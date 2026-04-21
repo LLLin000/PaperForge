@@ -523,6 +523,24 @@ def deploy_workflow_scripts(vault_path: Path, agent_key: str, agent_config: dict
             print_warning(f"Template not found (skipping): {src_rel}")
             fail_count += 1
     
+    # Deploy agent commands
+    command_src = repo_root / "command"
+    command_dst = vault_path / ".opencode/command"
+    
+    if command_src.exists() and command_src.is_dir():
+        command_files = list(command_src.glob("*.md"))
+        if command_files:
+            command_dst.mkdir(parents=True, exist_ok=True)
+            for cmd_file in command_files:
+                try:
+                    dst_file = command_dst / cmd_file.name
+                    shutil.copy2(cmd_file, dst_file)
+                    success_count += 1
+                except Exception as e:
+                    print_error(f"Failed to deploy command {cmd_file.name}: {e}")
+                    fail_count += 1
+            print_success(f"Deployed {len(command_files)} agent commands")
+    
     print(f"\nDeployment summary: {success_count} succeeded, {fail_count} failed")
     return fail_count == 0
 
