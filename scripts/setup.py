@@ -102,24 +102,24 @@ def select_agent() -> tuple[str, dict]:
 
 
 def configure_vault_paths(vault_path: Path) -> dict:
-    """Ask user for vault directory structure preferences."""
+    """Ask user for PaperForge-specific directory structure preferences."""
     print_header("Step 0.5: Vault Directory Configuration")
-    print("Configure your vault folder structure (press Enter to accept defaults):\n")
+    print("Configure PaperForge directory structure (press Enter to accept defaults):\n")
+    print("Note: 00_Inbox, 04_Archives, 05_Bases, 06_AI_Wiki are your personal PARA folders.")
+    print("      PaperForge will NOT create them.\n")
     
     paths = {
         "system_dir": ask("System folder name", default="99_System"),
-        "inbox_dir": ask("Inbox folder name", default="00_Inbox"),
         "resources_dir": ask("Resources folder name", default="03_Resources"),
-        "literature_dir": ask("Literature subfolder", default="Literature"),
-        "bases_dir": ask("Bases folder name", default="05_Bases"),
-        "archives_dir": ask("Archives folder name", default="04_Archives"),
-        "wiki_dir": ask("AI Wiki folder name", default="06_AI_Wiki"),
+        "literature_dir": ask("Literature subfolder (for generated notes)", default="Literature"),
     }
     
     # Build derived paths
-    paths["literature_path"] = f"{paths['resources_dir']}/{paths['literature_dir']}"
     paths["pipeline_path"] = f"{paths['system_dir']}/LiteraturePipeline"
     paths["template_path"] = f"{paths['system_dir']}/Template"
+    paths["literature_path"] = f"{paths['resources_dir']}/{paths['literature_dir']}"
+    
+    return paths
     
     return paths
 
@@ -248,17 +248,30 @@ def install_deps(deps: list[str]) -> bool:
 
 
 def create_directory_structure(vault_path: Path, paths: dict) -> None:
-    """Create required directory structure with configurable paths."""
+    """Create PaperForge directory structure with configurable paths."""
     dirs = [
+        # Core pipeline directories
         f"{paths['pipeline_path']}/ocr",
         f"{paths['pipeline_path']}/worker/scripts",
-        f"{paths['system_dir']}/Zotero",
+        f"{paths['pipeline_path']}/worker/tests",
+        f"{paths['pipeline_path']}/candidates/inbox",
+        f"{paths['pipeline_path']}/candidates/archive",
+        f"{paths['pipeline_path']}/search/tasks",
+        f"{paths['pipeline_path']}/search/results",
+        f"{paths['pipeline_path']}/indexes",
+        f"{paths['pipeline_path']}/writeback",
+        f"{paths['pipeline_path']}/exports",
+        
+        # Template directories
         f"{paths['template_path']}",
-        f"{paths['literature_path']}",
-        f"{paths['inbox_dir']}",
-        f"{paths['bases_dir']}",
-        f"{paths['archives_dir']}",
-        f"{paths['wiki_dir']}",
+        f"{paths['template_path']}/读图指南",
+        
+        # Zotero junction point
+        f"{paths['system_dir']}/Zotero",
+        
+        # Literature control (PaperForge-managed)
+        f"03_Resources/LiteratureControl/library-records",
+        f"03_Resources/LiteratureControl/candidate-records",
     ]
     
     for d in dirs:
@@ -267,19 +280,27 @@ def create_directory_structure(vault_path: Path, paths: dict) -> None:
     print_success(f"Directory structure created ({len(dirs)} folders)")
 
 
-def create_env_file(vault_path: Path, config: dict) -> None:
+def create_env_file(vault_path: Path, config: dict, paths: dict) -> None:
     """Create .env configuration file."""
     env_path = vault_path / ".env"
     
     lines = [
-        "# Literature Workflow Configuration",
+        "# PaperForge Configuration",
         f"ZOTERO_DATA_DIR={config['zotero_path']}",
         f"ZOTERO_STORAGE_DIR={config.get('storage_path', config['zotero_path'])}",
         f"PADDLEOCR_API_KEY={config['ocr_api_key']}",
         "PADDLEOCR_API_URL=https://paddleocr.baidu.com/api/v1/ocr",
         "",
-        "# Optional: Custom paths",
-        f"VAULT_PATH={vault_path}",
+        "# Agent Configuration",
+        f"PAPERFORGE_AGENT={config['agent']}",
+        f"PAPERFORGE_AGENT_NAME={config['agent_name']}",
+        f"PAPERFORGE_SKILL_DIR={config['skill_dir']}",
+        "",
+        "# Path Configuration",
+        f"PAPERFORGE_SYSTEM_DIR={paths['system_dir']}",
+        f"PAPERFORGE_PIPELINE_PATH={paths['pipeline_path']}",
+        f"PAPERFORGE_TEMPLATE_PATH={paths['template_path']}",
+        f"PAPERFORGE_VAULT_PATH={vault_path}",
     ]
     
     env_path.write_text("\n".join(lines), encoding="utf-8")
@@ -295,10 +316,9 @@ def create_agents_md(vault_path: Path, config: dict, paths: dict, agent_config: 
             print_warning("Skipping AGENTS.md creation")
             return
     
-    content = f"""# Agent Guide for Literature Research Vault
+    content = f"""# Agent Guide for PaperForge Literature Workflow
 
-This repository is an Obsidian Vault dedicated to Literature Research.
-It integrates closely with Zotero via automated pipeline tools.
+This vault uses PaperForge -- an automated literature research pipeline.
 
 ## Agent Configuration
 
@@ -306,50 +326,74 @@ It integrates closely with Zotero via automated pipeline tools.
 - **Skill Directory**: `{agent_config['skill_dir']}`
 - **Config File**: {agent_config.get('config_file', 'None')}
 
-## Vault Structure
+## PaperForge Directory Structure
+
+PaperForge manages the following directories (do NOT rename):
 
 ```
 {paths['system_dir']}/
-  LiteraturePipeline/       # Pipeline workers
-    ocr/                    # OCR outputs
-    worker/                 # Worker scripts
-  Template/                 # Templates
-    文献阅读.md
-    科研读图指南.md
-    读图指南/               # Chart reading guides
-  Zotero/                   # Zotero data (junction)
+  LiteraturePipeline/          # Core pipeline (managed by PaperForge)
+    candidates/                # Candidate literature
+      inbox/                   #   Search result inbox
+      archive/                 #   Archived events
+    exports/                   # Better BibTeX JSON exports
+    indexes/                   # Generated indices
+    ocr/                       # OCR outputs
+      <zotero_key>/            #   fulltext.md + images/
+    search/                    # Search tasks & results
+      tasks/                   #   Search configurations
+      results/                 #   Result cache
+    writeback/                 # Writeback queue & logs
+    worker/                    # Worker scripts
+      scripts/                 #   literature_pipeline.py
+      tests/                   #   Test files
+  Template/                    # Templates
+    文献阅读.md                 # Literature note template
+    科研读图指南.md             # Chart reading guide index
+    读图指南/                   # 14 chart type guides
+  Zotero/                      # Zotero data (junction)
+    zotero.sqlite              # Linked via junction/symlink
 
-{paths['inbox_dir']}/                     # Inbox for new papers
-{paths['literature_path']}/     # Literature notes
-{paths['bases_dir']}/                     # Obsidian Bases
-{paths['archives_dir']}/                  # Archives
-{paths['wiki_dir']}/                      # AI Wiki
+03_Resources/
+  Literature/                  # Your literature notes (generated by index-refresh)
+    <domain>/                  #   e.g., 骨科/, 运动医学/
+  LiteratureControl/           # PaperForge control files
+    candidate-records/         #   Candidate review cards
+    library-records/           #   Library tracking (analyze/ocr/deep flags)
 ```
+
+Your personal PARA folders (00_Inbox, 01_Projects, 02_Areas, 04_Archives, 05_Bases, 06_AI_Wiki) are NOT managed by PaperForge.
 
 ## 1. Environment & Tech Stack
 
 - **Platform**: Obsidian (Knowledge Management)
-- **Reference Manager**: Zotero (via MCP & Direct SQLite Access)
-- **Data Source**: PubMed (via MCP)
+- **Reference Manager**: Zotero (Better BibTeX + Bridge Plugin)
+- **OCR**: PaddleOCR-VL API
 - **Primary Language**: Simplified Chinese (简体中文)
-- **Scripting**: Python (Zotero interaction)
+- **Scripting**: Python 3.10+
 
-## 2. Workflows & Commands
+## 2. Workflows
 
-### Literature Search
-1.  **Analyze**: Use `parse_pico` to structure the research question.
-2.  **Search**: Use `zotero-lit-review` (Local Library first) or `pubmed_search`
-3.  **Verify**: Confirm what was found
-4.  **Import**: Batch import from PubMed
+### Phase 1: Candidate Management
+External searches (PubMed/OpenAlex/arXiv) or CSV imports → candidates.json → candidate-records/
 
-### Deep Reading (/LD-deep)
-1. Parse query (Zotero key / title / DOI / PMID)
-2. Bind OCR fulltext and metadata
-3. Generate `## 🔍 精读` scaffold
-4. Fill with Keshav three-pass reading method
-5. Validate output
+### Phase 2: Writeback to Zotero
+Selected candidates → writeback queue → Zotero Bridge API → Zotero library
 
-## 3. Style Guidelines
+### Phase 3: Index & Notes
+Better BibTeX auto-export JSON → index-refresh → formal-library.json + 03_Resources/Literature/<domain>/*.md
+
+### Phase 4: Deep Processing
+Library records flagged for analyze/ocr/deep → OCR → LD-deep agent → ## 🔍 精读 section
+
+## 3. Available Functions
+
+- **Quick Lookup** - Search and preview literature (single or batch)
+- **Deep Reading** - Keshav three-pass reading method (ensure-scaffold + fill)
+- **Queue Processing** - Batch process papers awaiting deep reading
+- **Figure Analysis** - Extract and analyze figures/tables from OCR
+
+## 4. Style Guidelines
 
 ### Markdown & Note Structure
 Follow the template in `{paths['template_path']}/文献阅读.md`.
@@ -372,7 +416,7 @@ tags:
 - **Output**: Simplified Chinese (简体中文) ONLY, unless asked otherwise.
 - **Search Terms**: English (for PubMed), but explain in Chinese.
 
-## 4. Interaction Rules
+## 5. Interaction Rules
 
 ### Protocol
 1. **No Hallucinations**: Never invent PMIDs or citations.
@@ -381,25 +425,18 @@ tags:
    - Confirm **Target Collection** before importing to Zotero.
 3. **Session Awareness**: Track context across sessions.
 
-## 5. Commands
-
-- `/LD <query>` - Quick literature lookup
-- `/LD-deep <query>` - Deep reading (Keshav three-pass)
-- `/LD-deep queue` - Process queued papers
-
 ## 6. Configuration
 
 - Zotero Data: `{zotero_path}`
 - Zotero Storage: `{storage_path}`
 - Vault Path: `{vault_path}`
+- System Dir: `{paths['system_dir']}`
+- Pipeline Path: `{paths['pipeline_path']}`
 - OCR API: PaddleOCR
 - Skill Dir: `{agent_config['skill_dir']}`
 
-Generated by setup.py on {platform.system()}
+Generated by PaperForge setup.py on {platform.system()}
 """
-    
-    agents_path.write_text(content, encoding="utf-8")
-    print_success(f"AGENTS.md created at {agents_path}")
     
     agents_path.write_text(content, encoding="utf-8")
     print_success(f"AGENTS.md created at {agents_path}")
@@ -495,7 +532,10 @@ def validate_setup(vault_path: Path, config: dict, paths: dict) -> list[str]:
     required_dirs = [
         f"{paths['pipeline_path']}/ocr",
         f"{paths['pipeline_path']}/worker/scripts",
-        f"{paths['literature_path']}",
+        f"{paths['pipeline_path']}/candidates/inbox",
+        f"{paths['pipeline_path']}/indexes",
+        f"{paths['pipeline_path']}/writeback",
+        f"03_Resources/LiteratureControl/library-records",
     ]
     for d in required_dirs:
         if not (vault_path / d).exists():
@@ -626,7 +666,7 @@ def main() -> int:
         "agent_name": agent_config["name"],
         "skill_dir": agent_config["skill_dir"],
     }
-    create_env_file(vault_path, config)
+    create_env_file(vault_path, config, paths)
     create_agents_md(vault_path, config, paths, agent_config)
     
     # Step 9: Validation
