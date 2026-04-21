@@ -115,7 +115,8 @@ Agents must follow this strict loop when asked to find literature:
 ## 4. Style Guidelines
 
 ### Markdown & Note Structure
-Follow the template in `99_System/Template/文献阅读.md`.
+
+Literature notes are generated automatically by the pipeline with standard frontmatter.
 
 **Frontmatter (YAML) is MANDATORY:**
 ```yaml

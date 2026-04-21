@@ -85,7 +85,6 @@ python scripts/setup.py
 │   ├── ocr/              # OCR 结果（全文 + 图表）
 │   └── worker/scripts/   # 工作流脚本
 ├── Template/
-│   ├── 文献阅读.md         # 文献笔记模板
 │   └── 科研读图指南.md     # 图表阅读参考
 └── Zotero/               # Zotero 数据链接
 

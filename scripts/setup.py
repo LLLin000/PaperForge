@@ -502,8 +502,6 @@ def deploy_workflow_scripts(vault_path: Path, agent_key: str, agent_config: dict
     
     # Deploy template files
     template_files = [
-        ("templates/文献阅读.md",
-         f"{paths['template_path']}/文献阅读.md"),
         ("templates/科研读图指南.md",
          f"{paths['template_path']}/科研读图指南.md"),
     ]
