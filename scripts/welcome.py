@@ -51,25 +51,16 @@ def show_welcome():
     print(f"\n{Colors.BRIGHT_CYAN}{Colors.BOLD}  PAPERFORGE - Literature Workflow Installer{Colors.ENDC}")
     print(f"  {Colors.DIM}v1.0.0 | Forging Knowledge from Research Papers{Colors.ENDC}\n")
 
-    # ASCII Logo - PAPERFORGE in block letters
-    logo = r"""
-    +================================================================+
-    |                                                                |
-    |          ####################################################  |
-    |          ##                                              ##  |
-    |          ##   #####  #####  #####  #####  ####   ####   ##  |
-    |          ##   #   #  #   #  #      #      #   #  #      ##  |
-    |          ##   #####  #####  ####   ####   ####   ####   ##  |
-    |          ##   #      #   #  #      #      #      #      ##  |
-    |          ##   #      #   #  #####  #####  #      #####  ##  |
-    |          ##                                              ##  |
-    |          ####################################################  |
-    |                                                                |
-    |              [+]  Forge Your Knowledge Into Power  [+]         |
-    |                                                                |
-    +================================================================+
-    """
-    print(f"{Colors.BRIGHT_YELLOW}{logo}{Colors.ENDC}")
+    # ASCII Logo - Horizontal line style (raw strings for safety)
+    print(r"    ______  ___  ______ _________________ ___________ _____  _____ ")
+    print(r"    | ___ \/ _ \ | ___ \  ___| ___ \  ___|  _  | ___ \  __ \|  ___|")
+    print(r"    | |_/ / /_\ \| |_/ / |__ | |_/ / |_  | | | | |_/ / |  \/| |__  ")
+    print(r"    |  __/|  _  ||  __/|  __||    /|  _| | | | |    /| | __ |  __| ")
+    print(r"    | |   | | | || |   | |___| |\ \| |   \ \_/ / |\ \| |_\ \| |___ ")
+    print(r"    \_|   \_| |_/\_|   \____/\_| \_\_|    \___/\_| \_|\____/\____/ ")
+    print(r"                                                                   ")
+    print(r"              [+]  Forge Your Knowledge Into Power  [+]             ")
+    print()
 
     # Feature list
     print(f"\n{Colors.BOLD}Features:{Colors.ENDC}")
