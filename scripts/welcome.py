@@ -64,11 +64,11 @@ def show_welcome():
 
     # Feature list
     print(f"\n{Colors.BOLD}Features:{Colors.ENDC}")
-    print(f"  {Colors.BRIGHT_CYAN}[B]{Colors.ENDC}  Bibliography Management    {Colors.DIM}→ Zotero integration{Colors.ENDC}")
-    print(f"  {Colors.BRIGHT_CYAN}[+]{Colors.ENDC}  Smart OCR Extraction       {Colors.DIM}→ PaddleOCR-VL API{Colors.ENDC}")
-    print(f"  {Colors.BRIGHT_CYAN}[D]{Colors.ENDC}  Deep Reading Analysis      {Colors.DIM}→ Keshav three-pass method{Colors.ENDC}")
-    print(f"  {Colors.BRIGHT_CYAN}[L]{Colors.ENDC}  Literature Queue           {Colors.DIM}→ Base system integration{Colors.ENDC}")
-    print(f"  {Colors.BRIGHT_CYAN}[A]{Colors.ENDC}  Multi-Agent Support        {Colors.DIM}→ OpenCode / Claude / Cursor / Copilot{Colors.ENDC}")
+    print(f"  {Colors.BRIGHT_CYAN}[B]{Colors.ENDC}  Bibliography Management    {Colors.DIM}-> Zotero integration{Colors.ENDC}")
+    print(f"  {Colors.BRIGHT_CYAN}[+]{Colors.ENDC}  Smart OCR Extraction       {Colors.DIM}-> PaddleOCR-VL API{Colors.ENDC}")
+    print(f"  {Colors.BRIGHT_CYAN}[D]{Colors.ENDC}  Deep Reading Analysis      {Colors.DIM}-> Keshav three-pass method{Colors.ENDC}")
+    print(f"  {Colors.BRIGHT_CYAN}[L]{Colors.ENDC}  Literature Queue           {Colors.DIM}-> Base system integration{Colors.ENDC}")
+    print(f"  {Colors.BRIGHT_CYAN}[A]{Colors.ENDC}  Multi-Agent Support        {Colors.DIM}-> OpenCode / Claude / Cursor / Copilot{Colors.ENDC}")
 
     # Steps
     print(f"\n{Colors.BOLD}Installation Steps:{Colors.ENDC}")
@@ -83,7 +83,7 @@ def show_welcome():
         ("8", "Validation", "Verify installation"),
     ]
     for num, title, desc in steps:
-        print(f"  {Colors.BRIGHT_CYAN}[{num}]{Colors.ENDC}  {Colors.BOLD}{title:<22}{Colors.ENDC}  {Colors.DIM}→ {desc}{Colors.ENDC}")
+        print(f"  {Colors.BRIGHT_CYAN}[{num}]{Colors.ENDC}  {Colors.BOLD}{title:<22}{Colors.ENDC}  {Colors.DIM}-> {desc}{Colors.ENDC}")
 
     # Bottom border
     draw_border(70, "=", Colors.BRIGHT_BLUE)
@@ -127,6 +127,22 @@ def show_completion():
     print(f"  {Colors.BRIGHT_CYAN}4.{Colors.ENDC} Start deep reading: {Colors.BOLD}/LD-deep <zotero_key>{Colors.ENDC}")
 
     print(f"\n{Colors.DIM}For help: https://github.com/LLLin000/PaperForge{Colors.ENDC}\n")
+
+
+def show_install_menu():
+    """Show the interactive installation menu."""
+    print(f"\n{Colors.BOLD}{Colors.BRIGHT_WHITE}Please select an option:{Colors.ENDC}\n")
+    print(f"  {Colors.BRIGHT_GREEN}[1]{Colors.ENDC}  {Colors.BOLD}Start Installation{Colors.ENDC}")
+    print(f"      Configure vault, Zotero, OCR, and deploy scripts")
+    print()
+    print(f"  {Colors.BRIGHT_YELLOW}[2]{Colors.ENDC}  {Colors.BOLD}Verify Setup{Colors.ENDC}")
+    print(f"      Check existing installation and fix issues")
+    print()
+    print(f"  {Colors.BRIGHT_BLUE}[3]{Colors.ENDC}  {Colors.BOLD}View Documentation{Colors.ENDC}")
+    print(f"      Open README and usage guide")
+    print()
+    print(f"  {Colors.BRIGHT_RED}[4]{Colors.ENDC}  {Colors.BOLD}Exit{Colors.ENDC}")
+    print()
 
 
 def main():
