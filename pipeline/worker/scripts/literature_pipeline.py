@@ -617,34 +617,6 @@ def generate_review(candidates: list[dict]) -> str:
     return "\n".join(lines)
 
 
-def run_candidate_sync(vault: Path) -> int:
-    paths = pipeline_paths(vault)
-    candidates = read_json(paths["candidates"])
-    collection_catalog = load_domain_collection_catalog(paths)
-    export_inventory = load_export_inventory(paths)
-    paths["records"].mkdir(parents=True, exist_ok=True)
-    visible_ids = set()
-    normalized_candidates = []
-    for row in candidates:
-        row["decision"] = canonicalize_decision(row.get("decision", ""))
-        row = apply_candidate_collection_resolution(row, collection_catalog)
-        row = apply_existing_library_match(row, export_inventory)
-        row["final_collection"] = compute_final_collection(row)
-        normalized_candidates.append(row)
-        if row["decision"] == "不纳入":
-            continue
-        visible_ids.add(row["candidate_id"])
-        record_path = paths["records"] / f"{row['candidate_id']}.md"
-        record_path.write_text(candidate_markdown(row), encoding="utf-8")
-    for record_path in paths["records"].glob("*.md"):
-        if record_path.stem not in visible_ids:
-            record_path.unlink()
-    write_json(paths["candidates"], normalized_candidates)
-    paths["review"].write_text(generate_review(normalized_candidates), encoding="utf-8")
-    print(f"candidate-sync: wrote {len(visible_ids)} records")
-    return 0
-
-
 DEEP_READING_HEADER = "## 🔍 精读"
 
 
@@ -1058,16 +1030,6 @@ def apply_writeback_log(paths: dict[str, Path], candidate_map: dict[str, dict]) 
     return changed
 
 
-def run_prepare_writeback(vault: Path) -> int:
-    paths = pipeline_paths(vault)
-    candidate_map = load_candidates_by_id(paths)
-    _, created = sync_writeback_queue(paths, candidate_map)
-    save_candidates(paths, candidate_map)
-    run_candidate_sync(vault)
-    print(f"prepare-writeback: synced queue, created {created} commands")
-    return 0
-
-
 def invoke_native_bridge(paths: dict[str, Path], max_commands: int = 5) -> dict:
     config = load_bridge_config(paths)
     base_url = str(config.get("server_base_url", "http://127.0.0.1:23119")).rstrip("/")
@@ -1088,38 +1050,6 @@ def invoke_native_bridge(paths: dict[str, Path], max_commands: int = 5) -> dict:
     if not result.get("ok", False):
         raise RuntimeError(result.get("error", "Native bridge returned non-ok result"))
     return result
-
-
-def run_writeback_native(vault: Path) -> int:
-    paths = pipeline_paths(vault)
-    candidate_map = load_candidates_by_id(paths)
-    queue_rows, _ = sync_writeback_queue(paths, candidate_map)
-    save_candidates(paths, candidate_map)
-    if not any(str(row.get("status", "") or "").strip() in {"queued", "running"} for row in queue_rows):
-        candidate_map = load_candidates_by_id(paths)
-        apply_writeback_log(paths, candidate_map)
-        save_candidates(paths, candidate_map)
-        run_candidate_sync(vault)
-        print("writeback-native: no queued commands")
-        return 0
-    try:
-        result = invoke_native_bridge(paths)
-    except requests.RequestException as exc:
-        run_candidate_sync(vault)
-        print(f"writeback-native: bridge unreachable -> {exc}")
-        return 1
-    except Exception as exc:
-        run_candidate_sync(vault)
-        print(f"writeback-native: bridge error -> {exc}")
-        return 1
-    candidate_map = load_candidates_by_id(paths)
-    apply_writeback_log(paths, candidate_map)
-    save_candidates(paths, candidate_map)
-    run_candidate_sync(vault)
-    print(
-        f"writeback-native: processed {result.get('processed', 0)} commands, failed {result.get('failed', 0)}"
-    )
-    return 0
 
 
 def normalize_candidate_title(text: str) -> str:
@@ -1546,59 +1476,6 @@ def _coerce_source_name(value: str) -> str:
     return aliases.get(text, text)
 
 
-def run_search_sources(vault: Path) -> int:
-    paths = pipeline_paths(vault)
-    paths["search_tasks"].mkdir(parents=True, exist_ok=True)
-    paths["search_archive"].mkdir(parents=True, exist_ok=True)
-    paths["search_results"].mkdir(parents=True, exist_ok=True)
-    paths["candidate_inbox"].mkdir(parents=True, exist_ok=True)
-    task_files = sorted(paths["search_tasks"].glob("*.json"))
-    processed = 0
-    emitted = 0
-    source_handlers = {
-        "pubmed_search": search_pubmed,
-        "openalex_search": search_openalex,
-        "arxiv_search": search_arxiv,
-    }
-    for task_file in task_files:
-        task = read_json(task_file)
-        task_id = str(task.get("task_id", "") or task_file.stem).strip() or task_file.stem
-        sources = task.get("sources") or ["pubmed_search", "openalex_search", "arxiv_search"]
-        sources = [_coerce_source_name(item) for item in sources]
-        base_limit = int(task.get("limit", 10) or 10)
-        source_limits = task.get("source_limits") or {}
-        batch_rows = []
-        for source in sources:
-            handler = source_handlers.get(source)
-            if not handler:
-                continue
-            source_limit = int(source_limits.get(source, base_limit) or base_limit)
-            try:
-                rows, meta = handler(task, source_limit)
-            except requests.RequestException as exc:
-                rows = []
-                meta = {
-                    "count": 0,
-                    "error": str(exc),
-                    "error_type": exc.__class__.__name__,
-                }
-            write_json(
-                paths["search_results"] / f"{task_id}.{source}.json",
-                {"task_id": task_id, "source": source, "query": task.get("query", ""), "meta": meta, "results": rows},
-            )
-            for row in rows:
-                batch_rows.append(build_search_event(task, source, row))
-        if batch_rows:
-            inbox_path = paths["candidate_inbox"] / f"{task_id}.jsonl"
-            write_jsonl(inbox_path, batch_rows)
-            emitted += len(batch_rows)
-        archived = paths["search_archive"] / f"{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')}-{task_file.name}"
-        shutil.move(str(task_file), archived)
-        processed += 1
-    print(f"search-sources: processed {processed} tasks, emitted {emitted} candidate events")
-    return 0
-
-
 def run_search_command(vault: Path, args) -> int:
     paths = pipeline_paths(vault)
     paths["search_tasks"].mkdir(parents=True, exist_ok=True)
@@ -1688,45 +1565,6 @@ def resolve_existing_candidate(candidate_map: dict[str, dict], incoming: dict) -
     return None, None
 
 
-def run_ingest_candidates(vault: Path) -> int:
-    paths = pipeline_paths(vault)
-    inbox_root = paths["candidate_inbox"]
-    archive_root = paths["candidate_archive"]
-    inbox_root.mkdir(parents=True, exist_ok=True)
-    archive_root.mkdir(parents=True, exist_ok=True)
-    candidate_map = load_candidates_by_id(paths)
-    imported = 0
-    updated = 0
-    processed_files = 0
-    for inbox_file in sorted(inbox_root.glob("*.jsonl")):
-        rows = read_jsonl(inbox_file)
-        for row in rows:
-            normalized = normalize_candidate_payload(row)
-            candidate_id = normalized.get("candidate_id", "")
-            if not candidate_id or not normalized.get("title"):
-                continue
-            existing_id, existing = resolve_existing_candidate(candidate_map, normalized)
-            merged = merge_candidate_record(existing, normalized)
-            target_id = existing_id or candidate_id
-            merged["candidate_id"] = target_id
-            candidate_map[target_id] = merged
-            if existing is None:
-                imported += 1
-            elif existing != merged:
-                updated += 1
-        archive_name = (
-            f"{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')}-{inbox_file.name}"
-        )
-        shutil.move(str(inbox_file), str(archive_root / archive_name))
-        processed_files += 1
-    save_candidates(paths, candidate_map)
-    run_candidate_sync(vault)
-    print(
-        f"ingest-candidates: processed {processed_files} files, imported {imported} candidates, updated {updated} candidates"
-    )
-    return 0
-
-
 def _harvest_csv_paths(paths: dict[str, Path]) -> list[Path]:
     root = paths["harvest_root"]
     if not root.exists():
@@ -1756,39 +1594,6 @@ def _merge_harvest_candidate(existing: dict | None, incoming: dict) -> dict:
     return merge_candidate_record(existing, incoming)
 
 
-def run_harvest_sync(vault: Path) -> int:
-    paths = pipeline_paths(vault)
-    candidate_map = load_candidates_by_id(paths)
-    imported = 0
-    updated = 0
-    for csv_path in _harvest_csv_paths(paths):
-        with csv_path.open("r", encoding="utf-8-sig", newline="") as handle:
-            reader = csv.DictReader(handle)
-            for raw_row in reader:
-                if not raw_row:
-                    continue
-                normalized = _normalize_harvest_row(raw_row)
-                if normalized.get("harvest_priority", "").lower() not in {
-                    "high",
-                    "medium",
-                }:
-                    continue
-                candidate_id = normalized.get("candidate_id", "").strip()
-                if not candidate_id:
-                    continue
-                existing = candidate_map.get(candidate_id)
-                merged = _merge_harvest_candidate(existing, normalized)
-                candidate_map[candidate_id] = merged
-                if existing is None:
-                    imported += 1
-                elif existing != merged:
-                    updated += 1
-    save_candidates(paths, candidate_map)
-    run_candidate_sync(vault)
-    print(f"harvest-sync: imported {imported} candidates, updated {updated} candidates")
-    return 0
-
-
 def next_key(domain: str, export_rows: list[dict]) -> str:
     prefix = "ORTHO" if domain == "骨科" else "SPORT"
     existing = [row.get("key", "") for row in export_rows]
@@ -1799,81 +1604,6 @@ def next_key(domain: str, export_rows: list[dict]) -> str:
             if suffix.isdigit():
                 max_num = max(max_num, int(suffix))
     return f"{prefix}{max_num + 1:03d}"
-
-
-def run_writeback(vault: Path) -> int:
-    paths = pipeline_paths(vault)
-    queue_rows = read_jsonl(paths["queue"])
-    log_rows = read_jsonl(paths["log"])
-    candidates = load_candidates_by_id(paths)
-    config = read_json(paths["config"])
-    export_map = {
-        entry["domain"]: paths["exports"] / entry["export_file"]
-        for entry in config["domains"]
-    }
-
-    for row in queue_rows:
-        if row.get("status") != "queued":
-            continue
-        candidate_id = row["source_candidate_id"]
-        candidate = candidates[candidate_id]
-        export_path = export_map[row["target_domain"]]
-        export_rows = load_export_rows(export_path) if export_path.exists() else []
-        exists = next(
-            (
-                item
-                for item in export_rows
-                if item.get("doi") == row["identifier"]
-                or item.get("pmid") == row["identifier"]
-            ),
-            None,
-        )
-        if exists is None:
-            key = next_key(row["target_domain"], export_rows)
-            export_rows.append(
-                {
-                    "key": key,
-                    "title": candidate["title"],
-                    "authors": candidate.get("authors", []),
-                    "abstract": candidate.get("abstract_short", ""),
-                    "journal": candidate.get("journal", ""),
-                    "year": candidate["year"],
-                    "date": "",
-                    "doi": candidate.get("doi", ""),
-                    "pmid": candidate.get("pmid", ""),
-                    "collections": [row["target_collection"]],
-                    "attachments": [],
-                }
-            )
-        else:
-            key = exists["key"]
-            collections = set(exists.get("collections", []))
-            collections.add(row["target_collection"])
-            exists["collections"] = sorted(collections)
-        write_json(export_path, export_rows)
-        row["status"] = "processed"
-        row["processed_at"] = datetime.now(timezone.utc).isoformat()
-        candidate["import_status"] = "imported"
-        candidate["zotero_key"] = key
-        log_rows.append(
-            {
-                "command_id": row["command_id"],
-                "action": row["action"],
-                "identifier": row["identifier"],
-                "target_collection": row["target_collection"],
-                "source_candidate_id": candidate_id,
-                "executed_at": datetime.now(timezone.utc).isoformat(),
-                "status": "success",
-                "zotero_key": key,
-            }
-        )
-
-    save_candidates(paths, candidates)
-    write_jsonl(paths["queue"], queue_rows)
-    write_jsonl(paths["log"], log_rows)
-    run_candidate_sync(vault)
-    print("writeback: processed queue")
-    return 0
 
 
 def frontmatter_note(entry: dict, existing_text: str = "") -> str:
