@@ -1,32 +1,14 @@
 #!/usr/bin/env python3
-"""
-PaperForge - Literature Research Workflow
-Installation Welcome Screen
+"""PaperForge Welcome Screen - ASCII-safe for Windows terminals."""
 
-     ╔════════════════════════════════════════════════════════════════╗
-     ║                                                                ║
-     ║          ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░            ║
-     ║          ░░                                  ░░            ║
-     ║          ░░   ▓▓▓▓▓  ▓▓▓▓▓  ▓▓▓▓▓  ▓▓▓▓▓  ▓▓▓▓▓   ░░            ║
-     ║          ░░   ▓   ▓  ▓   ▓  ▓      ▓      ▓       ░░            ║
-     ║          ░░   ▓▓▓▓▓  ▓▓▓▓▓  ▓▓▓▓   ▓▓▓▓   ▓▓▓▓    ░░            ║
-     ║          ░░   ▓      ▓   ▓  ▓      ▓      ▓       ░░            ║
-     ║          ░░   ▓      ▓   ▓  ▓▓▓▓▓  ▓▓▓▓▓  ▓       ░░            ║
-     ║          ░░                                  ░░            ║
-     ║          ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░            ║
-     ║                                                                ║
-     ║              ⚡  Forge Your Knowledge Into Power  ⚡              ║
-     ║                                                                ║
-     ╚════════════════════════════════════════════════════════════════╝
-"""
+from __future__ import annotations
 
-import os
-import sys
 import time
+import sys
 
 
-# ANSI color codes
 class Colors:
+    """ANSI color codes (safe for most terminals)."""
     BLACK = '\033[30m'
     RED = '\033[31m'
     GREEN = '\033[32m'
@@ -45,171 +27,139 @@ class Colors:
     BRIGHT_WHITE = '\033[97m'
     BOLD = '\033[1m'
     DIM = '\033[2m'
-    ITALIC = '\033[3m'
-    UNDERLINE = '\033[4m'
-    BLINK = '\033[5m'
-    REVERSE = '\033[7m'
-    STRIKETHROUGH = '\033[9m'
-    END = '\033[0m'
+    ENDC = '\033[0m'
 
 
 def clear_screen():
-    """Clear the terminal screen."""
-    os.system('cls' if os.name == 'nt' else 'clear')
+    """Clear terminal screen."""
+    print("\033[2J\033[H", end="")
 
 
-def print_slow(text, delay=0.01):
-    """Print text with a typing effect."""
-    for char in text:
-        print(char, end='', flush=True)
-        time.sleep(delay)
-    print()
-
-
-def draw_logo():
-    """Draw the PaperForge ASCII logo."""
-    logo = f"""
-{Colors.BRIGHT_YELLOW}```
-______  ___  ______ _________________ ___________ _____  _____ 
-| ___ \/ _ \ | ___ \  ___| ___ \  ___|  _  | ___ \  __ \|  ___|
-| |_/ / /_\ \| |_/ / |__ | |_/ / |_  | | | | |_/ / |  \/| |__  
-|  __/|  _  ||  __/|  __||    /|  _| | | | |    /| | __ |  __| 
-| |   | | | || |   | |___| |\ \| |   \ \_/ / |\ \| |_/ \| |___ 
-\_|   \_| |_/\_|   \____/\_| \_\_|    \___/\_| \_\|____/\____/ 
-```{Colors.END}
-    """
-    print(logo)
-
-
-def draw_border():
-    """Draw a decorative border."""
-    border = f"""
-{Colors.BRIGHT_BLUE}╔══════════════════════════════════════════════════════════════════╗{Colors.END}
-{Colors.BRIGHT_BLUE}║{Colors.END}                                                                  {Colors.BRIGHT_BLUE}║{Colors.END}
-{Colors.BRIGHT_BLUE}╚══════════════════════════════════════════════════════════════════╝{Colors.END}
-"""
-    print(border)
+def draw_border(width: int = 80, char: str = "-", color: str = Colors.BRIGHT_BLUE):
+    """Draw a simple horizontal border."""
+    print(f"{color}{char * width}{Colors.ENDC}")
 
 
 def show_welcome():
-    """Display the full welcome screen."""
+    """Display the PaperForge welcome screen."""
     clear_screen()
-    
+
     # Top border
-    print(f"\n{Colors.BRIGHT_BLUE}╔══════════════════════════════════════════════════════════════════════╗{Colors.END}")
-    print(f"{Colors.BRIGHT_BLUE}║{Colors.END}                                                                      {Colors.BRIGHT_BLUE}║{Colors.END}")
-    
-    # Logo
-    draw_logo()
-    
-    # Bottom border
-    print(f"{Colors.BRIGHT_BLUE}║{Colors.END}                                                                      {Colors.BRIGHT_BLUE}║{Colors.END}")
-    print(f"{Colors.BRIGHT_BLUE}╚══════════════════════════════════════════════════════════════════════╝{Colors.END}")
-    
-    # Tagline
-    print(f"\n{Colors.DIM}          Literature Research Pipeline for Obsidian + Zotero + AI Agent{Colors.END}")
-    print(f"{Colors.DIM}                    MIT License | github.com/LLLin000/PaperForge{Colors.END}\n")
-    
-    # Features grid
-    print(f"{Colors.BOLD}Features:{Colors.END}")
-    features = [
-        ("⚡", "/LD", "Quick literature lookup"),
-        ("🔍", "/LD-deep", "Keshav three-pass deep reading"),
-        ("📄", "Auto-OCR", "PaddleOCR-VL API integration"),
-        ("📊", "14 Charts", "Scientific chart reading guides"),
-        ("🔗", "Zotero Sync", "Bi-directional sync"),
-        ("🤖", "Multi-Agent", "OpenCode / Claude / Cursor / ..."),
-    ]
-    
-    for icon, name, desc in features:
-        print(f"  {Colors.BRIGHT_GREEN}{icon}{Colors.END}  {Colors.BOLD}{name:<12}{Colors.END}  {Colors.DIM}{desc}{Colors.END}")
-    
-    print()
+    draw_border(70, "=", Colors.BRIGHT_BLUE)
 
+    # Title
+    print(f"\n{Colors.BRIGHT_CYAN}{Colors.BOLD}  PAPERFORGE - Literature Workflow Installer{Colors.ENDC}")
+    print(f"  {Colors.DIM}v1.0.0 | Forging Knowledge from Research Papers{Colors.ENDC}\n")
 
-def show_install_menu():
-    """Show the installation steps menu."""
-    print(f"{Colors.BOLD}Installation Steps:{Colors.END}\n")
-    
+    # ASCII Logo - PAPERFORGE in block letters
+    logo = r"""
+    +================================================================+
+    |                                                                |
+    |          ####################################################  |
+    |          ##                                              ##  |
+    |          ##   #####  #####  #####  #####  ####   ####   ##  |
+    |          ##   #   #  #   #  #      #      #   #  #      ##  |
+    |          ##   #####  #####  ####   ####   ####   ####   ##  |
+    |          ##   #      #   #  #      #      #      #      ##  |
+    |          ##   #      #   #  #####  #####  #      #####  ##  |
+    |          ##                                              ##  |
+    |          ####################################################  |
+    |                                                                |
+    |              [+]  Forge Your Knowledge Into Power  [+]         |
+    |                                                                |
+    +================================================================+
+    """
+    print(f"{Colors.BRIGHT_YELLOW}{logo}{Colors.ENDC}")
+
+    # Feature list
+    print(f"\n{Colors.BOLD}Features:{Colors.ENDC}")
+    print(f"  {Colors.BRIGHT_CYAN}[B]{Colors.ENDC}  Bibliography Management    {Colors.DIM}→ Zotero integration{Colors.ENDC}")
+    print(f"  {Colors.BRIGHT_CYAN}[+]{Colors.ENDC}  Smart OCR Extraction       {Colors.DIM}→ PaddleOCR-VL API{Colors.ENDC}")
+    print(f"  {Colors.BRIGHT_CYAN}[D]{Colors.ENDC}  Deep Reading Analysis      {Colors.DIM}→ Keshav three-pass method{Colors.ENDC}")
+    print(f"  {Colors.BRIGHT_CYAN}[L]{Colors.ENDC}  Literature Queue           {Colors.DIM}→ Base system integration{Colors.ENDC}")
+    print(f"  {Colors.BRIGHT_CYAN}[A]{Colors.ENDC}  Multi-Agent Support        {Colors.DIM}→ OpenCode / Claude / Cursor / Copilot{Colors.ENDC}")
+
+    # Steps
+    print(f"\n{Colors.BOLD}Installation Steps:{Colors.ENDC}")
     steps = [
-        ("1", "Select Agent Platform", "OpenCode / Claude / Cursor / Copilot / ..."),
-        ("2", "Configure Vault Paths", "Customizable folder structure"),
-        ("3", "Link Zotero Library", "Auto-detect or manual configuration"),
-        ("4", "Deploy Skills", "OCR + Deep Reading + Chart Guides"),
-        ("5", "Validate Setup", "Integrity check and test"),
+        ("1", "Agent Platform Selection", "Choose your AI agent"),
+        ("2", "Vault Configuration", "Set folder structure"),
+        ("3", "Python Dependencies", "Install required packages"),
+        ("4", "Zotero Integration", "Connect reference manager"),
+        ("5", "OCR Configuration", "Set up PaddleOCR API"),
+        ("6", "Directory Setup", "Create vault folders"),
+        ("7", "Script Deployment", "Install workflow scripts"),
+        ("8", "Validation", "Verify installation"),
     ]
-    
     for num, title, desc in steps:
-        print(f"  {Colors.BRIGHT_CYAN}[{num}]{Colors.END}  {Colors.BOLD}{title:<22}{Colors.END}  {Colors.DIM}→ {desc}{Colors.END}")
-    
+        print(f"  {Colors.BRIGHT_CYAN}[{num}]{Colors.ENDC}  {Colors.BOLD}{title:<22}{Colors.ENDC}  {Colors.DIM}→ {desc}{Colors.ENDC}")
+
+    # Bottom border
+    draw_border(70, "=", Colors.BRIGHT_BLUE)
     print()
-    input(f"{Colors.BRIGHT_YELLOW}Press Enter to begin forging your knowledge...{Colors.END}")
 
 
-def show_progress_bar(step: int, total: int, label: str):
-    """Display a progress bar."""
+def show_progress(step: int, total: int, message: str):
+    """Display progress bar."""
     width = 40
     filled = int(width * step / total)
-    bar = "█" * filled + "░" * (width - filled)
+    bar = "#" * filled + "-" * (width - filled)
     percent = int(100 * step / total)
-    
-    print(f"\r  {Colors.BRIGHT_CYAN}[{bar}]{Colors.END} {Colors.BOLD}{percent}%{Colors.END}  {label}", end='', flush=True)
+
+    print(f"\r{Colors.BRIGHT_CYAN}[{bar}]{Colors.ENDC} {Colors.BOLD}{percent}%{Colors.ENDC} {Colors.DIM}{message}{Colors.ENDC}", end="")
+    sys.stdout.flush()
+
     if step == total:
         print()  # New line when complete
 
 
 def show_completion():
-    """Show installation completion screen."""
+    """Display completion screen."""
     clear_screen()
-    
-    print(f"""
-{Colors.BRIGHT_GREEN}╔══════════════════════════════════════════════════════════════════════╗{Colors.END}
-{Colors.BRIGHT_GREEN}║{Colors.END}                                                                      {Colors.BRIGHT_GREEN}║{Colors.END}
-{Colors.BRIGHT_GREEN}║{Colors.END}   {Colors.BOLD}{Colors.BRIGHT_WHITE}✓  INSTALLATION COMPLETE{Colors.END}                                         {Colors.BRIGHT_GREEN}║{Colors.END}
-{Colors.BRIGHT_GREEN}║{Colors.END}                                                                      {Colors.BRIGHT_GREEN}║{Colors.END}
-{Colors.BRIGHT_GREEN}║{Colors.END}   {Colors.BRIGHT_YELLOW}Your knowledge forge is ready!{Colors.END}                                 {Colors.BRIGHT_GREEN}║{Colors.END}
-{Colors.BRIGHT_GREEN}║{Colors.END}                                                                      {Colors.BRIGHT_GREEN}║{Colors.END}
-{Colors.BRIGHT_GREEN}╚══════════════════════════════════════════════════════════════════════╝{Colors.END}
 
-{Colors.BOLD}Next Steps:{Colors.END}
-  1. Open Obsidian and load your vault
-  2. Index your library: Run the index-refresh worker
-  3. Queue papers for analysis
-  4. Run OCR on queued papers
-  5. Start deep reading: {Colors.BRIGHT_CYAN}/LD-deep <zotero_key>{Colors.END}
+    # Completion frame
+    completion = f"""
+{Colors.BRIGHT_GREEN}======================================================================{Colors.ENDC}
+                                                                      
+   {Colors.BOLD}{Colors.BRIGHT_WHITE}[OK]  INSTALLATION COMPLETE{Colors.ENDC}                                         
+                                                                      
+   {Colors.BRIGHT_YELLOW}Your knowledge forge is ready!{Colors.ENDC}                                 
+                                                                      
+{Colors.BRIGHT_GREEN}======================================================================{Colors.ENDC}
+"""
+    print(completion)
 
-{Colors.BOLD}Commands:{Colors.END}
-  {Colors.BRIGHT_CYAN}/LD{Colors.END}         Quick literature lookup
-  {Colors.BRIGHT_CYAN}/LD-deep{Colors.END}    Keshav three-pass deep reading
-  {Colors.BRIGHT_CYAN}/LD-queue{Colors.END}   Process queued papers
+    print(f"\n{Colors.BOLD}Next Steps:{Colors.ENDC}")
+    print(f"  {Colors.BRIGHT_CYAN}1.{Colors.ENDC} Open Obsidian and load your vault")
+    print(f"  {Colors.BRIGHT_CYAN}2.{Colors.ENDC} Run: {Colors.BOLD}python scripts/index_refresh.py{Colors.ENDC}")
+    print(f"  {Colors.BRIGHT_CYAN}3.{Colors.ENDC} Queue papers for OCR processing")
+    print(f"  {Colors.BRIGHT_CYAN}4.{Colors.ENDC} Start deep reading: {Colors.BOLD}/LD-deep <zotero_key>{Colors.ENDC}")
 
-{Colors.DIM}For help: See AGENTS.md in your vault root{Colors.END}
-""")
+    print(f"\n{Colors.DIM}For help: https://github.com/LLLin000/PaperForge{Colors.ENDC}\n")
+
+
+def main():
+    """Test the welcome screen."""
+    show_welcome()
+    input(f"{Colors.DIM}Press Enter to simulate installation...{Colors.ENDC}")
+
+    # Simulate installation steps
+    steps = [
+        "Detecting vault path...",
+        "Checking Python dependencies...",
+        "Configuring Zotero...",
+        "Setting up OCR...",
+        "Creating directories...",
+        "Deploying scripts...",
+        "Validating setup...",
+    ]
+
+    for i, step in enumerate(steps, 1):
+        show_progress(i, len(steps), step)
+        time.sleep(0.5)
+
+    show_completion()
 
 
 if __name__ == "__main__":
-    try:
-        show_welcome()
-        show_install_menu()
-        
-        # Simulate installation steps
-        steps = [
-            "Detecting agent platform...",
-            "Configuring vault paths...",
-            "Linking Zotero library...",
-            "Deploying workflow scripts...",
-            "Installing chart guides...",
-            "Validating setup...",
-        ]
-        
-        print(f"\n{Colors.BOLD}Installing PaperForge...{Colors.END}\n")
-        for i, step in enumerate(steps, 1):
-            show_progress_bar(i, len(steps), step)
-            time.sleep(0.5)
-        
-        time.sleep(0.5)
-        show_completion()
-        
-    except KeyboardInterrupt:
-        print(f"\n\n{Colors.BRIGHT_RED}Installation cancelled.{Colors.END}")
-        sys.exit(1)
+    main()
