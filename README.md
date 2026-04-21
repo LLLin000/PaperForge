@@ -2,7 +2,7 @@
 
 基于 Obsidian + Zotero 的文献精读工作流，将粗糙的 PDF 文献锻造成精炼的知识晶体。
 
-**支持多 Agent 平台**: OpenCode / Claude Code / Cursor / Windsurf / GitHub Copilot / Cline / Augment / Trae
+专为 OpenCode Agent 设计。
 
 ```
    +======================+
@@ -16,203 +16,148 @@
    +======================+
    |  Literature Pipeline |
    +======================+
-   OCR -> Index -> Deep Reading
+   Index -> OCR -> Deep Reading
 ```
+
+## 核心架构
+
+PaperForge 是一个三层文献处理管道：
+
+### 第一层：索引生成
+- **Better BibTeX** 自动导出 Zotero 库为 JSON
+- `selection_sync` 检测新条目并标记状态
+- `index_refresh` 生成 Obsidian 文献笔记（含 Frontmatter）
+
+### 第二层：OCR 处理
+- `ocr` 自动上传 PDF 到 PaddleOCR API
+- 提取全文文本 + 图表切割
+- 保存到 `ocr/<key>/` 目录供精读使用
+
+### 第三层：深度精读（Agent 驱动）
+- 用户执行 `/LD-deep <key>` 命令
+- Agent 调用 `ld_deep.py` 生成 Keshav 三阶段精读骨架
+- 填充 Pass 1/2/3 内容，输出 `## 🔍 精读` 笔记
+
+> **注意**：深度精读由 Agent 命令触发，非自动执行。
 
 ## 快速开始
 
-### 方式一：让 Agent 帮你配置（推荐）
+### 让 Agent 帮你安装（推荐）
 
-复制以下内容，粘贴给你的 AI Agent，它会自动完成全部配置：
+复制以下内容，粘贴给你的 OpenCode Agent：
 
 ```
 Install and configure the literature workflow by following the instructions here:
 https://raw.githubusercontent.com/LLLin000/PaperForge/main/docs/INSTALLATION.md
 ```
 
-Agent 会问你几个问题，然后自动完成安装、配置和验证。
+Agent 会自动完成：
+1. 检测 Zotero 路径
+2. 安装 Python 依赖
+3. 创建目录结构
+4. 配置 PaddleOCR API
+5. 部署工作流脚本
 
-### 方式二：手动安装
-
-需要：
-- Python 3.10+
-- Zotero（安装 Better BibTeX 插件）
-- Obsidian
-- PaddleOCR API Key
+### 手动安装
 
 ```bash
-# 1. 克隆仓库
 git clone https://github.com/LLLin000/PaperForge.git
 cd PaperForge
-
-# 2. 安装 Python 依赖
-pip install -r requirements.txt
-
-# 3. 运行安装脚本
 python scripts/setup.py
 ```
 
-安装脚本会引导你：
-1. **选择 Agent 平台**（决定 skill 文件存放位置）
-2. **配置 Vault 目录结构**（可自定义系统文件夹、文献目录等名称）
-3. **配置 Zotero 路径**（Better BibTeX JSON 导出目录）
-4. **部署工作流脚本**
+## 安装要求
 
----
-
-## 功能特性
-
-- **文献索引** — 自动从 Better BibTeX JSON 导出生成 Obsidian 笔记
-- **深度精读** — Keshav 三阶段阅读法（概览 → 精读还原 → 深度理解）
-- **自动 OCR** — PaddleOCR-VL API 提取 PDF 全文和图片
-- **图表解析** — 14 种科研图表的读图指南
-- **多 Agent 支持** — 支持 OpenCode、Claude Code、Cursor 等 8+ 平台
-
----
-
-## 工作流程
-
-### 第 1 阶段：索引（Zotero → Obsidian）
-
-```
-Zotero + Better BibTeX
-    |
-    v (自动导出 JSON)
-99_System/LiteraturePipeline/exports/骨科.json
-    |
-    v (run_index_refresh)
-03_Resources/Literature/骨科/*.md  (生成文献笔记)
-```
-
-### 第 2 阶段：标记（选择需要深入阅读的论文）
-
-```
-literature_pipeline.py selection-sync
-    |
-    v (标记 analyze=true)
-03_Resources/LiteratureControl/library-records/*.md
-```
-
-### 第 3 阶段：OCR（提取 PDF 内容）
-
-```
- literature_pipeline.py ocr
-    |
-    v (PaddleOCR-VL API)
-99_System/LiteraturePipeline/ocr/<zotero_key>/
-    ├── fulltext.md          (完整文本)
-    ├── images/              (提取的图片)
-    └── meta.json            (元数据)
-```
-
-### 第 4 阶段：深度阅读（生成精读笔记）
-
-```
- literature_pipeline.py deep-reading
-    |
-    v (AI Agent 填充)
-03_Resources/Literature/骨科/*.md
-    └── ## 🔍 精读           (追加三阶段精读)
-```
-
-### 三阶段精读结构
-
-```markdown
-## 🔍 精读
-
-### Pass 1: 概览
-- 一句话总览
-- 5 Cs 快速评估
-- Figure 导读
-
-### Pass 2: 精读还原
-- Figure-by-Figure 解析（含图表嵌入）
-- Table-by-Table 解析
-- 关键方法补课
-- 主要发现与新意
-
-### Pass 3: 深度理解
-- 假设挑战与隐藏缺陷
-- 哪些结论扎实，哪些仍存疑
-- Discussion 解读
-- 对我的启发
-- 遗留问题
-```
-
----
+- **Zotero** + Better BibTeX 插件（自动导出 JSON）
+- **Obsidian**（笔记存储）
+- **Python 3.8+**
+- **PaddleOCR API Key**（PDF 识别）
 
 ## 目录结构
 
-PaperForge 只管理以下目录。你的 PARA 文件夹（00_Inbox, 04_Archives 等）由你自己维护。
+安装后在你的 Vault 中创建：
 
 ```
-<vault>/
-├── 99_System/                          # [PaperForge 管理]
-│   ├── LiteraturePipeline/             #   核心管道
-│   │   ├── candidates/                 #     候选文献管理
-│   │   │   ├── inbox/                  #       搜索结果临时存储
-│   │   │   └── archive/                #       归档事件
-│   │   ├── exports/                    #     Better BibTeX JSON 导出
-│   │   ├── indexes/                    #     生成的索引文件
-│   │   ├── ocr/                        #     OCR 输出
-│   │   │   └── <zotero_key>/           #       fulltext.md + images/
-│   │   ├── search/                     #     搜索任务
-│   │   │   ├── tasks/                  #       搜索配置
-│   │   │   └── results/                #       结果缓存
-│   │   ├── writeback/                  #     回写队列和日志
-│   │   └── worker/                     #     Worker 脚本
-│   │       ├── scripts/                #       literature_pipeline.py
-│   │       └── tests/                  #       测试文件
-│   ├── Template/                       #   模板
-│   │   ├── 文献阅读.md                 #     文献笔记模板
-│   │   ├── 科研读图指南.md             #     主读图指南
-│   │   └── 读图指南/                   #     14 种图表类型指南
-│   └── Zotero/                         #   Zotero 软链接 (junction)
-│
-├── 03_Resources/
-│   ├── Literature/                     # [你的文献库]
-│   │   ├── 骨科/                       #   index_refresh 生成
-│   │   └── 运动医学/                   #   index_refresh 生成
-│   └── LiteratureControl/              # [PaperForge 管理]
-│       ├── candidate-records/          #   candidate_sync 生成
-│       └── library-records/            #   selection_sync 生成
-│
-├── AGENTS.md                           # [PaperForge 生成] Agent 指南
-└── .env                                # [PaperForge 生成] 配置文件
+99_System/
+├── LiteraturePipeline/
+│   ├── exports/          # Better BibTeX JSON 导出
+│   ├── indexes/          # 文献索引 formal-library.json
+│   ├── ocr/              # OCR 结果（全文 + 图表）
+│   └── worker/scripts/   # 工作流脚本
+├── Template/
+│   ├── 文献阅读.md         # 文献笔记模板
+│   └── 科研读图指南.md     # 图表阅读参考
+└── Zotero/               # Zotero 数据链接
+
+03_Resources/
+└── Literature/
+    └── <domain>/         # 生成的文献笔记
+
+.opencode/skills/
+├── literature-qa/        # 深度阅读 Skill
+│   ├── scripts/ld_deep.py
+│   └── prompt_deep_subagent.md
+└── chart-reading/        # 14 种图表阅读指南
 ```
 
----
+## 工作流命令
 
-## 核心 Worker
+### 后台 Worker（Python）
 
-| Worker | 功能 |
-|--------|------|
-| `index-refresh` | 读取 Better BibTeX JSON，生成文献笔记 |
-| `selection-sync` | 标记需要深入阅读的论文（analyze/ocr/deep） |
-| `ocr` | PaddleOCR-VL API 提取 PDF 全文和图片 |
-| `deep-reading` | AI 生成三阶段精读笔记 |
-| `search-sources` | PubMed/OpenAlex/arXiv 搜索 |
-| `candidate-sync` | 候选文献管理和筛选 |
+```bash
+# 检测新条目并更新状态
+python pipeline/worker/scripts/literature_pipeline.py selection-sync
 
----
+# 生成/更新 Obsidian 笔记
+python pipeline/worker/scripts/literature_pipeline.py index-refresh
 
-## 文档
+# OCR 处理待处理 PDF
+python pipeline/worker/scripts/literature_pipeline.py ocr
 
-- [安装指南](docs/INSTALLATION.md)
-- [审计报告](docs/AUDIT_REPORT.md) - 工作流架构详解
-- [读图指南](99_System/Template/科研读图指南.md)
+# 生成待精读队列
+python pipeline/worker/scripts/literature_pipeline.py deep-reading
+```
 
----
+### Agent 命令（OpenCode）
 
-## 技术栈
+```
+/LD-deep <citation_key>    # 对指定文献执行深度精读
+```
 
-- **Obsidian** - 知识管理
-- **Zotero** + Better BibTeX - 文献管理
-- **PaddleOCR-VL** - PDF 识别
-- **Python 3.10+** - 管道脚本
+## 工作流程
 
----
+```
+1. Zotero 中添加文献（Better BibTeX 自动导出 JSON）
+   ↓
+2. 运行 selection-sync（检测新条目）
+   ↓
+3. 运行 index-refresh（生成 Obsidian 笔记）
+   ↓
+4. 运行 ocr（处理 PDF，提取全文+图表）
+   ↓
+5. 在 Obsidian 中查看笔记，执行 /LD-deep <key>
+   ↓
+6. Agent 生成 ## 🔍 精读 笔记
+```
+
+## 核心特性
+
+- **全自动索引**：Zotero 变动自动同步到 Obsidian
+- **OCR 全文提取**：PDF 转可搜索文本 + 图表切割
+- **Keshav 三阶段精读**：概览 → 精读还原 → 深度理解
+- **14 种图表阅读指南**：箱式图、热图、ROC、火山图等
+- **结构化输出**：标准化 frontmatter + 三阶段精读模板
+
+## 隐私保护
+
+- `.env` 文件（含 API Key）已加入 `.gitignore`
+- 所有个人数据（笔记、PDF、OCR 结果）不会被提交
+- 仓库仅包含工作流代码和模板
 
 ## License
 
-MIT License — 允许商业使用，需保留版权声明。
+MIT License with commercial use permitted.
+
+---
+
+**PaperForge** — *Preparing for the Future, One Paper at a Time.*
