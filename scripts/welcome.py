@@ -69,14 +69,14 @@ def print_slow(text, delay=0.01):
 def draw_logo():
     """Draw the PaperForge ASCII logo."""
     logo = f"""
-{Colors.BRIGHT_YELLOW}
+{Colors.BRIGHT_YELLOW}```
 ______  ___  ______ _________________ ___________ _____  _____ 
 | ___ \/ _ \ | ___ \  ___| ___ \  ___|  _  | ___ \  __ \|  ___|
 | |_/ / /_\ \| |_/ / |__ | |_/ / |_  | | | | |_/ / |  \/| |__  
 |  __/|  _  ||  __/|  __||    /|  _| | | | |    /| | __ |  __| 
 | |   | | | || |   | |___| |\ \| |   \ \_/ / |\ \| |_/ \| |___ 
 \_|   \_| |_/\_|   \____/\_| \_\_|    \___/\_| \_\|____/\____/ 
-{Colors.END}
+```{Colors.END}
     """
     print(logo)
 
@@ -108,7 +108,7 @@ def show_welcome():
     
     # Tagline
     print(f"\n{Colors.DIM}          Literature Research Pipeline for Obsidian + Zotero + AI Agent{Colors.END}")
-    print(f"{Colors.DIM}                    MIT License | github.com/LLLin000/Research-workflow{Colors.END}\n")
+    print(f"{Colors.DIM}                    MIT License | github.com/LLLin000/PaperForge{Colors.END}\n")
     
     # Features grid
     print(f"{Colors.BOLD}Features:{Colors.END}")
