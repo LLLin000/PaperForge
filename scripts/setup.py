@@ -513,6 +513,31 @@ def deploy_workflow_scripts(vault_path: Path, agent_key: str, agent_config: dict
                     fail_count += 1
             print_success(f"Deployed {len(chart_files)} chart reading guides")
     
+    # Deploy template files
+    template_files = [
+        ("99_System/Template/文献阅读.md",
+         f"{paths['template_path']}/文献阅读.md"),
+        ("99_System/Template/科研读图指南.md",
+         f"{paths['template_path']}/科研读图指南.md"),
+    ]
+    
+    for src_rel, dst_rel in template_files:
+        src_path = repo_root / src_rel
+        dst_path = vault_path / dst_rel
+        
+        if src_path.exists():
+            try:
+                dst_path.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(src_path, dst_path)
+                print_success(f"Deployed template: {src_rel}")
+                success_count += 1
+            except Exception as e:
+                print_error(f"Failed to deploy template {src_rel}: {e}")
+                fail_count += 1
+        else:
+            print_warning(f"Template not found (skipping): {src_rel}")
+            fail_count += 1
+    
     print(f"\nDeployment summary: {success_count} succeeded, {fail_count} failed")
     return fail_count == 0
 
