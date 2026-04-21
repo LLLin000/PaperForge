@@ -482,9 +482,9 @@ def deploy_workflow_scripts(vault_path: Path, agent_key: str, agent_config: dict
             print_error(f"Failed to deploy {src_rel}: {e}")
             fail_count += 1
     
-    # Deploy chart reading guides (into agent-specific skill dir)
-    chart_guide_src = repo_root / "skills/chart-reading"
-    chart_guide_dst = vault_path / skill_dir / "chart-reading"
+    # Deploy chart reading guides (into literature-qa skill as references)
+    chart_guide_src = repo_root / "skills/literature-qa/chart-reading"
+    chart_guide_dst = vault_path / skill_dir / "literature-qa/chart-reading"
     
     if chart_guide_src.exists() and chart_guide_src.is_dir():
         chart_files = list(chart_guide_src.glob("*.md"))
