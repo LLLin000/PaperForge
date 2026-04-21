@@ -521,7 +521,14 @@ def validate_setup(vault_path: Path, config: dict, paths: dict) -> list[str]:
 
 def main() -> int:
     """Main installer entry point."""
-    print_header("Literature Workflow Installer")
+    # Show welcome screen
+    try:
+        from welcome import show_welcome, show_install_menu
+        show_welcome()
+        show_install_menu()
+    except ImportError:
+        print_header("Literature Workflow Installer")
+    
     print("This script will help you configure the literature research pipeline.\n")
     
     # Step 0: Select agent platform
