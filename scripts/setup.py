@@ -23,6 +23,107 @@ class Colors:
     BOLD = '\033[1m'
 
 
+# Agent platform configurations
+AGENT_CONFIGS = {
+    "opencode": {
+        "name": "OpenCode",
+        "skill_dir": ".opencode/skills",
+        "config_file": None,
+    },
+    "claude": {
+        "name": "Claude Code",
+        "skill_dir": ".claude/skills",
+        "config_file": ".claude/skills.json",
+    },
+    "cursor": {
+        "name": "Cursor",
+        "skill_dir": ".cursor/skills",
+        "config_file": ".cursor/settings.json",
+    },
+    "windsurf": {
+        "name": "Windsurf",
+        "skill_dir": ".windsurf/skills",
+        "config_file": None,
+    },
+    "github_copilot": {
+        "name": "GitHub Copilot",
+        "skill_dir": ".github/skills",
+        "config_file": ".github/copilot-instructions.md",
+    },
+    "cline": {
+        "name": "Cline",
+        "skill_dir": ".clinerules/skills",
+        "config_file": ".clinerules",
+    },
+    "augment": {
+        "name": "Augment",
+        "skill_dir": ".augment/skills",
+        "config_file": None,
+    },
+    "trae": {
+        "name": "Trae",
+        "skill_dir": ".trae/skills",
+        "config_file": None,
+    },
+}
+
+
+def select_agent() -> tuple[str, dict]:
+    """Ask user to select their AI agent platform."""
+    print_header("Step 0: Agent Platform Selection")
+    print("Which AI agent do you use with this vault?")
+    print("(This determines where skill files and configurations are placed)\n")
+    
+    agents = list(AGENT_CONFIGS.items())
+    for i, (key, cfg) in enumerate(agents, 1):
+        print(f"  {i}. {cfg['name']} ({key})")
+    print(f"  {len(agents) + 1}. Other (custom)")
+    
+    choice = ask("Select agent", default="1")
+    try:
+        idx = int(choice) - 1
+        if 0 <= idx < len(agents):
+            return agents[idx]
+        elif idx == len(agents):
+            # Custom agent
+            custom_name = ask("Enter agent name")
+            custom_dir = ask("Enter skill directory (relative to vault)", default=".custom/skills")
+            return "custom", {
+                "name": custom_name,
+                "skill_dir": custom_dir,
+                "config_file": None,
+            }
+    except ValueError:
+        pass
+    
+    # Default to OpenCode
+    print_warning("Invalid choice, defaulting to OpenCode")
+    return "opencode", AGENT_CONFIGS["opencode"]
+
+
+def configure_vault_paths(vault_path: Path) -> dict:
+    """Ask user for vault directory structure preferences."""
+    print_header("Step 0.5: Vault Directory Configuration")
+    print("Configure your vault folder structure (press Enter to accept defaults):\n")
+    
+    paths = {
+        "system_dir": ask("System folder name", default="99_System"),
+        "inbox_dir": ask("Inbox folder name", default="00_Inbox"),
+        "resources_dir": ask("Resources folder name", default="03_Resources"),
+        "literature_dir": ask("Literature subfolder", default="Literature"),
+        "bases_dir": ask("Bases folder name", default="05_Bases"),
+        "archives_dir": ask("Archives folder name", default="04_Archives"),
+        "wiki_dir": ask("AI Wiki folder name", default="06_AI_Wiki"),
+    }
+    
+    # Build derived paths
+    paths["literature_path"] = f"{paths['resources_dir']}/{paths['literature_dir']}"
+    paths["pipeline_path"] = f"{paths['system_dir']}/LiteraturePipeline"
+    paths["template_path"] = f"{paths['system_dir']}/Template"
+    
+    return paths
+
+
 def print_header(text: str) -> None:
     print(f"\n{Colors.HEADER}{'='*60}{Colors.ENDC}")
     print(f"{Colors.BOLD}{text}{Colors.ENDC}")
@@ -146,21 +247,24 @@ def install_deps(deps: list[str]) -> bool:
         return False
 
 
-def create_directory_structure(vault_path: Path) -> None:
-    """Create required directory structure."""
+def create_directory_structure(vault_path: Path, paths: dict) -> None:
+    """Create required directory structure with configurable paths."""
     dirs = [
-        "99_System/LiteraturePipeline/ocr",
-        "99_System/LiteraturePipeline/worker/scripts",
-        "99_System/Zotero",
-        "99_System/Template",
-        "03_Resources/Literature",
-        "00_Inbox",
+        f"{paths['pipeline_path']}/ocr",
+        f"{paths['pipeline_path']}/worker/scripts",
+        f"{paths['system_dir']}/Zotero",
+        f"{paths['template_path']}",
+        f"{paths['literature_path']}",
+        f"{paths['inbox_dir']}",
+        f"{paths['bases_dir']}",
+        f"{paths['archives_dir']}",
+        f"{paths['wiki_dir']}",
     ]
     
     for d in dirs:
         (vault_path / d).mkdir(parents=True, exist_ok=True)
     
-    print_success("Directory structure created")
+    print_success(f"Directory structure created ({len(dirs)} folders)")
 
 
 def create_env_file(vault_path: Path, config: dict) -> None:
@@ -182,7 +286,7 @@ def create_env_file(vault_path: Path, config: dict) -> None:
     print_success(f"Configuration saved to {env_path}")
 
 
-def create_agents_md(vault_path: Path, config: dict) -> None:
+def create_agents_md(vault_path: Path, config: dict, paths: dict, agent_config: dict) -> None:
     """Create generic AGENTS.md template."""
     agents_path = vault_path / "AGENTS.md"
     
@@ -196,31 +300,47 @@ def create_agents_md(vault_path: Path, config: dict) -> None:
 This repository is an Obsidian Vault dedicated to Literature Research.
 It integrates closely with Zotero via automated pipeline tools.
 
-## 0. AGENT PROTOCOL (MANDATORY)
+## Agent Configuration
 
-### Skill Audit
-**Before executing ANY task, perform this audit:**
+- **Platform**: {agent_config['name']}
+- **Skill Directory**: `{agent_config['skill_dir']}`
+- **Config File**: {agent_config.get('config_file', 'None')}
 
-1. **CLASSIFY**: What is the domain? (Literature, Clinical, Bioinformatics)
-2. **SCAN**: Look at the available skills
-3. **SELECT**: Pick the best tool for the job
-4. **LOAD**: Execute `skill({{ name: "selected-skill" }})`
+## Vault Structure
 
-### Environment
+```
+{paths['system_dir']}/
+  LiteraturePipeline/       # Pipeline workers
+    ocr/                    # OCR outputs
+    worker/                 # Worker scripts
+  Template/                 # Templates
+    文献阅读.md
+    科研读图指南.md
+    读图指南/               # Chart reading guides
+  Zotero/                   # Zotero data (junction)
+
+{paths['inbox_dir']}/                     # Inbox for new papers
+{paths['literature_path']}/     # Literature notes
+{paths['bases_dir']}/                     # Obsidian Bases
+{paths['archives_dir']}/                  # Archives
+{paths['wiki_dir']}/                      # AI Wiki
+```
+
+## 1. Environment & Tech Stack
 
 - **Platform**: Obsidian (Knowledge Management)
-- **Reference Manager**: Zotero
-- **Data Source**: PubMed
+- **Reference Manager**: Zotero (via MCP & Direct SQLite Access)
+- **Data Source**: PubMed (via MCP)
 - **Primary Language**: Simplified Chinese (简体中文)
-- **Scripting**: Python, Markdown
+- **Scripting**: Python (Zotero interaction)
 
-## 1. Workflows
+## 2. Workflows & Commands
 
-### Literature Search Loop
-1. **Analyze**: Use `parse_pico` to structure the research question
-2. **Search**: Use `zotero-lit-review` (Local Library first) or `pubmed_search`
-3. **Verify**: Confirm what was found
-4. **Import**: Batch import from PubMed
+### Literature Search
+1.  **Analyze**: Use `parse_pico` to structure the research question.
+2.  **Search**: Use `zotero-lit-review` (Local Library first) or `pubmed_search`
+3.  **Verify**: Confirm what was found
+4.  **Import**: Batch import from PubMed
 
 ### Deep Reading (/LD-deep)
 1. Parse query (Zotero key / title / DOI / PMID)
@@ -229,10 +349,10 @@ It integrates closely with Zotero via automated pipeline tools.
 4. Fill with Keshav three-pass reading method
 5. Validate output
 
-## 2. Style Guidelines
+## 3. Style Guidelines
 
 ### Markdown & Note Structure
-Follow the template in `99_System/Template/文献阅读.md`.
+Follow the template in `{paths['template_path']}/文献阅读.md`.
 
 **Frontmatter (YAML) is MANDATORY:**
 ```yaml
@@ -251,33 +371,6 @@ tags:
 ### Output Language
 - **Output**: Simplified Chinese (简体中文) ONLY, unless asked otherwise.
 - **Search Terms**: English (for PubMed), but explain in Chinese.
-
-## 3. Directory Structure
-
-```
-{{vault_path}}/
-├── 00_Inbox/                    # Inbox for new papers
-├── 01_Projects/                 # Project-specific notes
-├── 02_Areas/                    # Area notes
-├── 03_Resources/                # Resources
-│   └── Literature/              # Literature notes
-│       ├── 骨科/                # Orthopedics
-│       ├── 运动医学/            # Sports Medicine
-│       └── ...
-├── 04_Archives/                 # Archives
-├── 05_Bases/                    # Obsidian Bases
-├── 06_AI_Wiki/                  # AI Wiki
-├── 99_System/                   # System files
-│   ├── LiteraturePipeline/      # Pipeline workers
-│   │   ├── ocr/                 # OCR outputs
-│   │   └── worker/              # Worker scripts
-│   ├── Template/                # Templates
-│   │   ├── 文献阅读.md
-│   │   ├── 科研读图指南.md
-│   │   └── 读图指南/            # Chart reading guides
-│   └── Zotero/                  # Zotero data (junction)
-└── AGENTS.md                    # This file
-```
 
 ## 4. Interaction Rules
 
@@ -300,15 +393,19 @@ tags:
 - Zotero Storage: `{storage_path}`
 - Vault Path: `{vault_path}`
 - OCR API: PaddleOCR
+- Skill Dir: `{agent_config['skill_dir']}`
 
 Generated by setup.py on {platform.system()}
 """
     
     agents_path.write_text(content, encoding="utf-8")
     print_success(f"AGENTS.md created at {agents_path}")
+    
+    agents_path.write_text(content, encoding="utf-8")
+    print_success(f"AGENTS.md created at {agents_path}")
 
 
-def deploy_workflow_scripts(vault_path: Path) -> bool:
+def deploy_workflow_scripts(vault_path: Path, agent_key: str, agent_config: dict, paths: dict) -> bool:
     """Deploy workflow scripts from repo to vault.
     
     This copies the core pipeline code from the repository into the user's vault,
@@ -319,19 +416,22 @@ def deploy_workflow_scripts(vault_path: Path) -> bool:
     # Determine repo root (where this script is located)
     repo_root = Path(__file__).resolve().parent.parent
     
+    # Get agent-specific skill directory
+    skill_dir = agent_config.get("skill_dir", ".opencode/skills")
+    
     # Files to deploy: (source_relative_path, dest_relative_path)
     deployments = [
         # OCR pipeline worker
-        ("99_System/LiteraturePipeline/worker/scripts/literature_pipeline.py",
-         "99_System/LiteraturePipeline/worker/scripts/literature_pipeline.py"),
+        (f"99_System/LiteraturePipeline/worker/scripts/literature_pipeline.py",
+         f"{paths['pipeline_path']}/worker/scripts/literature_pipeline.py"),
         
-        # Deep reading scripts
-        (".opencode/skills/literature-qa/scripts/ld_deep.py",
-         ".opencode/skills/literature-qa/scripts/ld_deep.py"),
+        # Deep reading scripts (into agent-specific skill dir)
+        (f".opencode/skills/literature-qa/scripts/ld_deep.py",
+         f"{skill_dir}/literature-qa/scripts/ld_deep.py"),
         
-        # Subagent prompt
-        (".opencode/skills/literature-qa/prompt_deep_subagent.md",
-         ".opencode/skills/literature-qa/prompt_deep_subagent.md"),
+        # Subagent prompt (into agent-specific skill dir)
+        (f".opencode/skills/literature-qa/prompt_deep_subagent.md",
+         f"{skill_dir}/literature-qa/prompt_deep_subagent.md"),
     ]
     
     success_count = 0
@@ -352,7 +452,7 @@ def deploy_workflow_scripts(vault_path: Path) -> bool:
             
             # Copy file
             shutil.copy2(src_path, dst_path)
-            print_success(f"Deployed: {src_rel}")
+            print_success(f"Deployed: {dst_rel}")
             success_count += 1
         except Exception as e:
             print_error(f"Failed to deploy {src_rel}: {e}")
@@ -360,7 +460,7 @@ def deploy_workflow_scripts(vault_path: Path) -> bool:
     
     # Deploy chart reading guides
     chart_guide_src = repo_root / "99_System/Template/读图指南"
-    chart_guide_dst = vault_path / "99_System/Template/读图指南"
+    chart_guide_dst = vault_path / paths["template_path"] / "读图指南"
     
     if chart_guide_src.exists() and chart_guide_src.is_dir():
         chart_files = list(chart_guide_src.glob("*.md"))
@@ -380,7 +480,7 @@ def deploy_workflow_scripts(vault_path: Path) -> bool:
     return fail_count == 0
 
 
-def validate_setup(vault_path: Path, config: dict) -> list[str]:
+def validate_setup(vault_path: Path, config: dict, paths: dict) -> list[str]:
     """Validate the setup and return issues."""
     issues = []
     
@@ -393,9 +493,9 @@ def validate_setup(vault_path: Path, config: dict) -> list[str]:
     
     # Check directory structure
     required_dirs = [
-        "99_System/LiteraturePipeline/ocr",
-        "99_System/LiteraturePipeline/worker/scripts",
-        "03_Resources/Literature",
+        f"{paths['pipeline_path']}/ocr",
+        f"{paths['pipeline_path']}/worker/scripts",
+        f"{paths['literature_path']}",
     ]
     for d in required_dirs:
         if not (vault_path / d).exists():
@@ -424,7 +524,12 @@ def main() -> int:
     print_header("Literature Workflow Installer")
     print("This script will help you configure the literature research pipeline.\n")
     
-    # Step 0: Detect vault path
+    # Step 0: Select agent platform
+    agent_key, agent_config = select_agent()
+    print_success(f"Selected agent: {agent_config['name']}")
+    
+    # Step 0.5: Configure vault paths
+    print_header("Step 0.5: Vault Configuration")
     vault_path_str = ask(
         "Where is your Obsidian vault located?",
         default=str(Path.cwd()),
@@ -436,6 +541,10 @@ def main() -> int:
         return 1
     
     print_success(f"Using vault: {vault_path}")
+    
+    # Configure directory structure
+    paths = configure_vault_paths(vault_path)
+    print_success("Directory structure configured")
     
     # Step 1: Check Python deps
     print_header("Step 1: Checking Python Dependencies")
@@ -483,14 +592,14 @@ def main() -> int:
     
     # Step 5: Create directories
     print_header("Step 4: Creating Directory Structure")
-    create_directory_structure(vault_path)
+    create_directory_structure(vault_path, paths)
     
-    # Step 5: Deploy workflow scripts
-    deploy_workflow_scripts(vault_path)
+    # Step 6: Deploy workflow scripts
+    deploy_workflow_scripts(vault_path, agent_key, agent_config, paths)
     
-    # Step 6: Create junction or config
+    # Step 7: Create junction or config
     print_header("Step 5: Configuring Zotero Integration")
-    zotero_link = vault_path / "99_System" / "Zotero"
+    zotero_link = vault_path / paths["system_dir"] / "Zotero"
     
     if zotero_link.exists() or zotero_link.is_symlink():
         print_warning("Zotero link already exists")
@@ -500,19 +609,22 @@ def main() -> int:
         else:
             print_warning("Failed to create junction, will use config file instead")
     
-    # Step 7: Save configuration
+    # Step 8: Save configuration
     print_header("Step 6: Saving Configuration")
     config = {
         "zotero_path": str(zotero_path),
         "storage_path": str(storage_path),
         "ocr_api_key": ocr_api_key,
+        "agent": agent_key,
+        "agent_name": agent_config["name"],
+        "skill_dir": agent_config["skill_dir"],
     }
     create_env_file(vault_path, config)
-    create_agents_md(vault_path, config)
+    create_agents_md(vault_path, config, paths, agent_config)
     
-    # Step 8: Validation
+    # Step 9: Validation
     print_header("Step 7: Validating Setup")
-    issues = validate_setup(vault_path, config)
+    issues = validate_setup(vault_path, config, paths)
     
     if issues:
         print_error("\nValidation failed with the following issues:")
@@ -523,6 +635,12 @@ def main() -> int:
     print_header("Installation Complete!")
     print(f"""
 {Colors.OKGREEN}Your literature workflow is ready to use!{Colors.ENDC}
+
+Configuration Summary:
+- Agent: {agent_config['name']}
+- Skill Directory: {agent_config['skill_dir']}
+- System Folder: {paths['system_dir']}
+- Literature Path: {paths['literature_path']}
 
 Next steps:
 1. Open Obsidian and ensure your vault is loaded
