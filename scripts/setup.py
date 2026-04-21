@@ -459,15 +459,15 @@ def deploy_workflow_scripts(vault_path: Path, agent_key: str, agent_config: dict
     # Files to deploy: (source_relative_path, dest_relative_path)
     deployments = [
         # OCR pipeline worker
-        (f"99_System/LiteraturePipeline/worker/scripts/literature_pipeline.py",
+        (f"pipeline/worker/scripts/literature_pipeline.py",
          f"{paths['pipeline_path']}/worker/scripts/literature_pipeline.py"),
         
         # Deep reading scripts (into agent-specific skill dir)
-        (f".opencode/skills/literature-qa/scripts/ld_deep.py",
+        (f"skills/literature-qa/scripts/ld_deep.py",
          f"{skill_dir}/literature-qa/scripts/ld_deep.py"),
         
         # Subagent prompt (into agent-specific skill dir)
-        (f".opencode/skills/literature-qa/prompt_deep_subagent.md",
+        (f"skills/literature-qa/prompt_deep_subagent.md",
          f"{skill_dir}/literature-qa/prompt_deep_subagent.md"),
     ]
     
@@ -495,9 +495,9 @@ def deploy_workflow_scripts(vault_path: Path, agent_key: str, agent_config: dict
             print_error(f"Failed to deploy {src_rel}: {e}")
             fail_count += 1
     
-    # Deploy chart reading guides
-    chart_guide_src = repo_root / "99_System/Template/读图指南"
-    chart_guide_dst = vault_path / paths["template_path"] / "读图指南"
+    # Deploy chart reading guides (into agent-specific skill dir)
+    chart_guide_src = repo_root / "skills/chart-reading"
+    chart_guide_dst = vault_path / skill_dir / "chart-reading"
     
     if chart_guide_src.exists() and chart_guide_src.is_dir():
         chart_files = list(chart_guide_src.glob("*.md"))
@@ -515,9 +515,9 @@ def deploy_workflow_scripts(vault_path: Path, agent_key: str, agent_config: dict
     
     # Deploy template files
     template_files = [
-        ("99_System/Template/文献阅读.md",
+        ("templates/文献阅读.md",
          f"{paths['template_path']}/文献阅读.md"),
-        ("99_System/Template/科研读图指南.md",
+        ("templates/科研读图指南.md",
          f"{paths['template_path']}/科研读图指南.md"),
     ]
     
