@@ -62,25 +62,15 @@ def show_welcome():
     print(r"              [+]  Forge Your Knowledge Into Power  [+]             ")
     print()
 
-    # Feature list
-    print(f"\n{Colors.BOLD}Features:{Colors.ENDC}")
-    print(f"  {Colors.BRIGHT_CYAN}[B]{Colors.ENDC}  Bibliography Management    {Colors.DIM}-> Zotero integration{Colors.ENDC}")
-    print(f"  {Colors.BRIGHT_CYAN}[+]{Colors.ENDC}  Smart OCR Extraction       {Colors.DIM}-> PaddleOCR-VL API{Colors.ENDC}")
-    print(f"  {Colors.BRIGHT_CYAN}[D]{Colors.ENDC}  Deep Reading Analysis      {Colors.DIM}-> Keshav three-pass method{Colors.ENDC}")
-    print(f"  {Colors.BRIGHT_CYAN}[L]{Colors.ENDC}  Literature Queue           {Colors.DIM}-> Base system integration{Colors.ENDC}")
-    print(f"  {Colors.BRIGHT_CYAN}[A]{Colors.ENDC}  Multi-Agent Support        {Colors.DIM}-> OpenCode / Claude / Cursor / Copilot{Colors.ENDC}")
-
     # Steps
     print(f"\n{Colors.BOLD}Installation Steps:{Colors.ENDC}")
     steps = [
-        ("1", "Agent Platform Selection", "Choose your AI agent"),
-        ("2", "Vault Configuration", "Set folder structure"),
-        ("3", "Python Dependencies", "Install required packages"),
-        ("4", "Zotero Integration", "Connect reference manager"),
-        ("5", "OCR Configuration", "Set up PaddleOCR API"),
-        ("6", "Directory Setup", "Create vault folders"),
-        ("7", "Script Deployment", "Install workflow scripts"),
-        ("8", "Validation", "Verify installation"),
+        ("1", "Vault Configuration", "Set vault path and structure"),
+        ("2", "Zotero Integration", "Connect reference manager"),
+        ("3", "OCR Configuration", "Set up PaddleOCR API"),
+        ("4", "Directory Setup", "Create vault folders"),
+        ("5", "Script Deployment", "Install workflow scripts"),
+        ("6", "Validation", "Verify installation"),
     ]
     for num, title, desc in steps:
         print(f"  {Colors.BRIGHT_CYAN}[{num}]{Colors.ENDC}  {Colors.BOLD}{title:<22}{Colors.ENDC}  {Colors.DIM}-> {desc}{Colors.ENDC}")
