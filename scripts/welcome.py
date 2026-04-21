@@ -67,34 +67,17 @@ def print_slow(text, delay=0.01):
 
 
 def draw_logo():
-    """Draw the PaperForge ASCII logo with PAPERFORGE text."""
+    """Draw the PaperForge ASCII logo."""
     logo = f"""
-{Colors.BRIGHT_YELLOW}                         ▄███████████▄                                   {Colors.END}
-{Colors.BRIGHT_YELLOW}                      ▄██▀{Colors.BOLD}   ▀███▀   {Colors.END}{Colors.BRIGHT_YELLOW}▀██▄                                {Colors.END}
-{Colors.BRIGHT_YELLOW}                     █▀{Colors.END}       ███       {Colors.BRIGHT_YELLOW}▀█                               {Colors.END}
-{Colors.BRIGHT_YELLOW}                    █{Colors.END}   ███   ███   ███   {Colors.BRIGHT_YELLOW}█                               {Colors.END}
-{Colors.BRIGHT_YELLOW}                    █{Colors.END}   ███   ███   ███   {Colors.BRIGHT_YELLOW}█                               {Colors.END}
-{Colors.BRIGHT_YELLOW}                    █{Colors.END}   ███   ███   ███   {Colors.BRIGHT_YELLOW}█                               {Colors.END}
-{Colors.BRIGHT_YELLOW}                     █{Colors.END}       █████       {Colors.BRIGHT_YELLOW}█                                {Colors.END}
-{Colors.BRIGHT_YELLOW}                      ▀██{Colors.END}   █████   {Colors.BRIGHT_YELLOW}▄██▀                                 {Colors.END}
-{Colors.BRIGHT_YELLOW}                        ▀███████████▀                                      {Colors.END}
-{Colors.BRIGHT_YELLOW}                            █████                                          {Colors.END}
-{Colors.BRIGHT_YELLOW}                           ███████                                         {Colors.END}
-{Colors.BRIGHT_YELLOW}                          ████ ████                                        {Colors.END}
-{Colors.BRIGHT_YELLOW}                         ████   ████                                       {Colors.END}
-{Colors.BRIGHT_YELLOW}                        ████     ████                                      {Colors.END}
-                                                                            
-{Colors.BRIGHT_RED}{Colors.BOLD}       ▓▓▓▓▓  ▓▓▓▓▓  ▓▓▓▓▓  ▓▓▓▓▓  ▓▓▓▓▓   ▓▓▓▓▓  ▓▓▓▓▓  ▓▓▓▓▓         {Colors.END}
-{Colors.BRIGHT_RED}{Colors.BOLD}       ▓   ▓  ▓   ▓  ▓      ▓   ▓  ▓       ▓      ▓      ▓             {Colors.END}
-{Colors.BRIGHT_RED}{Colors.BOLD}       ▓▓▓▓▓  ▓   ▓  ▓▓▓▓   ▓   ▓  ▓▓▓▓    ▓  ██  ▓  ██  ▓▓▓▓          {Colors.END}
-{Colors.BRIGHT_RED}{Colors.BOLD}       ▓      ▓   ▓  ▓      ▓   ▓  ▓       ▓  ██  ▓  ██  ▓             {Colors.END}
-{Colors.BRIGHT_RED}{Colors.BOLD}       ▓      ▓▓▓▓▓  ▓      ▓▓▓▓▓  ▓       ▓▓▓▓▓  ▓▓▓▓▓  ▓▓▓▓▓         {Colors.END}
-                                                                            
-                        {Colors.BRIGHT_CYAN}Forge Your Knowledge Into Power.{Colors.END}                      
-                              {Colors.DIM}Deep Read.  Archive.{Colors.END}                                
-                                                                            
-                                   {Colors.BOLD}[ v1.0 ]{Colors.END}                                    
-"""
+{Colors.BRIGHT_YELLOW}
+______  ___  ______ _________________ ___________ _____  _____ 
+| ___ \/ _ \ | ___ \  ___| ___ \  ___|  _  | ___ \  __ \|  ___|
+| |_/ / /_\ \| |_/ / |__ | |_/ / |_  | | | | |_/ / |  \/| |__  
+|  __/|  _  ||  __/|  __||    /|  _| | | | |    /| | __ |  __| 
+| |   | | | || |   | |___| |\ \| |   \ \_/ / |\ \| |_/ \| |___ 
+\_|   \_| |_/\_|   \____/\_| \_\_|    \___/\_| \_\|____/\____/ 
+{Colors.END}
+    """
     print(logo)
 
 
