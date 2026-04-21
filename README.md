@@ -2,6 +2,8 @@
 
 基于 Obsidian + Zotero + PaddleOCR 的医学文献精读工作流，支持自动 OCR、深度阅读笔记生成和队列管理。
 
+**支持多 Agent 平台**: OpenCode / Claude Code / Cursor / Windsurf / GitHub Copilot / Cline / Augment / Trae / 自定义
+
 ## 快速开始
 
 ### 方式一：让 Agent 帮你配置（推荐）
@@ -13,7 +15,7 @@ Install and configure the literature workflow by following the instructions here
 https://raw.githubusercontent.com/LLLin000/Research-workflow/main/docs/INSTALLATION.md
 ```
 
-Agent 会问你几个问题，然后自动完成安装、配置和验证。
+Agent 会问你几个问题（Agent 平台、Vault 路径、文件夹命名偏好），然后自动完成安装、配置和验证。
 
 ### 方式二：手动安装
 
@@ -32,8 +34,14 @@ cd Research-workflow
 pip install -r requirements.txt
 
 # 3. 运行安装脚本
-python setup.py
+python scripts/setup.py
 ```
+
+安装脚本会引导你：
+1. **选择 Agent 平台**（决定 skill 文件存放位置）
+2. **配置 Vault 目录结构**（可自定义系统文件夹、文献目录等名称）
+3. **配置 Zotero 路径**
+4. **部署工作流脚本**
 
 ## 功能特性
 
