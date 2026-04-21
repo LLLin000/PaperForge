@@ -1,0 +1,30 @@
+# Obsidian
+.obsidian/
+.trash/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+*.egg-info/
+dist/
+build/
+
+# Environment
+.env
+config.json
+
+# Data (user-specific)
+99_System/Zotero/
+99_System/LiteraturePipeline/ocr/
+00_Inbox/
+03_Resources/
+
+# OS
+.DS_Store
+Thumbs.db
