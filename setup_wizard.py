@@ -96,6 +96,7 @@ class EnvChecker:
     def _find_zotero(self) -> Optional[Path]:
         system = platform.system()
         if system == "Windows":
+            # 1. 注册表检测 (HKEY_LOCAL_MACHINE)
             try:
                 with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Zotero") as key:
                     install_dir, _ = winreg.QueryValueEx(key, "InstallDir")
@@ -104,22 +105,64 @@ class EnvChecker:
                         return path
             except (FileNotFoundError, OSError):
                 pass
-            for p in [
+            # 2. 注册表检测 (HKEY_CURRENT_USER - 用户级安装)
+            try:
+                with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"SOFTWARE\Zotero") as key:
+                    install_dir, _ = winreg.QueryValueEx(key, "InstallDir")
+                    path = Path(install_dir) / "zotero.exe"
+                    if path.exists():
+                        return path
+            except (FileNotFoundError, OSError):
+                pass
+            # 3. 常见安装路径检测
+            search_paths = [
                 Path(os.environ.get("PROGRAMFILES", r"C:\Program Files")) / "Zotero" / "zotero.exe",
+                Path(os.environ.get("PROGRAMFILES(X86)", r"C:\Program Files (x86)")) / "Zotero" / "zotero.exe",
                 Path(os.environ.get("LOCALAPPDATA", r"C:\Users\%USERNAME%\AppData\Local")) / "Zotero" / "zotero.exe",
-            ]:
+                Path.home() / "AppData" / "Local" / "Zotero" / "zotero.exe",
+                Path.home() / "scoop" / "apps" / "zotero" / "current" / "zotero.exe",  # Scoop安装
+            ]
+            for p in search_paths:
                 if p.exists():
                     return p
+            # 4. 通过 where 命令检测
+            try:
+                result = subprocess.run(["where", "zotero"], capture_output=True, text=True, timeout=5)
+                if result.returncode == 0:
+                    for line in result.stdout.strip().split("\n"):
+                        p = Path(line.strip())
+                        if p.exists():
+                            return p
+            except Exception:
+                pass
         elif system == "Darwin":
-            p = Path("/Applications/Zotero.app/Contents/MacOS/zotero")
-            if p.exists():
-                return p
+            search_paths = [
+                Path("/Applications/Zotero.app/Contents/MacOS/zotero"),
+                Path.home() / "Applications" / "Zotero.app" / "Contents" / "MacOS" / "zotero",
+            ]
+            for p in search_paths:
+                if p.exists():
+                    return p
+            # 通过 which 检测
+            try:
+                result = subprocess.run(["which", "zotero"], capture_output=True, text=True, timeout=5)
+                if result.returncode == 0:
+                    return Path(result.stdout.strip())
+            except Exception:
+                pass
         else:
-            for p in [Path.home() / ".local" / "share" / "zotero" / "zotero"]:
+            # Linux
+            search_paths = [
+                Path.home() / ".local" / "share" / "zotero" / "zotero",
+                Path("/usr/bin/zotero"),
+                Path("/usr/local/bin/zotero"),
+                Path("/snap/bin/zotero"),
+            ]
+            for p in search_paths:
                 if p.exists():
                     return p
             try:
-                result = subprocess.run(["which", "zotero"], capture_output=True, text=True)
+                result = subprocess.run(["which", "zotero"], capture_output=True, text=True, timeout=5)
                 if result.returncode == 0:
                     return Path(result.stdout.strip())
             except Exception:
@@ -286,6 +329,10 @@ class WelcomeStep(StepScreen):
         """)
         yield Button("▶ 开始安装", id="btn-start", variant="primary")
 
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "btn-start":
+            self.app.post_message(StepPassed(self.step_idx))
+
 
 class PythonStep(StepScreen):
     """Step 1: Python 版本"""
@@ -318,8 +365,11 @@ class VaultStep(StepScreen):
 
     def compose(self) -> ComposeResult:
         yield from super().compose()
-        yield Markdown("""
+        vault_path = self.checker.vault.resolve()
+        yield Markdown(f"""
 PaperForge 需要特定的目录结构来存放文献数据。
+
+当前 Vault 路径：`{vault_path}`
 
 必要目录：
 - `03_Resources/LiteratureControl/library-records/` — 文献状态跟踪
@@ -432,7 +482,35 @@ class JsonStep(StepScreen):
 3. 保存到：`{exports_dir}/library.json`
 4. 勾选 **Keep updated**（自动保持更新）
 
-每个 JSON 文件对应一个 Obsidian Base 视图。
+**📁 子分类与 Base 管理**
+
+你可以根据 Zotero 收藏夹结构，灵活决定如何导出：
+
+**方案 A：分开管理（推荐）**
+为每个子分类分别创建 JSON：
+```
+Zotero 收藏夹结构
+├── 骨科
+│   ├── 关节外科      → 导出为 orthopedic-joint.json
+│   └── 脊柱外科      → 导出为 orthopedic-spine.json
+└── 运动医学
+    └── 膝关节        → 导出为 sports-knee.json
+```
+每个 JSON 会生成一个独立的 Obsidian Base，便于分类查看。
+
+**方案 B：统一管理**
+为父分类创建单个 JSON：
+```
+医学文献（父分类）    → 导出为 medical-library.json
+├── 骨科
+│   ├── 关节外科
+│   └── 脊柱外科
+└── 运动医学
+    └── 膝关节
+```
+所有文献放在同一个 Base 中，通过 `collection_path` 字段区分子分类。
+
+**建议**：如果子分类文献量较大（>100篇），建议使用方案 A 分开管理。
         """)
         yield Horizontal(
             Button("🔍 自动检测", id="btn-check-json", variant="primary"),
@@ -456,7 +534,7 @@ class DoneStep(StepScreen):
     def compose(self) -> ComposeResult:
         yield from super().compose()
         yield Markdown("""
-## 🎉 安装完成！
+## 安装完成！
 
 所有前置条件已满足，你现在可以开始使用 PaperForge Lite。
 
@@ -483,8 +561,31 @@ python pipeline/worker/scripts/literature_pipeline.py --vault . ocr
 ```
 
 **5. 执行精读**
+在 OpenCode Agent 中输入：
 ```
 /LD-deep <zotero_key>
+```
+
+### 命令使用方式
+
+**方式一：直接运行 Python 脚本**
+```bash
+python pipeline/worker/scripts/literature_pipeline.py --vault . <command>
+```
+
+**方式二：安装到 OpenCode 命令（推荐）**
+将命令目录链接到 OpenCode：
+```bash
+# Windows (PowerShell, 管理员)
+New-Item -ItemType Junction -Path "$env:USERPROFILE\\.opencode\\skills\\literature-qa" -Target ".\\skills\\literature-qa"
+
+# macOS/Linux
+ln -s "$(pwd)/skills/literature-qa" ~/.opencode/skills/literature-qa
+```
+安装后可直接使用：
+```
+/LD-deep <zotero_key>
+/LD-paper <zotero_key>
 ```
 
 ### 常用命令速查
@@ -560,7 +661,7 @@ class SetupWizardApp(App):
     
     .main-area { width: 75%; height: 100%; padding: 1; }
     .progress-area { height: auto; padding: 0 1; }
-    .content-area { height: 1fr; border: solid blue; padding: 1; }
+    .content-area { height: 1fr; border: solid blue; padding: 1; overflow-y: auto; }
     
     .step-title { text-style: bold; color: yellow; }
     .status-bar { height: auto; padding: 1; }
