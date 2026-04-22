@@ -1,13 +1,18 @@
 from __future__ import annotations
 import argparse
 import csv
+import hashlib
 import html
 import json
 import os
 import re
 import shutil
+import subprocess
+import sys
+import tempfile
 import urllib.parse
 from json import JSONDecodeError
+import zipfile
 from datetime import datetime, timezone
 from pathlib import Path
 from xml.etree import ElementTree as ET
@@ -2371,6 +2376,203 @@ def run_deep_reading(vault: Path) -> int:
     print(f'deep-reading: synced {synced} records, {len(pending_queue)} pending')
     return 0
 
+# =============================================================================
+# Update 功能
+# =============================================================================
+
+GITHUB_REPO = "LLLin000/PaperForge"
+GITHUB_ZIP = f"https://github.com/{GITHUB_REPO}/archive/refs/heads/master.zip"
+
+PROTECTED_PATHS = {
+    "03_Resources", "05_Bases",
+    "99_System/LiteraturePipeline/ocr",
+    "99_System/LiteraturePipeline/exports",
+    "99_System/LiteraturePipeline/indexes",
+    "99_System/LiteraturePipeline/candidates",
+    ".env", "AGENTS.md",
+}
+UPDATEABLE_PATHS = ["skills", "pipeline", "templates", "command", "scripts"]
+
+
+def _color(text: str, c: str = "") -> str:
+    colors = {"r": "\033[91m", "g": "\033[92m", "y": "\033[93m", "b": "\033[94m", "c": "\033[96m", "x": "\033[0m"}
+    if sys.platform == "win32" and not os.environ.get("FORCE_COLOR"):
+        return text
+    return f"{colors.get(c, '')}{text}{colors['x']}"
+
+
+def _log(msg: str, c: str = "") -> None:
+    print(_color(msg, c))
+
+
+def _remote_version() -> str | None:
+    try:
+        api = f"https://api.github.com/repos/{GITHUB_REPO}/contents/paperforge.json"
+        req = urllib.request.Request(api, headers={"Accept": "application/vnd.github.v3+json", "User-Agent": "PaperForge"})
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.loads(resp.read())
+            req2 = urllib.request.Request(data["download_url"], headers={"User-Agent": "PaperForge"})
+            with urllib.request.urlopen(req2, timeout=10) as resp2:
+                return json.loads(resp2.read()).get("version")
+    except Exception:
+        return None
+
+
+def _scan_updates(vault: Path, source: Path) -> list[tuple[Path, Path, str]]:
+    updates = []
+    for name in UPDATEABLE_PATHS:
+        src_dir = source / name
+        if not src_dir.exists():
+            continue
+        for src in src_dir.rglob("*"):
+            if not src.is_file():
+                continue
+            rel = src.relative_to(source)
+            dst = vault / rel
+            rel_str = str(rel).replace("\\", "/")
+            if any(rel_str.startswith(p) for p in PROTECTED_PATHS):
+                continue
+            if dst.exists():
+                if hashlib.sha256(src.read_bytes()).hexdigest() != hashlib.sha256(dst.read_bytes()).hexdigest():
+                    updates.append((src, dst, "UPDATE"))
+            else:
+                updates.append((src, dst, "NEW"))
+    return updates
+
+
+def _do_backup(vault: Path, updates: list) -> Path | None:
+    backup_dir = vault / f".backup_{datetime.now():%Y%m%d_%H%M%S}"
+    backup_dir.mkdir(exist_ok=True)
+    count = 0
+    for src, dst, action in updates:
+        if action == "UPDATE" and dst.exists():
+            bp = backup_dir / dst.relative_to(vault)
+            bp.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(dst, bp)
+            count += 1
+    if count:
+        _log(f"[INFO] 已备份 {count} 个文件到 {backup_dir.name}", "c")
+    return backup_dir if count else None
+
+
+def _apply_updates(vault: Path, updates: list) -> bool:
+    try:
+        for src, dst, action in updates:
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(src, dst)
+        return True
+    except Exception as e:
+        _log(f"[ERR] 更新失败: {e}", "r")
+        return False
+
+
+def _rollback(vault: Path, backup_dir: Path) -> None:
+    _log("[INFO] 正在回滚...", "b")
+    for bp in backup_dir.rglob("*"):
+        if bp.is_file():
+            orig = vault / bp.relative_to(backup_dir)
+            orig.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(bp, orig)
+    _log("[OK] 回滚完成", "g")
+
+
+def update_via_git(vault: Path) -> bool:
+    if not (vault / ".git").is_dir():
+        _log("[ERR] 不是 git 仓库", "r")
+        return False
+    r = subprocess.run(["git", "status", "--short"], cwd=vault, capture_output=True, text=True, encoding="utf-8")
+    if r.stdout.strip():
+        _log("[WARN] 有未提交的更改，请先提交或储藏", "y")
+        return False
+    _log("[INFO] 执行 git pull...", "b")
+    r = subprocess.run(["git", "pull", "origin", "master"], cwd=vault, capture_output=True, text=True, encoding="utf-8")
+    if r.returncode != 0:
+        _log(f"[ERR] git pull 失败: {r.stderr}", "r")
+        return False
+    _log("[OK] git pull 成功", "g")
+    if r.stdout.strip():
+        print(r.stdout)
+    return True
+
+
+def update_via_zip(vault: Path) -> bool:
+    _log("[INFO] 下载更新包...", "b")
+    tmp = Path(tempfile.mkdtemp(prefix="pf_update_"))
+    zip_path = tmp / "update.zip"
+    try:
+        req = urllib.request.Request(GITHUB_ZIP, headers={"User-Agent": "PaperForge"})
+        with urllib.request.urlopen(req, timeout=60) as resp:
+            zip_path.write_bytes(resp.read())
+        with zipfile.ZipFile(zip_path, "r") as zf:
+            zf.extractall(tmp / "extracted")
+        dirs = [d for d in (tmp / "extracted").iterdir() if d.is_dir()]
+        source = dirs[0] if dirs else None
+        if not source:
+            _log("[ERR] 解压失败", "r")
+            return False
+        updates = _scan_updates(vault, source)
+        if not updates:
+            _log("[OK] 所有文件已是最新", "g")
+            return True
+        _log(f"\n[INFO] 发现 {len(updates)} 个文件需要更新:", "b")
+        for src, dst, action in updates:
+            _log(f"  [{action}] {dst.relative_to(vault)}", "g" if action == "NEW" else "y")
+        backup = _do_backup(vault, updates)
+        if _apply_updates(vault, updates):
+            _log(f"\n[OK] 更新完成！共 {len(updates)} 个文件", "g")
+            return True
+        if backup:
+            _rollback(vault, backup)
+        return False
+    except Exception as e:
+        _log(f"[ERR] 下载失败: {e}", "r")
+        return False
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+def run_update(vault: Path) -> int:
+    """运行更新检查与安装"""
+    local_cfg = vault / "paperforge.json"
+    if not local_cfg.exists():
+        _log("[ERR] 未找到 paperforge.json", "r")
+        return 1
+    local = json.loads(local_cfg.read_text(encoding="utf-8")).get("version", "unknown")
+    remote = _remote_version()
+    _log("=" * 50, "b")
+    _log("PaperForge Lite 更新", "b")
+    _log("=" * 50, "b")
+    _log(f"本地版本: {local}", "c")
+    _log(f"远程版本: {remote or 'unknown'}", "c")
+    if not remote:
+        _log("[ERR] 无法获取远程版本", "r")
+        return 1
+    try:
+        needs = tuple(int(x) for x in remote.split(".") if x.isdigit()) > tuple(int(x) for x in local.split(".") if x.isdigit())
+    except ValueError:
+        needs = remote != local
+    if not needs:
+        _log("[OK] 当前已是最新版本", "g")
+        return 0
+    _log(f"\n[INFO] 发现新版本: {local} -> {remote}", "y")
+    _log("[WARN] 更新前建议备份 Vault", "y")
+    ans = input(_color("确认更新? [y/N]: ", "y")).strip().lower()
+    if ans not in ("y", "yes"):
+        _log("[INFO] 已取消", "c")
+        return 0
+    if (vault / ".git").is_dir():
+        success = update_via_git(vault)
+    else:
+        success = update_via_zip(vault)
+    if success:
+        _log("\n[OK] 更新完成！请重启 Obsidian", "g")
+    return 0 if success else 1
+
+
+# =============================================================================
+# Main
+# =============================================================================
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument('--vault', required=True, type=Path)
@@ -2383,13 +2585,9 @@ def main() -> int:
     parser.add_argument('--limit', type=int, default=8)
     parser.add_argument('--sources', nargs='+')
     parser.add_argument('--skip-ingest', action='store_true')
-    parser.add_argument('worker', choices=['candidate-sync', 'search', 'search-sources', 'ingest-candidates', 'harvest-sync', 'selection-sync', 'prepare-writeback', 'writeback', 'writeback-native', 'index-refresh', 'ocr', 'deep-reading', 'all'])
+    parser.add_argument('worker', choices=['selection-sync', 'index-refresh', 'ocr', 'deep-reading', 'update', 'all'])
     args = parser.parse_args()
     load_simple_env(args.vault / '.env')
-    if args.worker == 'search':
-        if not args.query or not args.domain:
-            raise SystemExit('search worker requires --query and --domain')
-        return run_search_command(args.vault, args)
     if args.worker == 'selection-sync':
         return run_selection_sync(args.vault)
     if args.worker == 'index-refresh':
@@ -2398,25 +2596,10 @@ def main() -> int:
         return run_ocr(args.vault)
     if args.worker == 'deep-reading':
         return run_deep_reading(args.vault)
-    code = run_candidate_sync(args.vault)
-    if code:
-        return code
-    code = run_search_sources(args.vault)
-    if code:
-        return code
-    code = run_ingest_candidates(args.vault)
-    if code:
-        return code
-    code = run_harvest_sync(args.vault)
-    if code:
-        return code
+    if args.worker == 'update':
+        return run_update(args.vault)
+    # 'all' - 依次运行所有 Lite 版 workers
     code = run_selection_sync(args.vault)
-    if code:
-        return code
-    code = run_prepare_writeback(args.vault)
-    if code:
-        return code
-    code = run_writeback(args.vault)
     if code:
         return code
     code = run_index_refresh(args.vault)
