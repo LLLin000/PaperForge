@@ -612,10 +612,11 @@ class ZoteroStep(StepScreen):
 （通常是 `C:/Users/<用户名>/Zotero` 或 `~/Zotero`）
         """)
         from textual.widgets import Input
+        username = os.environ.get("USERNAME", os.environ.get("USER", "YourName"))
         yield Static("Zotero 数据目录:", classes="step-title")
         yield Input(
             value=default_value,
-            placeholder="C:\\Users\\YourName\\Zotero",
+            placeholder=f"C:/Users/{username}/Zotero",
             id="input-zotero-data",
         )
         yield Horizontal(
@@ -625,16 +626,13 @@ class ZoteroStep(StepScreen):
         )
 
     def _detect_zotero_data(self) -> Optional[Path]:
-        """Auto-detect Zotero data directory."""
+        """Build default Zotero data path from current username."""
         home = Path.home()
-        candidates = [
-            home / "Zotero",
-            home / "AppData" / "Roaming" / "Zotero" / "Zotero",
-        ]
-        for c in candidates:
-            if c.exists() and (c / "zotero.sqlite").exists():
-                return c
-        return None
+        # Default: C:/Users/<username>/Zotero (Windows) or ~/Zotero (Unix)
+        default = home / "Zotero"
+        if default.exists() and (default / "zotero.sqlite").exists():
+            return default
+        return default  # Return anyway as default value
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "btn-link-zotero":
