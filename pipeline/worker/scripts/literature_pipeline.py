@@ -122,10 +122,53 @@ def _extract_year(value: str) -> str:
     match = re.search('(19|20)\\d{2}', value or '')
     return match.group(0) if match else ''
 
+
+def load_vault_config(vault: Path) -> dict:
+    """Read vault configuration from paperforge.json."""
+    pf_json = vault / "paperforge.json"
+    if pf_json.exists():
+        try:
+            data = json.loads(pf_json.read_text(encoding="utf-8"))
+            return {
+                "system_dir": data.get("system_dir", "99_System"),
+                "resources_dir": data.get("resources_dir", "03_Resources"),
+                "literature_dir": data.get("literature_dir", "Literature"),
+            }
+        except (json.JSONDecodeError, IOError):
+            pass
+    return {"system_dir": "99_System", "resources_dir": "03_Resources", "literature_dir": "Literature"}
+
+
 def pipeline_paths(vault: Path) -> dict[str, Path]:
-    root = vault / '99_System' / 'LiteraturePipeline'
-    control_root = vault / '03_Resources' / 'LiteratureControl'
-    return {'pipeline': root, 'candidates': root / 'candidates' / 'candidates.json', 'candidate_inbox': root / 'candidates' / 'inbox', 'candidate_archive': root / 'candidates' / 'archive', 'search_tasks': root / 'search' / 'tasks', 'search_archive': root / 'search' / 'archive', 'search_results': root / 'search' / 'results', 'harvest_root': root / 'skill-prototypes' / 'zotero-review-manuscript-writer', 'records': control_root / 'candidate-records', 'review': root / 'candidates' / 'review-latest.md', 'config': root / 'config' / 'domain-collections.json', 'exports': root / 'exports', 'library_records': control_root / 'library-records', 'queue': root / 'writeback' / 'writeback-queue.jsonl', 'log': root / 'writeback' / 'writeback-log.jsonl', 'bridge_config': root / 'zotero-bridge' / 'bridge-config.json', 'bridge_config_sample': root / 'zotero-bridge' / 'bridge-config.sample.json', 'index': root / 'indexes' / 'formal-library.json', 'ocr': root / 'ocr', 'ocr_queue': root / 'ocr' / 'ocr-queue.json', 'resources': vault / '03_Resources'}
+    cfg = load_vault_config(vault)
+    system_dir = cfg["system_dir"]
+    resources_dir = cfg["resources_dir"]
+    
+    root = vault / system_dir / "PaperForge"
+    control_root = vault / resources_dir / "LiteratureControl"
+    return {
+        'pipeline': root,
+        'candidates': root / 'candidates' / 'candidates.json',
+        'candidate_inbox': root / 'candidates' / 'inbox',
+        'candidate_archive': root / 'candidates' / 'archive',
+        'search_tasks': root / 'search' / 'tasks',
+        'search_archive': root / 'search' / 'archive',
+        'search_results': root / 'search' / 'results',
+        'harvest_root': root / 'skill-prototypes' / 'zotero-review-manuscript-writer',
+        'records': control_root / 'candidate-records',
+        'review': root / 'candidates' / 'review-latest.md',
+        'config': root / 'config' / 'domain-collections.json',
+        'exports': root / 'exports',
+        'library_records': control_root / 'library-records',
+        'queue': root / 'writeback' / 'writeback-queue.jsonl',
+        'log': root / 'writeback' / 'writeback-log.jsonl',
+        'bridge_config': root / 'zotero-bridge' / 'bridge-config.json',
+        'bridge_config_sample': root / 'zotero-bridge' / 'bridge-config.sample.json',
+        'index': root / 'indexes' / 'formal-library.json',
+        'ocr': root / 'ocr',
+        'ocr_queue': root / 'ocr' / 'ocr-queue.json',
+        'resources': vault / resources_dir,
+    }
 
 def build_collection_lookup(collections: dict) -> dict:
     path_cache = {}
