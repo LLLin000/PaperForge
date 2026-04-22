@@ -72,8 +72,8 @@ ln -s "~/Zotero" "{vault_path}/99_System/Zotero"
 
 创建 `{vault_path}/.env`:
 ```
-PADDLEOCR_API_KEY=your_api_key_here
-PADDLEOCR_API_URL=https://api.paddleocr.baidu.com/api/v1/ocr
+PADDLEOCR_API_TOKEN=your_api_token_here
+PADDLEOCR_JOB_URL=https://paddleocr.aistudio-app.com/api/v2/ocr/jobs
 ```
 
 ### Step 5: 部署脚本

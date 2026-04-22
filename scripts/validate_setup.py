@@ -89,12 +89,12 @@ def validate_ocr_pipeline(vault_path: str) -> list[tuple[bool, str]]:
     results.append((ok, msg))
     
     if ok:
-        # Check if PADDLEOCR_API_KEY is set
-        env_content = env_path.read_text(encoding="utf-8")
-        if "PADDLEOCR_API_KEY" in env_content:
-            results.append((True, "[OK] PADDLEOCR_API_KEY configured in .env"))
+        # Check if PADDLEOCR_API_TOKEN is set
+        env_content = env_path.read_text(encoding='utf-8')
+        if "PADDLEOCR_API_TOKEN" in env_content:
+            results.append((True, "[OK] PADDLEOCR_API_TOKEN configured in .env"))
         else:
-            results.append((False, "[FAIL] PADDLEOCR_API_KEY not found in .env"))
+            results.append((False, "[FAIL] PADDLEOCR_API_TOKEN not found in .env"))
     
     # Check OCR pipeline directory
     ocr_dir = vault_dir / "99_System" / "LiteraturePipeline" / "worker"

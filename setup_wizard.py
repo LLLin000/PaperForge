@@ -922,11 +922,14 @@ class DeployStep(StepScreen):
         
         env_path = vault / ".env"
         env_content = f"""# PaperForge 配置文件
-# PaddleOCR API Key（从 https://paddleocr.baidu.com 获取）
-PADDLEOCR_API_KEY={api_key}
+# PaddleOCR API Token（从 https://paddleocr.baidu.com 获取）
+PADDLEOCR_API_TOKEN={api_key}
 
 # PaddleOCR API 地址
-PADDLEOCR_API_URL={api_url}
+PADDLEOCR_JOB_URL={api_url}
+
+# PaddleOCR 模型（通常不需要修改）
+PADDLEOCR_MODEL=PaddleOCR-VL-1.5
 """
         env_path.write_text(env_content, encoding="utf-8")
         
