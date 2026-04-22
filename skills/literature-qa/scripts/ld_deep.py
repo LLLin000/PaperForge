@@ -255,21 +255,180 @@ def extract_tables_from_fulltext(fulltext: str, figure_map: dict | None = None) 
 # Figure Map: caption-driven figure/table inventory
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# Chart Type Detection: per-figure subfigure type scanning
+# ---------------------------------------------------------------------------
+
+CHART_TYPE_KEYWORDS: dict[str, list[str]] = {
+    "条形图与误差棒": [
+        "bar", "histogram", "column", "quantification", "quantitative",
+        "relative expression", "mRNA expression", "protein level",
+        "BMD", "BV/TV", "Tb.N", "Tb.Sp", "intensity", "score",
+        "ratio", "percentage", "proportion", "fold change",
+    ],
+    "折线图与时间序列": [
+        "curve", "time", "kinetics", "release", "cyclic", "stability",
+        "degradation", "profile", "over time", "day", "week",
+        "duration", "period", "cycle", "repeated",
+    ],
+    "热图与聚类图": [
+        "heatmap", "heat map", "clustering", "cluster", "dendrogram",
+        "hierarchical", "correlation matrix", "expression matrix",
+    ],
+    "火山图与曼哈顿图": [
+        "volcano", "volcano plot", "manhattan", "-log10", "log2fc",
+        "fold change", "differential", "DEG", "DEM", "upregulated", "downregulated",
+    ],
+    "免疫荧光定量图": [
+        "immunofluorescence", "immunofluorescent", "confocal", "fluorescence",
+        "staining", "3D reconstruction", "overlay", "DAPI", " Alexa ",
+        "FITC", "TRITC", "Cy3", "Cy5", "SOX9", "COL2A1", "Piezo1",
+        "positive cells", "mean intensity", "fluorescent",
+    ],
+    "组织学半定量图": [
+        "H&E", "hematoxylin", "eosin", "Safranin", "Fast Green",
+        "Masson", "trichrome", "histology", "histological",
+        "tissue section", "slide", "stain", "morphology",
+        "O'Driscoll", "ICRS", "Mankin", "OARSI", "Pineda",
+    ],
+    "桑基图与弦图": [
+        "chord", "Sankey", "correlation network", "interaction network",
+        "signaling network", "proximity", "correlation of metabolic",
+        "Spearman", "Pearson correlation",
+    ],
+    "雷达图与漏斗图": [
+        "radar", "funnel", "spider", "web chart", "polar",
+    ],
+    "GSEA富集图": [
+        "GSEA", "MSEA", "enrichment", "enrichment plot", "enrichment score",
+        "NES", "leading edge", "pathway enrichment", "metabolic set",
+    ],
+    "箱式图与小提琴图": [
+        "box", "boxplot", "box plot", "violin", "whisker", "quartile",
+        "median", "IQR", "outlier",
+    ],
+    "散点图与气泡图": [
+        "scatter", "bubble", "dot plot", "correlation plot", "regression",
+        "linear fit", "R²", "correlation coefficient",
+    ],
+    "Western Blot条带图": [
+        "Western", "blot", "WB", "gel electrophoresis", "SDS-PAGE",
+        "band", "molecular weight", "kDa",
+    ],
+    "显微照片与SEM图": [
+        "SEM", "TEM", "microscopy", "micrograph", "morphology",
+        "surface", "topography", "nanostructure", "porous",
+        "FE-SEM", "scanning electron", "transmission electron",
+    ],
+    "降维图(PCA-tSNE-UMAP)": [
+        "PCA", "t-SNE", "tSNE", "UMAP", "MDS", "dimensionality reduction",
+        "principal component", "clustering plot", "embedding",
+    ],
+    "网络图与通路图": [
+        "pathway", "network", "signaling pathway", "KEGG", "Reactome",
+        "protein-protein interaction", "PPI", "regulatory network",
+    ],
+    "蛋白质结构图": [
+        "protein structure", "crystallography", "NMR structure", "AlphaFold",
+        "3D structure", "homology modeling", "docking",
+    ],
+    "森林图与Meta分析": [
+        "forest plot", "meta-analysis", "meta analysis", "pooled effect",
+        "heterogeneity", "I²", "Egger", "funnel plot",
+    ],
+    "ROC与PR曲线": [
+        "ROC", "AUC", "receiver operating", "sensitivity", "specificity",
+        "PR curve", "precision-recall", "diagnostic accuracy",
+    ],
+    "生存曲线": [
+        "survival", "Kaplan-Meier", "KM curve", "log-rank", "hazard ratio",
+        "HR", "OS", "PFS", "DFS", "mortality",
+    ],
+}
+
+
+def detect_chart_types(caption: str) -> list[str]:
+    """Detect which chart-reading guides are relevant for a figure caption.
+
+    Returns a deduplicated list of chart type names (Chinese) that match
+    keywords found in the caption. Matching is case-insensitive.
+    """
+    caption_lower = caption.lower()
+    matched: list[str] = []
+    for chart_type, keywords in CHART_TYPE_KEYWORDS.items():
+        for kw in keywords:
+            if kw.lower() in caption_lower:
+                matched.append(chart_type)
+                break
+    return matched
+
+
+def build_chart_type_map(figure_map: dict) -> dict:
+    """Build a per-figure chart-type reference map from figure-map.json.
+
+    Output format:
+    {
+      "zotero_key": "...",
+      "figures": [
+        {
+          "number": "1",
+          "label": "Figure 1",
+          "detected_chart_types": ["雷达图与漏斗图"],
+          "recommended_guides": ["chart-reading/雷达图与漏斗图.md"]
+        },
+        ...
+      ],
+      "tables": [...]
+    }
+    """
+    result: dict = {
+        "zotero_key": figure_map.get("zotero_key", ""),
+        "figures": [],
+        "tables": [],
+    }
+
+    for fig in figure_map.get("figures", []):
+        caption = fig.get("caption", "")
+        types = detect_chart_types(caption)
+        entry = {
+            "number": fig.get("number", "?"),
+            "label": fig.get("label", ""),
+            "caption_preview": caption[:200] + "..." if len(caption) > 200 else caption,
+            "detected_chart_types": types,
+            "recommended_guides": [f"chart-reading/{t}.md" for t in types],
+        }
+        result["figures"].append(entry)
+
+    for tbl in figure_map.get("tables", []):
+        caption = tbl.get("caption", "")
+        types = detect_chart_types(caption)
+        entry = {
+            "number": tbl.get("number", "?"),
+            "label": tbl.get("label", ""),
+            "caption_preview": caption[:200] + "..." if len(caption) > 200 else caption,
+            "detected_chart_types": types,
+            "recommended_guides": [f"chart-reading/{t}.md" for t in types],
+        }
+        result["tables"].append(entry)
+
+    return result
+
+
 CAPTION_PATTERNS = {
     "main_figure": re.compile(
-        r"^(?:Figure|Fig\.?\s*)(\d+[a-zA-Z]?)(?:\s*[:|\-]?\s*)(.*?)$",
+        r"^(?:Figure|Fig\.?)\s*(\d+[a-zA-Z]?)(?:\s*[\.:|\-]?\s*)(.*?)$",
         re.IGNORECASE,
     ),
     "supplementary_figure": re.compile(
-        r"^(?:Supplementary\s+(?:Figure|Fig\.?)\s*|Extended\s+Data\s+(?:Figure|Fig\.?)\s*|Suppl?\.?\s*(?:Figure|Fig\.?)\s*)(S?\d+[a-zA-Z]?)(?:\s*[:|\-]?\s*)(.*?)$",
+        r"^(?:Supplementary\s+(?:Figure|Fig\.?)\s*|Extended\s+Data\s+(?:Figure|Fig\.?)\s*|Suppl?\.?\s*(?:Figure|Fig\.?)\s*)(S?\d+[a-zA-Z]?)(?:\s*[\.:|\-]?\s*)(.*?)$",
         re.IGNORECASE,
     ),
     "main_table": re.compile(
-        r"^(?:Table)\s*(\d+[a-zA-Z]?)(?:\s*[:|\-]?\s*)(.*?)$",
+        r"^(?:Table)\s*(\d+[a-zA-Z]?)(?:\s*[\.:|\-]?\s*)(.*?)$",
         re.IGNORECASE,
     ),
     "supplementary_table": re.compile(
-        r"^(?:Supplementary\s+Table\s*|Suppl?\.?\s*Table\s*|Extended\s+Data\s+Table\s*)(S?\d+[a-zA-Z]?)(?:\s*[:|\-]?\s*)(.*?)$",
+        r"^(?:Supplementary\s+Table\s*|Suppl?\.?\s+Table\s*|Extended\s+Data\s+Table\s*)(S?\d+[a-zA-Z]?)(?:\s*[\.:|\-]?\s*)(.*?)$",
         re.IGNORECASE,
     ),
 }
@@ -772,6 +931,177 @@ def _read_json(path: Path) -> dict:
         return {}
 
 
+def prepare_deep_reading(vault: Path, zotero_key: str, force: bool = False) -> dict:
+    """Automate all mechanical pre-reading steps for /LD-deep.
+
+    Returns a dict with:
+      - status: "ok" | "error"
+      - message: human-readable summary
+      - formal_note: path to the formal literature note
+      - fulltext_md: path to OCR fulltext
+      - figure_map: path to figure-map.json
+      - chart_type_map: path to chart-type-map.json
+      - figures: list of extracted figures
+      - tables: list of extracted tables
+      - chart_recommendations: list of recommended chart-reading guides
+    """
+    result: dict = {
+        "status": "error",
+        "message": "",
+        "zotero_key": zotero_key,
+        "formal_note": None,
+        "fulltext_md": None,
+        "figure_map": None,
+        "chart_type_map": None,
+        "figures": [],
+        "tables": [],
+        "chart_recommendations": [],
+    }
+
+    records_root = vault / "03_Resources" / "LiteratureControl" / "library-records"
+    literature_root = vault / "03_Resources" / "Literature"
+    ocr_root = vault / "99_System" / "LiteraturePipeline" / "ocr"
+
+    record_path: Path | None = None
+    domain: str | None = None
+    if records_root.exists():
+        for domain_dir in records_root.iterdir():
+            if not domain_dir.is_dir():
+                continue
+            candidate = domain_dir / f"{zotero_key}.md"
+            if candidate.exists():
+                record_path = candidate
+                domain = domain_dir.name
+                break
+
+    if record_path is None:
+        for domain_dir in records_root.iterdir():
+            if not domain_dir.is_dir():
+                continue
+            for candidate in domain_dir.glob("*.md"):
+                text = candidate.read_text(encoding="utf-8")
+                if re.search(rf'^zotero_key:\s*"?{re.escape(zotero_key)}"?', text, re.MULTILINE):
+                    record_path = candidate
+                    domain = domain_dir.name
+                    break
+            if record_path:
+                break
+
+    if record_path is None:
+        result["message"] = f"[ERROR] Library record not found for zotero_key={zotero_key}"
+        return result
+
+    record_text = record_path.read_text(encoding="utf-8")
+
+    analyze_match = re.search(r'^analyze:\s*(true|false)$', record_text, re.MULTILINE)
+    if not analyze_match or analyze_match.group(1) != "true":
+        result["message"] = f"[ERROR] analyze != true in {record_path}. Set analyze: true first."
+        return result
+
+    status_match = re.search(r'^deep_reading_status:\s*"?(.*?)"?$', record_text, re.MULTILINE)
+    dr_status = status_match.group(1).strip() if status_match else "pending"
+    if dr_status == "done" and not force:
+        result["message"] = f"[WARN] deep_reading_status already 'done'. Use --force to re-run."
+        return result
+
+    ocr_dir = ocr_root / zotero_key
+    fulltext_md = ocr_dir / "fulltext.md"
+    meta_path = ocr_dir / "meta.json"
+
+    if not fulltext_md.exists():
+        result["message"] = f"[ERROR] OCR fulltext not found: {fulltext_md}. Run OCR first."
+        return result
+
+    ocr_status = "pending"
+    if meta_path.exists():
+        meta = _read_json(meta_path)
+        ocr_status = str(meta.get("ocr_status", "pending")).strip().lower()
+
+    if ocr_status != "done":
+        result["message"] = f"[ERROR] OCR status='{ocr_status}', not 'done'. Wait for OCR or check meta.json."
+        return result
+
+    result["fulltext_md"] = str(fulltext_md)
+
+    formal_note: Path | None = None
+    if literature_root.exists() and domain:
+        domain_dir = literature_root / domain
+        if domain_dir.exists():
+            for candidate in domain_dir.glob("*.md"):
+                if candidate.name.startswith(f"{zotero_key} ") or candidate.name.startswith(f"{zotero_key} -"):
+                    formal_note = candidate
+                    break
+            if formal_note is None:
+                for candidate in domain_dir.glob("*.md"):
+                    text = candidate.read_text(encoding="utf-8")
+                    if re.search(rf'^zotero_key:\s*"?{re.escape(zotero_key)}"?', text, re.MULTILINE):
+                        formal_note = candidate
+                        break
+
+    if formal_note is None:
+        for candidate in literature_root.rglob("*.md"):
+            text = candidate.read_text(encoding="utf-8")
+            if re.search(rf'^zotero_key:\s*"?{re.escape(zotero_key)}"?', text, re.MULTILINE):
+                formal_note = candidate
+                break
+
+    if formal_note is None:
+        result["message"] = f"[ERROR] Formal note not found in {literature_root}. Run index-refresh first."
+        return result
+
+    result["formal_note"] = str(formal_note)
+
+    figure_map_path = ocr_dir / "figure-map.json"
+    fulltext_text = fulltext_md.read_text(encoding="utf-8")
+    figure_map = build_figure_map(fulltext_text, zotero_key=zotero_key)
+    figure_map["generated_at"] = __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat()
+    figure_map_path.parent.mkdir(parents=True, exist_ok=True)
+    figure_map_path.write_text(json.dumps(figure_map, ensure_ascii=False, indent=2), encoding="utf-8")
+    result["figure_map"] = str(figure_map_path)
+
+    chart_type_map_path = ocr_dir / "chart-type-map.json"
+    chart_type_result = build_chart_type_map(figure_map)
+    chart_type_map_path.write_text(json.dumps(chart_type_result, ensure_ascii=False, indent=2), encoding="utf-8")
+    result["chart_type_map"] = str(chart_type_map_path)
+
+    all_guides: set[str] = set()
+    for fig in chart_type_result.get("figures", []):
+        for guide in fig.get("recommended_guides", []):
+            all_guides.add(guide)
+    for tbl in chart_type_result.get("tables", []):
+        for guide in tbl.get("recommended_guides", []):
+            all_guides.add(guide)
+    result["chart_recommendations"] = sorted(all_guides)
+
+    figure_candidates = extract_figures_from_fulltext(fulltext_text, figure_map)
+    table_candidates = extract_tables_from_fulltext(fulltext_text, figure_map)
+    planned_figures = build_figure_plan(figure_candidates)
+    planned_tables = table_candidates
+
+    note_text = formal_note.read_text(encoding="utf-8")
+    updated = ensure_study_section(note_text, planned_figures, planned_tables)
+    formal_note.write_text(updated, encoding="utf-8")
+
+    result["figures"] = [
+        {"number": f.number, "image_id": f.image_id, "page": f.page, "title": f.title}
+        for f in planned_figures
+    ]
+    result["tables"] = [
+        {"number": t.number, "page": t.page, "image_link": t.image_link}
+        for t in planned_tables
+    ]
+
+    result["status"] = "ok"
+    result["message"] = (
+        f"[OK] Prepared {zotero_key}\n"
+        f"  Formal note: {formal_note}\n"
+        f"  Fulltext: {fulltext_md}\n"
+        f"  Figures: {len(planned_figures)} | Tables: {len(planned_tables)}\n"
+        f"  Chart guides: {len(all_guides)} recommended"
+    )
+    return result
+
+
 def scan_deep_reading_queue(vault: Path) -> list[dict]:
     """Scan library-records for analyze=true + deep_reading_status!=done entries.
 
@@ -829,6 +1159,16 @@ def scan_deep_reading_queue(vault: Path) -> list[dict]:
     return queue
 
 
+import sys
+
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+    except AttributeError:
+        import codecs
+        sys.stdout = codecs.getwriter("utf-8")(sys.stdout.buffer)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Helpers for /LD-deep note scaffolding")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -863,7 +1203,25 @@ def main() -> int:
     map_parser.add_argument("--key", default="", help="Zotero key for output metadata")
     map_parser.add_argument("--out", type=Path, help="Optional output JSON path (default: stdout)")
 
+    chart_type_parser = subparsers.add_parser("chart-type-scan", help="Scan figure captions for chart types and recommend chart-reading guides")
+    chart_type_parser.add_argument("figure_map", type=Path, help="Path to figure-map.json generated by figure-map command")
+    chart_type_parser.add_argument("--out", type=Path, help="Optional output JSON path (default: stdout)")
+
+    prepare_parser = subparsers.add_parser("prepare", help="One-click prepare all mechanical steps for deep reading")
+    prepare_parser.add_argument("zotero_key", help="Zotero citation key")
+    prepare_parser.add_argument("--vault", type=Path, required=True, help="Path to vault root")
+    prepare_parser.add_argument("--format", choices=["json", "text"], default="text", help="Output format")
+    prepare_parser.add_argument("--force", action="store_true", help="Force re-run even if deep_reading_status is done")
+
     args = parser.parse_args()
+
+    if args.command == "prepare":
+        result = prepare_deep_reading(args.vault, args.zotero_key, force=args.force)
+        if args.format == "json":
+            print(json.dumps(result, ensure_ascii=False, indent=2))
+        else:
+            print(result.get("message", "Unknown result"))
+        return 0 if result["status"] == "ok" else 1
 
     if args.command == "figure-index":
         fulltext = args.fulltext.read_text(encoding="utf-8")
@@ -877,8 +1235,15 @@ def main() -> int:
         tables: list[TableEntry] = []
         if args.fulltext:
             fulltext = args.fulltext.read_text(encoding="utf-8")
-            figure_candidates = extract_figures_from_fulltext(fulltext)
-            table_candidates = extract_tables_from_fulltext(fulltext)
+            figure_map = None
+            figure_map_path = args.fulltext.parent / "figure-map.json"
+            if figure_map_path.exists():
+                try:
+                    figure_map = json.loads(figure_map_path.read_text(encoding="utf-8"))
+                except (json.JSONDecodeError, UnicodeDecodeError):
+                    pass
+            figure_candidates = extract_figures_from_fulltext(fulltext, figure_map)
+            table_candidates = extract_tables_from_fulltext(fulltext, figure_map)
             selected_figures = {part.strip() for part in (args.figures or "").split(",") if part.strip()}
             selected_tables = {part.strip() for part in (args.tables or "").split(",") if part.strip()}
             figures = (
@@ -970,6 +1335,20 @@ def main() -> int:
             args.out.parent.mkdir(parents=True, exist_ok=True)
             args.out.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
             print(f"figure-map: wrote {args.out}")
+        else:
+            print(json.dumps(result, ensure_ascii=False, indent=2))
+        return 0
+
+    if args.command == "chart-type-scan":
+        figure_map = _read_json(args.figure_map)
+        if not figure_map:
+            print("ERROR: Could not read figure-map.json or file is empty", file=__import__("sys").stderr)
+            return 1
+        result = build_chart_type_map(figure_map)
+        if args.out:
+            args.out.parent.mkdir(parents=True, exist_ok=True)
+            args.out.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
+            print(f"chart-type-scan: wrote {args.out}")
         else:
             print(json.dumps(result, ensure_ascii=False, indent=2))
         return 0

@@ -7,97 +7,49 @@
 ## 输入变量（由主 agent 填入）
 
 - `{{ZOTERO_KEY}}` — Zotero key，如 `Y5KQ4JQ7`
-- `{{FORMAL_NOTE}}` — 正式笔记完整路径，如 `D:\L\Med\Research\03_Resources\Literature\骨科\Y5KQ4JQ7 - Title.md`
-- `{{FULLTEXT_MD}}` — OCR 全文本路径，如 `D:\L\Med\Research\99_System\LiteraturePipeline\ocr\Y5KQ4JQ7\fulltext.md`
+- `{{VAULT}}` — Vault 根路径，如 `D:\L\Med\Research`
 - `{{SCRIPT}}` — `D:\L\Med\Research\.opencode\skills\literature-qa\scripts\ld_deep.py`
 
 ## 正确流程（必须按顺序执行）
 
-### 第一步：Figure Map 预扫描（Agent 执行）
+### 第一步：一键前置准备（运行 prepare 命令）
 
-不要自己猜 figure 编号。运行 figure-map 命令，让脚本基于 caption 解析所有图表：
+**这是唯一需要运行的机械化命令**。它会自动完成：检查状态、生成 figure-map、扫描图表类型、插入骨架。
 
 ```
-python {{SCRIPT}} figure-map "{{FULLTEXT_MD}}" --key {{ZOTERO_KEY}} --out "D:\L\Med\Research\99_System\LiteraturePipeline\ocr\{{ZOTERO_KEY}}\figure-map.json"
+python {{SCRIPT}} prepare {{ZOTERO_KEY}} --vault "{{VAULT}}" --format text
 ```
 
-读取生成的 `figure-map.json`，获得结构化清单：
-- `figures`: 主文 figure（Figure 1, 2, 3...）
-- `tables`: 主文 table（Table 1, 2...）
-- `supplementary_figures`: 补充图（Supplementary Figure S1...）
-- `supplementary_tables`: 补充表（Supplementary Table S1...）
-
-基于清单判断：
-- **主图**：默认全部展开（Figure 1-N）
-- **主表**：只展开有核心数据的表（ demographics、结果汇总、统计对比等）
-- **补充材料**：仅当对主结论形成关键支撑、补足方法可信度、或限制主文解释范围时才展开
-
-记录选定的 figure/table 编号（用 `image_id` 而非 caption 数字）。
-
-### 第二步：创建/更新骨架
-
-**输入变量**：`{{MODE}}` — 主 agent 传入的模式，可选值：`append`（默认，追加/补充）、`overwrite`（覆盖重写）。
-
-**若 MODE == `overwrite`**：
-1. 先删除现有 `## 🔍 精读` 区域：读取 `{{FORMAL_NOTE}}`，找到 `## 🔍 精读` heading，删除从该行开始到下一个同级（`## `）或更高级 heading 之前的所有内容。
-2. 将删除后的内容写回 `{{FORMAL_NOTE}}`。
-3. 然后运行 `ensure-scaffold` 生成全新骨架：
-   ```
-   python {{SCRIPT}} ensure-scaffold "{{FORMAL_NOTE}}" --fulltext "{{FULLTEXT_MD}}" --figures "<image_id1>,<image_id2>,..." --tables "<image_id1>,..."
-   ```
-
-**若 MODE == `append` 或未指定**：
-- 如果 `## 🔍 精读` 已存在且包含实质内容（非纯占位符），跳过骨架生成，直接进入第三步补充空缺。
-- 如果不存在或只有空骨架，运行上述 `ensure-scaffold` 命令生成骨架。
-
-如果 figure 解析失败，骨架里会显示"暂未从 OCR 中解析到可用主图"，这是正常的，继续填写其他内容。
-
-### 格式规范（强制）
-
-**Callout 间距规则**：在 Obsidian 中，连续的 callout 块如果没有空行分隔，会被合并成一个块。必须遵守以下规则：
-
-1. **不同 callout 之间必须有空行**：
-   ```markdown
-   > [!warning] 第一个警告
-   > 内容
-
-   > [!warning] 第二个警告
-   > 内容
-   ```
-
-2. **同一类型的多个 callout 之间也必须有空行**：
-   ```markdown
-   > [!question] 遗留问题 1
-   > 问题描述
-
-   > [!question] 遗留问题 2
-   > 问题描述
-   ```
-
-3. **Figure/Table callout 之间也必须有空行**（骨架已自动处理，agent 补充时同理）。
-
-**错误示例**（会导致合并）：
-```markdown
-> [!warning] 警告1
-> [!warning] 警告2
+**期望输出示例**：
+```
+[OK] Prepared Y5KQ4JQ7
+  Formal note: Y5KQ4JQ7 - Title.md
+  Figures: 6 | Tables: 2
+  Chart guides: 5 recommended
 ```
 
-**正确示例**：
-```markdown
-> [!warning] 警告1
-> 内容
+**如果输出以 `[ERROR]` 开头**：
+- 立即停止，将错误信息报告给主 agent
+- 常见错误：analyze != true（需用户在 Base 中勾选 analyze）、OCR 未完成、formal note 不存在
 
-> [!warning] 警告2
-> 内容
-```
+**如果输出 `[WARN] deep_reading_status already 'done'`**：
+- 这说明该论文已经精读过。如果用户要求重新精读，通知主 agent 确认是否覆盖。
 
-### 第三步：三阶段精读（Keshav 法）
+**prepare 成功后会自动生成以下文件**：
+- `99_System/LiteraturePipeline/ocr/{{ZOTERO_KEY}}/figure-map.json` — 图表清单
+- `99_System/LiteraturePipeline/ocr/{{ZOTERO_KEY}}/chart-type-map.json` — 图表类型与推荐指南
 
-用 Read 工具加载 `{{FORMAL_NOTE}}`，找到 `## 🔍 精读` 区域，按以下三阶段填写。
+**Agent 需要读取 chart-type-map.json**，为每张 figure 建立 `chart_types` 备忘列表。在 Pass 2 解析该 figure 时，根据其 chart_types 读取 `{{CHART_READING_DIR}}` 下对应的 chart-reading 指南，将关键审查问题整合进"图表质量审查"段落。
 
-**注意**：三阶段可以一次调用完成，也可以分多次调用。如果内容过多，先完成 Pass 1 + Pass 2，Pass 3 可以在后续调用中补完。
+> **注意**：prepare 命令已自动在 formal note 中插入了 `## 🔍 精读` 骨架（包含所有 figure/table 的 callout 块）。Agent **不需要**再手动运行 ensure-scaffold。
 
-#### Pass 1: 概览（第一遍，5-10 分钟）
+---
+
+### 第二步：Pass 1 概览（单独执行，完成后保存）
+
+**执行策略**：Pass 1 只填写 `### Pass 1: 概览` 区域，不要碰 Pass 2/3 的内容。
+
+用 Read 工具加载 formal note（路径在 prepare 输出中），找到 `## 🔍 精读` 区域，定位到 `### Pass 1: 概览`，将占位符替换为实际内容。
 
 快速扫描，建立全局认知，决定是否值得深入。
 
@@ -121,17 +73,28 @@ python {{SCRIPT}} figure-map "{{FULLTEXT_MD}}" --key {{ZOTERO_KEY}} --out "D:\L\
 - 关键表格：Table X（猜测：ZZZ）
 ```
 
-#### Pass 2: 精读还原（第二遍，figure-by-figure）
+**完成后**：用 Edit 工具将填写好的 Pass 1 内容写回 formal note，保存。然后继续下一步。
 
-逐图逐表精读，把握内容但不陷入细节。
+---
+
+### 第三步：Pass 2 精读还原（分块执行，每块完成后保存）
+
+**执行策略**：Pass 2 只填写 `### Pass 2: 精读还原` 区域。内容量大，必须分块执行，不要试图一次写完全部 figure。
+
+#### 分块规则
+
+将 figure/table 分为 2-3 个一组的块：
+- 第 1 块：Figure 1-2（或 1-3）
+- 第 2 块：Figure 3-4（或 4-5）
+- 第 3 块：剩余 Figure + Table + 关键方法补课 + 主要发现与新意
+
+每完成一个块，**立即用 Edit 保存**，然后 Read 确认已写入，再继续下一个块。
+
+#### Figure-by-Figure 解析（逐块填写）
+
+每张主图按以下结构：
 
 ```markdown
-### Pass 2: 精读还原
-
-#### Figure-by-Figure 解析
-
-（每张主图按以下结构）
-
 ##### Figure N：{caption 一句话概括}
 ![[image_link]]
 
@@ -143,11 +106,29 @@ python {{SCRIPT}} figure-map "{{FULLTEXT_MD}}" --key {{ZOTERO_KEY}} --out "D:\L\
 - 方法：（实验设计/数据来源/技术路线）
 - 结果：（图中展示的核心数据点/趋势/对比）
 
-**图表质量审查**（仅对含 graph/plot 的图执行；纯示意图跳过）
+**图表类型识别与 chart-reading 引用（强制）**
+1. **识别子图类型**：基于 caption 和图像内容，列出该 figure 包含的所有图表子类型（如：柱状图、折线图、免疫荧光图、热图等）
+2. **读取 chart-reading 参考**：根据 prepare 生成的 chart-type-map.json 中该 figure 的 `recommended_guides`，读取对应指南文件
+3. **执行审查清单**：将 chart-reading 指南中的核心审查问题逐条应用到该 figure 上，至少回答以下问题：
+   - 如果是**柱状图/条形图**：Y轴是否从0开始？误差棒类型是SD/SEM/CI？是否进行了多重比较校正？
+   - 如果是**折线图/时间序列**：曲线是否符合某种动力学模型？是否达到平台期？突释效应如何？
+   - 如果是**免疫荧光图**：是否使用 sequential scanning？荧光强度定量方法是什么？背景阈值如何设定？
+   - 如果是**热图/聚类图**：标准化方法是什么（Z-score/log/percentile）？聚类算法和距离度量是什么？是否存在循环论证？
+   - 如果是**火山图**：显著性阈值是raw p-value还是FDR？效应量阈值是多少？上调/下调是否对称？
+   - 如果是**GSEA/GSEA富集图**：q值阈值是多少（0.25还是0.05）？基因集大小是否合理？Leading Edge占比多少？
+   - 如果是**弦图/网络图**：弦的粗细代表什么？是否过度解读了方向性？
+   - 如果是**组织学图**：评分系统是什么？是否盲法评分？评分者间一致性（ICC/κ）是否报告？
+   - 如果是**箱式图/小提琴图**：中位数、IQR、异常值如何？组间分布是否对称？
+   - 如果是**散点图/气泡图**：相关性系数是多少？是否进行了回归分析？R²值如何？
+   - 如果是**ROC曲线**：AUC是多少？置信区间是否报告？截断点如何选择？
+   - 如果是**生存曲线**：中位生存期是多少？HR和置信区间是否报告？删失数据如何处理？
+4. **整合审查结果**：将上述审查的发现写入下方的 "**图表质量审查**" 段落。如果某条审查不适用，明确标注"N/A"；如果审查发现问题，用 `> [!warning]` 标出。
+
+**图表质量审查**
 - 轴标签是否完整？单位是否标注？
 - 是否有 error bars / 置信区间 / 统计显著性标记？
+- 根据 chart-reading 指南执行后的额外发现：
 - 如果缺少这些，对结论可信度有什么影响？
-- **[进阶]** 识别图表类型后，参考 `chart-reading/` 中的对应子指南进行深度审查（如箱式图看IQR与异常值、热图看标准化与批次、ROC曲线看截断点与AUC置信区间等）
 
 **作者解释**
 - 作者在文中对该图的描述：
@@ -160,11 +141,13 @@ python {{SCRIPT}} figure-map "{{FULLTEXT_MD}}" --key {{ZOTERO_KEY}} --out "D:\L\
 
 **疑点 / 局限**
 - （可酌情用 `> [!warning]` 突出）
+```
 
 #### Table-by-Table 解析
 
-（每张重要表格按以下结构）
+每张重要表格按以下结构：
 
+```markdown
 ##### Table N：{caption 一句话概括}
 ![[image_link]]
 
@@ -174,6 +157,7 @@ python {{SCRIPT}} figure-map "{{FULLTEXT_MD}}" --key {{ZOTERO_KEY}} --out "D:\L\
 - 我的理解：
 - 在全文中的作用：
 - 疑点 / 局限：
+```
 
 #### 关键方法补课
 - 方法 1：（如有不熟悉的实验技术，简要补课）
@@ -183,9 +167,14 @@ python {{SCRIPT}} figure-map "{{FULLTEXT_MD}}" --key {{ZOTERO_KEY}} --out "D:\L\
 **主要发现**
 - 发现 1：（证据来源：Figure X / Table Y）
 - 发现 2：
-```
 
-#### Pass 3: 深度理解（第三遍，质疑与迁移）
+**完成后**：确保 Pass 2 所有内容都已保存到 formal note，然后继续下一步。
+
+---
+
+### 第四步：Pass 3 深度理解（基于已写内容，完成后保存）
+
+**执行策略**：Pass 3 填写 `### Pass 3: 深度理解` 区域。这是基于前两个 pass 已写入内容的总结与升华，可以引用 Pass 1/2 中的具体发现。
 
 对医学文献，Pass 3 的核心不是"复现"，而是**批判性评估 + 临床/研究迁移**。可以 spawn 多个 subagent 并行分析不同维度，最后整合。
 
@@ -228,9 +217,15 @@ python {{SCRIPT}} figure-map "{{FULLTEXT_MD}}" --key {{ZOTERO_KEY}} --out "D:\L\
 - ...
 ```
 
-### 第四步：callout 使用规则
+**关键提示**：Pass 3 的写作可以引用 Pass 1 的"5 Cs 评估"和 Pass 2 的"主要发现"作为基础，形成连贯的批判性分析。不要孤立地写 Pass 3。
 
-骨架是纯文本，填写时选择性使用 callout 突出重要信息：
+**完成后**：用 Edit 保存，然后进入验证步骤。
+
+---
+
+### 第五步：Callout 使用规则
+
+填写时选择性使用 callout 突出重要信息：
 - **主要发现**的每条 → `> [!important]`
 - **仍存疑**的每条 → `> [!warning]`
 - **遗留问题** → `> [!question]`
@@ -262,39 +257,41 @@ python {{SCRIPT}} figure-map "{{FULLTEXT_MD}}" --key {{ZOTERO_KEY}} --out "D:\L\
 > [!warning] - 某结论缺乏独立验证
 ```
 
-### 第五步：验证骨架完整性
+---
 
-完成后，运行：
+### 第六步：验证完整性
+
+完成后，运行 validate-note 检查结构完整性：
 
 ```
-python {{SCRIPT}} validate-note "{{FORMAL_NOTE}}" --fulltext "{{FULLTEXT_MD}}" --figures "<image_ids>"
+python {{SCRIPT}} validate-note "<formal_note_path>" --fulltext "<fulltext_md_path>"
 ```
+
+其中 `<formal_note_path>` 和 `<fulltext_md_path>` 从 prepare 的输出中获取。
 
 如果输出不是 `OK`，说明有缺失的 section headings 或 figure embeds，需要修复后再报完成。
 
 ### 错误处理
 
-- 如果 `fulltext.md` 不存在或为空：立即报错，说明"OCR 文件不存在：{{FULLTEXT_MD}}"，不要静默继续
-- 如果 `figure-map` 报错：把完整错误信息报告给主 agent
-- 如果 `ensure-scaffold` 报错：把完整错误信息报告给主 agent
-- 如果 `validate-note` 失败：列出缺失项目并修复。**注意**：`validate-note` 现在会检查 callout 间距问题——如果多个 `> [!warning]` / `> [!question]` / `> [!note]-` 之间缺少空行，会报告 spacing 错误。修复方法：在相邻 callout 之间插入空行。
+- 如果 `prepare` 返回 `[ERROR]`：立即停止，将完整错误信息报告给主 agent
+- 如果 `validate-note` 失败：列出缺失项目并修复。**注意**：`validate-note` 会检查 callout 间距问题——如果多个 `> [!warning]` / `> [!question]` / `> [!note]-` 之间缺少空行，会报告 spacing 错误。修复方法：在相邻 callout 之间插入空行。
 
 ## 交付要求
 
-1. 骨架创建/更新成功后，必须报告：写入行数、figure 数量、包含的 section 列表
+1. prepare 成功后，报告：formal note 路径、figure 数量、table 数量
 2. 所有内容填写完毕后，运行 validate-note 并报告结果
-3. 如有任何异常（包括 figure 解析失败、路径找不到等），必须报告完整错误信息，不要静默跳过
-4. 只写回 `{{FORMAL_NOTE}}`，不要写其他文件
+3. 如有任何异常，必须报告完整错误信息，不要静默跳过
+4. 只写回 formal note，不要写其他文件
 
 ## 参考：ld_deep.py 命令速查
 
 ```bash
-# 生成 caption-driven figure map
-python {{SCRIPT}} figure-map "{{FULLTEXT_MD}}" --key {{ZOTERO_KEY}} --out "D:\L\Med\Research\99_System\LiteraturePipeline\ocr\{{ZOTERO_KEY}}\figure-map.json"
+# 一键前置准备（唯一需要 Agent 运行的机械化命令）
+python {{SCRIPT}} prepare {{ZOTERO_KEY}} --vault "{{VAULT}}" --format text
 
-# 创建/更新骨架（指定 image_id）
-python {{SCRIPT}} ensure-scaffold "{{FORMAL_NOTE}}" --fulltext {{FULLTEXT_MD}} --figures "<id1>,<id2>"
+# 验证骨架完整性（完成所有 Pass 后运行）
+python {{SCRIPT}} validate-note "<note_path>" --fulltext "<fulltext_path>"
 
-# 验证骨架完整性
-python {{SCRIPT}} validate-note "{{FORMAL_NOTE}}" --fulltext {{FULLTEXT_MD}} --figures "<id1>,<id2>"
+# 列出待精读队列（信息用）
+python {{SCRIPT}} queue --vault "{{VAULT}}" --format table
 ```
