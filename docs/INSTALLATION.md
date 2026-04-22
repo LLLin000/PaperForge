@@ -115,9 +115,6 @@ Copy the following files from the repository to your vault:
 # Copy scripts
 cp -r scripts/* "{vault_path}/99_System/PaperForge/worker/scripts/"
 
-# Copy templates
-cp -r templates/* "{vault_path}/99_System/Template/"
-
 # Copy AGENTS.md
 cp AGENTS.md "{vault_path}/AGENTS.md"
 ```

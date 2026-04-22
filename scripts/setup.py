@@ -116,8 +116,7 @@ def configure_vault_paths(vault_path: Path) -> dict:
     
     # Build derived paths
     paths["pipeline_path"] = f"{paths['system_dir']}/PaperForge"
-    paths["template_path"] = f"{paths['system_dir']}/Template"
-    paths["literature_path"] = f"{paths['resources_dir']}/{paths['literature_dir']}"
+        paths["literature_path"] = f"{paths['resources_dir']}/{paths['literature_dir']}"
     
     return paths
     
@@ -257,9 +256,6 @@ def create_directory_structure(vault_path: Path, paths: dict) -> None:
         f"{paths['pipeline_path']}/indexes",
         f"{paths['pipeline_path']}/exports",
         
-        # Template directories
-        f"{paths['template_path']}",
-        
         # Zotero junction point
         f"{paths['system_dir']}/Zotero",
         
@@ -293,7 +289,7 @@ def create_env_file(vault_path: Path, config: dict, paths: dict) -> None:
         "# Path Configuration",
         f"PAPERFORGE_SYSTEM_DIR={paths['system_dir']}",
         f"PAPERFORGE_PIPELINE_PATH={paths['pipeline_path']}",
-        f"PAPERFORGE_TEMPLATE_PATH={paths['template_path']}",
+        f"PAPERFORGE_RESOURCES_PATH={paths['literature_path']}",
         f"PAPERFORGE_VAULT_PATH={vault_path}",
     ]
     
@@ -412,8 +408,6 @@ Zotero 添加文献
 │   │   │       └── figure-map.json             ← 图表索引（自动创建）
 │   │   └── worker/scripts/
 │   │       └── literature_pipeline.py          ← 核心脚本
-│   ├── Template/
-│   │   └── 科研读图指南.md                     ← 图表阅读参考
 │   └── Zotero/                                 ← Junction/Symlink 到 Zotero 数据目录
 │
 ├── {agent_config['skill_dir']}/                ← {agent_config['name']} Skill 目录
@@ -830,26 +824,6 @@ def deploy_workflow_scripts(vault_path: Path, agent_key: str, agent_config: dict
                     print_error(f"Failed to deploy chart guide {chart_file.name}: {e}")
                     fail_count += 1
             print_success(f"Deployed {len(chart_files)} chart reading guides")
-    
-    # Deploy template files
-    template_files = [
-        ("templates/科研读图指南.md",
-         f"{paths['template_path']}/科研读图指南.md"),
-    ]
-    
-    for src_rel, dst_rel in template_files:
-        src_path = repo_root / src_rel
-        dst_path = vault_path / dst_rel
-        
-        if src_path.exists():
-            if safe_copy(src_path, dst_path):
-                print_success(f"Deployed template: {src_rel}")
-                success_count += 1
-            else:
-                fail_count += 1
-        else:
-            print_warning(f"Template not found (skipping): {src_rel}")
-            fail_count += 1
     
     # Deploy agent commands
     command_src = repo_root / "command"

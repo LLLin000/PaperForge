@@ -48,7 +48,6 @@ python setup.py
 
 - [安装指南](docs/INSTALLATION.md)
 - [使用指南](docs/USAGE.md)
-- [读图指南](99_System/Template/科研读图指南.md)
 
 ## License
 

@@ -58,7 +58,7 @@ PROTECTED_PATHS = {
 }
 
 # 可更新路径（代码文件）
-UPDATEABLE_PATHS = ["skills", "pipeline", "templates", "command", "scripts"]
+UPDATEABLE_PATHS = ["skills", "pipeline", "command", "scripts"]
 
 
 # =============================================================================

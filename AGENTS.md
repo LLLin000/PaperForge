@@ -92,8 +92,6 @@ Zotero 添加文献
 │   │   │       └── figure-map.json    ← 图表索引（自动创建）
 │   │   └── worker/scripts/
 │   │       └── literature_pipeline.py ← 核心脚本
-│   ├── Template/
-│   │   └── 科研读图指南.md            ← 图表阅读参考
 │   └── Zotero/                        ← Junction/Symlink 到 Zotero 数据目录
 │
 ├── .opencode/                         ← OpenCode Agent 配置（自动创建）

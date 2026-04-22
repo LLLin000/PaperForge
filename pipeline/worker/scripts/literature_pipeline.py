@@ -2391,7 +2391,7 @@ PROTECTED_PATHS = {
     "99_System/PaperForge/candidates",
     ".env", "AGENTS.md",
 }
-UPDATEABLE_PATHS = ["skills", "pipeline", "templates", "command", "scripts"]
+UPDATEABLE_PATHS = ["skills", "pipeline", "command", "scripts"]
 
 
 def _color(text: str, c: str = "") -> str:

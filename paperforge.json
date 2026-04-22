@@ -21,7 +21,6 @@
   "updateable_paths": [
     "skills/",
     "pipeline/",
-    "templates/",
     "command/",
     "scripts/"
   ],

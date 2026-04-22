@@ -985,7 +985,6 @@ python pipeline/worker/scripts/literature_pipeline.py --vault . <command>
 ### 详细文档
 
 - 安装后指南：`AGENTS.md`
-- 图表阅读指南：`99_System/Template/科研读图指南.md`
 - GitHub: https://github.com/LLLin000/PaperForge
         """)
         yield Horizontal(

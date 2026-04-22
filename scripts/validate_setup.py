@@ -125,9 +125,7 @@ def validate_ld_deep(vault_path: str) -> list[tuple[bool, str]]:
     results.append((ok, msg))
     
     # Check chart reading guides
-    chart_guide_dir = vault_dir / "99_System" / "Template" / "读图指南"
-    ok, msg = check_path("Chart reading guides directory", chart_guide_dir, "dir")
-    results.append((ok, msg))
+    
     
     if ok:
         # Count guide files
