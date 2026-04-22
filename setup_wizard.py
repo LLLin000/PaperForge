@@ -304,7 +304,10 @@ class EnvChecker:
         for jf in json_files:
             try:
                 data = json.loads(jf.read_text(encoding="utf-8"))
-                if isinstance(data, list) and len(data) > 0:
+                # Better BibTeX JSON 是 dict 格式（含 items），也兼容 list 格式
+                if isinstance(data, dict) and data.get("items"):
+                    valid.append(jf.name)
+                elif isinstance(data, list) and len(data) > 0:
                     valid.append(jf.name)
             except Exception:
                 pass
