@@ -787,11 +787,20 @@ class DeployStep(StepScreen):
 向导将自动完成以下操作：
 1. **复制脚本** — 将 pipeline worker 脚本部署到你的 Vault
 2. **创建 .env** — 配置文件存放 API Key（PaddleOCR 等）
-3. **创建 AGENTS.md** — 生成针对你 Vault 路径的安装后指南
+3. **创建 paperforge.json** — 版本和路径配置
 4. **安装命令** — 为 Agent 添加快捷命令
 
 这些操作不会覆盖你的数据文件。
         """)
+        from textual.widgets import Input
+        yield Static("PaddleOCR API Key:", classes="step-title")
+        yield Input(placeholder="粘贴你的 PaddleOCR API Key", id="input-api-key")
+        yield Static("PaddleOCR API URL:", classes="step-title")
+        yield Input(
+            value="https://api.paddleocr.com/ocr",
+            placeholder="https://api.paddleocr.com/ocr",
+            id="input-api-url",
+        )
         yield Horizontal(
             Button("🚀 一键部署", id="btn-deploy", variant="primary"),
             id="btn-row",
@@ -881,16 +890,24 @@ class DeployStep(StepScreen):
             for f in chart_src.glob("*.md"):
                 shutil.copy2(f, chart_dst / f.name)
         
-        # 4. 创建 .env
+        # 4. 创建 .env（使用用户输入的 API Key）
+        from textual.widgets import Input
+        api_key = self.query_one("#input-api-key", Input).value.strip()
+        api_url = self.query_one("#input-api-url", Input).value.strip() or "https://api.paddleocr.com/ocr"
+        
+        if not api_key:
+            self.set_status("请填写 PaddleOCR API Key", False)
+            return False
+        
         env_path = vault / ".env"
-        if not env_path.exists():
-            env_path.write_text("""# PaperForge 配置文件
-# 请填入你的 PaddleOCR API Key
-PADDLEOCR_API_KEY=your_api_key_here
+        env_content = f"""# PaperForge 配置文件
+# PaddleOCR API Key（从 https://paddleocr.baidu.com 获取）
+PADDLEOCR_API_KEY={api_key}
 
-# PaddleOCR API 地址（通常不需要修改）
-PADDLEOCR_API_URL=https://api.paddleocr.com/ocr
-""", encoding="utf-8")
+# PaddleOCR API 地址
+PADDLEOCR_API_URL={api_url}
+"""
+        env_path.write_text(env_content, encoding="utf-8")
         
         # 5. 创建 paperforge.json（包含用户自定义路径）
         pf_json = vault / "paperforge.json"
