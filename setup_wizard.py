@@ -590,30 +590,51 @@ class ZoteroStep(StepScreen):
 
     def compose(self) -> ComposeResult:
         yield from super().compose()
-        system_dir = getattr(self.app, 'vault_config', {}).get('system_dir', '99_System')
-        yield Markdown(f"""
+        # 自动检测 Zotero 数据目录
+        detected = self._detect_zotero_data()
+        default_value = str(detected) if detected else ""
+        
+        yield Markdown("""
 **Zotero 数据目录**存放了你的文献数据库和 PDF 附件。
 
 向导将创建目录链接，让 PaperForge 能读取你的 PDF：
 ```
-{system_dir}/Zotero
-    ↓ junction
-你的 Zotero 数据目录/
-    ├── zotero.sqlite     ← 数据库
-    └── storage/          ← PDF 附件
+你的 Vault/
+    └── [系统目录]/
+        └── Zotero/     ← 链接
+            ↓ junction
+            你的 Zotero 数据目录/
+                ├── zotero.sqlite
+                └── storage/
 ```
 
 **请填写你的 Zotero 数据目录路径：**
-        （通常是 `C:\\Users\\<用户名>\\Zotero` 或 `~/Zotero`）
+（通常是 `C:/Users/<用户名>/Zotero` 或 `~/Zotero`）
         """)
         from textual.widgets import Input
         yield Static("Zotero 数据目录:", classes="step-title")
-        yield Input(placeholder="C:\\Users\\YourName\\Zotero", id="input-zotero-data")
+        yield Input(
+            value=default_value,
+            placeholder="C:\\Users\\YourName\\Zotero",
+            id="input-zotero-data",
+        )
         yield Horizontal(
             Button("🔗 创建目录链接", id="btn-link-zotero", variant="primary"),
             Button("⬇ 下载 Zotero", id="btn-dl-zotero", variant="default"),
             id="btn-row",
         )
+
+    def _detect_zotero_data(self) -> Optional[Path]:
+        """Auto-detect Zotero data directory."""
+        home = Path.home()
+        candidates = [
+            home / "Zotero",
+            home / "AppData" / "Roaming" / "Zotero" / "Zotero",
+        ]
+        for c in candidates:
+            if c.exists() and (c / "zotero.sqlite").exists():
+                return c
+        return None
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "btn-link-zotero":
@@ -625,10 +646,10 @@ class ZoteroStep(StepScreen):
 
             zotero_data = Path(path_str)
             if not zotero_data.exists():
-                self.set_status(f"路径不存在: {zotero_data}", False)
+                self.set_status("路径不存在，请检查路径是否正确", False)
                 return
             if not (zotero_data / "zotero.sqlite").exists():
-                self.set_status(f"未找到 zotero.sqlite，请确认这是 Zotero 数据目录", False)
+                self.set_status("未找到 zotero.sqlite，请确认这是 Zotero 数据目录", False)
                 return
 
             # 创建 junction
@@ -655,7 +676,10 @@ class ZoteroStep(StepScreen):
                     )
                 else:
                     junction_path.symlink_to(zotero_data, target_is_directory=True)
-                self.set_status(f"链接已创建: {junction_path} -> {zotero_data}", True)
+                # 使用相对路径显示
+                junction_rel = junction_path.relative_to(vault)
+                zotero_rel = zotero_data.relative_to(Path.home()) if str(zotero_data).startswith(str(Path.home())) else zotero_data.name
+                self.set_status(f"链接已创建: [{junction_rel}] -> [{zotero_rel}]", True)
                 self.app.post_message(StepPassed(self.step_idx))
             except Exception as e:
                 self.set_status(f"创建链接失败: {e}", False)
@@ -704,16 +728,14 @@ class JsonStep(StepScreen):
 
     def compose(self) -> ComposeResult:
         yield from super().compose()
-        vault = self.checker.vault
         system_dir = getattr(self.app, 'vault_config', {}).get('system_dir', '99_System')
-        exports_dir = vault / system_dir / "PaperForge" / "exports"
         yield Markdown(f"""
 **Better BibTeX 自动导出**是 PaperForge 的数据来源。
 
 **配置步骤：**
 1. Zotero → 文件 → 导出库...
 2. 格式选择 **Better BibLaTeX**
-3. 保存到：`{exports_dir}`
+3. 保存到：`{system_dir}/PaperForge/exports/`
 4. 勾选 **Keep updated**（自动保持更新）
 
 📁 **子分类与 Base 管理**
