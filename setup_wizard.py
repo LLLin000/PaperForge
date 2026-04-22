@@ -481,30 +481,38 @@ class VaultStep(StepScreen):
 
     def compose(self) -> ComposeResult:
         yield from super().compose()
-        vault_path = self.checker.vault.resolve()
-        yield Markdown(f"""
-PaperForge 的目录结构可以自定义。你可以保留默认名称，也可以修改为符合你 Vault 风格的名称。
+        yield Markdown("""
+PaperForge 需要知道你的 **Obsidian Vault 位置**，以及你想要的目录结构。
 
-当前 Vault 路径：`{vault_path}`
+你可以保留默认名称，也可以自定义。
+        """)
+        from textual.widgets import Input
+        yield Static("Obsidian Vault 路径 (绝对路径):", classes="step-title")
+        yield Input(placeholder="D:\\Documents\\MyVault", id="input-vault-path")
+        yield Static("", id="vault-error", classes="status-bar")
+        yield Markdown("""
+---
 
-**默认结构：**
+**默认目录结构：**
 ```
-{vault_path.name}/
-├── 03_Resources/          ← 文献笔记和资源
-│   └── LiteratureControl/   ← 状态跟踪
-└── 99_System/             ← 系统文件
-    └── PaperForge/          ← 导出和 OCR
+Obsidian Vault/
+├── 资源文件夹/               ← 文献笔记和资源
+│   ├── 文献子文件夹/           ← 存放正式文献卡片
+│   └── 文献索引/               ← 状态跟踪
+└── 系统文件夹/               ← 系统文件
+    └── PaperForge/             ← 导出和 OCR
 ```
 
 修改下方名称（留空使用默认值）：
         """)
-        from textual.widgets import Input
         yield Static("系统文件夹名称:", classes="step-title")
         yield Input(value="99_System", id="input-system-dir")
         yield Static("资源文件夹名称:", classes="step-title")
         yield Input(value="03_Resources", id="input-resources-dir")
         yield Static("文献子文件夹名称:", classes="step-title")
         yield Input(value="Literature", id="input-literature-dir")
+        yield Static("文献索引文件夹名称:", classes="step-title")
+        yield Input(value="LiteratureControl", id="input-control-dir")
         yield Horizontal(
             Button("✓ 确认并创建目录", id="btn-setup-vault", variant="primary"),
             id="btn-row",
@@ -513,36 +521,67 @@ PaperForge 的目录结构可以自定义。你可以保留默认名称，也可
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "btn-setup-vault":
             from textual.widgets import Input
+
+            # 获取 Vault 路径
+            vault_input = self.query_one("#input-vault-path", Input).value.strip()
+            if not vault_input:
+                self.query_one("#vault-error", Static).update("[red]请填写 Obsidian Vault 的绝对路径[/]")
+                return
+
+            vault_path = Path(vault_input)
+            if not vault_path.exists():
+                self.query_one("#vault-error", Static).update(f"[red]该目录不存在: {vault_path}[/]")
+                return
+
+            # 更新 app 的 vault 路径
+            self.app.vault = vault_path
+            self.checker.vault = vault_path
+
+            # 获取目录名称
             system_dir = self.query_one("#input-system-dir", Input).value.strip() or "99_System"
             resources_dir = self.query_one("#input-resources-dir", Input).value.strip() or "03_Resources"
             literature_dir = self.query_one("#input-literature-dir", Input).value.strip() or "Literature"
+            control_dir = self.query_one("#input-control-dir", Input).value.strip() or "LiteratureControl"
+
+            # 解析路径（支持名称、相对路径、绝对路径）
+            def resolve_path(base: Path, path_str: str) -> Path:
+                p = Path(path_str)
+                if p.is_absolute():
+                    return p
+                else:
+                    return base / p
+
+            system_path = resolve_path(vault_path, system_dir)
+            resources_path = resolve_path(vault_path, resources_dir)
 
             # 保存配置
             self.app.vault_config = {
+                "vault_path": str(vault_path),
                 "system_dir": system_dir,
                 "resources_dir": resources_dir,
                 "literature_dir": literature_dir,
-                "paperforge_path": f"{system_dir}/PaperForge",
-                "literature_path": f"{resources_dir}/{literature_dir}",
+                "control_dir": control_dir,
+                "paperforge_path": str(system_path / "PaperForge"),
+                "literature_path": str(resources_path / literature_dir),
             }
 
-            # 创建目录（使用 PaperForge 作为统一子目录）
-            vault = self.checker.vault
+            # 创建目录
             dirs_to_create = [
-                vault / resources_dir / "LiteratureControl" / "library-records",
-                vault / system_dir / "PaperForge" / "exports",
-                vault / system_dir / "PaperForge" / "ocr",
+                resources_path / control_dir / "library-records",
+                system_path / "PaperForge" / "exports",
+                system_path / "PaperForge" / "ocr",
             ]
 
             created = []
             for d in dirs_to_create:
                 d.mkdir(parents=True, exist_ok=True)
-                created.append(str(d.relative_to(vault)))
+                created.append(str(d.relative_to(vault_path)))
 
-            # 同步更新 checker 的 system_dir
+            # 同步更新 checker
             self.checker.system_dir = system_dir
 
-            self.set_status(f"已创建 {len(created)} 个目录: {', '.join(created)}", True)
+            self.query_one("#vault-error", Static).update("")
+            self.set_status(f"已创建 {len(created)} 个目录", True)
             self.app.post_message(StepPassed(self.step_idx))
 
 
@@ -551,15 +590,13 @@ class ZoteroStep(StepScreen):
 
     def compose(self) -> ComposeResult:
         yield from super().compose()
-        vault = self.checker.vault
         system_dir = getattr(self.app, 'vault_config', {}).get('system_dir', '99_System')
-        junction_target = vault / system_dir / "Zotero"
         yield Markdown(f"""
 **Zotero 数据目录**存放了你的文献数据库和 PDF 附件。
 
 向导将创建目录链接，让 PaperForge 能读取你的 PDF：
 ```
-{junction_target}
+{system_dir}/Zotero
     ↓ junction
 你的 Zotero 数据目录/
     ├── zotero.sqlite     ← 数据库
@@ -567,7 +604,7 @@ class ZoteroStep(StepScreen):
 ```
 
 **请填写你的 Zotero 数据目录路径：**
-（通常是 `C:\\Users\\<用户名>\\Zotero` 或 `~/Zotero`）
+        （通常是 `C:\\Users\\<用户名>\\Zotero` 或 `~/Zotero`）
         """)
         from textual.widgets import Input
         yield Static("Zotero 数据目录:", classes="step-title")
