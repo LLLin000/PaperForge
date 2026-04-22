@@ -799,6 +799,29 @@ class DeployStep(StepScreen):
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "btn-deploy":
+            # 安全检查：前面步骤必须全部通过
+            step_states = self.app.step_states
+            required_steps = [
+                (1, "选择 Agent 平台"),
+                (2, "Python 环境检查"),
+                (3, "Vault 目录配置"),
+                (4, "Zotero 数据目录链接"),
+                (5, "Better BibTeX 插件"),
+                (6, "JSON 导出配置"),
+            ]
+            incomplete = []
+            for idx, name in required_steps:
+                if not step_states[idx]:
+                    incomplete.append(f"步骤 {idx}: {name}")
+            
+            if incomplete:
+                self.set_status(
+                    f"[无法部署] 以下步骤未完成：\n" + "\n".join(incomplete) + 
+                    "\n请先返回并完成上述步骤",
+                    False
+                )
+                return
+            
             self.set_status("正在部署...", None)
             success = self._deploy()
             if success:
