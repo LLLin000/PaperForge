@@ -732,9 +732,11 @@ class JsonStep(StepScreen):
 
 **配置步骤：**
 1. Zotero → 文件 → 导出库...
-2. 格式选择 **Better BibLaTeX**
+2. 格式选择 **Better BibTeX**
 3. 保存到：`{system_dir}/PaperForge/exports/`
-4. 勾选 **Keep updated**（自动保持更新）
+4. **[必须] 勾选 "保持更新"** — 这是自动同步的关键！
+
+> ⚠️ **重要**：如果不勾选"保持更新"，Zotero 新增文献后 PaperForge 不会自动发现，需要每次手动重新导出。
 
 📁 **子分类与 Base 管理**
 
