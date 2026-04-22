@@ -940,7 +940,7 @@ class SetupWizardApp(App):
     .progress-area { height: auto; padding: 0 1; }
     .content-area { height: 1fr; border: solid blue; padding: 1; overflow-y: auto; }
     
-    .logo { text-align: center; color: bright_cyan; text-style: bold; height: auto; }
+    .logo { text-align: center; color: ansi_bright_cyan; text-style: bold; height: auto; }
     .step-title { text-style: bold; color: yellow; }
     .status-bar { height: auto; padding: 1; }
     
