@@ -368,7 +368,9 @@ class StepScreen(Static):
 class WelcomeStep(StepScreen):
     """Step 0: 欢迎页"""
 
-    LOGO = r"""
+    def compose(self) -> ComposeResult:
+        yield from super().compose()
+        yield Static("""
     ______  ___  ______ _________________ ___________ _____  _____ 
     | ___ \/ _ \ | ___ \  ___| ___ \  ___|  _  | ___ \  __ \|  ___|
     | |_/ / /_\ \| |_/ / |__ | |_/ / |_  | | | | |_/ / |  \/| |__  
@@ -377,20 +379,18 @@ class WelcomeStep(StepScreen):
     \_|   \_| |_/\_|   \____/\_| \_\_|    \___/\_| \_|\____/\____/ 
                                                                    
               [+]  Forge Your Knowledge Into Power  [+]             
-    """
-
-    def compose(self) -> ComposeResult:
-        yield Static(self.LOGO, classes="logo")
+        """, classes="logo")
         yield Markdown("""
 **PaperForge Lite** 是一个连接 Zotero 与 Obsidian 的文献工作流工具。
 
 安装向导将引导你完成以下配置：
 
 1. 确认 Python 版本 (>= 3.8)
-2. 检查 Vault 目录结构
-3. 确认 Zotero 已安装
-4. 确认 Better BibTeX 插件已安装
-5. 确认 JSON 自动导出已配置
+2. 配置 Vault 目录结构
+3. 创建 Zotero 数据链接
+4. 安装 Better BibTeX 插件
+5. 配置 JSON 自动导出
+6. 部署工作流文件
 
 点击 **开始安装** 继续。
         """)
@@ -875,7 +875,19 @@ class DeployStep(StepScreen):
         
         skill_dir = agent_config.get('skill_dir', '.opencode/skills')
         
-        # 2. 创建目录（使用用户自定义路径）
+        # 2. 确定安装包根目录（wizard 所在目录的父目录）
+        wizard_dir = Path(__file__).parent.resolve()
+        # 如果 wizard 在 github-release/ 下，repo_root 就是 github-release/
+        # 如果 wizard 在 scripts/ 下，repo_root 是父目录
+        if (wizard_dir / "pipeline").exists():
+            repo_root = wizard_dir
+        elif (wizard_dir.parent / "pipeline").exists():
+            repo_root = wizard_dir.parent
+        else:
+            self.set_status(f"错误：找不到安装包文件。请在 PaperForge 解压目录下运行此向导。当前: {wizard_dir}", False)
+            return False
+        
+        # 3. 创建目录（使用用户自定义路径）
         pf_path = vault / system_dir / "PaperForge"
         dirs = [
             pf_path / "exports",
@@ -888,21 +900,26 @@ class DeployStep(StepScreen):
         for d in dirs:
             d.mkdir(parents=True, exist_ok=True)
         
-        # 3. 复制脚本（到 PaperForge 目录下）
+        # 4. 复制脚本（从安装包到 Vault）
         import shutil
-        repo_root = vault  # 假设从 github-release 运行
         
         # Copy pipeline worker to PaperForge/worker/scripts/
         worker_src = repo_root / "pipeline/worker/scripts/literature_pipeline.py"
         worker_dst = pf_path / "worker/scripts/literature_pipeline.py"
         if worker_src.exists():
             shutil.copy2(worker_src, worker_dst)
+        else:
+            self.set_status(f"错误：找不到 worker 脚本: {worker_src}", False)
+            return False
         
         # Copy ld_deep.py
         ld_src = repo_root / "skills/literature-qa/scripts/ld_deep.py"
         ld_dst = vault / skill_dir / "literature-qa/scripts/ld_deep.py"
         if ld_src.exists():
             shutil.copy2(ld_src, ld_dst)
+        else:
+            self.set_status(f"错误：找不到 ld_deep.py: {ld_src}", False)
+            return False
         
         # Copy chart-reading guides
         chart_src = repo_root / "skills/literature-qa/chart-reading"
@@ -911,7 +928,7 @@ class DeployStep(StepScreen):
             for f in chart_src.glob("*.md"):
                 shutil.copy2(f, chart_dst / f.name)
         
-        # 4. 创建 .env（放到 PaperForge 目录下）
+        # 5. 创建 .env（放到 PaperForge 目录下）
         from textual.widgets import Input
         api_key = self.query_one("#input-api-key", Input).value.strip()
         api_url = self.query_one("#input-api-url", Input).value.strip() or "https://api.paddleocr.com/ocr"
@@ -934,7 +951,7 @@ PADDLEOCR_MODEL=PaddleOCR-VL-1.5
 """
         env_path.write_text(env_content, encoding="utf-8")
         
-        # 5. 创建 paperforge.json（包含用户自定义路径）
+        # 6. 创建 paperforge.json（包含用户自定义路径）
         pf_json = vault / "paperforge.json"
         if not pf_json.exists():
             import json
@@ -947,7 +964,7 @@ PADDLEOCR_MODEL=PaddleOCR-VL-1.5
                 "paperforge_path": f"{system_dir}/PaperForge",
             }, indent=2, ensure_ascii=False), encoding="utf-8")
         
-        # 6. 验证文件完整性
+        # 7. 验证文件完整性
         self.set_status("验证文件完整性...", None)
         checks = {
             "Worker 脚本": worker_dst.exists(),
@@ -964,7 +981,7 @@ PADDLEOCR_MODEL=PaddleOCR-VL-1.5
         
         self.set_status("文件验证通过，初始化系统...", True)
         
-        # 7. 运行初始化命令（模拟测试）
+        # 8. 运行初始化命令（模拟测试）
         try:
             # 测试 selection-sync（会报错因为没 JSON，但测试脚本能否运行）
             result = subprocess.run(
@@ -1260,16 +1277,25 @@ class SetupWizardApp(App):
 # Entry
 # =============================================================================
 
+def _find_vault() -> Path | None:
+    """Find vault by looking for paperforge.json in current or parent dirs."""
+    current = Path(".").resolve()
+    for path in [current, *current.parents]:
+        if (path / "paperforge.json").exists():
+            return path
+    return None
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="PaperForge Lite 安装向导")
-    parser.add_argument("--vault", type=Path, default=Path("."), help="Vault 路径")
+    parser.add_argument("--vault", type=Path, default=None, help="Vault 路径（可选，默认当前目录）")
     args = parser.parse_args()
 
-    vault = args.vault.resolve()
-    if not (vault / "paperforge.json").exists():
-        print(f"[ERR] 未找到 paperforge.json: {vault}")
-        print("请先在 Vault 根目录运行 setup.py 完成初始安装")
-        return 1
+    if args.vault:
+        vault = args.vault.resolve()
+    else:
+        # 默认使用当前目录
+        vault = Path(".").resolve()
 
     app = SetupWizardApp(vault)
     app.run()
