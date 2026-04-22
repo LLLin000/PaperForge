@@ -677,17 +677,23 @@ class ZoteroStep(StepScreen):
                 )
                 return
             
-            # 安全检查：zotero_data 不能是 Vault 的子目录
+            # 检查：Zotero 数据目录是否在 Vault 内部
+            is_inside_vault = False
             try:
                 zotero_data.relative_to(vault)
-                self.set_status(
-                    "错误：Zotero 数据目录不能放在 Vault 内部。\n"
-                    "请使用 Zotero 默认的数据目录路径",
-                    False
-                )
-                return
+                is_inside_vault = True
             except ValueError:
-                pass  # 不是子目录，正常
+                pass
+            
+            if is_inside_vault:
+                # 在 Vault 内部，跳过创建 Junction，直接通过
+                self.set_status(
+                    f"检测到 Zotero 数据目录在 Vault 内部，无需创建链接\n"
+                    f"路径: {zotero_data}",
+                    True
+                )
+                self.app.post_message(StepPassed(self.step_idx))
+                return
 
             # Remove existing
             if junction_path.exists() or junction_path.is_symlink():
