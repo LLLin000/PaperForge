@@ -55,6 +55,7 @@ class EnvChecker:
 
     def __init__(self, vault: Path):
         self.vault = vault
+        self.manual_zotero_path: Optional[Path] = None
         self.results: dict[str, CheckResult] = {
             "python": CheckResult("Python 版本"),
             "vault": CheckResult("Vault 结构"),
@@ -93,9 +94,14 @@ class EnvChecker:
             r.action_required = True
         return r
 
-    def _find_zotero(self) -> Optional[Path]:
+    def _find_zotero(self, manual_path: Optional[Path] = None) -> Optional[Path]:
+        # 如果提供了手动路径，优先使用
+        if manual_path and manual_path.exists():
+            return manual_path
+        
         system = platform.system()
         if system == "Windows":
+            # ...existing detection code...
             # 1. 注册表检测 (HKEY_LOCAL_MACHINE)
             try:
                 with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Zotero") as key:
@@ -409,15 +415,20 @@ class ZoteroStep(StepScreen):
         yield Markdown("""
 **Zotero** 是必需的文献管理软件。
 
-如果你尚未安装，请点击 **下载 Zotero** 前往官网下载。
-
-安装完成后，点击 **检测** 确认。
+如果自动检测不到，你可以手动输入 Zotero 安装路径（如 `C:\\Program Files\\Zotero\\zotero.exe`）。
         """)
         yield Horizontal(
             Button("🔍 自动检测", id="btn-check-zotero", variant="primary"),
             Button("⬇ 下载 Zotero", id="btn-dl-zotero", variant="default"),
             Button("📷 查看安装截图", id="btn-img-zotero", variant="default"),
             id="btn-row",
+        )
+        yield Static("或手动指定路径：", classes="step-title")
+        from textual.widgets import Input
+        yield Horizontal(
+            Input(placeholder="C:\\Program Files\\Zotero\\zotero.exe", id="input-zotero-path"),
+            Button("✓ 使用此路径", id="btn-manual-zotero", variant="primary"),
+            id="manual-row",
         )
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
@@ -430,6 +441,17 @@ class ZoteroStep(StepScreen):
             webbrowser.open("https://www.zotero.org/download/")
         elif event.button.id == "btn-img-zotero":
             self.app.open_screenshot("zotero-install.png")
+        elif event.button.id == "btn-manual-zotero":
+            from textual.widgets import Input
+            input_widget = self.query_one("#input-zotero-path", Input)
+            path_str = input_widget.value.strip()
+            if path_str:
+                manual_path = Path(path_str)
+                self.checker.manual_zotero_path = manual_path
+                result = self.checker.check_zotero()
+                self.set_status(result.detail, result.passed)
+                if result.passed:
+                    self.app.post_message(StepPassed(self.step_idx))
 
 
 class BBTStep(StepScreen):
@@ -566,30 +588,28 @@ python pipeline/worker/scripts/literature_pipeline.py --vault . ocr
 /LD-deep <zotero_key>
 ```
 
-### 命令使用方式
+### 已安装的 Agent 命令
 
-**方式一：直接运行 Python 脚本**
+安装向导已自动将以下命令安装到你的 Agent 中：
+
+**精读命令：**
+| 命令 | 作用 |
+|------|------|
+| `/LD-deep <key>` | 完整三阶段精读 |
+| `/LD-paper <key>` | 快速摘要 |
+
+**Worker 快捷命令：**
+| 命令 | 作用 |
+|------|------|
+| `/lp-selection-sync` | 同步 Zotero 新文献 |
+| `/lp-index-refresh` | 生成正式笔记 |
+| `/lp-ocr` | 运行 PDF OCR |
+| `/lp-status` | 查看工作流状态 |
+
+**Python 脚本命令（备用）：**
 ```bash
 python pipeline/worker/scripts/literature_pipeline.py --vault . <command>
 ```
-
-**方式二：安装到 OpenCode 命令（推荐）**
-将命令目录链接到 OpenCode：
-```bash
-# Windows (PowerShell, 管理员)
-New-Item -ItemType Junction -Path "$env:USERPROFILE\\.opencode\\skills\\literature-qa" -Target ".\\skills\\literature-qa"
-
-# macOS/Linux
-ln -s "$(pwd)/skills/literature-qa" ~/.opencode/skills/literature-qa
-```
-安装后可直接使用：
-```
-/LD-deep <zotero_key>
-/LD-paper <zotero_key>
-```
-
-### 常用命令速查
-
 | 命令 | 作用 |
 |------|------|
 | `selection-sync` | 检测新文献 |
@@ -750,14 +770,20 @@ class SetupWizardApp(App):
         progress_text = self.query_one("#progress-text", Static)
         progress_text.update(f"Step {self.current_step} / {len(STEP_TITLES) - 1}: {STEP_TITLES[self.current_step]}")
 
-        # 更新 Tree 高亮
+        # 更新 Tree 高亮 - 区分已完成、跳过、当前、待处理
         tree = self.query_one("#step-tree", Tree)
         for i, node in enumerate(tree.root.children):
-            if i < self.current_step:
+            if self.step_states[i]:
+                # 已完成：绿色勾
                 node.label = f"[green]✓ {i}. {STEP_TITLES[i]}[/]"
             elif i == self.current_step:
+                # 当前：黄色箭头
                 node.label = f"[yellow]▶ {i}. {STEP_TITLES[i]}[/]"
+            elif i < self.current_step and not self.step_states[i]:
+                # 跳过（已访问但未完成）：灰色跳过标记
+                node.label = f"[gray]↷ {i}. {STEP_TITLES[i]}[/]"
             else:
+                # 待处理：灰色圆圈
                 node.label = f"[gray]○ {i}. {STEP_TITLES[i]}[/]"
 
     def action_next_step(self) -> None:
