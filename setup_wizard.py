@@ -138,12 +138,6 @@ class EnvChecker:
             r.detail = f"缺少: {', '.join(missing)}"
             r.action_required = True
         return r
-            r.detail = "所有必要目录已就绪"
-        else:
-            r.passed = False
-            r.detail = f"缺少: {', '.join(missing)}"
-            r.action_required = True
-        return r
 
     def _find_zotero(self, manual_path: Optional[Path] = None) -> Optional[Path]:
         # 如果提供了手动路径，优先使用
