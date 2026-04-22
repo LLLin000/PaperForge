@@ -1,12 +1,16 @@
 # PaperForge Lite 安装与配置指南
 
 > 本文档是 [setup_wizard.py](../setup_wizard.py) 的补充说明。如果 TUI 向导中的文字指引不够直观，请参考本页的详细步骤。
+> 
+> 本文档中的截图保存在 `docs/images/` 目录下，向导中点击"查看安装截图"按钮可直接打开。
 
 ---
 
 ## 第一步：安装 Zotero
 
 Zotero 是免费的文献管理软件，用于收集、组织和引用文献。
+
+**向导截图**：`docs/images/zotero-install.png`
 
 ### 下载安装
 
@@ -23,6 +27,8 @@ Zotero 是免费的文献管理软件，用于收集、组织和引用文献。
 ## 第二步：安装 Better BibTeX 插件
 
 Better BibTeX (BBT) 是 Zotero 的插件，用于生成可供 PaperForge 读取的 JSON 导出。
+
+**向导截图**：`docs/images/bbt-install.png`
 
 ### 下载插件
 
@@ -67,6 +73,8 @@ Zotero
 ## 第三步：配置 Better BibTeX 自动导出
 
 这是最关键的一步。每个导出的 JSON 文件将对应一个 Obsidian Base 视图。
+
+**向导截图**：`docs/images/json-export.png`
 
 ### 理解 JSON 与 Base 的关系
 

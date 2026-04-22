@@ -1,17 +1,12 @@
 #!/usr/bin/env python3
 """
-PaperForge Lite 安装向导 (Textual TUI)
+PaperForge Lite Setup Wizard (Textual Step-by-Step)
+====================================================
+基于 Textual ContentSwitcher + Tree + ProgressBar 的步骤向导。
 
 Usage:
     python setup_wizard.py --vault /path/to/vault
-
-功能：
-    1. 检测前置条件（Zotero, Better BibTeX, JSON导出, Vault结构）
-    2. 逐项检查，通过后自动打勾
-    3. 全部通过解锁操作指南
-    4. 操作指南说明工作流和首次使用步骤
 """
-
 from __future__ import annotations
 
 import json
@@ -19,103 +14,86 @@ import os
 import platform
 import subprocess
 import sys
+import webbrowser
 import winreg
 from pathlib import Path
 from typing import Optional
 
 from textual.app import App, ComposeResult
-from textual.containers import Container, Horizontal, Vertical
+from textual.containers import Container, Grid, Horizontal, Vertical
 from textual.reactive import reactive
+from textual.screen import Screen
 from textual.widgets import (
     Button,
+    ContentSwitcher,
     Footer,
     Header,
     Label,
-    RichLog,
+    Markdown,
+    ProgressBar,
     Static,
+    Tree,
 )
 
 
 # =============================================================================
-# 检测逻辑
+# Detection Logic (unchanged from previous version)
 # =============================================================================
 
-class CheckItem:
-    """单个检查项"""
-    def __init__(self, name: str, description: str):
+class CheckResult:
+    def __init__(self, name: str):
         self.name = name
-        self.description = description
-        self.status = "pending"  # pending, checking, pass, fail
-        self.detail = ""  # 详细说明或错误信息
-
-    @property
-    def icon(self) -> str:
-        return {
-            "pending": "[gray]○[/]",
-            "checking": "[yellow]⟳[/]",
-            "pass": "[green]✓[/]",
-            "fail": "[red]✗[/]",
-        }.get(self.status, "○")
+        self.passed = False
+        self.detail = ""
+        self.action_required = False
 
 
-class Checker:
-    """检测器"""
+class EnvChecker:
+    """环境检测器"""
+
     def __init__(self, vault: Path):
         self.vault = vault
-        self.items: list[CheckItem] = [
-            CheckItem("Python版本", "需要 Python >= 3.8"),
-            CheckItem("Vault目录结构", "必要的文件夹是否存在"),
-            CheckItem("Zotero安装", "Zotero 文献管理软件"),
-            CheckItem("Better BibTeX插件", "Zotero 的 Better BibTeX 插件"),
-            CheckItem("JSON导出文件", "Better BibTeX 自动导出的 JSON"),
-        ]
+        self.results: dict[str, CheckResult] = {
+            "python": CheckResult("Python 版本"),
+            "vault": CheckResult("Vault 结构"),
+            "zotero": CheckResult("Zotero 安装"),
+            "bbt": CheckResult("Better BibTeX"),
+            "json": CheckResult("JSON 导出"),
+        }
 
-    def check_python(self) -> None:
-        item = self.items[0]
-        item.status = "checking"
+    def check_python(self) -> CheckResult:
+        r = self.results["python"]
         v = sys.version_info
         if v >= (3, 8):
-            item.status = "pass"
-            item.detail = f"Python {v.major}.{v.minor}.{v.micro} ✓"
+            r.passed = True
+            r.detail = f"Python {v.major}.{v.minor}.{v.micro}"
         else:
-            item.status = "fail"
-            item.detail = f"当前 Python {v.major}.{v.minor}.{v.micro}，需要 >= 3.8"
+            r.passed = False
+            r.detail = f"Python {v.major}.{v.minor}.{v.micro} (需要 >= 3.8)"
+            r.action_required = True
+        return r
 
-    def check_vault_structure(self) -> None:
-        item = self.items[1]
-        item.status = "checking"
+    def check_vault(self) -> CheckResult:
+        r = self.results["vault"]
         required = [
             "03_Resources/LiteratureControl/library-records",
             "99_System/LiteraturePipeline/exports",
             "99_System/LiteraturePipeline/ocr",
             "99_System/Template",
         ]
-        missing = []
-        for rel in required:
-            if not (self.vault / rel).exists():
-                missing.append(rel)
+        missing = [rel for rel in required if not (self.vault / rel).exists()]
         if not missing:
-            item.status = "pass"
-            item.detail = "所有必要目录已就绪"
+            r.passed = True
+            r.detail = "所有必要目录已就绪"
         else:
-            item.status = "fail"
-            item.detail = f"缺少: {', '.join(missing)}\n请运行 setup.py 创建目录结构"
-
-    def check_zotero(self) -> None:
-        item = self.items[2]
-        item.status = "checking"
-        zotero_path = self._find_zotero()
-        if zotero_path:
-            item.status = "pass"
-            item.detail = f"找到: {zotero_path}"
-        else:
-            item.status = "fail"
-            item.detail = "未找到 Zotero\n请访问 https://www.zotero.org/download/ 下载安装"
+            r.passed = False
+            r.detail = f"缺少: {', '.join(missing)}"
+            r.action_required = True
+        return r
 
     def _find_zotero(self) -> Optional[Path]:
         system = platform.system()
         if system == "Windows":
-            # 检查注册表
             try:
                 with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Zotero") as key:
                     install_dir, _ = winreg.QueryValueEx(key, "InstallDir")
@@ -124,7 +102,6 @@ class Checker:
                         return path
             except (FileNotFoundError, OSError):
                 pass
-            # 检查常见路径
             for p in [
                 Path(os.environ.get("PROGRAMFILES", r"C:\Program Files")) / "Zotero" / "zotero.exe",
                 Path(os.environ.get("LOCALAPPDATA", r"C:\Users\%USERNAME%\AppData\Local")) / "Zotero" / "zotero.exe",
@@ -135,7 +112,7 @@ class Checker:
             p = Path("/Applications/Zotero.app/Contents/MacOS/zotero")
             if p.exists():
                 return p
-        else:  # Linux
+        else:
             for p in [Path.home() / ".local" / "share" / "zotero" / "zotero"]:
                 if p.exists():
                     return p
@@ -147,15 +124,25 @@ class Checker:
                 pass
         return None
 
-    def check_better_bibtex(self) -> None:
-        item = self.items[3]
-        item.status = "checking"
+    def check_zotero(self) -> CheckResult:
+        r = self.results["zotero"]
+        path = self._find_zotero()
+        if path:
+            r.passed = True
+            r.detail = str(path)
+        else:
+            r.passed = False
+            r.detail = "未找到 Zotero"
+            r.action_required = True
+        return r
+
+    def check_bbt(self) -> CheckResult:
+        r = self.results["bbt"]
         system = platform.system()
         bbt_found = False
         bbt_path = None
 
         if system == "Windows":
-            # Zotero profile 目录
             appdata = os.environ.get("APPDATA", "")
             if appdata:
                 profiles = Path(appdata) / "Zotero" / "Zotero" / "Profiles"
@@ -180,7 +167,7 @@ class Checker:
                                 bbt_found = True
                                 bbt_path = ext
                                 break
-        else:  # Linux
+        else:
             profiles = Path.home() / ".zotero" / "zotero" / "Profiles"
             if profiles.exists():
                 for profile in profiles.iterdir():
@@ -193,320 +180,335 @@ class Checker:
                                 break
 
         if bbt_found:
-            item.status = "pass"
-            item.detail = f"已安装: {bbt_path.name if bbt_path else 'Better BibTeX'}"
+            r.passed = True
+            r.detail = bbt_path.name if bbt_path else "Better BibTeX"
         else:
-            item.status = "fail"
-            item.detail = (
-                "未找到 Better BibTeX 插件\n"
-                "安装步骤:\n"
-                "  1. 下载插件: https://retorque.re/zotero-better-bibtex/\n"
-                "  2. Zotero → 工具(Tools) → 插件(Plugins)\n"
-                "  3. 齿轮图标 → Install Plugin From File...\n"
-                "  4. 选择下载的 .xpi 文件 → 重启 Zotero"
-            )
+            r.passed = False
+            r.detail = "未找到 Better BibTeX 插件"
+            r.action_required = True
+        return r
 
-    def check_json_exports(self) -> None:
-        item = self.items[4]
-        item.status = "checking"
+    def check_json(self) -> CheckResult:
+        r = self.results["json"]
         exports_dir = self.vault / "99_System" / "LiteraturePipeline" / "exports"
         if not exports_dir.exists():
-            item.status = "fail"
-            item.detail = (
-                f"导出目录不存在: {exports_dir}\n"
-                "配置步骤:\n"
-                "  1. Zotero → 编辑(Edit) → 首选项(Preferences)\n"
-                "  2. 左侧选择 Better BibTeX\n"
-                "  3. 找到 'Automatic export' 勾选 'On Change'\n"
-                "  4. 文件 → 导出库(Export Library)...\n"
-                "  5. 格式: Better BibLaTeX\n"
-                f"  6. 保存到: {exports_dir}/library.json\n"
-                "  7. 勾选 'Keep updated' → 确定"
-            )
-            return
+            r.passed = False
+            r.detail = f"导出目录不存在: {exports_dir}"
+            r.action_required = True
+            return r
 
         json_files = list(exports_dir.glob("*.json"))
         if not json_files:
-            item.status = "fail"
-            item.detail = (
-                f"未找到 JSON 文件\n"
-                "配置步骤:\n"
-                "  1. Zotero → 文件 → 导出库(Export Library)...\n"
-                "  2. 格式: Better BibLaTeX\n"
-                f"  3. 保存到: {exports_dir}/library.json\n"
-                "  4. 勾选 'Keep updated'\n"
-                "每个 JSON 对应一个 Base 视图"
-            )
-            return
+            r.passed = False
+            r.detail = "未找到 JSON 导出文件"
+            r.action_required = True
+            return r
 
-        # 验证 JSON 格式
-        valid_files = []
+        valid = []
         for jf in json_files:
             try:
                 data = json.loads(jf.read_text(encoding="utf-8"))
                 if isinstance(data, list) and len(data) > 0:
-                    valid_files.append(jf.name)
-            except (json.JSONDecodeError, Exception):
+                    valid.append(jf.name)
+            except Exception:
                 pass
 
-        if valid_files:
-            item.status = "pass"
-            item.detail = f"找到 {len(valid_files)} 个有效的 JSON 导出:\n" + "\n".join(f"  • {f}" for f in valid_files)
+        if valid:
+            r.passed = True
+            r.detail = f"找到 {len(valid)} 个有效 JSON"
         else:
-            item.status = "fail"
-            item.detail = (
-                f"找到 {len(json_files)} 个 JSON 但格式无效\n"
-                "请确认导出格式为 'Better BibLaTeX' 而非 'BibTeX'"
-            )
-
-    def check_all(self) -> None:
-        self.check_python()
-        self.check_vault_structure()
-        self.check_zotero()
-        self.check_better_bibtex()
-        self.check_json_exports()
-
-    @property
-    def all_passed(self) -> bool:
-        return all(item.status == "pass" for item in self.items)
+            r.passed = False
+            r.detail = "JSON 文件格式无效"
+            r.action_required = True
+        return r
 
 
 # =============================================================================
-# Textual 界面
+# Step Screens
 # =============================================================================
 
-class CheckListItem(Static):
-    """单个检查项的 UI 组件"""
-    def __init__(self, item: CheckItem):
-        super().__init__()
-        self.item = item
+STEP_TITLES = [
+    "欢迎使用 PaperForge",
+    "检查 Python 版本",
+    "检查 Vault 结构",
+    "安装 Zotero",
+    "安装 Better BibTeX",
+    "配置 JSON 导出",
+    "安装完成",
+]
+
+STEP_IDS = [f"step-{i}" for i in range(len(STEP_TITLES))]
+
+
+class StepScreen(Static):
+    """单个步骤页面基类"""
+
+    def __init__(self, step_id: str, checker: EnvChecker, **kwargs):
+        super().__init__(**kwargs)
+        self.step_id = step_id
+        self.checker = checker
+        self.step_idx = int(step_id.split("-")[1])
 
     def compose(self) -> ComposeResult:
-        with Horizontal():
-            yield Label(self.item.icon, id=f"icon-{id(self.item)}")
-            with Vertical():
-                yield Label(f"[b]{self.item.name}[/b]", id=f"name-{id(self.item)}")
-                yield Label(self.item.description, classes="description")
-                yield Label(self.item.detail, id=f"detail-{id(self.item)}", classes="detail")
+        yield Static(f"## {STEP_TITLES[self.step_idx]}", classes="step-title")
+        yield Static("", id=f"{self.step_id}-status", classes="status-bar")
 
-    def update_status(self) -> None:
-        icon = self.query_one(f"#icon-{id(self.item)}", Label)
-        icon.update(self.item.icon)
-        detail = self.query_one(f"#detail-{id(self.item)}", Label)
-        detail.update(self.item.detail)
-        detail.classes = f"detail {self.item.status}"
+    def set_status(self, text: str, success: bool | None = None) -> None:
+        status = self.query_one(f"#{self.step_id}-status", Static)
+        if success is True:
+            status.update(f"[green]✓ {text}[/]")
+        elif success is False:
+            status.update(f"[red]✗ {text}[/]")
+        else:
+            status.update(text)
 
 
-class SetupWizard(App):
-    """安装向导主应用"""
-    CSS = """
-    Screen { align: center middle; }
-    .title { text-align: center; content-align: center; padding: 1; }
-    .check-panel { width: 50%; height: 100%; border: solid green; padding: 1; }
-    .guide-panel { width: 50%; height: 100%; border: solid blue; padding: 1; }
-    .check-item { padding: 0 1; margin: 1 0; }
-    .check-item .description { color: gray; text-style: italic; }
-    .check-item .detail { margin-top: 0; }
-    .check-item .detail.pass { color: green; }
-    .check-item .detail.fail { color: red; }
-    .check-item .detail.pending { color: gray; }
-    .locked { color: gray; text-align: center; content-align: center; }
-    .guide-content { color: white; padding: 1; }
-    .step { margin: 1 0; padding: 1; border: solid gray; }
-    .step-header { text-style: bold; color: yellow; }
-    .command { background: black; color: cyan; padding: 0 1; }
-    .info { color: cyan; }
-    .warning { color: yellow; }
-    #log { height: 5; border: solid gray; }
-    """
-
-    BINDINGS = [
-        ("q", "quit", "退出"),
-        ("r", "refresh_checks", "重新检测"),
-    ]
-
-    def __init__(self, vault: Path):
-        super().__init__()
-        self.vault = vault
-        self.checker = Checker(vault)
-        self.check_widgets: list[CheckListItem] = []
+class WelcomeStep(StepScreen):
+    """Step 0: 欢迎页"""
 
     def compose(self) -> ComposeResult:
-        yield Header(show_clock=False)
-        yield Static("[b]PaperForge Lite 安装向导[/b]\n配置检查与首次使用指南", classes="title")
-        
-        with Horizontal():
-            # 左侧：检查清单
-            with Vertical(classes="check-panel"):
-                yield Static("[b]前置检查[/b]", classes="title")
-                
-                for item in self.checker.items:
-                    widget = CheckListItem(item)
-                    self.check_widgets.append(widget)
-                    yield widget
-                
-                yield Button("检测全部", id="check-all", variant="primary")
-                
-            # 右侧：操作指南
-            with Vertical(classes="guide-panel"):
-                yield Static("[b]操作指南[/b]", classes="title")
-                self.guide_container = Vertical(id="guide-content")
-                yield self.guide_container
-                yield Button("📖 打开图文指南", id="open-guide", variant="primary")
-        
-        yield RichLog(id="log", highlight=True)
-        yield Footer()
+        yield from super().compose()
+        yield Markdown("""
+**PaperForge Lite** 是一个连接 Zotero 与 Obsidian 的文献工作流工具。
 
-    def on_mount(self) -> None:
-        self.query_one("#log", RichLog).write("[green]欢迎使用 PaperForge Lite 安装向导[/]")
-        self.query_one("#log", RichLog).write("点击 [b]检测全部[/b] 开始检查前置条件...")
-        self._update_guide()
+安装向导将引导你完成以下配置：
 
-    def _update_guide(self) -> None:
-        """更新操作指南显示"""
-        guide = self.guide_container
-        guide.remove_children()
-        
-        if not self.checker.all_passed:
-            guide.mount(Static(
-                "\n\n[yellow]🔒 操作指南已锁定[/]\n\n"
-                "请先完成左侧所有检查项，\n"
-                "全部通过后将解锁详细操作指南。\n\n"
-                "每个 JSON 导出文件将对应一个 Obsidian Base 视图，\n"
-                "用于管理不同领域的文献。",
-                classes="locked"
-            ))
-            return
-        
-        # 解锁后的详细指南
-        guide_content = """
-## 🎉 恭喜！所有检查通过
+1. 确认 Python 版本 (>= 3.8)
+2. 检查 Vault 目录结构
+3. 确认 Zotero 已安装
+4. 确认 Better BibTeX 插件已安装
+5. 确认 JSON 自动导出已配置
 
-现在你可以开始使用 PaperForge Lite 了。
+点击 **开始安装** 继续。
+        """)
+        yield Button("▶ 开始安装", id="btn-start", variant="primary")
 
-### 📚 核心概念
 
-**Base 与 JSON 的关系：**
-每个 Better BibTeX 导出的 JSON 文件对应一个 **Obsidian Base** 视图。
-- 如果你有 `骨科.json` → 生成 `骨科.base`
-- 如果你有 `运动医学.json` → 生成 `运动医学.base`
+class PythonStep(StepScreen):
+    """Step 1: Python 版本"""
 
-**完整工作流：**
-```
-Zotero 添加文献
-    ↓ Better BibTeX 自动导出 JSON
-exports/*.json
-    ↓ 运行 selection-sync
-library-records/*.md（状态跟踪）
-    ↓ 运行 index-refresh
-Literature/*.md（正式笔记）
-    ↓ 标记 do_ocr + analyze
-运行 ocr → OCR 提取全文
-    ↓ 用户运行 /LD-deep
-Agent 精读 → 笔记追加精读内容
-```
+    def compose(self) -> ComposeResult:
+        yield from super().compose()
+        yield Markdown("""
+PaperForge 需要 **Python 3.8 或更高版本**。
 
-### 🚀 首次使用步骤
+当前环境将自动检测，无需手动操作。
+        """)
+        yield Horizontal(
+            Button("🔍 自动检测", id="btn-check-python", variant="primary"),
+            Button("⬇ 下载 Python", id="btn-dl-python", variant="default"),
+            id="btn-row",
+        )
 
-[step-1]
-**Step 1: 同步 Zotero 文献**
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "btn-check-python":
+            result = self.checker.check_python()
+            self.set_status(result.detail, result.passed)
+            if result.passed:
+                self.app.post_message(StepPassed(self.step_idx))
+        elif event.button.id == "btn-dl-python":
+            webbrowser.open("https://www.python.org/downloads/")
 
-运行以下命令检测新文献并创建状态记录：
-```
+
+class VaultStep(StepScreen):
+    """Step 2: Vault 结构"""
+
+    def compose(self) -> ComposeResult:
+        yield from super().compose()
+        yield Markdown("""
+PaperForge 需要特定的目录结构来存放文献数据。
+
+必要目录：
+- `03_Resources/LiteratureControl/library-records/` — 文献状态跟踪
+- `99_System/LiteraturePipeline/exports/` — Zotero JSON 导出
+- `99_System/LiteraturePipeline/ocr/` — OCR 结果
+- `99_System/Template/` — 模板文件
+        """)
+        yield Horizontal(
+            Button("🔍 自动检测", id="btn-check-vault", variant="primary"),
+            Button("📁 一键创建目录", id="btn-create-vault", variant="default"),
+            id="btn-row",
+        )
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "btn-check-vault":
+            result = self.checker.check_vault()
+            self.set_status(result.detail, result.passed)
+            if result.passed:
+                self.app.post_message(StepPassed(self.step_idx))
+        elif event.button.id == "btn-create-vault":
+            dirs = [
+                "03_Resources/LiteratureControl/library-records",
+                "99_System/LiteraturePipeline/exports",
+                "99_System/LiteraturePipeline/ocr",
+                "99_System/Template",
+            ]
+            for d in dirs:
+                (self.checker.vault / d).mkdir(parents=True, exist_ok=True)
+            self.set_status("目录已创建，请重新检测", None)
+
+
+class ZoteroStep(StepScreen):
+    """Step 3: Zotero"""
+
+    def compose(self) -> ComposeResult:
+        yield from super().compose()
+        yield Markdown("""
+**Zotero** 是必需的文献管理软件。
+
+如果你尚未安装，请点击 **下载 Zotero** 前往官网下载。
+
+安装完成后，点击 **检测** 确认。
+        """)
+        yield Horizontal(
+            Button("🔍 自动检测", id="btn-check-zotero", variant="primary"),
+            Button("⬇ 下载 Zotero", id="btn-dl-zotero", variant="default"),
+            Button("📷 查看安装截图", id="btn-img-zotero", variant="default"),
+            id="btn-row",
+        )
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "btn-check-zotero":
+            result = self.checker.check_zotero()
+            self.set_status(result.detail, result.passed)
+            if result.passed:
+                self.app.post_message(StepPassed(self.step_idx))
+        elif event.button.id == "btn-dl-zotero":
+            webbrowser.open("https://www.zotero.org/download/")
+        elif event.button.id == "btn-img-zotero":
+            self.app.open_screenshot("zotero-install.png")
+
+
+class BBTStep(StepScreen):
+    """Step 4: Better BibTeX"""
+
+    def compose(self) -> ComposeResult:
+        yield from super().compose()
+        yield Markdown("""
+**Better BibTeX (BBT)** 是 Zotero 的插件，用于生成 citation key 和自动导出 JSON。
+
+**安装步骤：**
+1. 下载 BBT 插件
+2. Zotero → 工具 → 插件
+3. 齿轮图标 → Install Plugin From File...
+4. 选择下载的 `.xpi` 文件 → 重启 Zotero
+
+安装完成后点击 **检测**。
+        """)
+        yield Horizontal(
+            Button("🔍 自动检测", id="btn-check-bbt", variant="primary"),
+            Button("⬇ 下载 BBT", id="btn-dl-bbt", variant="default"),
+            Button("📷 查看安装截图", id="btn-img-bbt", variant="default"),
+            id="btn-row",
+        )
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "btn-check-bbt":
+            result = self.checker.check_bbt()
+            self.set_status(result.detail, result.passed)
+            if result.passed:
+                self.app.post_message(StepPassed(self.step_idx))
+        elif event.button.id == "btn-dl-bbt":
+            webbrowser.open("https://retorque.re/zotero-better-bibtex/")
+        elif event.button.id == "btn-img-bbt":
+            self.app.open_screenshot("bbt-install.png")
+
+
+class JsonStep(StepScreen):
+    """Step 5: JSON Export"""
+
+    def compose(self) -> ComposeResult:
+        yield from super().compose()
+        exports_dir = self.checker.vault / "99_System" / "LiteraturePipeline" / "exports"
+        yield Markdown(f"""
+**Better BibTeX 自动导出**是 PaperForge 的数据来源。
+
+**配置步骤：**
+1. Zotero → 文件 → 导出库...
+2. 格式选择 **Better BibLaTeX**
+3. 保存到：`{exports_dir}/library.json`
+4. 勾选 **Keep updated**（自动保持更新）
+
+每个 JSON 文件对应一个 Obsidian Base 视图。
+        """)
+        yield Horizontal(
+            Button("🔍 自动检测", id="btn-check-json", variant="primary"),
+            Button("📷 查看配置截图", id="btn-img-json", variant="default"),
+            id="btn-row",
+        )
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "btn-check-json":
+            result = self.checker.check_json()
+            self.set_status(result.detail, result.passed)
+            if result.passed:
+                self.app.post_message(StepPassed(self.step_idx))
+        elif event.button.id == "btn-img-json":
+            self.app.open_screenshot("json-export.png")
+
+
+class DoneStep(StepScreen):
+    """Step 6: 完成页"""
+
+    def compose(self) -> ComposeResult:
+        yield from super().compose()
+        yield Markdown("""
+## 🎉 安装完成！
+
+所有前置条件已满足，你现在可以开始使用 PaperForge Lite。
+
+### 首次使用步骤：
+
+**1. 同步 Zotero 文献**
+```bash
 python pipeline/worker/scripts/literature_pipeline.py --vault . selection-sync
 ```
 
-预期输出：`Found X new items, created library-records/...`
-[/step-1]
-
-[step-2]
-**Step 2: 生成正式笔记**
-
-将状态记录转换为正式的 Obsidian 笔记：
-```
+**2. 生成正式笔记**
+```bash
 python pipeline/worker/scripts/literature_pipeline.py --vault . index-refresh
 ```
 
-预期输出：`Generated X formal notes`
-[/step-2]
+**3. 标记精读文献**
+在 Obsidian 中打开 library-records 文件，设置：
+- `do_ocr: true`
+- `analyze: true`
 
-[step-3]
-**Step 3: 标记要精读的文献**
-
-在 Obsidian 中打开任意 `library-records/*.md` 文件：
-- 将 `do_ocr: false` → `do_ocr: true`（触发 OCR）
-- 将 `analyze: false` → `analyze: true`（标记精读）
-
-或使用 Obsidian Base 视图批量操作。
-[/step-3]
-
-[step-4]
-**Step 4: 运行 OCR**
-```
+**4. 运行 OCR**
+```bash
 python pipeline/worker/scripts/literature_pipeline.py --vault . ocr
 ```
 
-等待 OCR 完成（需要配置 PaddleOCR API Key）。
-[/step-4]
-
-[step-5]
-**Step 5: 执行深度精读**
-
-在 OpenCode Agent 中执行：
+**5. 执行精读**
 ```
 /LD-deep <zotero_key>
 ```
 
-Agent 将自动生成 `## 🔍 精读` 区域。
-[/step-5]
-
-### ⚡ 快捷命令
+### 常用命令速查
 
 | 命令 | 作用 |
 |------|------|
-| `selection-sync` | 检测 Zotero 新条目 |
-| `index-refresh` | 生成/更新正式笔记 |
-| `ocr` | 运行 PDF OCR |
+| `selection-sync` | 检测新文献 |
+| `index-refresh` | 生成正式笔记 |
+| `ocr` | PDF OCR |
 | `deep-reading` | 查看精读队列 |
-| `update` | 检查并安装更新 |
+| `update` | 检查更新 |
 
-### 📖 详细文档
+### 详细文档
 
 - 安装后指南：`AGENTS.md`
 - 图表阅读指南：`99_System/Template/科研读图指南.md`
 - GitHub: https://github.com/LLLin000/PaperForge
-"""
-        guide.mount(Static(guide_content, classes="guide-content"))
-        self.query_one("#log", RichLog).write("[green]✓ 操作指南已解锁！请查看右侧[/]")
+        """)
+        yield Horizontal(
+            Button("📖 打开详细指南", id="btn-open-guide", variant="primary"),
+            Button("🔄 重新检测", id="btn-restart", variant="default"),
+            id="btn-row",
+        )
 
-    async def on_button_pressed(self, event: Button.Pressed) -> None:
-        if event.button.id == "check-all":
-            log = self.query_one("#log", RichLog)
-            log.write("[yellow]开始检测...[/]")
-            
-            for item in self.checker.items:
-                item.status = "checking"
-            self._refresh_checks()
-            
-            # 执行检测
-            self.checker.check_all()
-            
-            # 更新 UI
-            self._refresh_checks()
-            
-            passed = sum(1 for i in self.checker.items if i.status == "pass")
-            total = len(self.checker.items)
-            
-            if self.checker.all_passed:
-                log.write(f"[green]✓ 全部通过 ({passed}/{total})[/]")
-                self._update_guide()
-            else:
-                failed = [i.name for i in self.checker.items if i.status == "fail"]
-                log.write(f"[red]✗ 未通过项: {', '.join(failed)}[/]")
-                log.write("[yellow]请修复上述问题后重新检测[/]")
-        
-        elif event.button.id == "open-guide":
-            guide_path = self.vault / "docs" / "setup-guide.md"
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "btn-open-guide":
+            guide_path = self.checker.vault / "docs" / "setup-guide.md"
             if guide_path.exists():
                 if sys.platform == "win32":
                     os.startfile(str(guide_path))
@@ -514,40 +516,197 @@ Agent 将自动生成 `## 🔍 精读` 区域。
                     subprocess.run(["open", str(guide_path)])
                 else:
                     subprocess.run(["xdg-open", str(guide_path)])
-                self.query_one("#log", RichLog).write(f"[green]已打开: {guide_path}[/]")
             else:
-                self.query_one("#log", RichLog).write("[yellow]未找到本地指南，尝试打开在线文档...[/]")
-                import webbrowser
                 webbrowser.open("https://github.com/LLLin000/PaperForge/blob/master/docs/setup-guide.md")
-
-    def _refresh_checks(self) -> None:
-        """刷新检查项显示"""
-        for widget in self.check_widgets:
-            widget.update_status()
-
-    def action_refresh_checks(self) -> None:
-        """快捷键重新检测"""
-        button = self.query_one("#check-all", Button)
-        button.press()
+        elif event.button.id == "btn-restart":
+            self.app.post_message(RestartWizard())
 
 
 # =============================================================================
-# 入口
+# Custom Messages
+# =============================================================================
+
+class StepPassed:
+    """步骤通过消息"""
+    def __init__(self, step_idx: int):
+        self.step_idx = step_idx
+
+
+class RestartWizard:
+    """重新开始消息"""
+    pass
+
+
+# =============================================================================
+# Main App
+# =============================================================================
+
+class SetupWizardApp(App):
+    """PaperForge 安装向导主应用"""
+
+    CSS = """
+    Screen { align: center middle; }
+    
+    .wizard-container { width: 95%; height: 95%; border: solid green; }
+    
+    .sidebar { width: 25%; height: 100%; border: solid gray; padding: 1; }
+    .sidebar-title { text-align: center; text-style: bold; color: cyan; padding: 1; }
+    .step-tree { height: 1fr; }
+    
+    .main-area { width: 75%; height: 100%; padding: 1; }
+    .progress-area { height: auto; padding: 0 1; }
+    .content-area { height: 1fr; border: solid blue; padding: 1; }
+    
+    .step-title { text-style: bold; color: yellow; }
+    .status-bar { height: auto; padding: 1; }
+    
+    .step-content { padding: 1; }
+    .step-content Markdown { padding: 0 1; }
+    
+    #btn-row { height: auto; padding: 1; }
+    #btn-row Button { margin: 0 1; }
+    
+    .done { color: green; }
+    .current { color: yellow; text-style: bold; }
+    .pending { color: gray; }
+    """
+
+    BINDINGS = [
+        ("q", "quit", "退出"),
+        ("n", "next_step", "下一步"),
+        ("p", "prev_step", "上一步"),
+    ]
+
+    current_step = reactive(0)
+    step_states = reactive([False] * len(STEP_TITLES))
+
+    def __init__(self, vault: Path):
+        super().__init__()
+        self.vault = vault
+        self.checker = EnvChecker(vault)
+        self.step_screens: dict[str, StepScreen] = {}
+
+    def compose(self) -> ComposeResult:
+        yield Header(show_clock=False)
+
+        with Container(classes="wizard-container"):
+            with Horizontal():
+                # 左侧：步骤导航树
+                with Vertical(classes="sidebar"):
+                    yield Static("安装步骤", classes="sidebar-title")
+                    tree = Tree("PaperForge Lite", id="step-tree", classes="step-tree")
+                    for i, title in enumerate(STEP_TITLES):
+                        tree.root.add_leaf(f"{i}. {title}")
+                    yield tree
+
+                # 右侧：主内容区
+                with Vertical(classes="main-area"):
+                    # 进度条
+                    with Container(classes="progress-area"):
+                        yield ProgressBar(total=len(STEP_TITLES), show_eta=False, id="progress")
+                        yield Static("Step 0 / 6", id="progress-text", classes="progress-text")
+
+                    # 内容切换器
+                    with ContentSwitcher(id="content-switcher", classes="content-area"):
+                        screens = [
+                            WelcomeStep("step-0", self.checker),
+                            PythonStep("step-1", self.checker),
+                            VaultStep("step-2", self.checker),
+                            ZoteroStep("step-3", self.checker),
+                            BBTStep("step-4", self.checker),
+                            JsonStep("step-5", self.checker),
+                            DoneStep("step-6", self.checker),
+                        ]
+                        for screen in screens:
+                            self.step_screens[screen.step_id] = screen
+                            yield screen
+
+        yield Footer()
+
+    def on_mount(self) -> None:
+        self._update_step_display()
+
+    def watch_current_step(self, step: int) -> None:
+        self._update_step_display()
+
+    def watch_step_states(self, states: list[bool]) -> None:
+        self._update_step_display()
+
+    def _update_step_display(self) -> None:
+        # 更新 ContentSwitcher
+        switcher = self.query_one("#content-switcher", ContentSwitcher)
+        switcher.current = f"step-{self.current_step}"
+
+        # 更新进度条
+        progress = self.query_one("#progress", ProgressBar)
+        progress.advance(self.current_step - progress.progress)
+
+        progress_text = self.query_one("#progress-text", Static)
+        progress_text.update(f"Step {self.current_step} / {len(STEP_TITLES) - 1}: {STEP_TITLES[self.current_step]}")
+
+        # 更新 Tree 高亮
+        tree = self.query_one("#step-tree", Tree)
+        for i, node in enumerate(tree.root.children):
+            if i < self.current_step:
+                node.label = f"[green]✓ {i}. {STEP_TITLES[i]}[/]"
+            elif i == self.current_step:
+                node.label = f"[yellow]▶ {i}. {STEP_TITLES[i]}[/]"
+            else:
+                node.label = f"[gray]○ {i}. {STEP_TITLES[i]}[/]"
+
+    def action_next_step(self) -> None:
+        if self.current_step < len(STEP_TITLES) - 1:
+            self.current_step += 1
+
+    def action_prev_step(self) -> None:
+        if self.current_step > 0:
+            self.current_step -= 1
+
+    def on_step_passed(self, message: StepPassed) -> None:
+        """步骤通过，标记完成并自动前进"""
+        self.step_states[message.step_idx] = True
+        if message.step_idx < len(STEP_TITLES) - 1:
+            self.current_step = message.step_idx + 1
+
+    def on_restart_wizard(self) -> None:
+        """重新开始"""
+        self.current_step = 0
+        self.step_states = [False] * len(STEP_TITLES)
+        for screen in self.step_screens.values():
+            if hasattr(screen, 'set_status'):
+                screen.set_status("")
+
+    def open_screenshot(self, filename: str) -> None:
+        """打开截图"""
+        img_path = self.vault / "docs" / "images" / filename
+        if img_path.exists():
+            if sys.platform == "win32":
+                os.startfile(str(img_path))
+            elif sys.platform == "darwin":
+                subprocess.run(["open", str(img_path)])
+            else:
+                subprocess.run(["xdg-open", str(img_path)])
+        else:
+            # 截图不存在，打开在线文档
+            webbrowser.open(f"https://github.com/LLLin000/PaperForge/blob/master/docs/images/{filename}")
+
+
+# =============================================================================
+# Entry
 # =============================================================================
 
 def main() -> int:
-    import argparse
     parser = argparse.ArgumentParser(description="PaperForge Lite 安装向导")
     parser.add_argument("--vault", type=Path, default=Path("."), help="Vault 路径")
     args = parser.parse_args()
-    
+
     vault = args.vault.resolve()
     if not (vault / "paperforge.json").exists():
         print(f"[ERR] 未找到 paperforge.json: {vault}")
         print("请先在 Vault 根目录运行 setup.py 完成初始安装")
         return 1
-    
-    app = SetupWizard(vault)
+
+    app = SetupWizardApp(vault)
     app.run()
     return 0
 
