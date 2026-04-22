@@ -619,6 +619,7 @@ class SetupWizardApp(App):
                             DoneStep("step-6", self.checker),
                         ]
                         for screen in screens:
+                            screen.id = screen.step_id
                             self.step_screens[screen.step_id] = screen
                             yield screen
 
