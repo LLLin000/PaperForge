@@ -252,10 +252,6 @@ def extract_tables_from_fulltext(fulltext: str, figure_map: dict | None = None) 
 
 
 # ---------------------------------------------------------------------------
-# Figure Map: caption-driven figure/table inventory
-# ---------------------------------------------------------------------------
-
-# ---------------------------------------------------------------------------
 # Chart Type Detection: per-figure subfigure type scanning
 # ---------------------------------------------------------------------------
 
@@ -359,7 +355,7 @@ def detect_chart_types(caption: str) -> list[str]:
         for kw in keywords:
             if kw.lower() in caption_lower:
                 matched.append(chart_type)
-                break
+                break  # one match per chart type is enough
     return matched
 
 
@@ -413,7 +409,6 @@ def build_chart_type_map(figure_map: dict) -> dict:
 
     return result
 
-
 CAPTION_PATTERNS = {
     "main_figure": re.compile(
         r"^(?:Figure|Fig\.?)\s*(\d+[a-zA-Z]?)(?:\s*[\.:|\-]?\s*)(.*?)$",
@@ -428,7 +423,7 @@ CAPTION_PATTERNS = {
         re.IGNORECASE,
     ),
     "supplementary_table": re.compile(
-        r"^(?:Supplementary\s+Table\s*|Suppl?\.?\s+Table\s*|Extended\s+Data\s+Table\s*)(S?\d+[a-zA-Z]?)(?:\s*[\.:|\-]?\s*)(.*?)$",
+        r"^(?:Supplementary\s+Table\s*|Suppl?\.?\s*Table\s*|Extended\s+Data\s+Table\s*)(S?\d+[a-zA-Z]?)(?:\s*[\.:|\-]?\s*)(.*?)$",
         re.IGNORECASE,
     ),
 }
@@ -962,6 +957,7 @@ def prepare_deep_reading(vault: Path, zotero_key: str, force: bool = False) -> d
     literature_root = vault / "03_Resources" / "Literature"
     ocr_root = vault / "99_System" / "LiteraturePipeline" / "ocr"
 
+    # 1. Find library-record
     record_path: Path | None = None
     domain: str | None = None
     if records_root.exists():
@@ -975,6 +971,7 @@ def prepare_deep_reading(vault: Path, zotero_key: str, force: bool = False) -> d
                 break
 
     if record_path is None:
+        # Fallback: search by zotero_key in frontmatter
         for domain_dir in records_root.iterdir():
             if not domain_dir.is_dir():
                 continue
@@ -993,17 +990,20 @@ def prepare_deep_reading(vault: Path, zotero_key: str, force: bool = False) -> d
 
     record_text = record_path.read_text(encoding="utf-8")
 
+    # 2. Check analyze flag
     analyze_match = re.search(r'^analyze:\s*(true|false)$', record_text, re.MULTILINE)
     if not analyze_match or analyze_match.group(1) != "true":
         result["message"] = f"[ERROR] analyze != true in {record_path}. Set analyze: true first."
         return result
 
+    # 3. Check deep_reading_status
     status_match = re.search(r'^deep_reading_status:\s*"?(.*?)"?$', record_text, re.MULTILINE)
     dr_status = status_match.group(1).strip() if status_match else "pending"
     if dr_status == "done" and not force:
         result["message"] = f"[WARN] deep_reading_status already 'done'. Use --force to re-run."
         return result
 
+    # 4. Check OCR / fulltext availability
     ocr_dir = ocr_root / zotero_key
     fulltext_md = ocr_dir / "fulltext.md"
     meta_path = ocr_dir / "meta.json"
@@ -1023,14 +1023,17 @@ def prepare_deep_reading(vault: Path, zotero_key: str, force: bool = False) -> d
 
     result["fulltext_md"] = str(fulltext_md)
 
+    # 5. Find formal note
     formal_note: Path | None = None
     if literature_root.exists() and domain:
         domain_dir = literature_root / domain
         if domain_dir.exists():
+            # Try exact match first
             for candidate in domain_dir.glob("*.md"):
                 if candidate.name.startswith(f"{zotero_key} ") or candidate.name.startswith(f"{zotero_key} -"):
                     formal_note = candidate
                     break
+            # Fallback: search by frontmatter zotero_key
             if formal_note is None:
                 for candidate in domain_dir.glob("*.md"):
                     text = candidate.read_text(encoding="utf-8")
@@ -1039,6 +1042,7 @@ def prepare_deep_reading(vault: Path, zotero_key: str, force: bool = False) -> d
                         break
 
     if formal_note is None:
+        # Try global search
         for candidate in literature_root.rglob("*.md"):
             text = candidate.read_text(encoding="utf-8")
             if re.search(rf'^zotero_key:\s*"?{re.escape(zotero_key)}"?', text, re.MULTILINE):
@@ -1051,6 +1055,7 @@ def prepare_deep_reading(vault: Path, zotero_key: str, force: bool = False) -> d
 
     result["formal_note"] = str(formal_note)
 
+    # 6. Run figure-map
     figure_map_path = ocr_dir / "figure-map.json"
     fulltext_text = fulltext_md.read_text(encoding="utf-8")
     figure_map = build_figure_map(fulltext_text, zotero_key=zotero_key)
@@ -1059,11 +1064,13 @@ def prepare_deep_reading(vault: Path, zotero_key: str, force: bool = False) -> d
     figure_map_path.write_text(json.dumps(figure_map, ensure_ascii=False, indent=2), encoding="utf-8")
     result["figure_map"] = str(figure_map_path)
 
+    # 7. Run chart-type-scan
     chart_type_map_path = ocr_dir / "chart-type-map.json"
     chart_type_result = build_chart_type_map(figure_map)
     chart_type_map_path.write_text(json.dumps(chart_type_result, ensure_ascii=False, indent=2), encoding="utf-8")
     result["chart_type_map"] = str(chart_type_map_path)
 
+    # Collect recommendations
     all_guides: set[str] = set()
     for fig in chart_type_result.get("figures", []):
         for guide in fig.get("recommended_guides", []):
@@ -1073,10 +1080,11 @@ def prepare_deep_reading(vault: Path, zotero_key: str, force: bool = False) -> d
             all_guides.add(guide)
     result["chart_recommendations"] = sorted(all_guides)
 
+    # 8. Extract figures/tables and run ensure-scaffold
     figure_candidates = extract_figures_from_fulltext(fulltext_text, figure_map)
     table_candidates = extract_tables_from_fulltext(fulltext_text, figure_map)
     planned_figures = build_figure_plan(figure_candidates)
-    planned_tables = table_candidates
+    planned_tables = table_candidates  # Include all tables by default
 
     note_text = formal_note.read_text(encoding="utf-8")
     updated = ensure_study_section(note_text, planned_figures, planned_tables)
@@ -1161,10 +1169,12 @@ def scan_deep_reading_queue(vault: Path) -> list[dict]:
 
 import sys
 
+# Fix Windows console encoding for Unicode output
 if sys.platform == "win32":
     try:
         sys.stdout.reconfigure(encoding="utf-8")
     except AttributeError:
+        # Python < 3.7 fallback
         import codecs
         sys.stdout = codecs.getwriter("utf-8")(sys.stdout.buffer)
 
@@ -1235,6 +1245,7 @@ def main() -> int:
         tables: list[TableEntry] = []
         if args.fulltext:
             fulltext = args.fulltext.read_text(encoding="utf-8")
+            # Auto-load figure-map.json from same directory as fulltext if available
             figure_map = None
             figure_map_path = args.fulltext.parent / "figure-map.json"
             if figure_map_path.exists():
