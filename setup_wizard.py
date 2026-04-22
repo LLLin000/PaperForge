@@ -474,146 +474,154 @@ PaperForge 需要 **Python 3.8+** 以及以下 Python 包：
 
 
 class VaultStep(StepScreen):
-    """Step 2: Vault 结构"""
+    """Step 3: Vault 目录结构配置"""
 
     def compose(self) -> ComposeResult:
         yield from super().compose()
         vault_path = self.checker.vault.resolve()
         yield Markdown(f"""
-PaperForge 需要特定的目录结构来存放文献数据。
+PaperForge 的目录结构可以自定义。你可以保留默认名称，也可以修改为符合你 Vault 风格的名称。
 
 当前 Vault 路径：`{vault_path}`
 
-必要目录：
-- `03_Resources/LiteratureControl/library-records/` — 文献状态跟踪
-- `99_System/LiteraturePipeline/exports/` — Zotero JSON 导出
-- `99_System/LiteraturePipeline/ocr/` — OCR 结果
-- `99_System/Template/` — 模板文件
+**默认结构：**
+```
+{vault_path.name}/
+├── 03_Resources/          ← 文献笔记和资源
+│   └── LiteratureControl/   ← 状态跟踪
+├── 99_System/             ← 系统文件
+│   ├── LiteraturePipeline/  ← 导出和 OCR
+│   └── Template/            ← 模板
+```
+
+修改下方名称（留空使用默认值）：
         """)
+        from textual.widgets import Input
+        yield Static("系统文件夹名称:", classes="step-title")
+        yield Input(value="99_System", id="input-system-dir")
+        yield Static("资源文件夹名称:", classes="step-title")
+        yield Input(value="03_Resources", id="input-resources-dir")
+        yield Static("文献子文件夹名称:", classes="step-title")
+        yield Input(value="Literature", id="input-literature-dir")
         yield Horizontal(
-            Button("🔍 自动检测", id="btn-check-vault", variant="primary"),
-            Button("📁 一键创建目录", id="btn-create-vault", variant="default"),
+            Button("🔍 检测并创建目录", id="btn-setup-vault", variant="primary"),
             id="btn-row",
         )
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
-        if event.button.id == "btn-check-vault":
-            result = self.checker.check_vault()
-            self.set_status(result.detail, result.passed)
-            if result.passed:
-                self.app.post_message(StepPassed(self.step_idx))
-        elif event.button.id == "btn-create-vault":
-            dirs = [
-                "03_Resources/LiteratureControl/library-records",
-                "99_System/LiteraturePipeline/exports",
-                "99_System/LiteraturePipeline/ocr",
-                "99_System/Template",
+        if event.button.id == "btn-setup-vault":
+            from textual.widgets import Input
+            system_dir = self.query_one("#input-system-dir", Input).value.strip() or "99_System"
+            resources_dir = self.query_one("#input-resources-dir", Input).value.strip() or "03_Resources"
+            literature_dir = self.query_one("#input-literature-dir", Input).value.strip() or "Literature"
+
+            # 保存配置
+            self.app.vault_config = {
+                "system_dir": system_dir,
+                "resources_dir": resources_dir,
+                "literature_dir": literature_dir,
+                "pipeline_path": f"{system_dir}/LiteraturePipeline",
+                "template_path": f"{system_dir}/Template",
+                "literature_path": f"{resources_dir}/{literature_dir}",
+            }
+
+            # 创建目录
+            vault = self.checker.vault
+            dirs_to_create = [
+                vault / resources_dir / "LiteratureControl" / "library-records",
+                vault / system_dir / "LiteraturePipeline" / "exports",
+                vault / system_dir / "LiteraturePipeline" / "ocr",
+                vault / system_dir / "Template",
             ]
-            for d in dirs:
-                (self.checker.vault / d).mkdir(parents=True, exist_ok=True)
-            self.set_status("目录已创建，请重新检测", None)
+
+            created = []
+            for d in dirs_to_create:
+                d.mkdir(parents=True, exist_ok=True)
+                created.append(str(d.relative_to(vault)))
+
+            self.set_status(f"已创建 {len(created)} 个目录", True)
+            self.app.post_message(StepPassed(self.step_idx))
 
 
 class ZoteroStep(StepScreen):
-    """Step 4: Zotero 与数据目录链接"""
+    """Step 4: Zotero 数据目录链接"""
 
     def compose(self) -> ComposeResult:
         yield from super().compose()
         vault = self.checker.vault
-        junction_target = vault / "99_System" / "Zotero"
+        system_dir = getattr(self.app, 'vault_config', {}).get('system_dir', '99_System')
+        junction_target = vault / system_dir / "Zotero"
         yield Markdown(f"""
-**Zotero** 是必需的文献管理软件。
+**Zotero 数据目录**存放了你的文献数据库和 PDF 附件。
 
-检测通过后，向导会自动创建 Zotero 数据目录的链接：
-`{junction_target}` -> `你的 Zotero 数据目录`
+向导将创建目录链接，让 PaperForge 能读取你的 PDF：
+```
+{junction_target}
+    ↓ junction
+你的 Zotero 数据目录/
+    ├── zotero.sqlite     ← 数据库
+    └── storage/          ← PDF 附件
+```
 
-如果自动检测不到，你可以手动输入 Zotero 安装路径（如 `C:\\Program Files\\Zotero\\zotero.exe`）。
+**请填写你的 Zotero 数据目录路径：**
+（通常是 `C:\\Users\\<用户名>\\Zotero` 或 `~/Zotero`）
         """)
+        from textual.widgets import Input
+        yield Static("Zotero 数据目录:", classes="step-title")
+        yield Input(placeholder="C:\\Users\\YourName\\Zotero", id="input-zotero-data")
         yield Horizontal(
-            Button("🔍 自动检测", id="btn-check-zotero", variant="primary"),
+            Button("🔗 创建目录链接", id="btn-link-zotero", variant="primary"),
             Button("⬇ 下载 Zotero", id="btn-dl-zotero", variant="default"),
-            Button("📷 查看安装截图", id="btn-img-zotero", variant="default"),
             id="btn-row",
         )
-        yield Static("或手动指定路径：", classes="step-title")
-        from textual.widgets import Input
-        yield Horizontal(
-            Input(placeholder="C:\\Program Files\\Zotero\\zotero.exe", id="input-zotero-path"),
-            Button("✓ 使用此路径", id="btn-manual-zotero", variant="primary"),
-            id="manual-row",
-        )
-
-    def _create_junction(self) -> bool:
-        """Create Zotero data directory junction."""
-        vault = self.checker.vault
-        junction_path = vault / "99_System" / "Zotero"
-        
-        # Find Zotero data dir
-        zotero_data = None
-        home = Path.home()
-        candidates = [
-            home / "Zotero",
-            home / "AppData" / "Roaming" / "Zotero" / "Zotero",
-        ]
-        for c in candidates:
-            if c.exists() and (c / "zotero.sqlite").exists():
-                zotero_data = c
-                break
-        
-        if not zotero_data:
-            return False
-        
-        # Remove existing junction if stale
-        if junction_path.exists() or junction_path.is_symlink():
-            try:
-                if sys.platform == "win32":
-                    subprocess.run(["cmd", "/c", "rmdir", str(junction_path)], check=True, capture_output=True)
-                else:
-                    junction_path.unlink()
-            except Exception:
-                pass
-        
-        try:
-            junction_path.parent.mkdir(parents=True, exist_ok=True)
-            if sys.platform == "win32":
-                subprocess.run(
-                    ["cmd", "/c", "mklink", "/J", str(junction_path), str(zotero_data)],
-                    check=True, capture_output=True, shell=False,
-                )
-            else:
-                junction_path.symlink_to(zotero_data, target_is_directory=True)
-            return True
-        except Exception:
-            return False
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
-        if event.button.id == "btn-check-zotero":
-            result = self.checker.check_zotero()
-            self.set_status(f"Zotero: {result.detail}", result.passed)
-            if result.passed:
-                # Auto-create junction
-                if self._create_junction():
-                    self.set_status("Zotero 检测通过，数据目录链接已创建", True)
+        if event.button.id == "btn-link-zotero":
+            from textual.widgets import Input
+            path_str = self.query_one("#input-zotero-data", Input).value.strip()
+            if not path_str:
+                self.set_status("请填写 Zotero 数据目录路径", False)
+                return
+
+            zotero_data = Path(path_str)
+            if not zotero_data.exists():
+                self.set_status(f"路径不存在: {zotero_data}", False)
+                return
+            if not (zotero_data / "zotero.sqlite").exists():
+                self.set_status(f"未找到 zotero.sqlite，请确认这是 Zotero 数据目录", False)
+                return
+
+            # 创建 junction
+            vault = self.checker.vault
+            system_dir = getattr(self.app, 'vault_config', {}).get('system_dir', '99_System')
+            junction_path = vault / system_dir / "Zotero"
+
+            # Remove existing
+            if junction_path.exists() or junction_path.is_symlink():
+                try:
+                    if sys.platform == "win32":
+                        subprocess.run(["cmd", "/c", "rmdir", str(junction_path)], check=True, capture_output=True)
+                    else:
+                        junction_path.unlink()
+                except Exception:
+                    pass
+
+            try:
+                junction_path.parent.mkdir(parents=True, exist_ok=True)
+                if sys.platform == "win32":
+                    subprocess.run(
+                        ["cmd", "/c", "mklink", "/J", str(junction_path), str(zotero_data)],
+                        check=True, capture_output=True, shell=False,
+                    )
                 else:
-                    self.set_status("Zotero 检测通过，但无法自动创建数据目录链接（可稍后手动创建）", True)
+                    junction_path.symlink_to(zotero_data, target_is_directory=True)
+                self.set_status(f"链接已创建: {junction_path} -> {zotero_data}", True)
                 self.app.post_message(StepPassed(self.step_idx))
+            except Exception as e:
+                self.set_status(f"创建链接失败: {e}", False)
+
         elif event.button.id == "btn-dl-zotero":
             webbrowser.open("https://www.zotero.org/download/")
-        elif event.button.id == "btn-img-zotero":
-            self.app.open_screenshot("zotero-install.png")
-        elif event.button.id == "btn-manual-zotero":
-            from textual.widgets import Input
-            input_widget = self.query_one("#input-zotero-path", Input)
-            path_str = input_widget.value.strip()
-            if path_str:
-                manual_path = Path(path_str)
-                self.checker.manual_zotero_path = manual_path
-                result = self.checker.check_zotero()
-                self.set_status(result.detail, result.passed)
-                if result.passed:
-                    if self._create_junction():
-                        self.set_status("Zotero 检测通过，数据目录链接已创建", True)
-                    self.app.post_message(StepPassed(self.step_idx))
 
 
 class BBTStep(StepScreen):
