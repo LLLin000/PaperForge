@@ -1175,7 +1175,7 @@ def ensure_ocr_meta(vault: Path, row: dict) -> dict:
     meta.setdefault('page_count', 0)
     meta.setdefault('markdown_path', '')
     meta.setdefault('json_path', '')
-    meta.setdefault('assets_path', f'99_System/LiteraturePipeline/ocr/{key}/images')
+    meta.setdefault('assets_path', f'99_System/PaperForge/ocr/{key}/images')
     meta.setdefault('fulltext_md_path', '')
     meta.setdefault('error', '')
     return meta
@@ -2385,10 +2385,10 @@ GITHUB_ZIP = f"https://github.com/{GITHUB_REPO}/archive/refs/heads/master.zip"
 
 PROTECTED_PATHS = {
     "03_Resources", "05_Bases",
-    "99_System/LiteraturePipeline/ocr",
-    "99_System/LiteraturePipeline/exports",
-    "99_System/LiteraturePipeline/indexes",
-    "99_System/LiteraturePipeline/candidates",
+    "99_System/PaperForge/ocr",
+    "99_System/PaperForge/exports",
+    "99_System/PaperForge/indexes",
+    "99_System/PaperForge/candidates",
     ".env", "AGENTS.md",
 }
 UPDATEABLE_PATHS = ["skills", "pipeline", "templates", "command", "scripts"]

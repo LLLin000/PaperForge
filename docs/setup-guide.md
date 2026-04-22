@@ -118,7 +118,7 @@ Zotero
             ├─ 格式(Format): Better BibLaTeX  ★ 重要！不是 BibTeX
             ├─ 勾选 [Keep updated]            ★ 必须勾选
             ├─ 文件名: 骨科.json              ★ 建议用中文名，好识别
-            └─ 保存位置: {你的Vault}/99_System/LiteraturePipeline/exports/
+            └─ 保存位置: {你的Vault}/99_System/PaperForge/exports/
                  └─ [保存]
 ```
 
@@ -130,7 +130,7 @@ Zotero
 4. 勾选右下角的 `Keep updated`
 5. 点击 `...` 选择保存位置，导航到：
    ```
-   {你的Vault根目录}/99_System/LiteraturePipeline/exports/
+   {你的Vault根目录}/99_System/PaperForge/exports/
    ```
 6. 文件名填写收藏夹名称，如 `骨科.json`
 7. 点击保存
@@ -142,7 +142,7 @@ Zotero
 导出完成后，检查文件：
 
 ```bash
-ls 99_System/LiteraturePipeline/exports/
+ls 99_System/PaperForge/exports/
 # 应该看到: 骨科.json  运动医学.json  ...
 ```
 

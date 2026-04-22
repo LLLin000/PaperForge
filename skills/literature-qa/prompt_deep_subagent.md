@@ -36,8 +36,8 @@ python {{SCRIPT}} prepare {{ZOTERO_KEY}} --vault "{{VAULT}}" --format text
 - 这说明该论文已经精读过。如果用户要求重新精读，通知主 agent 确认是否覆盖。
 
 **prepare 成功后会自动生成以下文件**：
-- `99_System/LiteraturePipeline/ocr/{{ZOTERO_KEY}}/figure-map.json` — 图表清单
-- `99_System/LiteraturePipeline/ocr/{{ZOTERO_KEY}}/chart-type-map.json` — 图表类型与推荐指南
+- `99_System/PaperForge/ocr/{{ZOTERO_KEY}}/figure-map.json` — 图表清单
+- `99_System/PaperForge/ocr/{{ZOTERO_KEY}}/chart-type-map.json` — 图表类型与推荐指南
 
 **Agent 需要读取 chart-type-map.json**，为每张 figure 建立 `chart_types` 备忘列表。在 Pass 2 解析该 figure 时，根据其 chart_types 读取 `{{CHART_READING_DIR}}` 下对应的 chart-reading 指南，将关键审查问题整合进"图表质量审查"段落。
 

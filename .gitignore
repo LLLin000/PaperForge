@@ -21,7 +21,7 @@ config.json
 
 # Data (user-specific)
 99_System/Zotero/
-99_System/LiteraturePipeline/ocr/
+99_System/PaperForge/ocr/
 00_Inbox/
 03_Resources/
 

@@ -115,7 +115,7 @@ def configure_vault_paths(vault_path: Path) -> dict:
     }
     
     # Build derived paths
-    paths["pipeline_path"] = f"{paths['system_dir']}/LiteraturePipeline"
+    paths["pipeline_path"] = f"{paths['system_dir']}/PaperForge"
     paths["template_path"] = f"{paths['system_dir']}/Template"
     paths["literature_path"] = f"{paths['resources_dir']}/{paths['literature_dir']}"
     
@@ -401,7 +401,7 @@ Zotero 添加文献
 │               └── HIJKLMN.md
 │
 ├── {paths['system_dir']}/
-│   ├── LiteraturePipeline/
+│   ├── PaperForge/
 │   │   ├── exports/                            ← Better BibTeX 自动导出的 JSON
 │   │   │   └── library.json
 │   │   ├── ocr/                                ← OCR 结果（每个文献一个子目录）

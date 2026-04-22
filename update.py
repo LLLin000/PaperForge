@@ -50,10 +50,10 @@ if sys.platform == "win32":
 # 用户数据保护清单（绝不动这些路径）
 PROTECTED_PATHS = {
     "03_Resources", "05_Bases",
-    "99_System/LiteraturePipeline/ocr",
-    "99_System/LiteraturePipeline/exports",
-    "99_System/LiteraturePipeline/indexes",
-    "99_System/LiteraturePipeline/candidates",
+    "99_System/PaperForge/ocr",
+    "99_System/PaperForge/exports",
+    "99_System/PaperForge/indexes",
+    "99_System/PaperForge/candidates",
     ".env", "AGENTS.md",
 }
 

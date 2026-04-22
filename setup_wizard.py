@@ -72,6 +72,7 @@ class EnvChecker:
     def __init__(self, vault: Path):
         self.vault = vault
         self.manual_zotero_path: Optional[Path] = None
+        self.system_dir: str = "99_System"  # 可由用户自定义
         self.results: dict[str, CheckResult] = {
             "python": CheckResult("Python 版本"),
             "vault": CheckResult("Vault 结构"),
@@ -79,6 +80,10 @@ class EnvChecker:
             "bbt": CheckResult("Better BibTeX"),
             "json": CheckResult("JSON 导出"),
         }
+
+    def get_exports_dir(self) -> Path:
+        """Get exports directory based on user config."""
+        return self.vault / self.system_dir / "PaperForge" / "exports"
 
     def check_python(self) -> CheckResult:
         r = self.results["python"]
@@ -121,14 +126,18 @@ class EnvChecker:
     def check_vault(self) -> CheckResult:
         r = self.results["vault"]
         required = [
-            "03_Resources/LiteratureControl/library-records",
-            "99_System/LiteraturePipeline/exports",
-            "99_System/LiteraturePipeline/ocr",
-            "99_System/Template",
+            f"{self.system_dir}/PaperForge/exports",
+            f"{self.system_dir}/PaperForge/ocr",
         ]
         missing = [rel for rel in required if not (self.vault / rel).exists()]
         if not missing:
             r.passed = True
+            r.detail = "所有必要目录已就绪"
+        else:
+            r.passed = False
+            r.detail = f"缺少: {', '.join(missing)}"
+            r.action_required = True
+        return r
             r.detail = "所有必要目录已就绪"
         else:
             r.passed = False
@@ -283,7 +292,7 @@ class EnvChecker:
 
     def check_json(self) -> CheckResult:
         r = self.results["json"]
-        exports_dir = self.vault / "99_System" / "LiteraturePipeline" / "exports"
+        exports_dir = self.get_exports_dir()
         if not exports_dir.exists():
             r.passed = False
             r.detail = f"导出目录不存在: {exports_dir}"
@@ -489,9 +498,8 @@ PaperForge 的目录结构可以自定义。你可以保留默认名称，也可
 {vault_path.name}/
 ├── 03_Resources/          ← 文献笔记和资源
 │   └── LiteratureControl/   ← 状态跟踪
-├── 99_System/             ← 系统文件
-│   ├── LiteraturePipeline/  ← 导出和 OCR
-│   └── Template/            ← 模板
+└── 99_System/             ← 系统文件
+    └── PaperForge/          ← 导出和 OCR
 ```
 
 修改下方名称（留空使用默认值）：
@@ -504,7 +512,7 @@ PaperForge 的目录结构可以自定义。你可以保留默认名称，也可
         yield Static("文献子文件夹名称:", classes="step-title")
         yield Input(value="Literature", id="input-literature-dir")
         yield Horizontal(
-            Button("🔍 检测并创建目录", id="btn-setup-vault", variant="primary"),
+            Button("✓ 确认并创建目录", id="btn-setup-vault", variant="primary"),
             id="btn-row",
         )
 
@@ -520,18 +528,16 @@ PaperForge 的目录结构可以自定义。你可以保留默认名称，也可
                 "system_dir": system_dir,
                 "resources_dir": resources_dir,
                 "literature_dir": literature_dir,
-                "pipeline_path": f"{system_dir}/LiteraturePipeline",
-                "template_path": f"{system_dir}/Template",
+                "paperforge_path": f"{system_dir}/PaperForge",
                 "literature_path": f"{resources_dir}/{literature_dir}",
             }
 
-            # 创建目录
+            # 创建目录（使用 PaperForge 作为统一子目录）
             vault = self.checker.vault
             dirs_to_create = [
                 vault / resources_dir / "LiteratureControl" / "library-records",
-                vault / system_dir / "LiteraturePipeline" / "exports",
-                vault / system_dir / "LiteraturePipeline" / "ocr",
-                vault / system_dir / "Template",
+                vault / system_dir / "PaperForge" / "exports",
+                vault / system_dir / "PaperForge" / "ocr",
             ]
 
             created = []
@@ -539,7 +545,10 @@ PaperForge 的目录结构可以自定义。你可以保留默认名称，也可
                 d.mkdir(parents=True, exist_ok=True)
                 created.append(str(d.relative_to(vault)))
 
-            self.set_status(f"已创建 {len(created)} 个目录", True)
+            # 同步更新 checker 的 system_dir
+            self.checker.system_dir = system_dir
+
+            self.set_status(f"已创建 {len(created)} 个目录: {', '.join(created)}", True)
             self.app.post_message(StepPassed(self.step_idx))
 
 
@@ -660,21 +669,23 @@ class BBTStep(StepScreen):
 
 
 class JsonStep(StepScreen):
-    """Step 6: JSON Export"""
+    """Step 5: JSON 导出配置"""
 
     def compose(self) -> ComposeResult:
         yield from super().compose()
-        exports_dir = self.checker.vault / "99_System" / "LiteraturePipeline" / "exports"
+        vault = self.checker.vault
+        system_dir = getattr(self.app, 'vault_config', {}).get('system_dir', '99_System')
+        exports_dir = vault / system_dir / "PaperForge" / "exports"
         yield Markdown(f"""
 **Better BibTeX 自动导出**是 PaperForge 的数据来源。
 
 **配置步骤：**
 1. Zotero → 文件 → 导出库...
 2. 格式选择 **Better BibLaTeX**
-3. 保存到：`{exports_dir}/library.json`
+3. 保存到：`{exports_dir}`
 4. 勾选 **Keep updated**（自动保持更新）
 
-**📁 子分类与 Base 管理**
+📁 **子分类与 Base 管理**
 
 你可以根据 Zotero 收藏夹结构，灵活决定如何导出：
 
@@ -701,7 +712,6 @@ Zotero 收藏夹结构
         """)
         yield Horizontal(
             Button("🔍 自动检测", id="btn-check-json", variant="primary"),
-            Button("📷 查看配置截图", id="btn-img-json", variant="default"),
             id="btn-row",
         )
 
@@ -711,8 +721,6 @@ Zotero 收藏夹结构
             self.set_status(result.detail, result.passed)
             if result.passed:
                 self.app.post_message(StepPassed(self.step_idx))
-        elif event.button.id == "btn-img-json":
-            self.app.open_screenshot("json-export.png")
 
 
 class DeployStep(StepScreen):
@@ -749,6 +757,9 @@ class DeployStep(StepScreen):
     def _deploy(self) -> bool:
         """Deploy scripts and create config files."""
         vault = self.checker.vault
+        vault_config = getattr(self.app, 'vault_config', {})
+        system_dir = vault_config.get('system_dir', '99_System')
+        resources_dir = vault_config.get('resources_dir', '03_Resources')
         
         # 1. 获取 agent 配置
         agent_config = getattr(self.app, 'agent_config', None)
@@ -758,12 +769,15 @@ class DeployStep(StepScreen):
         
         skill_dir = agent_config.get('skill_dir', '.opencode/skills')
         
-        # 2. 创建目录
+        # 2. 创建目录（使用用户自定义路径）
+        pf_path = vault / system_dir / "PaperForge"
         dirs = [
+            pf_path / "exports",
+            pf_path / "ocr",
+            vault / resources_dir / "LiteratureControl" / "library-records",
             vault / "pipeline/worker/scripts",
             vault / skill_dir / "literature-qa/scripts",
             vault / skill_dir / "literature-qa/chart-reading",
-            vault / "99_System/Template",
         ]
         for d in dirs:
             d.mkdir(parents=True, exist_ok=True)
@@ -802,7 +816,7 @@ PADDLEOCR_API_KEY=your_api_key_here
 PADDLEOCR_API_URL=https://api.paddleocr.com/ocr
 """, encoding="utf-8")
         
-        # 5. 创建 paperforge.json
+        # 5. 创建 paperforge.json（包含用户自定义路径）
         pf_json = vault / "paperforge.json"
         if not pf_json.exists():
             import json
@@ -810,7 +824,41 @@ PADDLEOCR_API_URL=https://api.paddleocr.com/ocr
                 "version": "1.0.0",
                 "agent_platform": agent_config.get('name', 'OpenCode'),
                 "skill_dir": skill_dir,
+                "system_dir": system_dir,
+                "resources_dir": resources_dir,
+                "paperforge_path": f"{system_dir}/PaperForge",
             }, indent=2, ensure_ascii=False), encoding="utf-8")
+        
+        # 6. 验证文件完整性
+        self.set_status("验证文件完整性...", None)
+        checks = {
+            "Worker 脚本": worker_dst.exists(),
+            "精读脚本": ld_dst.exists(),
+            "目录结构": (vault / resources_dir / "LiteratureControl" / "library-records").exists(),
+            "导出目录": (pf_path / "exports").exists(),
+            "OCR 目录": (pf_path / "ocr").exists(),
+        }
+        
+        missing = [k for k, v in checks.items() if not v]
+        if missing:
+            self.set_status(f"验证失败: {', '.join(missing)}", False)
+            return False
+        
+        self.set_status("文件验证通过，初始化系统...", True)
+        
+        # 7. 运行初始化命令（模拟测试）
+        try:
+            # 测试 selection-sync（会报错因为没 JSON，但测试脚本能否运行）
+            result = subprocess.run(
+                [sys.executable, str(worker_dst), "--vault", str(vault), "status"],
+                capture_output=True, text=True, timeout=10,
+            )
+            if result.returncode == 0:
+                self.set_status("工作流脚本运行正常", True)
+            else:
+                self.set_status(f"脚本测试警告: {result.stderr[:100]}", None)
+        except Exception as e:
+            self.set_status(f"脚本测试跳过: {e}", None)
         
         return True
 

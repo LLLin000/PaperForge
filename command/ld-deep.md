@@ -8,8 +8,8 @@
 2. 支持 Zotero key、标题片段、DOI、PMID、关键词
 3. 优先搜索本地 Zotero 并锁定单篇论文
 4. 绑定该论文对应的：
-   - `99_System/LiteraturePipeline/ocr/<KEY>/fulltext.md`
-   - `99_System/LiteraturePipeline/ocr/<KEY>/meta.json`
+   - `99_System/PaperForge/ocr/<KEY>/fulltext.md`
+   - `99_System/PaperForge/ocr/<KEY>/meta.json`
    - `03_Resources/Literature/.../KEY - Title.md`
 5. 在正式文献卡片中检查或创建 `## 🔍 精读`
 6. 以“研究思路 + figure-by-figure”方式一次性完成精读写回

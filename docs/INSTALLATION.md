@@ -64,8 +64,8 @@ poetry add requests pymupdf pillow pytest
 Create the following directories in the Obsidian vault:
 
 ```bash
-mkdir -p "{vault_path}/99_System/LiteraturePipeline/ocr"
-mkdir -p "{vault_path}/99_System/LiteraturePipeline/worker/scripts"
+mkdir -p "{vault_path}/99_System/PaperForge/ocr"
+mkdir -p "{vault_path}/99_System/PaperForge/worker/scripts"
 mkdir -p "{vault_path}/99_System/Zotero"
 mkdir -p "{vault_path}/03_Resources/Literature"
 mkdir -p "{vault_path}/00_Inbox"
@@ -113,7 +113,7 @@ Copy the following files from the repository to your vault:
 
 ```bash
 # Copy scripts
-cp -r scripts/* "{vault_path}/99_System/LiteraturePipeline/worker/scripts/"
+cp -r scripts/* "{vault_path}/99_System/PaperForge/worker/scripts/"
 
 # Copy templates
 cp -r templates/* "{vault_path}/99_System/Template/"
@@ -130,7 +130,7 @@ Run validation:
 
 ```bash
 cd "{vault_path}"
-python 99_System/LiteraturePipeline/worker/scripts/validate_setup.py
+python 99_System/PaperForge/worker/scripts/validate_setup.py
 ```
 
 This checks:
@@ -170,7 +170,7 @@ Edit `{vault_path}/AGENTS.md`:
 
 3. **Verify**:
    ```bash
-   python 99_System/LiteraturePipeline/worker/scripts/validate_setup.py
+   python 99_System/PaperForge/worker/scripts/validate_setup.py
    ```
 
 ---

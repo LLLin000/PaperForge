@@ -5,5 +5,5 @@
 ## Commands
 
 ```bash
-python 99_System/LiteraturePipeline/worker/scripts/literature_pipeline.py --vault D:\L\Med\Research selection-sync
+python 99_System/PaperForge/worker/scripts/literature_pipeline.py --vault D:\L\Med\Research selection-sync
 ```

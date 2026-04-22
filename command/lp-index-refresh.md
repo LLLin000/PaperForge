@@ -5,7 +5,7 @@
 ## Commands
 
 ```bash
-python 99_System/LiteraturePipeline/worker/scripts/literature_pipeline.py --vault D:\L\Med\Research index-refresh
+python 99_System/PaperForge/worker/scripts/literature_pipeline.py --vault D:\L\Med\Research index-refresh
 ```
 
 ## 输出示例

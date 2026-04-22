@@ -11,10 +11,10 @@
   "protected_paths": [
     "03_Resources/",
     "05_Bases/",
-    "99_System/LiteraturePipeline/ocr/",
-    "99_System/LiteraturePipeline/exports/",
-    "99_System/LiteraturePipeline/indexes/",
-    "99_System/LiteraturePipeline/candidates/",
+    "99_System/PaperForge/ocr/",
+    "99_System/PaperForge/exports/",
+    "99_System/PaperForge/indexes/",
+    "99_System/PaperForge/candidates/",
     ".env",
     "AGENTS.md"
   ],

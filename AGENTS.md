@@ -21,7 +21,7 @@
 1. Zotero → Edit → Preferences → Better BibTeX
 2. 勾选 **"Keep updated"**（自动导出）
 3. 选择导出格式：**Better BibLaTeX** 或 **Better BibTeX**
-4. 导出路径设置为：`{你的Vault路径}/99_System/LiteraturePipeline/exports/library.json`
+4. 导出路径设置为：`{你的Vault路径}/99_System/PaperForge/exports/library.json`
 5. 点击 OK，JSON 文件会自动生成并保持同步
 
 ---
@@ -47,13 +47,13 @@ PaperForge Lite 采用 **两层设计**：
 ```
 Zotero 添加文献
     ↓ Better BibTeX 自动导出 JSON
-99_System/LiteraturePipeline/exports/library.json
+99_System/PaperForge/exports/library.json
     ↓ 运行 selection-sync
 03_Resources/LiteratureControl/library-records/<domain>/<key>.md
     ↓ 运行 index-refresh
 03_Resources/Literature/<domain>/<key> - <Title>.md（正式笔记）
     ↓ 用户在 library-record 中设置 do_ocr: true
-运行 ocr → 99_System/LiteraturePipeline/ocr/<key>/
+运行 ocr → 99_System/PaperForge/ocr/<key>/
     ↓ 用户在 library-record 中设置 analyze: true
 运行 deep-reading（查看队列，确认就绪）
     ↓ 用户执行 Agent 命令
@@ -114,8 +114,8 @@ Zotero 添加文献
 |------|------|------------|
 | `03_Resources/Literature/` | 正式文献笔记（含 frontmatter + 精读内容） | index-refresh 生成，Agent 写入精读 |
 | `03_Resources/LiteratureControl/library-records/` | 文献状态跟踪（analyze, ocr_status 等） | selection-sync 生成，用户修改状态 |
-| `99_System/LiteraturePipeline/exports/` | Better BibTeX JSON 导出 | Zotero 自动导出 |
-| `99_System/LiteraturePipeline/ocr/` | OCR 全文 + 图表切割 | ocr worker 生成 |
+| `99_System/PaperForge/exports/` | Better BibTeX JSON 导出 | Zotero 自动导出 |
+| `99_System/PaperForge/ocr/` | OCR 全文 + 图表切割 | ocr worker 生成 |
 | `99_System/Zotero/` | Zotero 数据目录的链接 | 安装时手动创建 junction |
 
 ---
@@ -128,7 +128,7 @@ Zotero 添加文献
 - **输出**：`03_Resources/LiteratureControl/library-records/<domain>/<key>.md`
 - **示例**：
   ```bash
-  python 99_System/LiteraturePipeline/worker/scripts/literature_pipeline.py \
+  python 99_System/PaperForge/worker/scripts/literature_pipeline.py \
     --vault "{vault路径}" selection-sync
   ```
 
@@ -141,7 +141,7 @@ Zotero 添加文献
 ### ocr
 - **作用**：将 PDF 上传到 PaddleOCR API，提取全文文本和图表
 - **触发条件**：library-record 中 `do_ocr: true`
-- **输出**：`99_System/LiteraturePipeline/ocr/<key>/` 目录
+- **输出**：`99_System/PaperForge/ocr/<key>/` 目录
   - `fulltext.md`：提取的全文（含 `<!-- page N -->` 分页标记）
   - `images/`：自动切割的图表图片
   - `meta.json`：OCR 状态（`ocr_status: done/pending/processing/failed`）
@@ -201,7 +201,7 @@ doi: "10.xxxx/xxxxx"
 collection_path: "子分类"        # Zotero 子收藏夹路径
 has_pdf: true                    # 是否有 PDF 附件（自动生成）
 pdf_path: "99_System/Zotero/..." # PDF 相对路径（自动生成）
-fulltext_md_path: "99_System/LiteraturePipeline/ocr/..."
+fulltext_md_path: "99_System/PaperForge/ocr/..."
 recommend_analyze: true          # 系统推荐精读（有 PDF 时自动设为 true）
 analyze: false                   # 【用户控制】是否生成精读？设为 true 触发
 do_ocr: true                     # 【用户控制】是否运行 OCR？设为 true 触发
@@ -249,7 +249,7 @@ pdf_link: "99_System/Zotero/..."
 
 ```bash
 # 在 Vault 根目录执行
-python 99_System/LiteraturePipeline/worker/scripts/literature_pipeline.py \
+python 99_System/PaperForge/worker/scripts/literature_pipeline.py \
   --vault "你的Vault路径" selection-sync
 ```
 
@@ -263,7 +263,7 @@ python 99_System/LiteraturePipeline/worker/scripts/literature_pipeline.py \
 ### Step 3: 运行 index-refresh
 
 ```bash
-python 99_System/LiteraturePipeline/worker/scripts/literature_pipeline.py \
+python 99_System/PaperForge/worker/scripts/literature_pipeline.py \
   --vault "你的Vault路径" index-refresh
 ```
 
@@ -285,7 +285,7 @@ python 99_System/LiteraturePipeline/worker/scripts/literature_pipeline.py \
 ### Step 5: 运行 OCR
 
 ```bash
-python 99_System/LiteraturePipeline/worker/scripts/literature_pipeline.py \
+python 99_System/PaperForge/worker/scripts/literature_pipeline.py \
   --vault "你的Vault路径" ocr
 ```
 
@@ -294,7 +294,7 @@ python 99_System/LiteraturePipeline/worker/scripts/literature_pipeline.py \
 ### Step 6: 检查 OCR 状态
 
 ```bash
-python 99_System/LiteraturePipeline/worker/scripts/literature_pipeline.py \
+python 99_System/PaperForge/worker/scripts/literature_pipeline.py \
   --vault "你的Vault路径" deep-reading
 ```
 
@@ -326,23 +326,23 @@ Agent 会自动：
 
 ```bash
 # 检测 Zotero 新条目
-python 99_System/LiteraturePipeline/worker/scripts/literature_pipeline.py \
+python 99_System/PaperForge/worker/scripts/literature_pipeline.py \
   --vault "你的Vault路径" selection-sync
 
 # 生成/更新正式笔记
-python 99_System/LiteraturePipeline/worker/scripts/literature_pipeline.py \
+python 99_System/PaperForge/worker/scripts/literature_pipeline.py \
   --vault "你的Vault路径" index-refresh
 
 # 运行 OCR（处理 do_ocr=true 的文献）
-python 99_System/LiteraturePipeline/worker/scripts/literature_pipeline.py \
+python 99_System/PaperForge/worker/scripts/literature_pipeline.py \
   --vault "你的Vault路径" ocr
 
 # 查看精读队列
-python 99_System/LiteraturePipeline/worker/scripts/literature_pipeline.py \
+python 99_System/PaperForge/worker/scripts/literature_pipeline.py \
   --vault "你的Vault路径" deep-reading
 
 # 查看整体状态
-python 99_System/LiteraturePipeline/worker/scripts/literature_pipeline.py \
+python 99_System/PaperForge/worker/scripts/literature_pipeline.py \
   --vault "你的Vault路径" status
 ```
 
@@ -364,7 +364,7 @@ python 99_System/LiteraturePipeline/worker/scripts/literature_pipeline.py \
 ### Q: OCR 一直显示 pending？
 - 检查 PaddleOCR API Key 是否配置正确（`.env` 文件）
 - 检查网络连接
-- 查看 `99_System/LiteraturePipeline/ocr/<key>/meta.json` 中的错误信息
+- 查看 `99_System/PaperForge/ocr/<key>/meta.json` 中的错误信息
 
 ### Q: /LD-deep 提示 OCR 未完成？
 - 确认 library-record 中 `ocr_status: done`
@@ -389,13 +389,13 @@ cd 你的Vault路径
 git pull origin main
 
 # 或手动复制更新文件
-cp -r 新下载的scripts/* 99_System/LiteraturePipeline/worker/scripts/
+cp -r 新下载的scripts/* 99_System/PaperForge/worker/scripts/
 ```
 
 ### 备份注意事项
-- `03_Resources/` 和 `99_System/LiteraturePipeline/ocr/` 包含你的数据，需备份
+- `03_Resources/` 和 `99_System/PaperForge/ocr/` 包含你的数据，需备份
 - `.env` 包含 API Key，不要提交到 git
-- `99_System/LiteraturePipeline/exports/` 可重新生成（由 Zotero 自动导出）
+- `99_System/PaperForge/exports/` 可重新生成（由 Zotero 自动导出）
 
 ---
 
