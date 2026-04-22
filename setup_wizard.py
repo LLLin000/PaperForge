@@ -604,15 +604,19 @@ class ZoteroStep(StepScreen):
 ```
 你的 Vault/
     └── [系统目录]/
-        └── Zotero/     ← 链接
+        └── Zotero/     ← 链接（自动创建）
             ↓ junction
-            你的 Zotero 数据目录/
+            你的 Zotero 数据目录/     ← 你填这里
                 ├── zotero.sqlite
                 └── storage/
 ```
 
 **请填写你的 Zotero 数据目录路径：**
-（通常是 `C:/Users/<用户名>/Zotero` 或 `~/Zotero`）
+- 这是 Zotero 存放数据库的地方，不是 Vault 里的路径
+- Windows 通常是 `C:/Users/你的用户名/Zotero`
+- macOS 通常是 `~/Zotero`
+
+> ⚠️ **不要**填 Vault 里面的路径，也不要在这里创建新文件夹
         """)
         from textual.widgets import Input
         username = os.environ.get("USERNAME", os.environ.get("USER", "YourName"))
@@ -657,6 +661,33 @@ class ZoteroStep(StepScreen):
             vault = self.checker.vault
             system_dir = getattr(self.app, 'vault_config', {}).get('system_dir', '99_System')
             junction_path = vault / system_dir / "Zotero"
+            
+            # 安全检查：不能和 Vault 目录相同，否则会循环
+            try:
+                zotero_data = zotero_data.resolve()
+                junction_path = junction_path.resolve()
+            except Exception:
+                pass
+            
+            if str(zotero_data) == str(junction_path):
+                self.set_status(
+                    "错误：你填的是 Vault 内的路径，不是 Zotero 数据目录。\n"
+                    "Zotero 数据目录通常在 C:/Users/你的用户名/Zotero",
+                    False
+                )
+                return
+            
+            # 安全检查：zotero_data 不能是 Vault 的子目录
+            try:
+                zotero_data.relative_to(vault)
+                self.set_status(
+                    "错误：Zotero 数据目录不能放在 Vault 内部。\n"
+                    "请使用 Zotero 默认的数据目录路径",
+                    False
+                )
+                return
+            except ValueError:
+                pass  # 不是子目录，正常
 
             # Remove existing
             if junction_path.exists() or junction_path.is_symlink():
