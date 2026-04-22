@@ -656,45 +656,29 @@ class ZoteroStep(StepScreen):
             if not (zotero_data / "zotero.sqlite").exists():
                 self.set_status("未找到 zotero.sqlite，请确认这是 Zotero 数据目录", False)
                 return
-
-            # 创建 junction
-            vault = self.checker.vault
-            system_dir = getattr(self.app, 'vault_config', {}).get('system_dir', '99_System')
-            junction_path = vault / system_dir / "Zotero"
-            
-            # 安全检查：不能和 Vault 目录相同，否则会循环
-            try:
-                zotero_data = zotero_data.resolve()
-                junction_path = junction_path.resolve()
-            except Exception:
-                pass
-            
-            if str(zotero_data) == str(junction_path):
-                self.set_status(
-                    "错误：你填的是 Vault 内的路径，不是 Zotero 数据目录。\n"
-                    "Zotero 数据目录通常在 C:/Users/你的用户名/Zotero",
-                    False
-                )
+            if not (zotero_data / "storage").exists():
+                self.set_status("未找到 storage 文件夹，请确认这是 Zotero 数据目录", False)
                 return
-            
-            # 检查：Zotero 数据目录是否在 Vault 内部
+
+            # 检查是否在 Vault 内部
+            vault = self.checker.vault
             is_inside_vault = False
             try:
-                zotero_data.relative_to(vault)
+                zotero_data.resolve().relative_to(vault.resolve())
                 is_inside_vault = True
             except ValueError:
                 pass
             
             if is_inside_vault:
-                # 在 Vault 内部，跳过创建 Junction，直接通过
-                self.set_status(
-                    f"检测到 Zotero 数据目录在 Vault 内部，无需创建链接\n"
-                    f"路径: {zotero_data}",
-                    True
-                )
+                # 在 Vault 内部，直接通过
+                self.set_status("Zotero 数据目录已确认", True)
                 self.app.post_message(StepPassed(self.step_idx))
                 return
-
+            
+            # 在 Vault 外部，创建 Junction
+            system_dir = getattr(self.app, 'vault_config', {}).get('system_dir', '99_System')
+            junction_path = vault / system_dir / "Zotero"
+            
             # Remove existing
             if junction_path.exists() or junction_path.is_symlink():
                 try:
@@ -714,10 +698,7 @@ class ZoteroStep(StepScreen):
                     )
                 else:
                     junction_path.symlink_to(zotero_data, target_is_directory=True)
-                # 使用相对路径显示
-                junction_rel = junction_path.relative_to(vault)
-                zotero_rel = zotero_data.relative_to(Path.home()) if str(zotero_data).startswith(str(Path.home())) else zotero_data.name
-                self.set_status(f"链接已创建: [{junction_rel}] -> [{zotero_rel}]", True)
+                self.set_status("链接已创建", True)
                 self.app.post_message(StepPassed(self.step_idx))
             except Exception as e:
                 self.set_status(f"创建链接失败: {e}", False)
