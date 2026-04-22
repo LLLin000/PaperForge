@@ -90,9 +90,9 @@ Better BibTeX 导出后：
   └── exports/综述.json
 
 PaperForge 自动生成：
-  ├── 05_Bases/骨科.base
-  ├── 05_Bases/运动医学.base
-  └── 05_Bases/综述.base
+  ├── <resources_dir>/<control_dir>/library-records/骨科/
+  ├── <resources_dir>/<control_dir>/library-records/运动医学/
+  └── <resources_dir>/<control_dir>/library-records/综述/
 ```
 
 **规则：一个 JSON 文件 = 一个 Base 视图 = 一个文献分类**
@@ -118,7 +118,7 @@ Zotero
             ├─ 格式(Format): Better BibLaTeX  ★ 重要！不是 BibTeX
             ├─ 勾选 [Keep updated]            ★ 必须勾选
             ├─ 文件名: 骨科.json              ★ 建议用中文名，好识别
-            └─ 保存位置: {你的Vault}/99_System/PaperForge/exports/
+            └─ 保存位置: {你的Vault}/<system_dir>/PaperForge/exports/
                  └─ [保存]
 ```
 
@@ -130,7 +130,7 @@ Zotero
 4. 勾选右下角的 `Keep updated`
 5. 点击 `...` 选择保存位置，导航到：
    ```
-   {你的Vault根目录}/99_System/PaperForge/exports/
+   {你的Vault根目录}/<system_dir>/PaperForge/exports/
    ```
 6. 文件名填写收藏夹名称，如 `骨科.json`
 7. 点击保存
@@ -142,7 +142,7 @@ Zotero
 导出完成后，检查文件：
 
 ```bash
-ls 99_System/PaperForge/exports/
+ls <system_dir>/PaperForge/exports/
 # 应该看到: 骨科.json  运动医学.json  ...
 ```
 
@@ -174,9 +174,9 @@ python pipeline/worker/scripts/literature_pipeline.py --vault . index-refresh
 ```
 
 此时你应该看到：
-- `03_Resources/LiteratureControl/library-records/` 下出现状态记录文件
-- `03_Resources/Literature/` 下出现正式笔记
-- `05_Bases/` 下出现 Base 视图文件（每个 JSON 对应一个）
+- `<resources_dir>/<control_dir>/library-records/` 下出现状态记录文件
+- `<resources_dir>/<literature_dir>/` 下出现正式笔记
+- `<resources_dir>/<control_dir>/library-records/` 下出现状态记录文件
 
 ---
 
@@ -222,3 +222,6 @@ python setup_wizard.py --vault .
 ---
 
 *PaperForge Lite | 安装指南*
+
+
+

@@ -45,7 +45,7 @@ def load_journal_db(vault: Path) -> dict[str, dict]:
     global _JOURNAL_DB
     if _JOURNAL_DB is not None:
         return _JOURNAL_DB
-    zoterostyle_path = vault / '99_System' / 'Zotero' / 'zoterostyle.json'
+    zoterostyle_path = vault / load_vault_config(vault)['system_dir'] / 'Zotero' / 'zoterostyle.json'
     if zoterostyle_path.exists():
         try:
             _JOURNAL_DB = read_json(zoterostyle_path)
@@ -125,27 +125,41 @@ def _extract_year(value: str) -> str:
 
 def load_vault_config(vault: Path) -> dict:
     """Read vault configuration from paperforge.json."""
+    defaults = {
+        "system_dir": "99_System",
+        "resources_dir": "03_Resources",
+        "literature_dir": "Literature",
+        "control_dir": "LiteratureControl",
+        "base_dir": "05_Bases",
+    }
     pf_json = vault / "paperforge.json"
     if pf_json.exists():
         try:
             data = json.loads(pf_json.read_text(encoding="utf-8"))
+            nested = data.get("vault_config", {}) if isinstance(data.get("vault_config"), dict) else {}
+            merged = {**defaults, **nested, **{k: v for k, v in data.items() if k in defaults and v}}
             return {
-                "system_dir": data.get("system_dir", "99_System"),
-                "resources_dir": data.get("resources_dir", "03_Resources"),
-                "literature_dir": data.get("literature_dir", "Literature"),
+                "system_dir": merged["system_dir"],
+                "resources_dir": merged["resources_dir"],
+                "literature_dir": merged["literature_dir"],
+                "control_dir": merged["control_dir"],
+                "base_dir": merged["base_dir"],
             }
         except (json.JSONDecodeError, IOError):
             pass
-    return {"system_dir": "99_System", "resources_dir": "03_Resources", "literature_dir": "Literature"}
+    return defaults
 
 
 def pipeline_paths(vault: Path) -> dict[str, Path]:
     cfg = load_vault_config(vault)
     system_dir = cfg["system_dir"]
     resources_dir = cfg["resources_dir"]
+    literature_dir = cfg["literature_dir"]
+    control_dir = cfg["control_dir"]
+    base_dir = cfg["base_dir"]
     
     root = vault / system_dir / "PaperForge"
-    control_root = vault / resources_dir / "LiteratureControl"
+    control_root = vault / resources_dir / control_dir
     return {
         'pipeline': root,
         'candidates': root / 'candidates' / 'candidates.json',
@@ -168,7 +182,87 @@ def pipeline_paths(vault: Path) -> dict[str, Path]:
         'ocr': root / 'ocr',
         'ocr_queue': root / 'ocr' / 'ocr-queue.json',
         'resources': vault / resources_dir,
+        'literature': vault / resources_dir / literature_dir,
+        'bases': vault / base_dir,
     }
+
+def load_domain_config(paths: dict[str, Path]) -> dict:
+    """Load or create the Lite domain mapping from export JSON files."""
+    config_path = paths['config']
+    if config_path.exists():
+        config = read_json(config_path)
+    else:
+        config = {"domains": []}
+    domains = config.setdefault("domains", [])
+    known_exports = {str(entry.get("export_file", "")) for entry in domains}
+    changed = not config_path.exists()
+    for export_path in sorted(paths['exports'].glob('*.json')):
+        if export_path.name in known_exports:
+            continue
+        domains.append({"domain": export_path.stem, "export_file": export_path.name, "allowed_collections": []})
+        known_exports.add(export_path.name)
+        changed = True
+    if changed:
+        config_path.parent.mkdir(parents=True, exist_ok=True)
+        write_json(config_path, config)
+    return config
+
+def base_markdown_filter(path: Path, vault: Path) -> str:
+    try:
+        return str(path.relative_to(vault)).replace('\\', '/')
+    except ValueError:
+        return str(path).replace('\\', '/')
+
+def write_base_file(path: Path, folder_filter: str, name: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    content = f"""filters:
+  and:
+    - file.inFolder("{folder_filter}")
+properties:
+  zotero_key:
+    displayName: "Zotero Key"
+  title:
+    displayName: "Title"
+  year:
+    displayName: "Year"
+  has_pdf:
+    displayName: "PDF"
+  do_ocr:
+    displayName: "OCR"
+  analyze:
+    displayName: "Analyze"
+  ocr_status:
+    displayName: "OCR Status"
+  deep_reading_status:
+    displayName: "Deep Reading"
+views:
+  - type: table
+    name: "{name}"
+    order:
+      - file.name
+      - title
+      - year
+      - has_pdf
+      - do_ocr
+      - analyze
+      - ocr_status
+      - deep_reading_status
+      - pdf_path
+      - fulltext_md_path
+"""
+    path.write_text(content, encoding='utf-8')
+
+def ensure_base_views(vault: Path, paths: dict[str, Path], config: dict) -> None:
+    paths['bases'].mkdir(parents=True, exist_ok=True)
+    records_root = paths['library_records']
+    write_base_file(paths['bases'] / 'PaperForge.base', base_markdown_filter(records_root, vault), 'All Records')
+    seen_domains = set()
+    for entry in config.get('domains', []):
+        domain = str(entry.get('domain', '') or '').strip()
+        if not domain or domain in seen_domains:
+            continue
+        seen_domains.add(domain)
+        write_base_file(paths['bases'] / f"{slugify_filename(domain)}.base", base_markdown_filter(records_root / domain, vault), domain)
 
 def build_collection_lookup(collections: dict) -> dict:
     path_cache = {}
@@ -596,7 +690,8 @@ def load_control_actions(paths: dict[str, Path]) -> dict[str, dict]:
 
 def run_selection_sync(vault: Path) -> int:
     paths = pipeline_paths(vault)
-    config = read_json(paths['config'])
+    config = load_domain_config(paths)
+    ensure_base_views(vault, paths, config)
     domain_lookup = {entry['export_file']: entry['domain'] for entry in config['domains']}
     written = 0
     updated = 0
@@ -617,7 +712,7 @@ def run_selection_sync(vault: Path) -> int:
                 if validated_error:
                     meta['error'] = validated_error
                     write_json(meta_path, meta)
-            note_path = paths['resources'] / 'Literature' / domain / f"{item['key']} - {slugify_filename(item['title'])}.md"
+            note_path = paths['literature'] / domain / f"{item['key']} - {slugify_filename(item['title'])}.md"
             note_text = note_path.read_text(encoding='utf-8') if note_path.exists() else ''
             fulltext_md_path = obsidian_wikilink_for_path(vault, meta.get('fulltext_md_path', '') or meta.get('markdown_path', ''))
             ocr_status = meta.get('ocr_status', 'pending')
@@ -1119,7 +1214,8 @@ def analyze_selected_keys(paths: dict[str, Path]) -> set[str]:
 
 def run_index_refresh(vault: Path) -> int:
     paths = pipeline_paths(vault)
-    config = read_json(paths['config'])
+    config = load_domain_config(paths)
+    ensure_base_views(vault, paths, config)
     domain_lookup = {entry['export_file']: entry['domain'] for entry in config['domains']}
     exports = {}
     for export_path in sorted(paths['exports'].glob('*.json')):
@@ -1128,7 +1224,7 @@ def run_index_refresh(vault: Path) -> int:
         exports[domain] = {row['key']: row for row in export_rows}
     selected_keys = None
     index_rows = []
-    lit_root = paths['resources'] / 'Literature'
+    lit_root = paths['literature']
     for export_path in sorted(paths['exports'].glob('*.json')):
         domain = domain_lookup.get(export_path.name, export_path.stem)
         export_rows = load_export_rows(export_path)
@@ -1159,7 +1255,7 @@ def run_index_refresh(vault: Path) -> int:
             index_rows.append(entry)
     write_json(paths['index'], index_rows)
     print(f'index-refresh: wrote {len(index_rows)} index rows')
-    control_records_dir = paths['resources'] / 'LiteratureControl' / 'library-records'
+    control_records_dir = paths['library_records']
     if control_records_dir.exists():
         for domain_dir in control_records_dir.iterdir():
             if not domain_dir.is_dir():
@@ -1218,7 +1314,11 @@ def ensure_ocr_meta(vault: Path, row: dict) -> dict:
     meta.setdefault('page_count', 0)
     meta.setdefault('markdown_path', '')
     meta.setdefault('json_path', '')
-    meta.setdefault('assets_path', f'99_System/PaperForge/ocr/{key}/images')
+    try:
+        assets_path = str((paths['ocr'] / key / 'images').relative_to(vault)).replace('\\', '/')
+    except ValueError:
+        assets_path = str(paths['ocr'] / key / 'images')
+    meta.setdefault('assets_path', assets_path)
     meta.setdefault('fulltext_md_path', '')
     meta.setdefault('error', '')
     return meta
@@ -2314,9 +2414,17 @@ def run_ocr(vault: Path) -> int:
                 write_json(paths['ocr'] / key / 'meta.json', meta)
                 changed += 1
                 continue
-            with open(queue_row['pdf_path'], 'rb') as file_handle:
-                response = requests.post(job_url, headers={'Authorization': f'bearer {token}'}, data={'model': model, 'optionalPayload': json.dumps(optional_payload)}, files={'file': file_handle}, timeout=120)
-            response.raise_for_status()
+            try:
+                with open(queue_row['pdf_path'], 'rb') as file_handle:
+                    response = requests.post(job_url, headers={'Authorization': f'bearer {token}'}, data={'model': model, 'optionalPayload': json.dumps(optional_payload)}, files={'file': file_handle}, timeout=120)
+                response.raise_for_status()
+            except requests.RequestException as e:
+                meta['ocr_status'] = 'error'
+                meta['error'] = f'PaddleOCR request failed: {e}'
+                queue_row['queue_status'] = 'error'
+                write_json(paths['ocr'] / key / 'meta.json', meta)
+                changed += 1
+                continue
             meta['ocr_job_id'] = response.json()['data']['jobId']
             meta['ocr_status'] = 'queued'
             meta['ocr_started_at'] = datetime.now(timezone.utc).isoformat()
@@ -2334,8 +2442,8 @@ def run_ocr(vault: Path) -> int:
     return 0
 
 def _resolve_formal_note_path(vault: Path, zotero_key: str, domain: str) -> Path | None:
-    """Resolve formal literature note from 03_Resources/Literature by zotero_key."""
-    lit_root = vault / '03_Resources' / 'Literature'
+    """Resolve formal literature note by zotero_key."""
+    lit_root = pipeline_paths(vault)['literature']
     domain_dir = lit_root / domain
     if not domain_dir.exists():
         return None
@@ -2360,7 +2468,8 @@ def run_deep_reading(vault: Path) -> int:
     Actual content filling is done via /LD-deep (agent-driven).
     """
     paths = pipeline_paths(vault)
-    config = read_json(paths['config'])
+    config = load_domain_config(paths)
+    ensure_base_views(vault, paths, config)
     domain_lookup = {entry['export_file']: entry['domain'] for entry in config['domains']}
     synced = 0
     pending_queue: list[dict] = []
@@ -2419,6 +2528,45 @@ def run_deep_reading(vault: Path) -> int:
     print(f'deep-reading: synced {synced} records, {len(pending_queue)} pending')
     return 0
 
+def run_status(vault: Path) -> int:
+    """Print a compact Lite install/runtime status."""
+    paths = pipeline_paths(vault)
+    cfg = load_vault_config(vault)
+    config = load_domain_config(paths)
+    ensure_base_views(vault, paths, config)
+    export_files = sorted(paths['exports'].glob('*.json'))
+    record_count = sum(1 for _ in paths['library_records'].rglob('*.md')) if paths['library_records'].exists() else 0
+    note_count = sum(1 for _ in paths['literature'].rglob('*.md')) if paths['literature'].exists() else 0
+    base_count = sum(1 for _ in paths['bases'].glob('*.base')) if paths['bases'].exists() else 0
+    ocr_done = 0
+    ocr_total = 0
+    if paths['ocr'].exists():
+        for meta_path in paths['ocr'].glob('*/meta.json'):
+            ocr_total += 1
+            try:
+                meta = read_json(meta_path)
+            except Exception:
+                continue
+            if str(meta.get('ocr_status', '')).strip().lower() == 'done':
+                ocr_done += 1
+    env_paths = [vault / '.env', paths['pipeline'] / '.env']
+    env_found = [str(path.relative_to(vault)).replace('\\', '/') for path in env_paths if path.exists()]
+
+    print('PaperForge Lite status')
+    print(f"- vault: {vault}")
+    print(f"- system_dir: {cfg['system_dir']}")
+    print(f"- resources_dir: {cfg['resources_dir']}")
+    print(f"- literature_dir: {cfg['literature_dir']}")
+    print(f"- control_dir: {cfg['control_dir']}")
+    print(f"- exports: {len(export_files)} JSON file(s)")
+    print(f"- domains: {len(config.get('domains', []))}")
+    print(f"- library_records: {record_count}")
+    print(f"- formal_notes: {note_count}")
+    print(f"- bases: {base_count}")
+    print(f"- ocr: {ocr_done}/{ocr_total} done")
+    print(f"- env: {', '.join(env_found) if env_found else 'not configured'}")
+    return 0
+
 # =============================================================================
 # Update 功能
 # =============================================================================
@@ -2426,15 +2574,22 @@ def run_deep_reading(vault: Path) -> int:
 GITHUB_REPO = "LLLin000/PaperForge"
 GITHUB_ZIP = f"https://github.com/{GITHUB_REPO}/archive/refs/heads/master.zip"
 
-PROTECTED_PATHS = {
-    "03_Resources", "05_Bases",
-    "99_System/PaperForge/ocr",
-    "99_System/PaperForge/exports",
-    "99_System/PaperForge/indexes",
-    "99_System/PaperForge/candidates",
-    ".env", "AGENTS.md",
-}
 UPDATEABLE_PATHS = ["skills", "pipeline", "command", "scripts"]
+
+
+def protected_paths(vault: Path) -> set[str]:
+    cfg = load_vault_config(vault)
+    pf = f"{cfg['system_dir']}/PaperForge"
+    return {
+        cfg["resources_dir"],
+        cfg["base_dir"],
+        f"{pf}/ocr",
+        f"{pf}/exports",
+        f"{pf}/indexes",
+        f"{pf}/candidates",
+        ".env",
+        "AGENTS.md",
+    }
 
 
 def _color(text: str, c: str = "") -> str:
@@ -2463,6 +2618,7 @@ def _remote_version() -> str | None:
 
 def _scan_updates(vault: Path, source: Path) -> list[tuple[Path, Path, str]]:
     updates = []
+    protected = protected_paths(vault)
     for name in UPDATEABLE_PATHS:
         src_dir = source / name
         if not src_dir.exists():
@@ -2473,7 +2629,7 @@ def _scan_updates(vault: Path, source: Path) -> list[tuple[Path, Path, str]]:
             rel = src.relative_to(source)
             dst = vault / rel
             rel_str = str(rel).replace("\\", "/")
-            if any(rel_str.startswith(p) for p in PROTECTED_PATHS):
+            if any(rel_str.startswith(p) for p in protected):
                 continue
             if dst.exists():
                 if hashlib.sha256(src.read_bytes()).hexdigest() != hashlib.sha256(dst.read_bytes()).hexdigest():
@@ -2628,11 +2784,12 @@ def main() -> int:
     parser.add_argument('--limit', type=int, default=8)
     parser.add_argument('--sources', nargs='+')
     parser.add_argument('--skip-ingest', action='store_true')
-    parser.add_argument('worker', choices=['selection-sync', 'index-refresh', 'ocr', 'deep-reading', 'update', 'wizard', 'all'])
+    parser.add_argument('worker', choices=['selection-sync', 'index-refresh', 'ocr', 'deep-reading', 'status', 'update', 'wizard', 'all'])
     args = parser.parse_args()
-    # Load .env from vault root first, then from PaperForge directory
+    paths = pipeline_paths(args.vault)
+    # Load .env from vault root first, then from the configured PaperForge directory.
     load_simple_env(args.vault / '.env')
-    load_simple_env(args.vault / '99_System' / 'PaperForge' / '.env')
+    load_simple_env(paths['pipeline'] / '.env')
     if args.worker == 'selection-sync':
         return run_selection_sync(args.vault)
     if args.worker == 'index-refresh':
@@ -2641,6 +2798,8 @@ def main() -> int:
         return run_ocr(args.vault)
     if args.worker == 'deep-reading':
         return run_deep_reading(args.vault)
+    if args.worker == 'status':
+        return run_status(args.vault)
     if args.worker == 'update':
         return run_update(args.vault)
     if args.worker == 'wizard':

@@ -8,9 +8,9 @@
 2. 支持 Zotero key、标题片段、DOI、PMID、关键词
 3. 优先搜索本地 Zotero 并锁定单篇论文
 4. 绑定该论文对应的：
-   - `99_System/PaperForge/ocr/<KEY>/fulltext.md`
-   - `99_System/PaperForge/ocr/<KEY>/meta.json`
-   - `03_Resources/Literature/.../KEY - Title.md`
+   - `<system_dir>/PaperForge/ocr/<KEY>/fulltext.md`
+   - `<system_dir>/PaperForge/ocr/<KEY>/meta.json`
+   - `<resources_dir>/<literature_dir>/.../KEY - Title.md`
 5. 在正式文献卡片中检查或创建 `## 🔍 精读`
 6. 以“研究思路 + figure-by-figure”方式一次性完成精读写回
 
@@ -189,16 +189,16 @@
 | 变量              | 示例值                                                             |
 | ----------------- | ----------------------------------------------------------------- |
 | `{{ZOTERO_KEY}}`   | `Y5KQ4JQ7`                                                        |
-| `{{FORMAL_NOTE}}`  | `D:\L\Med\Research\03_Resources\Literature\骨科\Y5KQ4JQ7 - 3D printed hydrogel for articular cartilage regeneration.md` |
-| `{{FULLTEXT_MD}}`  | `D:\L\Med\Research\99_System\LiteraturePipeline\ocr\Y5KQ4JQ7\fulltext.md` |
-| `{{SCRIPT}}`      | `D:\L\Med\Research\.opencode\skills\literature-qa\scripts\ld_deep.py` |
+| `{{FORMAL_NOTE}}`  | `<Vault>/<resources_dir>/<literature_dir>/骨科/Y5KQ4JQ7 - title.md` |
+| `{{FULLTEXT_MD}}`  | `<Vault>/<system_dir>/PaperForge/ocr/Y5KQ4JQ7/fulltext.md` |
+| `{{SCRIPT}}`      | `<Vault>/<skill_dir>/literature-qa/scripts/ld_deep.py` |
 
 ### Spawn 命令格式
 
 ```
 Task(
   description="LD-deep {{ZOTERO_KEY}}",
-  prompt="加载 subagent prompt: D:\L\Med\Research\.opencode\skills\literature-qa\prompt_deep_subagent.md\n\n填入以下变量：\n- ZOTERO_KEY: {{ZOTERO_KEY}}\n- FORMAL_NOTE: {{FORMAL_NOTE}}\n- FULLTEXT_MD: {{FULLTEXT_MD}}\n- SCRIPT: {{SCRIPT}}",
+  prompt="加载 subagent prompt: <Vault>/<skill_dir>/literature-qa/prompt_deep_subagent.md\n\n填入以下变量：\n- ZOTERO_KEY: {{ZOTERO_KEY}}\n- FORMAL_NOTE: {{FORMAL_NOTE}}\n- FULLTEXT_MD: {{FULLTEXT_MD}}\n- SCRIPT: {{SCRIPT}}",
   subagent_type="general"
 )
 ```

@@ -47,16 +47,6 @@ if sys.platform == "win32":
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
 
-# 用户数据保护清单（绝不动这些路径）
-PROTECTED_PATHS = {
-    "03_Resources", "05_Bases",
-    "99_System/PaperForge/ocr",
-    "99_System/PaperForge/exports",
-    "99_System/PaperForge/indexes",
-    "99_System/PaperForge/candidates",
-    ".env", "AGENTS.md",
-}
-
 # 可更新路径（代码文件）
 UPDATEABLE_PATHS = ["skills", "pipeline", "command", "scripts"]
 
@@ -81,6 +71,34 @@ def log(msg: str, c: str = "") -> None:
 
 def load_json(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
+
+
+def load_vault_config(vault: Path) -> dict:
+    defaults = {
+        "system_dir": "99_System",
+        "resources_dir": "03_Resources",
+        "literature_dir": "Literature",
+        "control_dir": "LiteratureControl",
+        "base_dir": "05_Bases",
+    }
+    data = load_json(vault / "paperforge.json")
+    nested = data.get("vault_config", {}) if isinstance(data.get("vault_config"), dict) else {}
+    return {**defaults, **nested, **{k: v for k, v in data.items() if k in defaults and v}}
+
+
+def protected_paths(vault: Path) -> set[str]:
+    cfg = load_vault_config(vault)
+    pf = f"{cfg['system_dir']}/PaperForge"
+    return {
+        cfg["resources_dir"],
+        cfg["base_dir"],
+        f"{pf}/ocr",
+        f"{pf}/exports",
+        f"{pf}/indexes",
+        f"{pf}/candidates",
+        ".env",
+        "AGENTS.md",
+    }
 
 
 def sha256(path: Path) -> str:
@@ -137,6 +155,7 @@ def newer(a: str, b: str) -> bool:
 def scan_updates(vault: Path, source: Path) -> list[tuple[Path, Path, str]]:
     """扫描需要更新的文件，返回 (src, dst, action) 列表"""
     updates = []
+    protected = protected_paths(vault)
     for name in UPDATEABLE_PATHS:
         src_dir = source / name
         if not src_dir.exists():
@@ -147,7 +166,7 @@ def scan_updates(vault: Path, source: Path) -> list[tuple[Path, Path, str]]:
             rel = src.relative_to(source)
             dst = vault / rel
             rel_str = str(rel).replace("\\", "/")
-            if any(rel_str.startswith(p) for p in PROTECTED_PATHS):
+            if any(rel_str.startswith(p) for p in protected):
                 continue
             if dst.exists():
                 if sha256(src) != sha256(dst):

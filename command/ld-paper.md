@@ -7,7 +7,7 @@
 1. 解析 `/LD <query>` 中的查询词
 2. 支持 Zotero key、标题片段、DOI、PMID、关键词
 3. 优先搜索本地 Zotero，解析到单篇目标论文
-4. 加载 `D:\L\Med\Research\99_System\LiteraturePipeline\ocr\<KEY>\fulltext.md` 作为主文本
+4. 根据 Vault 根目录的 `paperforge.json` 加载 `<system_dir>/PaperForge/ocr/<KEY>/fulltext.md` 作为主文本
 5. 读取 `meta.json` 显示论文标题、作者、期刊、年份
 6. 进入 Q&A 模式，用中文回答用户关于该论文的问题
 7. 在当前论文上下文中，用户可再说“精读这篇文章”切换到 deep 层

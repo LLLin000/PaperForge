@@ -16,9 +16,13 @@ import platform
 import subprocess
 import sys
 import webbrowser
-import winreg
 from pathlib import Path
 from typing import Optional
+
+if sys.platform == "win32":
+    import winreg
+else:
+    winreg = None
 
 from textual.app import App, ComposeResult
 from textual.containers import Container, Grid, Horizontal, Vertical
@@ -43,7 +47,7 @@ from textual.widgets import (
 # =============================================================================
 
 AGENT_CONFIGS = {
-    "opencode": {"name": "OpenCode", "skill_dir": ".opencode/skills", "config_file": None},
+    "opencode": {"name": "OpenCode", "skill_dir": ".opencode/skills", "command_dir": ".opencode/command", "config_file": None},
     "cursor": {"name": "Cursor", "skill_dir": ".cursor/skills", "config_file": ".cursor/settings.json"},
     "claude": {"name": "Claude Code", "skill_dir": ".claude/skills", "config_file": ".claude/skills.json"},
     "windsurf": {"name": "Windsurf", "skill_dir": ".windsurf/skills", "config_file": None},
@@ -370,7 +374,7 @@ class WelcomeStep(StepScreen):
 
     def compose(self) -> ComposeResult:
         yield from super().compose()
-        yield Static("""
+        yield Static(r"""
     ______  ___  ______ _________________ ___________ _____  _____ 
     | ___ \/ _ \ | ___ \  ___| ___ \  ___|  _  | ___ \  __ \|  ___|
     | |_/ / /_\ \| |_/ / |__ | |_/ / |_  | | | | |_/ / |  \/| |__  
@@ -516,6 +520,8 @@ Obsidian Vault/
         yield Input(value="Literature", id="input-literature-dir")
         yield Static("文献索引文件夹名称:", classes="step-title")
         yield Input(value="LiteratureControl", id="input-control-dir")
+        yield Static("Obsidian Base 文件夹名称:", classes="step-title")
+        yield Input(value="05_Bases", id="input-base-dir")
         yield Horizontal(
             Button("✓ 确认并创建目录", id="btn-setup-vault", variant="primary"),
             id="btn-row",
@@ -545,6 +551,7 @@ Obsidian Vault/
             resources_dir = self.query_one("#input-resources-dir", Input).value.strip() or "03_Resources"
             literature_dir = self.query_one("#input-literature-dir", Input).value.strip() or "Literature"
             control_dir = self.query_one("#input-control-dir", Input).value.strip() or "LiteratureControl"
+            base_dir = self.query_one("#input-base-dir", Input).value.strip() or "05_Bases"
 
             # 解析路径（支持名称、相对路径、绝对路径）
             def resolve_path(base: Path, path_str: str) -> Path:
@@ -556,6 +563,7 @@ Obsidian Vault/
 
             system_path = resolve_path(vault_path, system_dir)
             resources_path = resolve_path(vault_path, resources_dir)
+            base_path = resolve_path(vault_path, base_dir)
 
             # 保存配置
             self.app.vault_config = {
@@ -564,13 +572,16 @@ Obsidian Vault/
                 "resources_dir": resources_dir,
                 "literature_dir": literature_dir,
                 "control_dir": control_dir,
+                "base_dir": base_dir,
                 "paperforge_path": str(system_path / "PaperForge"),
                 "literature_path": str(resources_path / literature_dir),
+                "base_path": str(base_path),
             }
 
             # 创建目录
             dirs_to_create = [
                 resources_path / control_dir / "library-records",
+                base_path,
                 system_path / "PaperForge" / "exports",
                 system_path / "PaperForge" / "ocr",
             ]
@@ -671,6 +682,7 @@ class ZoteroStep(StepScreen):
             
             if is_inside_vault:
                 # 在 Vault 内部，直接通过
+                self.app.zotero_data_dir = str(zotero_data)
                 self.set_status("Zotero 数据目录已确认", True)
                 self.app.post_message(StepPassed(self.step_idx))
                 return
@@ -698,6 +710,8 @@ class ZoteroStep(StepScreen):
                     )
                 else:
                     junction_path.symlink_to(zotero_data, target_is_directory=True)
+                self.app.zotero_data_dir = str(zotero_data)
+                self.app.zotero_link = str(junction_path)
                 self.set_status("链接已创建", True)
                 self.app.post_message(StepPassed(self.step_idx))
             except Exception as e:
@@ -818,8 +832,8 @@ class DeployStep(StepScreen):
         yield Input(placeholder="粘贴你的 PaddleOCR API Key", id="input-api-key")
         yield Static("PaddleOCR API URL:", classes="step-title")
         yield Input(
-            value="https://api.paddleocr.com/ocr",
-            placeholder="https://api.paddleocr.com/ocr",
+            value="https://paddleocr.aistudio-app.com/api/v2/ocr/jobs",
+            placeholder="https://paddleocr.aistudio-app.com/api/v2/ocr/jobs",
             id="input-api-url",
         )
         yield Horizontal(
@@ -866,6 +880,34 @@ class DeployStep(StepScreen):
         vault_config = getattr(self.app, 'vault_config', {})
         system_dir = vault_config.get('system_dir', '99_System')
         resources_dir = vault_config.get('resources_dir', '03_Resources')
+        literature_dir = vault_config.get('literature_dir', 'Literature')
+        control_dir = vault_config.get('control_dir', 'LiteratureControl')
+        base_dir = vault_config.get('base_dir', '05_Bases')
+
+        def apply_user_paths(text: str, skill_dir_value: str = "") -> str:
+            agent_config_dir = str(Path(skill_dir_value or ".opencode/skills").parent).replace("\\", "/")
+            replacements = {
+                "<system_dir>": system_dir,
+                "<resources_dir>": resources_dir,
+                "<literature_dir>": literature_dir,
+                "<control_dir>": control_dir,
+                "<base_dir>": base_dir,
+                "<skill_dir>": skill_dir_value,
+                "<agent_config_dir>": agent_config_dir,
+                "99_System/PaperForge": f"{system_dir}/PaperForge",
+                "99_System\\PaperForge": f"{system_dir}\\PaperForge",
+                "99_System/Zotero": f"{system_dir}/Zotero",
+                "99_System\\Zotero": f"{system_dir}\\Zotero",
+                "03_Resources/LiteratureControl": f"{resources_dir}/{control_dir}",
+                "03_Resources\\LiteratureControl": f"{resources_dir}\\{control_dir}",
+                "03_Resources/Literature": f"{resources_dir}/{literature_dir}",
+                "03_Resources\\Literature": f"{resources_dir}\\{literature_dir}",
+                ".opencode/skills": skill_dir_value or ".opencode/skills",
+                ".opencode\\skills": (skill_dir_value or ".opencode/skills").replace("/", "\\"),
+            }
+            for old, new in replacements.items():
+                text = text.replace(old, new)
+            return text
         
         # 1. 获取 agent 配置
         agent_config = getattr(self.app, 'agent_config', None)
@@ -892,8 +934,11 @@ class DeployStep(StepScreen):
         dirs = [
             pf_path / "exports",
             pf_path / "ocr",
+            pf_path / "config",
             pf_path / "worker/scripts",
-            vault / resources_dir / "LiteratureControl" / "library-records",
+            vault / resources_dir / literature_dir,
+            vault / resources_dir / control_dir / "library-records",
+            vault / base_dir,
             vault / skill_dir / "literature-qa/scripts",
             vault / skill_dir / "literature-qa/chart-reading",
         ]
@@ -920,6 +965,15 @@ class DeployStep(StepScreen):
         else:
             self.set_status(f"错误：找不到 ld_deep.py: {ld_src}", False)
             return False
+
+        # Copy subagent prompt
+        prompt_src = repo_root / "skills/literature-qa/prompt_deep_subagent.md"
+        prompt_dst = vault / skill_dir / "literature-qa/prompt_deep_subagent.md"
+        if prompt_src.exists():
+            shutil.copy2(prompt_src, prompt_dst)
+        else:
+            self.set_status(f"错误：找不到 prompt_deep_subagent.md: {prompt_src}", False)
+            return False
         
         # Copy chart-reading guides
         chart_src = repo_root / "skills/literature-qa/chart-reading"
@@ -927,11 +981,29 @@ class DeployStep(StepScreen):
         if chart_src.exists() and chart_src.is_dir():
             for f in chart_src.glob("*.md"):
                 shutil.copy2(f, chart_dst / f.name)
+
+        # Copy OpenCode command files when the target platform supports them.
+        if getattr(self.app, 'agent_key', '') == 'opencode':
+            command_src = repo_root / "command"
+            command_dst = vault / agent_config.get("command_dir", ".opencode/command")
+            if command_src.exists() and command_src.is_dir():
+                command_dst.mkdir(parents=True, exist_ok=True)
+                for f in command_src.glob("*.md"):
+                    text = apply_user_paths(f.read_text(encoding="utf-8"), skill_dir)
+                    (command_dst / f.name).write_text(text, encoding="utf-8")
+
+        # Copy user-facing docs. AGENTS.md is regenerated below with the chosen paths.
+        docs_src = repo_root / "docs"
+        docs_dst = vault / "docs"
+        if docs_src.exists() and docs_src.is_dir():
+            shutil.copytree(docs_src, docs_dst, dirs_exist_ok=True)
+            for doc in docs_dst.rglob("*.md"):
+                doc.write_text(apply_user_paths(doc.read_text(encoding="utf-8"), skill_dir), encoding="utf-8")
         
         # 5. 创建 .env（放到 PaperForge 目录下）
         from textual.widgets import Input
         api_key = self.query_one("#input-api-key", Input).value.strip()
-        api_url = self.query_one("#input-api-url", Input).value.strip() or "https://api.paddleocr.com/ocr"
+        api_url = self.query_one("#input-api-url", Input).value.strip() or "https://paddleocr.aistudio-app.com/api/v2/ocr/jobs"
         
         if not api_key:
             self.set_status("请填写 PaddleOCR API Key", False)
@@ -948,28 +1020,72 @@ PADDLEOCR_JOB_URL={api_url}
 
 # PaddleOCR 模型（通常不需要修改）
 PADDLEOCR_MODEL=PaddleOCR-VL-1.5
+
+# Zotero data directory selected during setup
+ZOTERO_DATA_DIR={getattr(self.app, 'zotero_data_dir', '')}
 """
         env_path.write_text(env_content, encoding="utf-8")
+
+        # Create a minimal domain mapping. The worker will keep this usable even
+        # before JSON exports exist, and will infer domains from export filenames.
+        domain_config = pf_path / "config" / "domain-collections.json"
+        if not domain_config.exists():
+            export_domains = [
+                {"domain": f.stem, "export_file": f.name, "allowed_collections": []}
+                for f in sorted((pf_path / "exports").glob("*.json"))
+            ]
+            domain_config.write_text(
+                json.dumps({"domains": export_domains}, indent=2, ensure_ascii=False),
+                encoding="utf-8",
+            )
         
         # 6. 创建 paperforge.json（包含用户自定义路径）
         pf_json = vault / "paperforge.json"
-        if not pf_json.exists():
-            import json
-            pf_json.write_text(json.dumps({
-                "version": "1.0.0",
-                "agent_platform": agent_config.get('name', 'OpenCode'),
-                "skill_dir": skill_dir,
+        existing_config = {}
+        if pf_json.exists():
+            try:
+                existing_config = json.loads(pf_json.read_text(encoding="utf-8"))
+            except Exception:
+                existing_config = {}
+        existing_config.update({
+            "version": existing_config.get("version", "1.2.0"),
+            "agent_platform": agent_config.get('name', 'OpenCode'),
+            "agent_key": getattr(self.app, 'agent_key', 'opencode'),
+            "skill_dir": skill_dir,
+            "command_dir": agent_config.get("command_dir", ""),
+            "system_dir": system_dir,
+            "resources_dir": resources_dir,
+            "literature_dir": literature_dir,
+            "control_dir": control_dir,
+            "base_dir": base_dir,
+            "paperforge_path": f"{system_dir}/PaperForge",
+            "zotero_data_dir": getattr(self.app, 'zotero_data_dir', ''),
+            "zotero_link": getattr(self.app, 'zotero_link', f"{system_dir}/Zotero"),
+            "vault_config": {
                 "system_dir": system_dir,
                 "resources_dir": resources_dir,
-                "paperforge_path": f"{system_dir}/PaperForge",
-            }, indent=2, ensure_ascii=False), encoding="utf-8")
+                "literature_dir": literature_dir,
+                "control_dir": control_dir,
+                "base_dir": base_dir,
+            },
+        })
+        pf_json.write_text(json.dumps(existing_config, indent=2, ensure_ascii=False), encoding="utf-8")
+
+        agents_src = repo_root / "AGENTS.md"
+        agents_dst = vault / "AGENTS.md"
+        if agents_src.exists():
+            agents_text = apply_user_paths(agents_src.read_text(encoding="utf-8"), skill_dir)
+            agents_dst.write_text(agents_text, encoding="utf-8")
         
         # 7. 验证文件完整性
         self.set_status("验证文件完整性...", None)
         checks = {
             "Worker 脚本": worker_dst.exists(),
             "精读脚本": ld_dst.exists(),
-            "目录结构": (vault / resources_dir / "LiteratureControl" / "library-records").exists(),
+            "精读提示词": prompt_dst.exists(),
+            "目录结构": (vault / resources_dir / control_dir / "library-records").exists(),
+            "Base 目录": (vault / base_dir).exists(),
+            "分类配置": domain_config.exists(),
             "导出目录": (pf_path / "exports").exists(),
             "OCR 目录": (pf_path / "ocr").exists(),
         }
@@ -1003,7 +1119,10 @@ class DoneStep(StepScreen):
 
     def compose(self) -> ComposeResult:
         yield from super().compose()
-        yield Markdown("""
+        vault_config = getattr(self.app, 'vault_config', {})
+        system_dir = vault_config.get('system_dir', '99_System')
+        worker_cmd = f"python {system_dir}/PaperForge/worker/scripts/literature_pipeline.py --vault ."
+        yield Markdown(f"""
 ## 安装完成！
 
 所有前置条件已满足，你现在可以开始使用 PaperForge Lite。
@@ -1012,12 +1131,12 @@ class DoneStep(StepScreen):
 
 **1. 同步 Zotero 文献**
 ```bash
-python 99_System/PaperForge/worker/scripts/literature_pipeline.py --vault . selection-sync
+{worker_cmd} selection-sync
 ```
 
 **2. 生成正式笔记**
 ```bash
-python 99_System/PaperForge/worker/scripts/literature_pipeline.py --vault . index-refresh
+{worker_cmd} index-refresh
 ```
 
 **3. 标记精读文献**
@@ -1027,7 +1146,7 @@ python 99_System/PaperForge/worker/scripts/literature_pipeline.py --vault . inde
 
 **4. 运行 OCR**
 ```bash
-python 99_System/PaperForge/worker/scripts/literature_pipeline.py --vault . ocr
+{worker_cmd} ocr
 ```
 
 **5. 执行精读**
@@ -1056,7 +1175,7 @@ python 99_System/PaperForge/worker/scripts/literature_pipeline.py --vault . ocr
 
 **Python 脚本命令（备用）：**
 ```bash
-python 99_System/PaperForge/worker/scripts/literature_pipeline.py --vault . <command>
+{worker_cmd} <command>
 ```
 | 命令 | 作用 |
 |------|------|

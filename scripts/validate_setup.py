@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate literature workflow setup."""
+"""Validate a PaperForge Lite installation."""
 
 from __future__ import annotations
 
@@ -9,220 +9,108 @@ import sys
 from pathlib import Path
 
 
-def check_path(label: str, path: str | Path, expected_type: str = "file") -> tuple[bool, str]:
-    """Check if a path exists and is the expected type."""
-    p = Path(path)
-    if not p.exists():
+def check_path(label: str, path: Path, expected_type: str = "file") -> tuple[bool, str]:
+    if not path.exists():
         return False, f"[FAIL] {label}: not found at {path}"
-    
-    if expected_type == "file" and not p.is_file():
+    if expected_type == "file" and not path.is_file():
         return False, f"[FAIL] {label}: exists but is not a file ({path})"
-    if expected_type == "dir" and not p.is_dir():
+    if expected_type == "dir" and not path.is_dir():
         return False, f"[FAIL] {label}: exists but is not a directory ({path})"
-    
     return True, f"[OK] {label}: {path}"
 
 
-def validate_zotero(zotero_path: str) -> list[tuple[bool, str]]:
-    """Validate Zotero installation and data directory."""
-    results = []
-    zotero_dir = Path(zotero_path)
-    
-    # Check main directory
-    ok, msg = check_path("Zotero data directory", zotero_path, "dir")
-    results.append((ok, msg))
-    if not ok:
-        return results
-    
-    # Check zotero.sqlite
-    sqlite_path = zotero_dir / "zotero.sqlite"
-    ok, msg = check_path("zotero.sqlite", sqlite_path, "file")
-    results.append((ok, msg))
-    
-    # Check better-bibtex JSON (optional but recommended)
-    bbt_path = zotero_dir / "better-bibtex.json"
-    if bbt_path.exists():
-        results.append((True, f"[OK] Better BibTeX config: {bbt_path}"))
-    else:
-        results.append((False, f"[WARN] Better BibTeX config not found (optional but recommended): {bbt_path}"))
-    
-    return results
-
-
-def validate_obsidian(vault_path: str) -> list[tuple[bool, str]]:
-    """Validate Obsidian vault structure."""
-    results = []
-    vault_dir = Path(vault_path)
-    
-    ok, msg = check_path("Obsidian vault", vault_path, "dir")
-    results.append((ok, msg))
-    if not ok:
-        return results
-    
-    # Check expected subdirectories
-    expected_dirs = [
-        "00_Inbox",
-        "01_Projects", 
-        "02_Areas",
-        "03_Resources",
-        "04_Archives",
-        "05_Bases",
-        "99_System",
-    ]
-    
-    for subdir in expected_dirs:
-        subpath = vault_dir / subdir
-        ok, msg = check_path(f"Vault subdirectory: {subdir}", subpath, "dir")
-        results.append((ok, msg))
-    
-    return results
-
-
-def validate_ocr_pipeline(vault_path: str) -> list[tuple[bool, str]]:
-    """Validate OCR pipeline configuration."""
-    results = []
-    vault_dir = Path(vault_path)
-    
-    # Check .env file
-    env_path = vault_dir / ".env"
-    ok, msg = check_path("Environment config (.env)", env_path, "file")
-    results.append((ok, msg))
-    
-    if ok:
-        # Check if PADDLEOCR_API_TOKEN is set
-        env_content = env_path.read_text(encoding='utf-8')
-        if "PADDLEOCR_API_TOKEN" in env_content:
-            results.append((True, "[OK] PADDLEOCR_API_TOKEN configured in .env"))
-        else:
-            results.append((False, "[FAIL] PADDLEOCR_API_TOKEN not found in .env"))
-    
-    # Check OCR pipeline directory
-    ocr_dir = vault_dir / "99_System" / "LiteraturePipeline" / "worker"
-    ok, msg = check_path("OCR pipeline directory", ocr_dir, "dir")
-    results.append((ok, msg))
-    
-    # Check worker script
-    worker_path = ocr_dir / "scripts" / "literature_pipeline.py"
-    ok, msg = check_path("OCR worker script", worker_path, "file")
-    results.append((ok, msg))
-    
-    return results
-
-
-def validate_ld_deep(vault_path: str) -> list[tuple[bool, str]]:
-    """Validate /LD-deep command setup."""
-    results = []
-    vault_dir = Path(vault_path)
-    
-    # Check ld_deep.py script
-    ld_deep_path = vault_dir / ".opencode" / "skills" / "literature-qa" / "scripts" / "ld_deep.py"
-    ok, msg = check_path("LD-deep script", ld_deep_path, "file")
-    results.append((ok, msg))
-    
-    # Check prompt
-    prompt_path = vault_dir / ".opencode" / "skills" / "literature-qa" / "prompt_deep_subagent.md"
-    ok, msg = check_path("LD-deep subagent prompt", prompt_path, "file")
-    results.append((ok, msg))
-    
-    # Check chart reading guides
-    
-    
-    if ok:
-        # Count guide files
-        guide_files = list(chart_guide_dir.glob("*.md"))
-        if len(guide_files) >= 14:
-            results.append((True, f"[OK] Found {len(guide_files)} chart reading guides"))
-        else:
-            results.append((False, f"[WARN] Only {len(guide_files)} chart guides found (expected 14+)"))
-    
-    return results
+def load_config(vault: Path) -> dict:
+    defaults = {
+        "system_dir": "99_System",
+        "resources_dir": "03_Resources",
+        "literature_dir": "Literature",
+        "control_dir": "LiteratureControl",
+        "base_dir": "05_Bases",
+        "skill_dir": ".opencode/skills",
+    }
+    config_path = vault / "paperforge.json"
+    if not config_path.exists():
+        return defaults
+    try:
+        data = json.loads(config_path.read_text(encoding="utf-8"))
+    except Exception:
+        return defaults
+    nested = data.get("vault_config", {}) if isinstance(data.get("vault_config"), dict) else {}
+    return {**defaults, **nested, **{k: v for k, v in data.items() if k in defaults and v}}
 
 
 def validate_python_deps() -> list[tuple[bool, str]]:
-    """Check Python dependencies."""
     results = []
-    required = {
-        "requests": "requests",
-        "pymupdf": "fitz",
-        "pillow": "PIL",
-        "pytest": "pytest",
-    }
-    
+    required = {"requests": "requests", "pymupdf": "fitz", "pillow": "PIL", "textual": "textual"}
     for package, import_name in required.items():
         try:
             __import__(import_name)
             results.append((True, f"[OK] Python package installed: {package}"))
         except ImportError:
-            results.append((False, f"[FAIL] Python package missing: {package} (pip install {package})"))
-    
+            results.append((False, f"[FAIL] Python package missing: {package}"))
     return results
 
 
-def main():
-    """Run all validation checks."""
-    print("=" * 60)
-    print("Literature Workflow Setup Validation")
-    print("=" * 60)
-    
-    # Load config from .env or config.json
-    vault_path = os.environ.get("VAULT_PATH", ".")
-    zotero_path = os.environ.get("ZOTERO_PATH", "")
-    
-    config_path = Path(vault_path) / "config.json"
-    if config_path.exists():
-        config = json.loads(config_path.read_text(encoding="utf-8"))
-        vault_path = config.get("vault_path", vault_path)
-        zotero_path = config.get("zotero_path", zotero_path)
-    
+def validate_vault(vault: Path, cfg: dict) -> list[tuple[bool, str]]:
+    results = [check_path("Obsidian vault", vault, "dir")]
+    if not results[0][0]:
+        return results
+    pf_root = vault / cfg["system_dir"] / "PaperForge"
+    control_root = vault / cfg["resources_dir"] / cfg["control_dir"] / "library-records"
+    literature_root = vault / cfg["resources_dir"] / cfg["literature_dir"]
+    base_root = vault / cfg["base_dir"]
+    for label, path, kind in [
+        ("paperforge.json", vault / "paperforge.json", "file"),
+        ("PaperForge root", pf_root, "dir"),
+        ("exports directory", pf_root / "exports", "dir"),
+        ("ocr directory", pf_root / "ocr", "dir"),
+        ("domain config", pf_root / "config" / "domain-collections.json", "file"),
+        ("worker script", pf_root / "worker" / "scripts" / "literature_pipeline.py", "file"),
+        ("library records directory", control_root, "dir"),
+        ("literature notes directory", literature_root, "dir"),
+        ("Base directory", base_root, "dir"),
+    ]:
+        results.append(check_path(label, path, kind))
+    env_path = pf_root / ".env"
+    ok, msg = check_path("PaperForge .env", env_path, "file")
+    results.append((ok, msg))
+    if ok:
+        env_text = env_path.read_text(encoding="utf-8")
+        for key in ("PADDLEOCR_API_TOKEN", "PADDLEOCR_JOB_URL"):
+            results.append((key in env_text, f"[{'OK' if key in env_text else 'FAIL'}] {key} configured"))
+    return results
+
+
+def validate_agent(vault: Path, cfg: dict) -> list[tuple[bool, str]]:
+    skill_root = vault / cfg["skill_dir"] / "literature-qa"
+    results = [
+        check_path("LD-deep script", skill_root / "scripts" / "ld_deep.py", "file"),
+        check_path("LD-deep subagent prompt", skill_root / "prompt_deep_subagent.md", "file"),
+        check_path("chart-reading directory", skill_root / "chart-reading", "dir"),
+    ]
+    chart_dir = skill_root / "chart-reading"
+    if chart_dir.exists():
+        guide_count = len(list(chart_dir.glob("*.md")))
+        results.append((guide_count >= 14, f"[{'OK' if guide_count >= 14 else 'WARN'}] chart-reading guides: {guide_count}"))
+    return results
+
+
+def main() -> int:
+    vault = Path(os.environ.get("VAULT_PATH", ".")).resolve()
+    cfg = load_config(vault)
     all_results = []
-    
-    # Python dependencies
-    print("\n## Python Dependencies")
     all_results.extend(validate_python_deps())
-    
-    # Zotero
-    if zotero_path:
-        print("\n## Zotero Integration")
-        all_results.extend(validate_zotero(zotero_path))
-    else:
-        all_results.append((False, "[SKIP] Zotero path not configured"))
-    
-    # Obsidian vault
-    print("\n## Obsidian Vault")
-    all_results.extend(validate_obsidian(vault_path))
-    
-    # OCR pipeline
-    print("\n## OCR Pipeline")
-    all_results.extend(validate_ocr_pipeline(vault_path))
-    
-    # LD-deep
-    print("\n## LD-deep Commands")
-    all_results.extend(validate_ld_deep(vault_path))
-    
-    # Summary
-    print("\n" + "=" * 60)
+    all_results.extend(validate_vault(vault, cfg))
+    all_results.extend(validate_agent(vault, cfg))
+
     passed = sum(1 for ok, _ in all_results if ok)
-    failed = sum(1 for ok, _ in all_results if not ok)
-    warnings = sum(1 for ok, msg in all_results if not ok and msg.startswith("[WARN]"))
-    
-    print(f"Results: {passed} passed, {failed} failed ({warnings} warnings)")
-    print("=" * 60)
-    
-    # Print failures
-    failures = [msg for ok, msg in all_results if not ok and not msg.startswith("[WARN]")]
-    if failures:
-        print("\n### Failures to fix:")
-        for msg in failures:
-            print(f"  - {msg}")
-    
-    warnings_list = [msg for ok, msg in all_results if not ok and msg.startswith("[WARN]")]
-    if warnings_list:
-        print("\n### Warnings (optional):")
-        for msg in warnings_list:
-            print(f"  - {msg}")
-    
-    return 0 if not failures else 1
+    failed = [msg for ok, msg in all_results if not ok and not msg.startswith("[WARN]")]
+    warnings = [msg for ok, msg in all_results if not ok and msg.startswith("[WARN]")]
+    print(f"PaperForge Lite validation: {passed} passed, {len(failed)} failed, {len(warnings)} warnings")
+    for _, msg in all_results:
+        print(msg)
+    return 0 if not failed else 1
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    raise SystemExit(main())

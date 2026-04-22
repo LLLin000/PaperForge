@@ -11,6 +11,41 @@ from pathlib import Path
 from typing import Iterable
 
 
+def _load_vault_config(vault: Path) -> dict:
+    """Load vault directory configuration from paperforge.json."""
+    defaults = {
+        "system_dir": "99_System",
+        "resources_dir": "03_Resources",
+        "literature_dir": "Literature",
+        "control_dir": "LiteratureControl",
+        "base_dir": "05_Bases",
+    }
+    config_path = vault / "paperforge.json"
+    if config_path.exists():
+        try:
+            data = json.loads(config_path.read_text(encoding="utf-8"))
+            nested = data.get("vault_config", {}) if isinstance(data.get("vault_config"), dict) else {}
+            return {**defaults, **nested, **{k: v for k, v in data.items() if k in defaults and v}}
+        except Exception:
+            pass
+    return defaults
+
+
+def _paperforge_paths(vault: Path) -> dict[str, Path]:
+    config = _load_vault_config(vault)
+    resources = vault / config["resources_dir"]
+    return {
+        "ocr": vault / config["system_dir"] / "PaperForge" / "ocr",
+        "records": resources / config["control_dir"] / "library-records",
+        "literature": resources / config["literature_dir"],
+    }
+
+
+def _get_ocr_root(vault: Path) -> Path:
+    """Get OCR root path dynamically from config."""
+    return _paperforge_paths(vault)["ocr"]
+
+
 STUDY_HEADER = "## 🔍 精读"
 FIGURE_SECTION_HEADER = "#### Figure-by-Figure 解析"
 TABLE_SECTION_HEADER = "#### Table-by-Table 解析"
@@ -542,8 +577,8 @@ def build_figure_map(fulltext: str, zotero_key: str = "") -> dict:
 
 
 def find_note_by_zotero_key(workspace_root: Path, zotero_key: str) -> Path | None:
-    """Resolve the formal literature note from 03_Resources/Literature."""
-    literature_root = workspace_root / "03_Resources" / "Literature"
+    """Resolve the formal literature note from the configured literature directory."""
+    literature_root = _paperforge_paths(workspace_root)["literature"]
     if not literature_root.exists():
         return None
 
@@ -953,9 +988,10 @@ def prepare_deep_reading(vault: Path, zotero_key: str, force: bool = False) -> d
         "chart_recommendations": [],
     }
 
-    records_root = vault / "03_Resources" / "LiteratureControl" / "library-records"
-    literature_root = vault / "03_Resources" / "Literature"
-    ocr_root = vault / "99_System" / "LiteraturePipeline" / "ocr"
+    paths = _paperforge_paths(vault)
+    records_root = paths["records"]
+    literature_root = paths["literature"]
+    ocr_root = paths["ocr"]
 
     # 1. Find library-record
     record_path: Path | None = None
@@ -1116,8 +1152,9 @@ def scan_deep_reading_queue(vault: Path) -> list[dict]:
     Returns a list of dicts with keys:
       - zotero_key, title, domain, analyze, deep_reading_status, ocr_status
     """
-    records_root = vault / "03_Resources" / "LiteratureControl" / "library-records"
-    ocr_root = vault / "99_System" / "LiteraturePipeline" / "ocr"
+    paths = _paperforge_paths(vault)
+    records_root = paths["records"]
+    ocr_root = paths["ocr"]
     queue: list[dict] = []
     if not records_root.exists():
         return queue

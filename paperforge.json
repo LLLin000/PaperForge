@@ -9,12 +9,12 @@
     "check_interval_days": 7
   },
   "protected_paths": [
-    "03_Resources/",
-    "05_Bases/",
-    "99_System/PaperForge/ocr/",
-    "99_System/PaperForge/exports/",
-    "99_System/PaperForge/indexes/",
-    "99_System/PaperForge/candidates/",
+    "<resources_dir>/",
+    "<base_dir>/",
+    "<system_dir>/PaperForge/ocr/",
+    "<system_dir>/PaperForge/exports/",
+    "<system_dir>/PaperForge/indexes/",
+    "<system_dir>/PaperForge/candidates/",
     ".env",
     "AGENTS.md"
   ],
@@ -26,3 +26,6 @@
   ],
   "changelog_url": "https://github.com/LLLin000/PaperForge/releases"
 }
+
+
+

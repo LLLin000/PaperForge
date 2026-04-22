@@ -58,17 +58,17 @@ python setup_wizard.py --vault /path/to/your/vault
 
 ```
 your-vault/
-├── [资源目录]/                  # 默认: 03_Resources
-│   └── LiteratureControl/
+├── [资源目录]/                  # 安装时可自定义
+│   └── [文献索引目录]/
 │       └── library-records/     # 文献状态跟踪
-├── [系统目录]/                  # 默认: 99_System
+├── [系统目录]/                  # 安装时可自定义
 │   ├── PaperForge/
 │   │   ├── exports/             # Zotero JSON 导出
 │   │   ├── ocr/                 # OCR 结果
 │   │   └── worker/scripts/
 │   │       └── literature_pipeline.py
 │   └── Zotero/                  # Junction 到 Zotero 数据目录
-├── [Agent配置目录]/             # 根据平台: .opencode, .cursor 等
+├── [Agent配置目录]/             # 根据平台和安装配置决定
 │   └── skills/
 │       └── literature-qa/
 │           ├── scripts/ld_deep.py
@@ -89,10 +89,10 @@ your-vault/
 
 ```bash
 # Worker 命令
-python 99_System/PaperForge/worker/scripts/literature_pipeline.py --vault . selection-sync
-python 99_System/PaperForge/worker/scripts/literature_pipeline.py --vault . index-refresh
-python 99_System/PaperForge/worker/scripts/literature_pipeline.py --vault . ocr
-python 99_System/PaperForge/worker/scripts/literature_pipeline.py --vault . status
+python <system_dir>/PaperForge/worker/scripts/literature_pipeline.py --vault . selection-sync
+python <system_dir>/PaperForge/worker/scripts/literature_pipeline.py --vault . index-refresh
+python <system_dir>/PaperForge/worker/scripts/literature_pipeline.py --vault . ocr
+python <system_dir>/PaperForge/worker/scripts/literature_pipeline.py --vault . status
 
 # Agent 命令（在 OpenCode 中使用）
 /LD-deep <zotero_key>    # 完整三阶段精读
@@ -102,3 +102,4 @@ python 99_System/PaperForge/worker/scripts/literature_pipeline.py --vault . stat
 ## License
 
 MIT License — 允许商业使用，需保留版权声明。
+

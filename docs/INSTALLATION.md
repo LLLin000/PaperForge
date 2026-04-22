@@ -50,22 +50,22 @@ pip install requests pymupdf pillow
 ### Step 2: 创建目录结构
 
 ```bash
-mkdir -p "{vault_path}/99_System/PaperForge/ocr"
-mkdir -p "{vault_path}/99_System/PaperForge/worker/scripts"
-mkdir -p "{vault_path}/99_System/Zotero"
-mkdir -p "{vault_path}/03_Resources/LiteratureControl/library-records"
+mkdir -p "{vault_path}/<system_dir>/PaperForge/ocr"
+mkdir -p "{vault_path}/<system_dir>/PaperForge/worker/scripts"
+mkdir -p "{vault_path}/<system_dir>/Zotero"
+mkdir -p "{vault_path}/<resources_dir>/<control_dir>/library-records"
 ```
 
 ### Step 3: 链接 Zotero 数据目录
 
 **Windows** (管理员终端):
 ```cmd
-mklink /J "{vault_path}\99_System\Zotero" "C:\Users\<User>\Zotero"
+mklink /J "{vault_path}\<system_dir>\Zotero" "C:\Users\<User>\Zotero"
 ```
 
 **macOS/Linux**:
 ```bash
-ln -s "~/Zotero" "{vault_path}/99_System/Zotero"
+ln -s "~/Zotero" "{vault_path}/<system_dir>/Zotero"
 ```
 
 ### Step 4: 配置 .env
@@ -79,8 +79,8 @@ PADDLEOCR_JOB_URL=https://paddleocr.aistudio-app.com/api/v2/ocr/jobs
 ### Step 5: 部署脚本
 
 ```bash
-cp pipeline/worker/scripts/literature_pipeline.py "{vault_path}/99_System/PaperForge/worker/scripts/"
-cp -r skills/literature-qa "{vault_path}/.opencode/skills/"
+cp pipeline/worker/scripts/literature_pipeline.py "{vault_path}/<system_dir>/PaperForge/worker/scripts/"
+cp -r skills/literature-qa "{vault_path}/<skill_dir>/"
 cp AGENTS.md "{vault_path}/AGENTS.md"
 ```
 
@@ -92,7 +92,7 @@ cp AGENTS.md "{vault_path}/AGENTS.md"
 
 ```bash
 cd "{vault_path}"
-python 99_System/PaperForge/worker/scripts/literature_pipeline.py --vault . status
+python <system_dir>/PaperForge/worker/scripts/literature_pipeline.py --vault . status
 ```
 
 预期输出：
@@ -132,3 +132,4 @@ Status: OK
 5. **开始精读**：使用 `/LD-deep <zotero_key>` 生成结构化阅读笔记
 
 详细用法参见 [AGENTS.md](../AGENTS.md)。
+

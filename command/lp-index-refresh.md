@@ -1,16 +1,11 @@
 # /lp-index-refresh
 
-刷新 LiteraturePipeline 索引，包含孤立记录清理逻辑。
+根据 library-records 和 Zotero JSON 导出生成正式文献笔记。
 
-## Commands
+## Command
+
+先读取 Vault 根目录的 `paperforge.json`，用其中的 `system_dir` 拼出 worker 路径，再运行：
 
 ```bash
-python 99_System/PaperForge/worker/scripts/literature_pipeline.py --vault D:\L\Med\Research index-refresh
-```
-
-## 输出示例
-
-```
-index-refresh: wrote 684 index rows
-index-refresh: cleaned 0 orphaned records in 骨科
+python <system_dir>/PaperForge/worker/scripts/literature_pipeline.py --vault . index-refresh
 ```
