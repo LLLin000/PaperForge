@@ -2587,7 +2587,9 @@ def main() -> int:
     parser.add_argument('--skip-ingest', action='store_true')
     parser.add_argument('worker', choices=['selection-sync', 'index-refresh', 'ocr', 'deep-reading', 'update', 'wizard', 'all'])
     args = parser.parse_args()
+    # Load .env from vault root first, then from PaperForge directory
     load_simple_env(args.vault / '.env')
+    load_simple_env(args.vault / '99_System' / 'PaperForge' / '.env')
     if args.worker == 'selection-sync':
         return run_selection_sync(args.vault)
     if args.worker == 'index-refresh':

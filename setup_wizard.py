@@ -880,21 +880,21 @@ class DeployStep(StepScreen):
         dirs = [
             pf_path / "exports",
             pf_path / "ocr",
+            pf_path / "worker/scripts",
             vault / resources_dir / "LiteratureControl" / "library-records",
-            vault / "pipeline/worker/scripts",
             vault / skill_dir / "literature-qa/scripts",
             vault / skill_dir / "literature-qa/chart-reading",
         ]
         for d in dirs:
             d.mkdir(parents=True, exist_ok=True)
         
-        # 3. 复制脚本
+        # 3. 复制脚本（到 PaperForge 目录下）
         import shutil
         repo_root = vault  # 假设从 github-release 运行
         
-        # Copy pipeline worker
+        # Copy pipeline worker to PaperForge/worker/scripts/
         worker_src = repo_root / "pipeline/worker/scripts/literature_pipeline.py"
-        worker_dst = vault / "pipeline/worker/scripts/literature_pipeline.py"
+        worker_dst = pf_path / "worker/scripts/literature_pipeline.py"
         if worker_src.exists():
             shutil.copy2(worker_src, worker_dst)
         
@@ -911,7 +911,7 @@ class DeployStep(StepScreen):
             for f in chart_src.glob("*.md"):
                 shutil.copy2(f, chart_dst / f.name)
         
-        # 4. 创建 .env（使用用户输入的 API Key）
+        # 4. 创建 .env（放到 PaperForge 目录下）
         from textual.widgets import Input
         api_key = self.query_one("#input-api-key", Input).value.strip()
         api_url = self.query_one("#input-api-url", Input).value.strip() or "https://api.paddleocr.com/ocr"
@@ -920,7 +920,8 @@ class DeployStep(StepScreen):
             self.set_status("请填写 PaddleOCR API Key", False)
             return False
         
-        env_path = vault / ".env"
+        # 把 .env 放在 PaperForge 目录下
+        env_path = pf_path / ".env"
         env_content = f"""# PaperForge 配置文件
 # PaddleOCR API Token（从 https://paddleocr.baidu.com 获取）
 PADDLEOCR_API_TOKEN={api_key}
@@ -994,12 +995,12 @@ class DoneStep(StepScreen):
 
 **1. 同步 Zotero 文献**
 ```bash
-python pipeline/worker/scripts/literature_pipeline.py --vault . selection-sync
+python 99_System/PaperForge/worker/scripts/literature_pipeline.py --vault . selection-sync
 ```
 
 **2. 生成正式笔记**
 ```bash
-python pipeline/worker/scripts/literature_pipeline.py --vault . index-refresh
+python 99_System/PaperForge/worker/scripts/literature_pipeline.py --vault . index-refresh
 ```
 
 **3. 标记精读文献**
@@ -1009,7 +1010,7 @@ python pipeline/worker/scripts/literature_pipeline.py --vault . index-refresh
 
 **4. 运行 OCR**
 ```bash
-python pipeline/worker/scripts/literature_pipeline.py --vault . ocr
+python 99_System/PaperForge/worker/scripts/literature_pipeline.py --vault . ocr
 ```
 
 **5. 执行精读**
@@ -1038,7 +1039,7 @@ python pipeline/worker/scripts/literature_pipeline.py --vault . ocr
 
 **Python 脚本命令（备用）：**
 ```bash
-python pipeline/worker/scripts/literature_pipeline.py --vault . <command>
+python 99_System/PaperForge/worker/scripts/literature_pipeline.py --vault . <command>
 ```
 | 命令 | 作用 |
 |------|------|
