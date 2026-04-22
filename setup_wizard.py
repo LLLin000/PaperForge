@@ -22,6 +22,7 @@ from typing import Optional
 
 from textual.app import App, ComposeResult
 from textual.containers import Container, Grid, Horizontal, Vertical
+from textual.message import Message
 from textual.reactive import reactive
 from textual.screen import Screen
 from textual.widgets import (
@@ -245,6 +246,7 @@ class StepScreen(Static):
     """单个步骤页面基类"""
 
     def __init__(self, step_id: str, checker: EnvChecker, **kwargs):
+        kwargs.setdefault("id", step_id)
         super().__init__(**kwargs)
         self.step_id = step_id
         self.checker = checker
@@ -527,15 +529,17 @@ python pipeline/worker/scripts/literature_pipeline.py --vault . ocr
 # Custom Messages
 # =============================================================================
 
-class StepPassed:
+class StepPassed(Message):
     """步骤通过消息"""
     def __init__(self, step_idx: int):
+        super().__init__()
         self.step_idx = step_idx
 
 
-class RestartWizard:
+class RestartWizard(Message):
     """重新开始消息"""
-    pass
+    def __init__(self):
+        super().__init__()
 
 
 # =============================================================================
@@ -619,7 +623,6 @@ class SetupWizardApp(App):
                             DoneStep("step-6", self.checker),
                         ]
                         for screen in screens:
-                            screen.id = screen.step_id
                             self.step_screens[screen.step_id] = screen
                             yield screen
 
