@@ -58,24 +58,25 @@ python setup_wizard.py --vault /path/to/your/vault
 
 ```
 your-vault/
-├── 03_Resources/               # 可自定义名称
+├── [资源目录]/                  # 默认: 03_Resources
 │   └── LiteratureControl/
-│       └── library-records/    # 文献状态跟踪
-├── 99_System/                  # 可自定义名称
+│       └── library-records/     # 文献状态跟踪
+├── [系统目录]/                  # 默认: 99_System
 │   ├── PaperForge/
-│   │   ├── exports/            # Zotero JSON 导出
-│   │   ├── ocr/                # OCR 结果
+│   │   ├── exports/             # Zotero JSON 导出
+│   │   ├── ocr/                 # OCR 结果
 │   │   └── worker/scripts/
 │   │       └── literature_pipeline.py
-│   └── Zotero/                 # Junction 到 Zotero 数据目录
-├── .opencode/skills/           # Agent Skill 目录（根据平台）
-│   └── literature-qa/
-│       ├── scripts/ld_deep.py
-│       ├── prompt_deep_subagent.md
-│       └── chart-reading/      # 14 种图表阅读指南
-├── .env                        # API Key 配置
-├── paperforge.json             # 版本配置
-└── AGENTS.md                   # 安装后指南
+│   └── Zotero/                  # Junction 到 Zotero 数据目录
+├── [Agent配置目录]/             # 根据平台: .opencode, .cursor 等
+│   └── skills/
+│       └── literature-qa/
+│           ├── scripts/ld_deep.py
+│           ├── prompt_deep_subagent.md
+│           └── chart-reading/   # 14 种图表阅读指南
+├── .env                         # API Key 配置
+├── paperforge.json              # 版本配置
+└── AGENTS.md                    # 安装后指南
 ```
 
 ## 文档
