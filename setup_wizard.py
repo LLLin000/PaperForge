@@ -39,6 +39,22 @@ from textual.widgets import (
 
 
 # =============================================================================
+# Agent Platform Configurations
+# =============================================================================
+
+AGENT_CONFIGS = {
+    "opencode": {"name": "OpenCode", "skill_dir": ".opencode/skills", "config_file": None},
+    "cursor": {"name": "Cursor", "skill_dir": ".cursor/skills", "config_file": ".cursor/settings.json"},
+    "claude": {"name": "Claude Code", "skill_dir": ".claude/skills", "config_file": ".claude/skills.json"},
+    "windsurf": {"name": "Windsurf", "skill_dir": ".windsurf/skills", "config_file": None},
+    "github_copilot": {"name": "GitHub Copilot", "skill_dir": ".github/skills", "config_file": ".github/copilot-instructions.md"},
+    "cline": {"name": "Cline", "skill_dir": ".clinerules/skills", "config_file": ".clinerules"},
+    "augment": {"name": "Augment", "skill_dir": ".augment/skills", "config_file": None},
+    "trae": {"name": "Trae", "skill_dir": ".trae/skills", "config_file": None},
+}
+
+
+# =============================================================================
 # Detection Logic (unchanged from previous version)
 # =============================================================================
 
@@ -75,6 +91,32 @@ class EnvChecker:
             r.detail = f"Python {v.major}.{v.minor}.{v.micro} (需要 >= 3.8)"
             r.action_required = True
         return r
+
+    def check_dependencies(self) -> CheckResult:
+        r = CheckResult("Python 依赖")
+        required = {"requests": "requests", "pymupdf": "fitz", "PIL": "PIL"}
+        missing = []
+        for pkg, import_name in required.items():
+            try:
+                __import__(import_name)
+            except ImportError:
+                missing.append(pkg)
+        if not missing:
+            r.passed = True
+            r.detail = "所有依赖已安装 (requests, pymupdf, pillow)"
+        else:
+            r.passed = False
+            r.detail = f"缺少依赖: {', '.join(missing)}"
+            r.action_required = True
+        return r
+
+    def install_dependencies(self) -> bool:
+        deps = ["requests", "pymupdf", "pillow"]
+        try:
+            subprocess.run([sys.executable, "-m", "pip", "install"] + deps, check=True, capture_output=True)
+            return True
+        except subprocess.CalledProcessError:
+            return False
 
     def check_vault(self) -> CheckResult:
         r = self.results["vault"]
@@ -280,11 +322,13 @@ class EnvChecker:
 
 STEP_TITLES = [
     "欢迎使用 PaperForge",
-    "检查 Python 版本",
+    "选择 AI Agent 平台",
+    "检查 Python 与依赖",
     "检查 Vault 结构",
-    "安装 Zotero",
+    "安装 Zotero 与链接",
     "安装 Better BibTeX",
     "配置 JSON 导出",
+    "部署工作流脚本",
     "安装完成",
 ]
 
@@ -318,8 +362,19 @@ class StepScreen(Static):
 class WelcomeStep(StepScreen):
     """Step 0: 欢迎页"""
 
+    LOGO = r"""
+    ______  ___  ______ _________________ ___________ _____  _____ 
+    | ___ \/ _ \ | ___ \  ___| ___ \  ___|  _  | ___ \  __ \|  ___|
+    | |_/ / /_\ \| |_/ / |__ | |_/ / |_  | | | | |_/ / |  \/| |__  
+    |  __/|  _  ||  __/|  __||    /|  _| | | | |    /| | __ |  __| 
+    | |   | | | || |   | |___| |\ \| |   \ \_/ / |\ \| |_\ \| |___ 
+    \_|   \_| |_/\_|   \____/\_| \_\_|    \___/\_| \_|\____/\____/ 
+                                                                   
+              [+]  Forge Your Knowledge Into Power  [+]             
+    """
+
     def compose(self) -> ComposeResult:
-        yield from super().compose()
+        yield Static(self.LOGO, classes="logo")
         yield Markdown("""
 **PaperForge Lite** 是一个连接 Zotero 与 Obsidian 的文献工作流工具。
 
@@ -340,28 +395,80 @@ class WelcomeStep(StepScreen):
             self.app.post_message(StepPassed(self.step_idx))
 
 
-class PythonStep(StepScreen):
-    """Step 1: Python 版本"""
+class AgentPlatformStep(StepScreen):
+    """Step 1: 选择 AI Agent 平台"""
 
     def compose(self) -> ComposeResult:
         yield from super().compose()
         yield Markdown("""
-PaperForge 需要 **Python 3.8 或更高版本**。
+PaperForge 需要知道你使用哪个 **AI Agent** 来执行精读命令。
 
-当前环境将自动检测，无需手动操作。
+这将决定 Skill 文件安装到哪里：
+- **OpenCode** -> `.opencode/skills/`
+- **Cursor** -> `.cursor/skills/`
+- **Claude Code** -> `.claude/skills/`
+- 其他...
+
+选择你的 Agent 平台：
+        """)
+        for i, (key, cfg) in enumerate(AGENT_CONFIGS.items()):
+            yield Button(
+                f"{i+1}. {cfg['name']}",
+                id=f"btn-agent-{key}",
+                variant="default",
+            )
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        btn_id = event.button.id
+        if btn_id and btn_id.startswith("btn-agent-"):
+            agent_key = btn_id.replace("btn-agent-", "")
+            cfg = AGENT_CONFIGS.get(agent_key)
+            if cfg:
+                # 保存选择到 app
+                self.app.agent_config = cfg
+                self.app.agent_key = agent_key
+                self.set_status(f"已选择: {cfg['name']}", True)
+                self.app.post_message(StepPassed(self.step_idx))
+
+
+class PythonStep(StepScreen):
+    """Step 2: Python 版本与依赖"""
+
+    def compose(self) -> ComposeResult:
+        yield from super().compose()
+        yield Markdown("""
+PaperForge 需要 **Python 3.8+** 以及以下 Python 包：
+- `requests` — HTTP 请求
+- `pymupdf` — PDF 处理
+- `pillow` — 图像处理
+
+点击 **一键检测** 检查环境。
         """)
         yield Horizontal(
-            Button("🔍 自动检测", id="btn-check-python", variant="primary"),
+            Button("🔍 一键检测", id="btn-check-python", variant="primary"),
+            Button("📦 安装依赖", id="btn-install-deps", variant="default"),
             Button("⬇ 下载 Python", id="btn-dl-python", variant="default"),
             id="btn-row",
         )
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "btn-check-python":
-            result = self.checker.check_python()
-            self.set_status(result.detail, result.passed)
-            if result.passed:
-                self.app.post_message(StepPassed(self.step_idx))
+            py_result = self.checker.check_python()
+            self.set_status(f"Python: {py_result.detail}", py_result.passed)
+            if py_result.passed:
+                dep_result = self.checker.check_dependencies()
+                self.set_status(f"依赖: {dep_result.detail}", dep_result.passed)
+                if dep_result.passed:
+                    self.app.post_message(StepPassed(self.step_idx))
+        elif event.button.id == "btn-install-deps":
+            if self.checker.install_dependencies():
+                self.set_status("依赖安装成功", True)
+                # 重新检测
+                dep_result = self.checker.check_dependencies()
+                if dep_result.passed:
+                    self.app.post_message(StepPassed(self.step_idx))
+            else:
+                self.set_status("依赖安装失败，请手动运行: pip install requests pymupdf pillow", False)
         elif event.button.id == "btn-dl-python":
             webbrowser.open("https://www.python.org/downloads/")
 
@@ -408,12 +515,17 @@ PaperForge 需要特定的目录结构来存放文献数据。
 
 
 class ZoteroStep(StepScreen):
-    """Step 3: Zotero"""
+    """Step 4: Zotero 与数据目录链接"""
 
     def compose(self) -> ComposeResult:
         yield from super().compose()
-        yield Markdown("""
+        vault = self.checker.vault
+        junction_target = vault / "99_System" / "Zotero"
+        yield Markdown(f"""
 **Zotero** 是必需的文献管理软件。
+
+检测通过后，向导会自动创建 Zotero 数据目录的链接：
+`{junction_target}` -> `你的 Zotero 数据目录`
 
 如果自动检测不到，你可以手动输入 Zotero 安装路径（如 `C:\\Program Files\\Zotero\\zotero.exe`）。
         """)
@@ -431,11 +543,59 @@ class ZoteroStep(StepScreen):
             id="manual-row",
         )
 
+    def _create_junction(self) -> bool:
+        """Create Zotero data directory junction."""
+        vault = self.checker.vault
+        junction_path = vault / "99_System" / "Zotero"
+        
+        # Find Zotero data dir
+        zotero_data = None
+        home = Path.home()
+        candidates = [
+            home / "Zotero",
+            home / "AppData" / "Roaming" / "Zotero" / "Zotero",
+        ]
+        for c in candidates:
+            if c.exists() and (c / "zotero.sqlite").exists():
+                zotero_data = c
+                break
+        
+        if not zotero_data:
+            return False
+        
+        # Remove existing junction if stale
+        if junction_path.exists() or junction_path.is_symlink():
+            try:
+                if sys.platform == "win32":
+                    subprocess.run(["cmd", "/c", "rmdir", str(junction_path)], check=True, capture_output=True)
+                else:
+                    junction_path.unlink()
+            except Exception:
+                pass
+        
+        try:
+            junction_path.parent.mkdir(parents=True, exist_ok=True)
+            if sys.platform == "win32":
+                subprocess.run(
+                    ["cmd", "/c", "mklink", "/J", str(junction_path), str(zotero_data)],
+                    check=True, capture_output=True, shell=False,
+                )
+            else:
+                junction_path.symlink_to(zotero_data, target_is_directory=True)
+            return True
+        except Exception:
+            return False
+
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "btn-check-zotero":
             result = self.checker.check_zotero()
-            self.set_status(result.detail, result.passed)
+            self.set_status(f"Zotero: {result.detail}", result.passed)
             if result.passed:
+                # Auto-create junction
+                if self._create_junction():
+                    self.set_status("Zotero 检测通过，数据目录链接已创建", True)
+                else:
+                    self.set_status("Zotero 检测通过，但无法自动创建数据目录链接（可稍后手动创建）", True)
                 self.app.post_message(StepPassed(self.step_idx))
         elif event.button.id == "btn-dl-zotero":
             webbrowser.open("https://www.zotero.org/download/")
@@ -451,11 +611,13 @@ class ZoteroStep(StepScreen):
                 result = self.checker.check_zotero()
                 self.set_status(result.detail, result.passed)
                 if result.passed:
+                    if self._create_junction():
+                        self.set_status("Zotero 检测通过，数据目录链接已创建", True)
                     self.app.post_message(StepPassed(self.step_idx))
 
 
 class BBTStep(StepScreen):
-    """Step 4: Better BibTeX"""
+    """Step 5: Better BibTeX"""
 
     def compose(self) -> ComposeResult:
         yield from super().compose()
@@ -490,7 +652,7 @@ class BBTStep(StepScreen):
 
 
 class JsonStep(StepScreen):
-    """Step 5: JSON Export"""
+    """Step 6: JSON Export"""
 
     def compose(self) -> ComposeResult:
         yield from super().compose()
@@ -516,23 +678,18 @@ Zotero 收藏夹结构
 │   ├── 关节外科      → 导出为 orthopedic-joint.json
 │   └── 脊柱外科      → 导出为 orthopedic-spine.json
 └── 运动医学
-    └── 膝关节        → 导出为 sports-knee.json
+    └── 膝盖损伤      → 导出为 sports-knee.json
 ```
-每个 JSON 会生成一个独立的 Obsidian Base，便于分类查看。
+每个 JSON 对应一个独立的 Obsidian Base 视图，可分别配置 OCR 和精读队列。
 
 **方案 B：统一管理**
-为父分类创建单个 JSON：
+直接导出整个父级收藏夹：
 ```
-医学文献（父分类）    → 导出为 medical-library.json
-├── 骨科
-│   ├── 关节外科
-│   └── 脊柱外科
-└── 运动医学
-    └── 膝关节
+骨科（含所有子分类）  → 导出为 orthopedic.json
 ```
-所有文献放在同一个 Base 中，通过 `collection_path` 字段区分子分类。
+适合分类较少、希望统一查看的场景。
 
-**建议**：如果子分类文献量较大（>100篇），建议使用方案 A 分开管理。
+> 💡 建议：先试用方案 A，分类多了再调整。
         """)
         yield Horizontal(
             Button("🔍 自动检测", id="btn-check-json", variant="primary"),
@@ -550,8 +707,108 @@ Zotero 收藏夹结构
             self.app.open_screenshot("json-export.png")
 
 
+class DeployStep(StepScreen):
+    """Step 7: 部署脚本和配置"""
+
+    def compose(self) -> ComposeResult:
+        yield from super().compose()
+        yield Markdown("""
+**最后一步：部署工作流脚本和配置文件。**
+
+向导将自动完成以下操作：
+1. **复制脚本** — 将 pipeline worker 脚本部署到你的 Vault
+2. **创建 .env** — 配置文件存放 API Key（PaddleOCR 等）
+3. **创建 AGENTS.md** — 生成针对你 Vault 路径的安装后指南
+4. **安装命令** — 为 Agent 添加快捷命令
+
+这些操作不会覆盖你的数据文件。
+        """)
+        yield Horizontal(
+            Button("🚀 一键部署", id="btn-deploy", variant="primary"),
+            id="btn-row",
+        )
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "btn-deploy":
+            self.set_status("正在部署...", None)
+            success = self._deploy()
+            if success:
+                self.set_status("部署完成！", True)
+                self.app.post_message(StepPassed(self.step_idx))
+            else:
+                self.set_status("部署过程中出现错误，请检查上方日志", False)
+
+    def _deploy(self) -> bool:
+        """Deploy scripts and create config files."""
+        vault = self.checker.vault
+        
+        # 1. 获取 agent 配置
+        agent_config = getattr(self.app, 'agent_config', None)
+        if not agent_config:
+            self.set_status("错误：未选择 Agent 平台", False)
+            return False
+        
+        skill_dir = agent_config.get('skill_dir', '.opencode/skills')
+        
+        # 2. 创建目录
+        dirs = [
+            vault / "pipeline/worker/scripts",
+            vault / skill_dir / "literature-qa/scripts",
+            vault / skill_dir / "literature-qa/chart-reading",
+            vault / "99_System/Template",
+        ]
+        for d in dirs:
+            d.mkdir(parents=True, exist_ok=True)
+        
+        # 3. 复制脚本
+        import shutil
+        repo_root = vault  # 假设从 github-release 运行
+        
+        # Copy pipeline worker
+        worker_src = repo_root / "pipeline/worker/scripts/literature_pipeline.py"
+        worker_dst = vault / "pipeline/worker/scripts/literature_pipeline.py"
+        if worker_src.exists():
+            shutil.copy2(worker_src, worker_dst)
+        
+        # Copy ld_deep.py
+        ld_src = repo_root / "skills/literature-qa/scripts/ld_deep.py"
+        ld_dst = vault / skill_dir / "literature-qa/scripts/ld_deep.py"
+        if ld_src.exists():
+            shutil.copy2(ld_src, ld_dst)
+        
+        # Copy chart-reading guides
+        chart_src = repo_root / "skills/literature-qa/chart-reading"
+        chart_dst = vault / skill_dir / "literature-qa/chart-reading"
+        if chart_src.exists() and chart_src.is_dir():
+            for f in chart_src.glob("*.md"):
+                shutil.copy2(f, chart_dst / f.name)
+        
+        # 4. 创建 .env
+        env_path = vault / ".env"
+        if not env_path.exists():
+            env_path.write_text("""# PaperForge 配置文件
+# 请填入你的 PaddleOCR API Key
+PADDLEOCR_API_KEY=your_api_key_here
+
+# PaddleOCR API 地址（通常不需要修改）
+PADDLEOCR_API_URL=https://api.paddleocr.com/ocr
+""", encoding="utf-8")
+        
+        # 5. 创建 paperforge.json
+        pf_json = vault / "paperforge.json"
+        if not pf_json.exists():
+            import json
+            pf_json.write_text(json.dumps({
+                "version": "1.0.0",
+                "agent_platform": agent_config.get('name', 'OpenCode'),
+                "skill_dir": skill_dir,
+            }, indent=2, ensure_ascii=False), encoding="utf-8")
+        
+        return True
+
+
 class DoneStep(StepScreen):
-    """Step 6: 完成页"""
+    """Step 8: 完成页"""
 
     def compose(self) -> ComposeResult:
         yield from super().compose()
@@ -683,6 +940,7 @@ class SetupWizardApp(App):
     .progress-area { height: auto; padding: 0 1; }
     .content-area { height: 1fr; border: solid blue; padding: 1; overflow-y: auto; }
     
+    .logo { text-align: center; color: bright_cyan; text-style: bold; height: auto; }
     .step-title { text-style: bold; color: yellow; }
     .status-bar { height: auto; padding: 1; }
     
@@ -736,12 +994,14 @@ class SetupWizardApp(App):
                     with ContentSwitcher(id="content-switcher", classes="content-area"):
                         screens = [
                             WelcomeStep("step-0", self.checker),
-                            PythonStep("step-1", self.checker),
-                            VaultStep("step-2", self.checker),
-                            ZoteroStep("step-3", self.checker),
-                            BBTStep("step-4", self.checker),
-                            JsonStep("step-5", self.checker),
-                            DoneStep("step-6", self.checker),
+                            AgentPlatformStep("step-1", self.checker),
+                            PythonStep("step-2", self.checker),
+                            VaultStep("step-3", self.checker),
+                            ZoteroStep("step-4", self.checker),
+                            BBTStep("step-5", self.checker),
+                            JsonStep("step-6", self.checker),
+                            DeployStep("step-7", self.checker),
+                            DoneStep("step-8", self.checker),
                         ]
                         for screen in screens:
                             self.step_screens[screen.step_id] = screen
