@@ -2585,7 +2585,7 @@ def main() -> int:
     parser.add_argument('--limit', type=int, default=8)
     parser.add_argument('--sources', nargs='+')
     parser.add_argument('--skip-ingest', action='store_true')
-    parser.add_argument('worker', choices=['selection-sync', 'index-refresh', 'ocr', 'deep-reading', 'update', 'all'])
+    parser.add_argument('worker', choices=['selection-sync', 'index-refresh', 'ocr', 'deep-reading', 'update', 'wizard', 'all'])
     args = parser.parse_args()
     load_simple_env(args.vault / '.env')
     if args.worker == 'selection-sync':
@@ -2598,6 +2598,12 @@ def main() -> int:
         return run_deep_reading(args.vault)
     if args.worker == 'update':
         return run_update(args.vault)
+    if args.worker == 'wizard':
+        wizard_script = args.vault / 'setup_wizard.py'
+        if not wizard_script.exists():
+            print(f"[ERR] 未找到 {wizard_script}")
+            return 1
+        return subprocess.run([sys.executable, str(wizard_script), '--vault', str(args.vault)]).returncode
     # 'all' - 依次运行所有 Lite 版 workers
     code = run_selection_sync(args.vault)
     if code:
