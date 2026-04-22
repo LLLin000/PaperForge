@@ -1,53 +1,102 @@
-# Literature Workflow for Medical Research
+# PaperForge Lite
 
 基于 Obsidian + Zotero + PaddleOCR 的医学文献精读工作流，支持自动 OCR、深度阅读笔记生成和队列管理。
 
-## 快速开始
-
-### 方式一：让 Agent 帮你配置（推荐）
-
-复制以下内容，粘贴给你的 AI Agent，它会自动完成全部配置：
-
 ```
-Install and configure the literature workflow by following the instructions here:
-https://raw.githubusercontent.com/YOUR-USERNAME/YOUR-REPO/main/docs/INSTALLATION.md
+    ______  ___  ______ _________________ ___________ _____  _____ 
+    | ___ \/ _ \ | ___ \  ___| ___ \  ___|  _  | ___ \  __ \|  ___|
+    | |_/ / /_\ \| |_/ / |__ | |_/ / |_  | | | | |_/ / |  \/| |__  
+    |  __/|  _  ||  __/|  __||    /|  _| | | | |    /| | __ |  __| 
+    | |   | | | || |   | |___| |\ \| |   \ \_/ / |\ \| |_\ \| |___ 
+    \_|   \_| |_/\_|   \____/\_| \_\_|    \___/\_| \_|\____/\____/ 
 ```
 
-Agent 会问你几个问题，然后自动完成安装、配置和验证。
+## 快速开始（推荐方式）
 
-### 方式二：手动安装
-
-需要：
-- Python 3.10+
-- Zotero（安装 Better BibTex 插件）
-- Obsidian
-- PaddleOCR API Key
+**PaperForge 提供交互式安装向导，引导你完成全部配置：**
 
 ```bash
 # 1. 克隆仓库
-git clone https://github.com/YOUR-USERNAME/YOUR-REPO.git
-cd YOUR-REPO
+git clone https://github.com/LLLin000/PaperForge.git
+cd PaperForge
 
-# 2. 安装 Python 依赖
+# 2. 安装依赖
 pip install -r requirements.txt
 
-# 3. 运行安装脚本
-python setup.py
+# 3. 运行向导（交互式，按步骤引导）
+python setup_wizard.py --vault /path/to/your/vault
 ```
+
+向导会自动完成：
+- 检测 Python 环境和依赖
+- 配置 Vault 目录结构（可自定义名称）
+- 链接 Zotero 数据目录
+- 检测 Better BibTeX 插件
+- 配置 JSON 自动导出
+- 部署工作流脚本和 Agent 命令
+- 创建 .env 配置文件
 
 ## 功能特性
 
-- `/LD-deep` — 深度精读（Keshav 三阶段阅读法）
-- 自动 OCR 提取（PaddleOCR-VL API）
-- 图表类型智能识别（20 种图表类型自动检测）
-- 图表质量审查指南（14 种图表类型的专业审查清单）
-- Zotero 双向同步
-- 文献队列管理（Base 集成）
+- **交互式安装向导** — 步骤引导，自动检测，安全验证
+- **`/LD-deep`** — 深度精读（Keshav 三阶段阅读法）
+- **自动 OCR 提取** — PaddleOCR-VL API 提取全文和图表
+- **图表类型智能识别** — 20 种图表类型自动检测
+- **图表质量审查指南** — 14 种图表类型的专业审查清单
+- **Zotero 双向同步** — Better BibTeX 自动导出
+- **文献队列管理** — Obsidian Base 集成
+- **自动更新** — `python literature_pipeline.py --vault . update`
+
+## 安装要求
+
+- Python 3.10+
+- Zotero + Better BibTeX 插件
+- Obsidian
+- PaddleOCR API Key（安装后配置）
+
+## 目录结构
+
+```
+your-vault/
+├── 03_Resources/               # 可自定义名称
+│   └── LiteratureControl/
+│       └── library-records/    # 文献状态跟踪
+├── 99_System/                  # 可自定义名称
+│   ├── PaperForge/
+│   │   ├── exports/            # Zotero JSON 导出
+│   │   ├── ocr/                # OCR 结果
+│   │   └── worker/scripts/
+│   │       └── literature_pipeline.py
+│   └── Zotero/                 # Junction 到 Zotero 数据目录
+├── .opencode/skills/           # Agent Skill 目录（根据平台）
+│   └── literature-qa/
+│       ├── scripts/ld_deep.py
+│       ├── prompt_deep_subagent.md
+│       └── chart-reading/      # 14 种图表阅读指南
+├── .env                        # API Key 配置
+├── paperforge.json             # 版本配置
+└── AGENTS.md                   # 安装后指南
+```
 
 ## 文档
 
-- [安装指南](docs/INSTALLATION.md)
-- [使用指南](docs/USAGE.md)
+- [安装指南](docs/INSTALLATION.md) — 详细安装步骤
+- [安装后指南](AGENTS.md) — 第一次使用必看
+- [设置向导](setup_wizard.py) — 交互式配置工具
+
+## 核心命令
+
+```bash
+# Worker 命令
+python 99_System/PaperForge/worker/scripts/literature_pipeline.py --vault . selection-sync
+python 99_System/PaperForge/worker/scripts/literature_pipeline.py --vault . index-refresh
+python 99_System/PaperForge/worker/scripts/literature_pipeline.py --vault . ocr
+python 99_System/PaperForge/worker/scripts/literature_pipeline.py --vault . status
+
+# Agent 命令（在 OpenCode 中使用）
+/LD-deep <zotero_key>    # 完整三阶段精读
+/LD-paper <zotero_key>   # 快速摘要
+```
 
 ## License
 

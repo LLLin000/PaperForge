@@ -1,200 +1,134 @@
-# Installation Guide
+# PaperForge 安装指南
 
-## For LLM Agents
+## 推荐方式：交互式安装向导
 
-If you're an LLM Agent helping set up this literature workflow, welcome. You'll help your user install the pipeline and configure their Zotero/Obsidian integration.
-
-**Tell the user**: Paste this to your agent to auto-configure:
-```
-Install and configure the literature workflow by following the instructions here:
-https://raw.githubusercontent.com/YOUR-USERNAME/YOUR-REPO/main/docs/INSTALLATION.md
-```
-
----
-
-### Step 0: Ask User About Their Setup
-
-Ask the user these questions to determine configuration:
-
-1. **Do you have Zotero installed?**
-   - If **yes**: Where is your Zotero data directory? (usually `C:\Users\<User>\Zotero` on Windows or `~/Zotero` on macOS/Linux)
-   - If **no**: Install Zotero first from https://www.zotero.org/download/ and install the **Better BibTeX** plugin
-
-2. **Is your Zotero storage directory in a different location?**
-   - Default: same as data directory
-   - If **different path**: ask for the full path to the `storage` folder
-
-3. **Do you have Obsidian installed?**
-   - If **yes**: Where is your vault located? (e.g., `D:\L\Med\Research`)
-   - If **no**: Ask them to install Obsidian and create a vault first
-
-4. **Do you have a PaddleOCR API key?**
-   - If **yes**: ask for the API key
-   - If **no**: Direct them to https://paddleocr.baidu.com/ to apply for one
-
-5. **Do you have Python 3.10+ installed?**
-   - If **yes**: proceed
-   - If **no**: Ask them to install Python 3.10+ from https://python.org
-
-**Configuration summary**:
-- Zotero path: `{zotero_path}`
-- Zotero storage path: `{storage_path}` (may equal zotero_path)
-- Obsidian vault path: `{vault_path}`
-- PaddleOCR API key: `{ocr_api_key}`
-
----
-
-### Step 1: Install Dependencies
-
-Run in the terminal (spawn a subagent if needed):
+PaperForge 提供图形化安装向导，引导你完成全部配置：
 
 ```bash
-pip install requests pymupdf pillow pytest
+# 1. 克隆仓库
+git clone https://github.com/LLLin000/PaperForge.git
+cd PaperForge
+
+# 2. 安装依赖
+pip install -r requirements.txt
+
+# 3. 运行向导
+python setup_wizard.py --vault /path/to/your/vault
 ```
 
-If using Poetry:
-```bash
-poetry add requests pymupdf pillow pytest
-```
+向导会按步骤引导你：
+1. **选择 Agent 平台** — OpenCode / Cursor / Claude Code 等
+2. **检查 Python 环境** — 自动检测版本和依赖
+3. **配置 Vault 目录** — 自定义系统目录和资源目录名称
+4. **链接 Zotero 数据目录** — 自动创建 Junction
+5. **检测 Better BibTeX** — 确认插件已安装
+6. **配置 JSON 导出** — 设置自动导出路径和"保持更新"
+7. **一键部署** — 自动复制脚本、创建配置、验证完整性
+
+### 前置条件
+
+| 工具 | 用途 | 获取方式 |
+|------|------|----------|
+| Python 3.10+ | 运行工作流脚本 | https://python.org |
+| Zotero | 文献管理 | https://zotero.org |
+| Better BibTeX | Zotero 插件，生成 citation key 和 JSON 导出 | https://retorque.re/zotero-better-bibtex/ |
+| Obsidian | 笔记软件 | https://obsidian.md |
+| PaddleOCR API Key | OCR 服务 | https://paddleocr.baidu.com |
 
 ---
 
-### Step 2: Create Directory Structure
+## 手动安装（备用）
 
-Create the following directories in the Obsidian vault:
+如果向导无法运行，可以手动安装：
+
+### Step 1: 安装依赖
+
+```bash
+pip install requests pymupdf pillow
+```
+
+### Step 2: 创建目录结构
 
 ```bash
 mkdir -p "{vault_path}/99_System/PaperForge/ocr"
 mkdir -p "{vault_path}/99_System/PaperForge/worker/scripts"
 mkdir -p "{vault_path}/99_System/Zotero"
-mkdir -p "{vault_path}/03_Resources/Literature"
-mkdir -p "{vault_path}/00_Inbox"
+mkdir -p "{vault_path}/03_Resources/LiteratureControl/library-records"
 ```
 
----
+### Step 3: 链接 Zotero 数据目录
 
-### Step 3: Configure Zotero Integration
-
-#### Option A: Junction/Symlink (Recommended)
-
-**Windows** (admin terminal):
+**Windows** (管理员终端):
 ```cmd
-mklink /J "{vault_path}\99_System\Zotero" "{zotero_path}"
+mklink /J "{vault_path}\99_System\Zotero" "C:\Users\<User>\Zotero"
 ```
 
 **macOS/Linux**:
 ```bash
-ln -s "{zotero_path}" "{vault_path}/99_System/Zotero"
+ln -s "~/Zotero" "{vault_path}/99_System/Zotero"
 ```
 
-#### Option B: Config file (if symlink not possible)
+### Step 4: 配置 .env
 
-Create `{vault_path}/.env`:
+创建 `{vault_path}/.env`:
 ```
-ZOTERO_DATA_DIR={zotero_path}
-ZOTERO_STORAGE_DIR={storage_path}
-```
-
----
-
-### Step 4: Configure OCR Pipeline
-
-Create `{vault_path}/.env` (or append if exists):
-```
-PADDLEOCR_API_KEY={ocr_api_key}
-PADDLEOCR_API_URL=https://paddleocr.baidu.com/api/v1/ocr
+PADDLEOCR_API_KEY=your_api_key_here
+PADDLEOCR_API_URL=https://api.paddleocr.baidu.com/api/v1/ocr
 ```
 
----
-
-### Step 5: Install Workflow Scripts
-
-Copy the following files from the repository to your vault:
+### Step 5: 部署脚本
 
 ```bash
-# Copy scripts
-cp -r scripts/* "{vault_path}/99_System/PaperForge/worker/scripts/"
-
-# Copy AGENTS.md
+cp pipeline/worker/scripts/literature_pipeline.py "{vault_path}/99_System/PaperForge/worker/scripts/"
+cp -r skills/literature-qa "{vault_path}/.opencode/skills/"
 cp AGENTS.md "{vault_path}/AGENTS.md"
 ```
 
 ---
 
-### Step 6: Verify Setup
+## 安装后验证
 
-Run validation:
+运行向导后，验证安装：
 
 ```bash
 cd "{vault_path}"
-python 99_System/PaperForge/worker/scripts/validate_setup.py
+python 99_System/PaperForge/worker/scripts/literature_pipeline.py --vault . status
 ```
 
-This checks:
-- [ ] Zotero SQLite accessible
-- [ ] OCR directory writable
-- [ ] Required Python packages installed
-- [ ] AGENTS.md exists
-- [ ] Directory structure correct
+预期输出：
+```
+PaperForge Lite v1.2.0
+Vault: /path/to/your/vault
+Status: OK
+```
 
 ---
 
-### Step 7: Configure AGENTS.md
+## 故障排除
 
-Edit `{vault_path}/AGENTS.md`:
+### Zotero 未找到
+- 确认 Zotero 已安装
+- 检查数据目录路径（Zotero → Edit → Preferences → Advanced → Files and Folders）
+- 向导中手动输入正确的数据目录路径
 
-1. Update the vault path references
-2. Set your preferred output language (default: Simplified Chinese)
-3. Configure any custom collection paths
+### 权限被拒绝（Windows）
+- 以管理员身份运行终端来创建 Junction
+- 或手动创建 Junction：`mklink /J "目标" "源"`
 
----
-
-## For Humans
-
-### Quick Start
-
-1. **Prerequisites**:
-   - Python 3.10+
-   - Zotero + Better BibTeX plugin
-   - Obsidian
-   - PaddleOCR API key
-
-2. **Run the installer**:
-   ```bash
-   python setup.py
-   ```
-   This interactive script will ask you the same questions as above and configure everything automatically.
-
-3. **Verify**:
-   ```bash
-   python 99_System/PaperForge/worker/scripts/validate_setup.py
-   ```
+### Better BibTeX 未安装
+- Zotero → 工具 → 插件 → 齿轮图标 → Install Plugin From File...
+- 下载地址：https://retorque.re/zotero-better-bibtex/
 
 ---
 
-## Troubleshooting
+## 下一步
 
-### Zotero not found
-- Ensure Zotero is installed
-- Check the data directory path (Edit → Preferences → Advanced → Files and Folders)
+安装完成后：
 
-### Permission denied on Windows
-- Run terminal as Administrator for junction creation
-- Or use Option B (config file) instead
+1. **同步文献**：运行 selection-sync 检测 Zotero 中的文献
+2. **生成笔记**：运行 index-refresh 创建正式文献笔记
+3. **标记精读**：在 Obsidian 中设置 `do_ocr: true` 和 `analyze: true`
+4. **运行 OCR**：执行 ocr 命令处理 PDF
+5. **开始精读**：使用 `/LD-deep <zotero_key>` 生成结构化阅读笔记
 
-### Better BibTeX not installed
-- In Zotero: Tools → Plugins → Install plugin from file
-- Download from https://github.com/retorquere/zotero-better-bibtex/releases
-
----
-
-## Next Steps
-
-After installation:
-
-1. **Index your library**: Run the index-refresh worker to create formal notes for existing papers
-2. **Queue papers for analysis**: Use the Base system to mark papers for deep reading
-3. **Run OCR**: The OCR worker processes queued papers automatically
-4. **Start deep reading**: Use `/LD-deep <zotero_key>` to generate structured reading notes
-
-Read the [Workflow Guide](../README.md) for detailed usage instructions.
+详细用法参见 [AGENTS.md](../AGENTS.md)。
