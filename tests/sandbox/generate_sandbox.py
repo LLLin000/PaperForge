@@ -1,132 +1,91 @@
 #!/usr/bin/env python3
-"""Generate a completely sealed test sandbox vault for PaperForge Lite.
+"""Generate minimal pre-install sandbox for testing PaperForge Lite setup wizard.
 
 Run from repo root:
     python tests/sandbox/generate_sandbox.py
 
-This creates tests/sandbox/vault/ with:
-- Full vault directory structure
-- Mock Zotero storage with 3 PDFs
-- Better BibTeX JSON exports (2 domains)
-- Library records for all papers
-- paperforge.json with defaults
-- .env with dummy credentials
+Creates tests/sandbox/ with:
+- TestZoteroData/         — mock Zotero data dir (wizard creates junction to this)
+  - storage/              — 5 PDFs with keys matching exports JSON
+  - zotero.sqlite         — fake sqlite (satisfies Zotero path detection)
+- exports/                — Better BibTeX JSON exports (keys match storage filenames)
+- 00_TestVault/          — empty vault root (wizard generates everything here)
 
-Everything isolated — never touches real vault or Zotero.
+Wizard creates inside 00_TestVault/:
+  00_System/Zotero -> junction -> TestZoteroData (user points to our TestZoteroData)
 """
 from __future__ import annotations
 
 import json
-import os
 from pathlib import Path
 
-ROOT = Path(__file__).parent
-SANDBOX_VAULT = ROOT / "vault"
+SANDBOX = Path(__file__).parent
+ZOTERO_DATA = SANDBOX / "TestZoteroData"
+STORAGE = ZOTERO_DATA / "storage"
+EXPORTS = SANDBOX / "exports"
+VAULT = SANDBOX / "00_TestVault"
 
-PAPERFORGE_CFG = {
-    "system_dir": "99_System",
-    "resources_dir": "03_Resources",
-    "literature_dir": "Literature",
-    "control_dir": "LiteratureControl",
-    "base_dir": "05_Bases",
-}
-
-ZOTERO_JSON_ITEMS = {
+# Keys in JSON must match PDF filenames in storage (minus .pdf)
+PAPERS = {
     "骨科": [
         {
-            "key": "SANDBOX001",
-            "itemType": "journalArticle",
-            "title": "Suture Anchor Fixation for Rotator Cuff Tears: A Biomechanical Analysis",
-            "creators": [
-                {"creatorType": "author", "firstName": "James", "lastName": "Burkhardt"},
-                {"creatorType": "author", "firstName": "Maria", "lastName": "Chen"},
-            ],
+            "key": "TSTONE001",
+            "title": "Biomechanical Comparison of Suture Anchor Fixations in Rotator Cuff Repair",
+            "creators": [{"creatorType": "author", "firstName": "James", "lastName": "Burkhardt"}],
             "date": "2024",
             "publicationTitle": "Journal of Shoulder and Elbow Surgery",
             "DOI": "10.1016/j.jses.2024.01.001",
-            "PMID": "38234156",
             "abstractNote": "BACKGROUND: Suture anchor fixation is critical for rotator cuff repair. We compared pull-out strength across 3 anchor types.",
-            "collections": ["骨科"],
-            "attachments": [{"path": "storage:SANDBOX001/SANDBOX001.pdf", "contentType": "application/pdf"}],
+            "has_pdf": True,
         },
         {
-            "key": "SANDBOX002",
-            "itemType": "journalArticle",
+            "key": "TSTONE002",
             "title": "Machine Learning Prediction of Anterior Cruciate Ligament Injury Risk in Athletes",
-            "creators": [
-                {"creatorType": "author", "firstName": "Wei", "lastName": "Zhang"},
-            ],
+            "creators": [{"creatorType": "author", "firstName": "Wei", "lastName": "Zhang"}],
             "date": "2023",
             "publicationTitle": "American Journal of Sports Medicine",
             "DOI": "10.1177/03635465231123456",
-            "PMID": "37123456",
             "abstractNote": "PURPOSE: To develop and validate an ML model for predicting ACL injury risk using biomechanical and demographic features.",
-            "collections": ["骨科"],
-            "attachments": [{"path": "storage:SANDBOX002/SANDBOX002.pdf", "contentType": "application/pdf"}],
+            "has_pdf": True,
         },
         {
-            "key": "SANDBOX003",
-            "itemType": "journalArticle",
-            "title": "Platelet-Rich Plasma Injection for Knee Osteoarthritis: Randomized Controlled Trial",
-            "creators": [
-                {"creatorType": "author", "firstName": "Sarah", "lastName": "Johnson"},
-                {"creatorType": "author", "firstName": "Ahmed", "lastName": "Hassan"},
-            ],
+            "key": "TSTONE003",
+            "title": "Platelet-Rich Plasma for Knee Osteoarthritis: RCT",
+            "creators": [{"creatorType": "author", "firstName": "Sarah", "lastName": "Johnson"}],
             "date": "2022",
             "publicationTitle": "Osteoarthritis and Cartilage",
             "DOI": "10.1016/j.joca.2022.03.012",
-            "PMID": "35412345",
-            "abstractNote": "OBJECTIVE: To evaluate the efficacy of PRP injections vs hyaluronic acid for symptomatic knee OA.",
-            "collections": ["骨科"],
-            "attachments": [],
+            "abstractNote": "OBJECTIVE: To evaluate PRP injections vs hyaluronic acid for symptomatic knee OA in a double-blind RCT (n=192).",
+            "has_pdf": False,
         },
     ],
     "运动医学": [
         {
-            "key": "SANDBOX004",
-            "itemType": "journalArticle",
-            "title": "Return to Sport Protocols After ACL Reconstruction: A Systematic Review",
-            "creators": [
-                {"creatorType": "author", "firstName": "Lisa", "lastName": "Park"},
-                {"creatorType": "author", "firstName": "Tom", "lastName": "Nguyen"},
-            ],
+            "key": "TSTTWO001",
+            "title": "Return to Sport After ACL Reconstruction: A Systematic Review",
+            "creators": [{"creatorType": "author", "firstName": "Lisa", "lastName": "Park"}],
             "date": "2024",
             "publicationTitle": "Sports Health",
             "DOI": "10.1177/19417381241234567",
-            "PMID": "38876543",
-            "abstractNote": "DATA SOURCES: PubMed, Embase, Cochrane. 23 studies included. Return-to-sport criteria varied widely.",
-            "collections": ["运动医学"],
-            "attachments": [{"path": "storage:SANDBOX004/SANDBOX004.pdf", "contentType": "application/pdf"}],
+            "abstractNote": "DATA SOURCES: PubMed, Embase, Cochrane. 23 studies included. Return-to-sport criteria varied widely across studies.",
+            "has_pdf": True,
         },
         {
-            "key": "SANDBOX005",
-            "itemType": "journalArticle",
-            "title": "Ultrasound-Guided Percutaneous Achilles Tendon Repair in Acute Ruptures",
-            "creators": [
-                {"creatorType": "author", "firstName": "Carlos", "lastName": "Rodriguez"},
-            ],
+            "key": "TSTTWO002",
+            "title": "Ultrasound-Guided Achilles Tendon Repair: Case Series",
+            "creators": [{"creatorType": "author", "firstName": "Carlos", "lastName": "Rodriguez"}],
             "date": "2023",
             "publicationTitle": "Foot and Ankle International",
             "DOI": "10.1177/107110072311234",
-            "PMID": "37234567",
-            "abstractNote": "CASE SERIES: 28 patients. Primary outcomes: AOFAS score, time to weight-bearing, complications.",
-            "collections": ["运动医学"],
-            "attachments": [{"path": "storage:SANDBOX005/SANDBOX005.pdf", "contentType": "application/pdf"}],
+            "abstractNote": "CASE SERIES: 28 patients with acute Achilles ruptures. Primary outcomes: AOFAS score, time to weight-bearing, complications.",
+            "has_pdf": True,
         },
     ],
 }
 
-OCR_STATUSES = {
-    "SANDBOX001": "pending",
-    "SANDBOX002": "pending",
-    "SANDBOX003": "nopdf",
-    "SANDBOX004": "pending",
-    "SANDBOX005": "pending",
-}
 
-
-def write_minimal_pdf(path: Path) -> None:
-    pdf_content = (
+def _write_minimal_pdf(path: Path) -> None:
+    path.write_bytes(
         b"%PDF-1.4\n"
         b"1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n"
         b"2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n"
@@ -140,221 +99,133 @@ def write_minimal_pdf(path: Path) -> None:
         b"startxref\n199\n"
         b"%%EOF\n"
     )
-    path.write_bytes(pdf_content)
 
 
-def build_vault() -> None:
-    print(f"Generating sandbox vault at: {SANDBOX_VAULT}")
+def build() -> None:
+    import shutil
 
-    vault = SANDBOX_VAULT
-    if vault.exists():
-        import shutil
-        shutil.rmtree(vault)
-    vault.mkdir(parents=True)
+    for p in [ZOTERO_DATA, EXPORTS, VAULT]:
+        if p.exists():
+            shutil.rmtree(p)
 
-    system = vault / "99_System"
-    pf = system / "PaperForge"
-    exports = pf / "exports"
-    ocr = pf / "ocr"
-    zotero_link = system / "Zotero"
+    print(f"Generating sandbox at: {SANDBOX}")
 
-    resources = vault / "03_Resources"
-    literature = resources / "Literature"
-    control = resources / "LiteratureControl"
-    records_root = control / "library-records"
+    # --- TestZoteroData (wizard creates junction inside vault pointing here) ---
+    STORAGE.mkdir(parents=True)
+    (ZOTERO_DATA / "zotero.sqlite").write_bytes(b"SQLite format 3" * 4)
 
-    bases = vault / "05_Bases"
-    opencode = vault / ".opencode"
-    skills = opencode / "skills"
-    cmd_dir = opencode / "command"
+    for domain, papers in PAPERS.items():
+        for paper in papers:
+            key = paper["key"]
+            if paper["has_pdf"]:
+                pdf_dir = STORAGE / key
+                pdf_dir.mkdir(parents=True, exist_ok=True)
+                _write_minimal_pdf(pdf_dir / f"{key}.pdf")
 
-    dirs = [
-        exports, ocr, zotero_link,
-        literature, control, records_root,
-        bases, skills, cmd_dir,
-    ]
-    for d in dirs:
-        d.mkdir(parents=True, exist_ok=True)
+    # --- exports (BBT JSON, keys must match storage filenames) ---
+    EXPORTS.mkdir(parents=True)
+    for domain, papers in PAPERS.items():
+        items = []
+        for paper in papers:
+            item = {
+                "key": paper["key"],
+                "itemType": "journalArticle",
+                "title": paper["title"],
+                "creators": paper["creators"],
+                "date": paper["date"],
+                "publicationTitle": paper["publicationTitle"],
+                "DOI": paper["DOI"],
+                "abstractNote": paper["abstractNote"],
+                "collections": [domain],
+            }
+            if paper["has_pdf"]:
+                item["attachments"] = [{"path": f"{paper['key']}/{paper['key']}.pdf", "contentType": "application/pdf"}]
+            else:
+                item["attachments"] = []
+            items.append(item)
 
-    (vault / "paperforge.json").write_text(
-        json.dumps(PAPERFORGE_CFG, ensure_ascii=False, indent=2),
-        encoding="utf-8",
-    )
-
-    (vault / ".env").write_text(
-        "PADDLEOCR_API_TOKEN=sandbox_dummy_token_do_not_use\n"
-        "PADDLEOCR_API_TOKEN_USER=\n"
-        "PADDLEOCR_JOB_URL=https://api.paddleocr.com/v1/job\n"
-        "PADDLEOCR_MODEL=docThinking\n"
-        "PADDLEOCR_MAX_ITEMS=10\n",
-        encoding="utf-8",
-    )
-
-    zotero_storage = zotero_link / "storage"
-    zotero_storage.mkdir(exist_ok=True)
-
-    for domain, items in ZOTERO_JSON_ITEMS.items():
-        domain_records = records_root / domain
-        domain_records.mkdir(exist_ok=True)
-
-        export_items = []
-        for item in items:
-            key = item["key"]
-            export_items.append(item)
-
-            attachments = item.get("attachments", [])
-            for att in attachments:
-                att_path = att["path"]
-                if att_path.startswith("storage:"):
-                    storage_rel = att_path[len("storage:") :]
-                    storage_path = zotero_storage / storage_rel
-                    storage_path.parent.mkdir(parents=True, exist_ok=True)
-                    write_minimal_pdf(storage_path)
-
-            doi = item.get("DOI", "")
-            year = item.get("date", "")
-            title = item.get("title", "")
-            ocr_status = OCR_STATUSES.get(key, "pending")
-            has_pdf = "true" if attachments else "false"
-            pdf_path_val = f"storage:{key}/{key}.pdf" if attachments else ""
-
-            record_text = f"""---
-zotero_key: "{key}"
-domain: "{domain}"
-title: "{title}"
-year: "{year}"
-doi: "{doi}"
-has_pdf: {has_pdf}
-pdf_path: "{pdf_path_val}"
-fulltext_md_path: ""
-recommend_analyze: true
-analyze: false
-do_ocr: false
-ocr_status: "{ocr_status}"
-deep_reading_status: "pending"
-analysis_note: ""
----
-
-# {title}
-
-DOI: {doi}
-Year: {year}
-
-Abstract:
-{item.get('abstractNote', '')}
-
----
-*Generated sandbox record — not a real citation*
-"""
-            record_file = domain_records / f"{key}.md"
-            record_file.write_text(record_text, encoding="utf-8")
-
-            literature_note = f"""---
-title: "{title}"
-year: {year}
-type: journal
-category: "{domain}"
-tags:
-  - sandbox
-  - test
-pdf_link: "99_System/Zotero/storage/{key}/{key}.pdf"
----
-
-# {title}
-
-{item.get('abstractNote', '')}
-
----
-*Generated sandbox literature note*
-"""
-            lit_dir = literature / domain
-            lit_dir.mkdir(exist_ok=True)
-            lit_file = lit_dir / f"{key} - {title[:30]}.md"
-            lit_file.write_text(literature_note, encoding="utf-8")
-
-        bbt_export = exports / f"{domain}.json"
-        bbt_export.write_text(
-            json.dumps({"items": export_items}, ensure_ascii=False, indent=2),
+        export_path = EXPORTS / f"{domain}.json"
+        export_path.write_text(
+            json.dumps({"items": items}, ensure_ascii=False, indent=2),
             encoding="utf-8",
         )
 
-    for domain in ZOTERO_JSON_ITEMS:
-        base_file = bases / f"{domain}.base"
-        base_file.write_text(
-            f"""# GENERATED by PaperForge sandbox — test fixture
-name: {domain}
-type: ObsidianBase
+    # --- empty vault root (wizard fills everything) ---
+    VAULT.mkdir(parents=True)
 
-views:
-  - name: 全记录
-    type: table
-    filters: ""
-    order: title, year
+    # --- README ---
+    vault_abs = str(VAULT.resolve())
+    zotero_abs = str(ZOTERO_DATA.resolve())
+    exports_abs = str(EXPORTS.resolve())
 
----
-# {domain} Literature Base
-""",
-            encoding="utf-8",
-        )
+    readme = SANDBOX / "README.md"
+    readme.write_text(f"""# PaperForge Lite — Test Sandbox
 
-    lit_hub = bases / "Literature Hub.base"
-    lit_hub.write_text(
-        """# GENERATED by PaperForge sandbox — test fixture
-name: Literature Hub
-type: ObsidianBase
+## 用途
+测试 PaperForge Lite 安装向导 `setup_wizard.py` 的完整流程。
 
-views:
-  - name: 全记录
-    type: table
-    filters: ""
-    order: title, year
+## 目录结构
 
----
-# Literature Hub
-Cross-domain overview.
-""",
-        encoding="utf-8",
-    )
+```
+tests/sandbox/
+  TestZoteroData/          ← 模拟 Zotero 数据目录（setup wizard 会在 vault 内建 junction 指向这里）
+    storage/              ← 5 PDFs（4篇有附件，1篇无）
+    zotero.sqlite         ← 伪造（让 Zotero 路径检测通过）
+  exports/               ← Better BibTeX JSON 导出（2个域，5篇文献，keys 匹配 storage 文件名）
+  00_TestVault/          ← 空目录（安装向导会在这里创建所有子目录）
+  README.md              ← 本文件
+```
 
-    readme = vault / "README.md"
-    readme.write_text(
-        """# Sandbox Vault
+## 测试步骤
 
-This is a completely sealed test vault for PaperForge Lite testing.
-Do not use with a real Obsidian vault.
+```powershell
+# 1. 进入仓库根目录
+cd D:\\...\\github-release
 
-- 5 mock papers across 2 domains (骨科, 运动医学)
-- 4 with PDFs, 1 without (no-pdf case)
-- paperforge.json configured with default paths
-- .env with dummy PaddleOCR credentials
+# 2. 运行安装向导，指向空 vault
+python setup_wizard.py --vault {vault_abs}
 
-Zotero storage: 99_System/Zotero/storage/
-BBT exports: 99_System/PaperForge/exports/
-Library records: 03_Resources/LiteratureControl/library-records/
-Literature notes: 03_Resources/Literature/
-Bases: 05_Bases/
+# 3. 安装向导中：
+#    - Agent 平台：选你的（opencode / cursor / claude 等）
+#    - Zotero 数据目录：填 {zotero_abs}
+#      （向导会在 vault 内创建 junction: 00_TestVault/00_System/Zotero -> 指向这里）
+#    - BBT 导出目录：填 {exports_abs}
+#      （向导会检测到 exports/ 下的 JSON 文件）
+#    - 其他步骤默认即可
 
-DO NOT ADD REAL DATA HERE.
-""",
-        encoding="utf-8",
-    )
+# 4. 安装完成后，测试 pipeline：
+cd {vault_abs}
+paperforge selection-sync
+paperforge index-refresh
+paperforge ocr run
+paperforge status
+```
 
-    print(f"  vault/                    — root")
-    print(f"  99_System/               — system dir (Zotero junction, PaperForge)")
-    print(f"    Zotero/storage/         — 4 mock PDFs")
-    print(f"    PaperForge/exports/      — 2 BBT JSON files (骨科.json, 运动医学.json)")
-    print(f"    PaperForge/ocr/         — OCR output dir")
-    print(f"  03_Resources/             — resources dir")
-    print(f"    Literature/              — formal literature notes (5)")
-    print(f"    LiteratureControl/       — control dir")
-    print(f"      library-records/       — 5 library records")
-    print(f"  05_Bases/                 — 3 Base files")
-    print(f"  .opencode/                — skills + command stubs")
-    print(f"  .env                      — dummy credentials")
-    print(f"  paperforge.json          — default config")
-    print(f"\nTotal: 5 papers, 4 PDFs, 2 domains")
-    print(f"Sandbox vault ready at: {SANDBOX_VAULT}")
+## 预期结果
+
+| 检查项 | 预期 |
+|--------|------|
+| wizard 检测 TestZoteroData | 通过（有 storage/ 和 zotero.sqlite）|
+| wizard 检测 exports/ | 通过（2个 JSON，keys 有效）|
+| selection-sync | 生成 5 条 library-records |
+| TSTONE003 ocr_status | nopdf（无 PDF） |
+| TSTTWO001/002 有 PDF | ocr_status: pending |
+
+## 注意
+- 目录名故意和真实 vault 不同，避免硬编码测试不出来
+- PDF 是最小化假文件（pymupdf 可读，内容为空）
+- 不要往 sandbox 加真实数据
+""", encoding="utf-8")
+
+    pdf_count = sum(1 for papers in PAPERS.values() for p in papers if p["has_pdf"])
+    paper_count = sum(len(papers) for papers in PAPERS.values())
+    print(f"\nSandbox ready: {SANDBOX}")
+    print(f"  TestZoteroData/storage/  — {pdf_count} PDFs")
+    print(f"  exports/                   — {len(PAPERS)} BBT JSON files ({paper_count} papers)")
+    print(f"  00_TestVault/             — EMPTY (wizard fills this)")
+    print(f"\nRun:")
+    print(f"  python setup_wizard.py --vault {VAULT.resolve()}")
 
 
 if __name__ == "__main__":
-    build_vault()
+    build()
