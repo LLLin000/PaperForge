@@ -6,7 +6,7 @@ See: `.planning/PROJECT.md` (updated 2026-04-23)
 
 **Core value:** A new user can install PaperForge, configure their own vault paths and PaddleOCR credentials, then run the full literature pipeline with copy-pasteable commands that diagnose failures clearly.
 
-**Current focus:** Phase 1: Config And Command Foundation — Plan 01-01 complete
+**Current focus:** Phase 1: Config And Command Foundation — Plan 01-02 complete
 
 ## Current Findings
 
@@ -15,10 +15,11 @@ See: `.planning/PROJECT.md` (updated 2026-04-23)
 - PaddleOCR failures need a dedicated preflight and retry path before deeper workflow work.
 - Production Base designs are richer than release-generated Bases and should be parameterized.
 - `paperforge_lite/config.py` now provides a tested shared resolver; remaining Phase 1 plans must integrate worker and `/LD-deep` to use it.
+- `paperforge` CLI launcher now provides copy-pasteable commands with resolved paths; `paperforge paths --json` works without editable install.
 
 ## Next Action
 
-Continue Phase 1 Plan 01-02: `paperforge` launcher, package entry point, and command dispatch.
+Continue Phase 1 Plan 01-03: Worker, `/LD-deep`, setup, and validation resolver integration.
 
 ## Open Questions
 
@@ -31,12 +32,12 @@ Continue Phase 1 Plan 01-02: `paperforge` launcher, package entry point, and com
 | Plan | Status | Summary |
 |------|--------|---------|
 | 01-01 | done | Shared config resolver (`paperforge_lite/config.py`) and 13-key path inventory |
-| 01-02 | pending | `paperforge` launcher, package entry point, and command dispatch |
+| 01-02 | done | `paperforge` launcher, package entry point, and command dispatch |
 | 01-03 | pending | Worker, `/LD-deep`, setup, and validation resolver integration |
 | 01-04 | pending | Stable command documentation and setup next-step updates |
 
 **Completed:** 2026-04-23
-**Completed Requirements:** CONF-01, CONF-02, CONF-03, CONF-04
+**Completed Requirements:** CONF-01, CONF-02, CONF-03, CONF-04, CMD-01, CMD-03
 
 ## Decisions Logged
 
@@ -44,7 +45,9 @@ Continue Phase 1 Plan 01-02: `paperforge` launcher, package entry point, and com
 - **2026-04-23:** `paperforge_paths` returns exactly 13 keys; `command_dir` excluded (not user-facing)
 - **2026-04-23:** `resolve_vault` walks cwd upward for `paperforge.json` enabling vault-free invocation
 - **2026-04-23:** No `os.environ` mutation; `env` is a read-only parameter
+- **2026-04-23:** CLI returns int exit codes (not `sys.exit()`) for testability; worker functions imported at module level for patchability
+- **2026-04-23:** `load_simple_env` added to config.py for .env loading before worker dispatch
 
 ---
 *Initialized: 2026-04-23*
-*Last updated: 2026-04-23 (01-01 complete)*
+*Last updated: 2026-04-23 (01-02 complete)*
