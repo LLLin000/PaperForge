@@ -59,7 +59,7 @@
 | # | Phase | Goal | Requirements | Status |
 |---|-------|------|--------------|--------|
 | 6 | Setup, CLI, And Diagnostics Consistency | Align setup/docs/doctor/path contracts | 9 | 2 plans |
-| 7 | Zotero PDF, Metadata, And State Repair | Resolve PDFs and converge status fields | 9 | Planned |
+| 7 | Zotero PDF, Metadata, And State Repair | Resolve PDFs and converge status fields | 9 | Done |
 | 8 | Deep Helper Deployment And Sandbox Regression Gate | Automate the manual sandbox audit | 6 | Planned |
 
 ---

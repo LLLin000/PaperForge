@@ -31,3 +31,4 @@ tests/sandbox/00_TestVault/
 # OS
 .DS_Store
 Thumbs.db
+tests/
