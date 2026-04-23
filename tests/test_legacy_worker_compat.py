@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -171,11 +172,16 @@ class TestLegacyStatusSubprocess:
         if not worker_script.exists():
             pytest.skip("Worker script not found at expected path")
 
+        # Run with repo root on PYTHONPATH so paperforge_lite can be imported
+        env = dict(os.environ)
+        env["PYTHONPATH"] = str(_REPO_ROOT) + (";" if sys.platform == "win32" else ":") + env.get("PYTHONPATH", "")
+
         result = subprocess.run(
             [sys.executable, str(worker_script), "--vault", str(tmp_vault), "status"],
             capture_output=True,
             text=True,
             timeout=30,
+            env=env,
         )
         # Should exit 0, no import errors
         assert result.returncode == 0, (

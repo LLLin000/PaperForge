@@ -6,10 +6,17 @@ import sys
 from pathlib import Path
 
 import pytest
+from importlib.util import spec_from_file_location, module_from_spec
 
-# Ensure the repo root is on sys.path so we can import ld_deep
+# Pre-load ld_deep so its functions are available
 _REPO_ROOT = Path(__file__).parent.parent
-sys.path.insert(0, str(_REPO_ROOT))
+_ld_spec = spec_from_file_location(
+    "ld_deep",
+    _REPO_ROOT / "skills" / "literature-qa" / "scripts" / "ld_deep.py",
+)
+_ld_mod = module_from_spec(_ld_spec)
+sys.modules["ld_deep"] = _ld_mod
+_ld_spec.loader.exec_module(_ld_mod)
 
 
 @pytest.fixture
