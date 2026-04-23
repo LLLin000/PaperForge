@@ -23,10 +23,10 @@
 **Plans:** 4 plans
 
 Plans:
-- [x] 01-01-PLAN.md — Shared config resolver and path inventory contract
-- [x] 01-02-PLAN.md — `paperforge` launcher, package entry point, and command dispatch
-- [x] 01-03-PLAN.md — Worker, `/LD-deep`, setup, and validation resolver integration
-- [x] 01-04-PLAN.md — Stable command documentation and setup next-step updates
+- [x] 01-01-PLAN.md — Shared config resolver and path inventory contract (COMPLETE: 2026-04-23)
+- [ ] 01-02-PLAN.md — `paperforge` launcher, package entry point, and command dispatch
+- [ ] 01-03-PLAN.md — Worker, `/LD-deep`, setup, and validation resolver integration
+- [ ] 01-04-PLAN.md — Stable command documentation and setup next-step updates
 
 ## Phase 2: PaddleOCR And PDF Path Hardening
 
