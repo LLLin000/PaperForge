@@ -89,10 +89,10 @@
 | ONBD-03 | Phase 4 | Pending |
 | CONF-01 | Phase 1 | Pending |
 | CONF-02 | Phase 1 | Pending |
-| CONF-03 | Phase 1 | Pending |
-| CONF-04 | Phase 1 | Pending |
+| CONF-03 | Phase 1 | Done (01-03) |
+| CONF-04 | Phase 1 | Done (01-03) |
 | CMD-01 | Phase 1 | Pending |
-| CMD-02 | Phase 1 | Pending |
+| CMD-02 | Phase 1 | Done (01-03) |
 | CMD-03 | Phase 1 | Pending |
 | OCR-01 | Phase 2 | Pending |
 | OCR-02 | Phase 2 | Pending |
@@ -107,7 +107,7 @@
 | BASE-03 | Phase 3 | Pending |
 | BASE-04 | Phase 3 | Pending |
 | DEEP-01 | Phase 4 | Pending |
-| DEEP-02 | Phase 1 | Pending |
+| DEEP-02 | Phase 1 | Done (01-03) |
 | DEEP-03 | Phase 4 | Pending |
 | REL-01 | Phase 5 | Pending |
 | REL-02 | Phase 5 | Pending |
