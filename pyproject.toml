@@ -45,3 +45,6 @@ include = ["paperforge_lite*"]
 
 [tool.setuptools.package-data]
 paperforge_lite = ["py.typed"]
+
+[tool.pytest.ini_options]
+addopts = "--ignore=tests/sandbox/00_TestVault/"

@@ -20,15 +20,13 @@
 git clone https://github.com/LLLin000/PaperForge.git
 cd PaperForge
 
-# 2. 安装依赖
-pip install -r requirements.txt
-
-# 3. 运行向导（交互式，按步骤引导）
+# 2. 运行向导（交互式，按步骤引导）
 python setup_wizard.py --vault /path/to/your/vault
 ```
 
 向导会自动完成：
 - 检测 Python 环境和依赖
+- 安装 PaperForge 工具包（`pip install -e .` 由向导自动执行）
 - 配置 Vault 目录结构（可自定义名称）
 - 链接 Zotero 数据目录
 - 检测 Better BibTeX 插件

@@ -1126,7 +1126,22 @@ ZOTERO_DATA_DIR={getattr(self.app, 'zotero_data_dir', '')}
                 self.set_status(f"脚本测试警告: {result.stderr[:100]}", None)
         except Exception as e:
             self.set_status(f"脚本测试跳过: {e}", None)
-        
+
+        # 9. 安装 PaperForge 工具包（让 paperforge 命令全局可用）
+        self.set_status("安装 PaperForge 工具包...", None)
+        try:
+            result = subprocess.run(
+                [sys.executable, "-m", "pip", "install", "-e", str(repo_root)],
+                capture_output=True, text=True, timeout=60,
+            )
+            if result.returncode == 0:
+                self.set_status("PaperForge 工具包安装完成（paperforge 命令已全局注册）", True)
+            else:
+                stderr = result.stderr[:200] if result.stderr else ""
+                self.set_status(f"pip install 警告（paperforge 命令可能需要手动注册）: {stderr}", None)
+        except Exception as e:
+            self.set_status(f"pip install 跳过: {e}", None)
+
         return True
 
 
@@ -1141,36 +1156,31 @@ class DoneStep(StepScreen):
         yield Markdown(f"""
 ## 安装完成！
 
-所有前置条件已满足，你现在可以开始使用 PaperForge Lite。
+PaperForge Lite 已完成安装和初始化。以下是立即开始使用的步骤：
 
 ### 首次使用步骤：
 
-**1. 安装 PaperForge 工具包**
-```bash
-pip install -e .
-```
-
-**2. 同步 Zotero 文献**
+**1. 同步 Zotero 文献**
 ```bash
 paperforge selection-sync
 ```
 
-**3. 生成正式笔记**
+**2. 生成正式笔记**
 ```bash
 paperforge index-refresh
 ```
 
-**4. 标记精读文献**
+**3. 标记精读文献**
 在 Obsidian 中打开 library-records 文件，设置：
 - `do_ocr: true`
 - `analyze: true`
 
-**5. 运行 OCR**
+**4. 运行 OCR**
 ```bash
 paperforge ocr run
 ```
 
-**6. 执行精读**
+**5. 执行精读**
 在 OpenCode Agent 中输入：
 ```
 /LD-deep <zotero_key>

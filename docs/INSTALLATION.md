@@ -9,10 +9,7 @@ PaperForge 提供图形化安装向导，引导你完成全部配置：
 git clone https://github.com/LLLin000/PaperForge.git
 cd PaperForge
 
-# 2. 安装依赖
-pip install -r requirements.txt
-
-# 3. 运行向导
+# 2. 运行向导（pip install -e . 由向导自动执行）
 python setup_wizard.py --vault /path/to/your/vault
 ```
 

@@ -21,7 +21,7 @@ tests/sandbox/
 # 1. 进入仓库根目录
 cd D:\...\github-release
 
-# 2. 运行安装向导，指向空 vault
+# 2. 运行安装向导，指向空 vault（pip install -e . 由向导自动完成）
 python setup_wizard.py --vault D:\L\Med\Research\99_System\LiteraturePipeline\github-release\tests\sandbox\00_TestVault
 
 # 3. 安装向导中：
@@ -32,14 +32,10 @@ python setup_wizard.py --vault D:\L\Med\Research\99_System\LiteraturePipeline\gi
 #      （向导会检测到 exports/ 下的 JSON 文件）
 #    - 其他步骤默认即可
 
-# 4. 向导完成后，按提示运行（在同一终端窗口）：
-pip install -e .
-
-# 5. 测试 pipeline：
+# 4. 测试 pipeline：
 cd D:\L\Med\Research\99_System\LiteraturePipeline\github-release\tests\sandbox\00_TestVault
 paperforge selection-sync
 paperforge index-refresh
-paperforge ocr run
 paperforge status
 ```
 
