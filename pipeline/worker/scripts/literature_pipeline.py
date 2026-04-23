@@ -2790,7 +2790,8 @@ def run_deep_reading(vault: Path, verbose: bool = False) -> int:
                 if meta_path.exists():
                     try:
                         meta = read_json(meta_path)
-                        ocr_status = str(meta.get('ocr_status', 'pending')).strip().lower()
+                        validated_status, error_msg = validate_ocr_meta(paths, meta)
+                        ocr_status = validated_status
                     except Exception:
                         pass
                 pending_queue.append({

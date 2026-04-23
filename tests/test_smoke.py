@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 
@@ -233,6 +234,77 @@ def test_smoke_deep_reading_queue_output(
     queue_text = queue_path.read_text(encoding="utf-8")
     # Should contain the three-state header or queue content
     assert "##" in queue_text or "所有 analyze=true" in queue_text
+
+
+def test_smoke_deep_reading_done_incomplete_is_blocked(
+    fixture_vault: Path,
+    fixture_bbt_json: Path,
+    fixture_library_records: list[Path],
+) -> None:
+    """done_incomplete OCR status is treated as blocked, not ready.
+
+    Regression test: meta.json with ocr_status=done but incomplete files
+    (e.g., fulltext.md too small) should NOT appear in the ready queue.
+    validate_ocr_meta() must be called to catch this case.
+    """
+    import json
+    from pipeline.worker.scripts.literature_pipeline import run_deep_reading
+
+    records_dir = (
+        fixture_vault
+        / "03_Resources"
+        / "LiteratureControl"
+        / "library-records"
+        / "骨科"
+    )
+
+    key = "TESTKEY001"
+    record_path = records_dir / f"{key}.md"
+
+    record_text = record_path.read_text(encoding="utf-8")
+    record_text = re.sub(r'^analyze:\s*(true|false)$', 'analyze: true', record_text, flags=re.MULTILINE)
+    record_text = re.sub(r'^do_ocr:\s*(true|false)$', 'do_ocr: true', record_text, flags=re.MULTILINE)
+    record_path.write_text(record_text, encoding="utf-8")
+
+    ocr_root = fixture_vault / "99_System" / "PaperForge" / "ocr"
+    ocr_key_dir = ocr_root / key
+    ocr_key_dir.mkdir(parents=True, exist_ok=True)
+
+    meta = {
+        "zotero_key": key,
+        "ocr_status": "done",
+        "page_count": 5,
+        "error": "",
+    }
+    (ocr_key_dir / "meta.json").write_text(
+        json.dumps(meta), encoding="utf-8"
+    )
+
+    (ocr_key_dir / "fulltext.md").write_text(
+        "<!-- page 1 -->\nToo small",
+        encoding="utf-8",
+    )
+
+    json_dir = ocr_key_dir / "json"
+    json_dir.mkdir(parents=True, exist_ok=True)
+    (json_dir / "result.json").write_text(
+        json.dumps({"text": "x" * 2000}),
+        encoding="utf-8",
+    )
+
+    result = run_deep_reading(fixture_vault, verbose=False)
+    assert result == 0
+
+    pf_dir = fixture_vault / "99_System" / "PaperForge"
+    queue_path = pf_dir / "deep-reading-queue.md"
+    assert queue_path.exists()
+    queue_text = queue_path.read_text(encoding="utf-8")
+
+    assert key in queue_text, "paper should appear in queue report"
+    assert "done_incomplete" in queue_text, "status should be done_incomplete"
+    if "就绪" in queue_text:
+        ready_section = queue_text.split("就绪")[1].split("##")[0] if "##" in queue_text.split("就绪")[1] else queue_text.split("就绪")[1]
+        assert key not in ready_section, "done_incomplete paper should NOT be in ready section"
 
 
 # ---------------------------------------------------------------------------
