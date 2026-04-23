@@ -12,32 +12,26 @@ from typing import Iterable
 
 
 def _load_vault_config(vault: Path) -> dict:
-    """Load vault directory configuration from paperforge.json."""
-    defaults = {
-        "system_dir": "99_System",
-        "resources_dir": "03_Resources",
-        "literature_dir": "Literature",
-        "control_dir": "LiteratureControl",
-        "base_dir": "05_Bases",
-    }
-    config_path = vault / "paperforge.json"
-    if config_path.exists():
-        try:
-            data = json.loads(config_path.read_text(encoding="utf-8"))
-            nested = data.get("vault_config", {}) if isinstance(data.get("vault_config"), dict) else {}
-            return {**defaults, **nested, **{k: v for k, v in data.items() if k in defaults and v}}
-        except Exception:
-            pass
-    return defaults
+    """Load vault directory configuration — delegates to shared resolver.
+
+    Preserves the public name for legacy callers.
+    """
+    from paperforge_lite.config import load_vault_config as _shared_load_vault_config
+    return _shared_load_vault_config(vault)
 
 
 def _paperforge_paths(vault: Path) -> dict[str, Path]:
-    config = _load_vault_config(vault)
-    resources = vault / config["resources_dir"]
+    """Build PaperForge path inventory for /LD-deep — delegates to shared resolver.
+
+    Returns ocr, records, literature keys matching shared resolver output.
+    """
+    from paperforge_lite.config import paperforge_paths as _shared_paperforge_paths
+
+    shared = _shared_paperforge_paths(vault)
     return {
-        "ocr": vault / config["system_dir"] / "PaperForge" / "ocr",
-        "records": resources / config["control_dir"] / "library-records",
-        "literature": resources / config["literature_dir"],
+        "ocr": shared["ocr"],
+        "records": shared["library_records"],
+        "literature": shared["literature"],
     }
 
 

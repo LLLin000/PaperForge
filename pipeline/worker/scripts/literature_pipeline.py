@@ -124,66 +124,53 @@ def _extract_year(value: str) -> str:
 
 
 def load_vault_config(vault: Path) -> dict:
-    """Read vault configuration from paperforge.json."""
-    defaults = {
-        "system_dir": "99_System",
-        "resources_dir": "03_Resources",
-        "literature_dir": "Literature",
-        "control_dir": "LiteratureControl",
-        "base_dir": "05_Bases",
-    }
-    pf_json = vault / "paperforge.json"
-    if pf_json.exists():
-        try:
-            data = json.loads(pf_json.read_text(encoding="utf-8"))
-            nested = data.get("vault_config", {}) if isinstance(data.get("vault_config"), dict) else {}
-            merged = {**defaults, **nested, **{k: v for k, v in data.items() if k in defaults and v}}
-            return {
-                "system_dir": merged["system_dir"],
-                "resources_dir": merged["resources_dir"],
-                "literature_dir": merged["literature_dir"],
-                "control_dir": merged["control_dir"],
-                "base_dir": merged["base_dir"],
-            }
-        except (json.JSONDecodeError, IOError):
-            pass
-    return defaults
+    """Read vault configuration — delegates to shared resolver.
+
+    Preserves the public name for legacy callers. Configuration precedence:
+    1. paperforge_lite.config.load_vault_config (overrides > env > JSON > defaults)
+    """
+    from paperforge_lite.config import load_vault_config as _shared_load_vault_config
+    return _shared_load_vault_config(vault)
 
 
 def pipeline_paths(vault: Path) -> dict[str, Path]:
+    """Build complete PaperForge path inventory — delegates to shared resolver.
+
+    Returns paths from paperforge_lite.config.paperforge_paths() plus
+    worker-only keys. Preserves all legacy keys for existing callers.
+    """
+    from paperforge_lite.config import paperforge_paths as _shared_paperforge_paths
+
+    shared = _shared_paperforge_paths(vault)
+
     cfg = load_vault_config(vault)
     system_dir = cfg["system_dir"]
     resources_dir = cfg["resources_dir"]
-    literature_dir = cfg["literature_dir"]
     control_dir = cfg["control_dir"]
-    base_dir = cfg["base_dir"]
-    
-    root = vault / system_dir / "PaperForge"
-    control_root = vault / resources_dir / control_dir
+
+    root = shared["paperforge"]
+    control_root = shared["control"]
+
     return {
-        'pipeline': root,
-        'candidates': root / 'candidates' / 'candidates.json',
-        'candidate_inbox': root / 'candidates' / 'inbox',
-        'candidate_archive': root / 'candidates' / 'archive',
-        'search_tasks': root / 'search' / 'tasks',
-        'search_archive': root / 'search' / 'archive',
-        'search_results': root / 'search' / 'results',
-        'harvest_root': root / 'skill-prototypes' / 'zotero-review-manuscript-writer',
-        'records': control_root / 'candidate-records',
-        'review': root / 'candidates' / 'review-latest.md',
-        'config': root / 'config' / 'domain-collections.json',
-        'exports': root / 'exports',
-        'library_records': control_root / 'library-records',
-        'queue': root / 'writeback' / 'writeback-queue.jsonl',
-        'log': root / 'writeback' / 'writeback-log.jsonl',
-        'bridge_config': root / 'zotero-bridge' / 'bridge-config.json',
-        'bridge_config_sample': root / 'zotero-bridge' / 'bridge-config.sample.json',
-        'index': root / 'indexes' / 'formal-library.json',
-        'ocr': root / 'ocr',
-        'ocr_queue': root / 'ocr' / 'ocr-queue.json',
-        'resources': vault / resources_dir,
-        'literature': vault / resources_dir / literature_dir,
-        'bases': vault / base_dir,
+        **shared,
+        # Worker-only keys (added on top of shared resolver output)
+        "pipeline": root,
+        "candidates": root / "candidates" / "candidates.json",
+        "candidate_inbox": root / "candidates" / "inbox",
+        "candidate_archive": root / "candidates" / "archive",
+        "search_tasks": root / "search" / "tasks",
+        "search_archive": root / "search" / "archive",
+        "search_results": root / "search" / "results",
+        "harvest_root": root / "skill-prototypes" / "zotero-review-manuscript-writer",
+        "records": control_root / "candidate-records",
+        "review": root / "candidates" / "review-latest.md",
+        "config": root / "config" / "domain-collections.json",
+        "queue": root / "writeback" / "writeback-queue.jsonl",
+        "log": root / "writeback" / "writeback-log.jsonl",
+        "bridge_config": root / "zotero-bridge" / "bridge-config.json",
+        "bridge_config_sample": root / "zotero-bridge" / "bridge-config.sample.json",
+        "index": root / "indexes" / "formal-library.json",
+        "ocr_queue": root / "ocr" / "ocr-queue.json",
     }
 
 def load_domain_config(paths: dict[str, Path]) -> dict:
