@@ -6,7 +6,7 @@ See: `.planning/PROJECT.md` (updated 2026-04-23)
 
 **Core value:** A new user can install PaperForge, configure their own vault paths and PaddleOCR credentials, then run the full literature pipeline with copy-pasteable commands that diagnose failures clearly.
 
-**Current focus:** Phase 5: Release Verification — context gathered, planning pending
+**Current focus:** Phase 5 complete — all 5 phases done
 
 ## Current Findings
 
