@@ -19,10 +19,31 @@ from pathlib import Path
 from typing import Any
 
 # ---------------------------------------------------------------------------
+# .env loader
+# ---------------------------------------------------------------------------
+
+def load_simple_env(env_path: Path) -> None:
+    """Load key=value pairs from a .env file into os.environ (no overwrite)."""
+    if not env_path.exists():
+        return
+    for raw_line in env_path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        key = key.strip()
+        if not key or key in os.environ:
+            continue
+        value = value.strip()
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in {'"', "'"}:
+            value = value[1:-1]
+        os.environ[key] = value
+
+
+# ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
 
-# Built-in defaults — used when no paperforge.json exists
 DEFAULT_CONFIG: dict[str, str] = {
     "system_dir": "99_System",
     "resources_dir": "03_Resources",

@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "paperforge-lite"
+version = "1.0.0"
+description = "PaperForge Lite — Obsidian + Zotero literature pipeline CLI"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [
+    {name = "PaperForge Contributors"}
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+]
+dependencies = [
+    "requests>=2.31.0",
+    "pymupdf>=1.23.0",
+    "pillow>=10.0.0",
+    "textual>=0.47.0",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=7.4.0",
+]
+
+[project.scripts]
+paperforge = "paperforge_lite.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["paperforge_lite*"]
+
+[tool.setuptools.package-data]
+paperforge_lite = ["py.typed"]
