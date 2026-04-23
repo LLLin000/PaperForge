@@ -363,6 +363,12 @@ paperforge status
 paperforge doctor
 ```
 
+> 如果 `paperforge` 命令未注册，可使用 fallback：
+> ```bash
+> python -m paperforge_lite <command>
+> ```
+> 例如：`python -m paperforge_lite status`
+
 ### Agent 命令
 ```
 /LD-deep <zotero_key>    # 完整三阶段精读

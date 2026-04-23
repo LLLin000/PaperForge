@@ -62,6 +62,13 @@ def ocr_doctor(config: dict[str, str] | None, live: bool = False) -> dict:
                 "fix": "OCR provider is experiencing issues. Retry later with `paperforge ocr doctor`",
             }
         if resp.status_code != 200:
+            if resp.status_code == 405:
+                return {
+                    "level": 2,
+                    "passed": False,
+                    "error": "URL returned 405 Method Not Allowed",
+                    "fix": "PaddleOCR endpoint may require GET for probing but POST for OCR jobs. Check if your API endpoint supports both methods.",
+                }
             return {
                 "level": 2,
                 "passed": False,

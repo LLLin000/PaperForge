@@ -111,6 +111,12 @@ python -m pip install -e .
 python $(python -c "import json; print(json.load(open('paperforge.json'))['paperforge_path'] + '/worker/scripts/literature_pipeline.py')" --vault . status
 ```
 
+**如果 `paperforge` 命令未注册**，使用 fallback：
+```bash
+python -m paperforge_lite <command>
+```
+例如：`python -m paperforge_lite status`
+
 ---
 
 ## 故障排除

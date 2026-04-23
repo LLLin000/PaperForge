@@ -2844,6 +2844,137 @@ def run_deep_reading(vault: Path, verbose: bool = False) -> int:
     print(f'deep-reading: synced {synced} records, {len(pending_queue)} pending')
     return 0
 
+def run_repair(vault: Path, paths: dict, verbose: bool = False, fix: bool = False) -> dict:
+    """Scan all domains for three-way state divergence and optionally repair.
+
+    Compares three sources of ocr_status:
+    1. library_record.md frontmatter ocr_status
+    2. formal_note.md frontmatter ocr_status
+    3. meta.json ocr_status (post-validate_ocr_meta())
+
+    Returns:
+        dict with scanned, divergent, fixed, errors counts
+    """
+    result = {"scanned": 0, "divergent": [], "fixed": 0, "errors": []}
+    config = load_domain_config(paths)
+    domain_lookup = {entry['export_file']: entry['domain'] for entry in config['domains']}
+    record_paths = list(paths['library_records'].rglob('*.md'))
+    for record_path in record_paths:
+        try:
+            record_text = record_path.read_text(encoding='utf-8')
+        except Exception as e:
+            result['errors'].append({"file": str(record_path), "error": str(e)})
+            continue
+        key_match = re.search('^zotero_key:\\s*"?(.+?)"?\\s*$', record_text, re.MULTILINE)
+        if not key_match:
+            continue
+        zotero_key = key_match.group(1).strip()
+        domain = record_path.parent.name
+        record_dir = record_path.parent
+        result['scanned'] += 1
+        lib_ocr_match = re.search('^ocr_status:\\s*"?(.+?)"?\\s*$', record_text, re.MULTILINE)
+        lib_ocr_status = lib_ocr_match.group(1).strip() if lib_ocr_match else 'pending'
+        note_path = _resolve_formal_note_path(vault, zotero_key, domain)
+        note_ocr_status = None
+        if note_path and note_path.exists():
+            try:
+                note_text = note_path.read_text(encoding='utf-8')
+                note_status_match = re.search('^ocr_status:\\s*"?(.+?)"?\\s*$', note_text, re.MULTILINE)
+                note_ocr_status = note_status_match.group(1).strip() if note_status_match else None
+            except Exception:
+                pass
+        meta_path = paths['ocr'] / zotero_key / 'meta.json'
+        meta_ocr_status = None
+        meta_validated_status = None
+        if meta_path.exists():
+            try:
+                meta = read_json(meta_path)
+                validated_status, validated_error = validate_ocr_meta(paths, meta)
+                meta_validated_status = validated_status
+                if validated_error and verbose:
+                    print(f"[repair] {zotero_key} meta validation error: {validated_error}")
+                raw_status = str(meta.get('ocr_status', '') or '').strip().lower()
+                meta_ocr_status = raw_status if raw_status else None
+                if meta_validated_status == 'done_incomplete':
+                    meta_ocr_status = 'done_incomplete'
+            except Exception as e:
+                result['errors'].append({"file": str(meta_path), "error": str(e)})
+                meta_ocr_status = None
+        is_divergent = False
+        div_reason = ""
+        if meta_validated_status == 'done_incomplete':
+            is_divergent = True
+            div_reason = f"meta validation: done_incomplete ({validated_error})"
+        elif lib_ocr_status == 'done' and meta_ocr_status in ('pending', 'processing', None):
+            is_divergent = True
+            div_reason = f"library_record done but meta {meta_ocr_status or 'missing'}"
+        elif note_ocr_status == 'done' and (meta_ocr_status is None or meta_validated_status == 'done_incomplete'):
+            is_divergent = True
+            div_reason = "formal_note done but meta.json missing/invalid"
+        elif lib_ocr_status != 'pending' and meta_ocr_status is not None and meta_validated_status is not None and lib_ocr_status != meta_validated_status:
+            is_divergent = True
+            div_reason = f"library_record={lib_ocr_status} vs meta post-validation={meta_validated_status}"
+        if is_divergent:
+            item = {
+                "zotero_key": zotero_key,
+                "domain": domain,
+                "library_record_ocr_status": lib_ocr_status,
+                "formal_note_ocr_status": note_ocr_status,
+                "meta_ocr_status": meta_validated_status or meta_ocr_status,
+                "reason": div_reason,
+            }
+            result['divergent'].append(item)
+            if verbose:
+                print(f"[repair] divergent: {zotero_key} | {div_reason}")
+            if fix:
+                fixed_library_record = False
+                fixed_formal_note = False
+                fixed_meta = False
+                new_status = 'pending'
+                if meta_ocr_status is None or meta_validated_status == 'done_incomplete':
+                    new_status = 'pending'
+                    new_record_text = update_frontmatter_field(record_text, 'ocr_status', new_status)
+                    if new_record_text != record_text:
+                        record_path.write_text(new_record_text, encoding='utf-8')
+                        fixed_library_record = True
+                    if note_path and note_path.exists():
+                        try:
+                            note_text = note_path.read_text(encoding='utf-8')
+                            new_note_text = update_frontmatter_field(note_text, 'ocr_status', new_status)
+                            if new_note_text != note_text:
+                                note_path.write_text(new_note_text, encoding='utf-8')
+                                fixed_formal_note = True
+                        except Exception:
+                            pass
+                    if meta_validated_status == 'done_incomplete':
+                        if meta_path.exists():
+                            try:
+                                meta = read_json(meta_path)
+                                meta['ocr_status'] = 'pending'
+                                write_json(meta_path, meta)
+                                fixed_meta = True
+                            except Exception:
+                                pass
+                    record_do_ocr_match = re.search(r'^do_ocr:\s*(true|false)$', new_record_text, re.MULTILINE)
+                    is_do_ocr = record_do_ocr_match and record_do_ocr_match.group(1) == 'true'
+                    if not is_do_ocr:
+                        final_record_text = update_frontmatter_field(new_record_text, 'do_ocr', 'true')
+                        if final_record_text != new_record_text:
+                            record_path.write_text(final_record_text, encoding='utf-8')
+                            fixed_library_record = True
+                elif lib_ocr_status == 'done' and meta_ocr_status in ('pending', 'processing'):
+                    new_record_text = update_frontmatter_field(record_text, 'ocr_status', new_status)
+                    if new_record_text != record_text:
+                        record_path.write_text(new_record_text, encoding='utf-8')
+                        fixed_library_record = True
+                fixed_count = sum([fixed_library_record, fixed_formal_note, fixed_meta])
+                result['fixed'] += fixed_count
+                if verbose and fixed_count > 0:
+                    print(f"[repair] fixed {fixed_count} files for {zotero_key}")
+    if verbose:
+        print(f"[repair] scanned={result['scanned']} divergent={len(result['divergent'])} fixed={result['fixed']} errors={len(result['errors'])}")
+    return result
+
 def run_doctor(vault: Path) -> int:
     """Validate PaperForge Lite setup and report by category.
 

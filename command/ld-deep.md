@@ -167,7 +167,7 @@
 
 当不提供具体 key/标题时，agent 自动执行以下流程：
 
-1. 运行 `paperforge deep-reading` 查看精读队列（或 `python $(paperforge paths --json | python -c "import json,sys; print(json.load(sys.stdin)['literature_script'])") queue --vault {{VAULT}}` 获取 JSON 格式队列）
+1. 运行 `paperforge deep-reading` 查看精读队列（或 `python $(paperforge paths --json | python -c "import json,sys; print(json.load(sys.stdin)['ld_deep_script'])") queue --vault {{VAULT}}` 获取 JSON 格式队列）
 2. 解析输出的队列状态（`analyze=true` + `deep_reading_status != done` + `ocr_status`）
 3. 按 OCR 状态分组展示：
    - **就绪**：OCR 已完成，可直接精读
@@ -191,14 +191,14 @@
 | `{{ZOTERO_KEY}}`   | `Y5KQ4JQ7`                                                        | 从 library-record 或 JSON 导出中获取 |
 | `{{FORMAL_NOTE}}`  | `<Vault>/<resources_dir>/<literature_dir>/骨科/Y5KQ4JQ7 - title.md` | 从 `paperforge paths --json` 或 library-record 中获取 |
 | `{{FULLTEXT_MD}}`  | `<Vault>/<system_dir>/PaperForge/ocr/Y5KQ4JQ7/fulltext.md` | 由 OCR worker 生成在 ocr 目录下 |
-| `{{SCRIPT}}`      | `<Vault>/<skill_dir>/literature-qa/scripts/ld_deep.py` | 从 `paperforge paths --json` 获取 `literature_script` 字段 |
+| `{{SCRIPT}}`      | `<Vault>/<skill_dir>/literature-qa/scripts/ld_deep.py` | 从 `paperforge paths --json` 获取 `ld_deep_script` 字段 |
 
 ### Spawn 命令格式
 
 获取路径信息：
 ```bash
 paperforge paths --json
-# 返回 JSON，包含 worker_script, literature_script, skill_dir 等字段
+# 返回 JSON，包含 worker_script, ld_deep_script, skill_dir 等字段
 ```
 
 然后使用以下格式启动 subagent：

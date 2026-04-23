@@ -486,6 +486,14 @@ PaperForge 需要 **Python 3.8+** 以及以下 Python 包：
 class VaultStep(StepScreen):
     """Step 3: Vault 目录结构配置"""
 
+    def __init__(self, step_id: str, checker: EnvChecker, vault: str = "", **kwargs):
+        kwargs.setdefault("id", step_id)
+        super().__init__(**kwargs)
+        self.step_id = step_id
+        self.checker = checker
+        self.step_idx = int(step_id.split("-")[1])
+        self._vault = vault
+
     def compose(self) -> ComposeResult:
         yield from super().compose()
         yield Markdown("""
@@ -495,7 +503,7 @@ PaperForge 需要知道你的 **Obsidian Vault 位置**，以及你想要的目�
         """)
         from textual.widgets import Input
         yield Static("Obsidian Vault 路径 (绝对路径):", classes="step-title")
-        yield Input(placeholder="D:\\Documents\\MyVault", id="input-vault-path")
+        yield Input(value=self._vault, placeholder="D:\\Documents\\MyVault", id="input-vault-path")
         yield Static("", id="vault-error", classes="status-bar")
         yield Markdown("""
 ---
@@ -1329,7 +1337,7 @@ class SetupWizardApp(App):
                             WelcomeStep("step-0", self.checker),
                             AgentPlatformStep("step-1", self.checker),
                             PythonStep("step-2", self.checker),
-                            VaultStep("step-3", self.checker),
+                            VaultStep("step-3", self.checker, vault=str(self.vault)),
                             ZoteroStep("step-4", self.checker),
                             BBTStep("step-5", self.checker),
                             JsonStep("step-6", self.checker),

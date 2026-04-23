@@ -7,6 +7,7 @@ and has_pdf=False scenarios.
 from __future__ import annotations
 
 import os
+import json
 from pathlib import Path
 from unittest.mock import patch
 
@@ -141,3 +142,143 @@ class TestResolveJunction:
     def test_directory_junction_mocked(self, tmp_path: Path) -> None:
         """Directory junction resolution is platform-dependent; covered by symlink test above."""
         pytest.skip("Windows junction mock incompatible with Python import semantics for `from ctypes import wintypes`")
+
+
+class TestLoadExportRowsAttachmentNormalization:
+    """Tests for load_export_rows() attachment path normalization.
+
+    Verifies that BBT-exported bare KEY/KEY.pdf paths are normalized to
+    storage:KEY/KEY.pdf format so resolve_pdf_path() can resolve them correctly.
+    """
+
+    def test_bare_key_key_pdf_normalized_to_storage_prefix(self, tmp_path: Path) -> None:
+        """Bare 'KEY/KEY.pdf' path is normalized to 'storage:KEY/KEY.pdf'."""
+        from pipeline.worker.scripts.literature_pipeline import load_export_rows
+
+        export_data = {
+            "items": [
+                {
+                    "key": "ABC123",
+                    "itemKey": "ABC123",
+                    "itemType": "journalArticle",
+                    "title": "Test Paper",
+                    "attachments": [
+                        {"path": "ABC123/ABC123.pdf", "contentType": "application/pdf"}
+                    ],
+                }
+            ],
+            "collections": {},
+        }
+        export_file = tmp_path / "library.json"
+        export_file.write_text(json.dumps(export_data), encoding="utf-8")
+
+        rows = load_export_rows(export_file)
+
+        assert len(rows) == 1
+        assert rows[0]["attachments"][0]["path"] == "storage:ABC123/ABC123.pdf"
+
+    def test_storage_prefix_preserved(self, tmp_path: Path) -> None:
+        """Already-prefixed 'storage:KEY/KEY.pdf' path is not double-prefixed."""
+        from pipeline.worker.scripts.literature_pipeline import load_export_rows
+
+        export_data = {
+            "items": [
+                {
+                    "key": "ABC123",
+                    "itemKey": "ABC123",
+                    "itemType": "journalArticle",
+                    "title": "Test Paper",
+                    "attachments": [
+                        {"path": "storage:ABC123/ABC123.pdf", "contentType": "application/pdf"}
+                    ],
+                }
+            ],
+            "collections": {},
+        }
+        export_file = tmp_path / "library.json"
+        export_file.write_text(json.dumps(export_data), encoding="utf-8")
+
+        rows = load_export_rows(export_file)
+
+        assert len(rows) == 1
+        assert rows[0]["attachments"][0]["path"] == "storage:ABC123/ABC123.pdf"
+
+    def test_absolute_path_not_modified(self, tmp_path: Path) -> None:
+        """Absolute paths are not prefixed with storage:."""
+        from pipeline.worker.scripts.literature_pipeline import load_export_rows
+
+        abs_path = str(tmp_path / "ABC123" / "ABC123.pdf")
+        export_data = {
+            "items": [
+                {
+                    "key": "ABC123",
+                    "itemKey": "ABC123",
+                    "itemType": "journalArticle",
+                    "title": "Test Paper",
+                    "attachments": [
+                        {"path": abs_path, "contentType": "application/pdf"}
+                    ],
+                }
+            ],
+            "collections": {},
+        }
+        export_file = tmp_path / "library.json"
+        export_file.write_text(json.dumps(export_data), encoding="utf-8")
+
+        rows = load_export_rows(export_file)
+
+        assert len(rows) == 1
+        assert rows[0]["attachments"][0]["path"] == abs_path
+
+    def test_empty_attachment_path_unchanged(self, tmp_path: Path) -> None:
+        """Empty attachment path is returned unchanged."""
+        from pipeline.worker.scripts.literature_pipeline import load_export_rows
+
+        export_data = {
+            "items": [
+                {
+                    "key": "ABC123",
+                    "itemKey": "ABC123",
+                    "itemType": "journalArticle",
+                    "title": "Test Paper",
+                    "attachments": [
+                        {"path": "", "contentType": ""}
+                    ],
+                }
+            ],
+            "collections": {},
+        }
+        export_file = tmp_path / "library.json"
+        export_file.write_text(json.dumps(export_data), encoding="utf-8")
+
+        rows = load_export_rows(export_file)
+
+        assert len(rows) == 1
+        assert rows[0]["attachments"][0]["path"] == ""
+
+    def test_non_pdf_attachment_unchanged(self, tmp_path: Path) -> None:
+        """Non-PDF attachments are returned with empty contentType and unchanged path."""
+        from pipeline.worker.scripts.literature_pipeline import load_export_rows
+
+        export_data = {
+            "items": [
+                {
+                    "key": "ABC123",
+                    "itemKey": "ABC123",
+                    "itemType": "journalArticle",
+                    "title": "Test Paper",
+                    "attachments": [
+                        {"path": "ABC123/ABC123.docx", "contentType": ""}
+                    ],
+                }
+            ],
+            "collections": {},
+        }
+        export_file = tmp_path / "library.json"
+        export_file.write_text(json.dumps(export_data), encoding="utf-8")
+
+        rows = load_export_rows(export_file)
+
+        assert len(rows) == 1
+        assert rows[0]["attachments"][0]["path"] == "storage:ABC123/ABC123.docx"
+        assert rows[0]["attachments"][0]["contentType"] == ""
