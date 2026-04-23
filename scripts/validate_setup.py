@@ -20,6 +20,15 @@ def check_path(label: str, path: Path, expected_type: str = "file") -> tuple[boo
 
 
 def load_config(vault: Path) -> dict:
+    """Load vault configuration — prefers shared resolver, falls back to legacy."""
+    # Try shared resolver first (01-03 and later installs)
+    try:
+        from paperforge_lite.config import load_vault_config as _shared_load
+        return _shared_load(vault)
+    except ImportError:
+        pass
+
+    # Legacy fallback for pre-01-03 installs
     defaults = {
         "system_dir": "99_System",
         "resources_dir": "03_Resources",
@@ -37,6 +46,15 @@ def load_config(vault: Path) -> dict:
         return defaults
     nested = data.get("vault_config", {}) if isinstance(data.get("vault_config"), dict) else {}
     return {**defaults, **nested, **{k: v for k, v in data.items() if k in defaults and v}}
+
+
+def resolve_vault_for_validate() -> Path:
+    """Resolve vault path: PAPERFORGE_VAULT first, then VAULT_PATH, then cwd."""
+    if "PAPERFORGE_VAULT" in os.environ and os.environ["PAPERFORGE_VAULT"]:
+        return Path(os.environ["PAPERFORGE_VAULT"]).expanduser().resolve()
+    if "VAULT_PATH" in os.environ and os.environ["VAULT_PATH"]:
+        return Path(os.environ["VAULT_PATH"]).expanduser().resolve()
+    return Path.cwd().resolve()
 
 
 def validate_python_deps() -> list[tuple[bool, str]]:
@@ -96,7 +114,7 @@ def validate_agent(vault: Path, cfg: dict) -> list[tuple[bool, str]]:
 
 
 def main() -> int:
-    vault = Path(os.environ.get("VAULT_PATH", ".")).resolve()
+    vault = resolve_vault_for_validate()
     cfg = load_config(vault)
     all_results = []
     all_results.extend(validate_python_deps())
