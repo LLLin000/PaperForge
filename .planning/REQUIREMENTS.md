@@ -110,7 +110,7 @@
 | DEEP-02 | Phase 1 | Done (01-03) |
 | DEEP-03 | Phase 4 | Pending |
 | REL-01 | Phase 5 | Pending |
-| REL-02 | Phase 5 | Pending |
+| REL-02 | Phase 5 | Done (05-02) |
 | REL-03 | Phase 5 | Pending |
 
 **Coverage:**

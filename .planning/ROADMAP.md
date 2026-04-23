@@ -48,10 +48,10 @@ Plans:
 **Plans:** 4 plans
 
 Plans:
-- [ ] 02-01-PLAN.md — PDF Path Resolver + Preflight (ZOT-01, OCR-02, ZOT-02)
-- [ ] 02-02-PLAN.md — OCR Failure Classification (OCR-03, OCR-04, OCR-05)
+- [x] 02-01-PLAN.md — PDF Path Resolver + Preflight (ZOT-01, OCR-02, ZOT-02) (COMPLETE: 2026-04-23)
+- [x] 02-02-PLAN.md — OCR Failure Classification (OCR-03, OCR-04, OCR-05) (COMPLETE: 2026-04-23)
 - [x] 02-03-PLAN.md — OCR Doctor Command (OCR-01) (COMPLETE: 2026-04-23)
-- [ ] 02-04-PLAN.md — Selection Sync PDF Reporting (ZOT-02)
+- [x] 02-04-PLAN.md — Selection Sync PDF Reporting (ZOT-02) (COMPLETE: 2026-04-23)
 
 ## Phase 3: Config-Aware Obsidian Bases
 
@@ -70,6 +70,12 @@ Plans:
 - Avoid depending on a single domain name; render per export/domain.
 - Add snapshot-style tests for default paths and custom paths.
 
+**Plans:** 2 plans
+
+Plans:
+- [x] 03-01-PLAN.md — Base Generation Refactor — 8 Views + Incremental Merge + Placeholder Substitution (COMPLETE: 2026-04-23)
+- [x] 03-02-PLAN.md — CLI base-refresh + Tests (COMPLETE: 2026-04-23)
+
 ## Phase 4: End-To-End Onboarding And Validation
 
 **Goal:** Turn setup into a guided, verifiable path from registration/configuration to a ready deep-reading queue.
@@ -86,6 +92,14 @@ Plans:
 - The docs should include a first-paper checklist with expected outputs.
 - Validation should not require a real OCR job unless the user opts into live provider validation.
 - Keep Chinese user-facing docs consistent with command output.
+
+**Plans:** 4 plans
+
+Plans:
+- [x] 04-01-PLAN.md — deep-reading 三态 + verbose (ONBD-03, DEEP-01) (COMPLETE: 2026-04-23)
+- [x] 04-02-PLAN.md — paperforge doctor 子命令 (ONBD-02) (COMPLETE: 2026-04-23)
+- [x] 04-03-PLAN.md — AGENTS.md paperforge CLI 更新 (ONBD-03) (COMPLETE: 2026-04-23)
+- [x] 04-04-PLAN.md — docs/README.md BBT 配置指南 (ONBD-01, ZOT-03) (COMPLETE: 2026-04-23)
 
 ## Phase 5: Release Verification
 
@@ -104,15 +118,21 @@ Plans:
 - Mock network calls for normal CI; keep live PaddleOCR validation manual/optional.
 - Do not overwrite the existing user-facing `AGENTS.md` with generic GSD instructions.
 
+**Plans:** 2 plans
+
+Plans:
+- [x] 05-01-PLAN.md — Test coverage gaps: OCR state machine, Base rendering, command docs (REL-01, REL-03)
+- [x] 05-02-PLAN.md — Fixture smoke test suite (REL-02)
+
 ## Phase Summary
 
-| # | Phase | Goal | Requirements |
-|---|-------|------|--------------|
-| 1 | Config And Command Foundation | Stable commands and shared path/env resolution | 8 |
-| 2 | PaddleOCR And PDF Path Hardening | Diagnosable, retryable OCR | 7 |
-| 3 | Config-Aware Obsidian Bases | Real workflow Bases without hardcoded paths | 4 |
-| 4 | End-To-End Onboarding And Validation | User can complete first-paper flow | 6 |
-| 5 | Release Verification | Tests and docs prove ship readiness | 3 |
+| # | Phase | Goal | Requirements | Status |
+|---|-------|------|--------------|--------|
+| 1 | Config And Command Foundation | Stable commands and shared path/env resolution | 8 | COMPLETE |
+| 2 | PaddleOCR And PDF Path Hardening | Diagnosable, retryable OCR | 7 | COMPLETE |
+| 3 | Config-Aware Obsidian Bases | Real workflow Bases without hardcoded paths | 4 | COMPLETE |
+| 4 | End-To-End Onboarding And Validation | User can complete first-paper flow | 6 | COMPLETE |
+| 5 | Release Verification | Tests and docs prove ship readiness | 3 | COMPLETE |
 
 ---
 *Roadmap created: 2026-04-23*

@@ -84,6 +84,11 @@ Begin Phase 5: Release Verification — run `/gsd-plan-phase 5` to plan smoke te
 
 ## Phase 5 Progress
 
+| Plan | Status | Summary |
+|------|--------|---------|
+| 05-01 | done | Defect audit + discuss-phase |
+| 05-02 | done | Fixture vault factory + smoke test suite |
+
 **Discuss-phase complete (2026-04-23):**
 - Test coverage scope: key-path coverage, no mandatory line %
 - Smoke test: `tests/smoke_test.py` standalone script, 6-step fixture vault flow
@@ -93,7 +98,7 @@ Begin Phase 5: Release Verification — run `/gsd-plan-phase 5` to plan smoke te
 
 **Requirements:** REL-01, REL-02, REL-03
 
-**Status:** Context ready — planning pending
+**Status:** Phase 5 complete
 
 ---
 
