@@ -86,7 +86,7 @@ Begin Phase 5: Release Verification — run `/gsd-plan-phase 5` to plan smoke te
 
 | Plan | Status | Summary |
 |------|--------|---------|
-| 05-01 | done | Defect audit + discuss-phase |
+| 05-01 | done | OCR state machine tests (8 cases) + base views verified (21) + AGENTS.md consistency checked |
 | 05-02 | done | Fixture vault factory + smoke test suite |
 
 **Discuss-phase complete (2026-04-23):**
@@ -119,5 +119,7 @@ Begin Phase 5: Release Verification — run `/gsd-plan-phase 5` to plan smoke te
 - **2026-04-23 (Phase 2 discuss):** PDF path resolver supports absolute, vault-relative, junction, and Zotero storage-relative formats; investigate full local pipeline at `D:\L\Med\Research\99_System\LiteraturePipeline` for storage path formats; on failure returns empty string + error log
 - **2026-04-23 (02-03):** `paperforge ocr doctor` implements tiered L1-L4 diagnostics with early-exit on failure; L4 live PDF test is optional via `--live` flag; test job cancelled immediately after L3 to avoid wasting provider resources
 - **2026-04-23 (02-03):** OCR subparser uses `required=False` to preserve backward compatibility of `paperforge ocr` alias defaulting to `run`
+- **2026-04-23 (05-01):** Used HTTPError 401 side_effect on mocked requests.post to trigger 'blocked' OCR state (registry token always present in test env; classify_error maps 401 -> 'blocked')
+- **2026-04-23 (05-01):** ensure_ocr_meta patched with side_effect factory (not return_value) to avoid shared dict mutation across loop iterations
 
 ## Open Questions
