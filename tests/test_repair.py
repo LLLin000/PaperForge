@@ -316,6 +316,25 @@ class TestRunRepairFixMode:
         note_text = note_path.read_text(encoding="utf-8")
         assert re.search(r'^ocr_status:\s*"?pending"?', note_text, re.MULTILINE)
 
+    def test_fix_case4_lib_done_meta_pending_updates_all_three_and_sets_do_ocr(self, tmp_path):
+        vault = _make_vault(tmp_path)
+        paths = pipeline_paths(vault)
+        records_dir = vault / "03_Resources" / "LiteratureControl" / "library-records" / "骨科"
+        records_dir.mkdir(parents=True, exist_ok=True)
+        lit_dir = vault / "03_Resources" / "Literature"
+        record_path = _write_library_record(records_dir, "KEY001", "骨科", "done", do_ocr="false")
+        note_path = _write_formal_note(lit_dir, "KEY001", "骨科", "done")
+        meta_path = _write_meta(paths["ocr"], "KEY001", "pending")
+        result = run_repair(vault, paths, verbose=False, fix=True)
+        assert result["fixed"] >= 1
+        record_text = record_path.read_text(encoding="utf-8")
+        assert re.search(r'^ocr_status:\s*"?pending"?', record_text, re.MULTILINE)
+        assert re.search(r'^do_ocr:\s*"?true"?', record_text, re.MULTILINE)
+        note_text = note_path.read_text(encoding="utf-8")
+        assert re.search(r'^ocr_status:\s*"?pending"?', note_text, re.MULTILINE)
+        meta = json.loads(meta_path.read_text(encoding="utf-8"))
+        assert meta["ocr_status"] == "pending"
+
 
 class TestRunRepairReturnStructure:
     def test_result_has_all_keys(self, tmp_path):

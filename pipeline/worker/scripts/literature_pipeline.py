@@ -2946,7 +2946,7 @@ def run_repair(vault: Path, paths: dict, verbose: bool = False, fix: bool = Fals
                                 fixed_formal_note = True
                         except Exception:
                             pass
-                    if meta_validated_status == 'done_incomplete':
+                    if meta_validated_status is not None and meta_validated_status != 'done':
                         if meta_path.exists():
                             try:
                                 meta = read_json(meta_path)
@@ -2963,10 +2963,35 @@ def run_repair(vault: Path, paths: dict, verbose: bool = False, fix: bool = Fals
                             record_path.write_text(final_record_text, encoding='utf-8')
                             fixed_library_record = True
                 elif lib_ocr_status == 'done' and meta_ocr_status in ('pending', 'processing'):
+                    new_status = 'pending'
                     new_record_text = update_frontmatter_field(record_text, 'ocr_status', new_status)
                     if new_record_text != record_text:
                         record_path.write_text(new_record_text, encoding='utf-8')
                         fixed_library_record = True
+                    if note_path and note_path.exists():
+                        try:
+                            note_text = note_path.read_text(encoding='utf-8')
+                            new_note_text = update_frontmatter_field(note_text, 'ocr_status', new_status)
+                            if new_note_text != note_text:
+                                note_path.write_text(new_note_text, encoding='utf-8')
+                                fixed_formal_note = True
+                        except Exception:
+                            pass
+                    if meta_path.exists():
+                        try:
+                            meta = read_json(meta_path)
+                            meta['ocr_status'] = 'pending'
+                            write_json(meta_path, meta)
+                            fixed_meta = True
+                        except Exception:
+                            pass
+                    record_do_ocr_match = re.search(r'^do_ocr:\s*(true|false)$', new_record_text, re.MULTILINE)
+                    is_do_ocr = record_do_ocr_match and record_do_ocr_match.group(1) == 'true'
+                    if not is_do_ocr:
+                        final_record_text = update_frontmatter_field(new_record_text, 'do_ocr', 'true')
+                        if final_record_text != new_record_text:
+                            record_path.write_text(final_record_text, encoding='utf-8')
+                            fixed_library_record = True
                 fixed_count = sum([fixed_library_record, fixed_formal_note, fixed_meta])
                 result['fixed'] += fixed_count
                 if verbose and fixed_count > 0:
