@@ -6,7 +6,7 @@ See: `.planning/PROJECT.md` (updated 2026-04-23)
 
 **Core value:** A new user can install PaperForge, configure their own vault paths and PaddleOCR credentials, then run the full literature pipeline with copy-pasteable commands that diagnose failures clearly.
 
-**Current focus:** Phase 1: Config And Command Foundation -- Plan 01-03 complete
+**Current focus:** Phase 2: PaddleOCR And PDF Path Hardening — discuss-phase complete, entering plan-phase
 
 ## Current Findings
 
@@ -17,16 +17,21 @@ See: `.planning/PROJECT.md` (updated 2026-04-23)
 - `paperforge_lite/config.py` now provides a tested shared resolver; worker, `/LD-deep`, setup wizard, and validation all consume it (01-03 complete).
 - `paperforge` CLI launcher provides copy-pasteable commands with resolved paths.
 - All Phase 1 workers and agent commands now delegate to shared resolver: legacy public names preserved.
+- **Phase 1 fully complete** (01-01 through 01-04): 4 plans, 58 tests, 8/8 must-haves verified.
 
 ## Next Action
 
-Continue Phase 1 Plan 01-04: Stable command documentation and setup next-step updates.
+Begin Phase 2 Plan 02-04: Selection Sync PDF Reporting implementation (or next pending plan).
 
 ## Open Questions
 
 - Confirm the exact PaddleOCR service currently used and whether it expects `Bearer`, `bearer`, API key query params, or another auth contract.
-- Decide whether the launcher should be installed as `paperforge`, `pf`, or only exposed via `python -m paperforge_lite`.
 - Decide how aggressive Base refresh should be when user-edited `.base` files already exist.
+- Investigate Zotero storage-relative path formats from full local pipeline (`D:\L\Med\Research\99_System\LiteraturePipeline`).
+
+---
+*Initialized: 2026-04-23*
+*Last updated: 2026-04-23 (02-03 OCR Doctor complete)*
 
 ## Phase 1 Progress
 
@@ -35,10 +40,21 @@ Continue Phase 1 Plan 01-04: Stable command documentation and setup next-step up
 | 01-01 | done | Shared config resolver (`paperforge_lite/config.py`) and 13-key path inventory |
 | 01-02 | done | `paperforge` launcher, package entry point, and command dispatch |
 | 01-03 | done | Worker, `/LD-deep`, setup, and validation resolver integration |
-| 01-04 | pending | Stable command documentation and setup next-step updates |
+| 01-04 | done | Stable command documentation and setup next-step updates |
 
 **Completed:** 2026-04-23
 **Completed Requirements:** CONF-01, CONF-02, CONF-03, CONF-04, CMD-01, CMD-02, CMD-03, DEEP-02
+
+## Phase 2 Progress
+
+| Plan | Status | Summary |
+|------|--------|---------|
+| 02-01 | pending | PDF Path Resolver + Preflight |
+| 02-02 | pending | OCR Failure Classification |
+| 02-03 | done | OCR Doctor Command with L1-L4 diagnostics |
+| 02-04 | pending | Selection Sync PDF Reporting |
+
+**Requirements:** OCR-01, OCR-02, OCR-03, OCR-04, OCR-05, ZOT-01, ZOT-02
 
 ## Decisions Logged
 
@@ -51,7 +67,11 @@ Continue Phase 1 Plan 01-04: Stable command documentation and setup next-step up
 - **2026-04-23 (01-03):** Worker `load_vault_config` and `pipeline_paths` now delegate to `paperforge_lite.config`; `ld_deep._load_vault_config` and `_paperforge_paths` also delegate; setup wizard deploys `paperforge_lite/` package alongside scripts; validate_setup uses shared resolver with `PAPERFORGE_VAULT` first
 - **2026-04-23 (01-03):** Public function names preserved as thin wrappers for backward compatibility with existing callers
 - **2026-04-23 (01-03):** `pipeline_paths` uses `**shared` dict merge to combine resolver output with worker-only keys (pipeline, candidates, search_*, harvest_root, records, review, config, queue, log, bridge_config*, index, ocr_queue)
+- **2026-04-23 (Phase 2 discuss):** `paperforge ocr doctor` — single command with tiered L1-L4 diagnostics; L4 optional via `--live` flag
+- **2026-04-23 (Phase 2 discuss):** PDF preflight checks `has_pdf` + file existence before OCR; junction paths resolved through to actual Zotero storage; missing PDF → `ocr_status: nopdf`
+- **2026-04-23 (Phase 2 discuss):** Failure taxonomy: `blocked` (fixable config/path issues) vs `error` (runtime/API issues); no `retry` command — retry = re-run `paperforge ocr`; `meta.json` error field includes fix suggestion
+- **2026-04-23 (Phase 2 discuss):** PDF path resolver supports absolute, vault-relative, junction, and Zotero storage-relative formats; investigate full local pipeline at `D:\L\Med\Research\99_System\LiteraturePipeline` for storage path formats; on failure returns empty string + error log
+- **2026-04-23 (02-03):** `paperforge ocr doctor` implements tiered L1-L4 diagnostics with early-exit on failure; L4 live PDF test is optional via `--live` flag; test job cancelled immediately after L3 to avoid wasting provider resources
+- **2026-04-23 (02-03):** OCR subparser uses `required=False` to preserve backward compatibility of `paperforge ocr` alias defaulting to `run`
 
----
-*Initialized: 2026-04-23*
-*Last updated: 2026-04-23 (01-03 complete)*
+## Open Questions

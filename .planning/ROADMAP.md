@@ -26,7 +26,7 @@ Plans:
 - [x] 01-01-PLAN.md — Shared config resolver and path inventory contract (COMPLETE: 2026-04-23)
 - [x] 01-02-PLAN.md — `paperforge` launcher, package entry point, and command dispatch (COMPLETE: 2026-04-23)
 - [x] 01-03-PLAN.md — Worker, `/LD-deep`, setup, and validation resolver integration (COMPLETE: 2026-04-23)
-- [ ] 01-04-PLAN.md — Stable command documentation and setup next-step updates
+- [x] 01-04-PLAN.md — Stable command documentation and setup next-step updates (COMPLETE: 2026-04-23)
 
 ## Phase 2: PaddleOCR And PDF Path Hardening
 
@@ -44,6 +44,14 @@ Plans:
 - Add tests with mocked `requests.post/get` responses for auth failure, changed schema, pending, running, done, provider error, and timeout.
 - Add PDF resolver tests for absolute, vault-relative, system Zotero junction, and missing file cases.
 - Consider normalizing auth header to `Bearer` and allowing an env override for header name/scheme if PaddleOCR requires it.
+
+**Plans:** 4 plans
+
+Plans:
+- [ ] 02-01-PLAN.md — PDF Path Resolver + Preflight (ZOT-01, OCR-02, ZOT-02)
+- [ ] 02-02-PLAN.md — OCR Failure Classification (OCR-03, OCR-04, OCR-05)
+- [x] 02-03-PLAN.md — OCR Doctor Command (OCR-01) (COMPLETE: 2026-04-23)
+- [ ] 02-04-PLAN.md — Selection Sync PDF Reporting (ZOT-02)
 
 ## Phase 3: Config-Aware Obsidian Bases
 
