@@ -73,6 +73,7 @@ run_status = None
 run_selection_sync = None
 run_index_refresh = None
 run_deep_reading = None
+run_repair = None
 run_ocr = None
 ensure_base_views = None
 
@@ -114,6 +115,17 @@ def build_parser() -> argparse.ArgumentParser:
     p_dr.add_argument(
         "--verbose", "-v", action="store_true",
         help="Show fix instructions for blocked papers"
+    )
+
+    # repair
+    p_repair = sub.add_parser("repair", help="Repair divergent literature notes")
+    p_repair.add_argument(
+        "--verbose", "-v", action="store_true",
+        help="Show detailed divergence report"
+    )
+    p_repair.add_argument(
+        "--fix", action="store_true",
+        help="Actually apply repairs instead of dry-run"
     )
 
     # ocr subcommands
@@ -168,13 +180,14 @@ def _import_worker_functions() -> None:
     not replaced. This allows tests to patch stubs before main() is called.
     """
     global run_status, run_selection_sync, run_index_refresh
-    global run_deep_reading, run_ocr, ensure_base_views
+    global run_deep_reading, run_repair, run_ocr, ensure_base_views
 
     from pipeline.worker.scripts.literature_pipeline import (
         run_status as _rs,
         run_selection_sync as _rss,
         run_index_refresh as _rir,
         run_deep_reading as _rdr,
+        run_repair as _rr,
         run_ocr as _ro,
         ensure_base_views as _ebu,
     )
@@ -187,6 +200,8 @@ def _import_worker_functions() -> None:
         run_index_refresh = _rir
     if run_deep_reading is None:
         run_deep_reading = _rdr
+    if run_repair is None:
+        run_repair = _rr
     if run_ocr is None:
         run_ocr = _ro
     if ensure_base_views is None:
@@ -257,6 +272,16 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "deep-reading":
         return run_deep_reading(vault, verbose=getattr(args, "verbose", False))
+
+    if args.command == "repair":
+        cfg = load_vault_config(vault)
+        paths = paperforge_paths(vault, cfg)
+        return run_repair(
+            vault,
+            paths,
+            verbose=getattr(args, "verbose", False),
+            fix=getattr(args, "fix", False),
+        )
 
     if args.command == "doctor":
         from pipeline.worker.scripts.literature_pipeline import run_doctor
