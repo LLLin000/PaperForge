@@ -982,22 +982,6 @@ class DeployStep(StepScreen):
             for f in chart_src.glob("*.md"):
                 shutil.copy2(f, chart_dst / f.name)
 
-        # Copy the paperforge_lite shared-resolver package so deployed vaults
-        # can `import paperforge_lite` without requiring a pip install.
-        # Install to two locations matching how the scripts reference it:
-        #   - <pf_path>/worker/paperforge_lite/   (for literature_pipeline.py)
-        #   - <vault>/<skill_dir>/literature-qa/paperforge_lite/  (for ld_deep.py)
-        pf_lite_src = repo_root / "paperforge_lite"
-        if pf_lite_src.exists() and pf_lite_src.is_dir():
-            pf_lite_worker_dst = pf_path / "worker" / "paperforge_lite"
-            pf_lite_skill_dst = vault / skill_dir / "literature-qa" / "paperforge_lite"
-            for dst in [pf_lite_worker_dst, pf_lite_skill_dst]:
-                if dst.exists():
-                    shutil.rmtree(dst)
-                shutil.copytree(pf_lite_src, dst)
-        else:
-            self.set_status(f"警告：未找到 paperforge_lite 包，跳过包安装", None)
-
         # Copy OpenCode command files when the target platform supports them.
         if getattr(self.app, 'agent_key', '') == 'opencode':
             command_src = repo_root / "command"

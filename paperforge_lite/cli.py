@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -24,16 +25,56 @@ from paperforge_lite.config import (
     paths_as_strings,
 )
 
-# Worker functions — imported at module level so tests can patch them
-from pipeline.worker.scripts.literature_pipeline import (
-    run_status,
-    run_selection_sync,
-    run_index_refresh,
-    run_deep_reading,
-    run_ocr,
-    ensure_base_views,
-)
+# Worker functions — imported via deferred approach so the repo root
+# can be resolved relative to this file's location at call time (not import
+# time), avoiding ModuleNotFoundError when paperforge.exe is invoked from
+# the vault directory via an editable install.
+PF_LITE_DIR = Path(__file__).resolve().parent
 
+
+def _find_repo_root() -> Path:
+    """Find the actual PaperForge repo root by scanning upward for pipeline/.
+
+    Handles both cases:
+    - Running from repo: cli.py is at <repo>/paperforge_lite/cli.py
+    - Deployed vault:   cli.py is at <vault>/PaperForge/paperforge_lite/cli.py
+                        and the actual repo is found by looking further up.
+    """
+    d = PF_LITE_DIR
+    for _ in range(8):
+        if (d / "pipeline").exists() and (d / "paperforge_lite").exists():
+            return d
+        parent = d.parent
+        if parent == d:
+            break
+    return PF_LITE_DIR.parent
+
+
+REPO_ROOT = _find_repo_root()
+
+
+def _resolve_pipeline():
+    """Add repo root to sys.path so 'pipeline' package resolves."""
+    repo_pipeline = REPO_ROOT / "pipeline"
+    if repo_pipeline.exists():
+        repo_root_str = str(REPO_ROOT)
+        if repo_root_str not in sys.path:
+            sys.path.insert(0, repo_root_str)
+    else:
+        pf_worker_pipeline = PF_LITE_DIR.parent.parent / "PaperForge" / "worker" / "pipeline"
+        if pf_worker_pipeline.exists():
+            pf_worker_str = str(pf_worker_pipeline.parent)
+            if pf_worker_str not in sys.path:
+                sys.path.insert(0, pf_worker_str)
+
+
+# Worker function stubs — let tests patch cli.run_* directly
+run_status = None
+run_selection_sync = None
+run_index_refresh = None
+run_deep_reading = None
+run_ocr = None
+ensure_base_views = None
 
 # ---------------------------------------------------------------------------
 # Build parser
@@ -119,6 +160,39 @@ def _cmd_ocr_doctor(vault: Path, args: argparse.Namespace) -> int:
         return 1
 
 
+def _import_worker_functions() -> None:
+    """Import worker functions into module-level globals, skipping any that are already bound.
+
+    Called after _resolve_pipeline() has added the repo root to sys.path.
+    Idempotent: once a global is bound (by this function or by a test patch), it is
+    not replaced. This allows tests to patch stubs before main() is called.
+    """
+    global run_status, run_selection_sync, run_index_refresh
+    global run_deep_reading, run_ocr, ensure_base_views
+
+    from pipeline.worker.scripts.literature_pipeline import (
+        run_status as _rs,
+        run_selection_sync as _rss,
+        run_index_refresh as _rir,
+        run_deep_reading as _rdr,
+        run_ocr as _ro,
+        ensure_base_views as _ebu,
+    )
+
+    if run_status is None:
+        run_status = _rs
+    if run_selection_sync is None:
+        run_selection_sync = _rss
+    if run_index_refresh is None:
+        run_index_refresh = _rir
+    if run_deep_reading is None:
+        run_deep_reading = _rdr
+    if run_ocr is None:
+        run_ocr = _ro
+    if ensure_base_views is None:
+        ensure_base_views = _ebu
+
+
 # ---------------------------------------------------------------------------
 # Main entry point
 # ---------------------------------------------------------------------------
@@ -126,6 +200,9 @@ def main(argv: list[str] | None = None) -> int:
     """CLI entry point. Returns integer exit code (0 = success)."""
     if argv is None:
         argv = sys.argv[1:]
+
+    _resolve_pipeline()
+    _import_worker_functions()
 
     parser = build_parser()
     args = parser.parse_args(argv)
@@ -147,7 +224,6 @@ def main(argv: list[str] | None = None) -> int:
     pf_env = vault / cfg["system_dir"] / "PaperForge" / ".env"
     load_simple_env(pf_env)
 
-    # Dispatch
     if args.command == "paths":
         return _cmd_paths(vault, args)
 
@@ -169,6 +245,9 @@ def main(argv: list[str] | None = None) -> int:
         ensure_base_views(vault, paths, cfg, force=force)
         logger.info("Base refresh complete")
         return 0
+
+    # Lazy-load dispatch targets after _resolve_pipeline() has adjusted sys.path
+    _import_worker_functions()
 
     dispatch_map = {
         "status": run_status,

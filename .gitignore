@@ -25,6 +25,9 @@ config.json
 00_Inbox/
 03_Resources/
 
+# Test sandbox (wizard output)
+tests/sandbox/00_TestVault/
+
 # OS
 .DS_Store
 Thumbs.db
