@@ -2886,6 +2886,8 @@ def run_repair(vault: Path, paths: dict, verbose: bool = False, fix: bool = Fals
         meta_path = paths['ocr'] / zotero_key / 'meta.json'
         meta_ocr_status = None
         meta_validated_status = None
+        validated_status = None
+        validated_error = ""
         if meta_path.exists():
             try:
                 meta = read_json(meta_path)
