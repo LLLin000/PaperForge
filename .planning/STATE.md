@@ -6,7 +6,7 @@ See: `.planning/PROJECT.md` (updated 2026-04-23)
 
 **Core value:** A new user can install PaperForge, configure their own vault paths and PaddleOCR credentials, then run the full literature pipeline with copy-pasteable commands that diagnose failures clearly.
 
-**Current focus:** Phase 2: PaddleOCR And PDF Path Hardening — discuss-phase complete, entering plan-phase
+**Current focus:** Phase 5: Release Verification — context gathered, planning pending
 
 ## Current Findings
 
@@ -21,7 +21,7 @@ See: `.planning/PROJECT.md` (updated 2026-04-23)
 
 ## Next Action
 
-Begin Phase 2 Plan 02-04: Selection Sync PDF Reporting implementation (or next pending plan).
+Begin Phase 5: Release Verification — run `/gsd-plan-phase 5` to plan smoke tests and consistency checks.
 
 ## Open Questions
 
@@ -31,7 +31,7 @@ Begin Phase 2 Plan 02-04: Selection Sync PDF Reporting implementation (or next p
 
 ---
 *Initialized: 2026-04-23*
-*Last updated: 2026-04-23 (02-03 OCR Doctor complete)*
+*Last updated: 2026-04-23 (Phase 4 complete — Phase 2/3 records corrected, Phase 5 pending)*
 
 ## Phase 1 Progress
 
@@ -49,12 +49,53 @@ Begin Phase 2 Plan 02-04: Selection Sync PDF Reporting implementation (or next p
 
 | Plan | Status | Summary |
 |------|--------|---------|
-| 02-01 | pending | PDF Path Resolver + Preflight |
-| 02-02 | pending | OCR Failure Classification |
+| 02-01 | done | PDF Path Resolver + Preflight |
+| 02-02 | done | OCR Failure Classification |
 | 02-03 | done | OCR Doctor Command with L1-L4 diagnostics |
-| 02-04 | pending | Selection Sync PDF Reporting |
+| 02-04 | done | Selection Sync PDF Reporting |
 
 **Requirements:** OCR-01, OCR-02, OCR-03, OCR-04, OCR-05, ZOT-01, ZOT-02
+
+**Completed:** 2026-04-23
+
+## Phase 3 Progress
+
+| Plan | Status | Summary |
+|------|--------|---------|
+| 03-01 | done | Base Generation Refactor — 8 Views + Incremental Merge + Placeholder Substitution |
+| 03-02 | done | CLI base-refresh + Tests |
+
+**Requirements:** BASE-01, BASE-02, BASE-03, BASE-04
+
+**Completed:** 2026-04-23
+
+## Phase 4 Progress
+
+| Plan | Status | Summary |
+|------|--------|---------|
+| 04-01 | done | deep-reading 三态输出 + --verbose |
+| 04-02 | done | paperforge doctor 子命令 |
+| 04-03 | done | AGENTS.md paperforge CLI 更新 |
+| 04-04 | done | docs/README.md BBT 配置指南 |
+
+**Requirements:** ONBD-01, ONBD-02, ONBD-03, ZOT-03, DEEP-01, DEEP-03
+
+**Completed:** 2026-04-23
+
+## Phase 5 Progress
+
+**Discuss-phase complete (2026-04-23):**
+- Test coverage scope: key-path coverage, no mandatory line %
+- Smoke test: `tests/smoke_test.py` standalone script, 6-step fixture vault flow
+- Doc consistency: extend test_command_docs.py + new INSTALLATION consistency test
+- Defect audit: formal audit of all 16 DEFECTS.md items → fixed/deferred/superseded
+- v2 requirements: move INT-01/02/03, UX-01/02/03 to backlog.md with defer rationale
+
+**Requirements:** REL-01, REL-02, REL-03
+
+**Status:** Context ready — planning pending
+
+---
 
 ## Decisions Logged
 
