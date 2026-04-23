@@ -1,7 +1,8 @@
 """paperforge_lite.cli — PaperForge Lite command-line interface.
 
 Exposes `paperforge paths`, `paperforge status`, `paperforge selection-sync`,
-`paperforge index-refresh`, `paperforge ocr run`, and `paperforge deep-reading`.
+`paperforge index-refresh`, `paperforge ocr run`, `paperforge ocr doctor`,
+and `paperforge deep-reading`.
 
 Loads .env from the vault root and from <system_dir>/PaperForge/.env before
 dispatching to worker functions, matching the legacy pipeline behavior.
@@ -69,17 +70,38 @@ def build_parser() -> argparse.ArgumentParser:
     # deep-reading
     sub.add_parser("deep-reading", help="Check deep-reading queue status")
 
-    # ocr (parent with nested run)
-    p_ocr = sub.add_parser("ocr", help="Run OCR on PDFs requiring processing")
-    p_ocr.add_argument(
-        "action",
-        nargs="?",
-        default="run",
-        choices=["run"],
-        help="OCR action (default: run)",
-    )
+    # ocr subcommands
+    p_ocr = sub.add_parser("ocr", help="OCR operations")
+    ocr_sub = p_ocr.add_subparsers(dest="ocr_action")
+    ocr_sub.add_parser("run", help="Run OCR queue")
+    doctor_parser = ocr_sub.add_parser("doctor", help="Diagnose OCR configuration and connectivity")
+    doctor_parser.add_argument("--live", action="store_true", help="Run live PDF test (L4)")
 
     return parser
+
+
+# ---------------------------------------------------------------------------
+# OCR doctor command
+# ---------------------------------------------------------------------------
+def _cmd_ocr_doctor(vault: Path, args: argparse.Namespace) -> int:
+    """Handle `paperforge ocr doctor` and `paperforge ocr doctor --live`."""
+    from paperforge_lite.ocr_diagnostics import ocr_doctor
+
+    result = ocr_doctor(config=None, live=args.live)
+    level = result.get("level", 0)
+    passed = result.get("passed", False)
+
+    print(f"OCR Doctor — Level {level} diagnostic")
+    print("-" * 40)
+    if passed:
+        print(f"[PASS] {result.get('message', 'All checks passed')}")
+        return 0
+    else:
+        print(f"[FAIL] Level {level}: {result.get('error', 'Unknown failure')}")
+        print(f"[FIX]  {result.get('fix', 'No fix suggestion available')}")
+        if result.get("raw_response"):
+            print(f"[RAW]  {result['raw_response'][:200]}...")
+        return 1
 
 
 # ---------------------------------------------------------------------------
@@ -114,12 +136,21 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "paths":
         return _cmd_paths(vault, args)
 
+    if args.command == "ocr":
+        ocr_action = getattr(args, "ocr_action", None) or "run"
+        if ocr_action == "run":
+            return run_ocr(vault)
+        elif ocr_action == "doctor":
+            return _cmd_ocr_doctor(vault, args)
+        else:
+            print(f"Error: unknown ocr action {ocr_action}", file=sys.stderr)
+            return 1
+
     dispatch_map = {
         "status": run_status,
         "selection-sync": run_selection_sync,
         "index-refresh": run_index_refresh,
         "deep-reading": run_deep_reading,
-        "ocr": run_ocr,
     }
 
     worker_fn = dispatch_map.get(args.command)

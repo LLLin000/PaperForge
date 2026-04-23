@@ -142,3 +142,16 @@ def test_ocr_alias_dispatch(clean_captured, mock_vault):
         cli.main(argv)
 
     assert ("run_ocr", mock_vault) in CAPTURED_CALLS
+
+
+def test_ocr_doctor_dispatch(clean_captured, mock_vault):
+    """main(['--vault', vault, 'ocr', 'doctor']) calls _cmd_ocr_doctor."""
+    import importlib
+    import paperforge_lite.cli as cli
+    importlib.reload(cli)
+
+    with patch.object(cli, "_cmd_ocr_doctor", lambda vault, args: 0):
+        argv = ["--vault", str(mock_vault), "ocr", "doctor"]
+        code = cli.main(argv)
+
+    assert code == 0
