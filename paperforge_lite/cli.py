@@ -31,6 +31,7 @@ from pipeline.worker.scripts.literature_pipeline import (
     run_index_refresh,
     run_deep_reading,
     run_ocr,
+    ensure_base_views,
 )
 
 
@@ -68,7 +69,11 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_parser("index-refresh", help="Refresh formal literature notes from library records")
 
     # deep-reading
-    sub.add_parser("deep-reading", help="Check deep-reading queue status")
+    p_dr = sub.add_parser("deep-reading", help="Check deep-reading queue status")
+    p_dr.add_argument(
+        "--verbose", "-v", action="store_true",
+        help="Show fix instructions for blocked papers"
+    )
 
     # ocr subcommands
     p_ocr = sub.add_parser("ocr", help="OCR operations")
@@ -76,6 +81,16 @@ def build_parser() -> argparse.ArgumentParser:
     ocr_sub.add_parser("run", help="Run OCR queue")
     doctor_parser = ocr_sub.add_parser("doctor", help="Diagnose OCR configuration and connectivity")
     doctor_parser.add_argument("--live", action="store_true", help="Run live PDF test (L4)")
+
+    # base-refresh
+    p_base = sub.add_parser("base-refresh", help="Refresh Obsidian Base view files")
+    p_base.add_argument(
+        "--force", "-f", action="store_true",
+        help="Force full regeneration (bypasses incremental merge, replaces all views including user views)"
+    )
+
+    # doctor
+    sub.add_parser("doctor", help="Validate PaperForge Lite setup and configuration")
 
     return parser
 
@@ -146,12 +161,27 @@ def main(argv: list[str] | None = None) -> int:
             print(f"Error: unknown ocr action {ocr_action}", file=sys.stderr)
             return 1
 
+    if args.command == "base-refresh":
+        force = getattr(args, "force", False)
+        paths = paperforge_paths(vault, cfg)
+        logger = __import__("logging").getLogger("paperforge")
+        logger.info(f"Refreshing Base views in {paths['bases']}")
+        ensure_base_views(vault, paths, cfg, force=force)
+        logger.info("Base refresh complete")
+        return 0
+
     dispatch_map = {
         "status": run_status,
         "selection-sync": run_selection_sync,
         "index-refresh": run_index_refresh,
-        "deep-reading": run_deep_reading,
     }
+
+    if args.command == "deep-reading":
+        return run_deep_reading(vault, verbose=getattr(args, "verbose", False))
+
+    if args.command == "doctor":
+        from pipeline.worker.scripts.literature_pipeline import run_doctor
+        return run_doctor(vault)
 
     worker_fn = dispatch_map.get(args.command)
     if worker_fn is None:

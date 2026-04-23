@@ -126,8 +126,10 @@ Zotero 添加文献
 - **输出**：`<resources_dir>/<control_dir>/library-records/<domain>/<key>.md`
 - **示例**：
   ```bash
-  python <system_dir>/PaperForge/worker/scripts/literature_pipeline.py \
-    --vault "{vault路径}" selection-sync
+  paperforge selection-sync
+  # Legacy (备用):
+  # python <system_dir>/PaperForge/worker/scripts/literature_pipeline.py \
+  #   --vault "{vault路径}" selection-sync
   ```
 
 ### index-refresh
@@ -135,6 +137,13 @@ Zotero 添加文献
 - **运行时机**：selection-sync 之后，或需要更新笔记格式时
 - **输出**：`<resources_dir>/<literature_dir>/<domain>/<key> - <Title>.md`
 - **说明**：会读取 Better BibTeX JSON 提取元数据，生成带 frontmatter 的 Obsidian 笔记
+- **示例**：
+  ```bash
+  paperforge index-refresh
+  # Legacy (备用):
+  # python <system_dir>/PaperForge/worker/scripts/literature_pipeline.py \
+  #   --vault "{vault路径}" index-refresh
+  ```
 
 ### ocr
 - **作用**：将 PDF 上传到 PaddleOCR API，提取全文文本和图表
@@ -145,12 +154,27 @@ Zotero 添加文献
   - `meta.json`：OCR 状态（`ocr_status: done/pending/processing/failed`）
   - `figure-map.json`：图表索引（后续自动生成）
 - **注意**：OCR 是异步的，大文件可能需要几分钟
+- **示例**：
+  ```bash
+  paperforge ocr run
+  # Legacy (备用):
+  # python <system_dir>/PaperForge/worker/scripts/literature_pipeline.py \
+  #   --vault "{vault路径}" ocr
+  ```
 
 ### deep-reading
 - **作用**：扫描所有 library-records，列出 `analyze=true` 且 OCR 完成的文献
 - **运行时机**：用户想看看哪些文献可以开始精读了
 - **输出**：控制台表格，显示队列状态
 - **重要**：这只是**查看队列**，不会自动触发 Agent 精读
+- **示例**：
+  ```bash
+  paperforge deep-reading
+  paperforge deep-reading --verbose  # 显示阻塞条目的修复指令
+  # Legacy (备用):
+  # python <system_dir>/PaperForge/worker/scripts/literature_pipeline.py \
+  #   --vault "{vault路径}" deep-reading
+  ```
 
 ---
 
@@ -247,8 +271,7 @@ pdf_link: "<system_dir>/Zotero/..."
 
 ```bash
 # 在 Vault 根目录执行
-python <system_dir>/PaperForge/worker/scripts/literature_pipeline.py \
-  --vault "你的Vault路径" selection-sync
+paperforge selection-sync
 ```
 
 预期输出：
@@ -261,8 +284,7 @@ python <system_dir>/PaperForge/worker/scripts/literature_pipeline.py \
 ### Step 3: 运行 index-refresh
 
 ```bash
-python <system_dir>/PaperForge/worker/scripts/literature_pipeline.py \
-  --vault "你的Vault路径" index-refresh
+paperforge index-refresh
 ```
 
 预期输出：
@@ -283,8 +305,7 @@ python <system_dir>/PaperForge/worker/scripts/literature_pipeline.py \
 ### Step 5: 运行 OCR
 
 ```bash
-python <system_dir>/PaperForge/worker/scripts/literature_pipeline.py \
-  --vault "你的Vault路径" ocr
+paperforge ocr run
 ```
 
 等待完成（可能需要几分钟）。
@@ -292,8 +313,7 @@ python <system_dir>/PaperForge/worker/scripts/literature_pipeline.py \
 ### Step 6: 检查 OCR 状态
 
 ```bash
-python <system_dir>/PaperForge/worker/scripts/literature_pipeline.py \
-  --vault "你的Vault路径" deep-reading
+paperforge deep-reading
 ```
 
 预期输出：
@@ -324,24 +344,23 @@ Agent 会自动：
 
 ```bash
 # 检测 Zotero 新条目
-python <system_dir>/PaperForge/worker/scripts/literature_pipeline.py \
-  --vault "你的Vault路径" selection-sync
+paperforge selection-sync
 
 # 生成/更新正式笔记
-python <system_dir>/PaperForge/worker/scripts/literature_pipeline.py \
-  --vault "你的Vault路径" index-refresh
+paperforge index-refresh
 
 # 运行 OCR（处理 do_ocr=true 的文献）
-python <system_dir>/PaperForge/worker/scripts/literature_pipeline.py \
-  --vault "你的Vault路径" ocr
+paperforge ocr run
 
 # 查看精读队列
-python <system_dir>/PaperForge/worker/scripts/literature_pipeline.py \
-  --vault "你的Vault路径" deep-reading
+paperforge deep-reading
+paperforge deep-reading --verbose  # 显示阻塞条目修复指令
 
 # 查看整体状态
-python <system_dir>/PaperForge/worker/scripts/literature_pipeline.py \
-  --vault "你的Vault路径" status
+paperforge status
+
+# 验证安装配置
+paperforge doctor
 ```
 
 ### Agent 命令

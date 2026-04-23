@@ -129,3 +129,11 @@ None - no external service configuration required.
 ---
 *Phase: 01-config-and-command-foundation*
 *Completed: 2026-04-23*
+
+## Self-Check: PASSED
+
+- All 8 key files exist on disk
+- All 3 commits verified in git history: 216ea4e (test), 9496382 (feat), 767548d (docs)
+- 31 tests passing (3 path + 6 dispatch + 22 config from Plan 01)
+- `python -m paperforge_lite --vault . paths --json` exits 0, prints valid JSON with required keys
+- pyproject.toml contains paperforge entry point

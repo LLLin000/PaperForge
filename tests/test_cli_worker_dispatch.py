@@ -28,7 +28,7 @@ def stub_run_index_refresh(vault: Path) -> int:
     return 0
 
 
-def stub_run_deep_reading(vault: Path) -> int:
+def stub_run_deep_reading(vault: Path, verbose: bool = False) -> int:
     CAPTURED_CALLS.append(("run_deep_reading", vault))
     return 0
 

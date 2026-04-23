@@ -20,6 +20,11 @@ import requests
 import fitz
 from PIL import Image
 
+STANDARD_VIEW_NAMES = frozenset([
+    "控制面板", "推荐分析", "待 OCR", "OCR 完成",
+    "待深度阅读", "深度阅读完成", "正式卡片", "全记录"
+])
+
 def load_simple_env(env_path: Path) -> None:
     if not env_path.exists():
         return
@@ -94,6 +99,8 @@ def write_jsonl(path: Path, rows) -> None:
     path.write_text(text, encoding='utf-8')
 
 def yaml_quote(value: str) -> str:
+    if isinstance(value, bool):
+        return 'true' if value else 'false'
     return '"' + str(value or '').replace('\\', '\\\\').replace('"', '\\"') + '"'
 
 def yaml_block(value: str) -> list[str]:
@@ -200,9 +207,247 @@ def base_markdown_filter(path: Path, vault: Path) -> str:
     except ValueError:
         return str(path).replace('\\', '/')
 
-def write_base_file(path: Path, folder_filter: str, name: str) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    content = f"""filters:
+PAPERFORGE_VIEW_PREFIX = "# PAPERFORGE_VIEW: "
+
+def build_base_views(domain: str) -> list[dict]:
+    """Build the 8-view list for a domain Base file.
+
+    Args:
+        domain: The domain name (e.g., "骨科") — passed for compatibility but each view has fixed name/filter.
+
+    Returns:
+        List of 8 view dicts, each with keys: name (str), order (list), filter (str|None).
+    """
+    return [
+        {
+            "name": "控制面板",
+            "order": ["file.name", "title", "year", "has_pdf", "do_ocr", "analyze", "ocr_status", "deep_reading_status", "pdf_path", "fulltext_md_path"],
+            "filter": None,
+        },
+        {
+            "name": "推荐分析",
+            "order": ["year", "title", "has_pdf", "do_ocr", "analyze", "ocr_status", "deep_reading_status", "pdf_path", "fulltext_md_path"],
+            "filter": "analyze = true AND recommend_analyze = true",
+        },
+        {
+            "name": "待 OCR",
+            "order": ["year", "title", "has_pdf", "do_ocr", "ocr_status", "pdf_path"],
+            "filter": 'do_ocr = true AND ocr_status = "pending"',
+        },
+        {
+            "name": "OCR 完成",
+            "order": ["year", "title", "has_pdf", "do_ocr", "ocr_status", "pdf_path"],
+            "filter": 'ocr_status = "done"',
+        },
+        {
+            "name": "待深度阅读",
+            "order": ["year", "title", "has_pdf", "do_ocr", "analyze", "ocr_status", "deep_reading_status", "pdf_path"],
+            "filter": 'analyze = true AND ocr_status = "done" AND deep_reading_status = "pending"',
+        },
+        {
+            "name": "深度阅读完成",
+            "order": ["year", "title", "has_pdf", "do_ocr", "analyze", "ocr_status", "deep_reading_status", "pdf_path"],
+            "filter": 'deep_reading_status = "done"',
+        },
+        {
+            "name": "正式卡片",
+            "order": ["title", "year", "has_pdf", "deep_reading_status", "pdf_path"],
+            "filter": 'deep_reading_status = "done"',
+        },
+        {
+            "name": "全记录",
+            "order": ["title", "year", "has_pdf", "do_ocr", "analyze", "ocr_status", "deep_reading_status", "pdf_path", "fulltext_md_path"],
+            "filter": None,
+        },
+    ]
+
+def substitute_config_placeholders(content: str, paths: dict[str, Path]) -> str:
+    """Replace ${SCREAMING_SNAKE_CASE} path placeholders with vault-relative paths.
+
+    Args:
+        content: The Base file content string with ${PLACEHOLDER} tokens.
+        paths: dict of path key -> Path objects (from paperforge_paths()).
+
+    Returns:
+        Content with placeholders replaced by vault-relative paths.
+        Unrecognized placeholders are left unchanged.
+    """
+    substitutions = {
+        "LIBRARY_RECORDS": paths.get("library_records"),
+        "LITERATURE": paths.get("literature"),
+        "CONTROL_DIR": paths.get("control"),
+    }
+    result = content
+    for key, path in substitutions.items():
+        if path is not None:
+            vault = paths.get("vault")
+            if vault is not None:
+                try:
+                    rel = path.relative_to(vault)
+                    result = result.replace(f"${{{key}}}", str(rel).replace(chr(92), "/"))
+                except ValueError:
+                    result = result.replace(f"${{{key}}}", str(path).replace(chr(92), "/"))
+    return result
+
+
+def _render_views_section(views: list[dict]) -> str:
+    """Render a list of view dicts to YAML views: section."""
+    lines = []
+    for v in views:
+        lines.append(f"  - type: table")
+        lines.append(f'    name: "{v["name"]}"')
+        lines.append(f"    order:")
+        for col in v["order"]:
+            lines.append(f"      - {col}")
+        if v["filter"]:
+            lines.append(f'    filter: \'{v["filter"]}\'')
+    return "\n".join(lines)
+
+
+def merge_base_views(existing_content: str | None, new_views: list[dict]) -> str:
+    """Incrementally merge standard PaperForge views into an existing .base file.
+
+    Strategy:
+    - PaperForge generates exactly 8 views with known names (STANDARD_VIEW_NAMES).
+    - Any OTHER views in the existing file are user-defined and MUST be preserved.
+    - Each PaperForge view is preceded by a PAPERFORGE_VIEW_PREFIX comment marker.
+    - On refresh: replace ALL PaperForge views (identified by prefix) with fresh ones.
+    - User views (no prefix) are left completely untouched.
+
+    Args:
+        existing_content: Raw text of existing .base file (or None/empty for fresh generation).
+        new_views: List of 8 view dicts from build_base_views().
+
+    Returns:
+        Merged .base file content with PaperForge views updated, user views preserved.
+    """
+    PROPERTIES_YAML = """properties:
+  zotero_key:
+    displayName: "Zotero Key"
+  title:
+    displayName: "Title"
+  year:
+    displayName: "Year"
+  has_pdf:
+    displayName: "PDF"
+  do_ocr:
+    displayName: "OCR"
+  analyze:
+    displayName: "Analyze"
+  ocr_status:
+    displayName: "OCR Status"
+  deep_reading_status:
+    displayName: "Deep Reading"
+  pdf_path:
+    displayName: "PDF Path"
+  fulltext_md_path:
+    displayName: "Fulltext"
+"""
+
+    if not existing_content or not existing_content.strip():
+        fresh_views_yaml = _render_views_section(new_views)
+        return f"""filters:
+  and:
+    - file.inFolder("{new_views[0]['name']}")
+{PROPERTIES_YAML}
+views:
+{fresh_views_yaml}"""
+
+    lines = existing_content.split("\n")
+    views_start_idx = None
+    for i, line in enumerate(lines):
+        if line.strip().startswith("views:"):
+            views_start_idx = i
+            break
+
+    if views_start_idx is None:
+        fresh_views_yaml = _render_views_section(new_views)
+        return f"""{existing_content}
+
+# --- PaperForge views regenerated (views: section was missing) ---
+{PROPERTIES_YAML}
+views:
+{fresh_views_yaml}"""
+
+    header_lines = lines[:views_start_idx + 1]
+
+    new_pf_blocks = []
+    for v in new_views:
+        rendered = f"{PAPERFORGE_VIEW_PREFIX}{v['name']}\n"
+        rendered += f"  - type: table\n"
+        rendered += f'    name: "{v["name"]}"\n'
+        rendered += f"    order:\n"
+        for col in v["order"]:
+            rendered += f"      - {col}\n"
+        if v["filter"]:
+            rendered += f'    filter: \'{v["filter"]}\'\n'
+        else:
+            rendered += '\n'
+        new_pf_blocks.append((v["name"], rendered))
+
+    rebuilt_views_lines = []
+    pf_names_seen = set()
+    i = views_start_idx + 1
+    pending_pf_view_name = None
+    while i < len(lines):
+        line = lines[i]
+
+        if line.startswith(PAPERFORGE_VIEW_PREFIX):
+            pending_pf_view_name = line[len(PAPERFORGE_VIEW_PREFIX):].strip()
+            pf_names_seen.add(pending_pf_view_name)
+            i += 1
+            continue
+        elif pending_pf_view_name is not None and line.strip().startswith("- type: table"):
+            pf_block = next((b for n, b in new_pf_blocks if n == pending_pf_view_name), None)
+            if pf_block:
+                rebuilt_views_lines.append(pf_block)
+            pending_pf_view_name = None
+            i += 1
+            continue
+        elif line.strip().startswith("- type: table"):
+            pending_pf_view_name = None
+            view_block_lines = [line]
+            i += 1
+            while i < len(lines):
+                next_line = lines[i]
+                if next_line.strip().startswith(PAPERFORGE_VIEW_PREFIX):
+                    break
+                if next_line.strip().startswith("- type: table"):
+                    break
+                if next_line.strip() and not next_line.startswith(" ") and not next_line.startswith("\t"):
+                    break
+                view_block_lines.append(next_line)
+                i += 1
+            rebuilt_views_lines.append("\n".join(view_block_lines))
+            continue
+        else:
+            pending_pf_view_name = None
+            i += 1
+
+    for view_name, pf_block in new_pf_blocks:
+        if view_name not in pf_names_seen:
+            rebuilt_views_lines.append(pf_block)
+
+    result_lines = header_lines + rebuilt_views_lines
+    return "\n".join(result_lines)
+
+
+def _build_base_yaml(folder_filter: str, views: list[dict]) -> str:
+    """Build complete .base YAML with PAPERFORGE_VIEW_PREFIX markers on each view."""
+    views_yaml = ""
+    for v in views:
+        views_yaml += f"{PAPERFORGE_VIEW_PREFIX}{v['name']}\n"
+        views_yaml += f"  - type: table\n"
+        views_yaml += f'    name: "{v["name"]}"\n'
+        views_yaml += f"    order:\n"
+        for col in v["order"]:
+            views_yaml += f"      - {col}\n"
+        if v["filter"]:
+            views_yaml += f'    filter: \'{v["filter"]}\'\n'
+        else:
+            views_yaml += '\n'
+    views_yaml = views_yaml.rstrip('\n')
+    return f"""filters:
   and:
     - file.inFolder("{folder_filter}")
 properties:
@@ -222,34 +467,52 @@ properties:
     displayName: "OCR Status"
   deep_reading_status:
     displayName: "Deep Reading"
+  pdf_path:
+    displayName: "PDF Path"
+  fulltext_md_path:
+    displayName: "Fulltext"
 views:
-  - type: table
-    name: "{name}"
-    order:
-      - file.name
-      - title
-      - year
-      - has_pdf
-      - do_ocr
-      - analyze
-      - ocr_status
-      - deep_reading_status
-      - pdf_path
-      - fulltext_md_path
-"""
-    path.write_text(content, encoding='utf-8')
+{views_yaml}"""
 
-def ensure_base_views(vault: Path, paths: dict[str, Path], config: dict) -> None:
-    paths['bases'].mkdir(parents=True, exist_ok=True)
-    records_root = paths['library_records']
-    write_base_file(paths['bases'] / 'PaperForge.base', base_markdown_filter(records_root, vault), 'All Records')
+
+def ensure_base_views(vault: Path, paths: dict[str, Path], config: dict, force: bool = False) -> None:
+    """Generate/refresh Domain Base files with incremental merge (preserves user views).
+
+    Each PaperForge standard view is marked with PAPERFORGE_VIEW_PREFIX. On refresh,
+    only PaperForge views are replaced; user-defined views are preserved.
+    """
+    paths["bases"].mkdir(parents=True, exist_ok=True)
+
+    def refresh_base(base_path: Path, folder_filter: str, views: list[dict]) -> None:
+        """Refresh a single .base file: merge PaperForge views, preserve user views."""
+        if base_path.exists() and not force:
+            existing = base_path.read_text(encoding="utf-8")
+            merged = merge_base_views(existing, views)
+        else:
+            merged = _build_base_yaml(folder_filter, views)
+        merged = substitute_config_placeholders(merged, paths)
+        base_path.write_text(merged, encoding="utf-8")
+
     seen_domains = set()
-    for entry in config.get('domains', []):
-        domain = str(entry.get('domain', '') or '').strip()
+    for entry in config.get("domains", []):
+        domain = str(entry.get("domain", "") or "").strip()
         if not domain or domain in seen_domains:
             continue
         seen_domains.add(domain)
-        write_base_file(paths['bases'] / f"{slugify_filename(domain)}.base", base_markdown_filter(records_root / domain, vault), domain)
+
+        domain_views = build_base_views(domain)
+        folder_filter = f"${{LIBRARY_RECORDS}}/{domain}"
+        base_path = paths["bases"] / f"{slugify_filename(domain)}.base"
+        refresh_base(base_path, folder_filter, domain_views)
+
+    hub_views = build_base_views("Literature Hub")
+    hub_path = paths["bases"] / "Literature Hub.base"
+    refresh_base(hub_path, "${LIBRARY_RECORDS}", hub_views)
+
+    all_views = build_base_views("All Records")
+    pf_base = paths["bases"] / "PaperForge.base"
+    refresh_base(pf_base, "${LIBRARY_RECORDS}", all_views)
+
 
 def build_collection_lookup(collections: dict) -> dict:
     path_cache = {}
@@ -686,6 +949,13 @@ def run_selection_sync(vault: Path) -> int:
         domain = domain_lookup.get(export_path.name, export_path.stem)
         for item in load_export_rows(export_path):
             pdf_attachments = [a for a in item.get('attachments', []) if a.get('contentType') == 'application/pdf']
+            has_pdf = bool(pdf_attachments)
+            raw_pdf_path = pdf_attachments[0].get('path', '') if pdf_attachments else ''
+            from paperforge_lite.pdf_resolver import resolve_pdf_path
+            from paperforge_lite.config import load_vault_config as _load_vault_config
+            cfg = _load_vault_config(vault)
+            zotero_dir = vault / cfg.get('system_dir', '99_System') / 'Zotero'
+            resolved_pdf = resolve_pdf_path(raw_pdf_path, has_pdf, vault, zotero_dir)
             collection_meta = collection_fields(item.get('collections', []))
             record_dir = paths['library_records'] / domain
             record_dir.mkdir(parents=True, exist_ok=True)
@@ -703,6 +973,10 @@ def run_selection_sync(vault: Path) -> int:
             note_text = note_path.read_text(encoding='utf-8') if note_path.exists() else ''
             fulltext_md_path = obsidian_wikilink_for_path(vault, meta.get('fulltext_md_path', '') or meta.get('markdown_path', ''))
             ocr_status = meta.get('ocr_status', 'pending')
+            if not has_pdf or not resolved_pdf:
+                record_ocr_status = 'nopdf'
+            else:
+                record_ocr_status = ocr_status
             creators = item.get('creators', [])
             first_author = ''
             for c in creators:
@@ -712,11 +986,13 @@ def run_selection_sync(vault: Path) -> int:
             journal = item.get('publicationTitle', '')
             extra = item.get('extra', '')
             impact_factor = lookup_impact_factor(journal, extra, vault)
-            content = library_record_markdown({'zotero_key': item['key'], 'domain': domain, 'title': item.get('title', ''), 'year': item.get('year', ''), 'doi': item.get('doi', ''), 'date': item.get('date', ''), 'collection_path': ' | '.join(item.get('collections', [])), 'collections': collection_meta.get('collections', []), 'collection_tags': collection_meta.get('collection_tags', []), 'collection_group': collection_meta.get('collection_group', []), 'has_pdf': bool(pdf_attachments), 'pdf_path': obsidian_wikilink_for_pdf(vault, pdf_attachments[0]['path']) if pdf_attachments else '', 'recommend_analyze': bool(pdf_attachments), 'analyze': existing.get('analyze', False), 'do_ocr': existing.get('do_ocr', False), 'ocr_status': ocr_status, 'fulltext_md_path': fulltext_md_path, 'deep_reading_status': 'done' if note_text and has_deep_reading_content(note_text) else 'pending', 'analysis_note': existing.get('analysis_note', ''), 'first_author': first_author, 'journal': journal, 'impact_factor': impact_factor})
+            content = library_record_markdown({'zotero_key': item['key'], 'domain': domain, 'title': item.get('title', ''), 'year': item.get('year', ''), 'doi': item.get('doi', ''), 'date': item.get('date', ''), 'collection_path': ' | '.join(item.get('collections', [])), 'collections': collection_meta.get('collections', []), 'collection_tags': collection_meta.get('collection_tags', []), 'collection_group': collection_meta.get('collection_group', []), 'has_pdf': has_pdf, 'pdf_path': obsidian_wikilink_for_pdf(vault, resolved_pdf), 'recommend_analyze': bool(pdf_attachments), 'analyze': existing.get('analyze', False), 'do_ocr': existing.get('do_ocr', False), 'ocr_status': record_ocr_status, 'fulltext_md_path': fulltext_md_path, 'deep_reading_status': 'done' if note_text and has_deep_reading_content(note_text) else 'pending', 'analysis_note': existing.get('analysis_note', ''), 'first_author': first_author, 'journal': journal, 'impact_factor': impact_factor})
             if record_path.exists():
                 existing_content = record_path.read_text(encoding='utf-8')
                 updated_content = _add_missing_frontmatter_fields(existing_content, {'first_author': first_author, 'journal': journal, 'impact_factor': impact_factor})
-                updated_content = update_frontmatter_field(updated_content, 'ocr_status', ocr_status)
+                updated_content = update_frontmatter_field(updated_content, 'has_pdf', has_pdf)
+                updated_content = update_frontmatter_field(updated_content, 'pdf_path', obsidian_wikilink_for_pdf(vault, resolved_pdf))
+                updated_content = update_frontmatter_field(updated_content, 'ocr_status', record_ocr_status)
                 updated_content = update_frontmatter_field(updated_content, 'deep_reading_status', 'done' if note_text and has_deep_reading_content(note_text) else 'pending')
                 updated_content = update_frontmatter_field(updated_content, 'fulltext_md_path', fulltext_md_path or '')
                 if updated_content != existing_content:
@@ -2292,6 +2568,7 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
     return (page_num, markdown_path, json_path, fulltext_md_path)
 
 def run_ocr(vault: Path) -> int:
+    from paperforge_lite.pdf_resolver import resolve_pdf_path
     paths = pipeline_paths(vault)
     cleanup_blocked_ocr_dirs(paths)
     control_actions = load_control_actions(paths)
@@ -2341,8 +2618,21 @@ def run_ocr(vault: Path) -> int:
                 continue
             response = requests.get(f"{job_url}/{meta['ocr_job_id']}", headers={'Authorization': f'bearer {token}'}, timeout=60)
             response.raise_for_status()
-            payload = response.json()['data']
-            state = payload['state']
+            try:
+                payload = response.json()['data']
+                state = payload['state']
+            except (json.JSONDecodeError, KeyError) as e:
+                from paperforge_lite.ocr_diagnostics import classify_error
+                state, suggestion = classify_error(e, None)
+                meta['ocr_status'] = state
+                meta['error'] = f'API schema mismatch during polling: {e}'
+                meta['suggestion'] = suggestion
+                meta['raw_response'] = response.text[:1000]
+                queue_row['queue_status'] = state
+                write_json(paths['ocr'] / key / 'meta.json', meta)
+                changed += 1
+                active_submitted = max(0, active_submitted - 1)
+                continue
             if state in {'pending', 'running'}:
                 meta['ocr_status'] = state
                 queue_row['queue_status'] = state
@@ -2387,10 +2677,16 @@ def run_ocr(vault: Path) -> int:
                 continue
             if status in {'queued', 'running'} and meta.get('ocr_job_id'):
                 continue
-            if not queue_row.get('has_pdf'):
-                meta['ocr_status'] = 'blocked'
-                meta['error'] = 'PDF not found in Zotero attachments'
-                queue_row['queue_status'] = 'blocked'
+            resolved_pdf = resolve_pdf_path(
+                queue_row.get('pdf_path', ''),
+                queue_row.get('has_pdf', False),
+                vault,
+                paths.get('zotero_dir') if 'zotero_dir' in paths else None,
+            )
+            if not resolved_pdf:
+                meta['ocr_status'] = 'nopdf'
+                meta['error'] = 'PDF not found or not readable'
+                queue_row['queue_status'] = 'nopdf'
                 write_json(paths['ocr'] / key / 'meta.json', meta)
                 changed += 1
                 continue
@@ -2402,13 +2698,16 @@ def run_ocr(vault: Path) -> int:
                 changed += 1
                 continue
             try:
-                with open(queue_row['pdf_path'], 'rb') as file_handle:
+                with open(resolved_pdf, 'rb') as file_handle:
                     response = requests.post(job_url, headers={'Authorization': f'bearer {token}'}, data={'model': model, 'optionalPayload': json.dumps(optional_payload)}, files={'file': file_handle}, timeout=120)
                 response.raise_for_status()
-            except requests.RequestException as e:
-                meta['ocr_status'] = 'error'
-                meta['error'] = f'PaddleOCR request failed: {e}'
-                queue_row['queue_status'] = 'error'
+            except Exception as e:
+                from paperforge_lite.ocr_diagnostics import classify_error
+                state, suggestion = classify_error(e, getattr(e, 'response', None))
+                meta['ocr_status'] = state
+                meta['error'] = str(e)
+                meta['suggestion'] = suggestion
+                queue_row['queue_status'] = state
                 write_json(paths['ocr'] / key / 'meta.json', meta)
                 changed += 1
                 continue
@@ -2444,7 +2743,7 @@ def _resolve_formal_note_path(vault: Path, zotero_key: str, domain: str) -> Path
             return note_path
     return None
 
-def run_deep_reading(vault: Path) -> int:
+def run_deep_reading(vault: Path, verbose: bool = False) -> int:
     """Sync deep-reading status between formal notes and library records.
 
     This worker does NOT generate content. It only:
@@ -2471,13 +2770,15 @@ def run_deep_reading(vault: Path) -> int:
             record_text = record_path.read_text(encoding='utf-8')
             analyze_match = re.search('^analyze:\\s*(true|false)$', record_text, re.MULTILINE)
             is_analyze = analyze_match and analyze_match.group(1) == 'true'
+            do_ocr_match = re.search('^do_ocr:\\s*(true|false)$', record_text, re.MULTILINE)
+            is_do_ocr = do_ocr_match and do_ocr_match.group(1) == 'true'
             note_path = _resolve_formal_note_path(vault, key, domain)
             has_content = False
             if note_path and note_path.exists():
                 note_text = note_path.read_text(encoding='utf-8')
                 has_content = has_deep_reading_content(note_text)
             correct_status = 'done' if has_content else 'pending'
-            status_match = re.search('^deep_reading_status:\\s*"?(.*?)"?$', record_text, re.MULTILINE)
+            status_match = re.search('^deep_reading_status:\\s*"??"?$', record_text, re.MULTILINE)
             current_status = status_match.group(1) if status_match else 'pending'
             if current_status != correct_status:
                 new_text = re.sub('^deep_reading_status:\\s*"?.*?"?$', f'deep_reading_status: {yaml_quote(correct_status)}', record_text, flags=re.MULTILINE, count=1)
@@ -2492,21 +2793,48 @@ def run_deep_reading(vault: Path) -> int:
                         ocr_status = str(meta.get('ocr_status', 'pending')).strip().lower()
                     except Exception:
                         pass
-                pending_queue.append({'zotero_key': key, 'domain': domain, 'title': item.get('title', ''), 'ocr_status': ocr_status})
+                pending_queue.append({
+                    'zotero_key': key,
+                    'domain': domain,
+                    'title': item.get('title', ''),
+                    'ocr_status': ocr_status,
+                    'is_analyze': is_analyze,
+                    'is_do_ocr': is_do_ocr,
+                })
     if pending_queue:
-        report_lines = ['# 待精读队列', '']
         ready = [q for q in pending_queue if q['ocr_status'] == 'done']
-        blocked = [q for q in pending_queue if q['ocr_status'] != 'done']
+        waiting = [q for q in pending_queue if q['is_do_ocr'] and q['ocr_status'] in ('pending', 'processing')]
+        blocked = [q for q in pending_queue if q['is_analyze'] and q['ocr_status'] not in ('done', '') and not (q['is_do_ocr'] and q['ocr_status'] in ('pending', 'processing'))]
+        report_lines = ['# 待精读队列', '']
         if ready:
             report_lines.extend([f'## 就绪 ({len(ready)} 篇) — OCR 已完成，可直接 /LD-deep', ''])
             for q in ready:
                 report_lines.append(f"- `{q['zotero_key']}` | {q['domain']} | {q['title']}")
             report_lines.append('')
-        if blocked:
-            report_lines.extend([f'## 阻塞 ({len(blocked)} 篇) — 等待 OCR', ''])
-            for q in blocked:
+        if waiting:
+            report_lines.extend([f'## 等待 OCR ({len(waiting)} 篇)', ''])
+            for q in waiting:
                 report_lines.append(f"- `{q['zotero_key']}` | {q['domain']} | {q['title']} | OCR: {q['ocr_status']}")
             report_lines.append('')
+        if blocked:
+            report_lines.extend([f'## 阻塞 ({len(blocked)} 篇) — 需要先完成 OCR', ''])
+            for q in blocked:
+                report_lines.append(f"- `{q['zotero_key']}` | {q['domain']} | {q['title']} | OCR: {q['ocr_status'] or '未启动'}")
+            report_lines.append('')
+            if verbose:
+                report_lines.append('### 修复步骤\n')
+                for q in blocked:
+                    ocr_s = q['ocr_status'] or ''
+                    if not ocr_s or ocr_s == 'pending':
+                        fix = f"paperforge ocr run"
+                        report_lines.append(f"- `{q['zotero_key']}`: 运行 `{fix}` 启动 OCR")
+                    elif ocr_s == 'processing':
+                        report_lines.append(f"- `{q['zotero_key']}`: OCR 进行中，请等待完成")
+                    elif ocr_s == 'failed':
+                        report_lines.append(f"- `{q['zotero_key']}`: OCR 失败 — 检查 meta.json 错误信息，然后重新运行 `paperforge ocr run`")
+                    else:
+                        report_lines.append(f"- `{q['zotero_key']}`: 运行 `paperforge ocr run` 重试")
+                report_lines.append('')
         report_lines.extend(['## 操作', '', '- 对就绪论文，使用 `/LD-deep <zotero_key>` 触发精读', '- 批量触发：提供多个 key，用 subagent 并行处理', ''])
     else:
         report_lines = ['# 待精读队列', '', '所有 analyze=true 的论文已完成精读。', '']
@@ -2514,6 +2842,166 @@ def run_deep_reading(vault: Path) -> int:
     report_path.write_text('\n'.join(report_lines), encoding='utf-8')
     print(f'deep-reading: synced {synced} records, {len(pending_queue)} pending')
     return 0
+
+def run_doctor(vault: Path) -> int:
+    """Validate PaperForge Lite setup and report by category.
+
+    Returns:
+        0 if all checks pass, 1 otherwise.
+    """
+    paths = pipeline_paths(vault)
+    cfg = load_vault_config(vault)
+    checks: list[tuple[str, str, str, str]] = []
+
+    def add_check(category: str, status: str, message: str, fix: str = "") -> None:
+        checks.append((category, status, message, fix))
+
+    sys_version = sys.version_info
+    if sys_version.major >= 3 and sys_version.minor >= 10:
+        add_check("Python 环境", "pass", f"Python {sys_version.major}.{sys_version.minor}.{sys_version.micro}")
+    else:
+        add_check("Python 环境", "fail", f"Python {sys_version.major}.{sys_version.minor} (需要 3.10+)", "升级 Python 到 3.10 或更高版本")
+
+    required_modules = ["requests", "pymupdf", "PIL", "yaml"]
+    missing_modules = []
+    for mod in required_modules:
+        try:
+            __import__(mod)
+        except ImportError:
+            missing_modules.append(mod)
+    if missing_modules:
+        add_check("Python 环境", "fail", f"缺少模块: {', '.join(missing_modules)}", f"运行: pip install {' '.join(missing_modules)}")
+    elif sys_version.major >= 3 and sys_version.minor >= 10:
+        pass
+
+    if (vault / "paperforge.json").exists():
+        add_check("Vault 结构", "pass", "paperforge.json 存在")
+    else:
+        add_check("Vault 结构", "fail", "paperforge.json 不存在", "在 vault 根目录创建 paperforge.json")
+
+    system_dir = vault / cfg["system_dir"]
+    if system_dir.exists():
+        add_check("Vault 结构", "pass", f"system_dir 存在: {cfg['system_dir']}")
+    else:
+        add_check("Vault 结构", "fail", f"system_dir 不存在: {cfg['system_dir']}", f"运行: mkdir {cfg['system_dir']}")
+
+    resources_dir = vault / cfg["resources_dir"]
+    if resources_dir.exists():
+        add_check("Vault 结构", "pass", f"resources_dir 存在: {cfg['resources_dir']}")
+    else:
+        add_check("Vault 结构", "fail", f"resources_dir 不存在: {cfg['resources_dir']}", f"运行: mkdir {cfg['resources_dir']}")
+
+    control_dir = resources_dir / cfg.get("control_dir", "LiteratureControl")
+    if control_dir.exists():
+        add_check("Vault 结构", "pass", f"control_dir 存在: {cfg.get('control_dir', 'LiteratureControl')}")
+    else:
+        add_check("Vault 结构", "fail", f"control_dir 不存在: {cfg.get('control_dir', 'LiteratureControl')}", f"运行: mkdir {cfg['resources_dir']}/{cfg.get('control_dir', 'LiteratureControl')}")
+
+    zotero_link = system_dir / "Zotero"
+    if zotero_link.exists():
+        if zotero_link.is_symlink() or _is_junction(zotero_link):
+            add_check("Zotero 链接", "pass", "Zotero 目录是 junction/symlink")
+        else:
+            add_check("Zotero 链接", "warn", "Zotero 目录存在但不是 junction，建议使用 junction")
+    else:
+        add_check("Zotero 链接", "fail", "Zotero 目录不存在", f"创建 junction: mklink /j {zotero_link} <Zotero数据目录>")
+
+    exports_dir = system_dir / "PaperForge" / "exports"
+    library_json = exports_dir / "library.json"
+    if exports_dir.exists():
+        add_check("BBT 导出", "pass", "exports 目录存在")
+    else:
+        add_check("BBT 导出", "fail", "exports 目录不存在", "在 Better BibTeX 设置中配置导出路径")
+    if library_json.exists():
+        try:
+            data = json.loads(library_json.read_text(encoding="utf-8"))
+            if isinstance(data, list) and len(data) > 0:
+                has_key = any("key" in item or "citation-key" in item for item in data[:5])
+                if has_key:
+                    add_check("BBT 导出", "pass", f"library.json 正常 ({len(data)} 条)")
+                else:
+                    add_check("BBT 导出", "warn", "library.json 存在但无有效 citation key")
+            elif isinstance(data, list) and len(data) == 0:
+                add_check("BBT 导出", "warn", "library.json 为空")
+            else:
+                add_check("BBT 导出", "warn", "library.json 格式异常")
+        except JSONDecodeError:
+            add_check("BBT 导出", "fail", "library.json 不是有效的 JSON", "检查 Better BibTeX 导出格式")
+    else:
+        add_check("BBT 导出", "fail", "library.json 不存在", "在 Zotero Better BibTeX 设置中配置导出路径")
+
+    env_api_key = os.environ.get("PADDLEOCR_API_KEY") or os.environ.get("OCR_TOKEN")
+    if env_api_key:
+        add_check("OCR 配置", "pass", "API Key 已配置")
+    else:
+        add_check("OCR 配置", "fail", "缺少 PADDLEOCR_API_KEY", "在 .env 文件中设置 PADDLEOCR_API_KEY")
+
+    if (paths["pipeline"] / "literature_pipeline.py").exists():
+        add_check("Worker 脚本", "pass", "literature_pipeline.py 存在")
+        try:
+            from pipeline.worker.scripts.literature_pipeline import (
+                run_status, run_selection_sync, run_index_refresh,
+                run_deep_reading, run_ocr, ensure_base_views,
+            )
+            add_check("Worker 脚本", "pass", "所有 worker 函数可导入")
+        except ImportError as e:
+            add_check("Worker 脚本", "fail", f"worker 函数导入失败: {e}", "检查 pipeline/worker/scripts/literature_pipeline.py")
+    else:
+        add_check("Worker 脚本", "fail", "literature_pipeline.py 不存在", "确认 PaperForge pipeline 已正确安装")
+
+    ld_deep_script = paths.get("ld_deep_script")
+    skill_dir = None
+    if ld_deep_script:
+        skill_dir = ld_deep_script.parent.parent
+    if skill_dir and skill_dir.exists():
+        add_check("Agent 脚本", "pass", f"literature-qa skill 目录存在")
+    else:
+        add_check("Agent 脚本", "warn", "literature-qa skill 目录未找到", "确认 agent_config_dir 配置正确")
+
+    print("PaperForge Lite Doctor")
+    print("=" * 40)
+    current_category = ""
+    fix_map: dict[str, list[str]] = {}
+    for category, status, message, fix in checks:
+        if category != current_category:
+            if current_category:
+                print()
+            current_category = category
+        status_tag = {"pass": "[PASS]", "fail": "[FAIL]", "warn": "[WARN]"}[status]
+        print(f"{status_tag} {category} — {message}")
+        if status == "fail" and fix:
+            fix_map.setdefault(category, [])
+            fix_map[category].append(fix)
+
+    if fix_map:
+        print("\n修复步骤:")
+        for cat, fixes in fix_map.items():
+            for f in fixes:
+                print(f"  - {cat}: {f}")
+        print()
+        return 1
+    print()
+    return 0
+
+
+def _is_junction(path: Path) -> bool:
+    """Check if a path is a Windows junction point."""
+    try:
+        import ctypes
+        from ctypes import wintypes
+        FILE_FLAG_BACKUP_SEMANTICS = 0x02000000
+        FILE_ATTRIBUTE_REPARSE_POINT = 0x400
+        INVALID_FILE_ATTRIBUTES = 0xFFFFFFFF
+        GetFileAttributesW = ctypes.windll.kernel32.GetFileAttributesW
+        GetFileAttributesW.argtypes = [wintypes.LPCWSTR]
+        GetFileAttributesW.restype = wintypes.DWORD
+        attrs = GetFileAttributesW(str(path))
+        if attrs == INVALID_FILE_ATTRIBUTES:
+            return False
+        return bool(attrs & FILE_ATTRIBUTE_REPARSE_POINT)
+    except Exception:
+        return False
+
 
 def run_status(vault: Path) -> int:
     """Print a compact Lite install/runtime status."""

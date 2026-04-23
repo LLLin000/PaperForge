@@ -183,3 +183,67 @@ def ocr_doctor(config: dict[str, str] | None, live: bool = False) -> dict:
         "passed": True,
         "message": "All diagnostics passed. OCR is ready.",
     }
+
+
+def classify_error(exception: Exception, response) -> tuple[str, str]:
+    """Map an exception to an OCR failure state and actionable suggestion.
+
+    Args:
+        exception: The raised exception.
+        response: Optional requests.Response associated with the exception.
+
+    Returns:
+        Tuple of (state, suggestion) where state is 'blocked' or 'error'.
+    """
+    import requests
+
+    if isinstance(exception, requests.exceptions.ConnectionError):
+        return (
+            "blocked",
+            "Check PADDLEOCR_JOB_URL in .env and re-run `paperforge ocr`",
+        )
+    if isinstance(exception, (requests.exceptions.Timeout, requests.exceptions.ReadTimeout)):
+        return (
+            "error",
+            "OCR service timed out. Retry with `paperforge ocr` or check network.",
+        )
+    if isinstance(exception, requests.exceptions.HTTPError):
+        status = response.status_code if response is not None else 0
+        if status == 401:
+            return (
+                "blocked",
+                "PaddleOCR API key invalid or missing. Set PADDLEOCR_API_TOKEN and re-run `paperforge ocr`",
+            )
+        if status == 404:
+            return (
+                "error",
+                "OCR job not found. Re-run `paperforge ocr` to resubmit.",
+            )
+        if status >= 500:
+            return (
+                "error",
+                "OCR provider error. Retry later with `paperforge ocr`.",
+            )
+        return (
+            "error",
+            f"OCR HTTP error {status}. Retry with `paperforge ocr` or run `paperforge ocr doctor`.",
+        )
+    if isinstance(exception, json.JSONDecodeError):
+        return (
+            "error",
+            "PaddleOCR API response format changed. Check `meta.json` raw response and update client.",
+        )
+    if isinstance(exception, KeyError):
+        return (
+            "error",
+            "PaddleOCR API response missing expected fields. Provider may have updated schema.",
+        )
+    if isinstance(exception, FileNotFoundError):
+        return (
+            "blocked",
+            "PDF file not found. Check Zotero attachment and re-run `paperforge ocr`.",
+        )
+    return (
+        "error",
+        f"Unexpected error: {exception}. Retry with `paperforge ocr` or run `paperforge ocr doctor`.",
+    )
