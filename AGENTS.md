@@ -356,6 +356,10 @@ paperforge ocr run
 paperforge deep-reading
 paperforge deep-reading --verbose  # 显示阻塞条目修复指令
 
+# 修复状态分歧（默认 dry-run）
+paperforge repair --verbose        # 查看三向状态分歧详情
+paperforge repair --fix           # 实际修复（慎用）
+
 # 查看整体状态
 paperforge status
 
