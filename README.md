@@ -88,15 +88,22 @@ your-vault/
 ## 核心命令
 
 ```bash
-# Worker 命令
-python <system_dir>/PaperForge/worker/scripts/literature_pipeline.py --vault . selection-sync
-python <system_dir>/PaperForge/worker/scripts/literature_pipeline.py --vault . index-refresh
-python <system_dir>/PaperForge/worker/scripts/literature_pipeline.py --vault . ocr
-python <system_dir>/PaperForge/worker/scripts/literature_pipeline.py --vault . status
+# PaperForge 统一入口（推荐）
+paperforge status            # 查看状态
+paperforge selection-sync    # 同步 Zotero 文献
+paperforge index-refresh     # 生成正式笔记
+paperforge ocr run           # 运行 PDF OCR
+paperforge deep-reading      # 查看精读队列
 
 # Agent 命令（在 OpenCode 中使用）
 /LD-deep <zotero_key>    # 完整三阶段精读
 /LD-paper <zotero_key>   # 快速摘要
+
+# 备选：直接调用 worker 脚本（需要先运行 paperforge paths --json 获取路径）
+python <resolved_worker_script> --vault . selection-sync
+python <resolved_worker_script> --vault . index-refresh
+python <resolved_worker_script> --vault . ocr
+python <resolved_worker_script> --vault . status
 ```
 
 ## License

@@ -167,14 +167,14 @@
 
 当不提供具体 key/标题时，agent 自动执行以下流程：
 
-1. 运行 `python {{SCRIPT}} queue --vault {{VAULT}}`
-2. 解析输出的 JSON 队列（`analyze=true` + `deep_reading_status != done` + `ocr_status`）
+1. 运行 `paperforge deep-reading` 查看精读队列（或 `python $(paperforge paths --json | python -c "import json,sys; print(json.load(sys.stdin)['literature_script'])") queue --vault {{VAULT}}` 获取 JSON 格式队列）
+2. 解析输出的队列状态（`analyze=true` + `deep_reading_status != done` + `ocr_status`）
 3. 按 OCR 状态分组展示：
    - **就绪**：OCR 已完成，可直接精读
-   - **阻塞**：OCR 未完成，需先跑 `ocr` worker
+   - **阻塞**：OCR 未完成，需先跑 `paperforge ocr run`
 4. 由用户选择篇目：
-   - 若只有 1 篇就绪 → 直接执行单篇精读（等同于 `/LD-deep <key>`）
-   - 若多篇 → 展示清单，用户选择后批量 spawn subagent 并行处理
+   - 若只有 1 篇就绪 -> 直接执行单篇精读（等同于 `/LD-deep <key>`）
+   - 若多篇 -> 展示清单，用户选择后批量 spawn subagent 并行处理
 
 **注意**：`queue` 模式只扫描 `library-records`（Base 控制记录），不扫描正式卡片。只有在 Base 里勾选 `analyze=true` 的论文才会进入队列。
 
@@ -186,15 +186,22 @@
 
 对每篇论文，替换以下四个变量：
 
-| 变量              | 示例值                                                             |
-| ----------------- | ----------------------------------------------------------------- |
-| `{{ZOTERO_KEY}}`   | `Y5KQ4JQ7`                                                        |
-| `{{FORMAL_NOTE}}`  | `<Vault>/<resources_dir>/<literature_dir>/骨科/Y5KQ4JQ7 - title.md` |
-| `{{FULLTEXT_MD}}`  | `<Vault>/<system_dir>/PaperForge/ocr/Y5KQ4JQ7/fulltext.md` |
-| `{{SCRIPT}}`      | `<Vault>/<skill_dir>/literature-qa/scripts/ld_deep.py` |
+| 变量              | 示例值                                                             | 获取方式 |
+| ----------------- | ----------------------------------------------------------------- | -------- |
+| `{{ZOTERO_KEY}}`   | `Y5KQ4JQ7`                                                        | 从 library-record 或 JSON 导出中获取 |
+| `{{FORMAL_NOTE}}`  | `<Vault>/<resources_dir>/<literature_dir>/骨科/Y5KQ4JQ7 - title.md` | 从 `paperforge paths --json` 或 library-record 中获取 |
+| `{{FULLTEXT_MD}}`  | `<Vault>/<system_dir>/PaperForge/ocr/Y5KQ4JQ7/fulltext.md` | 由 OCR worker 生成在 ocr 目录下 |
+| `{{SCRIPT}}`      | `<Vault>/<skill_dir>/literature-qa/scripts/ld_deep.py` | 从 `paperforge paths --json` 获取 `literature_script` 字段 |
 
 ### Spawn 命令格式
 
+获取路径信息：
+```bash
+paperforge paths --json
+# 返回 JSON，包含 worker_script, literature_script, skill_dir 等字段
+```
+
+然后使用以下格式启动 subagent：
 ```
 Task(
   description="LD-deep {{ZOTERO_KEY}}",

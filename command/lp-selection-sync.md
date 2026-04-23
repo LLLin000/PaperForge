@@ -4,8 +4,15 @@
 
 ## Command
 
-先读取 Vault 根目录的 `paperforge.json`，用其中的 `system_dir` 拼出 worker 路径，再运行：
+```bash
+paperforge selection-sync
+```
+
+## 说明
+
+`paperforge selection-sync` 会自动读取 `paperforge.json` 定位 exports 目录和 control 目录。
+如需使用 Python 直接调用（备选方式）：
 
 ```bash
-python <system_dir>/PaperForge/worker/scripts/literature_pipeline.py --vault . selection-sync
+python $(paperforge paths --json | python -c "import json,sys; print(json.load(sys.stdin)['worker_script'])") --vault . selection-sync
 ```

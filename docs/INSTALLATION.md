@@ -92,14 +92,26 @@ cp AGENTS.md "{vault_path}/AGENTS.md"
 
 ```bash
 cd "{vault_path}"
-python <system_dir>/PaperForge/worker/scripts/literature_pipeline.py --vault . status
+
+# 验证 PaperForge 路径配置
+paperforge paths
+
+# 验证系统状态
+paperforge status
 ```
 
-预期输出：
+预期输出（`paperforge status`）：
 ```
 PaperForge Lite v1.2.0
 Vault: /path/to/your/vault
 Status: OK
+```
+
+**备选方式**（直接调用 worker 脚本）：
+```bash
+# 先获取 worker 脚本路径
+python -m pip install -e .
+python $(python -c "import json; print(json.load(open('paperforge.json'))['paperforge_path'] + '/worker/scripts/literature_pipeline.py')" --vault . status
 ```
 
 ---

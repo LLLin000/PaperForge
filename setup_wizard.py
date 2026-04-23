@@ -1129,27 +1129,32 @@ class DoneStep(StepScreen):
 
 ### 首次使用步骤：
 
-**1. 同步 Zotero 文献**
+**1. 安装 PaperForge 工具包**
 ```bash
-{worker_cmd} selection-sync
+pip install -e .
 ```
 
-**2. 生成正式笔记**
+**2. 同步 Zotero 文献**
 ```bash
-{worker_cmd} index-refresh
+paperforge selection-sync
 ```
 
-**3. 标记精读文献**
+**3. 生成正式笔记**
+```bash
+paperforge index-refresh
+```
+
+**4. 标记精读文献**
 在 Obsidian 中打开 library-records 文件，设置：
 - `do_ocr: true`
 - `analyze: true`
 
-**4. 运行 OCR**
+**5. 运行 OCR**
 ```bash
-{worker_cmd} ocr
+paperforge ocr run
 ```
 
-**5. 执行精读**
+**6. 执行精读**
 在 OpenCode Agent 中输入：
 ```
 /LD-deep <zotero_key>
@@ -1172,6 +1177,15 @@ class DoneStep(StepScreen):
 | `/lp-index-refresh` | 生成正式笔记 |
 | `/lp-ocr` | 运行 PDF OCR |
 | `/lp-status` | 查看工作流状态 |
+
+**paperforge 命令（推荐）：**
+```bash
+paperforge status            # 查看状态
+paperforge selection-sync    # 同步文献
+paperforge index-refresh     # 生成笔记
+paperforge ocr run           # 运行 OCR
+paperforge deep-reading      # 查看精读队列
+```
 
 **Python 脚本命令（备用）：**
 ```bash

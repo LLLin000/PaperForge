@@ -4,8 +4,17 @@
 
 ## Command
 
-先读取 Vault 根目录的 `paperforge.json`，用其中的 `system_dir` 拼出 worker 路径，再运行：
+```bash
+paperforge status
+```
+
+## 说明
+
+`paperforge` 是 PaperForge Lite 的统一入口点，会自动读取 `paperforge.json` 解析路径。
+如需使用 Python 直接调用（备选方式）：
 
 ```bash
-python <system_dir>/PaperForge/worker/scripts/literature_pipeline.py --vault . status
+python $(paperforge paths --json | python -c "import json,sys; print(json.load(sys.stdin)['worker_script'])") --vault . status
 ```
+
+更简单的方式是直接使用 `paperforge status`（见上方）。

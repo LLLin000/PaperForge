@@ -166,12 +166,19 @@ ls <system_dir>/PaperForge/exports/
 完成上述配置后，回到 Vault 根目录，运行：
 
 ```bash
-# 1. 检测 Zotero 新条目，创建状态记录
-python pipeline/worker/scripts/literature_pipeline.py --vault . selection-sync
+# 1. 同步 Zotero 文献，创建状态记录
+paperforge selection-sync
 
 # 2. 生成正式 Obsidian 笔记
-python pipeline/worker/scripts/literature_pipeline.py --vault . index-refresh
+paperforge index-refresh
 ```
+
+> **备选方式**（直接调用 worker 脚本）：
+> 先运行 `pip install -e .` 安装 paperforge 工具，然后：
+> ```bash
+> python $(paperforge paths --json | python -c "import json,sys; print(json.load(sys.stdin)['worker_script'])") --vault . selection-sync
+> python $(paperforge paths --json | python -c "import json,sys; print(json.load(sys.stdin)['worker_script'])") --vault . index-refresh
+> ```
 
 此时你应该看到：
 - `<resources_dir>/<control_dir>/library-records/` 下出现状态记录文件
