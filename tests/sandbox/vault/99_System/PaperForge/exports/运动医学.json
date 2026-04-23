@@ -1,0 +1,61 @@
+{
+  "items": [
+    {
+      "key": "SANDBOX004",
+      "itemType": "journalArticle",
+      "title": "Return to Sport Protocols After ACL Reconstruction: A Systematic Review",
+      "creators": [
+        {
+          "creatorType": "author",
+          "firstName": "Lisa",
+          "lastName": "Park"
+        },
+        {
+          "creatorType": "author",
+          "firstName": "Tom",
+          "lastName": "Nguyen"
+        }
+      ],
+      "date": "2024",
+      "publicationTitle": "Sports Health",
+      "DOI": "10.1177/19417381241234567",
+      "PMID": "38876543",
+      "abstractNote": "DATA SOURCES: PubMed, Embase, Cochrane. 23 studies included. Return-to-sport criteria varied widely.",
+      "collections": [
+        "运动医学"
+      ],
+      "attachments": [
+        {
+          "path": "storage:SANDBOX004/SANDBOX004.pdf",
+          "contentType": "application/pdf"
+        }
+      ]
+    },
+    {
+      "key": "SANDBOX005",
+      "itemType": "journalArticle",
+      "title": "Ultrasound-Guided Percutaneous Achilles Tendon Repair in Acute Ruptures",
+      "creators": [
+        {
+          "creatorType": "author",
+          "firstName": "Carlos",
+          "lastName": "Rodriguez"
+        }
+      ],
+      "date": "2023",
+      "publicationTitle": "Foot and Ankle International",
+      "DOI": "10.1177/107110072311234",
+      "PMID": "37234567",
+      "abstractNote": "CASE SERIES: 28 patients. Primary outcomes: AOFAS score, time to weight-bearing, complications.",
+      "collections": [
+        "运动医学"
+      ],
+      "attachments": [
+        {
+          "path": "storage:SANDBOX005/SANDBOX005.pdf",
+          "contentType": "application/pdf"
+        }
+      ]
+    }
+  ]
+}

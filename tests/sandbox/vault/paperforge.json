@@ -1,0 +1,7 @@
+{
+  "system_dir": "99_System",
+  "resources_dir": "03_Resources",
+  "literature_dir": "Literature",
+  "control_dir": "LiteratureControl",
+  "base_dir": "05_Bases"
+}
