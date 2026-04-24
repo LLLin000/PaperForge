@@ -3193,6 +3193,178 @@ def run_repair(vault: Path, paths: dict, verbose: bool = False, fix: bool = Fals
         print(f"[repair] scanned={result['scanned']} divergent={len(result['divergent'])} fixed={result['fixed']} errors={len(result['errors'])}")
     return result
 
+def _detect_zotero_data_dir() -> str | None:
+    """Try to detect the user's Zotero data directory."""
+    if os.name == "nt":
+        appdata = os.environ.get("APPDATA", "")
+        if appdata:
+            candidate = Path(appdata) / "Zotero"
+            if candidate.exists() and (candidate / "storage").exists():
+                return str(candidate)
+    home = Path.home()
+    candidates = []
+    if os.name == "nt":
+        candidates = [
+            home / "Zotero",
+            home / "AppData" / "Roaming" / "Zotero",
+        ]
+    else:
+        candidates = [
+            home / "Zotero",
+            home / ".zotero" / "zotero",
+            home / "Library" / "Application Support" / "Zotero",
+        ]
+    for candidate in candidates:
+        if candidate.exists() and (candidate / "storage").exists():
+            return str(candidate)
+    return None
+
+
+def check_zotero_location(vault: Path, cfg: dict, add_check) -> None:
+    """Detect if Zotero data directory is inside vault or linked via junction."""
+    system_dir = vault / cfg["system_dir"]
+    zotero_link = system_dir / "Zotero"
+    if zotero_link.exists():
+        if zotero_link.is_symlink() or _is_junction(zotero_link):
+            try:
+                target = os.path.realpath(zotero_link)
+                if Path(target).exists():
+                    add_check(
+                        "Path Resolution",
+                        "pass",
+                        f"Zotero junction valid -> {target}",
+                    )
+                else:
+                    add_check(
+                        "Path Resolution",
+                        "warn",
+                        f"Zotero junction target missing: {target}",
+                        f"Recreate junction: mklink /J \"{zotero_link}\" \"<Zotero数据目录>\"",
+                    )
+            except Exception:
+                add_check(
+                    "Path Resolution",
+                    "warn",
+                    "Zotero junction exists but target could not be resolved",
+                )
+        else:
+            if (zotero_link / "storage").exists():
+                add_check(
+                    "Path Resolution",
+                    "pass",
+                    "Zotero inside vault -- direct paths available",
+                )
+            else:
+                add_check(
+                    "Path Resolution",
+                    "warn",
+                    "Zotero directory exists but missing storage/ subdirectory",
+                    "Verify this is a valid Zotero data directory",
+                )
+    else:
+        zotero_data_dir = _detect_zotero_data_dir()
+        if zotero_data_dir:
+            add_check(
+                "Path Resolution",
+                "warn",
+                "Zotero outside vault -- junction recommended",
+                f'Run as Administrator: mklink /J "{zotero_link}" "{zotero_data_dir}"',
+            )
+        else:
+            add_check(
+                "Path Resolution",
+                "fail",
+                "Zotero directory not found",
+                f'Run as Administrator: mklink /J "{zotero_link}" "<Zotero数据目录>"',
+            )
+
+
+def _summarize_errors(errors: list[str]) -> str:
+    """Summarize error types into a human-readable string."""
+    counts: dict[str, int] = {}
+    for e in errors:
+        counts[e] = counts.get(e, 0) + 1
+    return ", ".join(f"{count} {err}" for err, count in sorted(counts.items()))
+
+
+def check_pdf_paths(vault: Path, paths: dict, add_check) -> None:
+    """Sample up to 5 library records and validate their pdf_path wikilinks."""
+    record_paths = list(paths["library_records"].rglob("*.md"))
+    if not record_paths:
+        add_check("Path Resolution", "pass", "No library records to check")
+        return
+    import random
+
+    sample = (
+        record_paths if len(record_paths) <= 5 else random.sample(record_paths, 5)
+    )
+    valid = 0
+    errors: list[str] = []
+    for record_path in sample:
+        try:
+            text = record_path.read_text(encoding="utf-8")
+        except Exception:
+            continue
+        pdf_match = re.search(r'^pdf_path:\s*"(.*?)"\s*$', text, re.MULTILINE)
+        if not pdf_match:
+            continue
+        pdf_path = pdf_match.group(1).strip()
+        if not pdf_path:
+            continue
+        raw_path = pdf_path.strip("[]")
+        candidate = vault / raw_path.replace("/", os.sep)
+        if candidate.exists():
+            valid += 1
+        else:
+            err_match = re.search(
+                r'^path_error:\s*"(.*?)"\s*$', text, re.MULTILINE
+            )
+            error_type = err_match.group(1) if err_match else "not_found"
+            errors.append(error_type)
+    total = len(sample)
+    if valid == total:
+        add_check("Path Resolution", "pass", f"{valid}/{total} PDF paths valid")
+    else:
+        error_summary = _summarize_errors(errors) if errors else "unknown"
+        add_check(
+            "Path Resolution",
+            "warn",
+            f"{valid}/{total} PDF paths valid, {total - valid} path errors: {error_summary}",
+        )
+
+
+def check_wikilink_format(vault: Path, paths: dict, add_check) -> None:
+    """Verify all pdf_path values in library-records use [[...]] format."""
+    record_paths = list(paths["library_records"].rglob("*.md"))
+    bad_paths: list[str] = []
+    for record_path in record_paths:
+        try:
+            text = record_path.read_text(encoding="utf-8")
+        except Exception:
+            continue
+        pdf_match = re.search(r'^pdf_path:\s*"(.*?)"\s*$', text, re.MULTILINE)
+        if not pdf_match:
+            continue
+        pdf_path = pdf_match.group(1).strip()
+        if not pdf_path:
+            continue
+        if not (pdf_path.startswith("[[") and pdf_path.endswith("]]")):
+            bad_paths.append(str(record_path.relative_to(vault)))
+    if bad_paths:
+        add_check(
+            "Path Resolution",
+            "warn",
+            f"{len(bad_paths)} pdf_path values not in wikilink format",
+            "Re-run `paperforge sync` to regenerate wikilinks",
+        )
+    else:
+        add_check(
+            "Path Resolution",
+            "pass",
+            "All pdf_path values use wikilink format",
+        )
+
+
 def run_doctor(vault: Path) -> int:
     """Validate PaperForge Lite setup and report by category.
 
@@ -3305,6 +3477,11 @@ def run_doctor(vault: Path) -> int:
             add_check("Worker 脚本", "fail", f"worker 函数导入失败: {e}", "检查 pipeline/worker/scripts/literature_pipeline.py")
     else:
         add_check("Worker 脚本", "fail", "literature_pipeline.py 不存在", "确认 PaperForge pipeline 已正确安装")
+
+    # Path Resolution checks
+    check_zotero_location(vault, cfg, add_check)
+    check_pdf_paths(vault, paths, add_check)
+    check_wikilink_format(vault, paths, add_check)
 
     ld_deep_script = paths.get("ld_deep_script")
     skill_dir = None
