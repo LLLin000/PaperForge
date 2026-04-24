@@ -58,7 +58,7 @@ class TestDeepLoadVaultConfig:
 
     def test_load_vault_config_keys(self, tmp_vault: Path) -> None:
         """_load_vault_config returns same keys as shared resolver."""
-        from paperforge_lite.config import load_vault_config as shared_load
+        from paperforge.config import load_vault_config as shared_load
         import ld_deep
 
         shared_cfg = shared_load(tmp_vault)
@@ -97,7 +97,7 @@ class TestDeepPaperforgePaths:
         self, tmp_vault: Path
     ) -> None:
         """Values for ocr, records, literature match paperforge_paths()."""
-        from paperforge_lite.config import paperforge_paths as shared_paths
+        from paperforge.config import paperforge_paths as shared_paths
         import ld_deep
 
         shared = shared_paths(tmp_vault)

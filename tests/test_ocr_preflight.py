@@ -242,7 +242,7 @@ class TestOcrPreflight:
         mock_paths["ocr"].mkdir()
 
         with patch(
-            "paperforge_lite.pdf_resolver.resolve_pdf_path",
+            "paperforge.pdf_resolver.resolve_pdf_path",
             return_value=str(target),
         ):
             with patch(

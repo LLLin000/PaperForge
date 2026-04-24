@@ -120,12 +120,12 @@ class TestLdDeepImport:
     def test_regression_agent_importability(self, test_vault: Path) -> None:
         """REG-02: ld_deep.py runs without manual PYTHONPATH."""
         result = subprocess.run(
-            [sys.executable, "-c", "import paperforge_lite"],
+            [sys.executable, "-c", "import paperforge"],
             capture_output=True,
             text=True,
             cwd=str(REPO_ROOT),
         )
-        assert result.returncode == 0, f"paperforge_lite should be importable: {result.stderr}"
+        assert result.returncode == 0, f"paperforge should be importable: {result.stderr}"
 
 
 class TestPrepareProducesScaffold:
@@ -202,7 +202,7 @@ class TestWorkerPathsJson:
 
     def test_regression_worker_path_json(self, test_vault: Path) -> None:
         """Verify paths --json returns worker_script and ld_deep_script."""
-        from paperforge_lite.config import paperforge_paths
+        from paperforge.config import paperforge_paths
 
         paths = paperforge_paths(test_vault)
         assert "worker_script" in paths, "paths should contain worker_script"
@@ -229,7 +229,7 @@ class TestDocCommandsExecutable:
             for block in code_blocks:
                 for line in block.splitlines():
                     line = line.strip()
-                    if line.startswith("paperforge ") or line.startswith("python -m paperforge_lite"):
+                    if line.startswith("paperforge ") or line.startswith("python -m paperforge"):
                         commands_found.append((doc_path.name, line))
 
         assert len(commands_found) > 0, "should find commands in docs"
@@ -247,7 +247,7 @@ class TestDocCommandsExecutable:
             if parts[0] == "paperforge":
                 try:
                     result = subprocess.run(
-                        [sys.executable, "-m", "paperforge_lite", *parts[1:], "--help"],
+                        [sys.executable, "-m", "paperforge", *parts[1:], "--help"],
                         capture_output=True,
                         text=True,
                         cwd=str(REPO_ROOT),
@@ -257,10 +257,10 @@ class TestDocCommandsExecutable:
                         pass
                 except Exception as e:
                     failures.append(f"{doc_name}: {cmd} -> {e}")
-            elif "python" in parts[0] and "-m" in parts and "paperforge_lite" in cmd:
+            elif "python" in parts[0] and "-m" in parts and "paperforge" in cmd:
                 try:
                     result = subprocess.run(
-                        [sys.executable, "-m", "paperforge_lite", "--help"],
+                        [sys.executable, "-m", "paperforge", "--help"],
                         capture_output=True,
                         text=True,
                         cwd=str(REPO_ROOT),

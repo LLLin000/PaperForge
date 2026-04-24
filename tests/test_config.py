@@ -1,4 +1,4 @@
-"""Tests for paperforge_lite.config resolver contract.
+"""Tests for paperforge.config resolver contract.
 
 These tests prove:
 - CONF-01: Env vars override JSON values
@@ -110,38 +110,38 @@ def env_dict() -> dict[str, str]:
 
 def test_default_system_dir_is_99_System():
     """Built-in default for system_dir must be '99_System'."""
-    from paperforge_lite.config import DEFAULT_CONFIG
+    from paperforge.config import DEFAULT_CONFIG
     assert DEFAULT_CONFIG["system_dir"] == "99_System"
 
 
 def test_default_resources_dir_is_03_Resources():
     """Built-in default for resources_dir must be '03_Resources'."""
-    from paperforge_lite.config import DEFAULT_CONFIG
+    from paperforge.config import DEFAULT_CONFIG
     assert DEFAULT_CONFIG["resources_dir"] == "03_Resources"
 
 
 def test_default_literature_dir():
-    from paperforge_lite.config import DEFAULT_CONFIG
+    from paperforge.config import DEFAULT_CONFIG
     assert DEFAULT_CONFIG["literature_dir"] == "Literature"
 
 
 def test_default_control_dir():
-    from paperforge_lite.config import DEFAULT_CONFIG
+    from paperforge.config import DEFAULT_CONFIG
     assert DEFAULT_CONFIG["control_dir"] == "LiteratureControl"
 
 
 def test_default_base_dir():
-    from paperforge_lite.config import DEFAULT_CONFIG
+    from paperforge.config import DEFAULT_CONFIG
     assert DEFAULT_CONFIG["base_dir"] == "05_Bases"
 
 
 def test_default_skill_dir():
-    from paperforge_lite.config import DEFAULT_CONFIG
+    from paperforge.config import DEFAULT_CONFIG
     assert DEFAULT_CONFIG["skill_dir"] == ".opencode/skills"
 
 
 def test_default_command_dir():
-    from paperforge_lite.config import DEFAULT_CONFIG
+    from paperforge.config import DEFAULT_CONFIG
     assert DEFAULT_CONFIG["command_dir"] == ".opencode/command"
 
 
@@ -151,12 +151,12 @@ def test_default_command_dir():
 
 def test_env_keys_has_all_required_overrides():
     """All PAPERFORGE_* env vars must be registered in ENV_KEYS."""
-    from paperforge_lite.config import ENV_KEYS
+    from paperforge.config import ENV_KEYS
     required = {
         "PAPERFORGE_VAULT",
         "PAPERFORGE_SYSTEM_DIR",
         "PAPERFORGE_RESOURCES_DIR",
-        "PAPERFORGE_LITERATURE_DIR",
+        "paperforgeRATURE_DIR",
         "PAPERFORGE_CONTROL_DIR",
         "PAPERFORGE_BASE_DIR",
         "PAPERFORGE_SKILL_DIR",
@@ -172,7 +172,7 @@ def test_env_keys_has_all_required_overrides():
 
 def test_env_overrides_nested_json(env_dict):
     """PAPERFORGE_SYSTEM_DIR overrides nested vault_config.system_dir (CONF-01)."""
-    from paperforge_lite.config import load_vault_config
+    from paperforge.config import load_vault_config
 
     # Create a vault with nested config
     vault = Path("test_vault_env_override")
@@ -197,7 +197,7 @@ def test_env_overrides_nested_json(env_dict):
 
 def test_explicit_overrides_win_over_env(env_dict):
     """Explicit overrides passed to load_vault_config win over env vars (CONF-01)."""
-    from paperforge_lite.config import load_vault_config
+    from paperforge.config import load_vault_config
 
     vault = Path("test_vault_explicit")
     vault.mkdir(exist_ok=True)
@@ -217,7 +217,7 @@ def test_explicit_overrides_win_over_env(env_dict):
 
 def test_nested_vault_config_is_honored(tmp_path: Path):
     """Nested vault_config keys are honored when present (CONF-04)."""
-    from paperforge_lite.config import load_vault_config
+    from paperforge.config import load_vault_config
 
     vault = tmp_path / "vault_nested"
     vault.mkdir()
@@ -232,7 +232,7 @@ def test_nested_vault_config_is_honored(tmp_path: Path):
 
 def test_top_level_keys_override_nested_for_backward_compat(tmp_path: Path):
     """Top-level paperforge.json keys override nested vault_config (CONF-04 backward compat)."""
-    from paperforge_lite.config import load_vault_config
+    from paperforge.config import load_vault_config
 
     vault = tmp_path / "vault_legacy"
     vault.mkdir()
@@ -252,7 +252,7 @@ def test_top_level_keys_override_nested_for_backward_compat(tmp_path: Path):
 
 def test_defaults_used_when_no_json(tmp_path: Path):
     """When no paperforge.json exists, defaults are returned."""
-    from paperforge_lite.config import load_vault_config
+    from paperforge.config import load_vault_config
 
     vault = tmp_path / "vault_empty"
     vault.mkdir()
@@ -268,7 +268,7 @@ def test_defaults_used_when_no_json(tmp_path: Path):
 
 def test_paperforge_paths_returns_exact_keys(tmp_path: Path):
     """paperforge_paths() must return exactly the required user-facing keys."""
-    from paperforge_lite.config import paperforge_paths
+    from paperforge.config import paperforge_paths
 
     vault = tmp_path / "vault_paths"
     vault.mkdir()
@@ -310,7 +310,7 @@ def test_paperforge_paths_returns_exact_keys(tmp_path: Path):
 
 def test_paperforge_paths_values_are_absolute(tmp_path: Path):
     """All path values returned must be absolute Path objects."""
-    from paperforge_lite.config import paperforge_paths
+    from paperforge.config import paperforge_paths
 
     vault = tmp_path / "vault_absolute"
     vault.mkdir()
@@ -329,7 +329,7 @@ def test_paperforge_paths_values_are_absolute(tmp_path: Path):
 
 def test_paperforge_paths_includes_worker_script(tmp_path: Path):
     """worker_script key must point to literature_pipeline.py."""
-    from paperforge_lite.config import paperforge_paths
+    from paperforge.config import paperforge_paths
 
     vault = tmp_path / "vault_ws"
     vault.mkdir()
@@ -348,7 +348,7 @@ def test_paperforge_paths_includes_worker_script(tmp_path: Path):
 
 def test_paperforge_paths_includes_ld_deep_script(tmp_path: Path):
     """ld_deep_script key must point to ld_deep.py."""
-    from paperforge_lite.config import paperforge_paths
+    from paperforge.config import paperforge_paths
 
     vault = tmp_path / "vault_ld"
     vault.mkdir()
@@ -371,7 +371,7 @@ def test_paperforge_paths_includes_ld_deep_script(tmp_path: Path):
 
 def test_paths_as_strings_returns_string_values():
     """paths_as_strings must return dict[str, str] with all values as strings."""
-    from paperforge_lite.config import paths_as_strings
+    from paperforge.config import paths_as_strings
     from pathlib import Path
 
     paths = {
@@ -406,7 +406,7 @@ def test_paths_as_strings_returns_string_values():
 
 def test_resolve_vault_precedence_explicit_first(tmp_path: Path):
     """resolve_vault returns explicit cli_vault first."""
-    from paperforge_lite.config import resolve_vault
+    from paperforge.config import resolve_vault
 
     vault_a = tmp_path / "vault_a"
     vault_b = tmp_path / "vault_b"
@@ -419,7 +419,7 @@ def test_resolve_vault_precedence_explicit_first(tmp_path: Path):
 
 def test_resolve_vault_precedence_env_second(tmp_path: Path):
     """resolve_vault returns PAPERFORGE_VAULT when no explicit cli_vault."""
-    from paperforge_lite.config import resolve_vault
+    from paperforge.config import resolve_vault
 
     vault = tmp_path / "vault_env"
     vault.mkdir()
@@ -430,7 +430,7 @@ def test_resolve_vault_precedence_env_second(tmp_path: Path):
 
 def test_resolve_vault_precedence_json_search_third(tmp_path: Path):
     """resolve_vault falls back to scanning cwd for paperforge.json."""
-    from paperforge_lite.config import resolve_vault
+    from paperforge.config import resolve_vault
 
     vault = tmp_path / "vault_json"
     vault.mkdir()
@@ -442,7 +442,7 @@ def test_resolve_vault_precedence_json_search_third(tmp_path: Path):
 
 def test_resolve_vault_precedence_cwd_last(tmp_path: Path):
     """resolve_vault falls back to cwd when no explicit, env, or json."""
-    from paperforge_lite.config import resolve_vault
+    from paperforge.config import resolve_vault
 
     result = resolve_vault(cli_vault=None, env={}, cwd=tmp_path)
     assert result == tmp_path

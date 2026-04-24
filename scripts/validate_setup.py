@@ -23,7 +23,7 @@ def load_config(vault: Path) -> dict:
     """Load vault configuration — prefers shared resolver, falls back to legacy."""
     # Try shared resolver first (01-03 and later installs)
     try:
-        from paperforge_lite.config import load_vault_config as _shared_load
+        from paperforge.config import load_vault_config as _shared_load
         return _shared_load(vault)
     except ImportError:
         pass

@@ -1,4 +1,4 @@
-"""Tests for paperforge_lite.pdf_resolver.
+"""Tests for paperforge.pdf_resolver.
 
 Covers absolute, vault-relative, junction, storage-relative, missing file,
 and has_pdf=False scenarios.
@@ -13,7 +13,7 @@ from unittest.mock import patch
 
 import pytest
 
-from paperforge_lite.pdf_resolver import is_valid_pdf, resolve_junction, resolve_pdf_path
+from paperforge.pdf_resolver import is_valid_pdf, resolve_junction, resolve_pdf_path
 
 
 class TestResolvePdfPath:
@@ -48,7 +48,7 @@ class TestResolvePdfPath:
             return path
 
         monkeypatch.setattr(
-            "paperforge_lite.pdf_resolver.resolve_junction", mock_resolve_junction
+            "paperforge.pdf_resolver.resolve_junction", mock_resolve_junction
         )
         result = resolve_pdf_path(str(junction), True, tmp_path)
         assert result == str(target.resolve())

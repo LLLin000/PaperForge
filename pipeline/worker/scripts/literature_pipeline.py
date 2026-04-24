@@ -134,19 +134,19 @@ def load_vault_config(vault: Path) -> dict:
     """Read vault configuration — delegates to shared resolver.
 
     Preserves the public name for legacy callers. Configuration precedence:
-    1. paperforge_lite.config.load_vault_config (overrides > env > JSON > defaults)
+    1. paperforge.config.load_vault_config (overrides > env > JSON > defaults)
     """
-    from paperforge_lite.config import load_vault_config as _shared_load_vault_config
+    from paperforge.config import load_vault_config as _shared_load_vault_config
     return _shared_load_vault_config(vault)
 
 
 def pipeline_paths(vault: Path) -> dict[str, Path]:
     """Build complete PaperForge path inventory — delegates to shared resolver.
 
-    Returns paths from paperforge_lite.config.paperforge_paths() plus
+    Returns paths from paperforge.config.paperforge_paths() plus
     worker-only keys. Preserves all legacy keys for existing callers.
     """
-    from paperforge_lite.config import paperforge_paths as _shared_paperforge_paths
+    from paperforge.config import paperforge_paths as _shared_paperforge_paths
 
     shared = _shared_paperforge_paths(vault)
 
@@ -951,8 +951,8 @@ def run_selection_sync(vault: Path) -> int:
             pdf_attachments = [a for a in item.get('attachments', []) if a.get('contentType') == 'application/pdf']
             has_pdf = bool(pdf_attachments)
             raw_pdf_path = pdf_attachments[0].get('path', '') if pdf_attachments else ''
-            from paperforge_lite.pdf_resolver import resolve_pdf_path
-            from paperforge_lite.config import load_vault_config as _load_vault_config
+            from paperforge.pdf_resolver import resolve_pdf_path
+            from paperforge.config import load_vault_config as _load_vault_config
             cfg = _load_vault_config(vault)
             zotero_dir = vault / cfg.get('system_dir', '99_System') / 'Zotero'
             resolved_pdf = resolve_pdf_path(raw_pdf_path, has_pdf, vault, zotero_dir)
@@ -2568,7 +2568,7 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
     return (page_num, markdown_path, json_path, fulltext_md_path)
 
 def run_ocr(vault: Path) -> int:
-    from paperforge_lite.pdf_resolver import resolve_pdf_path
+    from paperforge.pdf_resolver import resolve_pdf_path
     paths = pipeline_paths(vault)
     cleanup_blocked_ocr_dirs(paths)
     control_actions = load_control_actions(paths)
@@ -2622,7 +2622,7 @@ def run_ocr(vault: Path) -> int:
                 payload = response.json()['data']
                 state = payload['state']
             except (json.JSONDecodeError, KeyError) as e:
-                from paperforge_lite.ocr_diagnostics import classify_error
+                from paperforge.ocr_diagnostics import classify_error
                 state, suggestion = classify_error(e, None)
                 meta['ocr_status'] = state
                 meta['error'] = f'API schema mismatch during polling: {e}'
@@ -2702,7 +2702,7 @@ def run_ocr(vault: Path) -> int:
                     response = requests.post(job_url, headers={'Authorization': f'bearer {token}'}, data={'model': model, 'optionalPayload': json.dumps(optional_payload)}, files={'file': file_handle}, timeout=120)
                 response.raise_for_status()
             except Exception as e:
-                from paperforge_lite.ocr_diagnostics import classify_error
+                from paperforge.ocr_diagnostics import classify_error
                 state, suggestion = classify_error(e, getattr(e, 'response', None))
                 meta['ocr_status'] = state
                 meta['error'] = str(e)
@@ -3134,7 +3134,7 @@ def run_doctor(vault: Path) -> int:
             except Exception as e:
                 import_error = str(e)
         if ld_deep_import_ok:
-            add_check("Agent 脚本", "pass", "paperforge_lite and ld_deep importable")
+            add_check("Agent 脚本", "pass", "paperforge and ld_deep importable")
         else:
             add_check("Agent 脚本", "warn", f"literature-qa skill 目录存在但 import 失败: {import_error}", "确认 agent_config_dir 配置正确并已运行 pip install -e .")
     else:

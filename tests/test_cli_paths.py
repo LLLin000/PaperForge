@@ -1,4 +1,4 @@
-# Tests for paperforge_lite CLI paths command output.
+# Tests for paperforge CLI paths command output.
 # These tests prove the locked command surface without invoking real workers.
 
 import io
@@ -31,7 +31,7 @@ def mock_vault(tmp_path):
 # ----------------------------------------------------------------------
 def test_paths_json_structure(mock_vault):
     """main(['paths', '--json']) prints valid JSON with D-Path keys."""
-    from paperforge_lite.cli import main
+    from paperforge.cli import main
 
     argv = ["--vault", str(mock_vault), "paths", "--json"]
     f = io.StringIO()
@@ -57,7 +57,7 @@ def test_paths_json_structure(mock_vault):
 
 def test_paths_json_no_unresolved_tokens(mock_vault):
     """paths --json output must not contain <system_dir> or <resources_dir> placeholders."""
-    from paperforge_lite.cli import main
+    from paperforge.cli import main
 
     argv = ["--vault", str(mock_vault), "paths", "--json"]
     f = io.StringIO()
@@ -73,7 +73,7 @@ def test_paths_json_no_unresolved_tokens(mock_vault):
 
 def test_paths_text_no_unresolved_tokens(mock_vault):
     """paths (text mode) output must not contain unresolved path tokens."""
-    from paperforge_lite.cli import main
+    from paperforge.cli import main
 
     argv = ["--vault", str(mock_vault), "paths"]
     f = io.StringIO()

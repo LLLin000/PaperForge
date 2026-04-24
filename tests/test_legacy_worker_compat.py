@@ -69,11 +69,11 @@ def tmp_vault(tmp_path: Path) -> Path:
 
 
 class TestWorkerLoadVaultConfig:
-    """Test literature_pipeline.load_vault_config matches paperforge_lite.config."""
+    """Test literature_pipeline.load_vault_config matches paperforge.config."""
 
     def test_defaults_match_shared_resolver(self, tmp_vault: Path) -> None:
         """load_vault_config returns same top-level keys as shared resolver."""
-        from paperforge_lite.config import load_vault_config as shared_load
+        from paperforge.config import load_vault_config as shared_load
         import literature_pipeline as lp
 
         shared_cfg = shared_load(tmp_vault)
@@ -151,7 +151,7 @@ class TestWorkerPipelinePaths:
         self, tmp_vault: Path
     ) -> None:
         """Verify shared resolver keys have correct values."""
-        from paperforge_lite.config import paperforge_paths as shared_paths
+        from paperforge.config import paperforge_paths as shared_paths
         import literature_pipeline as lp
 
         shared = shared_paths(tmp_vault)
@@ -172,7 +172,7 @@ class TestLegacyStatusSubprocess:
         if not worker_script.exists():
             pytest.skip("Worker script not found at expected path")
 
-        # Run with repo root on PYTHONPATH so paperforge_lite can be imported
+        # Run with repo root on PYTHONPATH so paperforge can be imported
         env = dict(os.environ)
         env["PYTHONPATH"] = str(_REPO_ROOT) + (";" if sys.platform == "win32" else ":") + env.get("PYTHONPATH", "")
 

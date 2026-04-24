@@ -16,7 +16,7 @@ def _load_vault_config(vault: Path) -> dict:
 
     Preserves the public name for legacy callers.
     """
-    from paperforge_lite.config import load_vault_config as _shared_load_vault_config
+    from paperforge.config import load_vault_config as _shared_load_vault_config
     return _shared_load_vault_config(vault)
 
 
@@ -25,7 +25,7 @@ def _paperforge_paths(vault: Path) -> dict[str, Path]:
 
     Returns ocr, records, literature keys matching shared resolver output.
     """
-    from paperforge_lite.config import paperforge_paths as _shared_paperforge_paths
+    from paperforge.config import paperforge_paths as _shared_paperforge_paths
 
     shared = _shared_paperforge_paths(vault)
     return {

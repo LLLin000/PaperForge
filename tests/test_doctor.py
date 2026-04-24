@@ -11,7 +11,7 @@ def stub_run_doctor(vault: Path) -> int:
 
 def test_doctor_command_exists(clean_captured, mock_vault):
     import importlib
-    import paperforge_lite.cli as cli
+    import paperforge.cli as cli
     importlib.reload(cli)
 
     with patch("pipeline.worker.scripts.literature_pipeline.run_doctor", stub_run_doctor):

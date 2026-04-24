@@ -1,4 +1,4 @@
-# Tests for paperforge_lite.ocr_diagnostics — tiered L1-L4 checks.
+# Tests for paperforge.ocr_diagnostics — tiered L1-L4 checks.
 
 import json
 import os
@@ -6,7 +6,7 @@ from unittest.mock import patch, MagicMock
 
 import pytest
 
-from paperforge_lite.ocr_diagnostics import ocr_doctor
+from paperforge.ocr_diagnostics import ocr_doctor
 
 
 # ---------------------------------------------------------------------------
@@ -33,7 +33,7 @@ def test_l2_bad_url():
     mock_resp.status_code = 404
 
     with patch.dict(os.environ, env, clear=True):
-        with patch("paperforge_lite.ocr_diagnostics.requests.get", return_value=mock_resp):
+        with patch("paperforge.ocr_diagnostics.requests.get", return_value=mock_resp):
             result = ocr_doctor(config=None, live=False)
 
     assert result["level"] == 2
@@ -49,7 +49,7 @@ def test_l2_unauthorized():
     mock_resp.status_code = 401
 
     with patch.dict(os.environ, env, clear=True):
-        with patch("paperforge_lite.ocr_diagnostics.requests.get", return_value=mock_resp):
+        with patch("paperforge.ocr_diagnostics.requests.get", return_value=mock_resp):
             result = ocr_doctor(config=None, live=False)
 
     assert result["level"] == 2
@@ -72,8 +72,8 @@ def test_l3_schema_mismatch():
     post_resp.json.return_value = {"message": "ok"}
 
     with patch.dict(os.environ, env, clear=True):
-        with patch("paperforge_lite.ocr_diagnostics.requests.get", return_value=get_resp):
-            with patch("paperforge_lite.ocr_diagnostics.requests.post", return_value=post_resp):
+        with patch("paperforge.ocr_diagnostics.requests.get", return_value=get_resp):
+            with patch("paperforge.ocr_diagnostics.requests.post", return_value=post_resp):
                 result = ocr_doctor(config=None, live=False)
 
     assert result["level"] == 3
@@ -95,9 +95,9 @@ def test_l3_success():
     delete_resp.status_code = 204
 
     with patch.dict(os.environ, env, clear=True):
-        with patch("paperforge_lite.ocr_diagnostics.requests.get", return_value=get_resp):
-            with patch("paperforge_lite.ocr_diagnostics.requests.post", return_value=post_resp):
-                with patch("paperforge_lite.ocr_diagnostics.requests.delete", return_value=delete_resp):
+        with patch("paperforge.ocr_diagnostics.requests.get", return_value=get_resp):
+            with patch("paperforge.ocr_diagnostics.requests.post", return_value=post_resp):
+                with patch("paperforge.ocr_diagnostics.requests.delete", return_value=delete_resp):
                     result = ocr_doctor(config=None, live=False)
 
     assert result["level"] == 3
@@ -125,12 +125,12 @@ def test_l4_live_success():
 
     with patch.dict(os.environ, env, clear=True):
         with patch(
-            "paperforge_lite.ocr_diagnostics.requests.get",
+            "paperforge.ocr_diagnostics.requests.get",
             side_effect=[get_resp] + [poll_resp] * 10,
         ):
-            with patch("paperforge_lite.ocr_diagnostics.requests.post", return_value=post_resp):
-                with patch("paperforge_lite.ocr_diagnostics.requests.delete", return_value=delete_resp):
-                    with patch("paperforge_lite.ocr_diagnostics.time.sleep"):
+            with patch("paperforge.ocr_diagnostics.requests.post", return_value=post_resp):
+                with patch("paperforge.ocr_diagnostics.requests.delete", return_value=delete_resp):
+                    with patch("paperforge.ocr_diagnostics.time.sleep"):
                         result = ocr_doctor(config=None, live=True)
 
     assert result["level"] == 4
@@ -155,12 +155,12 @@ def test_l4_live_failure():
 
     with patch.dict(os.environ, env, clear=True):
         with patch(
-            "paperforge_lite.ocr_diagnostics.requests.get",
+            "paperforge.ocr_diagnostics.requests.get",
             side_effect=[get_resp] + [poll_resp] * 10,
         ):
-            with patch("paperforge_lite.ocr_diagnostics.requests.post", return_value=post_resp):
-                with patch("paperforge_lite.ocr_diagnostics.requests.delete", return_value=delete_resp):
-                    with patch("paperforge_lite.ocr_diagnostics.time.sleep"):
+            with patch("paperforge.ocr_diagnostics.requests.post", return_value=post_resp):
+                with patch("paperforge.ocr_diagnostics.requests.delete", return_value=delete_resp):
+                    with patch("paperforge.ocr_diagnostics.time.sleep"):
                         result = ocr_doctor(config=None, live=True)
 
     assert result["level"] == 4

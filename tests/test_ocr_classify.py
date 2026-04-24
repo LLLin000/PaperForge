@@ -1,4 +1,4 @@
-"""Tests for paperforge_lite.ocr_diagnostics.classify_error().
+"""Tests for paperforge.ocr_diagnostics.classify_error().
 
 Maps exceptions to (state, suggestion) pairs per the D-03 taxonomy.
 """
@@ -10,7 +10,7 @@ from unittest.mock import MagicMock
 import pytest
 import requests
 
-from paperforge_lite.ocr_diagnostics import classify_error
+from paperforge.ocr_diagnostics import classify_error
 
 
 class TestClassifyError:
