@@ -214,6 +214,9 @@ def build_parser() -> argparse.ArgumentParser:
     # doctor
     sub.add_parser("doctor", help="Validate PaperForge Lite setup and configuration")
 
+    # update
+    sub.add_parser("update", help="Update PaperForge Lite to the latest version")
+
     return parser
 
 
@@ -336,6 +339,10 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "doctor":
         from paperforge.worker.status import run_doctor
         return run_doctor(vault)
+
+    if args.command == "update":
+        from paperforge.worker.update import run_update
+        return run_update(vault)
 
     print(f"Error: unknown command {args.command}", file=sys.stderr)
     return 1
