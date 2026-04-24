@@ -299,7 +299,49 @@ def _rollback(vault: Path, backup_dir: Path) -> None:
     _log("[OK] 回滚完成", "g")
 
 
-def update_via_git(vault: Path) -> bool:
+def _detect_install_method() -> tuple[str, Path | None]:
+    """Detect how paperforge is installed."""
+    import paperforge
+    pkg_dir = Path(paperforge.__file__).parent.resolve()
+    
+    # Check if installed in site-packages (pip install)
+    if "site-packages" in str(pkg_dir) or "dist-packages" in str(pkg_dir):
+        return ("pip", pkg_dir)
+    
+    # Check if in editable mode (pip install -e .)
+    if pkg_dir.name == "paperforge" and (pkg_dir.parent / ".git").exists():
+        return ("pip-editable", pkg_dir.parent)
+    
+    # Check if vault has .git (git clone)
+    vault = Path.cwd()
+    if (vault / ".git").exists():
+        return ("git", vault)
+    
+    return ("unknown", None)
+
+
+def _update_via_pip(editable: bool = False) -> bool:
+    """Update via pip install."""
+    cmd = [sys.executable, "-m", "pip", "install"]
+    if editable:
+        cmd.extend(["-e", "."])
+    else:
+        cmd.append("--upgrade")
+        cmd.append("paperforge")
+    
+    _log(f"[INFO] 执行: {' '.join(cmd)}", "b")
+    r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8")
+    if r.returncode != 0:
+        _log(f"[ERR] pip 更新失败: {r.stderr}", "r")
+        return False
+    _log("[OK] pip 更新成功", "g")
+    if r.stdout.strip():
+        print(r.stdout)
+    return True
+
+
+def _update_via_git(vault: Path) -> bool:
+    """Update via git pull."""
     if not (vault / ".git").is_dir():
         _log("[ERR] 不是 git 仓库", "r")
         return False
@@ -383,10 +425,32 @@ def run_update(vault: Path) -> int:
     if ans not in ("y", "yes"):
         _log("[INFO] 已取消", "c")
         return 0
-    if (vault / ".git").is_dir():
-        success = update_via_git(vault)
+    
+    # Auto-detect installation method
+    method, path = _detect_install_method()
+    _log(f"[检测] 安装方式: {method}", "c")
+    
+    if method == "pip":
+        _log("[INFO] 通过 pip 更新...", "b")
+        success = _update_via_pip(editable=False)
+    elif method == "pip-editable":
+        _log("[INFO] 通过 pip editable 模式更新...", "b")
+        # For editable install, need to git pull first then reinstall
+        if path and (path / ".git").exists():
+            success = _update_via_git(path)
+            if success:
+                _log("[INFO] 重新安装 editable 模式...", "b")
+                os.chdir(path)
+                success = _update_via_pip(editable=True)
+        else:
+            _log("[WARN] 无法找到 git 仓库，尝试 pip 更新...", "y")
+            success = _update_via_pip(editable=False)
+    elif method == "git":
+        success = _update_via_git(vault)
     else:
-        success = update_via_zip(vault)
+        _log("[WARN] 未检测到标准安装方式，尝试 zip 下载...", "y")
+        success = _update_via_zip(vault)
+    
     if success:
         _log("\n[OK] 更新完成！请重启 Obsidian", "g")
     return 0 if success else 1

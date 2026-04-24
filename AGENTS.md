@@ -455,14 +455,61 @@ paperforge doctor
 ## 10. 升级与维护
 
 ### 更新 PaperForge 代码
+
+#### 方式 1：自动更新（推荐）
+
+```bash
+# 自动检测安装方式并更新
+paperforge update
+```
+
+系统会自动检测你是通过 pip、git 还是手动安装，并执行对应的更新方式。
+
+#### 方式 2：Windows 一键脚本
+
+双击运行 Vault 根目录下的 `scripts/update-paperforge.ps1`：
+- 自动检测安装方式
+- 自动执行更新
+- 无需手动输入命令
+
+```powershell
+# 或在 PowerShell 中执行
+.\scripts\update-paperforge.ps1
+
+# 强制更新（跳过确认）
+.\scripts\update-paperforge.ps1 -Force
+
+# 只检测不更新
+.\scripts\update-paperforge.ps1 -DryRun
+```
+
+#### 方式 3：手动更新
+
+**pip 安装用户：**
+```bash
+pip install --upgrade paperforge
+```
+
+**pip editable 安装用户：**
 ```bash
 cd 你的Vault路径
-# 如果你有 git 跟踪 PaperForge
-git pull origin main
-
-# 或手动复制更新文件
-cp -r 新下载的scripts/* <system_dir>/PaperForge/worker/scripts/
+git pull origin master
+pip install -e .
 ```
+
+**git clone 用户：**
+```bash
+cd 你的Vault路径
+git pull origin master
+```
+
+#### 方式 4：手动复制（最后手段）
+
+```bash
+cp -r 新下载的代码/* <vault_path>/
+```
+
+> [!WARNING] 手动复制容易遗漏文件，建议优先使用自动更新。
 
 ### 备份注意事项
 - `<resources_dir>/` 和 `<system_dir>/PaperForge/ocr/` 包含你的数据，需备份
