@@ -1,8 +1,8 @@
 # /pf-deep
 
-基于单篇论文的组会式精读入口。
+## Purpose
 
-## 功能
+基于单篇论文的组会式精读入口。
 
 1. 解析 `/pf-deep <query>` 中的查询词
 2. 支持 Zotero key、标题片段、DOI、PMID、关键词
@@ -14,30 +14,175 @@
 5. 在正式文献卡片中检查或创建 `## 精读`
 6. 以"研究思路 + figure-by-figure"方式一次性完成精读写回
 
-## 执行原则
+## CLI Equivalent
+
+```bash
+# 准备阶段（间接）
+paperforge sync      # 生成 library-records 和正式笔记
+paperforge ocr       # 完成 OCR 提取
+paperforge deep-reading  # 查看精读队列状态
+```
+
+> `/pf-deep` 是 **Agent 层命令**，无直接 CLI 等效命令。其依赖的数据由上述 CLI 命令准备。
+
+## Prerequisites
+
+- [ ] library-record 已创建（`paperforge sync` 生成）
+- [ ] `analyze: true` 已设置（在 library-record frontmatter 中）
+- [ ] OCR 已完成（`ocr_status: done`）
+- [ ] `fulltext.md` 存在且非空
+- [ ] 正式笔记文件存在
+
+## Arguments
+
+| 参数 | 必需 | 说明 |
+|------|------|------|
+| `<query>` | 是（queue 模式除外） | Zotero key、标题片段、DOI、PMID 或关键词 |
+| `queue` | 否 | 启动批量精读队列模式 |
+
+### 参数说明
+
+1. 如果输入看起来像 8 位 Zotero key，则直接按 key 解析。
+2. 否则先在本地 Zotero 中搜索标题/摘要。
+3. 若命中唯一结果或明显最佳结果，则直接载入。
+4. 若存在多个合理候选，则先列候选清单再让用户选。
+5. 不要强迫用户先知道 Zotero key。
+
+## Example
+
+### 单篇精读（已知 key）
+
+```bash
+/pf-deep XGT9Z257
+/pf-deep Predictive findings on magnetic resonance imaging
+/pf-deep 10.1016/j.jse.2018.01.001
+```
+
+### 批量从待精读队列启动
+
+```bash
+/pf-deep queue
+```
+
+当不提供具体 key/标题时，agent 自动执行以下流程：
+
+1. 运行 `paperforge deep-reading` 查看精读队列（或 `python -m paperforge deep-reading --vault {{VAULT}}` 获取 JSON 格式队列）
+2. 解析输出的队列状态（`analyze=true` + `deep_reading_status != done` + `ocr_status`）
+3. 按 OCR 状态分组展示：
+   - **就绪**：OCR 已完成，可直接精读
+   - **阻塞**：OCR 未完成，需先跑 `paperforge ocr`
+4. 由用户选择篇目：
+   - 若只有 1 篇就绪 -> 直接执行单篇精读（等同于 `/pf-deep <key>`）
+   - 若多篇 -> 展示清单，用户选择后批量 spawn subagent 并行处理
+
+> **注意**：`queue` 模式只扫描 `library-records`（Base 控制记录），不扫描正式卡片。只有在 Base 里勾选 `analyze=true` 的论文才会进入队列。
+
+## Output
+
+Agent 在正式笔记中创建或更新 `## 精读` 区域，包含：
+
+- **Pass 1: 概览** — 一句话总览、5 Cs 快速评估、Figure 导读
+- **Pass 2: 精读还原** — Figure-by-Figure 解析、Table-by-Table 解析、关键方法补课、主要发现与新意
+- **Pass 3: 深度理解** — 假设挑战与隐藏缺陷、结论扎实性评估、Discussion 解读、个人启发、遗留问题
+
+## Error Handling
+
+### OCR 未完成
+- **表现**：Agent 提示 `ocr_status` 不是 `done`
+- **解决**：先运行 `paperforge ocr`，确认 `meta.json` 中 `ocr_status` 变为 `done`
+
+### 内容已存在（覆盖确认）
+- **表现**：正式笔记中已存在 `## 精读` 区域且包含非占位符的实质内容
+- **处理**：Agent **必须**询问用户：
+  - **"追加"** — 保留现有内容，仅补充新增/空缺部分
+  - **"覆盖"** — 删除现有 `## 精读` 区域，重新生成
+  - **"跳过"** — 取消本次操作
+- **规则**：用户选择"追加"时保留已有内容；选择"覆盖"时先删除再重建；选择"跳过"时终止流程
+
+### 未找到论文
+- **表现**：Zotero key 无效或搜索无结果
+- **解决**：确认 key 正确，或尝试用标题片段搜索
+
+## Platform Notes
+
+### OpenCode
+
+- `/pf-deep` 在对话窗口直接输入
+- Agent 使用 `paperforge paths --json` 获取 Vault 路径配置
+- 多篇文章并行时使用 `Task` tool 启动 subagent，每篇独立处理
+- 需要文件系统访问权限读取 OCR 结果和写入正式笔记
+
+#### Subagent Spawn 指南（多篇并行时使用）
+
+当需要并行处理多篇论文时，使用 Task tool 启动 subagent，每个 subagent 独立处理一篇。
+
+**变量替换**：
+
+| 变量 | 示例值 | 获取方式 |
+|------|--------|---------|
+| `{{ZOTERO_KEY}}` | `Y5KQ4JQ7` | 从 library-record 或 JSON 导出中获取 |
+| `{{FORMAL_NOTE}}` | `<Vault>/<resources_dir>/<literature_dir>/骨科/Y5KQ4JQ7 - title.md` | 从 `paperforge paths --json` 或 library-record 中获取 |
+| `{{FULLTEXT_MD}}` | `<Vault>/<system_dir>/PaperForge/ocr/Y5KQ4JQ7/fulltext.md` | 由 OCR worker 生成在 ocr 目录下 |
+| `{{SCRIPT}}` | `<Vault>/<skill_dir>/literature-qa/scripts/ld_deep.py` | 从 `paperforge paths --json` 获取 `ld_deep_script` 字段 |
+
+**Spawn 命令格式**：
+
+获取路径信息：
+```bash
+paperforge paths --json
+# 返回 JSON，包含 worker_script, ld_deep_script, skill_dir 等字段
+```
+
+然后使用以下格式启动 subagent：
+```
+Task(
+  description="pf-deep {{ZOTERO_KEY}}",
+  prompt="加载 subagent prompt: <Vault>/<skill_dir>/literature-qa/prompt_deep_subagent.md\n\n填入以下变量：\n- ZOTERO_KEY: {{ZOTERO_KEY}}\n- FORMAL_NOTE: {{FORMAL_NOTE}}\n- FULLTEXT_MD: {{FULLTEXT_MD}}\n- SCRIPT: {{SCRIPT}}",
+  subagent_type="general"
+)
+```
+
+**多篇并行示例**：
+
+假设要对 LMD5YVLP、NDPUMMCI、Y5KQ4JQ7、UBM39DTB 四篇并行精读：
+
+1. 先行查询 formal-library.json 或检查文件系统，确认每篇的 FORMAL_NOTE 路径
+2. 用 Bash tool 预跑 `python {{SCRIPT}} figure-index {{FULLTEXT_MD}}` 确认 OCR 存在
+3. 四个 Task 并行启动，每篇独立
+4. 等待所有 Task 完成，收集各篇的写入行数和验证结果
+
+**预检（必须）**：
+
+在 spawn 之前，确认：
+- `{{FULLTEXT_MD}}` 存在且非空（OCR 已完成）
+- `{{FORMAL_NOTE}}` 所在目录存在（note 已被 selection-sync 创建）
+
+如有任何一项不满足，subagent 应报错退出，不静默失败。
+
+### Codex
+
+> **Future**：计划支持。预计通过 API 调用实现类似功能。
+
+### Claude Code
+
+> **Future**：计划支持。预计通过工具调用或文件附件实现。
+
+## 精读结构参考
+
+### 执行原则
 
 - `/pf-deep` 对用户来说是一次触发直接完成。
 - 内部逻辑分两步：
   1. 先生成 `## 精读` 骨架和 figure 标题位
   2. 再补全所有空段
-- **覆盖确认（强制）**：
-  在启动精读前，主 agent **必须**读取 `{{FORMAL_NOTE}}`，检查是否已存在 `## 精读` 区域且包含非占位符的实质内容（如已填写的分析段落、非"（待补充）"的文本）。
-  - 若检测到已有实质内容 → **必须**使用 Question tool 询问用户：
-    - "追加"（保留现有内容，仅补充新增/空缺部分）
-    - "覆盖"（删除现有精读，重新生成）
-    - "跳过"（取消本次操作）
-  - 用户选择"追加"时，subagent 应保留已有内容，仅填充空缺或补充新 section。
-  - 用户选择"覆盖"时，subagent 应**先删除现有 `## 精读` 区域**（从 `## 精读` 到下一个同级或更高级 heading），再重新生成骨架并填写。
-  - 用户选择"跳过"时，直接终止流程。
 - 后续再次运行时（未询问用户或用户选择追加）：
   - 只补空段
   - 不覆盖已有内容
   - 不覆盖用户手改内容
 
-## 精读定位
+### 精读定位
 
-这不是综述提取，也不是信息摘录。
-目标是模拟高水平博士/博士后组会讲解单篇论文的学习型精读。
+这不是综述提取，也不是信息摘录。目标是模拟高水平博士/博士后组会讲解单篇论文的学习型精读。
 
 主线必须是：
 
@@ -46,7 +191,7 @@
 3. 关键方法补课
 4. 主要发现、新意、疑点与启发
 
-## Supplementary 规则
+### Supplementary 规则
 
 - 默认不逐张展开 supplementary figure/table。
 - 仅在以下情况下纳入：
@@ -55,9 +200,7 @@
   - 限制主文结论的解释范围
   - 作者在正文中明显依赖该补充材料
 
-## 精读结构
-
-骨架为纯文本 + 粗体标题，不使用 Obsidian callout 格式。采用 Keshav 三阶段阅读法组织：
+### 标准骨架
 
 ```md
 ## 精读
@@ -136,7 +279,7 @@
 -
 ```
 
-## Figure 节要求
+### Figure 节要求
 
 每个 figure 小节按以下顺序填写：
 
@@ -149,80 +292,8 @@
 
 图像优先直接引用 `fulltext.md` 里已有的 OCR 图像链接。
 
-## 使用示例
+## See Also
 
-### 单篇精读（已知 key）
-
-```bash
-/pf-deep XGT9Z257
-/pf-deep Predictive findings on magnetic resonance imaging
-/pf-deep 10.1016/j.jse.2018.01.001
-```
-
-### 批量从待精读队列启动（/pf-deep queue）
-
-```
-/pf-deep queue
-```
-
-当不提供具体 key/标题时，agent 自动执行以下流程：
-
-1. 运行 `paperforge deep-reading` 查看精读队列（或 `python -m paperforge deep-reading --vault {{VAULT}}` 获取 JSON 格式队列）
-2. 解析输出的队列状态（`analyze=true` + `deep_reading_status != done` + `ocr_status`）
-3. 按 OCR 状态分组展示：
-   - **就绪**：OCR 已完成，可直接精读
-   - **阻塞**：OCR 未完成，需先跑 `paperforge ocr`
-4. 由用户选择篇目：
-   - 若只有 1 篇就绪 -> 直接执行单篇精读（等同于 `/pf-deep <key>`）
-   - 若多篇 -> 展示清单，用户选择后批量 spawn subagent 并行处理
-
-**注意**：`queue` 模式只扫描 `library-records`（Base 控制记录），不扫描正式卡片。只有在 Base 里勾选 `analyze=true` 的论文才会进入队列。
-
-## Subagent Spawn 指南（多篇并行时使用）
-
-当需要并行处理多篇论文时，使用 Task tool 启动 subagent，每个 subagent 独立处理一篇。
-
-### 变量替换
-
-对每篇论文，替换以下四个变量：
-
-| 变量              | 示例值                                                             | 获取方式 |
-| ----------------- | ----------------------------------------------------------------- | -------- |
-| `{{ZOTERO_KEY}}`   | `Y5KQ4JQ7`                                                        | 从 library-record 或 JSON 导出中获取 |
-| `{{FORMAL_NOTE}}`  | `<Vault>/<resources_dir>/<literature_dir>/骨科/Y5KQ4JQ7 - title.md` | 从 `paperforge paths --json` 或 library-record 中获取 |
-| `{{FULLTEXT_MD}}`  | `<Vault>/<system_dir>/PaperForge/ocr/Y5KQ4JQ7/fulltext.md` | 由 OCR worker 生成在 ocr 目录下 |
-| `{{SCRIPT}}`      | `<Vault>/<skill_dir>/literature-qa/scripts/ld_deep.py` | 从 `paperforge paths --json` 获取 `ld_deep_script` 字段 |
-
-### Spawn 命令格式
-
-获取路径信息：
-```bash
-paperforge paths --json
-# 返回 JSON，包含 worker_script, ld_deep_script, skill_dir 等字段
-```
-
-然后使用以下格式启动 subagent：
-```
-Task(
-  description="pf-deep {{ZOTERO_KEY}}",
-  prompt="加载 subagent prompt: <Vault>/<skill_dir>/literature-qa/prompt_deep_subagent.md\n\n填入以下变量：\n- ZOTERO_KEY: {{ZOTERO_KEY}}\n- FORMAL_NOTE: {{FORMAL_NOTE}}\n- FULLTEXT_MD: {{FULLTEXT_MD}}\n- SCRIPT: {{SCRIPT}}",
-  subagent_type="general"
-)
-```
-
-### 多篇并行示例
-
-假设要对 LMD5YVLP、NDPUMMCI、Y5KQ4JQ7、UBM39DTB 四篇并行精读：
-
-1. 先行查询 formal-library.json 或检查文件系统，确认每篇的 FORMAL_NOTE 路径
-2. 用 Bash tool 预跑 `python {{SCRIPT}} figure-index {{FULLTEXT_MD}}` 确认 OCR 存在
-3. 四个 Task 并行启动，每篇独立
-4. 等待所有 Task 完成，收集各篇的写入行数和验证结果
-
-### 预检（必须）
-
-在 spawn 之前，确认：
-- `{{FULLTEXT_MD}}` 存在且非空（OCR 已完成）
-- `{{FORMAL_NOTE}}` 所在目录存在（note 已被 selection-sync 创建）
-
-如有任何一项不满足，subagent 应报错退出，不静默失败。
+- [pf-paper](pf-paper.md) — 快速摘要与问答
+- [AGENTS.md](../AGENTS.md) — 完整使用指南、架构说明、常见问题
+- [docs/COMMANDS.md](COMMANDS.md) — 命令总览与矩阵
