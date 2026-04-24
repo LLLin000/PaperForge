@@ -20,8 +20,8 @@ build/
 config.json
 
 # Data (user-specific)
-99_System/Zotero/
-99_System/PaperForge/ocr/
+05_Bases/
+99_System/
 00_Inbox/
 03_Resources/
 
