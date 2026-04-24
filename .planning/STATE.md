@@ -2,27 +2,27 @@
 
 ## Project Reference
 
-See: `.planning/PROJECT.md` (updated 2026-04-23)
+See: `.planning/PROJECT.md` (updated 2026-04-24)
 
 **Core value:** A new user can install PaperForge, configure their own vault paths and PaddleOCR credentials, then run the full literature pipeline with copy-pasteable commands that diagnose failures clearly.
 
-**Current focus:** Milestone v1.1 — Sandbox Onboarding Hardening
+**Current focus:** Milestone v1.2 — Systematization & Cohesion
 
 ## Current Position
 
-Phase: 8 (complete)
-Plan: 08-SUMMARY.md
-Status: Phase 8 verified and complete
-Last activity: 2026-04-24 — Phase 8 execution complete (5/5 tasks, 17 tests pass)
+Phase: 9 (planned)
+Milestone: v1.2
+Status: Milestone initiated, ready for research and requirements
+Last activity: 2026-04-24 — Milestone v1.2 initiated
 
 ## Next Action
 
-Phase 8 is complete. Ready for next milestone or release.
+Milestone v1.2 is ready for architecture research and requirements definition.
 
 Options:
-- `/gsd-discuss-phase 9` — discuss verification phase
-- `/gsd-plan-phase 9` — plan next phase
-- `/gsd-execute-phase 9` — execute next phase
+- `/gsd-research` — research architecture from reference projects
+- `/gsd-define-requirements` — define v1.2 requirements
+- `/gsd-create-roadmap` — create phase roadmap for v1.2
 
 ## Phase 6 Decisions (Locked)
 
@@ -40,7 +40,7 @@ Options:
 
 ---
 *Initialized: 2026-04-23*
-*Last updated: 2026-04-24 (Phase 8 complete)*
+*Last updated: 2026-04-24 (Milestone v1.2 initiated)*
 
 ## Previous Milestone Summary
 
@@ -57,6 +57,8 @@ Milestone v1.0 completed Phases 1-5:
 | 7 | done | Zotero PDF, metadata, and state repair — OCR meta validation, three-way divergence repair command, PDF resolver tests |
 | 8 | done | Deep helper deployment and sandbox regression gate — importability, fixtures, smoke tests, rollback |
 
+Milestone v1.1 (Sandbox Onboarding Hardening) completed as part of Phases 6-8.
+
 ## Decisions Logged
 
 - **2026-04-23:** Config precedence locked as: explicit overrides > env > JSON nested > JSON top-level > defaults.
@@ -65,6 +67,9 @@ Milestone v1.0 completed Phases 1-5:
 - **2026-04-23:** `load_simple_env` loads vault root `.env` and PaperForge `.env` before worker dispatch.
 - **2026-04-23:** `paperforge ocr doctor` uses tiered diagnostics with live provider checks optional.
 - **2026-04-23:** v1.1 will use the sandbox first-time-user simulation as a release gate before claiming setup/onboarding reliability.
+- **2026-04-24:** v1.2 will unify agent commands under `/pf-*` namespace and simplify CLI commands for cohesion.
 - **2026-04-24:** Use importlib.util with sys.modules pre-registration for Python 3.14 dataclass compatibility.
 - **2026-04-24:** Generate deterministic OCR fixtures once and commit; never regenerate in CI.
 - **2026-04-24:** Rollback in prepare_deep_reading tracks written files and restores original note text, not full filesystem snapshot.
+- **2026-04-24:** Unify agent commands under `/pf-*` namespace; deprecate `/LD-*` and `/lp-*` prefixes.
+- **2026-04-24:** Simplify CLI by combining `selection-sync` + `index-refresh` into `paperforge sync`.

@@ -83,3 +83,79 @@
 ---
 *Milestone v1.0 completed: 2026-04-23*
 *Total phases: 5 | Total requirements: 28 validated*
+
+---
+
+## Milestone v1.1: Sandbox Onboarding Hardening (2026-04-24)
+
+**Goal:** Make the GitHub README + sandbox path behave like a real first-time user flow.
+
+**Completed:** 2026-04-24
+
+### What Shipped
+
+| Phase | Name | Goal |
+|-------|------|------|
+| 6 | Setup CLI Diagnostics Consistency | Field names, env vars, export validation, HTTP 405 handling, vault prefill |
+| 7 | Zotero PDF Metadata State Repair | OCR meta validation, three-way divergence repair command, PDF resolver tests |
+| 8 | Deep Helper Deployment And Sandbox Regression Gate | Importability, fixtures, smoke tests, rollback |
+
+### Requirements Validated
+
+| ID | Requirement | Phase |
+|----|-------------|-------|
+| SETUP-01 | Setup wizard no longer stalls on vault input | Phase 6 |
+| SETUP-02 | `paperforge paths --json` matches runtime paths | Phase 6 |
+| CLI-01 | `paperforge doctor` validates per-domain JSON exports | Phase 6 |
+| CLI-02 | `paperforge doctor` checks `PADDLEOCR_API_TOKEN` env | Phase 6 |
+| CLI-03 | `python -m paperforge_lite` fallback documented | Phase 6 |
+| REPAIR-01 | Three-way state divergence detection | Phase 7 |
+| REPAIR-02 | `paperforge repair` fixes state divergence | Phase 7 |
+| DEEP-04 | `/LD-deep` helpers run without manual PYTHONPATH | Phase 8 |
+| DEEP-05 | Rollback on prepare_deep_reading failure | Phase 8 |
+| TEST-01 | 17 smoke tests catch all audit regressions | Phase 8 |
+
+### Deferred to v1.2
+
+| ID | Requirement | Reason |
+|----|-------------|--------|
+| ZPATH-01 | BBT bare `KEY/KEY.pdf` auto-normalize | Requires BBT export format research |
+| ZPATH-02 | BBT relative path handling | Partial — `storage:` prefix works, bare paths don't |
+| ZPATH-03 | Cross-platform PDF path resolution | Windows junctions work, edge cases remain |
+
+---
+*Milestone v1.1 completed: 2026-04-24*
+*Total phases: 3 (6-8) | Total requirements: 21 validated, 3 partial*
+
+---
+
+## Milestone v1.2: Systematization & Cohesion (Planned)
+
+**Goal:** Transform PaperForge Lite from a functional-but-scattered prototype into a cohesive, user-centric system.
+
+**Status:** Initiated
+
+### Planned Work
+
+| # | Area | Description |
+|---|------|-------------|
+| 1 | Agent Command Unification | Rename `/ld-deep` → `/pf-deep`, `/lp-*` → `/pf-*`, update all docs |
+| 2 | CLI Simplification | Combine `selection-sync` + `index-refresh` into `paperforge sync`, evaluate other mergers |
+| 3 | Architecture Research | Study `get-shit-done-main` and reference projects for patterns |
+| 4 | UX Cohesion | Ensure 1:1 mapping between agent and CLI commands |
+| 5 | Documentation & Migration | Update AGENTS.md, command docs, migration guide |
+
+### Target Requirements
+
+| ID | Requirement | Target |
+|----|-------------|--------|
+| SYS-01 | All agent commands use `/pf-*` namespace | Phase 9 |
+| SYS-02 | `/LD-*` and `/lp-*` commands deprecated with warnings | Phase 9 |
+| SYS-03 | `paperforge sync` combines selection-sync + index-refresh | Phase 10 |
+| SYS-04 | CLI command set is user-centric, not worker-centric | Phase 10 |
+| SYS-05 | Architecture research documented with recommendations | Phase 9 |
+| SYS-06 | Command docs consistent across agent and CLI | Phase 10 |
+| SYS-07 | Migration guide for existing users | Phase 10 |
+
+---
+*Milestone v1.2 initiated: 2026-04-24*

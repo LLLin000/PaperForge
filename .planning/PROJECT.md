@@ -6,15 +6,16 @@ PaperForge Lite is a local Obsidian + Zotero literature workflow for medical res
 
 This is a brownfield release-hardening project for `D:\L\Med\Research\99_System\LiteraturePipeline\github-release`, informed by the fuller local implementation under `D:\L\Med\Research\99_System\LiteraturePipeline` and the production Obsidian Base views under `D:\L\Med\Research\05_Bases`.
 
-## Current Milestone: v1.1 Sandbox Onboarding Hardening
+## Current Milestone: v1.2 Systematization & Cohesion
 
-**Goal:** Make the GitHub README + sandbox path behave like a real first-time user flow, with no silent setup stalls, contradictory diagnostics, unresolved mock Zotero PDFs, or broken `/LD-deep` prepare commands.
+**Goal:** Transform PaperForge Lite from a functional-but-scattered prototype into a cohesive, user-centric system where commands are unified, workflows are intuitive, and the architecture feels intentional rather than assembled.
 
 **Target features:**
-- Setup wizard and CLI commands are internally consistent when a user follows README exactly.
-- `paperforge doctor`, `paperforge paths --json`, worker fallback commands, and Agent command docs report the same installed paths and env variable names.
-- Sandbox Better BibTeX exports and mock Zotero storage exercise the full flow from selection sync through `/LD-deep prepare`.
-- PDF/OCR/deep-reading statuses remain consistent across library-records, formal notes, `meta.json`, and queue output.
+- Agent commands use a single `/pf-*` namespace (`/pf-deep`, `/pf-paper`, `/pf-ocr`, `/pf-sync`, `/pf-status`) replacing the fragmented `/LD-*` and `/lp-*` prefixes.
+- CLI commands are simplified and user-centric (e.g., `paperforge sync` combines `selection-sync` + `index-refresh`).
+- Architecture is informed by reference projects (e.g., `get-shit-done-main`) for directory structure, command dispatch, and plugin patterns.
+- Documentation and command docs are consistent across agent and CLI interfaces.
+- Existing functionality is preserved; no breaking data format changes.
 
 ## Core Value
 
@@ -36,18 +37,24 @@ A new user can install PaperForge, configure their own vault paths and PaddleOCR
 - ✓ OCR status, formal note status, library-record status, and deep-reading queue status converge after each worker step (Phase 7).
 - ✓ `/LD-deep` helpers run from the deployed Vault location without manual `PYTHONPATH` fixes (Phase 8).
 - ✓ The sandbox smoke test catches every regression found in the manual first-time-user simulation (Phase 8).
+- ✓ v1.1 hardens the sandbox onboarding flow, adds rollback to `prepare_deep_reading`, and ships 17 regression tests.
 
 ### Active
 
-- [ ] BBT bare `KEY/KEY.pdf` paths auto-normalize to `storage:KEY/KEY.pdf` in `load_export_rows()`.
+- [ ] Unify agent command namespace: `/ld-deep` → `/pf-deep`, `/lp-*` → `/pf-*`.
+- [ ] Simplify CLI: combine `selection-sync` + `index-refresh` into `paperforge sync`, evaluate other command mergers.
+- [ ] Research architecture from reference projects for directory structure, dispatch patterns, and plugin architecture.
+- [ ] Ensure 1:1 mapping between agent commands and CLI commands where appropriate.
+- [ ] Update all command docs, AGENTS.md, and provide migration guide.
 
 ### Out of Scope
 
 - Replacing Zotero or Better BibTeX — the project is built around them.
 - Automatically triggering deep-reading agents from workers — the Lite architecture intentionally keeps worker automation and agent reasoning separate.
 - Cloud-hosted multi-user service — this project targets local single-user vault workflows.
-- Full OCR provider abstraction in v1.1 — PaddleOCR path/env consistency is the priority.
-- BBT bare path normalization in v1.1 — deferred to v1.2 (ZPATH-01/02/03 marked Partial).
+- Full OCR provider abstraction in v1.2 — PaddleOCR path/env consistency is the priority.
+- BBT bare path normalization in v1.2 — deferred to v1.3 (ZPATH-01/02/03 marked Partial).
+- Adding new AI capabilities or OCR features in v1.2 — focus is on systematization, not new functionality.
 
 ## Context
 
@@ -64,7 +71,9 @@ The v1.1 milestone was completed after a manual sandbox audit from `tests/sandbo
 - [x] Deployed `ld_deep.py` runs without manual `PYTHONPATH` (via `pip install -e .` or importlib).
 - [x] Sandbox smoke tests (17 tests) catch all regressions from the manual audit.
 
-**Remaining:** BBT bare `KEY/KEY.pdf` path normalization is not auto-converted. Users should configure BBT to emit `storage:` prefix or ensure PDFs are in absolute/vault-relative paths.
+**Remaining from v1.1:** BBT bare `KEY/KEY.pdf` path normalization is not auto-converted. Users should configure BBT to emit `storage:` prefix or ensure PDFs are in absolute/vault-relative paths.
+
+**v1.2 focus:** Command namespace unification, CLI simplification, architecture research, and UX cohesion. No new functional features; pure systematization.
 
 ## Constraints
 
@@ -86,6 +95,8 @@ The v1.1 milestone was completed after a manual sandbox audit from `tests/sandbo
 | Generate Bases from config-aware templates | Current production Base UX is better than release templates, but hardcoded paths must be parameterized | Implemented in v1.0 |
 | Use sandbox audit as v1.1 release gate | Manual first-time-user simulation exposed regressions that unit tests missed | Complete — 17 smoke tests now cover all audit findings |
 | Continue phase numbering after v1.0 | v1.1 is a follow-up hardening milestone, not a project reset | Phases start at 6 |
+| Unify agent commands under `/pf-*` namespace | Two prefixes (`/LD-*` and `/lp-*`) confuse users; single namespace aligns with CLI brand | Planned for v1.2 |
+| Simplify CLI with combined commands | `selection-sync` + `index-refresh` are almost always run together; one `sync` command reduces friction | Planned for v1.2 |
 
 ## Evolution
 
@@ -105,4 +116,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state.
 
 ---
-*Last updated: 2026-04-24 — Phase 8 complete (deterministic OCR fixtures, 17 regression tests, rollback on prepare failure)*
+*Last updated: 2026-04-24 — v1.2 initiated (systematization: unified commands, simplified CLI, architecture research)*
