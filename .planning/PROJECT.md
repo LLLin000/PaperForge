@@ -29,17 +29,17 @@ A new user can install PaperForge, configure their own vault paths and PaddleOCR
 - ✓ Existing Obsidian Base views prove the intended queue workflow: recommended analysis, OCR queue, completed OCR, pending deep reading, completed deep reading, and formal notes.
 - ✓ OCR queue state is persisted in `<system_dir>/PaperForge/ocr/ocr-queue.json` and per-paper `meta.json`.
 - ✓ v1.0 shipped a shared resolver, `paperforge` CLI, generated Bases, first-pass doctor command, fixture smoke tests, and command documentation.
+- ✓ Setup wizard, `paperforge` CLI, direct worker fallback, deployed Agent scripts, and command docs agree on the installed path contract (Phase 6).
+- ✓ Diagnostics validate actual supported Better BibTeX export shapes and correct PaddleOCR env names (Phase 6-7).
+- ✓ PDF path resolution handles sandbox BBT attachment paths and common Zotero storage-relative paths (Phase 7).
+- ✓ Selection sync writes complete normalized metadata into library-records, including author and journal fields (Phase 7).
+- ✓ OCR status, formal note status, library-record status, and deep-reading queue status converge after each worker step (Phase 7).
+- ✓ `/LD-deep` helpers run from the deployed Vault location without manual `PYTHONPATH` fixes (Phase 8).
+- ✓ The sandbox smoke test catches every regression found in the manual first-time-user simulation (Phase 8).
 
 ### Active
 
 - [ ] README-driven setup works in the sandbox without hidden required inputs or unexplained terminal stalls.
-- [ ] Setup wizard, `paperforge` CLI, direct worker fallback, deployed Agent scripts, and command docs agree on the installed path contract.
-- [ ] Diagnostics validate the actual supported Better BibTeX export shapes and PaddleOCR env names.
-- [ ] PDF path resolution handles sandbox BBT attachment paths and common Zotero storage-relative paths.
-- [ ] Selection sync writes complete normalized metadata into library-records, including author and journal fields.
-- [ ] OCR status, formal note status, library-record status, and deep-reading queue status converge after each worker step.
-- [ ] `/LD-deep` helpers run from the deployed Vault location without manual `PYTHONPATH` fixes.
-- [ ] The sandbox smoke test catches every regression found in the manual first-time-user simulation.
 
 ### Out of Scope
 
@@ -101,4 +101,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state.
 
 ---
-*Last updated: 2026-04-23 starting milestone v1.1*
+*Last updated: 2026-04-24 — Phase 8 complete (deterministic OCR fixtures, 17 regression tests, rollback on prepare failure)*

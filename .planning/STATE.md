@@ -12,24 +12,17 @@ See: `.planning/PROJECT.md` (updated 2026-04-23)
 
 Phase: 8 (complete)
 Plan: 08-SUMMARY.md
-Status: Phase 8 execution complete
+Status: Phase 8 verified and complete
 Last activity: 2026-04-24 — Phase 8 execution complete (5/5 tasks, 17 tests pass)
-
-## Milestone Context
-
-Manual sandbox simulation exposed release-blocking gaps after v1.0:
-
-- Setup wizard can appear to stall when invoked exactly as README says.
-- CLI/doctor/docs disagree on paths, env variable names, and JSON fields.
-- Per-domain BBT exports are supported by workers but rejected by doctor.
-- Sandbox Zotero storage PDFs are not resolved from BBT attachment paths.
-- Selection sync loses normalized author/journal metadata in library-records.
-- OCR and deep-reading states can diverge across records, notes, and meta files.
-- Deployed `/LD-deep` helper fails without package importability or manual `PYTHONPATH`.
 
 ## Next Action
 
-Run `/gsd-plan-phase 8` for **Deep Helper Deployment And Sandbox Regression Gate**.
+Phase 8 is complete. Ready for next milestone or release.
+
+Options:
+- `/gsd-discuss-phase 9` — discuss verification phase
+- `/gsd-plan-phase 9` — plan next phase
+- `/gsd-execute-phase 9` — execute next phase
 
 ## Phase 6 Decisions (Locked)
 

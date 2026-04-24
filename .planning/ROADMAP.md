@@ -60,7 +60,7 @@
 |---|-------|------|--------------|--------|
 | 6 | Setup, CLI, And Diagnostics Consistency | Align setup/docs/doctor/path contracts | 9 | 2 plans |
 | 7 | Zotero PDF, Metadata, And State Repair | Resolve PDFs and converge status fields | 9 | Done |
-| 8 | Deep Helper Deployment And Sandbox Regression Gate | Automate the manual sandbox audit | 6 | Done |
+| 8 | Deep Helper Deployment And Sandbox Regression Gate | Automate the manual sandbox audit | 6 | Done (2026-04-24) |
 
 ---
 *Roadmap created: 2026-04-23 for milestone v1.1*
