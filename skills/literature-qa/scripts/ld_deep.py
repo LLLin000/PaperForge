@@ -1085,59 +1085,77 @@ def prepare_deep_reading(vault: Path, zotero_key: str, force: bool = False) -> d
 
     result["formal_note"] = str(formal_note)
 
-    # 6. Run figure-map
-    figure_map_path = ocr_dir / "figure-map.json"
-    fulltext_text = fulltext_md.read_text(encoding="utf-8")
-    figure_map = build_figure_map(fulltext_text, zotero_key=zotero_key)
-    figure_map["generated_at"] = __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat()
-    figure_map_path.parent.mkdir(parents=True, exist_ok=True)
-    figure_map_path.write_text(json.dumps(figure_map, ensure_ascii=False, indent=2), encoding="utf-8")
-    result["figure_map"] = str(figure_map_path)
+    # Save original note content for rollback
+    original_note_text = formal_note.read_text(encoding="utf-8")
 
-    # 7. Run chart-type-scan
-    chart_type_map_path = ocr_dir / "chart-type-map.json"
-    chart_type_result = build_chart_type_map(figure_map)
-    chart_type_map_path.write_text(json.dumps(chart_type_result, ensure_ascii=False, indent=2), encoding="utf-8")
-    result["chart_type_map"] = str(chart_type_map_path)
+    # Track files for rollback
+    written_paths: list[Path] = []
 
-    # Collect recommendations
-    all_guides: set[str] = set()
-    for fig in chart_type_result.get("figures", []):
-        for guide in fig.get("recommended_guides", []):
-            all_guides.add(guide)
-    for tbl in chart_type_result.get("tables", []):
-        for guide in tbl.get("recommended_guides", []):
-            all_guides.add(guide)
-    result["chart_recommendations"] = sorted(all_guides)
+    try:
+        # 6. Run figure-map
+        figure_map_path = ocr_dir / "figure-map.json"
+        fulltext_text = fulltext_md.read_text(encoding="utf-8")
+        figure_map = build_figure_map(fulltext_text, zotero_key=zotero_key)
+        figure_map["generated_at"] = __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat()
+        figure_map_path.parent.mkdir(parents=True, exist_ok=True)
+        figure_map_path.write_text(json.dumps(figure_map, ensure_ascii=False, indent=2), encoding="utf-8")
+        written_paths.append(figure_map_path)
+        result["figure_map"] = str(figure_map_path)
 
-    # 8. Extract figures/tables and run ensure-scaffold
-    figure_candidates = extract_figures_from_fulltext(fulltext_text, figure_map)
-    table_candidates = extract_tables_from_fulltext(fulltext_text, figure_map)
-    planned_figures = build_figure_plan(figure_candidates)
-    planned_tables = table_candidates  # Include all tables by default
+        # 7. Run chart-type-scan
+        chart_type_map_path = ocr_dir / "chart-type-map.json"
+        chart_type_result = build_chart_type_map(figure_map)
+        chart_type_map_path.write_text(json.dumps(chart_type_result, ensure_ascii=False, indent=2), encoding="utf-8")
+        written_paths.append(chart_type_map_path)
+        result["chart_type_map"] = str(chart_type_map_path)
 
-    note_text = formal_note.read_text(encoding="utf-8")
-    updated = ensure_study_section(note_text, planned_figures, planned_tables)
-    formal_note.write_text(updated, encoding="utf-8")
+        # Collect recommendations
+        all_guides: set[str] = set()
+        for fig in chart_type_result.get("figures", []):
+            for guide in fig.get("recommended_guides", []):
+                all_guides.add(guide)
+        for tbl in chart_type_result.get("tables", []):
+            for guide in tbl.get("recommended_guides", []):
+                all_guides.add(guide)
+        result["chart_recommendations"] = sorted(all_guides)
 
-    result["figures"] = [
-        {"number": f.number, "image_id": f.image_id, "page": f.page, "title": f.title}
-        for f in planned_figures
-    ]
-    result["tables"] = [
-        {"number": t.number, "page": t.page, "image_link": t.image_link}
-        for t in planned_tables
-    ]
+        # 8. Extract figures/tables and run ensure-scaffold
+        figure_candidates = extract_figures_from_fulltext(fulltext_text, figure_map)
+        table_candidates = extract_tables_from_fulltext(fulltext_text, figure_map)
+        planned_figures = build_figure_plan(figure_candidates)
+        planned_tables = table_candidates  # Include all tables by default
 
-    result["status"] = "ok"
-    result["message"] = (
-        f"[OK] Prepared {zotero_key}\n"
-        f"  Formal note: {formal_note}\n"
-        f"  Fulltext: {fulltext_md}\n"
-        f"  Figures: {len(planned_figures)} | Tables: {len(planned_tables)}\n"
-        f"  Chart guides: {len(all_guides)} recommended"
-    )
-    return result
+        note_text = formal_note.read_text(encoding="utf-8")
+        updated = ensure_study_section(note_text, planned_figures, planned_tables)
+        formal_note.write_text(updated, encoding="utf-8")
+
+        result["figures"] = [
+            {"number": f.number, "image_id": f.image_id, "page": f.page, "title": f.title}
+            for f in planned_figures
+        ]
+        result["tables"] = [
+            {"number": t.number, "page": t.page, "image_link": t.image_link}
+            for t in planned_tables
+        ]
+
+        result["status"] = "ok"
+        result["message"] = (
+            f"[OK] Prepared {zotero_key}\n"
+            f"  Formal note: {formal_note}\n"
+            f"  Fulltext: {fulltext_md}\n"
+            f"  Figures: {len(planned_figures)} | Tables: {len(planned_tables)}\n"
+            f"  Chart guides: {len(all_guides)} recommended"
+        )
+        return result
+
+    except Exception as exc:
+        # Rollback: delete partial files and restore note
+        for path in written_paths:
+            if path.exists():
+                path.unlink()
+        formal_note.write_text(original_note_text, encoding="utf-8")
+        result["message"] = f"[ERROR] Prepare failed for {zotero_key}: {exc}. Rolled back changes."
+        return result
 
 
 def scan_deep_reading_queue(vault: Path) -> list[dict]:
