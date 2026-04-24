@@ -10,15 +10,14 @@ See: `.planning/PROJECT.md` (updated 2026-04-24)
 
 ## Current Position
 
-Phase: 9 (in_progress)
+Phase: 9 (done)
 Milestone: v1.2
-Status: Phase 9 Wave 4 complete (Task 5 done)
-Last activity: 2026-04-24 — Task 5: Updated AGENTS.md, README.md, docs, tests, setup_wizard.py, and literature_pipeline.py for unified commands
+Status: Phase 9 complete (Task 6 done) — Verification passed, all systems nominal
+Last activity: 2026-04-24 — Task 6: Full system verification complete — 155 passed, 2 skipped, 2 pre-existing failures, 2 pre-existing collection errors
 
 ## Next Action
 
-Continue Phase 9 execution:
-- Wave 5: Task 6 — Verification and cleanup
+Phase 9 complete. Proceed to Phase 10: Documentation & Cohesion.
 
 Phase 9 scope:
 - Task 0: Rename Python package (`paperforge` → `paperforge`) ✅
@@ -27,7 +26,7 @@ Phase 9 scope:
 - Task 3: Create new `/pf-*` agent command docs ✅
 - Task 4: Remove old `/LD-*` and `/lp-*` command docs ✅
 - Task 5: Update AGENTS.md and tests ✅
-- Task 6: Verification and cleanup
+- Task 6: Verification and cleanup ✅
 
 ## Phase 6 Decisions (Locked)
 

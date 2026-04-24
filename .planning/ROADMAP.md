@@ -35,14 +35,14 @@
 
 **Created:** 2026-04-24  
 **Scope:** Unify agent commands under `/pf-*`, simplify CLI, research architecture, ensure UX cohesion.  
-**Status:** INITIATED  
+**Status:** Phase 9 complete, Phase 10 pending  
 **Requirements:** SYS-01, SYS-02, SYS-03, SYS-04, SYS-05, SYS-06, SYS-07 (7 requirements)  
 **Roadmap:** See `ROADMAP-v1.2.md`
 
 ### Phase 9: Command Unification & CLI Simplification
 
 **Goal:** Implement unified `/pf-*` namespace and simplify CLI commands.  
-**Status:** Planned  
+**Status:** Done (2026-04-24)  
 **Requirements:** SYS-01, SYS-02, SYS-07 (3/7)
 
 ### Phase 10: Documentation & Cohesion
@@ -73,7 +73,7 @@
 | 6 | Setup, CLI, And Diagnostics Consistency | v1.1 | Align setup/docs/doctor/path contracts | 10 | Done |
 | 7 | Zotero PDF, Metadata, And State Repair | v1.1 | Resolve PDFs and converge status fields | 9 | Done |
 | 8 | Deep Helper Deployment And Sandbox Regression Gate | v1.1 | Automate the manual sandbox audit | 6 | Done |
-| 9 | Command Unification & CLI Simplification | v1.2 | Unified `/pf-*` namespace, simplified CLI | 3 | Planned |
+| 9 | Command Unification & CLI Simplification | v1.2 | Unified `/pf-*` namespace, simplified CLI | 3 | Done |
 | 10 | Documentation & Cohesion | v1.2 | Architecture docs, migration guide, consistency | 4 | Planned |
 
 ---
