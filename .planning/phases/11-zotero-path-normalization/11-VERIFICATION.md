@@ -137,4 +137,23 @@ analysis_note: ""
 
 ---
 
+## Self-Check
+
+- [x] `tests/test_path_normalization.py` exists (385 lines, 25 test methods)
+- [x] `tests/fixtures/bbt_export_absolute.json` exists
+- [x] `tests/fixtures/bbt_export_storage.json` exists
+- [x] `tests/fixtures/bbt_export_mixed.json` exists
+- [x] `pytest tests/test_path_normalization.py -v` passes: 25/25 passed
+- [x] `pytest tests/` has 0 new failures (1 pre-existing)
+- [x] `python scripts/consistency_audit.py` passes: 4/4
+- [x] AGENTS.md contains "Path Resolution" section (1 match)
+- [x] AGENTS.md contains wikilink examples `[[...]]` (7 matches)
+- [x] docs/ARCHITECTURE.md contains ADR-011 (1 match)
+- [x] `11-VERIFICATION.md` exists with test counts and sample library-record
+- [x] All changes committed to git (3 commits in Wave 4)
+
+**Status: PASSED**
+
+---
+
 *Wave 4 complete. Phase 11 fully executed.*
