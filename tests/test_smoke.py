@@ -37,7 +37,7 @@ if str(REPO_ROOT) not in sys.path:
 def _import_ld_deep(path: Path | None = None) -> Any:
     """Import ld_deep.py using importlib, with Python 3.14 workaround."""
     if path is None:
-        path = REPO_ROOT / "skills" / "literature-qa" / "scripts" / "ld_deep.py"
+        path = REPO_ROOT / "paperforge" / "skills" / "literature-qa" / "scripts" / "ld_deep.py"
 
     # Python 3.14 workaround: dataclasses needs module in sys.modules
     module_name = "_test_ld_deep_module"
@@ -78,7 +78,7 @@ class TestDoctorImportability:
 
     def test_doctor_importability_check(self, test_vault: Path) -> None:
         """Verify run_doctor checks importability via importlib.util."""
-        from pipeline.worker.scripts.literature_pipeline import run_doctor
+        from paperforge.worker.status import run_doctor
 
         source = Path(run_doctor.__code__.co_filename).read_text(encoding="utf-8")
         assert "importlib.util" in source, "doctor should use importlib.util for import check"
@@ -88,14 +88,14 @@ class TestDoctorImportability:
 
     def test_regression_doctor_env_name(self, test_vault: Path) -> None:
         """REG-02: doctor checks PADDLEOCR_API_TOKEN (not old env name)."""
-        from pipeline.worker.scripts.literature_pipeline import run_doctor
+        from paperforge.worker.status import run_doctor
 
         source = Path(run_doctor.__code__.co_filename).read_text(encoding="utf-8")
         assert "PADDLEOCR_API_TOKEN" in source, "doctor should check PADDLEOCR_API_TOKEN"
 
     def test_regression_per_domain_json(self, test_vault: Path) -> None:
         """REG-02: doctor validates per-domain exports without false missing error."""
-        from pipeline.worker.scripts.literature_pipeline import run_doctor
+        from paperforge.worker.status import run_doctor
 
         source = Path(run_doctor.__code__.co_filename).read_text(encoding="utf-8")
         assert "library.json 不存在" not in source or "*.json" in source, (

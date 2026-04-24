@@ -21,7 +21,7 @@ from tests.conftest import create_test_vault
 def _import_ld_deep(path: Path | None = None):
     """Import ld_deep.py using importlib, with Python 3.14 workaround."""
     if path is None:
-        path = REPO_ROOT / "skills" / "literature-qa" / "scripts" / "ld_deep.py"
+        path = REPO_ROOT / "paperforge" / "skills" / "literature-qa" / "scripts" / "ld_deep.py"
 
     import importlib.util
 

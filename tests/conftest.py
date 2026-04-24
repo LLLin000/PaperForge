@@ -145,7 +145,7 @@ def create_test_vault() -> Path:
     (zotero_dir / "TSTONE001.pdf").write_text("mock pdf content", encoding="utf-8")
 
     # Copy ld_deep.py to skill_dir (simulating deployment)
-    ld_deep_src = REPO_ROOT / "skills" / "literature-qa" / "scripts" / "ld_deep.py"
+    ld_deep_src = REPO_ROOT / "paperforge" / "skills" / "literature-qa" / "scripts" / "ld_deep.py"
     if ld_deep_src.exists():
         shutil.copy2(ld_deep_src, skill_dir / "ld_deep.py")
 

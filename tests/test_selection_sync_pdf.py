@@ -53,7 +53,7 @@ class TestSelectionSyncPdf:
         vault = self._make_vault(tmp_path)
 
         with patch(
-            "pipeline.worker.scripts.literature_pipeline.pipeline_paths"
+            "paperforge.worker.sync.pipeline_paths"
         ) as mock_paths:
             mock_paths.return_value = {
                 "exports": vault / "99_System" / "PaperForge" / "exports",
@@ -62,17 +62,17 @@ class TestSelectionSyncPdf:
                 "literature": vault / "03_Resources" / "Literature",
             }
             with patch(
-                "pipeline.worker.scripts.literature_pipeline.load_domain_config",
+                "paperforge.worker.sync.load_domain_config",
                 return_value={"domains": [{"export_file": "test.json", "domain": "TestDomain"}]},
             ):
                 with patch(
-                    "pipeline.worker.scripts.literature_pipeline.ensure_base_views"
+                    "paperforge.worker.base_views.ensure_base_views"
                 ):
                     with patch(
-                        "pipeline.worker.scripts.literature_pipeline.load_export_rows",
+                        "paperforge.worker.sync.load_export_rows",
                         return_value=[self._mock_export_item("NO_PDF", has_pdf=False)],
                     ):
-                        from pipeline.worker.scripts.literature_pipeline import (
+                        from paperforge.worker.sync import (
                             run_selection_sync,
                         )
 
@@ -92,7 +92,7 @@ class TestSelectionSyncPdf:
         missing_pdf = str(tmp_path / "missing.pdf")
 
         with patch(
-            "pipeline.worker.scripts.literature_pipeline.pipeline_paths"
+            "paperforge.worker.sync.pipeline_paths"
         ) as mock_paths:
             mock_paths.return_value = {
                 "exports": vault / "99_System" / "PaperForge" / "exports",
@@ -101,19 +101,19 @@ class TestSelectionSyncPdf:
                 "literature": vault / "03_Resources" / "Literature",
             }
             with patch(
-                "pipeline.worker.scripts.literature_pipeline.load_domain_config",
+                "paperforge.worker.sync.load_domain_config",
                 return_value={"domains": [{"export_file": "test.json", "domain": "TestDomain"}]},
             ):
                 with patch(
-                    "pipeline.worker.scripts.literature_pipeline.ensure_base_views"
+                    "paperforge.worker.base_views.ensure_base_views"
                 ):
                     with patch(
-                        "pipeline.worker.scripts.literature_pipeline.load_export_rows",
+                        "paperforge.worker.sync.load_export_rows",
                         return_value=[
                             self._mock_export_item("MISSING", has_pdf=True, pdf_path=missing_pdf)
                         ],
                     ):
-                        from pipeline.worker.scripts.literature_pipeline import (
+                        from paperforge.worker.sync import (
                             run_selection_sync,
                         )
 
@@ -133,7 +133,7 @@ class TestSelectionSyncPdf:
         pdf.write_bytes(b"%PDF-1.4\n")
 
         with patch(
-            "pipeline.worker.scripts.literature_pipeline.pipeline_paths"
+            "paperforge.worker.sync.pipeline_paths"
         ) as mock_paths:
             mock_paths.return_value = {
                 "exports": vault / "99_System" / "PaperForge" / "exports",
@@ -142,19 +142,19 @@ class TestSelectionSyncPdf:
                 "literature": vault / "03_Resources" / "Literature",
             }
             with patch(
-                "pipeline.worker.scripts.literature_pipeline.load_domain_config",
+                "paperforge.worker.sync.load_domain_config",
                 return_value={"domains": [{"export_file": "test.json", "domain": "TestDomain"}]},
             ):
                 with patch(
-                    "pipeline.worker.scripts.literature_pipeline.ensure_base_views"
+                    "paperforge.worker.base_views.ensure_base_views"
                 ):
                     with patch(
-                        "pipeline.worker.scripts.literature_pipeline.load_export_rows",
+                        "paperforge.worker.sync.load_export_rows",
                         return_value=[
                             self._mock_export_item("VALID", has_pdf=True, pdf_path=str(pdf))
                         ],
                     ):
-                        from pipeline.worker.scripts.literature_pipeline import (
+                        from paperforge.worker.sync import (
                             run_selection_sync,
                         )
 
@@ -180,7 +180,7 @@ class TestSelectionSyncPdf:
         )
 
         with patch(
-            "pipeline.worker.scripts.literature_pipeline.pipeline_paths"
+            "paperforge.worker.sync.pipeline_paths"
         ) as mock_paths:
             mock_paths.return_value = {
                 "exports": vault / "99_System" / "PaperForge" / "exports",
@@ -189,17 +189,17 @@ class TestSelectionSyncPdf:
                 "literature": vault / "03_Resources" / "Literature",
             }
             with patch(
-                "pipeline.worker.scripts.literature_pipeline.load_domain_config",
+                "paperforge.worker.sync.load_domain_config",
                 return_value={"domains": [{"export_file": "test.json", "domain": "TestDomain"}]},
             ):
                 with patch(
-                    "pipeline.worker.scripts.literature_pipeline.ensure_base_views"
+                    "paperforge.worker.base_views.ensure_base_views"
                 ):
                     with patch(
-                        "pipeline.worker.scripts.literature_pipeline.load_export_rows",
+                        "paperforge.worker.sync.load_export_rows",
                         return_value=[self._mock_export_item("CHANGED", has_pdf=False)],
                     ):
-                        from pipeline.worker.scripts.literature_pipeline import (
+                        from paperforge.worker.sync import (
                             run_selection_sync,
                         )
 

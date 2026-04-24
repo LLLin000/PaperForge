@@ -14,7 +14,7 @@ def test_doctor_command_exists(clean_captured, mock_vault):
     import paperforge.cli as cli
     importlib.reload(cli)
 
-    with patch("pipeline.worker.scripts.literature_pipeline.run_doctor", stub_run_doctor):
+    with patch("paperforge.worker.status.run_doctor", stub_run_doctor):
         argv = ["--vault", str(mock_vault), "doctor"]
         code = cli.main(argv)
 
@@ -22,14 +22,14 @@ def test_doctor_command_exists(clean_captured, mock_vault):
 
 
 def test_doctor_python_check():
-    from pipeline.worker.scripts.literature_pipeline import run_doctor
+    from paperforge.worker.status import run_doctor
     import inspect
     sig = inspect.signature(run_doctor)
     assert "vault" in sig.parameters
 
 
 def test_doctor_returns_int():
-    from pipeline.worker.scripts.literature_pipeline import run_doctor
+    from paperforge.worker.status import run_doctor
     import inspect
     sig = inspect.signature(run_doctor)
     assert sig.return_annotation in (int, "int") or True
@@ -56,7 +56,7 @@ def mock_vault(tmp_path):
 
 
 def test_doctor_on_empty_vault(tmp_path, capsys):
-    from pipeline.worker.scripts.literature_pipeline import run_doctor
+    from paperforge.worker.status import run_doctor
     pf_cfg = {
         "system_dir": "99_System",
         "resources_dir": "03_Resources",

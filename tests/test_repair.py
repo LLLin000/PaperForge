@@ -6,7 +6,8 @@ import re
 
 import pytest
 
-from pipeline.worker.scripts.literature_pipeline import run_repair, pipeline_paths
+from paperforge.worker.repair import run_repair
+from paperforge.worker.sync import pipeline_paths
 
 
 def _make_vault(tmp_path):

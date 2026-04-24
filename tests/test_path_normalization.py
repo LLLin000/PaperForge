@@ -21,7 +21,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from pipeline.worker.scripts.literature_pipeline import (
+from paperforge.worker.sync import (
     _normalize_attachment_path,
     _identify_main_pdf,
     obsidian_wikilink_for_pdf,

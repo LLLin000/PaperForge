@@ -1,4 +1,4 @@
-"""Test compatibility: literature_pipeline uses shared resolver."""
+"""Test compatibility: worker modules use shared resolver."""
 from __future__ import annotations
 
 import json
@@ -8,29 +8,8 @@ import sys
 from pathlib import Path
 
 import pytest
-from importlib.util import spec_from_file_location, module_from_spec
-
-
-def _load_module(name: str, path: Path):
-    """Load a Python script as an importable module."""
-    spec = spec_from_file_location(name, path)
-    assert spec is not None and spec.loader is not None
-    mod = module_from_spec(spec)
-    sys.modules[name] = mod
-    spec.loader.exec_module(mod)
-    return mod
-
 
 _REPO_ROOT = Path(__file__).parent.parent
-
-# Pre-load literature_pipeline so its functions are available
-_lp_spec = spec_from_file_location(
-    "literature_pipeline",
-    _REPO_ROOT / "pipeline" / "worker" / "scripts" / "literature_pipeline.py",
-)
-_lp_mod = module_from_spec(_lp_spec)
-sys.modules["literature_pipeline"] = _lp_mod
-_lp_spec.loader.exec_module(_lp_mod)
 
 
 @pytest.fixture
@@ -69,15 +48,15 @@ def tmp_vault(tmp_path: Path) -> Path:
 
 
 class TestWorkerLoadVaultConfig:
-    """Test literature_pipeline.load_vault_config matches paperforge.config."""
+    """Test worker.load_vault_config matches paperforge.config."""
 
     def test_defaults_match_shared_resolver(self, tmp_vault: Path) -> None:
         """load_vault_config returns same top-level keys as shared resolver."""
         from paperforge.config import load_vault_config as shared_load
-        import literature_pipeline as lp
+        from paperforge.worker.sync import load_vault_config as worker_load
 
         shared_cfg = shared_load(tmp_vault)
-        worker_cfg = lp.load_vault_config(tmp_vault)
+        worker_cfg = worker_load(tmp_vault)
 
         assert set(worker_cfg.keys()) == set(shared_cfg.keys()), (
             f"Key mismatch: worker={set(worker_cfg.keys())} vs shared={set(shared_cfg.keys())}"
@@ -89,29 +68,29 @@ class TestWorkerLoadVaultConfig:
 
     def test_nested_vault_config_respected(self, tmp_vault: Path) -> None:
         """Nested vault_config block takes precedence over top-level keys."""
-        import literature_pipeline as lp
+        from paperforge.worker.sync import load_vault_config
 
-        cfg = lp.load_vault_config(tmp_vault)
+        cfg = load_vault_config(tmp_vault)
         assert cfg["system_dir"] == "99_System"
         assert cfg["resources_dir"] == "03_Resources"
 
     def test_env_override_system_dir(self, tmp_vault: Path, monkeypatch) -> None:
         """PAPERFORGE_SYSTEM_DIR env var overrides vault_config."""
-        import literature_pipeline as lp
+        from paperforge.worker.sync import load_vault_config
 
         monkeypatch.setenv("PAPERFORGE_SYSTEM_DIR", "EnvSystem")
-        cfg = lp.load_vault_config(tmp_vault)
+        cfg = load_vault_config(tmp_vault)
         assert cfg["system_dir"] == "EnvSystem"
 
 
 class TestWorkerPipelinePaths:
-    """Test literature_pipeline.pipeline_paths includes all expected keys."""
+    """Test worker.pipeline_paths includes all expected keys."""
 
     def test_pipeline_paths_keys(self, tmp_vault: Path) -> None:
         """pipeline_paths returns expected worker keys from shared resolver."""
-        import literature_pipeline as lp
+        from paperforge.worker.sync import pipeline_paths
 
-        paths = lp.pipeline_paths(tmp_vault)
+        paths = pipeline_paths(tmp_vault)
 
         expected_keys = [
             # Shared resolver keys
@@ -152,10 +131,10 @@ class TestWorkerPipelinePaths:
     ) -> None:
         """Verify shared resolver keys have correct values."""
         from paperforge.config import paperforge_paths as shared_paths
-        import literature_pipeline as lp
+        from paperforge.worker.sync import pipeline_paths
 
         shared = shared_paths(tmp_vault)
-        worker = lp.pipeline_paths(tmp_vault)
+        worker = pipeline_paths(tmp_vault)
 
         for key in ["exports", "ocr", "library_records", "literature", "control", "bases"]:
             assert worker[key] == shared[key], (
@@ -164,20 +143,16 @@ class TestWorkerPipelinePaths:
 
 
 class TestLegacyStatusSubprocess:
-    """Test direct worker invocation via subprocess (CMD-02 smoke test)."""
+    """Test direct CLI invocation via subprocess (CMD-02 smoke test)."""
 
     def test_status_exits_zero(self, tmp_vault: Path) -> None:
-        """`python literature_pipeline.py --vault <vault> status` exits 0."""
-        worker_script = _REPO_ROOT / "pipeline" / "worker" / "scripts" / "literature_pipeline.py"
-        if not worker_script.exists():
-            pytest.skip("Worker script not found at expected path")
-
+        """`python -m paperforge status --vault <vault>` exits 0."""
         # Run with repo root on PYTHONPATH so paperforge can be imported
         env = dict(os.environ)
         env["PYTHONPATH"] = str(_REPO_ROOT) + (";" if sys.platform == "win32" else ":") + env.get("PYTHONPATH", "")
 
         result = subprocess.run(
-            [sys.executable, str(worker_script), "--vault", str(tmp_vault), "status"],
+            [sys.executable, "-m", "paperforge", "--vault", str(tmp_vault), "status"],
             capture_output=True,
             text=True,
             timeout=30,

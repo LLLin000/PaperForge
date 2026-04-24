@@ -86,20 +86,20 @@ do_ocr: true
         mock_post.return_value.json.return_value = {"data": {"jobId": "job-123"}}
         mock_post.return_value.raise_for_status = MagicMock()
 
-        with patch("pipeline.worker.scripts.literature_pipeline.pipeline_paths", return_value=paths):
-            with patch("pipeline.worker.scripts.literature_pipeline.load_control_actions", return_value={key: {"do_ocr": True}}):
-                with patch("pipeline.worker.scripts.literature_pipeline.load_export_rows", return_value=[
+        with patch("paperforge.worker.ocr.pipeline_paths", return_value=paths):
+            with patch("paperforge.worker.ocr.load_control_actions", return_value={key: {"do_ocr": True}}):
+                with patch("paperforge.worker.ocr.load_export_rows", return_value=[
                     {"key": key, "attachments": [{"contentType": "application/pdf", "path": "test.pdf"}], "title": "Test"}
                 ]):
-                    with patch("pipeline.worker.scripts.literature_pipeline.sync_ocr_queue", return_value=[
+                    with patch("paperforge.worker.ocr.sync_ocr_queue", return_value=[
                         {"zotero_key": key, "has_pdf": True, "pdf_path": "test.pdf", "queue_status": "pending"}
                     ]):
-                        with patch("pipeline.worker.scripts.literature_pipeline.ensure_ocr_meta", return_value={"zotero_key": key, "ocr_status": "pending"}):
-                            with patch("pipeline.worker.scripts.literature_pipeline.write_json") as mock_write:
-                                with patch("pipeline.worker.scripts.literature_pipeline.requests.post", mock_post):
-                                    with patch("pipeline.worker.scripts.literature_pipeline.run_selection_sync"):
-                                        with patch("pipeline.worker.scripts.literature_pipeline.run_index_refresh"):
-                                            from pipeline.worker.scripts.literature_pipeline import run_ocr
+                        with patch("paperforge.worker.ocr.ensure_ocr_meta", return_value={"zotero_key": key, "ocr_status": "pending"}):
+                            with patch("paperforge.worker.ocr.write_json") as mock_write:
+                                with patch("paperforge.worker.ocr.requests.post", mock_post):
+                                    with patch("paperforge.worker.sync.run_selection_sync"):
+                                        with patch("paperforge.worker.sync.run_index_refresh"):
+                                            from paperforge.worker.ocr import run_ocr
                                             run_ocr(vault)
 
         # Check requests.post was called (job submitted)
@@ -167,19 +167,19 @@ do_ocr: true
 
         # Use return_value for all calls — same mock is returned each time
         # This is sufficient since we only care about the first poll result
-        with patch("pipeline.worker.scripts.literature_pipeline.pipeline_paths", return_value=paths):
-            with patch("pipeline.worker.scripts.literature_pipeline.load_control_actions", return_value={key: {"do_ocr": True}}):
-                with patch("pipeline.worker.scripts.literature_pipeline.load_export_rows", return_value=[
+        with patch("paperforge.worker.ocr.pipeline_paths", return_value=paths):
+            with patch("paperforge.worker.ocr.load_control_actions", return_value={key: {"do_ocr": True}}):
+                with patch("paperforge.worker.ocr.load_export_rows", return_value=[
                     {"key": key, "attachments": [{"contentType": "application/pdf", "path": "test2.pdf"}], "title": "Test"}
                 ]):
-                    with patch("pipeline.worker.scripts.literature_pipeline.sync_ocr_queue", return_value=[
+                    with patch("paperforge.worker.ocr.sync_ocr_queue", return_value=[
                         {"zotero_key": key, "has_pdf": True, "pdf_path": "test2.pdf", "queue_status": "queued"}
                     ]):
-                        with patch("pipeline.worker.scripts.literature_pipeline.write_json") as mock_write:
-                            with patch("pipeline.worker.scripts.literature_pipeline.requests.get", return_value=poll_response):
-                                with patch("pipeline.worker.scripts.literature_pipeline.run_selection_sync"):
-                                    with patch("pipeline.worker.scripts.literature_pipeline.run_index_refresh"):
-                                        from pipeline.worker.scripts.literature_pipeline import run_ocr
+                        with patch("paperforge.worker.ocr.write_json") as mock_write:
+                            with patch("paperforge.worker.ocr.requests.get", return_value=poll_response):
+                                with patch("paperforge.worker.sync.run_selection_sync"):
+                                    with patch("paperforge.worker.sync.run_index_refresh"):
+                                        from paperforge.worker.ocr import run_ocr
                                         run_ocr(vault)
 
         meta_calls = [c for c in mock_write.call_args_list
@@ -238,19 +238,19 @@ do_ocr: true
         }
         error_response.raise_for_status = MagicMock()
 
-        with patch("pipeline.worker.scripts.literature_pipeline.pipeline_paths", return_value=paths):
-            with patch("pipeline.worker.scripts.literature_pipeline.load_control_actions", return_value={key: {"do_ocr": True}}):
-                with patch("pipeline.worker.scripts.literature_pipeline.load_export_rows", return_value=[
+        with patch("paperforge.worker.ocr.pipeline_paths", return_value=paths):
+            with patch("paperforge.worker.ocr.load_control_actions", return_value={key: {"do_ocr": True}}):
+                with patch("paperforge.worker.ocr.load_export_rows", return_value=[
                     {"key": key, "attachments": [{"contentType": "application/pdf", "path": "test3.pdf"}], "title": "Test"}
                 ]):
-                    with patch("pipeline.worker.scripts.literature_pipeline.sync_ocr_queue", return_value=[
+                    with patch("paperforge.worker.ocr.sync_ocr_queue", return_value=[
                         {"zotero_key": key, "has_pdf": True, "pdf_path": "test3.pdf", "queue_status": "queued"}
                     ]):
-                        with patch("pipeline.worker.scripts.literature_pipeline.write_json") as mock_write:
-                            with patch("pipeline.worker.scripts.literature_pipeline.requests.get", return_value=error_response):
-                                with patch("pipeline.worker.scripts.literature_pipeline.run_selection_sync"):
-                                    with patch("pipeline.worker.scripts.literature_pipeline.run_index_refresh"):
-                                        from pipeline.worker.scripts.literature_pipeline import run_ocr
+                        with patch("paperforge.worker.ocr.write_json") as mock_write:
+                            with patch("paperforge.worker.ocr.requests.get", return_value=error_response):
+                                with patch("paperforge.worker.sync.run_selection_sync"):
+                                    with patch("paperforge.worker.sync.run_index_refresh"):
+                                        from paperforge.worker.ocr import run_ocr
                                         run_ocr(vault)
 
         meta_calls = [c for c in mock_write.call_args_list
@@ -315,21 +315,21 @@ do_ocr: true
         def make_meta(*args, **kwargs):
             return {"zotero_key": key, "ocr_status": "pending"}
 
-        with patch("pipeline.worker.scripts.literature_pipeline.pipeline_paths", return_value=paths):
-            with patch("pipeline.worker.scripts.literature_pipeline.load_control_actions", return_value={key: {"do_ocr": True}}):
-                with patch("pipeline.worker.scripts.literature_pipeline.load_export_rows", return_value=[
+        with patch("paperforge.worker.ocr.pipeline_paths", return_value=paths):
+            with patch("paperforge.worker.ocr.load_control_actions", return_value={key: {"do_ocr": True}}):
+                with patch("paperforge.worker.ocr.load_export_rows", return_value=[
                     {"key": key, "attachments": [{"contentType": "application/pdf", "path": "test4.pdf"}], "title": "Test"}
                 ]):
-                    with patch("pipeline.worker.scripts.literature_pipeline.sync_ocr_queue", return_value=[
+                    with patch("paperforge.worker.ocr.sync_ocr_queue", return_value=[
                         {"zotero_key": key, "has_pdf": True, "pdf_path": "test4.pdf", "queue_status": "pending"}
                     ]):
-                        with patch("pipeline.worker.scripts.literature_pipeline.ensure_ocr_meta", side_effect=make_meta):
-                            with patch("pipeline.worker.scripts.literature_pipeline.write_json") as mock_write:
-                                with patch("pipeline.worker.scripts.literature_pipeline.run_selection_sync"):
-                                    with patch("pipeline.worker.scripts.literature_pipeline.run_index_refresh"):
-                                        with patch("pipeline.worker.scripts.literature_pipeline.requests.post", mock_post):
-                                            with patch("pipeline.worker.scripts.literature_pipeline.requests.get", MagicMock()):
-                                                from pipeline.worker.scripts.literature_pipeline import run_ocr
+                        with patch("paperforge.worker.ocr.ensure_ocr_meta", side_effect=make_meta):
+                            with patch("paperforge.worker.ocr.write_json") as mock_write:
+                                with patch("paperforge.worker.sync.run_selection_sync"):
+                                    with patch("paperforge.worker.sync.run_index_refresh"):
+                                        with patch("paperforge.worker.ocr.requests.post", mock_post):
+                                            with patch("paperforge.worker.ocr.requests.get", MagicMock()):
+                                                from paperforge.worker.ocr import run_ocr
                                                 run_ocr(vault)
 
         meta_calls = [c for c in mock_write.call_args_list
@@ -372,7 +372,7 @@ class TestSyncOcrQueue:
             {"zotero_key": key, "has_pdf": True, "pdf_path": "test.pdf"}
         ]
 
-        from pipeline.worker.scripts.literature_pipeline import sync_ocr_queue
+        from paperforge.worker.ocr import sync_ocr_queue
         result = sync_ocr_queue(paths, target_rows)
 
         # done should be skipped
@@ -401,7 +401,7 @@ class TestCleanupBlockedOcrDirs:
         }), encoding="utf-8")
         # No fulltext.md or json/result.json -> should be removed
 
-        from pipeline.worker.scripts.literature_pipeline import cleanup_blocked_ocr_dirs
+        from paperforge.worker.ocr import cleanup_blocked_ocr_dirs
         cleanup_blocked_ocr_dirs(paths)
 
         assert not blocked_dir.exists(), \
@@ -422,7 +422,7 @@ class TestCleanupBlockedOcrDirs:
         # Add fulltext.md as payload
         (blocked_dir / "fulltext.md").write_text("OCR result text", encoding="utf-8")
 
-        from pipeline.worker.scripts.literature_pipeline import cleanup_blocked_ocr_dirs
+        from paperforge.worker.ocr import cleanup_blocked_ocr_dirs
         cleanup_blocked_ocr_dirs(paths)
 
         assert blocked_dir.exists(), \
@@ -467,7 +467,7 @@ do_ocr: true
             ]), encoding="utf-8")
 
         # Smoke test: ensure no state raises an unhandled exception
-        from pipeline.worker.scripts.literature_pipeline import run_ocr
+        from paperforge.worker.ocr import run_ocr
         try:
             run_ocr(vault)
         except Exception as e:

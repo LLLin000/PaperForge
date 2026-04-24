@@ -12,7 +12,7 @@ from importlib.util import spec_from_file_location, module_from_spec
 _REPO_ROOT = Path(__file__).parent.parent
 _ld_spec = spec_from_file_location(
     "ld_deep",
-    _REPO_ROOT / "skills" / "literature-qa" / "scripts" / "ld_deep.py",
+    _REPO_ROOT / "paperforge" / "skills" / "literature-qa" / "scripts" / "ld_deep.py",
 )
 _ld_mod = module_from_spec(_ld_spec)
 sys.modules["ld_deep"] = _ld_mod

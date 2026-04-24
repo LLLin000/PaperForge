@@ -1,15 +1,15 @@
 """Tests for incremental merge and user-view preservation (Phase 3, Plan 02)."""
 import pytest
 from pathlib import Path
-from pipeline.worker.scripts.literature_pipeline import (
+from paperforge.worker.base_views import (
     ensure_base_views,
     merge_base_views,
     build_base_views,
     substitute_config_placeholders,
     PAPERFORGE_VIEW_PREFIX,
     STANDARD_VIEW_NAMES,
-    slugify_filename,
 )
+from paperforge.worker.sync import slugify_filename
 
 
 class TestIncrementalMerge:

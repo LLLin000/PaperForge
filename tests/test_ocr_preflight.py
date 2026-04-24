@@ -37,15 +37,15 @@ class TestOcrPreflight:
         mock_paths["ocr"].mkdir()
 
         with patch(
-            "pipeline.worker.scripts.literature_pipeline.pipeline_paths",
+            "paperforge.worker.ocr.pipeline_paths",
             return_value=mock_paths,
         ):
             with patch(
-                "pipeline.worker.scripts.literature_pipeline.load_control_actions",
+                "paperforge.worker.ocr.load_control_actions",
                 return_value={"ABC123": {"do_ocr": True}},
             ):
                 with patch(
-                    "pipeline.worker.scripts.literature_pipeline.load_export_rows",
+                    "paperforge.worker.ocr.load_export_rows",
                     return_value=[
                         {
                             "key": "ABC123",
@@ -55,7 +55,7 @@ class TestOcrPreflight:
                     ],
                 ):
                     with patch(
-                        "pipeline.worker.scripts.literature_pipeline.sync_ocr_queue",
+                        "paperforge.worker.ocr.sync_ocr_queue",
                         return_value=[
                             {
                                 "zotero_key": "ABC123",
@@ -65,19 +65,19 @@ class TestOcrPreflight:
                         ],
                     ):
                         with patch(
-                            "pipeline.worker.scripts.literature_pipeline.ensure_ocr_meta",
+                            "paperforge.worker.ocr.ensure_ocr_meta",
                             return_value={},
                         ):
                             with patch(
-                                "pipeline.worker.scripts.literature_pipeline.write_json"
+                                "paperforge.worker.ocr.write_json"
                             ) as mock_write:
                                 with patch(
-                                    "pipeline.worker.scripts.literature_pipeline.run_selection_sync"
+                                    "paperforge.worker.sync.run_selection_sync"
                                 ):
                                     with patch(
-                                        "pipeline.worker.scripts.literature_pipeline.run_index_refresh"
+                                        "paperforge.worker.sync.run_index_refresh"
                                     ):
-                                        from pipeline.worker.scripts.literature_pipeline import (
+                                        from paperforge.worker.ocr import (
                                             run_ocr,
                                         )
 
@@ -98,15 +98,15 @@ class TestOcrPreflight:
         mock_paths["ocr"].mkdir()
 
         with patch(
-            "pipeline.worker.scripts.literature_pipeline.pipeline_paths",
+            "paperforge.worker.ocr.pipeline_paths",
             return_value=mock_paths,
         ):
             with patch(
-                "pipeline.worker.scripts.literature_pipeline.load_control_actions",
+                "paperforge.worker.ocr.load_control_actions",
                 return_value={"ABC123": {"do_ocr": True}},
             ):
                 with patch(
-                    "pipeline.worker.scripts.literature_pipeline.load_export_rows",
+                    "paperforge.worker.ocr.load_export_rows",
                     return_value=[
                         {
                             "key": "ABC123",
@@ -121,7 +121,7 @@ class TestOcrPreflight:
                     ],
                 ):
                     with patch(
-                        "pipeline.worker.scripts.literature_pipeline.sync_ocr_queue",
+                        "paperforge.worker.ocr.sync_ocr_queue",
                         return_value=[
                             {
                                 "zotero_key": "ABC123",
@@ -131,19 +131,19 @@ class TestOcrPreflight:
                         ],
                     ):
                         with patch(
-                            "pipeline.worker.scripts.literature_pipeline.ensure_ocr_meta",
+                            "paperforge.worker.ocr.ensure_ocr_meta",
                             return_value={},
                         ):
                             with patch(
-                                "pipeline.worker.scripts.literature_pipeline.write_json"
+                                "paperforge.worker.ocr.write_json"
                             ) as mock_write:
                                 with patch(
-                                    "pipeline.worker.scripts.literature_pipeline.run_selection_sync"
+                                    "paperforge.worker.sync.run_selection_sync"
                                 ):
                                     with patch(
-                                        "pipeline.worker.scripts.literature_pipeline.run_index_refresh"
+                                        "paperforge.worker.sync.run_index_refresh"
                                     ):
-                                        from pipeline.worker.scripts.literature_pipeline import (
+                                        from paperforge.worker.ocr import (
                                             run_ocr,
                                         )
 
@@ -166,15 +166,15 @@ class TestOcrPreflight:
         mock_paths["ocr"].mkdir()
 
         with patch(
-            "pipeline.worker.scripts.literature_pipeline.pipeline_paths",
+            "paperforge.worker.ocr.pipeline_paths",
             return_value=mock_paths,
         ):
             with patch(
-                "pipeline.worker.scripts.literature_pipeline.load_control_actions",
+                "paperforge.worker.ocr.load_control_actions",
                 return_value={"ABC123": {"do_ocr": True}},
             ):
                 with patch(
-                    "pipeline.worker.scripts.literature_pipeline.load_export_rows",
+                    "paperforge.worker.ocr.load_export_rows",
                     return_value=[
                         {
                             "key": "ABC123",
@@ -189,7 +189,7 @@ class TestOcrPreflight:
                     ],
                 ):
                     with patch(
-                        "pipeline.worker.scripts.literature_pipeline.sync_ocr_queue",
+                        "paperforge.worker.ocr.sync_ocr_queue",
                         return_value=[
                             {
                                 "zotero_key": "ABC123",
@@ -199,15 +199,15 @@ class TestOcrPreflight:
                         ],
                     ):
                         with patch(
-                            "pipeline.worker.scripts.literature_pipeline.ensure_ocr_meta",
+                            "paperforge.worker.ocr.ensure_ocr_meta",
                             return_value={},
                         ):
                             with patch(
-                                "pipeline.worker.scripts.literature_pipeline.write_json"
+                                "paperforge.worker.ocr.write_json"
                             ):
                                 with patch("builtins.open") as mock_open:
                                     with patch(
-                                        "pipeline.worker.scripts.literature_pipeline.requests.post"
+                                        "paperforge.worker.ocr.requests.post"
                                     ) as mock_post:
                                         mock_post.return_value = MagicMock()
                                         mock_post.return_value.json.return_value = {
@@ -217,12 +217,12 @@ class TestOcrPreflight:
                                             lambda: None
                                         )
                                         with patch(
-                                            "pipeline.worker.scripts.literature_pipeline.run_selection_sync"
+                                            "paperforge.worker.sync.run_selection_sync"
                                         ):
                                             with patch(
-                                                "pipeline.worker.scripts.literature_pipeline.run_index_refresh"
+                                                "paperforge.worker.sync.run_index_refresh"
                                             ):
-                                                from pipeline.worker.scripts.literature_pipeline import (
+                                                from paperforge.worker.ocr import (
                                                     run_ocr,
                                                 )
 
@@ -246,15 +246,15 @@ class TestOcrPreflight:
             return_value=str(target),
         ):
             with patch(
-                "pipeline.worker.scripts.literature_pipeline.pipeline_paths",
+                "paperforge.worker.ocr.pipeline_paths",
                 return_value=mock_paths,
             ):
                 with patch(
-                    "pipeline.worker.scripts.literature_pipeline.load_control_actions",
+                    "paperforge.worker.ocr.load_control_actions",
                     return_value={"ABC123": {"do_ocr": True}},
                 ):
                     with patch(
-                        "pipeline.worker.scripts.literature_pipeline.load_export_rows",
+                        "paperforge.worker.ocr.load_export_rows",
                         return_value=[
                             {
                                 "key": "ABC123",
@@ -269,7 +269,7 @@ class TestOcrPreflight:
                         ],
                     ):
                         with patch(
-                            "pipeline.worker.scripts.literature_pipeline.sync_ocr_queue",
+                            "paperforge.worker.ocr.sync_ocr_queue",
                             return_value=[
                                 {
                                     "zotero_key": "ABC123",
@@ -279,15 +279,15 @@ class TestOcrPreflight:
                             ],
                         ):
                             with patch(
-                                "pipeline.worker.scripts.literature_pipeline.ensure_ocr_meta",
+                                "paperforge.worker.ocr.ensure_ocr_meta",
                                 return_value={},
                             ):
                                 with patch(
-                                    "pipeline.worker.scripts.literature_pipeline.write_json"
+                                    "paperforge.worker.ocr.write_json"
                                 ):
                                     with patch("builtins.open") as mock_open:
                                         with patch(
-                                            "pipeline.worker.scripts.literature_pipeline.requests.post"
+                                            "paperforge.worker.ocr.requests.post"
                                         ) as mock_post:
                                             mock_post.return_value = MagicMock()
                                             mock_post.return_value.json.return_value = {
@@ -297,12 +297,12 @@ class TestOcrPreflight:
                                                 lambda: None
                                             )
                                             with patch(
-                                                "pipeline.worker.scripts.literature_pipeline.run_selection_sync"
+                                                "paperforge.worker.sync.run_selection_sync"
                                             ):
                                                 with patch(
-                                                    "pipeline.worker.scripts.literature_pipeline.run_index_refresh"
+                                                    "paperforge.worker.sync.run_index_refresh"
                                                 ):
-                                                    from pipeline.worker.scripts.literature_pipeline import (
+                                                    from paperforge.worker.ocr import (
                                                         run_ocr,
                                                     )
 

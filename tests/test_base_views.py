@@ -1,7 +1,7 @@
 """Tests for the 8-view Base generation system (Phase 3, Plan 01)."""
 import pytest
 from pathlib import Path
-from pipeline.worker.scripts.literature_pipeline import (
+from paperforge.worker.base_views import (
     build_base_views,
     substitute_config_placeholders,
 )

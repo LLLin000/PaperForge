@@ -153,7 +153,7 @@ class TestLoadExportRowsAttachmentNormalization:
 
     def test_bare_key_key_pdf_normalized_to_storage_prefix(self, tmp_path: Path) -> None:
         """Bare 'KEY/KEY.pdf' path is normalized to 'storage:KEY/KEY.pdf'."""
-        from pipeline.worker.scripts.literature_pipeline import load_export_rows
+        from paperforge.worker.sync import load_export_rows
 
         export_data = {
             "items": [
@@ -179,7 +179,7 @@ class TestLoadExportRowsAttachmentNormalization:
 
     def test_storage_prefix_preserved(self, tmp_path: Path) -> None:
         """Already-prefixed 'storage:KEY/KEY.pdf' path is not double-prefixed."""
-        from pipeline.worker.scripts.literature_pipeline import load_export_rows
+        from paperforge.worker.sync import load_export_rows
 
         export_data = {
             "items": [
@@ -205,7 +205,7 @@ class TestLoadExportRowsAttachmentNormalization:
 
     def test_absolute_path_normalized_with_prefix(self, tmp_path: Path) -> None:
         """Absolute paths are normalized with absolute: prefix."""
-        from pipeline.worker.scripts.literature_pipeline import load_export_rows
+        from paperforge.worker.sync import load_export_rows
 
         abs_path = str(tmp_path / "ABC123" / "ABC123.pdf")
         export_data = {
@@ -232,7 +232,7 @@ class TestLoadExportRowsAttachmentNormalization:
 
     def test_empty_attachment_path_unchanged(self, tmp_path: Path) -> None:
         """Empty attachment path is returned unchanged."""
-        from pipeline.worker.scripts.literature_pipeline import load_export_rows
+        from paperforge.worker.sync import load_export_rows
 
         export_data = {
             "items": [
@@ -258,7 +258,7 @@ class TestLoadExportRowsAttachmentNormalization:
 
     def test_non_pdf_attachment_unchanged(self, tmp_path: Path) -> None:
         """Non-PDF attachments are returned with empty contentType and unchanged path."""
-        from pipeline.worker.scripts.literature_pipeline import load_export_rows
+        from paperforge.worker.sync import load_export_rows
 
         export_data = {
             "items": [
