@@ -10,21 +10,27 @@ See: `.planning/PROJECT.md` (updated 2026-04-24)
 
 ## Current Position
 
-Phase: 10 (in_progress)
+Phase: 10 (done)
 Milestone: v1.2
-Status: Phase 10 executing — Wave 4 complete
-Last activity: 2026-04-24 — Wave 4 (Tasks 5-6): Consistency audit script + manual checklist
+Status: Phase 10 complete — All tasks finished, verification passed
+Last activity: 2026-04-24 — Task 7: Verification & state update (audit 4/4, tests 178 passed/2 skipped/0 failed)
 
 ## Next Action
 
-Wave 4 complete. Proceeding to Wave 5 (Task 7).
+Phase 10 complete. Milestone v1.2 is ready for release.
 
-Wave status:
+All waves finished:
 - Wave 1: Task 1 — ARCHITECTURE.md ✅
 - Wave 2: Task 2 — MIGRATION-v1.2.md ✅
 - Wave 3: Tasks 3-4 — docs/COMMANDS.md + command/*.md template ✅
 - Wave 4: Tasks 5-6 — Consistency audit (script + checklist) ✅
-- Wave 5: Task 7 — Verification & state update ⏳
+- Wave 5: Task 7 — Verification & state update ✅
+
+Phase 10 verification results:
+- Consistency audit: 4/4 passing
+- Test suite: 178 passed, 2 skipped, 0 failed
+- All documentation artifacts present
+- STATE.md and ROADMAP.md updated
 
 Phase 10 scope:
 - Task 1: ARCHITECTURE.md — system architecture + ADR records

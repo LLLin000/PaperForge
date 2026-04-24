@@ -31,13 +31,12 @@
 
 ---
 
-## In Progress: v1.2 Systematization & Cohesion
+## Completed: v1.2 Systematization & Cohesion
 
 **Created:** 2026-04-24  
 **Scope:** Unify agent commands under `/pf-*`, simplify CLI, research architecture, ensure UX cohesion.  
-**Status:** Phase 9 complete, Phase 10 pending  
-**Requirements:** SYS-01, SYS-02, SYS-03, SYS-04, SYS-05, SYS-06, SYS-07 (7 requirements)  
-**Roadmap:** See `ROADMAP-v1.2.md`
+**Status:** COMPLETE — Phases 9-10 done  
+**Requirements:** SYS-01, SYS-02, SYS-03, SYS-04, SYS-05, SYS-06, SYS-07 (7/7)
 
 ### Phase 9: Command Unification & CLI Simplification
 
@@ -48,7 +47,7 @@
 ### Phase 10: Documentation & Cohesion
 
 **Goal:** Document architecture, create migration guide, ensure consistency.  
-**Status:** Planned  
+**Status:** Done (2026-04-24)  
 **Requirements:** SYS-03, SYS-04, SYS-05, SYS-06 (4/7)
 
 ---
@@ -74,7 +73,7 @@
 | 7 | Zotero PDF, Metadata, And State Repair | v1.1 | Resolve PDFs and converge status fields | 9 | Done |
 | 8 | Deep Helper Deployment And Sandbox Regression Gate | v1.1 | Automate the manual sandbox audit | 6 | Done |
 | 9 | Command Unification & CLI Simplification | v1.2 | Unified `/pf-*` namespace, simplified CLI | 3 | Done |
-| 10 | Documentation & Cohesion | v1.2 | Architecture docs, migration guide, consistency | 4 | Planned |
+| 10 | Documentation & Cohesion | v1.2 | Architecture docs, migration guide, consistency | 4 | Done |
 
 ---
 *Roadmap created: 2026-04-23 for milestone v1.1*
