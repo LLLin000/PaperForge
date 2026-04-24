@@ -3035,7 +3035,168 @@ def run_deep_reading(vault: Path, verbose: bool = False) -> int:
     print(f'deep-reading: synced {synced} records, {len(pending_queue)} pending')
     return 0
 
-def run_repair(vault: Path, paths: dict, verbose: bool = False, fix: bool = False) -> dict:
+def _find_export_for_domain(paths: dict[str, Path], domain: str) -> Path | None:
+    """Find the BBT export JSON file for a given domain."""
+    for export_path in sorted(paths["exports"].glob("*.json")):
+        if export_path.stem == domain:
+            return export_path
+    return None
+
+
+def _detect_path_errors(paths: dict[str, Path], verbose: bool = False) -> dict:
+    """Scan library-records for path_error fields.
+
+    Returns dict with:
+        - total: total count of records with path_error
+        - by_type: dict mapping error type -> count
+        - records: list of record dicts with keys: path, zotero_key, domain, path_error, bbt_path_raw
+    """
+    result: dict = {"total": 0, "by_type": {}, "records": []}
+    if not paths["library_records"].exists():
+        return result
+    for record_path in paths["library_records"].rglob("*.md"):
+        try:
+            text = record_path.read_text(encoding="utf-8")
+        except Exception as e:
+            if verbose:
+                print(f"[repair] error reading {record_path}: {e}")
+            continue
+        err_match = re.search(r'^path_error:\s*"(.*?)"\s*$', text, re.MULTILINE)
+        if not err_match:
+            continue
+        path_error = err_match.group(1).strip()
+        if not path_error:
+            continue
+        key_match = re.search(r'^zotero_key:\s*"?(.+?)"?\s*$', text, re.MULTILINE)
+        if not key_match:
+            continue
+        zotero_key = key_match.group(1).strip()
+        domain = record_path.parent.name
+        bbt_match = re.search(r'^bbt_path_raw:\s*"(.*?)"\s*$', text, re.MULTILINE)
+        bbt_path_raw = bbt_match.group(1) if bbt_match else ""
+        result["total"] += 1
+        result["by_type"][path_error] = result["by_type"].get(path_error, 0) + 1
+        result["records"].append(
+            {
+                "path": record_path,
+                "zotero_key": zotero_key,
+                "domain": domain,
+                "path_error": path_error,
+                "bbt_path_raw": bbt_path_raw,
+                "text": text,
+            }
+        )
+    return result
+
+
+def repair_pdf_paths(
+    vault: Path,
+    paths: dict[str, Path],
+    error_records: list[dict],
+    verbose: bool = False,
+) -> int:
+    """Re-resolve PDF paths for items with path_error.
+
+    Returns number of paths successfully fixed.
+    """
+    fixed = 0
+    from paperforge.pdf_resolver import resolve_pdf_path
+
+    cfg = load_vault_config(vault)
+    zotero_dir = vault / cfg.get("system_dir", "99_System") / "Zotero"
+
+    # Cache export rows by domain to avoid reloading
+    domain_exports: dict[str, list[dict]] = {}
+
+    for record in error_records:
+        record_path = record["path"]
+        zotero_key = record["zotero_key"]
+        domain = record["domain"]
+        path_error = record["path_error"]
+        text = record["text"]
+
+        # For not_found errors, try to find the item in BBT export and re-process
+        if path_error == "not_found":
+            export_rows = domain_exports.get(domain)
+            if export_rows is None:
+                export_path = _find_export_for_domain(paths, domain)
+                if export_path and export_path.exists():
+                    try:
+                        export_rows = load_export_rows(export_path)
+                        domain_exports[domain] = export_rows
+                    except Exception as e:
+                        if verbose:
+                            print(
+                                f"[repair] error loading export for {domain}: {e}"
+                            )
+                        export_rows = []
+                else:
+                    export_rows = []
+                    domain_exports[domain] = export_rows
+
+            item = next((r for r in export_rows if r["key"] == zotero_key), None)
+            if item:
+                pdf_path = item.get("pdf_path", "")
+                if pdf_path:
+                    new_wikilink = obsidian_wikilink_for_pdf(
+                        pdf_path, vault, zotero_dir
+                    )
+                    if new_wikilink:
+                        new_text = update_frontmatter_field(
+                            text, "pdf_path", new_wikilink
+                        )
+                        new_text = update_frontmatter_field(
+                            new_text, "path_error", ""
+                        )
+                        new_text = update_frontmatter_field(
+                            new_text,
+                            "bbt_path_raw",
+                            item.get("bbt_path_raw", ""),
+                        )
+                        new_text = update_frontmatter_field(
+                            new_text,
+                            "zotero_storage_key",
+                            item.get("zotero_storage_key", ""),
+                        )
+                        if new_text != text:
+                            record_path.write_text(new_text, encoding="utf-8")
+                            fixed += 1
+                            if verbose:
+                                print(
+                                    f"[repair] fixed path for {zotero_key}: {new_wikilink}"
+                                )
+                        continue
+
+        # For all errors, try resolving the current pdf_path
+        pdf_match = re.search(r'^pdf_path:\s*"(.*?)"\s*$', text, re.MULTILINE)
+        if pdf_match:
+            current_pdf = pdf_match.group(1).strip()
+            if current_pdf:
+                raw_path = current_pdf.strip("[]")
+                resolved = resolve_pdf_path(raw_path, True, vault, zotero_dir)
+                if resolved:
+                    new_text = update_frontmatter_field(text, "path_error", "")
+                    if new_text != text:
+                        record_path.write_text(new_text, encoding="utf-8")
+                        fixed += 1
+                        if verbose:
+                            print(f"[repair] cleared path_error for {zotero_key}")
+                else:
+                    if verbose:
+                        print(f"[repair] {zotero_key} path still unresolved")
+            else:
+                if verbose:
+                    print(
+                        f"[repair] {zotero_key} has empty pdf_path (not_found)"
+                    )
+        else:
+            if verbose:
+                print(f"[repair] {zotero_key} has no pdf_path field")
+
+    return fixed
+
+
+def run_repair(vault: Path, paths: dict, verbose: bool = False, fix: bool = False, fix_paths: bool = False) -> dict:
     """Scan all domains for three-way state divergence and optionally repair.
 
     Compares three sources of ocr_status:
@@ -3189,8 +3350,26 @@ def run_repair(vault: Path, paths: dict, verbose: bool = False, fix: bool = Fals
                 result['fixed'] += fixed_count
                 if verbose and fixed_count > 0:
                     print(f"[repair] fixed {fixed_count} files for {zotero_key}")
-    if verbose:
-        print(f"[repair] scanned={result['scanned']} divergent={len(result['divergent'])} fixed={result['fixed']} errors={len(result['errors'])}")
+    # Path error detection and repair
+    path_errors = _detect_path_errors(paths, verbose)
+    if path_errors["total"] > 0:
+        error_summary = ", ".join(
+            f"{count} {err}" for err, count in sorted(path_errors["by_type"].items())
+        )
+        print(
+            f"[repair] Found {path_errors['total']} items with path errors: {error_summary}"
+        )
+        if fix_paths:
+            fixed_count = repair_pdf_paths(
+                vault, paths, path_errors["records"], verbose
+            )
+            print(f"[repair] Fixed {fixed_count} PDF paths")
+        else:
+            print("[repair] Tip: run with --fix-paths to attempt auto-resolution")
+    elif verbose:
+        print("[repair] No path errors found")
+
+    result["path_errors"] = path_errors
     return result
 
 def _detect_zotero_data_dir() -> str | None:
@@ -3577,6 +3756,17 @@ def run_status(vault: Path) -> int:
     env_paths = [vault / '.env', paths['pipeline'] / '.env']
     env_found = [str(path.relative_to(vault)).replace('\\', '/') for path in env_paths if path.exists()]
 
+    # Count path errors
+    path_error_count = 0
+    if paths['library_records'].exists():
+        for record_path in paths['library_records'].rglob('*.md'):
+            try:
+                text = record_path.read_text(encoding='utf-8')
+                if re.search(r'^path_error:\s*"(.+?)"\s*$', text, re.MULTILINE):
+                    path_error_count += 1
+            except Exception:
+                continue
+
     print('PaperForge Lite status')
     print(f"- vault: {vault}")
     print(f"- system_dir: {cfg['system_dir']}")
@@ -3589,6 +3779,9 @@ def run_status(vault: Path) -> int:
     print(f"- formal_notes: {note_count}")
     print(f"- bases: {base_count}")
     print(f"- ocr: {ocr_done}/{ocr_total} done")
+    print(f"- path_errors: {path_error_count}")
+    if path_error_count > 0:
+        print("  Tip: Run `paperforge repair --fix-paths` to attempt resolution")
     print(f"- env: {', '.join(env_found) if env_found else 'not configured'}")
     return 0
 

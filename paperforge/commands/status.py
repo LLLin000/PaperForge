@@ -1,4 +1,8 @@
-"""Status command."""
+"""Status command.
+
+Reports vault statistics including library record counts, OCR progress,
+and path_error counts (displayed by run_status in literature_pipeline).
+"""
 
 import argparse
 from pathlib import Path

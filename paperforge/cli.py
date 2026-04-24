@@ -185,6 +185,10 @@ def build_parser() -> argparse.ArgumentParser:
         "--fix", action="store_true",
         help="Actually apply repairs instead of dry-run"
     )
+    p_repair.add_argument(
+        "--fix-paths", action="store_true",
+        help="Re-resolve PDF paths for items with path_error"
+    )
 
     # ocr (unified)
     p_ocr = sub.add_parser("ocr", help="OCR operations")

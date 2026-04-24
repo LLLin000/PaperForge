@@ -36,9 +36,23 @@ def run(args: argparse.Namespace) -> int:
         paths = paperforge_paths(vault, cfg)
 
     run_repair = _get_run_repair()
-    return run_repair(
+    result = run_repair(
         vault,
         paths,
         verbose=getattr(args, "verbose", False),
         fix=getattr(args, "fix", False),
+        fix_paths=getattr(args, "fix_paths", False),
     )
+    # Report path_error summary from repair scan
+    path_errors = result.get("path_errors", {})
+    if path_errors.get("total", 0) > 0:
+        error_summary = ", ".join(
+            f"{count} {err}"
+            for err, count in sorted(path_errors.get("by_type", {}).items())
+        )
+        print(
+            f"repair: Found {path_errors['total']} items with path_error: {error_summary}"
+        )
+    # Return non-zero if any divergences or path_errors remain
+    has_issues = bool(result.get("divergent")) or path_errors.get("total", 0) > 0
+    return 1 if has_issues else 0
