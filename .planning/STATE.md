@@ -54,6 +54,8 @@ Milestone v1.0 completed Phases 1-5:
 | 4 | done | Deep-reading queue states, doctor command, AGENTS/README updates |
 | 5 | done | Fixture smoke test suite and release verification |
 | 6 | done | Setup/CLI/docs consistency — field names, env vars, export validation, HTTP 405 handling, vault prefill |
+| 7 | done | Zotero PDF, metadata, and state repair — OCR meta validation, three-way divergence repair command, PDF resolver tests |
+| 8 | done | Deep helper deployment and sandbox regression gate — importability, fixtures, smoke tests, rollback |
 
 ## Decisions Logged
 

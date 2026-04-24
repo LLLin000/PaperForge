@@ -7,45 +7,45 @@
 
 ### Setup And Commands
 
-- [ ] **SETUP-01**: User can run `python setup_wizard.py --vault <vault>` and see an immediate, understandable setup UI or message instead of an unexplained terminal stall.
-- [ ] **SETUP-02**: User can rely on `--vault <vault>` being carried into the wizard flow without retyping the same path.
-- [ ] **SETUP-03**: User can continue with a documented fallback command when the global `paperforge` executable is not registered.
-- [ ] **SETUP-04**: User can inspect `paperforge paths --json` and receive installed worker and Agent script paths that actually exist.
-- [ ] **SETUP-05**: Agent command docs use the same JSON field names emitted by `paperforge paths --json`.
+- [x] **SETUP-01**: User can run `python setup_wizard.py --vault <vault>` and see an immediate, understandable setup UI or message instead of an unexplained terminal stall.
+- [x] **SETUP-02**: User can rely on `--vault <vault>` being carried into the wizard flow without retyping the same path.
+- [x] **SETUP-03**: User can continue with a documented fallback command when the global `paperforge` executable is not registered.
+- [x] **SETUP-04**: User can inspect `paperforge paths --json` and receive installed worker and Agent script paths that actually exist.
+- [x] **SETUP-05**: Agent command docs use the same JSON field names emitted by `paperforge paths --json`.
 
 ### Diagnostics
 
-- [ ] **DIAG-01**: User can run `paperforge doctor` against per-domain Better BibTeX exports without being incorrectly blocked for missing `library.json`.
-- [ ] **DIAG-02**: User can configure PaddleOCR once with the env variable name that setup writes and workers read.
-- [ ] **DIAG-03**: Doctor reports the deployed worker script path according to the same resolver contract used by runtime commands.
-- [ ] **DIAG-04**: OCR doctor distinguishes an expected endpoint-method mismatch from a bad user URL when checking the configured PaddleOCR job endpoint.
+- [x] **DIAG-01**: User can run `paperforge doctor` against per-domain Better BibTeX exports without being incorrectly blocked for missing `library.json`.
+- [x] **DIAG-02**: User can configure PaddleOCR once with the env variable name that setup writes and workers read.
+- [x] **DIAG-03**: Doctor reports the deployed worker script path according to the same resolver contract used by runtime commands.
+- [x] **DIAG-04**: OCR doctor distinguishes an expected endpoint-method mismatch from a bad user URL when checking the configured PaddleOCR job endpoint.
 
 ### Zotero Paths And Metadata
 
-- [ ] **ZPATH-01**: User can sync a BBT attachment path shaped like `KEY/KEY.pdf` when the file exists under the configured Zotero `storage/KEY/` directory.
-- [ ] **ZPATH-02**: User can sync common `storage:KEY/file.pdf` and `storage/KEY/file.pdf` attachment forms.
-- [ ] **ZPATH-03**: User sees library-record `pdf_path` populated only with a readable resolved PDF path or an explicit actionable missing-PDF status.
-- [ ] **META-01**: User sees `first_author` populated in generated library-records from normalized export metadata.
-- [ ] **META-02**: User sees `journal` populated in generated library-records from normalized export metadata.
+- [~] **ZPATH-01**: User can sync a BBT attachment path shaped like `KEY/KEY.pdf` when the file exists under the configured Zotero `storage/KEY/` directory.
+- [~] **ZPATH-02**: User can sync common `storage:KEY/file.pdf` and `storage/KEY/file.pdf` attachment forms.
+- [~] **ZPATH-03**: User sees library-record `pdf_path` populated only with a readable resolved PDF path or an explicit actionable missing-PDF status.
+- [x] **META-01**: User sees `first_author` populated in generated library-records from normalized export metadata.
+- [x] **META-02**: User sees `journal` populated in generated library-records from normalized export metadata.
 
 ### State And Queue Consistency
 
-- [ ] **STATE-01**: User can run `selection-sync`, `index-refresh`, and `ocr run` without records simultaneously saying `has_pdf: true` and `ocr_status: nopdf` when the PDF is readable.
-- [ ] **STATE-02**: User sees formal note OCR status synchronized with validated OCR `meta.json` status after worker refresh.
-- [ ] **STATE-03**: User sees `paperforge deep-reading --verbose` print the ready/waiting/blocked queue summary directly or print the report path clearly.
-- [ ] **STATE-04**: User can tell from command output which record needs OCR, which one is blocked, and which one is ready for `/LD-deep`.
+- [x] **STATE-01**: User can run `selection-sync`, `index-refresh`, and `ocr run` without records simultaneously saying `has_pdf: true` and `ocr_status: nopdf` when the PDF is readable.
+- [x] **STATE-02**: User sees formal note OCR status synchronized with validated OCR `meta.json` status after worker refresh.
+- [x] **STATE-03**: User sees `paperforge deep-reading --verbose` print the ready/waiting/blocked queue summary directly or print the report path clearly.
+- [x] **STATE-04**: User can tell from command output which record needs OCR, which one is blocked, and which one is ready for `/LD-deep`.
 
 ### Deep Reading Helpers
 
-- [ ] **DEEP-04**: User can run the deployed `ld_deep.py` helper from the Vault installation without manually setting `PYTHONPATH`.
-- [ ] **DEEP-05**: User can run `/LD-deep queue` documentation examples using paths and field names that exist.
-- [ ] **DEEP-06**: User can prepare a sandbox OCR-complete paper and get `figure-map.json`, `chart-type-map.json`, and a `## 🔍 精读` scaffold in the formal note.
+- [x] **DEEP-04**: User can run the deployed `ld_deep.py` helper from the Vault installation without manually setting `PYTHONPATH`.
+- [x] **DEEP-05**: User can run `/LD-deep queue` documentation examples using paths and field names that exist.
+- [x] **DEEP-06**: User can prepare a sandbox OCR-complete paper and get `figure-map.json`, `chart-type-map.json`, and a `## 🔍 精读` scaffold in the formal note.
 
 ### Regression Coverage
 
-- [ ] **REG-01**: Maintainer can run one sandbox smoke test that starts from a clean `tests/sandbox/00_TestVault` and covers setup-equivalent layout, selection sync, index refresh, OCR preflight/dry-run, deep-reading queue, and `ld_deep.py prepare`.
-- [ ] **REG-02**: Smoke assertions cover the exact regressions from the manual audit: doctor env names, per-domain JSON, worker path JSON, BBT PDF path resolution, metadata fields, queue output, and deployed Agent importability.
-- [ ] **REG-03**: README, INSTALLATION.md, AGENTS.md, and command files stay consistent with the smoke-tested commands.
+- [x] **REG-01**: Maintainer can run one sandbox smoke test that starts from a clean `tests/sandbox/00_TestVault` and covers setup-equivalent layout, selection sync, index refresh, OCR preflight/dry-run, deep-reading queue, and `ld_deep.py prepare`.
+- [x] **REG-02**: Smoke assertions cover the exact regressions from the manual audit: doctor env names, per-domain JSON, worker path JSON, BBT PDF path resolution, metadata fields, queue output, and deployed Agent importability.
+- [x] **REG-03**: README, INSTALLATION.md, AGENTS.md, and command files stay consistent with the smoke-tested commands.
 
 ## Future Requirements
 
@@ -75,34 +75,35 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SETUP-01 | Phase 6 | Pending |
-| SETUP-02 | Phase 6 | Pending |
-| SETUP-03 | Phase 6 | Pending |
-| SETUP-04 | Phase 6 | Pending |
-| SETUP-05 | Phase 6 | Pending |
-| DIAG-01 | Phase 6 | Pending |
-| DIAG-02 | Phase 6 | Pending |
-| DIAG-03 | Phase 6 | Pending |
-| DIAG-04 | Phase 6 | Pending |
-| ZPATH-01 | Phase 7 | Pending |
-| ZPATH-02 | Phase 7 | Pending |
-| ZPATH-03 | Phase 7 | Pending |
-| META-01 | Phase 7 | Pending |
-| META-02 | Phase 7 | Pending |
-| STATE-01 | Phase 7 | Pending |
-| STATE-02 | Phase 7 | Pending |
-| STATE-03 | Phase 7 | Pending |
-| STATE-04 | Phase 7 | Pending |
-| DEEP-04 | Phase 8 | Pending |
-| DEEP-05 | Phase 8 | Pending |
-| DEEP-06 | Phase 8 | Pending |
-| REG-01 | Phase 8 | Pending |
-| REG-02 | Phase 8 | Pending |
-| REG-03 | Phase 8 | Pending |
+| SETUP-01 | Phase 6 | Complete |
+| SETUP-02 | Phase 6 | Complete |
+| SETUP-03 | Phase 6 | Complete |
+| SETUP-04 | Phase 6 | Complete |
+| SETUP-05 | Phase 6 | Complete |
+| DIAG-01 | Phase 6 | Complete |
+| DIAG-02 | Phase 6 | Complete |
+| DIAG-03 | Phase 6 | Complete |
+| DIAG-04 | Phase 6 | Complete |
+| ZPATH-01 | Phase 7 | Partial |
+| ZPATH-02 | Phase 7 | Partial |
+| ZPATH-03 | Phase 7 | Partial |
+| META-01 | Phase 7 | Complete |
+| META-02 | Phase 7 | Complete |
+| STATE-01 | Phase 7 | Complete |
+| STATE-02 | Phase 7 | Complete |
+| STATE-03 | Phase 7 | Complete |
+| STATE-04 | Phase 7 | Complete |
+| DEEP-04 | Phase 8 | Complete |
+| DEEP-05 | Phase 8 | Complete |
+| DEEP-06 | Phase 8 | Complete |
+| REG-01 | Phase 8 | Complete |
+| REG-02 | Phase 8 | Complete |
+| REG-03 | Phase 8 | Complete |
 
 **Coverage:**
 - v1.1 requirements: 24 total
-- Mapped to phases: 24
+- Complete: 21
+- Partial: 3 (ZPATH-01/02/03 — BBT bare path normalization deferred)
 - Unmapped: 0
 
 ---
