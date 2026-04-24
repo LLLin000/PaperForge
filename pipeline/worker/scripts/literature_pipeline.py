@@ -2827,16 +2827,16 @@ def run_deep_reading(vault: Path, verbose: bool = False) -> int:
                 for q in blocked:
                     ocr_s = q['ocr_status'] or ''
                     if not ocr_s or ocr_s == 'pending':
-                        fix = f"paperforge ocr run"
+                        fix = f"paperforge ocr"
                         report_lines.append(f"- `{q['zotero_key']}`: 运行 `{fix}` 启动 OCR")
                     elif ocr_s == 'processing':
                         report_lines.append(f"- `{q['zotero_key']}`: OCR 进行中，请等待完成")
                     elif ocr_s == 'failed':
-                        report_lines.append(f"- `{q['zotero_key']}`: OCR 失败 — 检查 meta.json 错误信息，然后重新运行 `paperforge ocr run`")
+                        report_lines.append(f"- `{q['zotero_key']}`: OCR 失败 — 检查 meta.json 错误信息，然后重新运行 `paperforge ocr`")
                     else:
-                        report_lines.append(f"- `{q['zotero_key']}`: 运行 `paperforge ocr run` 重试")
+                        report_lines.append(f"- `{q['zotero_key']}`: 运行 `paperforge ocr` 重试")
                 report_lines.append('')
-        report_lines.extend(['## 操作', '', '- 对就绪论文，使用 `/LD-deep <zotero_key>` 触发精读', '- 批量触发：提供多个 key，用 subagent 并行处理', ''])
+        report_lines.extend(['## 操作', '', '- 对就绪论文，使用 `/pf-deep <zotero_key>` 触发精读', '- 批量触发：提供多个 key，用 subagent 并行处理', ''])
     else:
         report_lines = ['# 待精读队列', '', '所有 analyze=true 的论文已完成精读。', '']
     report_path = paths['pipeline'] / 'deep-reading-queue.md'
