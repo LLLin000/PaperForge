@@ -10,19 +10,25 @@ See: `.planning/PROJECT.md` (updated 2026-04-24)
 
 ## Current Position
 
-Phase: 11 (planned)
+Phase: 11 (executing)
 Plan: 11-PLAN.md (8 tasks, 4 waves)
-Status: Phase 11 planning complete, ready for execution
-Last activity: 2026-04-24 — Phase 11 plan created (8 tasks covering ZPATH-01/02/03 + SYS-08)
+Status: Wave 1 complete (Tasks 01-02 done), Wave 2 pending
+Last activity: 2026-04-24 — Wave 1 executed: Task 01 (_normalize_attachment_path) + Task 02 (_identify_main_pdf)
 
 ## Next Action
 
-Phase 11: Zotero Path Normalization — Plan ready. Execute now?
+Phase 11: Zotero Path Normalization — Wave 2 ready (Tasks 03-04: Wikilink Generation & Multi-Attachment Frontmatter)
 
 Options:
-- `/gsd-execute-phase 11` — start execution (Task 01-08)
-- Review/edit `.planning/phases/11-zotero-path-normalization/11-PLAN.md`
-- `/gsd-discuss-phase 11` — revisit decisions before execution
+- `/gsd-execute-phase 11` — continue execution (Task 03-08)
+- Review `.planning/phases/11-zotero-path-normalization/11-SUMMARY.md` for Wave 1 results
+
+## Completed in Wave 1
+
+- Task 01: `_normalize_attachment_path()` handles absolute Windows, storage:, and bare relative paths
+- Task 02: `_identify_main_pdf()` with hybrid strategy (title==PDF → largest size → shortest title)
+- New frontmatter fields: `bbt_path_raw`, `zotero_storage_key`, `attachment_count`, `supplementary`
+- Commits: `2939b86`, `7e7dbe1`
 
 ## Phase 10 Decisions (Locked)
 
@@ -33,7 +39,7 @@ Options:
 
 ## Open Questions
 
-- How to handle multiple attachments per Zotero item (main PDF vs supplementary)
+- [x] How to handle multiple attachments per Zotero item (main PDF vs supplementary) — **Resolved in Task 02**
 - Whether to archive `pipeline/` or merge into `paperforge/`
 - CI platform choice (GitHub Actions vs pre-commit hooks)
 
