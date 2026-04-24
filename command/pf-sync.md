@@ -154,4 +154,4 @@ paperforge sync --vault /path/to/vault
 - [pf-ocr](pf-ocr.md) — OCR 提取（下一步操作）
 - [pf-status](pf-status.md) — 检查系统状态
 - [AGENTS.md](../AGENTS.md) — 完整使用指南、架构说明、常见问题
-- [docs/COMMANDS.md](COMMANDS.md) — 命令总览与矩阵
+- [docs/COMMANDS.md](../docs/COMMANDS.md) — 命令总览与矩阵

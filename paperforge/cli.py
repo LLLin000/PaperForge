@@ -1,8 +1,11 @@
 """paperforge.cli — PaperForge Lite command-line interface.
 
 Exposes `paperforge paths`, `paperforge status`, `paperforge sync`,
-`paperforge selection-sync`, `paperforge index-refresh`, `paperforge ocr`,
-`paperforge ocr run`, `paperforge ocr doctor`, and `paperforge deep-reading`.
+`paperforge ocr`, `paperforge ocr --diagnose`, `paperforge deep-reading`,
+`paperforge repair`, and `paperforge doctor`.
+
+Backward-compatible aliases (deprecated): `selection-sync`, `index-refresh`,
+`ocr run`, `ocr doctor`.
 
 Loads .env from the vault root and from <system_dir>/PaperForge/.env before
 dispatching to worker functions, matching the legacy pipeline behavior.

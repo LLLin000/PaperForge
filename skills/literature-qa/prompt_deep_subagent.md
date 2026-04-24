@@ -1,4 +1,4 @@
-# Subagent Prompt for /LD-deep
+# Subagent Prompt for /pf-deep
 
 ## 任务
 

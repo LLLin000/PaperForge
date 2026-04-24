@@ -33,7 +33,7 @@ def ocr_doctor(config: dict[str, str] | None, live: bool = False) -> dict:
             "level": 1,
             "passed": False,
             "error": "PADDLEOCR_API_TOKEN not found in environment",
-            "fix": "Set PADDLEOCR_API_TOKEN in .env or environment variables and re-run `paperforge ocr doctor`",
+            "fix": "Set PADDLEOCR_API_TOKEN in .env or environment variables and re-run `paperforge ocr --diagnose`",
         }
 
     # L2 — URL reachability
@@ -52,14 +52,14 @@ def ocr_doctor(config: dict[str, str] | None, live: bool = False) -> dict:
                 "level": 2,
                 "passed": False,
                 "error": "URL returned 401 Unauthorized",
-                "fix": "PaddleOCR API token is invalid. Check PADDLEOCR_API_TOKEN and re-run `paperforge ocr doctor`",
+                "fix": "PaddleOCR API token is invalid. Check PADDLEOCR_API_TOKEN and re-run `paperforge ocr --diagnose`",
             }
         if resp.status_code >= 500:
             return {
                 "level": 2,
                 "passed": False,
                 "error": f"URL returned {resp.status_code}",
-                "fix": "OCR provider is experiencing issues. Retry later with `paperforge ocr doctor`",
+                "fix": "OCR provider is experiencing issues. Retry later with `paperforge ocr --diagnose`",
             }
         if resp.status_code != 200:
             if resp.status_code == 405:
@@ -73,7 +73,7 @@ def ocr_doctor(config: dict[str, str] | None, live: bool = False) -> dict:
                 "level": 2,
                 "passed": False,
                 "error": f"URL returned {resp.status_code}",
-                "fix": "Check PADDLEOCR_JOB_URL in .env and re-run `paperforge ocr doctor`",
+                "fix": "Check PADDLEOCR_JOB_URL in .env and re-run `paperforge ocr --diagnose`",
             }
     except requests.RequestException as e:
         return {
@@ -120,7 +120,7 @@ def ocr_doctor(config: dict[str, str] | None, live: bool = False) -> dict:
             "level": 3,
             "passed": False,
             "error": f"API submission test failed: {e}",
-            "fix": "Check PADDLEOCR configuration and network. Run `paperforge ocr doctor` again after fixes.",
+            "fix": "Check PADDLEOCR configuration and network. Run `paperforge ocr --diagnose` again after fixes.",
         }
     except (json.JSONDecodeError, KeyError) as e:
         return {
@@ -233,7 +233,7 @@ def classify_error(exception: Exception, response) -> tuple[str, str]:
             )
         return (
             "error",
-            f"OCR HTTP error {status}. Retry with `paperforge ocr` or run `paperforge ocr doctor`.",
+            f"OCR HTTP error {status}. Retry with `paperforge ocr` or run `paperforge ocr --diagnose`.",
         )
     if isinstance(exception, json.JSONDecodeError):
         return (
@@ -252,5 +252,5 @@ def classify_error(exception: Exception, response) -> tuple[str, str]:
         )
     return (
         "error",
-        f"Unexpected error: {exception}. Retry with `paperforge ocr` or run `paperforge ocr doctor`.",
+        f"Unexpected error: {exception}. Retry with `paperforge ocr` or run `paperforge ocr --diagnose`.",
     )

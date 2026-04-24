@@ -1467,7 +1467,7 @@ def frontmatter_note(entry: dict, existing_text: str='') -> str:
     lines.extend(yaml_list('collections', entry.get('collections', [])))
     lines.extend(yaml_list('collection_tags', entry.get('collection_tags', [])))
     lines.extend(yaml_block(entry.get('abstract', '')))
-    lines.extend([f"has_pdf: {('true' if entry.get('has_pdf') else 'false')}", f"ocr_status: {yaml_quote(entry.get('ocr_status', 'pending'))}", f"ocr_job_id: {yaml_quote(entry.get('ocr_job_id', ''))}", f"ocr_md_path: {yaml_quote(entry.get('ocr_md_path', ''))}", f"ocr_json_path: {yaml_quote(entry.get('ocr_json_path', ''))}", f"deep_reading_status: {yaml_quote(entry.get('deep_reading_status', 'pending'))}", f'deep_reading_md_path: {yaml_quote(deep_reading_path)}', f"pdf_path: {yaml_quote(entry.get('pdf_path', ''))}", 'tags:', '  - 文献阅读', f"  - {entry.get('domain', '')}", '---', '', f"# {entry['title']}", '', '## 📄 文献基本信息', '', f"- Zotero Key: `{entry.get('zotero_key', '')}`", f"- Collection: `{entry.get('collection_path', '')}`", f"- 作者：{', '.join(entry.get('authors', []))}", f"- PDF: {('已检测' if entry.get('has_pdf') else '未检测到')}", f"- OCR: {entry.get('ocr_status', 'pending')}", f"- 精读: {entry.get('deep_reading_status', 'pending')}", '', '## 摘要', '', entry.get('abstract', '') or '暂无摘要', '', '## 💡 文献内容总结', '', '- 由 index-refresh worker 自动生成的正式文献卡片。', '- 精读笔记（Deep Reading）仅由 /LD-deep 命令维护；index-refresh 只保留已有内容，不自动生成。', '- 如需精读，请在 Base 中勾选 analyze，OCR 完成后运行 /LD-deep <zotero_key>。', ''])
+    lines.extend([f"has_pdf: {('true' if entry.get('has_pdf') else 'false')}", f"ocr_status: {yaml_quote(entry.get('ocr_status', 'pending'))}", f"ocr_job_id: {yaml_quote(entry.get('ocr_job_id', ''))}", f"ocr_md_path: {yaml_quote(entry.get('ocr_md_path', ''))}", f"ocr_json_path: {yaml_quote(entry.get('ocr_json_path', ''))}", f"deep_reading_status: {yaml_quote(entry.get('deep_reading_status', 'pending'))}", f'deep_reading_md_path: {yaml_quote(deep_reading_path)}', f"pdf_path: {yaml_quote(entry.get('pdf_path', ''))}", 'tags:', '  - 文献阅读', f"  - {entry.get('domain', '')}", '---', '', f"# {entry['title']}", '', '## 📄 文献基本信息', '', f"- Zotero Key: `{entry.get('zotero_key', '')}`", f"- Collection: `{entry.get('collection_path', '')}`", f"- 作者：{', '.join(entry.get('authors', []))}", f"- PDF: {('已检测' if entry.get('has_pdf') else '未检测到')}", f"- OCR: {entry.get('ocr_status', 'pending')}", f"- 精读: {entry.get('deep_reading_status', 'pending')}", '', '## 摘要', '', entry.get('abstract', '') or '暂无摘要', '', '## 💡 文献内容总结', '', '- 由 sync worker 自动生成的正式文献卡片。', '- 精读笔记（Deep Reading）仅由 /pf-deep 命令维护；sync --index 只保留已有内容，不自动生成。', '- 如需精读，请在 Base 中勾选 analyze，OCR 完成后运行 /pf-deep <zotero_key>。', ''])
     if preserved_deep:
         lines.extend(['', preserved_deep, ''])
     return '\n'.join(lines)
@@ -2751,7 +2751,7 @@ def run_deep_reading(vault: Path, verbose: bool = False) -> int:
     2. Updates library-records/*.md frontmatter to match actual state
     3. Reports the queue of papers awaiting deep reading
 
-    Actual content filling is done via /LD-deep (agent-driven).
+    Actual content filling is done via /pf-deep (agent-driven).
     """
     paths = pipeline_paths(vault)
     config = load_domain_config(paths)
@@ -2808,7 +2808,7 @@ def run_deep_reading(vault: Path, verbose: bool = False) -> int:
         blocked = [q for q in pending_queue if q['is_analyze'] and q['ocr_status'] not in ('done', '') and not (q['is_do_ocr'] and q['ocr_status'] in ('pending', 'processing'))]
         report_lines = ['# 待精读队列', '']
         if ready:
-            report_lines.extend([f'## 就绪 ({len(ready)} 篇) — OCR 已完成，可直接 /LD-deep', ''])
+            report_lines.extend([f'## 就绪 ({len(ready)} 篇) — OCR 已完成，可直接 /pf-deep', ''])
             for q in ready:
                 report_lines.append(f"- `{q['zotero_key']}` | {q['domain']} | {q['title']}")
             report_lines.append('')

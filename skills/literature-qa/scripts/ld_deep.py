@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Helpers for /LD and /LD-deep literature sessions."""
+"""Helpers for /pf-deep literature sessions."""
 
 from __future__ import annotations
 
@@ -21,7 +21,7 @@ def _load_vault_config(vault: Path) -> dict:
 
 
 def _paperforge_paths(vault: Path) -> dict[str, Path]:
-    """Build PaperForge path inventory for /LD-deep — delegates to shared resolver.
+    """Build PaperForge path inventory for /pf-deep — delegates to shared resolver.
 
     Returns ocr, records, literature keys matching shared resolver output.
     """
@@ -956,7 +956,7 @@ def _read_json(path: Path) -> dict:
 
 
 def prepare_deep_reading(vault: Path, zotero_key: str, force: bool = False) -> dict:
-    """Automate all mechanical pre-reading steps for /LD-deep.
+    """Automate all mechanical pre-reading steps for /pf-deep.
 
     Returns a dict with:
       - status: "ok" | "error"
@@ -1080,7 +1080,7 @@ def prepare_deep_reading(vault: Path, zotero_key: str, force: bool = False) -> d
                 break
 
     if formal_note is None:
-        result["message"] = f"[ERROR] Formal note not found in {literature_root}. Run index-refresh first."
+        result["message"] = f"[ERROR] Formal note not found in {literature_root}. Run sync --index first."
         return result
 
     result["formal_note"] = str(formal_note)
@@ -1229,7 +1229,7 @@ if sys.platform == "win32":
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Helpers for /LD-deep note scaffolding")
+    parser = argparse.ArgumentParser(description="Helpers for /pf-deep note scaffolding")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     figure_parser = subparsers.add_parser("figure-index", help="Extract figures from fulltext markdown")

@@ -139,4 +139,4 @@ OCR 完成后，每个文献生成以下文件：
 - [pf-sync](pf-sync.md) — 文献同步（生成 library-records）
 - [pf-deep](pf-deep.md) — 深度精读（依赖 OCR 结果）
 - [AGENTS.md](../AGENTS.md) — 完整使用指南、架构说明、常见问题
-- [docs/COMMANDS.md](COMMANDS.md) — 命令总览与矩阵
+- [docs/COMMANDS.md](../docs/COMMANDS.md) — 命令总览与矩阵

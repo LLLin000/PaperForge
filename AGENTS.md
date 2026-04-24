@@ -424,18 +424,13 @@ cp -r 新下载的scripts/* <system_dir>/PaperForge/worker/scripts/
 
 从 v1.2 开始，PaperForge 采用统一的命令接口：
 
-| 旧命令（v1.1） | 新命令（v1.2） | 说明 |
-|---------------|---------------|------|
-| `paperforge selection-sync` | `paperforge sync` | 合并为统一 sync 命令 |
-| `paperforge index-refresh` | `paperforge sync` | 合并为统一 sync 命令 |
-| `paperforge sync --selection` | `paperforge sync --selection` | 仅执行 selection-sync |
-| `paperforge sync --index` | `paperforge sync --index` | 仅执行 index-refresh |
-| `paperforge ocr run` | `paperforge ocr` | 简化 OCR 命令 |
-| `paperforge ocr doctor` | `paperforge ocr --diagnose` | 诊断模式 |
-| `/LD-deep <key>` | `/pf-deep <key>` | Agent 精读命令 |
-| `/LD-paper <key>` | `/pf-paper <key>` | Agent 摘要命令 |
+- **CLI 统一入口**：`paperforge sync`（替代 `selection-sync` + `index-refresh`）、`paperforge ocr`（替代 `ocr run`）
+- **Agent 统一前缀**：`/pf-deep`、`/pf-paper`、`/pf-ocr`、`/pf-sync`、`/pf-status`（替代 `/LD-*` 和 `/lp-*`）
+- **Python 包重命名**：`paperforge`（替代 `paperforge_lite`）
 
 **旧命令仍兼容**：v1.2 继续支持旧命令名（`selection-sync`、`index-refresh`、`ocr run`），但文档已统一使用新命令。
+
+详细迁移步骤和回滚说明参见 [docs/MIGRATION-v1.2.md](docs/MIGRATION-v1.2.md)。
 
 ---
 

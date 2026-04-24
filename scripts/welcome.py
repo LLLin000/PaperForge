@@ -114,7 +114,7 @@ def show_completion():
     print(f"  {Colors.BRIGHT_CYAN}1.{Colors.ENDC} Open Obsidian and load your vault")
     print(f"  {Colors.BRIGHT_CYAN}2.{Colors.ENDC} Run: {Colors.BOLD}python scripts/index_refresh.py{Colors.ENDC}")
     print(f"  {Colors.BRIGHT_CYAN}3.{Colors.ENDC} Queue papers for OCR processing")
-    print(f"  {Colors.BRIGHT_CYAN}4.{Colors.ENDC} Start deep reading: {Colors.BOLD}/LD-deep <zotero_key>{Colors.ENDC}")
+    print(f"  {Colors.BRIGHT_CYAN}4.{Colors.ENDC} Start deep reading: {Colors.BOLD}/pf-deep <zotero_key>{Colors.ENDC}")
 
     print(f"\n{Colors.DIM}For help: https://github.com/LLLin000/PaperForge{Colors.ENDC}\n")
 

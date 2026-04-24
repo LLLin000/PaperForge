@@ -81,11 +81,11 @@ Agent 自动：
 
 各命令的详细文档见对应文件：
 
-- [`command/pf-deep.md`](pf-deep.md) — 深度精读
-- [`command/pf-paper.md`](pf-paper.md) — 快速摘要
-- [`command/pf-ocr.md`](pf-ocr.md) — OCR 提取
-- [`command/pf-sync.md`](pf-sync.md) — 文献同步
-- [`command/pf-status.md`](pf-status.md) — 状态检查
+- [`command/pf-deep.md`](../command/pf-deep.md) — 深度精读
+- [`command/pf-paper.md`](../command/pf-paper.md) — 快速摘要
+- [`command/pf-ocr.md`](../command/pf-ocr.md) — OCR 提取
+- [`command/pf-sync.md`](../command/pf-sync.md) — 文献同步
+- [`command/pf-status.md`](../command/pf-status.md) — 状态检查
 
 ---
 
