@@ -129,21 +129,24 @@
 
 ---
 
-## Milestone v1.2: Systematization & Cohesion (Planned)
+## Milestone v1.2: Systematization & Cohesion (In Progress)
 
 **Goal:** Transform PaperForge Lite from a functional-but-scattered prototype into a cohesive, user-centric system.
 
-**Status:** Initiated
+**Status:** In Progress (2026-04-24)
+
+**Roadmap:** `.planning/ROADMAP-v1.2.md`
+**Requirements:** `.planning/REQUIREMENTS-v1.2.md`
 
 ### Planned Work
 
-| # | Area | Description |
-|---|------|-------------|
-| 1 | Agent Command Unification | Rename `/ld-deep` → `/pf-deep`, `/lp-*` → `/pf-*`, update all docs |
-| 2 | CLI Simplification | Combine `selection-sync` + `index-refresh` into `paperforge sync`, evaluate other mergers |
-| 3 | Architecture Research | Study `get-shit-done-main` and reference projects for patterns |
-| 4 | UX Cohesion | Ensure 1:1 mapping between agent and CLI commands |
-| 5 | Documentation & Migration | Update AGENTS.md, command docs, migration guide |
+| # | Area | Description | Phase |
+|---|------|-------------|-------|
+| 1 | Agent Command Unification | Rename `/ld-deep` → `/pf-deep`, `/lp-*` → `/pf-*`, update all docs | 9 |
+| 2 | CLI Simplification | Combine `selection-sync` + `index-refresh` into `paperforge sync`, evaluate other mergers | 9 |
+| 3 | Architecture Research | Study `get-shit-done-main` and reference projects for patterns | 9 |
+| 4 | UX Cohesion | Ensure 1:1 mapping between agent and CLI commands | 10 |
+| 5 | Documentation & Migration | Update AGENTS.md, command docs, migration guide | 10 |
 
 ### Target Requirements
 
@@ -151,8 +154,8 @@
 |----|-------------|--------|
 | SYS-01 | All agent commands use `/pf-*` namespace | Phase 9 |
 | SYS-02 | `/LD-*` and `/lp-*` commands deprecated with warnings | Phase 9 |
-| SYS-03 | `paperforge sync` combines selection-sync + index-refresh | Phase 10 |
-| SYS-04 | CLI command set is user-centric, not worker-centric | Phase 10 |
+| SYS-03 | `paperforge sync` combines selection-sync + index-refresh | Phase 9 |
+| SYS-04 | CLI command set is user-centric, not worker-centric | Phase 9 |
 | SYS-05 | Architecture research documented with recommendations | Phase 9 |
 | SYS-06 | Command docs consistent across agent and CLI | Phase 10 |
 | SYS-07 | Migration guide for existing users | Phase 10 |

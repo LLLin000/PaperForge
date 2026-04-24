@@ -1,7 +1,7 @@
 # Roadmap: PaperForge Lite
 
-**Current:** v1.1 Complete (2026-04-24)  
-**Next:** v1.2 candidates under evaluation
+**Current:** v1.2 In Progress (2026-04-24)  
+**Next:** Phase 9 planning
 
 ---
 
@@ -31,7 +31,29 @@
 
 ---
 
-## Future: v1.2 Candidates
+## In Progress: v1.2 Systematization & Cohesion
+
+**Created:** 2026-04-24  
+**Scope:** Unify agent commands under `/pf-*`, simplify CLI, research architecture, ensure UX cohesion.  
+**Status:** INITIATED  
+**Requirements:** SYS-01, SYS-02, SYS-03, SYS-04, SYS-05, SYS-06, SYS-07 (7 requirements)  
+**Roadmap:** See `ROADMAP-v1.2.md`
+
+### Phase 9: Command Unification & CLI Simplification
+
+**Goal:** Implement unified `/pf-*` namespace and simplify CLI commands.  
+**Status:** Planned  
+**Requirements:** SYS-01, SYS-02, SYS-07 (3/7)
+
+### Phase 10: Documentation & Cohesion
+
+**Goal:** Document architecture, create migration guide, ensure consistency.  
+**Status:** Planned  
+**Requirements:** SYS-03, SYS-04, SYS-05, SYS-06 (4/7)
+
+---
+
+## Future: v1.3+ Candidates
 
 | Priority | Focus | Requirements | Rationale |
 |----------|-------|--------------|-----------|
@@ -51,7 +73,9 @@
 | 6 | Setup, CLI, And Diagnostics Consistency | v1.1 | Align setup/docs/doctor/path contracts | 10 | Done |
 | 7 | Zotero PDF, Metadata, And State Repair | v1.1 | Resolve PDFs and converge status fields | 9 | Done |
 | 8 | Deep Helper Deployment And Sandbox Regression Gate | v1.1 | Automate the manual sandbox audit | 6 | Done |
+| 9 | Command Unification & CLI Simplification | v1.2 | Unified `/pf-*` namespace, simplified CLI | 3 | Planned |
+| 10 | Documentation & Cohesion | v1.2 | Architecture docs, migration guide, consistency | 4 | Planned |
 
 ---
 *Roadmap created: 2026-04-23 for milestone v1.1*
-*Updated: 2026-04-24 — v1.1 complete, v1.2 candidates listed*
+*Updated: 2026-04-24 — v1.2 initiated with phases 9-10*
