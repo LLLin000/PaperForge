@@ -1,8 +1,8 @@
 """paperforge.cli — PaperForge Lite command-line interface.
 
-Exposes `paperforge paths`, `paperforge status`, `paperforge selection-sync`,
-`paperforge index-refresh`, `paperforge ocr run`, `paperforge ocr doctor`,
-and `paperforge deep-reading`.
+Exposes `paperforge paths`, `paperforge status`, `paperforge sync`,
+`paperforge selection-sync`, `paperforge index-refresh`, `paperforge ocr`,
+`paperforge ocr run`, `paperforge ocr doctor`, and `paperforge deep-reading`.
 
 Loads .env from the vault root and from <system_dir>/PaperForge/.env before
 dispatching to worker functions, matching the legacy pipeline behavior.
@@ -25,10 +25,15 @@ from paperforge.config import (
     paths_as_strings,
 )
 
-# Worker functions — imported via deferred approach so the repo root
-# can be resolved relative to this file's location at call time (not import
-# time), avoiding ModuleNotFoundError when paperforge.exe is invoked from
-# the vault directory via an editable install.
+# Worker function stubs — let tests patch cli.run_* directly
+run_status = None
+run_selection_sync = None
+run_index_refresh = None
+run_deep_reading = None
+run_repair = None
+run_ocr = None
+ensure_base_views = None
+
 PF_LITE_DIR = Path(__file__).resolve().parent
 
 
@@ -68,110 +73,6 @@ def _resolve_pipeline():
                 sys.path.insert(0, pf_worker_str)
 
 
-# Worker function stubs — let tests patch cli.run_* directly
-run_status = None
-run_selection_sync = None
-run_index_refresh = None
-run_deep_reading = None
-run_repair = None
-run_ocr = None
-ensure_base_views = None
-
-# ---------------------------------------------------------------------------
-# Build parser
-# ---------------------------------------------------------------------------
-def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
-        prog="paperforge",
-        description="PaperForge Lite — Obsidian + Zotero literature pipeline CLI",
-    )
-    parser.add_argument(
-        "--vault",
-        metavar="VAULT",
-        help="Path to the Obsidian vault root (default: cwd or PAPERFORGE_VAULT env)",
-    )
-
-    sub = parser.add_subparsers(dest="command", required=True)
-
-    # paths
-    p_paths = sub.add_parser("paths", help="Print resolved vault paths")
-    p_paths.add_argument(
-        "--json",
-        action="store_true",
-        help="Output paths as JSON instead of human-readable text",
-    )
-
-    # status
-    sub.add_parser("status", help="Run the literature pipeline status check")
-
-    # selection-sync
-    sub.add_parser("selection-sync", help="Sync Zotero selection to library records")
-
-    # index-refresh
-    sub.add_parser("index-refresh", help="Refresh formal literature notes from library records")
-
-    # deep-reading
-    p_dr = sub.add_parser("deep-reading", help="Check deep-reading queue status")
-    p_dr.add_argument(
-        "--verbose", "-v", action="store_true",
-        help="Show fix instructions for blocked papers"
-    )
-
-    # repair
-    p_repair = sub.add_parser("repair", help="Repair divergent literature notes")
-    p_repair.add_argument(
-        "--verbose", "-v", action="store_true",
-        help="Show detailed divergence report"
-    )
-    p_repair.add_argument(
-        "--fix", action="store_true",
-        help="Actually apply repairs instead of dry-run"
-    )
-
-    # ocr subcommands
-    p_ocr = sub.add_parser("ocr", help="OCR operations")
-    ocr_sub = p_ocr.add_subparsers(dest="ocr_action")
-    ocr_sub.add_parser("run", help="Run OCR queue")
-    doctor_parser = ocr_sub.add_parser("doctor", help="Diagnose OCR configuration and connectivity")
-    doctor_parser.add_argument("--live", action="store_true", help="Run live PDF test (L4)")
-
-    # base-refresh
-    p_base = sub.add_parser("base-refresh", help="Refresh Obsidian Base view files")
-    p_base.add_argument(
-        "--force", "-f", action="store_true",
-        help="Force full regeneration (bypasses incremental merge, replaces all views including user views)"
-    )
-
-    # doctor
-    sub.add_parser("doctor", help="Validate PaperForge Lite setup and configuration")
-
-    return parser
-
-
-# ---------------------------------------------------------------------------
-# OCR doctor command
-# ---------------------------------------------------------------------------
-def _cmd_ocr_doctor(vault: Path, args: argparse.Namespace) -> int:
-    """Handle `paperforge ocr doctor` and `paperforge ocr doctor --live`."""
-    from paperforge.ocr_diagnostics import ocr_doctor
-
-    result = ocr_doctor(config=None, live=args.live)
-    level = result.get("level", 0)
-    passed = result.get("passed", False)
-
-    print(f"OCR Doctor — Level {level} diagnostic")
-    print("-" * 40)
-    if passed:
-        print(f"[PASS] {result.get('message', 'All checks passed')}")
-        return 0
-    else:
-        print(f"[FAIL] Level {level}: {result.get('error', 'Unknown failure')}")
-        print(f"[FIX]  {result.get('fix', 'No fix suggestion available')}")
-        if result.get("raw_response"):
-            print(f"[RAW]  {result['raw_response'][:200]}...")
-        return 1
-
-
 def _import_worker_functions() -> None:
     """Import worker functions into module-level globals, skipping any that are already bound.
 
@@ -209,6 +110,134 @@ def _import_worker_functions() -> None:
 
 
 # ---------------------------------------------------------------------------
+# Build parser
+# ---------------------------------------------------------------------------
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        prog="paperforge",
+        description="PaperForge Lite — Obsidian + Zotero literature pipeline CLI",
+    )
+    parser.add_argument(
+        "--vault",
+        metavar="VAULT",
+        help="Path to the Obsidian vault root (default: cwd or PAPERFORGE_VAULT env)",
+    )
+
+    sub = parser.add_subparsers(dest="command", required=True)
+
+    # paths
+    p_paths = sub.add_parser("paths", help="Print resolved vault paths")
+    p_paths.add_argument(
+        "--json",
+        action="store_true",
+        help="Output paths as JSON instead of human-readable text",
+    )
+
+    # status
+    sub.add_parser("status", help="Run the literature pipeline status check")
+
+    # sync (new unified command)
+    p_sync = sub.add_parser("sync", help="Sync Zotero selection and refresh literature index")
+    p_sync.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Preview changes without executing",
+    )
+    p_sync.add_argument(
+        "--domain",
+        metavar="DOMAIN",
+        help="Filter by domain (future feature)",
+    )
+    p_sync.add_argument(
+        "--selection",
+        action="store_true",
+        help="Run selection-sync only",
+    )
+    p_sync.add_argument(
+        "--index",
+        action="store_true",
+        help="Run index-refresh only",
+    )
+
+    # selection-sync (backward compat)
+    sub.add_parser("selection-sync", help="Sync Zotero selection to library records")
+
+    # index-refresh (backward compat)
+    sub.add_parser("index-refresh", help="Refresh formal literature notes from library records")
+
+    # deep-reading
+    p_dr = sub.add_parser("deep-reading", help="Check deep-reading queue status")
+    p_dr.add_argument(
+        "--verbose", "-v", action="store_true",
+        help="Show fix instructions for blocked papers"
+    )
+
+    # repair
+    p_repair = sub.add_parser("repair", help="Repair divergent literature notes")
+    p_repair.add_argument(
+        "--verbose", "-v", action="store_true",
+        help="Show detailed divergence report"
+    )
+    p_repair.add_argument(
+        "--fix", action="store_true",
+        help="Actually apply repairs instead of dry-run"
+    )
+
+    # ocr (unified)
+    p_ocr = sub.add_parser("ocr", help="OCR operations")
+    p_ocr.add_argument(
+        "--diagnose",
+        action="store_true",
+        help="Diagnose OCR configuration without running",
+    )
+    p_ocr.add_argument(
+        "--key",
+        metavar="KEY",
+        help="Process specific Zotero key",
+    )
+    ocr_sub = p_ocr.add_subparsers(dest="ocr_action")
+    ocr_sub.add_parser("run", help="Run OCR queue")
+    doctor_parser = ocr_sub.add_parser("doctor", help="Diagnose OCR configuration and connectivity")
+    doctor_parser.add_argument("--live", action="store_true", help="Run live PDF test (L4)")
+
+    # base-refresh
+    p_base = sub.add_parser("base-refresh", help="Refresh Obsidian Base view files")
+    p_base.add_argument(
+        "--force", "-f", action="store_true",
+        help="Force full regeneration (bypasses incremental merge, replaces all views including user views)"
+    )
+
+    # doctor
+    sub.add_parser("doctor", help="Validate PaperForge Lite setup and configuration")
+
+    return parser
+
+
+# ---------------------------------------------------------------------------
+# OCR doctor command (kept for backward compat / test patching)
+# ---------------------------------------------------------------------------
+def _cmd_ocr_doctor(vault: Path, args: argparse.Namespace) -> int:
+    """Handle `paperforge ocr doctor` and `paperforge ocr doctor --live`."""
+    from paperforge.ocr_diagnostics import ocr_doctor
+
+    result = ocr_doctor(config=None, live=args.live)
+    level = result.get("level", 0)
+    passed = result.get("passed", False)
+
+    print(f"OCR Doctor — Level {level} diagnostic")
+    print("-" * 40)
+    if passed:
+        print(f"[PASS] {result.get('message', 'All checks passed')}")
+        return 0
+    else:
+        print(f"[FAIL] Level {level}: {result.get('error', 'Unknown failure')}")
+        print(f"[FIX]  {result.get('fix', 'No fix suggestion available')}")
+        if result.get("raw_response"):
+            print(f"[RAW]  {result['raw_response'][:200]}...")
+        return 1
+
+
+# ---------------------------------------------------------------------------
 # Main entry point
 # ---------------------------------------------------------------------------
 def main(argv: list[str] | None = None) -> int:
@@ -239,60 +268,73 @@ def main(argv: list[str] | None = None) -> int:
     pf_env = vault / cfg["system_dir"] / "PaperForge" / ".env"
     load_simple_env(pf_env)
 
+    # Attach resolved values to args for command modules
+    args.vault_path = vault
+    args.cfg = cfg
+    args.paths = paperforge_paths(vault, cfg)
+
+    # -----------------------------------------------------------------------
+    # Command dispatch
+    # -----------------------------------------------------------------------
     if args.command == "paths":
         return _cmd_paths(vault, args)
 
+    # New unified commands
+    if args.command == "sync":
+        from paperforge.commands import sync
+        return sync.run(args)
+
+    # OCR — handle both new unified and old subcommand styles
     if args.command == "ocr":
-        ocr_action = getattr(args, "ocr_action", None) or "run"
-        if ocr_action == "run":
-            return run_ocr(vault)
-        elif ocr_action == "doctor":
+        ocr_action = getattr(args, "ocr_action", None)
+        if ocr_action == "doctor":
+            # Backward compat: old ocr doctor subcommand
             return _cmd_ocr_doctor(vault, args)
-        else:
-            print(f"Error: unknown ocr action {ocr_action}", file=sys.stderr)
-            return 1
+        # New unified ocr (or ocr run)
+        from paperforge.commands import ocr
+        return ocr.run(args)
+
+    # Backward compat: old selection-sync and index-refresh
+    if args.command == "selection-sync":
+        from paperforge.commands import sync
+        args.selection = True
+        args.index = False
+        return sync.run(args)
+
+    if args.command == "index-refresh":
+        from paperforge.commands import sync
+        args.selection = False
+        args.index = True
+        return sync.run(args)
+
+    # Other commands delegate to their modules
+    if args.command == "status":
+        from paperforge.commands import status
+        return status.run(args)
+
+    if args.command == "deep-reading":
+        from paperforge.commands import deep
+        return deep.run(args)
+
+    if args.command == "repair":
+        from paperforge.commands import repair
+        return repair.run(args)
 
     if args.command == "base-refresh":
         force = getattr(args, "force", False)
-        paths = paperforge_paths(vault, cfg)
+        paths = args.paths
         logger = __import__("logging").getLogger("paperforge")
         logger.info(f"Refreshing Base views in {paths['bases']}")
         ensure_base_views(vault, paths, cfg, force=force)
         logger.info("Base refresh complete")
         return 0
 
-    # Lazy-load dispatch targets after _resolve_pipeline() has adjusted sys.path
-    _import_worker_functions()
-
-    dispatch_map = {
-        "status": run_status,
-        "selection-sync": run_selection_sync,
-        "index-refresh": run_index_refresh,
-    }
-
-    if args.command == "deep-reading":
-        return run_deep_reading(vault, verbose=getattr(args, "verbose", False))
-
-    if args.command == "repair":
-        cfg = load_vault_config(vault)
-        paths = paperforge_paths(vault, cfg)
-        return run_repair(
-            vault,
-            paths,
-            verbose=getattr(args, "verbose", False),
-            fix=getattr(args, "fix", False),
-        )
-
     if args.command == "doctor":
         from pipeline.worker.scripts.literature_pipeline import run_doctor
         return run_doctor(vault)
 
-    worker_fn = dispatch_map.get(args.command)
-    if worker_fn is None:
-        print(f"Error: unknown command {args.command}", file=sys.stderr)
-        return 1
-
-    return worker_fn(vault)
+    print(f"Error: unknown command {args.command}", file=sys.stderr)
+    return 1
 
 
 # ---------------------------------------------------------------------------
