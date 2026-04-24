@@ -1,347 +1,169 @@
-"""Shared pytest fixtures for PaperForge Lite smoke tests.
+"""Test fixtures and helpers for PaperForge Lite smoke tests."""
 
-Fixture vault factory + test data fixtures for end-to-end smoke testing
-without touching any real vault.
-"""
 from __future__ import annotations
 
 import json
+import os
+import shutil
+import sys
+import tempfile
 from pathlib import Path
+from typing import Generator
 
 import pytest
 
+REPO_ROOT = Path(__file__).resolve().parent.parent
+SANDBOX_DIR = REPO_ROOT / "tests" / "sandbox"
+FIXTURE_VAULT = SANDBOX_DIR / "00_TestVault"
+OCR_FIXTURE = SANDBOX_DIR / "ocr-complete" / "TSTONE001"
+EXPORT_FIXTURE = SANDBOX_DIR / "exports" / "骨科.json"
 
-# ---------------------------------------------------------------------------
-# Fixture vault factory
-# ---------------------------------------------------------------------------
 
-@pytest.fixture
-def fixture_vault(tmp_path: Path) -> Path:
-    """Create a complete fixture vault with realistic directory structure.
+def create_test_vault() -> Path:
+    """Create a fresh test vault with necessary structure."""
+    vault = FIXTURE_VAULT
+    if vault.exists():
+        shutil.rmtree(vault)
+    vault.mkdir(parents=True, exist_ok=True)
 
-    Creates:
-        <vault>/99_System/PaperForge/{exports,ocr}
-        <vault>/03_Resources/{Literature,LiteratureControl/library-records/骨科}
-        <vault>/05_Bases
-        <vault>/.opencode/{skills,command}
-        <vault>/paperforge.json
-    """
-    vault = tmp_path / "fixture_vault"
-    vault.mkdir()
+    # Create directory structure
+    system_dir = vault / "99_System"
+    pf_dir = system_dir / "PaperForge"
+    exports_dir = pf_dir / "exports"
+    ocr_dir = pf_dir / "ocr"
+    resources_dir = vault / "03_Resources"
+    literature_dir = resources_dir / "Literature"
+    control_dir = resources_dir / "LiteratureControl"
+    records_dir = control_dir / "library-records"
+    base_dir = vault / "05_Bases"
+    skill_dir = vault / ".opencode" / "skills" / "literature-qa" / "scripts"
 
-    # System / PaperForge structure
-    system = vault / "99_System"
-    pf = system / "PaperForge"
-    (pf / "exports").mkdir(parents=True)
-    (pf / "ocr").mkdir(parents=True)
+    for d in [
+        exports_dir, ocr_dir, literature_dir, records_dir, base_dir, skill_dir
+    ]:
+        d.mkdir(parents=True, exist_ok=True)
 
-    # Resources structure
-    resources = vault / "03_Resources"
-    literature = resources / "Literature"
-    literature.mkdir(parents=True)
-    control = resources / "LiteratureControl"
-    control.mkdir(parents=True)
-    records = control / "library-records" / "骨科"
-    records.mkdir(parents=True)
-
-    # Bases
-    (vault / "05_Bases").mkdir(parents=True)
-
-    # OpenCode skills / command
-    (vault / ".opencode" / "skills").mkdir(parents=True)
-    (vault / ".opencode" / "command").mkdir(parents=True)
-
-    # paperforge.json with defaults
-    pf_cfg = {
-        "system_dir": "99_System",
-        "resources_dir": "03_Resources",
-        "literature_dir": "Literature",
-        "control_dir": "LiteratureControl",
-        "base_dir": "05_Bases",
-    }
-    (vault / "paperforge.json").write_text(
-        json.dumps(pf_cfg, ensure_ascii=False), encoding="utf-8"
+    # Create paperforge.json
+    pf_json = vault / "paperforge.json"
+    pf_json.write_text(
+        json.dumps(
+            {
+                "version": "1.2.0",
+                "system_dir": "99_System",
+                "resources_dir": "03_Resources",
+                "literature_dir": "Literature",
+                "control_dir": "LiteratureControl",
+                "base_dir": "05_Bases",
+                "skill_dir": ".opencode/skills",
+            },
+            indent=2,
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
     )
+
+    # Create .env with PADDLEOCR_API_TOKEN
+    env_path = pf_dir / ".env"
+    env_path.write_text(
+        "PADDLEOCR_API_TOKEN=test_token\n"
+        "PADDLEOCR_JOB_URL=https://example.com/api\n",
+        encoding="utf-8",
+    )
+
+    # Copy OCR fixture
+    target_ocr = ocr_dir / "TSTONE001"
+    if OCR_FIXTURE.exists():
+        shutil.copytree(OCR_FIXTURE, target_ocr, dirs_exist_ok=True)
+
+    # Copy export fixture
+    if EXPORT_FIXTURE.exists():
+        shutil.copy2(EXPORT_FIXTURE, exports_dir / "骨科.json")
+
+    # Create library record for TSTONE001
+    domain_dir = records_dir / "骨科"
+    domain_dir.mkdir(parents=True, exist_ok=True)
+    record_path = domain_dir / "TSTONE001.md"
+    record_path.write_text(
+        "---\n"
+        'zotero_key: "TSTONE001"\n'
+        'domain: "骨科"\n'
+        'title: "Biomechanical Comparison of Suture Anchor Fixations in Rotator Cuff Repair"\n'
+        'year: "2024"\n'
+        'doi: "10.1016/j.jse.2024.01.001"\n'
+        'date: "2024-03-15"\n'
+        'collection_path: ""\n'
+        'has_pdf: true\n'
+        'pdf_path: "[[99_System/Zotero/storage/TSTONE001/TSTONE001.pdf]]"\n'
+        'fulltext_md_path: "[[99_System/PaperForge/ocr/TSTONE001/fulltext.md]]"\n'
+        'recommend_analyze: true\n'
+        'analyze: true\n'
+        'do_ocr: true\n'
+        'ocr_status: "done"\n'
+        'deep_reading_status: "pending"\n'
+        'analysis_note: ""\n'
+        'collection_group:\n'
+        '  - "骨科"\n'
+        'collections:\n'
+        '  - "骨科"\n'
+        'collection_tags:\n'
+        '  - "骨科"\n'
+        'first_author: "John Smith"\n'
+        'journal: "Journal of Shoulder and Elbow Surgery"\n'
+        'impact_factor: ""\n'
+        "---\n\n"
+        "# Biomechanical Comparison of Suture Anchor Fixations in Rotator Cuff Repair\n\n"
+        "正式库控制记录。\n",
+        encoding="utf-8",
+    )
+
+    # Create formal note for TSTONE001
+    note_path = literature_dir / "骨科" / "TSTONE001 - Biomechanical Comparison of Suture Anchor Fixations in Rotator Cuff Repair.md"
+    note_path.parent.mkdir(parents=True, exist_ok=True)
+    note_path.write_text(
+        "---\n"
+        'title: "Biomechanical Comparison of Suture Anchor Fixations in Rotator Cuff Repair"\n'
+        'year: "2024"\n'
+        'type: "journal"\n'
+        'journal: "Journal of Shoulder and Elbow Surgery"\n'
+        'impact_factor: "5.2"\n'
+        'category: "骨科"\n'
+        'tags:\n'
+        '  - 文献阅读\n'
+        '  - 骨科\n'
+        'keywords: ["biomechanics", "rotator cuff"]\n'
+        'pdf_link: "[[99_System/Zotero/storage/TSTONE001/TSTONE001.pdf]]"\n'
+        "---\n\n"
+        "# Biomechanical Comparison of Suture Anchor Fixations in Rotator Cuff Repair\n\n"
+        "## Abstract\n\n"
+        "This study compares the biomechanical properties...\n",
+        encoding="utf-8",
+    )
+
+    # Create Zotero storage with mock PDF
+    zotero_dir = system_dir / "Zotero" / "storage" / "TSTONE001"
+    zotero_dir.mkdir(parents=True, exist_ok=True)
+    (zotero_dir / "TSTONE001.pdf").write_text("mock pdf content", encoding="utf-8")
+
+    # Copy ld_deep.py to skill_dir (simulating deployment)
+    ld_deep_src = REPO_ROOT / "skills" / "literature-qa" / "scripts" / "ld_deep.py"
+    if ld_deep_src.exists():
+        shutil.copy2(ld_deep_src, skill_dir / "ld_deep.py")
 
     return vault
 
 
-# ---------------------------------------------------------------------------
-# Library record fixtures
-# ---------------------------------------------------------------------------
+@pytest.fixture
+def test_vault() -> Generator[Path, None, None]:
+    """Pytest fixture providing a fresh test vault."""
+    vault = create_test_vault()
+    yield vault
+    # Cleanup
+    if FIXTURE_VAULT.exists():
+        shutil.rmtree(FIXTURE_VAULT)
+
 
 @pytest.fixture
-def fixture_library_records(fixture_vault: Path) -> list[Path]:
-    """Create 3 minimal library-record markdown files in fixture vault.
-
-    Returns:
-        List of Path objects for the created record files.
-    """
-    records_dir = (
-        fixture_vault
-        / "03_Resources"
-        / "LiteratureControl"
-        / "library-records"
-        / "骨科"
-    )
-    records_dir.mkdir(parents=True, exist_ok=True)
-
-    records = [
-        {
-            "zotero_key": "TESTKEY001",
-            "domain": "骨科",
-            "title": "Test Paper Alpha: A Study on Bone Healing",
-            "year": "2023",
-            "doi": "10.1234/test.alpha",
-            "has_pdf": "true",
-            "pdf_path": "",
-            "fulltext_md_path": "",
-            "recommend_analyze": "true",
-            "analyze": "false",
-            "do_ocr": "false",
-            "ocr_status": "pending",
-            "deep_reading_status": "pending",
-            "analysis_note": "",
-        },
-        {
-            "zotero_key": "TESTKEY002",
-            "domain": "骨科",
-            "title": "Test Paper Beta: Knee Arthroscopy Techniques",
-            "year": "2024",
-            "doi": "10.1234/test.beta",
-            "has_pdf": "true",
-            "pdf_path": "",
-            "fulltext_md_path": "",
-            "recommend_analyze": "true",
-            "analyze": "false",
-            "do_ocr": "false",
-            "ocr_status": "pending",
-            "deep_reading_status": "pending",
-            "analysis_note": "",
-        },
-        {
-            "zotero_key": "TESTKEY003",
-            "domain": "骨科",
-            "title": "Test Paper Gamma: Sports Injury Prevention",
-            "year": "2022",
-            "doi": "10.1234/test.gamma",
-            "has_pdf": "false",
-            "pdf_path": "",
-            "fulltext_md_path": "",
-            "recommend_analyze": "false",
-            "analyze": "false",
-            "do_ocr": "false",
-            "ocr_status": "nopdf",
-            "deep_reading_status": "pending",
-            "analysis_note": "",
-        },
-    ]
-
-    created: list[Path] = []
-    for row in records:
-        key = row["zotero_key"]
-        title_slug = row["title"].split(":")[0].strip()
-        path = records_dir / f"{key}.md"
-
-        def yaml_val(v: str) -> str:
-            return f'"{v}"' if v else '""'
-
-        lines = ["---"]
-        for k, v in row.items():
-            if k == "title":
-                lines.append(f'title: {yaml_val(v)}')
-            elif k in ("doi", "pdf_path", "fulltext_md_path", "analysis_note", "ocr_status", "deep_reading_status"):
-                lines.append(f"{k}: {yaml_val(v)}")
-            elif k in ("recommend_analyze", "analyze", "do_ocr"):
-                lines.append(f"{k}: {v}")
-            else:
-                lines.append(f"{k}: {yaml_val(v)}")
-        lines.extend(["---", "", f'# {row["title"]}', ""])
-        lines.append("正式库控制记录。")
-        lines.append("")
-        path.write_text("\n".join(lines), encoding="utf-8")
-        created.append(path)
-
-    return created
-
-
-# ---------------------------------------------------------------------------
-# Better BibTeX JSON fixture
-# ---------------------------------------------------------------------------
-
-@pytest.fixture
-def fixture_bbt_json(fixture_vault: Path) -> Path:
-    """Create a minimal Better BibTeX JSON export in fixture vault exports/.
-
-    Returns:
-        Path to the created JSON export file.
-    """
-    exports_dir = fixture_vault / "99_System" / "PaperForge" / "exports"
-    exports_dir.mkdir(parents=True, exist_ok=True)
-
-    export_data = {
-        "items": [
-            {
-                "key": "TESTKEY001",
-                "itemType": "journalArticle",
-                "title": "Test Paper Alpha: A Study on Bone Healing",
-                "creators": [
-                    {"creatorType": "author", "firstName": "Alice", "lastName": "Smith"},
-                    {"creatorType": "author", "firstName": "Bob", "lastName": "Jones"},
-                ],
-                "date": "2023",
-                "publicationTitle": "Journal of Orthopedic Research",
-                "DOI": "10.1234/test.alpha",
-                "PMID": "",
-                "abstractNote": "Abstract of Test Paper Alpha.",
-                "collections": [],
-                "attachments": [
-                    {"path": "TESTKEY001.pdf", "contentType": "application/pdf"}
-                ],
-            },
-            {
-                "key": "TESTKEY002",
-                "itemType": "journalArticle",
-                "title": "Test Paper Beta: Knee Arthroscopy Techniques",
-                "creators": [
-                    {"creatorType": "author", "firstName": "Carol", "lastName": "Wang"},
-                ],
-                "date": "2024",
-                "publicationTitle": "Sports Medicine",
-                "DOI": "10.1234/test.beta",
-                "PMID": "12345678",
-                "abstractNote": "Abstract of Test Paper Beta.",
-                "collections": [],
-                "attachments": [
-                    {"path": "TESTKEY002.pdf", "contentType": "application/pdf"}
-                ],
-            },
-            {
-                "key": "TESTKEY003",
-                "itemType": "journalArticle",
-                "title": "Test Paper Gamma: Sports Injury Prevention",
-                "creators": [
-                    {"creatorType": "author", "firstName": "Dan", "lastName": "Lee"},
-                ],
-                "date": "2022",
-                "publicationTitle": "Injury Prevention",
-                "DOI": "10.1234/test.gamma",
-                "PMID": "",
-                "abstractNote": "Abstract of Test Paper Gamma.",
-                "collections": [],
-                "attachments": [],
-            },
-        ]
-    }
-
-    export_path = exports_dir / "骨科.json"
-    export_path.write_text(
-        json.dumps(export_data, ensure_ascii=False, indent=2), encoding="utf-8"
-    )
-    return export_path
-
-
-# ---------------------------------------------------------------------------
-# Fixture with real PDF file
-# ---------------------------------------------------------------------------
-
-@pytest.fixture
-def fixture_with_pdf(tmp_path: Path) -> tuple[Path, Path]:
-    """Create a fixture vault with a real temporary PDF file.
-
-    Creates paperforge.json, library-record with has_pdf=true, and a real
-    temp PDF file on disk.
-
-    Returns:
-        Tuple of (vault_path, pdf_path).
-    """
-    vault = tmp_path / "fixture_with_pdf"
-    vault.mkdir()
-
-    system = vault / "99_System"
-    pf = system / "PaperForge"
-    (pf / "exports").mkdir(parents=True)
-    (pf / "ocr").mkdir(parents=True)
-
-    resources = vault / "03_Resources"
-    literature = resources / "Literature"
-    literature.mkdir(parents=True)
-    control = resources / "LiteratureControl"
-    control.mkdir(parents=True)
-    records = control / "library-records" / "骨科"
-    records.mkdir(parents=True)
-
-    (vault / "05_Bases").mkdir(parents=True)
-    (vault / ".opencode" / "skills").mkdir(parents=True)
-    (vault / ".opencode" / "command").mkdir(parents=True)
-
-    pf_cfg = {
-        "system_dir": "99_System",
-        "resources_dir": "03_Resources",
-        "literature_dir": "Literature",
-        "control_dir": "LiteratureControl",
-        "base_dir": "05_Bases",
-    }
-    (vault / "paperforge.json").write_text(
-        json.dumps(pf_cfg, ensure_ascii=False), encoding="utf-8"
-    )
-
-    # Create a minimal valid PDF
-    pdf_path = records / "TESTPDF001.pdf"
-    _write_minimal_pdf(pdf_path)
-
-    # Library record with has_pdf: true
-    record_path = records / "TESTPDF001.md"
-    record_text = f"""---
-zotero_key: TESTPDF001
-domain: 骨科
-title: "Test Paper With Real PDF"
-year: 2024
-doi: "10.1234/test.real"
-has_pdf: true
-pdf_path: "{pdf_path.name}"
-fulltext_md_path: ""
-recommend_analyze: true
-analyze: false
-do_ocr: true
-ocr_status: pending
-deep_reading_status: pending
-analysis_note: ""
----
-
-# Test Paper With Real PDF
-
-正式库控制记录。
-"""
-    record_path.write_text(record_text, encoding="utf-8")
-
-    return vault, pdf_path
-
-
-def _write_minimal_pdf(path: Path) -> None:
-    """Write a minimal valid PDF 1.4 file to disk."""
-    # Minimal PDF 1.4 with one empty page
-    pdf_content = (
-        b"%PDF-1.4\n"
-        b"1 0 obj\n"
-        b"<< /Type /Catalog /Pages 2 0 R >>\n"
-        b"endobj\n"
-        b"2 0 obj\n"
-        b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>\n"
-        b"endobj\n"
-        b"3 0 obj\n"
-        b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] >>\n"
-        b"endobj\n"
-        b"xref\n"
-        b"0 4\n"
-        b"0000000000 65535 f \n"
-        b"0000000009 00000 n \n"
-        b"0000000058 00000 n \n"
-        b"0000000115 00000 n \n"
-        b"trailer\n"
-        b"<< /Size 4 /Root 1 0 R >>\n"
-        b"startxref\n"
-        b"199\n"
-        b"%%EOF\n"
-    )
-    path.write_bytes(pdf_content)
+def test_vault_preserved() -> Generator[Path, None, None]:
+    """Pytest fixture providing a test vault without automatic cleanup."""
+    vault = create_test_vault()
+    yield vault

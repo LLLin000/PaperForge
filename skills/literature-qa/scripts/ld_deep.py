@@ -1166,7 +1166,7 @@ def scan_deep_reading_queue(vault: Path) -> list[dict]:
             status_match = re.search(r'^deep_reading_status:\s*"?(.*?)"?$', text, re.MULTILINE)
             title_match = re.search(r'^title:\s*"?(.+?)"?$', text, re.MULTILINE)
 
-            zotero_key = zotero_key_match.group(1).strip() if zotero_key_match else record_path.stem
+            zotero_key = zotero_key_match.group(1).strip().strip('"').strip("'") if zotero_key_match else record_path.stem
             is_analyze = analyze_match is not None and analyze_match.group(1) == "true"
             dr_status = status_match.group(1).strip() if status_match else "pending"
             title = title_match.group(1).strip().strip('"') if title_match else ""
