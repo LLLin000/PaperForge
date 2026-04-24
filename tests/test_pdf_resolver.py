@@ -203,8 +203,8 @@ class TestLoadExportRowsAttachmentNormalization:
         assert len(rows) == 1
         assert rows[0]["attachments"][0]["path"] == "storage:ABC123/ABC123.pdf"
 
-    def test_absolute_path_not_modified(self, tmp_path: Path) -> None:
-        """Absolute paths are not prefixed with storage:."""
+    def test_absolute_path_normalized_with_prefix(self, tmp_path: Path) -> None:
+        """Absolute paths are normalized with absolute: prefix."""
         from pipeline.worker.scripts.literature_pipeline import load_export_rows
 
         abs_path = str(tmp_path / "ABC123" / "ABC123.pdf")
@@ -228,7 +228,7 @@ class TestLoadExportRowsAttachmentNormalization:
         rows = load_export_rows(export_file)
 
         assert len(rows) == 1
-        assert rows[0]["attachments"][0]["path"] == abs_path
+        assert rows[0]["attachments"][0]["path"] == f"absolute:{abs_path}"
 
     def test_empty_attachment_path_unchanged(self, tmp_path: Path) -> None:
         """Empty attachment path is returned unchanged."""
