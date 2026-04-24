@@ -787,6 +787,54 @@ def _normalize_attachment_path(path: str, zotero_dir: Path | None = None) -> tup
     return (f'storage:{norm}', bbt_path_raw, zotero_storage_key)
 
 
+def _identify_main_pdf(attachments: list[dict]) -> tuple[dict | None, list[dict]]:
+    """Identify the main PDF and supplementary materials from attachments.
+
+    Uses a hybrid three-priority strategy (Decision D-02):
+    1. Primary: attachment.title == "PDF" AND contentType == "application/pdf"
+    2. Fallback heuristic: largest file by size (if available), else shortest title
+    3. Final fallback: first PDF attachment in the list
+
+    Args:
+        attachments: List of attachment dicts from load_export_rows().
+
+    Returns:
+        Tuple of (main_pdf_attachment, supplementary_attachments).
+        main_pdf_attachment may be None if no PDFs found.
+        supplementary_attachments is a list of all other PDF attachments.
+    """
+    pdf_attachments = [
+        a for a in attachments
+        if isinstance(a, dict) and a.get('contentType') == 'application/pdf'
+    ]
+
+    if not pdf_attachments:
+        return (None, [])
+
+    # Priority 1: Title exactly equals "PDF"
+    for att in pdf_attachments:
+        if att.get('title') == 'PDF':
+            main = att
+            supplementary = [a for a in pdf_attachments if a is not main]
+            return (main, supplementary)
+
+    # Priority 2: Largest file by size (if size field is available and differentiated)
+    sized = [(a, a.get('size', 0) or 0) for a in pdf_attachments]
+    sized.sort(key=lambda x: x[1], reverse=True)
+    if sized and sized[0][1] > 0:
+        if len(sized) == 1 or sized[0][1] > sized[1][1]:
+            main = sized[0][0]
+            supplementary = [a for a in pdf_attachments if a is not main]
+            return (main, supplementary)
+
+    # Priority 2b (sizes equal or unavailable): shortest title
+    titled = [(a, len(str(a.get('title', '')))) for a in pdf_attachments]
+    titled.sort(key=lambda x: x[1])
+    main = titled[0][0]
+    supplementary = [a for a in pdf_attachments if a is not main]
+    return (main, supplementary)
+
+
 def load_export_rows(path: Path) -> list[dict]:
     data = read_json(path)
     if isinstance(data, list):
@@ -815,7 +863,32 @@ def load_export_rows(path: Path) -> list[dict]:
                     'zotero_storage_key': zotero_storage_key,
                     'size': attachment.get('size', 0) or 0,
                 })
-            rows.append({'key': item.get('key') or item.get('itemKey', ''), 'title': item.get('title', ''), 'authors': extract_authors(item), 'abstract': item.get('abstractNote', ''), 'journal': item.get('publicationTitle', ''), 'year': _extract_year(item.get('date', '')), 'date': item.get('date', ''), 'doi': item.get('DOI', ''), 'pmid': item.get('PMID', ''), 'collections': resolve_item_collection_paths(item, collection_lookup), 'attachments': attachments})
+            main_pdf, supplementary_pdfs = _identify_main_pdf(attachments)
+            pdf_path = main_pdf['path'] if main_pdf else ''
+            bbt_path_raw = main_pdf['bbt_path_raw'] if main_pdf else ''
+            zotero_storage_key = main_pdf['zotero_storage_key'] if main_pdf else ''
+            path_error = 'not_found' if not main_pdf else ''
+            supplementary = [a['path'] for a in supplementary_pdfs] if supplementary_pdfs else []
+            attachment_count = len(attachments)
+            rows.append({
+                'key': item.get('key') or item.get('itemKey', ''),
+                'title': item.get('title', ''),
+                'authors': extract_authors(item),
+                'abstract': item.get('abstractNote', ''),
+                'journal': item.get('publicationTitle', ''),
+                'year': _extract_year(item.get('date', '')),
+                'date': item.get('date', ''),
+                'doi': item.get('DOI', ''),
+                'pmid': item.get('PMID', ''),
+                'collections': resolve_item_collection_paths(item, collection_lookup),
+                'attachments': attachments,
+                'pdf_path': pdf_path,
+                'supplementary': supplementary,
+                'attachment_count': attachment_count,
+                'bbt_path_raw': bbt_path_raw,
+                'zotero_storage_key': zotero_storage_key,
+                'path_error': path_error,
+            })
         return rows
     raise ValueError(f'Unsupported export format: {path}')
 
@@ -933,7 +1006,27 @@ def has_deep_reading_content(text: str) -> bool:
     return has_prose_sentence or non_placeholder_chars >= 20
 
 def library_record_markdown(row: dict) -> str:
-    lines = ['---', f"zotero_key: {row.get('zotero_key', '')}", f"domain: {row.get('domain', '')}", f"title: {yaml_quote(row.get('title', ''))}", f"year: {row.get('year', '')}", f"doi: {yaml_quote(row.get('doi', ''))}", f"date: {yaml_quote(row.get('date', ''))}", f"collection_path: {yaml_quote(row.get('collection_path', ''))}", f"has_pdf: {('true' if row.get('has_pdf') else 'false')}", f"pdf_path: {yaml_quote(row.get('pdf_path', ''))}", f"fulltext_md_path: {yaml_quote(row.get('fulltext_md_path', ''))}", f"recommend_analyze: {('true' if row.get('recommend_analyze') else 'false')}", f"analyze: {('true' if row.get('analyze') else 'false')}", f"do_ocr: {('true' if row.get('do_ocr') else 'false')}", f"ocr_status: {yaml_quote(row.get('ocr_status', 'pending'))}", f"deep_reading_status: {yaml_quote(row.get('deep_reading_status', 'pending'))}", f"analysis_note: {yaml_quote(row.get('analysis_note', ''))}"]
+    lines = ['---', f"zotero_key: {row.get('zotero_key', '')}", f"domain: {row.get('domain', '')}", f"title: {yaml_quote(row.get('title', ''))}", f"year: {row.get('year', '')}", f"doi: {yaml_quote(row.get('doi', ''))}", f"date: {yaml_quote(row.get('date', ''))}", f"collection_path: {yaml_quote(row.get('collection_path', ''))}", f"has_pdf: {('true' if row.get('has_pdf') else 'false')}", f"pdf_path: {yaml_quote(row.get('pdf_path', ''))}", f"bbt_path_raw: {yaml_quote(row.get('bbt_path_raw', ''))}", f"zotero_storage_key: {yaml_quote(row.get('zotero_storage_key', ''))}", f"attachment_count: {row.get('attachment_count', 0)}"]
+    # supplementary as YAML list of wikilinks
+    supplementary = row.get('supplementary', [])
+    if supplementary:
+        lines.append('supplementary:')
+        for path in supplementary:
+            lines.append(f'  - {yaml_quote(f"[[{path}]]")}')
+    else:
+        lines.append('supplementary: []')
+    # path_error only emitted when there is an actual error
+    if row.get('path_error'):
+        lines.append(f"path_error: {yaml_quote(row.get('path_error', ''))}")
+    lines.extend([
+        f"fulltext_md_path: {yaml_quote(row.get('fulltext_md_path', ''))}",
+        f"recommend_analyze: {('true' if row.get('recommend_analyze') else 'false')}",
+        f"analyze: {('true' if row.get('analyze') else 'false')}",
+        f"do_ocr: {('true' if row.get('do_ocr') else 'false')}",
+        f"ocr_status: {yaml_quote(row.get('ocr_status', 'pending'))}",
+        f"deep_reading_status: {yaml_quote(row.get('deep_reading_status', 'pending'))}",
+        f"analysis_note: {yaml_quote(row.get('analysis_note', ''))}",
+    ])
     lines.extend(yaml_list('collection_group', row.get('collection_group', [])))
     lines.extend(yaml_list('collections', row.get('collections', [])))
     lines.extend(yaml_list('collection_tags', row.get('collection_tags', [])))
