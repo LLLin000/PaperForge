@@ -1,4 +1,4 @@
-"""paperforge_lite.cli — PaperForge Lite command-line interface.
+"""paperforge.cli — PaperForge Lite command-line interface.
 
 Exposes `paperforge paths`, `paperforge status`, `paperforge selection-sync`,
 `paperforge index-refresh`, `paperforge ocr run`, `paperforge ocr doctor`,
@@ -17,7 +17,7 @@ import sys
 from pathlib import Path
 
 # Config / resolver
-from paperforge_lite.config import (
+from paperforge.config import (
     load_simple_env,
     load_vault_config,
     resolve_vault,
@@ -36,13 +36,13 @@ def _find_repo_root() -> Path:
     """Find the actual PaperForge repo root by scanning upward for pipeline/.
 
     Handles both cases:
-    - Running from repo: cli.py is at <repo>/paperforge_lite/cli.py
-    - Deployed vault:   cli.py is at <vault>/PaperForge/paperforge_lite/cli.py
+    - Running from repo: cli.py is at <repo>/paperforge/cli.py
+    - Deployed vault:   cli.py is at <vault>/PaperForge/paperforge/cli.py
                         and the actual repo is found by looking further up.
     """
     d = PF_LITE_DIR
     for _ in range(8):
-        if (d / "pipeline").exists() and (d / "paperforge_lite").exists():
+        if (d / "pipeline").exists() and (d / "paperforge").exists():
             return d
         parent = d.parent
         if parent == d:
@@ -153,7 +153,7 @@ def build_parser() -> argparse.ArgumentParser:
 # ---------------------------------------------------------------------------
 def _cmd_ocr_doctor(vault: Path, args: argparse.Namespace) -> int:
     """Handle `paperforge ocr doctor` and `paperforge ocr doctor --live`."""
-    from paperforge_lite.ocr_diagnostics import ocr_doctor
+    from paperforge.ocr_diagnostics import ocr_doctor
 
     result = ocr_doctor(config=None, live=args.live)
     level = result.get("level", 0)

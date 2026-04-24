@@ -59,7 +59,7 @@ ENV_KEYS: dict[str, str] = {
     "vault": "PAPERFORGE_VAULT",
     "system_dir": "PAPERFORGE_SYSTEM_DIR",
     "resources_dir": "PAPERFORGE_RESOURCES_DIR",
-    "literature_dir": "PAPERFORGE_LITERATURE_DIR",
+    "literature_dir": "paperforgeRATURE_DIR",
     "control_dir": "PAPERFORGE_CONTROL_DIR",
     "base_dir": "PAPERFORGE_BASE_DIR",
     "skill_dir": "PAPERFORGE_SKILL_DIR",
