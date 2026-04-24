@@ -10,14 +10,21 @@ See: `.planning/PROJECT.md` (updated 2026-04-24)
 
 ## Current Position
 
-Phase: 10 (planned)
+Phase: 10 (in_progress)
 Milestone: v1.2
-Status: Phase 10 planned and ready for execution
-Last activity: 2026-04-24 — Phase 10 context, discussion, and plan created
+Status: Phase 10 executing — Wave 3 complete
+Last activity: 2026-04-24 — Wave 3 (Tasks 3-4): COMMANDS.md + unified command/*.md template
 
 ## Next Action
 
-Phase 10 planning complete. Ready for `/gsd-execute-phase` to begin implementation.
+Wave 3 complete. Proceeding to Wave 4 (Tasks 5-6).
+
+Wave status:
+- Wave 1: Task 1 — ARCHITECTURE.md ✅
+- Wave 2: Task 2 — MIGRATION-v1.2.md ✅
+- Wave 3: Tasks 3-4 — docs/COMMANDS.md + command/*.md template ✅
+- Wave 4: Tasks 5-6 — Consistency audit (script + checklist) ⏳
+- Wave 5: Task 7 — Verification & state update ⏳
 
 Phase 10 scope:
 - Task 1: ARCHITECTURE.md — system architecture + ADR records
