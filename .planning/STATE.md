@@ -10,16 +10,25 @@ See: `.planning/PROJECT.md` (updated 2026-04-24)
 
 ## Current Position
 
-Phase: 9 (done)
+Phase: 10 (planned)
 Milestone: v1.2
-Status: Phase 9 complete (Task 6 done) — Verification passed, all systems nominal
-Last activity: 2026-04-24 — Task 6: Full system verification complete — 155 passed, 2 skipped, 2 pre-existing failures, 2 pre-existing collection errors
+Status: Phase 10 planned and ready for execution
+Last activity: 2026-04-24 — Phase 10 context, discussion, and plan created
 
 ## Next Action
 
-Phase 9 complete. Proceed to Phase 10: Documentation & Cohesion.
+Phase 10 planning complete. Ready for `/gsd-execute-phase` to begin implementation.
 
-Phase 9 scope:
+Phase 10 scope:
+- Task 1: ARCHITECTURE.md — system architecture + ADR records
+- Task 2: MIGRATION-v1.2.md — complete migration guide
+- Task 3: docs/COMMANDS.md — master command reference (Agent ↔ CLI mapping)
+- Task 4: Unify command/*.md template
+- Task 5: Consistency audit scripts
+- Task 6: Manual consistency checklist
+- Task 7: Verification and state update
+
+Phase 9 (done):
 - Task 0: Rename Python package (`paperforge` → `paperforge`) ✅
 - Task 1: Create shared command modules ✅
 - Task 2: Refactor CLI to use command modules ✅
@@ -81,3 +90,7 @@ Milestone v1.1 (Sandbox Onboarding Hardening) completed as part of Phases 6-8.
 - **2026-04-24:** `paperforge ocr` merges `ocr run` + `ocr doctor`; `--diagnose` for standalone diagnostics.
 - **2026-04-24:** Unified command modules in `paperforge/commands/` (formerly `paperforge/commands/`).
 - **2026-04-24:** Rename Python package from `paperforge` to `paperforge` for naming consistency.
+- **2026-04-24:** Architecture docs (Phase 10): Full version for maintainers with ADR-style design decision records.
+- **2026-04-24:** Migration guide (Phase 10): Complete coverage of all v1.1 → v1.2 breaking changes including rollback instructions.
+- **2026-04-24:** Command docs (Phase 10): Layered structure with docs/COMMANDS.md as master reference + command/*.md as per-command detailed docs.
+- **2026-04-24:** Consistency audit (Phase 10): Mixed approach — automated scripts for hard constraints + manual checklist for soft constraints.
