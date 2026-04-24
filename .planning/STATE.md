@@ -10,10 +10,10 @@ See: `.planning/PROJECT.md` (updated 2026-04-23)
 
 ## Current Position
 
-Phase: 7 (discuss-phase complete, execution complete)
-Plan: 07-PLAN.md
-Status: Ready to initiate Phase 8
-Last activity: 2026-04-24 — Phase 7 execution complete (5/5 tasks done)
+Phase: 8 (complete)
+Plan: 08-SUMMARY.md
+Status: Phase 8 execution complete
+Last activity: 2026-04-24 — Phase 8 execution complete (5/5 tasks, 17 tests pass)
 
 ## Milestone Context
 
@@ -29,7 +29,7 @@ Manual sandbox simulation exposed release-blocking gaps after v1.0:
 
 ## Next Action
 
-Run `/gsd-plan-phase 6` for **Setup, CLI, And Diagnostics Consistency**.
+Run `/gsd-plan-phase 8` for **Deep Helper Deployment And Sandbox Regression Gate**.
 
 ## Phase 6 Decisions (Locked)
 
@@ -47,7 +47,7 @@ Run `/gsd-plan-phase 6` for **Setup, CLI, And Diagnostics Consistency**.
 
 ---
 *Initialized: 2026-04-23*
-*Last updated: 2026-04-24 (Phase 7 complete)*
+*Last updated: 2026-04-24 (Phase 8 complete)*
 
 ## Previous Milestone Summary
 
@@ -70,3 +70,6 @@ Milestone v1.0 completed Phases 1-5:
 - **2026-04-23:** `load_simple_env` loads vault root `.env` and PaperForge `.env` before worker dispatch.
 - **2026-04-23:** `paperforge ocr doctor` uses tiered diagnostics with live provider checks optional.
 - **2026-04-23:** v1.1 will use the sandbox first-time-user simulation as a release gate before claiming setup/onboarding reliability.
+- **2026-04-24:** Use importlib.util with sys.modules pre-registration for Python 3.14 dataclass compatibility.
+- **2026-04-24:** Generate deterministic OCR fixtures once and commit; never regenerate in CI.
+- **2026-04-24:** Rollback in prepare_deep_reading tracks written files and restores original note text, not full filesystem snapshot.
