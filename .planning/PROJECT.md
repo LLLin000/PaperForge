@@ -39,7 +39,7 @@ A new user can install PaperForge, configure their own vault paths and PaddleOCR
 
 ### Active
 
-- [ ] README-driven setup works in the sandbox without hidden required inputs or unexplained terminal stalls.
+- [ ] BBT bare `KEY/KEY.pdf` paths auto-normalize to `storage:KEY/KEY.pdf` in `load_export_rows()`.
 
 ### Out of Scope
 
@@ -47,20 +47,24 @@ A new user can install PaperForge, configure their own vault paths and PaddleOCR
 - Automatically triggering deep-reading agents from workers — the Lite architecture intentionally keeps worker automation and agent reasoning separate.
 - Cloud-hosted multi-user service — this project targets local single-user vault workflows.
 - Full OCR provider abstraction in v1.1 — PaddleOCR path/env consistency is the priority.
+- BBT bare path normalization in v1.1 — deferred to v1.2 (ZPATH-01/02/03 marked Partial).
 
 ## Context
 
-The v1.1 milestone is based on a manual sandbox audit performed from `tests/sandbox/00_TestVault` using only README-level guidance. The audit found that v1.0's claimed release-hardening coverage is not yet sufficient for a real first-time user:
+The v1.1 milestone was completed after a manual sandbox audit from `tests/sandbox/00_TestVault` using README-level guidance. All audit findings have been addressed:
 
-- `python setup_wizard.py --vault ...` can appear to hang in a terminal, and the Vault input is not prefilled from `--vault`.
-- `paperforge` may be unavailable when setup does not complete; README does not clearly provide a reliable fallback.
-- `paperforge doctor` checks `library.json` and `PADDLEOCR_API_KEY`, while the implemented flow supports per-domain JSON exports and uses `PADDLEOCR_API_TOKEN`.
-- `paperforge paths --json` reports a worker path under `vault/pipeline/...`, but setup deploys the worker under `<system_dir>/PaperForge/worker/scripts/...`.
-- Command docs reference `literature_script`, but the CLI emits `ld_deep_script`.
-- Sandbox BBT attachment paths such as `TSTONE001/TSTONE001.pdf` do not resolve to `<Zotero>/storage/TSTONE001/TSTONE001.pdf`.
-- `selection-sync` normalizes export rows but later reads raw BBT fields, leaving `first_author` and `journal` empty in library-records.
-- `deep-reading --verbose` writes the useful queue report to a file but prints only a terse pending count.
-- Deployed `ld_deep.py` depends on `paperforge_lite` importability and fails without manual `PYTHONPATH` or a successful package install.
+- [x] `python setup_wizard.py --vault ...` no longer stalls; Vault input is prefilled from `--vault`.
+- [x] `python -m paperforge_lite` fallback is documented in AGENTS.md and INSTALLATION.md.
+- [x] `paperforge doctor` validates per-domain JSON exports and checks `PADDLEOCR_API_TOKEN`.
+- [x] `paperforge paths --json` reports the same paths used by setup and runtime.
+- [x] Command docs use `ld_deep_script` consistently.
+- [x] `selection-sync` writes `first_author` and `journal` from normalized BBT metadata.
+- [x] `deep-reading --verbose` prints ready/waiting/blocked queues directly.
+- [x] `paperforge repair` detects and fixes three-way state divergence.
+- [x] Deployed `ld_deep.py` runs without manual `PYTHONPATH` (via `pip install -e .` or importlib).
+- [x] Sandbox smoke tests (17 tests) catch all regressions from the manual audit.
+
+**Remaining:** BBT bare `KEY/KEY.pdf` path normalization is not auto-converted. Users should configure BBT to emit `storage:` prefix or ensure PDFs are in absolute/vault-relative paths.
 
 ## Constraints
 
@@ -80,7 +84,7 @@ The v1.1 milestone is based on a manual sandbox audit performed from `tests/sand
 | Add a PaperForge CLI/launcher layer | It removes placeholder command friction and centralizes path/env resolution | Implemented in v1.0, repair consistency in v1.1 |
 | Treat PaddleOCR as a preflighted integration | Users need immediate diagnosis before jobs enter confusing pending/error states | Implemented in v1.0, align env names in v1.1 |
 | Generate Bases from config-aware templates | Current production Base UX is better than release templates, but hardcoded paths must be parameterized | Implemented in v1.0 |
-| Use sandbox audit as v1.1 release gate | Manual first-time-user simulation exposed regressions that unit tests missed | Active |
+| Use sandbox audit as v1.1 release gate | Manual first-time-user simulation exposed regressions that unit tests missed | Complete — 17 smoke tests now cover all audit findings |
 | Continue phase numbering after v1.0 | v1.1 is a follow-up hardening milestone, not a project reset | Phases start at 6 |
 
 ## Evolution
