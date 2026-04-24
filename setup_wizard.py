@@ -929,7 +929,11 @@ class DeployStep(StepScreen):
         wizard_dir = Path(__file__).parent.resolve()
         # 如果 wizard 在 github-release/ 下，repo_root 就是 github-release/
         # 如果 wizard 在 scripts/ 下，repo_root 是父目录
-        if (wizard_dir / "pipeline").exists():
+        if (wizard_dir / "paperforge").exists():
+            repo_root = wizard_dir
+        elif (wizard_dir.parent / "paperforge").exists():
+            repo_root = wizard_dir.parent
+        elif (wizard_dir / "pipeline").exists():
             repo_root = wizard_dir
         elif (wizard_dir.parent / "pipeline").exists():
             repo_root = wizard_dir.parent
@@ -956,17 +960,31 @@ class DeployStep(StepScreen):
         # 4. 复制脚本（从安装包到 Vault）
         import shutil
         
-        # Copy pipeline worker to PaperForge/worker/scripts/
-        worker_src = repo_root / "pipeline/worker/scripts/literature_pipeline.py"
-        worker_dst = pf_path / "worker/scripts/literature_pipeline.py"
+        # Copy worker modules to PaperForge/worker/scripts/
+        worker_src = repo_root / "paperforge/worker/sync.py"
+        worker_dst = pf_path / "worker/scripts/sync.py"
         if worker_src.exists():
+            import shutil
             shutil.copy2(worker_src, worker_dst)
+            # Also copy other worker modules
+            for mod in ["ocr.py", "repair.py", "status.py", "deep_reading.py", "update.py", "base_views.py", "__init__.py"]:
+                mod_src = repo_root / "paperforge/worker" / mod
+                if mod_src.exists():
+                    shutil.copy2(mod_src, pf_path / "worker/scripts" / mod)
         else:
-            self.set_status(f"错误：找不到 worker 脚本: {worker_src}", False)
-            return False
+            # Fallback to old pipeline location for backward compatibility
+            worker_src = repo_root / "pipeline/worker/scripts/literature_pipeline.py"
+            worker_dst = pf_path / "worker/scripts/literature_pipeline.py"
+            if worker_src.exists():
+                shutil.copy2(worker_src, worker_dst)
+            else:
+                self.set_status(f"错误：找不到 worker 脚本: {worker_src}", False)
+                return False
         
-        # Copy ld_deep.py
-        ld_src = repo_root / "skills/literature-qa/scripts/ld_deep.py"
+        # Copy ld_deep.py (prefer paperforge/skills, fallback to skills/)
+        ld_src = repo_root / "paperforge/skills/literature-qa/scripts/ld_deep.py"
+        if not ld_src.exists():
+            ld_src = repo_root / "skills/literature-qa/scripts/ld_deep.py"
         ld_dst = vault / skill_dir / "literature-qa/scripts/ld_deep.py"
         if ld_src.exists():
             shutil.copy2(ld_src, ld_dst)
@@ -974,8 +992,10 @@ class DeployStep(StepScreen):
             self.set_status(f"错误：找不到 ld_deep.py: {ld_src}", False)
             return False
 
-        # Copy subagent prompt
-        prompt_src = repo_root / "skills/literature-qa/prompt_deep_subagent.md"
+        # Copy subagent prompt (prefer paperforge/skills, fallback to skills/)
+        prompt_src = repo_root / "paperforge/skills/literature-qa/prompt_deep_subagent.md"
+        if not prompt_src.exists():
+            prompt_src = repo_root / "skills/literature-qa/prompt_deep_subagent.md"
         prompt_dst = vault / skill_dir / "literature-qa/prompt_deep_subagent.md"
         if prompt_src.exists():
             shutil.copy2(prompt_src, prompt_dst)
@@ -983,8 +1003,10 @@ class DeployStep(StepScreen):
             self.set_status(f"错误：找不到 prompt_deep_subagent.md: {prompt_src}", False)
             return False
         
-        # Copy chart-reading guides
-        chart_src = repo_root / "skills/literature-qa/chart-reading"
+        # Copy chart-reading guides (prefer paperforge/skills, fallback to skills/)
+        chart_src = repo_root / "paperforge/skills/literature-qa/chart-reading"
+        if not chart_src.exists():
+            chart_src = repo_root / "skills/literature-qa/chart-reading"
         chart_dst = vault / skill_dir / "literature-qa/chart-reading"
         if chart_src.exists() and chart_src.is_dir():
             for f in chart_src.glob("*.md"):
@@ -1144,7 +1166,7 @@ class DoneStep(StepScreen):
         yield from super().compose()
         vault_config = getattr(self.app, 'vault_config', {})
         system_dir = vault_config.get('system_dir', '99_System')
-        worker_cmd = f"python {system_dir}/PaperForge/worker/scripts/literature_pipeline.py --vault ."
+        worker_cmd = f"python -m paperforge sync --vault ."
         yield Markdown(f"""
 ## 安装完成！
 

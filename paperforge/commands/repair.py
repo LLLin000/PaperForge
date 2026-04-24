@@ -19,7 +19,7 @@ def _get_run_repair():
     repo_root = Path(__file__).resolve().parent.parent.parent
     if str(repo_root) not in sys.path:
         sys.path.insert(0, str(repo_root))
-    from pipeline.worker.scripts.literature_pipeline import run_repair
+    from paperforge.worker.repair import run_repair
 
     return run_repair
 

@@ -19,7 +19,7 @@ def _get_run_deep_reading():
     repo_root = Path(__file__).resolve().parent.parent.parent
     if str(repo_root) not in sys.path:
         sys.path.insert(0, str(repo_root))
-    from pipeline.worker.scripts.literature_pipeline import run_deep_reading
+    from paperforge.worker.deep_reading import run_deep_reading
 
     return run_deep_reading
 

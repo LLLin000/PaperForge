@@ -19,7 +19,7 @@ def _get_run_selection_sync():
     repo_root = Path(__file__).resolve().parent.parent.parent
     if str(repo_root) not in sys.path:
         sys.path.insert(0, str(repo_root))
-    from pipeline.worker.scripts.literature_pipeline import run_selection_sync
+    from paperforge.worker.sync import run_selection_sync
 
     return run_selection_sync
 
@@ -39,7 +39,7 @@ def _get_run_index_refresh():
     repo_root = Path(__file__).resolve().parent.parent.parent
     if str(repo_root) not in sys.path:
         sys.path.insert(0, str(repo_root))
-    from pipeline.worker.scripts.literature_pipeline import run_index_refresh
+    from paperforge.worker.sync import run_index_refresh
 
     return run_index_refresh
 

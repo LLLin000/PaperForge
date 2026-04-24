@@ -86,15 +86,12 @@ def _import_worker_functions() -> None:
     global run_status, run_selection_sync, run_index_refresh
     global run_deep_reading, run_repair, run_ocr, ensure_base_views
 
-    from pipeline.worker.scripts.literature_pipeline import (
-        run_status as _rs,
-        run_selection_sync as _rss,
-        run_index_refresh as _rir,
-        run_deep_reading as _rdr,
-        run_repair as _rr,
-        run_ocr as _ro,
-        ensure_base_views as _ebu,
-    )
+    from paperforge.worker.status import run_status as _rs
+    from paperforge.worker.sync import run_selection_sync as _rss, run_index_refresh as _rir
+    from paperforge.worker.deep_reading import run_deep_reading as _rdr
+    from paperforge.worker.repair import run_repair as _rr
+    from paperforge.worker.ocr import run_ocr as _ro
+    from paperforge.worker.base_views import ensure_base_views as _ebu
 
     if run_status is None:
         run_status = _rs
@@ -337,7 +334,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.command == "doctor":
-        from pipeline.worker.scripts.literature_pipeline import run_doctor
+        from paperforge.worker.status import run_doctor
         return run_doctor(vault)
 
     print(f"Error: unknown command {args.command}", file=sys.stderr)
