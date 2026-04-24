@@ -677,23 +677,42 @@ def resolve_item_collection_paths(item: dict, collection_lookup: dict) -> list[s
         paths.extend(collection_lookup.get('paths_by_item_id', {}).get(item_id, []))
     return sorted({path for path in paths if path}, key=lambda value: (-value.count('/'), value))
 
-def obsidian_wikilink_for_pdf(vault: Path, path: str) -> str:
-    text = str(path or '').strip()
+def obsidian_wikilink_for_pdf(pdf_path: str, vault_dir: Path, zotero_dir: Path | None = None) -> str:
+    text = str(pdf_path or '').strip()
     if not text:
         return ''
-    return obsidian_wikilink_for_path(vault, text)
+    # Handle storage: prefix paths by resolving through zotero_dir
+    if text.startswith('storage:') and zotero_dir is not None:
+        storage_rel = text[len('storage:'):].lstrip('/').lstrip('\\')
+        absolute_pdf_path = (zotero_dir / storage_rel.replace('/', os.sep)).resolve()
+        absolute_str = str(absolute_pdf_path)
+    else:
+        absolute_str = absolutize_vault_path(vault_dir, text, resolve_junction=True)
+    if not absolute_str:
+        return ''
+    absolute_path = Path(absolute_str)
+    try:
+        relative = absolute_path.relative_to(vault_dir)
+    except ValueError:
+        return f'[[{absolute_path.as_posix()}]]'
+    return f'[[{relative.as_posix()}]]'
 
-def absolutize_vault_path(vault: Path, path: str) -> str:
+def absolutize_vault_path(vault: Path, path: str, resolve_junction: bool = False) -> str:
     text = str(path or '').strip()
     if not text:
         return ''
     candidate = Path(text)
     if candidate.is_absolute():
-        return str(candidate)
-    return str((vault / text.replace('/', os.sep)).resolve())
+        result = str(candidate)
+    else:
+        result = str((vault / text.replace('/', os.sep)).resolve())
+    if resolve_junction:
+        from paperforge.pdf_resolver import resolve_junction
+        result = str(resolve_junction(Path(result)))
+    return result
 
 def obsidian_wikilink_for_path(vault: Path, path: str) -> str:
-    absolute = absolutize_vault_path(vault, path)
+    absolute = absolutize_vault_path(vault, path, resolve_junction=True)
     if not absolute:
         return ''
     absolute_path = Path(absolute)
@@ -1007,12 +1026,12 @@ def has_deep_reading_content(text: str) -> bool:
 
 def library_record_markdown(row: dict) -> str:
     lines = ['---', f"zotero_key: {row.get('zotero_key', '')}", f"domain: {row.get('domain', '')}", f"title: {yaml_quote(row.get('title', ''))}", f"year: {row.get('year', '')}", f"doi: {yaml_quote(row.get('doi', ''))}", f"date: {yaml_quote(row.get('date', ''))}", f"collection_path: {yaml_quote(row.get('collection_path', ''))}", f"has_pdf: {('true' if row.get('has_pdf') else 'false')}", f"pdf_path: {yaml_quote(row.get('pdf_path', ''))}", f"bbt_path_raw: {yaml_quote(row.get('bbt_path_raw', ''))}", f"zotero_storage_key: {yaml_quote(row.get('zotero_storage_key', ''))}", f"attachment_count: {row.get('attachment_count', 0)}"]
-    # supplementary as YAML list of wikilinks
+    # supplementary as YAML list of wikilinks (already formatted by caller)
     supplementary = row.get('supplementary', [])
     if supplementary:
         lines.append('supplementary:')
-        for path in supplementary:
-            lines.append(f'  - {yaml_quote(f"[[{path}]]")}')
+        for wikilink in supplementary:
+            lines.append(f'  - {yaml_quote(wikilink)}')
     else:
         lines.append('supplementary: []')
     # path_error only emitted when there is an actual error
@@ -1147,12 +1166,20 @@ def run_selection_sync(vault: Path) -> int:
             journal = item.get('publicationTitle', '')
             extra = item.get('extra', '')
             impact_factor = lookup_impact_factor(journal, extra, vault)
-            content = library_record_markdown({'zotero_key': item['key'], 'domain': domain, 'title': item.get('title', ''), 'year': item.get('year', ''), 'doi': item.get('doi', ''), 'date': item.get('date', ''), 'collection_path': ' | '.join(item.get('collections', [])), 'collections': collection_meta.get('collections', []), 'collection_tags': collection_meta.get('collection_tags', []), 'collection_group': collection_meta.get('collection_group', []), 'has_pdf': has_pdf, 'pdf_path': obsidian_wikilink_for_pdf(vault, resolved_pdf), 'recommend_analyze': bool(pdf_attachments), 'analyze': existing.get('analyze', False), 'do_ocr': existing.get('do_ocr', False), 'ocr_status': record_ocr_status, 'fulltext_md_path': fulltext_md_path, 'deep_reading_status': 'done' if note_text and has_deep_reading_content(note_text) else 'pending', 'analysis_note': existing.get('analysis_note', ''), 'first_author': first_author, 'journal': journal, 'impact_factor': impact_factor})
+            # Convert supplementary storage: paths to wikilinks
+            supplementary_wikilinks = []
+            for supp_path in item.get('supplementary', []):
+                if supp_path:
+                    wikilink = obsidian_wikilink_for_pdf(supp_path, vault, zotero_dir)
+                    if wikilink:
+                        supplementary_wikilinks.append(wikilink)
+            pdf_wikilink = obsidian_wikilink_for_pdf(resolved_pdf, vault, zotero_dir) if resolved_pdf else ''
+            content = library_record_markdown({'zotero_key': item['key'], 'domain': domain, 'title': item.get('title', ''), 'year': item.get('year', ''), 'doi': item.get('doi', ''), 'date': item.get('date', ''), 'collection_path': ' | '.join(item.get('collections', [])), 'collections': collection_meta.get('collections', []), 'collection_tags': collection_meta.get('collection_tags', []), 'collection_group': collection_meta.get('collection_group', []), 'has_pdf': has_pdf, 'pdf_path': pdf_wikilink, 'bbt_path_raw': item.get('bbt_path_raw', ''), 'zotero_storage_key': item.get('zotero_storage_key', ''), 'attachment_count': item.get('attachment_count', 0), 'supplementary': supplementary_wikilinks, 'path_error': item.get('path_error', ''), 'recommend_analyze': bool(pdf_attachments), 'analyze': existing.get('analyze', False), 'do_ocr': existing.get('do_ocr', False), 'ocr_status': record_ocr_status, 'fulltext_md_path': fulltext_md_path, 'deep_reading_status': 'done' if note_text and has_deep_reading_content(note_text) else 'pending', 'analysis_note': existing.get('analysis_note', ''), 'first_author': first_author, 'journal': journal, 'impact_factor': impact_factor})
             if record_path.exists():
                 existing_content = record_path.read_text(encoding='utf-8')
-                updated_content = _add_missing_frontmatter_fields(existing_content, {'first_author': first_author, 'journal': journal, 'impact_factor': impact_factor})
+                updated_content = _add_missing_frontmatter_fields(existing_content, {'first_author': first_author, 'journal': journal, 'impact_factor': impact_factor, 'bbt_path_raw': item.get('bbt_path_raw', ''), 'zotero_storage_key': item.get('zotero_storage_key', ''), 'attachment_count': str(item.get('attachment_count', 0)), 'path_error': item.get('path_error', '')})
                 updated_content = update_frontmatter_field(updated_content, 'has_pdf', has_pdf)
-                updated_content = update_frontmatter_field(updated_content, 'pdf_path', obsidian_wikilink_for_pdf(vault, resolved_pdf))
+                updated_content = update_frontmatter_field(updated_content, 'pdf_path', pdf_wikilink)
                 updated_content = update_frontmatter_field(updated_content, 'ocr_status', record_ocr_status)
                 updated_content = update_frontmatter_field(updated_content, 'deep_reading_status', 'done' if note_text and has_deep_reading_content(note_text) else 'pending')
                 updated_content = update_frontmatter_field(updated_content, 'fulltext_md_path', fulltext_md_path or '')
@@ -1641,6 +1668,9 @@ def run_index_refresh(vault: Path) -> int:
     config = load_domain_config(paths)
     ensure_base_views(vault, paths, config)
     domain_lookup = {entry['export_file']: entry['domain'] for entry in config['domains']}
+    from paperforge.config import load_vault_config as _load_vault_config
+    cfg = _load_vault_config(vault)
+    zotero_dir = vault / cfg.get('system_dir', '99_System') / 'Zotero'
     exports = {}
     for export_path in sorted(paths['exports'].glob('*.json')):
         domain = domain_lookup.get(export_path.name, export_path.stem)
@@ -1672,7 +1702,7 @@ def run_index_refresh(vault: Path) -> int:
                 for stale_note in note_path.parent.glob(f'{key} - *.md'):
                     if stale_note != note_path:
                         stale_note.unlink()
-            entry = {'zotero_key': key, 'domain': domain, 'title': item['title'], 'authors': item.get('authors', []), 'abstract': item.get('abstract', ''), 'journal': item.get('journal', ''), 'year': item.get('year', ''), 'doi': item.get('doi', ''), 'pmid': item.get('pmid', ''), 'collection_path': ' | '.join(item.get('collections', [])), 'collections': collection_meta.get('collections', []), 'collection_tags': collection_meta.get('collection_tags', []), 'collection_group': collection_meta.get('collection_group', []), 'has_pdf': bool(pdf_attachments), 'pdf_path': obsidian_wikilink_for_pdf(vault, pdf_attachments[0]['path']) if pdf_attachments else '', 'ocr_status': meta.get('ocr_status', 'pending'), 'ocr_job_id': meta.get('ocr_job_id', ''), 'ocr_md_path': obsidian_wikilink_for_path(vault, meta.get('markdown_path', '')), 'ocr_json_path': meta.get('json_path', ''), 'deep_reading_status': 'done' if note_path.exists() and has_deep_reading_content(note_path.read_text(encoding='utf-8')) else 'pending', 'note_path': str(note_path.relative_to(vault)).replace('\\', '/'), 'deep_reading_md_path': str(note_path.relative_to(vault)).replace('\\', '/') if note_path.exists() and has_deep_reading_content(note_path.read_text(encoding='utf-8')) else ''}
+            entry = {'zotero_key': key, 'domain': domain, 'title': item['title'], 'authors': item.get('authors', []), 'abstract': item.get('abstract', ''), 'journal': item.get('journal', ''), 'year': item.get('year', ''), 'doi': item.get('doi', ''), 'pmid': item.get('pmid', ''), 'collection_path': ' | '.join(item.get('collections', [])), 'collections': collection_meta.get('collections', []), 'collection_tags': collection_meta.get('collection_tags', []), 'collection_group': collection_meta.get('collection_group', []), 'has_pdf': bool(pdf_attachments), 'pdf_path': obsidian_wikilink_for_pdf(pdf_attachments[0]['path'], vault, zotero_dir) if pdf_attachments else '', 'ocr_status': meta.get('ocr_status', 'pending'), 'ocr_job_id': meta.get('ocr_job_id', ''), 'ocr_md_path': obsidian_wikilink_for_path(vault, meta.get('markdown_path', '')), 'ocr_json_path': meta.get('json_path', ''), 'deep_reading_status': 'done' if note_path.exists() and has_deep_reading_content(note_path.read_text(encoding='utf-8')) else 'pending', 'note_path': str(note_path.relative_to(vault)).replace('\\', '/'), 'deep_reading_md_path': str(note_path.relative_to(vault)).replace('\\', '/') if note_path.exists() and has_deep_reading_content(note_path.read_text(encoding='utf-8')) else ''}
             note_path.parent.mkdir(parents=True, exist_ok=True)
             existing_text = note_path.read_text(encoding='utf-8') if note_path.exists() else ''
             note_path.write_text(frontmatter_note(entry, existing_text), encoding='utf-8')
