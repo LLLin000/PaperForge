@@ -3066,34 +3066,41 @@ def run_doctor(vault: Path) -> int:
         add_check("Zotero 链接", "fail", "Zotero 目录不存在", f"创建 junction: mklink /j {zotero_link} <Zotero数据目录>")
 
     exports_dir = system_dir / "PaperForge" / "exports"
-    library_json = exports_dir / "library.json"
     if exports_dir.exists():
         add_check("BBT 导出", "pass", "exports 目录存在")
     else:
         add_check("BBT 导出", "fail", "exports 目录不存在", "在 Better BibTeX 设置中配置导出路径")
-    if library_json.exists():
+    
+    # Check for any valid JSON export (per-domain or library.json)
+    json_files = sorted(exports_dir.glob("*.json")) if exports_dir.exists() else []
+    valid_exports = []
+    for jf in json_files:
         try:
-            data = json.loads(library_json.read_text(encoding="utf-8"))
+            data = json.loads(jf.read_text(encoding="utf-8"))
             if isinstance(data, list) and len(data) > 0:
                 has_key = any("key" in item or "citation-key" in item for item in data[:5])
                 if has_key:
-                    add_check("BBT 导出", "pass", f"library.json 正常 ({len(data)} 条)")
-                else:
-                    add_check("BBT 导出", "warn", "library.json 存在但无有效 citation key")
-            elif isinstance(data, list) and len(data) == 0:
-                add_check("BBT 导出", "warn", "library.json 为空")
-            else:
-                add_check("BBT 导出", "warn", "library.json 格式异常")
-        except JSONDecodeError:
-            add_check("BBT 导出", "fail", "library.json 不是有效的 JSON", "检查 Better BibTeX 导出格式")
+                    valid_exports.append((jf.name, len(data)))
+            elif isinstance(data, dict) and isinstance(data.get("items"), list) and len(data["items"]) > 0:
+                has_key = any("key" in item or "citation-key" in item for item in data["items"][:5])
+                if has_key:
+                    valid_exports.append((jf.name, len(data["items"])))
+        except (JSONDecodeError, Exception):
+            pass
+    
+    if valid_exports:
+        for name, count in valid_exports:
+            add_check("BBT 导出", "pass", f"{name} 正常 ({count} 条)")
+    elif json_files:
+        add_check("BBT 导出", "warn", "导出文件存在但无有效 citation key")
     else:
-        add_check("BBT 导出", "fail", "library.json 不存在", "在 Zotero Better BibTeX 设置中配置导出路径")
+        add_check("BBT 导出", "fail", "未找到 JSON 导出文件", "在 Zotero Better BibTeX 设置中配置导出路径")
 
-    env_api_key = os.environ.get("PADDLEOCR_API_KEY") or os.environ.get("OCR_TOKEN")
+    env_api_key = os.environ.get("PADDLEOCR_API_TOKEN") or os.environ.get("PADDLEOCR_API_KEY") or os.environ.get("OCR_TOKEN")
     if env_api_key:
-        add_check("OCR 配置", "pass", "API Key 已配置")
+        add_check("OCR 配置", "pass", "API Token 已配置")
     else:
-        add_check("OCR 配置", "fail", "缺少 PADDLEOCR_API_KEY", "在 .env 文件中设置 PADDLEOCR_API_KEY")
+        add_check("OCR 配置", "fail", "缺少 PADDLEOCR_API_TOKEN", "在 .env 文件中设置 PADDLEOCR_API_TOKEN")
 
     if (paths["pipeline"] / "literature_pipeline.py").exists():
         add_check("Worker 脚本", "pass", "literature_pipeline.py 存在")
@@ -3113,7 +3120,23 @@ def run_doctor(vault: Path) -> int:
     if ld_deep_script:
         skill_dir = ld_deep_script.parent.parent
     if skill_dir and skill_dir.exists():
-        add_check("Agent 脚本", "pass", f"literature-qa skill 目录存在")
+        # Try actual importability check
+        ld_deep_import_ok = False
+        import_error = ""
+        if ld_deep_script and ld_deep_script.exists():
+            try:
+                import importlib.util
+                spec = importlib.util.spec_from_file_location("ld_deep", ld_deep_script)
+                if spec and spec.loader:
+                    mod = importlib.util.module_from_spec(spec)
+                    spec.loader.exec_module(mod)
+                    ld_deep_import_ok = True
+            except Exception as e:
+                import_error = str(e)
+        if ld_deep_import_ok:
+            add_check("Agent 脚本", "pass", "paperforge_lite and ld_deep importable")
+        else:
+            add_check("Agent 脚本", "warn", f"literature-qa skill 目录存在但 import 失败: {import_error}", "确认 agent_config_dir 配置正确并已运行 pip install -e .")
     else:
         add_check("Agent 脚本", "warn", "literature-qa skill 目录未找到", "确认 agent_config_dir 配置正确")
 
