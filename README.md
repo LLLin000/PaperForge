@@ -37,7 +37,7 @@ python setup_wizard.py --vault /path/to/your/vault
 ## 功能特性
 
 - **交互式安装向导** — 步骤引导，自动检测，安全验证
-- **`/LD-deep`** — 深度精读（Keshav 三阶段阅读法）
+- **`/pf-deep`** — 深度精读（Keshav 三阶段阅读法）
 - **自动 OCR 提取** — PaddleOCR-VL API 提取全文和图表
 - **图表类型智能识别** — 20 种图表类型自动检测
 - **图表质量审查指南** — 14 种图表类型的专业审查清单
@@ -88,18 +88,16 @@ your-vault/
 ```bash
 # PaperForge 统一入口（推荐）
 paperforge status            # 查看状态
-paperforge selection-sync    # 同步 Zotero 文献
-paperforge index-refresh     # 生成正式笔记
-paperforge ocr run           # 运行 PDF OCR
+paperforge sync              # 同步 Zotero 文献并生成正式笔记
+paperforge ocr               # 运行 PDF OCR
 paperforge deep-reading      # 查看精读队列
 
 # Agent 命令（在 OpenCode 中使用）
-/LD-deep <zotero_key>    # 完整三阶段精读
-/LD-paper <zotero_key>   # 快速摘要
+/pf-deep <zotero_key>    # 完整三阶段精读
+/pf-paper <zotero_key>   # 快速摘要
 
 # 备选：直接调用 worker 脚本（需要先运行 paperforge paths --json 获取路径）
-python <resolved_worker_script> --vault . selection-sync
-python <resolved_worker_script> --vault . index-refresh
+python <resolved_worker_script> --vault . sync
 python <resolved_worker_script> --vault . ocr
 python <resolved_worker_script> --vault . status
 ```

@@ -33,7 +33,7 @@ PaperForge Lite 采用 **两层设计**：
 | 层级 | 组件 | 触发方式 | 作用 |
 |------|------|----------|------|
 | **Worker 层** | `literature_pipeline.py`（4 个 workers） | Python CLI | 后台自动化 |
-| **Agent 层** | `/LD-deep`, `/LD-paper` 命令 | 用户手动触发 | 交互式精读 |
+| **Agent 层** | `/pf-deep`, `/pf-paper` 命令 | 用户手动触发 | 交互式精读 |
 
 **关键区别**：
 - **Worker 只做机械劳动**（检测新文献、生成笔记、OCR）
@@ -48,16 +48,16 @@ PaperForge Lite 采用 **两层设计**：
 Zotero 添加文献
     ↓ Better BibTeX 自动导出 JSON
 <system_dir>/PaperForge/exports/library.json
-    ↓ 运行 selection-sync
+    ↓ 运行 sync（selection-sync 阶段）
 <resources_dir>/<control_dir>/library-records/<domain>/<key>.md
-    ↓ 运行 index-refresh
+    ↓ 运行 sync（index-refresh 阶段）
 <resources_dir>/<literature_dir>/<domain>/<key> - <Title>.md（正式笔记）
     ↓ 用户在 library-record 中设置 do_ocr: true
 运行 ocr → <system_dir>/PaperForge/ocr/<key>/
     ↓ 用户在 library-record 中设置 analyze: true
 运行 deep-reading（查看队列，确认就绪）
     ↓ 用户执行 Agent 命令
-/LD-deep <zotero_key>
+/pf-deep <zotero_key>
     ↓ Agent 生成
 正式笔记中新增 ## 🔍 精读 区域
 ```
@@ -98,7 +98,7 @@ Zotero 添加文献
 │   └── skills/
 │       └── literature-qa/             ← 深度阅读 Skill
 │           ├── scripts/
-│           │   └── ld_deep.py         ← /LD-deep 核心脚本
+│           │   └── ld_deep.py         ← /pf-deep 核心脚本
 │           ├── prompt_deep_subagent.md ← Agent 精读提示词
 │           └── chart-reading/         ← 14 种图表阅读指南
 │
@@ -110,8 +110,8 @@ Zotero 添加文献
 
 | 目录 | 内容 | 谁生成/修改 |
 |------|------|------------|
-| `<resources_dir>/<literature_dir>/` | 正式文献笔记（含 frontmatter + 精读内容） | index-refresh 生成，Agent 写入精读 |
-| `<resources_dir>/<control_dir>/library-records/` | 文献状态跟踪（analyze, ocr_status 等） | selection-sync 生成，用户修改状态 |
+| `<resources_dir>/<literature_dir>/` | 正式文献笔记（含 frontmatter + 精读内容） | sync（index-refresh 阶段）生成，Agent 写入精读 |
+| `<resources_dir>/<control_dir>/library-records/` | 文献状态跟踪（analyze, ocr_status 等） | sync（selection-sync 阶段）生成，用户修改状态 |
 | `<system_dir>/PaperForge/exports/` | Better BibTeX JSON 导出 | Zotero 自动导出 |
 | `<system_dir>/PaperForge/ocr/` | OCR 全文 + 图表切割 | ocr worker 生成 |
 | `<system_dir>/Zotero/` | Zotero 数据目录的链接 | 安装时手动创建 junction |
@@ -120,27 +120,22 @@ Zotero 添加文献
 
 ## 4. 核心 Workers（Lite 版，4 个）
 
-### selection-sync
-- **作用**：检测 Zotero 中的新条目，创建 library-records
-- **运行时机**：添加新文献到 Zotero 后
-- **输出**：`<resources_dir>/<control_dir>/library-records/<domain>/<key>.md`
+### sync
+- **作用**：检测 Zotero 中的新条目并生成正式文献笔记（selection-sync + index-refresh 的统一入口）
+- **运行时机**：添加新文献到 Zotero 后，或需要更新笔记格式时
+- **输出**：
+  - `<resources_dir>/<control_dir>/library-records/<domain>/<key>.md`
+  - `<resources_dir>/<literature_dir>/<domain>/<key> - <Title>.md`
 - **示例**：
   ```bash
-  paperforge selection-sync
+  paperforge sync
+  # 仅同步 Zotero 到 library-records
+  paperforge sync --selection
+  # 仅根据现有 library-records 生成正式笔记
+  paperforge sync --index
   # Legacy (备用):
   # python <system_dir>/PaperForge/worker/scripts/literature_pipeline.py \
   #   --vault "{vault路径}" selection-sync
-  ```
-
-### index-refresh
-- **作用**：基于 library-records 生成正式文献笔记
-- **运行时机**：selection-sync 之后，或需要更新笔记格式时
-- **输出**：`<resources_dir>/<literature_dir>/<domain>/<key> - <Title>.md`
-- **说明**：会读取 Better BibTeX JSON 提取元数据，生成带 frontmatter 的 Obsidian 笔记
-- **示例**：
-  ```bash
-  paperforge index-refresh
-  # Legacy (备用):
   # python <system_dir>/PaperForge/worker/scripts/literature_pipeline.py \
   #   --vault "{vault路径}" index-refresh
   ```
@@ -156,7 +151,9 @@ Zotero 添加文献
 - **注意**：OCR 是异步的，大文件可能需要几分钟
 - **示例**：
   ```bash
-  paperforge ocr run
+  paperforge ocr
+  # 诊断模式（不运行，仅检查状态）
+  paperforge ocr --diagnose
   # Legacy (备用):
   # python <system_dir>/PaperForge/worker/scripts/literature_pipeline.py \
   #   --vault "{vault路径}" ocr
@@ -182,10 +179,10 @@ Zotero 添加文献
 
 | 命令 | 用途 | 前置条件 |
 |------|------|----------|
-| `/LD-deep <zotero_key>` | 完整 Keshav 三阶段精读 | OCR 完成 (`ocr_status: done`) |
-| `/LD-paper <zotero_key>` | 快速摘要（无 OCR 要求） | 有正式笔记即可 |
+| `/pf-deep <zotero_key>` | 完整 Keshav 三阶段精读 | OCR 完成 (`ocr_status: done`) |
+| `/pf-paper <zotero_key>` | 快速摘要（无 OCR 要求） | 有正式笔记即可 |
 
-### /LD-deep 执行流程
+### /pf-deep 执行流程
 
 1. **prepare 阶段**（自动）：
    - 查找 library-record（确认 `analyze: true`）
@@ -267,34 +264,27 @@ pdf_link: "<system_dir>/Zotero/..."
 
 确保 Zotero 中已有至少一篇带 PDF 的文献，且 Better BibTeX 已导出 JSON。
 
-### Step 2: 运行 selection-sync
+### Step 2: 运行 sync
 
 ```bash
 # 在 Vault 根目录执行
-paperforge selection-sync
+paperforge sync
 ```
 
 预期输出：
 ```
 [INFO] Found 5 new items
 [INFO] Created library-records/骨科/XXXXXXX.md
-...
-```
-
-### Step 3: 运行 index-refresh
-
-```bash
-paperforge index-refresh
-```
-
-预期输出：
-```
 [INFO] Generated 5 formal notes
 [INFO] Output: <resources_dir>/<literature_dir>/骨科/XXXXXXX - Title.md
 ...
 ```
 
-### Step 4: 标记要精读的文献
+> 如需分阶段执行：
+> - `paperforge sync --selection` — 仅同步 Zotero 到 library-records
+> - `paperforge sync --index` — 仅根据现有 library-records 生成正式笔记
+
+### Step 3: 标记要精读的文献
 
 在 Obsidian 中：
 1. 打开 `<resources_dir>/<control_dir>/library-records/骨科/XXXXXXX.md`
@@ -302,15 +292,15 @@ paperforge index-refresh
 3. 将 `analyze: false` 改为 `analyze: true`
 4. 保存文件
 
-### Step 5: 运行 OCR
+### Step 4: 运行 OCR
 
 ```bash
-paperforge ocr run
+paperforge ocr
 ```
 
 等待完成（可能需要几分钟）。
 
-### Step 6: 检查 OCR 状态
+### Step 5: 检查 OCR 状态
 
 ```bash
 paperforge deep-reading
@@ -322,11 +312,11 @@ paperforge deep-reading
 - `XXXXXXX` | 骨科 | 论文标题
 ```
 
-### Step 7: 执行精读
+### Step 6: 执行精读
 
 在 OpenCode Agent 中输入：
 ```
-/LD-deep XXXXXXX
+/pf-deep XXXXXXX
 ```
 
 Agent 会自动：
@@ -334,7 +324,7 @@ Agent 会自动：
 2. 逐阶段填写精读内容
 3. 验证结构完整性
 
-### Step 8: 查看结果
+### Step 7: 查看结果
 
 在 Obsidian 中打开正式笔记，找到 `## 🔍 精读` 区域，精读已完成。
 
@@ -343,14 +333,18 @@ Agent 会自动：
 ## 8. 常用命令速查
 
 ```bash
-# 检测 Zotero 新条目
-paperforge selection-sync
+# 检测 Zotero 新条目并生成正式笔记
+paperforge sync
 
-# 生成/更新正式笔记
-paperforge index-refresh
+# 仅同步 Zotero 到 library-records
+paperforge sync --selection
+
+# 仅根据现有 library-records 生成正式笔记
+paperforge sync --index
 
 # 运行 OCR（处理 do_ocr=true 的文献）
-paperforge ocr run
+paperforge ocr
+paperforge ocr --diagnose  # 诊断模式，不实际运行
 
 # 查看精读队列
 paperforge deep-reading
@@ -375,15 +369,15 @@ paperforge doctor
 
 ### Agent 命令
 ```
-/LD-deep <zotero_key>    # 完整三阶段精读
-/LD-paper <zotero_key>   # 快速摘要
+/pf-deep <zotero_key>    # 完整三阶段精读
+/pf-paper <zotero_key>   # 快速摘要
 ```
 
 ---
 
 ## 9. 常见问题
 
-### Q: 运行 selection-sync 后没有生成 library-records？
+### Q: 运行 sync 后没有生成 library-records？
 - 检查 Better BibTeX JSON 导出路径是否正确
 - 检查 JSON 文件是否包含文献数据
 - 确认 Zotero 中该文献有 citation key
@@ -393,7 +387,7 @@ paperforge doctor
 - 检查网络连接
 - 查看 `<system_dir>/PaperForge/ocr/<key>/meta.json` 中的错误信息
 
-### Q: /LD-deep 提示 OCR 未完成？
+### Q: /pf-deep 提示 OCR 未完成？
 - 确认 library-record 中 `ocr_status: done`
 - 如 OCR 失败，可重新设置 `do_ocr: true` 再运行 ocr worker
 
@@ -423,6 +417,25 @@ cp -r 新下载的scripts/* <system_dir>/PaperForge/worker/scripts/
 - `<resources_dir>/` 和 `<system_dir>/PaperForge/ocr/` 包含你的数据，需备份
 - `.env` 包含 API Key，不要提交到 git
 - `<system_dir>/PaperForge/exports/` 可重新生成（由 Zotero 自动导出）
+
+---
+
+## 11. 命令迁移说明（v1.1 → v1.2）
+
+从 v1.2 开始，PaperForge 采用统一的命令接口：
+
+| 旧命令（v1.1） | 新命令（v1.2） | 说明 |
+|---------------|---------------|------|
+| `paperforge selection-sync` | `paperforge sync` | 合并为统一 sync 命令 |
+| `paperforge index-refresh` | `paperforge sync` | 合并为统一 sync 命令 |
+| `paperforge sync --selection` | `paperforge sync --selection` | 仅执行 selection-sync |
+| `paperforge sync --index` | `paperforge sync --index` | 仅执行 index-refresh |
+| `paperforge ocr run` | `paperforge ocr` | 简化 OCR 命令 |
+| `paperforge ocr doctor` | `paperforge ocr --diagnose` | 诊断模式 |
+| `/LD-deep <key>` | `/pf-deep <key>` | Agent 精读命令 |
+| `/LD-paper <key>` | `/pf-paper <key>` | Agent 摘要命令 |
+
+**旧命令仍兼容**：v1.2 继续支持旧命令名（`selection-sync`、`index-refresh`、`ocr run`），但文档已统一使用新命令。
 
 ---
 

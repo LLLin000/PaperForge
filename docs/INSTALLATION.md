@@ -140,11 +140,10 @@ python -m paperforge <command>
 
 安装完成后：
 
-1. **同步文献**：运行 selection-sync 检测 Zotero 中的文献
-2. **生成笔记**：运行 index-refresh 创建正式文献笔记
-3. **标记精读**：在 Obsidian 中设置 `do_ocr: true` 和 `analyze: true`
-4. **运行 OCR**：执行 ocr 命令处理 PDF
-5. **开始精读**：使用 `/LD-deep <zotero_key>` 生成结构化阅读笔记
+1. **同步文献**：运行 `paperforge sync` 检测 Zotero 中的文献
+2. **标记精读**：在 Obsidian 中设置 `do_ocr: true` 和 `analyze: true`
+3. **运行 OCR**：执行 `paperforge ocr` 处理 PDF
+4. **开始精读**：使用 `/pf-deep <zotero_key>` 生成结构化阅读笔记
 
 详细用法参见 [AGENTS.md](../AGENTS.md)。
 

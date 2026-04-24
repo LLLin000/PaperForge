@@ -167,17 +167,13 @@ ls <system_dir>/PaperForge/exports/
 
 ```bash
 # 1. 同步 Zotero 文献，创建状态记录
-paperforge selection-sync
-
-# 2. 生成正式 Obsidian 笔记
-paperforge index-refresh
+paperforge sync
 ```
 
 > **备选方式**（直接调用 worker 脚本）：
 > 先运行 `pip install -e .` 安装 paperforge 工具，然后：
 > ```bash
-> python $(paperforge paths --json | python -c "import json,sys; print(json.load(sys.stdin)['worker_script'])") --vault . selection-sync
-> python $(paperforge paths --json | python -c "import json,sys; print(json.load(sys.stdin)['worker_script'])") --vault . index-refresh
+> python $(paperforge paths --json | python -c "import json,sys; print(json.load(sys.stdin)['worker_script'])") --vault . sync
 > ```
 
 此时你应该看到：
@@ -207,14 +203,14 @@ paperforge index-refresh
 
 1. 在 Zotero 中创建新收藏夹并添加文献
 2. 按照步骤三导出新的 JSON
-3. 重新运行 `selection-sync` 和 `index-refresh`
+3. 重新运行 `paperforge sync`
 
 ### Q: 修改了收藏夹名称？
 
 1. 在 Zotero 中修改收藏夹名称
 2. 重新导出 JSON（可以覆盖原文件或导出为新文件）
 3. 如果导出了新文件名的 JSON，旧文件可以手动删除
-4. 重新运行 `selection-sync` 和 `index-refresh`
+4. 重新运行 `paperforge sync`
 
 ---
 
