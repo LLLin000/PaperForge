@@ -13,6 +13,8 @@ provides:
   - Unified template for all command/*.md files
   - Platform notes (OpenCode/Codex/Claude Code) in every command doc
   - Cross-references between command docs, AGENTS.md, and COMMANDS.md
+  - scripts/consistency_audit.py automated hard-constraint checker
+  - docs/CONSISTENCY-CHECKLIST.md manual soft-constraint checklist
 affects:
   - AGENTS.md (referenced, not modified)
   - command/*.md (all 5 files)
@@ -28,12 +30,22 @@ tech-stack:
 key-files:
   created:
     - docs/COMMANDS.md
+    - scripts/consistency_audit.py
+    - docs/CONSISTENCY-CHECKLIST.md
   modified:
     - command/pf-deep.md
     - command/pf-paper.md
     - command/pf-ocr.md
     - command/pf-sync.md
     - command/pf-status.md
+    - AGENTS.md
+    - docs/COMMANDS.md
+    - paperforge/cli.py
+    - paperforge/ocr_diagnostics.py
+    - pipeline/worker/scripts/literature_pipeline.py
+    - scripts/welcome.py
+    - skills/literature-qa/prompt_deep_subagent.md
+    - skills/literature-qa/scripts/ld_deep.py
 
 key-decisions:
   - "Preserved Chinese as primary content language for consistency with existing docs and AGENTS.md"
@@ -46,7 +58,7 @@ patterns-established:
   - "Cross-reference linking: every command doc links to COMMANDS.md and AGENTS.md"
   - "Platform Notes: document OpenCode current behavior + Codex/Claude Code future plans"
 
-requirements-completed: [SYS-04]
+requirements-completed: [SYS-04, SYS-05]
 
 # Metrics
 duration: 6min
@@ -115,10 +127,110 @@ None. All files written successfully. Git commits completed without errors.
 ## Next Phase Readiness
 
 - Wave 3 (Tasks 3-4) complete
+- Wave 4 (Tasks 5-6) complete
 - Remaining Phase 10 waves:
-  - Wave 4: Tasks 5-6 — Consistency audit (script + checklist)
   - Wave 5: Task 7 — Verification & state update
-- Command documentation foundation is solid and ready for consistency audit
+- Consistency audit infrastructure is in place and passing
+- Command documentation foundation is solid and ready for final verification
+
+---
+
+# Phase 10 (Wave 4): Consistency Audit Summary
+
+**Automated consistency audit script (`scripts/consistency_audit.py`) and manual checklist (`docs/CONSISTENCY-CHECKLIST.md`) for hard and soft constraint verification**
+
+## Performance
+
+- **Duration:** ~15 min
+- **Tasks:** 2 (Tasks 5-6 of Phase 10)
+- **Files created:** 2 (1 script, 1 checklist)
+- **Files modified:** 12 (violations fixed across codebase)
+
+## Accomplishments
+
+- Created `scripts/consistency_audit.py` with 4 automated checks:
+  - Check 1: No old command names in active code/docs
+  - Check 2: No `paperforge_lite` references in Python code
+  - Check 3: No dead internal links in markdown
+  - Check 4: All command/*.md files have required structure sections
+- Created `docs/CONSISTENCY-CHECKLIST.md` with manual review items:
+  - Terminology, commands, cross-references, version references
+  - Style, branding, platform notes
+  - Review sign-off table
+- Fixed all violations discovered by the audit:
+  - Updated `paperforge/ocr_diagnostics.py` error messages to use `paperforge ocr --diagnose`
+  - Updated `pipeline/worker/scripts/literature_pipeline.py` generated content to use `/pf-deep`
+  - Updated `scripts/welcome.py` to recommend `/pf-deep`
+  - Updated `skills/literature-qa/prompt_deep_subagent.md` title to `/pf-deep`
+  - Updated `skills/literature-qa/scripts/ld_deep.py` docstrings and error messages to `/pf-deep`
+  - Fixed dead links in `docs/COMMANDS.md` (command file references)
+  - Fixed dead links in all `command/*.md` files (COMMANDS.md references)
+  - Updated `AGENTS.md` section 11 to reference `MIGRATION-v1.2.md`
+  - Updated `paperforge/cli.py` module docstring to use current command names
+
+## Task Commits
+
+1. **Task 5: Consistency audit script** - `abab8df` (feat)
+2. **Task 6: Manual consistency checklist** - `f0d2fa1` (docs)
+
+## Files Created/Modified
+
+- `scripts/consistency_audit.py` - Automated audit script with 4 checks (created)
+- `docs/CONSISTENCY-CHECKLIST.md` - Manual review checklist (created)
+- `paperforge/ocr_diagnostics.py` - Updated error messages to use new commands
+- `pipeline/worker/scripts/literature_pipeline.py` - Updated generated content to use `/pf-deep`
+- `scripts/welcome.py` - Updated welcome message to use `/pf-deep`
+- `skills/literature-qa/prompt_deep_subagent.md` - Updated title to `/pf-deep`
+- `skills/literature-qa/scripts/ld_deep.py` - Updated docstrings and error messages
+- `docs/COMMANDS.md` - Fixed dead links to command files
+- `command/pf-deep.md` - Fixed dead link to COMMANDS.md
+- `command/pf-paper.md` - Fixed dead link to COMMANDS.md
+- `command/pf-ocr.md` - Fixed dead link to COMMANDS.md
+- `command/pf-sync.md` - Fixed dead link to COMMANDS.md
+- `command/pf-status.md` - Fixed dead link to COMMANDS.md
+- `AGENTS.md` - Updated migration section to reference migration guide
+- `paperforge/cli.py` - Updated module docstring to use current commands
+
+## Decisions Made
+
+- **Audit scope**: Exclude migration guide (`docs/MIGRATION-v1.2.md`), architecture ADR docs (`docs/ARCHITECTURE.md`), planning docs (`.planning/`), and the audit script itself from checks
+- **Backward compatibility documentation**: `cli.py` docstrings and `setup_wizard.py` migration notes are acceptable since they explicitly document deprecated aliases
+- **Historical context**: ADR-010 in `ARCHITECTURE.md` mentions old command names as historical context; this is acceptable
+
+## Deviations from Plan
+
+**Auto-fixed Issues (Rule 1 & 2)**
+
+1. **[Rule 1 - Bug] Fixed dead internal links**
+   - **Found during:** Task 5 (Check 3)
+   - **Issue:** `docs/COMMANDS.md` linked to `pf-deep.md` etc. as relative paths, but those files are in `command/`, not `docs/`
+   - **Fix:** Updated all command file links to use `../command/pf-*.md`
+   - **Files modified:** `docs/COMMANDS.md`, `command/pf-*.md` (5 files)
+   - **Commit:** `abab8df`
+
+2. **[Rule 1 - Bug] Fixed user-facing old command references**
+   - **Found during:** Task 5 (Check 1)
+   - **Issue:** Multiple user-facing strings still referenced old commands (`paperforge ocr doctor`, `/LD-deep`, `index-refresh`)
+   - **Fix:** Updated error messages, generated content, welcome messages, and skill docstrings to use current command names
+   - **Files modified:** `paperforge/ocr_diagnostics.py`, `pipeline/worker/scripts/literature_pipeline.py`, `scripts/welcome.py`, `skills/literature-qa/prompt_deep_subagent.md`, `skills/literature-qa/scripts/ld_deep.py`, `AGENTS.md`, `paperforge/cli.py`
+   - **Commit:** `abab8df`
+
+## Issues Encountered
+
+None blocking. All violations were straightforward fixes.
+
+## Next Phase Readiness
+
+- Wave 4 (Tasks 5-6) complete
+- Remaining Phase 10 waves:
+  - Wave 5: Task 7 — Verification & state update
+- Consistency audit infrastructure is in place and passing
+- Command documentation foundation is solid and ready for final verification
+
+---
+
+*Phase: 10-documentation-and-cohesion (Wave 4)*
+*Completed: 2026-04-24*
 
 ---
 
@@ -133,6 +245,10 @@ None. All files written successfully. Git commits completed without errors.
 - [x] `command/pf-ocr.md` exists and is readable
 - [x] `command/pf-sync.md` exists and is readable
 - [x] `command/pf-status.md` exists and is readable
+- [x] `scripts/consistency_audit.py` exists and runs (4/4 checks pass)
+- [x] `docs/CONSISTENCY-CHECKLIST.md` exists and is readable
 - [x] Commit `5aeacae` (Task 3) verified in git log
 - [x] Commit `cf761d1` (Task 4) verified in git log
-- [x] All 6 files created/modified as expected
+- [x] Commit `abab8df` (Task 5) verified in git log
+- [x] Commit `f0d2fa1` (Task 6) verified in git log
+- [x] All 15 files created/modified as expected
