@@ -10,18 +10,18 @@ See: `.planning/PROJECT.md` (updated 2026-04-24)
 
 ## Current Position
 
-Phase: 12 (IN PROGRESS)
+Phase: 12 (COMPLETE)
 Plan: 12-PLAN.md (11 tasks, 5 waves)
-Status: Planning complete, ready for execution
-Last activity: 2026-04-24 — Phase 12 context, discussion, and plan committed (cfe0b6a)
+Status: All tasks completed, 203 tests passing, 0 failures
+Last activity: 2026-04-24 — Phase 12 execution complete (498a9ed, ba8a08b, f54fe8a, 87251db)
 
 ## Next Action
 
-Phase 12: Architecture Cleanup — Execute Wave 1 (package structure + sync/ocr migration)
+Phase 13: TBD — Review ROADMAP.md for next phase
 
 Options:
-- `/gsd-execute-phase 12` — begin Phase 12 execution
-- Review `.planning/phases/12-architecture-cleanup/12-PLAN.md` for full plan
+- `/gsd-execute-phase 13` — begin Phase 13 execution
+- Review `.planning/ROADMAP.md` for phase progression
 
 ## Completed in Wave 1
 
@@ -89,6 +89,17 @@ Options:
 - [x] Whether `storage:` prefix should include implicit `storage/` segment — **Deferred to Phase 12**
 - CI platform choice (GitHub Actions vs pre-commit hooks)
 
+## Phase 12 Decisions (Locked)
+
+- Migrated 4041-line `literature_pipeline.py` into 7 focused modules under `paperforge/worker/`
+- `paperforge/worker/sync.py` contains utilities + sync functions (selection-sync, index-refresh)
+- `paperforge/worker/ocr.py` contains OCR queue and post-processing
+- `paperforge/worker/repair.py`, `status.py`, `deep_reading.py`, `update.py`, `base_views.py` for respective domains
+- `skills/literature-qa/` migrated to `paperforge/skills/literature-qa/`
+- Function-level imports used to break circular dependencies between sync.py and ocr.py
+- Module-reference imports (`_sync.run_selection_sync`) used in ocr.py to maintain test patch compatibility
+- Old `pipeline/` and `skills/` directories removed after confirming zero import references
+
 ---
 *Initialized: 2026-04-23*
-*Last updated: 2026-04-24 (Wave 4 complete, Phase 11 done)*
+*Last updated: 2026-04-24 (Phase 12 complete)*
