@@ -1,50 +1,132 @@
-# Roadmap: PaperForge Lite
+# Roadmap: v1.3 Path Normalization & Architecture Hardening
 
-## Milestones
+**Current:** v1.3 In Progress (2026-04-24)
+**Next:** Phase 11 planning
 
-- ✅ **v1.0 MVP** — Phases 1-5 (shipped 2026-04-23)
-- ✅ **v1.1 Sandbox Onboarding** — Phases 6-8 (shipped 2026-04-24)
-- ✅ **v1.2 Systematization & Cohesion** — Phases 9-10 (shipped 2026-04-24)
-- 📋 **v1.3 (Next)** — Planned
+---
 
-## Current: v1.3 (Planning)
+## Phases
 
-**Focus:** Close remaining gaps, improve performance, research plugin architecture.
+### Phase 11: Zotero Path Normalization
 
-### Planned Phases
+**Goal:** Implement robust Zotero attachment path parsing and Obsidian wikilink generation.
 
-- [ ] Phase 11: [To be defined]
-- [ ] Phase 12: [To be defined]
+**Status:** Not started
+**Requirements:** PATH-01, PATH-02, PATH-03, PATH-04, PATH-05, TEST-03, TEST-04
+
+Plans:
+
+- [ ] 11-01: Create `ZoteroPathResolver` class
+  - Parse BBT JSON `attachments[].path` (absolute Windows paths)
+  - Extract storage key from `uri`/`select` fields
+  - Convert absolute path → Vault-relative path
+  
+- [ ] 11-02: Implement wikilink generation
+  - Generate `[[system/Zotero/storage/KEY/...]]` format
+  - Handle path separator normalization (`\` → `/`)
+  
+- [ ] 11-03: Multi-attachment support
+  - Identify main PDF (title == "PDF")
+  - Handle supplementary materials
+  
+- [ ] 11-04: Tests and fixtures
+  - Unit tests for all path formats
+  - Real-world fixtures from production Zotero library
+  - Wikilink generation tests
+
+**Success criteria:**
+1. All 4 BBT path input formats correctly parsed
+2. Wikilink output matches Obsidian standard
+3. Multi-attachment items handled gracefully
+4. 100% test coverage for path resolver
+
+---
+
+### Phase 12: Architecture Cleanup
+
+**Goal:** Fix module boundaries and eliminate test dead zones.
+
+**Status:** Not started
+**Requirements:** ARCH-01, ARCH-02, ARCH-03, ARCH-04, TEST-01, TEST-02, TEST-05
+
+Plans:
+
+- [ ] 12-01: Merge pipeline into paperforge package
+  - Move `pipeline/worker/scripts/` → `paperforge/worker/`
+  - Update all imports
+  - Ensure `__init__.py` files present
+  
+- [ ] 12-02: Integrate skill scripts
+  - Move `skills/literature-qa/` → `paperforge/skills/`
+  - Update `ld_deep.py` imports
+  - Update AGENTS.md references
+  
+- [ ] 12-03: Fix test dead zones
+  - Fix `test_pdf_resolver.py` attachment normalization
+  - Fix/remove `test_base_preservation.py` and `test_base_views.py`
+  - Verify all tests pass (0 failures)
+
+**Success criteria:**
+1. `from paperforge.worker.literature_pipeline import ...` works
+2. `from paperforge.skills.literature_qa.ld_deep import ...` works
+3. All 178+ tests pass with 0 failures
+4. No import collection errors
+
+---
+
+### Phase 13: Quality Assurance Integration
+
+**Goal:** Make consistency audit part of the development workflow.
+
+**Status:** Not started
+**Requirements:** QA-01, QA-02, QA-03
+
+Plans:
+
+- [ ] 13-01: Pre-commit hook
+  - Create `.pre-commit-config.yaml`
+  - Integrate `scripts/consistency_audit.py`
+  - Auto-fix mode for violations
+  
+- [ ] 13-02: CONTRIBUTING.md
+  - Document development workflow
+  - Explain audit checks
+  - Setup instructions for contributors
+  
+- [ ] 13-03: CI-ready audit
+  - GitHub Actions workflow (optional)
+  - Ensure audit runs on every PR
+  - Block merge on audit failure
+
+**Success criteria:**
+1. `git commit` triggers consistency audit
+2. Audit failures block commit (or auto-fix)
+3. CONTRIBUTING.md explains workflow
+4. CI runs audit on pull requests
+
+---
 
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|---------------|--------|-----------|
-| 1. Research & Foundation | v1.0 | 3/3 | Complete | 2026-04-23 |
-| 2. CLI Skeleton & Config | v1.0 | 2/2 | Complete | 2026-04-23 |
-| 3. Core Pipeline Integration | v1.0 | 2/2 | Complete | 2026-04-23 |
-| 4. Obsidian Integration | v1.0 | 2/2 | Complete | 2026-04-23 |
-| 5. Release Polish | v1.0 | 2/2 | Complete | 2026-04-23 |
-| 6. Setup, CLI, And Diagnostics Consistency | v1.1 | 3/3 | Complete | 2026-04-24 |
-| 7. Zotero PDF, Metadata, And State Repair | v1.1 | 2/2 | Complete | 2026-04-24 |
-| 8. Deep Helper Deployment And Sandbox Regression Gate | v1.1 | 2/2 | Complete | 2026-04-24 |
-| 9. Command Unification & CLI Simplification | v1.2 | 2/2 | Complete | 2026-04-24 |
-| 10. Documentation & Cohesion | v1.2 | 2/2 | Complete | 2026-04-24 |
-| 11. [TBD] | v1.3 | 0/0 | Not started | - |
-| 12. [TBD] | v1.3 | 0/0 | Not started | - |
+| 1-5 | v1.0 | — | Complete | 2026-04-23 |
+| 6-8 | v1.1 | — | Complete | 2026-04-24 |
+| 9-10 | v1.2 | — | Complete | 2026-04-24 |
+| 11 | v1.3 | 0/4 | Not started | — |
+| 12 | v1.3 | 0/3 | Not started | — |
+| 13 | v1.3 | 0/3 | Not started | — |
 
 ---
 
 <details>
 <summary>✅ v1.0 MVP (Phases 1-5) — SHIPPED 2026-04-23</summary>
 
-Initial release with CLI, config resolver, pipeline integration, Obsidian Base generation, and basic diagnostics.
-
-- Phase 1: Research & Foundation (3/3 plans)
-- Phase 2: CLI Skeleton & Config (2/2 plans)
-- Phase 3: Core Pipeline Integration (2/2 plans)
-- Phase 4: Obsidian Integration (2/2 plans)
-- Phase 5: Release Polish (2/2 plans)
+- Phase 1: Config And Command Foundation (3/3 plans)
+- Phase 2: PaddleOCR And PDF Path Hardening (2/2 plans)
+- Phase 3: Config-Aware Obsidian Bases (2/2 plans)
+- Phase 4: End-To-End Onboarding And Validation (2/2 plans)
+- Phase 5: Release Verification (2/2 plans)
 
 _Archived: `.planning/milestones/v1.0.md`_
 
@@ -52,8 +134,6 @@ _Archived: `.planning/milestones/v1.0.md`_
 
 <details>
 <summary>✅ v1.1 Sandbox Onboarding (Phases 6-8) — SHIPPED 2026-04-24</summary>
-
-Hardened sandbox onboarding flow, fixed all first-time-user audit findings, added state repair and deep helper deployment.
 
 - Phase 6: Setup, CLI, And Diagnostics Consistency (3/3 plans)
 - Phase 7: Zotero PDF, Metadata, And State Repair (2/2 plans)
@@ -65,8 +145,6 @@ _Archived: `.planning/milestones/v1.1.md`_
 
 <details>
 <summary>✅ v1.2 Systematization & Cohesion (Phases 9-10) — SHIPPED 2026-04-24</summary>
-
-Unified agent commands under `/pf-*`, simplified CLI, documented architecture, created migration guide.
 
 - Phase 9: Command Unification & CLI Simplification (2/2 plans)
 - Phase 10: Documentation & Cohesion (2/2 plans)

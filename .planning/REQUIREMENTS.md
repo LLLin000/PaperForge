@@ -1,110 +1,103 @@
-# Requirements: PaperForge Lite v1.1 Sandbox Onboarding Hardening
+# Requirements: v1.3 Path Normalization & Architecture Hardening
 
-**Defined:** 2026-04-23  
-**Core Value:** A new user can install PaperForge, configure their own vault paths and PaddleOCR credentials, then run the full literature pipeline with copy-pasteable commands that diagnose failures clearly.
+> **Defined:** 2026-04-24
+> **Core Value:** A new user can install PaperForge, configure their own vault paths and PaddleOCR credentials, then run the full literature pipeline with copy-pasteable commands that diagnose failures clearly.
 
-## Milestone v1.1 Requirements
+---
 
-### Setup And Commands
+## v1.3 Requirements
 
-- [x] **SETUP-01**: User can run `python setup_wizard.py --vault <vault>` and see an immediate, understandable setup UI or message instead of an unexplained terminal stall.
-- [x] **SETUP-02**: User can rely on `--vault <vault>` being carried into the wizard flow without retyping the same path.
-- [x] **SETUP-03**: User can continue with a documented fallback command when the global `paperforge` executable is not registered.
-- [x] **SETUP-04**: User can inspect `paperforge paths --json` and receive installed worker and Agent script paths that actually exist.
-- [x] **SETUP-05**: Agent command docs use the same JSON field names emitted by `paperforge paths --json`.
+### Path Normalization (PATH)
 
-### Diagnostics
+**Goal:** Handle real-world Zotero BBT export paths correctly, supporting absolute paths, multi-attachments, and Obsidian wikilinks.
 
-- [x] **DIAG-01**: User can run `paperforge doctor` against per-domain Better BibTeX exports without being incorrectly blocked for missing `library.json`.
-- [x] **DIAG-02**: User can configure PaddleOCR once with the env variable name that setup writes and workers read.
-- [x] **DIAG-03**: Doctor reports the deployed worker script path according to the same resolver contract used by runtime commands.
-- [x] **DIAG-04**: OCR doctor distinguishes an expected endpoint-method mismatch from a bad user URL when checking the configured PaddleOCR job endpoint.
+- [ ] **PATH-01**: Parse BBT JSON `attachments[].path` (absolute Windows paths)
+- [ ] **PATH-02**: Extract Zotero 8-bit storage key from `uri`/`select` fields
+- [ ] **PATH-03**: Convert absolute path → Vault-relative path (`system/Zotero/storage/KEY/...`)
+- [ ] **PATH-04**: Generate Obsidian wikilinks (`[[relative/path]]`) for PDF links
+- [ ] **PATH-05**: Handle multi-attachment items (identify main PDF vs supplementary)
+- [ ] **PATH-06**: Handle Chinese/special characters in filenames
+- [ ] **PATH-07**: Support backward-compatible `storage:` prefix and bare relative paths
 
-### Zotero Paths And Metadata
+### Architecture Cleanup (ARCH)
 
-- [~] **ZPATH-01**: User can sync a BBT attachment path shaped like `KEY/KEY.pdf` when the file exists under the configured Zotero `storage/KEY/` directory.
-- [~] **ZPATH-02**: User can sync common `storage:KEY/file.pdf` and `storage/KEY/file.pdf` attachment forms.
-- [~] **ZPATH-03**: User sees library-record `pdf_path` populated only with a readable resolved PDF path or an explicit actionable missing-PDF status.
-- [x] **META-01**: User sees `first_author` populated in generated library-records from normalized export metadata.
-- [x] **META-02**: User sees `journal` populated in generated library-records from normalized export metadata.
+**Goal:** Fix module boundary leakage discovered during v1.2. Integrate `pipeline/` and `skills/` into `paperforge/` package.
 
-### State And Queue Consistency
+- [ ] **ARCH-01**: Merge `pipeline/worker/scripts/` into `paperforge/worker/`
+- [ ] **ARCH-02**: Move `skills/literature-qa/` into `paperforge/skills/`
+- [ ] **ARCH-03**: Update all imports to use unified package structure
+- [ ] **ARCH-04**: Ensure `pip install -e .` installs all subpackages
 
-- [x] **STATE-01**: User can run `selection-sync`, `index-refresh`, and `ocr run` without records simultaneously saying `has_pdf: true` and `ocr_status: nopdf` when the PDF is readable.
-- [x] **STATE-02**: User sees formal note OCR status synchronized with validated OCR `meta.json` status after worker refresh.
-- [x] **STATE-03**: User sees `paperforge deep-reading --verbose` print the ready/waiting/blocked queue summary directly or print the report path clearly.
-- [x] **STATE-04**: User can tell from command output which record needs OCR, which one is blocked, and which one is ready for `/LD-deep`.
+### Test Hardening (TEST)
 
-### Deep Reading Helpers
+**Goal:** Eliminate test dead zones (broken tests, collection errors) and establish consistent test patterns.
 
-- [x] **DEEP-04**: User can run the deployed `ld_deep.py` helper from the Vault installation without manually setting `PYTHONPATH`.
-- [x] **DEEP-05**: User can run `/LD-deep queue` documentation examples using paths and field names that exist.
-- [x] **DEEP-06**: User can prepare a sandbox OCR-complete paper and get `figure-map.json`, `chart-type-map.json`, and a `## 🔍 精读` scaffold in the formal note.
+- [ ] **TEST-01**: Fix or remove `test_base_preservation.py` and `test_base_views.py`
+- [ ] **TEST-02**: Fix `test_pdf_resolver.py` attachment path normalization
+- [ ] **TEST-03**: Add tests for ZoteroPathResolver (all input formats)
+- [ ] **TEST-04**: Add tests for wikilink generation
+- [ ] **TEST-05**: Ensure all tests pass with 0 failures
 
-### Regression Coverage
+### Quality Assurance (QA)
 
-- [x] **REG-01**: Maintainer can run one sandbox smoke test that starts from a clean `tests/sandbox/00_TestVault` and covers setup-equivalent layout, selection sync, index refresh, OCR preflight/dry-run, deep-reading queue, and `ld_deep.py prepare`.
-- [x] **REG-02**: Smoke assertions cover the exact regressions from the manual audit: doctor env names, per-domain JSON, worker path JSON, BBT PDF path resolution, metadata fields, queue output, and deployed Agent importability.
-- [x] **REG-03**: README, INSTALLATION.md, AGENTS.md, and command files stay consistent with the smoke-tested commands.
+**Goal:** Make consistency audit part of the development workflow, not a manual afterthought.
 
-## Future Requirements
+- [ ] **QA-01**: Create pre-commit hook for consistency audit
+- [ ] **QA-02**: Document audit integration in CONTRIBUTING.md
+- [ ] **QA-03**: Ensure audit passes on every commit
 
-### Integrations
+---
 
-- **INT-01**: User can choose OCR providers beyond PaddleOCR.
-- **INT-02**: PaperForge can detect Better BibTeX export settings directly where possible.
-- **INT-03**: Optional scheduled worker automation can run without opening an agent session.
+## Deferred to v1.4+
 
-### UX
+| ID | Requirement | Reason |
+|----|-------------|--------|
+| PERF-01 | Repair scan O(n*m) → O(n) optimization | Lower priority than path normalization |
+| OCR-01 | OCR provider abstraction (beyond PaddleOCR) | Requires API research, not blocking |
+| TS-01 | TypeScript Obsidian plugin architecture | Major new stack, needs dedicated milestone |
 
-- **UX-01**: Setup wizard can repair an existing installation.
-- **UX-02**: Setup wizard can import existing production Base files and parameterize them.
-- **UX-03**: A dashboard note can summarize current pipeline health.
+---
 
 ## Out of Scope
 
 | Feature | Reason |
 |---------|--------|
-| Automatic deep-reading generation from worker | Conflicts with Lite architecture and risks uncontrolled agent work |
-| Replacing Zotero collections as the source of domains | Existing workflow depends on Zotero and Better BibTeX exports |
-| Multi-user hosted backend | Not needed for local release reliability |
-| Full provider plugin system in v1.1 | The current milestone fixes PaddleOCR path/env consistency first |
-| Real PaddleOCR network smoke test in default CI | Sandbox regression should be deterministic; live provider checks remain opt-in |
+| Replacing Zotero/Better BibTeX | Core dependency, not changing |
+| Auto-triggering deep-reading from workers | Lite architecture keeps them separate |
+| Cloud/multi-user service | Local-first scope |
+| Mobile app | Not medical researcher workflow |
+
+---
 
 ## Traceability
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SETUP-01 | Phase 6 | Complete |
-| SETUP-02 | Phase 6 | Complete |
-| SETUP-03 | Phase 6 | Complete |
-| SETUP-04 | Phase 6 | Complete |
-| SETUP-05 | Phase 6 | Complete |
-| DIAG-01 | Phase 6 | Complete |
-| DIAG-02 | Phase 6 | Complete |
-| DIAG-03 | Phase 6 | Complete |
-| DIAG-04 | Phase 6 | Complete |
-| ZPATH-01 | Phase 7 | Partial |
-| ZPATH-02 | Phase 7 | Partial |
-| ZPATH-03 | Phase 7 | Partial |
-| META-01 | Phase 7 | Complete |
-| META-02 | Phase 7 | Complete |
-| STATE-01 | Phase 7 | Complete |
-| STATE-02 | Phase 7 | Complete |
-| STATE-03 | Phase 7 | Complete |
-| STATE-04 | Phase 7 | Complete |
-| DEEP-04 | Phase 8 | Complete |
-| DEEP-05 | Phase 8 | Complete |
-| DEEP-06 | Phase 8 | Complete |
-| REG-01 | Phase 8 | Complete |
-| REG-02 | Phase 8 | Complete |
-| REG-03 | Phase 8 | Complete |
+| PATH-01 | Phase 11 | Pending |
+| PATH-02 | Phase 11 | Pending |
+| PATH-03 | Phase 11 | Pending |
+| PATH-04 | Phase 11 | Pending |
+| PATH-05 | Phase 11 | Pending |
+| PATH-06 | Phase 12 | Pending |
+| PATH-07 | Phase 12 | Pending |
+| ARCH-01 | Phase 12 | Pending |
+| ARCH-02 | Phase 12 | Pending |
+| ARCH-03 | Phase 12 | Pending |
+| ARCH-04 | Phase 12 | Pending |
+| TEST-01 | Phase 12 | Pending |
+| TEST-02 | Phase 12 | Pending |
+| TEST-03 | Phase 11 | Pending |
+| TEST-04 | Phase 11 | Pending |
+| TEST-05 | Phase 12 | Pending |
+| QA-01 | Phase 13 | Pending |
+| QA-02 | Phase 13 | Pending |
+| QA-03 | Phase 13 | Pending |
 
 **Coverage:**
-- v1.1 requirements: 24 total
-- Complete: 21
-- Partial: 3 (ZPATH-01/02/03 — BBT bare path normalization deferred)
-- Unmapped: 0
+- v1.3 requirements: 19 total
+- Mapped to phases: 19
+- Unmapped: 0 ✓
 
 ---
-*Requirements defined: 2026-04-23 from sandbox first-time-user audit*
+*Requirements defined: 2026-04-24*
+*Last updated: 2026-04-24 after milestone initiation*
