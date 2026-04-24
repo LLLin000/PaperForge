@@ -23,11 +23,11 @@ v2 requirements (INT-01, INT-02, INT-03, UX-01, UX-02, UX-03) are explicitly def
 
 - **Coverage standard:** Key modules have tests covering critical paths; no mandatory line/branch coverage percentage
 - **Must-cover modules:**
-  - `paperforge_lite/config.py` — resolve_vault(), load_vault_config(), paperforge_paths(), load_simple_env()
-  - `paperforge_lite/ocr_diagnostics.py` — L1-L4 diagnostic levels
-  - `paperforge_lite/pdf_resolver.py` — absolute, vault-relative, junction, storage-relative paths
+  - `paperforge/config.py` — resolve_vault(), load_vault_config(), paperforge_paths(), load_simple_env()
+  - `paperforge/ocr_diagnostics.py` — L1-L4 diagnostic levels
+  - `paperforge/pdf_resolver.py` — absolute, vault-relative, junction, storage-relative paths
   - `literature_pipeline.py` Base generation — build_base_views(), substitute_config_placeholders(), 8-view structure
-  - `paperforge_lite/cli.py` — all command dispatches (status, selection-sync, index-refresh, ocr, ocr doctor, deep-reading)
+  - `paperforge/cli.py` — all command dispatches (status, selection-sync, index-refresh, ocr, ocr doctor, deep-reading)
 - **Coverage gaps to report:** resolve_vault() fallback on missing paperforge.json, load_simple_env() exception handling, Chinese path handling in placeholder substitution
 
 ### Smoke Test Design (REL-02)
@@ -113,11 +113,11 @@ v2 requirements (INT-01, INT-02, INT-03, UX-01, UX-02, UX-03) are explicitly def
 - `.planning/phases/04-onboarding-validation/04-CONTEXT.md` — Phase 4 decisions (doctor subcommands, AGENTS update)
 
 ### Implementation Files
-- `paperforge_lite/config.py` — shared resolver (Phase 1)
-- `paperforge_lite/ocr_diagnostics.py` — L1-L4 doctor (Phase 2)
-- `paperforge_lite/pdf_resolver.py` — PDF path resolution (Phase 2)
+- `paperforge/config.py` — shared resolver (Phase 1)
+- `paperforge/ocr_diagnostics.py` — L1-L4 doctor (Phase 2)
+- `paperforge/pdf_resolver.py` — PDF path resolution (Phase 2)
 - `pipeline/worker/scripts/literature_pipeline.py` — Base generation, workers (Phase 3)
-- `paperforge_lite/cli.py` — command dispatch (Phase 1)
+- `paperforge/cli.py` — command dispatch (Phase 1)
 - `tests/` — 126 existing tests across 15 test files
 
 </canonical_refs>
@@ -137,7 +137,7 @@ v2 requirements (INT-01, INT-02, INT-03, UX-01, UX-02, UX-03) are explicitly def
 - Base generation uses 8-view structure with `${SCREAMING_SNAKE_CASE}` placeholders
 
 ### Integration Points
-- `paperforge` CLI entrypoint: `paperforge_lite/__main__.py` → `cli.py`
+- `paperforge` CLI entrypoint: `paperforge/__main__.py` → `cli.py`
 - Worker dispatch: `literature_pipeline.py` imported and called by `cli.py`
 - Smoke test will call `paperforge` CLI commands as subprocess or via `main()` directly
 

@@ -7,12 +7,12 @@ tags: [config, resolver, worker, ld-deep, setup, validation, paperforge-lite, td
 # Dependency graph
 requires:
   - phase: 01-config-and-command-foundation
-    provides: paperforge_lite.config with load_vault_config and paperforge_paths
+    provides: paperforge.config with load_vault_config and paperforge_paths
 provides:
   - Worker load_vault_config wired to shared resolver
   - Worker pipeline_paths returns shared keys + worker-only keys
   - ld_deep._load_vault_config and _paperforge_paths wired to shared resolver
-  - setup_wizard deploys paperforge_lite package alongside scripts
+  - setup_wizard deploys paperforge package alongside scripts
   - validate_setup.py uses shared resolver with PAPERFORGE_VAULT first
 affects: [01-04, worker, ld-deep, setup_wizard, validate_setup]
 
@@ -34,9 +34,9 @@ key-files:
 key-decisions:
   - "Public function names preserved as wrappers: load_vault_config, pipeline_paths in worker; _load_vault_config, _paperforge_paths in ld_deep"
   - "pipeline_paths uses **shared to merge resolver output then adds worker-only keys (pipeline, candidates, search_*, harvest_root, records, review, config, queue, log, bridge_config*, index, ocr_queue)"
-  - "setup_wizard deploys paperforge_lite to two parallel locations: <pf_path>/worker/paperforge_lite/ and <skill_dir>/literature-qa/paperforge_lite/"
+  - "setup_wizard deploys paperforge to two parallel locations: <pf_path>/worker/paperforge/ and <skill_dir>/literature-qa/paperforge/"
   - "validate_setup.py falls back to legacy JSON parsing if shared resolver unavailable (pre-01-03 installs)"
-  - "Subprocess test sets PYTHONPATH so paperforge_lite is importable when worker runs standalone"
+  - "Subprocess test sets PYTHONPATH so paperforge is importable when worker runs standalone"
 
 patterns-established:
   - "Pattern: delegate-wrapper — existing public API preserved, implementation delegates to shared resolver"
@@ -51,7 +51,7 @@ completed: 2026-04-23
 
 # Phase 1 Plan 3: Config And Command Foundation Summary
 
-**Worker, /LD-deep, setup wizard, and validation all consuming the same `paperforge_lite.config` resolver, with package deployment for copied installations**
+**Worker, /LD-deep, setup wizard, and validation all consuming the same `paperforge.config` resolver, with package deployment for copied installations**
 
 ## Performance
 
@@ -65,7 +65,7 @@ completed: 2026-04-23
 
 - `literature_pipeline.load_vault_config` and `pipeline_paths` now delegate to shared resolver while preserving legacy public names
 - `ld_deep._load_vault_config` and `_paperforge_paths` now delegate to shared resolver
-- `setup_wizard.py` deploys `paperforge_lite/` package to both worker and skill directories during installation
+- `setup_wizard.py` deploys `paperforge/` package to both worker and skill directories during installation
 - `scripts/validate_setup.py` uses shared resolver with `PAPERFORGE_VAULT` checked before `VAULT_PATH`
 - Direct worker invocation (`python literature_pipeline.py --vault . status`) works via PYTHONPATH or copied package
 - 34 passing tests covering config, worker compat, and ld_deep compat
@@ -81,11 +81,11 @@ Each task was committed atomically:
    - Updated tests to handle PYTHONPATH for subprocess and importlib for ld_deep module loading
 
 3. **Task 3: feat(01-03): replace duplicated resolver logic with shared wrappers** - `1c1e6d7` (feat)
-   - `literature_pipeline.py`: load_vault_config and pipeline_paths delegate to paperforge_lite.config
+   - `literature_pipeline.py`: load_vault_config and pipeline_paths delegate to paperforge.config
    - `ld_deep.py`: _load_vault_config and _paperforge_paths delegate to shared resolver
 
-4. **Task 4: feat(01-03): deploy paperforge_lite package through setup wizard** - `e0acb64` (feat)
-   - Copies paperforge_lite/ to <pf_path>/worker/paperforge_lite/ and <skill_dir>/literature-qa/paperforge_lite/
+4. **Task 4: feat(01-03): deploy paperforge package through setup wizard** - `e0acb64` (feat)
+   - Copies paperforge/ to <pf_path>/worker/paperforge/ and <skill_dir>/literature-qa/paperforge/
 
 5. **Task 5: feat(01-03): wire validate_setup.py to shared resolver** - `500d268` (feat)
    - load_config tries shared resolver first, falls back to legacy for pre-01-03 installs
@@ -97,15 +97,15 @@ Each task was committed atomically:
 - `tests/test_ld_deep_config.py` - 4 tests for ld_deep/shared resolver compatibility (126 lines)
 - `pipeline/worker/scripts/literature_pipeline.py` - load_vault_config and pipeline_paths now delegate to shared resolver
 - `skills/literature-qa/scripts/ld_deep.py` - _load_vault_config and _paperforge_paths now delegate to shared resolver
-- `setup_wizard.py` - adds shutil.copytree for paperforge_lite package deployment alongside scripts
+- `setup_wizard.py` - adds shutil.copytree for paperforge package deployment alongside scripts
 - `scripts/validate_setup.py` - load_config uses shared resolver first; resolve_vault_for_validate checks PAPERFORGE_VAULT first
 
 ## Decisions Made
 
 - Public function names preserved as thin wrappers for backward compatibility with existing callers
 - `pipeline_paths` uses `**shared` dict merge to combine shared resolver output with worker-only keys, avoiding key collision since shared uses `library_records` and worker uses `records` and `pipeline`
-- `setup_wizard.py` copies `paperforge_lite/` to both locations so either script can import it regardless of deployment scenario
-- `validate_setup.py` falls back to legacy config loading if `paperforge_lite` is not installed, maintaining compatibility with pre-01-03 installs
+- `setup_wizard.py` copies `paperforge/` to both locations so either script can import it regardless of deployment scenario
+- `validate_setup.py` falls back to legacy config loading if `paperforge` is not installed, maintaining compatibility with pre-01-03 installs
 
 ## Deviations from Plan
 
@@ -114,7 +114,7 @@ None - plan executed exactly as written.
 ## Issues Encountered
 
 - Test import failures: `literature_pipeline` and `ld_deep` are scripts without `__init__.py`, so required `importlib.util.spec_from_file_location` to load as modules in tests, and `PYTHONPATH` env var for subprocess test
-- Subprocess test failure (`ModuleNotFoundError: No module named 'paperforge_lite'`): fixed by passing `PYTHONPATH` env to subprocess run, simulating the installed-package scenario
+- Subprocess test failure (`ModuleNotFoundError: No module named 'paperforge'`): fixed by passing `PYTHONPATH` env to subprocess run, simulating the installed-package scenario
 
 ## User Setup Required
 
@@ -122,9 +122,9 @@ None - no external service configuration required.
 
 ## Next Phase Readiness
 
-- Worker, `/LD-deep`, setup deployment, and validation all consume the same config contract from `paperforge_lite.config`
+- Worker, `/LD-deep`, setup deployment, and validation all consume the same config contract from `paperforge.config`
 - Requirements CONF-03, CONF-04, CMD-02, and DEEP-02 are satisfied
-- `setup_wizard.py` now deploys the resolver package alongside scripts, enabling copied installations to import `paperforge_lite` without pip install
+- `setup_wizard.py` now deploys the resolver package alongside scripts, enabling copied installations to import `paperforge` without pip install
 - Ready for Plan 01-04: Stable command documentation and setup next-step updates
 
 ---

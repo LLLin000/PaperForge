@@ -235,4 +235,4 @@ file.name, title, year, has_pdf, do_ocr, analyze, ocr_status, deep_reading_statu
 - Phase 1, 2 CONTEXT: `.planning/phases/01-config-and-command-foundation/CONTEXT.md`, `.planning/phases/02-paddleocr-and-pdf-path-hardening/CONTEXT.md`
 - Requirements: `.planning/REQUIREMENTS.md` (BASE-01 through BASE-04)
 - Base generation code: `pipeline/worker/scripts/literature_pipeline.py` lines 199–254
-- `paperforge_lite/config.py` — `paperforge_paths()` function used for resolution
+- `paperforge/config.py` — `paperforge_paths()` function used for resolution

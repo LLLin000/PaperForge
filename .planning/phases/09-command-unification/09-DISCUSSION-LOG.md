@@ -78,7 +78,7 @@ paperforge ocr --key XXX     # process specific item
 ### 4. Command Dispatch Layer Architecture
 
 **Options presented:**
-- A: Unified command modules (`paperforge_lite/commands/`)
+- A: Unified command modules (`paperforge/commands/`)
 - B: Agent calls CLI via subprocess
 - C: Light shared layer (Agent imports cli.py)
 
@@ -86,7 +86,7 @@ paperforge ocr --key XXX     # process specific item
 
 **Architecture:**
 ```
-paperforge_lite/
+paperforge/
   ├── cli.py              # CLI entry point (argparse)
   └── commands/           # Shared command implementations
         ├── __init__.py
@@ -99,7 +99,7 @@ paperforge_lite/
 
 **Integration:**
 - CLI: `cli.py` → `commands/*.py` (direct function calls)
-- Agent: `command/pf-*.md` docs reference `python -m paperforge_lite <cmd>` or direct module imports
+- Agent: `command/pf-*.md` docs reference `python -m paperforge <cmd>` or direct module imports
 
 **Rationale:**
 - Maximum code reuse
@@ -113,7 +113,7 @@ paperforge_lite/
 - Phase 1: `paperforge` as canonical launcher
 - Phase 1: `paperforge ocr` as alias for `ocr run`
 - Phase 6: `paperforge paths --json` output fields
-- Phase 6: `python -m paperforge_lite` as fallback
+- Phase 6: `python -m paperforge` as fallback
 
 ### Cross-references
 - SYS-01: Unify agent command namespace (`/pf-*`)

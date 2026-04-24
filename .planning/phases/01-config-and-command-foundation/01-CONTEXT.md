@@ -49,7 +49,7 @@ python <system_dir>/PaperForge/worker/scripts/literature_pipeline.py --vault <va
   - `PAPERFORGE_VAULT`
   - `PAPERFORGE_SYSTEM_DIR`
   - `PAPERFORGE_RESOURCES_DIR`
-  - `PAPERFORGE_LITERATURE_DIR`
+  - `paperforgeRATURE_DIR`
   - `PAPERFORGE_CONTROL_DIR`
   - `PAPERFORGE_BASE_DIR`
   - `PAPERFORGE_SKILL_DIR`
@@ -91,7 +91,7 @@ python <system_dir>/PaperForge/worker/scripts/literature_pipeline.py --vault <va
 ### Packaging
 
 - Because this repo currently has no `pyproject.toml`, Phase 1 should add the minimal packaging/entrypoint files needed to expose `paperforge` after editable install.
-- If packaging is deferred inside a plan, the fallback command `python -m paperforge_lite ...` must still work.
+- If packaging is deferred inside a plan, the fallback command `python -m paperforge ...` must still work.
 
 ### the agent's Discretion
 
@@ -135,13 +135,13 @@ python <system_dir>/PaperForge/worker/scripts/literature_pipeline.py --vault <va
 <specifics>
 ## Specific Ideas
 
-- Add a module such as `paperforge_lite/config.py` with:
+- Add a module such as `paperforge/config.py` with:
   - `DEFAULT_CONFIG`
   - `load_simple_env(env_path)`
   - `load_vault_config(vault, env=os.environ, overrides=None)`
   - `resolve_vault(cli_vault=None, env=os.environ)`
   - `paperforge_paths(vault, cfg)`
-- Add a launcher module such as `paperforge_lite/cli.py` with:
+- Add a launcher module such as `paperforge/cli.py` with:
   - `main(argv=None)`
   - `paths` command
   - worker command dispatch for `status`, `selection-sync`, `index-refresh`, `deep-reading`, and `ocr run`

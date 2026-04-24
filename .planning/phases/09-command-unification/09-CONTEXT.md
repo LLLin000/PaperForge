@@ -25,7 +25,7 @@ Systematize the command interface by unifying agent commands under `/pf-*` names
 ### Architecture
 
 ```
-paperforge_lite/
+paperforge/
   ├── cli.py              # CLI entry point (argparse)
   └── commands/           # Shared command implementations
         ├── __init__.py
@@ -37,7 +37,7 @@ paperforge_lite/
 ```
 
 - **CLI**: `cli.py` → `commands/*.py` (function calls)
-- **Agent**: `command/pf-*.md` docs reference `python -m paperforge_lite <cmd>` or direct `commands/*.py` imports
+- **Agent**: `command/pf-*.md` docs reference `python -m paperforge <cmd>` or direct `commands/*.py` imports
 
 ## Key Decisions
 
@@ -66,7 +66,7 @@ paperforge ocr --key XXX     # process specific item
 - Rationale: users typically want "run and confirm"
 
 ### 4. Command Dispatch: Unified Modules
-- Create `paperforge_lite/commands/` package
+- Create `paperforge/commands/` package
 - Each module exposes `run(args)` or `run(**kwargs)` interface
 - CLI imports and calls these functions
 - Agent command docs reference the same modules
@@ -83,12 +83,12 @@ From get-shit-done-main analysis:
 ## Files to Modify
 
 ### New Files
-- `paperforge_lite/commands/__init__.py`
-- `paperforge_lite/commands/sync.py`
-- `paperforge_lite/commands/ocr.py`
-- `paperforge_lite/commands/deep.py`
-- `paperforge_lite/commands/repair.py`
-- `paperforge_lite/commands/status.py`
+- `paperforge/commands/__init__.py`
+- `paperforge/commands/sync.py`
+- `paperforge/commands/ocr.py`
+- `paperforge/commands/deep.py`
+- `paperforge/commands/repair.py`
+- `paperforge/commands/status.py`
 - `command/pf-deep.md`
 - `command/pf-paper.md`
 - `command/pf-ocr.md`
@@ -96,7 +96,7 @@ From get-shit-done-main analysis:
 - `command/pf-status.md`
 
 ### Modified Files
-- `paperforge_lite/cli.py` — refactor to use commands/
+- `paperforge/cli.py` — refactor to use commands/
 - `command/ld-deep.md` — delete
 - `command/ld-paper.md` — delete
 - `command/lp-*.md` — delete

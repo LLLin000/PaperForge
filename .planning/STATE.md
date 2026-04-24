@@ -10,17 +10,24 @@ See: `.planning/PROJECT.md` (updated 2026-04-24)
 
 ## Current Position
 
-Phase: 9 (planned)
+Phase: 9 (in_progress)
 Milestone: v1.2
-Status: Phase 9 planned and ready for execution
-Last activity: 2026-04-24 — Phase 9 context, discussion, and plan created
+Status: Phase 9 executing
+Last activity: 2026-04-24 — Phase 9 execution started
 
 ## Next Action
 
-Phase 9 planning complete. Ready for `/gsd-execute-phase` to begin implementation.
+Executing Phase 9 tasks via wave-based execution.
+
+Wave structure:
+- Wave 1: Task 0 — Rename Python package (paperforge → paperforge)
+- Wave 2: Tasks 1-2 — Create shared command modules + Refactor CLI
+- Wave 3: Tasks 3-4 — Create /pf-* docs + Remove old docs
+- Wave 4: Task 5 — Update AGENTS.md and tests
+- Wave 5: Task 6 — Verification and cleanup
 
 Phase 9 scope:
-- Task 0: Rename Python package (`paperforge_lite` → `paperforge`)
+- Task 0: Rename Python package (`paperforge` → `paperforge`)
 - Task 1: Create shared command modules
 - Task 2: Refactor CLI to use command modules
 - Task 3: Create new `/pf-*` agent command docs
@@ -35,7 +42,7 @@ Phase 9 scope:
 - Doctor validates all `*.json` exports, not only `library.json`
 - Doctor L2 distinguishes HTTP 405 from bad URL with actionable message
 - VaultStep Input pre-filled from `--vault` argument
-- `python -m paperforge_lite` is documented fallback when `paperforge` not registered
+- `python -m paperforge` is documented fallback when `paperforge` not registered
 
 ## Open Questions
 
@@ -79,5 +86,5 @@ Milestone v1.1 (Sandbox Onboarding Hardening) completed as part of Phases 6-8.
 - **2026-04-24:** Simplify CLI by combining `selection-sync` + `index-refresh` into `paperforge sync`.
 - **2026-04-24:** Aggressive migration strategy: old commands (`/LD-*`, `/lp-*`) removed entirely with no aliases.
 - **2026-04-24:** `paperforge ocr` merges `ocr run` + `ocr doctor`; `--diagnose` for standalone diagnostics.
-- **2026-04-24:** Unified command modules in `paperforge/commands/` (formerly `paperforge_lite/commands/`).
-- **2026-04-24:** Rename Python package from `paperforge_lite` to `paperforge` for naming consistency.
+- **2026-04-24:** Unified command modules in `paperforge/commands/` (formerly `paperforge/commands/`).
+- **2026-04-24:** Rename Python package from `paperforge` to `paperforge` for naming consistency.

@@ -14,7 +14,7 @@
 
 | Option | Description | Selected |
 |--------|-------------|----------|
-| Install-based fix | `pip install -e .` in setup_wizard — paperforge_lite always importable | ✓ |
+| Install-based fix | `pip install -e .` in setup_wizard — paperforge always importable | ✓ |
 | Bootstrap self-fix | sys.path insertion in ld_deep.py — self-contained but fragile path guessing | |
 | Wrapper script | .bat/.ps1 wrapper sets PYTHONPATH — no ld_deep.py changes, more maintenance burden | |
 
@@ -58,7 +58,7 @@
 | Manual check | Documented in release checklist — zero automation | |
 
 **User's choice:** Extract-and-execute from docs
-**Notes:** Part of smoke test, not separate. Targets paperforge CLI, python -m paperforge_lite, ld_deep.py commands.
+**Notes:** Part of smoke test, not separate. Targets paperforge CLI, python -m paperforge, ld_deep.py commands.
 
 ---
 

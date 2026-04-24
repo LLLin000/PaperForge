@@ -35,14 +35,14 @@
 **1a. Add pip install step to setup wizard:**
 - After writing `.env` (line ~1016), add a step that runs `pip install -e <repo_root>`
 - `repo_root` is the directory containing `setup_wizard.py` itself (already known)
-- Print clear status: "Installing paperforge_lite package..."
+- Print clear status: "Installing paperforge package..."
 - On failure: show warning but don't block (user may install later)
 
 **1b. Extend doctor importability check:**
 - In `run_doctor()` lines 3111-3118, upgrade the "Agent 脚本" check from "directory exists" to actual importability
-- Run `python -c "import paperforge_lite.config"` via subprocess
+- Run `python -c "import paperforge.config"` via subprocess
 - Also verify `ld_deep.py` can be imported: `python -c "import importlib.util; spec = importlib.util.spec_from_file_location('ld_deep', ld_deep_script); mod = importlib.util.module_from_spec(spec); spec.loader.exec_module(mod)"`
-- Status: pass = "paperforge_lite and ld_deep importable", warn = "directory exists but import failed"
+- Status: pass = "paperforge and ld_deep importable", warn = "directory exists but import failed"
 
 **1c. Test:**
 - `test_setup_wizard_pip_install`: verify setup wizard calls pip install -e .
@@ -132,7 +132,7 @@
   - `command/lp-status.md`
   - `command/lp-selection-sync.md`
   - `command/lp-index-refresh.md`
-- Filter for commands starting with `paperforge `, `python -m paperforge_lite`, or `ld_deep.py `
+- Filter for commands starting with `paperforge `, `python -m paperforge`, or `ld_deep.py `
 - Replace `<vault>` placeholder with actual fixture vault path
 
 **4b. Execute and validate:**
@@ -200,7 +200,7 @@
 After all tasks:
 1. Run `pytest tests/test_smoke.py -v` — all PASS
 2. Run `pytest tests/test_prepare_rollback.py -v` — all PASS
-3. Run `python -m paperforge_lite doctor` in `tests/sandbox/00_TestVault/` — passes importability check
+3. Run `python -m paperforge doctor` in `tests/sandbox/00_TestVault/` — passes importability check
 4. Verify `tests/sandbox/ocr-complete/` is committed to git
 5. Verify no live PaddleOCR API calls in any test
 

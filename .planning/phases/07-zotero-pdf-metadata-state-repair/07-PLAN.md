@@ -15,8 +15,8 @@
 | File | Role |
 |------|------|
 | `pipeline/worker/scripts/literature_pipeline.py` | Core worker logic — all three fixes live here |
-| `paperforge_lite/cli.py` | CLI dispatch — add `repair` subcommand |
-| `paperforge_lite/pdf_resolver.py` | PDF resolution utilities — no changes needed |
+| `paperforge/cli.py` | CLI dispatch — add `repair` subcommand |
+| `paperforge/pdf_resolver.py` | PDF resolution utilities — no changes needed |
 | `tests/test_pdf_resolver.py` | PDF resolver unit tests |
 
 ---
@@ -148,7 +148,7 @@ Repair actions (controlled by `fix: bool` parameter):
 ### Task 4: Add `repair` subcommand to CLI
 
 **Files:**
-- Modify: `paperforge_lite/cli.py` — add `repair` to dispatch
+- Modify: `paperforge/cli.py` — add `repair` to dispatch
 
 **New command:**
 ```
@@ -190,5 +190,5 @@ paperforge repair [--verbose] [--fix]
 
 After all tasks:
 1. Run `pytest tests/test_pdf_resolver.py tests/test_smoke.py -v` — all PASS
-2. Run `python -m paperforge_lite repair --verbose` — confirm no crashes
+2. Run `python -m paperforge repair --verbose` — confirm no crashes
 3. Confirm `paperforge repair` appears in `paperforge --help`

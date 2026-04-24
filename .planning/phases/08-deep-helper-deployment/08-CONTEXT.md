@@ -15,7 +15,7 @@ Out of scope: Real PaddleOCR API network calls in smoke tests, Fig./Tab. deep an
 ## Implementation Decisions
 
 ### ld_deep.py Importability (DEEP-04)
-- **D-01:** Fix via `pip install -e .` in setup_wizard — ensure `paperforge_lite` package is always importable from the deployed `ld_deep.py` location. Self-bootstrap or wrapper scripts are not needed.
+- **D-01:** Fix via `pip install -e .` in setup_wizard — ensure `paperforge` package is always importable from the deployed `ld_deep.py` location. Self-bootstrap or wrapper scripts are not needed.
 - **D-02:** The existing `paperforge paths --json` output fields (`ld_deep_script`, `worker_script`, `vault`) are already the canonical field names — docs must reference these.
 - **D-03:** Doctor check (existing `run_doctor`) already validates `literature-qa skill directory exists` — extend to check `ld_deep.py` is importable via `python -c "import ld_deep"`.
 
@@ -31,7 +31,7 @@ Out of scope: Real PaddleOCR API network calls in smoke tests, Fig./Tab. deep an
 
 ### Doc Verification (REG-03)
 - **D-10:** Smoke test extracts command strings from doc files (README.md, INSTALLATION.md, AGENTS.md, command/*.md) and validates they run successfully against the sandbox vault.
-- **D-11:** Extraction targets: `paperforge` CLI commands, `python -m paperforge_lite` fallback commands, and `/LD-deep` / `ld_deep.py` commands.
+- **D-11:** Extraction targets: `paperforge` CLI commands, `python -m paperforge` fallback commands, and `/LD-deep` / `ld_deep.py` commands.
 - **D-12:** Doc command extraction is part of the smoke test — not a separate two-step process.
 
 ### Prepare Error Handling
@@ -55,12 +55,12 @@ Out of scope: Real PaddleOCR API network calls in smoke tests, Fig./Tab. deep an
 - `.planning/REQUIREMENTS.md` — DEEP-04, DEEP-05, DEEP-06, REG-01, REG-02, REG-03 definitions (lines 40-48)
 
 ### CLI and Config (Phase 6 decisions)
-- `paperforge_lite/cli.py` — lines 309-313: `ld_deep_script` output key
-- `paperforge_lite/config.py` — lines 235-275: `paperforge_paths()` returns `ld_deep_script`
-- `paperforge_lite/config.py` — lines 260-261: `ld_deep_script = skill_path / "literature-qa" / "scripts" / "ld_deep.py"`
+- `paperforge/cli.py` — lines 309-313: `ld_deep_script` output key
+- `paperforge/config.py` — lines 235-275: `paperforge_paths()` returns `ld_deep_script`
+- `paperforge/config.py` — lines 260-261: `ld_deep_script = skill_path / "literature-qa" / "scripts" / "ld_deep.py"`
 
 ### LD-deep Script
-- `skills/literature-qa/scripts/ld_deep.py` — lines 14-35: imports from `paperforge_lite.config` (the importability issue)
+- `skills/literature-qa/scripts/ld_deep.py` — lines 14-35: imports from `paperforge.config` (the importability issue)
 - `skills/literature-qa/scripts/ld_deep.py` — lines 958-1140: `prepare_deep_reading()` function (writes figure-map, chart-type-map, scaffold)
 - `skills/literature-qa/scripts/ld_deep.py` — lines 1213-1398: CLI dispatch for `queue`, `prepare`, `figure-map`, `chart-type-scan`
 
@@ -78,7 +78,7 @@ Out of scope: Real PaddleOCR API network calls in smoke tests, Fig./Tab. deep an
 - `setup_wizard.py` — lines 968-974: copies `ld_deep.py` to vault skill directory
 
 ### Prior Phase Decisions
-- `.planning/phases/06-setup-cli-diagnostics-consistency/06-CONTEXT.md` — D-01: field name `ld_deep_script`, D-04: canonical env var `PADDLEOCR_API_TOKEN`, D-16: fallback `python -m paperforge_lite`
+- `.planning/phases/06-setup-cli-diagnostics-consistency/06-CONTEXT.md` — D-01: field name `ld_deep_script`, D-04: canonical env var `PADDLEOCR_API_TOKEN`, D-16: fallback `python -m paperforge`
 
 ### Command Docs (to verify)
 - `command/ld-deep.md` — must reference `ld_deep_script` field name
@@ -110,7 +110,7 @@ Out of scope: Real PaddleOCR API network calls in smoke tests, Fig./Tab. deep an
 
 ### Integration Points
 - `setup_wizard.py:968-974` — ld_deep.py deployment path: `repo_root/skills/literature-qa/scripts/ld_deep.py` → `vault/.opencode/skills/literature-qa/scripts/ld_deep.py`
-- `paperforge_lite/config.py:260-261` — `ld_deep_script` computed from `skill_dir + "literature-qa/scripts/ld_deep.py"`
+- `paperforge/config.py:260-261` — `ld_deep_script` computed from `skill_dir + "literature-qa/scripts/ld_deep.py"`
 - `tests/sandbox/00_TestVault/` — has deployed `ld_deep.py` already; the importability test should verify import from this location
 - `pipeline/worker/scripts/literature_pipeline.py:3111-3118` — doctor's existing Agent script check (warn-only); should be upgraded to importability check
 
@@ -119,7 +119,7 @@ Out of scope: Real PaddleOCR API network calls in smoke tests, Fig./Tab. deep an
 <specifics>
 ## Specific Ideas
 
-- "pip install -e ." approach: setup_wizard already writes `.env` — add a step that runs `pip install -e <repo_root>` to make `paperforge_lite` globally importable
+- "pip install -e ." approach: setup_wizard already writes `.env` — add a step that runs `pip install -e <repo_root>` to make `paperforge` globally importable
 - Static fixture `fulltext.md` should contain realistic figure captions (e.g., "Figure 1: Biomechanical comparison...") so `figure-map` and `chart-type-scan` produce non-trivial output
 - The smoke test doc extraction: parse markdown code blocks with `paperforge` or `python -m` or `ld_deep.py` prefixes
 

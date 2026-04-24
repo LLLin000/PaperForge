@@ -39,7 +39,7 @@ Supports dry-run (default) and `--fix` mode. Repair actions set divergent record
 Added `paperforge repair [--verbose] [--fix]` to CLI dispatch.
 
 - **Commit:** `1f817a5`
-- **File:** `paperforge_lite/cli.py`
+- **File:** `paperforge/cli.py`
 
 ### 4. Documentation Update (Task 5)
 

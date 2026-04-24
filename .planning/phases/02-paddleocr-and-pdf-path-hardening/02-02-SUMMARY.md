@@ -6,7 +6,7 @@
 - `tests/test_ocr_classify.py` — 12 tests for exception-to-state taxonomy
 
 ## Files Modified
-- `paperforge_lite/ocr_diagnostics.py` — Added `classify_error()` function mapping exceptions to (`state`, `suggestion`) pairs
+- `paperforge/ocr_diagnostics.py` — Added `classify_error()` function mapping exceptions to (`state`, `suggestion`) pairs
 - `pipeline/worker/scripts/literature_pipeline.py` — Wired `classify_error()` into:
   - POST exception handling (job submission)
   - Polling exception handling (JSON decode / schema mismatch)

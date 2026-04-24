@@ -4,7 +4,7 @@
 
 ### Task 1: 添加 --verbose flag 到 cli.py
 
-- 修改 `paperforge_lite/cli.py`：为 `deep-reading` 子命令添加了 `--verbose/-v` flag
+- 修改 `paperforge/cli.py`：为 `deep-reading` 子命令添加了 `--verbose/-v` flag
 - 将 `run_deep_reading` 从 dispatch_map 移出，改为单独的 if 分支以传递 verbose 参数
 - 更新测试 stub `stub_run_deep_reading` 接受 `verbose: bool = False` 参数
 
@@ -36,6 +36,6 @@ paperforge deep-reading --verbose  # 含修复指令
 
 ## 修改的文件
 
-- `paperforge_lite/cli.py` — 添加 --verbose flag，修改 dispatch
+- `paperforge/cli.py` — 添加 --verbose flag，修改 dispatch
 - `pipeline/worker/scripts/literature_pipeline.py` — run_deep_reading 三态 + verbose
 - `tests/test_cli_worker_dispatch.py` — stub_run_deep_reading 更新

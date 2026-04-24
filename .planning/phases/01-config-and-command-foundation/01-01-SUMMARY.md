@@ -7,7 +7,7 @@ tags: [config, resolver, path-inventory, paperforge-lite, stdlib]
 # Dependency graph
 requires: []
 provides:
-  - Shared config resolver paperforge_lite.config with locked precedence
+  - Shared config resolver paperforge.config with locked precedence
   - 13-key path inventory for all Phase 1+ consumers
   - Environment variable override contract (CONF-01)
   - Backward-compatible paperforge.json parsing (CONF-04)
@@ -20,8 +20,8 @@ tech-stack:
 
 key-files:
   created:
-    - paperforge_lite/__init__.py
-    - paperforge_lite/config.py
+    - paperforge/__init__.py
+    - paperforge/config.py
     - tests/test_config.py
   modified: []
 
@@ -58,7 +58,7 @@ completed: 2026-04-23
 
 ## Accomplishments
 
-- `paperforge_lite/config.py` with `DEFAULT_CONFIG`, `ENV_KEYS`, `CONFIG_KEYS`, `read_paperforge_json`, `resolve_vault`, `load_vault_config`, `paperforge_paths`, `paths_as_strings`
+- `paperforge/config.py` with `DEFAULT_CONFIG`, `ENV_KEYS`, `CONFIG_KEYS`, `read_paperforge_json`, `resolve_vault`, `load_vault_config`, `paperforge_paths`, `paths_as_strings`
 - 22 passing pytest tests proving precedence, backward compatibility, and path inventory
 - No external dependencies beyond stdlib (json, os, pathlib)
 - No os.environ mutation; env is a read-only parameter
@@ -77,8 +77,8 @@ Each task was committed atomically:
 
 ## Files Created/Modified
 
-- `paperforge_lite/__init__.py` - Package init with re-exports
-- `paperforge_lite/config.py` - Core resolver: 273 lines, stdlib only
+- `paperforge/__init__.py` - Package init with re-exports
+- `paperforge/config.py` - Core resolver: 273 lines, stdlib only
 - `tests/test_config.py` - 22 passing tests covering all contract requirements
 
 ## Decisions Made
@@ -102,8 +102,8 @@ None - no external service configuration required.
 
 ## Next Phase Readiness
 
-- `paperforge_lite.config` is importable and tested; ready for Plan 01-02 (CLI entry point)
-- Worker (`literature_pipeline.py`) and `/LD-deep` (`ld_deep.py`) can now be updated to import from `paperforge_lite.config` instead of duplicating resolver logic
+- `paperforge.config` is importable and tested; ready for Plan 01-02 (CLI entry point)
+- Worker (`literature_pipeline.py`) and `/LD-deep` (`ld_deep.py`) can now be updated to import from `paperforge.config` instead of duplicating resolver logic
 - Requirements CONF-01 through CONF-04 are satisfied; traceability established
 
 ---

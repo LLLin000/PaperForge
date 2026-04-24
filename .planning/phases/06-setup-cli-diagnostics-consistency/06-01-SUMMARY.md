@@ -15,17 +15,17 @@
 
 ### Task 2: Add fallback command to AGENTS.md and INSTALLATION.md (SETUP-03)
 - **Files:** `AGENTS.md`, `docs/INSTALLATION.md`
-- **Change:** Added `python -m paperforge_lite` fallback command documentation
+- **Change:** Added `python -m paperforge` fallback command documentation
   - AGENTS.md: Added after command list in section 8
   - INSTALLATION.md: Added after worker script fallback
-- **Verification:** `grep -c "python -m paperforge_lite" AGENTS.md docs/INSTALLATION.md` finds matches in both
+- **Verification:** `grep -c "python -m paperforge" AGENTS.md docs/INSTALLATION.md` finds matches in both
 - **Result:** PASS
 
 ### Task 3: HTTP 405 detection in ocr_diagnostics.py L2 (DIAG-04)
-- **File:** `paperforge_lite/ocr_diagnostics.py`
+- **File:** `paperforge/ocr_diagnostics.py`
 - **Change:** Added 405-specific handling in L2 check (lines 64-70)
   - When HTTP 405 is detected, returns actionable message explaining method mismatch
-- **Verification:** `grep -n "405 Method Not Allowed" paperforge_lite/ocr_diagnostics.py` finds the new code
+- **Verification:** `grep -n "405 Method Not Allowed" paperforge/ocr_diagnostics.py` finds the new code
 - **Result:** PASS
 
 ## Requirements Covered

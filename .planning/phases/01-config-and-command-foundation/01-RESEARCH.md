@@ -29,7 +29,7 @@
   - `PAPERFORGE_VAULT`
   - `PAPERFORGE_SYSTEM_DIR`
   - `PAPERFORGE_RESOURCES_DIR`
-  - `PAPERFORGE_LITERATURE_DIR`
+  - `paperforgeRATURE_DIR`
   - `PAPERFORGE_CONTROL_DIR`
   - `PAPERFORGE_BASE_DIR`
   - `PAPERFORGE_SKILL_DIR`
@@ -71,7 +71,7 @@
 ### Packaging
 
 - Because this repo currently has no `pyproject.toml`, Phase 1 should add the minimal packaging/entrypoint files needed to expose `paperforge` after editable install.
-- If packaging is deferred inside a plan, the fallback command `python -m paperforge_lite ...` must still work.
+- If packaging is deferred inside a plan, the fallback command `python -m paperforge ...` must still work.
 
 ### Claude's Discretion
 
@@ -99,7 +99,7 @@
 | CONF-02 | User can inspect resolved PaperForge paths with a command. | `paperforge paths` and `paperforge paths --json` should be first-class CLI subcommands backed by the resolver. |
 | CONF-03 | Worker, Agent scripts, command docs, and Base generation all use the same config resolver. | Current worker, `/LD-deep`, setup validation, and command docs each resolve paths independently; Phase 1 should centralize this contract. |
 | CONF-04 | Existing `paperforge.json` installations remain backward-compatible. | Resolver must support both top-level keys and nested `vault_config`, matching current worker and `ld_deep.py` behavior. |
-| CMD-01 | User can run stable commands such as `paperforge status`, `paperforge ocr run`, and `paperforge deep-reading`. | Add minimal packaging and CLI dispatch using Python console scripts plus `python -m paperforge_lite` fallback. |
+| CMD-01 | User can run stable commands such as `paperforge status`, `paperforge ocr run`, and `paperforge deep-reading`. | Add minimal packaging and CLI dispatch using Python console scripts plus `python -m paperforge` fallback. |
 | CMD-02 | Legacy direct worker invocation remains supported. | Keep `pipeline/worker/scripts/literature_pipeline.py --vault ... <worker>` and copied-vault worker behavior working. |
 | CMD-03 | Command output uses actionable statuses and avoids placeholder paths. | Replace command markdown placeholders with stable launcher commands; make `paths` print real resolved paths. |
 | DEEP-02 | `/LD-deep` prepare uses the same resolved paths as workers. | Replace or wrap `_load_vault_config()` and `_paperforge_paths()` in `skills/literature-qa/scripts/ld_deep.py`. |
@@ -107,11 +107,11 @@
 
 ## Summary
 
-Phase 1 should introduce a small, importable `paperforge_lite` package containing the shared config/path resolver and CLI launcher. The resolver is the contract: it must support explicit CLI overrides, `PAPERFORGE_*` process environment variables, existing `paperforge.json` top-level keys, existing nested `vault_config`, and built-in defaults. The CLI should use that resolver to expose `paperforge paths`, `paperforge status`, `paperforge selection-sync`, `paperforge index-refresh`, `paperforge ocr run`, `paperforge ocr`, and `paperforge deep-reading`.
+Phase 1 should introduce a small, importable `paperforge` package containing the shared config/path resolver and CLI launcher. The resolver is the contract: it must support explicit CLI overrides, `PAPERFORGE_*` process environment variables, existing `paperforge.json` top-level keys, existing nested `vault_config`, and built-in defaults. The CLI should use that resolver to expose `paperforge paths`, `paperforge status`, `paperforge selection-sync`, `paperforge index-refresh`, `paperforge ocr run`, `paperforge ocr`, and `paperforge deep-reading`.
 
-The brownfield risk is not the CLI itself; it is compatibility with copied installation files. `setup_wizard.py` currently copies only `literature_pipeline.py` and `ld_deep.py` into the target vault, while the source repo has no `pyproject.toml`. If the worker starts importing `paperforge_lite.config`, the plan must either install the package into the user's Python environment, copy the package beside the worker/skill scripts, or include a tested compatibility wrapper. Do not assume source-repo imports will exist after setup.
+The brownfield risk is not the CLI itself; it is compatibility with copied installation files. `setup_wizard.py` currently copies only `literature_pipeline.py` and `ld_deep.py` into the target vault, while the source repo has no `pyproject.toml`. If the worker starts importing `paperforge.config`, the plan must either install the package into the user's Python environment, copy the package beside the worker/skill scripts, or include a tested compatibility wrapper. Do not assume source-repo imports will exist after setup.
 
-**Primary recommendation:** Add `paperforge_lite/config.py` and `paperforge_lite/cli.py`, expose `paperforge = "paperforge_lite.cli:main"` in `pyproject.toml`, update worker and `/LD-deep` to import the shared resolver with a copied-install fallback, and update command docs to use `paperforge ...` instead of `<system_dir>` placeholders.
+**Primary recommendation:** Add `paperforge/config.py` and `paperforge/cli.py`, expose `paperforge = "paperforge.cli:main"` in `pyproject.toml`, update worker and `/LD-deep` to import the shared resolver with a copied-install fallback, and update command docs to use `paperforge ...` instead of `<system_dir>` placeholders.
 
 ## Standard Stack
 
@@ -147,7 +147,7 @@ The brownfield risk is not the CLI itself; it is compatibility with copied insta
 ```powershell
 python -m pip install -e .
 paperforge paths
-python -m paperforge_lite paths
+python -m paperforge paths
 ```
 
 **Version verification:** Current package versions were verified with:
@@ -167,7 +167,7 @@ Publish dates were verified through PyPI JSON on 2026-04-23.
 ### Recommended Project Structure
 
 ```text
-paperforge_lite/
+paperforge/
 ├── __init__.py
 ├── __main__.py          # calls cli.main()
 ├── cli.py               # paperforge command tree
@@ -189,7 +189,7 @@ tests/
 
 ### Pattern 1: Resolver as the Boundary
 
-**What:** Put all config precedence and path construction in `paperforge_lite.config`. Existing worker and agent scripts should stop owning their own merge rules.
+**What:** Put all config precedence and path construction in `paperforge.config`. Existing worker and agent scripts should stop owning their own merge rules.
 
 **When to use:** Any code path that needs vault, PaperForge root, exports, OCR root, library records, literature notes, bases, worker script, skill dir, command dir, or `ld_deep.py`.
 
@@ -211,7 +211,7 @@ ENV_KEYS = {
     "vault": "PAPERFORGE_VAULT",
     "system_dir": "PAPERFORGE_SYSTEM_DIR",
     "resources_dir": "PAPERFORGE_RESOURCES_DIR",
-    "literature_dir": "PAPERFORGE_LITERATURE_DIR",
+    "literature_dir": "paperforgeRATURE_DIR",
     "control_dir": "PAPERFORGE_CONTROL_DIR",
     "base_dir": "PAPERFORGE_BASE_DIR",
     "skill_dir": "PAPERFORGE_SKILL_DIR",
@@ -229,7 +229,7 @@ def load_vault_config(vault, env=None, overrides=None):
 
 ### Pattern 2: CLI Delegates, It Does Not Reimplement Workers
 
-**What:** `paperforge_lite.cli` parses stable user commands, resolves the vault, then calls existing worker functions or an adapter that preserves current worker behavior.
+**What:** `paperforge.cli` parses stable user commands, resolves the vault, then calls existing worker functions or an adapter that preserves current worker behavior.
 
 **When to use:** `status`, `selection-sync`, `index-refresh`, `deep-reading`, and `ocr run`.
 
@@ -282,7 +282,7 @@ def cmd_paths(args):
 
 **When to use:** Setup wizard deployment and direct legacy invocation.
 
-**Recommended plan:** Copy `paperforge_lite/` into `<system_dir>/PaperForge/worker/` and into `<skill_dir>/literature-qa/` or install the package through `pip install -e .` during setup. Add tests that execute the script from a temporary copied-vault layout.
+**Recommended plan:** Copy `paperforge/` into `<system_dir>/PaperForge/worker/` and into `<skill_dir>/literature-qa/` or install the package through `pip install -e .` during setup. Add tests that execute the script from a temporary copied-vault layout.
 
 ### Anti-Patterns to Avoid
 
@@ -307,7 +307,7 @@ def cmd_paths(args):
 
 ### Pitfall 1: Breaking Copied Worker Imports
 
-**What goes wrong:** Worker imports `paperforge_lite.config` successfully in the source repo but fails after setup because only `literature_pipeline.py` was copied into the vault.
+**What goes wrong:** Worker imports `paperforge.config` successfully in the source repo but fails after setup because only `literature_pipeline.py` was copied into the vault.
 **Why it happens:** The setup wizard copies individual files, not a package.
 **How to avoid:** Plan either package installation during setup or copy the package/module beside deployed worker and skill scripts. Test both source-repo and copied-vault invocation.
 **Warning signs:** Tests only call `paperforge ...` and never call `python <tmp-vault>/99_System/PaperForge/worker/scripts/literature_pipeline.py --vault <tmp-vault> status`.
@@ -367,7 +367,7 @@ dependencies = [
 test = ["pytest>=7.4.0"]
 
 [project.scripts]
-paperforge = "paperforge_lite.cli:main"
+paperforge = "paperforge.cli:main"
 ```
 
 ### Backward-Compatible `paperforge.json` Merge
@@ -392,7 +392,7 @@ def read_paperforge_json(vault: Path) -> dict[str, str]:
 ```python
 # Source: local compatibility need from setup_wizard.py copying individual scripts.
 try:
-    from paperforge_lite.config import load_vault_config, paperforge_paths
+    from paperforge.config import load_vault_config, paperforge_paths
 except ImportError:
     # Fallback only if copied installs cannot import the package.
     from _paperforge_config import load_vault_config, paperforge_paths
@@ -445,7 +445,7 @@ def run_worker(command: str, vault: Path) -> int:
 
 ## Open Questions
 
-1. **How will installed-vault worker scripts find `paperforge_lite`?**
+1. **How will installed-vault worker scripts find `paperforge`?**
    - What we know: setup currently copies individual worker and skill files.
    - What's unclear: whether setup should run `pip install -e .`, copy the package, or keep a fallback resolver file.
    - Recommendation: plan tests for both source CLI and copied-vault direct worker invocation; choose package install plus copied fallback if setup cannot guarantee package availability.
@@ -465,9 +465,9 @@ def run_worker(command: str, vault: Path) -> int:
 | Dependency | Required By | Available | Version | Fallback |
 |------------|-------------|-----------|---------|----------|
 | Python | CLI, worker, tests | Yes | 3.14.0 local; project docs target 3.10+ | Require Python >=3.10 in `pyproject.toml`; setup wizard currently checks >=3.8 and should be aligned later. |
-| pip | Editable install and dependency checks | Yes | 25.2 | Direct `python -m paperforge_lite ...` after source checkout if editable install is unavailable. |
+| pip | Editable install and dependency checks | Yes | 25.2 | Direct `python -m paperforge ...` after source checkout if editable install is unavailable. |
 | pytest | Phase 1 tests | Yes | 9.0.2 installed; latest 9.0.3 | Use `python -m pytest`; no existing tests detected. |
-| pyproject.toml | `paperforge` command installation | No | Not present | Add in Phase 1; fallback `python -m paperforge_lite ...` must work. |
+| pyproject.toml | `paperforge` command installation | No | Not present | Add in Phase 1; fallback `python -m paperforge ...` must work. |
 
 **Missing dependencies with no fallback:**
 
@@ -475,7 +475,7 @@ def run_worker(command: str, vault: Path) -> int:
 
 **Missing dependencies with fallback:**
 
-- `paperforge` executable is not currently installed; fallback after implementation should be `python -m paperforge_lite ...`.
+- `paperforge` executable is not currently installed; fallback after implementation should be `python -m paperforge ...`.
 
 ## Sources
 

@@ -10,17 +10,17 @@ Systematize the command interface: unify agent commands under `/pf-*`, simplify 
 
 ## Tasks
 
-### Task 0: Rename Python Package (`paperforge_lite` → `paperforge`)
+### Task 0: Rename Python Package (`paperforge` → `paperforge`)
 **Goal:** Unify Python package name with CLI command name.
 
 **Files to rename/move:**
-- `paperforge_lite/` → `paperforge/`
+- `paperforge/` → `paperforge/`
 
 **Files to update:**
 - `pyproject.toml` — update `name`, `packages`, `entry_points`, `package-data`
-- All Python imports (98 occurrences) — `from paperforge_lite...` → `from paperforge...`
+- All Python imports (98 occurrences) — `from paperforge...` → `from paperforge...`
 - All markdown references (377 occurrences)
-- `AGENTS.md` — update `python -m paperforge_lite` → `python -m paperforge`
+- `AGENTS.md` — update `python -m paperforge` → `python -m paperforge`
 - `tests/*.py` — update imports
 
 **Verification:**

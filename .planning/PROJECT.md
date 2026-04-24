@@ -61,7 +61,7 @@ A new user can install PaperForge, configure their own vault paths and PaddleOCR
 The v1.1 milestone was completed after a manual sandbox audit from `tests/sandbox/00_TestVault` using README-level guidance. All audit findings have been addressed:
 
 - [x] `python setup_wizard.py --vault ...` no longer stalls; Vault input is prefilled from `--vault`.
-- [x] `python -m paperforge_lite` fallback is documented in AGENTS.md and INSTALLATION.md.
+- [x] `python -m paperforge` fallback is documented in AGENTS.md and INSTALLATION.md.
 - [x] `paperforge doctor` validates per-domain JSON exports and checks `PADDLEOCR_API_TOKEN`.
 - [x] `paperforge paths --json` reports the same paths used by setup and runtime.
 - [x] Command docs use `ld_deep_script` consistently.

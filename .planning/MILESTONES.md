@@ -60,10 +60,10 @@
 
 ### Key Files Modified
 
-- `paperforge_lite/config.py` — shared resolver
-- `paperforge_lite/cli.py` — CLI launcher
-- `paperforge_lite/pdf_resolver.py` — PDF path resolution
-- `paperforge_lite/ocr_diagnostics.py` — OCR diagnostics
+- `paperforge/config.py` — shared resolver
+- `paperforge/cli.py` — CLI launcher
+- `paperforge/pdf_resolver.py` — PDF path resolution
+- `paperforge/ocr_diagnostics.py` — OCR diagnostics
 - `pipeline/worker/scripts/literature_pipeline.py` — worker + Base generation
 - `tests/` — 15 test files (145 tests)
 - `AGENTS.md` — updated to paperforge CLI format
@@ -108,7 +108,7 @@
 | SETUP-02 | `paperforge paths --json` matches runtime paths | Phase 6 |
 | CLI-01 | `paperforge doctor` validates per-domain JSON exports | Phase 6 |
 | CLI-02 | `paperforge doctor` checks `PADDLEOCR_API_TOKEN` env | Phase 6 |
-| CLI-03 | `python -m paperforge_lite` fallback documented | Phase 6 |
+| CLI-03 | `python -m paperforge` fallback documented | Phase 6 |
 | REPAIR-01 | Three-way state divergence detection | Phase 7 |
 | REPAIR-02 | `paperforge repair` fixes state divergence | Phase 7 |
 | DEEP-04 | `/LD-deep` helpers run without manual PYTHONPATH | Phase 8 |

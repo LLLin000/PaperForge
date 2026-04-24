@@ -20,7 +20,7 @@
 | L2 check has no explicit HTTP 405 handling | Confident | ocr_diagnostics.py lines 64-69 |
 | VaultStep Input has no value prefilled from --vault arg | Confident | setup_wizard.py line 498, VaultStep compose |
 | ProgressBar provides visible progress | Likely | setup_wizard.py lines 1322-1324, 1360-1364 |
-| python -m paperforge_lite is the fallback command | Likely | cli.py has __main__.py entry point |
+| python -m paperforge is the fallback command | Likely | cli.py has __main__.py entry point |
 
 ## Corrections Made
 

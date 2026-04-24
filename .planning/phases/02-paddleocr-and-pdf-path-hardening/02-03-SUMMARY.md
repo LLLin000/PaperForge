@@ -3,11 +3,11 @@
 ## Status: COMPLETED
 
 ## Files Created
-- `paperforge_lite/ocr_diagnostics.py` — `ocr_doctor()` with tiered L1-L4 checks
+- `paperforge/ocr_diagnostics.py` — `ocr_doctor()` with tiered L1-L4 checks
 - `tests/test_ocr_doctor.py` — 7 tests for L1-L4 diagnostics
 
 ## Files Modified
-- `paperforge_lite/cli.py` — Added `ocr` sub-subcommands (`run`, `doctor`), `_cmd_ocr_doctor()`, dispatch logic
+- `paperforge/cli.py` — Added `ocr` sub-subcommands (`run`, `doctor`), `_cmd_ocr_doctor()`, dispatch logic
 - `tests/test_cli_worker_dispatch.py` — Added `test_ocr_doctor_dispatch`
 - `command/lp-ocr.md` — Added `paperforge ocr doctor` documentation with diagnostic level table
 

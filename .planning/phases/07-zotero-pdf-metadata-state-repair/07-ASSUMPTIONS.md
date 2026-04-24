@@ -91,7 +91,7 @@
 1. **`literature_pipeline.py:750`** — `load_export_rows()`: 将 BBT 路径 `KEY/KEY.pdf` 规范化为 `storage:KEY/KEY.pdf` 格式后再返回
 2. **`literature_pipeline.py:2792`** — `run_deep_reading()`: 在读取 `meta.json` 的 `ocr_status` 前调用 `validate_ocr_meta()`
 3. **`literature_pipeline.py`** (新函数) — `run_repair(vault: Path)`: 检测三向分歧并报告/修复
-4. **`paperforge_lite/cli.py`** — 添加 `repair` 子命令到 CLI dispatch
+4. **`paperforge/cli.py`** — 添加 `repair` 子命令到 CLI dispatch
 
 ---
 

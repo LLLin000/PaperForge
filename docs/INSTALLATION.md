@@ -113,9 +113,9 @@ python $(python -c "import json; print(json.load(open('paperforge.json'))['paper
 
 **如果 `paperforge` 命令未注册**，使用 fallback：
 ```bash
-python -m paperforge_lite <command>
+python -m paperforge <command>
 ```
-例如：`python -m paperforge_lite status`
+例如：`python -m paperforge status`
 
 ---
 

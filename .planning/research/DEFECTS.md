@@ -11,7 +11,7 @@
 | Blocked/error recovery | `sync_ocr_queue()` skips `blocked`, and `cleanup_blocked_ocr_dirs()` removes only blocked dirs without payload | A transient missing token/path can leave records excluded until manual cleanup/reset | Add reset command and allow retry when config/path issue is fixed |
 | Base generation | `write_base_file()` emits minimal generic views; real Base files contain workflow-specific views | New users get weaker control UX than the working vault | Promote production views into config-aware templates |
 | Hardcoded Base filters | Production Bases filter `03_Resources/...` | Custom `resources_dir`/`control_dir` breaks generated or copied views | Render filters from `paperforge.json` values |
-| Placeholder commands | command docs say read `paperforge.json`, then run `python <system_dir>/...` | User still relies on agent/manual substitution | Provide `paperforge` command or `python -m paperforge_lite` entrypoint |
+| Placeholder commands | command docs say read `paperforge.json`, then run `python <system_dir>/...` | User still relies on agent/manual substitution | Provide `paperforge` command or `python -m paperforge` entrypoint |
 | Validation depth | `validate_setup.py` checks presence of keys, not whether token/url work or folders are writable | Install can appear valid while OCR cannot run | Add runtime validation categories: config, paths, zotero, bbt export, ocr auth, ocr queue |
 
 ## PaddleOCR Failure Hypotheses
@@ -28,7 +28,7 @@
 PaperForge should use a deterministic configuration hierarchy:
 
 1. CLI flags: `--vault`, `--config`, optional `--system-dir` overrides.
-2. Environment variables: `PAPERFORGE_VAULT`, `PAPERFORGE_SYSTEM_DIR`, `PAPERFORGE_RESOURCES_DIR`, `PAPERFORGE_LITERATURE_DIR`, `PAPERFORGE_CONTROL_DIR`, `PAPERFORGE_BASE_DIR`.
+2. Environment variables: `PAPERFORGE_VAULT`, `PAPERFORGE_SYSTEM_DIR`, `PAPERFORGE_RESOURCES_DIR`, `paperforgeRATURE_DIR`, `PAPERFORGE_CONTROL_DIR`, `PAPERFORGE_BASE_DIR`.
 3. Vault `paperforge.json`.
 4. Defaults.
 

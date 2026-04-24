@@ -4,7 +4,7 @@
 
 ### Task 1: 添加 doctor 子命令到 CLI parser
 
-- `paperforge_lite/cli.py`：
+- `paperforge/cli.py`：
   - `build_parser()` 中添加 `sub.add_parser("doctor", ...)`
   - `main()` 中添加 `if args.command == "doctor": from pipeline.worker.scripts.literature_pipeline import run_doctor; return run_doctor(vault)`
 
@@ -38,6 +38,6 @@ paperforge doctor  # 输出 7 类检查结果，[PASS]/[FAIL]/[WARN] + 修复步
 
 ## 修改的文件
 
-- `paperforge_lite/cli.py` — 添加 doctor 子命令
+- `paperforge/cli.py` — 添加 doctor 子命令
 - `pipeline/worker/scripts/literature_pipeline.py` — run_doctor 实现
 - `tests/test_doctor.py` — 新建测试文件（4 tests）

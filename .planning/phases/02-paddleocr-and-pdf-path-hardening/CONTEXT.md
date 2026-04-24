@@ -149,13 +149,13 @@ Runs tiered diagnostics in order, stopping early on failure with actionable mess
 
 ## 4. Architecture Changes
 
-### 4.1 New Module: `paperforge_lite/ocr_diagnostics.py`
+### 4.1 New Module: `paperforge/ocr_diagnostics.py`
 
 Functions:
 - `ocr_doctor(config, live=False) -> DoctorReport` — runs L1-L4 diagnostics
 - `classify_error(exception, response) -> (state, suggestion)` — maps exception to `blocked`/`error` + fix suggestion
 
-### 4.2 New Module: `paperforge_lite/pdf_resolver.py`
+### 4.2 New Module: `paperforge/pdf_resolver.py`
 
 Functions:
 - `resolve_pdf_path(pdf_path, has_pdf, vault_root, zotero_dir) -> str` — returns resolved path or empty string
@@ -246,15 +246,15 @@ doctor_parser.add_argument('--live', action='store_true')
 ## 8. Files to Create / Modify
 
 ### New Files
-- `paperforge_lite/pdf_resolver.py`
-- `paperforge_lite/ocr_diagnostics.py`
+- `paperforge/pdf_resolver.py`
+- `paperforge/ocr_diagnostics.py`
 - `tests/test_pdf_resolver.py`
 - `tests/test_ocr_preflight.py`
 - `tests/test_ocr_classify.py`
 - `tests/test_ocr_doctor.py`
 
 ### Modified Files
-- `paperforge_lite/cli.py` — add `ocr doctor` subcommand
+- `paperforge/cli.py` — add `ocr doctor` subcommand
 - `pipeline/worker/scripts/literature_pipeline.py` — preflight + classification in `run_ocr()`
 - `command/lp-ocr.md` — document `ocr doctor` and failure states
 

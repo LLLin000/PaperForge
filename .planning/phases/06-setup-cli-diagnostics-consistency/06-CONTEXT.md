@@ -56,7 +56,7 @@ Out of scope: Zotero PDF path resolution (Phase 7), deep helper deployment (Phas
 
 ### Fallback Command Documentation (SETUP-03)
 
-- **D-16:** `python -m paperforge_lite` is the documented fallback when `paperforge` not registered
+- **D-16:** `python -m paperforge` is the documented fallback when `paperforge` not registered
 - **D-17:** AGENTS.md, INSTALLATION.md, and command docs must mention this fallback explicitly
 
 ### Doctor Worker Script Path (DIAG-03)
@@ -78,9 +78,9 @@ Out of scope: Zotero PDF path resolution (Phase 7), deep helper deployment (Phas
 **Downstream agents MUST read these before planning or implementing.**
 
 ### CLI and Config
-- `paperforge_lite/cli.py` — lines 276-293: `_cmd_paths` output keys, `output_keys = {"vault", "worker_script", "ld_deep_script"}`
-- `paperforge_lite/config.py` — lines 208-276: `paperforge_paths()` returns all path inventory keys
-- `paperforge_lite/ocr_diagnostics.py` — lines 28: env var name read (`PADDLEOCR_API_TOKEN`), lines 44-77: L2 check
+- `paperforge/cli.py` — lines 276-293: `_cmd_paths` output keys, `output_keys = {"vault", "worker_script", "ld_deep_script"}`
+- `paperforge/config.py` — lines 208-276: `paperforge_paths()` returns all path inventory keys
+- `paperforge/ocr_diagnostics.py` — lines 28: env var name read (`PADDLEOCR_API_TOKEN`), lines 44-77: L2 check
 
 ### Setup and Deployment
 - `setup_wizard.py` — lines 486-535: `VaultStep` Input widget (needs vault prefilled), lines 1016: env var written as `PADDLEOCR_API_TOKEN`
@@ -102,7 +102,7 @@ Out of scope: Zotero PDF path resolution (Phase 7), deep helper deployment (Phas
 ## Existing Code Insights
 
 ### Reusable Assets
-- `paperforge_lite/config.py` `paperforge_paths()` already returns full path inventory — reuse for doctor reporting
+- `paperforge/config.py` `paperforge_paths()` already returns full path inventory — reuse for doctor reporting
 - `ocr_diagnostics.py` L1-L4 tiered structure — extend L2 with 405-specific handling
 - ProgressBar widget in setup_wizard.py — already exists, just needs vault prefilled
 

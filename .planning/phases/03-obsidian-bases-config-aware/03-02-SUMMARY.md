@@ -6,7 +6,7 @@ Phase 3 Plan 02 adds the `paperforge base-refresh` CLI command and two test file
 
 ## Files modified
 
-- `paperforge_lite/cli.py` — added `base-refresh` subcommand
+- `paperforge/cli.py` — added `base-refresh` subcommand
 
 ## Files created
 
@@ -43,7 +43,7 @@ Calls `ensure_base_views(vault, paths, config, force=force)`.
 ## Verification
 
 ```
-$ python -c "from paperforge_lite.cli import build_parser; ..."
+$ python -c "from paperforge.cli import build_parser; ..."
 $ python -m pytest tests/test_base_views.py tests/test_base_preservation.py -v
 tests/test_base_views.py: 11 passed
 tests/test_base_preservation.py: 10 passed

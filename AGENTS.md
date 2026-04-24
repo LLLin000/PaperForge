@@ -369,9 +369,9 @@ paperforge doctor
 
 > 如果 `paperforge` 命令未注册，可使用 fallback：
 > ```bash
-> python -m paperforge_lite <command>
+> python -m paperforge <command>
 > ```
-> 例如：`python -m paperforge_lite status`
+> 例如：`python -m paperforge status`
 
 ### Agent 命令
 ```

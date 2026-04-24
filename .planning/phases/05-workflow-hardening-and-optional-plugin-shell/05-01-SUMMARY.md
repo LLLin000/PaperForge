@@ -36,10 +36,10 @@ key_links:
     to: pipeline/worker/scripts/literature_pipeline.py
     via: run_ocr state transitions
   - from: tests/test_base_views.py
-    to: paperforge_lite/cli.py
+    to: paperforge/cli.py
     via: ensure_base_views rendering
   - from: AGENTS.md
-    to: paperforge_lite/cli.py
+    to: paperforge/cli.py
     via: command reference consistency
 ---
 
@@ -79,7 +79,7 @@ Existing coverage includes:
 
 ### Task 3 — Command Docs Consistency ✅
 
-Cross-referenced AGENTS.md paperforge commands against `paperforge_lite/cli.py`:
+Cross-referenced AGENTS.md paperforge commands against `paperforge/cli.py`:
 
 **AGENTS.md commands verified in cli.py:**
 - `paperforge selection-sync` ✅

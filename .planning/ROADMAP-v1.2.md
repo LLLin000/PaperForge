@@ -53,7 +53,7 @@
 
 ### Deliverables
 - `command/pf-deep.md`, `command/pf-paper.md`, `command/pf-ocr.md`, `command/pf-sync.md`, `command/pf-status.md`, `command/pf-doctor.md`
-- Updated `paperforge_lite/cli.py` with simplified commands
+- Updated `paperforge/cli.py` with simplified commands
 - `tests/test_unified_commands.py`
 
 ### Definition of Done
