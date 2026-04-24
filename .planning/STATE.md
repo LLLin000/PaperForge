@@ -6,22 +6,22 @@ See: `.planning/PROJECT.md` (updated 2026-04-24)
 
 **Core value:** A new user can install PaperForge, configure their own vault paths and PaddleOCR credentials, then run the full literature pipeline with copy-pasteable commands that diagnose failures clearly.
 
-**Current focus:** Milestone v1.3 — Path Normalization & Architecture Hardening (Phase 11 COMPLETE)
+**Current focus:** Milestone v1.3 — Path Normalization & Architecture Hardening (Phase 12 IN PROGRESS)
 
 ## Current Position
 
-Phase: 11 (COMPLETE)
-Plan: 11-PLAN.md (8 tasks, 4 waves — all done)
-Status: All waves complete (Tasks 01-08 done)
-Last activity: 2026-04-24 — Wave 4 executed: Task 07 (25 test methods) + Task 08 (docs + verification)
+Phase: 12 (IN PROGRESS)
+Plan: 12-PLAN.md (11 tasks, 5 waves)
+Status: Planning complete, ready for execution
+Last activity: 2026-04-24 — Phase 12 context, discussion, and plan committed (cfe0b6a)
 
 ## Next Action
 
-Phase 12: Architecture Cleanup — Ready to start
+Phase 12: Architecture Cleanup — Execute Wave 1 (package structure + sync/ocr migration)
 
 Options:
 - `/gsd-execute-phase 12` — begin Phase 12 execution
-- Review `.planning/phases/11-zotero-path-normalization/11-SUMMARY.md` for full results
+- Review `.planning/phases/12-architecture-cleanup/12-PLAN.md` for full plan
 
 ## Completed in Wave 1
 
