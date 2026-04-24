@@ -63,12 +63,11 @@ def code_block_lines(content: str) -> list[str]:
 def command_docs() -> dict[str, Path]:
     base = REPO_ROOT / "command"
     return {
-        "lp-status": base / "lp-status.md",
-        "lp-selection-sync": base / "lp-selection-sync.md",
-        "lp-index-refresh": base / "lp-index-refresh.md",
-        "lp-ocr": base / "lp-ocr.md",
-        "ld-deep": base / "ld-deep.md",
-        "ld-paper": base / "ld-paper.md",
+        "pf-status": base / "pf-status.md",
+        "pf-sync": base / "pf-sync.md",
+        "pf-ocr": base / "pf-ocr.md",
+        "pf-deep": base / "pf-deep.md",
+        "pf-paper": base / "pf-paper.md",
     }
 
 
@@ -78,6 +77,7 @@ def user_facing_docs() -> dict[str, Path]:
         "README": REPO_ROOT / "README.md",
         "INSTALLATION": REPO_ROOT / "docs" / "INSTALLATION.md",
         "setup-guide": REPO_ROOT / "docs" / "setup-guide.md",
+        "AGENTS": REPO_ROOT / "AGENTS.md",
     }
 
 
@@ -91,19 +91,18 @@ class TestStableCommandsPresent:
     @pytest.mark.parametrize(
         "doc_key,expected_cmd",
         [
-            ("lp-status", "paperforge status"),
-            ("lp-selection-sync", "paperforge selection-sync"),
-            ("lp-index-refresh", "paperforge index-refresh"),
-            ("lp-ocr", "paperforge ocr run"),
+            ("pf-status", "paperforge status"),
+            ("pf-sync", "paperforge sync"),
+            ("pf-ocr", "paperforge ocr"),
         ],
     )
-    def test_lp_doc_contains_stable_command(
+    def test_pf_doc_contains_stable_command(
         self,
         command_docs: dict[str, Path],
         doc_key: str,
         expected_cmd: str,
     ) -> None:
-        """lp-* command docs must show stable paperforge commands."""
+        """pf-* command docs must show stable paperforge commands."""
         content = read_fileutf8(command_docs[doc_key])
         code_lines = code_block_lines(content)
         # Join all lines for substring search
@@ -113,24 +112,24 @@ class TestStableCommandsPresent:
             f"not found in code blocks. Code lines:\n{code_lines}"
         )
 
-    def test_ld_deep_mentions_paperforge_deep_reading(
+    def test_pf_deep_mentions_paperforge_deep_reading(
         self,
         command_docs: dict[str, Path],
     ) -> None:
-        """ld-deep.md must mention 'paperforge deep-reading' for queue preflight."""
-        content = read_fileutf8(command_docs["ld-deep"])
+        """pf-deep.md must mention 'paperforge deep-reading' for queue preflight."""
+        content = read_fileutf8(command_docs["pf-deep"])
         assert "paperforge deep-reading" in content, (
-            "ld-deep.md must mention 'paperforge deep-reading' for queue preflight"
+            "pf-deep.md must mention 'paperforge deep-reading' for queue preflight"
         )
 
-    def test_ld_deep_mentions_paperforge_paths_json(
+    def test_pf_deep_mentions_paperforge_paths_json(
         self,
         command_docs: dict[str, Path],
     ) -> None:
-        """ld-deep.md must reference 'paperforge paths --json' for path resolution."""
-        content = read_fileutf8(command_docs["ld-deep"])
+        """pf-deep.md must reference 'paperforge paths --json' for path resolution."""
+        content = read_fileutf8(command_docs["pf-deep"])
         assert "paperforge paths --json" in content or "paperforge paths" in content, (
-            "ld-deep.md must reference 'paperforge paths' or 'paperforge paths --json' "
+            "pf-deep.md must reference 'paperforge paths' or 'paperforge paths --json' "
             "for script path discovery"
         )
 
@@ -152,18 +151,17 @@ class TestUnresolvedTokensAbsentFromUserRunExamples:
     @pytest.mark.parametrize(
         "doc_key",
         [
-            "lp-status",
-            "lp-selection-sync",
-            "lp-index-refresh",
-            "lp-ocr",
+            "pf-status",
+            "pf-sync",
+            "pf-ocr",
         ],
     )
-    def test_lp_doc_no_legacy_python_literature_pipeline(
+    def test_pf_doc_no_legacy_python_literature_pipeline(
         self,
         command_docs: dict[str, Path],
         doc_key: str,
     ) -> None:
-        """lp-* docs must NOT have legacy python <system_dir>/.../literature_pipeline.py commands."""
+        """pf-* docs must NOT have legacy python <system_dir>/.../literature_pipeline.py commands."""
         content = read_fileutf8(command_docs[doc_key])
         code_lines = code_block_lines(content)
         combined = "\n".join(code_lines)
@@ -229,6 +227,78 @@ class TestPaperforgeCommandExamplesInUserDocs:
             f"[{doc_key}] Expected to find stable paperforge command pattern {pattern!r} "
             f"in user-facing documentation."
         )
+
+
+# ---------------------------------------------------------------------------
+# New tests — unified commands present in user-facing docs
+# ---------------------------------------------------------------------------
+
+class TestUnifiedCommandsInUserDocs:
+    """AGENTS.md, README must reference new unified commands, not old ones."""
+
+    @pytest.mark.parametrize(
+        "doc_key",
+        ["README", "AGENTS"],
+    )
+    def test_no_old_selection_sync_in_user_docs(
+        self,
+        user_facing_docs: dict[str, Path],
+        doc_key: str,
+    ) -> None:
+        """User-facing docs should not reference old 'paperforge selection-sync' as primary."""
+        content = read_fileutf8(user_facing_docs[doc_key])
+        # Allow in migration section only
+        lines = content.splitlines()
+        migration_started = False
+        for line in lines:
+            if "命令迁移说明" in line or "迁移" in line.lower() or "migration" in line.lower():
+                migration_started = True
+            if "paperforge selection-sync" in line and not migration_started:
+                pytest.fail(
+                    f"[{doc_key}] Found old command 'paperforge selection-sync' outside migration section: {line}"
+                )
+
+    @pytest.mark.parametrize(
+        "doc_key",
+        ["README", "AGENTS"],
+    )
+    def test_no_old_index_refresh_in_user_docs(
+        self,
+        user_facing_docs: dict[str, Path],
+        doc_key: str,
+    ) -> None:
+        """User-facing docs should not reference old 'paperforge index-refresh' as primary."""
+        content = read_fileutf8(user_facing_docs[doc_key])
+        lines = content.splitlines()
+        migration_started = False
+        for line in lines:
+            if "命令迁移说明" in line or "迁移" in line.lower() or "migration" in line.lower():
+                migration_started = True
+            if "paperforge index-refresh" in line and not migration_started:
+                pytest.fail(
+                    f"[{doc_key}] Found old command 'paperforge index-refresh' outside migration section: {line}"
+                )
+
+    @pytest.mark.parametrize(
+        "doc_key",
+        ["README", "AGENTS"],
+    )
+    def test_no_old_ocr_run_in_user_docs(
+        self,
+        user_facing_docs: dict[str, Path],
+        doc_key: str,
+    ) -> None:
+        """User-facing docs should not reference old 'paperforge ocr run' as primary."""
+        content = read_fileutf8(user_facing_docs[doc_key])
+        lines = content.splitlines()
+        migration_started = False
+        for line in lines:
+            if "命令迁移说明" in line or "迁移" in line.lower() or "migration" in line.lower():
+                migration_started = True
+            if "paperforge ocr run" in line and not migration_started:
+                pytest.fail(
+                    f"[{doc_key}] Found old command 'paperforge ocr run' outside migration section: {line}"
+                )
 
 
 # ---------------------------------------------------------------------------

@@ -302,7 +302,7 @@ class TestMetadataFields:
 
 
 class TestSelectionSync:
-    """Integration tests for selection-sync related regressions."""
+    """Integration tests for sync related regressions."""
 
     def test_regression_bbt_pdf_path(self, test_vault: Path) -> None:
         """REG-02: BBT attachment paths resolve correctly."""
