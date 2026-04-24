@@ -12,17 +12,21 @@ See: `.planning/PROJECT.md` (updated 2026-04-24)
 
 Phase: 9 (planned)
 Milestone: v1.2
-Status: Milestone initiated, ready for research and requirements
-Last activity: 2026-04-24 — Milestone v1.2 initiated
+Status: Phase 9 planned and ready for execution
+Last activity: 2026-04-24 — Phase 9 context, discussion, and plan created
 
 ## Next Action
 
-Milestone v1.2 is ready for architecture research and requirements definition.
+Phase 9 planning complete. Ready for `/gsd-execute-phase` to begin implementation.
 
-Options:
-- `/gsd-research` — research architecture from reference projects
-- `/gsd-define-requirements` — define v1.2 requirements
-- `/gsd-create-roadmap` — create phase roadmap for v1.2
+Phase 9 scope:
+- Task 0: Rename Python package (`paperforge_lite` → `paperforge`)
+- Task 1: Create shared command modules
+- Task 2: Refactor CLI to use command modules
+- Task 3: Create new `/pf-*` agent command docs
+- Task 4: Remove old `/LD-*` and `/lp-*` command docs
+- Task 5: Update AGENTS.md and tests
+- Task 6: Verification and cleanup
 
 ## Phase 6 Decisions (Locked)
 
@@ -73,3 +77,7 @@ Milestone v1.1 (Sandbox Onboarding Hardening) completed as part of Phases 6-8.
 - **2026-04-24:** Rollback in prepare_deep_reading tracks written files and restores original note text, not full filesystem snapshot.
 - **2026-04-24:** Unify agent commands under `/pf-*` namespace; deprecate `/LD-*` and `/lp-*` prefixes.
 - **2026-04-24:** Simplify CLI by combining `selection-sync` + `index-refresh` into `paperforge sync`.
+- **2026-04-24:** Aggressive migration strategy: old commands (`/LD-*`, `/lp-*`) removed entirely with no aliases.
+- **2026-04-24:** `paperforge ocr` merges `ocr run` + `ocr doctor`; `--diagnose` for standalone diagnostics.
+- **2026-04-24:** Unified command modules in `paperforge/commands/` (formerly `paperforge_lite/commands/`).
+- **2026-04-24:** Rename Python package from `paperforge_lite` to `paperforge` for naming consistency.
