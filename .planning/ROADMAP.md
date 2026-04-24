@@ -11,32 +11,32 @@
 
 **Goal:** Implement robust Zotero attachment path parsing and Obsidian wikilink generation.
 
-**Status:** In Progress (4/8 tasks complete)
+**Status:** COMPLETE (8/8 tasks)
 **Requirements:** ZPATH-01, ZPATH-02, ZPATH-03, SYS-08
 
 Plans:
 
 - [x] 11-PLAN.md: Wave 1 — BBT Path Parsing & Normalization (Tasks 01-02)
   - [x] Task 01: `_normalize_attachment_path()` — absolute Windows, storage:, bare relative
-  - [x] Task 02: `_identify_main_pdf()` — hybrid strategy (title → size → shortest title)
+  - [x] Task 02: `_identify_main_pdf()` — hybrid strategy (title -> size -> shortest title)
   
 - [x] 11-PLAN.md: Wave 2 — Wikilink Generation & Multi-Attachment (Tasks 03-04)
   - [x] Task 03: `obsidian_wikilink_for_pdf()` rewrite with `zotero_dir` and junction resolution
   - [x] Task 04: Frontmatter updates — `pdf_path`, `supplementary`, `bbt_path_raw`, `path_error`
   
-- [ ] 11-PLAN.md: Wave 3 — Doctor Integration & Error Handling (Tasks 05-06)
-  - [ ] Task 05: `paperforge doctor` junction detection and path validation
-  - [ ] Task 06: `paperforge repair` and `status` path_error integration
+- [x] 11-PLAN.md: Wave 3 — Doctor Integration & Error Handling (Tasks 05-06)
+  - [x] Task 05: `paperforge doctor` junction detection and path validation
+  - [x] Task 06: `paperforge repair` and `status` path_error integration
   
-- [ ] 11-PLAN.md: Wave 4 — Tests, Docs & Verification (Tasks 07-08)
-  - [ ] Task 07: `test_path_normalization.py` with 12+ test methods
-  - [ ] Task 08: Documentation updates and final verification
+- [x] 11-PLAN.md: Wave 4 — Tests, Docs & Verification (Tasks 07-08)
+  - [x] Task 07: `test_path_normalization.py` with 25 test methods
+  - [x] Task 08: Documentation updates and final verification
 
 **Success criteria:**
 1. All 4 BBT path input formats correctly parsed
 2. Wikilink output matches Obsidian standard
 3. Multi-attachment items handled gracefully
-4. 100% test coverage for path resolver
+4. 100% test coverage for path resolver (25 tests, all passing)
 
 ---
 
@@ -111,7 +111,7 @@ Plans:
 | 1-5 | v1.0 | — | Complete | 2026-04-23 |
 | 6-8 | v1.1 | — | Complete | 2026-04-24 |
 | 9-10 | v1.2 | — | Complete | 2026-04-24 |
-| 11 | v1.3 | 0/1 | In Progress (4/8 tasks) | — |
+| 11 | v1.3 | 1/1 | Complete | 2026-04-24 |
 | 12 | v1.3 | 0/1 | Not started | — |
 | 13 | v1.3 | 0/1 | Not started | — |
 

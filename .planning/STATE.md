@@ -6,22 +6,22 @@ See: `.planning/PROJECT.md` (updated 2026-04-24)
 
 **Core value:** A new user can install PaperForge, configure their own vault paths and PaddleOCR credentials, then run the full literature pipeline with copy-pasteable commands that diagnose failures clearly.
 
-**Current focus:** Milestone v1.3 — Path Normalization & Architecture Hardening
+**Current focus:** Milestone v1.3 — Path Normalization & Architecture Hardening (Phase 11 COMPLETE)
 
 ## Current Position
 
-Phase: 11 (executing)
-Plan: 11-PLAN.md (8 tasks, 4 waves)
-Status: Wave 3 complete (Tasks 01-06 done), Wave 4 pending
-Last activity: 2026-04-24 — Wave 3 executed: Task 05 (doctor path resolution checks) + Task 06 (repair/status path_error integration)
+Phase: 11 (COMPLETE)
+Plan: 11-PLAN.md (8 tasks, 4 waves — all done)
+Status: All waves complete (Tasks 01-08 done)
+Last activity: 2026-04-24 — Wave 4 executed: Task 07 (25 test methods) + Task 08 (docs + verification)
 
 ## Next Action
 
-Phase 11: Zotero Path Normalization — Wave 4 ready (Tasks 07-08: Tests, Docs & Verification)
+Phase 12: Architecture Cleanup — Ready to start
 
 Options:
-- `/gsd-execute-phase 11` — continue execution (Tasks 07-08)
-- Review `.planning/phases/11-zotero-path-normalization/11-SUMMARY.md` for Wave 3 results
+- `/gsd-execute-phase 12` — begin Phase 12 execution
+- Review `.planning/phases/11-zotero-path-normalization/11-SUMMARY.md` for full results
 
 ## Completed in Wave 1
 
@@ -52,6 +52,22 @@ Options:
   - `repair_pdf_paths()` function re-runs path normalization on items with errors
 - Commits: `bdbaca4`, `434660c`
 
+## Completed in Wave 4
+
+- Task 07: `tests/test_path_normalization.py` with 25 test methods
+  - TestBBTPathNormalization: 8 tests (absolute Windows, storage:, bare, Chinese, spaces, etc.)
+  - TestMainPdfIdentification: 6 tests (title=PDF, largest, first, none, single, mixed)
+  - TestWikilinkGeneration: 6 tests (basic, junction, slashes, Chinese, empty, nonexistent)
+  - TestLoadExportRowsIntegration: 5 tests using fixture JSON files
+  - Fixtures: `bbt_export_absolute.json`, `bbt_export_storage.json`, `bbt_export_mixed.json`
+- Task 08: Documentation and verification
+  - AGENTS.md: Added "Path Resolution" section with BBT format table, wikilink rules, junction setup, multi-attachment handling
+  - AGENTS.md: Updated Library Record frontmatter with new fields (`pdf_path`, `bbt_path_raw`, `zotero_storage_key`, `attachment_count`, `supplementary`, `path_error`)
+  - docs/ARCHITECTURE.md: Added ADR-011 documenting D-01 through D-08
+  - Consistency audit: 4/4 passing
+  - Created `11-VERIFICATION.md` with test results and sample library-record
+- Commits: `72cbdc3`, `13e548d`
+
 ## Phase 10 Decisions (Locked)
 
 - Unified command modules in `paperforge/commands/`
@@ -59,12 +75,20 @@ Options:
 - `paperforge sync` combines selection-sync + index-refresh
 - `paperforge ocr` merges run + diagnose with `--diagnose` flag
 
+## Phase 11 Decisions (Locked)
+
+- D-01 through D-08: Documented in ADR-011
+- `storage:` prefix as unified internal representation for Zotero storage paths
+- Hybrid main PDF selection (title -> size -> shortest title)
+- Forward slashes exclusively in wikilinks (`Path.as_posix()`)
+- `path_error` frontmatter field for explicit error tracking
+
 ## Open Questions
 
 - [x] How to handle multiple attachments per Zotero item (main PDF vs supplementary) — **Resolved in Task 02**
-- Whether to archive `pipeline/` or merge into `paperforge/`
+- [x] Whether `storage:` prefix should include implicit `storage/` segment — **Deferred to Phase 12**
 - CI platform choice (GitHub Actions vs pre-commit hooks)
 
 ---
 *Initialized: 2026-04-23*
-*Last updated: 2026-04-24 (Wave 2 complete)*
+*Last updated: 2026-04-24 (Wave 4 complete, Phase 11 done)*

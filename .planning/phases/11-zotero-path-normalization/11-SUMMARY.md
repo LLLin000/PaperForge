@@ -1,17 +1,17 @@
-# Phase 11 Plan 01: Zotero Path Normalization — Wave 3 Summary
+# Phase 11 Plan 01: Zotero Path Normalization — Final Summary
 
 **Phase:** 11
 **Plan:** 01
-**Wave:** 3 of 4
+**Wave:** 4 of 4
 **Status:** COMPLETE
 **Date:** 2026-04-24
-**Tasks Completed:** 6 of 8 (Tasks 01-06 done)
+**Tasks Completed:** 8 of 8 (All tasks done)
 
 ---
 
 ## One-Liner
 
-Added Path Resolution diagnostics to `paperforge doctor` (junction detection, PDF path validation, wikilink format checking) and integrated `path_error` frontmatter field with `paperforge repair --fix-paths` auto-resolution and `paperforge status` reporting.
+Implemented robust Zotero attachment path normalization from three BBT export formats (absolute Windows, storage: prefix, bare relative) to consistent Obsidian wikilinks, with hybrid main PDF identification, junction-aware path resolution, doctor/repair integration, comprehensive tests (25 methods), and full documentation updates.
 
 ---
 
@@ -25,6 +25,8 @@ Added Path Resolution diagnostics to `paperforge doctor` (junction detection, PD
 | 04 | Update Library-Record Frontmatter | `adf349e` | `pipeline/worker/scripts/literature_pipeline.py` |
 | 05 | Enhance Doctor for Junction Detection | `bdbaca4` | `pipeline/worker/scripts/literature_pipeline.py` |
 | 06 | Integrate path_error with Repair/Status | `434660c` | `pipeline/worker/scripts/literature_pipeline.py`, `paperforge/cli.py`, `paperforge/commands/repair.py`, `paperforge/commands/status.py` |
+| 07 | Write Tests for Path Normalization | `72cbdc3` | `tests/test_path_normalization.py`, `tests/fixtures/*.json` |
+| 08 | Update Documentation and Verification | `13e548d` | `AGENTS.md`, `docs/ARCHITECTURE.md`, planning research files |
 
 ---
 
