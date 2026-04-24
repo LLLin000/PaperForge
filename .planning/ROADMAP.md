@@ -1,80 +1,76 @@
 # Roadmap: PaperForge Lite
 
-**Current:** v1.2 In Progress (2026-04-24)  
-**Next:** Phase 9 planning
+## Milestones
+
+- ✅ **v1.0 MVP** — Phases 1-5 (shipped 2026-04-23)
+- ✅ **v1.1 Sandbox Onboarding** — Phases 6-8 (shipped 2026-04-24)
+- ✅ **v1.2 Systematization & Cohesion** — Phases 9-10 (shipped 2026-04-24)
+- 📋 **v1.3 (Next)** — Planned
+
+## Current: v1.3 (Planning)
+
+**Focus:** Close remaining gaps, improve performance, research plugin architecture.
+
+### Planned Phases
+
+- [ ] Phase 11: [To be defined]
+- [ ] Phase 12: [To be defined]
+
+## Progress
+
+| Phase | Milestone | Plans Complete | Status | Completed |
+|-------|-----------|---------------|--------|-----------|
+| 1. Research & Foundation | v1.0 | 3/3 | Complete | 2026-04-23 |
+| 2. CLI Skeleton & Config | v1.0 | 2/2 | Complete | 2026-04-23 |
+| 3. Core Pipeline Integration | v1.0 | 2/2 | Complete | 2026-04-23 |
+| 4. Obsidian Integration | v1.0 | 2/2 | Complete | 2026-04-23 |
+| 5. Release Polish | v1.0 | 2/2 | Complete | 2026-04-23 |
+| 6. Setup, CLI, And Diagnostics Consistency | v1.1 | 3/3 | Complete | 2026-04-24 |
+| 7. Zotero PDF, Metadata, And State Repair | v1.1 | 2/2 | Complete | 2026-04-24 |
+| 8. Deep Helper Deployment And Sandbox Regression Gate | v1.1 | 2/2 | Complete | 2026-04-24 |
+| 9. Command Unification & CLI Simplification | v1.2 | 2/2 | Complete | 2026-04-24 |
+| 10. Documentation & Cohesion | v1.2 | 2/2 | Complete | 2026-04-24 |
+| 11. [TBD] | v1.3 | 0/0 | Not started | - |
+| 12. [TBD] | v1.3 | 0/0 | Not started | - |
 
 ---
 
-## Completed: v1.1 Sandbox Onboarding Hardening
+<details>
+<summary>✅ v1.0 MVP (Phases 1-5) — SHIPPED 2026-04-23</summary>
 
-**Created:** 2026-04-23  
-**Scope:** Fix every issue found by the README-driven sandbox first-time-user simulation.  
-**Status:** COMPLETE  
+Initial release with CLI, config resolver, pipeline integration, Obsidian Base generation, and basic diagnostics.
 
-### Phase 6: Setup, CLI, And Diagnostics Consistency
+- Phase 1: Research & Foundation (3/3 plans)
+- Phase 2: CLI Skeleton & Config (2/2 plans)
+- Phase 3: Core Pipeline Integration (2/2 plans)
+- Phase 4: Obsidian Integration (2/2 plans)
+- Phase 5: Release Polish (2/2 plans)
 
-**Goal:** Make the documented setup path, installed CLI, doctor command, and Agent command docs agree on the same paths, env names, and fallback commands.  
-**Status:** Done  
-**Requirements:** SETUP-01, SETUP-02, SETUP-03, SETUP-04, SETUP-05, DIAG-01, DIAG-02, DIAG-03, DIAG-04 (10/10 Complete)
+_Archived: `.planning/milestones/v1.0.md`_
 
-### Phase 7: Zotero PDF, Metadata, And State Repair
+</details>
 
-**Goal:** Make sandbox BBT attachment paths resolve correctly and keep OCR/deep-reading state consistent across records, notes, and meta files.  
-**Status:** Done (with 3 partial requirements)  
-**Requirements:** ZPATH-01~, ZPATH-02~, ZPATH-03~, META-01, META-02, STATE-01, STATE-02, STATE-03, STATE-04 (6/9 Complete, 3 Partial)
+<details>
+<summary>✅ v1.1 Sandbox Onboarding (Phases 6-8) — SHIPPED 2026-04-24</summary>
 
-### Phase 8: Deep Helper Deployment And Sandbox Regression Gate
+Hardened sandbox onboarding flow, fixed all first-time-user audit findings, added state repair and deep helper deployment.
 
-**Goal:** Turn the manual sandbox audit into an automated release gate that covers deployed Agent helper importability and `/LD-deep prepare`.  
-**Status:** Done (2026-04-24)  
-**Requirements:** DEEP-04, DEEP-05, DEEP-06, REG-01, REG-02, REG-03 (6/6 Complete)
+- Phase 6: Setup, CLI, And Diagnostics Consistency (3/3 plans)
+- Phase 7: Zotero PDF, Metadata, And State Repair (2/2 plans)
+- Phase 8: Deep Helper Deployment And Sandbox Regression Gate (2/2 plans)
 
----
+_Archived: `.planning/milestones/v1.1.md`_
 
-## Completed: v1.2 Systematization & Cohesion
+</details>
 
-**Created:** 2026-04-24  
-**Scope:** Unify agent commands under `/pf-*`, simplify CLI, research architecture, ensure UX cohesion.  
-**Status:** COMPLETE — Phases 9-10 done  
-**Requirements:** SYS-01, SYS-02, SYS-03, SYS-04, SYS-05, SYS-06, SYS-07 (7/7)
+<details>
+<summary>✅ v1.2 Systematization & Cohesion (Phases 9-10) — SHIPPED 2026-04-24</summary>
 
-### Phase 9: Command Unification & CLI Simplification
+Unified agent commands under `/pf-*`, simplified CLI, documented architecture, created migration guide.
 
-**Goal:** Implement unified `/pf-*` namespace and simplify CLI commands.  
-**Status:** Done (2026-04-24)  
-**Requirements:** SYS-01, SYS-02, SYS-07 (3/7)
+- Phase 9: Command Unification & CLI Simplification (2/2 plans)
+- Phase 10: Documentation & Cohesion (2/2 plans)
 
-### Phase 10: Documentation & Cohesion
+_Archived: `.planning/milestones/v1.2-ROADMAP.md`_
 
-**Goal:** Document architecture, create migration guide, ensure consistency.  
-**Status:** Done (2026-04-24)  
-**Requirements:** SYS-03, SYS-04, SYS-05, SYS-06 (4/7)
-
----
-
-## Future: v1.3+ Candidates
-
-| Priority | Focus | Requirements | Rationale |
-|----------|-------|--------------|-----------|
-| High | BBT bare path normalization | ZPATH-01, ZPATH-02, ZPATH-03 → Complete | Close the remaining 3 Partial requirements from Phase 7 |
-| Medium | Repair scan performance | — | O(n*m) rglob in large vaults; add caching or indexing |
-| Medium | OCR provider abstraction | INT-01 | Beyond PaddleOCR (OpenAI, local, etc.) |
-| Low | Scheduled worker automation | INT-03 | Run workers without opening an agent session |
-| Low | Dashboard health note | UX-03 | Obsidian note summarizing pipeline state |
-
----
-
-## Phase Summary (All Time)
-
-| # | Phase | Milestone | Goal | Requirements | Status |
-|---|-------|-----------|------|--------------|--------|
-| 1-5 | Config, PDF, Bases, Onboarding, Workflow | v1.0 | Initial release hardening | 28 | Done |
-| 6 | Setup, CLI, And Diagnostics Consistency | v1.1 | Align setup/docs/doctor/path contracts | 10 | Done |
-| 7 | Zotero PDF, Metadata, And State Repair | v1.1 | Resolve PDFs and converge status fields | 9 | Done |
-| 8 | Deep Helper Deployment And Sandbox Regression Gate | v1.1 | Automate the manual sandbox audit | 6 | Done |
-| 9 | Command Unification & CLI Simplification | v1.2 | Unified `/pf-*` namespace, simplified CLI | 3 | Done |
-| 10 | Documentation & Cohesion | v1.2 | Architecture docs, migration guide, consistency | 4 | Done |
-
----
-*Roadmap created: 2026-04-23 for milestone v1.1*
-*Updated: 2026-04-24 — v1.2 initiated with phases 9-10*
+</details>
