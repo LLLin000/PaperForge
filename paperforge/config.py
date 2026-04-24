@@ -253,9 +253,8 @@ def paperforge_paths(
     bases = vault / base_dir
     skill_path = vault / skill_dir
 
-    # Resolve script paths relative to vault (for portability in copied installs)
-    # worker_script: look relative to vault root
-    worker_script = vault / "pipeline" / "worker" / "scripts" / "literature_pipeline.py"
+    # worker_script: paperforge worker package (pipeline/ removed in v1.3)
+    worker_script = Path(__file__).parent / "worker" / "__init__.py"
     # ld_deep_script: look relative to skill_dir first, then repo paperforge/skills for dev
     ld_deep_script = skill_path / "literature-qa" / "scripts" / "ld_deep.py"
     if not ld_deep_script.exists():

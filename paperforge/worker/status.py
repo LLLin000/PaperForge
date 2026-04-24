@@ -475,21 +475,15 @@ def run_doctor(vault: Path) -> int:
     else:
         add_check("OCR 配置", "fail", "缺少 PADDLEOCR_API_TOKEN", "在 .env 文件中设置 PADDLEOCR_API_TOKEN")
 
-    if (paths["pipeline"] / "literature_pipeline.py").exists():
-        add_check("Worker 脚本", "pass", "literature_pipeline.py 存在")
-        try:
-            from paperforge.worker.sync import (
-                run_selection_sync, run_index_refresh,
-            )
-            from paperforge.worker.deep_reading import run_deep_reading
-            from paperforge.worker.ocr import run_ocr
-            from paperforge.worker.base_views import ensure_base_views
-            run_status  # self-reference
-            add_check("Worker 脚本", "pass", "所有 worker 函数可导入")
-        except ImportError as e:
-            add_check("Worker 脚本", "fail", f"worker 函数导入失败: {e}", "检查 pipeline/worker/scripts/literature_pipeline.py")
-    else:
-        add_check("Worker 脚本", "fail", "literature_pipeline.py 不存在", "确认 PaperForge pipeline 已正确安装")
+    # Worker module check (v1.3+: pipeline/ removed, use paperforge.worker package)
+    try:
+        from paperforge.worker.sync import run_selection_sync, run_index_refresh
+        from paperforge.worker.deep_reading import run_deep_reading
+        from paperforge.worker.ocr import run_ocr
+        from paperforge.worker.base_views import ensure_base_views
+        add_check("Worker 脚本", "pass", "paperforge.worker 包可导入")
+    except ImportError as e:
+        add_check("Worker 脚本", "fail", f"worker 函数导入失败: {e}", "运行: pip install -e .")
 
     # Path Resolution checks
     check_zotero_location(vault, cfg, add_check)

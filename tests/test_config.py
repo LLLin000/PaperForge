@@ -343,7 +343,7 @@ def test_paperforge_paths_includes_worker_script(tmp_path: Path):
 
     paths = paperforge_paths(vault)
     assert "worker_script" in paths
-    assert paths["worker_script"].name == "literature_pipeline.py"
+    assert paths["worker_script"].name == "__init__.py"
 
 
 def test_paperforge_paths_includes_ld_deep_script(tmp_path: Path):
