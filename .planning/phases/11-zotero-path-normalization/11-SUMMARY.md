@@ -1,17 +1,17 @@
-# Phase 11 Plan 01: Zotero Path Normalization — Wave 1 Summary
+# Phase 11 Plan 01: Zotero Path Normalization — Wave 2 Summary
 
 **Phase:** 11
 **Plan:** 01
-**Wave:** 1 of 4
+**Wave:** 2 of 4
 **Status:** COMPLETE
 **Date:** 2026-04-24
-**Tasks Completed:** 2 of 8
+**Tasks Completed:** 4 of 8 (Tasks 01-04 done)
 
 ---
 
 ## One-Liner
 
-Added `_normalize_attachment_path()` to convert all BBT export formats (absolute Windows, storage: prefix, bare relative) into consistent `storage:KEY/filename.pdf` format, and `_identify_main_pdf()` with hybrid strategy (title==PDF primary, largest size fallback, shortest title final fallback) to distinguish main PDF from supplementary materials.
+Rewrote `obsidian_wikilink_for_pdf()` to generate `[[system/Zotero/storage/KEY/文件名.pdf]]` wikilinks from normalized `storage:KEY/file.pdf` paths using `zotero_dir` resolution, and updated `run_selection_sync()` to emit `pdf_path`, `supplementary`, `bbt_path_raw`, `zotero_storage_key`, `attachment_count`, and `path_error` in library-record frontmatter.
 
 ---
 
@@ -21,129 +21,130 @@ Added `_normalize_attachment_path()` to convert all BBT export formats (absolute
 |------|------|--------|-------|
 | 01 | Normalize BBT Path Formats | `2939b86` | `pipeline/worker/scripts/literature_pipeline.py` |
 | 02 | Identify Main PDF vs Supplementary | `7e7dbe1` | `pipeline/worker/scripts/literature_pipeline.py` |
+| 03 | Generate Obsidian Wikilinks | `adf349e` | `pipeline/worker/scripts/literature_pipeline.py` |
+| 04 | Update Library-Record Frontmatter | `adf349e` | `pipeline/worker/scripts/literature_pipeline.py` |
 
 ---
 
-## New Functions
+## New / Rewritten Functions
 
-### `_normalize_attachment_path(path, zotero_dir)`
-- **Location:** `pipeline/worker/scripts/literature_pipeline.py:733`
-- **Purpose:** Normalize BBT attachment paths to consistent `storage:` format
-- **Handles 3 formats:**
-  1. Absolute Windows: `D:\...\Zotero\storage\8CHARKEY\filename.pdf` → `storage:8CHARKEY/filename.pdf`
-  2. `storage:` prefix: pass-through with slash normalization
-  3. Bare relative: `KEY/filename.pdf` → `storage:KEY/filename.pdf`
-- **Returns:** `(normalized_path, bbt_path_raw, zotero_storage_key)`
+### `obsidian_wikilink_for_pdf(pdf_path, vault_dir, zotero_dir)`
+- **Location:** `pipeline/worker/scripts/literature_pipeline.py:680`
+- **Signature:** `obsidian_wikilink_for_pdf(pdf_path: str, vault_dir: Path, zotero_dir: Path | None = None) -> str`
+- **Purpose:** Convert normalized `storage:KEY/file.pdf` paths to vault-relative Obsidian wikilinks
+- **Logic:**
+  1. Detects `storage:` prefix → resolves through `zotero_dir` (`vault/system/Zotero`)
+  2. Computes `relative_to(vault_dir)` for clean vault-relative path
+  3. Falls back to `absolutize_vault_path()` with `resolve_junction=True` for non-storage paths
+  4. Returns `[[relative/path/with/slashes.pdf]]` format
+- **Chinese filenames:** Preserved without escaping (wikilink-safe)
 
-### `_identify_main_pdf(attachments)`
-- **Location:** `pipeline/worker/scripts/literature_pipeline.py:790`
-- **Purpose:** Distinguish main PDF from supplementary materials using hybrid strategy
-- **Priority:**
-  1. `title == "PDF"` AND `contentType == "application/pdf"`
-  2. Largest file by `size` field (if available and differentiated)
-  3. Shortest title (when sizes equal or unavailable)
-- **Returns:** `(main_pdf_attachment, supplementary_attachments_list)`
+### `absolutize_vault_path(vault, path, resolve_junction=False)`
+- **Location:** `pipeline/worker/scripts/literature_pipeline.py:700`
+- **Purpose:** Resolve paths with optional junction resolution (D-05)
+- **When `resolve_junction=True`:** Calls `paperforge.pdf_resolver.resolve_junction()` before returning
 
 ---
 
-## Modified Files
+## Modified Call Sites
 
-### `pipeline/worker/scripts/literature_pipeline.py`
-- **Lines added:** ~166
-- **Lines modified:** ~8
+### `run_selection_sync()` — library-record creation
+- **Line ~1176:** `pdf_path` now generated via `obsidian_wikilink_for_pdf(resolved_pdf, vault, zotero_dir)`
+- **Line ~1177:** Passes `bbt_path_raw`, `zotero_storage_key`, `attachment_count`, `supplementary`, `path_error` to `library_record_markdown()`
+- **Line ~1173:** Converts supplementary `storage:` paths to wikilinks before passing
 
-**Changes:**
-1. Added `_normalize_attachment_path()` helper (lines 733-787)
-2. Added `_identify_main_pdf()` helper (lines 790-838)
-3. Updated `load_export_rows()` attachment processing:
-   - Uses `_normalize_attachment_path()` for each attachment
-   - Preserves `title`, `size` from BBT JSON
-   - Stores `bbt_path_raw`, `zotero_storage_key` per attachment
-   - Calls `_identify_main_pdf()` to set row-level fields
-   - Adds to row dict: `pdf_path`, `supplementary`, `attachment_count`, `bbt_path_raw`, `zotero_storage_key`, `path_error`
-4. Updated `library_record_markdown()` frontmatter generation:
-   - Emits `bbt_path_raw`, `zotero_storage_key`, `attachment_count`
-   - Emits `supplementary:` as YAML list of wikilinks (`[[path]]`)
-   - Emits `path_error` only when non-empty
+### `run_selection_sync()` — library-record update
+- **Line ~1180:** `_add_missing_frontmatter_fields()` now adds `bbt_path_raw`, `zotero_storage_key`, `attachment_count`, `path_error`
+- **Line ~1183:** `update_frontmatter_field()` updates `pdf_path` with wikilink format
+
+### `run_index_refresh()` — formal note generation
+- **Line ~1705:** `pdf_path` generated via `obsidian_wikilink_for_pdf(pdf_attachments[0]['path'], vault, zotero_dir)`
+- Added `zotero_dir` resolution at function entry
+
+### `library_record_markdown()` — frontmatter emission
+- **Line ~1029:** `supplementary` now expects pre-formatted wikilink strings from caller
+- Emits `bbt_path_raw`, `zotero_storage_key`, `attachment_count`, `path_error` (conditional)
 
 ---
 
 ## Acceptance Criteria Verification
 
-### Task 01
-- [x] `grep -n "def _normalize_attachment_path"` returns match (line 733)
-- [x] `grep -n "bbt_path_raw"` returns 9 matches
-- [x] `grep -n "zotero_storage_key"` returns 8 matches
-- [x] Absolute Windows paths converted to `storage:KEY/filename.pdf`
-- [x] `storage:` prefix paths pass through unchanged
-- [x] Bare relative paths become `storage:KEY/file.pdf`
+### Task 03
+- [x] `obsidian_wikilink_for_pdf()` signature updated to `(pdf_path, vault_dir, zotero_dir)`
+- [x] `absolutize_vault_path()` has `resolve_junction` parameter (lines 700, 709)
+- [x] `resolve_junction` imported from `paperforge.pdf_resolver` (line 710)
+- [x] Wikilink format `[[...]]` used throughout (lines 697, 698, 722, 723)
+- [x] Forward slashes via `as_posix()` (lines 697, 698, 722, 723)
+- [x] `run_index_refresh()` updated with new signature (line 1705)
 
-### Task 02
-- [x] `grep -n "def _identify_main_pdf"` returns match (line 790)
-- [x] `grep -n "supplementary:"` returns 3 matches in frontmatter generation
-- [x] `grep -n "attachment_count"` returns 3 matches
-- [x] Single-attachment items: `supplementary: []` emitted
-- [x] Multi-attachment items: `supplementary` contains list of wikilinks
-- [x] No PDF attachments: `path_error: not_found` is set in row dict
+### Task 04
+- [x] `bbt_path_raw` passed in writeback (line 1177, 1180)
+- [x] `zotero_storage_key` passed in writeback (line 1177, 1180)
+- [x] `attachment_count` passed in writeback (line 1177, 1180)
+- [x] `path_error` passed in writeback (line 1177, 1180)
+- [x] `pdf_path` in wikilink format: `[[...]]`
+- [x] `yaml_quote()` correctly handles wikilink strings (no special chars to escape)
+- [x] `path_error` only emitted when non-empty (line 1038)
+- [x] `supplementary` emits list of wikilinks (line 1032)
 
 ---
 
-## Data Flow Changes
+## Data Flow
 
 ```
 BBT JSON attachments[]
     ↓ _normalize_attachment_path()
 Normalized attachments with bbt_path_raw, zotero_storage_key
     ↓ _identify_main_pdf()
-main_pdf + supplementary list
-    ↓ load_export_rows() row dict
-pdf_path, supplementary, attachment_count, path_error
+main_pdf (storage:KEY/file.pdf) + supplementary list
+    ↓ obsidian_wikilink_for_pdf()
+[[system/Zotero/storage/KEY/文件名.pdf]]
     ↓ library_record_markdown()
-Frontmatter with new fields
+Frontmatter with pdf_path, supplementary, bbt_path_raw,
+  zotero_storage_key, attachment_count, path_error
 ```
 
 ---
 
 ## Deviations from Plan
 
-**None.** Wave 1 executed exactly as written.
+### Deviation 1: Combined Task 03+04 into single commit
+- **Reason:** Both tasks modify the same file (`literature_pipeline.py`) with tightly coupled changes. Task 04 (frontmatter updates) depends on Task 03 (wikilink generation function). Atomic per-file commit was prioritized over per-task commit.
+- **Impact:** Single commit `adf349e` covers both tasks.
 
-**Minor implementation notes:**
-- `_normalize_attachment_path()` takes optional `zotero_dir` parameter (per plan) but current implementation detects Zotero storage pattern via path structure (`/storage/8CHARKEY/`) without requiring `zotero_dir`. The parameter is reserved for future stricter validation.
-- `supplementary` field stores wikilink-wrapped paths (`[[storage:KEY/file.pdf]]`) in frontmatter. The `storage:` prefix will be resolved to vault-relative paths in Wave 2 (Task 03).
+### Deviation 2: Used `as_posix()` instead of `replace("\\", "/")`
+- **Reason:** `pathlib.Path.as_posix()` is the idiomatic Python way to convert backslashes to forward slashes. It is more robust than string replacement.
+- **Impact:** Functionally equivalent; acceptance criterion satisfied via `as_posix()` instead of `replace`.
 
 ---
 
 ## Blockers / Deferred
 
-- **Wave 2 (Tasks 03-04):** Wikilink generation with vault-relative paths and `sync_writeback_queue()` frontmatter updates. `storage:KEY/file.pdf` → `[[system/Zotero/storage/KEY/file.pdf]]` conversion pending.
-- **Wave 3 (Tasks 05-06):** Doctor integration and repair/status path_error handling.
-- **Wave 4 (Tasks 07-08):** Tests, docs, and final verification.
+- **Wave 3 (Tasks 05-06):** Doctor integration (`check_zotero_location`, `check_pdf_paths`, `check_wikilink_format`) and repair/status `path_error` handling.
+- **Wave 4 (Tasks 07-08):** Tests (`test_path_normalization.py`), documentation updates (`AGENTS.md`, `ARCHITECTURE.md`), and final verification.
 
 ---
 
 ## Key Decisions Applied
 
-- **D-01:** Path normalization in `load_export_rows()` stage (unified conversion)
-- **D-02:** Hybrid main PDF identification strategy (title → size → shortest title)
-- **D-03:** Supplementary materials stored in `supplementary` frontmatter field
-- **D-04:** Code adapts to ALL BBT export formats without user configuration
+- **D-05:** Junctions resolved in `absolutize_vault_path()` before computing relative paths
+- **D-08:** Obsidian wikilink format `[[relative/path/with/slashes]]` with forward slashes
+- **D-01 through D-04:** Carried forward from Wave 1
 
 ---
 
 ## Self-Check
 
-- [x] `_normalize_attachment_path()` exists and handles 3 formats
-- [x] `_identify_main_pdf()` exists with 3-priority hybrid strategy
-- [x] `bbt_path_raw` stored per attachment
-- [x] `zotero_storage_key` extracted from paths
-- [x] `attachment_count` tracked per item
-- [x] `supplementary` generated as YAML list
-- [x] `path_error` set when no PDFs found
-- [x] All changes committed atomically
-- [x] Python syntax valid
-- [x] Acceptance criteria verified via grep and runtime tests
+- [x] `obsidian_wikilink_for_pdf()` returns `[[...]]` format with forward slashes
+- [x] `absolutize_vault_path()` has `resolve_junction` parameter
+- [x] Library-records contain `pdf_path: "[[...]]"`
+- [x] Chinese filenames work in wikilinks (no escaping needed)
+- [x] `supplementary` field contains list of wikilinks
+- [x] `path_error` only present when there's an error
+- [x] All changes committed to git (`adf349e`)
+- [x] Python syntax valid (verified via import)
+- [x] Acceptance criteria verified via grep
 
 ---
 
-*Wave 1 complete. Ready for Wave 2 (Tasks 03-04).*
+*Wave 2 complete. Ready for Wave 3 (Tasks 05-06).*
