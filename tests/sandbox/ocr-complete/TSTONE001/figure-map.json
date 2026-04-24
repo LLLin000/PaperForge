@@ -1,0 +1,80 @@
+{
+  "zotero_key": "TSTONE001",
+  "generated_at": "2026-04-24T05:04:52.910240+00:00",
+  "figures": [
+    {
+      "number": "1",
+      "label": "Figure 1: Overview of suture anchor placement techniques",
+      "page": 1,
+      "type": "main_figure",
+      "caption": "Overview of suture anchor placement techniques. (A) Single row repair. (B) Double row repair. (C) Transosseous equivalent repair.",
+      "image_link": "page_001_fig_01.png",
+      "image_id": "page_001_fig_01",
+      "additional_images": []
+    },
+    {
+      "number": "2",
+      "label": "Figure 2: Biomechanical testing setup",
+      "page": 1,
+      "type": "main_figure",
+      "caption": "Biomechanical testing setup. (A) Custom loading fixture. (B) Cyclic loading protocol.",
+      "image_link": "page_002_fig_02.png",
+      "image_id": "page_002_fig_02",
+      "additional_images": []
+    },
+    {
+      "number": "3",
+      "label": "Figure 3: Load to failure comparison",
+      "page": 2,
+      "type": "main_figure",
+      "caption": "Load to failure comparison. Error bars represent standard deviation. *p < 0.05 vs single row.",
+      "image_link": "page_003_fig_03.png",
+      "image_id": "page_003_fig_03",
+      "additional_images": []
+    },
+    {
+      "number": "4",
+      "label": "Figure 4: Stiffness comparison between repair techniques",
+      "page": 2,
+      "type": "main_figure",
+      "caption": "Stiffness comparison between repair techniques.",
+      "image_link": "page_003_fig_04.png",
+      "image_id": "page_003_fig_04",
+      "additional_images": [
+        {
+          "id": "page_003_table_02",
+          "link": "page_003_table_02.png"
+        }
+      ]
+    }
+  ],
+  "tables": [
+    {
+      "number": "1",
+      "label": "Table 1: Patient demographics and baseline characteristics (n=45)",
+      "page": 1,
+      "type": "main_table",
+      "caption": "Patient demographics and baseline characteristics (n=45).",
+      "image_link": "page_002_table_01.png",
+      "image_id": "page_002_table_01",
+      "additional_images": []
+    },
+    {
+      "number": "2",
+      "label": "Table 2: Biomechanical properties summary",
+      "page": 2,
+      "type": "main_table",
+      "caption": "Biomechanical properties summary.",
+      "image_link": "page_003_table_02.png",
+      "image_id": "page_003_table_02",
+      "additional_images": [
+        {
+          "id": "page_003_fig_04",
+          "link": "page_003_fig_04.png"
+        }
+      ]
+    }
+  ],
+  "supplementary_figures": [],
+  "supplementary_tables": []
+}

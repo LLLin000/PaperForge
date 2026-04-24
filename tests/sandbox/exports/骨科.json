@@ -2,73 +2,40 @@
   "items": [
     {
       "key": "TSTONE001",
+      "itemKey": "TSTONE001",
       "itemType": "journalArticle",
       "title": "Biomechanical Comparison of Suture Anchor Fixations in Rotator Cuff Repair",
       "creators": [
         {
           "creatorType": "author",
-          "firstName": "James",
-          "lastName": "Burkhardt"
+          "firstName": "John",
+          "lastName": "Smith"
+        },
+        {
+          "creatorType": "author",
+          "firstName": "Jane",
+          "lastName": "Doe"
         }
       ],
-      "date": "2024",
       "publicationTitle": "Journal of Shoulder and Elbow Surgery",
-      "DOI": "10.1016/j.jses.2024.01.001",
-      "abstractNote": "BACKGROUND: Suture anchor fixation is critical for rotator cuff repair. We compared pull-out strength across 3 anchor types.",
-      "collections": [
-        "骨科"
-      ],
+      "date": "2024-03-15",
+      "DOI": "10.1016/j.jse.2024.01.001",
+      "PMID": "12345678",
+      "abstractNote": "This study compares the biomechanical properties of various suture anchor configurations used in rotator cuff repair surgery.",
       "attachments": [
         {
-          "path": "TSTONE001/TSTONE001.pdf",
+          "path": "storage:TSTONE001/TSTONE001.pdf",
           "contentType": "application/pdf"
         }
-      ]
-    },
-    {
-      "key": "TSTONE002",
-      "itemType": "journalArticle",
-      "title": "Machine Learning Prediction of Anterior Cruciate Ligament Injury Risk in Athletes",
-      "creators": [
-        {
-          "creatorType": "author",
-          "firstName": "Wei",
-          "lastName": "Zhang"
-        }
       ],
-      "date": "2023",
-      "publicationTitle": "American Journal of Sports Medicine",
-      "DOI": "10.1177/03635465231123456",
-      "abstractNote": "PURPOSE: To develop and validate an ML model for predicting ACL injury risk using biomechanical and demographic features.",
-      "collections": [
-        "骨科"
-      ],
-      "attachments": [
-        {
-          "path": "TSTONE002/TSTONE002.pdf",
-          "contentType": "application/pdf"
-        }
-      ]
-    },
-    {
-      "key": "TSTONE003",
-      "itemType": "journalArticle",
-      "title": "Platelet-Rich Plasma for Knee Osteoarthritis: RCT",
-      "creators": [
-        {
-          "creatorType": "author",
-          "firstName": "Sarah",
-          "lastName": "Johnson"
-        }
-      ],
-      "date": "2022",
-      "publicationTitle": "Osteoarthritis and Cartilage",
-      "DOI": "10.1016/j.joca.2022.03.012",
-      "abstractNote": "OBJECTIVE: To evaluate PRP injections vs hyaluronic acid for symptomatic knee OA in a double-blind RCT (n=192).",
-      "collections": [
-        "骨科"
-      ],
-      "attachments": []
+      "collections": ["骨科"]
     }
-  ]
+  ],
+  "collections": {
+    "骨科": {
+      "name": "骨科",
+      "parent": "",
+      "items": ["TSTONE001"]
+    }
+  }
 }
