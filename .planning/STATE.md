@@ -12,17 +12,12 @@ See: `.planning/PROJECT.md` (updated 2026-04-24)
 
 Phase: 9 (in_progress)
 Milestone: v1.2
-Status: Phase 9 executing
-Last activity: 2026-04-24 — Phase 9 execution started
+Status: Phase 9 Wave 3 complete (Tasks 3-4 done)
+Last activity: 2026-04-24 — Tasks 3-4: Created /pf-* docs, removed /LD-* and /lp-* docs
 
 ## Next Action
 
-Executing Phase 9 tasks via wave-based execution.
-
-Wave structure:
-- Wave 1: Task 0 — Rename Python package (paperforge → paperforge)
-- Wave 2: Tasks 1-2 — Create shared command modules + Refactor CLI
-- Wave 3: Tasks 3-4 — Create /pf-* docs + Remove old docs
+Continue Phase 9 execution:
 - Wave 4: Task 5 — Update AGENTS.md and tests
 - Wave 5: Task 6 — Verification and cleanup
 
