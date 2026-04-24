@@ -730,6 +730,63 @@ def extract_authors(item: dict) -> list[str]:
             authors.append(creator['name'])
     return authors
 
+def _normalize_attachment_path(path: str, zotero_dir: Path | None = None) -> tuple[str, str, str]:
+    """Normalize a BBT attachment path to a consistent storage: format.
+
+    Handles three real-world BBT export formats:
+    1. Absolute Windows paths: D:\\...\\Zotero\\storage\\8CHARKEY\\filename.pdf
+       -> storage:8CHARKEY/filename.pdf
+    2. storage: prefix: storage:KEY/filename.pdf -> pass through
+    3. Bare relative: KEY/filename.pdf -> storage:KEY/filename.pdf
+
+    Args:
+        path: Raw path from BBT JSON attachment.
+        zotero_dir: Optional absolute path to Zotero data directory for
+            validating absolute paths.
+
+    Returns:
+        Tuple of (normalized_path, bbt_path_raw, zotero_storage_key).
+        normalized_path uses forward slashes and storage: prefix for
+        Zotero storage paths. bbt_path_raw preserves the original input
+        for debugging. zotero_storage_key is the 8-character Zotero key.
+    """
+    raw = str(path or '').strip()
+    if not raw:
+        return ('', '', '')
+
+    bbt_path_raw = raw
+
+    # Format 2: Already has storage: prefix — pass through with slash normalization
+    if raw.startswith('storage:'):
+        storage_rel = raw[len('storage:'):].lstrip('/').lstrip('\\')
+        storage_rel = storage_rel.replace('\\', '/')
+        parts = storage_rel.split('/')
+        zotero_storage_key = parts[0] if parts else ''
+        return (f'storage:{storage_rel}', bbt_path_raw, zotero_storage_key)
+
+    # Format 1: Absolute Windows path pointing to Zotero storage
+    candidate = Path(raw)
+    if candidate.is_absolute():
+        norm_path = raw.replace('\\', '/')
+        # Detect Zotero storage pattern: .../storage/8CHARKEY/...
+        if '/storage/' in norm_path:
+            parts_after_storage = norm_path.split('/storage/', 1)[1]
+            parts = parts_after_storage.split('/')
+            if len(parts) >= 2 and len(parts[0]) == 8 and parts[0].isalnum():
+                zotero_storage_key = parts[0]
+                filename = '/'.join(parts[1:])
+                return (f'storage:{zotero_storage_key}/{filename}',
+                        bbt_path_raw, zotero_storage_key)
+        # Absolute path but not in Zotero storage — mark as absolute
+        return (f'absolute:{raw}', bbt_path_raw, '')
+
+    # Format 3: Bare relative path — prepend storage: prefix
+    norm = raw.replace('\\', '/')
+    parts = norm.split('/')
+    zotero_storage_key = parts[0] if parts else ''
+    return (f'storage:{norm}', bbt_path_raw, zotero_storage_key)
+
+
 def load_export_rows(path: Path) -> list[dict]:
     data = read_json(path)
     if isinstance(data, list):
@@ -744,12 +801,20 @@ def load_export_rows(path: Path) -> list[dict]:
             for attachment in item.get('attachments', []):
                 if not isinstance(attachment, dict):
                     continue
-                attachment_path = attachment.get('path', '')
-                # Normalize bare Zotero storage-relative paths to storage: prefix
-                if attachment_path and not attachment_path.startswith('storage:') and not Path(attachment_path).is_absolute():
-                    attachment_path = 'storage:' + attachment_path
-                content_type = 'application/pdf' if str(attachment_path).lower().endswith('.pdf') else ''
-                attachments.append({'path': attachment_path, 'contentType': content_type})
+                raw_path = attachment.get('path', '')
+                normalized_path, bbt_path_raw, zotero_storage_key = _normalize_attachment_path(raw_path)
+                # Preserve contentType from BBT if present; fallback to file extension
+                content_type = attachment.get('contentType', '')
+                if not content_type and str(normalized_path).lower().endswith('.pdf'):
+                    content_type = 'application/pdf'
+                attachments.append({
+                    'path': normalized_path,
+                    'contentType': content_type,
+                    'title': attachment.get('title', ''),
+                    'bbt_path_raw': bbt_path_raw,
+                    'zotero_storage_key': zotero_storage_key,
+                    'size': attachment.get('size', 0) or 0,
+                })
             rows.append({'key': item.get('key') or item.get('itemKey', ''), 'title': item.get('title', ''), 'authors': extract_authors(item), 'abstract': item.get('abstractNote', ''), 'journal': item.get('publicationTitle', ''), 'year': _extract_year(item.get('date', '')), 'date': item.get('date', ''), 'doi': item.get('DOI', ''), 'pmid': item.get('PMID', ''), 'collections': resolve_item_collection_paths(item, collection_lookup), 'attachments': attachments})
         return rows
     raise ValueError(f'Unsupported export format: {path}')
