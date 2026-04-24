@@ -177,30 +177,34 @@ Zotero 添加文献
 
 ## 5. Agent 命令（用户手动触发）
 
-| 命令 | 用途 | 前置条件 |
-|------|------|----------|
-| `/pf-deep <zotero_key>` | 完整 Keshav 三阶段精读 | OCR 完成 (`ocr_status: done`) |
-| `/pf-paper <zotero_key>` | 快速摘要（无 OCR 要求） | 有正式笔记即可 |
+PaperForge 的命令分为两类：
 
-### /pf-deep 执行流程
+| 类型 | 命令 | 用途 | 说明 |
+|------|------|------|------|
+| **深度思考** | `/pf-deep <key>` | 完整 Keshav 三阶段精读 | **必须 Agent 执行** — 需要理解论文、分析图表、生成 callout |
+| **深度思考** | `/pf-paper <key>` | 快速摘要 | **必须 Agent 执行** — 需要理解内容并写作 |
+| **机械操作** | `/pf-sync` | 同步 Zotero 并生成笔记 | Agent 可帮你检查状态并执行 |
+| **机械操作** | `/pf-ocr` | 运行 PDF OCR | Agent 可帮你检查队列并执行 |
+| **机械操作** | `/pf-status` | 查看系统状态 | Agent 可帮你解读诊断结果 |
 
-1. **prepare 阶段**（自动）：
-   - 查找 library-record（确认 `analyze: true`）
-   - 检查 OCR 状态
-   - 读取 formal note
-   - 生成 figure-map.json（图表索引）
-   - 生成 chart-type-map.json（图表类型识别）
-   - 在正式笔记中插入 `## 🔍 精读` 骨架
+> **双模式调用**：`/pf-sync`、`/pf-ocr`、`/pf-status` 本质上是 CLI 命令的 Agent 包装。你可以在终端直接运行 `paperforge sync/ocr/status`，也可以在 OpenCode 中使用 `/pf-*` 让 Agent 帮你检查前置条件、执行命令、解读输出。
 
-2. **精读阶段**（Agent 执行）：
-   - Pass 1: 概览（5-10 分钟快速扫描）
-   - Pass 2: 精读还原（逐图逐表分析）
-   - Pass 3: 深度理解（批判性评估 + 迁移思考）
+### 必须 Agent 执行的命令
 
-3. **验证阶段**（自动）：
-   - 检查 callout 间距
-   - 检查必要 section 是否完整
-   - 检查 figure/table embed 是否存在
+#### `/pf-deep <zotero_key>` — 完整精读
+
+**用途**：完整 Keshav 三阶段精读
+**前置条件**：OCR 完成 (`ocr_status: done`)
+
+执行流程：
+1. **prepare 阶段**（自动）：查找 library-record、检查 OCR、生成 figure-map
+2. **精读阶段**（Agent 执行）：Pass 1 概览 → Pass 2 精读还原 → Pass 3 深度理解
+3. **验证阶段**（自动）：检查 callout 间距、section 完整性
+
+#### `/pf-paper <zotero_key>` — 快速摘要
+
+**用途**：快速摘要（无 OCR 要求）
+**前置条件**：有正式笔记即可
 
 ---
 
@@ -420,9 +424,14 @@ paperforge doctor
 
 ### Agent 命令
 ```
-/pf-deep <zotero_key>    # 完整三阶段精读
-/pf-paper <zotero_key>   # 快速摘要
+/pf-deep <zotero_key>    # 完整三阶段精读（必须 Agent 执行）
+/pf-paper <zotero_key>   # 快速摘要（必须 Agent 执行）
+/pf-sync                 # 同步 Zotero（Agent 包装 CLI）
+/pf-ocr                  # 运行 OCR（Agent 包装 CLI）
+/pf-status               # 查看状态（Agent 包装 CLI）
 ```
+
+> 注：`/pf-sync`、`/pf-ocr`、`/pf-status` 与 `paperforge sync/ocr/status` 是同一命令的两种调用方式。在终端直接运行 CLI 即可；在 OpenCode 中使用 `/pf-*` 可以让 Agent 帮你检查前置条件并解读输出。
 
 ---
 

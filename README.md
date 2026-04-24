@@ -62,9 +62,7 @@ your-vault/
 ├── [系统目录]/                  # 安装时可自定义
 │   ├── PaperForge/
 │   │   ├── exports/             # Zotero JSON 导出
-│   │   ├── ocr/                 # OCR 结果
-│   │   └── worker/scripts/
-│   │       └── literature_pipeline.py
+│   │   └── ocr/                 # OCR 结果
 │   └── Zotero/                  # Junction 到 Zotero 数据目录
 ├── [Agent配置目录]/             # 根据平台和安装配置决定
 │   └── skills/
@@ -86,18 +84,21 @@ your-vault/
 ## 核心命令
 
 ```bash
-# PaperForge 统一入口（推荐）
+# PaperForge CLI（在终端中直接运行）
 paperforge status            # 查看状态
 paperforge sync              # 同步 Zotero 文献并生成正式笔记
 paperforge ocr               # 运行 PDF OCR
 paperforge deep-reading      # 查看精读队列
 
 # Agent 命令（在 OpenCode 中使用）
-/pf-deep <zotero_key>    # 完整三阶段精读
-/pf-paper <zotero_key>   # 快速摘要
+/pf-deep <zotero_key>    # 完整三阶段精读（需要 AI 理解论文）
+/pf-paper <zotero_key>   # 快速摘要（需要 AI 理解论文）
+/pf-sync                 # 同步 Zotero（Agent 帮你检查并执行）
+/pf-ocr                  # 运行 OCR（Agent 帮你检查队列并执行）
+/pf-status               # 查看状态（Agent 帮你解读诊断结果）
+```
 
-# 备选：直接调用 worker 脚本（需要先运行 paperforge paths --json 获取路径）
-python <resolved_worker_script> --vault . sync
+> **双模式说明**：`/pf-sync`、`/pf-ocr`、`/pf-status` 与 `paperforge sync/ocr/status` 是同一命令的两种调用方式。你可以在终端直接运行 CLI，也可以在 OpenCode 中使用 `/pf-*` 让 Agent 帮你检查前置条件并解读输出。
 python <resolved_worker_script> --vault . ocr
 python <resolved_worker_script> --vault . status
 ```
