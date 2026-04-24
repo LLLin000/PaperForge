@@ -467,6 +467,40 @@ Old commands remain as backward-compatible aliases in `cli.py` but are deprecate
 
 ---
 
+### ADR-011: Zotero Path Normalization Strategy
+
+**Status:** Accepted  
+**Phase:** 11 (Path Normalization & Architecture Hardening)  
+**Context:** Better BibTeX (BBT) exports attachment paths in three different formats depending on export settings and platform: absolute Windows paths (`D:\Zotero\storage\KEY\file.pdf`), `storage:` prefixed paths (`storage:KEY/file.pdf`), and bare relative paths (`KEY/file.pdf`). PaperForge needs to normalize these to a single internal representation and generate valid Obsidian wikilinks that work across Windows and macOS/Linux. Additionally, users may keep their Zotero data directory outside the Obsidian vault, requiring junction/symlink resolution.  
+
+**Decision:** Implement a three-stage normalization pipeline with explicit decisions for each ambiguity:
+
+1. **D-01 — Normalize all paths to `storage:KEY/filename.pdf`:** `_normalize_attachment_path()` handles all three BBT formats and converts them to a unified `storage:` representation with forward slashes. Absolute paths outside Zotero storage get an `absolute:` prefix for explicit handling.
+
+2. **D-02 — Hybrid main PDF selection:** `_identify_main_pdf()` uses a three-priority strategy: (1) attachment with `title == "PDF"`, (2) largest file by size (or shortest title if sizes are equal/unavailable), (3) first PDF in the list. All other PDFs become `supplementary`.
+
+3. **D-03 — Store raw BBT path for debugging:** Every attachment carries `bbt_path_raw` preserving the original export string, enabling diagnosis when normalization produces unexpected results.
+
+4. **D-04 — Extract 8-character storage key:** `zotero_storage_key` is extracted from absolute paths (`.../storage/8CHARKEY/...`) or `storage:8CHARKEY/...` prefix. This key is used for OCR directory naming and cross-referencing.
+
+5. **D-05 — Resolve junctions before computing relative paths:** `absolutize_vault_path()` gains a `resolve_junction=True` parameter. When enabled, Windows junctions/symlinks in the path are resolved to their targets before `relative_to(vault)` is computed, ensuring wikilinks point to the true file location.
+
+6. **D-06 — Track path errors explicitly:** A `path_error` frontmatter field (`not_found`, `invalid`, `permission_denied`) is set when PDF resolution fails. `paperforge repair --fix-paths` can re-run normalization and clear the error if the issue is resolved.
+
+7. **D-07 — Doctor detects Zotero location and recommends junction:** `paperforge doctor` checks whether Zotero is inside the vault, outside with a junction, or missing. When outside without junction, it prints the exact `mklink /J` command needed.
+
+8. **D-08 — Wikilinks use forward slashes exclusively:** All generated `pdf_path` values use `[[relative/path/file.pdf]]` format with `/` separators, even on Windows. `Path.as_posix()` is used instead of string replacement for robustness.
+
+**Consequences:**
+- (+) All real-world BBT export formats are handled without user configuration changes.
+- (+) Wikilinks are vault-relative and work on all platforms.
+- (+) Junctions are transparently resolved; users don't need to know the real Zotero data dir path.
+- (+) Path errors are visible, diagnosable, and auto-repairable.
+- (-) `storage:` prefix semantics are overloaded: it means "relative to Zotero data dir" in `pdf_resolver.py`, but the actual Zotero structure has an intermediate `storage/` directory. This requires `zotero_dir` configuration to point to the correct level.
+- (-) One extra frontmatter field (`path_error`) adds noise to library-records; it is omitted when empty.
+
+---
+
 ## Extension Points
 
 ### Adding a New CLI Command
@@ -556,7 +590,7 @@ The current implementation targets **OpenCode Agent** (`.opencode/skills/` and `
 - Installation instructions: [`docs/INSTALLATION.md`](INSTALLATION.md)
 - Command reference: [`docs/COMMANDS.md`](COMMANDS.md)
 - Migration guide: [`docs/MIGRATION-v1.2.md`](MIGRATION-v1.2.md)
-- Requirements: [`.planning/REQUIREMENTS-v1.2.md`](../.planning/REQUIREMENTS-v1.2.md)
+- Requirements: [`.planning/REQUIREMENTS.md`](../.planning/REQUIREMENTS.md)
 
 ---
 

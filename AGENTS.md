@@ -204,7 +204,51 @@ Zotero 添加文献
 
 ---
 
-## 6. Frontmatter 字段参考
+## 6. Path Resolution（路径解析）
+
+PaperForge 支持三种 Better BibTeX 导出路径格式，并统一转换为 Obsidian wikilink：
+
+### 支持的 BBT 路径格式
+
+| 格式 | 示例 | 处理方式 |
+|------|------|----------|
+| **Absolute Windows** | `D:\Zotero\storage\KEY\file.pdf` | 提取 8 位 KEY，转换为 `storage:KEY/file.pdf` |
+| **storage: prefix** | `storage:KEY/file.pdf` | 直接透传，仅规范化斜杠 |
+| **Bare relative** | `KEY/file.pdf` | 自动添加 `storage:` 前缀 |
+
+### Wikilink 生成规则
+
+- 所有 PDF 路径在 library-record 中存储为 **Obsidian wikilink** 格式：`[[relative/path/to/file.pdf]]`
+- 使用正斜杠 `/`（即使 Windows 系统）
+- 支持中文文件名，无需转义
+- 示例：`[[99_System/Zotero/storage/KEY/中文论文.pdf]]`
+
+### Junction / Symlink 设置
+
+如果 Zotero 数据目录在 Vault 外部，需创建 junction：
+
+```powershell
+# 以管理员身份运行 PowerShell
+New-Item -ItemType Junction -Path "C:\你的Vault\99_System\Zotero" -Target "C:\Users\用户名\Zotero"
+```
+
+或 CMD：
+
+```cmd
+mklink /J "C:\你的Vault\99_System\Zotero" "C:\Users\用户名\Zotero"
+```
+
+运行 `paperforge doctor` 会自动检测 Zotero 位置并推荐正确的 junction 命令。
+
+### 多附件处理
+
+当一篇文献有多个 PDF 附件时：
+- **Main PDF**：title="PDF" 的附件，或最大文件，或第一个 PDF
+- **Supplementary**：其他 PDF 附件列表，以 wikilink 数组形式存储
+
+---
+
+## 7. Frontmatter 字段参考
 
 ### Library Record（`library-records/<domain>/<key>.md`）
 
@@ -219,13 +263,20 @@ year: 2024
 doi: "10.xxxx/xxxxx"
 collection_path: "子分类"        # Zotero 子收藏夹路径
 has_pdf: true                    # 是否有 PDF 附件（自动生成）
-pdf_path: "<system_dir>/Zotero/..." # PDF 相对路径（自动生成）
-fulltext_md_path: "<system_dir>/PaperForge/ocr/..."
+pdf_path: "[[99_System/Zotero/storage/KEY/文件名.pdf]]"  # Wikilink 格式
+bbt_path_raw: "D:\\Zotero\\storage\\KEY\\文件名.pdf"     # 原始 BBT 路径（调试用）
+zotero_storage_key: "KEY"        # 8 位 Zotero storage key
+attachment_count: 2              # 附件总数
+supplementary:                   # 其他 PDF 附件（wikilink 列表）
+  - "[[99_System/Zotero/storage/KEY/supp1.pdf]]"
+  - "[[99_System/Zotero/storage/KEY/supp2.pdf]]"
+fulltext_md_path: "[[99_System/PaperForge/ocr/KEY/fulltext.md]]"
 recommend_analyze: true          # 系统推荐精读（有 PDF 时自动设为 true）
 analyze: false                   # 【用户控制】是否生成精读？设为 true 触发
 do_ocr: true                     # 【用户控制】是否运行 OCR？设为 true 触发
 ocr_status: "done"               # OCR 状态（pending/processing/done/failed）
 deep_reading_status: "pending"   # 精读状态（pending/done）
+path_error: ""                   # 路径错误（not_found/invalid/permission_denied）
 analysis_note: ""                # 预留字段
 ---
 ```
@@ -252,7 +303,7 @@ tags:
   - 文献阅读
   - 子分类
 keywords: ["keyword1", "keyword2"]
-pdf_link: "<system_dir>/Zotero/..."
+pdf_link: "[[99_System/Zotero/storage/KEY/文件名.pdf]]"
 ---
 ```
 

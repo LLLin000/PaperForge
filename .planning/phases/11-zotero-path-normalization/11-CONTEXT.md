@@ -72,7 +72,7 @@ Out of scope:
 
 ### Wikilink Standard
 - **D-08:** Obsidian wikilink format: `[[relative/path/with/slashes]]`
-  - No Markdown standard links `[text](path)`
+  - No Markdown standard links — use `[[wikilink]]` instead of `label → url` format
   - Forward slashes `/` even on Windows
   - Path relative to Vault root
 - Rationale: Enables Obsidian graph view and backlink functionality
