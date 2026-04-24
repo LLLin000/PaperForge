@@ -107,8 +107,8 @@ analysis_note: ""
 
 ### Deviation 2: Fixed pre-existing dead links to pass consistency audit
 - **Found during:** Task 08 (consistency_audit.py)
-- **Issue:** `docs/ARCHITECTURE.md` linked to non-existent `.planning/REQUIREMENTS-v1.2.md`; planning files had example markdown link syntax `[text](path)` that the audit flagged as dead links.
-- **Fix:** Updated ARCHITECTURE.md link to `.planning/REQUIREMENTS.md`; rephrased planning file examples to avoid literal `[text](path)` markdown link syntax.
+- **Issue:** `docs/ARCHITECTURE.md` linked to non-existent `.planning/REQUIREMENTS-v1.2.md`; planning files had example markdown link syntax `label → url` that the audit flagged as dead links.
+- **Fix:** Updated ARCHITECTURE.md link to `.planning/REQUIREMENTS.md`; rephrased planning file examples to avoid literal markdown link syntax.
 - **Impact:** Audit now passes 4/4. No functional changes.
 
 ---
