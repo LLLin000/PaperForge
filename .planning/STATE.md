@@ -10,19 +10,19 @@ See: `.planning/PROJECT.md` (updated 2026-04-24)
 
 ## Current Position
 
-Phase: 11 (context gathered)
-Plan: —
-Status: Phase 11 discussion complete, ready for planning
-Last activity: 2026-04-24 — Phase 11 context captured (6 gray areas, 8 decisions)
+Phase: 11 (planned)
+Plan: 11-PLAN.md (8 tasks, 4 waves)
+Status: Phase 11 planning complete, ready for execution
+Last activity: 2026-04-24 — Phase 11 plan created (8 tasks covering ZPATH-01/02/03 + SYS-08)
 
 ## Next Action
 
-Phase 11: Zotero Path Normalization — Context gathered. Ready for planning.
+Phase 11: Zotero Path Normalization — Plan ready. Execute now?
 
 Options:
-- `/gsd-plan-phase 11` — create execution plan
-- `/gsd-research-phase 11` — research implementation patterns first
-- Review/edit `.planning/phases/11-zotero-path-normalization/11-CONTEXT.md`
+- `/gsd-execute-phase 11` — start execution (Task 01-08)
+- Review/edit `.planning/phases/11-zotero-path-normalization/11-PLAN.md`
+- `/gsd-discuss-phase 11` — revisit decisions before execution
 
 ## Phase 10 Decisions (Locked)
 
