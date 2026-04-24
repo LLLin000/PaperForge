@@ -6,18 +6,21 @@ See: `.planning/PROJECT.md` (updated 2026-04-24)
 
 **Core value:** A new user can install PaperForge, configure their own vault paths and PaddleOCR credentials, then run the full literature pipeline with copy-pasteable commands that diagnose failures clearly.
 
-**Current focus:** Milestone v1.3 — Path Normalization & Architecture Hardening (Phase 12 IN PROGRESS)
+**Current focus:** Milestone v1.3 — COMPLETE
 
 ## Current Position
 
-Phase: 12 (COMPLETE)
-Plan: 12-PLAN.md (11 tasks, 5 waves)
-Status: All tasks completed, 203 tests passing, 0 failures
-Last activity: 2026-04-24 — Phase 12 execution complete (498a9ed, ba8a08b, f54fe8a, 87251db)
+Phase: 12 (COMPLETE)  
+Milestone: v1.3 (COMPLETE)  
+Status: All phases done, 203 tests passing, 0 failures  
+Last activity: 2026-04-24 — Milestone v1.3 completion
 
 ## Next Action
 
-Phase 13: TBD — Review ROADMAP.md for next phase
+Milestone v1.3 complete. Next steps:
+- `/gsd-new-milestone` to start v1.4
+- Review `.planning/ROADMAP.md` for candidate features
+- Or end session
 
 Options:
 - `/gsd-execute-phase 13` — begin Phase 13 execution

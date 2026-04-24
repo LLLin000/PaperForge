@@ -162,3 +162,42 @@
 
 ---
 *Milestone v1.2 initiated: 2026-04-24*
+
+---
+
+## Milestone v1.3: Path Normalization & Architecture Hardening (2026-04-24)
+
+**Goal:** Fix real-world Zotero path handling, clean up module architecture, and close gaps discovered during v1.2 execution.
+
+**Completed:** 2026-04-24
+
+### What Shipped
+
+| Phase | Name | Goal |
+|-------|------|------|
+| 11 | Zotero Path Normalization | Parse 3 BBT formats, generate wikilinks, multi-attachment support |
+| 12 | Architecture Cleanup | Eliminate module boundary leaks (pipeline/ → paperforge/worker/) |
+
+### Key Deliverables
+
+- `_normalize_attachment_path()` — unified BBT path parsing (absolute Windows, storage: prefix, bare relative)
+- `_identify_main_pdf()` — hybrid strategy for main PDF vs supplementary
+- `obsidian_wikilink_for_pdf()` — standard `[[relative/path]]` wikilink generation
+- `path_error` frontmatter field — granular error states (not_found/invalid/permission_denied)
+- `paperforge doctor` Path Resolution checks — junction detection, path validation
+- `paperforge repair --fix-paths` — automatic path error repair
+- `paperforge/worker/` package — 7 focused modules from 4041-line monolith
+- `paperforge/skills/literature-qa/` — migrated skills with subdirectory structure
+
+### Verification
+
+- 203 tests passed, 2 skipped, 0 failed
+- Consistency audit 4/4 passing
+- No `pipeline.worker.scripts` or `skills.literature_qa` imports remain
+
+### Archive
+
+`.planning/milestones/v1.3.md`
+
+---
+*Milestone v1.3 completed: 2026-04-24*

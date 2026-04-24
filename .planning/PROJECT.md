@@ -6,17 +6,25 @@ PaperForge Lite is a local Obsidian + Zotero literature workflow for medical res
 
 This is a brownfield release-hardening project for `D:\L\Med\Research\99_System\LiteraturePipeline\github-release`, informed by the fuller local implementation under `D:\L\Med\Research\99_System\LiteraturePipeline` and the production Obsidian Base views under `D:\L\Med\Research\05_Bases`.
 
-## Current Milestone: v1.3 Path Normalization & Architecture Hardening
+## Completed Milestone: v1.3 Path Normalization & Architecture Hardening
 
-**Goal:** Fix real-world Zotero path handling, clean up module architecture, and close gaps discovered during v1.2 execution.
+**Status:** COMPLETE (2026-04-24)  
+**Archive:** `.planning/milestones/v1.3.md`
 
-**Target features:**
-- Zotero attachment path normalization (absolute paths → Vault-relative wikilinks)
-- Multi-attachment support (main PDF + supplementary materials)
-- Pipeline module boundary cleanup (`pipeline/` → `paperforge/`)
+**Delivered:**
+- Zotero attachment path normalization (3 BBT formats → Vault-relative wikilinks)
+- Multi-attachment support (main PDF + supplementary with hybrid strategy)
+- Pipeline module boundary cleanup (`pipeline/` → `paperforge/worker/` as 7 modules)
 - Skill scripts integration (`skills/` → `paperforge/skills/`)
-- Test dead zone elimination (fix/remove broken tests)
-- Consistency audit CI integration
+- Test dead zone elimination (203 passed, 2 skipped, 0 failed)
+- Enhanced `paperforge doctor` with Path Resolution checks
+- `paperforge repair --fix-paths` for automatic path error repair
+
+---
+
+## Next Milestone: v1.4 (TBD)
+
+See `.planning/ROADMAP.md` for candidate features.
 
 ## Core Value
 
@@ -42,13 +50,13 @@ A new user can install PaperForge, configure their own vault paths and PaddleOCR
 - ✓ v1.2 unified agent commands under `/pf-*` namespace and simplified CLI (`paperforge sync`, `paperforge ocr`).
 - ✓ v1.2 documented architecture (10 ADRs), migration guide, and established consistency audit.
 
-### Active
+### v1.3 Completed (2026-04-24)
 
-- [ ] Zotero attachment path normalization (absolute paths, multi-attachments, wikilinks)
-- [ ] Pipeline module boundary cleanup (`pipeline/` → `paperforge/`)
-- [ ] Skill scripts integration (`skills/` → `paperforge/skills/`)
-- [ ] Test dead zone elimination (fix/remove broken tests)
-- [ ] Consistency audit CI integration (pre-commit / GitHub Action)
+- ✓ Zotero attachment path normalization (absolute paths, multi-attachments, wikilinks) — Phase 11
+- ✓ Pipeline module boundary cleanup (`pipeline/` → `paperforge/worker/` as 7 modules) — Phase 12
+- ✓ Skill scripts integration (`skills/` → `paperforge/skills/`) — Phase 12
+- ✓ Test dead zone elimination (203 passed, 0 failed) — Phase 12
+- [ ] Consistency audit CI integration (pre-commit / GitHub Action) — deferred to future
 
 ### Out of Scope
 
