@@ -100,4 +100,4 @@ class TestClassifyError:
         state, suggestion = classify_error(exc, None)
         assert state == "error"
         assert "something weird" in suggestion
-        assert "doctor" in suggestion.lower()
+        assert "diagnose" in suggestion.lower()

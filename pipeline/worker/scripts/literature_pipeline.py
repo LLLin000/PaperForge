@@ -745,6 +745,9 @@ def load_export_rows(path: Path) -> list[dict]:
                 if not isinstance(attachment, dict):
                     continue
                 attachment_path = attachment.get('path', '')
+                # Normalize bare Zotero storage-relative paths to storage: prefix
+                if attachment_path and not attachment_path.startswith('storage:') and not Path(attachment_path).is_absolute():
+                    attachment_path = 'storage:' + attachment_path
                 content_type = 'application/pdf' if str(attachment_path).lower().endswith('.pdf') else ''
                 attachments.append({'path': attachment_path, 'contentType': content_type})
             rows.append({'key': item.get('key') or item.get('itemKey', ''), 'title': item.get('title', ''), 'authors': extract_authors(item), 'abstract': item.get('abstractNote', ''), 'journal': item.get('publicationTitle', ''), 'year': _extract_year(item.get('date', '')), 'date': item.get('date', ''), 'doi': item.get('DOI', ''), 'pmid': item.get('PMID', ''), 'collections': resolve_item_collection_paths(item, collection_lookup), 'attachments': attachments})
