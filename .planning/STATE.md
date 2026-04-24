@@ -6,98 +6,36 @@ See: `.planning/PROJECT.md` (updated 2026-04-24)
 
 **Core value:** A new user can install PaperForge, configure their own vault paths and PaddleOCR credentials, then run the full literature pipeline with copy-pasteable commands that diagnose failures clearly.
 
-**Current focus:** Milestone v1.2 — Systematization & Cohesion
+**Current focus:** Milestone v1.3 — Path Normalization & Architecture Hardening
 
 ## Current Position
 
-Phase: 10 (done)
-Milestone: v1.2
-Status: SHIPPED 2026-04-24
-Last activity: 2026-04-24 — Milestone v1.2 completion (archive, tag, commit)
+Phase: Not started (defining requirements)
+Plan: —
+Status: Milestone v1.3 initiated
+Last activity: 2026-04-24 — Milestone v1.3 planning started
 
 ## Next Action
 
-Milestone v1.2 is complete and tagged. Ready to plan v1.3.
+Milestone v1.3 planning in progress.
 
 Options:
-- `/gsd-new-milestone` — start v1.3 planning
-- `/gsd-status` — check overall project status
-- Test suite: 178 passed, 2 skipped, 0 failed
-- All documentation artifacts present
-- STATE.md and ROADMAP.md updated
+- `/gsd-discuss-phase 11` — start Phase 11 discussion
+- `/gsd-plan-phase 11` — plan Phase 11 directly
 
-Phase 10 scope:
-- Task 1: ARCHITECTURE.md — system architecture + ADR records
-- Task 2: MIGRATION-v1.2.md — complete migration guide
-- Task 3: docs/COMMANDS.md — master command reference (Agent ↔ CLI mapping)
-- Task 4: Unify command/*.md template
-- Task 5: Consistency audit scripts
-- Task 6: Manual consistency checklist
-- Task 7: Verification and state update
+## Phase 10 Decisions (Locked)
 
-Phase 9 (done):
-- Task 0: Rename Python package (`paperforge` → `paperforge`) ✅
-- Task 1: Create shared command modules ✅
-- Task 2: Refactor CLI to use command modules ✅
-- Task 3: Create new `/pf-*` agent command docs ✅
-- Task 4: Remove old `/LD-*` and `/lp-*` command docs ✅
-- Task 5: Update AGENTS.md and tests ✅
-- Task 6: Verification and cleanup ✅
-
-## Phase 6 Decisions (Locked)
-
-- `paperforge paths --json` outputs: `vault`, `worker_script`, `ld_deep_script` (not `literature_script`)
-- Canonical PaddleOCR env var: `PADDLEOCR_API_TOKEN` (must be consistent across setup/worker/doctor)
-- Doctor validates all `*.json` exports, not only `library.json`
-- Doctor L2 distinguishes HTTP 405 from bad URL with actionable message
-- VaultStep Input pre-filled from `--vault` argument
-- `python -m paperforge` is documented fallback when `paperforge` not registered
+- Unified command modules in `paperforge/commands/`
+- Aggressive migration: no aliases for old commands
+- `paperforge sync` combines selection-sync + index-refresh
+- `paperforge ocr` merges run + diagnose with `--diagnose` flag
 
 ## Open Questions
 
-- HTTP 405 error message wording (agent's discretion per CONTEXT.md)
-- ProgressBar stall if prefilled vault doesn't resolve it
+- How to handle multiple attachments per Zotero item (main PDF vs supplementary)
+- Whether to archive `pipeline/` or merge into `paperforge/`
+- CI platform choice (GitHub Actions vs pre-commit hooks)
 
 ---
 *Initialized: 2026-04-23*
-*Last updated: 2026-04-24 (Milestone v1.2 initiated)*
-
-## Previous Milestone Summary
-
-Milestone v1.0 completed Phases 1-5:
-
-| Phase | Status | Summary |
-|------|--------|---------|
-| 1 | done | Shared config resolver, `paperforge` launcher, worker/Agent resolver integration, stable command docs |
-| 2 | done | PDF path resolver, OCR failure classification, OCR doctor, selection-sync PDF reporting |
-| 3 | done | Config-aware Base generation and `base-refresh` |
-| 4 | done | Deep-reading queue states, doctor command, AGENTS/README updates |
-| 5 | done | Fixture smoke test suite and release verification |
-| 6 | done | Setup/CLI/docs consistency — field names, env vars, export validation, HTTP 405 handling, vault prefill |
-| 7 | done | Zotero PDF, metadata, and state repair — OCR meta validation, three-way divergence repair command, PDF resolver tests |
-| 8 | done | Deep helper deployment and sandbox regression gate — importability, fixtures, smoke tests, rollback |
-
-Milestone v1.1 (Sandbox Onboarding Hardening) completed as part of Phases 6-8.
-
-## Decisions Logged
-
-- **2026-04-23:** Config precedence locked as: explicit overrides > env > JSON nested > JSON top-level > defaults.
-- **2026-04-23:** `paperforge_paths` returns a stable user-facing path inventory; v1.1 must make that inventory match deployed installation layout.
-- **2026-04-23:** CLI returns int exit codes for testability; worker functions imported at module level for patchability.
-- **2026-04-23:** `load_simple_env` loads vault root `.env` and PaperForge `.env` before worker dispatch.
-- **2026-04-23:** `paperforge ocr doctor` uses tiered diagnostics with live provider checks optional.
-- **2026-04-23:** v1.1 will use the sandbox first-time-user simulation as a release gate before claiming setup/onboarding reliability.
-- **2026-04-24:** v1.2 will unify agent commands under `/pf-*` namespace and simplify CLI commands for cohesion.
-- **2026-04-24:** Use importlib.util with sys.modules pre-registration for Python 3.14 dataclass compatibility.
-- **2026-04-24:** Generate deterministic OCR fixtures once and commit; never regenerate in CI.
-- **2026-04-24:** Rollback in prepare_deep_reading tracks written files and restores original note text, not full filesystem snapshot.
-- **2026-04-24:** Unify agent commands under `/pf-*` namespace; deprecate `/LD-*` and `/lp-*` prefixes.
-- **2026-04-24:** Simplify CLI by combining `selection-sync` + `index-refresh` into `paperforge sync`.
-- **2026-04-24:** Aggressive migration strategy: old commands (`/LD-*`, `/lp-*`) removed entirely with no aliases.
-- **2026-04-24:** `paperforge ocr` merges `ocr run` + `ocr doctor`; `--diagnose` for standalone diagnostics.
-- **2026-04-24:** Unified command modules in `paperforge/commands/` (formerly `paperforge/commands/`).
-- **2026-04-24:** Rename Python package from `paperforge` to `paperforge` for naming consistency.
-- **2026-04-24:** Architecture docs (Phase 10): Full version for maintainers with ADR-style design decision records.
-- **2026-04-24:** Migration guide (Phase 10): Complete coverage of all v1.1 → v1.2 breaking changes including rollback instructions.
-- **2026-04-24:** Command docs (Phase 10): Layered structure with docs/COMMANDS.md as master reference + command/*.md as per-command detailed docs.
-- **2026-04-24:** Consistency audit (Phase 10): Mixed approach — automated scripts for hard constraints + manual checklist for soft constraints.
+*Last updated: 2026-04-24 (Milestone v1.3 initiated)*

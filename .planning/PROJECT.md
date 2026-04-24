@@ -6,15 +6,17 @@ PaperForge Lite is a local Obsidian + Zotero literature workflow for medical res
 
 This is a brownfield release-hardening project for `D:\L\Med\Research\99_System\LiteraturePipeline\github-release`, informed by the fuller local implementation under `D:\L\Med\Research\99_System\LiteraturePipeline` and the production Obsidian Base views under `D:\L\Med\Research\05_Bases`.
 
-## Current Milestone: v1.3 (Next)
+## Current Milestone: v1.3 Path Normalization & Architecture Hardening
 
-**Goal:** Close remaining gaps from v1.1-v1.2, improve performance, and prepare for potential plugin architecture.
+**Goal:** Fix real-world Zotero path handling, clean up module architecture, and close gaps discovered during v1.2 execution.
 
 **Target features:**
-- BBT bare `KEY/KEY.pdf` path normalization (close ZPATH partial requirements)
-- Repair scan performance optimization (O(n*m) → O(n))
-- OCR provider abstraction (beyond PaddleOCR)
-- Consider TypeScript Obsidian plugin architecture
+- Zotero attachment path normalization (absolute paths → Vault-relative wikilinks)
+- Multi-attachment support (main PDF + supplementary materials)
+- Pipeline module boundary cleanup (`pipeline/` → `paperforge/`)
+- Skill scripts integration (`skills/` → `paperforge/skills/`)
+- Test dead zone elimination (fix/remove broken tests)
+- Consistency audit CI integration
 
 ## Core Value
 
@@ -42,10 +44,11 @@ A new user can install PaperForge, configure their own vault paths and PaddleOCR
 
 ### Active
 
-- [ ] BBT bare `KEY/KEY.pdf` path normalization (ZPATH-01/02/03 currently Partial)
-- [ ] Repair scan performance optimization (O(n*m) → O(n))
-- [ ] OCR provider abstraction (beyond PaddleOCR)
-- [ ] TypeScript Obsidian plugin architecture research
+- [ ] Zotero attachment path normalization (absolute paths, multi-attachments, wikilinks)
+- [ ] Pipeline module boundary cleanup (`pipeline/` → `paperforge/`)
+- [ ] Skill scripts integration (`skills/` → `paperforge/skills/`)
+- [ ] Test dead zone elimination (fix/remove broken tests)
+- [ ] Consistency audit CI integration (pre-commit / GitHub Action)
 
 ### Out of Scope
 
@@ -79,7 +82,7 @@ The v1.1 milestone was completed after a manual sandbox audit from `tests/sandbo
 - Consistency audit (4/4 passing)
 - 178 tests passing, 0 failures
 
-**v1.3 focus:** Close remaining gaps (BBT normalization, repair performance, OCR abstraction), research Obsidian plugin architecture.
+**v1.3 focus:** Fix real-world Zotero path handling (absolute Windows paths in BBT JSON → Vault-relative wikilinks), clean up module architecture (`pipeline/` and `skills/` integration), eliminate test dead zones, establish CI-ready consistency audit.
 
 ## Constraints
 
@@ -124,4 +127,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state.
 
 ---
-*Last updated: 2026-04-24 — v1.2 shipped (systematization complete: unified commands, simplified CLI, architecture docs)*
+*Last updated: 2026-04-24 — v1.3 initiated (path normalization & architecture hardening)*
