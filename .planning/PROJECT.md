@@ -2,9 +2,9 @@
 
 ## What This Is
 
-PaperForge Lite is a local Obsidian + Zotero literature workflow for medical researchers. It takes a new user from registration/configuration through Better BibTeX export, Obsidian Base queue control, PaddleOCR processing, formal literature note generation, and `/pf-deep` deep reading without requiring an agent to manually inspect paths and rewrite commands.
+PaperForge Lite is a polished local Obsidian + Zotero literature workflow for medical researchers. It takes a new user from registration/configuration through Better BibTeX export, Obsidian Base queue control, PaddleOCR processing, formal literature note generation, and `/pf-deep` deep reading. The UX is smooth, code is clean, and failures are diagnosed clearly.
 
-This is a brownfield release-hardening project for `D:\L\Med\Research\99_System\LiteraturePipeline\github-release`, informed by the fuller local implementation under `D:\L\Med\Research\99_System\LiteraturePipeline` and the production Obsidian Base views under `D:\L\Med\Research\05_Bases`.
+v1.4 focuses on eliminating accumulated technical debt (~1,610 lines of code duplication, ad-hoc logging) and smoothing the user-facing workflow friction points identified in a comprehensive codebase audit.
 
 ## Completed Milestone: v1.3 Path Normalization & Architecture Hardening
 
@@ -22,9 +22,27 @@ This is a brownfield release-hardening project for `D:\L\Med\Research\99_System\
 
 ---
 
-## Next Milestone: v1.4 (TBD)
+## Current Milestone: v1.4 Code Health & UX Hardening
 
-See `.planning/ROADMAP.md` for candidate features.
+**Goal:** Eliminate all code duplication, add formal observability, and streamline the end-to-end user workflow.
+
+**Target features (User-facing):**
+- Simplify OCR → deep-reading workflow (reduce manual frontmatter-editing steps)
+- Add progress indicators for long-running operations (large-file OCR)
+- Improve error visibility on OCR failure (structured log output)
+- Unify Agent/CLI naming mental model (audit `/pf-*` vs `paperforge *` boundaries)
+- Fix README rendering artifacts (legacy code snippet on line 102)
+
+**Target features (Maintainer-facing):**
+- Extract `worker/_utils.py` shared module (eliminate ~1,610 lines of duplicated code)
+- Replace `print()` with level-based structured `logging` module
+- Merge duplicate deep-reading queue scanning implementations
+- Add retry/backoff/rate-limiting for OCR worker
+- Clean up dead code and unused imports across all 7 workers
+- Add pre-commit hook with consistency audit
+- Add `CONTRIBUTING.md`, `CHANGELOG.md`
+- Add E2E integration tests + setup_wizard tests
+- Cross-reference chart-reading guides in agent prompt
 
 ## Core Value
 
@@ -92,6 +110,8 @@ The v1.1 milestone was completed after a manual sandbox audit from `tests/sandbo
 
 **v1.3 focus:** Fix real-world Zotero path handling (absolute Windows paths in BBT JSON → Vault-relative wikilinks), clean up module architecture (`pipeline/` and `skills/` integration), eliminate test dead zones, establish CI-ready consistency audit.
 
+**v1.4 focus:** A comprehensive codebase audit (2026-04-25) revealed 1,610 lines of duplicated code across 7 worker modules, ad-hoc `print()`-based logging, duplicate deep-reading queue implementations, and user-facing UX friction. v1.4 will extract a shared utilities module, add structured logging, merge duplicate implementations, add pre-commit hooks, and streamline the OCR→deep-reading workflow.
+
 ## Constraints
 
 - **Local-first:** Must work in a user's Obsidian vault without a daemon or cloud service.
@@ -116,6 +136,7 @@ The v1.1 milestone was completed after a manual sandbox audit from `tests/sandbo
 | Aggressive migration (no aliases) | Clean break reduces maintenance burden; migration guide handles transition | ✓ Implemented v1.2 |
 | Command modules in `paperforge/commands/` | Shared logic between CLI and Agent layers reduces duplication | ✓ Implemented v1.2 |
 | Package rename to `paperforge` | Naming consistency with CLI brand | ✓ Implemented v1.2 |
+| Extract shared worker utilities to `_utils.py` | ~1,610 lines of duplicate utility code exist across 7 worker modules; single source of truth reduces maintenance burden | — Pending |
 
 ## Evolution
 
@@ -134,5 +155,4 @@ This document evolves at phase transitions and milestone boundaries.
 3. Audit Out of Scope.
 4. Update Context with current state.
 
----
-*Last updated: 2026-04-24 — v1.3 initiated (path normalization & architecture hardening)*
+---\n*Last updated: 2026-04-25 — Milestone v1.4 started (code health & UX hardening)*
