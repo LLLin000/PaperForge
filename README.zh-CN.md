@@ -18,6 +18,21 @@ paperforge setup
 
 ---
 
+### PaperForge 能为你构建什么
+
+PaperForge 把你的 Zotero 文献库转化为**AI 可直接读取的知识库**：
+
+| 层级 | 产出物 | 用途 |
+|------|--------|------|
+| **文献索引** | 带结构化 frontmatter 的正式笔记（标题/作者/期刊/DOI/PMID/标签/摘要） | 语义搜索、脱离 Zotero 浏览 |
+| **全文语料** | OCR 提取的纯文本 markdown（`fulltext.md`） | 分块 → embedding → RAG，或直接喂给 LLM |
+| **图表数据库** | Figure-map（每张图表 = 图片链接 + caption） | 多模态 RAG："展示图 3 并解释" |
+| **专家分析** | 结构化精读笔记（Keshav 三阶段 + 图表审查 + 批判评估） | LLM 推理的 ground truth、文献综述、系统评价 |
+
+**这不只是一个笔记工具。** 你的 Vault 会变成一个可查询的知识库，任何 AI 工具（OpenCode、Claude Code、Cursor，或通过 qmd/LlamaIndex 搭建的自定义 RAG 管道）都可以读取、搜索和推理。
+
+---
+
 ## 完整工作流程
 
 ```

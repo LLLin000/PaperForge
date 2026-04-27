@@ -18,6 +18,21 @@ paperforge setup
 
 ---
 
+### What PaperForge Builds For You
+
+PaperForge turns your Zotero library into an **AI-ready literature knowledge base**:
+
+| Layer | What you get | How to use it |
+|-------|-------------|---------------|
+| **Literature index** | Formal notes with structured frontmatter (title, authors, journal, DOI, PMID, tags, abstract) | Semantic search, Zotero-independent browsing |
+| **Full-text corpus** | Clean OCR-extracted markdown (`fulltext.md`) | Chunk → embed → RAG, or feed directly to LLMs |
+| **Figure database** | Figure-map with image links + captions for every chart and table | Multimodal RAG: "show me Figure 3 + explain" |
+| **Expert analysis** | Structured deep-reading notes with Keshav 3-pass analysis, chart review, critical evaluation | LLM reasoning ground truth, literature synthesis, systematic reviews |
+
+**Not just a note-taking tool.** Your vault becomes a queryable knowledge base that any AI tool (OpenCode, Claude Code, Cursor, or custom RAG pipelines with qmd/LlamaIndex) can read, search, and reason over.
+
+---
+
 ## Full Workflow
 
 ```
