@@ -19,6 +19,9 @@ import os
 import sys
 from pathlib import Path
 
+# Logging
+from paperforge.logging_config import configure_logging
+
 # Config / resolver
 from paperforge.config import (
     load_simple_env,
@@ -122,6 +125,11 @@ def build_parser() -> argparse.ArgumentParser:
         metavar="VAULT",
         help="Path to the Obsidian vault root (default: cwd or PAPERFORGE_VAULT env)",
     )
+    parser.add_argument(
+        "--verbose", "-v",
+        action="store_true",
+        help="Enable DEBUG-level diagnostic output on stderr",
+    )
 
     sub = parser.add_subparsers(dest="command", required=True)
 
@@ -167,17 +175,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     # deep-reading
     p_dr = sub.add_parser("deep-reading", help="Check deep-reading queue status")
-    p_dr.add_argument(
-        "--verbose", "-v", action="store_true",
-        help="Show fix instructions for blocked papers"
-    )
 
     # repair
     p_repair = sub.add_parser("repair", help="Repair divergent literature notes")
-    p_repair.add_argument(
-        "--verbose", "-v", action="store_true",
-        help="Show detailed divergence report"
-    )
     p_repair.add_argument(
         "--fix", action="store_true",
         help="Actually apply repairs instead of dry-run"
@@ -279,6 +279,9 @@ def main(argv: list[str] | None = None) -> int:
     args.vault_path = vault
     args.cfg = cfg
     args.paths = paperforge_paths(vault, cfg)
+
+    # Configure logging before command dispatch
+    configure_logging(verbose=getattr(args, "verbose", False))
 
     # -----------------------------------------------------------------------
     # Command dispatch
