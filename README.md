@@ -13,48 +13,48 @@
 
 ## 快速开始（推荐方式）
 
-**PaperForge 提供交互式安装向导，引导你完成全部配置：**
+**一行命令安装：**
 
-```bash
-# 1. 克隆仓库
-git clone https://github.com/LLLin000/PaperForge.git
-cd PaperForge
-
-# 2. 运行向导（交互式，按步骤引导）
-python setup_wizard.py --vault /path/to/your/vault
+```powershell
+pip install git+https://github.com/LLLin000/PaperForge.git
+paperforge setup
 ```
 
-向导会自动完成：
+安装向导会自动完成：
 - 检测 Python 环境和依赖
-- 安装 PaperForge 工具包（`pip install -e .` 由向导自动执行）
 - 配置 Vault 目录结构（可自定义名称）
 - 链接 Zotero 数据目录
 - 检测 Better BibTeX 插件
-- 配置 JSON 自动导出
-- 部署工作流脚本和 Agent 命令
-- 创建 .env 配置文件
+- 配置 PaddleOCR API Key
+- 部署 Agent 命令和精读脚本
+- 创建 `.env` 配置文件
+
+> **Windows 一键安装脚本**（适用于新用户，无需提前安装 Python 知识）：
+> ```powershell
+> powershell -c "iwr -Uri https://raw.githubusercontent.com/LLLin000/PaperForge/master/scripts/install-paperforge.ps1 -OutFile install.ps1; ./install.ps1"
+> paperforge setup
+> ```
 
 ## 功能特性
 
-- **交互式安装向导** — 步骤引导，自动检测，安全验证
+- **交互式安装向导** — `paperforge setup` 步骤引导配置
 - **`/pf-deep`** — 深度精读（Keshav 三阶段阅读法）
-- **自动 OCR 提取** — PaddleOCR-VL API 提取全文和图表
+- **自动 OCR 提取** — PaddleOCR-VL API，自动重试+进度条
 - **图表类型智能识别** — 19 种图表类型自动检测
-- **图表质量审查指南** — 19 种图表类型的专业审查清单
+- **图表质量审查指南** — 19 种图表类型专业审查清单
 - **Zotero 双向同步** — Better BibTeX 自动导出
-- **文献队列管理** — Obsidian Base 集成
-- **结构化日志** — `--verbose`/`-v` 全局参数，stderr 诊断输出，不影响管道 stdout
-- **进度指示** — `tqdm` 进度条 + `--no-progress` 全局参数
-- **自动重试** — tenacity 指数退避，OCR 上传/轮询自动恢复
-- **代码质量栅栏** — pre-commit hooks + ruff 检查 + 重复代码检测
+- **文献队列管理** — Obsidian Base 视图集成
+- **持久轮询** — OCR 上传后自动等待完成，一次命令搞定
+- **结构化日志** — `--verbose`/`-v` 全局参数，stderr 诊断输出
+- **代码质量栅栏** — pre-commit + ruff 检查 + 一致性审计
 - **自动更新** — `paperforge update`
 
 ## 安装要求
 
 - Python 3.10+
-- Zotero + Better BibTeX 插件
+- Zotero + Better BibTeX 插件（配置自动导出 JSON）
 - Obsidian
-- PaddleOCR API Key（安装后配置）
+- PaddleOCR API Key（安装时配置）
 
 ## 目录结构
 
@@ -68,46 +68,54 @@ your-vault/
 │   │   ├── exports/             # Zotero JSON 导出
 │   │   └── ocr/                 # OCR 结果
 │   └── Zotero/                  # Junction 到 Zotero 数据目录
-├── [Agent配置目录]/             # 根据平台和安装配置决定
+├── [Agent配置目录]/             # 根据平台决定
 │   └── skills/
 │       └── literature-qa/
 │           ├── scripts/ld_deep.py
 │           ├── prompt_deep_subagent.md
-│               └── chart-reading/   # 19 种图表阅读指南
+│           └── chart-reading/   # 19 种图表阅读指南
 ├── .env                         # API Key 配置
 ├── paperforge.json              # 版本配置
 └── AGENTS.md                    # 安装后指南
 ```
 
-## 文档
-
-- [安装指南](docs/INSTALLATION.md) — 详细安装步骤
-- [安装后指南](AGENTS.md) — 第一次使用必看
-- [变更日志](CHANGELOG.md) — v1.0~v1.4 版本历史
-- [贡献指南](CONTRIBUTING.md) — 开发环境搭建与代码约定
-- [v1.4 迁移说明](docs/MIGRATION-v1.4.md) — 从 v1.3 升级到 v1.4
-- [设置向导](setup_wizard.py) — 交互式配置工具
-
 ## 核心命令
 
 ```bash
-# PaperForge CLI（在终端中直接运行）
-paperforge status            # 查看状态
-paperforge sync              # 同步 Zotero 文献并生成正式笔记
-paperforge ocr               # 运行 PDF OCR（支持 --verbose, --no-progress）
-paperforge deep-reading      # 查看精读队列（支持 --verbose）
-paperforge --verbose ...     # 全局 --verbose/-v 启用 DEBUG 日志
+# 终端命令
+paperforge setup              # 运行安装向导
+paperforge status             # 查看状态
+paperforge sync               # 同步 Zotero 并生成笔记
+paperforge ocr                # OCR（自动上传+等待+下载）
+paperforge deep-reading       # 查看精读队列
+paperforge doctor             # 诊断配置
+paperforge update             # 检查更新
+paperforge --verbose          # 全局 DEBUG 日志
 
 # Agent 命令（在 OpenCode 中使用）
-/pf-deep <zotero_key>    # 完整三阶段精读（需要 AI 理解论文）
-/pf-paper <zotero_key>   # 快速摘要（需要 AI 理解论文）
-/pf-sync                 # 同步 Zotero（Agent 帮你检查并执行）
-/pf-ocr                  # 运行 OCR（Agent 帮你检查队列并执行）
-/pf-status               # 查看状态（Agent 帮你解读诊断结果）
+/pf-deep <zotero_key>    # 完整三阶段精读
+/pf-paper <zotero_key>   # 快速摘要
+/pf-sync                 # 同步 Zotero
+/pf-ocr                  # 运行 OCR
+/pf-status               # 查看状态
 ```
 
-> **双模式说明**：`/pf-sync`、`/pf-ocr`、`/pf-status` 与 `paperforge sync/ocr/status` 是同一命令的两种调用方式。你可以在终端直接运行 CLI，也可以在 OpenCode 中使用 `/pf-*` 让 Agent 帮你检查前置条件并解读输出。
+## 更新
+
+```bash
+paperforge update
+# 或
+pip install --upgrade git+https://github.com/LLLin000/PaperForge.git
+```
+
+## 文档
+
+- [安装指南](docs/INSTALLATION.md)
+- [安装后指南](AGENTS.md)
+- [变更日志](CHANGELOG.md)
+- [贡献指南](CONTRIBUTING.md)
+- [v1.4 迁移说明](docs/MIGRATION-v1.4.md)
 
 ## License
 
-MIT License — 允许商业使用，需保留版权声明。
+MIT License
