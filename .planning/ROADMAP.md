@@ -63,7 +63,10 @@ Plans:
   2. `paperforge deep-reading` CLI output matches Agent queue scan output exactly
   3. ~50 lines of duplicate queue-scanning logic removed from `ld_deep.py`
   4. No behavioral change to queue filtering: ready/waiting/blocked categories preserved
-**Plans**: TBD
+**Plans**: 1 plan
+
+Plans:
+- [ ] 15-01-PLAN.md — Canonical scan_library_records() in _utils.py; refactor both callers
 
 ---
 
@@ -131,7 +134,7 @@ Plans:
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 13. Logging Foundation | v1.4 | 3/3 | Complete   | 2026-04-27 |
+| 13. Logging Foundation | v1.4 | 3/3 | Complete    | 2026-04-27 |
 | 14. Shared Utils Extraction | v1.4 | 0/0 | Not started | — |
 | 15. Queue Merge | v1.4 | 0/0 | Not started | — |
 | 16. Retry + Progress | v1.4 | 0/0 | Not started | — |
