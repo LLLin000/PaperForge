@@ -310,6 +310,7 @@ def test_paperforge_paths_returns_exact_keys(tmp_path: Path):
         "paperforge",
         "exports",
         "ocr",
+        "zotero_dir",
         "resources",
         "literature",
         "control",

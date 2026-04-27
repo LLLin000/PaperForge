@@ -258,6 +258,10 @@ def paperforge_paths(
     bases = vault / base_dir
     skill_path = vault / skill_dir
 
+    zotero_dir_val = os.environ.get("ZOTERO_DATA_DIR", "").strip()
+    if not zotero_dir_val:
+        zotero_dir_val = str(system / "Zotero")
+
     # worker_script: paperforge worker package (pipeline/ removed in v1.3)
     worker_script = Path(__file__).parent / "worker" / "__init__.py"
     # ld_deep_script: look relative to skill_dir first, then repo paperforge/skills for dev
@@ -278,6 +282,7 @@ def paperforge_paths(
         "paperforge": paperforge,
         "exports": paperforge / "exports",
         "ocr": paperforge / "ocr",
+        "zotero_dir": Path(zotero_dir_val),
         "resources": resources,
         "literature": literature,
         "control": control,
