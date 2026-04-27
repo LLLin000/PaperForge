@@ -10,6 +10,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Iterable
 
+from paperforge.worker._utils import scan_library_records
+
 
 def _load_vault_config(vault: Path) -> dict:
     """Load vault directory configuration — delegates to shared resolver.
@@ -1161,57 +1163,17 @@ def prepare_deep_reading(vault: Path, zotero_key: str, force: bool = False) -> d
 def scan_deep_reading_queue(vault: Path) -> list[dict]:
     """Scan library-records for analyze=true + deep_reading_status!=done entries.
 
-    Returns a list of dicts with keys:
-      - zotero_key, title, domain, analyze, deep_reading_status, ocr_status
+    Thin wrapper around scan_library_records() in _utils.py.
+    Re-exported from _utils.py for backward compatibility.
     """
-    paths = _paperforge_paths(vault)
-    records_root = paths["records"]
-    ocr_root = paths["ocr"]
-    queue: list[dict] = []
-    if not records_root.exists():
-        return queue
-
-    for domain_dir in records_root.iterdir():
-        if not domain_dir.is_dir():
-            continue
-        domain = domain_dir.name
-        for record_path in domain_dir.glob("*.md"):
-            text = record_path.read_text(encoding="utf-8")
-
-            # Extract frontmatter fields
-            zotero_key_match = re.search(r'^zotero_key:\s*(.+)$', text, re.MULTILINE)
-            analyze_match = re.search(r'^analyze:\s*(true|false)$', text, re.MULTILINE)
-            status_match = re.search(r'^deep_reading_status:\s*"?(.*?)"?$', text, re.MULTILINE)
-            title_match = re.search(r'^title:\s*"?(.+?)"?$', text, re.MULTILINE)
-
-            zotero_key = zotero_key_match.group(1).strip().strip('"').strip("'") if zotero_key_match else record_path.stem
-            is_analyze = analyze_match is not None and analyze_match.group(1) == "true"
-            dr_status = status_match.group(1).strip() if status_match else "pending"
-            title = title_match.group(1).strip().strip('"') if title_match else ""
-
-            if not is_analyze or dr_status == "done":
-                continue
-
-            # Check OCR status
-            meta_path = ocr_root / zotero_key / "meta.json"
-            ocr_status = "pending"
-            if meta_path.exists():
-                meta = _read_json(meta_path)
-                ocr_status = str(meta.get("ocr_status", "pending")).strip().lower()
-
-            queue.append({
-                "zotero_key": zotero_key,
-                "domain": domain,
-                "title": title,
-                "deep_reading_status": dr_status,
-                "ocr_status": ocr_status,
-            })
-
-    # Sort: OCR done first, then by domain, then by key
+    all_records = scan_library_records(vault)
+    # Filter: only records that still need deep reading
+    queue = [r for r in all_records if r['deep_reading_status'] != 'done']
+    # Sort: OCR completed first, then by domain, then by key
     queue.sort(key=lambda row: (
-        0 if row["ocr_status"] == "done" else 1,
-        row["domain"],
-        row["zotero_key"],
+        0 if row['ocr_status'] == 'done' else 1,
+        row['domain'],
+        row['zotero_key'],
     ))
     return queue
 

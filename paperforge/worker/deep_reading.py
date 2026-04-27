@@ -25,117 +25,25 @@ from paperforge.worker.sync import has_deep_reading_content, load_export_rows
 from paperforge.worker.base_views import ensure_base_views
 from paperforge.worker.ocr import validate_ocr_meta
 
+from paperforge.worker._utils import (
+    STANDARD_VIEW_NAMES,
+    _extract_year,
+    _JOURNAL_DB,
+    load_journal_db,
+    lookup_impact_factor,
+    read_json,
+    read_jsonl,
+    slugify_filename,
+    write_json,
+    write_jsonl,
+    yaml_block,
+    yaml_list,
+    yaml_quote,
+    scan_library_records,
+    _resolve_formal_note_path,
+)
+
 logger = logging.getLogger(__name__)
-
-STANDARD_VIEW_NAMES = frozenset([
-    "控制面板", "推荐分析", "待 OCR", "OCR 完成",
-    "待深度阅读", "深度阅读完成", "正式卡片", "全记录"
-])
-
-def load_simple_env(env_path: Path) -> None:
-    if not env_path.exists():
-        return
-    for raw_line in env_path.read_text(encoding='utf-8').splitlines():
-        line = raw_line.strip()
-        if not line or line.startswith('#') or '=' not in line:
-            continue
-        key, value = line.split('=', 1)
-        key = key.strip()
-        if not key or key in os.environ:
-            continue
-        value = value.strip()
-        if len(value) >= 2 and value[0] == value[-1] and (value[0] in {'"', "'"}):
-            value = value[1:-1]
-        os.environ[key] = value
-
-def read_json(path: Path):
-    return json.loads(path.read_text(encoding='utf-8'))
-_JOURNAL_DB: dict[str, dict] | None = None
-
-def load_journal_db(vault: Path) -> dict[str, dict]:
-    """Load zoterostyle.json journal database."""
-    global _JOURNAL_DB
-    if _JOURNAL_DB is not None:
-        return _JOURNAL_DB
-    zoterostyle_path = vault / load_vault_config(vault)['system_dir'] / 'Zotero' / 'zoterostyle.json'
-    if zoterostyle_path.exists():
-        try:
-            _JOURNAL_DB = read_json(zoterostyle_path)
-        except (JSONDecodeError, Exception):
-            _JOURNAL_DB = {}
-    else:
-        _JOURNAL_DB = {}
-    return _JOURNAL_DB
-
-def lookup_impact_factor(journal_name: str, extra: str, vault: Path) -> str:
-    """Lookup impact factor: prefer zoterostyle.json, fallback to extra field."""
-    if not journal_name:
-        return ''
-    journal_db = load_journal_db(vault)
-    if journal_name in journal_db:
-        rank_data = journal_db[journal_name].get('rank', {})
-        if isinstance(rank_data, dict):
-            sciif = rank_data.get('sciif', '')
-            if sciif:
-                return str(sciif)
-    if extra:
-        if_match = re.search('影响因子[:：]\\s*([0-9.]+)', extra)
-        if if_match:
-            return if_match.group(1)
-    return ''
-
-def write_json(path: Path, data) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')
-
-def read_jsonl(path: Path):
-    rows = []
-    if not path.exists():
-        return rows
-    for line in path.read_text(encoding='utf-8').splitlines():
-        line = line.strip()
-        if line:
-            rows.append(json.loads(line))
-    return rows
-
-def write_jsonl(path: Path, rows) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    text = '\n'.join((json.dumps(row, ensure_ascii=False) for row in rows))
-    if text:
-        text += '\n'
-    path.write_text(text, encoding='utf-8')
-
-def yaml_quote(value: str) -> str:
-    if isinstance(value, bool):
-        return 'true' if value else 'false'
-    return '"' + str(value or '').replace('\\', '\\\\').replace('"', '\\"') + '"'
-
-def yaml_block(value: str) -> list[str]:
-    value = (value or '').strip()
-    if not value:
-        return ['abstract: |-', '  ']
-    lines = ['abstract: |-']
-    for line in value.splitlines():
-        lines.append(f'  {line}')
-    return lines
-
-def yaml_list(key: str, values) -> list[str]:
-    cleaned = [str(value).strip() for value in values or [] if str(value).strip()]
-    if not cleaned:
-        return [f'{key}: []']
-    lines = [f'{key}:']
-    for value in cleaned:
-        lines.append(f'  - {yaml_quote(value)}')
-    return lines
-
-def slugify_filename(text: str) -> str:
-    cleaned = re.sub('[<>:"/\\\\|?*]+', '', text).strip()
-    return cleaned[:120] or 'untitled'
-
-def _extract_year(value: str) -> str:
-    match = re.search('(19|20)\\d{2}', value or '')
-    return match.group(0) if match else ''
-
 
 def load_vault_config(vault: Path) -> dict:
     """Read vault configuration — delegates to shared resolver.
@@ -208,21 +116,7 @@ def load_domain_config(paths: dict[str, Path]) -> dict:
         write_json(config_path, config)
     return config
 
-def _resolve_formal_note_path(vault: Path, zotero_key: str, domain: str) -> Path | None:
-    """Resolve formal literature note by zotero_key."""
-    lit_root = pipeline_paths(vault)['literature']
-    domain_dir = lit_root / domain
-    if not domain_dir.exists():
-        return None
-    frontmatter_pattern = re.compile(f'^\\s*zotero_key:\\s*"?{re.escape(zotero_key)}"?\\s*$', re.MULTILINE)
-    for note_path in domain_dir.rglob('*.md'):
-        try:
-            text = note_path.read_text(encoding='utf-8')
-        except UnicodeDecodeError:
-            text = note_path.read_text(encoding='utf-8', errors='ignore')
-        if frontmatter_pattern.search(text):
-            return note_path
-    return None
+# Re-exported from _utils.py for backward compatibility
 
 def run_deep_reading(vault: Path, verbose: bool = False) -> int:
     """Sync deep-reading status between formal notes and library records.
@@ -240,49 +134,41 @@ def run_deep_reading(vault: Path, verbose: bool = False) -> int:
     domain_lookup = {entry['export_file']: entry['domain'] for entry in config['domains']}
     synced = 0
     pending_queue: list[dict] = []
-    for export_path in sorted(paths['exports'].glob('*.json')):
-        domain = domain_lookup.get(export_path.name, export_path.stem)
-        for item in load_export_rows(export_path):
-            key = item['key']
+    records = scan_library_records(vault)
+
+    for record in records:
+        key = record['zotero_key']
+        domain = record['domain']
+
+        # Status sync: check actual note content vs frontmatter status
+        note_path = record['note_path']
+        has_content = False
+        if note_path and note_path.exists():
+            note_text = note_path.read_text(encoding='utf-8')
+            has_content = has_deep_reading_content(note_text)
+        correct_status = 'done' if has_content else 'pending'
+
+        if record['deep_reading_status'] != correct_status:
             record_dir = paths['library_records'] / domain
             record_path = record_dir / f'{key}.md'
-            if not record_path.exists():
-                continue
             record_text = record_path.read_text(encoding='utf-8')
-            analyze_match = re.search('^analyze:\\s*(true|false)$', record_text, re.MULTILINE)
-            is_analyze = analyze_match and analyze_match.group(1) == 'true'
-            do_ocr_match = re.search('^do_ocr:\\s*(true|false)$', record_text, re.MULTILINE)
-            is_do_ocr = do_ocr_match and do_ocr_match.group(1) == 'true'
-            note_path = _resolve_formal_note_path(vault, key, domain)
-            has_content = False
-            if note_path and note_path.exists():
-                note_text = note_path.read_text(encoding='utf-8')
-                has_content = has_deep_reading_content(note_text)
-            correct_status = 'done' if has_content else 'pending'
-            status_match = re.search('^deep_reading_status:\\s*"??"?$', record_text, re.MULTILINE)
-            current_status = status_match.group(1) if status_match else 'pending'
-            if current_status != correct_status:
-                new_text = re.sub('^deep_reading_status:\\s*"?.*?"?$', f'deep_reading_status: {yaml_quote(correct_status)}', record_text, flags=re.MULTILINE, count=1)
-                record_path.write_text(new_text, encoding='utf-8')
-                synced += 1
-            if is_analyze and correct_status == 'pending':
-                meta_path = paths['ocr'] / key / 'meta.json'
-                ocr_status = 'pending'
-                if meta_path.exists():
-                    try:
-                        meta = read_json(meta_path)
-                        validated_status, error_msg = validate_ocr_meta(paths, meta)
-                        ocr_status = validated_status
-                    except Exception:
-                        pass
-                pending_queue.append({
-                    'zotero_key': key,
-                    'domain': domain,
-                    'title': item.get('title', ''),
-                    'ocr_status': ocr_status,
-                    'is_analyze': is_analyze,
-                    'is_do_ocr': is_do_ocr,
-                })
+            new_text = re.sub(
+                '^deep_reading_status:\\s*"?.*?"?$',
+                f'deep_reading_status: {yaml_quote(correct_status)}',
+                record_text, flags=re.MULTILINE, count=1
+            )
+            record_path.write_text(new_text, encoding='utf-8')
+            synced += 1
+
+        if correct_status == 'pending':
+            pending_queue.append({
+                'zotero_key': key,
+                'domain': domain,
+                'title': record['title'],
+                'ocr_status': record['ocr_status'],
+                'is_analyze': True,
+                'is_do_ocr': record['do_ocr'],
+            })
     if pending_queue:
         ready = [q for q in pending_queue if q['ocr_status'] == 'done']
         waiting = [q for q in pending_queue if q['is_do_ocr'] and q['ocr_status'] in ('pending', 'processing')]
