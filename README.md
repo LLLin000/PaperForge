@@ -39,11 +39,15 @@ python setup_wizard.py --vault /path/to/your/vault
 - **交互式安装向导** — 步骤引导，自动检测，安全验证
 - **`/pf-deep`** — 深度精读（Keshav 三阶段阅读法）
 - **自动 OCR 提取** — PaddleOCR-VL API 提取全文和图表
-- **图表类型智能识别** — 20 种图表类型自动检测
-- **图表质量审查指南** — 14 种图表类型的专业审查清单
+- **图表类型智能识别** — 19 种图表类型自动检测
+- **图表质量审查指南** — 19 种图表类型的专业审查清单
 - **Zotero 双向同步** — Better BibTeX 自动导出
 - **文献队列管理** — Obsidian Base 集成
-- **自动更新** — `python literature_pipeline.py --vault . update`
+- **结构化日志** — `--verbose`/`-v` 全局参数，stderr 诊断输出，不影响管道 stdout
+- **进度指示** — `tqdm` 进度条 + `--no-progress` 全局参数
+- **自动重试** — tenacity 指数退避，OCR 上传/轮询自动恢复
+- **代码质量栅栏** — pre-commit hooks + ruff 检查 + 重复代码检测
+- **自动更新** — `paperforge update`
 
 ## 安装要求
 
@@ -69,7 +73,7 @@ your-vault/
 │       └── literature-qa/
 │           ├── scripts/ld_deep.py
 │           ├── prompt_deep_subagent.md
-│           └── chart-reading/   # 14 种图表阅读指南
+│               └── chart-reading/   # 19 种图表阅读指南
 ├── .env                         # API Key 配置
 ├── paperforge.json              # 版本配置
 └── AGENTS.md                    # 安装后指南
@@ -79,6 +83,9 @@ your-vault/
 
 - [安装指南](docs/INSTALLATION.md) — 详细安装步骤
 - [安装后指南](AGENTS.md) — 第一次使用必看
+- [变更日志](CHANGELOG.md) — v1.0~v1.4 版本历史
+- [贡献指南](CONTRIBUTING.md) — 开发环境搭建与代码约定
+- [v1.4 迁移说明](docs/MIGRATION-v1.4.md) — 从 v1.3 升级到 v1.4
 - [设置向导](setup_wizard.py) — 交互式配置工具
 
 ## 核心命令
@@ -87,8 +94,9 @@ your-vault/
 # PaperForge CLI（在终端中直接运行）
 paperforge status            # 查看状态
 paperforge sync              # 同步 Zotero 文献并生成正式笔记
-paperforge ocr               # 运行 PDF OCR
-paperforge deep-reading      # 查看精读队列
+paperforge ocr               # 运行 PDF OCR（支持 --verbose, --no-progress）
+paperforge deep-reading      # 查看精读队列（支持 --verbose）
+paperforge --verbose ...     # 全局 --verbose/-v 启用 DEBUG 日志
 
 # Agent 命令（在 OpenCode 中使用）
 /pf-deep <zotero_key>    # 完整三阶段精读（需要 AI 理解论文）
