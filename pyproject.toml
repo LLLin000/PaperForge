@@ -47,7 +47,12 @@ where = ["."]
 include = ["paperforge*"]
 
 [tool.setuptools.package-data]
-paperforge = ["py.typed"]
+paperforge = [
+    "py.typed",
+    "skills/literature-qa/prompt_deep_subagent.md",
+    "skills/literature-qa/chart-reading/*.md",
+    "skills/literature-qa/chart-reading/*",
+]
 
 [tool.pytest.ini_options]
 addopts = "--ignore=tests/sandbox/00_TestVault/"
