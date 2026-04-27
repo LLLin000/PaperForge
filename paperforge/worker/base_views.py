@@ -110,6 +110,9 @@ def build_base_views(domain: str) -> list[dict]:
                 "file.name",
                 "title",
                 "year",
+                "first_author",
+                "journal",
+                "impact_factor",
                 "has_pdf",
                 "do_ocr",
                 "analyze",
@@ -125,6 +128,9 @@ def build_base_views(domain: str) -> list[dict]:
             "order": [
                 "year",
                 "title",
+                "first_author",
+                "journal",
+                "impact_factor",
                 "has_pdf",
                 "do_ocr",
                 "analyze",
@@ -137,27 +143,27 @@ def build_base_views(domain: str) -> list[dict]:
         },
         {
             "name": "待 OCR",
-            "order": ["year", "title", "has_pdf", "do_ocr", "ocr_status", "pdf_path"],
+            "order": ["year", "first_author", "title", "has_pdf", "do_ocr", "ocr_status", "pdf_path"],
             "filter": 'do_ocr = true AND ocr_status = "pending"',
         },
         {
             "name": "OCR 完成",
-            "order": ["year", "title", "has_pdf", "do_ocr", "ocr_status", "pdf_path"],
+            "order": ["year", "first_author", "title", "has_pdf", "do_ocr", "ocr_status", "pdf_path"],
             "filter": 'ocr_status = "done"',
         },
         {
             "name": "待深度阅读",
-            "order": ["year", "title", "has_pdf", "do_ocr", "analyze", "ocr_status", "deep_reading_status", "pdf_path"],
+            "order": ["year", "first_author", "title", "has_pdf", "do_ocr", "analyze", "ocr_status", "deep_reading_status", "pdf_path"],
             "filter": 'analyze = true AND ocr_status = "done" AND deep_reading_status = "pending"',
         },
         {
             "name": "深度阅读完成",
-            "order": ["year", "title", "has_pdf", "do_ocr", "analyze", "ocr_status", "deep_reading_status", "pdf_path"],
+            "order": ["year", "first_author", "title", "has_pdf", "do_ocr", "analyze", "ocr_status", "deep_reading_status", "pdf_path"],
             "filter": 'deep_reading_status = "done"',
         },
         {
             "name": "正式卡片",
-            "order": ["title", "year", "has_pdf", "deep_reading_status", "pdf_path"],
+            "order": ["title", "year", "first_author", "journal", "impact_factor", "has_pdf", "deep_reading_status", "pdf_path"],
             "filter": 'deep_reading_status = "done"',
         },
         {
@@ -165,6 +171,9 @@ def build_base_views(domain: str) -> list[dict]:
             "order": [
                 "title",
                 "year",
+                "first_author",
+                "journal",
+                "impact_factor",
                 "has_pdf",
                 "do_ocr",
                 "analyze",
@@ -245,6 +254,12 @@ def merge_base_views(existing_content: str | None, new_views: list[dict]) -> str
     displayName: "Title"
   year:
     displayName: "Year"
+  first_author:
+    displayName: "First Author"
+  journal:
+    displayName: "Journal"
+  impact_factor:
+    displayName: "IF"
   has_pdf:
     displayName: "PDF"
   do_ocr:
@@ -374,6 +389,12 @@ properties:
     displayName: "Title"
   year:
     displayName: "Year"
+  first_author:
+    displayName: "First Author"
+  journal:
+    displayName: "Journal"
+  impact_factor:
+    displayName: "IF"
   has_pdf:
     displayName: "PDF"
   do_ocr:

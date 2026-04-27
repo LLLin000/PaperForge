@@ -50,9 +50,9 @@ class TestResolvePdfPath:
         assert result == str(target.resolve())
 
     def test_zotero_storage_relative_path(self, tmp_path: Path) -> None:
-        """storage: prefixed path resolves against zotero_dir."""
+        """storage: prefixed path resolves against zotero_dir/storage/."""
         zotero_dir = tmp_path / "zotero"
-        storage_dir = zotero_dir / "ABC123"
+        storage_dir = zotero_dir / "storage" / "ABC123"
         storage_dir.mkdir(parents=True)
         pdf = storage_dir / "item.pdf"
         pdf.write_text("PDF content")

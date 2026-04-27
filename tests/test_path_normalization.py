@@ -197,18 +197,17 @@ class TestWikilinkGeneration:
     """Tests for obsidian_wikilink_for_pdf() wikilink generation."""
 
     def test_basic_wikilink(self, tmp_path: Path) -> None:
-        """storage:KEY/file.pdf resolves to [[system/Zotero/KEY/file.pdf]]."""
+        """storage:KEY/file.pdf resolves to [[system/Zotero/storage/KEY/file.pdf]]."""
         vault_dir = tmp_path / "vault"
         zotero_dir = vault_dir / "system" / "Zotero"
-        # Current implementation joins storage: directly under zotero_dir
-        storage_dir = zotero_dir / "KEY"
+        storage_dir = zotero_dir / "storage" / "KEY"
         storage_dir.mkdir(parents=True)
         pdf = storage_dir / "file.pdf"
         pdf.write_text("PDF content")
 
         result = obsidian_wikilink_for_pdf("storage:KEY/file.pdf", vault_dir, zotero_dir)
 
-        assert result == "[[system/Zotero/KEY/file.pdf]]"
+        assert result == "[[system/Zotero/storage/KEY/file.pdf]]"
 
     def test_junction_resolution(self, tmp_path: Path, monkeypatch) -> None:
         """Junction resolved before relative path computed."""
@@ -239,8 +238,7 @@ class TestWikilinkGeneration:
         """Output wikilink uses forward slashes, never backslashes."""
         vault_dir = tmp_path / "vault"
         zotero_dir = vault_dir / "system" / "Zotero"
-        # Current implementation joins storage: directly under zotero_dir
-        storage_dir = zotero_dir / "KEY"
+        storage_dir = zotero_dir / "storage" / "KEY"
         storage_dir.mkdir(parents=True)
         pdf = storage_dir / "file.pdf"
         pdf.write_text("PDF content")
@@ -254,8 +252,7 @@ class TestWikilinkGeneration:
         """Chinese characters preserved in wikilink without escaping."""
         vault_dir = tmp_path / "vault"
         zotero_dir = vault_dir / "system" / "Zotero"
-        # Current implementation joins storage: directly under zotero_dir
-        storage_dir = zotero_dir / "KEY"
+        storage_dir = zotero_dir / "storage" / "KEY"
         storage_dir.mkdir(parents=True)
         pdf = storage_dir / "中文论文.pdf"
         pdf.write_text("PDF content")
@@ -263,7 +260,7 @@ class TestWikilinkGeneration:
         result = obsidian_wikilink_for_pdf("storage:KEY/中文论文.pdf", vault_dir, zotero_dir)
 
         assert "中文论文" in result
-        assert result == "[[system/Zotero/KEY/中文论文.pdf]]"
+        assert result == "[[system/Zotero/storage/KEY/中文论文.pdf]]"
 
     def test_empty_pdf_path(self, tmp_path: Path) -> None:
         """Empty pdf_path returns empty string."""

@@ -279,7 +279,7 @@ def obsidian_wikilink_for_pdf(pdf_path: str, vault_dir: Path, zotero_dir: Path |
     # Handle storage: prefix paths by resolving through zotero_dir
     if text.startswith("storage:") and zotero_dir is not None:
         storage_rel = text[len("storage:") :].lstrip("/").lstrip("\\")
-        absolute_pdf_path = (zotero_dir / storage_rel.replace("/", os.sep)).resolve()
+        absolute_pdf_path = (zotero_dir / "storage" / storage_rel.replace("/", os.sep)).resolve()
         absolute_str = str(absolute_pdf_path)
     else:
         absolute_str = absolutize_vault_path(vault_dir, text, resolve_junction=True)
@@ -491,8 +491,10 @@ def load_export_rows(path: Path) -> list[dict]:
                     "key": item.get("key") or item.get("itemKey", ""),
                     "title": item.get("title", ""),
                     "authors": extract_authors(item),
+                    "creators": item.get("creators", []),
                     "abstract": item.get("abstractNote", ""),
                     "journal": item.get("publicationTitle", ""),
+                    "extra": item.get("extra", ""),
                     "year": _extract_year(item.get("date", "")),
                     "date": item.get("date", ""),
                     "doi": item.get("DOI", ""),
@@ -888,7 +890,7 @@ def run_selection_sync(vault: Path, verbose: bool = False) -> int:
                 if c.get("creatorType") == "author":
                     first_author = f"{c.get('firstName', '')} {c.get('lastName', '')}".strip()
                     break
-            journal = item.get("publicationTitle", "")
+            journal = item.get("journal", "")
             extra = item.get("extra", "")
             impact_factor = lookup_impact_factor(journal, extra, vault)
             # Convert supplementary storage: paths to wikilinks
