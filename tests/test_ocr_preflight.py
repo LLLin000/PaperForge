@@ -189,10 +189,14 @@ class TestOcrPreflight:
             patch("paperforge.worker.ocr.write_json"),
             patch("builtins.open") as mock_open,
             patch("paperforge.worker.ocr.requests.post") as mock_post,
+            patch("paperforge.worker.ocr.requests.get") as mock_get,
         ):
             mock_post.return_value = MagicMock()
             mock_post.return_value.json.return_value = {"data": {"jobId": "123"}}
             mock_post.return_value.raise_for_status = lambda: None
+            mock_get.return_value = MagicMock()
+            mock_get.return_value.json.return_value = {"data": {"state": "done", "resultUrl": {"jsonUrl": ""}}}
+            mock_get.return_value.raise_for_status = lambda: None
             with patch("paperforge.worker.sync.run_selection_sync"), patch("paperforge.worker.sync.run_index_refresh"):
                 from paperforge.worker.ocr import (
                     run_ocr,
@@ -258,10 +262,14 @@ class TestOcrPreflight:
             patch("paperforge.worker.ocr.write_json"),
             patch("builtins.open") as mock_open,
             patch("paperforge.worker.ocr.requests.post") as mock_post,
+            patch("paperforge.worker.ocr.requests.get") as mock_get,
         ):
             mock_post.return_value = MagicMock()
             mock_post.return_value.json.return_value = {"data": {"jobId": "123"}}
             mock_post.return_value.raise_for_status = lambda: None
+            mock_get.return_value = MagicMock()
+            mock_get.return_value.json.return_value = {"data": {"state": "done", "resultUrl": {"jsonUrl": ""}}}
+            mock_get.return_value.raise_for_status = lambda: None
             with patch("paperforge.worker.sync.run_selection_sync"), patch("paperforge.worker.sync.run_index_refresh"):
                 from paperforge.worker.ocr import (
                     run_ocr,

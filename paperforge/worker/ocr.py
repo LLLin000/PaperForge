@@ -1430,6 +1430,7 @@ def run_ocr(vault: Path, verbose: bool = False, no_progress: bool = False) -> in
     changed = 0
     active_submitted = 0
     queue_changed = False
+    _submitted: set[str] = set()  # keys newly uploaded in this run
 
     def _do_poll(job_id: str, token_val: str) -> requests.Response:
         resp = requests.get(f"{job_url}/{job_id}", headers={"Authorization": f"bearer {token_val}"}, timeout=60)
@@ -1598,11 +1599,67 @@ def run_ocr(vault: Path, verbose: bool = False, no_progress: bool = False) -> in
             meta["ocr_job_id"] = response.json()["data"]["jobId"]
             meta["ocr_status"] = "queued"
             meta["ocr_started_at"] = datetime.now(timezone.utc).isoformat()
+            _submitted.add(key)
             meta["error"] = ""
             queue_row["queue_status"] = "queued"
             write_json(paths["ocr"] / key / "meta.json", meta)
             changed += 1
             available_slots -= 1
+    # Persistent poll: wait for newly submitted jobs to complete
+    # Only polls items that were JUST uploaded in this run (not pre-existing queued)
+    freshly_queued = {r["zotero_key"] for r in ocr_queue if r.get("queue_status") == "queued" and r.get("zotero_key") in _submitted}
+    if freshly_queued and token:
+        import time as _time
+        max_cycles = int(os.environ.get("PAPERFORGE_POLL_MAX_CYCLES", "20"))  # ~5 min at 15s intervals
+        for _cycle in range(max_cycles):
+            pending = [r for r in ocr_queue if r.get("queue_status") in ("queued", "running") and r.get("zotero_key") in _submitted]
+            if not pending:
+                break
+            for queue_row in progress_bar(pending, desc="Waiting OCR", disable=no_progress):
+                key = queue_row["zotero_key"]
+                meta = ensure_ocr_meta(vault, queue_row)
+                job_id = meta.get("ocr_job_id", "")
+                if not job_id:
+                    continue
+                try:
+                    response = retry_with_meta(_do_poll, paths["ocr"] / key / "meta.json", job_id, token)
+                    payload = response.json()["data"]
+                    state = payload["state"]
+                except Exception:
+                    continue
+                if state == "done":
+                    result_url = payload["resultUrl"]["jsonUrl"]
+                    try:
+                        result_response = requests.get(result_url, timeout=120)
+                        result_response.raise_for_status()
+                        lines = [l.strip() for l in result_response.text.splitlines() if l.strip()]
+                        results = [json.loads(l)["result"] for l in lines]
+                        page_num, md_path, json_path, fulltext_md_path = postprocess_ocr_result(vault, key, results)
+                        meta["ocr_status"] = "done"
+                        meta["ocr_finished_at"] = datetime.now(timezone.utc).isoformat()
+                        meta["page_count"] = page_num
+                        meta["markdown_path"] = md_path
+                        meta["json_path"] = json_path
+                        meta["fulltext_md_path"] = fulltext_md_path
+                        meta["error"] = ""
+                        queue_row["queue_status"] = "done"
+                        queue_changed = True
+                        changed += 1
+                    except Exception:
+                        pass
+                elif state in ("error", "failed"):
+                    meta["ocr_status"] = "error"
+                    meta["error"] = payload.get("errorMsg", "Unknown OCR failure")
+                    queue_row["queue_status"] = "error"
+                    changed += 1
+                else:
+                    meta["ocr_status"] = state
+                    queue_row["queue_status"] = state
+                write_json(paths["ocr"] / key / "meta.json", meta)
+            if pending:
+                _time.sleep(int(os.environ.get("PAPERFORGE_POLL_INTERVAL", "15")))
+        if pending:
+            logger.warning("OCR poll timeout: %d jobs still pending", len(pending))
     if queue_changed:
         ocr_queue = [row for row in ocr_queue if str(row.get("queue_status", "")).lower() != "done"]
     write_ocr_queue(paths, ocr_queue)

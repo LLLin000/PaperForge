@@ -52,6 +52,7 @@ paperforge = [
     "skills/literature-qa/prompt_deep_subagent.md",
     "skills/literature-qa/chart-reading/*.md",
     "skills/literature-qa/chart-reading/*",
+    "command_files/*.md",
 ]
 
 [tool.pytest.ini_options]

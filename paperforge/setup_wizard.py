@@ -1035,7 +1035,9 @@ class DeployStep(StepScreen):
 
         # Copy OpenCode command files when the target platform supports them.
         if getattr(self.app, "agent_key", "") == "opencode":
-            command_src = repo_root / "command"
+            command_src = wizard_dir / "command_files"
+            if not command_src.exists() or not command_src.is_dir():
+                command_src = repo_root / "command"
             command_dst = vault / agent_config.get("command_dir", ".opencode/command")
             if command_src.exists() and command_src.is_dir():
                 command_dst.mkdir(parents=True, exist_ok=True)

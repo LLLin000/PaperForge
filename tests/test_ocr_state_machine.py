@@ -127,11 +127,15 @@ do_ocr: true
                         ):
                             with patch("paperforge.worker.ocr.write_json") as mock_write:
                                 with patch("paperforge.worker.ocr.requests.post", mock_post):
-                                    with patch("paperforge.worker.sync.run_selection_sync"):
-                                        with patch("paperforge.worker.sync.run_index_refresh"):
-                                            from paperforge.worker.ocr import run_ocr
+                                    with patch("paperforge.worker.ocr.requests.get") as mock_get:
+                                        mock_get.return_value.json.return_value = {
+                                            "data": {"state": "done", "resultUrl": {"jsonUrl": ""}}
+                                        }
+                                        with patch("paperforge.worker.sync.run_selection_sync"):
+                                            with patch("paperforge.worker.sync.run_index_refresh"):
+                                                from paperforge.worker.ocr import run_ocr
 
-                                            run_ocr(vault)
+                                                run_ocr(vault)
 
         # Check requests.post was called (job submitted)
         assert mock_post.called, "requests.post was not called - job not submitted"
@@ -142,7 +146,7 @@ do_ocr: true
         ]
         assert meta_calls, f"No meta write found for key {key}"
         final_meta = meta_calls[-1][0][1]
-        assert final_meta.get("ocr_status") == "queued", f"Expected 'queued', got {final_meta.get('ocr_status')}"
+        assert final_meta.get("ocr_status") == "done", f"Expected 'done' (persistent poll completes), got {final_meta.get('ocr_status')}"
         assert final_meta.get("ocr_job_id") == "job-123"
 
 
@@ -432,10 +436,15 @@ do_ocr: true
                                 with patch("paperforge.worker.sync.run_selection_sync"):
                                     with patch("paperforge.worker.sync.run_index_refresh"):
                                         with patch("paperforge.worker.ocr.requests.post", mock_post):
-                                            with patch("paperforge.worker.ocr.requests.get", MagicMock()):
-                                                from paperforge.worker.ocr import run_ocr
+                                            with patch("paperforge.worker.ocr.requests.get") as mock_get:
+                                                mock_get.return_value.json.return_value = {
+                                                    "data": {"state": "done", "resultUrl": {"jsonUrl": ""}}
+                                                }
+                                                with patch("paperforge.worker.sync.run_selection_sync"):
+                                                    with patch("paperforge.worker.sync.run_index_refresh"):
+                                                        from paperforge.worker.ocr import run_ocr
 
-                                                run_ocr(vault)
+                                                        run_ocr(vault)
 
         meta_calls = [
             c for c in mock_write.call_args_list if isinstance(c[0][1], dict) and c[0][1].get("zotero_key") == key
