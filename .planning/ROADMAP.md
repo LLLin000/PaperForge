@@ -66,7 +66,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 15-01-PLAN.md — Canonical scan_library_records() in _utils.py; refactor both callers
+- [x] 15-01-PLAN.md — Canonical scan_library_records() in _utils.py; refactor both callers
 
 ---
 
@@ -136,7 +136,7 @@ Plans:
 |-------|-----------|----------------|--------|-----------|
 | 13. Logging Foundation | v1.4 | 3/3 | Complete    | 2026-04-27 |
 | 14. Shared Utils Extraction | v1.4 | 0/0 | Not started | — |
-| 15. Queue Merge | v1.4 | 0/0 | Not started | — |
+| 15. Queue Merge | v1.4 | 1/1 | Complete   | 2026-04-27 |
 | 16. Retry + Progress | v1.4 | 0/0 | Not started | — |
 | 17. Dead Code + Pre-Commit | v1.4 | 0/0 | Not started | — |
 | 18. Docs + CHANGELOG + UX | v1.4 | 0/0 | Not started | — |
