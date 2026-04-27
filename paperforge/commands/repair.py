@@ -1,7 +1,10 @@
 """Repair command."""
 
 import argparse
+import logging
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 
 def _get_run_repair():

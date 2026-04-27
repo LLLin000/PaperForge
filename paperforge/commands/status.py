@@ -5,7 +5,10 @@ and path_error counts (displayed by run_status in literature_pipeline).
 """
 
 import argparse
+import logging
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 
 def _get_run_status():

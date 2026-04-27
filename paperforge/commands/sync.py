@@ -1,7 +1,10 @@
 """Sync command — unifies selection-sync and index-refresh."""
 
 import argparse
+import logging
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 
 def _get_run_selection_sync():

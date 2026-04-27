@@ -1,4 +1,5 @@
 from __future__ import annotations
+import logging
 import argparse
 import csv
 import hashlib
@@ -23,6 +24,8 @@ from PIL import Image
 from paperforge.worker.sync import has_deep_reading_content, load_export_rows
 from paperforge.worker.base_views import ensure_base_views
 from paperforge.worker.ocr import validate_ocr_meta
+
+logger = logging.getLogger(__name__)
 
 STANDARD_VIEW_NAMES = frozenset([
     "控制面板", "推荐分析", "待 OCR", "OCR 完成",

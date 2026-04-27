@@ -1,7 +1,10 @@
 """OCR command — unifies OCR run and diagnose."""
 
 import argparse
+import logging
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 
 def _diagnose(vault: Path, live: bool = False) -> int:
