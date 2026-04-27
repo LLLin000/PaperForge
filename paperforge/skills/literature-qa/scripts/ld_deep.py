@@ -5,12 +5,15 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 import re
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
 
 from paperforge.worker._utils import scan_library_records
+
+logger = logging.getLogger(__name__)
 
 
 def _load_vault_config(vault: Path) -> dict:
@@ -904,6 +907,165 @@ def validate_selected_blocks(
     return missing
 
 
+def postprocess_pass2(note_text: str, figure_count: int) -> list[dict]:
+    """Validate Pass 2 figure blocks in a written deep-reading note.
+
+    Args:
+        note_text: Full text of the formal note after AI wrote Pass 2.
+        figure_count: Expected number of figures from the skeleton.
+
+    Returns:
+        List of error dicts with keys: type, severity, figure, line, message.
+    """
+    errors: list[dict] = []
+    lines = note_text.splitlines()
+
+    # --- Collect figure callout positions ---
+    fig_pattern = re.compile(r'^>\s*\[!note\]-\s*Figure\s+(\d+)')
+    figure_entries: list[tuple[int, int]] = []
+    for i, line in enumerate(lines, 1):
+        m = fig_pattern.match(line)
+        if m:
+            figure_entries.append((int(m.group(1)), i))
+
+    # Check 1 — Order
+    for j in range(1, len(figure_entries)):
+        prev_num, prev_line = figure_entries[j - 1]
+        curr_num, _curr_line = figure_entries[j]
+        if curr_num <= prev_num:
+            errors.append({
+                "type": "order",
+                "severity": "error",
+                "figure": str(prev_num),
+                "line": prev_line,
+                "message": f"Figure {prev_num} appears before Figure {curr_num} (line {prev_line})",
+            })
+
+    # Check 5 — Duplicates
+    seen: dict[int, list[int]] = {}
+    for fig_num, line_num in figure_entries:
+        seen.setdefault(fig_num, []).append(line_num)
+    for fig_num, line_nums in seen.items():
+        if len(line_nums) > 1:
+            errors.append({
+                "type": "duplicate",
+                "severity": "error",
+                "figure": str(fig_num),
+                "line": line_nums[1],
+                "message": f"Figure {fig_num} appears at lines {line_nums[0]} and {line_nums[1]}",
+            })
+
+    # Check 6 — Missing
+    present_numbers = {fn for fn, _ in figure_entries}
+    for fn in range(1, figure_count + 1):
+        if fn not in present_numbers:
+            errors.append({
+                "type": "missing",
+                "severity": "error",
+                "figure": str(fn),
+                "line": 0,
+                "message": f"Figure {fn} is missing from the note",
+            })
+
+    # Check 7 — Extra
+    for fn, ln in figure_entries:
+        if fn > figure_count:
+            errors.append({
+                "type": "extra",
+                "severity": "error",
+                "figure": str(fn),
+                "line": ln,
+                "message": f"Figure {fn} not in skeleton (found at line {ln})",
+            })
+
+    # --- Build figure block ranges ---
+    figure_ranges: list[tuple[int, int, int]] = []
+    for idx, (fig_num, start_line) in enumerate(figure_entries):
+        if idx + 1 < len(figure_entries):
+            end_line = figure_entries[idx + 1][1]
+        else:
+            end_line = len(lines) + 1
+        figure_ranges.append((fig_num, start_line, end_line))
+
+    # Check 4 — Missing sub-headings
+    subheading_set = set(FIGURE_SUBHEADINGS)
+    for fig_num, start_line, end_line in figure_ranges:
+        block_lines = lines[start_line - 1:end_line - 1]
+        found_headings: set[str] = set()
+        for ll in block_lines:
+            stripped = ll.strip()
+            for h in subheading_set:
+                if stripped == f"> **{h}**":
+                    found_headings.add(h)
+        for h in FIGURE_SUBHEADINGS:
+            if h not in found_headings:
+                errors.append({
+                    "type": "missing_subheading",
+                    "severity": "error",
+                    "figure": str(fig_num),
+                    "line": start_line,
+                    "message": f"Figure {fig_num}: sub-heading '{h}' not found",
+                })
+
+    # Check 3 — Empty blocks
+    for fig_num, start_line, end_line in figure_ranges:
+        block_lines = lines[start_line - 1:end_line - 1]
+        sub_indices: list[int] = []
+        for bi, ll in enumerate(block_lines):
+            stripped = ll.strip()
+            for h in FIGURE_SUBHEADINGS:
+                if stripped == f"> **{h}**":
+                    sub_indices.append(bi)
+                    break
+        for si in range(len(sub_indices) - 1):
+            curr_idx = sub_indices[si]
+            next_idx = sub_indices[si + 1]
+            gap = block_lines[curr_idx + 1:next_idx]
+            gap_content = [l for l in gap if l.strip() not in ("", ">")]
+            if not gap_content:
+                heading_line = block_lines[curr_idx]
+                heading_text = heading_line.strip().replace("> **", "").replace("**", "")
+                errors.append({
+                    "type": "empty_block",
+                    "severity": "warning",
+                    "figure": str(fig_num),
+                    "line": start_line + curr_idx,
+                    "message": f"Figure {fig_num}: sub-heading '{heading_text}' has no content",
+                })
+
+    # Check 2 — Image bounds: detect stray ![[ outside callout blocks
+    for i, line in enumerate(lines, 1):
+        if "![" not in line:
+            continue
+        # A line that does not start with ">" cannot be inside a callout
+        if not line.strip().startswith(">"):
+            img_match = re.search(r'!\[\[([^\]]+)\]\]', line)
+            img_ref = img_match.group(0) if img_match else "unknown"
+            errors.append({
+                "type": "image_bounds",
+                "severity": "error",
+                "line": i,
+                "message": f"Stray image at line {i}: {img_ref}",
+            })
+            continue
+        inside_callout = False
+        for _fig_num, bl_start, bl_end in figure_ranges:
+            if bl_start <= i < bl_end:
+                inside_callout = True
+                break
+        if not inside_callout:
+            img_match = re.search(r'!\[\[([^\]]+)\]\]', line)
+            img_ref = img_match.group(0) if img_match else "unknown"
+            errors.append({
+                "type": "image_bounds",
+                "severity": "error",
+                "line": i,
+                "message": f"Stray image at line {i}: {img_ref}",
+            })
+
+    return errors
+
+
 def validate_callout_structure(note_text: str, figures: Iterable[FigureEntry]) -> list[str]:
     """Check that the note keeps the required small set of section markers."""
     missing: list[str] = []
@@ -1299,6 +1461,10 @@ def prepare_deep_reading(vault: Path, zotero_key: str, force: bool = False) -> d
         updated = ensure_study_section(note_text, planned_figures, planned_tables)
         formal_note.write_text(updated, encoding="utf-8")
 
+        skeleton_errors = validate_callout_structure(updated, planned_figures)
+        if skeleton_errors:
+            logger.warning("Skeleton validation found %d issues: %s", len(skeleton_errors), "; ".join(skeleton_errors[:3]))
+
         result["figures"] = [
             {"number": f.number, "image_id": f.image_id, "page": f.page, "title": f.title} for f in planned_figures
         ]
@@ -1410,6 +1576,11 @@ def main() -> int:
     )
     chart_type_parser.add_argument("--out", type=Path, help="Optional output JSON path (default: stdout)")
 
+    pp_parser = subparsers.add_parser("postprocess-pass2", help="Validate Pass 2 figure blocks after AI writing")
+    pp_parser.add_argument("note", type=Path, help="Path to the formal note")
+    pp_parser.add_argument("--figures", type=int, required=True, help="Expected number of figures")
+    pp_parser.add_argument("--format", choices=["json", "text"], default="text", help="Output format")
+
     prepare_parser = subparsers.add_parser("prepare", help="One-click prepare all mechanical steps for deep reading")
     prepare_parser.add_argument("zotero_key", help="Zotero citation key")
     prepare_parser.add_argument("--vault", type=Path, required=True, help="Path to vault root")
@@ -1425,6 +1596,20 @@ def main() -> int:
         else:
             print(result.get("message", "Unknown result"))
         return 0 if result["status"] == "ok" else 1
+
+    if args.command == "postprocess-pass2":
+        note_text = args.note.read_text(encoding="utf-8")
+        errors = postprocess_pass2(note_text, args.figures)
+        if args.format == "json":
+            print(json.dumps(errors, ensure_ascii=False, indent=2))
+        else:
+            if not errors:
+                print("OK: Pass 2 structure is clean")
+            else:
+                print(f"Found {len(errors)} issues:")
+                for e in errors:
+                    print(f"  [{e['severity']}] {e['message']}")
+        return 1 if errors else 0
 
     if args.command == "figure-index":
         fulltext = args.fulltext.read_text(encoding="utf-8")
