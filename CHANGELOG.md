@@ -8,29 +8,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
-### Added
-
-- `auto_analyze_after_ocr` config option in `paperforge.json` (opt-in, default `false`) — when enabled, library-records with `do_ocr: true` automatically get `analyze: true` after OCR completes
-- Pre-commit hooks configuration (Ruff lint + format, YAML/TOML validation, consistency audit)
-- CHANGELOG.md (this file) and CONTRIBUTING.md for contributor onboarding
-- Structured logging with configurable log levels via `PAPERFORGE_LOG_LEVEL` env var
-- Retry and progress bar utilities for long-running operations
-- Consistency audit script (`scripts/consistency_audit.py`) for detecting duplicate utility functions
-
-### Changed
-
-- Logging migrated from `print()` to `logging` module across all worker modules (except user-facing CLI stdout)
-- `literature_pipeline.py` monolithic script (4041 lines) split into 7 focused modules under `paperforge/worker/`
-- Shared utility functions (`read_json`, `write_json`, etc.) consolidated into `_utils.py` leaf module with re-exports for backward compatibility
-- Deep-reading queue now uses canonical `scan_library_records()` from `_utils.py` for consistent record iteration
-- `paperforge/worker/` modules use `from paperforge.config import load_vault_config` for config access
-
-### Fixed
-
-- Dead delegation wrappers and redundant re-exports removed from worker modules
-- OCR error context now surfaced in library-record frontmatter (`path_error` field)
-- Circular import risk eliminated by enforcing `_utils.py` leaf module boundary
-
 ## [1.4.0] — 2026-04-27
 
 ### Added
