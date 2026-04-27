@@ -397,7 +397,7 @@ class WelcomeStep(StepScreen):
 
 安装向导将引导你完成以下配置：
 
-1. 确认 Python 版本 (>= 3.8)
+1. 确认 Python 版本 (>= 3.10)
 2. 配置 Vault 目录结构
 3. 创建 Zotero 数据链接
 4. 安装 Better BibTeX 插件
@@ -455,10 +455,7 @@ class PythonStep(StepScreen):
     def compose(self) -> ComposeResult:
         yield from super().compose()
         yield Markdown("""
-PaperForge 需要 **Python 3.8+** 以及以下 Python 包：
-- `requests` — HTTP 请求
-- `pymupdf` — PDF 处理
-- `pillow` — 图像处理
+PaperForge 需要 **Python 3.10+** 以及以下 Python 包（pip 安装时会自动解决）：
 
 点击 **一键检测** 检查环境。
         """)
@@ -1199,7 +1196,6 @@ class DoneStep(StepScreen):
         yield from super().compose()
         vault_config = getattr(self.app, "vault_config", {})
         system_dir = vault_config.get("system_dir", "99_System")
-        worker_cmd = "python -m paperforge sync --vault ."
         yield Markdown(f"""
 ## 安装完成！
 
@@ -1260,32 +1256,22 @@ paperforge ocr --diagnose
 ```bash
 paperforge status            # 查看状态
 paperforge sync              # 同步文献并生成笔记
-paperforge ocr               # 运行 OCR
+paperforge ocr               # 运行 OCR（自动上传+等待+下载）
 paperforge deep-reading      # 查看精读队列
+paperforge doctor            # 诊断配置
+paperforge update            # 检查更新
 ```
-
-> **命令迁移说明（v1.1 → v1.2）**：旧命令 `paperforge selection-sync`、`paperforge index-refresh`、`paperforge ocr run` 以及 `/LD-deep`、`/LD-paper`、 `/lp-*` 在 v1.2 中仍兼容，但文档已统一使用新命令名。
-
-**Python 脚本命令（备用）：**
-```bash
-{worker_cmd} <command>
-```
-| 命令 | 作用 |
-|------|------|
-| `selection-sync` | 检测新文献 |
-| `index-refresh` | 生成正式笔记 |
-| `ocr` | PDF OCR |
-| `deep-reading` | 查看精读队列 |
-| `update` | 检查更新 |
 
 ### 详细文档
 
-- 安装后指南：`AGENTS.md`
+- 安装后指南：`docs/setup-guide.md`
+- 详细配置说明：`paperforge setup`
 - GitHub: https://github.com/LLLin000/PaperForge
         """)
         yield Horizontal(
             Button("📖 打开详细指南", id="btn-open-guide", variant="primary"),
             Button("🔄 重新检测", id="btn-restart", variant="default"),
+            Button("✓ 完成退出", id="btn-exit", variant="default"),
             id="btn-row",
         )
 
@@ -1303,6 +1289,8 @@ paperforge deep-reading      # 查看精读队列
                 webbrowser.open("https://github.com/LLLin000/PaperForge/blob/master/docs/setup-guide.md")
         elif event.button.id == "btn-restart":
             self.app.post_message(RestartWizard())
+        elif event.button.id == "btn-exit":
+            self.app.exit()
 
 
 # =============================================================================
