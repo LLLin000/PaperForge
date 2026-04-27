@@ -1,3 +1,12 @@
+```
+    ______  ___  ______ _________________ ___________ _____  _____
+    | ___ \/ _ \ | ___ \  ___| ___ \  ___|  _  | ___ \  __ \|  ___|
+    | |_/ / /_\ \| |_/ / |__ | |_/ / |_  | | | | |_/ / |  \/| |__
+    |  __/|  _  ||  __/|  __||    /|  _| | | | |    /| | __ |  __|
+    | |   | | | || |   | |___| |\ \| |   \ \_/ / |\ \| |_\ \| |___
+    \_|   \_| |_/\_|   \____/\_| \_\_|    \___/\_| \_|\____/\____/
+```
+
 # PaperForge Lite
 
 [![PyPI version](https://img.shields.io/pypi/v/paperforge?style=for-the-badge&logo=pypi&logoColor=white&color=3775A9)](https://pypi.org/project/paperforge/)
@@ -37,38 +46,38 @@ PaperForge turns your Zotero library into an **AI-ready literature knowledge bas
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                    文献管理 (Literature Management)        │
-│                                                         │
-│  Zotero 添加新文献                                       │
-│    │ Better BibTeX 自动导出 JSON                         │
-│    ▼                                                    │
-│  paperforge sync  ─── 同步 Zotero → 生成文献笔记           │
+│              Literature Management                        │
+│                                                          │
+│  New paper in Zotero                                     │
+│    │ Better BibTeX auto-export JSON                      │
+│    ▼                                                     │
+│  paperforge sync  ─── Sync Zotero → generate notes       │
 └─────────────────────────────────────────────────────────┘
                           │
                           ▼
 ┌─────────────────────────────────────────────────────────┐
-│                    OCR (Full-text Extraction)             │
-│                                                         │
-│  paperforge ocr    ─── 上传 PDF → 轮询等待 → 下载全文      │
-│                          │                               │
+│               OCR (Full-text Extraction)                  │
+│                                                          │
+│  paperforge ocr    ─── Upload PDF → poll → download      │
+│                          │                                │
 │    ┌─────────────────────┼─────────────────────┐         │
 │    │ fulltext.md         │ images/             │         │
-│    │ OCR 全文文本        │ 图表切割图片        │         │
+│    │ extracted text      │ chart images        │         │
 │    └─────────────────────┴─────────────────────┘         │
 └─────────────────────────────────────────────────────────┘
                           │
                           ▼
 ┌─────────────────────────────────────────────────────────┐
-│                   精读 (Deep Reading)                      │
-│                                                         │
-│  /pf-deep <key>  ─── AI 三阶段精读                        │
-│                          │                               │
-│    Pass 1: 概览 ─── 5Cs 快速评估                         │
-│    Pass 2: 精读 ─── 按编号逐图解析 + chart-reading 审查    │
-│    Pass 3: 深度 ─── 批判评估 + 研究迁移                   │
-│                          │                               │
-│    ▼                                                    │
-│  Obsidian 笔记 ─── ## 🔍 精读 区域已填充完成               │
+│              Deep Reading                                 │
+│                                                          │
+│  /pf-deep <key>  ─── AI 3-pass reading                   │
+│                          │                                │
+│    Pass 1: Overview   ─── 5Cs quick assessment           │
+│    Pass 2: Close read ─── figure-by-figure + chart review │
+│    Pass 3: Synthesis  ─── critique + research transfer   │
+│                          │                                │
+│    ▼                                                     │
+│  Obsidian note ─── ## 🔍 Deep Reading section populated  │
 └─────────────────────────────────────────────────────────┘
 ```
 
