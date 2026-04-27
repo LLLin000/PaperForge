@@ -14,7 +14,7 @@
 - [ ] **Phase 15: Deep-Reading Queue Merge** — Single canonical `scan_library_records()` for both CLI and Agent consumers
 - [ ] **Phase 16: Retry + Progress Bars** — Resilient OCR with exponential backoff and user-visible progress indication
 - [ ] **Phase 17: Dead Code Removal + Pre-Commit** — Clean codebase validated by automated git hooks
-- [ ] **Phase 18: Documentation + CHANGELOG + UX Polish** — Complete user/maintainer docs, README fix, command naming audit
+- [ ] **Phase 18: Documentation + CHANGELOG + UX Polish** — Complete user/maintainer docs, README fix, command naming audit (2 plans)
 - [ ] **Phase 19: Testing** — E2E pipeline tests, setup wizard tests, `_utils.py` unit tests
 
 ---
@@ -110,15 +110,19 @@ Plans:
 **Depends on**: No hard code dependency — can overlap with earlier phases; must ship after Phase 17 to document final state
 **Requirements**: DX-03, DX-04, UX-01, UX-02, UX-03, UX-04, DOCS-01, DOCS-02, DOCS-03, DOCS-04
 **Success Criteria** (what must be TRUE):
-  1. `CHANGELOG.md` exists in Keep a Changelog format with sections for v1.0 through v1.4 — changelog URL included in `paperforge.json` update metadata
-  2. `CONTRIBUTING.md` documents: development setup (`pip install -e ".[test]"`), pre-commit hook installation, test execution workflow, architecture overview, and code conventions
-  3. `docs/MIGRATION-v1.4.md` documents all behavioral changes (dual-output logging, retry behavior, opt-in workflow streamlining), new environment variables, and required developer setup
-  4. README.md line 102 orphaned legacy code snippet removed; all user-facing docs (AGENTS.md, docs/*.md, command/*.md) audited for rendering issues
-  5. `chart-reading/INDEX.md` cross-references all 19 chart types ordered by biomedical commonness; agent prompt (`prompt_deep_subagent.md`) references this index
-  6. AGENTS.md section 1 includes "What to type where" quick-reference table mapping `/pf-*` Agent commands to `paperforge *` CLI commands
-  7. `auto_analyze_after_ocr` option available in `paperforge.json` (bool, default `false`) — opt-in to preserve Worker/Agent separation
-  8. ADR-012 (Shared Utilities Extraction) and ADR-013 (Dual-Output Logging Strategy) added to `docs/ARCHITECTURE.md`
-**Plans**: TBD
+   1. `CHANGELOG.md` exists in Keep a Changelog format with sections for v1.0 through v1.4 — changelog URL included in `paperforge.json` update metadata
+   2. `CONTRIBUTING.md` documents: development setup (`pip install -e ".[test]"`), pre-commit hook installation, test execution workflow, architecture overview, and code conventions
+   3. `docs/MIGRATION-v1.4.md` documents all behavioral changes (dual-output logging, retry behavior, opt-in workflow streamlining), new environment variables, and required developer setup
+   4. README.md line 102 orphaned legacy code snippet removed; all user-facing docs (AGENTS.md, docs/*.md, command/*.md) audited for rendering issues
+   5. `chart-reading/INDEX.md` cross-references all 19 chart types ordered by biomedical commonness; agent prompt (`prompt_deep_subagent.md`) references this index
+   6. AGENTS.md section 1 includes "What to type where" quick-reference table mapping `/pf-*` Agent commands to `paperforge *` CLI commands
+   7. `auto_analyze_after_ocr` option available in `paperforge.json` (bool, default `false`) — opt-in to preserve Worker/Agent separation
+   8. ADR-012 (Shared Utilities Extraction) and ADR-013 (Dual-Output Logging Strategy) added to `docs/ARCHITECTURE.md`
+**Plans**: 2 plans (1 wave)
+
+Plans:
+- [ ] 18-01-PLAN.md — Core Config & Foundation Docs (auto_analyze_after_ocr, CHANGELOG, CONTRIBUTING)
+- [ ] 18-02-PLAN.md — Migration, Architecture & Doc Polish (MIGRATION, ADRs, AGENTS, INDEX, README)
 
 ---
 
@@ -146,7 +150,7 @@ Plans:
 | 15. Queue Merge | v1.4 | 1/1 | Complete   | 2026-04-27 |
 | 16. Retry + Progress | v1.4 | 2/2 | Complete | 2026-04-27 |
 | 17. Dead Code + Pre-Commit | v1.4 | 1/1 | Complete | 2026-04-27 |
-| 18. Docs + CHANGELOG + UX | v1.4 | 0/0 | Not started | — |
+| 18. Docs + CHANGELOG + UX | v1.4 | 2/0 | Not started | — |
 | 19. Testing | v1.4 | 0/0 | Not started | — |
 
 ### Historical Milestones
