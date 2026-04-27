@@ -8,7 +8,7 @@ v1.4 focuses on eliminating accumulated technical debt (~1,610 lines of code dup
 
 ## Completed Milestone: v1.3 Path Normalization & Architecture Hardening
 
-**Status:** COMPLETE (2026-04-24)  
+**Status:** COMPLETE (2026-04-24)
 **Archive:** `.planning/milestones/v1.3.md`
 
 **Delivered:**

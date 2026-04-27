@@ -48,8 +48,8 @@ All 19 v1.3 requirements shipped and validated. See `.planning/milestones/v1.3.m
 
 - [ ] **DX-01**: Create `.pre-commit-config.yaml` with hooks: `ruff` (lint + format), `check-yaml`, `check-toml`, `end-of-file-fixer`, `trailing-whitespace`, and a custom `consistency-audit` hook that runs `scripts/consistency_audit.py` and blocks commits if duplicate utility functions are detected in any worker module.
 - [ ] **DX-02**: Add `[tool.ruff]` section to `pyproject.toml` targeting Python 3.10+, enabling rules `E`, `F`, `I`, `UP`, `B`, `SIM`. Run `ruff check --fix` and `ruff format` across the entire codebase as part of the pre-commit activation phase.
-- [ ] **DX-03**: Create `CHANGELOG.md` following the Keep a Changelog format with sections for each version (v1.0 through v1.4). Include the changelog URL in `paperforge.json` update metadata.
-- [ ] **DX-04**: Create `CONTRIBUTING.md` documenting: development setup (`pip install -e ".[test]"`), pre-commit hook installation, test execution workflow, architecture overview, and code conventions (no new print() calls, import shared utilities from `_utils.py`, REQ-ID linking in commit messages).
+- [x] **DX-03**: Create `CHANGELOG.md` following the Keep a Changelog format with sections for each version (v1.0 through v1.4). Include the changelog URL in `paperforge.json` update metadata.
+- [x] **DX-04**: Create `CONTRIBUTING.md` documenting: development setup (`pip install -e ".[test]"`), pre-commit hook installation, test execution workflow, architecture overview, and code conventions (no new print() calls, import shared utilities from `_utils.py`, REQ-ID linking in commit messages).
 
 ### Testing (TEST)
 
@@ -64,19 +64,19 @@ All 19 v1.3 requirements shipped and validated. See `.planning/milestones/v1.3.m
 
 **Goal:** Smooth user-facing friction points identified in the codebase audit.
 
-- [ ] **UX-01**: Add workflow streamlining options to `paperforge.json`: `auto_analyze_after_ocr` (bool, default `false`) — when enabled, after OCR completes for a paper, the library-record's `analyze` flag is automatically set to `true`. This is opt-in to preserve the two-layer Worker/Agent separation and user agency.
-- [ ] **UX-02**: Fix README.md rendering artifact: remove the orphaned legacy code snippet lines (`python <resolved_worker_script> --vault . ocr`, `python <resolved_worker_script> --vault . status`) at lines 102-104 that appear outside any code fence. Audit all user-facing docs (AGENTS.md, docs/*.md, command/*.md) for similar rendering issues.
-- [ ] **UX-03**: Generate a chart-reading guide cross-reference index (`chart-reading/INDEX.md`) that maps the 19 chart types to their reading guides, ordered by commonness in biomedical literature. The agent prompt (`prompt_deep_subagent.md`) references this index so AI agents can discover and cite relevant guides during Pass 2 figure-by-figure analysis.
-- [ ] **UX-04**: Audit the command naming boundary: ensure all user-facing documentation consistently maps `/pf-*` Agent commands to `paperforge *` CLI commands. Add a quick-reference table showing "What to type where" in AGENTS.md section 1.
+- [x] **UX-01**: Add workflow streamlining options to `paperforge.json`: `auto_analyze_after_ocr` (bool, default `false`) — when enabled, after OCR completes for a paper, the library-record's `analyze` flag is automatically set to `true`. This is opt-in to preserve the two-layer Worker/Agent separation and user agency.
+- [x] **UX-02**: Fix README.md rendering artifact: remove the orphaned legacy code snippet lines (`python <resolved_worker_script> --vault . ocr`, `python <resolved_worker_script> --vault . status`) at lines 102-104 that appear outside any code fence. Audit all user-facing docs (AGENTS.md, docs/*.md, command/*.md) for similar rendering issues.
+- [x] **UX-03**: Generate a chart-reading guide cross-reference index (`chart-reading/INDEX.md`) that maps the 19 chart types to their reading guides, ordered by commonness in biomedical literature. The agent prompt (`prompt_deep_subagent.md`) references this index so AI agents can discover and cite relevant guides during Pass 2 figure-by-figure analysis.
+- [x] **UX-04**: Audit the command naming boundary: ensure all user-facing documentation consistently maps `/pf-*` Agent commands to `paperforge *` CLI commands. Add a quick-reference table showing "What to type where" in AGENTS.md section 1.
 
 ### Documentation (DOCS)
 
 **Goal:** Document the v1.4 changes for existing users and future maintainers.
 
-- [ ] **DOCS-01**: Create `docs/MIGRATION-v1.4.md` following the established v1.2 migration document pattern. Document behavioral changes (dual-output logging, retry behavior, opt-in workflow streamlining), environment variable additions (`PAPERFORGE_LOG_LEVEL`, `PAPERFORGE_RETRY_MAX`, `PAPERFORGE_RETRY_BACKOFF`), and new developer workflow requirements (pre-commit hooks, ruff).
-- [ ] **DOCS-02**: Update `AGENTS.md` to reflect: new `--verbose` flag on CLI commands, new `paperforge.json` workflow options, new environment variables page, and the chart-reading INDEX.md cross-reference.
-- [ ] **DOCS-03**: Add ADR-012 (Shared Utilities Extraction) and ADR-013 (Dual-Output Logging Strategy) to `docs/ARCHITECTURE.md`, documenting the `_utils.py` leaf-module constraint and the print/logging boundary decision.
-- [ ] **DOCS-04**: Update `ROADMAP.md` to reflect v1.4 phase structure and mark all requirements as mapped after roadmap creation.
+- [x] **DOCS-01**: Create `docs/MIGRATION-v1.4.md` following the established v1.2 migration document pattern. Document behavioral changes (dual-output logging, retry behavior, opt-in workflow streamlining), environment variable additions (`PAPERFORGE_LOG_LEVEL`, `PAPERFORGE_RETRY_MAX`, `PAPERFORGE_RETRY_BACKOFF`), and new developer workflow requirements (pre-commit hooks, ruff).
+- [x] **DOCS-02**: Update `AGENTS.md` to reflect: new `--verbose` flag on CLI commands, new `paperforge.json` workflow options, new environment variables page, and the chart-reading INDEX.md cross-reference.
+- [x] **DOCS-03**: Add ADR-012 (Shared Utilities Extraction) and ADR-013 (Dual-Output Logging Strategy) to `docs/ARCHITECTURE.md`, documenting the `_utils.py` leaf-module constraint and the print/logging boundary decision.
+- [x] **DOCS-04**: Update `ROADMAP.md` to reflect v1.4 phase structure and mark all requirements as mapped after roadmap creation.
 
 ---
 
@@ -129,20 +129,20 @@ Deferred from v1.4 scope to keep the milestone focused and manageable.
 | REL-04 | Phase 16 | Pending |
 | DX-01 | Phase 17 | Pending |
 | DX-02 | Phase 17 | Pending |
-| DX-03 | Phase 18 | Pending |
-| DX-04 | Phase 18 | Pending |
+| DX-03 | Phase 18 | Complete |
+| DX-04 | Phase 18 | Complete |
 | TEST-01 | Phase 19 | Pending |
 | TEST-02 | Phase 19 | Pending |
 | TEST-03 | Phase 14 | Pending |
 | TEST-04 | Phase 19 | Pending |
-| UX-01 | Phase 18 | Pending |
-| UX-02 | Phase 18 | Pending |
-| UX-03 | Phase 18 | Pending |
-| UX-04 | Phase 18 | Pending |
-| DOCS-01 | Phase 18 | Pending |
-| DOCS-02 | Phase 18 | Pending |
-| DOCS-03 | Phase 18 | Pending |
-| DOCS-04 | Phase 18 | Pending |
+| UX-01 | Phase 18 | Complete |
+| UX-02 | Phase 18 | Complete |
+| UX-03 | Phase 18 | Complete |
+| UX-04 | Phase 18 | Complete |
+| DOCS-01 | Phase 18 | Complete |
+| DOCS-02 | Phase 18 | Complete |
+| DOCS-03 | Phase 18 | Complete |
+| DOCS-04 | Phase 18 | Complete |
 
 **Coverage:**
 - v1.4 requirements: 30 total

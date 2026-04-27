@@ -221,7 +221,7 @@ _JOURNAL_DB: dict[str, dict] | None = None
 
 def load_journal_db(system_dir: Path, zoterostyle_path_override: Path | None = None) -> dict[str, dict]:
     """Load zoterostyle.json journal database.
-    
+
     Changed signature: takes system_dir instead of vault to avoid
     depending on load_vault_config, which keeps config.py as the
     single source of config truth.
@@ -264,7 +264,7 @@ STANDARD_VIEW_NAMES = frozenset([
 # ---- Retry logic ----
 def retry_on_failure(max_retries=3, backoff=2.0, exceptions=(Exception,)):
     """Decorator: retry function with exponential backoff + jitter.
-    
+
     Configurable via environment variables:
       PAPERFORGE_RETRY_MAX (default: 3)
       PAPERFORGE_RETRY_BACKOFF (default: 2.0 seconds)
@@ -273,11 +273,11 @@ def retry_on_failure(max_retries=3, backoff=2.0, exceptions=(Exception,)):
     import random
     import functools
     import logging
-    
+
     logger = logging.getLogger('paperforge.retry')
     actual_max = int(os.environ.get('PAPERFORGE_RETRY_MAX', max_retries))
     actual_backoff = float(os.environ.get('PAPERFORGE_RETRY_BACKOFF', backoff))
-    
+
     def decorator(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
@@ -303,7 +303,7 @@ def retry_on_failure(max_retries=3, backoff=2.0, exceptions=(Exception,)):
 # ---- Progress bar helper ----
 def progress_bar(iterable, desc: str = '', unit: str = 'items'):
     """Wrap iterable with tqdm progress bar, falling back gracefully if TTY unavailable.
-    
+
     Auto-detects: if sys.stdout is a TTY, uses tqdm. Otherwise passes through silently.
     This ensures CI and piped output never break.
     """
@@ -323,48 +323,48 @@ def scan_library_records(
     filter_analyze: bool = True,
 ) -> list[dict]:
     """Scan library-records for entries awaiting deep reading.
-    
+
     This is the SINGLE source of truth, merged from:
       - worker/deep_reading.py::run_deep_reading() (was: scan + report)
       - skills/ld_deep.py::scan_deep_reading_queue() (was: scan for Agent)
-    
+
     Args:
         library_records_dir: Path to <control_dir>/library-records/
         ocr_dir: Path to <system_dir>/PaperForge/ocr/
         filter_analyze: If True, only return entries with analyze=true
                        and deep_reading_status != done
-    
+
     Returns:
-        List of dicts with keys: zotero_key, domain, title, 
+        List of dicts with keys: zotero_key, domain, title,
         deep_reading_status, ocr_status, record_path, note_path
     """
     import logging
     logger = logging.getLogger('paperforge.deep_reading')
-    
+
     queue: list[dict] = []
     if not library_records_dir.exists():
         return queue
-    
+
     for domain_dir in sorted(library_records_dir.iterdir()):
         if not domain_dir.is_dir():
             continue
         domain = domain_dir.name
         for record_path in sorted(domain_dir.glob('*.md')):
             text = record_path.read_text(encoding='utf-8')
-            
+
             zotero_key_match = re.search(r'^zotero_key:\s*(.+)$', text, re.MULTILINE)
             analyze_match = re.search(r'^analyze:\s*(true|false)$', text, re.MULTILINE)
             status_match = re.search(r'^deep_reading_status:\s*"?(.*?)"?$', text, re.MULTILINE)
             title_match = re.search(r'^title:\s*"?(.+?)"?$', text, re.MULTILINE)
-            
+
             zotero_key = zotero_key_match.group(1).strip().strip('"').strip("'") if zotero_key_match else record_path.stem
             is_analyze = analyze_match is not None and analyze_match.group(1) == 'true'
             dr_status = status_match.group(1).strip() if status_match else 'pending'
             title = title_match.group(1).strip().strip('"') if title_match else ''
-            
+
             if filter_analyze and (not is_analyze or dr_status == 'done'):
                 continue
-            
+
             # Check OCR status
             meta_path = ocr_dir / zotero_key / 'meta.json'
             ocr_status = 'pending'
@@ -374,7 +374,7 @@ def scan_library_records(
                     ocr_status = str(meta.get('ocr_status', 'pending')).strip().lower()
                 except Exception:
                     pass
-            
+
             queue.append({
                 'zotero_key': zotero_key,
                 'domain': domain,
@@ -383,14 +383,14 @@ def scan_library_records(
                 'ocr_status': ocr_status,
                 'record_path': str(record_path),
             })
-    
+
     if filter_analyze:
         queue.sort(key=lambda row: (
             0 if row['ocr_status'] == 'done' else 1,
             row['domain'],
             row['zotero_key'],
         ))
-    
+
     logger.info(f'scan_library_records: found {len(queue)} entries')
     return queue
 ```
@@ -431,21 +431,21 @@ import sys
 
 def configure_logging(verbose: bool = False) -> None:
     """Configure the 'paperforge' logger hierarchy.
-    
+
     Args:
         verbose: If True, set DEBUG level. Otherwise INFO.
     """
     level = logging.DEBUG if verbose else logging.INFO
-    
+
     # Root paperforge logger
     logger = logging.getLogger('paperforge')
     logger.setLevel(level)
-    
+
     # Sub-loggers for specific domains
-    for name in ('sync', 'ocr', 'deep_reading', 'repair', 'status', 
+    for name in ('sync', 'ocr', 'deep_reading', 'repair', 'status',
                  'update', 'base_views', 'retry', 'cli', 'skills'):
         logging.getLogger(f'paperforge.{name}').setLevel(level)
-    
+
     # Only add handler if none exists (prevents duplicate output on reload)
     if not logger.handlers:
         handler = logging.StreamHandler(sys.stderr)
@@ -455,7 +455,7 @@ def configure_logging(verbose: bool = False) -> None:
         )
         handler.setFormatter(formatter)
         logger.addHandler(handler)
-    
+
     # Quiet down noisy third-party loggers
     for noisy in ('urllib3', 'requests', 'PIL'):
         logging.getLogger(noisy).setLevel(logging.WARNING)
@@ -573,11 +573,11 @@ for export_path in sorted(paths['exports'].glob('*.json')):
 
 # After:
 for export_path in progress_bar(
-    sorted(paths['exports'].glob('*.json')), 
+    sorted(paths['exports'].glob('*.json')),
     desc='Processing domains', unit='domain'
 ):
     for item in progress_bar(
-        load_export_rows(export_path), 
+        load_export_rows(export_path),
         desc=f'  {export_path.stem}', unit='record'
     ):
         ...
@@ -588,7 +588,7 @@ for export_path in progress_bar(
 from paperforge.worker._utils import progress_bar
 
 for record in progress_bar(
-    pending_records, 
+    pending_records,
     desc='Uploading PDFs for OCR', unit='pdf'
 ):
     ...
@@ -651,7 +651,7 @@ import requests
 def _upload_pdf_to_paddleocr(pdf_path: Path, api_key: str, api_url: str) -> dict:
     """Upload PDF to PaddleOCR API with retry on transient failures."""
     # ... existing upload logic ...
-    response = requests.post(api_url, files={'file': open(pdf_path, 'rb')}, 
+    response = requests.post(api_url, files={'file': open(pdf_path, 'rb')},
                             headers={'Authorization': f'Bearer {api_key}'})
     response.raise_for_status()
     return response.json()
@@ -1014,7 +1014,7 @@ Phase 1: Foundation (no user-facing changes, infrastructure only)
   │ STATUS: logging works, -v flag works, tqdm available       │
   └─────────────────────────────────────────────────────────────┘
                     │
-Phase 2: Shared utilities extraction (core refactor)             
+Phase 2: Shared utilities extraction (core refactor)
   ┌─────────────────────────────────────────────────────────────┐
   │ 2a. Create paperforge/worker/_utils.py with ALL functions  │
   │ 2b. Update sync.py to import from _utils.py (keep originals│
@@ -1027,7 +1027,7 @@ Phase 2: Shared utilities extraction (core refactor)
   │ STATUS: all 7 workers import from _utils.py, tests pass    │
   └─────────────────────────────────────────────────────────────┘
                     │
-Phase 3: Deep-reading queue merge                                
+Phase 3: Deep-reading queue merge
   ┌─────────────────────────────────────────────────────────────┐
   │ 3a. Add scan_library_records() to _utils.py                │
   │ 3b. Update worker/deep_reading.py to use it                │
@@ -1037,7 +1037,7 @@ Phase 3: Deep-reading queue merge
   │ STATUS: single queue scanner, both consumers use it        │
   └─────────────────────────────────────────────────────────────┘
                     │
-Phase 4: Retry logic + progress bars                              
+Phase 4: Retry logic + progress bars
   ┌─────────────────────────────────────────────────────────────┐
   │ 4a. Add retry_on_failure decorator to _utils.py            │
   │ 4b. Apply @retry_on_failure to OCR upload + poll functions │
@@ -1047,7 +1047,7 @@ Phase 4: Retry logic + progress bars
   │ STATUS: OCR retries on failure, progress bars in terminal  │
   └─────────────────────────────────────────────────────────────┘
                     │
-Phase 5: Dead code removal + cleanup                              
+Phase 5: Dead code removal + cleanup
   ┌─────────────────────────────────────────────────────────────┐
   │ 5a. Remove duplicated functions from 6 workers (Phase B)   │
   │ 5b. Remove UPDATE_* constants from status.py (Phase A)     │
@@ -1057,7 +1057,7 @@ Phase 5: Dead code removal + cleanup
   │ STATUS: ~1,610 lines eliminated from codebase              │
   └─────────────────────────────────────────────────────────────┘
                     │
-Phase 6: Pre-commit hooks                                         
+Phase 6: Pre-commit hooks
   ┌─────────────────────────────────────────────────────────────┐
   │ 6a. Create .pre-commit-config.yaml                         │
   │ 6b. Create scripts/consistency-audit.py                    │
