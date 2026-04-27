@@ -142,3 +142,12 @@ Each task was committed atomically:
 
 *Phase: 13-logging-foundation*
 *Completed: 2026-04-27*
+
+## Self-Check: PASSED
+
+- [x] SUMMARY.md exists
+- [x] Both commits found: e0dbfec, 492c4c2
+- [x] All 12 module loggers import correctly with correct hierarchical names
+- [x] 4 user-facing stdout print() calls preserved in repair.py (1 multiline at L530, 3 single-line at L537/539/541)
+- [x] 0 `[INFO]`/`[WARN]` print() calls remain in commands/ocr.py
+- [x] 0 `_log()`/`_color()` references remain in worker/update.py
