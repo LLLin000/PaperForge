@@ -36,15 +36,16 @@ def ocr_doctor(config: dict[str, str] | None, live: bool = False) -> dict:
             "fix": "Set PADDLEOCR_API_TOKEN in .env or environment variables and re-run `paperforge ocr --diagnose`",
         }
 
-    # L2 — URL reachability
+    # L2 — URL reachability (use POST since most endpoints reject GET)
     job_url = os.environ.get(
         "PADDLEOCR_JOB_URL",
         "https://paddleocr.aistudio-app.com/api/v2/ocr/jobs",
     ).strip()
     try:
-        resp = requests.get(
+        resp = requests.post(
             job_url,
             headers={"Authorization": f"bearer {token}"},
+            json={"model": os.environ.get("PADDLEOCR_MODEL", "PaddleOCR-VL-1.5")},
             timeout=30,
         )
         if resp.status_code == 401:
@@ -62,13 +63,6 @@ def ocr_doctor(config: dict[str, str] | None, live: bool = False) -> dict:
                 "fix": "OCR provider is experiencing issues. Retry later with `paperforge ocr --diagnose`",
             }
         if resp.status_code != 200:
-            if resp.status_code == 405:
-                return {
-                    "level": 2,
-                    "passed": False,
-                    "error": "URL returned 405 Method Not Allowed",
-                    "fix": "PaddleOCR endpoint may require GET for probing but POST for OCR jobs. Check if your API endpoint supports both methods.",
-                }
             return {
                 "level": 2,
                 "passed": False,

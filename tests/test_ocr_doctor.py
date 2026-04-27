@@ -25,13 +25,13 @@ def test_l1_missing_token():
 # L2 — URL reachability
 # ---------------------------------------------------------------------------
 def test_l2_bad_url():
-    """Mock GET returning 404 → level 2 failed."""
+    """Mock POST returning 404 → level 2 failed."""
     env = {"PADDLEOCR_API_TOKEN": "test-token"}
     mock_resp = MagicMock()
     mock_resp.status_code = 404
 
     with patch.dict(os.environ, env, clear=True):
-        with patch("paperforge.ocr_diagnostics.requests.get", return_value=mock_resp):
+        with patch("paperforge.ocr_diagnostics.requests.post", return_value=mock_resp):
             result = ocr_doctor(config=None, live=False)
 
     assert result["level"] == 2
@@ -41,13 +41,13 @@ def test_l2_bad_url():
 
 
 def test_l2_unauthorized():
-    """Mock GET returning 401 → level 2 failed with auth message."""
+    """Mock POST returning 401 → level 2 failed with auth message."""
     env = {"PADDLEOCR_API_TOKEN": "bad-token"}
     mock_resp = MagicMock()
     mock_resp.status_code = 401
 
     with patch.dict(os.environ, env, clear=True):
-        with patch("paperforge.ocr_diagnostics.requests.get", return_value=mock_resp):
+        with patch("paperforge.ocr_diagnostics.requests.post", return_value=mock_resp):
             result = ocr_doctor(config=None, live=False)
 
     assert result["level"] == 2
