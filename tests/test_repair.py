@@ -218,7 +218,9 @@ class TestRunRepairScanOnly:
         result = run_repair(vault, paths, verbose=False, fix=False)
         assert result["scanned"] == 2
 
-    def test_verbose_output_printed(self, tmp_path, capsys):
+    def test_verbose_output_printed(self, tmp_path, caplog):
+        import logging
+        caplog.set_level(logging.DEBUG, logger="paperforge.worker.repair")
         vault = _make_vault(tmp_path)
         paths = pipeline_paths(vault)
         records_dir = vault / "03_Resources" / "LiteratureControl" / "library-records" / "骨科"
@@ -226,9 +228,8 @@ class TestRunRepairScanOnly:
         _write_library_record(records_dir, "KEY001", "骨科", "done")
         _write_meta(paths["ocr"], "KEY001", "pending")
         result = run_repair(vault, paths, verbose=True, fix=False)
-        captured = capsys.readouterr()
-        assert "KEY001" in captured.out
-        assert "divergent" in captured.out
+        assert "KEY001" in caplog.text
+        assert "divergent" in caplog.text
 
 
 class TestRunRepairFixMode:

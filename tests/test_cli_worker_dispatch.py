@@ -13,17 +13,17 @@ from unittest.mock import patch, MagicMock
 CAPTURED_CALLS: list[tuple[str, Path]] = []
 
 
-def stub_run_status(vault: Path) -> int:
+def stub_run_status(vault: Path, verbose: bool = False) -> int:
     CAPTURED_CALLS.append(("run_status", vault))
     return 0
 
 
-def stub_run_selection_sync(vault: Path) -> int:
+def stub_run_selection_sync(vault: Path, verbose: bool = False) -> int:
     CAPTURED_CALLS.append(("run_selection_sync", vault))
     return 0
 
 
-def stub_run_index_refresh(vault: Path) -> int:
+def stub_run_index_refresh(vault: Path, verbose: bool = False) -> int:
     CAPTURED_CALLS.append(("run_index_refresh", vault))
     return 0
 
@@ -33,7 +33,7 @@ def stub_run_deep_reading(vault: Path, verbose: bool = False) -> int:
     return 0
 
 
-def stub_run_ocr(vault: Path) -> int:
+def stub_run_ocr(vault: Path, verbose: bool = False) -> int:
     CAPTURED_CALLS.append(("run_ocr", vault))
     return 0
 
