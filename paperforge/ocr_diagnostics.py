@@ -62,7 +62,9 @@ def ocr_doctor(config: dict[str, str] | None, live: bool = False) -> dict:
                 "error": f"URL returned {resp.status_code}",
                 "fix": "OCR provider is experiencing issues. Retry later with `paperforge ocr --diagnose`",
             }
-        if resp.status_code != 200:
+        # 200 = happy path, 400 = reachable but request incomplete
+        # Both prove URL is live and token is valid (else 401)
+        if resp.status_code not in (200, 400):
             return {
                 "level": 2,
                 "passed": False,

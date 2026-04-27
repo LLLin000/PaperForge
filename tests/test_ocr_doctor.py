@@ -56,6 +56,20 @@ def test_l2_unauthorized():
     assert "token is invalid" in result["fix"]
 
 
+def test_l2_400_accepted():
+    """Mock POST returning 400 → level 2 passes (reachable, incomplete request)."""
+    env = {"PADDLEOCR_API_TOKEN": "test-token"}
+    mock_resp = MagicMock()
+    mock_resp.status_code = 400
+
+    with patch.dict(os.environ, env, clear=True):
+        with patch("paperforge.ocr_diagnostics.requests.post", return_value=mock_resp):
+            result = ocr_doctor(config=None, live=False)
+
+    # 400 must NOT be an L2 failure — it proves URL reachable
+    assert result["level"] != 2, f"Expected L2 to pass, got level {result['level']}"
+
+
 # ---------------------------------------------------------------------------
 # L3 — API response structure
 # ---------------------------------------------------------------------------
