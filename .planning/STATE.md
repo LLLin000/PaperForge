@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.4
 milestone_name: milestone
 status: Ready to plan
-stopped_at: Phase 16 plan 16-02 complete
-last_updated: "2026-04-27T09:05:31.176Z"
+stopped_at: Phase 17 plan 17-01 complete
+last_updated: "2026-04-27T17:43:00.000Z"
 progress:
   total_phases: 7
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 7
-  completed_plans: 6
+  completed_plans: 7
 ---
 
 # State: PaperForge Lite Release Hardening
@@ -24,15 +24,15 @@ See: `.planning/PROJECT.md` (updated 2026-04-25)
 
 ## Current Position
 
-Phase: 15
-Plan: Plans complete
+Phase: 17
+Plan: 17-01 complete
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total phases completed (cumulative): 13
-- v1.4 phases: 1/7 complete
+- Total phases completed (cumulative): 14
+- v1.4 phases: 2/7 complete
 
 **By Milestone:**
 
@@ -50,6 +50,7 @@ Plan: Plans complete
 | Phase 13-logging-foundation P03 | 8min | 2 tasks | 6 files |
 | Phase 15-deep-reading-queue-merge P01 | 4min | 2 tasks | 3 files |
 | Phase 15-deep-reading-queue-merge P01 | 4min | 2 tasks | 3 files |
+| Phase 17-dead-code-precommit P01 | 25min | 2 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -82,6 +83,13 @@ Plan: Plans complete
 - Forward slashes exclusively in wikilinks (`Path.as_posix()`)
 - `path_error` frontmatter field for explicit error tracking
 
+### Phase 17 Decisions (Locked)
+
+- `from paperforge.config import load_vault_config, paperforge_paths` replaces all per-module delegation wrappers
+- Pre-commit hooks configured but NOT auto-installed (DX-04 deferred to Phase 18)
+- `ruff check --fix` + `ruff format` are sufficient for automated code cleanup
+- `E501` (line-too-long) and pre-existing simplifications suppressed via `per-file-ignores` — not a blocker for code quality
+
 ### Phase 12 Decisions (Locked)
 
 - Migrated 4041-line `literature_pipeline.py` into 7 focused modules under `paperforge/worker/`
@@ -98,11 +106,12 @@ None yet.
 - **Circular import risk in Phase 14:** `_utils.py` must be pure leaf module — verify with `pytest --collect-only` after each worker migration
 - **Windows TTY detection (Phase 16):** `sys.stdout.reconfigure(encoding='utf-8')` may not work on all PowerShell configs — test on actual Windows 10/11
 - **Backward compatibility:** Users relying on `from paperforge.worker.sync import read_json` — mitigation: re-exports with deprecation comments
+- **Pre-commit hooks not installed:** Phase 18 (DX-04) must handle `pre-commit install` to activate hooks on `git commit`
 
 ## Session Continuity
 
-Last session: 2026-04-27T09:05:31.173Z
-Stopped at: Phase 16 plan 16-02 complete
-Resume file: .planning/phases/16-retry-progress-bars/16-02-SUMMARY.md
+Last session: 2026-04-27T17:43:00.000Z
+Stopped at: Phase 17 plan 17-01 complete
+Resume file: .planning/phases/17-dead-code-precommit/17-01-SUMMARY.md
 
 ---\n*Initialized: 2026-04-23*\n*Last updated: 2026-04-26 (v1.4 roadmap created — Phase 13 ready to plan)*

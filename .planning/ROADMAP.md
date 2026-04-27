@@ -83,8 +83,8 @@ Plans:
 **Plans**: 2 plans (2 waves)
 
 Plans:
-- [ ] 16-01-PLAN.md — Retry & Progress Infrastructure: _retry.py, _progress.py, pyproject.toml deps (Wave 1)
-- [ ] 16-02-PLAN.md — CLI + OCR Integration: --no-progress, retry/pb/zombie/batch in ocr.py (Wave 2)
+- [x] 16-01-PLAN.md — Retry & Progress Infrastructure: _retry.py, _progress.py, pyproject.toml deps (Wave 1)
+- [x] 16-02-PLAN.md — CLI + OCR Integration: --no-progress, retry/pb/zombie/batch in ocr.py (Wave 2)
 
 ---
 
@@ -101,7 +101,7 @@ Plans:
 **Plans**: 1 plan (2 waves)
 
 Plans:
-- [ ] 17-01-PLAN.md — Ruff config + pre-commit hooks + Check 5 + dead code sweep + OBS-05 (Wave 1: config scaffolding; Wave 2: fix + verify)
+- [x] 17-01-PLAN.md — Ruff config + pre-commit hooks + Check 5 + dead code sweep + OBS-05 (Wave 1: config scaffolding; Wave 2: fix + verify)
 
 ---
 
@@ -144,8 +144,8 @@ Plans:
 | 13. Logging Foundation | v1.4 | 3/3 | Complete    | 2026-04-27 |
 | 14. Shared Utils Extraction | v1.4 | 0/0 | Not started | — |
 | 15. Queue Merge | v1.4 | 1/1 | Complete   | 2026-04-27 |
-| 16. Retry + Progress | v1.4 | 0/2 | Planning done | — |
-| 17. Dead Code + Pre-Commit | v1.4 | 0/1 | Plan ready | — |
+| 16. Retry + Progress | v1.4 | 2/2 | Complete | 2026-04-27 |
+| 17. Dead Code + Pre-Commit | v1.4 | 1/1 | Complete | 2026-04-27 |
 | 18. Docs + CHANGELOG + UX | v1.4 | 0/0 | Not started | — |
 | 19. Testing | v1.4 | 0/0 | Not started | — |
 
