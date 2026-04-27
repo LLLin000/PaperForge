@@ -1,4 +1,4 @@
-"""paperforge.cli — PaperForge Lite command-line interface.
+"""paperforge.cli — PaperForge command-line interface.
 
 Exposes `paperforge paths`, `paperforge status`, `paperforge sync`,
 `paperforge ocr`, `paperforge ocr --diagnose`, `paperforge deep-reading`,
@@ -118,7 +118,7 @@ def _import_worker_functions() -> None:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="paperforge",
-        description="PaperForge Lite — Obsidian + Zotero literature pipeline CLI",
+        description="PaperForge — Obsidian + Zotero literature pipeline CLI",
     )
     parser.add_argument(
         "--vault",
@@ -214,10 +214,10 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     # doctor
-    sub.add_parser("doctor", help="Validate PaperForge Lite setup and configuration")
+    sub.add_parser("doctor", help="Validate PaperForge setup and configuration")
 
     # update
-    sub.add_parser("update", help="Update PaperForge Lite to the latest version")
+    sub.add_parser("update", help="Update PaperForge to the latest version")
 
     # setup wizard
     sub.add_parser("setup", help="Run the setup wizard (Textual-based)")

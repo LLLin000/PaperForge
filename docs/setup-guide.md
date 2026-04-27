@@ -1,4 +1,4 @@
-# PaperForge Lite 安装配置与使用指南
+# PaperForge 安装配置与使用指南
 
 > 本文档面向**首次使用 PaperForge 的新用户**，从零开始覆盖安装、配置、使用全流程。
 

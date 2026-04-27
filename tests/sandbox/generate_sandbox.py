@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate minimal pre-install sandbox for testing PaperForge Lite setup wizard.
+"""Generate minimal pre-install sandbox for testing PaperForge setup wizard.
 
 Run from repo root:
     python tests/sandbox/generate_sandbox.py
@@ -161,10 +161,10 @@ def build() -> None:
 
     readme = SANDBOX / "README.md"
     readme.write_text(
-        f"""# PaperForge Lite — Test Sandbox
+        f"""# PaperForge — Test Sandbox
 
 ## 用途
-测试 PaperForge Lite 安装向导 `setup_wizard.py` 的完整流程。
+测试 PaperForge 安装向导 `setup_wizard.py` 的完整流程。
 
 ## 目录结构
 

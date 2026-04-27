@@ -1,4 +1,4 @@
-# PaperForge Lite Architecture
+# PaperForge Architecture
 
 > Maintainer-facing documentation covering the two-layer design, data flow, directory structure, key design decisions, and extension points.
 >
@@ -19,7 +19,7 @@
 
 ## System Overview
 
-PaperForge Lite is a local-first literature workflow that bridges Zotero (reference management) and Obsidian (knowledge management) for medical researchers. The system is intentionally split into two distinct layers: the **Worker layer** and the **Agent layer**. This separation is the defining architectural choice of the project.
+PaperForge is a local-first literature workflow that bridges Zotero (reference management) and Obsidian (knowledge management) for medical researchers. The system is intentionally split into two distinct layers: the **Worker layer** and the **Agent layer**. This separation is the defining architectural choice of the project.
 
 The **Worker layer** (`literature_pipeline.py` and the `paperforge/commands/` package) handles all automated, mechanical tasks: detecting new literature from Zotero via Better BibTeX JSON export, generating library records and formal notes, running OCR through the PaddleOCR API, and maintaining state consistency across the system. Workers are deterministic, idempotent where possible, and designed to run without human intervention. They are triggered by CLI commands such as `paperforge sync` or `paperforge ocr`.
 
@@ -113,7 +113,7 @@ Each literature item tracks `ocr_status` through a finite state machine:
 
 ## Directory Structure
 
-PaperForge Lite uses **5 core directories** under the Obsidian vault root. All paths are configurable via `paperforge.json` and resolved through the shared config resolver (see [ADR-001](#adr-001-config-precedence)).
+PaperForge uses **5 core directories** under the Obsidian vault root. All paths are configurable via `paperforge.json` and resolved through the shared config resolver (see [ADR-001](#adr-001-config-precedence)).
 
 ```
 {vault_root}/
@@ -632,4 +632,4 @@ The current implementation targets **OpenCode Agent** (`.opencode/skills/` and `
 
 ---
 
-*PaperForge Lite | Architecture Documentation | For Maintainers and Contributors*
+*PaperForge | Architecture Documentation | For Maintainers and Contributors*

@@ -1,4 +1,4 @@
-"""PaperForge Lite — shared configuration and path resolver.
+"""PaperForge — shared configuration and path resolver.
 
 Configuration precedence (D-Configuration Hierarchy):
   1. Explicit overrides (function parameter)
@@ -217,7 +217,7 @@ def paperforge_paths(
     """Build the complete PaperForge path inventory for a vault.
 
     Returns absolute Path objects for every user-facing and worker-facing
-    location used by PaperForge Lite.
+    location used by PaperForge.
 
     Args:
         vault: Path to the vault root.

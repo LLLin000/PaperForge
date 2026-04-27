@@ -7,7 +7,7 @@
     \_|   \_| |_/\_|   \____/\_| \_\_|    \___/\_| \_|\____/\____/
 ```
 
-# PaperForge Lite
+# PaperForge
 
 [![PyPI version](https://img.shields.io/pypi/v/paperforge?style=for-the-badge&logo=pypi&logoColor=white&color=3775A9)](https://pypi.org/project/paperforge/)
 [![Python version](https://img.shields.io/pypi/pyversions/paperforge?style=for-the-badge&logo=python&logoColor=white&color=3775A9)](https://python.org)

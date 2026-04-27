@@ -7,7 +7,7 @@
 
 ## Terminology
 
-- [ ] "PaperForge Lite" used correctly (product name, not "Paperforge" or "Paper Forge")
+- [ ] "PaperForge" used correctly (product name, not "Paperforge" or "Paper Forge")
 - [ ] "Zotero" capitalized correctly
 - [ ] "Obsidian" capitalized correctly
 - [ ] "PaddleOCR" capitalized correctly
@@ -45,7 +45,7 @@
 
 ## Branding
 
-- [ ] README.md uses correct product name "PaperForge Lite"
+- [ ] README.md uses correct product name "PaperForge"
 - [ ] `AGENTS.md` uses correct product name
 - [ ] Command docs use correct product name
 - [ ] No references to deprecated package name `paperforge_lite` in user-facing docs
@@ -66,4 +66,4 @@
 
 ---
 
-*PaperForge Lite | Consistency Checklist | For maintainers and release managers*
+*PaperForge | Consistency Checklist | For maintainers and release managers*

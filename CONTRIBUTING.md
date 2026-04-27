@@ -1,6 +1,6 @@
-# Contributing to PaperForge Lite
+# Contributing to PaperForge
 
-Thank you for your interest in contributing to PaperForge Lite! This document provides setup instructions, workflow guidelines, and code conventions to help you get started.
+Thank you for your interest in contributing to PaperForge! This document provides setup instructions, workflow guidelines, and code conventions to help you get started.
 
 ---
 
@@ -84,7 +84,7 @@ Tests are in `tests/` with a shared `conftest.py` providing fixtures. The `tests
 
 ## Architecture Overview
 
-PaperForge Lite uses a **two-layer design**:
+PaperForge uses a **two-layer design**:
 
 ```
 Worker Layer (automated, deterministic, CLI-triggered)
@@ -169,4 +169,4 @@ Agent Layer (interactive, reasoning-driven, user-triggered)
 
 ---
 
-*Thank you for contributing to PaperForge Lite — Building a better literature workflow, underground!*
+*Thank you for contributing to PaperForge — Building a better literature workflow, underground!*

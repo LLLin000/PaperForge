@@ -1,4 +1,4 @@
-"""Smoke tests for PaperForge Lite — Phase 8 regression gate.
+"""Smoke tests for PaperForge — Phase 8 regression gate.
 
 These tests validate:
 - ld_deep.py importability from deployed location

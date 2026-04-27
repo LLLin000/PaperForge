@@ -1,4 +1,4 @@
-# PaperForge Lite 快速安装指南
+# PaperForge 快速安装指南
 
 > 详细版教程（含截图和每个步骤的说明）请见 [setup-guide.md](setup-guide.md)。
 

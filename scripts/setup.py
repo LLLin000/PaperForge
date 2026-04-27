@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compatibility wrapper for the PaperForge Lite setup wizard."""
+"""Compatibility wrapper for the PaperForge setup wizard."""
 
 from __future__ import annotations
 

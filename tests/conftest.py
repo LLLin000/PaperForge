@@ -1,4 +1,4 @@
-"""Test fixtures and helpers for PaperForge Lite smoke tests."""
+"""Test fixtures and helpers for PaperForge smoke tests."""
 
 from __future__ import annotations
 

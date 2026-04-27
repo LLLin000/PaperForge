@@ -74,6 +74,6 @@ def test_doctor_on_empty_vault(tmp_path, capsys):
     (tmp_path / "paperforge.json").write_text(json.dumps(pf_cfg), encoding="utf-8")
     code = run_doctor(tmp_path)
     captured = capsys.readouterr().out
-    assert "PaperForge Lite Doctor" in captured
+    assert "PaperForge Doctor" in captured
     assert "[FAIL]" in captured or "[WARN]" in captured
     assert code == 1

@@ -1,5 +1,5 @@
 """
-Test suite for PaperForge Lite command documentation.
+Test suite for PaperForge command documentation.
 
 Ensures user-facing docs use stable `paperforge ...` commands
 instead of unresolved <system_dir> token paths.

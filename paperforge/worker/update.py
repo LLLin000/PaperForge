@@ -276,7 +276,7 @@ def run_update(vault: Path) -> int:
             local = "unknown"
     remote = _remote_version()
     logger.info("%s", "=" * 50)
-    logger.info("PaperForge Lite 更新")
+    logger.info("PaperForge 更新")
     logger.info("%s", "=" * 50)
     logger.info("本地版本: %s", local)
     logger.info("远程版本: %s", remote or "unknown")

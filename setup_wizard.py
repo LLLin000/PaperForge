@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-PaperForge Lite Setup Wizard (Textual Step-by-Step)
+PaperForge Setup Wizard (Textual Step-by-Step)
 ====================================================
 基于 Textual ContentSwitcher + Tree + ProgressBar 的步骤向导。
 
@@ -393,7 +393,7 @@ class WelcomeStep(StepScreen):
             classes="logo",
         )
         yield Markdown("""
-**PaperForge Lite** 是一个连接 Zotero 与 Obsidian 的文献工作流工具。
+**PaperForge** 是一个连接 Zotero 与 Obsidian 的文献工作流工具。
 
 安装向导将引导你完成以下配置：
 
@@ -1201,7 +1201,7 @@ class DoneStep(StepScreen):
         yield Markdown(f"""
 ## 安装完成！
 
-PaperForge Lite 已完成安装和初始化。以下是立即开始使用的步骤：
+PaperForge 已完成安装和初始化。以下是立即开始使用的步骤：
 
 ### 首次使用步骤：
 
@@ -1382,7 +1382,7 @@ class SetupWizardApp(App):
                 # 左侧：步骤导航树
                 with Vertical(classes="sidebar"):
                     yield Static("安装步骤", classes="sidebar-title")
-                    tree = Tree("PaperForge Lite", id="step-tree", classes="step-tree")
+                    tree = Tree("PaperForge", id="step-tree", classes="step-tree")
                     for i, title in enumerate(STEP_TITLES):
                         tree.root.add_leaf(f"{i}. {title}")
                     yield tree
@@ -1502,7 +1502,7 @@ def _find_vault() -> Path | None:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="PaperForge Lite 安装向导")
+    parser = argparse.ArgumentParser(description="PaperForge 安装向导")
     parser.add_argument("--vault", type=Path, default=None, help="Vault 路径（可选，默认当前目录）")
     args = parser.parse_args(argv)
 

@@ -1,4 +1,4 @@
-"""End-to-end integration tests for the PaperForge Lite literature pipeline.
+"""End-to-end integration tests for the PaperForge literature pipeline.
 
 Covers: Zotero JSON export -> selection-sync -> index-refresh -> OCR queue -> formal notes.
 

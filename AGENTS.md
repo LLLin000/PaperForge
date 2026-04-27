@@ -1,4 +1,4 @@
-# PaperForge Lite - Agent Guide
+# PaperForge - Agent Guide
 
 > 本文档面向 **安装完成后的新用户** 和 **AI Agent**。安装步骤见 [setup-guide.md](docs/setup-guide.md) 或快速版 [INSTALLATION.md](docs/INSTALLATION.md)。
 
@@ -28,7 +28,7 @@
 
 ## 1. 核心架构（Lite 版）
 
-PaperForge Lite 采用 **两层设计**：
+PaperForge 采用 **两层设计**：
 
 | 层级 | 组件 | 触发方式 | 作用 |
 |------|------|----------|------|
@@ -565,4 +565,4 @@ cp -r 新下载的代码/* <vault_path>/
 
 ---
 
-*PaperForge Lite | 快速开始指南 | 安装后阅读*
+*PaperForge | 快速开始指南 | 安装后阅读*

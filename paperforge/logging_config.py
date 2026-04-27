@@ -1,4 +1,4 @@
-"""PaperForge Lite — logging configuration single entry point.
+"""PaperForge — logging configuration single entry point.
 
 Call ``configure_logging(verbose)`` once at CLI startup before command dispatch.
 All worker and command modules use ``logging.getLogger(__name__)`` for

@@ -240,7 +240,7 @@ def check_wikilink_format(vault: Path, paths: dict, add_check) -> None:
 
 
 def run_doctor(vault: Path, verbose: bool = False) -> int:
-    """Validate PaperForge Lite setup and report by category.
+    """Validate PaperForge setup and report by category.
 
     Returns:
         0 if all checks pass, 1 otherwise.
@@ -407,7 +407,7 @@ def run_doctor(vault: Path, verbose: bool = False) -> int:
     else:
         add_check("Agent 脚本", "warn", "literature-qa skill 目录未找到", "确认 agent_config_dir 配置正确")
 
-    print("PaperForge Lite Doctor")
+    print("PaperForge Doctor")
     print("=" * 40)
     current_category = ""
     fix_map: dict[str, list[str]] = {}
@@ -487,7 +487,7 @@ def run_status(vault: Path, verbose: bool = False) -> int:
             except Exception:
                 continue
 
-    print("PaperForge Lite status")
+    print("PaperForge status")
     print(f"- vault: {vault}")
     print(f"- system_dir: {cfg['system_dir']}")
     print(f"- resources_dir: {cfg['resources_dir']}")

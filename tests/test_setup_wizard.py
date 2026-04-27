@@ -1,4 +1,4 @@
-"""Unit tests for PaperForge Lite setup wizard standalone functions.
+"""Unit tests for PaperForge setup wizard standalone functions.
 
 Covers: AGENT_CONFIGS, EnvChecker (check_python, check_vault, check_dependencies,
 get_exports_dir, _find_zotero), CheckResult, and _find_vault.

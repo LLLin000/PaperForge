@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate a PaperForge Lite installation."""
+"""Validate a PaperForge installation."""
 
 from __future__ import annotations
 
@@ -126,7 +126,7 @@ def main() -> int:
     passed = sum(1 for ok, _ in all_results if ok)
     failed = [msg for ok, msg in all_results if not ok and not msg.startswith("[WARN]")]
     warnings = [msg for ok, msg in all_results if not ok and msg.startswith("[WARN]")]
-    print(f"PaperForge Lite validation: {passed} passed, {len(failed)} failed, {len(warnings)} warnings")
+    print(f"PaperForge validation: {passed} passed, {len(failed)} failed, {len(warnings)} warnings")
     for _, msg in all_results:
         print(msg)
     return 0 if not failed else 1
