@@ -50,78 +50,10 @@ Plans:
   3. No circular imports: `_utils.py` imports only from stdlib and `paperforge.config` — never from any sibling worker module
   4. All 205 existing tests pass with zero failures after extraction (verified by `pytest tests/ -x`)
   5. Re-exports with `# Re-exported from _utils.py for backward compatibility` comments preserved in original modules where callers may still reference them
-**Plans**: TBD
-
----
-
-### Phase 15: Deep-Reading Queue Merge
-**Goal**: Merge two divergent queue-scanning implementations into a single canonical `scan_library_records()` in `_utils.py` — CLI and Agent consumers see identical results.
-**Depends on**: Phase 14 (`_utils.py` must exist for the shared function)
-**Requirements**: CH-03
-**Success Criteria** (what must be TRUE):
-  1. `scan_library_records()` in `_utils.py` returns identical results whether called from `worker/deep_reading.py` or `skills/ld_deep.py`
-  2. `paperforge deep-reading` CLI output matches Agent queue scan output exactly
-  3. ~50 lines of duplicate queue-scanning logic removed from `ld_deep.py`
-  4. No behavioral change to queue filtering: ready/waiting/blocked categories preserved
-**Plans**: 1 plan
-
-Plans:
-- [x] 15-01-PLAN.md — Canonical scan_library_records() in _utils.py; refactor both callers
-
----
-
-### Phase 16: Retry + Progress Bars
-**Goal**: Make the OCR pipeline resilient to transient network failures and provide user-visible progress indication for long-running operations.
-**Depends on**: Phase 13 (logging) and Phase 14 (`_utils.py` for retry decorator + progress bar wrapper)
-**Requirements**: REL-01, REL-02, REL-03, REL-04, OBS-04
-**Success Criteria** (what must be TRUE):
-  1. Transient PaddleOCR API failures (HTTP 429, 502, 503, timeouts) trigger automatic retry with exponential backoff (1s → 2s → 4s → 8s → max 30s) and jitter
-  2. OCR `meta.json` records `retry_count`, `last_error`, and `last_attempt_at` fields — atomically written after each attempt
-  3. Zombie `processing` jobs older than 30 minutes are reset to `pending` on worker restart (configurable via `PAPERFORGE_RETRY_MAX` and `PAPERFORGE_RETRY_BACKOFF` env vars)
-  4. A single OCR upload failure does not abort the entire batch — failed items are logged, state updated, and processing continues with remaining items
-  5. `tqdm` progress bar appears during OCR uploads in interactive terminals; auto-disables in CI/pipe contexts; `--no-progress` flag suppresses explicitly
-**Plans**: 2 plans (2 waves)
-
-Plans:
-- [x] 16-01-PLAN.md — Retry & Progress Infrastructure: _retry.py, _progress.py, pyproject.toml deps (Wave 1)
-- [x] 16-02-PLAN.md — CLI + OCR Integration: --no-progress, retry/pb/zombie/batch in ocr.py (Wave 2)
-
----
-
-### Phase 17: Dead Code Removal + Pre-Commit
-**Goal**: Remove all dead code, slim import blocks, and install automated pre-commit safety nets that prevent future duplication — LAST code phase, validates the cleaned codebase.
-**Depends on**: Phase 14 (`_utils.py` provides canonical locations for previously duplicated code) and Phase 15 (deep-reading cleanup complete)
-**Requirements**: CH-04, DX-01, DX-02, OBS-05
-**Success Criteria** (what must be TRUE):
-  1. No unused imports remain in any worker module — verified by `ruff check`
-  2. UPDATE_* constants (already removed in Phase 12 — verified by grep) and unnecessary delegation wrappers (`load_vault_config`, `pipeline_paths`) removed — direct `config.*` imports replace them
-  3. `.pre-commit-config.yaml` active with hooks: `ruff` (lint + format), `check-yaml`, `check-toml`, `end-of-file-fixer`, `trailing-whitespace`, and custom `consistency-audit` hook
-  4. `git commit` triggers pre-commit hooks — consistency audit blocks commits if duplicate utility functions are detected in any worker module
-  5. OCR error messages include HTTP status code, library-record name for context, and actionable suggestion (e.g., "Run `paperforge ocr --diagnose` to test API connectivity")
-**Plans**: 1 plan (2 waves)
-
-Plans:
-- [x] 17-01-PLAN.md — Ruff config + pre-commit hooks + Check 5 + dead code sweep + OBS-05 (Wave 1: config scaffolding; Wave 2: fix + verify)
-
----
-
-### Phase 18: Documentation + CHANGELOG + UX Polish
-**Goal**: Complete all user-facing and maintainer-facing documentation, fix README rendering artifacts, add workflow streamlining options, and cross-reference chart-reading guides.
-**Depends on**: No hard code dependency — can overlap with earlier phases; must ship after Phase 17 to document final state
-**Requirements**: DX-03, DX-04, UX-01, UX-02, UX-03, UX-04, DOCS-01, DOCS-02, DOCS-03, DOCS-04
-**Success Criteria** (what must be TRUE):
-   1. `CHANGELOG.md` exists in Keep a Changelog format with sections for v1.0 through v1.4 — changelog URL included in `paperforge.json` update metadata
-   2. `CONTRIBUTING.md` documents: development setup (`pip install -e ".[test]"`), pre-commit hook installation, test execution workflow, architecture overview, and code conventions
-   3. `docs/MIGRATION-v1.4.md` documents all behavioral changes (dual-output logging, retry behavior, opt-in workflow streamlining), new environment variables, and required developer setup
-   4. README.md line 102 orphaned legacy code snippet removed; all user-facing docs (AGENTS.md, docs/*.md, command/*.md) audited for rendering issues
-   5. `chart-reading/INDEX.md` cross-references all 19 chart types ordered by biomedical commonness; agent prompt (`prompt_deep_subagent.md`) references this index
-   6. AGENTS.md section 1 includes "What to type where" quick-reference table mapping `/pf-*` Agent commands to `paperforge *` CLI commands
-   7. `auto_analyze_after_ocr` option available in `paperforge.json` (bool, default `false`) — opt-in to preserve Worker/Agent separation
-   8. ADR-012 (Shared Utilities Extraction) and ADR-013 (Dual-Output Logging Strategy) added to `docs/ARCHITECTURE.md`
 **Plans**: 2 plans (1 wave)
 
 Plans:
-- [ ] 18-01-PLAN.md — Core Config & Foundation Docs (auto_analyze_after_ocr, CHANGELOG, CONTRIBUTING)
+- [x] 18-01-PLAN.md — Core Config & Foundation Docs (auto_analyze_after_ocr, CHANGELOG, CONTRIBUTING)
 - [ ] 18-02-PLAN.md — Migration, Architecture & Doc Polish (MIGRATION, ADRs, AGENTS, INDEX, README)
 
 ---
@@ -150,7 +82,7 @@ Plans:
 | 15. Queue Merge | v1.4 | 1/1 | Complete   | 2026-04-27 |
 | 16. Retry + Progress | v1.4 | 2/2 | Complete | 2026-04-27 |
 | 17. Dead Code + Pre-Commit | v1.4 | 1/1 | Complete | 2026-04-27 |
-| 18. Docs + CHANGELOG + UX | v1.4 | 2/0 | Not started | — |
+| 18. Docs + CHANGELOG + UX | v1.4 | 2/1 | In progress | — |
 | 19. Testing | v1.4 | 0/0 | Not started | — |
 
 ### Historical Milestones
