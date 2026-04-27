@@ -71,22 +71,19 @@ def run(args: argparse.Namespace) -> int:
         return _diagnose(vault, live=live)
 
     if key:
-        print(f"[INFO] Processing specific key: {key}")
+        logger.info("Processing specific key: %s", key)
 
     run_ocr = _get_run_ocr()
     exit_code = run_ocr(vault)
 
     # Auto-diagnose after successful run (new unified behavior)
     if exit_code == 0 and ocr_action is None and not diagnose_only and not key:
-        print("\n[Auto-diagnose] Running post-OCR diagnostic...")
+        logger.info("Running post-OCR diagnostic...")
         try:
             diag_code = _diagnose(vault, live=False)
             if diag_code != 0:
-                print(
-                    "[WARN] Post-OCR diagnostic found issues, "
-                    "but OCR completed successfully."
-                )
+                logger.warning("Post-OCR diagnostic found issues, but OCR completed successfully.")
         except Exception as e:
-            print(f"[WARN] Auto-diagnose failed: {e}")
+            logger.warning("Auto-diagnose failed: %s", e)
 
     return exit_code

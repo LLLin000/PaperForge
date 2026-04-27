@@ -219,16 +219,6 @@ def protected_paths(vault: Path) -> set[str]:
     }
 
 
-def _color(text: str, c: str = "") -> str:
-    colors = {"r": "\033[91m", "g": "\033[92m", "y": "\033[93m", "b": "\033[94m", "c": "\033[96m", "x": "\033[0m"}
-    if sys.platform == "win32" and not os.environ.get("FORCE_COLOR"):
-        return text
-    return f"{colors.get(c, '')}{text}{colors['x']}"
-
-
-def _log(msg: str, c: str = "") -> None:
-    print(_color(msg, c))
-
 
 def _remote_version() -> str | None:
     try:
@@ -277,7 +267,7 @@ def _do_backup(vault: Path, updates: list) -> Path | None:
             shutil.copy2(dst, bp)
             count += 1
     if count:
-        _log(f"[INFO] 已备份 {count} 个文件到 {backup_dir.name}", "c")
+        logger.info("已备份 %d 个文件到 %s", count, backup_dir.name)
     return backup_dir if count else None
 
 
@@ -288,18 +278,18 @@ def _apply_updates(vault: Path, updates: list) -> bool:
             shutil.copy2(src, dst)
         return True
     except Exception as e:
-        _log(f"[ERR] 更新失败: {e}", "r")
+        logger.error("更新失败: %s", e)
         return False
 
 
 def _rollback(vault: Path, backup_dir: Path) -> None:
-    _log("[INFO] 正在回滚...", "b")
+    logger.info("正在回滚...")
     for bp in backup_dir.rglob("*"):
         if bp.is_file():
             orig = vault / bp.relative_to(backup_dir)
             orig.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(bp, orig)
-    _log("[OK] 回滚完成", "g")
+    logger.info("回滚完成")
 
 
 def _detect_install_method() -> tuple[str, Path | None]:
@@ -332,12 +322,12 @@ def _update_via_pip(editable: bool = False) -> bool:
         cmd.append("--upgrade")
         cmd.append("paperforge")
     
-    _log(f"[INFO] 执行: {' '.join(cmd)}", "b")
+    logger.info("执行: %s", ' '.join(cmd))
     r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8")
     if r.returncode != 0:
-        _log(f"[ERR] pip 更新失败: {r.stderr}", "r")
+        logger.error("pip 更新失败: %s", r.stderr)
         return False
-    _log("[OK] pip 更新成功", "g")
+    logger.info("pip 更新成功")
     if r.stdout.strip():
         print(r.stdout)
     return True
@@ -346,25 +336,25 @@ def _update_via_pip(editable: bool = False) -> bool:
 def _update_via_git(vault: Path) -> bool:
     """Update via git pull."""
     if not (vault / ".git").is_dir():
-        _log("[ERR] 不是 git 仓库", "r")
+        logger.error("不是 git 仓库")
         return False
     r = subprocess.run(["git", "status", "--short"], cwd=vault, capture_output=True, text=True, encoding="utf-8")
     if r.stdout.strip():
-        _log("[WARN] 有未提交的更改，请先提交或储藏", "y")
+        logger.warning("有未提交的更改，请先提交或储藏")
         return False
-    _log("[INFO] 执行 git pull...", "b")
+    logger.info("执行 git pull...")
     r = subprocess.run(["git", "pull", "origin", "master"], cwd=vault, capture_output=True, text=True, encoding="utf-8")
     if r.returncode != 0:
-        _log(f"[ERR] git pull 失败: {r.stderr}", "r")
+        logger.error("git pull 失败: %s", r.stderr)
         return False
-    _log("[OK] git pull 成功", "g")
+    logger.info("git pull 成功")
     if r.stdout.strip():
         print(r.stdout)
     return True
 
 
 def update_via_zip(vault: Path) -> bool:
-    _log("[INFO] 下载更新包...", "b")
+    logger.info("下载更新包...")
     tmp = Path(tempfile.mkdtemp(prefix="pf_update_"))
     zip_path = tmp / "update.zip"
     try:
@@ -376,24 +366,24 @@ def update_via_zip(vault: Path) -> bool:
         dirs = [d for d in (tmp / "extracted").iterdir() if d.is_dir()]
         source = dirs[0] if dirs else None
         if not source:
-            _log("[ERR] 解压失败", "r")
+            logger.error("解压失败")
             return False
         updates = _scan_updates(vault, source)
         if not updates:
-            _log("[OK] 所有文件已是最新", "g")
+            logger.info("所有文件已是最新")
             return True
-        _log(f"\n[INFO] 发现 {len(updates)} 个文件需要更新:", "b")
+        logger.info("发现 %d 个文件需要更新:", len(updates))
         for src, dst, action in updates:
-            _log(f"  [{action}] {dst.relative_to(vault)}", "g" if action == "NEW" else "y")
+            logger.info("  [%s] %s", action, dst.relative_to(vault))
         backup = _do_backup(vault, updates)
         if _apply_updates(vault, updates):
-            _log(f"\n[OK] 更新完成！共 {len(updates)} 个文件", "g")
+            logger.info("更新完成！共 %d 个文件", len(updates))
             return True
         if backup:
             _rollback(vault, backup)
         return False
     except Exception as e:
-        _log(f"[ERR] 下载失败: {e}", "r")
+        logger.error("下载失败: %s", e)
         return False
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
@@ -403,59 +393,59 @@ def run_update(vault: Path) -> int:
     """运行更新检查与安装"""
     local_cfg = vault / "paperforge.json"
     if not local_cfg.exists():
-        _log("[ERR] 未找到 paperforge.json", "r")
+        logger.error("未找到 paperforge.json")
         return 1
     local = json.loads(local_cfg.read_text(encoding="utf-8")).get("version", "unknown")
     remote = _remote_version()
-    _log("=" * 50, "b")
-    _log("PaperForge Lite 更新", "b")
-    _log("=" * 50, "b")
-    _log(f"本地版本: {local}", "c")
-    _log(f"远程版本: {remote or 'unknown'}", "c")
+    logger.info("%s", "=" * 50)
+    logger.info("PaperForge Lite 更新")
+    logger.info("%s", "=" * 50)
+    logger.info("本地版本: %s", local)
+    logger.info("远程版本: %s", remote or 'unknown')
     if not remote:
-        _log("[ERR] 无法获取远程版本", "r")
+        logger.error("无法获取远程版本")
         return 1
     try:
         needs = tuple(int(x) for x in remote.split(".") if x.isdigit()) > tuple(int(x) for x in local.split(".") if x.isdigit())
     except ValueError:
         needs = remote != local
     if not needs:
-        _log("[OK] 当前已是最新版本", "g")
+        logger.info("当前已是最新版本")
         return 0
-    _log(f"\n[INFO] 发现新版本: {local} -> {remote}", "y")
-    _log("[WARN] 更新前建议备份 Vault", "y")
-    ans = input(_color("确认更新? [y/N]: ", "y")).strip().lower()
+    logger.info("发现新版本: %s -> %s", local, remote)
+    logger.warning("更新前建议备份 Vault")
+    ans = input("确认更新? [y/N]: ").strip().lower()
     if ans not in ("y", "yes"):
-        _log("[INFO] 已取消", "c")
+        logger.info("已取消")
         return 0
     
     # Auto-detect installation method
     method, path = _detect_install_method()
-    _log(f"[检测] 安装方式: {method}", "c")
+    logger.info("安装方式: %s", method)
     
     if method == "pip":
-        _log("[INFO] 通过 pip 更新...", "b")
+        logger.info("通过 pip 更新...")
         success = _update_via_pip(editable=False)
     elif method == "pip-editable":
-        _log("[INFO] 通过 pip editable 模式更新...", "b")
+        logger.info("通过 pip editable 模式更新...")
         # For editable install, need to git pull first then reinstall
         if path and (path / ".git").exists():
             success = _update_via_git(path)
             if success:
-                _log("[INFO] 重新安装 editable 模式...", "b")
+                logger.info("重新安装 editable 模式...")
                 os.chdir(path)
                 success = _update_via_pip(editable=True)
         else:
-            _log("[WARN] 无法找到 git 仓库，尝试 pip 更新...", "y")
+            logger.warning("无法找到 git 仓库，尝试 pip 更新...")
             success = _update_via_pip(editable=False)
     elif method == "git":
         success = _update_via_git(vault)
     else:
-        _log("[WARN] 未检测到标准安装方式，尝试 zip 下载...", "y")
+        logger.warning("未检测到标准安装方式，尝试 zip 下载...")
         success = _update_via_zip(vault)
     
     if success:
-        _log("\n[OK] 更新完成！请重启 Obsidian", "g")
+        logger.info("更新完成！请重启 Obsidian")
     return 0 if success else 1
 
 

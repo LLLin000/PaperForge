@@ -236,7 +236,7 @@ def _detect_path_errors(paths: dict[str, Path], verbose: bool = False) -> dict:
             text = record_path.read_text(encoding="utf-8")
         except Exception as e:
             if verbose:
-                print(f"[repair] error reading {record_path}: {e}")
+                logger.error("error reading %s: %s", record_path, e)
             continue
         err_match = re.search(r'^path_error:\s*"(.*?)"\s*$', text, re.MULTILINE)
         if not err_match:
@@ -303,9 +303,7 @@ def repair_pdf_paths(
                         domain_exports[domain] = export_rows
                     except Exception as e:
                         if verbose:
-                            print(
-                                f"[repair] error loading export for {domain}: {e}"
-                            )
+                            logger.error("error loading export for %s: %s", domain, e)
                         export_rows = []
                 else:
                     export_rows = []
@@ -339,9 +337,7 @@ def repair_pdf_paths(
                             record_path.write_text(new_text, encoding="utf-8")
                             fixed += 1
                             if verbose:
-                                print(
-                                    f"[repair] fixed path for {zotero_key}: {new_wikilink}"
-                                )
+                                logger.info("fixed path for %s: %s", zotero_key, new_wikilink)
                         continue
 
         # For all errors, try resolving the current pdf_path
@@ -357,18 +353,16 @@ def repair_pdf_paths(
                         record_path.write_text(new_text, encoding="utf-8")
                         fixed += 1
                         if verbose:
-                            print(f"[repair] cleared path_error for {zotero_key}")
+                            logger.info("cleared path_error for %s", zotero_key)
                 else:
                     if verbose:
-                        print(f"[repair] {zotero_key} path still unresolved")
+                        logger.warning("%s path still unresolved", zotero_key)
             else:
                 if verbose:
-                    print(
-                        f"[repair] {zotero_key} has empty pdf_path (not_found)"
-                    )
+                    logger.warning("%s has empty pdf_path (not_found)", zotero_key)
         else:
             if verbose:
-                print(f"[repair] {zotero_key} has no pdf_path field")
+                logger.warning("%s has no pdf_path field", zotero_key)
 
     return fixed
 
@@ -423,7 +417,7 @@ def run_repair(vault: Path, paths: dict, verbose: bool = False, fix: bool = Fals
                 validated_status, validated_error = validate_ocr_meta(paths, meta)
                 meta_validated_status = validated_status
                 if validated_error and verbose:
-                    print(f"[repair] {zotero_key} meta validation error: {validated_error}")
+                    logger.warning("%s meta validation error: %s", zotero_key, validated_error)
                 raw_status = str(meta.get('ocr_status', '') or '').strip().lower()
                 meta_ocr_status = raw_status if raw_status else None
                 if meta_validated_status == 'done_incomplete':
@@ -456,7 +450,7 @@ def run_repair(vault: Path, paths: dict, verbose: bool = False, fix: bool = Fals
             }
             result['divergent'].append(item)
             if verbose:
-                print(f"[repair] divergent: {zotero_key} | {div_reason}")
+                logger.info("divergent: %s | %s", zotero_key, div_reason)
             if fix:
                 fixed_library_record = False
                 fixed_formal_note = False
@@ -526,7 +520,7 @@ def run_repair(vault: Path, paths: dict, verbose: bool = False, fix: bool = Fals
                 fixed_count = sum([fixed_library_record, fixed_formal_note, fixed_meta])
                 result['fixed'] += fixed_count
                 if verbose and fixed_count > 0:
-                    print(f"[repair] fixed {fixed_count} files for {zotero_key}")
+                    logger.info("fixed %d files for %s", fixed_count, zotero_key)
     # Path error detection and repair
     path_errors = _detect_path_errors(paths, verbose)
     if path_errors["total"] > 0:
