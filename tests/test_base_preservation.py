@@ -168,8 +168,8 @@ class TestLiteratureHubBase:
         assert PAPERFORGE_VIEW_PREFIX in content
         assert "${LIBRARY_RECORDS}" not in content, "Placeholder should be substituted"
 
-    def test_paperforge_base_created(self, tmp_path):
-        """PaperForge.base (all records) is created alongside domain bases."""
+    def test_paperforge_base_not_created(self, tmp_path):
+        """PaperForge.base (all records) is NOT created (removed in v1.4.1)."""
         vault = tmp_path / "Vault"
         vault.mkdir()
         resources = vault / "03_Resources"
@@ -197,10 +197,7 @@ class TestLiteratureHubBase:
         ensure_base_views(vault, paths, config, force=False)
 
         pf_base = bases / "PaperForge.base"
-        assert pf_base.exists(), "PaperForge.base not created"
-        content = pf_base.read_text(encoding="utf-8")
-        assert content.count("type: table") == 8
-        assert "${LIBRARY_RECORDS}" not in content
+        assert not pf_base.exists(), "PaperForge.base should not be created"
 
 
 class TestMergeBaseViews:

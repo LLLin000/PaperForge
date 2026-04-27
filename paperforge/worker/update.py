@@ -18,6 +18,7 @@ from paperforge.worker._utils import (
     read_json,
     write_json,
 )
+from paperforge.worker.status import GITHUB_REPO, GITHUB_ZIP
 
 logger = logging.getLogger(__name__)
 
