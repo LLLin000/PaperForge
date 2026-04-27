@@ -28,7 +28,9 @@ dependencies = [
     "requests>=2.31.0",
     "pymupdf>=1.23.0",
     "pillow>=10.0.0",
+    "tenacity>=8.2.0",
     "textual>=0.47.0",
+    "tqdm>=4.66.0",
 ]
 
 [project.optional-dependencies]
@@ -48,3 +50,14 @@ paperforge = ["py.typed"]
 
 [tool.pytest.ini_options]
 addopts = "--ignore=tests/sandbox/00_TestVault/"
+
+[tool.ruff]
+target-version = "py310"
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = ["B904"]  # raise-within-try is intentional in many worker error paths
+
+[tool.ruff.format]
+quote-style = "double"

@@ -27,117 +27,26 @@ from paperforge.worker.sync import (
     load_export_rows,
 )
 
+from paperforge.worker._utils import (
+    STANDARD_VIEW_NAMES,
+    _extract_year,
+    _JOURNAL_DB,
+    load_journal_db,
+    lookup_impact_factor,
+    read_json,
+    read_jsonl,
+    slugify_filename,
+    write_json,
+    write_jsonl,
+    yaml_block,
+    yaml_list,
+    yaml_quote,
+)
+
+from paperforge.worker._retry import configure_retry, retry_with_meta
+from paperforge.worker._progress import progress_bar
+
 logger = logging.getLogger(__name__)
-
-STANDARD_VIEW_NAMES = frozenset([
-    "控制面板", "推荐分析", "待 OCR", "OCR 完成",
-    "待深度阅读", "深度阅读完成", "正式卡片", "全记录"
-])
-
-def load_simple_env(env_path: Path) -> None:
-    if not env_path.exists():
-        return
-    for raw_line in env_path.read_text(encoding='utf-8').splitlines():
-        line = raw_line.strip()
-        if not line or line.startswith('#') or '=' not in line:
-            continue
-        key, value = line.split('=', 1)
-        key = key.strip()
-        if not key or key in os.environ:
-            continue
-        value = value.strip()
-        if len(value) >= 2 and value[0] == value[-1] and (value[0] in {'"', "'"}):
-            value = value[1:-1]
-        os.environ[key] = value
-
-def read_json(path: Path):
-    return json.loads(path.read_text(encoding='utf-8'))
-_JOURNAL_DB: dict[str, dict] | None = None
-
-def load_journal_db(vault: Path) -> dict[str, dict]:
-    """Load zoterostyle.json journal database."""
-    global _JOURNAL_DB
-    if _JOURNAL_DB is not None:
-        return _JOURNAL_DB
-    zoterostyle_path = vault / load_vault_config(vault)['system_dir'] / 'Zotero' / 'zoterostyle.json'
-    if zoterostyle_path.exists():
-        try:
-            _JOURNAL_DB = read_json(zoterostyle_path)
-        except (JSONDecodeError, Exception):
-            _JOURNAL_DB = {}
-    else:
-        _JOURNAL_DB = {}
-    return _JOURNAL_DB
-
-def lookup_impact_factor(journal_name: str, extra: str, vault: Path) -> str:
-    """Lookup impact factor: prefer zoterostyle.json, fallback to extra field."""
-    if not journal_name:
-        return ''
-    journal_db = load_journal_db(vault)
-    if journal_name in journal_db:
-        rank_data = journal_db[journal_name].get('rank', {})
-        if isinstance(rank_data, dict):
-            sciif = rank_data.get('sciif', '')
-            if sciif:
-                return str(sciif)
-    if extra:
-        if_match = re.search('影响因子[:：]\\s*([0-9.]+)', extra)
-        if if_match:
-            return if_match.group(1)
-    return ''
-
-def write_json(path: Path, data) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')
-
-def read_jsonl(path: Path):
-    rows = []
-    if not path.exists():
-        return rows
-    for line in path.read_text(encoding='utf-8').splitlines():
-        line = line.strip()
-        if line:
-            rows.append(json.loads(line))
-    return rows
-
-def write_jsonl(path: Path, rows) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    text = '\n'.join((json.dumps(row, ensure_ascii=False) for row in rows))
-    if text:
-        text += '\n'
-    path.write_text(text, encoding='utf-8')
-
-def yaml_quote(value: str) -> str:
-    if isinstance(value, bool):
-        return 'true' if value else 'false'
-    return '"' + str(value or '').replace('\\', '\\\\').replace('"', '\\"') + '"'
-
-def yaml_block(value: str) -> list[str]:
-    value = (value or '').strip()
-    if not value:
-        return ['abstract: |-', '  ']
-    lines = ['abstract: |-']
-    for line in value.splitlines():
-        lines.append(f'  {line}')
-    return lines
-
-def yaml_list(key: str, values) -> list[str]:
-    cleaned = [str(value).strip() for value in values or [] if str(value).strip()]
-    if not cleaned:
-        return [f'{key}: []']
-    lines = [f'{key}:']
-    for value in cleaned:
-        lines.append(f'  - {yaml_quote(value)}')
-    return lines
-
-def slugify_filename(text: str) -> str:
-    cleaned = re.sub('[<>:"/\\\\|?*]+', '', text).strip()
-    return cleaned[:120] or 'untitled'
-
-def _extract_year(value: str) -> str:
-    match = re.search('(19|20)\\d{2}', value or '')
-    return match.group(0) if match else ''
-
 
 def load_vault_config(vault: Path) -> dict:
     """Read vault configuration — delegates to shared resolver.
@@ -234,6 +143,9 @@ def ensure_ocr_meta(vault: Path, row: dict) -> dict:
     meta.setdefault('assets_path', assets_path)
     meta.setdefault('fulltext_md_path', '')
     meta.setdefault('error', '')
+    meta.setdefault('retry_count', 0)
+    meta.setdefault('last_error', None)
+    meta.setdefault('last_attempt_at', None)
     return meta
 
 def validate_ocr_meta(paths: dict[str, Path], meta: dict) -> tuple[str, str]:
@@ -1217,10 +1129,38 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
     fulltext_md_path = str(fulltext_path.resolve())
     return (page_num, markdown_path, json_path, fulltext_md_path)
 
-def run_ocr(vault: Path, verbose: bool = False) -> int:
+def run_ocr(vault: Path, verbose: bool = False, no_progress: bool = False) -> int:
     from paperforge.pdf_resolver import resolve_pdf_path
     paths = pipeline_paths(vault)
     cleanup_blocked_ocr_dirs(paths)
+
+    # Zombie reset: reset stale processing jobs to pending
+    zombie_timeout = int(os.environ.get('PAPERFORGE_ZOMBIE_TIMEOUT_MINUTES', '30'))
+    ocr_root = paths.get('ocr')
+    if ocr_root and ocr_root.exists():
+        for meta_dir in ocr_root.iterdir():
+            meta_path = meta_dir / 'meta.json'
+            if not meta_path.exists():
+                continue
+            try:
+                meta = read_json(meta_path)
+            except Exception:
+                continue
+            zkey = meta.get('zotero_key', meta_dir.name)
+            zstatus = str(meta.get('ocr_status', '') or '').strip().lower()
+            if zstatus in {'queued', 'running'}:
+                zstarted = meta.get('ocr_started_at', '')
+                if zstarted:
+                    try:
+                        started_dt = datetime.fromisoformat(zstarted)
+                        if (datetime.now(timezone.utc) - started_dt).total_seconds() > zombie_timeout * 60:
+                            meta['ocr_status'] = 'pending'
+                            meta['retry_count'] = int(meta.get('retry_count', 0)) + 1
+                            write_json(meta_path, meta)
+                            logger.warning("Zombie reset %s: was %s, started at %s, reset to pending", zkey, zstatus, zstarted)
+                    except Exception:
+                        pass
+
     control_actions = load_control_actions(paths)
     target_keys = {key for key, action in control_actions.items() if action.get('do_ocr', False)}
     target_rows = []
@@ -1254,7 +1194,13 @@ def run_ocr(vault: Path, verbose: bool = False) -> int:
     changed = 0
     active_submitted = 0
     queue_changed = False
-    for queue_row in ocr_queue:
+
+    def _do_poll(job_id: str, token_val: str) -> requests.Response:
+        resp = requests.get(f"{job_url}/{job_id}", headers={'Authorization': f'bearer {token_val}'}, timeout=60)
+        resp.raise_for_status()
+        return resp
+
+    for queue_row in progress_bar(ocr_queue, desc="Processing OCR", disable=no_progress):
         key = queue_row['zotero_key']
         meta = ensure_ocr_meta(vault, queue_row)
         status = str(meta.get('ocr_status', 'pending') or 'pending').strip().lower()
@@ -1266,8 +1212,21 @@ def run_ocr(vault: Path, verbose: bool = False) -> int:
             active_submitted += 1
             if not token:
                 continue
-            response = requests.get(f"{job_url}/{meta['ocr_job_id']}", headers={'Authorization': f'bearer {token}'}, timeout=60)
-            response.raise_for_status()
+            meta_path_poll = paths['ocr'] / key / 'meta.json'
+            try:
+                response = retry_with_meta(_do_poll, meta_path_poll, meta['ocr_job_id'], token)
+            except Exception as e:
+                from paperforge.ocr_diagnostics import classify_error
+                state, suggestion = classify_error(e, getattr(e, 'response', None))
+                meta['ocr_status'] = state
+                meta['error'] = str(e)
+                meta['suggestion'] = suggestion
+                meta['library_record'] = key
+                queue_row['queue_status'] = state
+                write_json(paths['ocr'] / key / 'meta.json', meta)
+                changed += 1
+                active_submitted = max(0, active_submitted - 1)
+                continue
             try:
                 payload = response.json()['data']
                 state = payload['state']
@@ -1277,6 +1236,7 @@ def run_ocr(vault: Path, verbose: bool = False) -> int:
                 meta['ocr_status'] = state
                 meta['error'] = f'API schema mismatch during polling: {e}'
                 meta['suggestion'] = suggestion
+                meta['library_record'] = key
                 meta['raw_response'] = response.text[:1000]
                 queue_row['queue_status'] = state
                 write_json(paths['ocr'] / key / 'meta.json', meta)
@@ -1310,13 +1270,22 @@ def run_ocr(vault: Path, verbose: bool = False) -> int:
             else:
                 meta['ocr_status'] = 'error'
                 meta['error'] = payload.get('errorMsg', 'Unknown OCR failure')
+                meta['library_record'] = key
                 queue_row['queue_status'] = 'error'
                 active_submitted = max(0, active_submitted - 1)
             write_json(paths['ocr'] / key / 'meta.json', meta)
             changed += 1
     available_slots = max(0, max_items - active_submitted)
     if available_slots > 0:
-        for queue_row in ocr_queue:
+
+        def _do_upload(token_val: str, pdf_path: Path) -> requests.Response:
+            with open(pdf_path, 'rb') as file_handle:
+                resp = requests.post(job_url, headers={'Authorization': f'bearer {token_val}'}, data={'model': model, 'optionalPayload': json.dumps(optional_payload)}, files={'file': file_handle}, timeout=120)
+            resp.raise_for_status()
+            return resp
+
+        upload_items = [r for r in ocr_queue if r.get('queue_status', '') not in ('done', 'queued', 'running')]
+        for queue_row in progress_bar(upload_items, desc="Uploading", disable=no_progress):
             if available_slots <= 0:
                 break
             key = queue_row['zotero_key']
@@ -1347,16 +1316,16 @@ def run_ocr(vault: Path, verbose: bool = False) -> int:
                 write_json(paths['ocr'] / key / 'meta.json', meta)
                 changed += 1
                 continue
+            meta_path_upload = paths['ocr'] / key / 'meta.json'
             try:
-                with open(resolved_pdf, 'rb') as file_handle:
-                    response = requests.post(job_url, headers={'Authorization': f'bearer {token}'}, data={'model': model, 'optionalPayload': json.dumps(optional_payload)}, files={'file': file_handle}, timeout=120)
-                response.raise_for_status()
+                response = retry_with_meta(_do_upload, meta_path_upload, token, resolved_pdf)
             except Exception as e:
                 from paperforge.ocr_diagnostics import classify_error
                 state, suggestion = classify_error(e, getattr(e, 'response', None))
                 meta['ocr_status'] = state
                 meta['error'] = str(e)
                 meta['suggestion'] = suggestion
+                meta['library_record'] = key
                 queue_row['queue_status'] = state
                 write_json(paths['ocr'] / key / 'meta.json', meta)
                 changed += 1

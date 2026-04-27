@@ -240,6 +240,67 @@ def check_command_docs() -> tuple[int, list[str]]:
     return (0 if passed else 1), violations
 
 
+def check_duplicate_utils() -> tuple[int, list[str]]:
+    """Check 5: Detect worker modules with duplicated utility functions outside the re-export from _utils.py."""
+    import ast
+    violations: list[str] = []
+
+    worker_dir = REPO_ROOT / "paperforge" / "worker"
+    if not worker_dir.exists():
+        return 0, violations
+
+    # Known shared function names from _utils.py
+    shared_funcs = frozenset({
+        "read_json", "write_json", "read_jsonl", "write_jsonl",
+        "yaml_quote", "yaml_block", "yaml_list",
+        "slugify_filename", "_extract_year",
+        "load_journal_db", "lookup_impact_factor",
+        "scan_library_records", "_resolve_formal_note_path",
+    })
+
+    skip_files = frozenset({"_utils.py", "_retry.py", "_progress.py", "__init__.py"})
+
+    for py_path in sorted(worker_dir.glob("*.py")):
+        if py_path.name in skip_files:
+            continue
+        rel = py_path.relative_to(REPO_ROOT).as_posix()
+        try:
+            tree = ast.parse(py_path.read_text(encoding="utf-8"))
+        except SyntaxError:
+            violations.append(f"  [{rel}] Syntax error -- cannot parse")
+            continue
+
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.FunctionDef):
+                continue
+            if node.name not in shared_funcs:
+                continue
+
+            # Check if this function is a legitimate re-export from _utils
+            # (import from _utils + simple return wrapper)
+            is_reexport = False
+            for child in ast.walk(node):
+                if isinstance(child, ast.ImportFrom):
+                    if child.module and "_utils" in child.module:
+                        is_reexport = True
+                        break
+                elif isinstance(child, ast.Import):
+                    for alias in child.names:
+                        if "_utils" in (alias.name or ""):
+                            is_reexport = True
+                            break
+
+            if is_reexport:
+                continue
+
+            violations.append(
+                f"  [{rel}] Function '{node.name}' is defined locally but exists in _utils.py"
+            )
+
+    passed = len(violations) == 0
+    return (0 if passed else 1), violations
+
+
 def main() -> int:
     print("=== Consistency Audit Results ===\n")
 
@@ -248,6 +309,7 @@ def main() -> int:
         ("Check 2: No paperforge_lite in Python", check_paperforge_lite),
         ("Check 3: No dead links", check_dead_links),
         ("Check 4: Command docs structure", check_command_docs),
+        ("Check 5: No duplicate utility functions", check_duplicate_utils),
     ]
 
     total_passed = 0
