@@ -47,6 +47,24 @@ STUDY_HEADER = "## 🔍 精读"
 FIGURE_SECTION_HEADER = "#### Figure-by-Figure 解析"
 TABLE_SECTION_HEADER = "#### Table-by-Table 解析"
 
+FIGURE_SUBHEADINGS = [
+    "图像定位与核心问题",
+    "方法与结果",
+    "图表质量审查",
+    "作者解释",
+    "我的理解",
+    "疑点 / 局限",
+]
+
+TABLE_SUBHEADINGS = [
+    "这张表在回答什么问题",
+    "关键字段 / 分组",
+    "主要结果",
+    "我的理解",
+    "在全文中的作用",
+    "疑点 / 局限",
+]
+
 
 @dataclass
 class FigureEntry:
@@ -65,6 +83,7 @@ class TableEntry:
     number: str
     image_link: str
     page: int | None
+    image_id: str = ""
 
 
 def validate_extraction_completeness(
@@ -836,56 +855,28 @@ def render_study_scaffold(figures: Iterable[FigureEntry], tables: Iterable[Table
 
 
 def render_figure_block(figure: FigureEntry) -> str:
-    page_suffix = f"（第 {figure.page} 页）" if figure.page else ""
     lines = [
         f"> [!note]- Figure {figure.number}：{figure.title}",
         f"> ![[{figure.image_link}]]",
     ]
-    # Add additional images for multi-image figures
     for add_img in figure.additional_images:
         lines.append(f"> ![[{add_img['link']}]]")
-    lines.extend(
-        [
-            ">",
-            "> **图像定位与核心问题**",
-            f"> - 页码：{page_suffix or '待补充'}",
-            "> - 这张图要回答什么：",
-            "> - （待补充）",
-            ">",
-            "> **方法与结果**",
-            "> - 方法：",
-            "> - 结果：",
-            ">",
-            "> **作者解释**",
-            "> - （待补充）",
-            ">",
-            "> **我的理解**",
-            "> - （待补充）",
-            ">",
-            "> **在全文中的作用**",
-            "> - （待补充）",
-            ">",
-            "> **疑点 / 局限**",
-            "> - （待补充）",
-        ]
-    )
+    lines.append(">")
+    for heading in FIGURE_SUBHEADINGS:
+        lines.append(f"> **{heading}**")
+        lines.append(">")
     return "\n".join(lines) + "\n\n"
 
 
 def render_table_block(table: TableEntry) -> str:
-    page_suffix = f"第 {table.page} 页" if table.page else "待补充"
     lines = [
         f"> [!note]- Table {table.number}",
         f"> ![[{table.image_link}]]",
         ">",
-        f"> - 图像定位：{page_suffix}",
-        "> - 这张表在回答什么问题：",
-        "> - 关键字段 / 分组：",
-        "> - 主要结果：",
-        "> - 我的理解：",
-        "> - 在全文中的作用：",
-        "> - 疑点 / 局限：",
     ]
+    for heading in TABLE_SUBHEADINGS:
+        lines.append(f"> **{heading}**")
+        lines.append(">")
     return "\n".join(lines) + "\n\n"
 
 
