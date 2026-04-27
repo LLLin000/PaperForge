@@ -36,7 +36,7 @@
 Plans:
 - [x] 13-01-PLAN.md — Logging Core: logging_config.py + global --verbose flag
 - [x] 13-02-PLAN.md — Module Loggers: logger instances + diagnostic print migration
-- [ ] 13-03-PLAN.md — Verbose Wiring: verbose params + command dispatch passthrough
+- [x] 13-03-PLAN.md — Verbose Wiring: verbose params + command dispatch passthrough
 
 ---
 
@@ -131,7 +131,7 @@ Plans:
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 13. Logging Foundation | v1.4 | 2/3 | In Progress|  |
+| 13. Logging Foundation | v1.4 | 3/3 | Complete   | 2026-04-27 |
 | 14. Shared Utils Extraction | v1.4 | 0/0 | Not started | — |
 | 15. Queue Merge | v1.4 | 0/0 | Not started | — |
 | 16. Retry + Progress | v1.4 | 0/0 | Not started | — |
