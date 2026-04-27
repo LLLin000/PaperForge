@@ -378,7 +378,7 @@ def check_wikilink_format(vault: Path, paths: dict, add_check) -> None:
         )
 
 
-def run_doctor(vault: Path) -> int:
+def run_doctor(vault: Path, verbose: bool = False) -> int:
     """Validate PaperForge Lite setup and report by category.
 
     Returns:
@@ -563,7 +563,7 @@ def _is_junction(path: Path) -> bool:
         return False
 
 
-def run_status(vault: Path) -> int:
+def run_status(vault: Path, verbose: bool = False) -> int:
     """Print a compact Lite install/runtime status."""
     paths = pipeline_paths(vault)
     cfg = load_vault_config(vault)

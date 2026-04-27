@@ -1217,7 +1217,7 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
     fulltext_md_path = str(fulltext_path.resolve())
     return (page_num, markdown_path, json_path, fulltext_md_path)
 
-def run_ocr(vault: Path) -> int:
+def run_ocr(vault: Path, verbose: bool = False) -> int:
     from paperforge.pdf_resolver import resolve_pdf_path
     paths = pipeline_paths(vault)
     cleanup_blocked_ocr_dirs(paths)

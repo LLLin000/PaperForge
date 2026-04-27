@@ -808,7 +808,7 @@ def load_control_actions(paths: dict[str, Path]) -> dict[str, dict]:
         actions[zotero_key] = {'analyze': row.get('analyze', False), 'do_ocr': row.get('do_ocr', False)}
     return actions
 
-def run_selection_sync(vault: Path) -> int:
+def run_selection_sync(vault: Path, verbose: bool = False) -> int:
     from paperforge.worker.base_views import ensure_base_views
     from paperforge.worker.ocr import validate_ocr_meta
     paths = pipeline_paths(vault)
@@ -1355,7 +1355,7 @@ def frontmatter_note(entry: dict, existing_text: str='') -> str:
 def analyze_selected_keys(paths: dict[str, Path]) -> set[str]:
     return {key for key, row in load_control_actions(paths).items() if row.get('analyze')}
 
-def run_index_refresh(vault: Path) -> int:
+def run_index_refresh(vault: Path, verbose: bool = False) -> int:
     from paperforge.worker.base_views import ensure_base_views
     from paperforge.worker.ocr import validate_ocr_meta
     paths = pipeline_paths(vault)
