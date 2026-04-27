@@ -40,4 +40,4 @@ def run(args: argparse.Namespace) -> int:
         vault = resolve_vault(cli_vault=getattr(args, "vault", None))
 
     run_status = _get_run_status()
-    return run_status(vault)
+    return run_status(vault, verbose=getattr(args, "verbose", False))

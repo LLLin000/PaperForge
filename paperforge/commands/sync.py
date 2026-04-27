@@ -82,13 +82,13 @@ def run(args: argparse.Namespace) -> int:
 
     if not index_only:
         run_selection_sync = _get_run_selection_sync()
-        code = run_selection_sync(vault)
+        code = run_selection_sync(vault, verbose=getattr(args, "verbose", False))
         if code != 0:
             exit_code = code
 
     if not selection_only:
         run_index_refresh = _get_run_index_refresh()
-        code = run_index_refresh(vault)
+        code = run_index_refresh(vault, verbose=getattr(args, "verbose", False))
         if code != 0 and exit_code == 0:
             exit_code = code
 
