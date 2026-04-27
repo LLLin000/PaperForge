@@ -18,19 +18,43 @@ paperforge setup
 
 ---
 
-## Pipeline
+## Full Workflow
 
 ```
-Zotero: new paper added
-    │ Better BibTeX auto-exports JSON
-    ▼
-paperforge sync    ─── Sync Zotero → generate formal notes
-    │
-    ▼
-paperforge ocr     ─── Upload PDF → auto-poll → download fulltext + figures
-    │
-    ▼
-/pf-deep <key>     ─── AI 3-pass deep reading → write to Obsidian note
+┌─────────────────────────────────────────────────────────┐
+│                    文献管理 (Literature Management)        │
+│                                                         │
+│  Zotero 添加新文献                                       │
+│    │ Better BibTeX 自动导出 JSON                         │
+│    ▼                                                    │
+│  paperforge sync  ─── 同步 Zotero → 生成文献笔记           │
+└─────────────────────────────────────────────────────────┘
+                          │
+                          ▼
+┌─────────────────────────────────────────────────────────┐
+│                    OCR (Full-text Extraction)             │
+│                                                         │
+│  paperforge ocr    ─── 上传 PDF → 轮询等待 → 下载全文      │
+│                          │                               │
+│    ┌─────────────────────┼─────────────────────┐         │
+│    │ fulltext.md         │ images/             │         │
+│    │ OCR 全文文本        │ 图表切割图片        │         │
+│    └─────────────────────┴─────────────────────┘         │
+└─────────────────────────────────────────────────────────┘
+                          │
+                          ▼
+┌─────────────────────────────────────────────────────────┐
+│                   精读 (Deep Reading)                      │
+│                                                         │
+│  /pf-deep <key>  ─── AI 三阶段精读                        │
+│                          │                               │
+│    Pass 1: 概览 ─── 5Cs 快速评估                         │
+│    Pass 2: 精读 ─── 按编号逐图解析 + chart-reading 审查    │
+│    Pass 3: 深度 ─── 批判评估 + 研究迁移                   │
+│                          │                               │
+│    ▼                                                    │
+│  Obsidian 笔记 ─── ## 🔍 精读 区域已填充完成               │
+└─────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -174,7 +198,7 @@ pip install --upgrade git+https://github.com/LLLin000/PaperForge.git
 | [📋 Post-Install Guide](AGENTS.md) | First-time user guide |
 | [📝 Changelog](CHANGELOG.md) | Version history |
 | [🤝 Contributing](CONTRIBUTING.md) | dev setup and conventions |
-| [📎 v1.4 Migration](docs/MIGRATION-v1.4.md) | Upgrading from v1.3 |
+
 
 ---
 
