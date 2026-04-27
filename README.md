@@ -1,121 +1,182 @@
 # PaperForge Lite
 
-基于 Obsidian + Zotero + PaddleOCR 的医学文献精读工作流，支持自动 OCR、深度阅读笔记生成和队列管理。
+[![PyPI version](https://img.shields.io/pypi/v/paperforge?style=for-the-badge&logo=pypi&logoColor=white&color=3775A9)](https://pypi.org/project/paperforge/)
+[![Python version](https://img.shields.io/pypi/pyversions/paperforge?style=for-the-badge&logo=python&logoColor=white&color=3775A9)](https://python.org)
+[![License](https://img.shields.io/github/license/LLLin000/PaperForge?style=for-the-badge&color=brightgreen)](LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/LLLin000/PaperForge?style=for-the-badge&logo=github&color=181717)](https://github.com/LLLin000/PaperForge)
 
-```
-    ______  ___  ______ _________________ ___________ _____  _____
-    | ___ \/ _ \ | ___ \  ___| ___ \  ___|  _  | ___ \  __ \|  ___|
-    | |_/ / /_\ \| |_/ / |__ | |_/ / |_  | | | | |_/ / |  \/| |__
-    |  __/|  _  ||  __/|  __||    /|  _| | | | |    /| | __ |  __|
-    | |   | | | || |   | |___| |\ \| |   \ \_/ / |\ \| |_\ \| |___
-    \_|   \_| |_/\_|   \____/\_| \_\_|    \___/\_| \_|\____/\____/
-```
+[简体中文](README.zh-CN.md) · **English**
 
-## 快速开始（推荐方式）
+**An automated deep-reading workflow for medical literature, powered by Obsidian + Zotero + PaddleOCR. Upload a PDF and get a structured, AI-written reading note — with a single command.**
 
-**一行命令安装：**
-
-```powershell
+```bash
 pip install git+https://github.com/LLLin000/PaperForge.git
 paperforge setup
 ```
 
-安装向导会自动完成：
-- 检测 Python 环境和依赖
-- 配置 Vault 目录结构（可自定义名称）
-- 链接 Zotero 数据目录
-- 检测 Better BibTeX 插件
-- 配置 PaddleOCR API Key
-- 部署 Agent 命令和精读脚本
-- 创建 `.env` 配置文件
+*"From PDF to structured reading notes in two commands."*
 
-> **Windows 一键安装脚本**（适用于新用户，无需提前安装 Python 知识）：
+---
+
+## Pipeline
+
+```
+Zotero: new paper added
+    │ Better BibTeX auto-exports JSON
+    ▼
+paperforge sync    ─── Sync Zotero → generate formal notes
+    │
+    ▼
+paperforge ocr     ─── Upload PDF → auto-poll → download fulltext + figures
+    │
+    ▼
+/pf-deep <key>     ─── AI 3-pass deep reading → write to Obsidian note
+```
+
+---
+
+## Features
+
+| Feature | Description |
+|---------|-------------|
+| **One-shot OCR** | Upload → poll → download, all in one command |
+| **3-pass deep reading** | Keshav method + 6 fixed sub-heading skeleton, AI fills blanks |
+| **Chart review** | 19 chart types auto-detected with expert review checklists |
+| **Auto retry** | Exponential backoff on network failures |
+| **Structured logging** | Global `--verbose` flag, stderr diagnostics |
+| **Progress bars** | tqdm with `--no-progress` flag for quiet mode |
+| **Zotero sync** | Better BibTeX auto-export, bidirectional |
+| **Obsidian Base** | Literature queue management via Base views |
+| **Pre-commit gates** | ruff lint + format + consistency audit |
+| **Cross-platform** | Windows / macOS / Linux |
+
+---
+
+## Quick Start
+
+### Install
+
+```bash
+pip install git+https://github.com/LLLin000/PaperForge.git
+paperforge setup
+```
+
+The interactive wizard handles: agent platform selection, vault directory setup, Zotero data linking, PaddleOCR API key configuration. See [setup-guide.md](docs/setup-guide.md) for a step-by-step walkthrough.
+
+> Windows one-click installer:
 > ```powershell
 > powershell -c "iwr -Uri https://raw.githubusercontent.com/LLLin000/PaperForge/master/scripts/install-paperforge.ps1 -OutFile install.ps1; ./install.ps1"
 > paperforge setup
 > ```
 
-## 功能特性
+### Prerequisites
 
-- **交互式安装向导** — `paperforge setup` 步骤引导配置
-- **`/pf-deep`** — 深度精读（Keshav 三阶段阅读法）
-- **自动 OCR 提取** — PaddleOCR-VL API，自动重试+进度条
-- **图表类型智能识别** — 19 种图表类型自动检测
-- **图表质量审查指南** — 19 种图表类型专业审查清单
-- **Zotero 双向同步** — Better BibTeX 自动导出
-- **文献队列管理** — Obsidian Base 视图集成
-- **持久轮询** — OCR 上传后自动等待完成，一次命令搞定
-- **结构化日志** — `--verbose`/`-v` 全局参数，stderr 诊断输出
-- **代码质量栅栏** — pre-commit + ruff 检查 + 一致性审计
-- **自动更新** — `paperforge update`
+| Software | Purpose | Get it |
+|----------|---------|--------|
+| Python 3.10+ | Run PaperForge | https://python.org |
+| Zotero | Literature management | https://zotero.org |
+| Better BibTeX | Zotero plugin | https://retorque.re/zotero-better-bibtex/ |
+| Obsidian | Note-taking | https://obsidian.md |
+| PaddleOCR API Key | OCR service | https://paddleocr.baidu.com |
 
-## 安装要求
+---
 
-- Python 3.10+
-- Zotero + Better BibTeX 插件（配置自动导出 JSON）
-- Obsidian
-- PaddleOCR API Key（安装时配置）
+## Commands
 
-## 目录结构
+### Terminal
 
-```
-your-vault/
-├── [资源目录]/                  # 安装时可自定义
-│   └── [文献索引目录]/
-│       └── library-records/     # 文献状态跟踪
-├── [系统目录]/                  # 安装时可自定义
-│   ├── PaperForge/
-│   │   ├── exports/             # Zotero JSON 导出
-│   │   └── ocr/                 # OCR 结果
-│   └── Zotero/                  # Junction 到 Zotero 数据目录
-├── [Agent配置目录]/             # 根据平台决定
-│   └── skills/
-│       └── literature-qa/
-│           ├── scripts/ld_deep.py
-│           ├── prompt_deep_subagent.md
-│           └── chart-reading/   # 19 种图表阅读指南
-├── .env                         # API Key 配置
-├── paperforge.json              # 版本配置
-└── AGENTS.md                    # 安装后指南
-```
+| Category | Command | What it does |
+|----------|---------|-------------|
+| **Setup** | `paperforge setup` | Run setup wizard |
+| | `paperforge doctor` | Diagnose configuration |
+| **Sync** | `paperforge sync` | Sync Zotero, generate notes |
+| **OCR** | `paperforge ocr` | One-shot OCR (upload → poll → download) |
+| | `paperforge ocr --diagnose` | OCR configuration check |
+| | `paperforge ocr --no-progress` | Quiet mode |
+| **Reading** | `paperforge deep-reading` | Show deep-reading queue |
+| **Maintenance** | `paperforge status` | System status |
+| | `paperforge update` | Auto-update |
+| | `paperforge --verbose` | DEBUG-level logging |
 
-## 核心命令
+### Agent (via OpenCode)
+
+| Command | What it does | Required |
+|---------|-------------|----------|
+| `/pf-deep <key>` | Full 3-pass deep reading | OCR complete |
+| `/pf-paper <key>` | Quick summary | Formal note exists |
+| `/pf-sync` | Sync Zotero | Installed |
+| `/pf-ocr` | Run OCR | Installed |
+| `/pf-status` | System status | Installed |
+
+---
+
+## First Run
 
 ```bash
-# 终端命令
-paperforge setup              # 运行安装向导
-paperforge status             # 查看状态
-paperforge sync               # 同步 Zotero 并生成笔记
-paperforge ocr                # OCR（自动上传+等待+下载）
-paperforge deep-reading       # 查看精读队列
-paperforge doctor             # 诊断配置
-paperforge update             # 检查更新
-paperforge --verbose          # 全局 DEBUG 日志
+# 1. Sync Zotero
+paperforge sync
 
-# Agent 命令（在 OpenCode 中使用）
-/pf-deep <zotero_key>    # 完整三阶段精读
-/pf-paper <zotero_key>   # 快速摘要
-/pf-sync                 # 同步 Zotero
-/pf-ocr                  # 运行 OCR
-/pf-status               # 查看状态
+# 2. Mark papers for reading in Obsidian (set do_ocr: true, analyze: true)
+
+# 3. Run OCR
+paperforge ocr
+
+# 4. Deep read (in OpenCode)
+/pf-deep XXXXXXX
 ```
 
-## 更新
+---
+
+## Update
 
 ```bash
 paperforge update
-# 或
+# or
 pip install --upgrade git+https://github.com/LLLin000/PaperForge.git
 ```
 
-## 文档
+---
 
-- [📖 详细安装配置指南](docs/setup-guide.md) — 从零开始的完整教程
-- [⚡ 快速安装指南](docs/INSTALLATION.md) — 简洁版安装步骤
-- [📋 安装后指南](AGENTS.md) — 第一次使用必看
-- [📝 变更日志](CHANGELOG.md) — 版本历史
-- [🤝 贡献指南](CONTRIBUTING.md) — 开发环境搭建
-- [📎 v1.4 迁移说明](docs/MIGRATION-v1.4.md) — 从旧版升级
+## Configuration
+
+### paperforge.json
+
+```json
+{
+  "version": "1.4.1",
+  "system_dir": "99_System",
+  "resources_dir": "03_Resources",
+  "literature_dir": "Literature",
+  "control_dir": "LiteratureControl",
+  "base_dir": "05_Bases",
+  "auto_analyze_after_ocr": false
+}
+```
+
+### Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `PADDLEOCR_API_TOKEN` | — | PaddleOCR API Key |
+| `PADDLEOCR_JOB_URL` | `https://paddleocr.aistudio-app.com/api/v2/ocr/jobs` | API endpoint |
+| `PAPERFORGE_LOG_LEVEL` | `INFO` | Logging level |
+| `PAPERFORGE_RETRY_MAX` | `5` | Upload retry count |
+| `PAPERFORGE_POLL_MAX_CYCLES` | `20` | Max poll cycles |
+
+---
+
+## Documentation
+
+| Document | What it covers |
+|----------|---------------|
+| [📖 Setup Guide](docs/setup-guide.md) | Step-by-step from zero to running |
+| [⚡ Quick Install](docs/INSTALLATION.md) | Concise install instructions |
+| [📋 Post-Install Guide](AGENTS.md) | First-time user guide |
+| [📝 Changelog](CHANGELOG.md) | Version history |
+| [🤝 Contributing](CONTRIBUTING.md) | dev setup and conventions |
+| [📎 v1.4 Migration](docs/MIGRATION-v1.4.md) | Upgrading from v1.3 |
+
+---
 
 ## License
 
