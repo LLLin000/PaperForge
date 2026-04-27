@@ -1,6 +1,6 @@
 # PaperForge Lite - Agent Guide
 
-> 本文档面向 **安装完成后的新用户** 和 **AI Agent**。安装步骤见 [INSTALLATION.md](docs/INSTALLATION.md)。
+> 本文档面向 **安装完成后的新用户** 和 **AI Agent**。安装步骤见 [setup-guide.md](docs/setup-guide.md) 或快速版 [INSTALLATION.md](docs/INSTALLATION.md)。
 
 ---
 
@@ -10,7 +10,7 @@
 [ ] Zotero 已安装 + Better BibTeX 插件已启用
 [ ] Better BibTeX 已配置自动导出 JSON（见下方配置）
 [ ] Obsidian 已打开当前 Vault
-[ ] Python 依赖已安装 (pip install requests pymupdf pillow)
+[ ] PaperForge 已安装 (pip install git+https://github.com/LLLin000/PaperForge.git)
 [ ] PaddleOCR API Key 已配置（在 .env 中）
 [ ] 目录结构已创建（setup.py 会自动完成）
 [ ] Zotero 数据目录已链接到 <system_dir>/Zotero
@@ -518,22 +518,22 @@ paperforge update
 
 #### 方式 3：手动更新
 
+**推荐：自动更新**
+```bash
+paperforge update
+```
+系统会自动检测安装方式并执行对应的更新命令。
+
 **pip 安装用户：**
 ```bash
-pip install --upgrade paperforge
+pip install --upgrade git+https://github.com/LLLin000/PaperForge.git
 ```
 
-**pip editable 安装用户：**
+**pip editable / git clone 用户：**
 ```bash
-cd 你的Vault路径
+cd 你的仓库目录
 git pull origin master
 pip install -e .
-```
-
-**git clone 用户：**
-```bash
-cd 你的Vault路径
-git pull origin master
 ```
 
 #### 方式 4：手动复制（最后手段）

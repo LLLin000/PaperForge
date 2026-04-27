@@ -110,11 +110,12 @@ pip install --upgrade git+https://github.com/LLLin000/PaperForge.git
 
 ## 文档
 
-- [安装指南](docs/INSTALLATION.md)
-- [安装后指南](AGENTS.md)
-- [变更日志](CHANGELOG.md)
-- [贡献指南](CONTRIBUTING.md)
-- [v1.4 迁移说明](docs/MIGRATION-v1.4.md)
+- [📖 详细安装配置指南](docs/setup-guide.md) — 从零开始的完整教程
+- [⚡ 快速安装指南](docs/INSTALLATION.md) — 简洁版安装步骤
+- [📋 安装后指南](AGENTS.md) — 第一次使用必看
+- [📝 变更日志](CHANGELOG.md) — 版本历史
+- [🤝 贡献指南](CONTRIBUTING.md) — 开发环境搭建
+- [📎 v1.4 迁移说明](docs/MIGRATION-v1.4.md) — 从旧版升级
 
 ## License
 
