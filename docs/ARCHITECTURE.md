@@ -230,16 +230,16 @@ def run(args: argparse.Namespace) -> int:
     # 1. Resolve inputs from args namespace
     vault = getattr(args, "vault_path", None)
     cfg = getattr(args, "cfg", {})
-    
+
     # 2. Import worker functions (with fallback for test patching)
     run_selection_sync = _get_run_selection_sync()
-    
+
     # 3. Execute business logic
     if getattr(args, "selection", False) or not getattr(args, "index", False):
         run_selection_sync(vault)
     if getattr(args, "index", False) or not getattr(args, "selection", False):
         run_index_refresh(vault)
-    
+
     return 0
 ```
 
@@ -284,9 +284,9 @@ if args.command == "selection-sync":
 
 ### ADR-001: Config Precedence
 
-**Status:** Accepted  
-**Phase:** 1 (Foundation)  
-**Context:** PaperForge needs to support multiple configuration sources: built-in defaults, JSON config files, environment variables, and explicit function arguments. Users need predictable override behavior.  
+**Status:** Accepted
+**Phase:** 1 (Foundation)
+**Context:** PaperForge needs to support multiple configuration sources: built-in defaults, JSON config files, environment variables, and explicit function arguments. Users need predictable override behavior.
 **Decision:** Establish a locked five-level precedence hierarchy:
 
 1. **Explicit overrides** (function parameter)
@@ -295,7 +295,7 @@ if args.command == "selection-sync":
 4. **`paperforge.json` top-level keys** (legacy backward-compat)
 5. **Built-in defaults**
 
-The `load_vault_config()` function in `paperforge/config.py` merges sources in this exact order. No source can accidentally override a higher-precedence source.  
+The `load_vault_config()` function in `paperforge/config.py` merges sources in this exact order. No source can accidentally override a higher-precedence source.
 **Consequences:**
 - (+) Predictable behavior: users know exactly which setting wins.
 - (+) Backward compatible: legacy top-level JSON keys still work.
@@ -306,14 +306,14 @@ The `load_vault_config()` function in `paperforge/config.py` merges sources in t
 
 ### ADR-002: Pipeline Split into Worker/Agent
 
-**Status:** Accepted  
-**Phase:** 1 (Foundation)  
-**Context:** The original prototype mixed automated tasks (sync, OCR) with interactive tasks (deep reading) in a single script. This made it unclear what ran automatically vs. what required human judgment.  
+**Status:** Accepted
+**Phase:** 1 (Foundation)
+**Context:** The original prototype mixed automated tasks (sync, OCR) with interactive tasks (deep reading) in a single script. This made it unclear what ran automatically vs. what required human judgment.
 **Decision:** Split the system into two layers:
 - **Worker layer**: Automated, deterministic, CLI-triggered. Handles mechanical tasks.
 - **Agent layer**: Interactive, reasoning-driven, user-triggered. Handles cognitive tasks.
 
-Workers never trigger Agents, and Agents never trigger Workers. The handoff point is the `library-record` frontmatter: users set `do_ocr: true` or `analyze: true`, then run the appropriate worker or agent command.  
+Workers never trigger Agents, and Agents never trigger Workers. The handoff point is the `library-record` frontmatter: users set `do_ocr: true` or `analyze: true`, then run the appropriate worker or agent command.
 **Consequences:**
 - (+) Clear mental model: users understand what runs automatically vs. on demand.
 - (+) Isolated failure domains: an OCR failure cannot corrupt an Agent's analysis.
@@ -324,14 +324,14 @@ Workers never trigger Agents, and Agents never trigger Workers. The handoff poin
 
 ### ADR-003: OCR Async with State Machine
 
-**Status:** Accepted  
-**Phase:** 2 (OCR Integration)  
-**Context:** PaddleOCR API calls are asynchronous and may take minutes for large PDFs. The system must handle pending, processing, completed, and failed states without blocking the user.  
+**Status:** Accepted
+**Phase:** 2 (OCR Integration)
+**Context:** PaddleOCR API calls are asynchronous and may take minutes for large PDFs. The system must handle pending, processing, completed, and failed states without blocking the user.
 **Decision:** Track OCR status through a finite state machine (`pending` -> `processing` -> `done`/`failed`) persisted in two places:
 1. Per-paper `meta.json` in `<system_dir>/PaperForge/ocr/<key>/`
 2. Per-paper `ocr_status` field in the `library-record` frontmatter
 
-The `paperforge ocr` command scans all library-records for `do_ocr: true` and `ocr_status != done`, uploads PDFs, and updates both persistence layers. The `paperforge deep-reading` command checks `ocr_status == done` before listing a paper as "ready."  
+The `paperforge ocr` command scans all library-records for `do_ocr: true` and `ocr_status != done`, uploads PDFs, and updates both persistence layers. The `paperforge deep-reading` command checks `ocr_status == done` before listing a paper as "ready."
 **Consequences:**
 - (+) Resilient to crashes: status is persisted, not in-memory.
 - (+) Idempotent: re-running `paperforge ocr` skips already-done papers.
@@ -342,10 +342,10 @@ The `paperforge ocr` command scans all library-records for `do_ocr: true` and `o
 
 ### ADR-004: Base Views Config-Aware
 
-**Status:** Accepted  
-**Phase:** 3 (Base Views)  
-**Context:** Obsidian Base views (`.base` files) provide a database-like UI for library-records. Hardcoded paths in Base views break when users customize their directory structure.  
-**Decision:** Generate Base views from Jinja2 templates at setup time, injecting resolved paths from `paperforge_paths()`. Templates live in `paperforge/templates/bases/` and are rendered into `<base_dir>/` with user-configured directory names substituted.  
+**Status:** Accepted
+**Phase:** 3 (Base Views)
+**Context:** Obsidian Base views (`.base` files) provide a database-like UI for library-records. Hardcoded paths in Base views break when users customize their directory structure.
+**Decision:** Generate Base views from Jinja2 templates at setup time, injecting resolved paths from `paperforge_paths()`. Templates live in `paperforge/templates/bases/` and are rendered into `<base_dir>/` with user-configured directory names substituted.
 **Consequences:**
 - (+) Base views work out of the box regardless of directory configuration.
 - (+) Users can customize paths in `paperforge.json` without breaking views.
@@ -356,16 +356,16 @@ The `paperforge ocr` command scans all library-records for `do_ocr: true` and `o
 
 ### ADR-005: Deep Reading Three-Pass
 
-**Status:** Accepted  
-**Phase:** 4 (Deep Reading)  
-**Context:** Deep reading of academic papers is a skill. The system needs a structured method that ensures comprehensive understanding without overwhelming the user.  
+**Status:** Accepted
+**Phase:** 4 (Deep Reading)
+**Context:** Deep reading of academic papers is a skill. The system needs a structured method that ensures comprehensive understanding without overwhelming the user.
 **Decision:** Adopt S. Keshav's three-pass method, implemented as three distinct phases in `/pf-deep`:
 
 1. **Pass 1 — Overview (5-10 minutes):** Scan title, abstract, headers, conclusions. Identify paper type, context, and contribution.
 2. **Pass 2 — Content:** Read figures, tables, and methodology in detail. Reconstruct the author's argument.
 3. **Pass 3 — Critical:** Evaluate assumptions, limitations, and relevance to the reader's own research. Generate迁移思考 (transfer thinking).
 
-Each pass produces structured Markdown output inserted into the formal note under `## 精读`.  
+Each pass produces structured Markdown output inserted into the formal note under `## 精读`.
 **Consequences:**
 - (+) Research-backed methodology ensures consistent analysis quality.
 - (+) Structured output makes notes searchable and comparable.
@@ -376,15 +376,15 @@ Each pass produces structured Markdown output inserted into the formal note unde
 
 ### ADR-006: Fixture-Based Smoke Tests
 
-**Status:** Accepted  
-**Phase:** 5 (Testing)  
-**Context:** Integration tests for a literature pipeline require realistic inputs: Zotero JSON, PDFs, and Obsidian vault structures. Generating these dynamically in every test run is slow and non-deterministic.  
+**Status:** Accepted
+**Phase:** 5 (Testing)
+**Context:** Integration tests for a literature pipeline require realistic inputs: Zotero JSON, PDFs, and Obsidian vault structures. Generating these dynamically in every test run is slow and non-deterministic.
 **Decision:** Commit deterministic test fixtures to `tests/sandbox/` and `tests/fixtures/`:
 - `library.json` fixtures with known Zotero items
 - Minimal PDF fixtures for OCR testing
 - Complete vault structures generated by `generate_sandbox.py`
 
-Smoke tests (Phase 8) use these fixtures to validate end-to-end behavior without requiring a live Zotero instance or PaddleOCR API key.  
+Smoke tests (Phase 8) use these fixtures to validate end-to-end behavior without requiring a live Zotero instance or PaddleOCR API key.
 **Consequences:**
 - (+) Tests run offline and in CI without external dependencies.
 - (+) Deterministic: same input always produces same output.
@@ -396,10 +396,10 @@ Smoke tests (Phase 8) use these fixtures to validate end-to-end behavior without
 
 ### ADR-007: CLI/Worker Consistency
 
-**Status:** Accepted  
-**Phase:** 6 (CLI Hardening)  
-**Context:** Early versions had path resolution logic duplicated between `literature_pipeline.py` and the CLI wrapper. Changes to one often broke the other.  
-**Decision:** Extract shared path resolution and config loading into `paperforge/config.py`. Both the CLI and worker scripts import from this module. The `paperforge_paths()` function returns a dict of resolved `Path` objects used consistently across the system.  
+**Status:** Accepted
+**Phase:** 6 (CLI Hardening)
+**Context:** Early versions had path resolution logic duplicated between `literature_pipeline.py` and the CLI wrapper. Changes to one often broke the other.
+**Decision:** Extract shared path resolution and config loading into `paperforge/config.py`. Both the CLI and worker scripts import from this module. The `paperforge_paths()` function returns a dict of resolved `Path` objects used consistently across the system.
 **Consequences:**
 - (+) Single source of truth for path construction.
 - (+) CLI `paperforge paths --json` outputs exactly the paths workers use.
@@ -410,16 +410,16 @@ Smoke tests (Phase 8) use these fixtures to validate end-to-end behavior without
 
 ### ADR-008: Three-Way Repair
 
-**Status:** Accepted  
-**Phase:** 7 (Repair & Consistency)  
-**Context:** Over time, three sources of truth for a paper's status can diverge: the formal note frontmatter, the library-record frontmatter, and the actual OCR output directory. Users may manually edit one without updating the others.  
+**Status:** Accepted
+**Phase:** 7 (Repair & Consistency)
+**Context:** Over time, three sources of truth for a paper's status can diverge: the formal note frontmatter, the library-record frontmatter, and the actual OCR output directory. Users may manually edit one without updating the others.
 **Decision:** Implement `paperforge repair` with three-way divergence detection:
 1. Scan all library-records
 2. Compare `ocr_status` in library-record vs. formal note vs. `meta.json`
 3. Report discrepancies in a structured table
 4. With `--fix`, propagate the most reliable source (OCR directory > library-record > formal note)
 
-Default mode is `--dry-run`: show discrepancies without modifying files.  
+Default mode is `--dry-run`: show discrepancies without modifying files.
 **Consequences:**
 - (+) Detects and fixes silent data drift.
 - (+) Safe by default: dry-run lets users review before applying.
@@ -430,16 +430,16 @@ Default mode is `--dry-run`: show discrepancies without modifying files.
 
 ### ADR-009: Rollback in Prepare
 
-**Status:** Accepted  
-**Phase:** 8 (Agent Hardening)  
-**Context:** The `prepare_deep_reading()` function in `ld_deep.py` writes multiple files (figure-map.json, chart-type-map.json) and modifies the formal note before the Agent begins reading. If any step fails, partial writes leave the vault in an inconsistent state.  
+**Status:** Accepted
+**Phase:** 8 (Agent Hardening)
+**Context:** The `prepare_deep_reading()` function in `ld_deep.py` writes multiple files (figure-map.json, chart-type-map.json) and modifies the formal note before the Agent begins reading. If any step fails, partial writes leave the vault in an inconsistent state.
 **Decision:** Implement rollback tracking in `prepare_deep_reading()`:
 1. Before writing, snapshot the formal note content.
 2. Track every file written or modified in a `written_files` list.
 3. If any step raises an exception, delete all written files and restore the formal note.
 4. Return an error dict with the exception message.
 
-Tests in `test_prepare_rollback.py` verify this behavior by mocking failures at each step.  
+Tests in `test_prepare_rollback.py` verify this behavior by mocking failures at each step.
 **Consequences:**
 - (+) Failed preparations do not corrupt user data.
 - (+) Idempotent retries: user can re-run `/pf-deep` after fixing the issue.
@@ -450,15 +450,15 @@ Tests in `test_prepare_rollback.py` verify this behavior by mocking failures at 
 
 ### ADR-010: Command Unification
 
-**Status:** Accepted  
-**Phase:** 9 (Systematization)  
-**Context:** v1.1 had fragmented command namespaces: CLI used `selection-sync`/`index-refresh`, Agent used `/LD-deep`/`/LD-paper`, and legacy scripts used `/lp-*` prefixes. This confused users and complicated documentation.  
+**Status:** Accepted
+**Phase:** 9 (Systematization)
+**Context:** v1.1 had fragmented command namespaces: CLI used `selection-sync`/`index-refresh`, Agent used `/LD-deep`/`/LD-paper`, and legacy scripts used `/lp-*` prefixes. This confused users and complicated documentation.
 **Decision:** Unify under a single namespace:
 - **CLI:** `paperforge sync` (replaces `selection-sync` + `index-refresh`), `paperforge ocr` (replaces `ocr run`)
 - **Agent:** `/pf-deep`, `/pf-paper`, `/pf-ocr`, `/pf-sync`, `/pf-status`
 - **Code:** Shared implementations in `paperforge/commands/` package
 
-Old commands remain as backward-compatible aliases in `cli.py` but are deprecated in documentation.  
+Old commands remain as backward-compatible aliases in `cli.py` but are deprecated in documentation.
 **Consequences:**
 - (+) Single mental model: one command name maps to one concept.
 - (+) Reduced documentation surface: one doc per command, not three.
@@ -469,9 +469,9 @@ Old commands remain as backward-compatible aliases in `cli.py` but are deprecate
 
 ### ADR-011: Zotero Path Normalization Strategy
 
-**Status:** Accepted  
-**Phase:** 11 (Path Normalization & Architecture Hardening)  
-**Context:** Better BibTeX (BBT) exports attachment paths in three different formats depending on export settings and platform: absolute Windows paths (`D:\Zotero\storage\KEY\file.pdf`), `storage:` prefixed paths (`storage:KEY/file.pdf`), and bare relative paths (`KEY/file.pdf`). PaperForge needs to normalize these to a single internal representation and generate valid Obsidian wikilinks that work across Windows and macOS/Linux. Additionally, users may keep their Zotero data directory outside the Obsidian vault, requiring junction/symlink resolution.  
+**Status:** Accepted
+**Phase:** 11 (Path Normalization & Architecture Hardening)
+**Context:** Better BibTeX (BBT) exports attachment paths in three different formats depending on export settings and platform: absolute Windows paths (`D:\Zotero\storage\KEY\file.pdf`), `storage:` prefixed paths (`storage:KEY/file.pdf`), and bare relative paths (`KEY/file.pdf`). PaperForge needs to normalize these to a single internal representation and generate valid Obsidian wikilinks that work across Windows and macOS/Linux. Additionally, users may keep their Zotero data directory outside the Obsidian vault, requiring junction/symlink resolution.
 
 **Decision:** Implement a three-stage normalization pipeline with explicit decisions for each ambiguity:
 
@@ -501,6 +501,44 @@ Old commands remain as backward-compatible aliases in `cli.py` but are deprecate
 
 ---
 
+### ADR-012: Shared Utilities Extraction (`_utils.py`)
+
+**Status:** Accepted
+**Phase:** 14 (Shared Utilities Extraction)
+**Context:** Approximately 1,610 lines of utility code were copy-pasted across 7 worker modules; changes to one copy often missed others; bug fixes had to be applied N times. Each worker module independently defined `read_json`, `write_json`, `yaml_quote`, `slugify_filename`, `lookup_impact_factor`, and other helpers — with identical logic but subtle behavioral drifts over time.
+
+**Decision:** Create `paperforge/worker/_utils.py` as a pure leaf module organized by category (JSON I/O, YAML Helpers, String/Path Utils, Journal Database, Constants). The module must never import from `paperforge.worker.*` or `paperforge.commands.*` — only from stdlib and `paperforge.config`. Functions are imported by workers as `from paperforge.worker._utils import read_json, ...`. Re-exports with `# Re-exported from _utils.py for backward compatibility` comments preserve backward compatibility in original modules.
+
+**Consequences:**
+- (+) Single source of truth for utility functions — changes in one place propagate to all workers.
+- (+) Easier testing — dedicated `_utils.py` unit tests (Phase 19).
+- (+) No circular imports — leaf module constraint enforced by code review and consistency audit hook.
+- (-) Re-export comments add minor clutter to original worker modules.
+- (-) Module must be carefully audited at every change to maintain leaf status (import only stdlib + `paperforge.config`).
+
+---
+
+### ADR-013: Dual-Output Logging Strategy
+
+**Status:** Accepted
+**Phase:** 13 (Logging Foundation)
+**Context:** The codebase used ad-hoc `print()` calls for all output — user-facing status, diagnostic traces, and error messages. This made it impossible to filter log levels, broke piped command output when diagnostic text appeared on stdout, and provided no structured error reporting for troubleshooting.
+
+**Decision:** Implement a dual-output strategy:
+1. `print()` preserved for user-facing formatted output on stdout only — existing piped commands and Agent scripts that parse stdout remain unmodified.
+2. `logging.getLogger(__name__)` used for all diagnostic/trace/error output to stderr.
+3. A `configure_logging(verbose: bool)` function in `paperforge/logging_config.py` configures the root logger.
+4. Log level defaults to `INFO` (from `PAPERFORGE_LOG_LEVEL` env var) and switches to `DEBUG` when `--verbose`/`-v` is passed.
+
+**Consequences:**
+- (+) Structured log output with levels, module names, and timestamps — dramatically easier debugging.
+- (+) Piped stdout remains clean — downstream consumers (Agent scripts, `grep`) see only user-facing output.
+- (+) `--verbose` enables per-module debugging without modifying code.
+- (-) Two output channels require documentation — users must know stdout (user-facing) vs stderr (diagnostic).
+- (-) Existing `print()` calls for user-facing output remain as-is — behavioral change guarantee maintained.
+
+---
+
 ## Extension Points
 
 ### Adding a New CLI Command
@@ -508,7 +546,7 @@ Old commands remain as backward-compatible aliases in `cli.py` but are deprecate
 1. **Create command module** in `paperforge/commands/<command_name>.py`:
    ```python
    import argparse
-   
+
    def run(args: argparse.Namespace) -> int:
        """Execute the new command."""
        # Your logic here
@@ -560,7 +598,7 @@ The current implementation targets **OpenCode Agent** (`.opencode/skills/` and `
    ```python
    # paperforge/agents/codex_adapter.py
    from paperforge.commands import get_command_module
-   
+
    def run_codex_command(name: str, vault: Path, **kwargs):
        """Adapter for Codex agent commands."""
        module = get_command_module(name)

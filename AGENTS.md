@@ -40,6 +40,17 @@ PaperForge Lite 采用 **两层设计**：
 - **Agent 只做深度思考**（精读、分析、写作）
 - Worker 不会自动触发 Agent，Agent 不会自动触发 Worker
 
+**操作速查**：
+| 你要做什么 | 在终端输入 | 在 OpenCode 输入 |
+|-----------|-----------|-----------------|
+| 同步 Zotero 并生成笔记 | `paperforge sync` | `/pf-sync` |
+| 运行 OCR | `paperforge ocr` | `/pf-ocr` |
+| 查看精读队列 | `paperforge deep-reading` | `/pf-deep`（精读具体文献） |
+| 查看系统状态 | `paperforge status` | `/pf-status` |
+| 修复状态分歧 | `paperforge repair` | （终端操作） |
+| 验证安装配置 | `paperforge doctor` | （终端操作） |
+| 查看帮助 | `paperforge --help` | （终端操作） |
+
 ---
 
 ## 2. 完整数据流
@@ -188,6 +199,10 @@ PaperForge 的命令分为两类：
 | **机械操作** | `/pf-status` | 查看系统状态 | Agent 可帮你解读诊断结果 |
 
 > **双模式调用**：`/pf-sync`、`/pf-ocr`、`/pf-status` 本质上是 CLI 命令的 Agent 包装。你可以在终端直接运行 `paperforge sync/ocr/status`，也可以在 OpenCode 中使用 `/pf-*` 让 Agent 帮你检查前置条件、执行命令、解读输出。
+
+> **v1.4 新增**：所有命令支持全局 `--verbose` / `-v` 参数（如 `paperforge sync --verbose`），输出 DEBUG 级别的诊断信息到 stderr，不影响 stdout 的正常输出。
+
+> **v1.4 新增 — auto_analyze_after_ocr**：如果开启了 `paperforge.json` 中的 `auto_analyze_after_ocr`，OCR 完成后 `analyze` 会自动设为 `true`，无需手动修改 library-record。
 
 ### 必须 Agent 执行的命令
 
@@ -390,16 +405,21 @@ Agent 会自动：
 ```bash
 # 检测 Zotero 新条目并生成正式笔记
 paperforge sync
+paperforge sync --verbose      # 显示详细诊断信息
 
 # 仅同步 Zotero 到 library-records
 paperforge sync --selection
+paperforge sync --selection --verbose
 
 # 仅根据现有 library-records 生成正式笔记
 paperforge sync --index
+paperforge sync --index --verbose
 
 # 运行 OCR（处理 do_ocr=true 的文献）
 paperforge ocr
-paperforge ocr --diagnose  # 诊断模式，不实际运行
+paperforge ocr --verbose       # 显示 OCR 详细日志
+paperforge ocr --diagnose      # 诊断模式，不实际运行
+paperforge ocr --no-progress   # 静默模式，不显示进度条
 
 # 查看精读队列
 paperforge deep-reading
@@ -432,6 +452,10 @@ paperforge doctor
 ```
 
 > 注：`/pf-sync`、`/pf-ocr`、`/pf-status` 与 `paperforge sync/ocr/status` 是同一命令的两种调用方式。在终端直接运行 CLI 即可；在 OpenCode 中使用 `/pf-*` 可以让 Agent 帮你检查前置条件并解读输出。
+
+### Chart-Reading 指南索引
+
+`/pf-deep` 精读时会参考 19 种图表类型的阅读指南，按生物医学文献常见度排序。完整索引参见 `chart-reading/INDEX.md`。
 
 ---
 
@@ -537,11 +561,8 @@ cp -r 新下载的代码/* <vault_path>/
 
 **旧命令仍兼容**：v1.2 继续支持旧命令名（`selection-sync`、`index-refresh`、`ocr run`），但文档已统一使用新命令。
 
-详细迁移步骤和回滚说明参见 [docs/MIGRATION-v1.2.md](docs/MIGRATION-v1.2.md)。
+> **v1.4 新增**：结构化日志（`--verbose`）、自动重试、进度条、代码自动化检查。详细迁移步骤和回滚说明参见 [docs/MIGRATION-v1.2.md](docs/MIGRATION-v1.2.md)（v1.1→v1.2）和 [docs/MIGRATION-v1.4.md](docs/MIGRATION-v1.4.md)（v1.3→v1.4）。
 
 ---
 
 *PaperForge Lite | 快速开始指南 | 安装后阅读*
-
-
-
