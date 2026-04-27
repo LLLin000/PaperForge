@@ -1,3 +1,3 @@
 """paperforge — PaperForge Lite package."""
 
-__version__ = "1.0.0"
+__version__ = "1.4.0"

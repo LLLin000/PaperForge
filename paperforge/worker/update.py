@@ -265,11 +265,15 @@ def update_via_zip(vault: Path) -> bool:
 
 def run_update(vault: Path) -> int:
     """运行更新检查与安装"""
-    local_cfg = vault / "paperforge.json"
-    if not local_cfg.exists():
-        logger.error("未找到 paperforge.json")
-        return 1
-    local = json.loads(local_cfg.read_text(encoding="utf-8")).get("version", "unknown")
+    try:
+        from importlib.metadata import version as _pkg_ver
+        local = _pkg_ver("paperforge")
+    except Exception:
+        local_cfg = vault / "paperforge.json"
+        if local_cfg.exists():
+            local = json.loads(local_cfg.read_text(encoding="utf-8")).get("version", "unknown")
+        else:
+            local = "unknown"
     remote = _remote_version()
     logger.info("%s", "=" * 50)
     logger.info("PaperForge Lite 更新")

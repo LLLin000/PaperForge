@@ -219,6 +219,9 @@ def build_parser() -> argparse.ArgumentParser:
     # update
     sub.add_parser("update", help="Update PaperForge Lite to the latest version")
 
+    # setup wizard
+    sub.add_parser("setup", help="Run the setup wizard (Textual-based)")
+
     return parser
 
 
@@ -357,6 +360,11 @@ def main(argv: list[str] | None = None) -> int:
         from paperforge.worker.update import run_update
 
         return run_update(vault)
+
+    if args.command == "setup":
+        from paperforge.setup_wizard import main as run_setup
+
+        return run_setup(sys.argv[2:])
 
     print(f"Error: unknown command {args.command}", file=sys.stderr)
     return 1
