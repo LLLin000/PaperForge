@@ -447,6 +447,4 @@ def ensure_base_views(vault: Path, paths: dict[str, Path], config: dict, force: 
     hub_path = paths["bases"] / "Literature Hub.base"
     refresh_base(hub_path, "${LIBRARY_RECORDS}", hub_views)
 
-    all_views = build_base_views("All Records")
-    pf_base = paths["bases"] / "PaperForge.base"
-    refresh_base(pf_base, "${LIBRARY_RECORDS}", all_views)
+    # PaperForge.base intentionally removed (v1.4.1) — duplicates Literature Hub
