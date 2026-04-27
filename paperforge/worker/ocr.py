@@ -1496,6 +1496,26 @@ def run_ocr(vault: Path, verbose: bool = False, no_progress: bool = False) -> in
                     all_results.append(page_payload)
                 page_num, markdown_path, json_path, fulltext_md_path = postprocess_ocr_result(vault, key, all_results)
                 meta["ocr_status"] = "done"
+                # Per D-01: auto_analyze_after_ocr opt-in workflow streamlining
+                cfg_path = vault / "paperforge.json"
+                if cfg_path.exists():
+                    try:
+                        pf_cfg = read_json(cfg_path)
+                        if pf_cfg.get("auto_analyze_after_ocr", False):
+                            record_glob = list(paths["library_records"].rglob(f"{key}.md"))
+                            if record_glob:
+                                record_path = record_glob[0]
+                                text = record_path.read_text(encoding="utf-8")
+                                text = re.sub(
+                                    r"^analyze:.*$",
+                                    "analyze: true",
+                                    text,
+                                    count=1,
+                                    flags=re.MULTILINE,
+                                )
+                                record_path.write_text(text, encoding="utf-8")
+                    except Exception:
+                        logger.warning("auto_analyze_after_ocr: failed for %s", key, exc_info=True)
                 meta["ocr_finished_at"] = datetime.now(timezone.utc).isoformat()
                 meta["page_count"] = page_num
                 meta["markdown_path"] = markdown_path

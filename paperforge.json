@@ -24,8 +24,6 @@
     "command/",
     "scripts/"
   ],
-  "changelog_url": "https://github.com/LLLin000/PaperForge/releases"
+  "changelog_url": "https://github.com/LLLin000/PaperForge/releases",
+  "auto_analyze_after_ocr": false
 }
-
-
-
