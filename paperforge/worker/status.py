@@ -1,148 +1,21 @@
 from __future__ import annotations
-import logging
-import argparse
-import csv
-import hashlib
-import html
+
 import json
+import logging
 import os
 import re
-import shutil
-import subprocess
 import sys
-import tempfile
-import urllib.parse
 from json import JSONDecodeError
-import zipfile
-from datetime import datetime, timezone
 from pathlib import Path
-from xml.etree import ElementTree as ET
-import requests
-import fitz
-from PIL import Image
 
+from paperforge.config import load_vault_config, paperforge_paths
+from paperforge.worker._utils import (
+    read_json,
+    write_json,
+)
 from paperforge.worker.base_views import ensure_base_views
 
 logger = logging.getLogger(__name__)
-
-STANDARD_VIEW_NAMES = frozenset([
-    "控制面板", "推荐分析", "待 OCR", "OCR 完成",
-    "待深度阅读", "深度阅读完成", "正式卡片", "全记录"
-])
-
-def load_simple_env(env_path: Path) -> None:
-    if not env_path.exists():
-        return
-    for raw_line in env_path.read_text(encoding='utf-8').splitlines():
-        line = raw_line.strip()
-        if not line or line.startswith('#') or '=' not in line:
-            continue
-        key, value = line.split('=', 1)
-        key = key.strip()
-        if not key or key in os.environ:
-            continue
-        value = value.strip()
-        if len(value) >= 2 and value[0] == value[-1] and (value[0] in {'"', "'"}):
-            value = value[1:-1]
-        os.environ[key] = value
-
-def read_json(path: Path):
-    return json.loads(path.read_text(encoding='utf-8'))
-_JOURNAL_DB: dict[str, dict] | None = None
-
-def load_journal_db(vault: Path) -> dict[str, dict]:
-    """Load zoterostyle.json journal database."""
-    global _JOURNAL_DB
-    if _JOURNAL_DB is not None:
-        return _JOURNAL_DB
-    zoterostyle_path = vault / load_vault_config(vault)['system_dir'] / 'Zotero' / 'zoterostyle.json'
-    if zoterostyle_path.exists():
-        try:
-            _JOURNAL_DB = read_json(zoterostyle_path)
-        except (JSONDecodeError, Exception):
-            _JOURNAL_DB = {}
-    else:
-        _JOURNAL_DB = {}
-    return _JOURNAL_DB
-
-def lookup_impact_factor(journal_name: str, extra: str, vault: Path) -> str:
-    """Lookup impact factor: prefer zoterostyle.json, fallback to extra field."""
-    if not journal_name:
-        return ''
-    journal_db = load_journal_db(vault)
-    if journal_name in journal_db:
-        rank_data = journal_db[journal_name].get('rank', {})
-        if isinstance(rank_data, dict):
-            sciif = rank_data.get('sciif', '')
-            if sciif:
-                return str(sciif)
-    if extra:
-        if_match = re.search('影响因子[:：]\\s*([0-9.]+)', extra)
-        if if_match:
-            return if_match.group(1)
-    return ''
-
-def write_json(path: Path, data) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')
-
-def read_jsonl(path: Path):
-    rows = []
-    if not path.exists():
-        return rows
-    for line in path.read_text(encoding='utf-8').splitlines():
-        line = line.strip()
-        if line:
-            rows.append(json.loads(line))
-    return rows
-
-def write_jsonl(path: Path, rows) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    text = '\n'.join((json.dumps(row, ensure_ascii=False) for row in rows))
-    if text:
-        text += '\n'
-    path.write_text(text, encoding='utf-8')
-
-def yaml_quote(value: str) -> str:
-    if isinstance(value, bool):
-        return 'true' if value else 'false'
-    return '"' + str(value or '').replace('\\', '\\\\').replace('"', '\\"') + '"'
-
-def yaml_block(value: str) -> list[str]:
-    value = (value or '').strip()
-    if not value:
-        return ['abstract: |-', '  ']
-    lines = ['abstract: |-']
-    for line in value.splitlines():
-        lines.append(f'  {line}')
-    return lines
-
-def yaml_list(key: str, values) -> list[str]:
-    cleaned = [str(value).strip() for value in values or [] if str(value).strip()]
-    if not cleaned:
-        return [f'{key}: []']
-    lines = [f'{key}:']
-    for value in cleaned:
-        lines.append(f'  - {yaml_quote(value)}')
-    return lines
-
-def slugify_filename(text: str) -> str:
-    cleaned = re.sub('[<>:"/\\\\|?*]+', '', text).strip()
-    return cleaned[:120] or 'untitled'
-
-def _extract_year(value: str) -> str:
-    match = re.search('(19|20)\\d{2}', value or '')
-    return match.group(0) if match else ''
-
-
-def load_vault_config(vault: Path) -> dict:
-    """Read vault configuration — delegates to shared resolver.
-
-    Preserves the public name for legacy callers. Configuration precedence:
-    1. paperforge.config.load_vault_config (overrides > env > JSON > defaults)
-    """
-    from paperforge.config import load_vault_config as _shared_load_vault_config
-    return _shared_load_vault_config(vault)
 
 
 def pipeline_paths(vault: Path) -> dict[str, Path]:
@@ -151,14 +24,7 @@ def pipeline_paths(vault: Path) -> dict[str, Path]:
     Returns paths from paperforge.config.paperforge_paths() plus
     worker-only keys. Preserves all legacy keys for existing callers.
     """
-    from paperforge.config import paperforge_paths as _shared_paperforge_paths
-
-    shared = _shared_paperforge_paths(vault)
-
-    cfg = load_vault_config(vault)
-    system_dir = cfg["system_dir"]
-    resources_dir = cfg["resources_dir"]
-    control_dir = cfg["control_dir"]
+    shared = paperforge_paths(vault)
 
     root = shared["paperforge"]
     control_root = shared["control"]
@@ -185,17 +51,15 @@ def pipeline_paths(vault: Path) -> dict[str, Path]:
         "ocr_queue": root / "ocr" / "ocr-queue.json",
     }
 
+
 def load_domain_config(paths: dict[str, Path]) -> dict:
     """Load or create the Lite domain mapping from export JSON files."""
-    config_path = paths['config']
-    if config_path.exists():
-        config = read_json(config_path)
-    else:
-        config = {"domains": []}
+    config_path = paths["config"]
+    config = read_json(config_path) if config_path.exists() else {"domains": []}
     domains = config.setdefault("domains", [])
     known_exports = {str(entry.get("export_file", "")) for entry in domains}
     changed = not config_path.exists()
-    for export_path in sorted(paths['exports'].glob('*.json')):
+    for export_path in sorted(paths["exports"].glob("*.json")):
         if export_path.name in known_exports:
             continue
         domains.append({"domain": export_path.stem, "export_file": export_path.name, "allowed_collections": []})
@@ -205,6 +69,7 @@ def load_domain_config(paths: dict[str, Path]) -> dict:
         config_path.parent.mkdir(parents=True, exist_ok=True)
         write_json(config_path, config)
     return config
+
 
 def _detect_zotero_data_dir() -> str | None:
     """Try to detect the user's Zotero data directory."""
@@ -252,7 +117,7 @@ def check_zotero_location(vault: Path, cfg: dict, add_check) -> None:
                         "Path Resolution",
                         "warn",
                         f"Zotero junction target missing: {target}",
-                        f"Recreate junction: mklink /J \"{zotero_link}\" \"<Zotero数据目录>\"",
+                        f'Recreate junction: mklink /J "{zotero_link}" "<Zotero数据目录>"',
                     )
             except Exception:
                 add_check(
@@ -308,9 +173,7 @@ def check_pdf_paths(vault: Path, paths: dict, add_check) -> None:
         return
     import random
 
-    sample = (
-        record_paths if len(record_paths) <= 5 else random.sample(record_paths, 5)
-    )
+    sample = record_paths if len(record_paths) <= 5 else random.sample(record_paths, 5)
     valid = 0
     errors: list[str] = []
     for record_path in sample:
@@ -329,9 +192,7 @@ def check_pdf_paths(vault: Path, paths: dict, add_check) -> None:
         if candidate.exists():
             valid += 1
         else:
-            err_match = re.search(
-                r'^path_error:\s*"(.*?)"\s*$', text, re.MULTILINE
-            )
+            err_match = re.search(r'^path_error:\s*"(.*?)"\s*$', text, re.MULTILINE)
             error_type = err_match.group(1) if err_match else "not_found"
             errors.append(error_type)
     total = len(sample)
@@ -395,7 +256,12 @@ def run_doctor(vault: Path, verbose: bool = False) -> int:
     if sys_version.major >= 3 and sys_version.minor >= 10:
         add_check("Python 环境", "pass", f"Python {sys_version.major}.{sys_version.minor}.{sys_version.micro}")
     else:
-        add_check("Python 环境", "fail", f"Python {sys_version.major}.{sys_version.minor} (需要 3.10+)", "升级 Python 到 3.10 或更高版本")
+        add_check(
+            "Python 环境",
+            "fail",
+            f"Python {sys_version.major}.{sys_version.minor} (需要 3.10+)",
+            "升级 Python 到 3.10 或更高版本",
+        )
 
     required_modules = ["requests", "pymupdf", "PIL", "yaml"]
     missing_modules = []
@@ -405,7 +271,12 @@ def run_doctor(vault: Path, verbose: bool = False) -> int:
         except ImportError:
             missing_modules.append(mod)
     if missing_modules:
-        add_check("Python 环境", "fail", f"缺少模块: {', '.join(missing_modules)}", f"运行: pip install {' '.join(missing_modules)}")
+        add_check(
+            "Python 环境",
+            "fail",
+            f"缺少模块: {', '.join(missing_modules)}",
+            f"运行: pip install {' '.join(missing_modules)}",
+        )
     elif sys_version.major >= 3 and sys_version.minor >= 10:
         pass
 
@@ -424,13 +295,20 @@ def run_doctor(vault: Path, verbose: bool = False) -> int:
     if resources_dir.exists():
         add_check("Vault 结构", "pass", f"resources_dir 存在: {cfg['resources_dir']}")
     else:
-        add_check("Vault 结构", "fail", f"resources_dir 不存在: {cfg['resources_dir']}", f"运行: mkdir {cfg['resources_dir']}")
+        add_check(
+            "Vault 结构", "fail", f"resources_dir 不存在: {cfg['resources_dir']}", f"运行: mkdir {cfg['resources_dir']}"
+        )
 
     control_dir = resources_dir / cfg.get("control_dir", "LiteratureControl")
     if control_dir.exists():
         add_check("Vault 结构", "pass", f"control_dir 存在: {cfg.get('control_dir', 'LiteratureControl')}")
     else:
-        add_check("Vault 结构", "fail", f"control_dir 不存在: {cfg.get('control_dir', 'LiteratureControl')}", f"运行: mkdir {cfg['resources_dir']}/{cfg.get('control_dir', 'LiteratureControl')}")
+        add_check(
+            "Vault 结构",
+            "fail",
+            f"control_dir 不存在: {cfg.get('control_dir', 'LiteratureControl')}",
+            f"运行: mkdir {cfg['resources_dir']}/{cfg.get('control_dir', 'LiteratureControl')}",
+        )
 
     zotero_link = system_dir / "Zotero"
     if zotero_link.exists():
@@ -439,14 +317,16 @@ def run_doctor(vault: Path, verbose: bool = False) -> int:
         else:
             add_check("Zotero 链接", "warn", "Zotero 目录存在但不是 junction，建议使用 junction")
     else:
-        add_check("Zotero 链接", "fail", "Zotero 目录不存在", f"创建 junction: mklink /j {zotero_link} <Zotero数据目录>")
+        add_check(
+            "Zotero 链接", "fail", "Zotero 目录不存在", f"创建 junction: mklink /j {zotero_link} <Zotero数据目录>"
+        )
 
     exports_dir = system_dir / "PaperForge" / "exports"
     if exports_dir.exists():
         add_check("BBT 导出", "pass", "exports 目录存在")
     else:
         add_check("BBT 导出", "fail", "exports 目录不存在", "在 Better BibTeX 设置中配置导出路径")
-    
+
     # Check for any valid JSON export (per-domain or library.json)
     json_files = sorted(exports_dir.glob("*.json")) if exports_dir.exists() else []
     valid_exports = []
@@ -463,7 +343,7 @@ def run_doctor(vault: Path, verbose: bool = False) -> int:
                     valid_exports.append((jf.name, len(data["items"])))
         except (JSONDecodeError, Exception):
             pass
-    
+
     if valid_exports:
         for name, count in valid_exports:
             add_check("BBT 导出", "pass", f"{name} 正常 ({count} 条)")
@@ -472,7 +352,9 @@ def run_doctor(vault: Path, verbose: bool = False) -> int:
     else:
         add_check("BBT 导出", "fail", "未找到 JSON 导出文件", "在 Zotero Better BibTeX 设置中配置导出路径")
 
-    env_api_key = os.environ.get("PADDLEOCR_API_TOKEN") or os.environ.get("PADDLEOCR_API_KEY") or os.environ.get("OCR_TOKEN")
+    env_api_key = (
+        os.environ.get("PADDLEOCR_API_TOKEN") or os.environ.get("PADDLEOCR_API_KEY") or os.environ.get("OCR_TOKEN")
+    )
     if env_api_key:
         add_check("OCR 配置", "pass", "API Token 已配置")
     else:
@@ -480,10 +362,11 @@ def run_doctor(vault: Path, verbose: bool = False) -> int:
 
     # Worker module check (v1.3+: pipeline/ removed, use paperforge.worker package)
     try:
-        from paperforge.worker.sync import run_selection_sync, run_index_refresh
+        from paperforge.worker.base_views import ensure_base_views
         from paperforge.worker.deep_reading import run_deep_reading
         from paperforge.worker.ocr import run_ocr
-        from paperforge.worker.base_views import ensure_base_views
+        from paperforge.worker.sync import run_index_refresh, run_selection_sync
+
         add_check("Worker 脚本", "pass", "paperforge.worker 包可导入")
     except ImportError as e:
         add_check("Worker 脚本", "fail", f"worker 函数导入失败: {e}", "运行: pip install -e .")
@@ -504,6 +387,7 @@ def run_doctor(vault: Path, verbose: bool = False) -> int:
         if ld_deep_script and ld_deep_script.exists():
             try:
                 import importlib.util
+
                 spec = importlib.util.spec_from_file_location("ld_deep", ld_deep_script)
                 if spec and spec.loader:
                     mod = importlib.util.module_from_spec(spec)
@@ -514,7 +398,12 @@ def run_doctor(vault: Path, verbose: bool = False) -> int:
         if ld_deep_import_ok:
             add_check("Agent 脚本", "pass", "paperforge and ld_deep importable")
         else:
-            add_check("Agent 脚本", "warn", f"literature-qa skill 目录存在但 import 失败: {import_error}", "确认 agent_config_dir 配置正确并已运行 pip install -e .")
+            add_check(
+                "Agent 脚本",
+                "warn",
+                f"literature-qa skill 目录存在但 import 失败: {import_error}",
+                "确认 agent_config_dir 配置正确并已运行 pip install -e .",
+            )
     else:
         add_check("Agent 脚本", "warn", "literature-qa skill 目录未找到", "确认 agent_config_dir 配置正确")
 
@@ -549,7 +438,7 @@ def _is_junction(path: Path) -> bool:
     try:
         import ctypes
         from ctypes import wintypes
-        FILE_FLAG_BACKUP_SEMANTICS = 0x02000000
+
         FILE_ATTRIBUTE_REPARSE_POINT = 0x400
         INVALID_FILE_ATTRIBUTES = 0xFFFFFFFF
         GetFileAttributesW = ctypes.windll.kernel32.GetFileAttributesW
@@ -569,36 +458,36 @@ def run_status(vault: Path, verbose: bool = False) -> int:
     cfg = load_vault_config(vault)
     config = load_domain_config(paths)
     ensure_base_views(vault, paths, config)
-    export_files = sorted(paths['exports'].glob('*.json'))
-    record_count = sum(1 for _ in paths['library_records'].rglob('*.md')) if paths['library_records'].exists() else 0
-    note_count = sum(1 for _ in paths['literature'].rglob('*.md')) if paths['literature'].exists() else 0
-    base_count = sum(1 for _ in paths['bases'].glob('*.base')) if paths['bases'].exists() else 0
+    export_files = sorted(paths["exports"].glob("*.json"))
+    record_count = sum(1 for _ in paths["library_records"].rglob("*.md")) if paths["library_records"].exists() else 0
+    note_count = sum(1 for _ in paths["literature"].rglob("*.md")) if paths["literature"].exists() else 0
+    base_count = sum(1 for _ in paths["bases"].glob("*.base")) if paths["bases"].exists() else 0
     ocr_done = 0
     ocr_total = 0
-    if paths['ocr'].exists():
-        for meta_path in paths['ocr'].glob('*/meta.json'):
+    if paths["ocr"].exists():
+        for meta_path in paths["ocr"].glob("*/meta.json"):
             ocr_total += 1
             try:
                 meta = read_json(meta_path)
             except Exception:
                 continue
-            if str(meta.get('ocr_status', '')).strip().lower() == 'done':
+            if str(meta.get("ocr_status", "")).strip().lower() == "done":
                 ocr_done += 1
-    env_paths = [vault / '.env', paths['pipeline'] / '.env']
-    env_found = [str(path.relative_to(vault)).replace('\\', '/') for path in env_paths if path.exists()]
+    env_paths = [vault / ".env", paths["pipeline"] / ".env"]
+    env_found = [str(path.relative_to(vault)).replace("\\", "/") for path in env_paths if path.exists()]
 
     # Count path errors
     path_error_count = 0
-    if paths['library_records'].exists():
-        for record_path in paths['library_records'].rglob('*.md'):
+    if paths["library_records"].exists():
+        for record_path in paths["library_records"].rglob("*.md"):
             try:
-                text = record_path.read_text(encoding='utf-8')
+                text = record_path.read_text(encoding="utf-8")
                 if re.search(r'^path_error:\s*"(.+?)"\s*$', text, re.MULTILINE):
                     path_error_count += 1
             except Exception:
                 continue
 
-    print('PaperForge Lite status')
+    print("PaperForge Lite status")
     print(f"- vault: {vault}")
     print(f"- system_dir: {cfg['system_dir']}")
     print(f"- resources_dir: {cfg['resources_dir']}")
@@ -616,6 +505,7 @@ def run_status(vault: Path, verbose: bool = False) -> int:
     print(f"- env: {', '.join(env_found) if env_found else 'not configured'}")
     return 0
 
+
 # =============================================================================
 # Update 功能
 # =============================================================================
@@ -624,5 +514,3 @@ GITHUB_REPO = "LLLin000/PaperForge"
 GITHUB_ZIP = f"https://github.com/{GITHUB_REPO}/archive/refs/heads/master.zip"
 
 UPDATEABLE_PATHS = ["skills", "pipeline", "command", "scripts"]
-
-

@@ -12,11 +12,10 @@ Exit code: 0 if all pass, 1 if any fail.
 
 from __future__ import annotations
 
-import os
 import re
 import sys
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable
 
 # Root of the repository (parent of this script)
 REPO_ROOT = Path(__file__).parent.parent.resolve()
@@ -77,10 +76,7 @@ COMMAND_DOC_REQUIRED_SECTIONS = [
 def should_exclude_check1(path: Path) -> bool:
     """Check if a path should be excluded from Check 1."""
     rel = path.relative_to(REPO_ROOT).as_posix()
-    for exclude in CHECK1_EXCLUDES:
-        if rel.startswith(exclude) or exclude in rel:
-            return True
-    return False
+    return any(rel.startswith(exclude) or exclude in rel for exclude in CHECK1_EXCLUDES)
 
 
 def find_files(pattern: str, root: Path = REPO_ROOT) -> Iterable[Path]:
@@ -111,7 +107,7 @@ def check_old_commands() -> tuple[int, list[str]]:
                     line_end = len(content)
                 line = content[line_start:line_end]
                 # Allow old commands in explicit migration sections of AGENTS.md
-                if rel == "AGENTS.md" and "命令迁移说明" in content[:match.start()]:
+                if rel == "AGENTS.md" and "命令迁移说明" in content[: match.start()]:
                     # Check if this is in section 11 (migration section)
                     section_start = content.find("## 11. 命令迁移说明")
                     if section_start != -1 and match.start() > section_start:
@@ -203,9 +199,7 @@ def check_dead_links() -> tuple[int, list[str]]:
             if not target_path.exists():
                 # Try appending .md for implicit markdown links
                 if not (target_path.with_suffix(".md")).exists():
-                    violations.append(
-                        f"  [{rel}] Dead link to '{link_target}' (text: '{link_text}')"
-                    )
+                    violations.append(f"  [{rel}] Dead link to '{link_target}' (text: '{link_text}')")
 
     passed = len(violations) == 0
     return (0 if passed else 1), violations
@@ -243,6 +237,7 @@ def check_command_docs() -> tuple[int, list[str]]:
 def check_duplicate_utils() -> tuple[int, list[str]]:
     """Check 5: Detect worker modules with duplicated utility functions outside the re-export from _utils.py."""
     import ast
+
     violations: list[str] = []
 
     worker_dir = REPO_ROOT / "paperforge" / "worker"
@@ -250,13 +245,23 @@ def check_duplicate_utils() -> tuple[int, list[str]]:
         return 0, violations
 
     # Known shared function names from _utils.py
-    shared_funcs = frozenset({
-        "read_json", "write_json", "read_jsonl", "write_jsonl",
-        "yaml_quote", "yaml_block", "yaml_list",
-        "slugify_filename", "_extract_year",
-        "load_journal_db", "lookup_impact_factor",
-        "scan_library_records", "_resolve_formal_note_path",
-    })
+    shared_funcs = frozenset(
+        {
+            "read_json",
+            "write_json",
+            "read_jsonl",
+            "write_jsonl",
+            "yaml_quote",
+            "yaml_block",
+            "yaml_list",
+            "slugify_filename",
+            "_extract_year",
+            "load_journal_db",
+            "lookup_impact_factor",
+            "scan_library_records",
+            "_resolve_formal_note_path",
+        }
+    )
 
     skip_files = frozenset({"_utils.py", "_retry.py", "_progress.py", "__init__.py"})
 
@@ -293,9 +298,7 @@ def check_duplicate_utils() -> tuple[int, list[str]]:
             if is_reexport:
                 continue
 
-            violations.append(
-                f"  [{rel}] Function '{node.name}' is defined locally but exists in _utils.py"
-            )
+            violations.append(f"  [{rel}] Function '{node.name}' is defined locally but exists in _utils.py")
 
     passed = len(violations) == 0
     return (0 if passed else 1), violations

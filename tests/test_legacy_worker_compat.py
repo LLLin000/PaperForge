@@ -1,4 +1,5 @@
 """Test compatibility: worker modules use shared resolver."""
+
 from __future__ import annotations
 
 import json
@@ -22,7 +23,7 @@ def tmp_vault(tmp_path: Path) -> Path:
     (paperforge / "candidates").mkdir(parents=True)
 
     resources = tmp_path / "03_Resources"
-    literature = resources / "Literature"
+    resources / "Literature"
     control = resources / "LiteratureControl"
     (control / "library-records").mkdir(parents=True)
 
@@ -58,13 +59,13 @@ class TestWorkerLoadVaultConfig:
         shared_cfg = shared_load(tmp_vault)
         worker_cfg = worker_load(tmp_vault)
 
-        assert set(worker_cfg.keys()) == set(shared_cfg.keys()), (
-            f"Key mismatch: worker={set(worker_cfg.keys())} vs shared={set(shared_cfg.keys())}"
-        )
+        assert set(worker_cfg.keys()) == set(
+            shared_cfg.keys()
+        ), f"Key mismatch: worker={set(worker_cfg.keys())} vs shared={set(shared_cfg.keys())}"
         for key in shared_cfg:
-            assert worker_cfg.get(key) == shared_cfg.get(key), (
-                f"Key '{key}' differs: worker={worker_cfg.get(key)!r} vs shared={shared_cfg.get(key)!r}"
-            )
+            assert worker_cfg.get(key) == shared_cfg.get(
+                key
+            ), f"Key '{key}' differs: worker={worker_cfg.get(key)!r} vs shared={shared_cfg.get(key)!r}"
 
     def test_nested_vault_config_respected(self, tmp_vault: Path) -> None:
         """Nested vault_config block takes precedence over top-level keys."""
@@ -126,9 +127,7 @@ class TestWorkerPipelinePaths:
         for key in expected_keys:
             assert key in paths, f"Missing key: {key}"
 
-    def test_pipeline_paths_values_from_shared_resolver(
-        self, tmp_vault: Path
-    ) -> None:
+    def test_pipeline_paths_values_from_shared_resolver(self, tmp_vault: Path) -> None:
         """Verify shared resolver keys have correct values."""
         from paperforge.config import paperforge_paths as shared_paths
         from paperforge.worker.sync import pipeline_paths
@@ -137,9 +136,7 @@ class TestWorkerPipelinePaths:
         worker = pipeline_paths(tmp_vault)
 
         for key in ["exports", "ocr", "library_records", "literature", "control", "bases"]:
-            assert worker[key] == shared[key], (
-                f"Key '{key}' differs: worker={worker[key]} vs shared={shared[key]}"
-            )
+            assert worker[key] == shared[key], f"Key '{key}' differs: worker={worker[key]} vs shared={shared[key]}"
 
 
 class TestLegacyStatusSubprocess:
@@ -159,10 +156,7 @@ class TestLegacyStatusSubprocess:
             env=env,
         )
         # Should exit 0, no import errors
-        assert result.returncode == 0, (
-            f"status command failed with code {result.returncode}\n"
-            f"stdout: {result.stdout}\nstderr: {result.stderr}"
-        )
-        assert "ImportError" not in result.stderr, (
-            f"Import error in stderr: {result.stderr}"
-        )
+        assert (
+            result.returncode == 0
+        ), f"status command failed with code {result.returncode}\nstdout: {result.stdout}\nstderr: {result.stderr}"
+        assert "ImportError" not in result.stderr, f"Import error in stderr: {result.stderr}"

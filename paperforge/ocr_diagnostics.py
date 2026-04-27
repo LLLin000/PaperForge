@@ -167,7 +167,7 @@ def ocr_doctor(config: dict[str, str] | None, live: bool = False) -> dict:
                     return {
                         "level": 4,
                         "passed": False,
-                        "error": f'Live PDF test failed: {poll_data.get("errorMsg", "unknown")}',
+                        "error": f"Live PDF test failed: {poll_data.get('errorMsg', 'unknown')}",
                         "fix": "PDF may be unreadable or OCR service error. Try a different PDF or check service status.",
                     }
             else:

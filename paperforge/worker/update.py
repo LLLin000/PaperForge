@@ -1,146 +1,25 @@
 from __future__ import annotations
-import logging
-import argparse
-import csv
+
 import hashlib
-import html
 import json
+import logging
 import os
-import re
 import shutil
 import subprocess
 import sys
 import tempfile
 import urllib.parse
-from json import JSONDecodeError
 import zipfile
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
-from xml.etree import ElementTree as ET
-import requests
-import fitz
-from PIL import Image
+
+from paperforge.config import load_vault_config, paperforge_paths
+from paperforge.worker._utils import (
+    read_json,
+    write_json,
+)
 
 logger = logging.getLogger(__name__)
-
-STANDARD_VIEW_NAMES = frozenset([
-    "控制面板", "推荐分析", "待 OCR", "OCR 完成",
-    "待深度阅读", "深度阅读完成", "正式卡片", "全记录"
-])
-
-def load_simple_env(env_path: Path) -> None:
-    if not env_path.exists():
-        return
-    for raw_line in env_path.read_text(encoding='utf-8').splitlines():
-        line = raw_line.strip()
-        if not line or line.startswith('#') or '=' not in line:
-            continue
-        key, value = line.split('=', 1)
-        key = key.strip()
-        if not key or key in os.environ:
-            continue
-        value = value.strip()
-        if len(value) >= 2 and value[0] == value[-1] and (value[0] in {'"', "'"}):
-            value = value[1:-1]
-        os.environ[key] = value
-
-def read_json(path: Path):
-    return json.loads(path.read_text(encoding='utf-8'))
-_JOURNAL_DB: dict[str, dict] | None = None
-
-def load_journal_db(vault: Path) -> dict[str, dict]:
-    """Load zoterostyle.json journal database."""
-    global _JOURNAL_DB
-    if _JOURNAL_DB is not None:
-        return _JOURNAL_DB
-    zoterostyle_path = vault / load_vault_config(vault)['system_dir'] / 'Zotero' / 'zoterostyle.json'
-    if zoterostyle_path.exists():
-        try:
-            _JOURNAL_DB = read_json(zoterostyle_path)
-        except (JSONDecodeError, Exception):
-            _JOURNAL_DB = {}
-    else:
-        _JOURNAL_DB = {}
-    return _JOURNAL_DB
-
-def lookup_impact_factor(journal_name: str, extra: str, vault: Path) -> str:
-    """Lookup impact factor: prefer zoterostyle.json, fallback to extra field."""
-    if not journal_name:
-        return ''
-    journal_db = load_journal_db(vault)
-    if journal_name in journal_db:
-        rank_data = journal_db[journal_name].get('rank', {})
-        if isinstance(rank_data, dict):
-            sciif = rank_data.get('sciif', '')
-            if sciif:
-                return str(sciif)
-    if extra:
-        if_match = re.search('影响因子[:：]\\s*([0-9.]+)', extra)
-        if if_match:
-            return if_match.group(1)
-    return ''
-
-def write_json(path: Path, data) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')
-
-def read_jsonl(path: Path):
-    rows = []
-    if not path.exists():
-        return rows
-    for line in path.read_text(encoding='utf-8').splitlines():
-        line = line.strip()
-        if line:
-            rows.append(json.loads(line))
-    return rows
-
-def write_jsonl(path: Path, rows) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    text = '\n'.join((json.dumps(row, ensure_ascii=False) for row in rows))
-    if text:
-        text += '\n'
-    path.write_text(text, encoding='utf-8')
-
-def yaml_quote(value: str) -> str:
-    if isinstance(value, bool):
-        return 'true' if value else 'false'
-    return '"' + str(value or '').replace('\\', '\\\\').replace('"', '\\"') + '"'
-
-def yaml_block(value: str) -> list[str]:
-    value = (value or '').strip()
-    if not value:
-        return ['abstract: |-', '  ']
-    lines = ['abstract: |-']
-    for line in value.splitlines():
-        lines.append(f'  {line}')
-    return lines
-
-def yaml_list(key: str, values) -> list[str]:
-    cleaned = [str(value).strip() for value in values or [] if str(value).strip()]
-    if not cleaned:
-        return [f'{key}: []']
-    lines = [f'{key}:']
-    for value in cleaned:
-        lines.append(f'  - {yaml_quote(value)}')
-    return lines
-
-def slugify_filename(text: str) -> str:
-    cleaned = re.sub('[<>:"/\\\\|?*]+', '', text).strip()
-    return cleaned[:120] or 'untitled'
-
-def _extract_year(value: str) -> str:
-    match = re.search('(19|20)\\d{2}', value or '')
-    return match.group(0) if match else ''
-
-
-def load_vault_config(vault: Path) -> dict:
-    """Read vault configuration — delegates to shared resolver.
-
-    Preserves the public name for legacy callers. Configuration precedence:
-    1. paperforge.config.load_vault_config (overrides > env > JSON > defaults)
-    """
-    from paperforge.config import load_vault_config as _shared_load_vault_config
-    return _shared_load_vault_config(vault)
 
 
 def pipeline_paths(vault: Path) -> dict[str, Path]:
@@ -149,14 +28,7 @@ def pipeline_paths(vault: Path) -> dict[str, Path]:
     Returns paths from paperforge.config.paperforge_paths() plus
     worker-only keys. Preserves all legacy keys for existing callers.
     """
-    from paperforge.config import paperforge_paths as _shared_paperforge_paths
-
-    shared = _shared_paperforge_paths(vault)
-
-    cfg = load_vault_config(vault)
-    system_dir = cfg["system_dir"]
-    resources_dir = cfg["resources_dir"]
-    control_dir = cfg["control_dir"]
+    shared = paperforge_paths(vault)
 
     root = shared["paperforge"]
     control_root = shared["control"]
@@ -183,17 +55,15 @@ def pipeline_paths(vault: Path) -> dict[str, Path]:
         "ocr_queue": root / "ocr" / "ocr-queue.json",
     }
 
+
 def load_domain_config(paths: dict[str, Path]) -> dict:
     """Load or create the Lite domain mapping from export JSON files."""
-    config_path = paths['config']
-    if config_path.exists():
-        config = read_json(config_path)
-    else:
-        config = {"domains": []}
+    config_path = paths["config"]
+    config = read_json(config_path) if config_path.exists() else {"domains": []}
     domains = config.setdefault("domains", [])
     known_exports = {str(entry.get("export_file", "")) for entry in domains}
     changed = not config_path.exists()
-    for export_path in sorted(paths['exports'].glob('*.json')):
+    for export_path in sorted(paths["exports"].glob("*.json")):
         if export_path.name in known_exports:
             continue
         domains.append({"domain": export_path.stem, "export_file": export_path.name, "allowed_collections": []})
@@ -203,6 +73,7 @@ def load_domain_config(paths: dict[str, Path]) -> dict:
         config_path.parent.mkdir(parents=True, exist_ok=True)
         write_json(config_path, config)
     return config
+
 
 def protected_paths(vault: Path) -> set[str]:
     cfg = load_vault_config(vault)
@@ -219,11 +90,12 @@ def protected_paths(vault: Path) -> set[str]:
     }
 
 
-
 def _remote_version() -> str | None:
     try:
         api = f"https://api.github.com/repos/{GITHUB_REPO}/contents/paperforge.json"
-        req = urllib.request.Request(api, headers={"Accept": "application/vnd.github.v3+json", "User-Agent": "PaperForge"})
+        req = urllib.request.Request(
+            api, headers={"Accept": "application/vnd.github.v3+json", "User-Agent": "PaperForge"}
+        )
         with urllib.request.urlopen(req, timeout=10) as resp:
             data = json.loads(resp.read())
             req2 = urllib.request.Request(data["download_url"], headers={"User-Agent": "PaperForge"})
@@ -260,7 +132,7 @@ def _do_backup(vault: Path, updates: list) -> Path | None:
     backup_dir = vault / f".backup_{datetime.now():%Y%m%d_%H%M%S}"
     backup_dir.mkdir(exist_ok=True)
     count = 0
-    for src, dst, action in updates:
+    for _src, dst, action in updates:
         if action == "UPDATE" and dst.exists():
             bp = backup_dir / dst.relative_to(vault)
             bp.parent.mkdir(parents=True, exist_ok=True)
@@ -273,7 +145,7 @@ def _do_backup(vault: Path, updates: list) -> Path | None:
 
 def _apply_updates(vault: Path, updates: list) -> bool:
     try:
-        for src, dst, action in updates:
+        for src, dst, _action in updates:
             dst.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(src, dst)
         return True
@@ -295,21 +167,22 @@ def _rollback(vault: Path, backup_dir: Path) -> None:
 def _detect_install_method() -> tuple[str, Path | None]:
     """Detect how paperforge is installed."""
     import paperforge
+
     pkg_dir = Path(paperforge.__file__).parent.resolve()
-    
+
     # Check if installed in site-packages (pip install)
     if "site-packages" in str(pkg_dir) or "dist-packages" in str(pkg_dir):
         return ("pip", pkg_dir)
-    
+
     # Check if in editable mode (pip install -e .)
     if pkg_dir.name == "paperforge" and (pkg_dir.parent / ".git").exists():
         return ("pip-editable", pkg_dir.parent)
-    
+
     # Check if vault has .git (git clone)
     vault = Path.cwd()
     if (vault / ".git").exists():
         return ("git", vault)
-    
+
     return ("unknown", None)
 
 
@@ -321,8 +194,8 @@ def _update_via_pip(editable: bool = False) -> bool:
     else:
         cmd.append("--upgrade")
         cmd.append("paperforge")
-    
-    logger.info("执行: %s", ' '.join(cmd))
+
+    logger.info("执行: %s", " ".join(cmd))
     r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8")
     if r.returncode != 0:
         logger.error("pip 更新失败: %s", r.stderr)
@@ -373,7 +246,7 @@ def update_via_zip(vault: Path) -> bool:
             logger.info("所有文件已是最新")
             return True
         logger.info("发现 %d 个文件需要更新:", len(updates))
-        for src, dst, action in updates:
+        for _src, dst, action in updates:
             logger.info("  [%s] %s", action, dst.relative_to(vault))
         backup = _do_backup(vault, updates)
         if _apply_updates(vault, updates):
@@ -401,12 +274,14 @@ def run_update(vault: Path) -> int:
     logger.info("PaperForge Lite 更新")
     logger.info("%s", "=" * 50)
     logger.info("本地版本: %s", local)
-    logger.info("远程版本: %s", remote or 'unknown')
+    logger.info("远程版本: %s", remote or "unknown")
     if not remote:
         logger.error("无法获取远程版本")
         return 1
     try:
-        needs = tuple(int(x) for x in remote.split(".") if x.isdigit()) > tuple(int(x) for x in local.split(".") if x.isdigit())
+        needs = tuple(int(x) for x in remote.split(".") if x.isdigit()) > tuple(
+            int(x) for x in local.split(".") if x.isdigit()
+        )
     except ValueError:
         needs = remote != local
     if not needs:
@@ -418,11 +293,11 @@ def run_update(vault: Path) -> int:
     if ans not in ("y", "yes"):
         logger.info("已取消")
         return 0
-    
+
     # Auto-detect installation method
     method, path = _detect_install_method()
     logger.info("安装方式: %s", method)
-    
+
     if method == "pip":
         logger.info("通过 pip 更新...")
         success = _update_via_pip(editable=False)
@@ -443,7 +318,7 @@ def run_update(vault: Path) -> int:
     else:
         logger.warning("未检测到标准安装方式，尝试 zip 下载...")
         success = _update_via_zip(vault)
-    
+
     if success:
         logger.info("更新完成！请重启 Obsidian")
     return 0 if success else 1
@@ -452,4 +327,3 @@ def run_update(vault: Path) -> int:
 # =============================================================================
 # Main
 # =============================================================================
-

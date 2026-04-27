@@ -1,41 +1,27 @@
 from __future__ import annotations
+
 import logging
-import argparse
-import csv
-import hashlib
-import html
-import json
 import os
-import re
-import shutil
-import subprocess
-import sys
-import tempfile
-import urllib.parse
-from json import JSONDecodeError
-import zipfile
-from datetime import datetime, timezone
 from pathlib import Path
-from xml.etree import ElementTree as ET
-import requests
-import fitz
-from PIL import Image
+
+from paperforge.config import paperforge_paths
+from paperforge.worker._utils import (
+    read_json,
+    slugify_filename,
+    write_json,
+)
 
 logger = logging.getLogger(__name__)
 
-STANDARD_VIEW_NAMES = frozenset([
-    "控制面板", "推荐分析", "待 OCR", "OCR 完成",
-    "待深度阅读", "深度阅读完成", "正式卡片", "全记录"
-])
 
 def load_simple_env(env_path: Path) -> None:
     if not env_path.exists():
         return
-    for raw_line in env_path.read_text(encoding='utf-8').splitlines():
+    for raw_line in env_path.read_text(encoding="utf-8").splitlines():
         line = raw_line.strip()
-        if not line or line.startswith('#') or '=' not in line:
+        if not line or line.startswith("#") or "=" not in line:
             continue
-        key, value = line.split('=', 1)
+        key, value = line.split("=", 1)
         key = key.strip()
         if not key or key in os.environ:
             continue
@@ -44,104 +30,6 @@ def load_simple_env(env_path: Path) -> None:
             value = value[1:-1]
         os.environ[key] = value
 
-def read_json(path: Path):
-    return json.loads(path.read_text(encoding='utf-8'))
-_JOURNAL_DB: dict[str, dict] | None = None
-
-def load_journal_db(vault: Path) -> dict[str, dict]:
-    """Load zoterostyle.json journal database."""
-    global _JOURNAL_DB
-    if _JOURNAL_DB is not None:
-        return _JOURNAL_DB
-    zoterostyle_path = vault / load_vault_config(vault)['system_dir'] / 'Zotero' / 'zoterostyle.json'
-    if zoterostyle_path.exists():
-        try:
-            _JOURNAL_DB = read_json(zoterostyle_path)
-        except (JSONDecodeError, Exception):
-            _JOURNAL_DB = {}
-    else:
-        _JOURNAL_DB = {}
-    return _JOURNAL_DB
-
-def lookup_impact_factor(journal_name: str, extra: str, vault: Path) -> str:
-    """Lookup impact factor: prefer zoterostyle.json, fallback to extra field."""
-    if not journal_name:
-        return ''
-    journal_db = load_journal_db(vault)
-    if journal_name in journal_db:
-        rank_data = journal_db[journal_name].get('rank', {})
-        if isinstance(rank_data, dict):
-            sciif = rank_data.get('sciif', '')
-            if sciif:
-                return str(sciif)
-    if extra:
-        if_match = re.search('影响因子[:：]\\s*([0-9.]+)', extra)
-        if if_match:
-            return if_match.group(1)
-    return ''
-
-def write_json(path: Path, data) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')
-
-def read_jsonl(path: Path):
-    rows = []
-    if not path.exists():
-        return rows
-    for line in path.read_text(encoding='utf-8').splitlines():
-        line = line.strip()
-        if line:
-            rows.append(json.loads(line))
-    return rows
-
-def write_jsonl(path: Path, rows) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    text = '\n'.join((json.dumps(row, ensure_ascii=False) for row in rows))
-    if text:
-        text += '\n'
-    path.write_text(text, encoding='utf-8')
-
-def yaml_quote(value: str) -> str:
-    if isinstance(value, bool):
-        return 'true' if value else 'false'
-    return '"' + str(value or '').replace('\\', '\\\\').replace('"', '\\"') + '"'
-
-def yaml_block(value: str) -> list[str]:
-    value = (value or '').strip()
-    if not value:
-        return ['abstract: |-', '  ']
-    lines = ['abstract: |-']
-    for line in value.splitlines():
-        lines.append(f'  {line}')
-    return lines
-
-def yaml_list(key: str, values) -> list[str]:
-    cleaned = [str(value).strip() for value in values or [] if str(value).strip()]
-    if not cleaned:
-        return [f'{key}: []']
-    lines = [f'{key}:']
-    for value in cleaned:
-        lines.append(f'  - {yaml_quote(value)}')
-    return lines
-
-def slugify_filename(text: str) -> str:
-    cleaned = re.sub('[<>:"/\\\\|?*]+', '', text).strip()
-    return cleaned[:120] or 'untitled'
-
-def _extract_year(value: str) -> str:
-    match = re.search('(19|20)\\d{2}', value or '')
-    return match.group(0) if match else ''
-
-
-def load_vault_config(vault: Path) -> dict:
-    """Read vault configuration — delegates to shared resolver.
-
-    Preserves the public name for legacy callers. Configuration precedence:
-    1. paperforge.config.load_vault_config (overrides > env > JSON > defaults)
-    """
-    from paperforge.config import load_vault_config as _shared_load_vault_config
-    return _shared_load_vault_config(vault)
-
 
 def pipeline_paths(vault: Path) -> dict[str, Path]:
     """Build complete PaperForge path inventory — delegates to shared resolver.
@@ -149,14 +37,7 @@ def pipeline_paths(vault: Path) -> dict[str, Path]:
     Returns paths from paperforge.config.paperforge_paths() plus
     worker-only keys. Preserves all legacy keys for existing callers.
     """
-    from paperforge.config import paperforge_paths as _shared_paperforge_paths
-
-    shared = _shared_paperforge_paths(vault)
-
-    cfg = load_vault_config(vault)
-    system_dir = cfg["system_dir"]
-    resources_dir = cfg["resources_dir"]
-    control_dir = cfg["control_dir"]
+    shared = paperforge_paths(vault)
 
     root = shared["paperforge"]
     control_root = shared["control"]
@@ -183,17 +64,15 @@ def pipeline_paths(vault: Path) -> dict[str, Path]:
         "ocr_queue": root / "ocr" / "ocr-queue.json",
     }
 
+
 def load_domain_config(paths: dict[str, Path]) -> dict:
     """Load or create the Lite domain mapping from export JSON files."""
-    config_path = paths['config']
-    if config_path.exists():
-        config = read_json(config_path)
-    else:
-        config = {"domains": []}
+    config_path = paths["config"]
+    config = read_json(config_path) if config_path.exists() else {"domains": []}
     domains = config.setdefault("domains", [])
     known_exports = {str(entry.get("export_file", "")) for entry in domains}
     changed = not config_path.exists()
-    for export_path in sorted(paths['exports'].glob('*.json')):
+    for export_path in sorted(paths["exports"].glob("*.json")):
         if export_path.name in known_exports:
             continue
         domains.append({"domain": export_path.stem, "export_file": export_path.name, "allowed_collections": []})
@@ -204,13 +83,16 @@ def load_domain_config(paths: dict[str, Path]) -> dict:
         write_json(config_path, config)
     return config
 
+
 def base_markdown_filter(path: Path, vault: Path) -> str:
     try:
-        return str(path.relative_to(vault)).replace('\\', '/')
+        return str(path.relative_to(vault)).replace("\\", "/")
     except ValueError:
-        return str(path).replace('\\', '/')
+        return str(path).replace("\\", "/")
+
 
 PAPERFORGE_VIEW_PREFIX = "# PAPERFORGE_VIEW: "
+
 
 def build_base_views(domain: str) -> list[dict]:
     """Build the 8-view list for a domain Base file.
@@ -224,12 +106,33 @@ def build_base_views(domain: str) -> list[dict]:
     return [
         {
             "name": "控制面板",
-            "order": ["file.name", "title", "year", "has_pdf", "do_ocr", "analyze", "ocr_status", "deep_reading_status", "pdf_path", "fulltext_md_path"],
+            "order": [
+                "file.name",
+                "title",
+                "year",
+                "has_pdf",
+                "do_ocr",
+                "analyze",
+                "ocr_status",
+                "deep_reading_status",
+                "pdf_path",
+                "fulltext_md_path",
+            ],
             "filter": None,
         },
         {
             "name": "推荐分析",
-            "order": ["year", "title", "has_pdf", "do_ocr", "analyze", "ocr_status", "deep_reading_status", "pdf_path", "fulltext_md_path"],
+            "order": [
+                "year",
+                "title",
+                "has_pdf",
+                "do_ocr",
+                "analyze",
+                "ocr_status",
+                "deep_reading_status",
+                "pdf_path",
+                "fulltext_md_path",
+            ],
             "filter": "analyze = true AND recommend_analyze = true",
         },
         {
@@ -259,10 +162,21 @@ def build_base_views(domain: str) -> list[dict]:
         },
         {
             "name": "全记录",
-            "order": ["title", "year", "has_pdf", "do_ocr", "analyze", "ocr_status", "deep_reading_status", "pdf_path", "fulltext_md_path"],
+            "order": [
+                "title",
+                "year",
+                "has_pdf",
+                "do_ocr",
+                "analyze",
+                "ocr_status",
+                "deep_reading_status",
+                "pdf_path",
+                "fulltext_md_path",
+            ],
             "filter": None,
         },
     ]
+
 
 def substitute_config_placeholders(content: str, paths: dict[str, Path]) -> str:
     """Replace ${SCREAMING_SNAKE_CASE} path placeholders with vault-relative paths.
@@ -297,13 +211,13 @@ def _render_views_section(views: list[dict]) -> str:
     """Render a list of view dicts to YAML views: section."""
     lines = []
     for v in views:
-        lines.append(f"  - type: table")
+        lines.append("  - type: table")
         lines.append(f'    name: "{v["name"]}"')
-        lines.append(f"    order:")
+        lines.append("    order:")
         for col in v["order"]:
             lines.append(f"      - {col}")
         if v["filter"]:
-            lines.append(f'    filter: \'{v["filter"]}\'')
+            lines.append(f"    filter: '{v['filter']}'")
     return "\n".join(lines)
 
 
@@ -351,7 +265,7 @@ def merge_base_views(existing_content: str | None, new_views: list[dict]) -> str
         fresh_views_yaml = _render_views_section(new_views)
         return f"""filters:
   and:
-    - file.inFolder("{new_views[0]['name']}")
+    - file.inFolder("{new_views[0]["name"]}")
 {PROPERTIES_YAML}
 views:
 {fresh_views_yaml}"""
@@ -372,20 +286,20 @@ views:
 views:
 {fresh_views_yaml}"""
 
-    header_lines = lines[:views_start_idx + 1]
+    header_lines = lines[: views_start_idx + 1]
 
     new_pf_blocks = []
     for v in new_views:
         rendered = f"{PAPERFORGE_VIEW_PREFIX}{v['name']}\n"
-        rendered += f"  - type: table\n"
+        rendered += "  - type: table\n"
         rendered += f'    name: "{v["name"]}"\n'
-        rendered += f"    order:\n"
+        rendered += "    order:\n"
         for col in v["order"]:
             rendered += f"      - {col}\n"
         if v["filter"]:
-            rendered += f'    filter: \'{v["filter"]}\'\n'
+            rendered += f"    filter: '{v['filter']}'\n"
         else:
-            rendered += '\n'
+            rendered += "\n"
         new_pf_blocks.append((v["name"], rendered))
 
     rebuilt_views_lines = []
@@ -396,7 +310,7 @@ views:
         line = lines[i]
 
         if line.startswith(PAPERFORGE_VIEW_PREFIX):
-            pending_pf_view_name = line[len(PAPERFORGE_VIEW_PREFIX):].strip()
+            pending_pf_view_name = line[len(PAPERFORGE_VIEW_PREFIX) :].strip()
             pf_names_seen.add(pending_pf_view_name)
             i += 1
             continue
@@ -440,16 +354,16 @@ def _build_base_yaml(folder_filter: str, views: list[dict]) -> str:
     views_yaml = ""
     for v in views:
         views_yaml += f"{PAPERFORGE_VIEW_PREFIX}{v['name']}\n"
-        views_yaml += f"  - type: table\n"
+        views_yaml += "  - type: table\n"
         views_yaml += f'    name: "{v["name"]}"\n'
-        views_yaml += f"    order:\n"
+        views_yaml += "    order:\n"
         for col in v["order"]:
             views_yaml += f"      - {col}\n"
         if v["filter"]:
-            views_yaml += f'    filter: \'{v["filter"]}\'\n'
+            views_yaml += f"    filter: '{v['filter']}'\n"
         else:
-            views_yaml += '\n'
-    views_yaml = views_yaml.rstrip('\n')
+            views_yaml += "\n"
+    views_yaml = views_yaml.rstrip("\n")
     return f"""filters:
   and:
     - file.inFolder("{folder_filter}")
@@ -515,5 +429,3 @@ def ensure_base_views(vault: Path, paths: dict[str, Path], config: dict, force: 
     all_views = build_base_views("All Records")
     pf_base = paths["bases"] / "PaperForge.base"
     refresh_base(pf_base, "${LIBRARY_RECORDS}", all_views)
-
-
