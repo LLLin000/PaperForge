@@ -80,7 +80,11 @@ Plans:
   3. Zombie `processing` jobs older than 30 minutes are reset to `pending` on worker restart (configurable via `PAPERFORGE_RETRY_MAX` and `PAPERFORGE_RETRY_BACKOFF` env vars)
   4. A single OCR upload failure does not abort the entire batch — failed items are logged, state updated, and processing continues with remaining items
   5. `tqdm` progress bar appears during OCR uploads in interactive terminals; auto-disables in CI/pipe contexts; `--no-progress` flag suppresses explicitly
-**Plans**: TBD
+**Plans**: 2 plans (2 waves)
+
+Plans:
+- [ ] 16-01-PLAN.md — Retry & Progress Infrastructure: _retry.py, _progress.py, pyproject.toml deps (Wave 1)
+- [ ] 16-02-PLAN.md — CLI + OCR Integration: --no-progress, retry/pb/zombie/batch in ocr.py (Wave 2)
 
 ---
 
@@ -90,11 +94,14 @@ Plans:
 **Requirements**: CH-04, DX-01, DX-02, OBS-05
 **Success Criteria** (what must be TRUE):
   1. No unused imports remain in any worker module — verified by `ruff check`
-  2. UPDATE_* constants (lines 620-625 in `status.py`) and unnecessary delegation wrappers (`load_vault_config`, `pipeline_paths`) removed — direct `config.*` imports replace them
+  2. UPDATE_* constants (already removed in Phase 12 — verified by grep) and unnecessary delegation wrappers (`load_vault_config`, `pipeline_paths`) removed — direct `config.*` imports replace them
   3. `.pre-commit-config.yaml` active with hooks: `ruff` (lint + format), `check-yaml`, `check-toml`, `end-of-file-fixer`, `trailing-whitespace`, and custom `consistency-audit` hook
   4. `git commit` triggers pre-commit hooks — consistency audit blocks commits if duplicate utility functions are detected in any worker module
   5. OCR error messages include HTTP status code, library-record name for context, and actionable suggestion (e.g., "Run `paperforge ocr --diagnose` to test API connectivity")
-**Plans**: TBD
+**Plans**: 1 plan (2 waves)
+
+Plans:
+- [ ] 17-01-PLAN.md — Ruff config + pre-commit hooks + Check 5 + dead code sweep + OBS-05 (Wave 1: config scaffolding; Wave 2: fix + verify)
 
 ---
 
@@ -137,8 +144,8 @@ Plans:
 | 13. Logging Foundation | v1.4 | 3/3 | Complete    | 2026-04-27 |
 | 14. Shared Utils Extraction | v1.4 | 0/0 | Not started | — |
 | 15. Queue Merge | v1.4 | 1/1 | Complete   | 2026-04-27 |
-| 16. Retry + Progress | v1.4 | 0/0 | Not started | — |
-| 17. Dead Code + Pre-Commit | v1.4 | 0/0 | Not started | — |
+| 16. Retry + Progress | v1.4 | 0/2 | Planning done | — |
+| 17. Dead Code + Pre-Commit | v1.4 | 0/1 | Plan ready | — |
 | 18. Docs + CHANGELOG + UX | v1.4 | 0/0 | Not started | — |
 | 19. Testing | v1.4 | 0/0 | Not started | — |
 
