@@ -6,10 +6,8 @@ and has_pdf=False scenarios.
 
 from __future__ import annotations
 
-import os
 import json
 from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 
@@ -47,9 +45,7 @@ class TestResolvePdfPath:
                 return target
             return path
 
-        monkeypatch.setattr(
-            "paperforge.pdf_resolver.resolve_junction", mock_resolve_junction
-        )
+        monkeypatch.setattr("paperforge.pdf_resolver.resolve_junction", mock_resolve_junction)
         result = resolve_pdf_path(str(junction), True, tmp_path)
         assert result == str(target.resolve())
 
@@ -162,9 +158,7 @@ class TestLoadExportRowsAttachmentNormalization:
                     "itemKey": "ABC123",
                     "itemType": "journalArticle",
                     "title": "Test Paper",
-                    "attachments": [
-                        {"path": "ABC123/ABC123.pdf", "contentType": "application/pdf"}
-                    ],
+                    "attachments": [{"path": "ABC123/ABC123.pdf", "contentType": "application/pdf"}],
                 }
             ],
             "collections": {},
@@ -188,9 +182,7 @@ class TestLoadExportRowsAttachmentNormalization:
                     "itemKey": "ABC123",
                     "itemType": "journalArticle",
                     "title": "Test Paper",
-                    "attachments": [
-                        {"path": "storage:ABC123/ABC123.pdf", "contentType": "application/pdf"}
-                    ],
+                    "attachments": [{"path": "storage:ABC123/ABC123.pdf", "contentType": "application/pdf"}],
                 }
             ],
             "collections": {},
@@ -215,9 +207,7 @@ class TestLoadExportRowsAttachmentNormalization:
                     "itemKey": "ABC123",
                     "itemType": "journalArticle",
                     "title": "Test Paper",
-                    "attachments": [
-                        {"path": abs_path, "contentType": "application/pdf"}
-                    ],
+                    "attachments": [{"path": abs_path, "contentType": "application/pdf"}],
                 }
             ],
             "collections": {},
@@ -241,9 +231,7 @@ class TestLoadExportRowsAttachmentNormalization:
                     "itemKey": "ABC123",
                     "itemType": "journalArticle",
                     "title": "Test Paper",
-                    "attachments": [
-                        {"path": "", "contentType": ""}
-                    ],
+                    "attachments": [{"path": "", "contentType": ""}],
                 }
             ],
             "collections": {},
@@ -267,9 +255,7 @@ class TestLoadExportRowsAttachmentNormalization:
                     "itemKey": "ABC123",
                     "itemType": "journalArticle",
                     "title": "Test Paper",
-                    "attachments": [
-                        {"path": "ABC123/ABC123.docx", "contentType": ""}
-                    ],
+                    "attachments": [{"path": "ABC123/ABC123.docx", "contentType": ""}],
                 }
             ],
             "collections": {},

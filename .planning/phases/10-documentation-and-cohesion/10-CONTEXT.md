@@ -65,7 +65,7 @@ Phase 10 will implement OpenCode support and document approach for others.
   - No old command names (`selection-sync`, `index-refresh`, `ocr run`, `/LD-*`, `/lp-*`)
   - No dead links
   - No broken references to `paperforge_lite`
-  
+
 - **Manual checklist** for soft constraints:
   - Terminology consistency
   - Style consistency

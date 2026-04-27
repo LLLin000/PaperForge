@@ -120,7 +120,7 @@ OCR 完成后，每个文献生成以下文件：
 ### OpenCode
 
 > `/pf-ocr` 是 **CLI 命令**，Agent 层不直接提供 `/pf-ocr` 聊天命令。
-> 
+>
 > 用户需要：
 > 1. 在 Obsidian 中将 library-record 的 `do_ocr` 设为 `true`
 > 2. 在终端运行 `paperforge ocr`

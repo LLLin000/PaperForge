@@ -1,9 +1,9 @@
 # Phase 7 Summary — Zotero PDF, Metadata, And State Repair
 
-**Status:** Complete (with one task deferred)  
-**Date:** 2026-04-24  
-**Plan:** [07-PLAN.md](07-PLAN.md)  
-**Review:** [07-REVIEW.md](07-REVIEW.md)  
+**Status:** Complete (with one task deferred)
+**Date:** 2026-04-24
+**Plan:** [07-PLAN.md](07-PLAN.md)
+**Review:** [07-REVIEW.md](07-REVIEW.md)
 
 ---
 

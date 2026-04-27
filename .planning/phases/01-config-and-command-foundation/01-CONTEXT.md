@@ -1,7 +1,7 @@
 # Phase 1: Config And Command Foundation - Context
 
-**Gathered:** 2026-04-23  
-**Status:** Ready for planning  
+**Gathered:** 2026-04-23
+**Status:** Ready for planning
 **Source:** Derived from `$gsd-new-project` research and Phase 1 roadmap.
 
 <domain>
@@ -160,5 +160,5 @@ python <system_dir>/PaperForge/worker/scripts/literature_pipeline.py --vault <va
 
 ---
 
-*Phase: 01-config-and-command-foundation*  
+*Phase: 01-config-and-command-foundation*
 *Context gathered: 2026-04-23 via derived planning context*

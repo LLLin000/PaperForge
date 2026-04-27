@@ -7,6 +7,7 @@ PaperForge Lite Setup Wizard (Textual Step-by-Step)
 Usage:
     python setup_wizard.py --vault /path/to/vault
 """
+
 from __future__ import annotations
 
 import argparse
@@ -17,7 +18,6 @@ import subprocess
 import sys
 import webbrowser
 from pathlib import Path
-from typing import Optional
 
 if sys.platform == "win32":
     import winreg
@@ -25,33 +25,39 @@ else:
     winreg = None
 
 from textual.app import App, ComposeResult
-from textual.containers import Container, Grid, Horizontal, Vertical
+from textual.containers import Container, Horizontal, Vertical
 from textual.message import Message
 from textual.reactive import reactive
-from textual.screen import Screen
 from textual.widgets import (
     Button,
     ContentSwitcher,
     Footer,
     Header,
-    Label,
     Markdown,
     ProgressBar,
     Static,
     Tree,
 )
 
-
 # =============================================================================
 # Agent Platform Configurations
 # =============================================================================
 
 AGENT_CONFIGS = {
-    "opencode": {"name": "OpenCode", "skill_dir": ".opencode/skills", "command_dir": ".opencode/command", "config_file": None},
+    "opencode": {
+        "name": "OpenCode",
+        "skill_dir": ".opencode/skills",
+        "command_dir": ".opencode/command",
+        "config_file": None,
+    },
     "cursor": {"name": "Cursor", "skill_dir": ".cursor/skills", "config_file": ".cursor/settings.json"},
     "claude": {"name": "Claude Code", "skill_dir": ".claude/skills", "config_file": ".claude/skills.json"},
     "windsurf": {"name": "Windsurf", "skill_dir": ".windsurf/skills", "config_file": None},
-    "github_copilot": {"name": "GitHub Copilot", "skill_dir": ".github/skills", "config_file": ".github/copilot-instructions.md"},
+    "github_copilot": {
+        "name": "GitHub Copilot",
+        "skill_dir": ".github/skills",
+        "config_file": ".github/copilot-instructions.md",
+    },
     "cline": {"name": "Cline", "skill_dir": ".clinerules/skills", "config_file": ".clinerules"},
     "augment": {"name": "Augment", "skill_dir": ".augment/skills", "config_file": None},
     "trae": {"name": "Trae", "skill_dir": ".trae/skills", "config_file": None},
@@ -61,6 +67,7 @@ AGENT_CONFIGS = {
 # =============================================================================
 # Detection Logic (unchanged from previous version)
 # =============================================================================
+
 
 class CheckResult:
     def __init__(self, name: str):
@@ -75,7 +82,7 @@ class EnvChecker:
 
     def __init__(self, vault: Path):
         self.vault = vault
-        self.manual_zotero_path: Optional[Path] = None
+        self.manual_zotero_path: Path | None = None
         self.system_dir: str = "99_System"  # 可由用户自定义
         self.results: dict[str, CheckResult] = {
             "python": CheckResult("Python 版本"),
@@ -143,11 +150,11 @@ class EnvChecker:
             r.action_required = True
         return r
 
-    def _find_zotero(self, manual_path: Optional[Path] = None) -> Optional[Path]:
+    def _find_zotero(self, manual_path: Path | None = None) -> Path | None:
         # 如果提供了手动路径，优先使用
         if manual_path and manual_path.exists():
             return manual_path
-        
+
         system = platform.system()
         if system == "Windows":
             # ...existing detection code...
@@ -309,9 +316,7 @@ class EnvChecker:
             try:
                 data = json.loads(jf.read_text(encoding="utf-8"))
                 # Better BibTeX JSON 是 dict 格式（含 items），也兼容 list 格式
-                if isinstance(data, dict) and data.get("items"):
-                    valid.append(jf.name)
-                elif isinstance(data, list) and len(data) > 0:
+                if isinstance(data, dict) and data.get("items") or isinstance(data, list) and len(data) > 0:
                     valid.append(jf.name)
             except Exception:
                 pass
@@ -374,16 +379,19 @@ class WelcomeStep(StepScreen):
 
     def compose(self) -> ComposeResult:
         yield from super().compose()
-        yield Static(r"""
-    ______  ___  ______ _________________ ___________ _____  _____ 
+        yield Static(
+            r"""
+    ______  ___  ______ _________________ ___________ _____  _____
     | ___ \/ _ \ | ___ \  ___| ___ \  ___|  _  | ___ \  __ \|  ___|
-    | |_/ / /_\ \| |_/ / |__ | |_/ / |_  | | | | |_/ / |  \/| |__  
-    |  __/|  _  ||  __/|  __||    /|  _| | | | |    /| | __ |  __| 
-    | |   | | | || |   | |___| |\ \| |   \ \_/ / |\ \| |_\ \| |___ 
-    \_|   \_| |_/\_|   \____/\_| \_\_|    \___/\_| \_|\____/\____/ 
-                                                                   
-              [+]  Forge Your Knowledge Into Power  [+]             
-        """, classes="logo")
+    | |_/ / /_\ \| |_/ / |__ | |_/ / |_  | | | | |_/ / |  \/| |__
+    |  __/|  _  ||  __/|  __||    /|  _| | | | |    /| | __ |  __|
+    | |   | | | || |   | |___| |\ \| |   \ \_/ / |\ \| |_\ \| |___
+    \_|   \_| |_/\_|   \____/\_| \_\_|    \___/\_| \_|\____/\____/
+
+              [+]  Forge Your Knowledge Into Power  [+]
+        """,
+            classes="logo",
+        )
         yield Markdown("""
 **PaperForge Lite** 是一个连接 Zotero 与 Obsidian 的文献工作流工具。
 
@@ -488,7 +496,7 @@ class VaultStep(StepScreen):
 
     def __init__(self, step_id: str, checker: EnvChecker, vault: str = "", **kwargs):
         kwargs.setdefault("id", step_id)
-        super().__init__(**kwargs)
+        super().__init__(step_id=step_id, checker=checker, **kwargs)
         self.step_id = step_id
         self.checker = checker
         self.step_idx = int(step_id.split("-")[1])
@@ -502,6 +510,7 @@ PaperForge 需要知道你的 **Obsidian Vault 位置**，以及你想要的目�
 你可以保留默认名称，也可以自定义。
         """)
         from textual.widgets import Input
+
         yield Static("Obsidian Vault 路径 (绝对路径):", classes="step-title")
         yield Input(value=self._vault, placeholder="D:\\Documents\\MyVault", id="input-vault-path")
         yield Static("", id="vault-error", classes="status-bar")
@@ -615,7 +624,7 @@ class ZoteroStep(StepScreen):
         # 自动检测 Zotero 数据目录
         detected = self._detect_zotero_data()
         default_value = str(detected) if detected else ""
-        
+
         yield Markdown("""
 **Zotero 数据目录**存放了你的文献数据库和 PDF 附件。
 
@@ -638,6 +647,7 @@ class ZoteroStep(StepScreen):
 > ⚠️ **不要**填 Vault 里面的路径，也不要在这里创建新文件夹
         """)
         from textual.widgets import Input
+
         username = os.environ.get("USERNAME", os.environ.get("USER", "YourName"))
         yield Static("Zotero 数据目录:", classes="step-title")
         yield Input(
@@ -651,7 +661,7 @@ class ZoteroStep(StepScreen):
             id="btn-row",
         )
 
-    def _detect_zotero_data(self) -> Optional[Path]:
+    def _detect_zotero_data(self) -> Path | None:
         """Build default Zotero data path from current username."""
         home = Path.home()
         # Default: C:/Users/<username>/Zotero (Windows) or ~/Zotero (Unix)
@@ -663,6 +673,7 @@ class ZoteroStep(StepScreen):
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "btn-link-zotero":
             from textual.widgets import Input
+
             path_str = self.query_one("#input-zotero-data", Input).value.strip()
             if not path_str:
                 self.set_status("请填写 Zotero 数据目录路径", False)
@@ -687,18 +698,18 @@ class ZoteroStep(StepScreen):
                 is_inside_vault = True
             except ValueError:
                 pass
-            
+
             if is_inside_vault:
                 # 在 Vault 内部，直接通过
                 self.app.zotero_data_dir = str(zotero_data)
                 self.set_status("Zotero 数据目录已确认", True)
                 self.app.post_message(StepPassed(self.step_idx))
                 return
-            
+
             # 在 Vault 外部，创建 Junction
-            system_dir = getattr(self.app, 'vault_config', {}).get('system_dir', '99_System')
+            system_dir = getattr(self.app, "vault_config", {}).get("system_dir", "99_System")
             junction_path = vault / system_dir / "Zotero"
-            
+
             # Remove existing
             if junction_path.exists() or junction_path.is_symlink():
                 try:
@@ -714,7 +725,9 @@ class ZoteroStep(StepScreen):
                 if sys.platform == "win32":
                     subprocess.run(
                         ["cmd", "/c", "mklink", "/J", str(junction_path), str(zotero_data)],
-                        check=True, capture_output=True, shell=False,
+                        check=True,
+                        capture_output=True,
+                        shell=False,
                     )
                 else:
                     junction_path.symlink_to(zotero_data, target_is_directory=True)
@@ -769,7 +782,7 @@ class JsonStep(StepScreen):
 
     def compose(self) -> ComposeResult:
         yield from super().compose()
-        system_dir = getattr(self.app, 'vault_config', {}).get('system_dir', '99_System')
+        system_dir = getattr(self.app, "vault_config", {}).get("system_dir", "99_System")
         yield Markdown(f"""
 **Better BibTeX 自动导出**是 PaperForge 的数据来源。
 
@@ -836,6 +849,7 @@ class DeployStep(StepScreen):
 这些操作不会覆盖你的数据文件。
         """)
         from textual.widgets import Input
+
         yield Static("PaddleOCR API Key:", classes="step-title")
         yield Input(placeholder="粘贴你的 PaddleOCR API Key", id="input-api-key")
         yield Static("PaddleOCR API URL:", classes="step-title")
@@ -865,15 +879,13 @@ class DeployStep(StepScreen):
             for idx, name in required_steps:
                 if not step_states[idx]:
                     incomplete.append(f"步骤 {idx}: {name}")
-            
+
             if incomplete:
                 self.set_status(
-                    f"[无法部署] 以下步骤未完成：\n" + "\n".join(incomplete) + 
-                    "\n请先返回并完成上述步骤",
-                    False
+                    "[无法部署] 以下步骤未完成：\n" + "\n".join(incomplete) + "\n请先返回并完成上述步骤", False
                 )
                 return
-            
+
             self.set_status("正在部署...", None)
             success = self._deploy()
             if success:
@@ -885,12 +897,12 @@ class DeployStep(StepScreen):
     def _deploy(self) -> bool:
         """Deploy scripts and create config files."""
         vault = self.checker.vault
-        vault_config = getattr(self.app, 'vault_config', {})
-        system_dir = vault_config.get('system_dir', '99_System')
-        resources_dir = vault_config.get('resources_dir', '03_Resources')
-        literature_dir = vault_config.get('literature_dir', 'Literature')
-        control_dir = vault_config.get('control_dir', 'LiteratureControl')
-        base_dir = vault_config.get('base_dir', '05_Bases')
+        vault_config = getattr(self.app, "vault_config", {})
+        system_dir = vault_config.get("system_dir", "99_System")
+        resources_dir = vault_config.get("resources_dir", "03_Resources")
+        literature_dir = vault_config.get("literature_dir", "Literature")
+        control_dir = vault_config.get("control_dir", "LiteratureControl")
+        base_dir = vault_config.get("base_dir", "05_Bases")
 
         def apply_user_paths(text: str, skill_dir_value: str = "") -> str:
             agent_config_dir = str(Path(skill_dir_value or ".opencode/skills").parent).replace("\\", "/")
@@ -916,15 +928,15 @@ class DeployStep(StepScreen):
             for old, new in replacements.items():
                 text = text.replace(old, new)
             return text
-        
+
         # 1. 获取 agent 配置
-        agent_config = getattr(self.app, 'agent_config', None)
+        agent_config = getattr(self.app, "agent_config", None)
         if not agent_config:
             self.set_status("错误：未选择 Agent 平台", False)
             return False
-        
-        skill_dir = agent_config.get('skill_dir', '.opencode/skills')
-        
+
+        skill_dir = agent_config.get("skill_dir", ".opencode/skills")
+
         # 2. 确定安装包根目录（wizard 所在目录的父目录）
         wizard_dir = Path(__file__).parent.resolve()
         # 如果 wizard 在 github-release/ 下，repo_root 就是 github-release/
@@ -940,7 +952,7 @@ class DeployStep(StepScreen):
         else:
             self.set_status(f"错误：找不到安装包文件。请在 PaperForge 解压目录下运行此向导。当前: {wizard_dir}", False)
             return False
-        
+
         # 3. 创建目录（使用用户自定义路径）
         pf_path = vault / system_dir / "PaperForge"
         dirs = [
@@ -956,18 +968,27 @@ class DeployStep(StepScreen):
         ]
         for d in dirs:
             d.mkdir(parents=True, exist_ok=True)
-        
+
         # 4. 复制脚本（从安装包到 Vault）
         import shutil
-        
+
         # Copy worker modules to PaperForge/worker/scripts/
         worker_src = repo_root / "paperforge/worker/sync.py"
         worker_dst = pf_path / "worker/scripts/sync.py"
         if worker_src.exists():
             import shutil
+
             shutil.copy2(worker_src, worker_dst)
             # Also copy other worker modules
-            for mod in ["ocr.py", "repair.py", "status.py", "deep_reading.py", "update.py", "base_views.py", "__init__.py"]:
+            for mod in [
+                "ocr.py",
+                "repair.py",
+                "status.py",
+                "deep_reading.py",
+                "update.py",
+                "base_views.py",
+                "__init__.py",
+            ]:
                 mod_src = repo_root / "paperforge/worker" / mod
                 if mod_src.exists():
                     shutil.copy2(mod_src, pf_path / "worker/scripts" / mod)
@@ -980,7 +1001,7 @@ class DeployStep(StepScreen):
             else:
                 self.set_status(f"错误：找不到 worker 脚本: {worker_src}", False)
                 return False
-        
+
         # Copy ld_deep.py (prefer paperforge/skills, fallback to skills/)
         ld_src = repo_root / "paperforge/skills/literature-qa/scripts/ld_deep.py"
         if not ld_src.exists():
@@ -1002,7 +1023,7 @@ class DeployStep(StepScreen):
         else:
             self.set_status(f"错误：找不到 prompt_deep_subagent.md: {prompt_src}", False)
             return False
-        
+
         # Copy chart-reading guides (prefer paperforge/skills, fallback to skills/)
         chart_src = repo_root / "paperforge/skills/literature-qa/chart-reading"
         if not chart_src.exists():
@@ -1013,7 +1034,7 @@ class DeployStep(StepScreen):
                 shutil.copy2(f, chart_dst / f.name)
 
         # Copy OpenCode command files when the target platform supports them.
-        if getattr(self.app, 'agent_key', '') == 'opencode':
+        if getattr(self.app, "agent_key", "") == "opencode":
             command_src = repo_root / "command"
             command_dst = vault / agent_config.get("command_dir", ".opencode/command")
             if command_src.exists() and command_src.is_dir():
@@ -1029,16 +1050,20 @@ class DeployStep(StepScreen):
             shutil.copytree(docs_src, docs_dst, dirs_exist_ok=True)
             for doc in docs_dst.rglob("*.md"):
                 doc.write_text(apply_user_paths(doc.read_text(encoding="utf-8"), skill_dir), encoding="utf-8")
-        
+
         # 5. 创建 .env（放到 PaperForge 目录下）
         from textual.widgets import Input
+
         api_key = self.query_one("#input-api-key", Input).value.strip()
-        api_url = self.query_one("#input-api-url", Input).value.strip() or "https://paddleocr.aistudio-app.com/api/v2/ocr/jobs"
-        
+        api_url = (
+            self.query_one("#input-api-url", Input).value.strip()
+            or "https://paddleocr.aistudio-app.com/api/v2/ocr/jobs"
+        )
+
         if not api_key:
             self.set_status("请填写 PaddleOCR API Key", False)
             return False
-        
+
         # 把 .env 放在 PaperForge 目录下
         env_path = pf_path / ".env"
         env_content = f"""# PaperForge 配置文件
@@ -1068,7 +1093,7 @@ ZOTERO_DATA_DIR={getattr(self.app, 'zotero_data_dir', '')}
                 json.dumps({"domains": export_domains}, indent=2, ensure_ascii=False),
                 encoding="utf-8",
             )
-        
+
         # 6. 创建 paperforge.json（包含用户自定义路径）
         pf_json = vault / "paperforge.json"
         existing_config = {}
@@ -1077,28 +1102,30 @@ ZOTERO_DATA_DIR={getattr(self.app, 'zotero_data_dir', '')}
                 existing_config = json.loads(pf_json.read_text(encoding="utf-8"))
             except Exception:
                 existing_config = {}
-        existing_config.update({
-            "version": existing_config.get("version", "1.2.0"),
-            "agent_platform": agent_config.get('name', 'OpenCode'),
-            "agent_key": getattr(self.app, 'agent_key', 'opencode'),
-            "skill_dir": skill_dir,
-            "command_dir": agent_config.get("command_dir", ""),
-            "system_dir": system_dir,
-            "resources_dir": resources_dir,
-            "literature_dir": literature_dir,
-            "control_dir": control_dir,
-            "base_dir": base_dir,
-            "paperforge_path": f"{system_dir}/PaperForge",
-            "zotero_data_dir": getattr(self.app, 'zotero_data_dir', ''),
-            "zotero_link": getattr(self.app, 'zotero_link', f"{system_dir}/Zotero"),
-            "vault_config": {
+        existing_config.update(
+            {
+                "version": existing_config.get("version", "1.2.0"),
+                "agent_platform": agent_config.get("name", "OpenCode"),
+                "agent_key": getattr(self.app, "agent_key", "opencode"),
+                "skill_dir": skill_dir,
+                "command_dir": agent_config.get("command_dir", ""),
                 "system_dir": system_dir,
                 "resources_dir": resources_dir,
                 "literature_dir": literature_dir,
                 "control_dir": control_dir,
                 "base_dir": base_dir,
-            },
-        })
+                "paperforge_path": f"{system_dir}/PaperForge",
+                "zotero_data_dir": getattr(self.app, "zotero_data_dir", ""),
+                "zotero_link": getattr(self.app, "zotero_link", f"{system_dir}/Zotero"),
+                "vault_config": {
+                    "system_dir": system_dir,
+                    "resources_dir": resources_dir,
+                    "literature_dir": literature_dir,
+                    "control_dir": control_dir,
+                    "base_dir": base_dir,
+                },
+            }
+        )
         pf_json.write_text(json.dumps(existing_config, indent=2, ensure_ascii=False), encoding="utf-8")
 
         agents_src = repo_root / "AGENTS.md"
@@ -1106,7 +1133,7 @@ ZOTERO_DATA_DIR={getattr(self.app, 'zotero_data_dir', '')}
         if agents_src.exists():
             agents_text = apply_user_paths(agents_src.read_text(encoding="utf-8"), skill_dir)
             agents_dst.write_text(agents_text, encoding="utf-8")
-        
+
         # 7. 验证文件完整性
         self.set_status("验证文件完整性...", None)
         checks = {
@@ -1119,20 +1146,22 @@ ZOTERO_DATA_DIR={getattr(self.app, 'zotero_data_dir', '')}
             "导出目录": (pf_path / "exports").exists(),
             "OCR 目录": (pf_path / "ocr").exists(),
         }
-        
+
         missing = [k for k, v in checks.items() if not v]
         if missing:
             self.set_status(f"验证失败: {', '.join(missing)}", False)
             return False
-        
+
         self.set_status("文件验证通过，初始化系统...", True)
-        
+
         # 8. 运行初始化命令（模拟测试）
         try:
             # 测试 selection-sync（会报错因为没 JSON，但测试脚本能否运行）
             result = subprocess.run(
                 [sys.executable, str(worker_dst), "--vault", str(vault), "status"],
-                capture_output=True, text=True, timeout=10,
+                capture_output=True,
+                text=True,
+                timeout=10,
             )
             if result.returncode == 0:
                 self.set_status("工作流脚本运行正常", True)
@@ -1146,7 +1175,9 @@ ZOTERO_DATA_DIR={getattr(self.app, 'zotero_data_dir', '')}
         try:
             result = subprocess.run(
                 [sys.executable, "-m", "pip", "install", "-e", str(repo_root)],
-                capture_output=True, text=True, timeout=60,
+                capture_output=True,
+                text=True,
+                timeout=60,
             )
             if result.returncode == 0:
                 self.set_status("PaperForge 工具包安装完成（paperforge 命令已全局注册）", True)
@@ -1164,9 +1195,9 @@ class DoneStep(StepScreen):
 
     def compose(self) -> ComposeResult:
         yield from super().compose()
-        vault_config = getattr(self.app, 'vault_config', {})
-        system_dir = vault_config.get('system_dir', '99_System')
-        worker_cmd = f"python -m paperforge sync --vault ."
+        vault_config = getattr(self.app, "vault_config", {})
+        system_dir = vault_config.get("system_dir", "99_System")
+        worker_cmd = "python -m paperforge sync --vault ."
         yield Markdown(f"""
 ## 安装完成！
 
@@ -1276,8 +1307,10 @@ paperforge deep-reading      # 查看精读队列
 # Custom Messages
 # =============================================================================
 
+
 class StepPassed(Message):
     """步骤通过消息"""
+
     def __init__(self, step_idx: int):
         super().__init__()
         self.step_idx = step_idx
@@ -1285,6 +1318,7 @@ class StepPassed(Message):
 
 class RestartWizard(Message):
     """重新开始消息"""
+
     def __init__(self):
         super().__init__()
 
@@ -1293,32 +1327,33 @@ class RestartWizard(Message):
 # Main App
 # =============================================================================
 
+
 class SetupWizardApp(App):
     """PaperForge 安装向导主应用"""
 
     CSS = """
     Screen { align: center middle; }
-    
+
     .wizard-container { width: 95%; height: 95%; border: solid green; }
-    
+
     .sidebar { width: 25%; height: 100%; border: solid gray; padding: 1; }
     .sidebar-title { text-align: center; text-style: bold; color: cyan; padding: 1; }
     .step-tree { height: 1fr; }
-    
+
     .main-area { width: 75%; height: 100%; padding: 1; }
     .progress-area { height: auto; padding: 0 1; }
     .content-area { height: 1fr; border: solid blue; padding: 1; overflow-y: auto; }
-    
+
     .logo { text-align: center; color: ansi_bright_cyan; text-style: bold; height: auto; }
     .step-title { text-style: bold; color: yellow; }
     .status-bar { height: auto; padding: 1; }
-    
+
     .step-content { padding: 1; }
     .step-content Markdown { padding: 0 1; }
-    
+
     #btn-row { height: auto; padding: 1; }
     #btn-row Button { margin: 0 1; }
-    
+
     .done { color: green; }
     .current { color: yellow; text-style: bold; }
     .pending { color: gray; }
@@ -1434,7 +1469,7 @@ class SetupWizardApp(App):
         self.current_step = 0
         self.step_states = [False] * len(STEP_TITLES)
         for screen in self.step_screens.values():
-            if hasattr(screen, 'set_status'):
+            if hasattr(screen, "set_status"):
                 screen.set_status("")
 
     def open_screenshot(self, filename: str) -> None:
@@ -1455,6 +1490,7 @@ class SetupWizardApp(App):
 # =============================================================================
 # Entry
 # =============================================================================
+
 
 def _find_vault() -> Path | None:
     """Find vault by looking for paperforge.json in current or parent dirs."""

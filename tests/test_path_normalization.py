@@ -13,25 +13,22 @@ from __future__ import annotations
 import json
 import sys
 from pathlib import Path
-from unittest.mock import patch
-
-import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from paperforge.worker.sync import (
-    _normalize_attachment_path,
     _identify_main_pdf,
-    obsidian_wikilink_for_pdf,
+    _normalize_attachment_path,
     load_export_rows,
+    obsidian_wikilink_for_pdf,
 )
-
 
 # ---------------------------------------------------------------------------
 # Test class: TestBBTPathNormalization
 # ---------------------------------------------------------------------------
+
 
 class TestBBTPathNormalization:
     """Tests for _normalize_attachment_path() with various BBT export formats."""
@@ -110,6 +107,7 @@ class TestBBTPathNormalization:
 # Test class: TestMainPdfIdentification
 # ---------------------------------------------------------------------------
 
+
 class TestMainPdfIdentification:
     """Tests for _identify_main_pdf() hybrid priority strategy."""
 
@@ -153,7 +151,12 @@ class TestMainPdfIdentification:
     def test_no_pdf_attachments(self) -> None:
         """No PDF attachments returns (None, [])."""
         attachments = [
-            {"path": "storage:KEY/data.xlsx", "contentType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "title": "Data", "size": 100},
+            {
+                "path": "storage:KEY/data.xlsx",
+                "contentType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                "title": "Data",
+                "size": 100,
+            },
         ]
         main, supplementary = _identify_main_pdf(attachments)
 
@@ -189,6 +192,7 @@ class TestMainPdfIdentification:
 # Test class: TestWikilinkGeneration
 # ---------------------------------------------------------------------------
 
+
 class TestWikilinkGeneration:
     """Tests for obsidian_wikilink_for_pdf() wikilink generation."""
 
@@ -223,9 +227,7 @@ class TestWikilinkGeneration:
                 return real_target
             return path
 
-        monkeypatch.setattr(
-            "paperforge.pdf_resolver.resolve_junction", mock_resolve_junction
-        )
+        monkeypatch.setattr("paperforge.pdf_resolver.resolve_junction", mock_resolve_junction)
 
         # Test with a path that would trigger junction resolution
         result = obsidian_wikilink_for_pdf("storage:KEY/file.pdf", vault_dir, zotero_dir)
@@ -290,6 +292,7 @@ class TestWikilinkGeneration:
 # ---------------------------------------------------------------------------
 # Test class: TestLoadExportRowsIntegration
 # ---------------------------------------------------------------------------
+
 
 class TestLoadExportRowsIntegration:
     """Integration tests using fixture JSON files."""

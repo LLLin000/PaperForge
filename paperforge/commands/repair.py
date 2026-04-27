@@ -32,7 +32,7 @@ def run(args: argparse.Namespace) -> int:
     vault = getattr(args, "vault_path", None)
     paths = getattr(args, "paths", None)
     if vault is None:
-        from paperforge.config import resolve_vault, paperforge_paths, load_vault_config
+        from paperforge.config import load_vault_config, paperforge_paths, resolve_vault
 
         vault = resolve_vault(cli_vault=getattr(args, "vault", None))
         cfg = load_vault_config(vault)
@@ -49,13 +49,8 @@ def run(args: argparse.Namespace) -> int:
     # Report path_error summary from repair scan
     path_errors = result.get("path_errors", {})
     if path_errors.get("total", 0) > 0:
-        error_summary = ", ".join(
-            f"{count} {err}"
-            for err, count in sorted(path_errors.get("by_type", {}).items())
-        )
-        print(
-            f"repair: Found {path_errors['total']} items with path_error: {error_summary}"
-        )
+        error_summary = ", ".join(f"{count} {err}" for err, count in sorted(path_errors.get("by_type", {}).items()))
+        print(f"repair: Found {path_errors['total']} items with path_error: {error_summary}")
     # Return non-zero if any divergences or path_errors remain
     has_issues = bool(result.get("divergent")) or path_errors.get("total", 0) > 0
     return 1 if has_issues else 0

@@ -2,9 +2,7 @@
 
 import json
 import os
-from unittest.mock import patch, MagicMock
-
-import pytest
+from unittest.mock import MagicMock, patch
 
 from paperforge.ocr_diagnostics import ocr_doctor
 
@@ -123,15 +121,17 @@ def test_l4_live_success():
     delete_resp = MagicMock()
     delete_resp.status_code = 204
 
-    with patch.dict(os.environ, env, clear=True):
-        with patch(
+    with (
+        patch.dict(os.environ, env, clear=True),
+        patch(
             "paperforge.ocr_diagnostics.requests.get",
             side_effect=[get_resp] + [poll_resp] * 10,
-        ):
-            with patch("paperforge.ocr_diagnostics.requests.post", return_value=post_resp):
-                with patch("paperforge.ocr_diagnostics.requests.delete", return_value=delete_resp):
-                    with patch("paperforge.ocr_diagnostics.time.sleep"):
-                        result = ocr_doctor(config=None, live=True)
+        ),
+        patch("paperforge.ocr_diagnostics.requests.post", return_value=post_resp),
+    ):
+        with patch("paperforge.ocr_diagnostics.requests.delete", return_value=delete_resp):
+            with patch("paperforge.ocr_diagnostics.time.sleep"):
+                result = ocr_doctor(config=None, live=True)
 
     assert result["level"] == 4
     assert result["passed"] is True
@@ -153,15 +153,17 @@ def test_l4_live_failure():
     delete_resp = MagicMock()
     delete_resp.status_code = 204
 
-    with patch.dict(os.environ, env, clear=True):
-        with patch(
+    with (
+        patch.dict(os.environ, env, clear=True),
+        patch(
             "paperforge.ocr_diagnostics.requests.get",
             side_effect=[get_resp] + [poll_resp] * 10,
-        ):
-            with patch("paperforge.ocr_diagnostics.requests.post", return_value=post_resp):
-                with patch("paperforge.ocr_diagnostics.requests.delete", return_value=delete_resp):
-                    with patch("paperforge.ocr_diagnostics.time.sleep"):
-                        result = ocr_doctor(config=None, live=True)
+        ),
+        patch("paperforge.ocr_diagnostics.requests.post", return_value=post_resp),
+    ):
+        with patch("paperforge.ocr_diagnostics.requests.delete", return_value=delete_resp):
+            with patch("paperforge.ocr_diagnostics.time.sleep"):
+                result = ocr_doctor(config=None, live=True)
 
     assert result["level"] == 4
     assert result["passed"] is False

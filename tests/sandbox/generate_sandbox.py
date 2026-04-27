@@ -14,6 +14,7 @@ Creates tests/sandbox/ with:
 Wizard creates inside 00_TestVault/:
   00_System/Zotero -> junction -> TestZoteroData (user points to our TestZoteroData)
 """
+
 from __future__ import annotations
 
 import json
@@ -159,7 +160,8 @@ def build() -> None:
     exports_abs = str(EXPORTS.resolve())
 
     readme = SANDBOX / "README.md"
-    readme.write_text(f"""# PaperForge Lite — Test Sandbox
+    readme.write_text(
+        f"""# PaperForge Lite — Test Sandbox
 
 ## 用途
 测试 PaperForge Lite 安装向导 `setup_wizard.py` 的完整流程。
@@ -215,15 +217,17 @@ paperforge status
 - 目录名故意和真实 vault 不同，避免硬编码测试不出来
 - PDF 是最小化假文件（pymupdf 可读，内容为空）
 - 不要往 sandbox 加真实数据
-""", encoding="utf-8")
+""",
+        encoding="utf-8",
+    )
 
     pdf_count = sum(1 for papers in PAPERS.values() for p in papers if p["has_pdf"])
     paper_count = sum(len(papers) for papers in PAPERS.values())
     print(f"\nSandbox ready: {SANDBOX}")
     print(f"  TestZoteroData/storage/  — {pdf_count} PDFs")
     print(f"  exports/                   — {len(PAPERS)} BBT JSON files ({paper_count} papers)")
-    print(f"  00_TestVault/             — EMPTY (wizard fills this)")
-    print(f"\nRun:")
+    print("  00_TestVault/             — EMPTY (wizard fills this)")
+    print("\nRun:")
     print(f"  python setup_wizard.py --vault {VAULT.resolve()}")
 
 

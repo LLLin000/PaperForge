@@ -146,4 +146,3 @@ python -m paperforge <command>
 4. **开始精读**：使用 `/pf-deep <zotero_key>` 生成结构化阅读笔记
 
 详细用法参见 [AGENTS.md](../AGENTS.md)。
-

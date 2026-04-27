@@ -1,12 +1,13 @@
 """Test compatibility: ld_deep uses shared resolver for path construction."""
+
 from __future__ import annotations
 
 import json
 import sys
+from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
 
 import pytest
-from importlib.util import spec_from_file_location, module_from_spec
 
 # Pre-load ld_deep so its functions are available
 _REPO_ROOT = Path(__file__).parent.parent
@@ -28,7 +29,7 @@ def tmp_vault(tmp_path: Path) -> Path:
     (paperforge / "ocr").mkdir(parents=True)
 
     resources = tmp_path / "03_Resources"
-    literature = resources / "Literature"
+    resources / "Literature"
     control = resources / "LiteratureControl"
     (control / "library-records").mkdir(parents=True)
 
@@ -58,19 +59,20 @@ class TestDeepLoadVaultConfig:
 
     def test_load_vault_config_keys(self, tmp_vault: Path) -> None:
         """_load_vault_config returns same keys as shared resolver."""
-        from paperforge.config import load_vault_config as shared_load
         import ld_deep
+
+        from paperforge.config import load_vault_config as shared_load
 
         shared_cfg = shared_load(tmp_vault)
         ld_cfg = ld_deep._load_vault_config(tmp_vault)
 
-        assert set(ld_cfg.keys()) == set(shared_cfg.keys()), (
-            f"Key mismatch: ld_deep={set(ld_cfg.keys())} vs shared={set(shared_cfg.keys())}"
-        )
+        assert set(ld_cfg.keys()) == set(
+            shared_cfg.keys()
+        ), f"Key mismatch: ld_deep={set(ld_cfg.keys())} vs shared={set(shared_cfg.keys())}"
         for key in shared_cfg:
-            assert ld_cfg.get(key) == shared_cfg.get(key), (
-                f"Key '{key}' differs: ld_deep={ld_cfg.get(key)!r} vs shared={shared_cfg.get(key)!r}"
-            )
+            assert ld_cfg.get(key) == shared_cfg.get(
+                key
+            ), f"Key '{key}' differs: ld_deep={ld_cfg.get(key)!r} vs shared={shared_cfg.get(key)!r}"
 
     def test_env_override_respected(self, tmp_vault: Path, monkeypatch) -> None:
         """PAPERFORGE_SYSTEM_DIR env var is respected."""
@@ -93,12 +95,11 @@ class TestDeepPaperforgePaths:
         for key in ["ocr", "records", "literature"]:
             assert key in paths, f"Missing expected key: {key}"
 
-    def test_paperforge_paths_values_match_shared_resolver(
-        self, tmp_vault: Path
-    ) -> None:
+    def test_paperforge_paths_values_match_shared_resolver(self, tmp_vault: Path) -> None:
         """Values for ocr, records, literature match paperforge_paths()."""
-        from paperforge.config import paperforge_paths as shared_paths
         import ld_deep
+
+        from paperforge.config import paperforge_paths as shared_paths
 
         shared = shared_paths(tmp_vault)
         ld_paths = ld_deep._paperforge_paths(tmp_vault)

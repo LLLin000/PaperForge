@@ -92,15 +92,15 @@ Implement robust Zotero attachment path parsing from real-world BBT JSON exports
 
    **Priority 1 (Primary):**
    - `attachment.title == "PDF"` AND `attachment.contentType == "application/pdf"`
-   
+
    **Priority 2 (Fallback heuristic):**
    - Filter to `contentType == "application/pdf"` items only
    - Select the LARGEST file by size (if size field available)
    - If sizes are equal or unavailable, select the one with shortest title (main PDFs often have simple titles)
-   
+
    **Priority 3 (Final fallback):**
    - First PDF attachment in the list
-   
+
    **Returns:** `(main_pdf_attachment, supplementary_attachments)` where supplementary is a list of all other PDF attachments
 
 2. In `load_export_rows()`, when processing each item:

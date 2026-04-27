@@ -6,9 +6,9 @@ from __future__ import annotations
 import argparse
 import json
 import re
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Iterable
 
 from paperforge.worker._utils import scan_library_records
 
@@ -19,6 +19,7 @@ def _load_vault_config(vault: Path) -> dict:
     Preserves the public name for legacy callers.
     """
     from paperforge.config import load_vault_config as _shared_load_vault_config
+
     return _shared_load_vault_config(vault)
 
 
@@ -177,7 +178,9 @@ def extract_figures_from_fulltext(fulltext: str, figure_map: dict | None = None)
                     FigureEntry(
                         number=mapped.get("number", "?"),
                         image_id=image_id,
-                        title=mapped.get("caption", "")[:80] + "..." if len(mapped.get("caption", "")) > 80 else mapped.get("caption", "[Figure]"),
+                        title=mapped.get("caption", "")[:80] + "..."
+                        if len(mapped.get("caption", "")) > 80
+                        else mapped.get("caption", "[Figure]"),
                         image_link=pending_image,
                         page=mapped.get("page", pending_page),
                         caption=mapped.get("caption", ""),
@@ -269,11 +272,13 @@ def extract_tables_from_fulltext(fulltext: str, figure_map: dict | None = None) 
             # Try figure_map first
             mapped = map_lookup.get(image_id)
             if mapped:
-                tables.append(TableEntry(
-                    number=mapped.get("number", str(len(tables) + 1)),
-                    image_link=image_link,
-                    page=mapped.get("page", pending_page),
-                ))
+                tables.append(
+                    TableEntry(
+                        number=mapped.get("number", str(len(tables) + 1)),
+                        image_link=image_link,
+                        page=mapped.get("page", pending_page),
+                    )
+                )
             else:
                 # Fallback: cannot determine real table number from filename
                 # The number in filename (e.g. 75 in page_024_table_75...) is an OCR internal ID, NOT the table number
@@ -288,88 +293,241 @@ def extract_tables_from_fulltext(fulltext: str, figure_map: dict | None = None) 
 
 CHART_TYPE_KEYWORDS: dict[str, list[str]] = {
     "条形图与误差棒": [
-        "bar", "histogram", "column", "quantification", "quantitative",
-        "relative expression", "mRNA expression", "protein level",
-        "BMD", "BV/TV", "Tb.N", "Tb.Sp", "intensity", "score",
-        "ratio", "percentage", "proportion", "fold change",
+        "bar",
+        "histogram",
+        "column",
+        "quantification",
+        "quantitative",
+        "relative expression",
+        "mRNA expression",
+        "protein level",
+        "BMD",
+        "BV/TV",
+        "Tb.N",
+        "Tb.Sp",
+        "intensity",
+        "score",
+        "ratio",
+        "percentage",
+        "proportion",
+        "fold change",
     ],
     "折线图与时间序列": [
-        "curve", "time", "kinetics", "release", "cyclic", "stability",
-        "degradation", "profile", "over time", "day", "week",
-        "duration", "period", "cycle", "repeated",
+        "curve",
+        "time",
+        "kinetics",
+        "release",
+        "cyclic",
+        "stability",
+        "degradation",
+        "profile",
+        "over time",
+        "day",
+        "week",
+        "duration",
+        "period",
+        "cycle",
+        "repeated",
     ],
     "热图与聚类图": [
-        "heatmap", "heat map", "clustering", "cluster", "dendrogram",
-        "hierarchical", "correlation matrix", "expression matrix",
+        "heatmap",
+        "heat map",
+        "clustering",
+        "cluster",
+        "dendrogram",
+        "hierarchical",
+        "correlation matrix",
+        "expression matrix",
     ],
     "火山图与曼哈顿图": [
-        "volcano", "volcano plot", "manhattan", "-log10", "log2fc",
-        "fold change", "differential", "DEG", "DEM", "upregulated", "downregulated",
+        "volcano",
+        "volcano plot",
+        "manhattan",
+        "-log10",
+        "log2fc",
+        "fold change",
+        "differential",
+        "DEG",
+        "DEM",
+        "upregulated",
+        "downregulated",
     ],
     "免疫荧光定量图": [
-        "immunofluorescence", "immunofluorescent", "confocal", "fluorescence",
-        "staining", "3D reconstruction", "overlay", "DAPI", " Alexa ",
-        "FITC", "TRITC", "Cy3", "Cy5", "SOX9", "COL2A1", "Piezo1",
-        "positive cells", "mean intensity", "fluorescent",
+        "immunofluorescence",
+        "immunofluorescent",
+        "confocal",
+        "fluorescence",
+        "staining",
+        "3D reconstruction",
+        "overlay",
+        "DAPI",
+        " Alexa ",
+        "FITC",
+        "TRITC",
+        "Cy3",
+        "Cy5",
+        "SOX9",
+        "COL2A1",
+        "Piezo1",
+        "positive cells",
+        "mean intensity",
+        "fluorescent",
     ],
     "组织学半定量图": [
-        "H&E", "hematoxylin", "eosin", "Safranin", "Fast Green",
-        "Masson", "trichrome", "histology", "histological",
-        "tissue section", "slide", "stain", "morphology",
-        "O'Driscoll", "ICRS", "Mankin", "OARSI", "Pineda",
+        "H&E",
+        "hematoxylin",
+        "eosin",
+        "Safranin",
+        "Fast Green",
+        "Masson",
+        "trichrome",
+        "histology",
+        "histological",
+        "tissue section",
+        "slide",
+        "stain",
+        "morphology",
+        "O'Driscoll",
+        "ICRS",
+        "Mankin",
+        "OARSI",
+        "Pineda",
     ],
     "桑基图与弦图": [
-        "chord", "Sankey", "correlation network", "interaction network",
-        "signaling network", "proximity", "correlation of metabolic",
-        "Spearman", "Pearson correlation",
+        "chord",
+        "Sankey",
+        "correlation network",
+        "interaction network",
+        "signaling network",
+        "proximity",
+        "correlation of metabolic",
+        "Spearman",
+        "Pearson correlation",
     ],
     "雷达图与漏斗图": [
-        "radar", "funnel", "spider", "web chart", "polar",
+        "radar",
+        "funnel",
+        "spider",
+        "web chart",
+        "polar",
     ],
     "GSEA富集图": [
-        "GSEA", "MSEA", "enrichment", "enrichment plot", "enrichment score",
-        "NES", "leading edge", "pathway enrichment", "metabolic set",
+        "GSEA",
+        "MSEA",
+        "enrichment",
+        "enrichment plot",
+        "enrichment score",
+        "NES",
+        "leading edge",
+        "pathway enrichment",
+        "metabolic set",
     ],
     "箱式图与小提琴图": [
-        "box", "boxplot", "box plot", "violin", "whisker", "quartile",
-        "median", "IQR", "outlier",
+        "box",
+        "boxplot",
+        "box plot",
+        "violin",
+        "whisker",
+        "quartile",
+        "median",
+        "IQR",
+        "outlier",
     ],
     "散点图与气泡图": [
-        "scatter", "bubble", "dot plot", "correlation plot", "regression",
-        "linear fit", "R²", "correlation coefficient",
+        "scatter",
+        "bubble",
+        "dot plot",
+        "correlation plot",
+        "regression",
+        "linear fit",
+        "R²",
+        "correlation coefficient",
     ],
     "Western Blot条带图": [
-        "Western", "blot", "WB", "gel electrophoresis", "SDS-PAGE",
-        "band", "molecular weight", "kDa",
+        "Western",
+        "blot",
+        "WB",
+        "gel electrophoresis",
+        "SDS-PAGE",
+        "band",
+        "molecular weight",
+        "kDa",
     ],
     "显微照片与SEM图": [
-        "SEM", "TEM", "microscopy", "micrograph", "morphology",
-        "surface", "topography", "nanostructure", "porous",
-        "FE-SEM", "scanning electron", "transmission electron",
+        "SEM",
+        "TEM",
+        "microscopy",
+        "micrograph",
+        "morphology",
+        "surface",
+        "topography",
+        "nanostructure",
+        "porous",
+        "FE-SEM",
+        "scanning electron",
+        "transmission electron",
     ],
     "降维图(PCA-tSNE-UMAP)": [
-        "PCA", "t-SNE", "tSNE", "UMAP", "MDS", "dimensionality reduction",
-        "principal component", "clustering plot", "embedding",
+        "PCA",
+        "t-SNE",
+        "tSNE",
+        "UMAP",
+        "MDS",
+        "dimensionality reduction",
+        "principal component",
+        "clustering plot",
+        "embedding",
     ],
     "网络图与通路图": [
-        "pathway", "network", "signaling pathway", "KEGG", "Reactome",
-        "protein-protein interaction", "PPI", "regulatory network",
+        "pathway",
+        "network",
+        "signaling pathway",
+        "KEGG",
+        "Reactome",
+        "protein-protein interaction",
+        "PPI",
+        "regulatory network",
     ],
     "蛋白质结构图": [
-        "protein structure", "crystallography", "NMR structure", "AlphaFold",
-        "3D structure", "homology modeling", "docking",
+        "protein structure",
+        "crystallography",
+        "NMR structure",
+        "AlphaFold",
+        "3D structure",
+        "homology modeling",
+        "docking",
     ],
     "森林图与Meta分析": [
-        "forest plot", "meta-analysis", "meta analysis", "pooled effect",
-        "heterogeneity", "I²", "Egger", "funnel plot",
+        "forest plot",
+        "meta-analysis",
+        "meta analysis",
+        "pooled effect",
+        "heterogeneity",
+        "I²",
+        "Egger",
+        "funnel plot",
     ],
     "ROC与PR曲线": [
-        "ROC", "AUC", "receiver operating", "sensitivity", "specificity",
-        "PR curve", "precision-recall", "diagnostic accuracy",
+        "ROC",
+        "AUC",
+        "receiver operating",
+        "sensitivity",
+        "specificity",
+        "PR curve",
+        "precision-recall",
+        "diagnostic accuracy",
     ],
     "生存曲线": [
-        "survival", "Kaplan-Meier", "KM curve", "log-rank", "hazard ratio",
-        "HR", "OS", "PFS", "DFS", "mortality",
+        "survival",
+        "Kaplan-Meier",
+        "KM curve",
+        "log-rank",
+        "hazard ratio",
+        "HR",
+        "OS",
+        "PFS",
+        "DFS",
+        "mortality",
     ],
 }
 
@@ -440,6 +598,7 @@ def build_chart_type_map(figure_map: dict) -> dict:
 
     return result
 
+
 CAPTION_PATTERNS = {
     "main_figure": re.compile(
         r"^(?:Figure|Fig\.?)\s*(\d+[a-zA-Z]?)(?:\s*[\.:|\-]?\s*)(.*?)$",
@@ -473,30 +632,32 @@ def build_figure_map(fulltext: str, zotero_key: str = "") -> dict:
     # First pass: collect all images with their page and line index
     all_images: list[dict] = []
     current_page: int | None = None
-    
+
     for idx, raw_line in enumerate(lines):
         line = raw_line.strip()
         if not line:
             continue
-        
+
         page_match = page_pattern.match(line)
         if page_match:
             current_page = int(page_match.group(1))
             continue
-        
+
         image_match = image_pattern.match(line)
         if image_match:
-            all_images.append({
-                "link": image_match.group(1),
-                "id": Path(image_match.group(1)).stem,
-                "line_idx": idx,
-                "page": current_page,
-            })
+            all_images.append(
+                {
+                    "link": image_match.group(1),
+                    "id": Path(image_match.group(1)).stem,
+                    "line_idx": idx,
+                    "page": current_page,
+                }
+            )
 
     # Second pass: match captions to nearest images
     entries: list[dict] = []
     current_page = None
-    
+
     for idx, raw_line in enumerate(lines):
         line = raw_line.strip()
         if not line:
@@ -517,8 +678,8 @@ def build_figure_map(fulltext: str, zotero_key: str = "") -> dict:
 
             # Find nearest image within window of adjacent pages (current ± 2 pages)
             best_image = None
-            min_distance = float('inf')
-            
+            min_distance = float("inf")
+
             for img in all_images:
                 # Check if image is within 2 pages of current page
                 if current_page is not None and img["page"] is not None:
@@ -541,16 +702,18 @@ def build_figure_map(fulltext: str, zotero_key: str = "") -> dict:
                         if line_diff <= 5:  # Within 5 lines
                             additional_images.append({"id": img["id"], "link": img["link"]})
 
-            entries.append({
-                "number": number,
-                "label": line.split(".")[0] if "." in line else line.split("|")[0].strip(),
-                "page": current_page,
-                "type": entry_type,
-                "caption": caption_text,
-                "image_link": best_image["link"] if best_image else None,
-                "image_id": best_image["id"] if best_image else None,
-                "additional_images": additional_images,
-            })
+            entries.append(
+                {
+                    "number": number,
+                    "label": line.split(".")[0] if "." in line else line.split("|")[0].strip(),
+                    "page": current_page,
+                    "type": entry_type,
+                    "caption": caption_text,
+                    "image_link": best_image["link"] if best_image else None,
+                    "image_id": best_image["id"] if best_image else None,
+                    "additional_images": additional_images,
+                }
+            )
             break  # one caption per line
 
     # Deduplicate by (type, number) keeping first
@@ -596,7 +759,9 @@ def render_study_scaffold(figures: Iterable[FigureEntry], tables: Iterable[Table
 
     # Build figure blocks using the standard renderer for consistency
     figure_blocks = [render_figure_block(fig) for fig in figure_list]
-    figure_section = "\n\n".join(figure_blocks) if figure_blocks else "##### Figure 待补充\n\n- 暂未从 OCR 中解析到可用主图。"
+    figure_section = (
+        "\n\n".join(figure_blocks) if figure_blocks else "##### Figure 待补充\n\n- 暂未从 OCR 中解析到可用主图。"
+    )
 
     # Build table blocks using the standard renderer for consistency
     table_blocks = [render_table_block(table) for table in table_list]
@@ -679,29 +844,31 @@ def render_figure_block(figure: FigureEntry) -> str:
     # Add additional images for multi-image figures
     for add_img in figure.additional_images:
         lines.append(f"> ![[{add_img['link']}]]")
-    lines.extend([
-        ">",
-        "> **图像定位与核心问题**",
-        f"> - 页码：{page_suffix or '待补充'}",
-        "> - 这张图要回答什么：",
-        "> - （待补充）",
-        ">",
-        "> **方法与结果**",
-        "> - 方法：",
-        "> - 结果：",
-        ">",
-        "> **作者解释**",
-        "> - （待补充）",
-        ">",
-        "> **我的理解**",
-        "> - （待补充）",
-        ">",
-        "> **在全文中的作用**",
-        "> - （待补充）",
-        ">",
-        "> **疑点 / 局限**",
-        "> - （待补充）",
-    ])
+    lines.extend(
+        [
+            ">",
+            "> **图像定位与核心问题**",
+            f"> - 页码：{page_suffix or '待补充'}",
+            "> - 这张图要回答什么：",
+            "> - （待补充）",
+            ">",
+            "> **方法与结果**",
+            "> - 方法：",
+            "> - 结果：",
+            ">",
+            "> **作者解释**",
+            "> - （待补充）",
+            ">",
+            "> **我的理解**",
+            "> - （待补充）",
+            ">",
+            "> **在全文中的作用**",
+            "> - （待补充）",
+            ">",
+            "> **疑点 / 局限**",
+            "> - （待补充）",
+        ]
+    )
     return "\n".join(lines) + "\n\n"
 
 
@@ -722,7 +889,9 @@ def render_table_block(table: TableEntry) -> str:
     return "\n".join(lines) + "\n\n"
 
 
-def validate_selected_blocks(note_text: str, figures: Iterable[FigureEntry], tables: Iterable[TableEntry] | None = None) -> list[str]:
+def validate_selected_blocks(
+    note_text: str, figures: Iterable[FigureEntry], tables: Iterable[TableEntry] | None = None
+) -> list[str]:
     """Return missing selected figure/table embeds that must be repaired before generation."""
     missing: list[str] = []
     for figure in figures:
@@ -755,7 +924,7 @@ def validate_callout_structure(note_text: str, figures: Iterable[FigureEntry]) -
         figure_heading_prefix = f"> [!note]- Figure {figure.number}："
         # Find the line that starts with this prefix
         figure_idx = -1
-        for i, line in enumerate(note_text.splitlines()):
+        for _i, line in enumerate(note_text.splitlines()):
             if line.strip().startswith(figure_heading_prefix):
                 figure_idx = note_text.find(line)
                 break
@@ -767,7 +936,7 @@ def validate_callout_structure(note_text: str, figures: Iterable[FigureEntry]) -
             next_section = figure_block.find("\n#### ", 1)
             end_positions = [p for p in [next_callout, next_heading, next_section] if p != -1]
             if end_positions:
-                figure_block = figure_block[:min(end_positions)]
+                figure_block = figure_block[: min(end_positions)]
             required_local = [
                 "**作者解释**",
                 "**我的理解**",
@@ -932,13 +1101,19 @@ def _ensure_section_with_blocks(note_text: str, header: str, blocks: list[str]) 
     return updated
 
 
-def ensure_study_section(note_text: str, figures: Iterable[FigureEntry], tables: Iterable[TableEntry] | None = None) -> str:
+def ensure_study_section(
+    note_text: str, figures: Iterable[FigureEntry], tables: Iterable[TableEntry] | None = None
+) -> str:
     """Append the study scaffold if it does not yet exist."""
     figure_list = list(figures)
     table_list = list(tables or [])
     if STUDY_HEADER in note_text:
-        updated = _ensure_section_with_blocks(note_text, FIGURE_SECTION_HEADER, [render_figure_block(fig) for fig in figure_list])
-        updated = _ensure_section_with_blocks(updated, TABLE_SECTION_HEADER, [render_table_block(table) for table in table_list])
+        updated = _ensure_section_with_blocks(
+            note_text, FIGURE_SECTION_HEADER, [render_figure_block(fig) for fig in figure_list]
+        )
+        updated = _ensure_section_with_blocks(
+            updated, TABLE_SECTION_HEADER, [render_table_block(table) for table in table_list]
+        )
         return updated
 
     stripped = note_text.rstrip()
@@ -1023,7 +1198,7 @@ def prepare_deep_reading(vault: Path, zotero_key: str, force: bool = False) -> d
     record_text = record_path.read_text(encoding="utf-8")
 
     # 2. Check analyze flag
-    analyze_match = re.search(r'^analyze:\s*(true|false)$', record_text, re.MULTILINE)
+    analyze_match = re.search(r"^analyze:\s*(true|false)$", record_text, re.MULTILINE)
     if not analyze_match or analyze_match.group(1) != "true":
         result["message"] = f"[ERROR] analyze != true in {record_path}. Set analyze: true first."
         return result
@@ -1032,7 +1207,7 @@ def prepare_deep_reading(vault: Path, zotero_key: str, force: bool = False) -> d
     status_match = re.search(r'^deep_reading_status:\s*"?(.*?)"?$', record_text, re.MULTILINE)
     dr_status = status_match.group(1).strip() if status_match else "pending"
     if dr_status == "done" and not force:
-        result["message"] = f"[WARN] deep_reading_status already 'done'. Use --force to re-run."
+        result["message"] = "[WARN] deep_reading_status already 'done'. Use --force to re-run."
         return result
 
     # 4. Check OCR / fulltext availability
@@ -1098,7 +1273,9 @@ def prepare_deep_reading(vault: Path, zotero_key: str, force: bool = False) -> d
         figure_map_path = ocr_dir / "figure-map.json"
         fulltext_text = fulltext_md.read_text(encoding="utf-8")
         figure_map = build_figure_map(fulltext_text, zotero_key=zotero_key)
-        figure_map["generated_at"] = __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat()
+        figure_map["generated_at"] = (
+            __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat()
+        )
         figure_map_path.parent.mkdir(parents=True, exist_ok=True)
         figure_map_path.write_text(json.dumps(figure_map, ensure_ascii=False, indent=2), encoding="utf-8")
         written_paths.append(figure_map_path)
@@ -1132,13 +1309,9 @@ def prepare_deep_reading(vault: Path, zotero_key: str, force: bool = False) -> d
         formal_note.write_text(updated, encoding="utf-8")
 
         result["figures"] = [
-            {"number": f.number, "image_id": f.image_id, "page": f.page, "title": f.title}
-            for f in planned_figures
+            {"number": f.number, "image_id": f.image_id, "page": f.page, "title": f.title} for f in planned_figures
         ]
-        result["tables"] = [
-            {"number": t.number, "page": t.page, "image_link": t.image_link}
-            for t in planned_tables
-        ]
+        result["tables"] = [{"number": t.number, "page": t.page, "image_link": t.image_link} for t in planned_tables]
 
         result["status"] = "ok"
         result["message"] = (
@@ -1168,16 +1341,19 @@ def scan_deep_reading_queue(vault: Path) -> list[dict]:
     """
     all_records = scan_library_records(vault)
     # Filter: only records that still need deep reading
-    queue = [r for r in all_records if r['deep_reading_status'] != 'done']
+    queue = [r for r in all_records if r["deep_reading_status"] != "done"]
     # Sort: OCR completed first, then by domain, then by key
-    queue.sort(key=lambda row: (
-        0 if row['ocr_status'] == 'done' else 1,
-        row['domain'],
-        row['zotero_key'],
-    ))
+    queue.sort(
+        key=lambda row: (
+            0 if row["ocr_status"] == "done" else 1,
+            row["domain"],
+            row["zotero_key"],
+        )
+    )
     return queue
 
 
+import contextlib
 import sys
 
 # Fix Windows console encoding for Unicode output
@@ -1187,6 +1363,7 @@ if sys.platform == "win32":
     except AttributeError:
         # Python < 3.7 fallback
         import codecs
+
         sys.stdout = codecs.getwriter("utf-8")(sys.stdout.buffer)
 
 
@@ -1199,19 +1376,29 @@ def main() -> int:
 
     scaffold_parser = subparsers.add_parser("ensure-scaffold", help="Append a deep-reading scaffold to a note")
     scaffold_parser.add_argument("note", type=Path)
-    scaffold_parser.add_argument("--fulltext", type=Path, help="Optional fulltext markdown used to build figure headings")
+    scaffold_parser.add_argument(
+        "--fulltext", type=Path, help="Optional fulltext markdown used to build figure headings"
+    )
     scaffold_parser.add_argument("--figures", help="Comma-separated selected figure numbers to insert")
     scaffold_parser.add_argument("--tables", help="Comma-separated selected table numbers to insert")
 
-    validate_parser = subparsers.add_parser("validate-selected", help="Validate selected figure/table embeds are present in the note")
+    validate_parser = subparsers.add_parser(
+        "validate-selected", help="Validate selected figure/table embeds are present in the note"
+    )
     validate_parser.add_argument("note", type=Path)
-    validate_parser.add_argument("--fulltext", type=Path, required=True, help="OCR fulltext markdown used to resolve figure/table embeds")
+    validate_parser.add_argument(
+        "--fulltext", type=Path, required=True, help="OCR fulltext markdown used to resolve figure/table embeds"
+    )
     validate_parser.add_argument("--figures", help="Comma-separated selected figure numbers to validate")
     validate_parser.add_argument("--tables", help="Comma-separated selected table numbers to validate")
 
-    full_validate_parser = subparsers.add_parser("validate-note", help="Run the full structural validation for a deep-reading note")
+    full_validate_parser = subparsers.add_parser(
+        "validate-note", help="Run the full structural validation for a deep-reading note"
+    )
     full_validate_parser.add_argument("note", type=Path)
-    full_validate_parser.add_argument("--fulltext", type=Path, required=True, help="OCR fulltext markdown used to resolve figure/table embeds")
+    full_validate_parser.add_argument(
+        "--fulltext", type=Path, required=True, help="OCR fulltext markdown used to resolve figure/table embeds"
+    )
     full_validate_parser.add_argument("--figures", help="Comma-separated selected figure numbers to validate")
     full_validate_parser.add_argument("--tables", help="Comma-separated selected table numbers to validate")
 
@@ -1224,8 +1411,12 @@ def main() -> int:
     map_parser.add_argument("--key", default="", help="Zotero key for output metadata")
     map_parser.add_argument("--out", type=Path, help="Optional output JSON path (default: stdout)")
 
-    chart_type_parser = subparsers.add_parser("chart-type-scan", help="Scan figure captions for chart types and recommend chart-reading guides")
-    chart_type_parser.add_argument("figure_map", type=Path, help="Path to figure-map.json generated by figure-map command")
+    chart_type_parser = subparsers.add_parser(
+        "chart-type-scan", help="Scan figure captions for chart types and recommend chart-reading guides"
+    )
+    chart_type_parser.add_argument(
+        "figure_map", type=Path, help="Path to figure-map.json generated by figure-map command"
+    )
     chart_type_parser.add_argument("--out", type=Path, help="Optional output JSON path (default: stdout)")
 
     prepare_parser = subparsers.add_parser("prepare", help="One-click prepare all mechanical steps for deep reading")
@@ -1247,7 +1438,9 @@ def main() -> int:
     if args.command == "figure-index":
         fulltext = args.fulltext.read_text(encoding="utf-8")
         for figure in extract_figures_from_fulltext(fulltext):
-            print(f"Figure {figure.number}\tid={figure.image_id}\tpage={figure.page}\timage={figure.image_link}\ttitle={figure.title}")
+            print(
+                f"Figure {figure.number}\tid={figure.image_id}\tpage={figure.page}\timage={figure.image_link}\ttitle={figure.title}"
+            )
         return 0
 
     if args.command == "ensure-scaffold":
@@ -1260,10 +1453,8 @@ def main() -> int:
             figure_map = None
             figure_map_path = args.fulltext.parent / "figure-map.json"
             if figure_map_path.exists():
-                try:
+                with contextlib.suppress(json.JSONDecodeError, UnicodeDecodeError):
                     figure_map = json.loads(figure_map_path.read_text(encoding="utf-8"))
-                except (json.JSONDecodeError, UnicodeDecodeError):
-                    pass
             figure_candidates = extract_figures_from_fulltext(fulltext, figure_map)
             table_candidates = extract_tables_from_fulltext(fulltext, figure_map)
             selected_figures = {part.strip() for part in (args.figures or "").split(",") if part.strip()}
@@ -1285,7 +1476,9 @@ def main() -> int:
         table_candidates = extract_tables_from_fulltext(fulltext)
         selected_figures = {part.strip() for part in (args.figures or "").split(",") if part.strip()}
         selected_tables = {part.strip() for part in (args.tables or "").split(",") if part.strip()}
-        figures = select_entries_by_numbers(figure_candidates, selected_figures, attr="image_id") if selected_figures else []
+        figures = (
+            select_entries_by_numbers(figure_candidates, selected_figures, attr="image_id") if selected_figures else []
+        )
         tables = select_entries_by_numbers(table_candidates, selected_tables) if selected_tables else []
         missing = validate_selected_blocks(note_text, figures, tables)
         if missing:
@@ -1302,10 +1495,8 @@ def main() -> int:
         figure_map = None
         figure_map_path = args.fulltext.parent / "figure-map.json"
         if figure_map_path.exists():
-            try:
+            with contextlib.suppress(json.JSONDecodeError, UnicodeDecodeError):
                 figure_map = json.loads(figure_map_path.read_text(encoding="utf-8"))
-            except (json.JSONDecodeError, UnicodeDecodeError):
-                pass
         figure_candidates = extract_figures_from_fulltext(fulltext, figure_map)
         table_candidates = extract_tables_from_fulltext(fulltext)
         selected_figures = {part.strip() for part in (args.figures or "").split(",") if part.strip()}

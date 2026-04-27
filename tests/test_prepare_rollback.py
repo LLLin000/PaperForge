@@ -56,7 +56,13 @@ class TestPrepareRollback:
         ocr_dir = vault / "99_System" / "PaperForge" / "ocr" / "TSTONE001"
         figure_map_path = ocr_dir / "figure-map.json"
         chart_type_map_path = ocr_dir / "chart-type-map.json"
-        formal_note = vault / "03_Resources" / "Literature" / "骨科" / "TSTONE001 - Biomechanical Comparison of Suture Anchor Fixations in Rotator Cuff Repair.md"
+        formal_note = (
+            vault
+            / "03_Resources"
+            / "Literature"
+            / "骨科"
+            / "TSTONE001 - Biomechanical Comparison of Suture Anchor Fixations in Rotator Cuff Repair.md"
+        )
 
         # Remove pre-existing fixture files to test clean rollback
         if figure_map_path.exists():
@@ -84,7 +90,13 @@ class TestPrepareRollback:
         ocr_dir = vault / "99_System" / "PaperForge" / "ocr" / "TSTONE001"
         figure_map_path = ocr_dir / "figure-map.json"
         chart_type_map_path = ocr_dir / "chart-type-map.json"
-        formal_note = vault / "03_Resources" / "Literature" / "骨科" / "TSTONE001 - Biomechanical Comparison of Suture Anchor Fixations in Rotator Cuff Repair.md"
+        formal_note = (
+            vault
+            / "03_Resources"
+            / "Literature"
+            / "骨科"
+            / "TSTONE001 - Biomechanical Comparison of Suture Anchor Fixations in Rotator Cuff Repair.md"
+        )
 
         # Remove pre-existing fixture files to test clean rollback
         if figure_map_path.exists():
@@ -112,7 +124,13 @@ class TestPrepareRollback:
         ocr_dir = vault / "99_System" / "PaperForge" / "ocr" / "TSTONE001"
         figure_map_path = ocr_dir / "figure-map.json"
         chart_type_map_path = ocr_dir / "chart-type-map.json"
-        formal_note = vault / "03_Resources" / "Literature" / "骨科" / "TSTONE001 - Biomechanical Comparison of Suture Anchor Fixations in Rotator Cuff Repair.md"
+        formal_note = (
+            vault
+            / "03_Resources"
+            / "Literature"
+            / "骨科"
+            / "TSTONE001 - Biomechanical Comparison of Suture Anchor Fixations in Rotator Cuff Repair.md"
+        )
 
         original_note_text = formal_note.read_text(encoding="utf-8")
 

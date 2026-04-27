@@ -12,13 +12,11 @@ from __future__ import annotations
 
 import importlib.util
 import json
-import os
 import re
 import subprocess
 import sys
 from pathlib import Path
 from typing import Any
-from unittest.mock import patch
 
 import pytest
 
@@ -33,6 +31,7 @@ if str(REPO_ROOT) not in sys.path:
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _import_ld_deep(path: Path | None = None) -> Any:
     """Import ld_deep.py using importlib, with Python 3.14 workaround."""
@@ -67,9 +66,9 @@ class TestSetupWizard:
         import setup_wizard
 
         source = Path(setup_wizard.__file__).read_text(encoding="utf-8")
-        assert '"-m", "pip", "install", "-e"' in source or "pip install -e" in source, (
-            "setup wizard should call pip install -e"
-        )
+        assert (
+            '"-m", "pip", "install", "-e"' in source or "pip install -e" in source
+        ), "setup wizard should call pip install -e"
         assert "repo_root" in source, "setup wizard should reference repo_root"
 
 
@@ -82,9 +81,9 @@ class TestDoctorImportability:
 
         source = Path(run_doctor.__code__.co_filename).read_text(encoding="utf-8")
         assert "importlib.util" in source, "doctor should use importlib.util for import check"
-        assert "spec_from_file_location" in source or "exec_module" in source, (
-            "doctor should actually exec_module ld_deep"
-        )
+        assert (
+            "spec_from_file_location" in source or "exec_module" in source
+        ), "doctor should actually exec_module ld_deep"
 
     def test_regression_doctor_env_name(self, test_vault: Path) -> None:
         """REG-02: doctor checks PADDLEOCR_API_TOKEN (not old env name)."""
@@ -98,9 +97,9 @@ class TestDoctorImportability:
         from paperforge.worker.status import run_doctor
 
         source = Path(run_doctor.__code__.co_filename).read_text(encoding="utf-8")
-        assert "library.json 不存在" not in source or "*.json" in source, (
-            "doctor should support per-domain JSON exports"
-        )
+        assert (
+            "library.json 不存在" not in source or "*.json" in source
+        ), "doctor should support per-domain JSON exports"
 
 
 class TestLdDeepImport:
@@ -277,14 +276,7 @@ class TestMetadataFields:
 
     def test_regression_metadata_fields(self, test_vault: Path) -> None:
         """Verify library-record has non-empty first_author and journal."""
-        record_path = (
-            test_vault
-            / "03_Resources"
-            / "LiteratureControl"
-            / "library-records"
-            / "骨科"
-            / "TSTONE001.md"
-        )
+        record_path = test_vault / "03_Resources" / "LiteratureControl" / "library-records" / "骨科" / "TSTONE001.md"
         assert record_path.exists(), "library record should exist"
         text = record_path.read_text(encoding="utf-8")
 
@@ -306,14 +298,7 @@ class TestSelectionSync:
 
     def test_regression_bbt_pdf_path(self, test_vault: Path) -> None:
         """REG-02: BBT attachment paths resolve correctly."""
-        record_path = (
-            test_vault
-            / "03_Resources"
-            / "LiteratureControl"
-            / "library-records"
-            / "骨科"
-            / "TSTONE001.md"
-        )
+        record_path = test_vault / "03_Resources" / "LiteratureControl" / "library-records" / "骨科" / "TSTONE001.md"
         assert record_path.exists(), "library record should exist"
         text = record_path.read_text(encoding="utf-8")
         assert "TSTONE001.pdf" in text, "record should reference the PDF"

@@ -1,13 +1,12 @@
 """Tests for incremental merge and user-view preservation (Phase 3, Plan 02)."""
+
 import pytest
-from pathlib import Path
+
 from paperforge.worker.base_views import (
+    PAPERFORGE_VIEW_PREFIX,
+    build_base_views,
     ensure_base_views,
     merge_base_views,
-    build_base_views,
-    substitute_config_placeholders,
-    PAPERFORGE_VIEW_PREFIX,
-    STANDARD_VIEW_NAMES,
 )
 from paperforge.worker.sync import slugify_filename
 
@@ -46,13 +45,16 @@ class TestIncrementalMerge:
         content = domain_base.read_text(encoding="utf-8")
         assert content.count("type: table") == 8
 
-        user_custom = content + '''
+        user_custom = (
+            content
+            + """
   - type: table
     name: "My Custom Dashboard"
     order:
       - title
       - year
-'''
+"""
+        )
         domain_base.write_text(user_custom, encoding="utf-8")
 
         ensure_base_views(self.vault, self.paths, self.config, force=False)
@@ -84,12 +86,15 @@ class TestIncrementalMerge:
         ensure_base_views(self.vault, self.paths, self.config, force=False)
         content1 = domain_base.read_text(encoding="utf-8")
 
-        user_custom = content1 + '''
+        user_custom = (
+            content1
+            + """
   - type: table
     name: "My Custom View"
     order:
       - title
-'''
+"""
+        )
         domain_base.write_text(user_custom, encoding="utf-8")
 
         ensure_base_views(self.vault, self.paths, self.config, force=True)
@@ -106,15 +111,14 @@ class TestIncrementalMerge:
         content1 = domain_base.read_text(encoding="utf-8")
 
         modified = content1.replace(
-            'filter: \'ocr_status = "done"\'',
-            'filter: \'ocr_status = "done" AND has_pdf = true\''
+            "filter: 'ocr_status = \"done\"'", "filter: 'ocr_status = \"done\" AND has_pdf = true'"
         )
         domain_base.write_text(modified, encoding="utf-8")
 
         ensure_base_views(self.vault, self.paths, self.config, force=False)
         refreshed = domain_base.read_text(encoding="utf-8")
 
-        assert 'filter: \'ocr_status = "done"\'' in refreshed
+        assert "filter: 'ocr_status = \"done\"'" in refreshed
         assert "has_pdf = true" not in refreshed
 
     def test_new_domain_base_is_created_on_first_run(self):
@@ -202,7 +206,7 @@ class TestLiteratureHubBase:
 class TestMergeBaseViews:
     def test_merge_base_views_preserves_user_views(self):
         """merge_base_views preserves views without PAPERFORGE_VIEW_PREFIX."""
-        existing = '''
+        existing = """
 filters:
   and:
     - file.inFolder("骨科")
@@ -221,7 +225,7 @@ views:
     name: "My Custom View"
     order:
       - title
-'''
+"""
         views = build_base_views("骨科")
         result = merge_base_views(existing, views)
 
@@ -240,7 +244,7 @@ views:
 
     def test_merge_base_views_unknown_placeholder_unchanged(self):
         """Unknown placeholders in content are left unchanged after merge."""
-        existing = '''
+        existing = """
 filters:
   and:
     - file.inFolder("骨科")
@@ -249,7 +253,7 @@ views:
     name: "控制面板"
     order:
       - file.name
-'''
+"""
         views = build_base_views("骨科")
         result = merge_base_views(existing, views)
 

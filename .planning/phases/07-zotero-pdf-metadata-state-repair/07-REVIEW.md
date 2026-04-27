@@ -124,7 +124,7 @@ This is implemented correctly for the first fix branch (lines 2934-2964). Howeve
 
 The plan specifies three repair scenarios (lines 135-138):
 1. Missing meta files → set pending + do_ocr
-2. Incomplete meta → set pending + do_ocr  
+2. Incomplete meta → set pending + do_ocr
 3. library done but meta pending → set library to pending only
 
 The implementation adds `do_ocr: true` to scenario 3 as well. This is likely harmless (setting do_ocr alongside the status reset makes sense to retrigger OCR), but deviates from the plan.

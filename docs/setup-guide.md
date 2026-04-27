@@ -1,7 +1,7 @@
 # PaperForge Lite 安装与配置指南
 
 > 本文档是 [setup_wizard.py](../setup_wizard.py) 的补充说明。如果 TUI 向导中的文字指引不够直观，请参考本页的详细步骤。
-> 
+>
 > 本文档中的截图保存在 `docs/images/` 目录下，向导中点击"查看安装截图"按钮可直接打开。
 
 ---
@@ -225,6 +225,3 @@ python setup_wizard.py --vault .
 ---
 
 *PaperForge Lite | 安装指南*
-
-
-

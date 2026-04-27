@@ -113,7 +113,7 @@ None. All Phase 1 criteria are verifiable programmatically.
 None. Phase 1 goal fully achieved:
 
 - `paperforge/config.py` is the single tested contract for path resolution, containing no OCR doctor, PDF resolver, or Base redesign behavior (per Plan 01 success criteria)
-- CLI launcher has package entry point and `python -m paperforge` fallback (per Plan 02 success criteria)  
+- CLI launcher has package entry point and `python -m paperforge` fallback (per Plan 02 success criteria)
 - Worker, `/LD-deep`, setup wizard, and validation all consume the same resolver; copied installations deploy the package (per Plan 03 success criteria)
 - User-facing docs use stable `paperforge ...` commands; unresolved `<system_dir>` path tokens removed from user-run examples; legacy invocation documented as fallback (per Plan 04 success criteria)
 - All 8 requirement IDs satisfied

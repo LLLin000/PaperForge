@@ -1,6 +1,5 @@
 """Tests for the 8-view Base generation system (Phase 3, Plan 01)."""
-import pytest
-from pathlib import Path
+
 from paperforge.worker.base_views import (
     build_base_views,
     substitute_config_placeholders,
@@ -15,10 +14,7 @@ class TestBuildBaseViews:
     def test_all_view_names_present(self):
         views = build_base_views("骨科")
         names = [v["name"] for v in views]
-        expected = [
-            "控制面板", "推荐分析", "待 OCR", "OCR 完成",
-            "待深度阅读", "深度阅读完成", "正式卡片", "全记录"
-        ]
+        expected = ["控制面板", "推荐分析", "待 OCR", "OCR 完成", "待深度阅读", "深度阅读完成", "正式卡片", "全记录"]
         assert names == expected
 
     def test_each_view_has_required_keys(self):
@@ -38,7 +34,7 @@ class TestBuildBaseViews:
     def test_pending_ocr_filter(self):
         views = build_base_views("骨科")
         pending = next(v for v in views if v["name"] == "待 OCR")
-        assert 'do_ocr = true' in pending["filter"]
+        assert "do_ocr = true" in pending["filter"]
         assert 'ocr_status = "pending"' in pending["filter"]
 
     def test_ocr_done_filter(self):
@@ -61,10 +57,7 @@ class TestSubstituteConfigPlaceholders:
         vault.mkdir()
         lib_rec = vault / "03_Resources" / "LiteratureControl" / "library-records"
         lib_rec.mkdir(parents=True)
-        result = substitute_config_placeholders(
-            content,
-            {"library_records": lib_rec, "vault": vault}
-        )
+        result = substitute_config_placeholders(content, {"library_records": lib_rec, "vault": vault})
         assert "${LIBRARY_RECORDS}" not in result
         assert "03_Resources/LiteratureControl/library-records" in result
 
@@ -77,8 +70,7 @@ class TestSubstituteConfigPlaceholders:
         lib_rec.mkdir()
         lit.mkdir()
         result = substitute_config_placeholders(
-            content,
-            {"library_records": lib_rec, "literature": lit, "vault": vault}
+            content, {"library_records": lib_rec, "literature": lit, "vault": vault}
         )
         assert "${LIBRARY_RECORDS}" not in result
         assert "${LITERATURE}" not in result
@@ -94,8 +86,5 @@ class TestSubstituteConfigPlaceholders:
         vault.mkdir()
         lib_rec = vault / "LR"
         lib_rec.mkdir()
-        result = substitute_config_placeholders(
-            content,
-            {"library_records": lib_rec, "vault": vault}
-        )
+        result = substitute_config_placeholders(content, {"library_records": lib_rec, "vault": vault})
         assert "\\" not in result  # Should use forward slash

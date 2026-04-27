@@ -3,12 +3,11 @@
 Verifies that run_selection_sync() sets ocr_status: nopdf when PDFs are missing
 and preserves pending/done for valid PDFs.
 """
+
 from __future__ import annotations
 
 from pathlib import Path
 from unittest.mock import patch
-
-import pytest
 
 
 class TestSelectionSyncPdf:
@@ -28,7 +27,7 @@ class TestSelectionSyncPdf:
         resources.mkdir()
         (resources / "LiteratureControl" / "library-records").mkdir(parents=True)
         (resources / "Literature").mkdir(parents=True)
-        (vault / "paperforge.json").write_text('{}', encoding="utf-8")
+        (vault / "paperforge.json").write_text("{}", encoding="utf-8")
         return vault
 
     def _mock_export_item(self, key: str, has_pdf: bool = True, pdf_path: str = "") -> dict:
@@ -52,35 +51,31 @@ class TestSelectionSyncPdf:
         """Export item with no PDF attachments → ocr_status: nopdf."""
         vault = self._make_vault(tmp_path)
 
-        with patch(
-            "paperforge.worker.sync.pipeline_paths"
-        ) as mock_paths:
+        with patch("paperforge.worker.sync.pipeline_paths") as mock_paths:
             mock_paths.return_value = {
                 "exports": vault / "99_System" / "PaperForge" / "exports",
                 "ocr": vault / "99_System" / "PaperForge" / "ocr",
                 "library_records": vault / "03_Resources" / "LiteratureControl" / "library-records",
                 "literature": vault / "03_Resources" / "Literature",
             }
-            with patch(
-                "paperforge.worker.sync.load_domain_config",
-                return_value={"domains": [{"export_file": "test.json", "domain": "TestDomain"}]},
+            with (
+                patch(
+                    "paperforge.worker.sync.load_domain_config",
+                    return_value={"domains": [{"export_file": "test.json", "domain": "TestDomain"}]},
+                ),
+                patch("paperforge.worker.base_views.ensure_base_views"),
+                patch(
+                    "paperforge.worker.sync.load_export_rows",
+                    return_value=[self._mock_export_item("NO_PDF", has_pdf=False)],
+                ),
             ):
-                with patch(
-                    "paperforge.worker.base_views.ensure_base_views"
-                ):
-                    with patch(
-                        "paperforge.worker.sync.load_export_rows",
-                        return_value=[self._mock_export_item("NO_PDF", has_pdf=False)],
-                    ):
-                        from paperforge.worker.sync import (
-                            run_selection_sync,
-                        )
+                from paperforge.worker.sync import (
+                    run_selection_sync,
+                )
 
-                        run_selection_sync(vault)
+                run_selection_sync(vault)
 
-        record_path = (
-            vault / "03_Resources" / "LiteratureControl" / "library-records" / "TestDomain" / "NO_PDF.md"
-        )
+        record_path = vault / "03_Resources" / "LiteratureControl" / "library-records" / "TestDomain" / "NO_PDF.md"
         assert record_path.exists()
         content = record_path.read_text(encoding="utf-8")
         assert 'ocr_status: "nopdf"' in content
@@ -91,37 +86,31 @@ class TestSelectionSyncPdf:
         vault = self._make_vault(tmp_path)
         missing_pdf = str(tmp_path / "missing.pdf")
 
-        with patch(
-            "paperforge.worker.sync.pipeline_paths"
-        ) as mock_paths:
+        with patch("paperforge.worker.sync.pipeline_paths") as mock_paths:
             mock_paths.return_value = {
                 "exports": vault / "99_System" / "PaperForge" / "exports",
                 "ocr": vault / "99_System" / "PaperForge" / "ocr",
                 "library_records": vault / "03_Resources" / "LiteratureControl" / "library-records",
                 "literature": vault / "03_Resources" / "Literature",
             }
-            with patch(
-                "paperforge.worker.sync.load_domain_config",
-                return_value={"domains": [{"export_file": "test.json", "domain": "TestDomain"}]},
+            with (
+                patch(
+                    "paperforge.worker.sync.load_domain_config",
+                    return_value={"domains": [{"export_file": "test.json", "domain": "TestDomain"}]},
+                ),
+                patch("paperforge.worker.base_views.ensure_base_views"),
+                patch(
+                    "paperforge.worker.sync.load_export_rows",
+                    return_value=[self._mock_export_item("MISSING", has_pdf=True, pdf_path=missing_pdf)],
+                ),
             ):
-                with patch(
-                    "paperforge.worker.base_views.ensure_base_views"
-                ):
-                    with patch(
-                        "paperforge.worker.sync.load_export_rows",
-                        return_value=[
-                            self._mock_export_item("MISSING", has_pdf=True, pdf_path=missing_pdf)
-                        ],
-                    ):
-                        from paperforge.worker.sync import (
-                            run_selection_sync,
-                        )
+                from paperforge.worker.sync import (
+                    run_selection_sync,
+                )
 
-                        run_selection_sync(vault)
+                run_selection_sync(vault)
 
-        record_path = (
-            vault / "03_Resources" / "LiteratureControl" / "library-records" / "TestDomain" / "MISSING.md"
-        )
+        record_path = vault / "03_Resources" / "LiteratureControl" / "library-records" / "TestDomain" / "MISSING.md"
         assert record_path.exists()
         content = record_path.read_text(encoding="utf-8")
         assert 'ocr_status: "nopdf"' in content
@@ -132,37 +121,31 @@ class TestSelectionSyncPdf:
         pdf = tmp_path / "test.pdf"
         pdf.write_bytes(b"%PDF-1.4\n")
 
-        with patch(
-            "paperforge.worker.sync.pipeline_paths"
-        ) as mock_paths:
+        with patch("paperforge.worker.sync.pipeline_paths") as mock_paths:
             mock_paths.return_value = {
                 "exports": vault / "99_System" / "PaperForge" / "exports",
                 "ocr": vault / "99_System" / "PaperForge" / "ocr",
                 "library_records": vault / "03_Resources" / "LiteratureControl" / "library-records",
                 "literature": vault / "03_Resources" / "Literature",
             }
-            with patch(
-                "paperforge.worker.sync.load_domain_config",
-                return_value={"domains": [{"export_file": "test.json", "domain": "TestDomain"}]},
+            with (
+                patch(
+                    "paperforge.worker.sync.load_domain_config",
+                    return_value={"domains": [{"export_file": "test.json", "domain": "TestDomain"}]},
+                ),
+                patch("paperforge.worker.base_views.ensure_base_views"),
+                patch(
+                    "paperforge.worker.sync.load_export_rows",
+                    return_value=[self._mock_export_item("VALID", has_pdf=True, pdf_path=str(pdf))],
+                ),
             ):
-                with patch(
-                    "paperforge.worker.base_views.ensure_base_views"
-                ):
-                    with patch(
-                        "paperforge.worker.sync.load_export_rows",
-                        return_value=[
-                            self._mock_export_item("VALID", has_pdf=True, pdf_path=str(pdf))
-                        ],
-                    ):
-                        from paperforge.worker.sync import (
-                            run_selection_sync,
-                        )
+                from paperforge.worker.sync import (
+                    run_selection_sync,
+                )
 
-                        run_selection_sync(vault)
+                run_selection_sync(vault)
 
-        record_path = (
-            vault / "03_Resources" / "LiteratureControl" / "library-records" / "TestDomain" / "VALID.md"
-        )
+        record_path = vault / "03_Resources" / "LiteratureControl" / "library-records" / "TestDomain" / "VALID.md"
         assert record_path.exists()
         content = record_path.read_text(encoding="utf-8")
         assert 'ocr_status: "pending"' in content
@@ -179,31 +162,29 @@ class TestSelectionSyncPdf:
             encoding="utf-8",
         )
 
-        with patch(
-            "paperforge.worker.sync.pipeline_paths"
-        ) as mock_paths:
+        with patch("paperforge.worker.sync.pipeline_paths") as mock_paths:
             mock_paths.return_value = {
                 "exports": vault / "99_System" / "PaperForge" / "exports",
                 "ocr": vault / "99_System" / "PaperForge" / "ocr",
                 "library_records": vault / "03_Resources" / "LiteratureControl" / "library-records",
                 "literature": vault / "03_Resources" / "Literature",
             }
-            with patch(
-                "paperforge.worker.sync.load_domain_config",
-                return_value={"domains": [{"export_file": "test.json", "domain": "TestDomain"}]},
+            with (
+                patch(
+                    "paperforge.worker.sync.load_domain_config",
+                    return_value={"domains": [{"export_file": "test.json", "domain": "TestDomain"}]},
+                ),
+                patch("paperforge.worker.base_views.ensure_base_views"),
+                patch(
+                    "paperforge.worker.sync.load_export_rows",
+                    return_value=[self._mock_export_item("CHANGED", has_pdf=False)],
+                ),
             ):
-                with patch(
-                    "paperforge.worker.base_views.ensure_base_views"
-                ):
-                    with patch(
-                        "paperforge.worker.sync.load_export_rows",
-                        return_value=[self._mock_export_item("CHANGED", has_pdf=False)],
-                    ):
-                        from paperforge.worker.sync import (
-                            run_selection_sync,
-                        )
+                from paperforge.worker.sync import (
+                    run_selection_sync,
+                )
 
-                        run_selection_sync(vault)
+                run_selection_sync(vault)
 
         content = record_path.read_text(encoding="utf-8")
         assert 'ocr_status: "nopdf"' in content

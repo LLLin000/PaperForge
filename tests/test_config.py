@@ -6,18 +6,18 @@ These tests prove:
 - CONF-03: All consumers use the same resolver
 - CONF-04: Top-level and nested paperforge.json keys are both honored
 """
+
 from __future__ import annotations
 
 import json
-import os
 from pathlib import Path
 
 import pytest
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture
 def minimal_vault(tmp_path: Path) -> Path:
@@ -32,15 +32,18 @@ def vault_with_nested_config(tmp_path: Path) -> Path:
     vault.mkdir()
     pf = vault / "paperforge.json"
     pf.write_text(
-        json.dumps({
-            "vault_config": {
-                "system_dir": "CustomSystem",
-                "resources_dir": "CustomResources",
-                "literature_dir": "CustomLiterature",
-                "control_dir": "CustomControl",
-                "base_dir": "CustomBases",
-            }
-        }, ensure_ascii=False),
+        json.dumps(
+            {
+                "vault_config": {
+                    "system_dir": "CustomSystem",
+                    "resources_dir": "CustomResources",
+                    "literature_dir": "CustomLiterature",
+                    "control_dir": "CustomControl",
+                    "base_dir": "CustomBases",
+                }
+            },
+            ensure_ascii=False,
+        ),
         encoding="utf-8",
     )
     return vault
@@ -53,18 +56,21 @@ def vault_with_top_level_config(tmp_path: Path) -> Path:
     vault.mkdir()
     pf = vault / "paperforge.json"
     pf.write_text(
-        json.dumps({
-            "vault_config": {
-                "system_dir": "NestedSystem",
-                "resources_dir": "NestedResources",
+        json.dumps(
+            {
+                "vault_config": {
+                    "system_dir": "NestedSystem",
+                    "resources_dir": "NestedResources",
+                },
+                # Legacy top-level keys — these take precedence per CONF-04
+                "system_dir": "LegacySystem",
+                "resources_dir": "LegacyResources",
+                "literature_dir": "LegacyLiterature",
+                "control_dir": "LegacyControl",
+                "base_dir": "LegacyBases",
             },
-            # Legacy top-level keys — these take precedence per CONF-04
-            "system_dir": "LegacySystem",
-            "resources_dir": "LegacyResources",
-            "literature_dir": "LegacyLiterature",
-            "control_dir": "LegacyControl",
-            "base_dir": "LegacyBases",
-        }, ensure_ascii=False),
+            ensure_ascii=False,
+        ),
         encoding="utf-8",
     )
     return vault
@@ -108,40 +114,48 @@ def env_dict() -> dict[str, str]:
 # DEFAULT_CONFIG tests — truths from must_haves
 # ---------------------------------------------------------------------------
 
+
 def test_default_system_dir_is_99_System():
     """Built-in default for system_dir must be '99_System'."""
     from paperforge.config import DEFAULT_CONFIG
+
     assert DEFAULT_CONFIG["system_dir"] == "99_System"
 
 
 def test_default_resources_dir_is_03_Resources():
     """Built-in default for resources_dir must be '03_Resources'."""
     from paperforge.config import DEFAULT_CONFIG
+
     assert DEFAULT_CONFIG["resources_dir"] == "03_Resources"
 
 
 def test_default_literature_dir():
     from paperforge.config import DEFAULT_CONFIG
+
     assert DEFAULT_CONFIG["literature_dir"] == "Literature"
 
 
 def test_default_control_dir():
     from paperforge.config import DEFAULT_CONFIG
+
     assert DEFAULT_CONFIG["control_dir"] == "LiteratureControl"
 
 
 def test_default_base_dir():
     from paperforge.config import DEFAULT_CONFIG
+
     assert DEFAULT_CONFIG["base_dir"] == "05_Bases"
 
 
 def test_default_skill_dir():
     from paperforge.config import DEFAULT_CONFIG
+
     assert DEFAULT_CONFIG["skill_dir"] == ".opencode/skills"
 
 
 def test_default_command_dir():
     from paperforge.config import DEFAULT_CONFIG
+
     assert DEFAULT_CONFIG["command_dir"] == ".opencode/command"
 
 
@@ -149,9 +163,11 @@ def test_default_command_dir():
 # ENV_KEYS coverage — CONF-01
 # ---------------------------------------------------------------------------
 
+
 def test_env_keys_has_all_required_overrides():
     """All PAPERFORGE_* env vars must be registered in ENV_KEYS."""
     from paperforge.config import ENV_KEYS
+
     required = {
         "PAPERFORGE_VAULT",
         "PAPERFORGE_SYSTEM_DIR",
@@ -170,6 +186,7 @@ def test_env_keys_has_all_required_overrides():
 # load_vault_config precedence — CONF-01, CONF-04
 # ---------------------------------------------------------------------------
 
+
 def test_env_overrides_nested_json(env_dict):
     """PAPERFORGE_SYSTEM_DIR overrides nested vault_config.system_dir (CONF-01)."""
     from paperforge.config import load_vault_config
@@ -186,12 +203,13 @@ def test_env_overrides_nested_json(env_dict):
     env_dict["PAPERFORGE_SYSTEM_DIR"] = "EnvSystem"
     cfg = load_vault_config(vault, env=env_dict)
 
-    assert cfg["system_dir"] == "EnvSystem", (
-        f"Expected 'EnvSystem' from PAPERFORGE_SYSTEM_DIR, got '{cfg['system_dir']}'"
-    )
+    assert (
+        cfg["system_dir"] == "EnvSystem"
+    ), f"Expected 'EnvSystem' from PAPERFORGE_SYSTEM_DIR, got '{cfg['system_dir']}'"
 
     # Cleanup
     import shutil
+
     shutil.rmtree(vault, ignore_errors=True)
 
 
@@ -207,11 +225,12 @@ def test_explicit_overrides_win_over_env(env_dict):
     overrides = {"system_dir": "OverrideSystem"}
     cfg = load_vault_config(vault, env=env_dict, overrides=overrides)
 
-    assert cfg["system_dir"] == "OverrideSystem", (
-        f"Expected 'OverrideSystem' from explicit override, got '{cfg['system_dir']}'"
-    )
+    assert (
+        cfg["system_dir"] == "OverrideSystem"
+    ), f"Expected 'OverrideSystem' from explicit override, got '{cfg['system_dir']}'"
 
     import shutil
+
     shutil.rmtree(vault, ignore_errors=True)
 
 
@@ -237,17 +256,17 @@ def test_top_level_keys_override_nested_for_backward_compat(tmp_path: Path):
     vault = tmp_path / "vault_legacy"
     vault.mkdir()
     (vault / "paperforge.json").write_text(
-        json.dumps({
-            "vault_config": {"system_dir": "NestedSystem"},
-            "system_dir": "LegacySystem",
-        }),
+        json.dumps(
+            {
+                "vault_config": {"system_dir": "NestedSystem"},
+                "system_dir": "LegacySystem",
+            }
+        ),
         encoding="utf-8",
     )
 
     cfg = load_vault_config(vault)
-    assert cfg["system_dir"] == "LegacySystem", (
-        f"Expected 'LegacySystem' from top-level key, got '{cfg['system_dir']}'"
-    )
+    assert cfg["system_dir"] == "LegacySystem", f"Expected 'LegacySystem' from top-level key, got '{cfg['system_dir']}'"
 
 
 def test_defaults_used_when_no_json(tmp_path: Path):
@@ -265,6 +284,7 @@ def test_defaults_used_when_no_json(tmp_path: Path):
 # ---------------------------------------------------------------------------
 # paperforge_paths key inventory — CONF-02, CONF-03
 # ---------------------------------------------------------------------------
+
 
 def test_paperforge_paths_returns_exact_keys(tmp_path: Path):
     """paperforge_paths() must return exactly the required user-facing keys."""
@@ -369,10 +389,12 @@ def test_paperforge_paths_includes_ld_deep_script(tmp_path: Path):
 # paths_as_strings — JSON serializable output
 # ---------------------------------------------------------------------------
 
+
 def test_paths_as_strings_returns_string_values():
     """paths_as_strings must return dict[str, str] with all values as strings."""
-    from paperforge.config import paths_as_strings
     from pathlib import Path
+
+    from paperforge.config import paths_as_strings
 
     paths = {
         "vault": Path("/some/vault"),
@@ -403,6 +425,7 @@ def test_paths_as_strings_returns_string_values():
 # ---------------------------------------------------------------------------
 # resolve_vault precedence
 # ---------------------------------------------------------------------------
+
 
 def test_resolve_vault_precedence_explicit_first(tmp_path: Path):
     """resolve_vault returns explicit cli_vault first."""

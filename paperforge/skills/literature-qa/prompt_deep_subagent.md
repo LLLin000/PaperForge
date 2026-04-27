@@ -295,4 +295,3 @@ python {{SCRIPT}} validate-note "<note_path>" --fulltext "<fulltext_path>"
 # 列出待精读队列（信息用）
 python {{SCRIPT}} queue --vault "{{VAULT}}" --format table
 ```
-

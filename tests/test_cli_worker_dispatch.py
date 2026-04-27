@@ -1,11 +1,11 @@
 # Tests for paperforge CLI worker dispatch
 # These tests prove the locked command surface without invoking real workers.
 
-import pytest
 import json
-import sys
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
+
+import pytest
 
 # ----------------------------------------------------------------------
 # Worker function stubs — capture calls for assertion
@@ -33,7 +33,7 @@ def stub_run_deep_reading(vault: Path, verbose: bool = False) -> int:
     return 0
 
 
-def stub_run_ocr(vault: Path, verbose: bool = False) -> int:
+def stub_run_ocr(vault: Path, verbose: bool = False, no_progress: bool = False) -> int:
     CAPTURED_CALLS.append(("run_ocr", vault))
     return 0
 
@@ -69,7 +69,9 @@ def mock_vault(tmp_path):
 def test_status_dispatch(clean_captured, mock_vault):
     """main(['--vault', vault, 'status']) calls run_status."""
     import importlib
+
     import paperforge.cli as cli
+
     importlib.reload(cli)
 
     with patch.object(cli, "run_status", stub_run_status):
@@ -82,7 +84,9 @@ def test_status_dispatch(clean_captured, mock_vault):
 def test_selection_sync_dispatch(clean_captured, mock_vault):
     """main(['--vault', vault, 'selection-sync']) calls run_selection_sync."""
     import importlib
+
     import paperforge.cli as cli
+
     importlib.reload(cli)
 
     with patch.object(cli, "run_selection_sync", stub_run_selection_sync):
@@ -95,7 +99,9 @@ def test_selection_sync_dispatch(clean_captured, mock_vault):
 def test_index_refresh_dispatch(clean_captured, mock_vault):
     """main(['--vault', vault, 'index-refresh']) calls run_index_refresh."""
     import importlib
+
     import paperforge.cli as cli
+
     importlib.reload(cli)
 
     with patch.object(cli, "run_index_refresh", stub_run_index_refresh):
@@ -108,7 +114,9 @@ def test_index_refresh_dispatch(clean_captured, mock_vault):
 def test_deep_reading_dispatch(clean_captured, mock_vault):
     """main(['--vault', vault, 'deep-reading']) calls run_deep_reading."""
     import importlib
+
     import paperforge.cli as cli
+
     importlib.reload(cli)
 
     with patch.object(cli, "run_deep_reading", stub_run_deep_reading):
@@ -121,7 +129,9 @@ def test_deep_reading_dispatch(clean_captured, mock_vault):
 def test_ocr_run_dispatch(clean_captured, mock_vault):
     """main(['--vault', vault, 'ocr', 'run']) calls run_ocr."""
     import importlib
+
     import paperforge.cli as cli
+
     importlib.reload(cli)
 
     with patch.object(cli, "run_ocr", stub_run_ocr):
@@ -134,7 +144,9 @@ def test_ocr_run_dispatch(clean_captured, mock_vault):
 def test_ocr_alias_dispatch(clean_captured, mock_vault):
     """main(['--vault', vault, 'ocr']) calls run_ocr (alias for 'ocr run')."""
     import importlib
+
     import paperforge.cli as cli
+
     importlib.reload(cli)
 
     with patch.object(cli, "run_ocr", stub_run_ocr):
@@ -147,7 +159,9 @@ def test_ocr_alias_dispatch(clean_captured, mock_vault):
 def test_ocr_doctor_dispatch(clean_captured, mock_vault):
     """main(['--vault', vault, 'ocr', 'doctor']) calls _cmd_ocr_doctor."""
     import importlib
+
     import paperforge.cli as cli
+
     importlib.reload(cli)
 
     with patch.object(cli, "_cmd_ocr_doctor", lambda vault, args: 0):

@@ -2,12 +2,12 @@
 
 Maps exceptions to (state, suggestion) pairs per the D-03 taxonomy.
 """
+
 from __future__ import annotations
 
 import json
 from unittest.mock import MagicMock
 
-import pytest
 import requests
 
 from paperforge.ocr_diagnostics import classify_error

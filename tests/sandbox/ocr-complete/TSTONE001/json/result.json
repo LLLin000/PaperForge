@@ -1,0 +1,26 @@
+{
+  "pages": [
+    {
+      "page_num": 1,
+      "markdown": "Biomechanical Comparison of Suture Anchor Fixations in Rotator Cuff Repair\n\nJohn Smith, Jane Doe\nJournal of Shoulder and Elbow Surgery, 2024\n\n## Abstract\n\nThis study compares the biomechanical properties of various suture anchor configurations used in rotator cuff repair surgery.\n\n## Introduction\n\nRotator cuff tears are a common shoulder pathology. Surgical repair using suture anchors remains the gold standard treatment."
+    },
+    {
+      "page_num": 2,
+      "markdown": "## Methods\n\n### Patient Demographics\n\nTable 1: Patient demographics and baseline characteristics (n=45).\n\n### Biomechanical Testing\n\nFigure 2: Biomechanical testing setup. (A) Custom loading fixture. (B) Cyclic loading protocol.\n\n## Results\n\n### Load to Failure\n\nFigure 3: Load to failure comparison. Error bars represent standard deviation. *p < 0.05 vs single row."
+    },
+    {
+      "page_num": 3,
+      "markdown": "### Stiffness Analysis\n\nFigure 4: Stiffness comparison between repair techniques.\n\nTable 2: Biomechanical properties summary.\n\n## Discussion\n\nThe double row technique demonstrated significantly higher load to failure compared to single row repair.\n\n## Conclusion\n\nDouble row suture anchor fixation provides superior biomechanical properties for rotator cuff repair."
+    }
+  ],
+  "figures": [
+    {"page": 1, "filename": "page_001_fig_01.png", "caption": "Overview of suture anchor placement techniques."},
+    {"page": 2, "filename": "page_002_fig_02.png", "caption": "Biomechanical testing setup."},
+    {"page": 3, "filename": "page_003_fig_03.png", "caption": "Load to failure comparison."},
+    {"page": 3, "filename": "page_003_fig_04.png", "caption": "Stiffness comparison between repair techniques."}
+  ],
+  "tables": [
+    {"page": 2, "filename": "page_002_table_01.png", "caption": "Patient demographics and baseline characteristics."},
+    {"page": 3, "filename": "page_003_table_02.png", "caption": "Biomechanical properties summary."}
+  ]
+}

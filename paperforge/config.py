@@ -22,6 +22,7 @@ from typing import Any
 # .env loader
 # ---------------------------------------------------------------------------
 
+
 def load_simple_env(env_path: Path) -> None:
     """Load key=value pairs from a .env file into os.environ (no overwrite)."""
     if not env_path.exists():
@@ -74,6 +75,7 @@ CONFIG_KEYS: set[str] = set(DEFAULT_CONFIG.keys())
 # JSON reader
 # ---------------------------------------------------------------------------
 
+
 def read_paperforge_json(vault: Path) -> dict[str, Any]:
     """Read and parse paperforge.json, returning raw key-value pairs.
 
@@ -96,6 +98,7 @@ def read_paperforge_json(vault: Path) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 # Vault resolution
 # ---------------------------------------------------------------------------
+
 
 def resolve_vault(
     cli_vault: Path | None = None,
@@ -141,6 +144,7 @@ def resolve_vault(
 # ---------------------------------------------------------------------------
 # Config loading
 # ---------------------------------------------------------------------------
+
 
 def load_vault_config(
     vault: Path,
@@ -204,6 +208,7 @@ def load_vault_config(
 # ---------------------------------------------------------------------------
 # Path construction
 # ---------------------------------------------------------------------------
+
 
 def paperforge_paths(
     vault: Path,

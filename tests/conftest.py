@@ -3,12 +3,9 @@
 from __future__ import annotations
 
 import json
-import os
 import shutil
-import sys
-import tempfile
+from collections.abc import Generator
 from pathlib import Path
-from typing import Generator
 
 import pytest
 
@@ -38,9 +35,7 @@ def create_test_vault() -> Path:
     base_dir = vault / "05_Bases"
     skill_dir = vault / ".opencode" / "skills" / "literature-qa" / "scripts"
 
-    for d in [
-        exports_dir, ocr_dir, literature_dir, records_dir, base_dir, skill_dir
-    ]:
+    for d in [exports_dir, ocr_dir, literature_dir, records_dir, base_dir, skill_dir]:
         d.mkdir(parents=True, exist_ok=True)
 
     # Create paperforge.json
@@ -65,8 +60,7 @@ def create_test_vault() -> Path:
     # Create .env with PADDLEOCR_API_TOKEN
     env_path = pf_dir / ".env"
     env_path.write_text(
-        "PADDLEOCR_API_TOKEN=test_token\n"
-        "PADDLEOCR_JOB_URL=https://example.com/api\n",
+        "PADDLEOCR_API_TOKEN=test_token\nPADDLEOCR_JOB_URL=https://example.com/api\n",
         encoding="utf-8",
     )
 
@@ -92,20 +86,20 @@ def create_test_vault() -> Path:
         'doi: "10.1016/j.jse.2024.01.001"\n'
         'date: "2024-03-15"\n'
         'collection_path: ""\n'
-        'has_pdf: true\n'
+        "has_pdf: true\n"
         'pdf_path: "[[99_System/Zotero/storage/TSTONE001/TSTONE001.pdf]]"\n'
         'fulltext_md_path: "[[99_System/PaperForge/ocr/TSTONE001/fulltext.md]]"\n'
-        'recommend_analyze: true\n'
-        'analyze: true\n'
-        'do_ocr: true\n'
+        "recommend_analyze: true\n"
+        "analyze: true\n"
+        "do_ocr: true\n"
         'ocr_status: "done"\n'
         'deep_reading_status: "pending"\n'
         'analysis_note: ""\n'
-        'collection_group:\n'
+        "collection_group:\n"
         '  - "骨科"\n'
-        'collections:\n'
+        "collections:\n"
         '  - "骨科"\n'
-        'collection_tags:\n'
+        "collection_tags:\n"
         '  - "骨科"\n'
         'first_author: "John Smith"\n'
         'journal: "Journal of Shoulder and Elbow Surgery"\n'
@@ -117,7 +111,11 @@ def create_test_vault() -> Path:
     )
 
     # Create formal note for TSTONE001
-    note_path = literature_dir / "骨科" / "TSTONE001 - Biomechanical Comparison of Suture Anchor Fixations in Rotator Cuff Repair.md"
+    note_path = (
+        literature_dir
+        / "骨科"
+        / "TSTONE001 - Biomechanical Comparison of Suture Anchor Fixations in Rotator Cuff Repair.md"
+    )
     note_path.parent.mkdir(parents=True, exist_ok=True)
     note_path.write_text(
         "---\n"
@@ -127,9 +125,9 @@ def create_test_vault() -> Path:
         'journal: "Journal of Shoulder and Elbow Surgery"\n'
         'impact_factor: "5.2"\n'
         'category: "骨科"\n'
-        'tags:\n'
-        '  - 文献阅读\n'
-        '  - 骨科\n'
+        "tags:\n"
+        "  - 文献阅读\n"
+        "  - 骨科\n"
         'keywords: ["biomechanics", "rotator cuff"]\n'
         'pdf_link: "[[99_System/Zotero/storage/TSTONE001/TSTONE001.pdf]]"\n'
         "---\n\n"
@@ -140,9 +138,15 @@ def create_test_vault() -> Path:
     )
 
     # Create Zotero storage with mock PDF
-    zotero_dir = system_dir / "Zotero" / "storage" / "TSTONE001"
+    # PDF goes at Zotero/KEY/filename.pdf so resolve_pdf_path can find it
+    zotero_dir = system_dir / "Zotero" / "TSTONE001"
     zotero_dir.mkdir(parents=True, exist_ok=True)
     (zotero_dir / "TSTONE001.pdf").write_text("mock pdf content", encoding="utf-8")
+
+    # Also create in storage/ subdirectory for legacy path resolution
+    storage_dir = system_dir / "Zotero" / "storage" / "TSTONE001"
+    storage_dir.mkdir(parents=True, exist_ok=True)
+    (storage_dir / "TSTONE001.pdf").write_text("mock pdf content", encoding="utf-8")
 
     # Copy ld_deep.py to skill_dir (simulating deployment)
     ld_deep_src = REPO_ROOT / "paperforge" / "skills" / "literature-qa" / "scripts" / "ld_deep.py"

@@ -2,6 +2,7 @@
 
 Supports absolute, vault-relative, junction/symlink, and Zotero storage-relative paths.
 """
+
 from __future__ import annotations
 
 import ctypes
@@ -58,7 +59,7 @@ def resolve_pdf_path(
 
     # Try Zotero storage-relative (format: "storage:XXXX/item.pdf")
     if raw.startswith("storage:") and zotero_dir is not None:
-        storage_rel = raw[len("storage:"):].lstrip("/")
+        storage_rel = raw[len("storage:") :].lstrip("/")
         storage_candidate = (zotero_dir / storage_rel.replace("/", os.sep)).resolve()
         if is_valid_pdf(storage_candidate):
             return str(storage_candidate)
@@ -83,13 +84,9 @@ def resolve_junction(path: Path) -> Path:
     # Windows-specific: resolve directory junction reparse points
     if os.name == "nt" and path.is_dir():
         try:
-            from ctypes import wintypes
-
             kernel32 = ctypes.windll.kernel32
             buf = ctypes.create_unicode_buffer(1024)
-            handle = kernel32.CreateFileW(
-                str(path), 0, 0, None, 3, 0x02000000, None
-            )
+            handle = kernel32.CreateFileW(str(path), 0, 0, None, 3, 0x02000000, None)
             if handle != -1:
                 try:
                     res = kernel32.GetFinalPathNameByHandleW(handle, buf, 1024, 0)

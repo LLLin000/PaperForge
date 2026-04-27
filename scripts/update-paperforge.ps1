@@ -1,6 +1,6 @@
 # PaperForge Lite Update Script for Windows
 # 一键更新脚本 — 双击运行即可
-# 
+#
 # 功能：
 #   1. 自动检测安装方式（pip/pip-editable/git/zip）
 #   2. 执行对应的更新命令
@@ -62,7 +62,7 @@ try {
     if ($pkgPath) {
         $pkgDir = Split-Path $pkgPath -Parent
         $installPath = $pkgDir
-        
+
         if ($pkgDir -match "site-packages|dist-packages") {
             # pip install (non-editable)
             $installMethod = "pip"
@@ -100,7 +100,7 @@ switch ($installMethod) {
     "pip" {
         Write-Color "`n[更新] 通过 pip 升级..." "Cyan"
         Write-Color "命令: pip install --upgrade paperforge" "Gray"
-        
+
         if (-not $Force) {
             $confirm = Read-Host "确认更新? [y/N]"
             if ($confirm -notmatch "^[Yy]") {
@@ -108,15 +108,15 @@ switch ($installMethod) {
                 exit 0
             }
         }
-        
+
         & $pip.Source install --upgrade paperforge
         $success = ($LASTEXITCODE -eq 0)
     }
-    
+
     "pip-editable" {
         Write-Color "`n[更新] pip editable 模式 detected" "Cyan"
         Write-Color "步骤 1: git pull 拉取最新代码..." "Yellow"
-        
+
         if (-not $Force) {
             $confirm = Read-Host "确认更新? [y/N]"
             if ($confirm -notmatch "^[Yy]") {
@@ -124,7 +124,7 @@ switch ($installMethod) {
                 exit 0
             }
         }
-        
+
         Push-Location $installPath
         try {
             git pull origin master
@@ -137,11 +137,11 @@ switch ($installMethod) {
             Pop-Location
         }
     }
-    
+
     "git" {
         Write-Color "`n[更新] 通过 git pull 更新..." "Cyan"
         Write-Color "命令: git pull origin master" "Gray"
-        
+
         if (-not $Force) {
             $confirm = Read-Host "确认更新? [y/N]"
             if ($confirm -notmatch "^[Yy]") {
@@ -149,11 +149,11 @@ switch ($installMethod) {
                 exit 0
             }
         }
-        
+
         git pull origin master
         $success = ($LASTEXITCODE -eq 0)
     }
-    
+
     default {
         Write-Color "`n[错误] 无法自动检测安装方式" "Red"
         Write-Color @"

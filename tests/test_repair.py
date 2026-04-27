@@ -1,10 +1,9 @@
 """Tests for run_repair() — three-way OCR status divergence detection and repair."""
+
 from __future__ import annotations
 
 import json
 import re
-
-import pytest
 
 from paperforge.worker.repair import run_repair
 from paperforge.worker.sync import pipeline_paths
@@ -220,6 +219,7 @@ class TestRunRepairScanOnly:
 
     def test_verbose_output_printed(self, tmp_path, caplog):
         import logging
+
         caplog.set_level(logging.DEBUG, logger="paperforge.worker.repair")
         vault = _make_vault(tmp_path)
         paths = pipeline_paths(vault)
@@ -227,7 +227,7 @@ class TestRunRepairScanOnly:
         records_dir.mkdir(parents=True, exist_ok=True)
         _write_library_record(records_dir, "KEY001", "骨科", "done")
         _write_meta(paths["ocr"], "KEY001", "pending")
-        result = run_repair(vault, paths, verbose=True, fix=False)
+        run_repair(vault, paths, verbose=True, fix=False)
         assert "KEY001" in caplog.text
         assert "divergent" in caplog.text
 
@@ -288,8 +288,8 @@ class TestRunRepairFixMode:
         paths = pipeline_paths(vault)
         records_dir = vault / "03_Resources" / "LiteratureControl" / "library-records" / "骨科"
         records_dir.mkdir(parents=True, exist_ok=True)
-        record1_path = _write_library_record(records_dir, "KEY001", "骨科", "done", do_ocr="false")
-        record2_path = _write_library_record(records_dir, "KEY002", "骨科", "pending")
+        _write_library_record(records_dir, "KEY001", "骨科", "done", do_ocr="false")
+        _write_library_record(records_dir, "KEY002", "骨科", "pending")
         _write_minimal_meta(paths["ocr"], "KEY001", "done")
         _write_minimal_meta(paths["ocr"], "KEY002", "done")
         result = run_repair(vault, paths, verbose=False, fix=True)
@@ -314,7 +314,7 @@ class TestRunRepairFixMode:
         lit_dir = vault / "03_Resources" / "Literature"
         _write_library_record(records_dir, "KEY001", "骨科", "done", do_ocr="false")
         note_path = _write_formal_note(lit_dir, "KEY001", "骨科", "done")
-        result = run_repair(vault, paths, verbose=False, fix=True)
+        run_repair(vault, paths, verbose=False, fix=True)
         note_text = note_path.read_text(encoding="utf-8")
         assert re.search(r'^ocr_status:\s*"?pending"?', note_text, re.MULTILINE)
 

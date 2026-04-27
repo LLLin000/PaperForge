@@ -15,21 +15,20 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import sys
 from pathlib import Path
-
-# Logging
-from paperforge.logging_config import configure_logging
 
 # Config / resolver
 from paperforge.config import (
     load_simple_env,
     load_vault_config,
-    resolve_vault,
     paperforge_paths,
     paths_as_strings,
+    resolve_vault,
 )
+
+# Logging
+from paperforge.logging_config import configure_logging
 
 # Worker function stubs — let tests patch cli.run_* directly
 run_status = None
@@ -89,12 +88,13 @@ def _import_worker_functions() -> None:
     global run_status, run_selection_sync, run_index_refresh
     global run_deep_reading, run_repair, run_ocr, ensure_base_views
 
-    from paperforge.worker.status import run_status as _rs
-    from paperforge.worker.sync import run_selection_sync as _rss, run_index_refresh as _rir
-    from paperforge.worker.deep_reading import run_deep_reading as _rdr
-    from paperforge.worker.repair import run_repair as _rr
-    from paperforge.worker.ocr import run_ocr as _ro
     from paperforge.worker.base_views import ensure_base_views as _ebu
+    from paperforge.worker.deep_reading import run_deep_reading as _rdr
+    from paperforge.worker.ocr import run_ocr as _ro
+    from paperforge.worker.repair import run_repair as _rr
+    from paperforge.worker.status import run_status as _rs
+    from paperforge.worker.sync import run_index_refresh as _rir
+    from paperforge.worker.sync import run_selection_sync as _rss
 
     if run_status is None:
         run_status = _rs
@@ -126,9 +126,15 @@ def build_parser() -> argparse.ArgumentParser:
         help="Path to the Obsidian vault root (default: cwd or PAPERFORGE_VAULT env)",
     )
     parser.add_argument(
-        "--verbose", "-v",
+        "--verbose",
+        "-v",
         action="store_true",
         help="Enable DEBUG-level diagnostic output on stderr",
+    )
+    parser.add_argument(
+        "--no-progress",
+        action="store_true",
+        help="Disable progress bars (tqdm) for all commands",
     )
 
     sub = parser.add_subparsers(dest="command", required=True)
@@ -174,18 +180,12 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_parser("index-refresh", help="Refresh formal literature notes from library records")
 
     # deep-reading
-    p_dr = sub.add_parser("deep-reading", help="Check deep-reading queue status")
+    sub.add_parser("deep-reading", help="Check deep-reading queue status")
 
     # repair
     p_repair = sub.add_parser("repair", help="Repair divergent literature notes")
-    p_repair.add_argument(
-        "--fix", action="store_true",
-        help="Actually apply repairs instead of dry-run"
-    )
-    p_repair.add_argument(
-        "--fix-paths", action="store_true",
-        help="Re-resolve PDF paths for items with path_error"
-    )
+    p_repair.add_argument("--fix", action="store_true", help="Actually apply repairs instead of dry-run")
+    p_repair.add_argument("--fix-paths", action="store_true", help="Re-resolve PDF paths for items with path_error")
 
     # ocr (unified)
     p_ocr = sub.add_parser("ocr", help="OCR operations")
@@ -207,8 +207,10 @@ def build_parser() -> argparse.ArgumentParser:
     # base-refresh
     p_base = sub.add_parser("base-refresh", help="Refresh Obsidian Base view files")
     p_base.add_argument(
-        "--force", "-f", action="store_true",
-        help="Force full regeneration (bypasses incremental merge, replaces all views including user views)"
+        "--force",
+        "-f",
+        action="store_true",
+        help="Force full regeneration (bypasses incremental merge, replaces all views including user views)",
     )
 
     # doctor
@@ -292,6 +294,7 @@ def main(argv: list[str] | None = None) -> int:
     # New unified commands
     if args.command == "sync":
         from paperforge.commands import sync
+
         return sync.run(args)
 
     # OCR — handle both new unified and old subcommand styles
@@ -302,17 +305,20 @@ def main(argv: list[str] | None = None) -> int:
             return _cmd_ocr_doctor(vault, args)
         # New unified ocr (or ocr run)
         from paperforge.commands import ocr
+
         return ocr.run(args)
 
     # Backward compat: old selection-sync and index-refresh
     if args.command == "selection-sync":
         from paperforge.commands import sync
+
         args.selection = True
         args.index = False
         return sync.run(args)
 
     if args.command == "index-refresh":
         from paperforge.commands import sync
+
         args.selection = False
         args.index = True
         return sync.run(args)
@@ -320,14 +326,17 @@ def main(argv: list[str] | None = None) -> int:
     # Other commands delegate to their modules
     if args.command == "status":
         from paperforge.commands import status
+
         return status.run(args)
 
     if args.command == "deep-reading":
         from paperforge.commands import deep
+
         return deep.run(args)
 
     if args.command == "repair":
         from paperforge.commands import repair
+
         return repair.run(args)
 
     if args.command == "base-refresh":
@@ -341,10 +350,12 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "doctor":
         from paperforge.worker.status import run_doctor
+
         return run_doctor(vault)
 
     if args.command == "update":
         from paperforge.worker.update import run_update
+
         return run_update(vault)
 
     print(f"Error: unknown command {args.command}", file=sys.stderr)

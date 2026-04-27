@@ -1,8 +1,8 @@
 # Phase 12: Architecture Cleanup - Discussion Log
 
-**Phase:** 12  
-**Topic:** 修复模块边界泄漏，消除测试死区  
-**Base Commit:** 4297dcd  
+**Phase:** 12
+**Topic:** 修复模块边界泄漏，消除测试死区
+**Base Commit:** 4297dcd
 
 ---
 

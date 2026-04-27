@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Test suite for PaperForge Lite command documentation.
 
@@ -8,11 +7,11 @@ instead of unresolved <system_dir> token paths.
 Scope: User-run command examples in markdown files.
 Excluded: Architecture diagrams, frontmatter field examples in AGENTS.md.
 """
+
 from __future__ import annotations
 
 import re
 from pathlib import Path
-from typing import Optional
 
 import pytest
 
@@ -59,6 +58,7 @@ def code_block_lines(content: str) -> list[str]:
 # Fixtures
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture
 def command_docs() -> dict[str, Path]:
     base = REPO_ROOT / "command"
@@ -85,6 +85,7 @@ def user_facing_docs() -> dict[str, Path]:
 # Task 1 tests — stable commands present
 # ---------------------------------------------------------------------------
 
+
 class TestStableCommandsPresent:
     """Verify command docs contain stable paperforge commands."""
 
@@ -107,10 +108,9 @@ class TestStableCommandsPresent:
         code_lines = code_block_lines(content)
         # Join all lines for substring search
         combined = "\n".join(code_lines)
-        assert expected_cmd in combined, (
-            f"[{doc_key}] Expected stable command '{expected_cmd}' "
-            f"not found in code blocks. Code lines:\n{code_lines}"
-        )
+        assert (
+            expected_cmd in combined
+        ), f"[{doc_key}] Expected stable command '{expected_cmd}' not found in code blocks. Code lines:\n{code_lines}"
 
     def test_pf_deep_mentions_paperforge_deep_reading(
         self,
@@ -118,9 +118,9 @@ class TestStableCommandsPresent:
     ) -> None:
         """pf-deep.md must mention 'paperforge deep-reading' for queue preflight."""
         content = read_fileutf8(command_docs["pf-deep"])
-        assert "paperforge deep-reading" in content, (
-            "pf-deep.md must mention 'paperforge deep-reading' for queue preflight"
-        )
+        assert (
+            "paperforge deep-reading" in content
+        ), "pf-deep.md must mention 'paperforge deep-reading' for queue preflight"
 
     def test_pf_deep_mentions_paperforge_paths_json(
         self,
@@ -128,15 +128,15 @@ class TestStableCommandsPresent:
     ) -> None:
         """pf-deep.md must reference 'paperforge paths --json' for path resolution."""
         content = read_fileutf8(command_docs["pf-deep"])
-        assert "paperforge paths --json" in content or "paperforge paths" in content, (
-            "pf-deep.md must reference 'paperforge paths' or 'paperforge paths --json' "
-            "for script path discovery"
-        )
+        assert (
+            "paperforge paths --json" in content or "paperforge paths" in content
+        ), "pf-deep.md must reference 'paperforge paths' or 'paperforge paths --json' for script path discovery"
 
 
 # ---------------------------------------------------------------------------
 # Task 1 tests — unresolved tokens absent from user-run examples
 # ---------------------------------------------------------------------------
+
 
 class TestUnresolvedTokensAbsentFromUserRunExamples:
     """
@@ -180,10 +180,9 @@ class TestUnresolvedTokensAbsentFromUserRunExamples:
         code_lines = code_block_lines(content)
         combined = "\n".join(code_lines)
         match = self.LEGACY_PYTHON_LITERATURE_PIPELINE.search(combined)
-        assert match is None, (
-            f"[README] Found legacy unresolved token path in code blocks: {match.group(0)!r}\n"
-            f"Code lines:\n{code_lines}"
-        )
+        assert (
+            match is None
+        ), f"[README] Found legacy unresolved token path in code blocks: {match.group(0)!r}\nCode lines:\n{code_lines}"
 
     def test_installation_no_legacy_python_literature_pipeline_in_examples(
         self,
@@ -204,6 +203,7 @@ class TestUnresolvedTokensAbsentFromUserRunExamples:
 # Task 1 tests — paperforge paths/status examples in user-facing docs
 # ---------------------------------------------------------------------------
 
+
 class TestPaperforgeCommandExamplesInUserDocs:
     """README, INSTALLATION, setup-guide must show stable paperforge command examples."""
 
@@ -223,15 +223,15 @@ class TestPaperforgeCommandExamplesInUserDocs:
     ) -> None:
         """User-facing docs must contain at least one 'paperforge status' or 'paperforge paths' example."""
         content = read_fileutf8(user_facing_docs[doc_key])
-        assert re.search(pattern, content), (
-            f"[{doc_key}] Expected to find stable paperforge command pattern {pattern!r} "
-            f"in user-facing documentation."
-        )
+        assert re.search(
+            pattern, content
+        ), f"[{doc_key}] Expected to find stable paperforge command pattern {pattern!r} in user-facing documentation."
 
 
 # ---------------------------------------------------------------------------
 # New tests — unified commands present in user-facing docs
 # ---------------------------------------------------------------------------
+
 
 class TestUnifiedCommandsInUserDocs:
     """AGENTS.md, README must reference new unified commands, not old ones."""
@@ -296,9 +296,7 @@ class TestUnifiedCommandsInUserDocs:
             if "命令迁移说明" in line or "迁移" in line.lower() or "migration" in line.lower():
                 migration_started = True
             if "paperforge ocr run" in line and not migration_started:
-                pytest.fail(
-                    f"[{doc_key}] Found old command 'paperforge ocr run' outside migration section: {line}"
-                )
+                pytest.fail(f"[{doc_key}] Found old command 'paperforge ocr run' outside migration section: {line}")
 
 
 # ---------------------------------------------------------------------------

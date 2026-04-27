@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import json
 import os
-import sys
 from pathlib import Path
 
 
@@ -24,6 +23,7 @@ def load_config(vault: Path) -> dict:
     # Try shared resolver first (01-03 and later installs)
     try:
         from paperforge.config import load_vault_config as _shared_load
+
         return _shared_load(vault)
     except ImportError:
         pass
@@ -109,7 +109,9 @@ def validate_agent(vault: Path, cfg: dict) -> list[tuple[bool, str]]:
     chart_dir = skill_root / "chart-reading"
     if chart_dir.exists():
         guide_count = len(list(chart_dir.glob("*.md")))
-        results.append((guide_count >= 14, f"[{'OK' if guide_count >= 14 else 'WARN'}] chart-reading guides: {guide_count}"))
+        results.append(
+            (guide_count >= 14, f"[{'OK' if guide_count >= 14 else 'WARN'}] chart-reading guides: {guide_count}")
+        )
     return results
 
 

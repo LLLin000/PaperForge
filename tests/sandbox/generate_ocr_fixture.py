@@ -15,7 +15,6 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 FIXTURE_DIR = REPO_ROOT / "tests" / "sandbox" / "ocr-complete" / "TSTONE001"
 EXPORT_JSON = REPO_ROOT / "tests" / "sandbox" / "exports" / "骨科.json"
@@ -108,8 +107,10 @@ def generate_fixtures() -> None:
             str(ld_deep_script),
             "figure-map",
             str(fulltext_path),
-            "--key", "TSTONE001",
-            "--out", str(figure_map_path),
+            "--key",
+            "TSTONE001",
+            "--out",
+            str(figure_map_path),
         ],
         capture_output=True,
         text=True,
@@ -128,7 +129,8 @@ def generate_fixtures() -> None:
             str(ld_deep_script),
             "chart-type-scan",
             str(figure_map_path),
-            "--out", str(chart_type_map_path),
+            "--out",
+            str(chart_type_map_path),
         ],
         capture_output=True,
         text=True,
