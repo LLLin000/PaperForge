@@ -8,6 +8,42 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [1.4.1] — 2026-04-28
+
+### Added
+
+- Persistent OCR polling: `paperforge ocr` now waits for all submitted jobs to complete before returning
+- `postprocess-pass2` validation command for /pf-deep: checks figure order, image bounds, empty blocks, missing sub-headings, duplicates, and extra figures
+- Fixed sub-headings in figure/table callout blocks (skeleton generation): AI fills pre-defined structure instead of creating free-form content
+- One-click install script (`scripts/install-paperforge.ps1`)
+- `paperforge setup` CLI command for the setup wizard
+- OpenCode command files packaged for pip installation
+
+### Fixed
+
+- `paperforge update` now correctly detects local version from pip metadata
+- Missing `GITHUB_REPO` import in `update.py` (caused "无法获取远程版本")
+- `paperforge.json` version synced to match release (was stuck at 1.2.0)
+- `zotero_dir` added to `paperforge_paths()` for PDF resolution in OCR pipeline
+- OCR diagnostic L2 probes use POST instead of GET (PaddleOCR rejects GET)
+- L3 diagnostic skips schema validation when no file is uploaded
+- L2 accepts HTTP 400 as reachable (PaddleOCR rejects bare POST without fileUrl)
+- Skills prompt and chart-reading `.md` files now included in pip package
+- `PaperForge.base` removed (duplicated Literature Hub)
+- `setup_wizard.py` moved into the `paperforge` package for pip-installed access
+- Test OCR preflight and state machine tests mock `requests.get` to prevent real network calls
+- Persistent poll reduced to 20 cycles (configurable via `PAPERFORGE_POLL_MAX_CYCLES`)
+- `VaultStep.__init__` missing `step_id` and `checker` in `super()` call
+- BBT JSON field extraction for `first_author`, `journal`, `impact_factor`
+- PDF storage subdirectory resolution for `storage:KEY/file.pdf` paths
+- Base view columns (`first_author`, `journal`, `impact_factor`) added to all views
+
+### Changed
+
+- `/pf-deep` skill refactored: `ld_deep.py` skeleton now includes 6 fixed sub-headings per figure callout block
+- `prompt_deep_subagent.md` rewritten from 297 to 103 lines (directive command style)
+- OC `doctor` renamed to unified `ocr` command with auto-diagnose
+
 ## [1.4.0] — 2026-04-27
 
 ### Added

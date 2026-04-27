@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "paperforge"
-version = "1.4.0"
+version = "1.4.1"
 description = "PaperForge Lite — Obsidian + Zotero literature pipeline CLI"
 readme = "README.md"
 requires-python = ">=3.10"
