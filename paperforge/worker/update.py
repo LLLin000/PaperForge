@@ -216,17 +216,23 @@ def update_via_zip(vault: Path) -> bool:
 
 
 def _install_obsidian_plugin(vault: Path) -> bool:
-    """Copy Obsidian plugin files into .obsidian/plugins/paperforge/."""
-    try:
-        import importlib
-        import paperforge
-        importlib.reload(paperforge)
+    """Copy Obsidian plugin files into .obsidian/plugins/paperforge/.
 
-        pkg_dir = Path(paperforge.__file__).parent.resolve()
-        plugin_src = pkg_dir / "plugin"
+    Source priority: vault copy (git/zip) → Python package (pip).
+    """
+    try:
         plugin_dst = vault / ".obsidian" / "plugins" / "paperforge"
 
-        if not plugin_src.exists() or not plugin_src.is_dir():
+        # Try vault copy first (works for git pull and zip updates)
+        plugin_src = vault / "paperforge" / "plugin"
+        if not plugin_src.is_dir():
+            # Fallback: Python package location (works for pip)
+            import importlib
+            import paperforge
+            importlib.reload(paperforge)
+            plugin_src = Path(paperforge.__file__).parent.resolve() / "plugin"
+
+        if not plugin_src.is_dir():
             logger.warning("Plugin source not found: %s", plugin_src)
             return False
 
