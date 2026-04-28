@@ -4,13 +4,13 @@ description: Complete three-pass deep reading of an academic paper (Keshav metho
 allowed-tools: [Read, Bash, Edit]
 ---
 
-# /pf-deep
+# <prefix>pf-deep
 
 ## Purpose
 
 基于单篇论文的组会式精读入口。
 
-1. 解析 `/pf-deep <query>` 中的查询词
+1. 解析 `<prefix>pf-deep <query>` 中的查询词
 2. 支持 Zotero key、标题片段、DOI、PMID、关键词
 3. 优先搜索本地 Zotero 并锁定单篇论文
 4. 绑定该论文对应的：
@@ -29,7 +29,7 @@ paperforge ocr       # 完成 OCR 提取
 paperforge deep-reading  # 查看精读队列状态
 ```
 
-> `/pf-deep` 是 **Agent 层命令**，无直接 CLI 等效命令。其依赖的数据由上述 CLI 命令准备。
+> `<prefix>pf-deep` 是 **Agent 层命令**，无直接 CLI 等效命令。其依赖的数据由上述 CLI 命令准备。
 
 ## Prerequisites
 
@@ -59,15 +59,15 @@ paperforge deep-reading  # 查看精读队列状态
 ### 单篇精读（已知 key）
 
 ```bash
-/pf-deep XGT9Z257
-/pf-deep Predictive findings on magnetic resonance imaging
-/pf-deep 10.1016/j.jse.2018.01.001
+<prefix>pf-deep XGT9Z257
+<prefix>pf-deep Predictive findings on magnetic resonance imaging
+<prefix>pf-deep 10.1016/j.jse.2018.01.001
 ```
 
 ### 批量从待精读队列启动
 
 ```bash
-/pf-deep queue
+<prefix>pf-deep queue
 ```
 
 当不提供具体 key/标题时，agent 自动执行以下流程：
@@ -103,7 +103,7 @@ Agent 在正式笔记中创建或更新 `## 精读` 区域，包含：
 
 ### 执行原则
 
-- `/pf-deep` 对用户来说是一次触发直接完成。
+- `<prefix>pf-deep` 对用户来说是一次触发直接完成。
 - 内部逻辑分两步：
   1. 先生成 `## 精读` 骨架和 figure 标题位
   2. 再补全所有空段

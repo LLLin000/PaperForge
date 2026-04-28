@@ -4,13 +4,13 @@ description: Quick paper Q&A workbench. Load a paper by Zotero key, title, DOI, 
 allowed-tools: [Read, Bash]
 ---
 
-# /pf-paper
+# <prefix>pf-paper
 
 ## Purpose
 
 基于 Zotero OCR 文本的单篇论文工作台入口。
 
-1. 解析 `/pf-paper <query>` 中的查询词
+1. 解析 `<prefix>pf-paper <query>` 中的查询词
 2. 支持 Zotero key、标题片段、DOI、PMID、关键词
 3. 优先搜索本地 Zotero，解析到单篇目标论文
 4. 根据 Vault 根目录的 `paperforge.json` 加载 `<system_dir>/PaperForge/ocr/<KEY>/fulltext.md` 作为主文本
@@ -25,7 +25,7 @@ allowed-tools: [Read, Bash]
 paperforge sync      # 生成正式笔记和 library-records
 ```
 
-> `/pf-paper` 是 **Agent 层命令**，无直接 CLI 等效命令。
+> `<prefix>pf-paper` 是 **Agent 层命令**，无直接 CLI 等效命令。
 
 ## Prerequisites
 
@@ -33,7 +33,7 @@ paperforge sync      # 生成正式笔记和 library-records
 - [ ] library-record 存在（用于定位论文）
 - [ ] `fulltext.md` 存在（推荐，用于基于原文回答；如不存在则基于元数据回答）
 
-> **注意**：与 `/pf-deep` 不同，`/pf-paper` **不强制要求** OCR 完成。没有 OCR 时基于论文元数据和公开信息回答。
+> **注意**：与 `/pf-deep` 不同，`<prefix>pf-paper` **不强制要求** OCR 完成。没有 OCR 时基于论文元数据和公开信息回答。
 
 ## Arguments
 
@@ -53,10 +53,10 @@ paperforge sync      # 生成正式笔记和 library-records
 ## Example
 
 ```bash
-/pf-paper XGT9Z257
-/pf-paper Predictive findings on magnetic resonance imaging
-/pf-paper 10.1016/j.jse.2018.01.001
-/pf-paper XGT9Z257 PQR8KLM
+<prefix>pf-paper XGT9Z257
+<prefix>pf-paper Predictive findings on magnetic resonance imaging
+<prefix>pf-paper 10.1016/j.jse.2018.01.001
+<prefix>pf-paper XGT9Z257 PQR8KLM
 ```
 
 ## Output
