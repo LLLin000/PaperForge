@@ -109,7 +109,7 @@ PaperForge 把你的 Zotero 文献库转化为**AI 可直接读取的知识库**
 
 ```
 在当前的 vault 里安装 PaperForge。参考下面的文档完成安装：
-https://raw.githubusercontent.com/LLLin000/PaperForge/master/docs/ai-agent-setup-guide.md
+https://raw.githubusercontent.com/LLLin000/PaperForge/master/docs/ai-agent-setup-guide-zh.md
 ```
 
 Agent 会问你几个问题，然后全自动装好。
@@ -126,7 +126,7 @@ paperforge setup
 
 安装向导引导你完成：Agent 平台选择、Vault 目录配置、Zotero 数据目录链接、PaddleOCR API Key 配置。详细步骤见 [setup-guide.md](docs/setup-guide.md)。
 
-> 如果你是 AI Agent 正在读这个：使用 headless 模式 — `paperforge setup --headless`。完整指引见 [docs/ai-agent-setup-guide.md](docs/ai-agent-setup-guide.md)。
+> 如果你是 AI Agent 正在读这个：使用 headless 模式 — `paperforge setup --headless`。完整指引见 [docs/ai-agent-setup-guide-zh.md](docs/ai-agent-setup-guide-zh.md)。
 
 ### 前置条件
 
