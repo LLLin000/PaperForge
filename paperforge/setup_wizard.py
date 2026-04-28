@@ -1775,9 +1775,6 @@ def headless_setup(
                 zotero_data = str(home_zotero)
                 print(f"    [OK] Zotero data detected: {zotero_data}")
 
-    # =========================================================================
-    # Phase 4: Deploy files
-    # =========================================================================
     print("[*] Phase 4: Deploying files...")
     import shutil
 
@@ -1797,49 +1794,29 @@ def headless_setup(
             shutil.copy2(mod_src, pf_path / "worker/scripts" / mod)
     print(f"    [OK] worker scripts")
 
-    # LD deep script
-    ld_src = repo_root / "paperforge/skills/literature-qa/scripts/ld_deep.py"
-    ld_dst = vault / skill_dir / "literature-qa/scripts/ld_deep.py"
-    if ld_src.exists():
-        shutil.copy2(ld_src, ld_dst)
+    # Deploy skills based on agent format
+    fmt = agent_config.get("format", "skill_directory")
+    imported_skills = []
+
+    if fmt == "flat_command":
+        imported_skills = _deploy_flat_command(
+            vault, agent_config["command_dir"], repo_root,
+            system_dir, resources_dir, literature_dir, control_dir, base_dir, skill_dir,
+        )
+    elif fmt == "rules_file":
+        imported_skills = _deploy_rules_file(
+            vault, agent_config["skill_dir"], repo_root,
+            system_dir, resources_dir, literature_dir, control_dir, base_dir, skill_dir,
+        )
     else:
-        print(f"Error: ld_deep.py not found: {ld_src}", file=sys.stderr)
-        return 5
+        # skill_directory (default)
+        imported_skills = _deploy_skill_directory(
+            vault, skill_dir, repo_root,
+            system_dir, resources_dir, literature_dir, control_dir, base_dir,
+        )
 
-    # Subagent prompt
-    prompt_src = repo_root / "paperforge/skills/literature-qa/prompt_deep_subagent.md"
-    prompt_dst = vault / skill_dir / "literature-qa/prompt_deep_subagent.md"
-    if prompt_src.exists():
-        shutil.copy2(prompt_src, prompt_dst)
-    print(f"    [OK] skill files")
-
-    # Chart-reading guides
-    chart_src = repo_root / "paperforge/skills/literature-qa/chart-reading"
-    chart_dst = vault / skill_dir / "literature-qa/chart-reading"
-    if chart_src.exists() and chart_src.is_dir():
-        for f in chart_src.glob("*.md"):
-            shutil.copy2(f, chart_dst / f.name)
-    print(f"    [OK] chart-reading guides")
-
-    # Command files (OpenCode only)
-    if agent_key == "opencode":
-        command_src = repo_root / "command"
-        command_dst = vault / agent_config.get("command_dir", ".opencode/command")
-        if command_src.exists() and command_src.is_dir():
-            command_dst.mkdir(parents=True, exist_ok=True)
-            for f in command_src.glob("*.md"):
-                text = f.read_text(encoding="utf-8")
-                for old, new in [
-                    ("<system_dir>", system_dir),
-                    ("<resources_dir>", resources_dir),
-                    ("<literature_dir>", literature_dir),
-                    ("<control_dir>", control_dir),
-                    ("<base_dir>", base_dir),
-                    ("<skill_dir>", skill_dir),
-                ]:
-                    text = text.replace(old, new)
-                (command_dst / f.name).write_text(text, encoding="utf-8")
-        print(f"    [OK] OpenCode command files")
+    if imported_skills:
+        print(f"    [OK] {len(imported_skills)} skill(s): {', '.join(imported_skills)}")
 
     # Docs
     docs_src = repo_root / "docs"
