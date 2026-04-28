@@ -14,6 +14,7 @@ import argparse
 import json
 import os
 import platform
+import shutil
 import subprocess
 import sys
 import webbrowser
@@ -1538,6 +1539,152 @@ def _find_vault() -> Path | None:
     return None
 
 
+def _substitute_vars(
+    text: str,
+    system_dir: str,
+    resources_dir: str,
+    literature_dir: str,
+    control_dir: str,
+    base_dir: str,
+    skill_dir: str,
+) -> str:
+    """Substitute path variables in skill content."""
+    for old, new in [
+        ("<system_dir>", system_dir),
+        ("<resources_dir>", resources_dir),
+        ("<literature_dir>", literature_dir),
+        ("<control_dir>", control_dir),
+        ("<base_dir>", base_dir),
+        ("<skill_dir>", skill_dir),
+    ]:
+        text = text.replace(old, new)
+    return text
+
+
+def _deploy_skill_directory(
+    vault: Path,
+    skill_dir: str,
+    repo_root: Path,
+    system_dir: str,
+    resources_dir: str,
+    literature_dir: str,
+    control_dir: str,
+    base_dir: str,
+) -> list[str]:
+    """Deploy skills in SKILL.md directory format (Claude Code, Codex, Copilot, etc.)."""
+    imported = []
+    skill_src = repo_root / "paperforge" / "skills" / "literature-qa"
+    if not skill_src.exists():
+        skill_src = repo_root / "skills" / "literature-qa"
+    skill_dst_base = vault / skill_dir / "literature-qa"
+
+    # Copy ld_deep.py to scripts/ subdirectory
+    ld_src = skill_src / "scripts" / "ld_deep.py"
+    ld_dst = skill_dst_base / "scripts" / "ld_deep.py"
+    if ld_src.exists():
+        ld_dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(ld_src, ld_dst)
+
+    # Copy subagent prompt
+    prompt_src = skill_src / "prompt_deep_subagent.md"
+    prompt_dst = skill_dst_base / "prompt_deep_subagent.md"
+    if prompt_src.exists():
+        shutil.copy2(prompt_src, prompt_dst)
+
+    # Copy chart-reading guides
+    chart_src = skill_src / "chart-reading"
+    chart_dst = skill_dst_base / "chart-reading"
+    if chart_src.exists() and chart_src.is_dir():
+        chart_dst.mkdir(parents=True, exist_ok=True)
+        for f in chart_src.glob("*.md"):
+            shutil.copy2(f, chart_dst / f.name)
+
+    for skill_name in ["pf-deep", "pf-paper", "pf-sync", "pf-ocr", "pf-status"]:
+        skill_dst = skill_dst_base / skill_name
+        skill_dst.mkdir(parents=True, exist_ok=True)
+
+        # SKILL.md from source scripts/
+        src_md = skill_src / "scripts" / f"{skill_name}.md"
+        if src_md.exists():
+            text = src_md.read_text(encoding="utf-8")
+            text = _substitute_vars(text, system_dir, resources_dir, literature_dir, control_dir, base_dir, skill_dir)
+            (skill_dst / "SKILL.md").write_text(text, encoding="utf-8")
+            imported.append(skill_name)
+
+        # chart-reading guides per skill (only for pf-deep)
+        if skill_name == "pf-deep":
+            if chart_src.exists() and chart_src.is_dir():
+                skill_chart_dst = skill_dst / "chart-reading"
+                skill_chart_dst.mkdir(parents=True, exist_ok=True)
+                for f in chart_src.glob("*.md"):
+                    shutil.copy2(f, skill_chart_dst / f.name)
+
+    return imported
+
+
+def _deploy_flat_command(
+    vault: Path,
+    command_dir: str,
+    repo_root: Path,
+    system_dir: str,
+    resources_dir: str,
+    literature_dir: str,
+    control_dir: str,
+    base_dir: str,
+    skill_dir: str,
+) -> list[str]:
+    """Deploy skills in flat .md command format (OpenCode)."""
+    imported = []
+    command_src = repo_root / "command"
+    command_dst = vault / command_dir
+    if not (command_src.exists() and command_src.is_dir()):
+        return imported
+
+    command_dst.mkdir(parents=True, exist_ok=True)
+    for f in command_src.glob("pf-*.md"):
+        text = f.read_text(encoding="utf-8")
+        text = _substitute_vars(text, system_dir, resources_dir, literature_dir, control_dir, base_dir, skill_dir)
+        (command_dst / f.name).write_text(text, encoding="utf-8")
+        imported.append(f.stem)
+
+    return imported
+
+
+def _deploy_rules_file(
+    vault: Path,
+    skill_dir: str,
+    repo_root: Path,
+    system_dir: str,
+    resources_dir: str,
+    literature_dir: str,
+    control_dir: str,
+    base_dir: str,
+    skill_dir_path: str,
+) -> list[str]:
+    """Deploy skills as .clinerules directory with literature-qa subdirectories (Cline)."""
+    imported = []
+    skill_src = repo_root / "paperforge" / "skills" / "literature-qa"
+    if not skill_src.exists():
+        skill_src = repo_root / "skills" / "literature-qa"
+    skill_dst_base = vault / skill_dir / "literature-qa"
+
+    # Copy ld_deep.py to scripts/ subdirectory
+    ld_src = skill_src / "scripts" / "ld_deep.py"
+    ld_dst = skill_dst_base / "scripts" / "ld_deep.py"
+    if ld_src.exists():
+        ld_dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(ld_src, ld_dst)
+
+    # Copy subagent prompt
+    prompt_src = skill_src / "prompt_deep_subagent.md"
+    prompt_dst = skill_dst_base / "prompt_deep_subagent.md"
+    if prompt_src.exists():
+        shutil.copy2(prompt_src, prompt_dst)
+
+    imported.append("clinerules")
+    return imported
+
+
 def headless_setup(
     vault: Path,
     agent_key: str = "opencode",
@@ -1726,52 +1873,29 @@ def headless_setup(
             shutil.copy2(mod_src, pf_path / "worker/scripts" / mod)
     print(f"    [OK] worker scripts")
 
-    # LD deep script
-    ld_src = repo_root / "paperforge/skills/literature-qa/scripts/ld_deep.py"
-    ld_dst = vault / skill_dir / "literature-qa/scripts/ld_deep.py"
-    if ld_src.exists():
-        ld_dst.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(ld_src, ld_dst)
+    # Deploy skills based on agent format
+    fmt = agent_config.get("format", "skill_directory")
+    imported_skills = []
+
+    if fmt == "flat_command":
+        imported_skills = _deploy_flat_command(
+            vault, agent_config["command_dir"], repo_root,
+            system_dir, resources_dir, literature_dir, control_dir, base_dir, skill_dir,
+        )
+    elif fmt == "rules_file":
+        imported_skills = _deploy_rules_file(
+            vault, agent_config["skill_dir"], repo_root,
+            system_dir, resources_dir, literature_dir, control_dir, base_dir, skill_dir,
+        )
     else:
-        print(f"Error: ld_deep.py not found: {ld_src}", file=sys.stderr)
-        return 5
+        # skill_directory (default)
+        imported_skills = _deploy_skill_directory(
+            vault, skill_dir, repo_root,
+            system_dir, resources_dir, literature_dir, control_dir, base_dir,
+        )
 
-    # Subagent prompt
-    prompt_src = repo_root / "paperforge/skills/literature-qa/prompt_deep_subagent.md"
-    prompt_dst = vault / skill_dir / "literature-qa/prompt_deep_subagent.md"
-    if prompt_src.exists():
-        prompt_dst.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(prompt_src, prompt_dst)
-    print(f"    [OK] skill files")
-
-    # Chart-reading guides
-    chart_src = repo_root / "paperforge/skills/literature-qa/chart-reading"
-    chart_dst = vault / skill_dir / "literature-qa/chart-reading"
-    if chart_src.exists() and chart_src.is_dir():
-        chart_dst.mkdir(parents=True, exist_ok=True)
-        for f in chart_src.glob("*.md"):
-            shutil.copy2(f, chart_dst / f.name)
-    print(f"    [OK] chart-reading guides")
-
-    # Command files (OpenCode only)
-    if agent_key == "opencode":
-        command_src = repo_root / "command"
-        command_dst = vault / agent_config.get("command_dir", ".opencode/command")
-        if command_src.exists() and command_src.is_dir():
-            command_dst.mkdir(parents=True, exist_ok=True)
-            for f in command_src.glob("*.md"):
-                text = f.read_text(encoding="utf-8")
-                for old, new in [
-                    ("<system_dir>", system_dir),
-                    ("<resources_dir>", resources_dir),
-                    ("<literature_dir>", literature_dir),
-                    ("<control_dir>", control_dir),
-                    ("<base_dir>", base_dir),
-                    ("<skill_dir>", skill_dir),
-                ]:
-                    text = text.replace(old, new)
-                (command_dst / f.name).write_text(text, encoding="utf-8")
-        print(f"    [OK] OpenCode command files")
+    if imported_skills:
+        print(f"    [OK] {len(imported_skills)} skill(s): {', '.join(imported_skills)}")
 
     # Docs
     docs_src = repo_root / "docs"
@@ -1886,8 +2010,7 @@ PADDLEOCR_MODEL=PaddleOCR-VL-1.5
     print("[*] Phase 7: Verifying installation...")
     checks = {
         "Worker scripts": worker_dst.exists(),
-        "Skill scripts": ld_dst.exists(),
-        "Chart-reading guides": (chart_dst / "INDEX.md").exists() if chart_dst.exists() else True,
+        "Skill files": len(imported_skills) > 0,
         "Library records dir": (vault / resources_dir / control_dir / "library-records").exists(),
         "Base dir": (vault / base_dir).exists(),
         "Exports dir": (pf_path / "exports").exists(),
