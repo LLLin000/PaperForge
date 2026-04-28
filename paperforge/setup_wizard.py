@@ -14,6 +14,7 @@ import argparse
 import json
 import os
 import platform
+import shutil
 import subprocess
 import sys
 import webbrowser
@@ -48,19 +49,66 @@ AGENT_CONFIGS = {
         "name": "OpenCode",
         "skill_dir": ".opencode/skills",
         "command_dir": ".opencode/command",
+        "format": "flat_command",
+        "prefix": "/",
         "config_file": None,
     },
-    "cursor": {"name": "Cursor", "skill_dir": ".cursor/skills", "config_file": ".cursor/settings.json"},
-    "claude": {"name": "Claude Code", "skill_dir": ".claude/skills", "config_file": ".claude/skills.json"},
-    "windsurf": {"name": "Windsurf", "skill_dir": ".windsurf/skills", "config_file": None},
+    "claude": {
+        "name": "Claude Code",
+        "skill_dir": ".claude/skills",
+        "format": "skill_directory",
+        "prefix": "/",
+        "config_file": ".claude/skills.json",
+    },
+    "codex": {
+        "name": "Codex",
+        "skill_dir": ".codex/skills",
+        "format": "skill_directory",
+        "prefix": "$",
+        "config_file": None,
+    },
+    "cursor": {
+        "name": "Cursor",
+        "skill_dir": ".cursor/skills",
+        "format": "skill_directory",
+        "prefix": "/",
+        "config_file": ".cursor/settings.json",
+    },
+    "windsurf": {
+        "name": "Windsurf",
+        "skill_dir": ".windsurf/skills",
+        "format": "skill_directory",
+        "prefix": "/",
+        "config_file": None,
+    },
     "github_copilot": {
         "name": "GitHub Copilot",
         "skill_dir": ".github/skills",
+        "format": "skill_directory",
+        "prefix": "/",
         "config_file": ".github/copilot-instructions.md",
     },
-    "cline": {"name": "Cline", "skill_dir": ".clinerules/skills", "config_file": ".clinerules"},
-    "augment": {"name": "Augment", "skill_dir": ".augment/skills", "config_file": None},
-    "trae": {"name": "Trae", "skill_dir": ".trae/skills", "config_file": None},
+    "cline": {
+        "name": "Cline",
+        "skill_dir": ".clinerules",
+        "format": "rules_file",
+        "prefix": "/",
+        "config_file": ".clinerules",
+    },
+    "augment": {
+        "name": "Augment",
+        "skill_dir": ".augment/skills",
+        "format": "skill_directory",
+        "prefix": "/",
+        "config_file": None,
+    },
+    "trae": {
+        "name": "Trae",
+        "skill_dir": ".trae/skills",
+        "format": "skill_directory",
+        "prefix": "/",
+        "config_file": None,
+    },
 }
 
 
@@ -1491,6 +1539,28 @@ def _find_vault() -> Path | None:
     return None
 
 
+def _substitute_vars(
+    text: str,
+    system_dir: str,
+    resources_dir: str,
+    literature_dir: str,
+    control_dir: str,
+    base_dir: str,
+    skill_dir: str,
+) -> str:
+    """Substitute path variables in skill content."""
+    for old, new in [
+        ("<system_dir>", system_dir),
+        ("<resources_dir>", resources_dir),
+        ("<literature_dir>", literature_dir),
+        ("<control_dir>", control_dir),
+        ("<base_dir>", base_dir),
+        ("<skill_dir>", skill_dir),
+    ]:
+        text = text.replace(old, new)
+    return text
+
+
 def _deploy_skill_directory(
     vault: Path,
     skill_dir: str,
@@ -1504,13 +1574,36 @@ def _deploy_skill_directory(
     """Deploy skills in SKILL.md directory format (Claude Code, Codex, Copilot, etc.)."""
     imported = []
     skill_src = repo_root / "paperforge" / "skills" / "literature-qa"
+    if not skill_src.exists():
+        skill_src = repo_root / "skills" / "literature-qa"
     skill_dst_base = vault / skill_dir / "literature-qa"
+
+    # Copy ld_deep.py to scripts/ subdirectory
+    ld_src = skill_src / "scripts" / "ld_deep.py"
+    ld_dst = skill_dst_base / "scripts" / "ld_deep.py"
+    if ld_src.exists():
+        ld_dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(ld_src, ld_dst)
+
+    # Copy subagent prompt
+    prompt_src = skill_src / "prompt_deep_subagent.md"
+    prompt_dst = skill_dst_base / "prompt_deep_subagent.md"
+    if prompt_src.exists():
+        shutil.copy2(prompt_src, prompt_dst)
+
+    # Copy chart-reading guides
+    chart_src = skill_src / "chart-reading"
+    chart_dst = skill_dst_base / "chart-reading"
+    if chart_src.exists() and chart_src.is_dir():
+        chart_dst.mkdir(parents=True, exist_ok=True)
+        for f in chart_src.glob("*.md"):
+            shutil.copy2(f, chart_dst / f.name)
 
     for skill_name in ["pf-deep", "pf-paper", "pf-sync", "pf-ocr", "pf-status"]:
         skill_dst = skill_dst_base / skill_name
         skill_dst.mkdir(parents=True, exist_ok=True)
 
-        # SKILL.md
+        # SKILL.md from source scripts/
         src_md = skill_src / "scripts" / f"{skill_name}.md"
         if src_md.exists():
             text = src_md.read_text(encoding="utf-8")
@@ -1518,14 +1611,13 @@ def _deploy_skill_directory(
             (skill_dst / "SKILL.md").write_text(text, encoding="utf-8")
             imported.append(skill_name)
 
-        # chart-reading guides (only for pf-deep)
+        # chart-reading guides per skill (only for pf-deep)
         if skill_name == "pf-deep":
-            chart_src = skill_src / "chart-reading"
-            chart_dst = skill_dst / "chart-reading"
             if chart_src.exists() and chart_src.is_dir():
-                chart_dst.mkdir(parents=True, exist_ok=True)
+                skill_chart_dst = skill_dst / "chart-reading"
+                skill_chart_dst.mkdir(parents=True, exist_ok=True)
                 for f in chart_src.glob("*.md"):
-                    shutil.copy2(f, chart_dst / f.name)
+                    shutil.copy2(f, skill_chart_dst / f.name)
 
     return imported
 
@@ -1569,42 +1661,28 @@ def _deploy_rules_file(
     base_dir: str,
     skill_dir_path: str,
 ) -> list[str]:
-    """Deploy skills as a single .clinerules file (Cline)."""
+    """Deploy skills as .clinerules directory with literature-qa subdirectories (Cline)."""
     imported = []
-    rules_src = repo_root / "command"
-    rules_dst = vault / skill_dir  # e.g., .clinerules
+    skill_src = repo_root / "paperforge" / "skills" / "literature-qa"
+    if not skill_src.exists():
+        skill_src = repo_root / "skills" / "literature-qa"
+    skill_dst_base = vault / skill_dir / "literature-qa"
 
-    sections = []
-    for cmd_file in sorted(rules_src.glob("pf-*.md")):
-        content = cmd_file.read_text(encoding="utf-8")
-        content = _substitute_vars(content, system_dir, resources_dir, literature_dir, control_dir, base_dir, skill_dir_path)
-        sections.append(f"# {cmd_file.stem}\n\n{content}")
+    # Copy ld_deep.py to scripts/ subdirectory
+    ld_src = skill_src / "scripts" / "ld_deep.py"
+    ld_dst = skill_dst_base / "scripts" / "ld_deep.py"
+    if ld_src.exists():
+        ld_dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(ld_src, ld_dst)
 
-    rules_dst.write_text("\n\n---\n\n".join(sections), encoding="utf-8")
+    # Copy subagent prompt
+    prompt_src = skill_src / "prompt_deep_subagent.md"
+    prompt_dst = skill_dst_base / "prompt_deep_subagent.md"
+    if prompt_src.exists():
+        shutil.copy2(prompt_src, prompt_dst)
+
     imported.append("clinerules")
     return imported
-
-
-def _substitute_vars(
-    text: str,
-    system_dir: str,
-    resources_dir: str,
-    literature_dir: str,
-    control_dir: str,
-    base_dir: str,
-    skill_dir: str,
-) -> str:
-    """Substitute path variables in skill content."""
-    for old, new in [
-        ("<system_dir>", system_dir),
-        ("<resources_dir>", resources_dir),
-        ("<literature_dir>", literature_dir),
-        ("<control_dir>", control_dir),
-        ("<base_dir>", base_dir),
-        ("<skill_dir>", skill_dir),
-    ]:
-        text = text.replace(old, new)
-    return text
 
 
 def headless_setup(
@@ -1710,8 +1788,6 @@ def headless_setup(
         vault / resources_dir / literature_dir,
         vault / resources_dir / control_dir / "library-records",
         vault / base_dir,
-        vault / skill_dir / "literature-qa/scripts",
-        vault / skill_dir / "literature-qa/chart-reading",
         vault / ".obsidian" / "plugins" / "paperforge",
     ]
     for d in dirs:
@@ -1757,7 +1833,7 @@ def headless_setup(
                 print(f"    首次安装需要配置 BBT 自动导出：")
                 print(f"    1. Zotero → 文件 → 导出库 → Better BibTeX")
                 print(f"    2. 保存到 vault 的 {system_dir}/PaperForge/exports/")
-                print(f"    3. 勾选 "保持更新"")
+                print(f'    3. 勾选 "保持更新"')
             else:
                 print(f"    Configure BBT auto-export to: {system_dir}/PaperForge/exports/")
             print(f"    完成后运行: paperforge sync")
@@ -1775,6 +1851,9 @@ def headless_setup(
                 zotero_data = str(home_zotero)
                 print(f"    [OK] Zotero data detected: {zotero_data}")
 
+    # =========================================================================
+    # Phase 4: Deploy files
+    # =========================================================================
     print("[*] Phase 4: Deploying files...")
     import shutil
 
@@ -1931,8 +2010,7 @@ PADDLEOCR_MODEL=PaddleOCR-VL-1.5
     print("[*] Phase 7: Verifying installation...")
     checks = {
         "Worker scripts": worker_dst.exists(),
-        "Skill scripts": ld_dst.exists(),
-        "Chart-reading guides": (chart_dst / "INDEX.md").exists() if chart_dst.exists() else True,
+        "Skill files": len(imported_skills) > 0,
         "Library records dir": (vault / resources_dir / control_dir / "library-records").exists(),
         "Base dir": (vault / base_dir).exists(),
         "Exports dir": (pf_path / "exports").exists(),
