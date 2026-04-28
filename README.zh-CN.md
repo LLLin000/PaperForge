@@ -96,6 +96,8 @@ PaperForge 把你的 Zotero 文献库转化为**AI 可直接读取的知识库**
 | **进度指示** | tqdm 进度条 + `--no-progress` |
 | **Zotero 同步** | Better BibTeX 自动导出，双工同步 |
 | **Obsidian Base** | 文献队列管理，Base 视图集成 |
+| **Obsidian 插件** | 状态面板 + 命令面板集成 |
+| **多 Agent 平台** | OpenCode, Claude Code, Codex, Cursor, Copilot, Windsurf, Cline, Augment, Trae |
 | **pre-commit 栅栏** | ruff 检查 + 一致性审计 |
 | **多平台** | Windows / macOS / Linux |
 
@@ -126,7 +128,7 @@ paperforge setup
 
 安装向导引导你完成：Agent 平台选择、Vault 目录配置、Zotero 数据目录链接、PaddleOCR API Key 配置。详细步骤见 [setup-guide.md](docs/setup-guide.md)。
 
-> 如果你是 AI Agent 正在读这个：使用 headless 模式 — `paperforge setup --headless`。完整指引见 [docs/ai-agent-setup-guide-zh.md](docs/ai-agent-setup-guide-zh.md)。
+> 如果你是 AI Agent 正在读这个：使用 headless 模式 — `paperforge setup --headless --agent <agent_key>`。支持的 Agent：opencode, claude, codex, cursor, copilot, windsurf, cline, augment, trae。完整指引见 [docs/ai-agent-setup-guide-zh.md](docs/ai-agent-setup-guide-zh.md)。
 
 ### 前置条件
 
@@ -154,18 +156,21 @@ paperforge setup
 | | `paperforge ocr --no-progress` | 静默模式 |
 | **精读** | `paperforge deep-reading` | 查看精读队列 |
 | **维护** | `paperforge status` | 系统状态 |
+| | `paperforge status --json` | JSON 格式输出 |
 | | `paperforge update` | 自动更新 |
 | | `paperforge --verbose` | 全局 DEBUG 日志 |
 
-### Agent 命令（OpenCode 中使用）
+### Agent 命令（OpenCode / Claude Code / Codex / Cursor / Copilot）
 
 | 命令 | 用途 | 前置条件 |
 |------|------|---------|
-| `/pf-deep <key>` | 完整三阶段精读 | OCR 完成 |
-| `/pf-paper <key>` | 快速摘要 | 有正式笔记即可 |
-| `/pf-sync` | 同步 Zotero | 安装完成 |
-| `/pf-ocr` | 运行 OCR | 安装完成 |
-| `/pf-status` | 系统状态 | 安装完成 |
+| `/<prefix>pf-deep <key>` | 完整三阶段精读 | OCR 完成 |
+| `/<prefix>pf-paper <key>` | 论文对话问答 | 有正式笔记即可 |
+| `/pf-sync` | 同步 Zotero（仅 OpenCode） | 安装完成 |
+| `/pf-ocr` | 运行 OCR（仅 OpenCode） | 安装完成 |
+| `/pf-status` | 系统状态（仅 OpenCode） | 安装完成 |
+
+> 调用前缀：Claude Code / OpenCode / Copilot 使用 `/`，Codex 使用 `$`。sync/ocr/status 为 CLI 操作，纯终端命令。
 
 ---
 
@@ -202,7 +207,7 @@ pip install --upgrade git+https://github.com/LLLin000/PaperForge.git
 
 ```json
 {
-  "version": "1.4.1",
+  "version": "1.4.3",
   "system_dir": "99_System",
   "resources_dir": "03_Resources",
   "literature_dir": "Literature",
