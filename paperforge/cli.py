@@ -148,7 +148,8 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     # status
-    sub.add_parser("status", help="Run the literature pipeline status check")
+    status_p = sub.add_parser("status", help="Run the literature pipeline status check")
+    status_p.add_argument("--json", action="store_true", dest="json_output", help="Output JSON")
 
     # sync (new unified command)
     p_sync = sub.add_parser("sync", help="Sync Zotero selection and refresh literature index")

@@ -452,8 +452,10 @@ def _is_junction(path: Path) -> bool:
         return False
 
 
-def run_status(vault: Path, verbose: bool = False) -> int:
+def run_status(vault: Path, verbose: bool = False, json_output: bool = False) -> int:
     """Print a compact Lite install/runtime status."""
+    import json as _json
+
     paths = pipeline_paths(vault)
     cfg = load_vault_config(vault)
     config = load_domain_config(paths)
@@ -464,15 +466,23 @@ def run_status(vault: Path, verbose: bool = False) -> int:
     base_count = sum(1 for _ in paths["bases"].glob("*.base")) if paths["bases"].exists() else 0
     ocr_done = 0
     ocr_total = 0
+    ocr_pending = 0
+    ocr_failed = 0
     if paths["ocr"].exists():
         for meta_path in paths["ocr"].glob("*/meta.json"):
             ocr_total += 1
             try:
                 meta = read_json(meta_path)
             except Exception:
+                ocr_failed += 1
                 continue
-            if str(meta.get("ocr_status", "")).strip().lower() == "done":
+            status = str(meta.get("ocr_status", "")).strip().lower()
+            if status == "done":
                 ocr_done += 1
+            elif status in ("pending", "processing"):
+                ocr_pending += 1
+            else:
+                ocr_failed += 1
     env_paths = [vault / ".env", paths["pipeline"] / ".env"]
     env_found = [str(path.relative_to(vault)).replace("\\", "/") for path in env_paths if path.exists()]
 
@@ -487,18 +497,40 @@ def run_status(vault: Path, verbose: bool = False) -> int:
             except Exception:
                 continue
 
+    if json_output:
+        data = {
+            "vault": str(vault),
+            "system_dir": cfg["system_dir"],
+            "resources_dir": cfg["resources_dir"],
+            "exports": len(export_files),
+            "domains": len(config.get("domains", [])),
+            "total_papers": record_count,
+            "formal_notes": note_count,
+            "bases": base_count,
+            "ocr": {
+                "done": ocr_done,
+                "pending": ocr_pending,
+                "failed": ocr_failed,
+                "total": ocr_total,
+            },
+            "path_errors": path_error_count,
+            "env_configured": len(env_found) > 0,
+        }
+        print(_json.dumps(data, indent=2, ensure_ascii=False))
+        return 0
+
     print("PaperForge status")
     print(f"- vault: {vault}")
     print(f"- system_dir: {cfg['system_dir']}")
     print(f"- resources_dir: {cfg['resources_dir']}")
-    print(f"- literature_dir: {cfg['literature_dir']}")
+    print(f"- literature_dir: cfg['literature_dir']")
     print(f"- control_dir: {cfg['control_dir']}")
     print(f"- exports: {len(export_files)} JSON file(s)")
     print(f"- domains: {len(config.get('domains', []))}")
     print(f"- library_records: {record_count}")
     print(f"- formal_notes: {note_count}")
     print(f"- bases: {base_count}")
-    print(f"- ocr: {ocr_done}/{ocr_total} done")
+    print(f"- ocr: {ocr_done}/{ocr_total} done (pending: {ocr_pending}, failed: {ocr_failed})")
     print(f"- path_errors: {path_error_count}")
     if path_error_count > 0:
         print("  Tip: Run `paperforge repair --fix-paths` to attempt resolution")

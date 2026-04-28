@@ -13,7 +13,7 @@ import pytest
 CAPTURED_CALLS: list[tuple[str, Path]] = []
 
 
-def stub_run_status(vault: Path, verbose: bool = False) -> int:
+def stub_run_status(vault: Path, verbose: bool = False, json_output: bool = False) -> int:
     CAPTURED_CALLS.append(("run_status", vault))
     return 0
 
