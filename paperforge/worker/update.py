@@ -106,7 +106,8 @@ def _remote_version() -> str | None:
                 content = resp2.read().decode("utf-8")
                 m = re.search(r'__version__\s*=\s*["\']([^"\']+)["\']', content)
                 return m.group(1) if m else None
-    except Exception:
+    except Exception as e:
+        logger.warning("Remote version check failed: %s", e)
         return None
 
 
