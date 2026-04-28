@@ -4,7 +4,7 @@
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 20px;
 }
 
 /* ── Header ── */
@@ -43,7 +43,7 @@
 
 .paperforge-metric-card {
     flex: 1;
-    min-width: 100px;
+    min-width: 90px;
     background: var(--background-secondary);
     border: 1px solid var(--background-modifier-border);
     border-radius: var(--radius-m);
@@ -65,6 +65,67 @@
     margin-top: 2px;
 }
 
+/* ── OCR Progress Bar ── */
+.paperforge-ocr-section h4 {
+    margin: 0 0 8px;
+    font-size: var(--font-ui-small);
+    color: var(--text-muted);
+}
+
+.paperforge-progress-bar {
+    position: relative;
+    height: 22px;
+    background: var(--background-modifier-border);
+    border-radius: var(--radius-s);
+    overflow: hidden;
+}
+
+.paperforge-progress-fill {
+    height: 100%;
+    background: var(--interactive-accent);
+    border-radius: var(--radius-s);
+    transition: width 0.3s ease;
+}
+
+.paperforge-progress-label {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--font-ui-smaller);
+    font-weight: var(--font-medium);
+    color: var(--text-on-accent);
+    mix-blend-mode: difference;
+}
+
+.paperforge-progress-detail {
+    margin-top: 6px;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.paperforge-progress-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: var(--font-ui-smaller);
+}
+
+.paperforge-progress-row-label {
+    color: var(--text-muted);
+}
+
+.paperforge-progress-row-value {
+    color: var(--text-normal);
+    font-weight: var(--font-medium);
+}
+
+.paperforge-progress-row-failed {
+    color: var(--text-error);
+}
+
 /* ── Status rows ── */
 .paperforge-status-row {
     display: flex;
@@ -79,22 +140,7 @@
     border-bottom: none;
 }
 
-.paperforge-status-row-label {
-    color: var(--text-muted);
-}
-
-.paperforge-status-row-value {
-    color: var(--text-normal);
-    font-weight: var(--font-medium);
-}
-
 /* ── Error / Loading ── */
-.paperforge-status-loading {
-    color: var(--text-muted);
-    font-size: var(--font-ui-small);
-    padding: 8px 0;
-}
-
 .paperforge-status-error {
     color: var(--text-error);
     font-size: var(--font-ui-small);
