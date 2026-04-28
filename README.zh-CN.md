@@ -103,20 +103,30 @@ PaperForge 把你的 Zotero 文献库转化为**AI 可直接读取的知识库**
 
 ## 快速开始
 
-### 安装
+### 安装 — 让 AI 帮你装（推荐）
+
+把下面这段话粘贴给你的 AI Agent（OpenCode / Cursor / Claude Code 等）：
+
+```
+在当前的 vault 里安装 PaperForge。参考下面的文档完成安装：
+https://raw.githubusercontent.com/LLLin000/PaperForge/master/docs/ai-agent-setup-guide.md
+```
+
+Agent 会问你几个问题，然后全自动装好。
+
+### 安装 — 自己装
+
+首先 `cd` 到你的 Obsidian Vault 根目录：
 
 ```bash
+cd /path/to/your/vault
 pip install git+https://github.com/LLLin000/PaperForge.git
 paperforge setup
 ```
 
 安装向导引导你完成：Agent 平台选择、Vault 目录配置、Zotero 数据目录链接、PaddleOCR API Key 配置。详细步骤见 [setup-guide.md](docs/setup-guide.md)。
 
-> Windows 一键安装脚本：
-> ```powershell
-> powershell -c "iwr -Uri https://raw.githubusercontent.com/LLLin000/PaperForge/master/scripts/install-paperforge.ps1 -OutFile install.ps1; ./install.ps1"
-> paperforge setup
-> ```
+> 如果你是 AI Agent 正在读这个：使用 headless 模式 — `paperforge setup --headless`。完整指引见 [docs/ai-agent-setup-guide.md](docs/ai-agent-setup-guide.md)。
 
 ### 前置条件
 
