@@ -12,6 +12,7 @@ from xml.etree import ElementTree as ET
 import requests
 
 from paperforge.config import load_vault_config, paperforge_paths
+from paperforge.worker._domain import build_collection_lookup, load_domain_config, load_domain_collections
 from paperforge.worker._utils import (
     _extract_year,
     lookup_impact_factor,
@@ -60,87 +61,6 @@ def pipeline_paths(vault: Path) -> dict[str, Path]:
         "index": root / "indexes" / "formal-library.json",
         "ocr_queue": root / "ocr" / "ocr-queue.json",
     }
-
-
-def load_domain_config(paths: dict[str, Path]) -> dict:
-    """Load or create the Lite domain mapping from export JSON files."""
-    config_path = paths["config"]
-    config = read_json(config_path) if config_path.exists() else {"domains": []}
-    domains = config.setdefault("domains", [])
-    known_exports = {str(entry.get("export_file", "")) for entry in domains}
-    changed = not config_path.exists()
-    for export_path in sorted(paths["exports"].glob("*.json")):
-        if export_path.name in known_exports:
-            continue
-        domains.append({"domain": export_path.stem, "export_file": export_path.name, "allowed_collections": []})
-        known_exports.add(export_path.name)
-        changed = True
-    if changed:
-        config_path.parent.mkdir(parents=True, exist_ok=True)
-        write_json(config_path, config)
-    return config
-
-
-def build_collection_lookup(collections: dict) -> dict:
-    path_cache = {}
-    item_paths = {}
-
-    def path_for(key: str) -> str:
-        if key in path_cache:
-            return path_cache[key]
-        node = collections.get(key, {})
-        parent = node.get("parent") or ""
-        name = node.get("name", "")
-        parent_path = path_for(parent) if parent else ""
-        full_path = f"{parent_path}/{name}" if parent_path else name
-        path_cache[key] = full_path
-        return full_path
-
-    for key, node in collections.items():
-        full_path = path_for(key)
-        for item_id in node.get("items", []):
-            item_paths.setdefault(item_id, []).append(full_path)
-    return {"path_by_key": path_cache, "paths_by_item_id": item_paths}
-
-
-def export_collection_paths(export_path: Path) -> list[str]:
-    data = read_json(export_path)
-    if not isinstance(data, dict):
-        return []
-    collections = data.get("collections", {})
-    if not isinstance(collections, dict):
-        return []
-    lookup = build_collection_lookup(collections)
-    paths = sorted(
-        {path for path in lookup.get("path_by_key", {}).values() if str(path or "").strip()},
-        key=lambda value: (value.count("/"), value),
-    )
-    return paths
-
-
-def load_domain_collection_catalog(paths: dict[str, Path]) -> dict[str, list[str]]:
-    config_path = paths["config"]
-    config = read_json(config_path) if config_path.exists() else {"domains": []}
-    domain_entries = list(config.get("domains", []))
-    entry_by_export = {
-        entry.get("export_file", ""): dict(entry) for entry in domain_entries if entry.get("export_file")
-    }
-    export_files = sorted(paths["exports"].glob("*.json"))
-    changed = False
-    for export_path in export_files:
-        entry = entry_by_export.get(export_path.name)
-        if not entry:
-            entry = {"domain": export_path.stem, "export_file": export_path.name, "allowed_collections": []}
-            entry_by_export[export_path.name] = entry
-            changed = True
-        derived = export_collection_paths(export_path)
-        if entry.get("allowed_collections", []) != derived:
-            entry["allowed_collections"] = derived
-            changed = True
-    domains = sorted(entry_by_export.values(), key=lambda entry: entry.get("domain", ""))
-    if changed or config.get("domains", []) != domains:
-        write_json(config_path, {"domains": domains})
-    return {entry.get("domain", ""): entry.get("allowed_collections", []) for entry in domains if entry.get("domain")}
 
 
 def load_export_inventory(paths: dict[str, Path]) -> dict[str, dict]:
@@ -971,7 +891,7 @@ def load_candidates_by_id(paths: dict[str, Path]) -> dict[str, dict]:
 
 
 def save_candidates(paths: dict[str, Path], candidate_map: dict[str, dict]) -> None:
-    collection_catalog = load_domain_collection_catalog(paths)
+    collection_catalog = load_domain_collections(paths)
     export_inventory = load_export_inventory(paths)
     rows = []
     for row in candidate_map.values():

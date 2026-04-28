@@ -65,25 +65,6 @@ def pipeline_paths(vault: Path) -> dict[str, Path]:
     }
 
 
-def load_domain_config(paths: dict[str, Path]) -> dict:
-    """Load or create the Lite domain mapping from export JSON files."""
-    config_path = paths["config"]
-    config = read_json(config_path) if config_path.exists() else {"domains": []}
-    domains = config.setdefault("domains", [])
-    known_exports = {str(entry.get("export_file", "")) for entry in domains}
-    changed = not config_path.exists()
-    for export_path in sorted(paths["exports"].glob("*.json")):
-        if export_path.name in known_exports:
-            continue
-        domains.append({"domain": export_path.stem, "export_file": export_path.name, "allowed_collections": []})
-        known_exports.add(export_path.name)
-        changed = True
-    if changed:
-        config_path.parent.mkdir(parents=True, exist_ok=True)
-        write_json(config_path, config)
-    return config
-
-
 def base_markdown_filter(path: Path, vault: Path) -> str:
     try:
         return str(path.relative_to(vault)).replace("\\", "/")
