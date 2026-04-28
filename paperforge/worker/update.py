@@ -92,8 +92,10 @@ def protected_paths(vault: Path) -> set[str]:
 
 
 def _remote_version() -> str | None:
+    """Read version from __init__.py on GitHub (single source of truth)."""
+    import re
     try:
-        api = f"https://api.github.com/repos/{GITHUB_REPO}/contents/paperforge.json"
+        api = f"https://api.github.com/repos/{GITHUB_REPO}/contents/paperforge/__init__.py"
         req = urllib.request.Request(
             api, headers={"Accept": "application/vnd.github.v3+json", "User-Agent": "PaperForge"}
         )
@@ -101,7 +103,9 @@ def _remote_version() -> str | None:
             data = json.loads(resp.read())
             req2 = urllib.request.Request(data["download_url"], headers={"User-Agent": "PaperForge"})
             with urllib.request.urlopen(req2, timeout=10) as resp2:
-                return json.loads(resp2.read()).get("version")
+                content = resp2.read().decode("utf-8")
+                m = re.search(r'__version__\s*=\s*["\']([^"\']+)["\']', content)
+                return m.group(1) if m else None
     except Exception:
         return None
 
