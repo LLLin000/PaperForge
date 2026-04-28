@@ -19,6 +19,7 @@
 **An automated deep-reading workflow for medical literature, powered by Obsidian + Zotero + PaddleOCR. Upload a PDF and get a structured, AI-written reading note — with a single command.**
 
 ```bash
+# First, cd to the OB vault directory
 pip install git+https://github.com/LLLin000/PaperForge.git
 paperforge setup
 ```
