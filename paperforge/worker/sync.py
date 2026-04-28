@@ -16,6 +16,7 @@ from paperforge.worker._domain import build_collection_lookup, load_domain_confi
 from paperforge.worker._utils import (
     _extract_year,
     lookup_impact_factor,
+    pipeline_paths,
     read_json,
     read_jsonl,
     slugify_filename,
@@ -27,40 +28,6 @@ from paperforge.worker._utils import (
 )
 
 logger = logging.getLogger(__name__)
-
-
-def pipeline_paths(vault: Path) -> dict[str, Path]:
-    """Build complete PaperForge path inventory — delegates to shared resolver.
-
-    Returns paths from paperforge.config.paperforge_paths() plus
-    worker-only keys. Preserves all legacy keys for existing callers.
-    """
-    shared = paperforge_paths(vault)
-
-    root = shared["paperforge"]
-    control_root = shared["control"]
-
-    return {
-        **shared,
-        # Worker-only keys (added on top of shared resolver output)
-        "pipeline": root,
-        "candidates": root / "candidates" / "candidates.json",
-        "candidate_inbox": root / "candidates" / "inbox",
-        "candidate_archive": root / "candidates" / "archive",
-        "search_tasks": root / "search" / "tasks",
-        "search_archive": root / "search" / "archive",
-        "search_results": root / "search" / "results",
-        "harvest_root": root / "skill-prototypes" / "zotero-review-manuscript-writer",
-        "records": control_root / "candidate-records",
-        "review": root / "candidates" / "review-latest.md",
-        "config": root / "config" / "domain-collections.json",
-        "queue": root / "writeback" / "writeback-queue.jsonl",
-        "log": root / "writeback" / "writeback-log.jsonl",
-        "bridge_config": root / "zotero-bridge" / "bridge-config.json",
-        "bridge_config_sample": root / "zotero-bridge" / "bridge-config.sample.json",
-        "index": root / "indexes" / "formal-library.json",
-        "ocr_queue": root / "ocr" / "ocr-queue.json",
-    }
 
 
 def load_export_inventory(paths: dict[str, Path]) -> dict[str, dict]:
