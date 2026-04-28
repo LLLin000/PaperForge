@@ -108,15 +108,18 @@ PaperForge turns your Zotero library into an **AI-ready literature knowledge bas
 Copy and paste this prompt to your AI agent (OpenCode, Cursor, Claude Code, etc.):
 
 ```
-请帮我安装 PaperForge。参考下面的文档完成安装：
+Install PaperForge in this vault by following:
 https://raw.githubusercontent.com/LLLin000/PaperForge/master/docs/ai-agent-setup-guide.md
 ```
 
-The agent will ask you 2 questions, then install everything. Done.
+The agent will ask a few questions, then install everything. Done.
 
 ### Install — Do it yourself
 
+First, `cd` to your Obsidian vault root:
+
 ```bash
+cd /path/to/your/vault
 pip install git+https://github.com/LLLin000/PaperForge.git
 paperforge setup
 ```

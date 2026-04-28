@@ -6,8 +6,18 @@
 
 ## For Humans
 
-Copy this and paste it to your AI agent:
+**English users** — copy this and paste it to your AI agent:
 
+```
+Install PaperForge in this vault by following:
+https://raw.githubusercontent.com/LLLin000/PaperForge/master/docs/ai-agent-setup-guide.md
+```
+
+**中文用户** — 复制粘贴给 AI：
+
+```
+在当前的 vault 里安装 PaperForge。参考下面的文档完成安装：
+https://raw.githubusercontent.com/LLLin000/PaperForge/master/docs/ai-agent-setup-guide.md
 ```
 请帮我安装 PaperForge。
 参考 https://raw.githubusercontent.com/LLLin000/PaperForge/master/docs/ai-agent-setup-guide.md 完成安装。
