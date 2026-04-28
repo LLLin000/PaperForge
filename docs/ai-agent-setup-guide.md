@@ -21,9 +21,9 @@ You are installing PaperForge into the user's Obsidian Vault. Follow each step i
 
 ---
 
-### Step 0: 收集信息 — 问用户 3 个问题
+### Step 0: 收集信息 — 必须先问清楚
 
-**必须问。不能猜。不能跳过。**
+**以下所有问题必须在执行任何命令之前问完。不能猜，不能用默认值糊弄。**
 
 **Q1: Obsidian Vault 路径**
 
@@ -55,13 +55,65 @@ You are installing PaperForge into the user's Obsidian Vault. Follow each step i
 
 用户不回答则默认 `opencode`。
 
-**Q3（可选）: PaddleOCR API Key**
+**Q3: Zotero 数据目录**
 
 问：
-> 你有 PaddleOCR API Key 吗？
+> 你的 Zotero 数据目录在哪？
+>
+> 这是存放 zotero.sqlite 和 storage/ 文件夹的目录，不是 Zotero 程序目录。Windows 通常是 C:/Users/你的用户名/Zotero，macOS 是 ~/Zotero。
+
+尝试自动检测：
+```bash
+python -c "from pathlib import Path; d = Path.home() / 'Zotero'; print(str(d) if (d / 'zotero.sqlite').exists() else 'NOT_FOUND')"
+```
+
+- 检测到 → 告诉用户："检测到 Zotero 数据目录在 `<path>`，对吗？"
+- 检测不到 → 让用户手动提供
+- 用户确认后记下这个路径
+
+**Q4: PaddleOCR API Key**
+
+问：
+> PaperForge 的 OCR 功能依赖 PaddleOCR。你有 API Key 吗？
 
 - 有 → 拿到 key 值，记下来
-- 没有 → 跳过，不追问。获取地址：https://paddleocr.baidu.com
+- 没有 → 告诉用户：
+  > 请到 https://paddleocr.baidu.com 注册获取（免费额度）。
+  > 如果现在跳过，OCR 功能暂时不可用。后续在 <system_dir>/PaperForge/.env 里配置。
+  > 是否跳过？
+
+**Q5: 目录名称（必选）**
+
+问：
+> PaperForge 会在 Vault 里创建 5 个目录。每个目录默认一个名称，你可以改。下面列出各自用途，你确认或修改后我继续：
+
+| 参数 | 默认值 | 用途 |
+|------|--------|------|
+| 系统目录 | `99_System` | 存放 PaperForge 自身文件（插件、OCR 结果、导出 JSON） |
+| 资源目录 | `03_Resources` | 存放文献笔记和状态跟踪文件 |
+| 文献子目录 | `Literature` | 存放正式文献卡片（你的笔记） |
+| 控制目录 | `LiteratureControl` | 存放文献状态跟踪（每篇文献的 OCR/精读状态） |
+| Base 目录 | `05_Bases` | 存放 Obsidian Base 视图文件（表格化浏览文献队列） |
+
+Vault 最终结构：
+```
+<Vault>/
+├── <系统目录>/
+│   └── PaperForge/       ← OCR 结果、导出 JSON、worker 脚本
+├── <资源目录>/
+│   ├── <文献子目录>/       ← 正式文献笔记
+│   └── <控制目录>/         ← 文献状态跟踪
+└── <Base目录>/            ← Obsidian Base 视图
+```
+
+逐项确认：
+> 1. 系统目录名，默认 `99_System`，你用这个还是改？
+> 2. 资源目录名，默认 `03_Resources`，你用这个还是改？
+> 3. 文献子目录名，默认 `Literature`，你用这个还是改？
+> 4. 控制目录名，默认 `LiteratureControl`，你用这个还是改？
+> 5. Base 目录名，默认 `05_Bases`，你用这个还是改？
+
+用户改了的记下来，没改的用默认值。
 
 ---
 
@@ -128,22 +180,30 @@ python -c "from paperforge.setup_wizard import EnvChecker; from pathlib import P
 
 ### Step 5: 创建目录并部署文件
 
-现在一次性完成目录创建和文件部署：
+把 Step 0 收集到的所有信息拼成一条命令：
 
 ```bash
 paperforge setup --headless \
   --vault "<vault_path>" \
   --agent "<agent_key>" \
+  --zotero-data "<zotero_data_dir>" \
+  --system-dir "<system_dir>" \
+  --resources-dir "<resources_dir>" \
+  --literature-dir "<literature_dir>" \
+  --control-dir "<control_dir>" \
+  --base-dir "<base_dir>" \
+  --paddleocr-key "<api_key>" \
   --skip-checks
 ```
 
-**重要**：加 `--skip-checks`，因为 Step 1-4 已经逐项检测过了，不需要重复。
+- 用 Step 0 收集到的实际值替换每个 `<...>`
+- 如果用户 Q4 跳过了 PaddleOCR，去掉 `--paddleocr-key` 那一行
+- 如果用户 Q5 某个目录用了默认值，就用默认值（`99_System` / `03_Resources` / `Literature` / `LiteratureControl` / `05_Bases`）
+- `--skip-checks` 因为 Step 1-4 已经逐项检测过了
 
-如果有 PaddleOCR Key，加上 `--paddleocr-key "<key>"`。
-
-示例（Windows，OpenCode，无 Key）：
+**示例（Windows，全部显式传参）：**
 ```bash
-paperforge setup --headless --vault "D:\Documents\医学文献" --agent opencode --skip-checks
+paperforge setup --headless --vault "D:\Documents\医学文献" --agent opencode --zotero-data "C:\Users\lin\Zotero" --system-dir "99_System" --resources-dir "03_Resources" --literature-dir "Literature" --control-dir "LiteratureControl" --base-dir "05_Bases" --paddleocr-key "sk-xxx" --skip-checks
 ```
 
 **输出解读**
@@ -188,23 +248,31 @@ python -m paperforge status
 
 报告给用户以下信息：
 
-> 安装完成。接下来你需要做：
-> 
-> **在 Obsidian 里启用插件：**
-> 1. 打开 Obsidian
-> 2. 设置 → 社区插件 → 已安装插件 → 找到 PaperForge → 启用
-> 3. Ctrl+P 输入 "PaperForge"，可以看到 3 个命令
-> 
-> **配置 Zotero 自动导出（必须）：**
-> 4. Zotero → 文件 → 导出库 → 格式选 Better BibTeX
-> 5. 保存到 Vault 里的 `<system_dir>/PaperForge/exports/`
-> 6. 勾选 "保持更新"
-> 
-> **首次使用流程：**
-> 7. 在 Zotero 里添加文献 → `paperforge sync`（同步到 Obsidian）
-> 8. 在 Obsidian 的 library-records 里设置 `do_ocr: true`
-> 9. `paperforge ocr`（运行 OCR）
-> 10. 在 Agent 里输入 `/pf-deep <key>`（精读）
+> 安装完成。接下来你需要做 3 件事：
+
+> **1. 配置 Zotero 自动导出 JSON（必须）**
+> 这是 PaperForge 的数据来源，不做这一步 sync 无法工作：
+> - 打开 Zotero
+> - 文件 → 导出库 → 格式选 **Better BibTeX**
+> - 保存到 Vault 里的 `<system_dir>/PaperForge/exports/`
+> - **必须勾选 "保持更新"** ← 这是自动同步的关键
+>
+> 配置完成后运行 `paperforge sync` 测试是否正常。
+
+> **2. 在 Obsidian 里启用 PaperForge 插件**
+> - 打开 Obsidian
+> - 设置 → 社区插件 → 已安装插件 → 找到 PaperForge → 启用
+> - Ctrl+P 输入 "PaperForge"，可以看到 3 个命令：
+>   - `PaperForge: 同步文献并生成笔记`
+>   - `PaperForge: 运行 OCR`
+>   - `PaperForge: 查看系统状态`
+
+> **3. 若跳过了 PaddleOCR Key**
+> - 在 `<system_dir>/PaperForge/.env` 里添加：
+>   ```
+>   PADDLEOCR_API_TOKEN=<你的key>
+>   ```
+> - 获取地址：https://paddleocr.baidu.com
 
 ---
 
