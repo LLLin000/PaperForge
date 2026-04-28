@@ -1547,8 +1547,9 @@ def _substitute_vars(
     control_dir: str,
     base_dir: str,
     skill_dir: str,
+    prefix: str = "/",
 ) -> str:
-    """Substitute path variables in skill content."""
+    """Substitute path variables and command prefix in skill content."""
     for old, new in [
         ("<system_dir>", system_dir),
         ("<resources_dir>", resources_dir),
@@ -1556,6 +1557,7 @@ def _substitute_vars(
         ("<control_dir>", control_dir),
         ("<base_dir>", base_dir),
         ("<skill_dir>", skill_dir),
+        ("<prefix>", prefix),
     ]:
         text = text.replace(old, new)
     return text
@@ -1570,54 +1572,58 @@ def _deploy_skill_directory(
     literature_dir: str,
     control_dir: str,
     base_dir: str,
+    prefix: str = "/",
 ) -> list[str]:
-    """Deploy skills in SKILL.md directory format (Claude Code, Codex, Copilot, etc.)."""
-    imported = []
-    skill_src = repo_root / "paperforge" / "skills" / "literature-qa"
-    if not skill_src.exists():
-        skill_src = repo_root / "skills" / "literature-qa"
-    skill_dst_base = vault / skill_dir / "literature-qa"
+    """Deploy AI-deep skills as independent SKILL.md directories (Claude Code, Codex, etc.).
 
-    # Copy ld_deep.py to scripts/ subdirectory
-    ld_src = skill_src / "scripts" / "ld_deep.py"
-    ld_dst = skill_dst_base / "scripts" / "ld_deep.py"
+    pf-deep and pf-paper are two separate skills (not one skill with two modules).
+    pf-deep bundles scripts, chart-reading, and subagent prompt.
+    pf-paper is a lightweight SKILL.md only.
+    """
+    imported = []
+    src_scripts = repo_root / "paperforge" / "skills" / "literature-qa" / "scripts"
+    src_charts = repo_root / "paperforge" / "skills" / "literature-qa" / "chart-reading"
+    src_prompt = repo_root / "paperforge" / "skills" / "literature-qa" / "prompt_deep_subagent.md"
+
+    # --- pf-deep: full deep reading skill with supporting files ---
+    pf_deep_dst = vault / skill_dir / "pf-deep"
+    pf_deep_dst.mkdir(parents=True, exist_ok=True)
+
+    deep_src = src_scripts / "pf-deep.md"
+    if deep_src.exists():
+        text = deep_src.read_text(encoding="utf-8")
+        text = _substitute_vars(text, system_dir, resources_dir, literature_dir, control_dir, base_dir, skill_dir, prefix)
+        (pf_deep_dst / "SKILL.md").write_text(text, encoding="utf-8")
+        imported.append("pf-deep")
+
+    # ld_deep.py
+    ld_src = src_scripts / "ld_deep.py"
+    ld_dst = pf_deep_dst / "scripts" / "ld_deep.py"
     if ld_src.exists():
         ld_dst.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(ld_src, ld_dst)
 
-    # Copy subagent prompt
-    prompt_src = skill_src / "prompt_deep_subagent.md"
-    prompt_dst = skill_dst_base / "prompt_deep_subagent.md"
-    if prompt_src.exists():
-        shutil.copy2(prompt_src, prompt_dst)
+    # subagent prompt
+    if src_prompt.exists():
+        shutil.copy2(src_prompt, pf_deep_dst / "prompt_deep_subagent.md")
 
-    # Copy chart-reading guides
-    chart_src = skill_src / "chart-reading"
-    chart_dst = skill_dst_base / "chart-reading"
-    if chart_src.exists() and chart_src.is_dir():
+    # chart-reading guides
+    if src_charts.exists() and src_charts.is_dir():
+        chart_dst = pf_deep_dst / "chart-reading"
         chart_dst.mkdir(parents=True, exist_ok=True)
-        for f in chart_src.glob("*.md"):
+        for f in src_charts.glob("*.md"):
             shutil.copy2(f, chart_dst / f.name)
 
-    for skill_name in ["pf-deep", "pf-paper", "pf-sync", "pf-ocr", "pf-status"]:
-        skill_dst = skill_dst_base / skill_name
-        skill_dst.mkdir(parents=True, exist_ok=True)
+    # --- pf-paper: lightweight paper Q&A skill ---
+    pf_paper_dst = vault / skill_dir / "pf-paper"
+    pf_paper_dst.mkdir(parents=True, exist_ok=True)
 
-        # SKILL.md from source scripts/
-        src_md = skill_src / "scripts" / f"{skill_name}.md"
-        if src_md.exists():
-            text = src_md.read_text(encoding="utf-8")
-            text = _substitute_vars(text, system_dir, resources_dir, literature_dir, control_dir, base_dir, skill_dir)
-            (skill_dst / "SKILL.md").write_text(text, encoding="utf-8")
-            imported.append(skill_name)
-
-        # chart-reading guides per skill (only for pf-deep)
-        if skill_name == "pf-deep":
-            if chart_src.exists() and chart_src.is_dir():
-                skill_chart_dst = skill_dst / "chart-reading"
-                skill_chart_dst.mkdir(parents=True, exist_ok=True)
-                for f in chart_src.glob("*.md"):
-                    shutil.copy2(f, skill_chart_dst / f.name)
+    paper_src = src_scripts / "pf-paper.md"
+    if paper_src.exists():
+        text = paper_src.read_text(encoding="utf-8")
+        text = _substitute_vars(text, system_dir, resources_dir, literature_dir, control_dir, base_dir, skill_dir, prefix)
+        (pf_paper_dst / "SKILL.md").write_text(text, encoding="utf-8")
+        imported.append("pf-paper")
 
     return imported
 
@@ -1661,25 +1667,25 @@ def _deploy_rules_file(
     base_dir: str,
     skill_dir_path: str,
 ) -> list[str]:
-    """Deploy skills as .clinerules directory with literature-qa subdirectories (Cline)."""
+    """Deploy skills as .clinerules directory with pf-deep/pf-paper subdirectories (Cline)."""
     imported = []
-    skill_src = repo_root / "paperforge" / "skills" / "literature-qa"
-    if not skill_src.exists():
-        skill_src = repo_root / "skills" / "literature-qa"
-    skill_dst_base = vault / skill_dir / "literature-qa"
+    src_scripts = repo_root / "paperforge" / "skills" / "literature-qa" / "scripts"
+    src_charts = repo_root / "paperforge" / "skills" / "literature-qa" / "chart-reading"
+    src_prompt = repo_root / "paperforge" / "skills" / "literature-qa" / "prompt_deep_subagent.md"
 
-    # Copy ld_deep.py to scripts/ subdirectory
-    ld_src = skill_src / "scripts" / "ld_deep.py"
-    ld_dst = skill_dst_base / "scripts" / "ld_deep.py"
+    # pf-deep
+    pf_deep_dst = vault / skill_dir / "pf-deep"
+    pf_deep_dst.mkdir(parents=True, exist_ok=True)
+    ld_src = src_scripts / "ld_deep.py"
     if ld_src.exists():
-        ld_dst.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(ld_src, ld_dst)
-
-    # Copy subagent prompt
-    prompt_src = skill_src / "prompt_deep_subagent.md"
-    prompt_dst = skill_dst_base / "prompt_deep_subagent.md"
-    if prompt_src.exists():
-        shutil.copy2(prompt_src, prompt_dst)
+        (pf_deep_dst / "scripts").mkdir(parents=True, exist_ok=True)
+        shutil.copy2(ld_src, pf_deep_dst / "scripts" / "ld_deep.py")
+    if src_prompt.exists():
+        shutil.copy2(src_prompt, pf_deep_dst / "prompt_deep_subagent.md")
+    if src_charts.exists() and src_charts.is_dir():
+        (pf_deep_dst / "chart-reading").mkdir(parents=True, exist_ok=True)
+        for f in src_charts.glob("*.md"):
+            shutil.copy2(f, pf_deep_dst / "chart-reading" / f.name)
 
     imported.append("clinerules")
     return imported
@@ -1875,6 +1881,7 @@ def headless_setup(
 
     # Deploy skills based on agent format
     fmt = agent_config.get("format", "skill_directory")
+    prefix = agent_config.get("prefix", "/")
     imported_skills = []
 
     if fmt == "flat_command":
@@ -1891,11 +1898,26 @@ def headless_setup(
         # skill_directory (default)
         imported_skills = _deploy_skill_directory(
             vault, skill_dir, repo_root,
-            system_dir, resources_dir, literature_dir, control_dir, base_dir,
+            system_dir, resources_dir, literature_dir, control_dir, base_dir, prefix,
         )
 
     if imported_skills:
         print(f"    [OK] {len(imported_skills)} skill(s): {', '.join(imported_skills)}")
+
+    # Create agent config file if defined (e.g., Claude skills.json)
+    config_file = agent_config.get("config_file")
+    if config_file:
+        config_dst = vault / config_file
+        if not config_dst.exists():
+            try:
+                config_dst.parent.mkdir(parents=True, exist_ok=True)
+                if config_file.endswith(".json"):
+                    config_dst.write_text("{}\n", encoding="utf-8")
+                else:
+                    config_dst.write_text("", encoding="utf-8")
+                print(f"    [OK] {config_file}")
+            except OSError:
+                pass
 
     # Docs
     docs_src = repo_root / "docs"
