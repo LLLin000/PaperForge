@@ -166,7 +166,7 @@ At minimum, back up these directories:
 
 ```bash
 # If installed via pip
-pip install --upgrade paperforge
+pip install --upgrade git+https://github.com/LLLin000/PaperForge.git
 
 # If installed via git (editable install)
 cd "你的Vault路径"
