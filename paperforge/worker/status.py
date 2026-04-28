@@ -9,6 +9,7 @@ from json import JSONDecodeError
 from pathlib import Path
 
 from paperforge.config import load_vault_config, paperforge_paths
+from paperforge.worker._domain import load_domain_config
 from paperforge.worker._utils import (
     read_json,
     write_json,
@@ -50,25 +51,6 @@ def pipeline_paths(vault: Path) -> dict[str, Path]:
         "index": root / "indexes" / "formal-library.json",
         "ocr_queue": root / "ocr" / "ocr-queue.json",
     }
-
-
-def load_domain_config(paths: dict[str, Path]) -> dict:
-    """Load or create the Lite domain mapping from export JSON files."""
-    config_path = paths["config"]
-    config = read_json(config_path) if config_path.exists() else {"domains": []}
-    domains = config.setdefault("domains", [])
-    known_exports = {str(entry.get("export_file", "")) for entry in domains}
-    changed = not config_path.exists()
-    for export_path in sorted(paths["exports"].glob("*.json")):
-        if export_path.name in known_exports:
-            continue
-        domains.append({"domain": export_path.stem, "export_file": export_path.name, "allowed_collections": []})
-        known_exports.add(export_path.name)
-        changed = True
-    if changed:
-        config_path.parent.mkdir(parents=True, exist_ok=True)
-        write_json(config_path, config)
-    return config
 
 
 def _detect_zotero_data_dir() -> str | None:
