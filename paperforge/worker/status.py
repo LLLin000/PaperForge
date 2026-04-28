@@ -467,6 +467,7 @@ def run_status(vault: Path, verbose: bool = False, json_output: bool = False) ->
     ocr_done = 0
     ocr_total = 0
     ocr_pending = 0
+    ocr_processing = 0
     ocr_failed = 0
     if paths["ocr"].exists():
         for meta_path in paths["ocr"].glob("*/meta.json"):
@@ -479,7 +480,9 @@ def run_status(vault: Path, verbose: bool = False, json_output: bool = False) ->
             status = str(meta.get("ocr_status", "")).strip().lower()
             if status == "done":
                 ocr_done += 1
-            elif status in ("pending", "processing"):
+            elif status == "processing":
+                ocr_processing += 1
+            elif status == "pending":
                 ocr_pending += 1
             else:
                 ocr_failed += 1
@@ -510,6 +513,7 @@ def run_status(vault: Path, verbose: bool = False, json_output: bool = False) ->
             "ocr": {
                 "done": ocr_done,
                 "pending": ocr_pending,
+                "processing": ocr_processing,
                 "failed": ocr_failed,
                 "total": ocr_total,
             },
@@ -530,7 +534,7 @@ def run_status(vault: Path, verbose: bool = False, json_output: bool = False) ->
     print(f"- library_records: {record_count}")
     print(f"- formal_notes: {note_count}")
     print(f"- bases: {base_count}")
-    print(f"- ocr: {ocr_done}/{ocr_total} done (pending: {ocr_pending}, failed: {ocr_failed})")
+    print(f"- ocr: {ocr_done}/{ocr_total} done (pending: {ocr_pending}, processing: {ocr_processing}, failed: {ocr_failed})")
     print(f"- path_errors: {path_error_count}")
     if path_error_count > 0:
         print("  Tip: Run `paperforge repair --fix-paths` to attempt resolution")
