@@ -29,28 +29,36 @@ https://raw.githubusercontent.com/LLLin000/PaperForge/master/docs/ai-agent-setup
 
 You are installing PaperForge into the user's Obsidian Vault. Follow each step in order. **Do not skip steps.** Report results at each step before proceeding.
 
+### Language
+
+**Detect the user's language from their initial message.** The prompts in this guide are provided in Chinese (for Chinese-speaking users) and English (for English-speaking users). Use the language the user first spoke to you in.
+
+- 用户说中文 → 用中文提问
+- User speaks English → use English prompts
+
+All command outputs and technical terms can stay in English — only the conversational prompts need to match the user's language.
+
 ---
 
 ### Step 0: 收集信息 — 必须先问清楚
 
 **以下所有问题必须在执行任何命令之前问完。不能猜，不能用默认值糊弄。**
 
-**Q1: Obsidian Vault 路径**
+**EN**: Ask all questions before running anything. Do not guess.
 
-问：
+**Q1: Obsidian Vault 路径 / Vault Path**
+
+中文：
 > 你的 Obsidian Vault 的完整绝对路径是什么？
+> （如果不知道：打开 Obsidian → 左下角点 vault 名称 → "管理 Vault" → 右键 vault → "在系统文件管理器中显示"。把那个文件夹的完整路径发给我。）
 
-要求用户提供绝对路径（如 `D:\Documents\医学文献` 或 `/Users/name/Documents/MyVault`）。
+English:
+> What is the absolute path to your Obsidian Vault?
+> (If you don't know: Open Obsidian → bottom-left vault name → "Manage Vaults" → right-click your vault → "Show in system explorer". Send me the full path.)
 
-如果用户说不知道：
-> 打开 Obsidian → 左下角点 vault 名称 → "管理 Vault" → 右键 vault → "在系统文件管理器中显示"。把那个文件夹的完整路径发给我。
+**Q2: AI Agent 平台 / Agent Platform**
 
-**Q2: AI Agent 平台**
-
-问：
-> 你正在使用哪个 AI Agent？
-
-展示列表让用户选：
+Show the user this table and wait for one choice:
 
 | Key | Name |
 |-----|------|
@@ -63,89 +71,108 @@ You are installing PaperForge into the user's Obsidian Vault. Follow each step i
 | `augment` | Augment |
 | `trae` | Trae |
 
-用户不回答则默认 `opencode`。
+中文：你正在使用哪个 AI Agent？选一个。
+English: Which AI Agent are you using? Pick one.
 
-**Q3: Zotero 数据目录**
+Default if no answer: `opencode`.
 
-先尝试自动检测：
+**Q3: Zotero 数据目录 / Zotero Data Directory**
+
+First try auto-detection:
 ```bash
 python -c "from pathlib import Path; d = Path.home() / 'Zotero'; print(str(d) if (d / 'zotero.sqlite').exists() else 'NOT_FOUND')"
 ```
 
-然后告诉用户检测结果，并给用户手动指定的机会：
+中文：
+> 我检测到 Zotero 数据目录可能在这个位置：`<path>`
+> 这个目录应该包含 zotero.sqlite 和 storage/ 文件夹。
+> — 正确就回复"对"
+> — 不对就把正确的 Zotero 数据目录完整路径发给我
 
-> 我检测到 Zotero 数据目录可能在这个位置：`<检测到的路径>`
->
-> 这个目录应该包含 `zotero.sqlite` 和 `storage/` 文件夹。
->
-> — 如果正确，回复"对"
-> — 如果不对，请把正确的 Zotero 数据目录完整路径发给我
->
-> （常见位置：Windows: `C:/Users/<用户名>/Zotero`，macOS: `~/Zotero`）
+English:
+> I detected a Zotero data directory at: `<path>`
+> This should contain zotero.sqlite and a storage/ folder.
+> — Reply "yes" if correct
+> — Otherwise send me the full path to your Zotero data directory
 
-如果检测结果是 `NOT_FOUND`，直接问：
-> 未检测到默认位置的 Zotero 数据目录。请把你的 Zotero 数据目录完整路径发给我。
-> （需要包含 `zotero.sqlite` 和 `storage/` 文件夹的那个目录）
+If `NOT_FOUND`:
 
-**拿不到绝对路径不往下走。**
+中文：未检测到 Zotero 数据目录。请把你的 Zotero 数据目录完整路径发给我。
+English: Could not auto-detect Zotero data directory. Please send me the full path.
+
+**Do not proceed without this path.**
 
 **Q4: PaddleOCR API Key**
 
-问：
+中文：
 > PaperForge 的 OCR 功能依赖 PaddleOCR。你有 API Key 吗？
+> 没有的话去 https://paddleocr.baidu.com 注册（免费额度）。
+> 如果现在跳过，OCR 功能暂时不可用。是否跳过？
 
-- 有 → 拿到 key 值，记下来
-- 没有 → 告诉用户：
-  > 请到 https://paddleocr.baidu.com 注册获取（免费额度）。
-  > 如果现在跳过，OCR 功能暂时不可用。后续在 <system_dir>/PaperForge/.env 里配置。
-  > 是否跳过？
+English:
+> PaperForge needs a PaddleOCR API Key for OCR. Do you have one?
+> If not, sign up at https://paddleocr.baidu.com (free tier).
+> If you skip now, OCR won't work until configured later. Skip?
 
-**Q5: 目录名称（必选）**
+**Q5: 目录名称 / Directory Names**
 
-问：
-> PaperForge 会在 Vault 里创建 5 个目录。每个目录默认一个名称，你可以改。下面列出各自用途，你确认或修改后我继续：
+Explain each directory and ask user to confirm or change.
 
-| 参数 | 默认值 | 用途 |
+Show this table and ask about each one:
+
+| 参数 / Parameter | 默认 / Default | 用途 / Purpose |
 |------|--------|------|
-| 系统目录 | `99_System` | 存放 PaperForge 自身文件（插件、OCR 结果、导出 JSON） |
-| 资源目录 | `03_Resources` | 存放文献笔记和状态跟踪文件 |
-| 文献子目录 | `Literature` | 存放正式文献卡片（你的笔记） |
-| 控制目录 | `LiteratureControl` | 存放文献状态跟踪（每篇文献的 OCR/精读状态） |
-| Base 目录 | `05_Bases` | 存放 Obsidian Base 视图文件（表格化浏览文献队列） |
+| system dir / 系统目录 | `99_System` | PaperForge internal files (plugins, OCR results, export JSON) |
+| resources dir / 资源目录 | `03_Resources` | Literature notes and state tracking |
+| literature dir / 文献目录 | `Literature` | Formal literature note cards (your notes) |
+| control dir / 控制目录 | `LiteratureControl` | Per-paper state tracking (OCR/deep-reading status) |
+| base dir / Base目录 | `05_Bases` | Obsidian Base view files (tabular queue browser) |
 
-Vault 最终结构：
+Final vault structure:
 ```
 <Vault>/
-├── <系统目录>/
-│   └── PaperForge/       ← OCR 结果、导出 JSON、worker 脚本
-├── <资源目录>/
-│   ├── <文献子目录>/       ← 正式文献笔记
-│   └── <控制目录>/         ← 文献状态跟踪
-└── <Base目录>/            ← Obsidian Base 视图
+├── <system-dir>/
+│   └── PaperForge/       ← OCR, exports, workers
+├── <resources-dir>/
+│   ├── <literature-dir>/  ← formal notes
+│   └── <control-dir>/     ← state tracking
+└── <base-dir>/            ← Obsidian Base views
 ```
 
-逐项确认：
-> 1. 系统目录名，默认 `99_System`，你用这个还是改？
-> 2. 资源目录名，默认 `03_Resources`，你用这个还是改？
-> 3. 文献子目录名，默认 `Literature`，你用这个还是改？
-> 4. 控制目录名，默认 `LiteratureControl`，你用这个还是改？
-> 5. Base 目录名，默认 `05_Bases`，你用这个还是改？
+Ask one by one:
 
-用户改了的记下来，没改的用默认值。
+中文：
+> 1. 系统目录，默认 99_System，你用这个还是改？
+> 2. 资源目录，默认 03_Resources？
+> 3. 文献目录，默认 Literature？
+> 4. 控制目录，默认 LiteratureControl？
+> 5. Base 目录，默认 05_Bases？
+
+English:
+> 1. System directory, default 99_System. Keep or change?
+> 2. Resources directory, default 03_Resources?
+> 3. Literature directory, default Literature?
+> 4. Control directory, default LiteratureControl?
+> 5. Base directory, default 05_Bases?
+
+Use defaults for any the user doesn't change.
 
 ---
 
-### Step 1: 检查 Python 版本
+### Step 1: 检查 Python 版本 / Check Python
 
 ```bash
 python --version
 ```
 
-- Python >= 3.10 → 通过，进入 Step 2
-- Python < 3.10 或不存在 → **停止**。告诉用户：
-  > PaperForge 需要 Python 3.10 或更高版本。请从 https://python.org 下载安装后再继续。
-  > 
-  > 安装时请勾选 "Add Python to PATH"。
+- Python >= 3.10 → proceed to Step 2
+- Python < 3.10 or missing → **STOP**.
+
+中文：PaperForge 需要 Python 3.10 或更高版本。请从 https://python.org 下载安装（勾选 "Add Python to PATH"），装好后告诉我。
+
+English: PaperForge requires Python 3.10+. Please install from https://python.org (check "Add Python to PATH"), then tell me when done.
+
+**Wait for user before continuing.**
 
 ---
 
@@ -161,38 +188,47 @@ pip install git+https://github.com/LLLin000/PaperForge.git
 
 ---
 
-### Step 3: 检测 Zotero
+### Step 3: 检测 Zotero / Check Zotero
 
 ```bash
 python -c "from paperforge.setup_wizard import EnvChecker; from pathlib import Path; c = EnvChecker(Path('<vault_path>')); r = c.check_zotero(); print('OK' if r.passed else 'NOT_FOUND'); print(r.detail)"
 ```
 
-把 `<vault_path>` 替换为 Step 0 拿到的路径。
+- `OK` → proceed to Step 4
+- `NOT_FOUND` → **STOP**.
 
-- `OK` → 告诉用户 "检测到 Zotero"，进入 Step 4
-- `NOT_FOUND` → 告诉用户：
-  > 未检测到 Zotero。请从 https://zotero.org 下载安装。
-  > 
-  > 安装完成后告诉我，我继续检测。
-  
-  **等待用户确认后再继续**。
+中文：未检测到 Zotero。请从 https://zotero.org 下载安装，装好后告诉我。
+
+English: Zotero not found. Please install from https://zotero.org, then tell me when done.
+
+**Wait for user before continuing.**
 
 ---
 
-### Step 4: 检测 Better BibTeX 插件
+### Step 4: 检测 Better BibTeX 插件 / Check BBT
 
 ```bash
 python -c "from paperforge.setup_wizard import EnvChecker; from pathlib import Path; c = EnvChecker(Path('<vault_path>')); r = c.check_bbt(); print('OK' if r.passed else 'NOT_FOUND'); print(r.detail)"
 ```
 
-- `OK` → 告诉用户 "检测到 Better BibTeX"，进入 Step 5
-- `NOT_FOUND` → 告诉用户：
-  > 未检测到 Better BibTeX 插件。请按以下步骤安装：
-  > 1. 下载：https://retorque.re/zotero-better-bibtex/
-  > 2. Zotero → 工具 → 插件 → 齿轮 → Install Plugin From File
-  > 3. 选择下载的 .xpi 文件 → 重启 Zotero
-  
-  **等待用户确认后再继续**。
+- `OK` → proceed to Step 5
+- `NOT_FOUND` → **STOP**.
+
+中文：
+> 未检测到 Better BibTeX 插件。请安装：
+> 1. 下载：https://retorque.re/zotero-better-bibtex/
+> 2. Zotero → 工具 → 插件 → 齿轮 → Install Plugin From File
+> 3. 选择 .xpi → 重启 Zotero
+> 装好后告诉我。
+
+English:
+> Better BibTeX plugin not found. Please install:
+> 1. Download: https://retorque.re/zotero-better-bibtex/
+> 2. Zotero → Tools → Add-ons → gear icon → Install Add-on From File
+> 3. Select the .xpi → restart Zotero
+> Tell me when done.
+
+**Wait for user before continuing.**
 
 ---
 
@@ -262,35 +298,43 @@ python -m paperforge status
 
 ---
 
-### Step 7: 告诉用户下一步
+### Step 7: 告诉用户下一步 / Tell User Next Steps
 
-报告给用户以下信息：
-
+中文：
 > 安装完成。接下来你需要做 3 件事：
-
-> **1. 配置 Zotero 自动导出 JSON（必须）**
-> 这是 PaperForge 的数据来源，不做这一步 sync 无法工作：
-> - 打开 Zotero
-> - 文件 → 导出库 → 格式选 **Better BibTeX**
-> - 保存到 Vault 里的 `<system_dir>/PaperForge/exports/`
-> - **必须勾选 "保持更新"** ← 这是自动同步的关键
 >
-> 配置完成后运行 `paperforge sync` 测试是否正常。
-
+> **1. 配置 Zotero 自动导出 JSON（必须）**
+> PaperForge 的数据来源，不做这一步 sync 无法工作：
+> - 打开 Zotero
+> - 文件 → 导出库 → 格式选 Better BibTeX
+> - 保存到 Vault 里的 <system_dir>/PaperForge/exports/
+> - 必须勾选 "保持更新" ← 这是自动同步的关键
+>
 > **2. 在 Obsidian 里启用 PaperForge 插件**
-> - 打开 Obsidian
-> - 设置 → 社区插件 → 已安装插件 → 找到 PaperForge → 启用
-> - Ctrl+P 输入 "PaperForge"，可以看到 3 个命令：
->   - `PaperForge: 同步文献并生成笔记`
->   - `PaperForge: 运行 OCR`
->   - `PaperForge: 查看系统状态`
-
+> - 设置 → 社区插件 → 已安装 → PaperForge → 启用
+> - Ctrl+P 输入 "PaperForge"
+>
 > **3. 若跳过了 PaddleOCR Key**
-> - 在 `<system_dir>/PaperForge/.env` 里添加：
->   ```
+> - 在 <system_dir>/PaperForge/.env 里添加：
 >   PADDLEOCR_API_TOKEN=<你的key>
->   ```
-> - 获取地址：https://paddleocr.baidu.com
+
+English:
+> Installation complete. Three things to do next:
+>
+> **1. Configure Zotero auto-export JSON (required)**
+> This is PaperForge's data source. Sync won't work without it:
+> - Open Zotero
+> - File → Export Library → Format: Better BibTeX
+> - Save to <system_dir>/PaperForge/exports/ in your vault
+> - Must check "Keep Updated" ← critical for auto-sync
+>
+> **2. Enable PaperForge plugin in Obsidian**
+> - Settings → Community Plugins → Installed → PaperForge → Enable
+> - Ctrl+P, type "PaperForge"
+>
+> **3. If you skipped PaddleOCR Key**
+> - Add to <system_dir>/PaperForge/.env:
+>   PADDLEOCR_API_TOKEN=<your key>
 
 ---
 
