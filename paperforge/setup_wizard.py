@@ -1730,6 +1730,7 @@ def headless_setup(
     ld_src = repo_root / "paperforge/skills/literature-qa/scripts/ld_deep.py"
     ld_dst = vault / skill_dir / "literature-qa/scripts/ld_deep.py"
     if ld_src.exists():
+        ld_dst.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(ld_src, ld_dst)
     else:
         print(f"Error: ld_deep.py not found: {ld_src}", file=sys.stderr)
@@ -1739,6 +1740,7 @@ def headless_setup(
     prompt_src = repo_root / "paperforge/skills/literature-qa/prompt_deep_subagent.md"
     prompt_dst = vault / skill_dir / "literature-qa/prompt_deep_subagent.md"
     if prompt_src.exists():
+        prompt_dst.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(prompt_src, prompt_dst)
     print(f"    [OK] skill files")
 
@@ -1746,6 +1748,7 @@ def headless_setup(
     chart_src = repo_root / "paperforge/skills/literature-qa/chart-reading"
     chart_dst = vault / skill_dir / "literature-qa/chart-reading"
     if chart_src.exists() and chart_src.is_dir():
+        chart_dst.mkdir(parents=True, exist_ok=True)
         for f in chart_src.glob("*.md"):
             shutil.copy2(f, chart_dst / f.name)
     print(f"    [OK] chart-reading guides")
