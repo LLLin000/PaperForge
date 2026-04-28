@@ -96,6 +96,8 @@ PaperForge turns your Zotero library into an **AI-ready literature knowledge bas
 | **Progress bars** | tqdm with `--no-progress` flag for quiet mode |
 | **Zotero sync** | Better BibTeX auto-export, bidirectional |
 | **Obsidian Base** | Literature queue management via Base views |
+| **Obsidian plugin** | Status panel + command palette integration |
+| **Multi-agent** | OpenCode, Claude Code, Codex, Cursor, Copilot, Windsurf, Cline, Augment, Trae |
 | **Pre-commit gates** | ruff lint + format + consistency audit |
 | **Cross-platform** | Windows / macOS / Linux |
 
@@ -126,7 +128,7 @@ paperforge setup
 
 The interactive wizard handles: agent platform selection, vault directory setup, Zotero data linking, PaddleOCR API key configuration. See [setup-guide.md](docs/setup-guide.md) for a step-by-step walkthrough.
 
-> For AI agents reading this: use the headless mode — `paperforge setup --headless`. Full instructions in [docs/ai-agent-setup-guide.md](docs/ai-agent-setup-guide.md).
+> For AI agents reading this: use the headless mode — `paperforge setup --headless --agent <agent_key>`. Supported agents: opencode, claude, codex, cursor, copilot, windsurf, cline, augment, trae. Full instructions in [docs/ai-agent-setup-guide.md](docs/ai-agent-setup-guide.md).
 
 ### Prerequisites
 
@@ -154,18 +156,21 @@ The interactive wizard handles: agent platform selection, vault directory setup,
 | | `paperforge ocr --no-progress` | Quiet mode |
 | **Reading** | `paperforge deep-reading` | Show deep-reading queue |
 | **Maintenance** | `paperforge status` | System status |
+| | `paperforge status --json` | JSON output for tooling |
 | | `paperforge update` | Auto-update |
 | | `paperforge --verbose` | DEBUG-level logging |
 
-### Agent (via OpenCode)
+### Agent (OpenCode / Claude Code / Codex / Cursor / Copilot)
 
 | Command | What it does | Required |
 |---------|-------------|----------|
-| `/pf-deep <key>` | Full 3-pass deep reading | OCR complete |
-| `/pf-paper <key>` | Quick summary | Formal note exists |
-| `/pf-sync` | Sync Zotero | Installed |
-| `/pf-ocr` | Run OCR | Installed |
-| `/pf-status` | System status | Installed |
+| `/<prefix>pf-deep <key>` | Full 3-pass deep reading | OCR complete |
+| `/<prefix>pf-paper <key>` | Quick Q&A | Formal note exists |
+| `/pf-sync` | Sync Zotero (OpenCode only) | Installed |
+| `/pf-ocr` | Run OCR (OpenCode only) | Installed |
+| `/pf-status` | System status (OpenCode only) | Installed |
+
+> Prefix: `/` for Claude Code / OpenCode / Copilot, `$` for Codex. CLI-only commands (sync, ocr, status) are available as OpenCode commands or via terminal.
 
 ---
 
@@ -202,7 +207,7 @@ pip install --upgrade git+https://github.com/LLLin000/PaperForge.git
 
 ```json
 {
-  "version": "1.4.1",
+  "version": "1.4.3",
   "system_dir": "99_System",
   "resources_dir": "03_Resources",
   "literature_dir": "Literature",

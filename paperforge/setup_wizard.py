@@ -1991,7 +1991,7 @@ PADDLEOCR_MODEL=PaddleOCR-VL-1.5
         except Exception:
             existing_config = {}
     existing_config.update({
-        "version": existing_config.get("version", "1.4.2"),
+        "version": existing_config.get("version", "1.4.3"),
         "agent_platform": agent_config.get("name", "OpenCode"),
         "agent_key": agent_key,
         "skill_dir": skill_dir,
