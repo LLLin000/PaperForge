@@ -699,17 +699,27 @@ def build_figure_map(fulltext: str, zotero_key: str = "") -> dict:
             caption_text = m.group(2).strip() if len(m.groups()) > 1 else ""
 
             # Find nearest image within window of adjacent pages (current ± 2 pages)
+            # Filter: figure captions → exclude table images; table captions → prefer table images
             best_image = None
             min_distance = float("inf")
+            is_table_type = entry_type in ("main_table", "supplementary_table")
 
             for img in all_images:
-                # Check if image is within 2 pages of current page
+                img_name_lower = img.get("link", "").lower()
+                img_is_table = "table" in img_name_lower
+
+                # Figure captions: skip images that are clearly table screenshots
+                if not is_table_type and img_is_table:
+                    continue
+
                 if current_page is not None and img["page"] is not None:
                     page_diff = abs(img["page"] - current_page)
                     if page_diff <= 2:
                         distance = abs(img["line_idx"] - idx)
-                        if distance < min_distance:
-                            min_distance = distance
+                        # Table captions: boost score for table images (+ priority)
+                        score = distance - 100 if (is_table_type and img_is_table) else distance
+                        if score < min_distance:
+                            min_distance = score
                             best_image = img
 
             # Find additional images on the same page near the best image
