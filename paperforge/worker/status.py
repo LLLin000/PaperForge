@@ -476,7 +476,7 @@ def run_status(vault: Path, verbose: bool = False, json_output: bool = False) ->
     print(f"- vault: {vault}")
     print(f"- system_dir: {cfg['system_dir']}")
     print(f"- resources_dir: {cfg['resources_dir']}")
-    print(f"- literature_dir: cfg['literature_dir']")
+    print(f"- literature_dir: {cfg['literature_dir']}")
     print(f"- control_dir: {cfg['control_dir']}")
     print(f"- exports: {len(export_files)} JSON file(s)")
     print(f"- domains: {len(config.get('domains', []))}")

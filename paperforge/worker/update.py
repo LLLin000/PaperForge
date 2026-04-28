@@ -25,6 +25,15 @@ logger = logging.getLogger(__name__)
 GITHUB_PIP_SOURCE = f"git+https://github.com/{GITHUB_REPO}.git"
 
 
+def _sync_obsidian_plugin(vault: Path) -> None:
+    """Reload utils and sync the Obsidian plugin into the current vault."""
+    import importlib
+    import paperforge.worker._utils as _pf_utils
+
+    importlib.reload(_pf_utils)
+    _pf_utils.install_obsidian_plugin(vault)
+
+
 def protected_paths(vault: Path) -> set[str]:
     cfg = load_vault_config(vault)
     pf = f"{cfg['system_dir']}/PaperForge"
@@ -241,6 +250,7 @@ def run_update(vault: Path) -> int:
     except ValueError:
         needs = remote != local
     if not needs:
+        _sync_obsidian_plugin(vault)
         logger.info("当前已是最新版本")
         return 0
     logger.info("发现新版本: %s -> %s", local, remote)
@@ -276,11 +286,7 @@ def run_update(vault: Path) -> int:
         success = _update_via_zip(vault)
 
     if success:
-        # Reload _utils to get latest install_obsidian_plugin after pip/git/zip update
-        import importlib
-        import paperforge.worker._utils as _pf_utils
-        importlib.reload(_pf_utils)
-        _pf_utils.install_obsidian_plugin(vault)
+        _sync_obsidian_plugin(vault)
         logger.info("更新完成！请重启 Obsidian")
     return 0 if success else 1
 
