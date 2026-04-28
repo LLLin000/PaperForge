@@ -57,19 +57,27 @@ You are installing PaperForge into the user's Obsidian Vault. Follow each step i
 
 **Q3: Zotero 数据目录**
 
-问：
-> 你的 Zotero 数据目录在哪？
->
-> 这是存放 zotero.sqlite 和 storage/ 文件夹的目录，不是 Zotero 程序目录。Windows 通常是 C:/Users/你的用户名/Zotero，macOS 是 ~/Zotero。
-
-尝试自动检测：
+先尝试自动检测：
 ```bash
 python -c "from pathlib import Path; d = Path.home() / 'Zotero'; print(str(d) if (d / 'zotero.sqlite').exists() else 'NOT_FOUND')"
 ```
 
-- 检测到 → 告诉用户："检测到 Zotero 数据目录在 `<path>`，对吗？"
-- 检测不到 → 让用户手动提供
-- 用户确认后记下这个路径
+然后告诉用户检测结果，并给用户手动指定的机会：
+
+> 我检测到 Zotero 数据目录可能在这个位置：`<检测到的路径>`
+>
+> 这个目录应该包含 `zotero.sqlite` 和 `storage/` 文件夹。
+>
+> — 如果正确，回复"对"
+> — 如果不对，请把正确的 Zotero 数据目录完整路径发给我
+>
+> （常见位置：Windows: `C:/Users/<用户名>/Zotero`，macOS: `~/Zotero`）
+
+如果检测结果是 `NOT_FOUND`，直接问：
+> 未检测到默认位置的 Zotero 数据目录。请把你的 Zotero 数据目录完整路径发给我。
+> （需要包含 `zotero.sqlite` 和 `storage/` 文件夹的那个目录）
+
+**拿不到绝对路径不往下走。**
 
 **Q4: PaddleOCR API Key**
 
