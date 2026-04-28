@@ -1641,8 +1641,6 @@ def headless_setup(
         vault / resources_dir / literature_dir,
         vault / resources_dir / control_dir / "library-records",
         vault / base_dir,
-        vault / skill_dir / "literature-qa/scripts",
-        vault / skill_dir / "literature-qa/chart-reading",
         vault / ".obsidian" / "plugins" / "paperforge",
     ]
     for d in dirs:
