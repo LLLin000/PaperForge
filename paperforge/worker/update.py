@@ -271,7 +271,9 @@ def update_via_zip(vault: Path) -> bool:
 def _install_obsidian_plugin(vault: Path) -> bool:
     """Copy Obsidian plugin files into .obsidian/plugins/paperforge/."""
     try:
+        import importlib
         import paperforge
+        importlib.reload(paperforge)
 
         pkg_dir = Path(paperforge.__file__).parent.resolve()
         plugin_src = pkg_dir / "plugin"
