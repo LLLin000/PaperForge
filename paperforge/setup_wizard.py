@@ -1491,6 +1491,122 @@ def _find_vault() -> Path | None:
     return None
 
 
+def _deploy_skill_directory(
+    vault: Path,
+    skill_dir: str,
+    repo_root: Path,
+    system_dir: str,
+    resources_dir: str,
+    literature_dir: str,
+    control_dir: str,
+    base_dir: str,
+) -> list[str]:
+    """Deploy skills in SKILL.md directory format (Claude Code, Codex, Copilot, etc.)."""
+    imported = []
+    skill_src = repo_root / "paperforge" / "skills" / "literature-qa"
+    skill_dst_base = vault / skill_dir / "literature-qa"
+
+    for skill_name in ["pf-deep", "pf-paper", "pf-sync", "pf-ocr", "pf-status"]:
+        skill_dst = skill_dst_base / skill_name
+        skill_dst.mkdir(parents=True, exist_ok=True)
+
+        # SKILL.md
+        src_md = skill_src / "scripts" / f"{skill_name}.md"
+        if src_md.exists():
+            text = src_md.read_text(encoding="utf-8")
+            text = _substitute_vars(text, system_dir, resources_dir, literature_dir, control_dir, base_dir, skill_dir)
+            (skill_dst / "SKILL.md").write_text(text, encoding="utf-8")
+            imported.append(skill_name)
+
+        # chart-reading guides (only for pf-deep)
+        if skill_name == "pf-deep":
+            chart_src = skill_src / "chart-reading"
+            chart_dst = skill_dst / "chart-reading"
+            if chart_src.exists() and chart_src.is_dir():
+                chart_dst.mkdir(parents=True, exist_ok=True)
+                for f in chart_src.glob("*.md"):
+                    shutil.copy2(f, chart_dst / f.name)
+
+    return imported
+
+
+def _deploy_flat_command(
+    vault: Path,
+    command_dir: str,
+    repo_root: Path,
+    system_dir: str,
+    resources_dir: str,
+    literature_dir: str,
+    control_dir: str,
+    base_dir: str,
+    skill_dir: str,
+) -> list[str]:
+    """Deploy skills in flat .md command format (OpenCode)."""
+    imported = []
+    command_src = repo_root / "command"
+    command_dst = vault / command_dir
+    if not (command_src.exists() and command_src.is_dir()):
+        return imported
+
+    command_dst.mkdir(parents=True, exist_ok=True)
+    for f in command_src.glob("pf-*.md"):
+        text = f.read_text(encoding="utf-8")
+        text = _substitute_vars(text, system_dir, resources_dir, literature_dir, control_dir, base_dir, skill_dir)
+        (command_dst / f.name).write_text(text, encoding="utf-8")
+        imported.append(f.stem)
+
+    return imported
+
+
+def _deploy_rules_file(
+    vault: Path,
+    skill_dir: str,
+    repo_root: Path,
+    system_dir: str,
+    resources_dir: str,
+    literature_dir: str,
+    control_dir: str,
+    base_dir: str,
+    skill_dir_path: str,
+) -> list[str]:
+    """Deploy skills as a single .clinerules file (Cline)."""
+    imported = []
+    rules_src = repo_root / "command"
+    rules_dst = vault / skill_dir  # e.g., .clinerules
+
+    sections = []
+    for cmd_file in sorted(rules_src.glob("pf-*.md")):
+        content = cmd_file.read_text(encoding="utf-8")
+        content = _substitute_vars(content, system_dir, resources_dir, literature_dir, control_dir, base_dir, skill_dir_path)
+        sections.append(f"# {cmd_file.stem}\n\n{content}")
+
+    rules_dst.write_text("\n\n---\n\n".join(sections), encoding="utf-8")
+    imported.append("clinerules")
+    return imported
+
+
+def _substitute_vars(
+    text: str,
+    system_dir: str,
+    resources_dir: str,
+    literature_dir: str,
+    control_dir: str,
+    base_dir: str,
+    skill_dir: str,
+) -> str:
+    """Substitute path variables in skill content."""
+    for old, new in [
+        ("<system_dir>", system_dir),
+        ("<resources_dir>", resources_dir),
+        ("<literature_dir>", literature_dir),
+        ("<control_dir>", control_dir),
+        ("<base_dir>", base_dir),
+        ("<skill_dir>", skill_dir),
+    ]:
+        text = text.replace(old, new)
+    return text
+
+
 def headless_setup(
     vault: Path,
     agent_key: str = "opencode",
