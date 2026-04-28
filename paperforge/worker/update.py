@@ -161,7 +161,7 @@ def _update_via_pip(editable: bool = False) -> bool:
         cmd.append(GITHUB_PIP_SOURCE)
 
     logger.info("执行: %s", " ".join(cmd))
-    r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8")
+    r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
     if r.returncode != 0:
         logger.error("pip 更新失败: %s", r.stderr)
         return False
@@ -176,12 +176,12 @@ def _update_via_git(vault: Path) -> bool:
     if not (vault / ".git").is_dir():
         logger.error("不是 git 仓库")
         return False
-    r = subprocess.run(["git", "status", "--short"], cwd=vault, capture_output=True, text=True, encoding="utf-8")
+    r = subprocess.run(["git", "status", "--short"], cwd=vault, capture_output=True, text=True, encoding="utf-8", errors="replace")
     if r.stdout.strip():
         logger.warning("有未提交的更改，请先提交或储藏")
         return False
     logger.info("执行 git pull...")
-    r = subprocess.run(["git", "pull", "origin", "master"], cwd=vault, capture_output=True, text=True, encoding="utf-8")
+    r = subprocess.run(["git", "pull", "origin", "master"], cwd=vault, capture_output=True, text=True, encoding="utf-8", errors="replace")
     if r.returncode != 0:
         logger.error("git pull 失败: %s", r.stderr)
         return False
