@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import base64
 import json
 import logging
 import os
@@ -49,11 +50,12 @@ def _remote_version() -> str | None:
         )
         with urllib.request.urlopen(req, timeout=10) as resp:
             data = json.loads(resp.read())
-            req2 = urllib.request.Request(data["download_url"], headers={"User-Agent": "PaperForge"})
-            with urllib.request.urlopen(req2, timeout=10) as resp2:
-                content = resp2.read().decode("utf-8")
-                m = re.search(r'__version__\s*=\s*["\']([^"\']+)["\']', content)
-                return m.group(1) if m else None
+            content_b64 = data.get("content", "")
+            if not content_b64:
+                return None
+            content = base64.b64decode(content_b64).decode("utf-8")
+            m = re.search(r'__version__\s*=\s*["\']([^"\']+)["\']', content)
+            return m.group(1) if m else None
     except Exception as e:
         logger.warning("Remote version check failed: %s", e)
         return None
