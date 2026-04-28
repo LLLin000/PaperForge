@@ -1,6 +1,6 @@
 {
   "name": "PaperForge-Lite",
-  "version": "1.4.3",
+  "version": "1.4.4",
   "description": "Lightweight literature management automation for Obsidian + Zotero",
   "repository": "https://github.com/LLLin000/PaperForge",
   "update": {
@@ -22,7 +22,8 @@
     "skills/",
     "pipeline/",
     "command/",
-    "scripts/"
+    "scripts/",
+    "plugin/"
   ],
   "changelog_url": "https://github.com/LLLin000/PaperForge/releases",
   "auto_analyze_after_ocr": false
