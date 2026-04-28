@@ -19,6 +19,7 @@
 **Obsidian + Zotero + PaddleOCR 驱动的医学文献精读工作流。只需一条命令完成 PDF 上传、OCR 等待、结果下载，自动生成结构化精读笔记。**
 
 ```bash
+# 首先cd到OB仓库目录
 pip install git+https://github.com/LLLin000/PaperForge.git
 paperforge setup
 ```
