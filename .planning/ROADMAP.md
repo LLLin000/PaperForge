@@ -16,6 +16,7 @@
 - [x] **Phase 17: Dead Code Removal + Pre-Commit** — Clean codebase validated by automated git hooks
 - [x] **Phase 18: Documentation + CHANGELOG + UX Polish** — Complete user/maintainer docs, README fix, command naming audit (2 plans)
 - [x] **Phase 19: Testing** — E2E pipeline tests, setup wizard tests, `_utils.py` unit tests
+- [ ] **Phase 20: Headless Setup & Obsidian Plugin** — `paperforge setup --headless`, minimal Obsidian plugin for command palette integration
 
 ---
 
@@ -67,12 +68,27 @@ Plans:
   2. Setup wizard tests pass validating agent platform detection, vault path resolution, environment checks, and configuration file generation
   3. Dedicated unit tests for `_utils.py` cover JSON I/O, YAML helpers, slugify, and journal DB functions — `test_utils_json.py`, `test_utils_yaml.py`, `test_utils_slugify.py`, `test_utils_journal.py`
   4. All 205 existing tests continue to pass with zero failures — minimum bar: 205+ tests passing, 0 failures, 0 errors
-**Plans**: 3 plans (1 wave)
+**Plans**: 3 plans (1 wave) — EXECUTED (317 tests pass, see 19-*-SUMMARY.md)
 
 Plans:
-- [ ] 19-01-PLAN.md — _utils.py unit tests (JSON I/O, YAML helpers, slugify, journal DB)
-- [ ] 19-02-PLAN.md — E2E pipeline integration tests (selection-sync → index-refresh → OCR queue → formal notes)
-- [ ] 19-03-PLAN.md — Setup wizard tests (Agent configs, EnvChecker, path resolution)
+- [x] 19-01-PLAN.md — _utils.py unit tests (71 new tests, 4 files)
+- [x] 19-02-PLAN.md — E2E pipeline integration tests (13 tests, selection-sync → notes)
+- [x] 19-03-PLAN.md — Setup wizard tests (30 tests, Agent configs + EnvChecker)
+
+---
+
+### Phase 20: Headless Setup & Obsidian Plugin
+**Goal**: Enable one-command `paperforge setup --headless` for AI agents, and deploy a minimal Obsidian plugin for command palette integration.
+**Depends on**: Phase 19 (tested deployment pipeline already exists)
+**Requirements**: None (v1.4.2 patch — new milestone document at `.planning/milestones/v1.4.2.md`)
+**Success Criteria** (what must be TRUE):
+  1. `paperforge setup --headless --vault <path> --agent opencode` completes full installation, exit code 0
+  2. Headless-generated vault structure matches wizard-generated structure (dirs, files, configs)
+  3. `.obsidian/plugins/paperforge/main.js` and `manifest.json` are deployed and valid
+  4. `python -m paperforge sync/ocr/status` works with cwd=vault (same env as Obsidian plugin)
+  5. AGENTS.md contains complete AI Agent self-install guidance section
+  6. All 317 existing tests pass with zero regressions
+**Plans**: No formal PLAN.md — milestone document is authoritative
 
 ---
 
@@ -83,12 +99,13 @@ Plans:
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 13. Logging Foundation | v1.4 | 3/3 | Complete    | 2026-04-27 |
-| 14. Shared Utils Extraction | v1.4 | 0/0 | Not started | — |
+| 14. Shared Utils Extraction | v1.4 | 0/0 | Complete | 2026-04-27 |
 | 15. Queue Merge | v1.4 | 1/1 | Complete   | 2026-04-27 |
 | 16. Retry + Progress | v1.4 | 2/2 | Complete | 2026-04-27 |
 | 17. Dead Code + Pre-Commit | v1.4 | 1/1 | Complete | 2026-04-27 |
 | 18. Docs + CHANGELOG + UX | v1.4 | 2/2 | Complete   | 2026-04-27 |
-| 19. Testing | v1.4 | 0/3 | Not started | — |
+| 19. Testing | v1.4 | 3/3 | Complete | 2026-04-28 |
+| 20. Headless Setup & Plugin | v1.4.2 | — | In progress | — |
 
 ### Historical Milestones
 

@@ -1,0 +1,10 @@
+{
+  "id": "paperforge",
+  "name": "PaperForge",
+  "version": "1.4.2",
+  "minAppVersion": "1.0.0",
+  "description": "PaperForge — Zotero + Obsidian literature pipeline. Sync, OCR, and deep-reading commands in your command palette.",
+  "author": "PaperForge",
+  "authorUrl": "https://github.com/LLLin000/PaperForge",
+  "isDesktopOnly": true
+}

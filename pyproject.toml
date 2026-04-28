@@ -53,6 +53,8 @@ paperforge = [
     "skills/literature-qa/chart-reading/*.md",
     "skills/literature-qa/chart-reading/*",
     "command_files/*.md",
+    "plugin/*.js",
+    "plugin/*.json",
 ]
 
 [tool.pytest.ini_options]

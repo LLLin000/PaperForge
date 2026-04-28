@@ -220,7 +220,65 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_parser("update", help="Update PaperForge to the latest version")
 
     # setup wizard
-    sub.add_parser("setup", help="Run the setup wizard (Textual-based)")
+    p_setup = sub.add_parser("setup", help="Run the setup wizard (Textual-based)")
+    p_setup.add_argument(
+        "--headless",
+        action="store_true",
+        help="Run setup non-interactively (for AI agents or scripts)",
+    )
+    p_setup.add_argument(
+        "--agent",
+        metavar="AGENT",
+        default="opencode",
+        choices=["opencode", "cursor", "claude", "windsurf", "github_copilot", "cline", "augment", "trae"],
+        help="AI Agent platform (default: opencode)",
+    )
+    p_setup.add_argument(
+        "--paddleocr-key",
+        metavar="KEY",
+        help="PaddleOCR API Key",
+    )
+    p_setup.add_argument(
+        "--paddleocr-url",
+        metavar="URL",
+        default="https://paddleocr.aistudio-app.com/api/v2/ocr/jobs",
+        help="PaddleOCR API URL",
+    )
+    p_setup.add_argument(
+        "--system-dir",
+        metavar="NAME",
+        help="System directory name (default: 99_System)",
+    )
+    p_setup.add_argument(
+        "--resources-dir",
+        metavar="NAME",
+        help="Resources directory name (default: 03_Resources)",
+    )
+    p_setup.add_argument(
+        "--literature-dir",
+        metavar="NAME",
+        help="Literature directory name (default: Literature)",
+    )
+    p_setup.add_argument(
+        "--control-dir",
+        metavar="NAME",
+        help="Control directory name (default: LiteratureControl)",
+    )
+    p_setup.add_argument(
+        "--base-dir",
+        metavar="NAME",
+        help="Base directory name (default: 05_Bases)",
+    )
+    p_setup.add_argument(
+        "--zotero-data",
+        metavar="PATH",
+        help="Zotero data directory (auto-detect if omitted)",
+    )
+    p_setup.add_argument(
+        "--skip-checks",
+        action="store_true",
+        help="Skip environment checks (for testing/CI)",
+    )
 
     return parser
 
@@ -362,9 +420,27 @@ def main(argv: list[str] | None = None) -> int:
         return run_update(vault)
 
     if args.command == "setup":
-        from paperforge.setup_wizard import main as run_setup
+        if getattr(args, "headless", False):
+            from paperforge.setup_wizard import headless_setup
 
-        return run_setup(sys.argv[2:])
+            return headless_setup(
+                vault=vault,
+                agent_key=args.agent,
+                paddleocr_key=getattr(args, "paddleocr_key", None),
+                paddleocr_url=getattr(args, "paddleocr_url",
+                    "https://paddleocr.aistudio-app.com/api/v2/ocr/jobs"),
+                system_dir=getattr(args, "system_dir", None) or "99_System",
+                resources_dir=getattr(args, "resources_dir", None) or "03_Resources",
+                literature_dir=getattr(args, "literature_dir", None) or "Literature",
+                control_dir=getattr(args, "control_dir", None) or "LiteratureControl",
+                base_dir=getattr(args, "base_dir", None) or "05_Bases",
+                zotero_data=getattr(args, "zotero_data", None),
+                skip_checks=getattr(args, "skip_checks", False),
+            )
+        else:
+            from paperforge.setup_wizard import main as run_setup
+
+            return run_setup(sys.argv[2:])
 
     print(f"Error: unknown command {args.command}", file=sys.stderr)
     return 1

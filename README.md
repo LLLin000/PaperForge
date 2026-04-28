@@ -103,7 +103,18 @@ PaperForge turns your Zotero library into an **AI-ready literature knowledge bas
 
 ## Quick Start
 
-### Install
+### Install — Let your AI agent do it (Recommended)
+
+Copy and paste this prompt to your AI agent (OpenCode, Cursor, Claude Code, etc.):
+
+```
+请帮我安装 PaperForge。参考下面的文档完成安装：
+https://raw.githubusercontent.com/LLLin000/PaperForge/master/docs/ai-agent-setup-guide.md
+```
+
+The agent will ask you 2 questions, then install everything. Done.
+
+### Install — Do it yourself
 
 ```bash
 pip install git+https://github.com/LLLin000/PaperForge.git
@@ -112,11 +123,7 @@ paperforge setup
 
 The interactive wizard handles: agent platform selection, vault directory setup, Zotero data linking, PaddleOCR API key configuration. See [setup-guide.md](docs/setup-guide.md) for a step-by-step walkthrough.
 
-> Windows one-click installer:
-> ```powershell
-> powershell -c "iwr -Uri https://raw.githubusercontent.com/LLLin000/PaperForge/master/scripts/install-paperforge.ps1 -OutFile install.ps1; ./install.ps1"
-> paperforge setup
-> ```
+> For AI agents reading this: use the headless mode — `paperforge setup --headless`. Full instructions in [docs/ai-agent-setup-guide.md](docs/ai-agent-setup-guide.md).
 
 ### Prerequisites
 
