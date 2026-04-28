@@ -1491,6 +1491,394 @@ def _find_vault() -> Path | None:
     return None
 
 
+def headless_setup(
+    vault: Path,
+    agent_key: str = "opencode",
+    paddleocr_key: str | None = None,
+    paddleocr_url: str = "https://paddleocr.aistudio-app.com/api/v2/ocr/jobs",
+    system_dir: str = "99_System",
+    resources_dir: str = "03_Resources",
+    literature_dir: str = "Literature",
+    control_dir: str = "LiteratureControl",
+    base_dir: str = "05_Bases",
+    zotero_data: str | None = None,
+    skip_checks: bool = False,
+    repo_root: Path | None = None,
+) -> int:
+    """Run PaperForge setup non-interactively (no Textual TUI).
+
+    Designed for AI agents and automated scripts. Returns 0 on success,
+    non-zero on failure with error messages on stderr.
+
+    Args:
+        vault: Path to Obsidian vault root.
+        agent_key: AI agent platform key (opencode, cursor, claude, etc.)
+        paddleocr_key: PaddleOCR API token.
+        paddleocr_url: PaddleOCR API URL.
+        system_dir: System directory name.
+        resources_dir: Resources directory name.
+        literature_dir: Literature subdirectory name.
+        control_dir: Control subdirectory name.
+        base_dir: Base directory name.
+        zotero_data: Zotero data directory (auto-detect if None).
+        skip_checks: Skip environment validation.
+        repo_root: Path to PaperForge package root (auto-detect if None).
+
+    Returns:
+        int: 0 on success, non-zero on failure.
+    """
+    vault = Path(vault).expanduser().resolve()
+
+    # Determine repo_root (where paperforge package sources live)
+    if repo_root is None:
+        wizard_dir = Path(__file__).parent.resolve()
+        if (wizard_dir / "paperforge" if wizard_dir.name != "paperforge" else False):
+            _repo = wizard_dir
+        elif (wizard_dir.parent / "paperforge").exists():
+            _repo = wizard_dir.parent
+        elif wizard_dir.name == "paperforge" and (wizard_dir / "__init__.py").exists():
+            _repo = wizard_dir.parent
+        else:
+            _repo = wizard_dir.parent
+        repo_root = _repo
+
+    if not (repo_root / "paperforge").exists():
+        print(f"Error: cannot find PaperForge package root (tried: {repo_root})", file=sys.stderr)
+        return 1
+
+    # Agent config
+    agent_config = AGENT_CONFIGS.get(agent_key)
+    if not agent_config:
+        print(f"Error: unknown agent platform '{agent_key}'", file=sys.stderr)
+        return 1
+    skill_dir = agent_config.get("skill_dir", ".opencode/skills")
+
+    print(f"[*] PaperForge headless setup")
+    print(f"    Vault:    {vault}")
+    print(f"    Agent:    {agent_config['name']}")
+    print(f"    System:   {system_dir}")
+    print(f"    Resources: {resources_dir}")
+
+    # =========================================================================
+    # Phase 1: Pre-flight checks (BLOCKING — must pass to continue)
+    # =========================================================================
+    checker = EnvChecker(vault)
+    checker.system_dir = system_dir
+
+    if not skip_checks:
+        print("[*] Phase 1: Pre-flight checks...")
+
+        py = checker.check_python()
+        if not py.passed:
+            print(f"[FAIL] {py.detail}", file=sys.stderr)
+            return 2
+        print(f"    [OK] {py.detail}")
+
+        deps = checker.check_dependencies()
+        if not deps.passed:
+            print(f"[FAIL] {deps.detail}", file=sys.stderr)
+            print(f"[FIX] pip install requests pymupdf pillow", file=sys.stderr)
+            return 3
+        print(f"    [OK] {deps.detail}")
+
+    # =========================================================================
+    # Phase 2: Create directories
+    # =========================================================================
+    print("[*] Phase 2: Creating directories...")
+    pf_path = vault / system_dir / "PaperForge"
+    dirs = [
+        pf_path / "exports",
+        pf_path / "ocr",
+        pf_path / "config",
+        pf_path / "worker/scripts",
+        vault / resources_dir / literature_dir,
+        vault / resources_dir / control_dir / "library-records",
+        vault / base_dir,
+        vault / skill_dir / "literature-qa/scripts",
+        vault / skill_dir / "literature-qa/chart-reading",
+        vault / ".obsidian" / "plugins" / "paperforge",
+    ]
+    for d in dirs:
+        d.mkdir(parents=True, exist_ok=True)
+    print(f"    [OK] {len(dirs)} directories ready")
+
+    # =========================================================================
+    # Phase 3: Informational checks (NON-BLOCKING — warnings only)
+    # =========================================================================
+    built_vault_config = {
+        "system_dir": system_dir,
+        "resources_dir": resources_dir,
+        "literature_dir": literature_dir,
+        "control_dir": control_dir,
+        "base_dir": base_dir,
+    }
+
+    if not skip_checks:
+        print("[*] Phase 3: Environment checks (non-blocking)...")
+
+        zot = checker.check_zotero()
+        if zot.passed:
+            print(f"    [OK] Zotero: {zot.detail}")
+        else:
+            print(f"    [WARN] Zotero not found — install from https://zotero.org")
+            print(f"    {zot.detail}")
+
+        bbt = checker.check_bbt()
+        if bbt.passed:
+            print(f"    [OK] Better BibTeX: {bbt.detail}")
+        else:
+            print(f"    [WARN] Better BibTeX not found")
+            print(f"    Install from: https://retorque.re/zotero-better-bibtex/")
+
+        # JSON export check — only after exports/ dir exists
+        json_check = checker.check_json()
+        if json_check.passed:
+            print(f"    [OK] JSON exports: {json_check.detail}")
+        else:
+            print(f"    [WARN] {json_check.detail}")
+            zotero_data_hint = zotero_data or "<你的Zotero数据目录>"
+            if sys.platform == "win32":
+                print(f"    首次安装需要配置 BBT 自动导出：")
+                print(f"    1. Zotero → 文件 → 导出库 → Better BibTeX")
+                print(f"    2. 保存到 vault 的 {system_dir}/PaperForge/exports/")
+                print(f"    3. 勾选 "保持更新"")
+            else:
+                print(f"    Configure BBT auto-export to: {system_dir}/PaperForge/exports/")
+            print(f"    完成后运行: paperforge sync")
+
+    # Zotero data directory detection
+    if zotero_data is None and not skip_checks:
+        detected = checker._find_zotero()
+        if detected:
+            # _find_zotero returns the .exe path; we need the data directory
+            zotero_home = detected.parent.parent if detected.parent.name == "Zotero" else detected.parent
+            data_candidate = Path(str(zotero_home)).parent if "Zotero" in str(zotero_home) else zotero_home
+            # Common Zotero data dir: ~/Zotero on all platforms
+            home_zotero = Path.home() / "Zotero"
+            if home_zotero.exists() and (home_zotero / "zotero.sqlite").exists():
+                zotero_data = str(home_zotero)
+                print(f"    [OK] Zotero data detected: {zotero_data}")
+
+    # =========================================================================
+    # Phase 4: Deploy files
+    # =========================================================================
+    print("[*] Phase 4: Deploying files...")
+    import shutil
+
+    # Worker scripts
+    worker_src = repo_root / "paperforge/worker/sync.py"
+    worker_dst = pf_path / "worker/scripts/sync.py"
+    if not worker_src.exists():
+        print(f"Error: worker script not found: {worker_src}", file=sys.stderr)
+        return 4
+
+    shutil.copy2(worker_src, worker_dst)
+    for mod in ["ocr.py", "repair.py", "status.py", "deep_reading.py",
+                "update.py", "base_views.py", "__init__.py",
+                "_utils.py", "_progress.py", "_retry.py"]:
+        mod_src = repo_root / "paperforge/worker" / mod
+        if mod_src.exists():
+            shutil.copy2(mod_src, pf_path / "worker/scripts" / mod)
+    print(f"    [OK] worker scripts")
+
+    # LD deep script
+    ld_src = repo_root / "paperforge/skills/literature-qa/scripts/ld_deep.py"
+    ld_dst = vault / skill_dir / "literature-qa/scripts/ld_deep.py"
+    if ld_src.exists():
+        shutil.copy2(ld_src, ld_dst)
+    else:
+        print(f"Error: ld_deep.py not found: {ld_src}", file=sys.stderr)
+        return 5
+
+    # Subagent prompt
+    prompt_src = repo_root / "paperforge/skills/literature-qa/prompt_deep_subagent.md"
+    prompt_dst = vault / skill_dir / "literature-qa/prompt_deep_subagent.md"
+    if prompt_src.exists():
+        shutil.copy2(prompt_src, prompt_dst)
+    print(f"    [OK] skill files")
+
+    # Chart-reading guides
+    chart_src = repo_root / "paperforge/skills/literature-qa/chart-reading"
+    chart_dst = vault / skill_dir / "literature-qa/chart-reading"
+    if chart_src.exists() and chart_src.is_dir():
+        for f in chart_src.glob("*.md"):
+            shutil.copy2(f, chart_dst / f.name)
+    print(f"    [OK] chart-reading guides")
+
+    # Command files (OpenCode only)
+    if agent_key == "opencode":
+        command_src = repo_root / "command"
+        command_dst = vault / agent_config.get("command_dir", ".opencode/command")
+        if command_src.exists() and command_src.is_dir():
+            command_dst.mkdir(parents=True, exist_ok=True)
+            for f in command_src.glob("*.md"):
+                text = f.read_text(encoding="utf-8")
+                for old, new in [
+                    ("<system_dir>", system_dir),
+                    ("<resources_dir>", resources_dir),
+                    ("<literature_dir>", literature_dir),
+                    ("<control_dir>", control_dir),
+                    ("<base_dir>", base_dir),
+                    ("<skill_dir>", skill_dir),
+                ]:
+                    text = text.replace(old, new)
+                (command_dst / f.name).write_text(text, encoding="utf-8")
+        print(f"    [OK] OpenCode command files")
+
+    # Docs
+    docs_src = repo_root / "docs"
+    docs_dst = vault / "docs"
+    if docs_src.exists() and docs_src.is_dir():
+        shutil.copytree(docs_src, docs_dst, dirs_exist_ok=True)
+    print(f"    [OK] docs")
+
+    # Obsidian plugin
+    plugin_src = repo_root / "paperforge/plugin"
+    plugin_dst = vault / ".obsidian" / "plugins" / "paperforge"
+    if plugin_src.exists() and plugin_src.is_dir():
+        for f in plugin_src.glob("*"):
+            shutil.copy2(f, plugin_dst / f.name)
+        print(f"    [OK] Obsidian plugin")
+    else:
+        print(f"    [WARN] Plugin source not found: {plugin_src}")
+
+    # AGENTS.md
+    agents_src = repo_root / "AGENTS.md"
+    agents_dst = vault / "AGENTS.md"
+    if agents_src.exists():
+        text = agents_src.read_text(encoding="utf-8")
+        for old, new in [
+            ("<system_dir>", system_dir),
+            ("<resources_dir>", resources_dir),
+            ("<literature_dir>", literature_dir),
+            ("<control_dir>", control_dir),
+            ("<base_dir>", base_dir),
+            ("<skill_dir>", skill_dir),
+        ]:
+            text = text.replace(old, new)
+        agents_dst.write_text(text, encoding="utf-8")
+
+    # =========================================================================
+    # Phase 5: Create config files
+    # =========================================================================
+    print("[*] Phase 5: Creating config files...")
+
+    # .env
+    if paddleocr_key:
+        env_content = f"""# PaperForge 配置文件
+PADDLEOCR_API_TOKEN={paddleocr_key}
+PADDLEOCR_JOB_URL={paddleocr_url}
+PADDLEOCR_MODEL=PaddleOCR-VL-1.5
+"""
+        (pf_path / ".env").write_text(env_content, encoding="utf-8")
+        print(f"    [OK] .env")
+    else:
+        print(f"    [INFO] No PaddleOCR key — create {pf_path}/.env manually")
+
+    # Domain config (populated from whatever JSONs already exist in exports/)
+    domain_config = pf_path / "config" / "domain-collections.json"
+    if not domain_config.exists():
+        export_domains = [
+            {"domain": f.stem, "export_file": f.name, "allowed_collections": []}
+            for f in sorted((pf_path / "exports").glob("*.json"))
+        ]
+        domain_config.write_text(
+            json.dumps({"domains": export_domains}, indent=2, ensure_ascii=False),
+            encoding="utf-8",
+        )
+    print(f"    [OK] domain-collections.json")
+
+    # paperforge.json
+    pf_json = vault / "paperforge.json"
+    existing_config = {}
+    if pf_json.exists():
+        try:
+            existing_config = json.loads(pf_json.read_text(encoding="utf-8"))
+        except Exception:
+            existing_config = {}
+    existing_config.update({
+        "version": existing_config.get("version", "1.4.2"),
+        "agent_platform": agent_config.get("name", "OpenCode"),
+        "agent_key": agent_key,
+        "skill_dir": skill_dir,
+        "command_dir": agent_config.get("command_dir", ""),
+        "system_dir": system_dir,
+        "resources_dir": resources_dir,
+        "literature_dir": literature_dir,
+        "control_dir": control_dir,
+        "base_dir": base_dir,
+        "paperforge_path": f"{system_dir}/PaperForge",
+        "zotero_data_dir": zotero_data or "",
+        "zotero_link": f"{system_dir}/Zotero",
+        "vault_config": built_vault_config,
+    })
+    pf_json.write_text(json.dumps(existing_config, indent=2, ensure_ascii=False), encoding="utf-8")
+    print(f"    [OK] paperforge.json")
+
+    # =========================================================================
+    # Phase 6: pip install
+    # =========================================================================
+    print("[*] Phase 6: Registering paperforge CLI...")
+    try:
+        result = subprocess.run(
+            [sys.executable, "-m", "pip", "install", "-e", str(repo_root)],
+            capture_output=True, text=True, timeout=120,
+        )
+        if result.returncode == 0:
+            print(f"    [OK] paperforge CLI registered")
+        else:
+            stderr_short = result.stderr[:200] if result.stderr else ""
+            print(f"    [WARN] pip install: {stderr_short}", file=sys.stderr)
+    except Exception as e:
+        print(f"    [WARN] pip install skipped: {e}")
+
+    # =========================================================================
+    # Phase 7: Verify
+    # =========================================================================
+    print("[*] Phase 7: Verifying installation...")
+    checks = {
+        "Worker scripts": worker_dst.exists(),
+        "Skill scripts": ld_dst.exists(),
+        "Chart-reading guides": (chart_dst / "INDEX.md").exists() if chart_dst.exists() else True,
+        "Library records dir": (vault / resources_dir / control_dir / "library-records").exists(),
+        "Base dir": (vault / base_dir).exists(),
+        "Exports dir": (pf_path / "exports").exists(),
+        "OCR dir": (pf_path / "ocr").exists(),
+        "paperforge.json": pf_json.exists(),
+        "Obsidian plugin": (vault / ".obsidian" / "plugins" / "paperforge" / "main.js").exists(),
+        "AGENTS.md": agents_dst.exists(),
+    }
+    failed = [k for k, v in checks.items() if not v]
+    if failed:
+        print(f"[FAIL] Missing: {', '.join(failed)}", file=sys.stderr)
+        return 6
+
+    print(f"    [OK] All {len(checks)} checks passed")
+
+    # =========================================================================
+    # Done
+    # =========================================================================
+    print()
+    print("=" * 60)
+    print("  PaperForge v1.4.2 installation complete!")
+    print("=" * 60)
+    print()
+    print("Next steps:")
+    print("  1. Open Obsidian → Settings → Community Plugins → Enable 'PaperForge'")
+    print("  2. Press Ctrl+P and type 'PaperForge' to see CLI commands")
+    print()
+    print("First-run workflow:")
+    print(f"  3. Configure Better BibTeX auto-export to: {system_dir}/PaperForge/exports/")
+    print("     (Zotero → Export Library → Better BibTeX → Keep Updated)")
+    print("  4. Add papers to Zotero, then run: paperforge sync")
+    print("  5. Mark papers with do_ocr:true in library-records")
+    print("  6. Run: paperforge ocr")
+    print("  7. Use /pf-deep <key> in your AI agent for deep reading")
+    print()
+
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="PaperForge 安装向导")
     parser.add_argument("--vault", type=Path, default=None, help="Vault 路径（可选，默认当前目录）")
