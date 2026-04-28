@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import logging
 import re
+import shutil
 from json import JSONDecodeError
 from pathlib import Path
 
@@ -262,3 +263,32 @@ def pipeline_paths(vault: Path) -> dict[str, Path]:
         "index": root / "indexes" / "formal-library.json",
         "ocr_queue": root / "ocr" / "ocr-queue.json",
     }
+
+
+def install_obsidian_plugin(vault: Path) -> bool:
+    """Copy Obsidian plugin files into .obsidian/plugins/paperforge/.
+
+    Source priority: vault copy (git/zip) -> Python package (pip).
+    Lives in _utils.py so it can be reloaded after update.
+    """
+    try:
+        plugin_dst = vault / ".obsidian" / "plugins" / "paperforge"
+        plugin_src = vault / "paperforge" / "plugin"
+        if not plugin_src.is_dir():
+            import paperforge
+            plugin_src = Path(paperforge.__file__).parent.resolve() / "plugin"
+        if not plugin_src.is_dir():
+            logger.warning("Plugin source not found: %s", plugin_src)
+            return False
+        plugin_dst.mkdir(parents=True, exist_ok=True)
+        count = 0
+        for f in plugin_src.glob("*"):
+            if f.is_file():
+                shutil.copy2(f, plugin_dst / f.name)
+                count += 1
+        if count:
+            logger.info("Obsidian plugin installed: %d files -> %s", count, plugin_dst)
+        return True
+    except Exception as e:
+        logger.warning("Failed to install Obsidian plugin: %s", e)
+        return False
