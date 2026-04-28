@@ -303,10 +303,10 @@ def run_update(vault: Path) -> int:
         from importlib.metadata import version as _pkg_ver
         local = _pkg_ver("paperforge")
     except Exception:
-        local_cfg = vault / "paperforge.json"
-        if local_cfg.exists():
-            local = json.loads(local_cfg.read_text(encoding="utf-8")).get("version", "unknown")
-        else:
+        try:
+            import paperforge
+            local = paperforge.__version__
+        except Exception:
             local = "unknown"
     remote = _remote_version()
     logger.info("%s", "=" * 50)

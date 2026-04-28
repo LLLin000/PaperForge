@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "paperforge"
-version = "1.4.4"
+dynamic = ["version"]
 description = "PaperForge — Obsidian + Zotero literature pipeline CLI"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -45,6 +45,9 @@ paperforge = "paperforge.cli:main"
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["paperforge*"]
+
+[tool.setuptools.dynamic]
+version = {attr = "paperforge.__version__"}
 
 [tool.setuptools.package-data]
 paperforge = [
