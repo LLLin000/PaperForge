@@ -21,6 +21,7 @@ from paperforge.worker._utils import (
 from paperforge.worker.status import GITHUB_REPO, GITHUB_ZIP, UPDATEABLE_PATHS
 
 logger = logging.getLogger(__name__)
+GITHUB_PIP_SOURCE = f"git+https://github.com/{GITHUB_REPO}.git"
 
 
 def protected_paths(vault: Path) -> set[str]:
@@ -146,7 +147,7 @@ def _update_via_pip(editable: bool = False) -> bool:
         cmd.extend(["-e", "."])
     else:
         cmd.append("--upgrade")
-        cmd.append("paperforge")
+        cmd.append(GITHUB_PIP_SOURCE)
 
     logger.info("执行: %s", " ".join(cmd))
     r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8")
