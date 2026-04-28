@@ -545,4 +545,4 @@ def run_status(vault: Path, verbose: bool = False, json_output: bool = False) ->
 GITHUB_REPO = "LLLin000/PaperForge"
 GITHUB_ZIP = f"https://github.com/{GITHUB_REPO}/archive/refs/heads/master.zip"
 
-UPDATEABLE_PATHS = ["skills", "pipeline", "command", "scripts"]
+UPDATEABLE_PATHS = ["skills", "pipeline", "command", "scripts", "plugin"]

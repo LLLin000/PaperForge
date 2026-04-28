@@ -18,7 +18,7 @@ from paperforge.worker._utils import (
     read_json,
     write_json,
 )
-from paperforge.worker.status import GITHUB_REPO, GITHUB_ZIP
+from paperforge.worker.status import GITHUB_REPO, GITHUB_ZIP, UPDATEABLE_PATHS
 
 logger = logging.getLogger(__name__)
 
@@ -267,6 +267,33 @@ def update_via_zip(vault: Path) -> bool:
         shutil.rmtree(tmp, ignore_errors=True)
 
 
+def _install_obsidian_plugin(vault: Path) -> bool:
+    """Copy Obsidian plugin files into .obsidian/plugins/paperforge/."""
+    try:
+        import paperforge
+
+        pkg_dir = Path(paperforge.__file__).parent.resolve()
+        plugin_src = pkg_dir / "plugin"
+        plugin_dst = vault / ".obsidian" / "plugins" / "paperforge"
+
+        if not plugin_src.exists() or not plugin_src.is_dir():
+            logger.warning("Plugin source not found: %s", plugin_src)
+            return False
+
+        plugin_dst.mkdir(parents=True, exist_ok=True)
+        count = 0
+        for f in plugin_src.glob("*"):
+            if f.is_file():
+                shutil.copy2(f, plugin_dst / f.name)
+                count += 1
+        if count:
+            logger.info("Obsidian plugin installed: %d files -> %s", count, plugin_dst)
+        return True
+    except Exception as e:
+        logger.warning("Failed to install Obsidian plugin: %s", e)
+        return False
+
+
 def run_update(vault: Path) -> int:
     """运行更新检查与安装"""
     try:
@@ -329,6 +356,7 @@ def run_update(vault: Path) -> int:
         success = _update_via_zip(vault)
 
     if success:
+        _install_obsidian_plugin(vault)
         logger.info("更新完成！请重启 Obsidian")
     return 0 if success else 1
 
