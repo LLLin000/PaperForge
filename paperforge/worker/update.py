@@ -219,14 +219,10 @@ def update_via_zip(vault: Path) -> bool:
 def run_update(vault: Path) -> int:
     """运行更新检查与安装"""
     try:
-        from importlib.metadata import version as _pkg_ver
-        local = _pkg_ver("paperforge")
+        import paperforge
+        local = paperforge.__version__
     except Exception:
-        try:
-            import paperforge
-            local = paperforge.__version__
-        except Exception:
-            local = "unknown"
+        local = "unknown"
     remote = _remote_version()
     logger.info("%s", "=" * 50)
     logger.info("PaperForge 更新")
