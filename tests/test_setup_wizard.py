@@ -24,7 +24,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 # Import standalone functions and classes (not Textual-dependent)
-from setup_wizard import AGENT_CONFIGS, CheckResult, EnvChecker, _find_vault
+from paperforge.setup_wizard import AGENT_CONFIGS, CheckResult, EnvChecker, _find_vault
 
 
 # ===================================================================
@@ -36,8 +36,11 @@ class TestAgentConfigs:
     """Agent platform configuration completeness."""
 
     def test_has_all_expected_agents(self) -> None:
-        """Verify all 8 agent platforms are configured."""
-        expected_agents = {"opencode", "cursor", "claude", "windsurf", "github_copilot", "cline", "augment", "trae"}
+        """Verify all 9 agent platforms are configured."""
+        expected_agents = {
+            "opencode", "claude", "codex", "cursor", "windsurf",
+            "github_copilot", "cline", "augment", "trae",
+        }
         assert set(AGENT_CONFIGS.keys()) == expected_agents
 
     def test_each_agent_has_name_and_skill_dir(self) -> None:
@@ -61,6 +64,39 @@ class TestAgentConfigs:
     def test_opencode_has_command_dir(self) -> None:
         """OpenCode is the only agent with command_dir."""
         assert AGENT_CONFIGS["opencode"].get("command_dir") == ".opencode/command"
+
+    def test_agent_config_format_field(self):
+        """All agents must have a format field."""
+        for key, cfg in AGENT_CONFIGS.items():
+            assert "format" in cfg, f"{key} missing format field"
+            assert cfg["format"] in {"skill_directory", "flat_command", "rules_file"}, f"{key} invalid format"
+
+    def test_agent_config_prefix_field(self):
+        """All agents must have a prefix field."""
+        for key, cfg in AGENT_CONFIGS.items():
+            assert "prefix" in cfg, f"{key} missing prefix field"
+            assert cfg["prefix"] in {"/", "$"}, f"{key} invalid prefix"
+
+    def test_codex_is_codex(self):
+        """Codex entry must have correct configuration."""
+        assert "codex" in AGENT_CONFIGS
+        cfg = AGENT_CONFIGS["codex"]
+        assert cfg["name"] == "Codex"
+        assert cfg["format"] == "skill_directory"
+        assert cfg["prefix"] == "$"
+        assert cfg["skill_dir"] == ".codex/skills"
+
+    def test_cline_format_is_rules_file(self):
+        """Cline must use rules_file format."""
+        cfg = AGENT_CONFIGS["cline"]
+        assert cfg["format"] == "rules_file"
+        assert cfg["skill_dir"] == ".clinerules"
+
+    def test_opencode_format_is_flat_command(self):
+        """OpenCode must use flat_command format."""
+        cfg = AGENT_CONFIGS["opencode"]
+        assert cfg["format"] == "flat_command"
+        assert cfg["command_dir"] == ".opencode/command"
 
 
 # ===================================================================

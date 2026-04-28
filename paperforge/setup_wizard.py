@@ -1686,7 +1686,7 @@ def headless_setup(
                 print(f"    首次安装需要配置 BBT 自动导出：")
                 print(f"    1. Zotero → 文件 → 导出库 → Better BibTeX")
                 print(f"    2. 保存到 vault 的 {system_dir}/PaperForge/exports/")
-                print(f"    3. 勾选 "保持更新"")
+                print(f'    3. 勾选 "保持更新"')
             else:
                 print(f"    Configure BBT auto-export to: {system_dir}/PaperForge/exports/")
             print(f"    完成后运行: paperforge sync")
