@@ -1,104 +1,69 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.4
-milestone_name: milestone
-status: In progress
-stopped_at: Phase 19 execution complete
-last_updated: "2026-04-27T10:52:33.704Z"
+milestone: v1.5
+milestone_name: Obsidian Plugin Setup Integration
+status: Phase complete — ready for verification
+stopped_at: Completed Phase 21 (One-Click Install & Polished UX) — both plans delivered
+last_updated: "2026-04-29T14:40:05.628Z"
 progress:
-  total_phases: 3
+  total_phases: 2
   completed_phases: 2
-  total_plans: 6
-  completed_plans: 6
+  total_plans: 3
+  completed_plans: 3
 ---
 
-# State: PaperForge Lite Release Hardening
+# Project State
 
 ## Project Reference
 
-See: `.planning/PROJECT.md` (updated 2026-04-25)
+See: .planning/PROJECT.md (updated 2026-04-29)
 
-**Core value:** A new user can install PaperForge, configure their own vault paths and PaddleOCR credentials, then run the full literature pipeline with copy-pasteable commands that diagnose failures clearly.
-
-**Current focus:** Phase 13 — logging-foundation
+**Core value:** A new user downloads one Obsidian plugin and completes full PaperForge installation without touching a terminal.
+**Current focus:** Phase 21 — one-click-install-and-polished-ux
 
 ## Current Position
 
-Phase: 19
-Plans: 19-01 ready to execute, 19-02 ready to execute, 19-03 ready to execute
+Phase: 21 (one-click-install-and-polished-ux) — EXECUTING
+Plan: 2 of 2
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total phases completed (cumulative): 14
-- v1.4 phases: 2/7 complete
+- Total plans completed: 38 (across Phases 1-19)
+- Average duration: Not yet tracked
+- Total execution time: Not yet tracked
 
-**By Milestone:**
+**By Phase (most recent):**
 
-| Milestone | Phases | Status |
-|-----------|--------|--------|
-| v1.0 MVP | 1-5 | Shipped 2026-04-23 |
-| v1.1 Sandbox | 6-8 | Shipped 2026-04-24 |
-| v1.2 Systematization | 9-10 | Shipped 2026-04-24 |
-| v1.3 Architecture | 11-12 | Shipped 2026-04-24 |
-| v1.4 Code Health | 13-19 | In progress |
+| Phase | Milestone | Plans | Status |
+|-------|-----------|-------|--------|
+| 19. Testing | v1.4 | 3/3 | Complete |
+| 20. Plugin Settings Shell | v1.5 | 3/3 | Complete |
+| 21. One-Click Install | v1.5 | 2/2 | Planned |
+
+**Recent Trend:** v1.4 averaged ~1 day per phase. Target for v1.5 should be similar.
 
 *Updated after each plan completion*
-| Phase 13-logging-foundation P01 | 18min | 2 tasks | 2 files |
-| Phase 13-logging-foundation P02 | 12min | 2 tasks | 12 files |
-| Phase 13-logging-foundation P03 | 8min | 2 tasks | 6 files |
-| Phase 15-deep-reading-queue-merge P01 | 4min | 2 tasks | 3 files |
-| Phase 15-deep-reading-queue-merge P01 | 4min | 2 tasks | 3 files |
-| Phase 17-dead-code-precommit P01 | 25min | 2 tasks | 11 files |
-| Phase 18-documentation-ux-polish P01 | 12min | 3 tasks | 4 files |
-| Phase 18-documentation-ux-polish P01 | 12min | 3 tasks | 4 files |
-| Phase 18-documentation-ux-polish P02 | 18min | 3 tasks | 6 files |
+| Phase 20 P20 | 2min | 3 tasks | 1 files |
+| Phase 21 P21-01 | — | 3 tasks | 2 files |
+| Phase 21 P21-02 | — | 2 tasks | 1 files |
+| Phase 21-one-click-install-and-polished-ux P01 | 5 min | 3 tasks | 2 files |
+| Phase 21-one-click-install-and-polished-ux P02 | 5 min | 2 tasks | 1 files |
 
 ## Accumulated Context
 
-### v1.4 Critical Path
+### Decisions
 
-- **Phase 13:** Logging Foundation (enables all observability work)
-- **Phase 14:** Shared Utils Extraction (critical path — all code-health work depends on `_utils.py`)
-- **Phases 13-14-15-16:** Strictly sequential (hard dependency chain)
-- **Phase 18:** Can partially overlap with Phases 14-17
-- **Phase 19:** Must be last (validates final state)
+- **v1.5**: Settings tab in Obsidian plugin as setup entry point — eliminates terminal requirement; plugin becomes single download artifact. Zero new npm or Python dependencies. (See PROJECT.md Key Decisions)
 
-### v1.4 Key Decisions (from research)
+Recent decisions affecting current work:
 
-- **Dual-output logging:** `print()` stays for user-facing stdout; `logging` for diagnostic stderr — NOT a wholesale replacement
-- **`_utils.py` leaf module:** Must never import from `paperforge.worker.*` or `paperforge.commands.*` — circular import firebreak
-- **Re-exports preserved:** Moved functions get `# Re-exported from _utils.py` comments in original modules for backward compatibility
-- **No new user-facing features:** v1.4 is pure infrastructure hardening — `auto_analyze_after_ocr` is the only opt-in workflow option
-
-### v1.4 Environment Variables (new)
-
-- `PAPERFORGE_LOG_LEVEL` — `DEBUG`/`INFO`/`WARNING`/`ERROR`
-- `PAPERFORGE_RETRY_MAX` — max retry attempts
-- `PAPERFORGE_RETRY_BACKOFF` — backoff multiplier
-
-### Phase 11 Decisions (Locked)
-
-- D-01 through D-08: Documented in ADR-011
-- `storage:` prefix as unified internal representation for Zotero storage paths
-- Hybrid main PDF selection (title → size → shortest title)
-- Forward slashes exclusively in wikilinks (`Path.as_posix()`)
-- `path_error` frontmatter field for explicit error tracking
-
-### Phase 17 Decisions (Locked)
-
-- `from paperforge.config import load_vault_config, paperforge_paths` replaces all per-module delegation wrappers
-- Pre-commit hooks configured but NOT auto-installed (DX-04 deferred to Phase 18)
-- `ruff check --fix` + `ruff format` are sufficient for automated code cleanup
-- `E501` (line-too-long) and pre-existing simplifications suppressed via `per-file-ignores` — not a blocker for code quality
-
-### Phase 12 Decisions (Locked)
-
-- Migrated 4041-line `literature_pipeline.py` into 7 focused modules under `paperforge/worker/`
-- Function-level imports used to break circular dependencies between sync.py and ocr.py
-- Module-reference imports (`_sync.run_selection_sync`) used in ocr.py for test patch compatibility
-- Old `pipeline/` and `skills/` directories removed after confirming zero import references
+- **Phase 20**: Plugin settings use Obsidian's `PluginSettingTab` API, `loadData()`/`saveData()` for persistence, `Setting` form builder for UI. No TypeScript, no build system. Plugin is pure JS CommonJS (`paperforge/plugin/main.js`).
+- **Phase 20-21**: Settings tab is purely additive — zero changes to existing `PaperForgeStatusView` sidebar or `ACTIONS[]` definitions.
+- **Phase 21**: Subprocess orchestration uses `node:child_process.spawn` (not `exec`) for non-blocking setup execution with stdout/stderr parsing.
+- [Phase 21-one-click-install-and-polished-ux]: Settings tab is purely additive — zero changes to PaperForgeStatusView sidebar or ACTIONS[] definitions
+- [Phase 21-one-click-install-and-polished-ux]: Subprocess uses spawn (not exec) for stdout streaming, --headless (not --non-interactive), API key via --paddleocr-key flag
 
 ### Pending Todos
 
@@ -106,15 +71,11 @@ None yet.
 
 ### Blockers/Concerns
 
-- **Circular import risk in Phase 14:** `_utils.py` must be pure leaf module — verify with `pytest --collect-only` after each worker migration
-- **Windows TTY detection (Phase 16):** `sys.stdout.reconfigure(encoding='utf-8')` may not work on all PowerShell configs — test on actual Windows 10/11
-- **Backward compatibility:** Users relying on `from paperforge.worker.sync import read_json` — mitigation: re-exports with deprecation comments
-- **Pre-commit hooks not installed:** CONTRIBUTING.md documents `pre-commit install` (DX-04 docs complete). Hooks must be manually installed by each developer.
+- **Phase 20**: Critical pitfalls from research — debounced saves (500ms) prevent `data.json` corruption; `display()` lifecycle requires immediate in-memory update on change; `loadData()` null merge via `Object.assign({}, DEFAULTS, data || {})`
+- **Phase 21**: Windows path encoding with spaces/Unicode requires `spawn` with proper quoting; raw stderr must be parsed into friendly Chinese messages before Notice display; button double-click prevention via `setDisabled(true)`
 
 ## Session Continuity
 
-Last session: 2026-04-27T10:52:33.701Z
-Stopped at: Phase 19 execution complete
-Resume file: .planning/phases/19-testing/19-03-SUMMARY.md
-
----\n*Initialized: 2026-04-23*\n*Last updated: 2026-04-26 (v1.4 roadmap created — Phase 13 ready to plan)*
+Last session: 2026-04-29T14:40:05.625Z
+Stopped at: Completed Phase 21 (One-Click Install & Polished UX) — both plans delivered
+Resume file: None

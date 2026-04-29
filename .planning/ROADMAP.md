@@ -1,122 +1,46 @@
-# Roadmap: PaperForge Lite v1.4 — Code Health & UX Hardening
+# Roadmap: PaperForge Lite
 
-**Milestone:** v1.4
-**Goal:** Eliminate all code duplication (~1,610 lines), add structured observability, automate code-health guardrails, and smooth user-facing workflow friction.
-**Started:** 2026-04-25
-**Phase numbering:** Continues from v1.3 Phase 12 → v1.4 starts at Phase 13
+**Project kind:** brownfield-release-hardening
+**Current milestone:** v1.5 — Obsidian Plugin Setup Integration
+**Phase numbering:** Continuous (never restarts). v1.0 Phases 1-5, v1.1 Phases 6-8, v1.2 Phases 9-10, v1.3 Phases 11-12, v1.4 Phases 13-19, v1.5 Phases 20-21
+
+---
+
+## Milestones
+
+- ✅ **v1.0 MVP** — Phases 1-5 (shipped 2026-04-23)
+- ✅ **v1.1 Sandbox Onboarding** — Phases 6-8 (shipped 2026-04-24)
+- ✅ **v1.2 Systematization & Cohesion** — Phases 9-10 (shipped 2026-04-24)
+- ✅ **v1.3 Path Normalization & Architecture Hardening** — Phases 11-12 (shipped 2026-04-24)
+- ✅ **v1.4 Code Health & UX Hardening** — Phases 13-19 (shipped 2026-04-28)
+- 🚧 **v1.5 Obsidian Plugin Setup Integration** — Phases 20-21 (in progress)
 
 ---
 
 ## Phases
 
-- [x] **Phase 13: Logging Foundation** — Structured logging, `--verbose` flag, zero behavioral change to user-facing output
-- [x] **Phase 14: Shared Utilities Extraction** — Extract `_utils.py` leaf module, eliminate ~1,610 lines of duplication across 7 workers
-- [x] **Phase 15: Deep-Reading Queue Merge** — Single canonical `scan_library_records()` for both CLI and Agent consumers
-- [x] **Phase 16: Retry + Progress Bars** — Resilient OCR with exponential backoff and user-visible progress indication
-- [x] **Phase 17: Dead Code Removal + Pre-Commit** — Clean codebase validated by automated git hooks
-- [x] **Phase 18: Documentation + CHANGELOG + UX Polish** — Complete user/maintainer docs, README fix, command naming audit (2 plans)
-- [x] **Phase 19: Testing** — E2E pipeline tests, setup wizard tests, `_utils.py` unit tests
-- [ ] **Phase 20: Headless Setup & Obsidian Plugin** — `paperforge setup --headless`, minimal Obsidian plugin for command palette integration
-
----
-
-## Phase Details
-
-### Phase 13: Logging Foundation
-**Goal**: Structured, level-based logging infrastructure with zero behavioral change to user-facing output — sets the stage for all subsequent observability work.
-**Depends on**: Nothing (first phase of v1.4)
-**Requirements**: OBS-01, OBS-02, OBS-03
-**Success Criteria** (what must be TRUE):
-  1. All worker modules use `logging.getLogger(__name__)` instead of bare `print()` for diagnostic/trace/error output
-  2. `--verbose`/`-v` flag on `paperforge sync`, `paperforge ocr`, and `paperforge deep-reading` enables DEBUG-level output on stderr
-  3. User-facing status messages continue to appear on stdout unchanged — piped commands (`paperforge status | grep ocr`) remain unbroken
-  4. `PAPERFORGE_LOG_LEVEL` environment variable (accepting `DEBUG`/`INFO`/`WARNING`/`ERROR`) controls default log level
-  5. `paperforge/logging_config.py` exists as the single `configure_logging(verbose)` call point; no scattered `basicConfig()` calls
-**Plans**: 3 plans (2 waves)
-
-Plans:
-- [x] 13-01-PLAN.md — Logging Core: logging_config.py + global --verbose flag
-- [x] 13-02-PLAN.md — Module Loggers: logger instances + diagnostic print migration
-- [x] 13-03-PLAN.md — Verbose Wiring: verbose params + command dispatch passthrough
-
----
-
-### Phase 14: Shared Utilities Extraction
-**Goal**: Eliminate ~1,610 lines of copy-pasted utility code by creating `paperforge/worker/_utils.py` as a pure leaf module — THE critical path all subsequent code-health work depends on.
-**Depends on**: Phase 13 (logging infrastructure available for diagnostic output)
-**Requirements**: CH-01, CH-02, CH-05, TEST-03
-**Success Criteria** (what must be TRUE):
-  1. `paperforge/worker/_utils.py` exists containing all shared utility functions: `read_json`, `write_json`, `read_jsonl`, `write_jsonl`, `yaml_quote`, `yaml_block`, `yaml_list`, `slugify_filename`, `_extract_year`, `load_journal_db`, `lookup_impact_factor`, `_STANDARD_VIEW_NAMES`, and the `_JOURNAL_DB` cache
-  2. All 7 worker modules (`sync.py`, `ocr.py`, `deep_reading.py`, `repair.py`, `status.py`, `update.py`, `base_views.py`) import shared functions from `paperforge.worker._utils` — no local copy of any utility function remains
-  3. No circular imports: `_utils.py` imports only from stdlib and `paperforge.config` — never from any sibling worker module
-  4. All 205 existing tests pass with zero failures after extraction (verified by `pytest tests/ -x`)
-  5. Re-exports with `# Re-exported from _utils.py for backward compatibility` comments preserved in original modules where callers may still reference them
-**Plans**: 2 plans (1 wave)
-
-Plans:
-- [x] 18-01-PLAN.md — Core Config & Foundation Docs (auto_analyze_after_ocr, CHANGELOG, CONTRIBUTING)
-- [x] 18-02-PLAN.md — Migration, Architecture & Doc Polish (MIGRATION, ADRs, AGENTS, INDEX, README)
-
----
-
-### Phase 19: Testing
-**Goal**: Validate the entire v1.4 codebase with expanded test coverage — E2E pipeline tests, setup wizard tests, and dedicated `_utils.py` unit tests.
-**Depends on**: All previous phases (tests validate the final v1.4 state)
-**Requirements**: TEST-01, TEST-02, TEST-04
-**Success Criteria** (what must be TRUE):
-  1. E2E integration tests pass covering full Zotero JSON → selection-sync → index-refresh → OCR queue → formal notes pipeline using the sandbox fixture vault
-  2. Setup wizard tests pass validating agent platform detection, vault path resolution, environment checks, and configuration file generation
-  3. Dedicated unit tests for `_utils.py` cover JSON I/O, YAML helpers, slugify, and journal DB functions — `test_utils_json.py`, `test_utils_yaml.py`, `test_utils_slugify.py`, `test_utils_journal.py`
-  4. All 205 existing tests continue to pass with zero failures — minimum bar: 205+ tests passing, 0 failures, 0 errors
-**Plans**: 3 plans (1 wave) — EXECUTED (317 tests pass, see 19-*-SUMMARY.md)
-
-Plans:
-- [x] 19-01-PLAN.md — _utils.py unit tests (71 new tests, 4 files)
-- [x] 19-02-PLAN.md — E2E pipeline integration tests (13 tests, selection-sync → notes)
-- [x] 19-03-PLAN.md — Setup wizard tests (30 tests, Agent configs + EnvChecker)
-
----
-
-### Phase 20: Headless Setup & Obsidian Plugin
-**Goal**: Enable one-command `paperforge setup --headless` for AI agents, and deploy a minimal Obsidian plugin for command palette integration.
-**Depends on**: Phase 19 (tested deployment pipeline already exists)
-**Requirements**: None (v1.4.2 patch — new milestone document at `.planning/milestones/v1.4.2.md`)
-**Success Criteria** (what must be TRUE):
-  1. `paperforge setup --headless --vault <path> --agent opencode` completes full installation, exit code 0
-  2. Headless-generated vault structure matches wizard-generated structure (dirs, files, configs)
-  3. `.obsidian/plugins/paperforge/main.js` and `manifest.json` are deployed and valid
-  4. `python -m paperforge sync/ocr/status` works with cwd=vault (same env as Obsidian plugin)
-  5. AGENTS.md contains complete AI Agent self-install guidance section
-  6. All 317 existing tests pass with zero regressions
-**Plans**: No formal PLAN.md — milestone document is authoritative
-
----
-
-## Progress
-
-**Execution Order:** Phases 13-14-15-16 are strictly sequential (hard dependency chain). Phase 18 can overlap partially with Phases 14-17. Phase 19 must be last.
-
-| Phase | Milestone | Plans Complete | Status | Completed |
-|-------|-----------|----------------|--------|-----------|
-| 13. Logging Foundation | v1.4 | 3/3 | Complete    | 2026-04-27 |
-| 14. Shared Utils Extraction | v1.4 | 0/0 | Complete | 2026-04-27 |
-| 15. Queue Merge | v1.4 | 1/1 | Complete   | 2026-04-27 |
-| 16. Retry + Progress | v1.4 | 2/2 | Complete | 2026-04-27 |
-| 17. Dead Code + Pre-Commit | v1.4 | 1/1 | Complete | 2026-04-27 |
-| 18. Docs + CHANGELOG + UX | v1.4 | 2/2 | Complete   | 2026-04-27 |
-| 19. Testing | v1.4 | 3/3 | Complete | 2026-04-28 |
-| 20. Headless Setup & Plugin | v1.4.2 | — | In progress | — |
-
-### Historical Milestones
-
 <details>
 <summary>✅ v1.0 MVP (Phases 1-5) — SHIPPED 2026-04-23</summary>
 
-- Phase 1: Config And Command Foundation (3/3 plans)
-- Phase 2: PaddleOCR And PDF Path Hardening (2/2 plans)
-- Phase 3: Config-Aware Obsidian Bases (2/2 plans)
-- Phase 4: End-To-End Onboarding And Validation (2/2 plans)
-- Phase 5: Release Verification (2/2 plans)
+### Phase 1: Config And Command Foundation
+**Goal**: Stable commands and shared path/env resolution
+**Plans**: 3/3 plans complete
+
+### Phase 2: PaddleOCR And PDF Path Hardening
+**Goal**: Diagnosable, retryable OCR
+**Plans**: 2/2 plans complete
+
+### Phase 3: Config-Aware Obsidian Bases
+**Goal**: Real workflow Bases without hardcoded paths
+**Plans**: 2/2 plans complete
+
+### Phase 4: End-To-End Onboarding And Validation
+**Goal**: User can complete first-paper flow
+**Plans**: 2/2 plans complete
+
+### Phase 5: Release Verification
+**Goal**: Tests and docs prove ship readiness
+**Plans**: 2/2 plans complete
 
 _Archived: `.planning/milestones/v1.0.md`_
 
@@ -125,9 +49,17 @@ _Archived: `.planning/milestones/v1.0.md`_
 <details>
 <summary>✅ v1.1 Sandbox Onboarding (Phases 6-8) — SHIPPED 2026-04-24</summary>
 
-- Phase 6: Setup, CLI, And Diagnostics Consistency (3/3 plans)
-- Phase 7: Zotero PDF, Metadata, And State Repair (2/2 plans)
-- Phase 8: Deep Helper Deployment And Sandbox Regression Gate (2/2 plans)
+### Phase 6: Setup, CLI, And Diagnostics Consistency
+**Goal**: Field names, env vars, export validation, HTTP 405 handling, vault prefill
+**Plans**: 3/3 plans complete
+
+### Phase 7: Zotero PDF, Metadata, And State Repair
+**Goal**: OCR meta validation, three-way divergence repair, PDF resolver tests
+**Plans**: 2/2 plans complete
+
+### Phase 8: Deep Helper Deployment And Sandbox Regression Gate
+**Goal**: Importability, fixtures, smoke tests, rollback
+**Plans**: 2/2 plans complete
 
 _Archived: `.planning/milestones/v1.1.md`_
 
@@ -136,8 +68,13 @@ _Archived: `.planning/milestones/v1.1.md`_
 <details>
 <summary>✅ v1.2 Systematization & Cohesion (Phases 9-10) — SHIPPED 2026-04-24</summary>
 
-- Phase 9: Command Unification & CLI Simplification (2/2 plans)
-- Phase 10: Documentation & Cohesion (2/2 plans)
+### Phase 9: Command Unification & CLI Simplification
+**Goal**: Unified `/pf-*` namespace, `paperforge sync` combined command
+**Plans**: 2/2 plans complete
+
+### Phase 10: Documentation & Cohesion
+**Goal**: Updated AGENTS.md, migration guide, consistency audit
+**Plans**: 2/2 plans complete
 
 _Archived: `.planning/milestones/v1.2-ROADMAP.md`_
 
@@ -146,14 +83,131 @@ _Archived: `.planning/milestones/v1.2-ROADMAP.md`_
 <details>
 <summary>✅ v1.3 Path Normalization & Architecture Hardening (Phases 11-12) — SHIPPED 2026-04-24</summary>
 
-- Phase 11: Zotero Path Normalization (1/1 plan)
-- Phase 12: Architecture Cleanup (1/1 plan)
+### Phase 11: Zotero Path Normalization
+**Goal**: Parse 3 BBT formats, generate wikilinks, multi-attachment support
+**Plans**: 1/1 plan complete
+**Requirements**: ZPATH-01, ZPATH-02, ZPATH-03
+
+### Phase 12: Architecture Cleanup
+**Goal**: Eliminate module boundary leaks (pipeline/ → paperforge/worker/), migrate skills
+**Plans**: 1/1 plan complete
+**Requirements**: ARCH-01, ARCH-02
 
 _Archived: `.planning/milestones/v1.3.md`_
 
 </details>
 
+<details>
+<summary>✅ v1.4 Code Health & UX Hardening (Phases 13-19) — SHIPPED 2026-04-28</summary>
+
+### Phase 13: Logging Foundation
+**Goal**: Structured logging, `--verbose` flag, zero behavioral change to user-facing output
+**Requirements**: OBS-01, OBS-02, OBS-03
+**Plans**: 3/3 plans complete
+
+### Phase 14: Shared Utilities Extraction
+**Goal**: Extract `_utils.py`, eliminate ~1,610 lines of duplication across 7 workers
+**Requirements**: CH-01, CH-02, CH-05, TEST-03
+**Plans**: 2/2 plans complete
+
+### Phase 15: Deep-Reading Queue Merge
+**Goal**: Single canonical `scan_library_records()` for both CLI and Agent consumers
+**Requirements**: CH-03, CH-04
+**Plans**: 1/1 plan complete
+
+### Phase 16: Retry + Progress Bars
+**Goal**: Resilient OCR with exponential backoff and user-visible progress indication
+**Requirements**: UX-01, UX-02
+**Plans**: 2/2 plans complete
+
+### Phase 17: Dead Code Removal + Pre-Commit
+**Goal**: Clean codebase validated by automated git hooks (ruff)
+**Requirements**: CH-06, CH-07
+**Plans**: 1/1 plan complete
+
+### Phase 18: Documentation + CHANGELOG + UX Polish
+**Goal**: Complete user/maintainer docs, auto_analyze_after_ocr, CHANGELOG, CONTRIBUTING
+**Requirements**: DOC-01, DOC-02, DOC-03, UX-03
+**Plans**: 2/2 plans complete
+
+### Phase 19: Testing
+**Goal**: E2E pipeline tests, setup wizard tests, `_utils.py` unit tests (317 passed, 2 skipped)
+**Requirements**: TEST-01, TEST-02, TEST-04
+**Plans**: 3/3 plans complete
+
+_Note: Phase 20 (v1.4.2 "Headless Setup & Obsidian Plugin") was a placeholder. v1.5 expands this into a full plugin settings tab with setup integration — see Phases 20-21 below._
+
+_Archived: `.planning/milestones/v1.4.md`_
+
+</details>
+
+### 🚧 v1.5 Obsidian Plugin Setup Integration (In Progress)
+
+**Milestone Goal:** Move the entire PaperForge setup/configuration experience from terminal CLI into the Obsidian plugin's settings tab, so a new user downloads one plugin and completes full installation without touching a terminal.
+
+- [x] **Phase 20: Plugin Settings Shell & Persistence** — Obsidian settings tab with all setup fields, persistence across restarts, debounced saves (completed 2026-04-29)
+- [ ] **Phase 21: One-Click Install & Polished UX** — Install button with field validation, `spawn`-based subprocess orchestration, human-readable Chinese notices
+
 ---
 
-*Roadmap created: 2026-04-26 — Milestone v1.4 Code Health & UX Hardening*
-*Phase numbering continues from v1.3 Phase 12*
+## Phase Details
+
+### Phase 20: Plugin Settings Shell & Persistence
+**Goal**: Users can access PaperForge configuration in Obsidian's Settings tab, edit all setup wizard fields, and settings survive restarts and tab switches — all without breaking the existing sidebar.
+**Depends on**: Phase 19 (tested deployment pipeline exists)
+**Requirements**: SETUP-01, SETUP-02, SETUP-03
+**Success Criteria** (what must be TRUE):
+  1. User opens Obsidian Settings → Community Plugins → PaperForge (gear icon) and sees a settings tab with all 8 configuration fields grouped in logical sections with Chinese labels and tooltips
+  2. User edits any text field, navigates to a different settings tab and returns — all edited values remain intact (in-memory state survives `display()` re-invocation without data loss)
+  3. User fills in all fields, closes and re-opens Obsidian, and all values restore correctly from `data.json` — no data loss, corruption, or `TypeError` on null data
+  4. First-time install (no prior `data.json`) loads gracefully with `DEFAULT_SETTINGS` values pre-filled — settings tab renders cleanly without JavaScript errors
+  5. After registering the settings tab via `addSettingTab()`, the existing `PaperForgeStatusView` sidebar and command palette actions (`Sync Library`, `Run OCR`) continue functioning without regression
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 21: One-Click Install & Polished UX
+**Goal**: Users trigger full PaperForge setup with one click and receive step-by-step Chinese feedback via Obsidian notices — no terminal interaction required, no raw traceback exposure.
+**Depends on**: Phase 20 (settings tab shell and persistence must exist before adding install behavior)
+**Requirements**: INST-01, INST-02, INST-03, INST-04
+**Success Criteria** (what must be TRUE):
+  1. User fills in all required configuration fields and clicks "安装配置" — the full setup pipeline executes: `paperforge.json` is written, directories are created, environment checks pass, and agent configs are generated
+  2. During setup execution, the Install button is visually disabled and displays "正在安装..." — clicking it again produces no duplicate subprocess (double-click prevention with `setDisabled(true)`)
+  3. User sees step-by-step Chinese notice toasts throughout setup progress ("正在创建目录... ✓", "正在写入配置文件... ✓", "正在检查环境... ✓") — raw Python tracebacks or terminal stderr content is never displayed directly in the Notice
+  4. User leaves a required field empty (e.g., Vault path) and clicks Install — receives a specific, friendly Chinese error notice (e.g., "未找到 Vault 路径，请检查设置") before any subprocess is spawned, preventing cryptic mid-install failures
+  5. After setup completes (success or failure), the sidebar `PaperForgeStatusView` panel and command palette actions (`Sync Library`, `Run OCR`) continue working normally — settings tab code is strictly additive with zero coupling to sidebar internals
+**Plans**: 2 plans (21-01, 21-02)
+**UI hint**: yes
+
+---
+
+## Progress
+
+**Execution Order:** Phases 20 → 21 are strictly sequential. Phase 20 provides the settings shell; Phase 21 adds install behavior on top.
+
+| Phase | Milestone | Plans Complete | Status | Completed |
+|-------|-----------|----------------|--------|-----------|
+| 1. Config & Command Foundation | v1.0 | 3/3 | Complete | 2026-04-23 |
+| 2. PaddleOCR & PDF Path Hardening | v1.0 | 2/2 | Complete | 2026-04-23 |
+| 3. Config-Aware Obsidian Bases | v1.0 | 2/2 | Complete | 2026-04-23 |
+| 4. End-To-End Onboarding | v1.0 | 2/2 | Complete | 2026-04-23 |
+| 5. Release Verification | v1.0 | 2/2 | Complete | 2026-04-23 |
+| 6. Setup & CLI Diagnostics | v1.1 | 3/3 | Complete | 2026-04-24 |
+| 7. Zotero PDF & Metadata Repair | v1.1 | 2/2 | Complete | 2026-04-24 |
+| 8. Deep Helper & Sandbox Gate | v1.1 | 2/2 | Complete | 2026-04-24 |
+| 9. Command Unification & CLI | v1.2 | 2/2 | Complete | 2026-04-24 |
+| 10. Documentation & Cohesion | v1.2 | 2/2 | Complete | 2026-04-24 |
+| 11. Zotero Path Normalization | v1.3 | 1/1 | Complete | 2026-04-24 |
+| 12. Architecture Cleanup | v1.3 | 1/1 | Complete | 2026-04-24 |
+| 13. Logging Foundation | v1.4 | 3/3 | Complete | 2026-04-27 |
+| 14. Shared Utils Extraction | v1.4 | 2/2 | Complete | 2026-04-27 |
+| 15. Queue Merge | v1.4 | 1/1 | Complete | 2026-04-27 |
+| 16. Retry + Progress | v1.4 | 2/2 | Complete | 2026-04-27 |
+| 17. Dead Code + Pre-Commit | v1.4 | 1/1 | Complete | 2026-04-27 |
+| 18. Docs + CHANGELOG + UX | v1.4 | 2/2 | Complete | 2026-04-27 |
+| 19. Testing | v1.4 | 3/3 | Complete | 2026-04-28 |
+| 20. Plugin Settings Shell & Persistence | v1.5 | 1/1 | Complete    | 2026-04-29 |
+| 21. One-Click Install & Polished UX | v1.5 | 0/2 | Planned     | — |
+
+---
+
+*Roadmap updated: 2026-04-29 — Phase 21 plans created (One-Click Install & Polished UX)*
