@@ -308,6 +308,35 @@ class PaperForgeSettingTab extends PluginSettingTab {
         clearTimeout(this._saveTimeout);
         this._saveTimeout = setTimeout(() => this.plugin.saveSettings(), 500);
     }
+
+    _validate() {
+        const errors = [];
+        const s = this.plugin.settings;
+
+        if (!s.vault_path || !s.vault_path.trim()) {
+            errors.push('Vault 路径未填写，请输入 Obsidian Vault 的完整路径');
+        }
+        if (!s.system_dir || !s.system_dir.trim()) {
+            errors.push('系统目录未填写');
+        }
+        if (!s.resources_dir || !s.resources_dir.trim()) {
+            errors.push('资源目录未填写');
+        }
+        if (!s.literature_dir || !s.literature_dir.trim()) {
+            errors.push('文献目录未填写');
+        }
+        if (!s.control_dir || !s.control_dir.trim()) {
+            errors.push('控制目录未填写');
+        }
+        if (!s.agent_config_dir || !s.agent_config_dir.trim()) {
+            errors.push('Agent 配置目录未填写');
+        }
+        if (!s.paddleocr_api_key || !s.paddleocr_api_key.trim()) {
+            errors.push('PaddleOCR API 密钥未填写，请先获取 API Key');
+        }
+
+        return errors;
+    }
 }
 
 module.exports = class PaperForgePlugin extends Plugin {
