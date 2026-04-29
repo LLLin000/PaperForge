@@ -260,6 +260,20 @@ class PaperForgeSettingTab extends PluginSettingTab {
         containerEl.createEl('h3', { text: 'Zotero 链接' });
 
         this._addTextSetting('zotero_data_dir', 'Zotero 数据目录', 'Zotero 数据目录路径（可选，用于自动检测 PDF）');
+
+        containerEl.createEl('h3', { text: '安装配置' });
+
+        this._statusArea = containerEl.createEl('div', { cls: 'paperforge-install-status' });
+        this._statusArea.setText('填写上方配置后，点击下方按钮一键安装');
+
+        new Setting(containerEl)
+            .setName('一键安装')
+            .setDesc('根据上方配置写入 PaperForge 配置文件，创建目录结构，检查环境依赖')
+            .addButton((button) => {
+                button.setButtonText('安装配置')
+                    .setCta()
+                    .onClick(() => this._runSetup(button));
+            });
     }
 
     _addTextSetting(key, name, desc, placeholder) {
