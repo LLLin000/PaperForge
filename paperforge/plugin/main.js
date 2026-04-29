@@ -3,6 +3,17 @@ const { exec } = require('node:child_process');
 
 const VIEW_TYPE_PAPERFORGE = 'paperforge-status';
 
+const DEFAULT_SETTINGS = {
+    vault_path: '',
+    system_dir: '99_System',
+    resources_dir: '20_Resources',
+    literature_dir: 'Literature',
+    control_dir: 'Control',
+    agent_config_dir: '.opencode',
+    paddleocr_api_key: '',
+    zotero_data_dir: '',
+};
+
 const ACTIONS = [
     {
         id: 'paperforge-sync',
@@ -220,11 +231,79 @@ class PaperForgeStatusView extends ItemView {
     }
 }
 
+const { PluginSettingTab, Setting } = require('obsidian');
+
+class PaperForgeSettingTab extends PluginSettingTab {
+    constructor(app, plugin) {
+        super(app, plugin);
+        this.plugin = plugin;
+        this._saveTimeout = null;
+    }
+
+    display() {
+        const { containerEl } = this;
+        containerEl.empty();
+
+        containerEl.createEl('h3', { text: '基础路径' });
+
+        this._addTextSetting('vault_path', 'Vault 路径', '你的 Obsidian Vault 所在目录', '输入 Vault 完整路径...');
+        this._addTextSetting('system_dir', '系统目录', '内部系统文件目录（默认 99_System）');
+        this._addTextSetting('resources_dir', '资源目录', '管理资源文件目录（默认 20_Resources）');
+        this._addTextSetting('literature_dir', '文献目录', '文献笔记存放目录（默认 Literature）');
+        this._addTextSetting('control_dir', '控制目录', 'Library-records 控制文件目录（默认 Control）');
+        this._addTextSetting('agent_config_dir', 'Agent 配置目录', 'Agent 技能目录（默认 .opencode）');
+
+        containerEl.createEl('h3', { text: 'API 密钥' });
+
+        this._addPasswordSetting('paddleocr_api_key', 'PaddleOCR API 密钥', '用于 OCR 文字识别的 API Key');
+
+        containerEl.createEl('h3', { text: 'Zotero 链接' });
+
+        this._addTextSetting('zotero_data_dir', 'Zotero 数据目录', 'Zotero 数据目录路径（可选，用于自动检测 PDF）');
+    }
+
+    _addTextSetting(key, name, desc, placeholder) {
+        new Setting(this.containerEl)
+            .setName(name)
+            .setDesc(desc)
+            .addText((text) => {
+                text.setValue(this.plugin.settings[key] || '')
+                    .setPlaceholder(placeholder || '')
+                    .onChange((value) => {
+                        this.plugin.settings[key] = value;
+                        this._debouncedSave();
+                    });
+            });
+    }
+
+    _addPasswordSetting(key, name, desc) {
+        new Setting(this.containerEl)
+            .setName(name)
+            .setDesc(desc)
+            .addText((text) => {
+                text.setValue(this.plugin.settings[key] || '')
+                    .inputEl.type = 'password';
+                text.onChange((value) => {
+                    this.plugin.settings[key] = value;
+                    this._debouncedSave();
+                });
+            });
+    }
+
+    _debouncedSave() {
+        clearTimeout(this._saveTimeout);
+        this._saveTimeout = setTimeout(() => this.plugin.saveSettings(), 500);
+    }
+}
+
 module.exports = class PaperForgePlugin extends Plugin {
     async onload() {
+        await this.loadSettings();
         this.registerView(VIEW_TYPE_PAPERFORGE, (leaf) => new PaperForgeStatusView(leaf));
 
         this.addRibbonIcon('book-open', 'PaperForge Dashboard', () => PaperForgeStatusView.open(this));
+
+        this.addSettingTab(new PaperForgeSettingTab(this.app, this));
 
         this.addCommand({
             id: 'paperforge-status-panel',
@@ -253,5 +332,13 @@ module.exports = class PaperForgePlugin extends Plugin {
 
     onunload() {
         this.app.workspace.detachLeavesOfType(VIEW_TYPE_PAPERFORGE);
+    }
+
+    async loadSettings() {
+        this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+    }
+
+    async saveSettings() {
+        await this.saveData(this.settings);
     }
 };
