@@ -366,3 +366,34 @@
     color: var(--text-muted);
     font-size: var(--font-ui-small);
 }
+
+/* ==========================================================================
+   SECTION 5 — Settings Tab: Install Status
+   ========================================================================== */
+.paperforge-install-status {
+    margin: 12px 0;
+    padding: 10px 14px;
+    border-radius: var(--radius-m);
+    font-size: var(--font-ui-small);
+    line-height: 1.5;
+    background: var(--background-secondary);
+    border: 1px solid var(--background-modifier-border);
+}
+
+.paperforge-install-success {
+    color: var(--color-green);
+    border-color: var(--color-green);
+    background: color-mix(in srgb, var(--color-green) 10%, var(--background-secondary));
+}
+
+.paperforge-install-error {
+    color: var(--text-error);
+    border-color: var(--text-error);
+    background: color-mix(in srgb, var(--text-error) 10%, var(--background-secondary));
+}
+
+.paperforge-install-progress {
+    color: var(--color-blue);
+    border-color: var(--color-blue);
+    background: color-mix(in srgb, var(--color-blue) 8%, var(--background-secondary));
+}
