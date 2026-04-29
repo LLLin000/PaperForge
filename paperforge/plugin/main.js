@@ -337,6 +337,124 @@ class PaperForgeSettingTab extends PluginSettingTab {
 
         return errors;
     }
+
+    async _runSetup(button) {
+        const errors = this._validate();
+        if (errors.length > 0) {
+            this._showNotice('error', '配置验证失败', errors.join('；'));
+            return;
+        }
+
+        button.setDisabled(true);
+        button.setButtonText('正在安装...');
+        this._setStatus('正在配置 PaperForge 环境...', 'progress');
+
+        const { spawn } = require('node:child_process');
+        const s = this.plugin.settings;
+
+        const args = [
+            '-m', 'paperforge', 'setup', '--headless',
+            '--vault', s.vault_path.trim(),
+            '--paddleocr-key', s.paddleocr_api_key.trim(),
+            '--system-dir', s.system_dir.trim(),
+            '--resources-dir', s.resources_dir.trim(),
+            '--literature-dir', s.literature_dir.trim(),
+            '--control-dir', s.control_dir.trim(),
+            '--agent', 'opencode',
+        ];
+
+        if (s.zotero_data_dir && s.zotero_data_dir.trim()) {
+            args.push('--zotero-data', s.zotero_data_dir.trim());
+        }
+
+        try {
+            const result = await new Promise((resolve, reject) => {
+                const child = spawn('python', args, {
+                    cwd: s.vault_path.trim(),
+                    env: process.env,
+                    timeout: 120000,
+                });
+
+                let stdout = '';
+                let stderr = '';
+
+                child.stdout.on('data', (data) => {
+                    const text = data.toString('utf-8');
+                    stdout += text;
+                    this._processSetupOutput(text);
+                });
+
+                child.stderr.on('data', (data) => {
+                    stderr += data.toString('utf-8');
+                });
+
+                child.on('close', (code) => {
+                    if (code === 0) {
+                        resolve({ stdout, stderr });
+                    } else {
+                        reject(new Error(stderr || `exit code ${code}`));
+                    }
+                });
+
+                child.on('error', (err) => {
+                    reject(err);
+                });
+            });
+
+            this._showNotice('success', '配置完成', 'PaperForge 安装配置已完成！现可运行同步和 OCR 命令。');
+            this._setStatus('配置完成！', 'success');
+        } catch (err) {
+            console.error('PaperForge setup failed:', err.message);
+            this._showNotice('error', '配置失败', this._formatSetupError(err.message));
+            this._setStatus('配置失败，请检查设置后重试', 'error');
+        } finally {
+            button.setDisabled(false);
+            button.setButtonText('安装配置');
+        }
+    }
+
+    _showNotice(type, title, detail) {
+        const prefix = { success: '[OK]', error: '[!!]', progress: '[...]' };
+        const duration = type === 'error' ? 8000 : 4000;
+        new Notice(`${prefix[type] || ''} ${title}\n${detail}`, duration);
+    }
+
+    _formatSetupError(raw) {
+        const patterns = [
+            { match: /command not found|No such file|not recognized/i, msg: '未找到 Python 环境，请确保已安装 Python 并加入 PATH' },
+            { match: /paperforge.*not found|cannot import|ModuleNotFoundError|No module named/i, msg: '未安装 PaperForge 包，请先运行 pip install paperforge' },
+            { match: /permission denied|EACCES/i, msg: '权限不足，无法创建目录或写入文件' },
+            { match: /ENOENT/i, msg: '路径不存在，请检查 Vault 路径是否正确' },
+            { match: /timeout|timed out/i, msg: '操作超时，请检查网络连接后重试' },
+        ];
+
+        for (const p of patterns) {
+            if (p.match.test(raw)) return p.msg;
+        }
+
+        const fallback = raw.split('\n').filter(Boolean).slice(0, 3).join('；');
+        return fallback.slice(0, 200) || '未知错误，请查看控制台日志';
+    }
+
+    _processSetupOutput(text) {
+        const lines = text.split('\n').filter(Boolean);
+        for (const line of lines) {
+            if (line.includes('[*]') || line.includes('[OK]') || line.includes('[FAIL]')) {
+                const clean = line.replace(/^\[\*\].*\d+:?\s*/, '').replace(/^\[OK\]\s*/, '').replace(/^\[FAIL\]\s*/, '');
+                this._setStatus(clean, 'progress');
+            }
+        }
+    }
+
+    _setStatus(message, type) {
+        if (this._statusArea) {
+            this._statusArea.setText(message);
+            this._statusArea.className = 'paperforge-install-status';
+            if (type) {
+                this._statusArea.addClass(`paperforge-install-${type}`);
+            }
+        }
+    }
 }
 
 module.exports = class PaperForgePlugin extends Plugin {
