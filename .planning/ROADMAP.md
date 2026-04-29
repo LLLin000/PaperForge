@@ -13,7 +13,7 @@
 - ✅ **v1.2 Systematization & Cohesion** — Phases 9-10 (shipped 2026-04-24)
 - ✅ **v1.3 Path Normalization & Architecture Hardening** — Phases 11-12 (shipped 2026-04-24)
 - ✅ **v1.4 Code Health & UX Hardening** — Phases 13-19 (shipped 2026-04-28)
-- 🚧 **v1.5 Obsidian Plugin Setup Integration** — Phases 20-21 (in progress)
+- ✅ **v1.5 Obsidian Plugin Setup Integration** — Phases 20-21 (shipped 2026-04-29)
 
 ---
 
@@ -141,12 +141,12 @@ _Archived: `.planning/milestones/v1.4.md`_
 
 </details>
 
-### 🚧 v1.5 Obsidian Plugin Setup Integration (In Progress)
+### ✅ v1.5 Obsidian Plugin Setup Integration (Complete)
 
 **Milestone Goal:** Move the entire PaperForge setup/configuration experience from terminal CLI into the Obsidian plugin's settings tab, so a new user downloads one plugin and completes full installation without touching a terminal.
 
 - [x] **Phase 20: Plugin Settings Shell & Persistence** — Obsidian settings tab with all setup fields, persistence across restarts, debounced saves (completed 2026-04-29)
-- [ ] **Phase 21: One-Click Install & Polished UX** — Install button with field validation, `spawn`-based subprocess orchestration, human-readable Chinese notices
+- [x] **Phase 21: One-Click Install & Polished UX** — Install button with field validation, `spawn`-based subprocess orchestration, human-readable Chinese notices (completed 2026-04-29)
 
 ---
 
@@ -206,8 +206,8 @@ _Archived: `.planning/milestones/v1.4.md`_
 | 18. Docs + CHANGELOG + UX | v1.4 | 2/2 | Complete | 2026-04-27 |
 | 19. Testing | v1.4 | 3/3 | Complete | 2026-04-28 |
 | 20. Plugin Settings Shell & Persistence | v1.5 | 1/1 | Complete    | 2026-04-29 |
-| 21. One-Click Install & Polished UX | v1.5 | 0/2 | Planned     | — |
+| 21. One-Click Install & Polished UX | v1.5 | 2/2 | Complete    | 2026-04-29 |
 
 ---
 
-*Roadmap updated: 2026-04-29 — Phase 21 plans created (One-Click Install & Polished UX)*
+*Roadmap updated: 2026-04-29 — Phase 21 complete, v1.5 milestone delivered*
