@@ -23,8 +23,8 @@ See: .planning/PROJECT.md (updated 2026-04-29)
 
 ## Current Position
 
-Phase: 21 (one-click-install-and-polished-ux) — EXECUTING
-Plan: 2 of 2
+Phase: 21 (one-click-install-and-polished-ux) — COMPLETE
+Plan: 2 of 2 (v1.5 milestone delivered)
 
 ## Performance Metrics
 
