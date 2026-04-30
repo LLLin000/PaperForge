@@ -9,189 +9,177 @@
 
 # PaperForge
 
-[![PyPI version](https://img.shields.io/pypi/v/paperforge?style=for-the-badge&logo=pypi&logoColor=white&color=3775A9)](https://pypi.org/project/paperforge/)
-[![Python version](https://img.shields.io/pypi/pyversions/paperforge?style=for-the-badge&logo=python&logoColor=white&color=3775A9)](https://python.org)
+[![Version](https://img.shields.io/badge/version-1.4.11-blue?style=for-the-badge)](https://github.com/LLLin000/PaperForge/releases)
+[![Python](https://img.shields.io/pypi/pyversions/paperforge?style=for-the-badge&logo=python&logoColor=white&color=3775A9)](https://python.org)
 [![License](https://img.shields.io/github/license/LLLin000/PaperForge?style=for-the-badge&color=brightgreen)](LICENSE)
-[![GitHub stars](https://img.shields.io/github/stars/LLLin000/PaperForge?style=for-the-badge&logo=github&color=181717)](https://github.com/LLLin000/PaperForge)
 
 [简体中文](README.zh-CN.md) · **English**
 
-**An automated deep-reading workflow for medical literature, powered by Obsidian + Zotero + PaddleOCR. Upload a PDF and get a structured, AI-written reading note — with a single command.**
+**Obsidian + Zotero literature pipeline. One plugin install, no terminal required.**
 
-```bash
-# First, cd to the OB vault directory
-pip install git+https://github.com/LLLin000/PaperForge.git
-paperforge setup
+```text
+Download plugin → Enable in Obsidian → Open wizard → Fill config → Click Install → Done
 ```
 
-*"From PDF to structured reading notes in two commands."*
+*"From PDF to structured reading notes — all inside Obsidian."*
 
 ---
 
-### What PaperForge Builds For You
+## What PaperForge Does
 
-PaperForge turns your Zotero library into an **AI-ready literature knowledge base**:
+PaperForge turns your Zotero library into an AI-ready literature knowledge base:
 
 | Layer | What you get | How to use it |
 |-------|-------------|---------------|
-| **Literature index** | Formal notes with structured frontmatter (title, authors, journal, DOI, PMID, tags, abstract) | Semantic search, Zotero-independent browsing |
-| **Full-text corpus** | Clean OCR-extracted markdown (`fulltext.md`) | Chunk → embed → RAG, or feed directly to LLMs |
-| **Figure database** | Figure-map with image links + captions for every chart and table | Multimodal RAG: "show me Figure 3 + explain" |
-| **Expert analysis** | Structured deep-reading notes with Keshav 3-pass analysis, chart review, critical evaluation | LLM reasoning ground truth, literature synthesis, systematic reviews |
-
-**Not just a note-taking tool.** Your vault becomes a queryable knowledge base that any AI tool (OpenCode, Claude Code, Cursor, or custom RAG pipelines with qmd/LlamaIndex) can read, search, and reason over.
+| **Literature index** | Structured notes with frontmatter (title, authors, journal, DOI, tags, abstract) | Search, browse, filter via Base views |
+| **Full-text corpus** | OCR-extracted markdown (`fulltext.md`) | Feed to LLMs for RAG or question answering |
+| **Figure database** | Figure-map with images + captions for every chart/table | Multimodal AI: "show me Figure 3 and explain" |
+| **Deep reading** | AI-written 3-pass analysis with chart review and critical evaluation | Literature synthesis, systematic reviews |
 
 ---
 
-## Full Workflow
+## Install
 
-```
-┌─────────────────────────────────────────────────────────┐
-│              Literature Management                        │
-│                                                          │
-│  New paper in Zotero                                     │
-│    │ Better BibTeX auto-export JSON                      │
-│    ▼                                                     │
-│  paperforge sync  ─── Sync Zotero → generate notes       │
-└─────────────────────────────────────────────────────────┘
-                          │
-                          ▼
-┌─────────────────────────────────────────────────────────┐
-│               OCR (Full-text Extraction)                  │
-│                                                          │
-│  paperforge ocr    ─── Upload PDF → poll → download      │
-│                          │                                │
-│    ┌─────────────────────┼─────────────────────┐         │
-│    │ fulltext.md         │ images/             │         │
-│    │ extracted text      │ chart images        │         │
-│    └─────────────────────┴─────────────────────┘         │
-└─────────────────────────────────────────────────────────┘
-                          │
-                          ▼
-┌─────────────────────────────────────────────────────────┐
-│              Deep Reading                                 │
-│                                                          │
-│  /pf-deep <key>  ─── AI 3-pass reading                   │
-│                          │                                │
-│    Pass 1: Overview   ─── 5Cs quick assessment           │
-│    Pass 2: Close read ─── figure-by-figure + chart review │
-│    Pass 3: Synthesis  ─── critique + research transfer   │
-│                          │                                │
-│    ▼                                                     │
-│  Obsidian note ─── ## 🔍 Deep Reading section populated  │
-└─────────────────────────────────────────────────────────┘
-```
+### Obsidian Plugin (Recommended)
 
----
+1. **Download** the plugin files from the [latest release](https://github.com/LLLin000/PaperForge/releases/latest)
 
-## Features
+2. **Copy** into your vault: `{vault}/.obsidian/plugins/paperforge/`
 
-| Feature | Description |
-|---------|-------------|
-| **One-shot OCR** | Upload → poll → download, all in one command |
-| **3-pass deep reading** | Keshav method + 6 fixed sub-heading skeleton, AI fills blanks |
-| **Chart review** | 19 chart types auto-detected with expert review checklists |
-| **Auto retry** | Exponential backoff on network failures |
-| **Structured logging** | Global `--verbose` flag, stderr diagnostics |
-| **Progress bars** | tqdm with `--no-progress` flag for quiet mode |
-| **Zotero sync** | Better BibTeX auto-export, bidirectional |
-| **Obsidian Base** | Literature queue management via Base views |
-| **Obsidian plugin** | Status panel + command palette integration |
-| **Multi-agent** | OpenCode, Claude Code, Codex, Cursor, Copilot, Windsurf, Cline, Augment, Trae |
-| **Pre-commit gates** | ruff lint + format + consistency audit |
-| **Cross-platform** | Windows / macOS / Linux |
+3. **Enable** in Obsidian: Settings → Community Plugins → PaperForge
 
----
+4. **Open the wizard**: Settings → PaperForge → "打开安装向导"
 
-## Quick Start
+5. **Follow 5 steps**: Overview → Directory Config → Agent & Keys → Install → Done
 
-### Install — Let your AI agent do it (Recommended)
-
-Copy and paste this prompt to your AI agent (OpenCode, Cursor, Claude Code, etc.):
-
-```
-Install PaperForge in this vault by following:
-https://raw.githubusercontent.com/LLLin000/PaperForge/master/docs/ai-agent-setup-guide.md
-```
-
-The agent will ask a few questions, then install everything. Done.
-
-### Install — Do it yourself
-
-First, `cd` to your Obsidian vault root:
-
-```bash
-cd /path/to/your/vault
-pip install git+https://github.com/LLLin000/PaperForge.git
-paperforge setup
-```
-
-The interactive wizard handles: agent platform selection, vault directory setup, Zotero data linking, PaddleOCR API key configuration. See [setup-guide.md](docs/setup-guide.md) for a step-by-step walkthrough.
-
-> For AI agents reading this: use the headless mode — `paperforge setup --headless --agent <agent_key>`. Supported agents: opencode, claude, codex, cursor, copilot, windsurf, cline, augment, trae. Full instructions in [docs/ai-agent-setup-guide.md](docs/ai-agent-setup-guide.md).
+> The wizard auto-detects Python, Zotero, and Better BibTeX before starting.
 
 ### Prerequisites
 
 | Software | Purpose | Get it |
 |----------|---------|--------|
-| Python 3.10+ | Run PaperForge | https://python.org |
+| Python 3.9+ | Run PaperForge CLI | https://python.org |
 | Zotero | Literature management | https://zotero.org |
-| Better BibTeX | Zotero plugin | https://retorque.re/zotero-better-bibtex/ |
-| Obsidian | Note-taking | https://obsidian.md |
-| PaddleOCR API Key | OCR service | https://paddleocr.baidu.com |
+| Better BibTeX | Zotero plugin for JSON export | https://retorque.re/zotero-better-bibtex/ |
+| PaddleOCR Key | OCR text extraction | https://aistudio.baidu.com/paddleocr |
+
+### CLI (Advanced)
+
+```bash
+cd /path/to/your/vault
+pip install git+https://github.com/LLLin000/PaperForge.git
+python -m paperforge setup --headless --agent opencode --paddleocr-key <key>
+```
+
+---
+
+## Usage (All in Obsidian)
+
+| Action | How |
+|--------|-----|
+| **Open Dashboard** | `Ctrl+P` → "PaperForge: Open Dashboard", or click sidebar book icon |
+| **Sync Literature** | Dashboard → "Sync Library" — pulls from Zotero, generates notes |
+| **Run OCR** | Dashboard → "Run OCR" — extracts full text & figures |
+| **Deep Read** | `/pf-deep <zotero_key>` — AI 3-pass analysis (must run in AI agent) |
+| **Quick Query** | `/pf-paper <zotero_key>` — fast paper Q&A |
+
+### Dashboard
+
+```
+┌──────────────────────────────────┐
+│  PaperForge                   ↻  │
+│                                  │
+│  [Papers: 550] [Notes: 520] [...]│
+│                                  │
+│  OCR Pipeline  [Active]          │
+│  ████████████░░░░░░░ 80%         │
+│  Pending: 10  Active: 2  Done: 8│
+│                                  │
+│  Quick Actions                   │
+│  [Sync Library] [Run OCR]        │
+└──────────────────────────────────┘
+```
 
 ---
 
 ## Commands
 
-### Terminal
+### Obsidian Command Palette (`Ctrl+P`)
 
-| Category | Command | What it does |
-|----------|---------|-------------|
-| **Setup** | `paperforge setup` | Run setup wizard |
-| | `paperforge doctor` | Diagnose configuration |
-| **Sync** | `paperforge sync` | Sync Zotero, generate notes |
-| **OCR** | `paperforge ocr` | One-shot OCR (upload → poll → download) |
-| | `paperforge ocr --diagnose` | OCR configuration check |
-| | `paperforge ocr --no-progress` | Quiet mode |
-| **Reading** | `paperforge deep-reading` | Show deep-reading queue |
-| **Maintenance** | `paperforge status` | System status |
-| | `paperforge status --json` | JSON output for tooling |
-| | `paperforge update` | Auto-update |
-| | `paperforge --verbose` | DEBUG-level logging |
+| Command | Description |
+|---------|-------------|
+| `PaperForge: Open Dashboard` | Open status panel with metrics and quick actions |
+| `PaperForge: Sync Library` | Sync Zotero and generate notes |
+| `PaperForge: Run OCR` | Extract PDF full text and figures |
 
-### Agent (OpenCode / Claude Code / Codex / Cursor / Copilot)
+### Agent Commands
 
-| Command | What it does | Required |
+| Command | Description | Requires |
 |---------|-------------|----------|
-| `/<prefix>pf-deep <key>` | Full 3-pass deep reading | OCR complete |
-| `/<prefix>pf-paper <key>` | Quick Q&A | Formal note exists |
-| `/pf-sync` | Sync Zotero (OpenCode only) | Installed |
-| `/pf-ocr` | Run OCR (OpenCode only) | Installed |
-| `/pf-status` | System status (OpenCode only) | Installed |
+| `/pf-deep <key>` | Full 3-pass deep reading | OCR complete |
+| `/pf-paper <key>` | Quick Q&A | Formal note exists |
+| `/pf-sync` | Sync Zotero | Installed |
+| `/pf-ocr` | Run OCR | Installed |
+| `/pf-status` | System status | Installed |
 
-> Prefix: `/` for Claude Code / OpenCode / Copilot, `$` for Codex. CLI-only commands (sync, ocr, status) are available as OpenCode commands or via terminal.
+### CLI (Optional)
+
+| Command | Description |
+|---------|-------------|
+| `paperforge sync` | Sync Zotero, generate notes |
+| `paperforge ocr` | Run OCR |
+| `paperforge status` | System overview |
+| `paperforge doctor` | Diagnose configuration |
+| `paperforge update` | Auto-update |
 
 ---
 
-## First Run
+## Supported Agent Platforms
 
-```bash
-# 1. Sync Zotero
-paperforge sync
+| Platform | Agent Commands | Setup |
+|----------|---------------|-------|
+| **OpenCode** | Full support (all `/pf-*` commands) | `.opencode/command/` + `.opencode/skills/` |
+| **Claude Code** | `/pf-deep`, `/pf-paper` | `.claude/skills/` |
+| **Cursor** | `/pf-deep`, `/pf-paper` | `.cursor/skills/` |
+| **GitHub Copilot** | `/pf-deep`, `/pf-paper` | `.github/skills/` |
+| **Windsurf** | `/pf-deep`, `/pf-paper` | `.windsurf/skills/` |
+| **Codex** | `$pf-deep`, `$pf-paper` | `.codex/skills/` |
+| **Cline** | `/pf-deep`, `/pf-paper` | `.clinerules/` |
 
-# 2. Mark papers for reading in Obsidian (set do_ocr: true, analyze: true)
+Select your platform in the wizard — files are deployed automatically.
 
-# 3. Run OCR
-paperforge ocr
+---
 
-# 4. Deep read (in OpenCode)
-/pf-deep XXXXXXX
+## Configuration
+
+All config is handled by the setup wizard. Generated files:
+
 ```
+vault/
+├── paperforge.json          ← directory config + agent platform
+├── System/
+│   └── PaperForge/
+│       ├── .env             ← PaddleOCR API key
+│       ├── exports/         ← Better BibTeX JSON exports go here
+│       └── config/          ← domain-collections.json
+├── Resources/
+│   ├── Notes/               ← formal literature notes (metadata + deep reading)
+│   └── Index_Cards/         ← index records (one per paper, by domain)
+└── Base/                   ← Obsidian Base views (filterable table views)
+```
+
+Environment variables (optional overrides):
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `PADDLEOCR_API_TOKEN` | — | PaddleOCR API Key |
+| `PAPERFORGE_LOG_LEVEL` | `INFO` | Logging level |
 
 ---
 
 ## Update
+
+Auto-update on every Obsidian restart (can be disabled in plugin settings). Or manually:
 
 ```bash
 paperforge update
@@ -201,44 +189,15 @@ pip install --upgrade git+https://github.com/LLLin000/PaperForge.git
 
 ---
 
-## Configuration
-
-### paperforge.json
-
-```json
-{
-  "version": "1.4.3",
-  "system_dir": "99_System",
-  "resources_dir": "03_Resources",
-  "literature_dir": "Literature",
-  "control_dir": "LiteratureControl",
-  "base_dir": "05_Bases",
-  "auto_analyze_after_ocr": false
-}
-```
-
-### Environment Variables
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `PADDLEOCR_API_TOKEN` | — | PaddleOCR API Key |
-| `PADDLEOCR_JOB_URL` | `https://paddleocr.aistudio-app.com/api/v2/ocr/jobs` | API endpoint |
-| `PAPERFORGE_LOG_LEVEL` | `INFO` | Logging level |
-| `PAPERFORGE_RETRY_MAX` | `5` | Upload retry count |
-| `PAPERFORGE_POLL_MAX_CYCLES` | `20` | Max poll cycles |
-
----
-
 ## Documentation
 
-| Document | What it covers |
-|----------|---------------|
-| [📖 Setup Guide](docs/setup-guide.md) | Step-by-step from zero to running |
-| [⚡ Quick Install](docs/INSTALLATION.md) | Concise install instructions |
-| [📋 Post-Install Guide](AGENTS.md) | First-time user guide |
-| [📝 Changelog](CHANGELOG.md) | Version history |
-| [🤝 Contributing](CONTRIBUTING.md) | dev setup and conventions |
-
+| Document | Content |
+|----------|---------|
+| [Setup Guide](docs/setup-guide.md) | Step-by-step from zero to running |
+| [Quick Install](docs/INSTALLATION.md) | Concise install instructions |
+| [Post-Install Guide](AGENTS.md) | First-time user guide and workflow |
+| [Changelog](CHANGELOG.md) | Version history |
+| [Contributing](CONTRIBUTING.md) | Dev setup and conventions |
 
 ---
 
