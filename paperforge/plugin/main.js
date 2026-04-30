@@ -1,7 +1,12 @@
 const { Plugin, Notice, ItemView, Modal, Setting, PluginSettingTab } = require('obsidian');
 const { exec } = require('node:child_process');
+const { LANG, detectLang } = require('./i18n.js');
 
 const VIEW_TYPE_PAPERFORGE = 'paperforge-status';
+
+let T = LANG.zh;  // default Chinese, updated in onload()
+
+function t(key) { return T[key] || LANG.en[key] || key; }
 
 const DEFAULT_SETTINGS = {
     vault_path: '',
@@ -13,6 +18,7 @@ const DEFAULT_SETTINGS = {
     setup_complete: false,
     auto_update: true,
     agent_platform: 'opencode',
+    language: '',
 };
 
 const ACTIONS = [
@@ -266,9 +272,9 @@ class PaperForgeSettingTab extends PluginSettingTab {
         }
 
         /* ── Header ── */
-        containerEl.createEl('h2', { text: 'PaperForge' });
+        containerEl.createEl('h2', { text: t('header_title') || 'PaperForge' });
         containerEl.createEl('p', {
-            text: 'Obsidian + Zotero 文献管理流水线。自动同步文献、生成笔记、OCR 提取全文，一站式文献精读工作流。',
+            text: t('desc'),
             cls: 'paperforge-settings-desc'
         });
 
@@ -801,6 +807,7 @@ class PaperForgeSetupModal extends Modal {
 module.exports = class PaperForgePlugin extends Plugin {
     async onload() {
         await this.loadSettings();
+        T = (detectLang() === 'zh') ? LANG.zh : LANG.en;
         this.registerView(VIEW_TYPE_PAPERFORGE, (leaf) => new PaperForgeStatusView(leaf));
 
         this.addRibbonIcon('book-open', 'PaperForge Dashboard', () => PaperForgeStatusView.open(this));
