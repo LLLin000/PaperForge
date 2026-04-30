@@ -4,7 +4,7 @@
   "version": "1.4.11",
   "minAppVersion": "1.0.0",
   "description": "PaperForge — Zotero + Obsidian literature pipeline. Sync, OCR, and deep-reading commands in your command palette.",
-  "author": "PaperForge",
+  "author": "Lin Zhaoxuan",
   "authorUrl": "https://github.com/LLLin000/PaperForge",
   "isDesktopOnly": true
 }
