@@ -1,0 +1,96 @@
+#!/usr/bin/env python
+"""Bump version across all PaperForge files.
+
+Usage:
+    python scripts/bump.py 1.4.12           # specific version
+    python scripts/bump.py patch            # bump patch (1.4.11 → 1.4.12)
+    python scripts/bump.py minor            # bump minor (1.4.11 → 1.5.0)
+    python scripts/bump.py major            # bump major (1.4.11 → 2.0.0)
+    python scripts/bump.py 1.4.12 --dry-run # preview only, no changes
+    python scripts/bump.py patch --no-git   # skip git commit/tag
+"""
+import argparse
+import json
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+
+FILES_TO_UPDATE = {
+    "__init__": ROOT / "paperforge" / "__init__.py",
+    "manifest": ROOT / "paperforge" / "plugin" / "manifest.json",
+    "versions": ROOT / "paperforge" / "plugin" / "versions.json",
+}
+
+
+def read_current_version() -> str:
+    content = FILES_TO_UPDATE["__init__"].read_text(encoding="utf-8")
+    m = re.search(r'__version__\s*=\s*"([^"]+)"', content)
+    if not m:
+        sys.exit("Cannot find __version__ in __init__.py")
+    return m.group(1)
+
+
+def bump_part(version: str, part: str) -> str:
+    parts = [int(x) for x in version.split(".")]
+    if part == "major":
+        return f"{parts[0] + 1}.0.0"
+    elif part == "minor":
+        return f"{parts[0]}.{parts[1] + 1}.0"
+    else:
+        return f"{parts[0]}.{parts[1]}.{parts[2] + 1}"
+
+
+def update_file(path: Path, old_ver: str, new_ver: str, dry: bool) -> bool:
+    content = path.read_text(encoding="utf-8")
+    if old_ver not in content:
+        print(f"  SKIP {path.name}: version {old_ver} not found")
+        return False
+    if dry:
+        print(f"  WOULD update {path.name}: {old_ver} → {new_ver}")
+        return True
+    new_content = content.replace(old_ver, new_ver)
+
+    # Special: append new_version: minAppVersion to versions.json
+    if path.name == "versions.json" and f'"{new_ver}"' not in new_content:
+        data = json.loads(new_content)
+        data[new_ver] = "1.0.0"
+        new_content = json.dumps(data, indent=2, ensure_ascii=False) + "\n"
+
+    path.write_text(new_content, encoding="utf-8")
+    print(f"  {path.name}: {old_ver} → {new_ver}")
+    return True
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Bump PaperForge version")
+    parser.add_argument("version", help="New version or bump part (major/minor/patch)")
+    parser.add_argument("--dry-run", action="store_true", help="Preview only")
+    parser.add_argument("--no-git", action="store_true", help="Skip git commit/tag")
+    args = parser.parse_args()
+
+    old_ver = read_current_version()
+    new_ver = args.version if "." in args.version else bump_part(old_ver, args.version)
+
+    print(f"Bump: {old_ver} → {new_ver}")
+
+    for key, path in FILES_TO_UPDATE.items():
+        update_file(path, old_ver, new_ver, args.dry_run)
+
+    if args.dry_run:
+        print("\nDry run — no changes made.")
+        return
+
+    if not args.no_git:
+        msg = f"chore: bump version to v{new_ver}"
+        subprocess.run(["git", "add", "-u"], cwd=ROOT, check=True)
+        subprocess.run(["git", "commit", "-m", msg], cwd=ROOT)
+        subprocess.run(["git", "tag", f"v{new_ver}"], cwd=ROOT)
+        print(f"\nCommitted and tagged v{new_ver}")
+        print("Run: git push && git push --tags")
+
+
+if __name__ == "__main__":
+    main()
