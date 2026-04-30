@@ -1,281 +1,297 @@
 # Pitfalls Research
 
-**Domain:** Python CLI application — adding shared utilities, logging, pre-commit, and UX improvements to a brownfield Obsidian + Zotero literature pipeline
-**Researched:** 2026-04-25
+**Domain:** Obsidian Plugin Settings Tab (Retrofit to Existing CommonJS Plugin)
+**Researched:** 2026-04-29
 **Confidence:** HIGH
+
+> Source material: Official Obsidian API type definitions (`obsidian.d.ts`, v1.12+), existing PaperForge `main.js` (CommonJS, sidebar + ribbon + commands, zero settings), Obsidian `Setting` / `PluginSettingTab` / `Plugin.loadData/saveData` APIs, `Notice` / `ButtonComponent` / `exec` from `node:child_process`.
 
 ---
 
 ## Critical Pitfalls
 
-### Pitfall 1: Shared Utility Extraction Creating Circular Imports
+### Pitfall 1: `loadData()` / `saveData()` Data Corruption Due to Timing and Partial Writes
 
 **What goes wrong:**
-Extracting `read_json`, `write_json`, `yaml_quote`, `load_vault_config`, `pipeline_paths`, `STANDARD_VIEW_NAMES`, and `_JOURNAL_DB` into `paperforge/worker/_utils.py` creates circular import chains. The 7 worker modules already cross-import: `ocr.py` imports from `sync.py`, `deep_reading.py` imports from both `sync.py` and `ocr.py`, `repair.py` imports from all three. If `_utils.py` re-exports or imports anything from worker modules (even indirectly via shared path construction), circular imports explode at runtime with `ImportError: cannot import name '...' from partially initialized module '...' (most likely due to a circular import)`.
+Calling `this.saveData(this.settings)` inside an `onChange` handler fires on every keystroke. Each keystroke triggers a full `data.json` write (file overwrite). On slow filesystems or with rapid typing, the Obsidian Sync service may pick up intermediate partial writes, or two sequential writes may collide. The result: truncated or corrupted `data.json`, plugin settings reset to defaults on next load.
 
 **Why it happens:**
-- `_JOURNAL_DB` is a module-level global singleton shared across workers — moving it to `_utils.py` means workers must import from `_utils`, but `sync.py` already exports functions that `ocr.py` and `deep_reading.py` need (e.g., `load_export_rows`, `has_deep_reading_content`).
-- `load_vault_config` and `pipeline_paths` are duplicated 7 times with identical logic. Extracting them requires careful dependency ordering to avoid `_utils.py` needing to import `config.py`, which imports... nothing problematic, but the *callers* (workers) already cross-import each other.
-- The `pipeline_paths` function in each worker adds worker-specific keys on top of the shared `paperforge_paths()` output. Naively centralizing this function would lose the worker-specific keys.
+`Plugin.saveData()` writes to `data.json` in `{vault}/.obsidian/plugins/paperforge/` synchronously from the caller's perspective (it returns a Promise but fires immediately). Obsidian's `Setting.addText(cb => cb.onChange(...))` fires on every `input` event. There is no built-in debounce. Developers naively add `this.saveData()` inside the onChange callback, creating a write-per-keystroke pattern.
 
 **How to avoid:**
-1. **Make `_utils.py` a pure leaf module** — it imports NOTHING from `paperforge.worker.*` or `paperforge.commands.*`. It can import from `paperforge.config` (already a leaf) and stdlib only. This is the single most important rule.
-2. **Do NOT move `pipeline_paths` into `_utils.py`** — each worker's `pipeline_paths` adds unique keys. Instead, provide a `build_pipeline_paths(vault, extra_keys: dict)` factory in `_utils.py` that workers call with their own extras.
-3. **Keep `_JOURNAL_DB` in `_utils.py` as a module-level global** — this is safe as long as it only depends on `_utils.py`'s own `read_json` and `load_vault_config`. The singleton pattern (check if not None before loading) works across all importers.
-4. **Use lazy imports inside functions** for cross-worker dependencies that already exist. Example: `from paperforge.worker.sync import load_export_rows` inside a function (not at module top) avoids circular import at load time.
-5. **Verify with `pytest --collect-only` immediately after extraction** — circular imports manifest as collection failures, not runtime failures. If test collection passes, the import graph is safe.
+- **Debounce saveData**: Wrap `this.saveData()` in a debounce function (250-500ms). Clear it on component unload.
+- **Atomic writes**: Obsidian's `saveData` is already atomic (write-to-temp then rename), but debouncing still prevents rapid-fire writes.
+- **Schema versioning**: Always include `version: 2` in settings. On `loadData()`, check `settings.version` and run migration if missing or outdated.
+
+```javascript
+// Pattern — debounced save with version guard
+let _saveTimeout = null;
+const debouncedSave = () => {
+    clearTimeout(_saveTimeout);
+    _saveTimeout = setTimeout(() => this.saveData(this.settings), 300);
+};
+// In onunload: clearTimeout(_saveTimeout)
+```
 
 **Warning signs:**
-- `ImportError` mentioning "partially initialized module" during `pytest` collection
-- Any `from paperforge.worker import ...` at the top of `_utils.py`
-- `_utils.py` importing from `paperforge.commands.*` or `paperforge.skills.*`
-- Module count in `sys.modules` growing unexpectedly during import
+- `data.json` shows intermediate/incomplete JSON after typing in a text field
+- User reports "my settings reset" after Obsidian restart
+- Obsidian Sync shows "conflict" on `data.json`
 
 **Phase to address:**
-Phase 1 (shared utility extraction) — this is the first thing to do, and must be done correctly before any other change. All subsequent phases depend on `_utils.py` existing and being safe to import from.
+Phase 1 (Settings tab shell + persistence layer). Build debounced save + versioning before ANY settings controls.
 
 ---
 
-### Pitfall 2: Replacing `print()` with `logging` Breaking Piped Output and Test stdio Capture
+### Pitfall 2: Settings Tab `display()` Breaking the Existing Sidebar View
 
 **What goes wrong:**
-The current codebase uses bare `print()` for all output (status messages, OCR progress, deep-reading queue reports). Replacing these with `logging.info()` or `logging.getLogger()` calls without proper configuration breaks:
-
-1. **Piped commands**: `paperforge status | grep ocr` stops working if logs go to stderr by default.
-2. **Test stdout capture**: `pytest` tests that assert on `print()` output (e.g., `test_cli_worker_dispatch.py`, `test_path_normalization.py`, `test_legacy_worker_compat.py`) fail because `logging` output goes to stderr or is swallowed.
-3. **Duplicate output**: If `logging.basicConfig()` is called in multiple worker modules (which currently happens implicitly via duplicated `load_simple_env` calls), handlers accumulate. The same log line prints twice, then three times, then more as modules are imported.
-4. **`logging.basicConfig()` called in library code**: The `cli.py` main() function calls workers, and workers call `load_simple_env`. If any worker module also calls `logging.basicConfig()`, it conflicts with the application-level configuration. This is Python's #1 logging anti-pattern.
+The existing plugin has a `PaperForgeStatusView` (sidebar `ItemView`). Adding a `PluginSettingTab` that mutates global state, overrides `this.app.workspace` internals, or triggers workspace layout changes will break the existing sidebar. Specifically: if the settings tab code uses `this.app.workspace.getLeaf()` or triggers a workspace layout save/restore, it can steal focus from the sidebar, close the sidebar pane, or cause layout jank.
 
 **Why it happens:**
-- Python's stdlib `logging` module uses a global root logger. `basicConfig()` is a one-shot configuration — calling it a second time is silently ignored (by default) or raises if `force=True` is passed. This creates confusing behavior where "logs work in this module but not that one."
-- `print()` writes to `sys.stdout`; `logging` by default writes to `sys.stderr` (StreamHandler default). Code that captures stdout (pytest, subprocess pipes) misses log output entirely.
-- Windows PowerShell encoding (GBK/UTF-8 mismatch on redirected streams) adds another layer — `print()` may work but `logging.StreamHandler` with default encoding may crash.
+`PluginSettingTab` extends `SettingTab` which has a `display()` method called whenever the user switches to the settings tab. This method is called **fresh each time** — the `containerEl` is reused but emptied each time the tab gains focus. If `display()` opens/closes leaves, registers views, or calls `workspace.revealLeaf()`, it disrupts the workspace layout that the sidebar view depends on.
 
 **How to avoid:**
-1. **Configure logging ONCE in `cli.py` `main()`**, before any worker is imported. Use `dictConfig` for explicit, maintainable handler setup.
-2. **Use a dedicated `StreamHandler(sys.stdout)` for CLI-facing output** at INFO level and above. Keep `stderr` for WARNING/ERROR only.
-3. **Use `sys.stdout.isatty()` check** to emit structured output (JSON) when piped vs. human-readable when interactive. This prevents breaking `paperforge deep-reading | grep ready` workflows.
-4. **Add `force=True` to `basicConfig`** in the single configuration call to prevent silent failures if something else already configured logging.
-5. **Provide a `get_logger(__name__)` helper** in `_utils.py` that returns a pre-configured logger. All workers use this instead of `logging.getLogger()`.
-6. **Preserve `print()` for user-facing interactive output** where formatting matters (OCR queue tables, diagnostic reports). Only replace `print()` for informational/debug messages that don't need rich formatting. Not every `print()` should become a `logger.info()`.
-7. **Update test assertions that capture stdout** to either capture logging output (via `caplog` fixture) or verify through the returned exit code + side effects (file contents) rather than stdout.
+- **Settings tab is self-contained**: Only mutate `this.containerEl` in `display()`. Never touch `this.app.workspace` from settings.
+- **Never register views in `display()`**: View registration (`registerView`) belongs in `onload()`, not in settings display.
+- **Do not call `PaperForgeStatusView.open()` from settings**: The settings tab should not trigger sidebar actions.
+- **Settings actions that need refresh**: Use `Notice` to tell user "Restart required" or "Click Refresh in sidebar" rather than programmatically opening views.
 
 **Warning signs:**
-- `logging.basicConfig()` appearing in any file under `paperforge/worker/`
-- Tests that previously passed on stdout assertions suddenly failing
-- Log messages appearing twice in CI logs
-- `No handlers could be found for logger "paperforge.xxx"` warnings at startup
+- Sidebar closes/disappears when switching to Settings tab
+- "PaperForge Dashboard" ribbon icon stops working after visiting settings
+- Workspace layout resets to default after opening settings
 
 **Phase to address:**
-Phase 2 (logging integration) — must come AFTER shared utility extraction (Phase 1) because the `get_logger` helper lives in `_utils.py`. Must come BEFORE Phase 4 (progress bars) because progress bars interact with logging output formatting.
+Phase 1 (Settings tab shell). Day 1 test: open sidebar, open settings, verify sidebar still visible and functional.
 
 ---
 
-### Pitfall 3: Pre-Commit Hooks That Make Development Painful
+### Pitfall 3: `exec` Blocking the Obsidian UI Thread During Long Subprocesses
 
 **What goes wrong:**
-Adding pre-commit hooks without careful tuning causes developers to `--no-verify` commits, skip hooks entirely, or waste hours on false positives. Specific failure modes:
-
-1. **Slow hooks (>5 seconds)**: Running `mypy` or full test suite as a pre-commit hook. Developers commit 50+ times per day in TDD workflows — even 3-second delays compound to minutes of waiting.
-2. **False positives on test fixtures**: Dead code detection marks `conftest.py` fixtures, sandbox generators, and `test_*.py` helper functions as "unused" because they're dynamically discovered by pytest.
-3. **Formatting hooks that reformat test fixture files**: `ruff format` or `black` applied to sandbox vault files (`tests/sandbox/00_TestVault/`) that have intentional whitespace/formatting.
-4. **Windows line ending conflicts**: CRLF vs. LF mismatch between Windows development machines and Linux CI. Hooks pass locally on Windows but fail in CI with "files would be reformatted."
-5. **Version skew**: Hooks pinned to specific versions in `.pre-commit-config.yaml` but CI installs different versions, producing different results.
+The existing plugin uses `exec('python -m paperforge ...', { cwd, timeout }, callback)`. While `exec` itself is async-callback (non-blocking), a settings "Setup Wizard" button that runs `paperforge doctor` or `paperforge sync --setup` can take 10-60 seconds. The user sees a frozen settings tab with no progress indicator. Worse: if the callback throws and isn't caught, the plugin crashes silently. If the timeout fires, the child process may become a zombie (orphaned Python process keeping file handles open).
 
 **Why it happens:**
-- pre-commit runs hooks in isolated virtualenvs — dependencies may differ from the project's `requirements.txt` or `pyproject.toml`.
-- Static analysis tools (dead code detectors, mypy) operate on AST/syntax level and cannot understand pytest fixture discovery, `conftest.py` auto-import, or dynamic dispatch patterns used in `cli.py` stubs.
-- `pre-commit run --all-files` in CI catches issues that escaped local hooks (force push, forgotten `pre-commit install`), but if local windows pass and CI Linux fails, developers can't reproduce locally.
+`exec` buffers all stdout/stderr in memory and delivers them once the process exits. There is no streaming feedback to the settings UI. The `ButtonComponent.onClick(callback)` pattern passes an async callback — but `exec`'s callback-based API doesn't integrate with async/await naturally. The result: the button looks "stuck" with no visual feedback for 10-60 seconds.
 
 **How to avoid:**
-1. **Keep pre-commit hooks FAST (<2 seconds total)**:
-   - `ruff` (lint + format) — replaces `black`, `isort`, `flake8`, `pyupgrade` in a single sub-second hook
-   - `check-yaml`, `check-json`, `check-toml` — basic syntax checks only
-   - `trailing-whitespace`, `end-of-file-fixer`, `mixed-line-ending` — fast text checks
-   - NO `mypy`, NO `pytest`, NO dead code detection as pre-commit hooks — these go to CI only
-2. **Exclude test fixture directories** from all hooks:
-   ```yaml
-   exclude: |
-     (?x)^(
-       tests/sandbox/.*|
-       tests/.*/fixtures/.*|
-       .*\.base$
-     )
-   ```
-3. **Force LF line endings globally** in `.gitattributes` and `.pre-commit-config.yaml`:
-   ```yaml
-   - repo: https://github.com/pre-commit/pre-commit-hooks
-     hooks:
-       - id: mixed-line-ending
-         args: ['--fix=lf']
-   ```
-4. **Run the SAME hooks in CI** via `pre-commit run --all-files` — this eliminates the "works on my machine" problem. If hooks pass locally and CI fails, the hook config is misconfigured, not the code.
-5. **Pin ALL hook versions to exact tags** (never `rev: main` or `rev: master`). Run `pre-commit autoupdate` monthly.
-6. **Bootstrap with `--min-confidence high`** for any dead code detector, and maintain a `.deadcode.toml` allowlist for intentionally-dynamic symbols (cli.py stubs, pytest fixtures, agent skill entry points).
+- **Use `execFile` or `spawn` for streaming**: `spawn` provides `stdout.on('data')` for live progress. Pipe it to a progress display in the settings tab.
+- **Button state management**: Immediately disable the button (`.setDisabled(true)` + `.setButtonText('Running...')`) after click. Re-enable in callback.
+- **Wrap exec in Promise with proper cleanup**:
+```javascript
+const runCommand = (cmd, args, cwd, timeoutMs) => new Promise((resolve, reject) => {
+    const child = spawn(cmd, args, { cwd, timeout: timeoutMs, shell: true });
+    let stdout = '', stderr = '';
+    child.stdout.on('data', d => stdout += d);
+    child.stderr.on('data', d => stderr += d);
+    child.on('close', code => {
+        if (code === 0) resolve(stdout);
+        else reject(new Error(stderr || `Exit code ${code}`));
+    });
+    child.on('error', reject);
+});
+```
+- **Show incremental progress**: For long commands, use `--verbose` or `--progress` flags on the Python side and parse streaming output for progress updates.
+- **Timeout + cleanup**: Explicitly `child.kill('SIGTERM')` on timeout. Do not rely solely on the `timeout` option (which can fail on Windows).
 
 **Warning signs:**
-- Developers using `git commit --no-verify` as a habit
-- Pre-commit hook taking >5 seconds to complete
-- CI failing on formatting issues that "pass locally"
-- Deleted test code being caught by dead-code detection
+- Clicking "Run Setup" freezes Obsidian for 20+ seconds
+- Multiple "Run" clicks spawn multiple subprocesses (because button wasn't disabled)
+- Zombie Python processes after Obsidian close (check Task Manager)
+- Settings tab becomes unresponsive with no loading indicator
 
 **Phase to address:**
-Phase 3 (pre-commit hooks) — must come AFTER shared utility extraction (Phase 1) because the hooks need to validate the refactored module structure. The `.pre-commit-config.yaml` should be committed early and iterated on.
+Phase 2 (Setup wizard controls). This is where subprocess UX matters most.
 
 ---
 
-### Pitfall 4: Progress Bars Breaking Windows PowerShell Piping
+### Pitfall 4: Windows Path Encoding — `basePath` with Spaces and Unicode in `exec` cwd
 
 **What goes wrong:**
-Adding `tqdm` or `rich.progress` progress bars to long-running operations (OCR uploads, large PDF processing) breaks two critical workflows:
+The existing code uses `this.app.vault.adapter.basePath` as `cwd` for `exec`. On Windows, `basePath` returns a native path like `C:\Users\Lin\My Vault` (with spaces) or `D:\L\Med\Research\99_System\LiteraturePipeline` (with non-ASCII-like directory names). When passed to `exec('python -m paperforge ...', { cwd: basePath })`, the Windows command interpreter may fail to parse the path due to spaces, or the Python process may mishandle Unicode in working directory paths.
 
-1. **Non-TTY output**: When `paperforge ocr` is piped to a file or run from a script, progress bars either render as garbage (ANSI escape sequences in text files) or are stripped entirely (rich detects non-TTY and produces no output at all). Users lose visibility into long-running operations.
-2. **Windows PowerShell encoding**: PowerShell redirects stdout as UTF-16 by default. `tqdm` uses `\r` (carriage return) for in-place updates, which doesn't work with UTF-16 encoding. Rich's legacy Windows layer uses `mbcs` encoding on redirected streams, causing `UnicodeEncodeError` on Chinese filenames.
-3. **Subprocess capture**: When PaperForge is called from another process (AI agent via `paperforge ocr`), the parent captures stdout. Tqdm/rich detect non-TTY and either produce nothing or emit partial output only on completion.
+Additionally, `basePath` may have different case than the actual filesystem path (Windows is case-insensitive but Node's `path` comparisons are case-sensitive). If any code does `pathA === pathB` comparisons, it will fail.
 
 **Why it happens:**
-- Both `tqdm` and `rich` check `sys.stderr.isatty()` or `sys.stdout.isatty()` to decide whether to render progress animations. On Windows, this check is unreliable — ConPTY, legacy conhost, and PowerShell ISE all return different results.
-- Rich on Windows falls back to "legacy Windows" rendering when stdout is a `FileIO` (pipe redirection), using `mbcs` encoding that cannot handle Unicode characters.
-- `tqdm` defaults to `file=sys.stderr` and uses `\r` for updates. On Windows, `sys.stderr.reconfigure(encoding='utf-8')` is needed but not guaranteed.
+- `exec` uses `cmd.exe` on Windows for `shell: true` (default). Spaces in paths require quoting.
+- `basePath` is a native OS path. Inside Obsidian's Electron runtime, this is fine for Vault API calls. But passing it directly to a Python subprocess as `cwd` may expose encoding mismatches (Electron's `basePath` may be UTF-16 on Windows while Python expects UTF-8 or system locale encoding).
+- `path.sep` on Windows is `\`, but the vault adapter uses `/` internally. Mixed separators in path construction can cause "file not found" errors.
 
 **How to avoid:**
-1. **Use `tqdm` with explicit `disable=None`** (auto-detection) and set `file=sys.stderr` for progress. Emit only final results to `sys.stdout`. This preserves piping of meaningful output.
-2. **Detect non-interactive mode explicitly**: Check `sys.stdout.isatty()` and `sys.stderr.isatty()`. If either is False, disable progress bars and use simple line-by-line status messages instead.
-3. **Reconfigure stdout/stderr encoding on Windows** early in `cli.py`:
-   ```python
-   if sys.platform == "win32":
-       for stream in (sys.stdout, sys.stderr):
-           if hasattr(stream, "reconfigure"):
-               stream.reconfigure(encoding="utf-8")
-   ```
-4. **Provide `--no-progress` / `--quiet` flags** so scripts and agents can suppress progress bars explicitly.
-5. **For OCR uploads**: emit progress as log-level messages (`logger.info("Uploading page 3/12...")`) rather than a progress bar. The OCR worker already writes `meta.json` with status — use that as the canonical progress tracking, not terminal output.
+- **Quote the cwd**: `{ cwd: basePath }` is fine — Node's `child_process` handles quoting internally. But verify by testing with a path like `C:\Users\Test User\My Vault`.
+- **Normalize paths before using in Python commands**: Use `path.normalize()` for any path argument passed as a CLI argument, and wrap in double quotes.
+- **Test with a vault path containing**: spaces, Chinese characters, em-dashes, and trailing spaces.
+- **`spawn` over `exec`**: `spawn` accepts an explicit `cwd` option with proper quoting. It's safer for Windows subprocess handling because it doesn't go through `cmd.exe` by default (though `shell: true` restores cmd.exe behavior).
+- **Path arguments passed to Python**: Always wrap in double quotes: `python -m paperforge status --vault "C:\My Vault\"`
 
 **Warning signs:**
-- ANSI escape codes appearing in piped output files
-- `UnicodeEncodeError` when running `paperforge ocr 2>&1 | tee log.txt` on Windows
-- Progress bars appearing as a single static line instead of animating
-- "No output" when calling `paperforge ocr` from subprocess
+- `exec` returns "The system cannot find the path specified" despite path existing
+- Works on one Windows machine but fails on another (encoding/locale difference)
+- Python process starts but can't find vault files (wrong working directory)
+- Error: `'C:\Users\Lin' is not recognized as an internal or external command` (space in path not quoted)
 
 **Phase to address:**
-Phase 4 (progress indicators / UX improvements) — depends on Phase 2 (logging) because progress indicators must coexist with the logging infrastructure. Should be tested on both Windows PowerShell and Git Bash.
+Phase 2 (Setup wizard / path configuration). Must test on a vault with spaces and Unicode in path.
 
 ---
 
-### Pitfall 5: OCR Retry Logic Corrupting the Async State Machine
+### Pitfall 5: Raw stderr Dumped Into `Notice` — User-Unfriendly Output
 
 **What goes wrong:**
-The OCR worker (`ocr.py`) manages an async state machine: `pending → processing → done/failed`. Adding retry/backoff without careful state management causes:
-
-1. **Duplicate submissions**: Retrying a job that already submitted successfully creates a second OCR task. PaddleOCR processes both, producing two result sets. The second one overwrites the first or leaves orphaned files.
-2. **Zombie `processing` state**: If the process crashes during a retry (Ctrl+C, OOM, power loss), `meta.json` stays at `ocr_status: processing`. No code recovers from this state — the job is permanently stuck.
-3. **Infinite retry loops on permanent failures**: PaddleOCR 400 errors (bad PDF, authentication failure, quota exceeded) are NOT transient. Retrying them with exponential backoff wastes API quota and blocks the queue.
-4. **State divergence between `meta.json` and `ocr-queue.json`**: The OCR worker writes both files. If retry logic updates one but not the other, the `deep-reading` worker reports incorrect status, and `paperforge repair` cannot automatically fix it.
+The existing plugin code does:
+```javascript
+new Notice(`[!!] ${a.cmd} failed: ${(stderr || err.message).slice(0, 120)}`, 8000);
+```
+This shows raw Python tracebacks, CLI errors, or JSON blobs in the Obsidian notification. The user sees technical gobbledygook like `[!!] sync failed: Traceback (most recent call last):\n  File "paperforge", line 12, in <module>\nModuleNotFoundError: No module named 'paperforge'`.
 
 **Why it happens:**
-- The current code has no retry mechanism at all. Adding one needs to distinguish transient failures (network timeout, 503 Service Unavailable, connection reset) from permanent failures (400 Bad Request, 401 Unauthorized, 404 Not Found, file corruption).
-- `meta.json` and `ocr-queue.json` are written independently — there's no atomic multi-file transaction. If the process dies between writes, they diverge.
-- The `meta.json` schema has no `retry_count`, `last_error`, or `last_attempt_at` fields. Retry logic operates blind — it cannot distinguish "never attempted" from "failed 3 times."
+`exec` delivers unfiltered stderr. The naive approach is to show it directly. Python's tracebacks are multi-line, include absolute paths, and are not user-actionable for non-technical users.
 
 **How to avoid:**
-1. **Add retry metadata to `meta.json`**: `retry_count` (int), `last_error` (str), `last_attempt_at` (ISO timestamp). Update these atomically before each retry.
-2. **Classify errors explicitly**: Only retry on `requests.Timeout`, `requests.ConnectionError`, HTTP 429, HTTP 503, HTTP 502. Never retry on HTTP 400, 401, 403, 404, or JSON parse errors.
-3. **Add a `blocked` terminal state**: If `retry_count >= max_retries` OR the error is non-retryable, set `ocr_status: blocked`. The deep-reading worker already handles `blocked` (cleanup_blocked_ocr_dirs), and `paperforge repair` can detect it.
-4. **Recover `processing` state on startup**: During `load_simple_env` / init, scan `meta.json` files with `ocr_status: processing`. If `last_attempt_at` is older than 1 hour (or missing), transition to `pending` for retry. This prevents zombie jobs.
-5. **Use `tenacity` library** (lightweight, well-maintained, supports both sync and async) with:
-   ```python
-   from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
-   @retry(
-       stop=stop_after_attempt(3),
-       wait=wait_exponential(multiplier=2, min=4, max=60),
-       retry=retry_if_exception_type((requests.Timeout, requests.ConnectionError)),
-       before_sleep=lambda retry_state: update_meta_retry_count(retry_state),
-   )
-   ```
-6. **Write `meta.json` using atomic write-then-rename** pattern to prevent corrupt files from mid-crash writes.
+- **Parse stderr for known error patterns, return user-friendly messages**:
+```javascript
+const parseError = (stderr) => {
+    if (stderr.includes('ModuleNotFoundError')) 
+        return 'PaperForge is not installed. Open Settings and run the Setup Wizard.';
+    if (stderr.includes('FileNotFoundError') && stderr.includes('library.json'))
+        return 'No Zotero export found. Check that Better BibTeX is configured.';
+    if (stderr.includes('ConnectionError') || stderr.includes('timeout'))
+        return 'Cannot reach PaddleOCR API. Check your internet connection and API key.';
+    // Fallback: show first line only, stripped of path info
+    const firstLine = stderr.split('\n').find(l => l.trim() && !l.includes('File "'));
+    return `Error: ${firstLine || 'Unknown error'}. See console for details.`;
+};
+```
+- **Log full stderr to console**: `console.error('[PaperForge]', stderr)` so developers can still access the raw error.
+- **Use `Notice` duration**: Short messages 4000ms, errors 8000ms, success 3000ms.
+- **Never show `[!!]` or `[OK]` in user-facing notices**: These are terminal artifacts.
+- **Use Obsidian's `createFragment` for rich notices**: `new Notice(createFragment(frag => frag.createEl('b', { text: 'Setup Complete' })))`.
 
 **Warning signs:**
-- `ocr_status: processing` records that are hours/days old
-- Duplicate OCR results for the same `zotero_key`
-- PaddleOCR API returning 429 Too Many Requests (rate limiting)
-- `ocr-queue.json` and `meta.json` disagreeing on job status
+- Notices show full Python tracebacks
+- Error messages contain absolute file paths from the developer's machine
+- User reports "I got an error but I don't understand what to do"
 
 **Phase to address:**
-Phase 5 (retry/backoff for OCR worker) — depends on Phase 2 (logging, to emit structured retry logs) and Phase 1 (shared utilities for write_json atomic). Must be tested with simulated network failures.
+Phase 2 (Setup wizard error handling). All subprocess calls from settings must produce polished notices.
 
 ---
 
-### Pitfall 6: Dead Code Removal Breaking Backward Compatibility
+### Pitfall 6: Form State Loss on Tab Switch — `display()` is Called Fresh, Rebuilding Destroys Unsaved Changes
 
 **What goes wrong:**
-Removing "dead code" — legacy command aliases, unused imports, deprecated function stubs — breaks users still relying on those interfaces:
-
-1. **Legacy CLI aliases removed**: `paperforge selection-sync`, `paperforge index-refresh`, `paperforge ocr run`, and `paperforge ocr doctor` are mapped in `cli.py` to new unified commands but callers (scripts, cron jobs, agent skills) may still use them.
-2. **`cli.py` module-level globals (`run_status = None`, `run_selection_sync = None`, ...) removed**: Tests patch these via `importlib.reload(cli)` + `patch.object(cli, "run_status", stub)`. Removing them breaks all dispatch tests.
-3. **`STRAIGHT_VIEW_NAMES`, `_JOURNAL_DB`, `STANDARD_VIEW_NAMES` removed from original modules**: Callers may `from paperforge.worker.sync import STANDARD_VIEW_NAMES` — if only `_utils.py` defines it, those imports break.
-4. **Duplicate utility functions removed without re-export**: If `read_json` is moved to `_utils.py` and removed from `sync.py`, any code that does `from paperforge.worker.sync import read_json` breaks, even if the same function exists in `_utils.py`.
-5. **`paperforge_lite` package name aliases removed**: The v1.2 rename from `paperforge_lite` to `paperforge` may have residual imports in user scripts or agent configurations.
+`SettingTab.display()` is called **every time the user switches to the settings tab**. If `display()` rebuilds the entire form from `this.settings`, any unsaved changes in text fields are lost when the user switches to another tab and comes back. Worse: if the user typed something invalid, the validation state is lost and the field resets to the last saved value.
 
 **Why it happens:**
-- Python's import system caches modules in `sys.modules`. `from paperforge.worker.sync import read_json` creates a binding to the `sync` module's namespace. Even if `read_json` is an identical function in `_utils.py`, the import path is different and the test/script fails.
-- Dead code detectors flag `cli.py` stubs as "unused" because they're set to `None` and then conditionally assigned by `_import_worker_functions()`. This is intentional, not dead code.
-- Legacy command aliases (`selection-sync`, `index-refresh`) were kept for backward compatibility. The v1.2 migration guide says they're deprecated but still functional. Removing them changes the documented CLI surface.
+`SettingTab.hide()` is called when user switches away. `display()` is called when they return. The `containerEl` is managed by Obsidian's settings system — it gets emptied or hidden. The standard pattern is `display()` reads from `plugin.settings` and rebuilds the UI. But if the user typed a new value and hasn't triggered `saveData()` yet (debounce hasn't fired), the in-memory `this.settings` may or may not be up to date depending on whether `onChange` updated it synchronously.
 
 **How to avoid:**
-1. **Re-export moved functions from original modules**: After moving `read_json` to `_utils.py`, add `from paperforge.worker._utils import read_json` to `sync.py`. This preserves the existing import path. Mark as `# Re-exported from _utils.py for backward compatibility`.
-2. **Keep `cli.py` stubs exactly as-is**: The `globals set to None` pattern is intentionally designed for test patching. Do not "simplify" it.
-3. **Phase legacy alias removal**: Add a deprecation warning (`warnings.warn("'selection-sync' is deprecated, use 'paperforge sync --selection'", DeprecationWarning)`) in v1.4. Actually remove in v1.5 or later. Give users at least one release cycle.
-4. **Use a dead-code tool with an allowlist**: Create `deadcode.toml` with explicit exclusions for:
-   - `cli.py` module-level globals
-   - `conftest.py` fixtures and helpers
-   - `test_*.py` files entirely
-   - `__init__.py` re-exports
-   - Functions called via `getattr`, decorators, or string-based dispatch
-   - Agent skill entry points (`ld_deep.py`)
-5. **Check backward imports with grep before removal**: `rg "from paperforge.worker.sync import (read_json|write_json|yaml_quote|load_vault_config)"` across the entire repo to find all importers.
+- **Update `this.settings` immediately on change, debounce only the `saveData()` call**:
+```javascript
+new Setting(containerEl)
+    .addText(cb => cb
+        .setValue(this.plugin.settings.someKey)
+        .onChange(value => {
+            this.plugin.settings.someKey = value;  // immediate in-memory update
+            this.debouncedSave();                    // debounced disk write
+        }));
+```
+- **Do NOT read from DOM on save**: Always read from `this.plugin.settings` when saving, not from `component.getValue()`.
+- **Clean up in `hide()`**: If you have validation state, persist it before hiding. Obsidian calls `hide()` before removing the tab content.
+- **Never reset the form from `display()` without checking if unsaved changes exist**.
 
 **Warning signs:**
-- `ModuleNotFoundError` or `ImportError` on user machines after update
-- Dead code tool marking `cli.py` stubs as unused
-- "Removed unused import" commits that delete imports used by string-based dispatch
-- CI passing but users reporting "command not found" for `selection-sync`
+- User types a value, switches to "Appearance" tab, comes back — field is empty again
+- Validation errors disappear when switching tabs (they shouldn't)
+- Settings file shows old value despite user seeing new value in the field
 
 **Phase to address:**
-Phase 6 (dead code cleanup) — must be the LAST code change phase, after all other phases are stable. Run dead code detection as a CI check, not a pre-commit hook. Review findings manually, never auto-fix.
+Phase 1 (Settings persistence). This is fundamental to the `PluginSettingTab` lifecycle.
 
 ---
 
-### Pitfall 7: Workflow Changes That Confuse Existing Users
+### Pitfall 7: `data.json` Missing Keys Crash on First Load (No Migration Path)
 
 **What goes wrong:**
-The v1.4 milestone introduces significant workflow changes — OCR queue auto-processing, simplified manual steps, progress indicators. Users who have established workflows get confused or lose data:
-
-1. **Changed frontmatter field behavior**: If `do_ocr: true` now triggers OCR automatically (previously required manual `paperforge ocr`), users with existing `do_ocr: true` set on hundreds of records get unexpected OCR processing.
-2. **Removed manual steps**: If the workflow goes from "edit frontmatter → run ocr → run deep-reading → run /pf-deep" to "edit frontmatter → done (everything auto)", users lose the explicit control they rely on.
-3. **Output format changes**: If `paperforge deep-reading` output format changes (from Markdown table to something else), scripts and agent prompts that parse this output break.
-4. **Chinese-language UI consistency**: The project has Chinese frontmatter fields (`analyze`, `do_ocr`) and Chinese Base view names (`控制面板`, `推荐分析`, `待OCR`). Adding English-only error messages or log output breaks the mixed-language UX.
+On first load (or after adding a new setting field), `loadData()` returns `null` or `{}`. If the code does `this.settings = await this.loadData()` and then accesses `this.settings.someNewKey` without checking existence, it gets `undefined`. If the code later does `this.settings.someNewKey.toLowerCase()` or similar, it throws a TypeError that crashes the plugin silently (no `Notice`, only console error).
 
 **Why it happens:**
-- The project has an existing user base using v1.2/v1.3 workflows. Changes to the workflow must be opt-in or backward-compatible, not forced.
-- User-edited frontmatter (in Obsidian) is the primary control mechanism. Any automation that modifies frontmatter without user consent violates the Lite architecture's principle of "worker does mechanical work, user controls decisions."
-- Documentation (AGENTS.md, README.md, INSTALLATION.md) must be updated simultaneously with code changes. Out-of-sync docs are worse than no docs.
+`loadData()` returns `null` when `data.json` doesn't exist (first run). Returns `{}` when file exists but is empty. Returns parsed JSON otherwise. Developers forget to handle the `null` and `undefined` cases for newly added settings keys.
 
 **How to avoid:**
-1. **Workflow changes must be opt-in**: Add a `paperforge.json` config key (e.g., `"auto_ocr": false` default) that gates new automation. Existing users get zero behavior change until they explicitly enable it.
-2. **Preserve all existing CLI command output formats**: If `deep-reading` output changes, add a `--format json` flag for scripts, keep Markdown as default for humans.
-3. **Never auto-modify user-set frontmatter fields**: The `analyze`, `do_ocr` fields are user-controlled. Workers may read them but must not write them (except `ocr_status` and `deep_reading_status` which are system-managed).
-4. **Maintain Chinese-language consistency**: Error messages, log output, and CLI help text should continue to use Chinese where the existing codebase does. New English-only messages should be bilingual or use Chinese.
-5. **Update AGENTS.md and README.md in the SAME commit as code changes**: This prevents the documentation lag that users hit when they `paperforge update` and commands change without explanation.
-6. **Write a MIGRATION-v1.4.md document**: Following the pattern established in v1.2's MIGRATION-v1.2.md, document every behavioral change, every removed/deprecated feature, and every workflow change with before/after examples.
+- **Always merge with defaults after load**:
+```javascript
+const DEFAULT_SETTINGS = {
+    version: 2,
+    resourcesDir: '20_Resources',
+    controlDir: '21_Library',
+    autoAnalyzeAfterOcr: false,
+    pythonPath: 'python',
+};
+async onload() {
+    const data = await this.loadData();
+    this.settings = Object.assign({}, DEFAULT_SETTINGS, data || {});
+    // Migrate from older versions:
+    if (this.settings.version < 2) {
+        this.settings.autoAnalyzeAfterOcr = false; // new field
+        this.settings.version = 2;
+        await this.saveData(this.settings);
+    }
+}
+```
+- **Never access `this.settings.X` without default fallback**: Use `this.settings.someKey ?? defaultValue`.
+- **Test first-launch scenario**: Delete `data.json`, reload Obsidian, verify settings tab works without crash.
 
 **Warning signs:**
-- Users reporting "paperforge stopped working" after update
-- Frontmatter values changed unexpectedly after running sync
-- Agent commands (`/pf-deep`, `/pf-paper`) behaving differently
-- English error messages appearing in a Chinese-language vault
+- Plugin silently fails after update (new setting field added without migration)
+- `Cannot read property 'toLowerCase' of undefined` in console
+- Settings tab blank after first install (data.json missing)
 
 **Phase to address:**
-All phases — workflow impact assessment should be part of every code change. The MIGRATION document should be maintained continuously, not written at the end.
+Phase 1 (Settings persistence layer). Write DEFAULT_SETTINGS + merge + migration before any settings controls.
+
+---
+
+### Pitfall 8: Button Double-Click Spawning Multiple Subprocesses
+
+**What goes wrong:**
+A "Run Setup" button in settings that uses `onClick` without disabling itself will allow the user to click repeatedly. Each click spawns a new `exec`/`spawn`. Two Python processes now compete for resources, write to the same files, and the second invocation may fail with "file locked" errors.
+
+**Why it happens:**
+`ButtonComponent.onClick()` does not auto-disable the button. The developer forgets to add `setDisabled(true)` at the start of the handler and `setDisabled(false)` in the callback. Network latency or slow Python startup means the user sees no immediate feedback and clicks again.
+
+**How to avoid:**
+```javascript
+new Setting(containerEl)
+    .setName('Setup')
+    .addButton(btn => btn
+        .setButtonText('Run Setup')
+        .setCta()
+        .onClick(async (evt) => {
+            btn.setDisabled(true);
+            btn.setButtonText('Running...');
+            try {
+                const result = await runSetupCommand();
+                new Notice('Setup complete. Restart Obsidian to apply.', 5000);
+            } catch (e) {
+                new Notice(`Setup failed: ${parseError(e.stderr)}`, 8000);
+            } finally {
+                btn.setDisabled(false);
+                btn.setButtonText('Run Setup');
+            }
+        }));
+```
+- **Use a guard flag**: `if (this._setupRunning) return; this._setupRunning = true;` for additional safety.
+- **Never keep button enabled during async operations**.
+
+**Warning signs:**
+- Two "Python" processes in Task Manager
+- "File is locked by another process" errors
+- User reports "I clicked it twice and it broke"
+
+**Phase to address:**
+Phase 2 (Setup wizard). Every action button must disable itself on click.
 
 ---
 
@@ -285,12 +301,12 @@ Shortcuts that seem reasonable but create long-term problems.
 
 | Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
 |----------|-------------------|----------------|-----------------|
-| Re-exporting all utils via `__init__.py` wildcard | One import for callers | Circular dependency risk, breaks explicit imports, makes static analysis impossible | Never — use explicit `from _utils import X` in each worker |
-| `logging.basicConfig()` in each worker module | Logs work immediately | Duplicate handlers, silent failures, "where is my log going?" confusion | Never — configure once in cli.py main() |
-| `try: import tqdm; USE_PROGRESS=True except: pass` | No new dependency | Inconsistent UX, some users get bars and some don't, impossible to debug | Only if tqdm is optional and `--no-progress` is the default |
-| `time.sleep(retry_count * 2)` for backoff | No library needed | Blocks event loop, no jitter (thundering herd), can't configure max retries | Only for scripts with <3 calls, never for OCR worker |
-| `git add -A && pre-commit run --all-files` in CI | Simple CI pipeline | Reformats entire codebase on every PR, loses git blame history, causes merge conflicts | Never — run only on changed files |
-| Removing "unused" `cli.py` stubs | Cleaner code | Breaks 20+ dispatch tests, breaks backward compat | Never — these are intentionally nullable for test injection |
+| Skip `DEFAULT_SETTINGS` merge — assume `loadData()` always returns full object | Saves 3 lines of code | Plugin crashes on first install; every new setting requires migration logic later | Never |
+| Hardcode `exec('python ...')` without configurable Python path | Simple, works for most users | Breaks for users with `python3`, conda envs, or pyenv; requires code change + release to fix | Never — make it a setting from day 1 |
+| Use `Notice` for all output, including long success messages | Quick to implement | Long messages clip; no way to show structured output (lists, links); no scroll | MVP only if all messages < 80 chars |
+| Skip debounce — save on every `onChange` | Works for low setting count | `data.json` write per keystroke; sync conflicts; disk wear on SSDs over years | Never for text inputs (toggle is ok) |
+| Use `setTimeout` for debounce without cleanup | Simple | Memory leak; saveData fires after plugin unload; "Cannot read property of undefined" on closed plugin | Never — always store timer handle and clear |
+| Store paths as Windows backslash format in settings | "It works on my machine" | Breaks on macOS/Linux; broken wikilinks; path comparisons fail across OS | Never — always store forward-slash paths |
 
 ---
 
@@ -300,13 +316,15 @@ Common mistakes when connecting to external services.
 
 | Integration | Common Mistake | Correct Approach |
 |-------------|----------------|------------------|
-| PaddleOCR API | Retrying on 400/401 errors | Only retry on timeout, 429, 502, 503. Write `blocked` state for permanent failures. |
-| obsidian:// wikilinks | Assuming forward slashes always work | Always use relative paths with `/`. Never store Windows backslash paths in wikilinks. |
-| Better BibTeX JSON | Assuming `attachments[].path` is always storage:-prefixed | Handle 3 BBT formats: absolute Windows paths, `storage:` prefix, bare relative. Use `_normalize_attachment_path`. |
-| `.env` files | Overwriting user-set env vars (no-overwrite is correct) | `load_simple_env` in config.py correctly checks `if not key or key in os.environ: continue`. Preserve this. |
-| Windows junctions | Assuming `Path.resolve()` follows junctions | On Windows, `Path.resolve()` follows junctions. Use `paperforge.pdf_resolver.resolve_junction` for explicit control. |
-| Frontmatter parsing | Regex-based parsing instead of YAML library | Use regex for surgical field access (preserves comments and formatting). NEVER rewrite entire frontmatter — use `update_frontmatter_field` and `_add_missing_frontmatter_fields` patterns. |
-| Base view files | Hardcoding vault paths in `.base` JSON | Always use relative paths from vault root. Generated Bases use config-aware templates. |
+| `exec` / `spawn` (Python CLI) | Not quoting `cwd` with spaces on Windows | `spawn` with explicit `{ cwd, shell: true }` — Node handles quoting; test on path with spaces |
+| `exec` / `spawn` (Python CLI) | Assuming `python` is the correct binary name | Make Python path a setting (`pythonPath`); default to `python` on Windows, `python3` on macOS/Linux per `process.platform` |
+| `exec` / `spawn` (Python CLI) | Using `child_process.exec` which buffers all output (max 1MB) | Use `spawn` for long-running commands (`sync`, `ocr`); use `exec` only for quick commands (`status`, `doctor`) |
+| `exec` / `spawn` (Python CLI) | Not handling process.umask or env inheritance | Pass `env: { ...process.env, PYTHONIOENCODING: 'utf-8' }` to force UTF-8 output from Python |
+| `Plugin.saveData()` | Calling it outside onload/display contexts where `this.app` may be unavailable | Only call `saveData` in methods with access to `this.app` (settings tab has `this.app` injected); never from standalone functions |
+| `Plugin.loadData()` | Not awaiting it | `loadData()` returns `Promise<any>`; must be awaited or `.then()`'d. Synchronous access returns a Promise, not data. |
+| Vault adapter `basePath` | Passing it directly to shell commands without sanitization | `basePath` is native OS path; use `path.resolve(basePath)` to normalize, then pass as `cwd` to `spawn` |
+| `Notice` message formatting | Using `\n` for multi-line (strips whitespace in Obsidian's notice CSS) | Use `createFragment` for rich text; or keep messages single-line, ~60-80 chars max |
+| `Button.onClick` async | Not handling promise rejection | Wrap in try/catch; show Notice on error; always re-enable button in finally block |
 
 ---
 
@@ -316,11 +334,25 @@ Patterns that work at small scale but fail as usage grows.
 
 | Trap | Symptoms | Prevention | When It Breaks |
 |------|----------|------------|----------------|
-| `rglob('*.md')` on entire literature directory | Slow deep-reading scans | Cache formal note paths by zotero_key in a JSON index. Rebuild index on sync only. | ~500 literature notes |
-| `read_json` + `write_json` for every OCR queue mutation | I/O thrashing, corrupt files on crash | Batch queue writes. Use atomic write-then-rename. | 20+ queued items |
-| Loading all export JSONs on every sync | 10-30s sync time with large Zotero libraries | Load incrementally. Cache export inventory in memory during sync session. | 5,000+ Zotero items |
-| Progress bar refresh on every OCR page | 100% CPU on progress rendering, no actual speed gain | Update progress on time intervals (every 500ms), not on every page completion. | 50+ page PDFs |
-| Pre-commit running on all files in monorepo | 30s+ per commit, developers use --no-verify | `exclude` slow directories. Run slow checks in CI only. Use `stages: [push]` for expensive hooks. | Any repo with 50+ Python files |
+| Rebuilding entire settings form on every `display()` call | Slow tab switching (500ms+ perceptible lag) when settings tab has 20+ fields | Cache DOM structure; only update values in `display()`, don't recreate; use `Setting.clear()` strategically | 15+ settings fields |
+| `saveData()` on every keystroke | Disk I/O spikes; Obsidian Sync uploads; SSDs degrade over years with 100k+ writes/day | Debounce 250-500ms; use `saveLocalStorage` for transient UI state instead of `saveData` | Any text input setting |
+| Loading entire `library.json` in settings display | Settings tab freezes for 5+ seconds when Zotero export is large | Never load external data files in settings `display()`; show counts only; use a "View Details" button that opens a separate view | Zotero library > 1000 entries |
+| `exec` with 300s timeout for OCR jobs | Settings tab appears frozen; no cancel button; user force-quits Obsidian | Never run long subprocesses from settings UI; dispatch a command that opens the sidebar view with progress tracking instead | Any subprocess > 10 seconds |
+| Re-registering event handlers every `display()` call | Memory leak: each tab switch adds new listeners without removing old ones | Use `SettingTab.hide()` to clean up; register events through `this.plugin.registerEvent()` for auto-cleanup on unload | After 10+ tab switches |
+
+---
+
+## Security Mistakes
+
+Domain-specific security issues beyond general web security.
+
+| Mistake | Risk | Prevention |
+|---------|------|------------|
+| Storing API keys (PaddleOCR) in `data.json` unencrypted | API key readable by any plugin; leaked via Obsidian Sync; exposed in git if vault is versioned | Use `SecretStorage` API (Obsidian v1.11.4+) for API keys: `await this.app.secretStorage.set('paddleocr_key', key)` |
+| Passing user-provided paths to `exec` without validation | Command injection if user types `; rm -rf /` or `&& evil_command` in a path setting | Validate paths: `path.resolve(userPath); if (!resolved.startsWith(basePath)) reject;` — use `spawn` with args array, never string interpolation |
+| Exposing `data.json` to git via vault versioning | API keys, internal paths, and settings leaked to public repo | Add `.obsidian/plugins/paperforge/data.json` to `.gitignore` (or use SecretStorage for secrets) |
+| Running Python subprocess with inherited `PATH` | Malicious `python` binary in PATH earlier than expected; `paperforge` could be a different package | Use absolute path to Python if configured; verify `python -c "import paperforge"` before running commands |
+| Settings import/export without validation | Malformed JSON import can crash plugin or execute arbitrary code if eval'd | Validate imported JSON against schema; never `eval()`; use `JSON.parse()` with try/catch; verify all keys match expected schema |
 
 ---
 
@@ -330,12 +362,13 @@ Common user experience mistakes in this domain.
 
 | Pitfall | User Impact | Better Approach |
 |---------|-------------|-----------------|
-| Removing `--verbose` from deep-reading | Users can't see why a paper is blocked for deep reading | Keep `--verbose` and expand it to show per-paper status details |
-| Changing `paperforge deep-reading` output format | Scripts that parse the queue report break | Add `--format json` for scripts, keep Markdown table as default for humans |
-| Adding progress bars without quiet mode | AI agents calling `paperforge ocr` get garbage output | Add `--no-progress`/`--quiet` flags. Detect non-TTY and disable progress bars. |
-| English-only log messages in Chinese UI | Chinese-speaking users (the target audience) lose context | Keep log messages bilingual where practical; use Chinese for user-facing messages |
-| "Auto-fix" pre-commit hooks that reformat Obsidian Base files | Base view JSON gets reformatted, Obsidian can't parse it | Exclude `.base` files from all formatting hooks |
-| Silent OCR failure with only meta.json updated | Users think OCR succeeded but fulltext.md is empty | Surface OCR errors prominently in `deep-reading` output. Highlight `ocr_status: failed` entries. |
+| Showing raw Python errors in Notice | User sees cryptic traceback, doesn't know what action to take | Parse error; map to human-readable message with action hint ("Check your Python installation in Settings > PaperForge") |
+| No feedback during long setup operations | User clicks "Run Setup", nothing happens for 30s, assumes plugin is broken | Show "Running..." on button; add a progress bar or spinner; show incremental status messages |
+| `Notice` text too long (clips at ~80 chars) | Critical information hidden | Split into multiple short notices or use a modal for detailed output |
+| Toggle/checkbox with no immediate save indication | User changes toggle, doesn't know if it's saved | Show brief "Saved" notice after debounce fires; or show a green checkmark icon next to saved settings |
+| Settings tab with no "Reset to Defaults" | User makes a mess, can't undo | Add "Reset to Defaults" button per section; confirm with Notice; merge defaults without overwriting API keys |
+| Path inputs requiring exact format without browse button | User guesses wrong path format (backslash vs forward slash, trailing slash) | Provide a "Browse" button using Obsidian's file/folder suggest API; auto-normalize path on blur |
+| Setup wizard that doesn't check prerequisites | User goes through setup, fails at the end because Python is missing | Check prerequisites FIRST (Python exists, paperforge importable, Zotero configured) before showing the main settings form |
 
 ---
 
@@ -343,16 +376,19 @@ Common user experience mistakes in this domain.
 
 Things that appear complete but are missing critical pieces.
 
-- [ ] **Shared `_utils.py`:** Often missing re-exports in original modules — verify `from paperforge.worker.sync import read_json` still works after extraction.
-- [ ] **Logging configuration:** Often missing `force=True` on `basicConfig` — verify second import doesn't swallow logs.
-- [ ] **Pre-commit hooks:** Often running slow checks locally — verify total hook time <2 seconds on a fresh clone.
-- [ ] **Progress bars:** Often untested on Windows PowerShell — verify output is clean when piped to `tee` or `> file.txt`.
-- [ ] **OCR retry:** Often missing `processing→pending` recovery — verify zombie jobs older than 1 hour are automatically recovered.
-- [ ] **Dead code removal:** Often removing "unused" test fixtures — verify all tests pass after cleanup (run full suite, not just changed files).
-- [ ] **Workflow backward compat:** Often missing migration doc — verify AGENTS.md and README.md reflect all behavioral changes.
-- [ ] **Atomic file writes:** Often using direct `write_text()` for state files — verify write-then-rename for `meta.json`, `ocr-queue.json`, `frontmatter` updates.
-- [ ] **Windows encoding:** Often untested on Chinese Windows locale — verify `UnicodeEncodeError` doesn't occur on Chinese filenames/paths with `print()` or logging.
-- [ ] **Test still capturing stdout:** Often silently passing because `pytest` captures output — verify with `pytest -s` (no capture) that output doesn't duplicate or miss.
+- [ ] **Persistence:** Settings survive Obsidian restart — verify by changing a toggle, restarting, checking it persisted
+- [ ] **Persistence:** New setting defaults populate on first load — delete `data.json`, reload, verify all fields show defaults
+- [ ] **Validation:** Empty required fields show red error text — test empty Python path, empty resources directory
+- [ ] **Validation:** Invalid paths are caught before subprocess runs — test with non-existent path, UNC path, path with `..`
+- [ ] **Subprocess:** Button disables during execution — rapid double-click test
+- [ ] **Subprocess:** Timeout doesn't orphan the Python process — run a command that hangs, check Task Manager after timeout
+- [ ] **Sidebar:** Existing sidebar (PaperForgeStatusView) still works after settings tab added — open sidebar, open settings, switch tabs, verify sidebar still renders
+- [ ] **Ribbon:** Ribbon icon still opens sidebar after settings tab added — click ribbon, verify sidebar opens
+- [ ] **Commands:** All existing commands (`PaperForge: Sync Library`, `PaperForge: Run OCR`) still work — invoke from command palette
+- [ ] **Windows path:** Works with vault path containing spaces and Unicode — test with `C:\Users\Test User\My 测试 Vault\`
+- [ ] **Notice quality:** Error messages are user-readable, not raw Python tracebacks — trigger each error case, check Notice text
+- [ ] **Unload:** Settings tab closes cleanly when plugin is disabled — disable plugin, verify no errors in console, no orphaned processes
+- [ ] **Migration:** Upgrading from v1.4.9 (no settings) to v1.5.0 (with settings) doesn't lose data — install old plugin, add data, upgrade, verify
 
 ---
 
@@ -362,13 +398,13 @@ When pitfalls occur despite prevention, how to recover.
 
 | Pitfall | Recovery Cost | Recovery Steps |
 |---------|---------------|----------------|
-| Circular import from `_utils.py` | LOW | Revert `_utils.py` to leaf-only imports. Use lazy function-level imports for cross-worker deps. Run `pytest --collect-only` to verify. |
-| Logging duplicate handlers | LOW | Remove `basicConfig` from all workers. Add `force=True` to central config call. Verify with `logger.info("test")` appearing exactly once. |
-| Pre-commit too slow | LOW | Move slow hooks to CI stage in `.pre-commit-config.yaml`. Developers run `pre-commit install` again. |
-| Progress bar garbage in pipes | MEDIUM | Add `--no-progress` flag. Detect `not sys.stderr.isatty()`. Users add `--no-progress` to scripts. |
-| Corrupt OCR state from failed retry | MEDIUM | Run `paperforge repair --fix` which detects `processing` state divergence. Add `blocked` state for permanent failures. Users re-set `do_ocr: true` for affected papers. |
-| ImportError after dead code removal | MEDIUM | Add re-exports to original modules. Write allowlist for dead code tool. Users may need to update their scripts/aliases. |
-| Workflow surprise for existing users | HIGH | Write MIGRATION-v1.4.md BEFORE release. Add opt-in config flag. Support `--legacy-mode` if needed. Communicate changes in release notes. |
+| Corrupted `data.json` | LOW | Delete `data.json`, reload Obsidian — plugin creates fresh defaults. User reconfigures settings (5 fields max). |
+| Orphaned Python subprocess | LOW | Kill via Task Manager (Windows) or `pkill -f paperforge` (macOS/Linux). No data loss — just process leak. |
+| Settings tab crashes sidebar | MEDIUM | Disable plugin, restart Obsidian, delete `data.json`, re-enable. Sidebar view is re-registered in `onload()`. |
+| `loadData()` returns `null` with no merge | LOW | Add `DEFAULT_SETTINGS` merge in `onload()` — no data lost, just settings reset to defaults on next load. |
+| Double-click spawning duplicate subprocess | LOW | Kill extra processes. Add button disable pattern — fix is code-only, no data migration needed. |
+| Broken path config (spaces, encoding) | MEDIUM | User edits `data.json` manually to fix path. Or reset settings and reconfigure. Provide a "Repair" button in settings that validates all paths. |
+| `saveData` without debounce causing sync conflicts | MEDIUM | Delete `data.json` on all synced devices, reconfigure on one device. Add debounce in next release. |
 
 ---
 
@@ -378,32 +414,26 @@ How roadmap phases should address these pitfalls.
 
 | Pitfall | Prevention Phase | Verification |
 |---------|------------------|--------------|
-| Circular imports in shared utils | Phase 1: Shared Utility Extraction | `pytest --collect-only` passes. No `from paperforge.worker` in `_utils.py`. |
-| Logging breaks piped output | Phase 2: Logging Integration | `paperforge status | grep ocr` works. Tests pass with and without `-s`. Single handler per logger. |
-| Pre-commit too slow/aggressive | Phase 3: Pre-Commit Hooks | `time pre-commit run --all-files` <5s total. No false positives on test fixtures. |
-| Progress bars break piping | Phase 4: Progress Indicators | `paperforge ocr --no-progress` works. Non-TTY output is clean text. Windows PowerShell tested. |
-| OCR retry corrupts state | Phase 5: Retry/Backoff | Simulated network failure test. `meta.json` integrity after crash. No zombie `processing` records. |
-| Dead code removal breaks compatibility | Phase 6: Dead Code Cleanup | All 203 existing tests pass. `paperforge selection-sync` still works (with deprecation warning). |
-| Workflow changes confuse users | All phases (continuous) | MIGRATION-v1.4.md complete. AGENTS.md updated. Opt-in config gates new behavior. |
+| #1: loadData/saveData corruption | Phase 1 (Settings shell) | Delete data.json, restart, verify defaults; toggle setting, restart, verify persistence |
+| #2: Settings tab breaks sidebar | Phase 1 (Settings shell) | Open sidebar + settings simultaneously, switch tabs, verify sidebar stays open and renders correctly |
+| #3: exec blocks UI | Phase 2 (Setup wizard) | Run setup with slow network; verify button shows "Running..." and doesn't freeze Obsidian |
+| #4: Windows path encoding | Phase 1 (Settings shell) | Test with vault path: `C:\Users\Test User\My Vault 测试\` |
+| #5: Raw stderr in Notice | Phase 2 (Setup wizard) | Trigger Python not found error; verify Notice shows "PaperForge not installed. Open Settings to configure." |
+| #6: Form state loss on tab switch | Phase 1 (Settings shell) | Type in text field, switch to Appearance tab, switch back, verify text preserved |
+| #7: Missing keys crash on first load | Phase 1 (Settings shell) | Delete data.json (or fresh install), open settings, verify all controls render without console errors |
+| #8: Button double-click spawns duplicates | Phase 2 (Setup wizard) | Rapid click "Run Setup" 5 times; verify only 1 Python process in Task Manager |
 
 ---
 
 ## Sources
 
-- Python's import system and circular dependencies: https://dev.to/kaushikcoderpy/python-project-structure-imports-circular-dependencies-syspath-2026-4904 (HIGH confidence)
-- structlog structured logging best practices: https://structlog.readthedocs.io/en/stable/logging-best-practices.html (HIGH confidence)
-- Python logging migration patterns: https://medium.com/@dhruvshirar/structured-logging-in-python (MEDIUM confidence)
-- Pytest monkeypatching module globals: https://mathspp.com/blog/til/patching-module-globals-with-pytest (HIGH confidence)
-- Pytest fixtures and monkeypatch docs: https://docs.pytest.org/en/stable/how-to/monkeypatch.html (HIGH confidence)
-- Rich on Windows piping issues: https://github.com/Textualize/rich/issues/3082 (MEDIUM confidence), https://github.com/Textualize/rich/issues/3437 (MEDIUM confidence)
-- Tenacity retry library: https://tenacity.readthedocs.io/en/stable (HIGH confidence)
-- Pre-commit hooks breaking CI: https://tildalice.io/precommit-hooks-break-ci-fixes/ (MEDIUM confidence)
-- Pre-commit hooks vs CI: https://tildalice.io/pre-commit-hooks-vs-ci-when-to-skip-local-checks/ (MEDIUM confidence)
-- Dead code detection in Python: https://github.com/sen-ltd/deadcode-py (MEDIUM confidence)
-- Atomic file writes in Python: Standard POSIX pattern (write to tempfile, rename) — multiple official Python docs references (HIGH confidence)
-- PaperForge codebase audit (2026-04-25): Direct analysis of all 7 worker modules, cli.py, config.py, test files, and inter-module import graph (HIGH confidence, first-hand observation)
+- **Official Obsidian API types** (`obsidian.d.ts`, retrieved from `https://raw.githubusercontent.com/obsidianmd/obsidian-api/master/obsidian.d.ts`): Plugin, PluginSettingTab, Setting, SettingTab, Notice, ButtonComponent, TextComponent, DropdownComponent, ToggleComponent, DataAdapter, Vault, Workspace, loadData, saveData, addSettingTab. HIGH confidence.
+- **Official Obsidian API docs** (`https://docs.obsidian.md/Reference/TypeScript+API/Plugin/loadData`): Confirms `loadData()` returns `Promise<any>`, data stored in `data.json`. HIGH confidence.
+- **Existing PaperForge plugin code** (`paperforge/plugin/main.js`): Confirms CommonJS pattern, `exec` usage, `Notice` patterns, `basePath` usage, sidebar `ItemView`, ribbon icon, commands. HIGH confidence.
+- **Node.js `child_process` documentation** (`https://nodejs.org/api/child_process.html`): `exec` vs `spawn` behavior, `shell` option on Windows, timeout behavior, quoting requirements. HIGH confidence.
+- **Training data knowledge**: Common Obsidian plugin development patterns, `SettingTab.display()` lifecycle, `hide()` behavior, debounce patterns in Electron apps, Windows path handling in Electron. MEDIUM confidence.
 
 ---
 
-*Pitfalls research for: PaperForge Lite v1.4 — adding shared utilities, logging, pre-commit, and UX improvements*
-*Researched: 2026-04-25*
+*Pitfalls research for: Obsidian Plugin Settings Tab (Retrofit to PaperForge CommonJS Plugin)*
+*Researched: 2026-04-29*
