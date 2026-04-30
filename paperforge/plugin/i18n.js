@@ -181,15 +181,11 @@ const LANG = {
 };
 
 // Auto-detect language from Obsidian config
-function detectLang() {
+function detectLang(app) {
     try {
-        const locale = window.localStorage.getItem('language') || 'en';
+        const locale = (app && app.vault && app.vault.getConfig && app.vault.getConfig('language')) || 'en';
         return locale.startsWith('zh') ? 'zh' : 'en';
     } catch { return 'en'; }
 }
 
-function getLang() { return _PF_LANG; }
-
-let _PF_LANG = 'zh';
-
-module.exports = { LANG, detectLang, getLang, set lang(v) { _PF_LANG = v; } };
+module.exports = { LANG, detectLang };
