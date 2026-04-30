@@ -131,13 +131,15 @@ class PaperForgeStatusView extends ItemView {
     /* ---------------------------------------------------------------------- */
     /*  Fetch & Render Stats                                                  */
     /* ---------------------------------------------------------------------- */
-    _fetchStats() {
-        this._metricsEl.empty();
-        this._metricsEl.createEl('div', { cls: 'paperforge-status-loading', text: 'Loading...' });
+    _fetchStats(quiet) {
+        if (!quiet) {
+            this._metricsEl.empty();
+            this._metricsEl.createEl('div', { cls: 'paperforge-status-loading', text: 'Loading...' });
+        }
 
         const vp = this.app.vault.adapter.basePath;
         exec('python -m paperforge status --json', { cwd: vp, timeout: 30000 }, (err, stdout) => {
-            this._metricsEl.empty();
+            if (quiet) { this._metricsEl.empty(); }
             if (err) {
                 this._metricsEl.createEl('div', { cls: 'paperforge-status-error', text: 'Cannot reach PaperForge CLI.\nMake sure paperforge is installed and in your PATH.' });
                 return;
@@ -236,33 +238,41 @@ class PaperForgeStatusView extends ItemView {
         const vp = this.app.vault.adapter.basePath;
         this._showMessage('Processing...', 'running');
         const { spawn } = require('node:child_process');
-        const child = spawn('python', ['-m', 'paperforge', a.cmd, '--no-progress'], { cwd: vp, timeout: 300000 });
+        const child = spawn('python', ['-m', 'paperforge', a.cmd], { cwd: vp, timeout: 600000 });
         const log = [];
+        const startTime = Date.now();
+        const pollTimer = setInterval(() => this._fetchStats(true), 4000);
         child.stdout.on('data', (data) => {
             const lines = data.toString('utf-8').split('\n').filter(Boolean);
             for (const l of lines) {
-                const clean = l.replace(/^\[\*\].*\d+:?\s*/, '').trim();
-                if (clean) { log.push(clean); this._showMessage(clean, 'running'); }
+                const clean = l.trim();
+                if (clean) { log.push(clean); this._showMessage(log.slice(-8).join('\n'), 'running'); }
             }
         });
         child.stderr.on('data', (data) => {
-            const errLines = data.toString('utf-8').split('\n').filter(Boolean);
-            for (const l of errLines) {
+            const lines = data.toString('utf-8').split('\n').filter(Boolean);
+            for (const l of lines) {
+                if (l.includes('\r') || l.includes('%') || l.includes('█')) continue;
                 const trim = l.trim();
-                if (trim && !trim.startsWith('\r')) { log.push(trim); this._showMessage(trim, 'running'); }
+                if (trim && !trim.match(/^\d+%|^\|/)) { log.push(trim); this._showMessage(log.slice(-8).join('\n'), 'running'); }
             }
         });
         child.on('close', (code) => {
+            clearInterval(pollTimer);
             card.removeClass('running');
+            const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
             if (code !== 0) {
                 const last = log.slice(-3).join(' | ') || 'exit code ' + code;
                 this._showMessage('[!!] ' + last, 'error');
                 new Notice('[!!] ' + a.cmd + ' failed: ' + last, 8000);
             } else {
-                const last = log[log.length - 1] || a.okMsg || 'Done';
-                this._showMessage('[OK] ' + a.title + ': ' + last, 'ok');
+                // Build a summary from log lines
+                const updated = log.filter(l => l.match(/updated \d+/));
+                const lastUpdated = updated.pop() || log[log.length - 1] || '';
+                const summary = `${elapsed}s — ${lastUpdated}`;
+                this._showMessage('[OK] ' + a.title + ': ' + summary, 'ok');
                 new Notice('[OK] ' + a.okMsg);
-                this._fetchStats();
+                this._fetchStats(true);
             }
         });
         child.on('error', (err) => {
@@ -270,6 +280,13 @@ class PaperForgeStatusView extends ItemView {
             this._showMessage('[!!] ' + err.message, 'error');
             new Notice('[!!] Cannot start: ' + err.message, 8000);
         });
+    }
+
+    _showMessage(msg, cls) {
+        if (this._messageEl) {
+            this._messageEl.setText(msg);
+            this._messageEl.className = `paperforge-message msg-${cls}`;
+        }
     }
 
     _showMessage(msg, cls) {
