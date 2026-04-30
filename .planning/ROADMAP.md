@@ -207,7 +207,8 @@ _Archived: `.planning/milestones/v1.4.md`_
 | 19. Testing | v1.4 | 3/3 | Complete | 2026-04-28 |
 | 20. Plugin Settings Shell & Persistence | v1.5 | 1/1 | Complete    | 2026-04-29 |
 | 21. One-Click Install & Polished UX | v1.5 | 2/2 | Complete    | 2026-04-29 |
+| 22. Install Wizard Modal | v1.5 | 0/0 | Planned    | — |
 
 ---
 
-*Roadmap updated: 2026-04-29 — Phase 21 complete, v1.5 milestone delivered*
+*Roadmap updated: 2026-04-29 — Phase 22 planned (settings/install separation)*

@@ -642,7 +642,7 @@ Obsidian Vault/
 
             # 创建目录
             dirs_to_create = [
-                resources_path / control_dir / "library-records",
+                resources_path / control_dir,
                 base_path,
                 system_path / "PaperForge" / "exports",
                 system_path / "PaperForge" / "ocr",
@@ -1006,7 +1006,7 @@ class DeployStep(StepScreen):
             pf_path / "config",
             pf_path / "worker/scripts",
             vault / resources_dir / literature_dir,
-            vault / resources_dir / control_dir / "library-records",
+        vault / resources_dir / control_dir,
             vault / base_dir,
             vault / skill_dir / "literature-qa/scripts",
             vault / skill_dir / "literature-qa/chart-reading",
@@ -1187,7 +1187,7 @@ ZOTERO_DATA_DIR={getattr(self.app, 'zotero_data_dir', '')}
             "Worker 脚本": worker_dst.exists(),
             "精读脚本": ld_dst.exists(),
             "精读提示词": prompt_dst.exists(),
-            "目录结构": (vault / resources_dir / control_dir / "library-records").exists(),
+            "目录结构": (vault / resources_dir / control_dir).exists(),
             "Base 目录": (vault / base_dir).exists(),
             "分类配置": domain_config.exists(),
             "导出目录": (pf_path / "exports").exists(),
@@ -1800,6 +1800,29 @@ def headless_setup(
         d.mkdir(parents=True, exist_ok=True)
     print(f"    [OK] {len(dirs)} directories ready")
 
+    # Zotero junction (creates <system_dir>/Zotero -> actual Zotero data dir)
+    if zotero_data and zotero_data.strip():
+        zotero_link_path = vault / system_dir / "Zotero"
+        if not zotero_link_path.exists():
+            try:
+                zotero_link_path.parent.mkdir(parents=True, exist_ok=True)
+                if sys.platform == "win32":
+                    result = subprocess.run(
+                        ["cmd", "/c", "mklink", "/J", str(zotero_link_path), str(zotero_data)],
+                        capture_output=True, text=True, timeout=30,
+                    )
+                    if result.returncode != 0:
+                        print(f"    [WARN] Zotero junction failed: {result.stderr.strip()}")
+                        print(f"    手动创建: mklink /J {zotero_link_path} {zotero_data}")
+                    else:
+                        print(f"    [OK] Zotero junction created")
+                        print(f"        {zotero_data} -> {zotero_link_path}")
+                else:
+                    zotero_link_path.symlink_to(zotero_data, target_is_directory=True)
+                    print(f"    [OK] Zotero symlink created")
+            except Exception as e:
+                print(f"    [WARN] Zotero junction failed: {e}")
+
     # =========================================================================
     # Phase 3: Informational checks (NON-BLOCKING — warnings only)
     # =========================================================================
@@ -1888,6 +1911,11 @@ def headless_setup(
         imported_skills = _deploy_flat_command(
             vault, agent_config["command_dir"], repo_root,
             system_dir, resources_dir, literature_dir, control_dir, base_dir, skill_dir,
+        )
+        # OpenCode also needs the skill directory (ld_deep.py, prompt, chart-reading)
+        imported_skills += _deploy_skill_directory(
+            vault, skill_dir, repo_root,
+            system_dir, resources_dir, literature_dir, control_dir, base_dir, prefix,
         )
     elif fmt == "rules_file":
         imported_skills = _deploy_rules_file(
@@ -2033,7 +2061,7 @@ PADDLEOCR_MODEL=PaddleOCR-VL-1.5
     checks = {
         "Worker scripts": worker_dst.exists(),
         "Skill files": len(imported_skills) > 0,
-        "Library records dir": (vault / resources_dir / control_dir / "library-records").exists(),
+        "Library records dir": (vault / resources_dir / control_dir).exists(),
         "Base dir": (vault / base_dir).exists(),
         "Exports dir": (pf_path / "exports").exists(),
         "OCR dir": (pf_path / "ocr").exists(),
