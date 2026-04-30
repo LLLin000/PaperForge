@@ -194,6 +194,8 @@ def merge_base_views(existing_content: str | None, new_views: list[dict]) -> str
     Returns:
         Merged .base file content with PaperForge views updated, user views preserved.
     """
+    import re
+
     PROPERTIES_YAML = """properties:
   zotero_key:
     displayName: "Zotero Key"
@@ -297,7 +299,11 @@ views:
                     break
                 view_block_lines.append(next_line)
                 i += 1
-            rebuilt_views_lines.append("\n".join(view_block_lines))
+            block_text = "\n".join(view_block_lines)
+            # If no PF markers seen yet, this is a legacy pre-prefix view → skip
+            if not pf_names_seen:
+                continue
+            rebuilt_views_lines.append(block_text)
             continue
         else:
             pending_pf_view_name = None
@@ -309,6 +315,15 @@ views:
 
     result_lines = header_lines + rebuilt_views_lines
     return "\n".join(result_lines)
+
+
+def _update_folder_filter(content: str, new_filter: str) -> str:
+    """Update the folder filter in a .base file if it changed."""
+    import re
+    old_match = re.search(r'file\.inFolder\("([^"]+)"\)', content)
+    if not old_match or old_match.group(1) == new_filter:
+        return content
+    return content.replace(old_match.group(1), new_filter, 1)
 
 
 def _build_base_yaml(folder_filter: str, views: list[dict]) -> str:
@@ -370,11 +385,14 @@ def ensure_base_views(vault: Path, paths: dict[str, Path], config: dict, force: 
 
     def refresh_base(base_path: Path, folder_filter: str, views: list[dict]) -> None:
         """Refresh a single .base file: merge PaperForge views, preserve user views."""
+        resolved_filter = substitute_config_placeholders(folder_filter, paths)
         if base_path.exists() and not force:
             existing = base_path.read_text(encoding="utf-8")
+            # Update folder filter if paths changed (e.g. library-records removed)
+            existing = _update_folder_filter(existing, resolved_filter)
             merged = merge_base_views(existing, views)
         else:
-            merged = _build_base_yaml(folder_filter, views)
+            merged = _build_base_yaml(resolved_filter, views)
         merged = substitute_config_placeholders(merged, paths)
         base_path.write_text(merged, encoding="utf-8")
 

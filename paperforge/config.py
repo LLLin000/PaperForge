@@ -286,7 +286,7 @@ def paperforge_paths(
         "resources": resources,
         "literature": literature,
         "control": control,
-        "library_records": control / "library-records",
+        "library_records": control,
         "bases": bases,
         "worker_script": worker_script,
         "skill_dir": skill_path,

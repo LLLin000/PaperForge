@@ -92,7 +92,7 @@
    ========================================================================== */
 .paperforge-metrics {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
     gap: 10px;
 }
 
@@ -123,7 +123,7 @@
 }
 
 .paperforge-metric-value {
-    font-size: 28px;
+    font-size: clamp(18px, 4vw, 28px);
     font-weight: var(--font-bold);
     line-height: 1.1;
     color: var(--text-normal);
@@ -137,6 +137,9 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
     font-weight: var(--font-medium);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 /* ==========================================================================
@@ -289,7 +292,7 @@
 
 .paperforge-actions-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
     gap: 10px;
 }
 
@@ -350,6 +353,36 @@
 /* ==========================================================================
    Misc
    ========================================================================== */
+.paperforge-message {
+    padding: 8px 12px;
+    border-radius: var(--radius-s);
+    font-size: var(--font-ui-smaller);
+    line-height: 1.4;
+    display: none;
+    word-break: break-word;
+}
+
+.paperforge-message.msg-running {
+    display: block;
+    background: var(--background-secondary);
+    border: 1px solid var(--color-blue);
+    color: var(--color-blue);
+}
+
+.paperforge-message.msg-ok {
+    display: block;
+    background: color-mix(in srgb, var(--color-green) 8%, var(--background-secondary));
+    border: 1px solid var(--color-green);
+    color: var(--color-green);
+}
+
+.paperforge-message.msg-error {
+    display: block;
+    background: color-mix(in srgb, var(--text-error) 8%, var(--background-secondary));
+    border: 1px solid var(--text-error);
+    color: var(--text-error);
+}
+
 .paperforge-status-error {
     color: var(--text-error);
     font-size: var(--font-ui-small);
@@ -368,32 +401,249 @@
 }
 
 /* ==========================================================================
-   SECTION 5 — Settings Tab: Install Status
+   SECTION 5 — Settings Tab: Guide & Summary
    ========================================================================== */
-.paperforge-install-status {
-    margin: 12px 0;
+.paperforge-settings-desc {
+    font-size: var(--font-ui-smaller);
+    color: var(--text-muted);
+    line-height: 1.6;
+    margin: 8px 0 16px;
     padding: 10px 14px;
-    border-radius: var(--radius-m);
-    font-size: var(--font-ui-small);
-    line-height: 1.5;
     background: var(--background-secondary);
+    border-radius: var(--radius-m);
     border: 1px solid var(--background-modifier-border);
 }
 
-.paperforge-install-success {
-    color: var(--color-green);
-    border-color: var(--color-green);
-    background: color-mix(in srgb, var(--color-green) 10%, var(--background-secondary));
+.paperforge-guide {
+    margin: 8px 0 16px;
 }
 
-.paperforge-install-error {
-    color: var(--text-error);
-    border-color: var(--text-error);
-    background: color-mix(in srgb, var(--text-error) 10%, var(--background-secondary));
+.paperforge-guide-item {
+    padding: 8px 14px;
+    margin-bottom: 6px;
+    background: var(--background-secondary);
+    border-radius: var(--radius-s);
+    border: 1px solid var(--background-modifier-border);
+    font-size: var(--font-ui-small);
+    line-height: 1.5;
 }
 
-.paperforge-install-progress {
-    color: var(--color-blue);
-    border-color: var(--color-blue);
-    background: color-mix(in srgb, var(--color-blue) 8%, var(--background-secondary));
+.paperforge-setup-bar {
+    margin: 8px 0 12px;
+    padding: 10px 14px;
+    border-radius: var(--radius-m);
+    font-size: var(--font-ui-small);
+    border: 1px solid var(--background-modifier-border);
+}
+
+.paperforge-setup-label { font-weight: var(--font-semibold); }
+.paperforge-setup-done { color: var(--color-green); }
+.paperforge-setup-pending { color: var(--text-muted); }
+
+.paperforge-summary {
+    margin: 8px 0;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: var(--radius-m);
+    overflow: hidden;
+}
+
+.paperforge-summary-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    padding: 6px 14px;
+    font-size: var(--font-ui-smaller);
+    border-bottom: 1px solid var(--background-modifier-border);
+    background: var(--background-primary);
+    gap: 4px;
+}
+
+.paperforge-summary-row:last-child { border-bottom: none; }
+.paperforge-summary-label {
+    flex: 0 0 auto;
+    min-width: 80px;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+.paperforge-summary-value {
+    flex: 1 1 200px;
+    word-break: break-all;
+    font-family: var(--font-monospace);
+    font-size: 11px;
+}
+
+/* ==========================================================================
+   SECTION 6 — Setup Wizard Modal
+   ========================================================================== */
+.paperforge-modal {
+    padding: 0 20px 20px;
+}
+
+.paperforge-modal .paperforge-step-bar {
+    display: flex;
+    justify-content: center;
+    gap: 0;
+    margin: 20px 0 24px;
+    padding: 0 10px;
+    position: relative;
+}
+
+.paperforge-step-dot {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    flex: 1;
+    position: relative;
+}
+
+.paperforge-step-dot::before {
+    content: '';
+    position: absolute;
+    top: 12px;
+    left: -50%;
+    right: 50%;
+    height: 2px;
+    background: var(--background-modifier-border);
+    z-index: 0;
+}
+
+.paperforge-step-dot:first-child::before { display: none; }
+.paperforge-step-dot.done::before,
+.paperforge-step-dot.active::before { background: var(--interactive-accent); }
+
+.paperforge-step-num {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: var(--font-bold);
+    background: var(--background-secondary);
+    border: 2px solid var(--background-modifier-border);
+    color: var(--text-muted); z-index: 1;
+    transition: all 0.2s;
+}
+
+.paperforge-step-dot.active .paperforge-step-num {
+    background: var(--interactive-accent); border-color: var(--interactive-accent); color: var(--text-on-accent);
+}
+.paperforge-step-dot.done .paperforge-step-num {
+    background: var(--color-green); border-color: var(--color-green); color: var(--text-on-accent);
+}
+
+.paperforge-step-label { font-size: 11px; color: var(--text-muted); }
+.paperforge-step-dot.active .paperforge-step-label { color: var(--text-normal); font-weight: var(--font-semibold); }
+.paperforge-step-dot.done .paperforge-step-label { color: var(--color-green); }
+
+.paperforge-step-content {
+    min-height: 260px;
+    margin-bottom: 20px;
+}
+
+.paperforge-step-content h2 {
+    font-size: var(--font-ui-large);
+    margin-bottom: 8px;
+}
+
+.paperforge-step-nav {
+    display: flex; justify-content: space-between; gap: 12px;
+    padding-top: 16px;
+    border-top: 1px solid var(--background-modifier-border);
+}
+
+.paperforge-step-btn {
+    padding: 8px 20px; border-radius: var(--radius-m);
+    font-size: var(--font-ui-small); cursor: pointer;
+    border: 1px solid var(--background-modifier-border);
+    background: var(--background-secondary); color: var(--text-normal);
+    transition: background 0.15s;
+}
+
+.paperforge-step-btn:hover { background: var(--background-modifier-hover); }
+.paperforge-step-btn.mod-cta {
+    background: var(--interactive-accent); color: var(--text-on-accent); border-color: var(--interactive-accent);
+}
+.paperforge-step-btn.mod-cta:hover { opacity: 0.9; }
+
+.paperforge-modal-hint {
+    font-size: var(--font-ui-smaller); color: var(--text-muted);
+    margin-top: 12px; padding: 6px 10px;
+    background: var(--background-secondary); border-radius: var(--radius-s);
+}
+
+/* ── Modal Form Fields ── */
+.paperforge-modal-field {
+    display: flex; flex-direction: column; gap: 4px;
+    margin-bottom: 14px;
+}
+
+.paperforge-modal-label {
+    font-size: var(--font-ui-small); font-weight: var(--font-semibold);
+    color: var(--text-normal);
+}
+
+.paperforge-modal-input {
+    width: 100%; padding: 7px 10px;
+    font-size: var(--font-ui-small); font-family: var(--font-monospace);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: var(--radius-s);
+    background: var(--background-primary); color: var(--text-normal);
+}
+
+.paperforge-modal-input:focus {
+    border-color: var(--interactive-accent);
+    outline: none;
+    box-shadow: 0 0 0 1px var(--interactive-accent);
+}
+
+.paperforge-modal-input:disabled {
+    opacity: 0.6; cursor: not-allowed;
+}
+
+.paperforge-modal-select {
+    width: 100%; padding: 7px 10px;
+    font-size: var(--font-ui-small);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: var(--radius-s);
+    background: var(--background-primary); color: var(--text-normal);
+    cursor: pointer;
+}
+
+.paperforge-modal-select:focus {
+    border-color: var(--interactive-accent);
+    outline: none;
+}
+
+/* ── Step 1: Directory Tree ── */
+.paperforge-dir-tree {
+    margin: 16px 0; font-size: var(--font-ui-small); line-height: 1.8; font-family: var(--font-monospace);
+}
+
+.paperforge-dir-node.root {
+    font-weight: var(--font-bold); padding: 6px 10px;
+    background: var(--background-secondary); border-radius: var(--radius-s);
+    border: 1px solid var(--background-modifier-border); margin-bottom: 4px;
+}
+
+.paperforge-dir-node.folder { padding: 4px 10px; color: var(--text-normal); }
+.paperforge-dir-node.file { padding: 3px 10px; color: var(--text-muted); }
+.paperforge-dir-children { padding-left: 24px; }
+
+/* ── Step 4: Install Log ── */
+.paperforge-install-log {
+    margin: 12px 0; padding: 14px;
+    background: #1e1e1e; color: #d4d4d4;
+    border-radius: var(--radius-m);
+    font-family: var(--font-monospace); font-size: 12px;
+    line-height: 1.6; max-height: 300px;
+    overflow-y: auto; white-space: pre-wrap;
+}
+
+/* ── Step 5: Next Steps ── */
+.paperforge-nextsteps { margin: 8px 0; }
+
+.paperforge-nextstep-item {
+    padding: 8px 14px; margin-bottom: 6px;
+    background: var(--background-secondary); border-radius: var(--radius-s);
+    border: 1px solid var(--background-modifier-border);
+    font-size: var(--font-ui-small); line-height: 1.5;
 }
