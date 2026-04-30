@@ -215,20 +215,22 @@ def cleanup_blocked_ocr_dirs(paths: dict[str, Path]) -> None:
 
 def normalize_obsidian_markdown(text: str) -> str:
     normalized = text.replace("\r\n", "\n")
-    normalized = re.sub("[ \\t]+\\$", "$", normalized)
-    normalized = re.sub("\\$[ \\t]+", "$", normalized)
-    normalized = re.sub("\\$\\s+\\^", "$^", normalized)
-    normalized = re.sub("\\^\\{\\s+", "^{", normalized)
-    normalized = re.sub("\\s+\\}", "}", normalized)
-    normalized = normalized.replace("$^{ID}$", "")
-    normalized = re.sub("[ \\t]{2,}", " ", normalized)
+    normalized = re.sub("[^\\S\\n]+\\$", "$", normalized)
+    normalized = re.sub("\\$[^\\S\\n]+", "$", normalized)
+    normalized = re.sub(
+        "\\$\\^\\{([^}]+)\\*\\}\\$",
+        lambda m: _superscript_to_correspondence_footnote(m.group(1)),
+        normalized,
+    )
     normalized = re.sub(
         "\\$\\^\\{([^}]*)\\\\dagger\\}\\$", lambda m: _superscript_to_equal_footnote(m.group(1)), normalized
     )
     normalized = re.sub("\\$\\^\\{([^}]*)†\\}\\$", lambda m: _superscript_to_equal_footnote(m.group(1)), normalized)
-    normalized = re.sub(
-        "\\$\\^\\{([^}]*)\\*\\}\\$", lambda m: _superscript_to_correspondence_footnote(m.group(1)), normalized
-    )
+    normalized = re.sub("\\$\\s+\\^", "$^", normalized)
+    normalized = re.sub("\\^\\{\\s+", "^{", normalized)
+    normalized = re.sub("\\s+\\}", "}", normalized)
+    normalized = normalized.replace("$^{ID}$", "")
+    normalized = re.sub("[^\\S\\n]{2,}", " ", normalized)
     normalized = re.sub(
         "(?m)^\\*\\s*Correspondence:\\s*(.+)$", lambda match: f"[^correspondence]: {match.group(1).strip()}", normalized
     )
@@ -236,6 +238,16 @@ def normalize_obsidian_markdown(text: str) -> str:
         "(?m)^Correspondence:\\s*(.+)$", lambda match: f"[^correspondence]: {match.group(1).strip()}", normalized
     )
     normalized = re.sub("(?m)^†\\s*(.+)$", lambda match: f"[^equal]: {match.group(1).strip()}", normalized)
+    normalized = re.sub(
+        r"(?<!\\)(\*{1,3})\s*=\s*(?=p\s*<)",
+        lambda m: f"$^{{{m.group(1)}}}$ = ",
+        normalized,
+    )
+    normalized = re.sub(
+        r"(?<!\\)(\*{1,3})\s*(?=p\s*<)",
+        lambda m: f"$^{{{m.group(1)}}}$ ",
+        normalized,
+    )
     normalized = re.sub("([A-Za-z])(\\$[^$\\n]+\\$)", "\\1 \\2", normalized)
     normalized = re.sub("(\\$[^$\\n]+\\$)([A-Za-z])", "\\1 \\2", normalized)
     normalized = re.sub("\\n{3,}", "\n\n", normalized)
@@ -637,6 +649,15 @@ def _cluster_bbox(cluster: list[dict]) -> list[int]:
     ]
 
 
+def _union_bboxes(bbox_list: list[list[int]]) -> list[int]:
+    return [
+        min(int(bbox[0]) for bbox in bbox_list),
+        min(int(bbox[1]) for bbox in bbox_list),
+        max(int(bbox[2]) for bbox in bbox_list),
+        max(int(bbox[3]) for bbox in bbox_list),
+    ]
+
+
 def is_formal_figure_legend(text: str) -> bool:
     cleaned = clean_block_text(text)
     if not cleaned:
@@ -689,16 +710,59 @@ def estimate_body_column_width(blocks: list[dict], page_width: int = 0) -> int:
     return widths[len(widths) // 2]
 
 
-def _precaption_media_region(caption_bbox: list[int], cluster_bboxes: list[list[int]]) -> list[int] | None:
+def _precaption_media_region(
+    caption_bbox: list[int],
+    cluster_bboxes: list[list[int]],
+    blocks: list[dict] | None = None,
+    body_column_width: int = 0,
+) -> list[int] | None:
     relevant = [bbox for bbox in cluster_bboxes if int(bbox[3]) <= int(caption_bbox[1]) + 24]
     if len(relevant) < 1:
         return None
-    return [
-        min(int(bbox[0]) for bbox in relevant),
-        min(int(bbox[1]) for bbox in relevant),
-        max(int(bbox[2]) for bbox in relevant),
-        max(int(bbox[3]) for bbox in relevant),
-    ]
+    if not blocks:
+        return _union_bboxes(relevant)
+    caption_y1 = int(caption_bbox[1])
+    barrier_y = 0
+    for block in blocks:
+        label = block.get("block_label", "")
+        if label not in {"text", "paragraph_title", "abstract"}:
+            continue
+        bbox = block.get("block_bbox", [0, 0, 0, 0])
+        if int(bbox[3]) > caption_y1 + 24 or int(bbox[3]) <= barrier_y:
+            continue
+        text = clean_block_text(block.get("block_content", ""))
+        if not text:
+            continue
+        if is_subfigure_label(text):
+            continue
+        if is_formal_figure_legend(text):
+            barrier_y = max(barrier_y, int(bbox[3]))
+            continue
+        width = _bbox_width(bbox)
+        height = _bbox_height(bbox)
+        if width <= 0 or height <= 0:
+            continue
+        if body_column_width and width < int(body_column_width * 0.45):
+            continue
+        if not body_column_width and width < 320:
+            continue
+        if len(text) < 30:
+            continue
+        barrier_y = max(barrier_y, int(bbox[3]))
+    for block in blocks:
+        label = block.get("block_label", "")
+        if label not in {"figure_title", "paragraph_title", "text"}:
+            continue
+        text = clean_block_text(block.get("block_content", ""))
+        if not is_formal_figure_legend(text):
+            continue
+        bbox = block.get("block_bbox", [0, 0, 0, 0])
+        if int(bbox[3]) <= caption_y1 and int(bbox[3]) > barrier_y:
+            barrier_y = max(barrier_y, int(bbox[3]))
+    filtered = [bbox for bbox in relevant if int(bbox[1]) >= barrier_y - 24]
+    if len(filtered) < 1:
+        return None
+    return _union_bboxes(filtered)
 
 
 def compute_precaption_composite_regions(blocks: list[dict], page_width: int = 0, page_height: int = 0) -> list[dict]:
@@ -709,7 +773,9 @@ def compute_precaption_composite_regions(blocks: list[dict], page_width: int = 0
     regions: list[dict] = []
     for caption in caption_blocks:
         caption_bbox = [int(value) for value in caption.get("block_bbox", [0, 0, 0, 0])]
-        precaption_region = _precaption_media_region(caption_bbox, cluster_bboxes)
+        precaption_region = _precaption_media_region(
+            caption_bbox, cluster_bboxes, blocks=blocks, body_column_width=body_column_width
+        )
         if not precaption_region:
             continue
         region_blocks = []
@@ -717,6 +783,8 @@ def compute_precaption_composite_regions(blocks: list[dict], page_width: int = 0
             label = block.get("block_label", "")
             bbox = [int(value) for value in block.get("block_bbox", [0, 0, 0, 0])]
             if bbox[3] > caption_bbox[1] + 24:
+                continue
+            if bbox[3] < precaption_region[1] - 240:
                 continue
             vertical_overlap_with_region = _bbox_vertical_overlap(bbox, precaption_region)
             near_region_side = vertical_overlap_with_region > 0 and (
@@ -730,9 +798,13 @@ def compute_precaption_composite_regions(blocks: list[dict], page_width: int = 0
             if not intersects_region:
                 continue
             if label in {"image", "chart"}:
+                if _bbox_vertical_overlap(bbox, precaption_region) <= 0 and bbox[3] < precaption_region[1] - 80:
+                    continue
                 region_blocks.append(block)
                 continue
             if label in {"text", "paragraph_title"}:
+                if bbox[3] < precaption_region[1] - 80:
+                    continue
                 width = _bbox_width(bbox)
                 text = clean_block_text(block.get("block_content", ""))
                 if (
@@ -1482,10 +1554,8 @@ def run_ocr(vault: Path, verbose: bool = False, no_progress: bool = False) -> in
                 active_submitted = max(0, active_submitted - 1)
             write_json(paths["ocr"] / key / "meta.json", meta)
             changed += 1
-    available_slots = max(0, max_items - active_submitted)
-    if available_slots > 0:
-
-        def _do_upload(token_val: str, pdf_path: Path) -> requests.Response:
+    # Upload pending items in batches until none remain (processes all do_ocr items, not just max_items)
+    def _do_upload(token_val: str, pdf_path: Path) -> requests.Response:
             with open(pdf_path, "rb") as file_handle:
                 resp = requests.post(
                     job_url,
@@ -1496,6 +1566,15 @@ def run_ocr(vault: Path, verbose: bool = False, no_progress: bool = False) -> in
                 )
             resp.raise_for_status()
             return resp
+
+    # Batch upload loop: process all pending items (not just max_items)
+    while True:
+        available_slots = max(0, max_items - active_submitted)
+        if available_slots <= 0:
+            break
+        upload_items = [r for r in ocr_queue if r.get("queue_status", "") not in ("done", "queued", "running")]
+        if not upload_items:
+            break
 
         upload_items = [r for r in ocr_queue if r.get("queue_status", "") not in ("done", "queued", "running")]
         for queue_row in progress_bar(upload_items, desc="Uploading", disable=no_progress):
