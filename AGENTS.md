@@ -565,4 +565,75 @@ cp -r 新下载的代码/* <vault_path>/
 
 ---
 
+## 12. 开发者指南（AI Agent 必读）
+
+### 版本号管理
+
+PaperForge 版本只在 `paperforge/__init__.py` 一处定义。升版本时不要手动改多个文件，使用自动化脚本：
+
+```bash
+# 升 patch 版本（1.4.11 → 1.4.12），自动 git commit + tag
+python scripts/bump.py patch
+
+# 升 minor 版本（1.4.11 → 1.5.0）
+python scripts/bump.py minor
+
+# 指定版本号
+python scripts/bump.py 2.0.0
+
+# 预览（不实际修改）
+python scripts/bump.py patch --dry-run
+
+# 只改文件不 commit
+python scripts/bump.py patch --no-git
+```
+
+脚本会自动更新：
+| 文件 | 字段 |
+|------|------|
+| `paperforge/__init__.py` | `__version__` |
+| `paperforge/plugin/manifest.json` | `version` |
+| `paperforge/plugin/versions.json` | 追加 `"version": "minAppVersion"` |
+
+### 发布 Release 流程
+
+```bash
+# 1. 升版本（自动 commit + tag）
+python scripts/bump.py patch
+
+# 2. 推送代码和 tag
+git push && git push --tags
+
+# 3. 创建 GitHub Release 并上传插件文件
+gh release create v1.4.12 \
+    --title "v1.4.12" \
+    --notes "简短说明" \
+    paperforge/plugin/main.js \
+    paperforge/plugin/styles.css \
+    paperforge/plugin/manifest.json \
+    paperforge/plugin/versions.json
+```
+
+> Obsidian 社区插件要求 Release 附带 `main.js`、`manifest.json`、`styles.css`、`versions.json` 四个单独文件（非 zip）。
+
+### 插件 i18n
+
+插件界面通过 `paperforge/plugin/i18n.js` 做中英文适配：
+- 语言自动检测：读取 Obsidian 语言设置，`zh*` 用中文，其他用英文
+- 新增文本时，需同时在 `i18n.js` 的 `zh` 和 `en` 两块加 key
+- 代码中使用 `t('key_name')` 读取翻译
+- Dashboard 的 `ACTIONS` 标题保持英文（Obsidian 命令面板统一使用英文 ID）
+
+### pre-commit 检查
+
+```bash
+# 提交前运行 ruff lint + format + 一致性审计
+ruff check --fix paperforge/ && ruff format paperforge/
+
+# 运行测试（317 tests）
+pytest tests/ -q --tb=short
+```
+
+---
+
 *PaperForge | 快速开始指南 | 安装后阅读*
