@@ -234,22 +234,41 @@ class PaperForgeStatusView extends ItemView {
     _runAction(a, card) {
         card.addClass('running');
         const vp = this.app.vault.adapter.basePath;
-        this._showMessage(`Running ${a.title}...`, 'running');
-        exec(`python -m paperforge ${a.cmd}`, { cwd: vp, timeout: 300000 }, (err, stdout, stderr) => {
-            card.removeClass('running');
-            if (err) {
-                const msg = stderr ? stderr.split('\n').filter(Boolean).slice(-2).join(' | ') : err.message;
-                this._showMessage(`[!!] ${a.cmd} failed: ${msg}`, 'error');
-                new Notice(`[!!] ${a.cmd} failed: ${msg}`, 8000);
-                return;
+        this._showMessage('Processing...', 'running');
+        const { spawn } = require('node:child_process');
+        const child = spawn('python', ['-m', 'paperforge', a.cmd, '--no-progress'], { cwd: vp, timeout: 300000 });
+        const log = [];
+        child.stdout.on('data', (data) => {
+            const lines = data.toString('utf-8').split('\n').filter(Boolean);
+            for (const l of lines) {
+                const clean = l.replace(/^\[\*\].*\d+:?\s*/, '').trim();
+                if (clean) { log.push(clean); this._showMessage(clean, 'running'); }
             }
-            const output = stdout.trim();
-            const summary = output.split('\n').filter(Boolean);
-            const first = summary[0]?.slice(0, 80) || a.okMsg || 'Done';
-            const detail = summary.length > 1 ? ` (${summary.length} lines)` : '';
-            this._showMessage(`[OK] ${a.title}: ${first}${detail}`, 'ok');
-            new Notice(`[OK] ${a.okMsg || first}`);
-            this._fetchStats();
+        });
+        child.stderr.on('data', (data) => {
+            const errLines = data.toString('utf-8').split('\n').filter(Boolean);
+            for (const l of errLines) {
+                const trim = l.trim();
+                if (trim && !trim.startsWith('\r')) { log.push(trim); this._showMessage(trim, 'running'); }
+            }
+        });
+        child.on('close', (code) => {
+            card.removeClass('running');
+            if (code !== 0) {
+                const last = log.slice(-3).join(' | ') || 'exit code ' + code;
+                this._showMessage('[!!] ' + last, 'error');
+                new Notice('[!!] ' + a.cmd + ' failed: ' + last, 8000);
+            } else {
+                const last = log[log.length - 1] || a.okMsg || 'Done';
+                this._showMessage('[OK] ' + a.title + ': ' + last, 'ok');
+                new Notice('[OK] ' + a.okMsg);
+                this._fetchStats();
+            }
+        });
+        child.on('error', (err) => {
+            card.removeClass('running');
+            this._showMessage('[!!] ' + err.message, 'error');
+            new Notice('[!!] Cannot start: ' + err.message, 8000);
         });
     }
 
