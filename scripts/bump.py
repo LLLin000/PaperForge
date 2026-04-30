@@ -1,16 +1,17 @@
 #!/usr/bin/env python
-"""Bump version across all PaperForge files.
+"""Bump version across all PaperForge files and optionally create a release.
 
 Usage:
-    python scripts/bump.py 1.4.12           # specific version
-    python scripts/bump.py patch            # bump patch (1.4.11 → 1.4.12)
-    python scripts/bump.py minor            # bump minor (1.4.11 → 1.5.0)
-    python scripts/bump.py major            # bump major (1.4.11 → 2.0.0)
-    python scripts/bump.py 1.4.12 --dry-run # preview only, no changes
-    python scripts/bump.py patch --no-git   # skip git commit/tag
+    python scripts/bump.py 1.4.12              # specific version, commit + tag only
+    python scripts/bump.py patch               # bump patch, commit + tag
+    python scripts/bump.py patch --release     # bump, commit, tag, push, create GitHub release
+    python scripts/bump.py minor --release -m "New feature X"   # release with custom notes
+    python scripts/bump.py 2.0.0 --dry-run     # preview only
+    python scripts/bump.py patch --no-git      # skip git entirely
 """
 import argparse
 import json
+import os
 import re
 import subprocess
 import sys
@@ -23,6 +24,13 @@ FILES_TO_UPDATE = {
     "manifest": ROOT / "paperforge" / "plugin" / "manifest.json",
     "versions": ROOT / "paperforge" / "plugin" / "versions.json",
 }
+
+PLUGIN_FILES = [
+    ROOT / "paperforge" / "plugin" / "main.js",
+    ROOT / "paperforge" / "plugin" / "styles.css",
+    ROOT / "paperforge" / "plugin" / "manifest.json",
+    ROOT / "paperforge" / "plugin" / "versions.json",
+]
 
 
 def read_current_version() -> str:
@@ -52,16 +60,17 @@ def update_file(path: Path, old_ver: str, new_ver: str, dry: bool) -> bool:
         print(f"  WOULD update {path.name}: {old_ver} → {new_ver}")
         return True
     new_content = content.replace(old_ver, new_ver)
-
-    # Special: append new_version: minAppVersion to versions.json
     if path.name == "versions.json" and f'"{new_ver}"' not in new_content:
         data = json.loads(new_content)
         data[new_ver] = "1.0.0"
         new_content = json.dumps(data, indent=2, ensure_ascii=False) + "\n"
-
     path.write_text(new_content, encoding="utf-8")
     print(f"  {path.name}: {old_ver} → {new_ver}")
     return True
+
+
+def run(cmd, **kwargs):
+    subprocess.run(cmd, cwd=ROOT, check=True, **kwargs)
 
 
 def main():
@@ -69,6 +78,8 @@ def main():
     parser.add_argument("version", help="New version or bump part (major/minor/patch)")
     parser.add_argument("--dry-run", action="store_true", help="Preview only")
     parser.add_argument("--no-git", action="store_true", help="Skip git commit/tag")
+    parser.add_argument("--release", action="store_true", help="Push and create GitHub release")
+    parser.add_argument("-m", "--message", default="", help="Release notes (one-line summary)")
     args = parser.parse_args()
 
     old_ver = read_current_version()
@@ -83,13 +94,36 @@ def main():
         print("\nDry run — no changes made.")
         return
 
-    if not args.no_git:
-        msg = f"chore: bump version to v{new_ver}"
-        subprocess.run(["git", "add", "-u"], cwd=ROOT, check=True)
-        subprocess.run(["git", "commit", "-m", msg], cwd=ROOT)
-        subprocess.run(["git", "tag", f"v{new_ver}"], cwd=ROOT)
-        print(f"\nCommitted and tagged v{new_ver}")
+    if args.no_git:
+        print("\nSkipping git — files updated on disk only.")
+        return
+
+    # Git commit + tag
+    run(["git", "add", "-u"])
+    run(["git", "commit", "-m", f"chore: bump version to v{new_ver}"])
+    run(["git", "tag", f"v{new_ver}"])
+    print(f"Committed and tagged v{new_ver}")
+
+    if not args.release:
         print("Run: git push && git push --tags")
+        return
+
+    # Push
+    run(["git", "push"])
+    run(["git", "push", "--tags"])
+    print("Pushed to remote")
+
+    # Create GitHub release
+    notes = args.message or f"v{new_ver}"
+    release_args = [
+        "gh", "release", "create", f"v{new_ver}",
+        "--title", f"v{new_ver}",
+        "--notes", notes,
+    ]
+    for pf in PLUGIN_FILES:
+        release_args.append(str(pf))
+    run(release_args)
+    print(f"GitHub release v{new_ver} created with plugin assets")
 
 
 if __name__ == "__main__":

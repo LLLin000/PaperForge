@@ -282,33 +282,32 @@ class PaperForgeSettingTab extends PluginSettingTab {
         const statusRow = containerEl.createEl('div', { cls: 'paperforge-setup-bar' });
         const statusLabel = statusRow.createEl('span', { cls: 'paperforge-setup-label' });
         if (this.plugin.settings.setup_complete) {
-            statusLabel.setText('✓ PaperForge 环境已配置完成');
+            statusLabel.setText(t('setup_done'));
             statusLabel.addClass('paperforge-setup-done');
         } else {
-            statusLabel.setText('尚未安装，完成下方安装准备后点击安装向导');
+            statusLabel.setText(t('setup_pending'));
             statusLabel.addClass('paperforge-setup-pending');
         }
 
         /* ── Preparation Guide ── */
-        containerEl.createEl('h3', { text: '安装准备' });
-        containerEl.createEl('p', {
-            text: '首次使用前，请依次完成以下准备：',
-            cls: 'paperforge-settings-desc'
-        });
+        containerEl.createEl('h3', { text: t('section_prep') });
+        containerEl.createEl('p', { text: t('section_prep_desc'), cls: 'paperforge-settings-desc' });
         const prep = containerEl.createEl('div', { cls: 'paperforge-guide' });
-        const prepItems = [
-            { title: 'Python 3.9+', desc: '确保 Python 可命令行调用。点击下方按钮会自动检测' },
-            { title: 'Zotero 桌面版', desc: '安装 Zotero (https://www.zotero.org)' },
-            { title: 'Better BibTeX', desc: 'Zotero → 工具 → 插件 → 安装 Better BibTeX for Zotero' },
-            { title: 'BBT 自动导出', desc: 'Zotero 中右键文献子分类 → 导出分类 → BetterBibTeX JSON → 勾选保持更新 → 导出到下方路径（JSON 文件名即为生成的 Base 名）：' },
-            { title: '', desc: `${vaultPath}/${this.plugin.settings.system_dir || 'System'}/PaperForge/exports/library.json` },
-            { title: 'PaddleOCR Key', desc: '在 https://aistudio.baidu.com/paddleocr 注册获取 API Key' },
+        const prepData = [
+            ['prep_python', 'prep_python_desc'],
+            ['prep_zotero', 'prep_zotero_desc'],
+            ['prep_bbt', 'prep_bbt_desc'],
+            ['prep_export', 'prep_export_desc'],
+            ['prep_key', 'prep_key_desc'],
         ];
-        for (const item of prepItems) {
+        for (const [kTitle, kDesc] of prepData) {
             const row = prep.createEl('div', { cls: 'paperforge-guide-item' });
-            if (item.title) row.createEl('strong', { text: item.title });
-            row.createEl('span', { text: item.desc });
+            row.createEl('strong', { text: t(kTitle) });
+            row.createEl('span', { text: ' — ' + t(kDesc) });
         }
+        // Export path (dynamic, needs vault path)
+        const expRow = prep.createEl('div', { cls: 'paperforge-guide-item' });
+        expRow.createEl('span', { text: `${vaultPath}/${this.plugin.settings.system_dir || 'System'}/PaperForge/exports/library.json` });
 
         /* ── Pre-check status area ── */
         this._checkEl = containerEl.createEl('div', { cls: 'paperforge-message' });
@@ -316,12 +315,10 @@ class PaperForgeSettingTab extends PluginSettingTab {
         /* ── Install / Reconfigure Button ── */
         const needSetup = !this.plugin.settings.setup_complete;
         new Setting(containerEl)
-            .setName(needSetup ? '安装向导' : '重新配置')
-            .setDesc(needSetup
-                ? '自动检测 Python + API Key，通过后打开分步安装向导'
-                : '重新运行安装向导，修改目录或密钥配置')
+            .setName(t(needSetup ? 'btn_install' : 'btn_reconfig'))
+            .setDesc(t(needSetup ? 'btn_install_desc' : 'btn_reconfig_desc'))
             .addButton((btn) => {
-                btn.setButtonText(needSetup ? '打开安装向导' : '重新配置')
+                btn.setButtonText(t(needSetup ? 'btn_install' : 'btn_reconfig'))
                     .setCta()
                     .onClick(() => {
                         if (!needSetup) {
@@ -335,17 +332,17 @@ class PaperForgeSettingTab extends PluginSettingTab {
             });
 
         /* ── Operation Guide ── */
-        containerEl.createEl('h3', { text: '操作方式' });
+        containerEl.createEl('h3', { text: t('section_guide') });
         const guide = containerEl.createEl('div', { cls: 'paperforge-guide' });
-        const guideItems = [
-            { title: '打开 Dashboard', desc: 'Ctrl+P → 输入 PaperForge: Open Dashboard，或点左侧书本图标' },
-            { title: '同步文献', desc: 'Dashboard 中点 Sync Library，从 Zotero 拉取文献生成笔记' },
-            { title: '运行 OCR', desc: 'Dashboard 中点 Run OCR，提取 PDF 全文与图表' },
+        const guideData = [
+            ['guide_open', 'guide_open_desc'],
+            ['guide_sync', 'guide_sync_desc'],
+            ['guide_ocr', 'guide_ocr_desc'],
         ];
-        for (const item of guideItems) {
+        for (const [kTitle, kDesc] of guideData) {
             const row = guide.createEl('div', { cls: 'paperforge-guide-item' });
-            row.createEl('strong', { text: item.title });
-            row.createEl('span', { text: ' — ' + item.desc });
+            row.createEl('strong', { text: t(kTitle) });
+            row.createEl('span', { text: ' — ' + t(kDesc) });
         }
 
         /* ── Config Summary (only after install) ── */
@@ -383,7 +380,7 @@ class PaperForgeSettingTab extends PluginSettingTab {
             const path = require('path');
 
             /* 1 — Python */
-            results.push({ label: 'Python', ok: !pyErr, detail: pyErr ? '未安装' : pyOut.trim() });
+            results.push({ label: 'Python', ok: !pyErr, detail: pyErr ? t('check_python_fail') : pyOut.trim() });
 
             /* 2 — Zotero (check install + data dir) */
             let zotOk = false;
@@ -403,7 +400,7 @@ class PaperForgeSettingTab extends PluginSettingTab {
             if (!zotOk && zotDataDir) {
                 try { zotOk = fs.existsSync(zotDataDir); } catch {}
             }
-            results.push({ label: 'Zotero', ok: zotOk, detail: zotOk ? '已安装' : '未检测到' });
+            results.push({ label: 'Zotero', ok: zotOk, detail: zotOk ? t('check_zotero_ok') : t('check_zotero_fail') });
 
             /* 3 — Better BibTeX (check Zotero extensions dir) */
             let bbtOk = false;
@@ -420,7 +417,7 @@ class PaperForgeSettingTab extends PluginSettingTab {
                     }
                 } catch {}
             }
-            results.push({ label: 'Better BibTeX', ok: bbtOk, detail: bbtOk ? '已安装' : '未检测到' });
+            results.push({ label: 'Better BibTeX', ok: bbtOk, detail: bbtOk ? t('check_bbt_ok') : t('check_bbt_fail') });
 
             /* Render */
             const marks = { true: '✓', false: '✗' };
@@ -468,7 +465,7 @@ class PaperForgeSetupModal extends Modal {
     }
 
     _renderStepIndicator() {
-        const steps = ['概览', '目录', 'Agent', '安装', '完成'];
+        const steps = [t('wizard_step1'), t('wizard_step2'), t('wizard_step3'), t('wizard_step4'), t('wizard_step5')];
         const bar = this.contentEl.createEl('div', { cls: 'paperforge-step-bar' });
         steps.forEach((label, i) => {
             const n = i + 1;
@@ -494,22 +491,22 @@ class PaperForgeSetupModal extends Modal {
     _renderNavigation() {
         const nav = this.contentEl.createEl('div', { cls: 'paperforge-step-nav' });
         if (this._step > 1) {
-            nav.createEl('button', { cls: 'paperforge-step-btn', text: '← 上一步' })
+            nav.createEl('button', { cls: 'paperforge-step-btn', text: t('nav_prev') })
                 .addEventListener('click', () => { this._step--; this._render(); });
         }
         if (this._step < 5) {
-            nav.createEl('button', { cls: 'paperforge-step-btn mod-cta', text: '下一步 →' })
+            nav.createEl('button', { cls: 'paperforge-step-btn mod-cta', text: t('nav_next') })
                 .addEventListener('click', () => { this._step++; this._render(); });
         } else {
-            nav.createEl('button', { cls: 'paperforge-step-btn', text: '关闭' })
+            nav.createEl('button', { cls: 'paperforge-step-btn', text: t('nav_close') })
                 .addEventListener('click', () => this.close());
         }
     }
 
     /* ── Step 1: Overview ── */
     _stepOverview(el) {
-        el.createEl('h2', { text: 'PaperForge 安装向导' });
-        el.createEl('p', { text: '本向导将引导您完成 PaperForge 环境的完整配置。安装过程会自动创建所有目录结构，无需手动操作。' });
+        el.createEl('h2', { text: t('wizard_title') });
+        el.createEl('p', { text: t('wizard_intro') });
 
         const s = this.plugin.settings;
         const vault = this.app.vault.adapter.basePath;
@@ -527,43 +524,40 @@ class PaperForgeSetupModal extends Modal {
                 <div class="paperforge-dir-node folder">📁 ${s.system_dir || 'System'}/ — 系统文件</div>
             </div>`;
 
-        el.createEl('p', {
-            text: '系统文件和 Agent 配置位于 Vault 根目录下。文献数据（正文、索引）统一存放在资源目录内。安装后所有字段仍可在设置中修改。',
-            cls: 'paperforge-modal-hint'
-        });
+        el.createEl('p', { text: t('wizard_preview'), cls: 'paperforge-modal-hint' });
     }
 
     /* ── Step 2: Directory Config (editable) ── */
     _stepDirectories(el) {
-        el.createEl('h2', { text: '目录配置' });
-        el.createEl('p', { text: '配置 PaperForge 的文件组织方式。所有值均可自定义，留空则使用默认值。' });
+        el.createEl('h2', { text: t('wizard_step2') });
+        el.createEl('p', { text: t('wizard_intro') });
 
         const s = this.plugin.settings;
         const vault = this.app.vault.adapter.basePath;
 
-        this._modalField(el, 'Vault 路径', vault, true);
+        this._modalField(el, t('dir_vault'), vault, true);
 
-        el.createEl('p', { text: '资源目录是文献数据的统一根目录，以下子目录将创建在其内部：', cls: 'paperforge-modal-hint' });
+        el.createEl('p', { text: t('wizard_dir_hint'), cls: 'paperforge-modal-hint' });
 
-        this._modalInput(el, '资源目录', 'resources_dir', s.resources_dir, 'Resources');
+        this._modalInput(el, t('dir_resources'), 'resources_dir', s.resources_dir, 'Resources');
 
-        el.createEl('p', { text: '资源目录内的两个子目录：', cls: 'paperforge-modal-hint' });
+        el.createEl('p', { text: t('wizard_dir_sub_hint'), cls: 'paperforge-modal-hint' });
 
-        this._modalInput(el, '正文目录', 'literature_dir', s.literature_dir, 'Notes');
-        this._modalInput(el, '索引目录', 'control_dir', s.control_dir, 'Index_Cards');
+        this._modalInput(el, t('dir_notes'), 'literature_dir', s.literature_dir, 'Notes');
+        this._modalInput(el, t('dir_index'), 'control_dir', s.control_dir, 'Index_Cards');
 
-        el.createEl('p', { text: '独立于资源目录的系统文件：', cls: 'paperforge-modal-hint' });
+        el.createEl('p', { text: t('wizard_sys_hint'), cls: 'paperforge-modal-hint' });
 
-        this._modalInput(el, '系统目录', 'system_dir', s.system_dir, 'System');
-        this._modalInput(el, 'Base 目录', 'base_dir', s.base_dir, 'Base');
+        this._modalInput(el, t('dir_system'), 'system_dir', s.system_dir, 'System');
+        this._modalInput(el, t('dir_base'), 'base_dir', s.base_dir, 'Base');
     }
 
     /* ── Step 3: Keys, Zotero & Agent ── */
     _stepKeys(el) {
-        el.createEl('h2', { text: 'API 密钥与 Agent 平台' });
+        el.createEl('h2', { text: t('wizard_step3') });
         const s = this.plugin.settings;
 
-        el.createEl('p', { text: '选择你使用的 AI Agent 平台，安装时将按对应格式部署技能文件：', cls: 'paperforge-modal-hint' });
+        el.createEl('p', { text: t('wizard_agent_hint'), cls: 'paperforge-modal-hint' });
 
         const AGENTS = [
             { key: 'opencode', name: 'OpenCode' },
@@ -575,7 +569,7 @@ class PaperForgeSetupModal extends Modal {
             { key: 'cline', name: 'Cline' },
         ];
         const agentRow = el.createEl('div', { cls: 'paperforge-modal-field' });
-        agentRow.createEl('label', { cls: 'paperforge-modal-label', text: 'Agent 平台' });
+        agentRow.createEl('label', { cls: 'paperforge-modal-label', text: t('label_agent') });
         const select = agentRow.createEl('select', { cls: 'paperforge-modal-select' });
         for (const a of AGENTS) {
             const opt = select.createEl('option', { text: a.name, attr: { value: a.key } });
@@ -587,10 +581,10 @@ class PaperForgeSetupModal extends Modal {
             this._pendingSave = setTimeout(() => { this.plugin.saveSettings(); this._pendingSave = null; }, 500);
         });
 
-        el.createEl('p', { text: '以下为 API 密钥与 Zotero 配置：', cls: 'paperforge-modal-hint' });
+        el.createEl('p', { text: t('wizard_keys_hint'), cls: 'paperforge-modal-hint' });
 
-        this._modalSecret(el, 'PaddleOCR API 密钥', 'paddleocr_api_key', s.paddleocr_api_key, '用于 OCR 文字识别的 API Key');
-        this._modalInput(el, 'Zotero 数据目录', 'zotero_data_dir', s.zotero_data_dir || '', '可选，用于自动检测 PDF');
+        this._modalSecret(el, t('field_paddleocr'), 'paddleocr_api_key', s.paddleocr_api_key, 'API Key');
+        this._modalInput(el, t('field_zotero_data'), 'zotero_data_dir', s.zotero_data_dir || '', t('field_zotero_placeholder'));
     }
 
     /* ── Modal form helpers ── */
@@ -642,21 +636,18 @@ class PaperForgeSetupModal extends Modal {
 
     /* ── Step 4: Install ── */
     _stepInstall(el) {
-        el.createEl('h2', { text: '开始安装' });
+        el.createEl('h2', { text: t('wizard_step4') });
         this._installLog = el.createEl('div', { cls: 'paperforge-install-log' });
 
-        const startBtn = el.createEl('button', {
-            cls: 'paperforge-step-btn mod-cta',
-            text: '开始安装'
-        });
+        const startBtn = el.createEl('button', { cls: 'paperforge-step-btn mod-cta', text: t('install_btn') });
         startBtn.addEventListener('click', () => this._runInstall(startBtn));
     }
 
     async _runInstall(btn) {
         btn.disabled = true;
-        btn.textContent = '正在安装...';
-        this._installLog.setText('正在配置 PaperForge 环境...\n');
-        this._log('正在验证配置...');
+        btn.textContent = t('install_btn_running');
+        this._installLog.setText(t('install_validating') + '\n');
+        this._log(t('install_validating'));
 
         const s = this.plugin.settings;
         const errors = this._validate();
@@ -664,7 +655,7 @@ class PaperForgeSetupModal extends Modal {
             this._log('验证失败：');
             errors.forEach(e => this._log('  ✗ ' + e));
             btn.disabled = false;
-            btn.textContent = '重试';
+            btn.textContent = t('install_btn_retry');
             return;
         }
 
@@ -705,15 +696,15 @@ class PaperForgeSetupModal extends Modal {
                 });
                 child.on('error', (err) => reject(err));
             });
-            this._log('\n✓ 安装完成！');
+            this._log(t('install_complete'));
             s.setup_complete = true;
             await this.plugin.saveSettings();
             setTimeout(() => { this._step = 5; this._render(); }, 800);
         } catch (err) {
             console.error('PaperForge setup failed:', err.message);
-            this._log('\n✗ 安装失败：' + this._formatSetupError(err.message));
+            this._log(t('install_failed') + this._formatSetupError(err.message));
             btn.disabled = false;
-            btn.textContent = '重试';
+            btn.textContent = t('install_btn_retry');
         }
     }
 
@@ -726,12 +717,12 @@ class PaperForgeSetupModal extends Modal {
     _validate() {
         const errors = [];
         const s = this.plugin.settings;
-        if (!s.vault_path || !s.vault_path.trim()) errors.push('Vault 路径未填写');
-        if (!s.resources_dir || !s.resources_dir.trim()) errors.push('资源目录未填写');
-        if (!s.literature_dir || !s.literature_dir.trim()) errors.push('正文目录未填写');
-        if (!s.control_dir || !s.control_dir.trim()) errors.push('索引目录未填写');
-        if (!s.base_dir || !s.base_dir.trim()) errors.push('Base 目录未填写');
-        if (!s.paddleocr_api_key || !s.paddleocr_api_key.trim()) errors.push('PaddleOCR API 密钥未填写');
+        if (!s.vault_path || !s.vault_path.trim()) errors.push(t('validate_vault'));
+        if (!s.resources_dir || !s.resources_dir.trim()) errors.push(t('validate_resources'));
+        if (!s.literature_dir || !s.literature_dir.trim()) errors.push(t('validate_notes'));
+        if (!s.control_dir || !s.control_dir.trim()) errors.push(t('validate_index'));
+        if (!s.base_dir || !s.base_dir.trim()) errors.push(t('validate_base'));
+        if (!s.paddleocr_api_key || !s.paddleocr_api_key.trim()) errors.push(t('validate_key'));
         return errors;
     }
 
@@ -747,53 +738,46 @@ class PaperForgeSetupModal extends Modal {
 
     _formatSetupError(raw) {
         const patterns = [
-            { match: /command not found|No such file|not recognized/i, msg: '未找到 Python 环境，请确保已安装 Python 并加入 PATH' },
-            { match: /paperforge.*not found|cannot import|ModuleNotFoundError|No module named/i, msg: '未安装 PaperForge 包，请先运行 pip install paperforge' },
-            { match: /permission denied|EACCES/i, msg: '权限不足，无法创建目录或写入文件' },
-            { match: /ENOENT/i, msg: '路径不存在，请检查 Vault 路径是否正确' },
-            { match: /timeout|timed out/i, msg: '操作超时，请检查网络连接后重试' },
+            { match: /command not found|No such file|not recognized/i, msg: 'Python not found' },
+            { match: /paperforge.*not found|cannot import|ModuleNotFoundError|No module named/i, msg: 'PaperForge not installed' },
+            { match: /permission denied|EACCES/i, msg: 'Permission denied' },
+            { match: /ENOENT/i, msg: 'Path not found' },
+            { match: /timeout|timed out/i, msg: 'Timeout' },
         ];
-        for (const p of patterns) {
-            if (p.match.test(raw)) return p.msg;
-        }
-        const fallback = raw.split('\n').filter(Boolean).slice(0, 3).join('；');
-        return fallback.slice(0, 200) || '未知错误，请查看控制台日志';
+        for (const p of patterns) { if (p.match.test(raw)) return p.msg; }
+        const fallback = raw.split('\n').filter(Boolean).slice(0, 3).join(' | ');
+        return fallback.slice(0, 200) || 'Unknown error';
     }
 
     /* ── Step 5: Complete ── */
     _stepComplete(el) {
-        el.createEl('h2', { text: '✓ PaperForge 安装完成' });
-
+        el.createEl('h2', { text: t('complete_title') });
         const summary = el.createEl('div', { cls: 'paperforge-summary' });
-        summary.createEl('div', { cls: 'paperforge-summary-title', text: '当前完整配置' });
-
+        summary.createEl('div', { cls: 'paperforge-summary-title', text: t('complete_summary') });
         const s = this.plugin.settings;
         const vault = this.app.vault.adapter.basePath;
         const items = [
-            { label: 'Vault 路径', val: vault, icon: '📁' },
-            { label: '资源目录', val: `${vault}/${s.resources_dir}`, icon: '📂' },
-            { label: '正文目录', val: `${vault}/${s.resources_dir}/${s.literature_dir}`, icon: '📄' },
-            { label: '索引目录', val: `${vault}/${s.resources_dir}/${s.control_dir}`, icon: '📄' },
-            { label: 'Base 目录', val: `${vault}/${s.base_dir}`, icon: '📂' },
-            { label: '系统目录', val: `${vault}/${s.system_dir}`, icon: '⚙' },
-            { label: 'API Key', val: s.paddleocr_api_key ? '已配置 ✓' : '未配置 ✗', icon: '🔑' },
-            { label: 'Zotero 数据', val: s.zotero_data_dir || '未设置', icon: '🔗' },
+            { label: t('dir_vault'), val: vault },
+            { label: t('dir_resources'), val: `${vault}/${s.resources_dir}` },
+            { label: t('dir_notes'), val: `${vault}/${s.resources_dir}/${s.literature_dir}` },
+            { label: t('dir_index'), val: `${vault}/${s.resources_dir}/${s.control_dir}` },
+            { label: t('dir_base'), val: `${vault}/${s.base_dir}` },
+            { label: t('dir_system'), val: `${vault}/${s.system_dir}` },
+            { label: 'API Key', val: s.paddleocr_api_key ? t('api_key_set') : t('api_key_missing') },
+            { label: t('field_zotero_data'), val: s.zotero_data_dir || t('not_set') },
         ];
         for (const item of items) {
             const row = summary.createEl('div', { cls: 'paperforge-summary-row' });
-            row.createEl('span', { cls: 'paperforge-summary-icon', text: item.icon });
             row.createEl('span', { cls: 'paperforge-summary-label', text: item.label });
             row.createEl('span', { cls: 'paperforge-summary-value', text: item.val });
         }
-
-        /* Next steps */
-        el.createEl('h3', { text: '下一步操作' });
+        el.createEl('h3', { text: t('complete_next') });
         const nextList = el.createEl('div', { cls: 'paperforge-nextsteps' });
         const steps = [
-            ['打开 PaperForge Dashboard', '按 Ctrl+P 打开命令面板，输入 "PaperForge: Open Dashboard" 并回车；或点击左侧边栏的书本图标 (📖) 直接打开'],
-            ['同步文献', '在 Dashboard 面板中点击 "Sync Library" 按钮，即可从 Zotero 拉取文献并生成笔记'],
-            ['运行 OCR', '在 Dashboard 中点击 "Run OCR" 按钮，提取 PDF 全文和图表'],
-            ['配置 Better BibTeX 自动导出', 'Zotero → 编辑 → 首选项 → Better BibTeX → 勾选 "Keep updated"，导出路径设置为：'],
+            [t('complete_step1'), t('complete_step1_desc')],
+            [t('complete_step2'), t('complete_step2_desc')],
+            [t('complete_step3'), t('complete_step3_desc')],
+            [t('complete_step4'), t('complete_step4_desc')],
             ['', `${vault}/${s.system_dir}/PaperForge/exports/library.json`],
         ];
         for (const [title, desc] of steps) {
