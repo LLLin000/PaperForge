@@ -3,8 +3,8 @@
   "name": "PaperForge",
   "version": "1.4.13",
   "minAppVersion": "1.0.0",
-  "description": "PaperForge — Zotero literature pipeline. Sync, OCR, and deep-reading commands in your command palette.",
+  "description": "PaperForge — Zotero literature pipeline. Sync PDFs, run OCR, and read with AI-assisted deep reading.",
   "author": "Lin Zhaoxuan",
-  "authorUrl": "https://github.com/LLLin000/PaperForge",
+  "authorUrl": "https://github.com/LLLin000",
   "isDesktopOnly": true
 }
