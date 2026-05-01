@@ -9,9 +9,9 @@
 
 # PaperForge
 
-[![Version](https://img.shields.io/badge/version-1.4.11-blue?style=for-the-badge)](https://github.com/LLLin000/PaperForge/releases)
+[![Version](https://img.shields.io/github/v/release/LLLin000/PaperForge?style=for-the-badge&label=version)](https://github.com/LLLin000/PaperForge/releases)
 [![Python](https://img.shields.io/pypi/pyversions/paperforge?style=for-the-badge&logo=python&logoColor=white&color=3775A9)](https://python.org)
-[![License](https://img.shields.io/github/license/LLLin000/PaperForge?style=for-the-badge&color=brightgreen)](LICENSE)
+[![License](https://img.shields.io/badge/license-CC%20BY--NC--SA%204.0-lightgreen?style=for-the-badge)](LICENSE)
 
 > [English](README.md) · **简体中文**
 
@@ -201,6 +201,25 @@ pip install --upgrade git+https://github.com/LLLin000/PaperForge.git
 
 ---
 
-## License
+## 协议
 
-MIT License
+[CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/) — 开源非商用。
+详见 [LICENSE](LICENSE)。
+
+---
+
+## 致谢
+
+PaperForge 站在这些优秀项目的肩膀上：
+
+| 项目 | 作用 |
+|------|------|
+| [PaddleOCR / PaddleOCR-VL](https://github.com/PaddlePaddle/PaddleOCR) | PDF OCR 引擎 — 文字提取、版面检测、图表分割 |
+| [Obsidian](https://obsidian.md) | 笔记平台 — 插件宿主、Vault 文件系统 |
+| [Better BibTeX for Zotero](https://retorque.re/zotero-better-bibtex/) | 文献数据自动导出为 JSON |
+| [PyMuPDF (fitz)](https://github.com/pymupdf/PyMuPDF) | 本地 PDF 验证与净化 |
+| [requests](https://github.com/psf/requests) | OCR API HTTP 客户端 |
+| [tenacity](https://github.com/jd/tenacity) | 指数退避重试机制 |
+| [Pillow](https://python-pillow.org) | 图表图片处理 |
+| [tqdm](https://github.com/tqdm/tqdm) | 进度条 |
+| [textual](https://github.com/Textualize/textual) | TUI 组件（诊断向导） |
