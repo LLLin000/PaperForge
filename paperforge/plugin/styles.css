@@ -647,3 +647,12 @@
     border: 1px solid var(--background-modifier-border);
     font-size: var(--font-ui-small); line-height: 1.5;
 }
+
+/* ── OCR Processing Animation ── */
+.paperforge-processing .paperforge-progress-seg.pending {
+    animation: paperforge-pulse 1.5s ease-in-out infinite;
+}
+@keyframes paperforge-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
