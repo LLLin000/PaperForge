@@ -9,7 +9,7 @@
 
 # PaperForge
 
-[![Version](https://img.shields.io/badge/version-1.4.11-blue?style=for-the-badge)](https://github.com/LLLin000/PaperForge/releases)
+[![Version](https://img.shields.io/github/v/release/LLLin000/PaperForge?style=for-the-badge&label=version)](https://github.com/LLLin000/PaperForge/releases)
 [![Python](https://img.shields.io/pypi/pyversions/paperforge?style=for-the-badge&logo=python&logoColor=white&color=3775A9)](https://python.org)
 [![License](https://img.shields.io/github/license/LLLin000/PaperForge?style=for-the-badge&color=brightgreen)](LICENSE)
 
@@ -203,4 +203,23 @@ pip install --upgrade git+https://github.com/LLLin000/PaperForge.git
 
 ## License
 
-MIT License
+[CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/) — Non-commercial use only.
+See [LICENSE](LICENSE) for details.
+
+---
+
+## Acknowledgments
+
+PaperForge stands on the shoulders of these excellent projects:
+
+| Project | Role |
+|---------|------|
+| [PaddleOCR / PaddleOCR-VL](https://github.com/PaddlePaddle/PaddleOCR) | PDF OCR engine — text extraction, layout detection, figure segmentation |
+| [Obsidian](https://obsidian.md) | Note-taking platform — plugin host, vault file structure |
+| [Better BibTeX for Zotero](https://retorque.re/zotero-better-bibtex/) | Auto-export citation data as JSON |
+| [PyMuPDF (fitz)](https://github.com/pymupdf/PyMuPDF) | Local PDF validation and sanitization |
+| [requests](https://github.com/psf/requests) | HTTP client for OCR API |
+| [tenacity](https://github.com/jd/tenacity) | Retry logic with exponential backoff |
+| [Pillow](https://python-pillow.org) | Image processing for figure assets |
+| [tqdm](https://github.com/tqdm/tqdm) | Progress bars |
+| [textual](https://github.com/Textualize/textual) | TUI components (diagnostic wizard) |

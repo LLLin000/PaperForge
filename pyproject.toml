@@ -8,7 +8,7 @@ dynamic = ["version"]
 description = "PaperForge — Obsidian + Zotero literature pipeline CLI"
 readme = "README.md"
 requires-python = ">=3.10"
-license = {text = "MIT"}
+license = {text = "CC BY-NC-SA 4.0"}
 authors = [
     {name = "PaperForge Contributors"}
 ]
