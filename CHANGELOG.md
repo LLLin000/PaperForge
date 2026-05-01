@@ -8,7 +8,60 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
-## [1.4.1] — 2026-04-28
+## [1.4.13] — 2026-05-01
+
+### Added
+
+- **Four-state OCR display**: Pending (do_ocr:true, not started) / Processing (queued/running) / Done / Failed — with pulse animation on Processing count
+- **do_ocr-aware status counting**: `paperforge status` now scans library records for `do_ocr:true` items and reports them even before any meta.json is written
+- **PDF sanitize fallback**: when provider returns `resultUrl 404` (result object missing), sets `needs_sanitize` and retries with fitz-rewritten PDF
+- **8 edge case stress tests**: empty queue, corrupt meta.json, max_items=1 throttling, upload timeout, unknown API state, full pending→done cycle, mixed-state queue, done_incomplete→pending + error reset
+
+### Changed
+
+- **OCR pipeline**: combined upload + poll into a single loop — uploads up to `max_items` concurrency, polls all queued, decrements active count on completion, continues until all done
+- **Error handling**: `error` status resets to `pending` on a fresh `paperforge ocr` run (clears job_id, retry_count=0); `done_incomplete` → pending (retry_count=0)
+- **API "failed" state** treated as transient — kept as `queued` for retry instead of terminal `error`
+- **Status classification**: `queued`, `running`, `processing` all count as "Processing"; `pending` counts separately; no more misclassification as `failed`
+- **Zombie cleanup**: stale `queued`/`running` jobs (>30 min) reset to `pending` at start of each run
+- **Plugin sidebar caching**: `_cachedStats` stores last successful status; panel renders cached data immediately on reopen, refreshes in background — no more blank Loading
+- **Metric cards cleared on each render**: fixed duplicate card bug on refresh
+
+### Fixed
+
+- `ensure_ocr_meta` handles corrupt `meta.json` gracefully (falls back to `{}` instead of crashing `run_ocr`)
+- `queued`/`running` no longer counted as `failed` in status output
+- Sidebar "Loading..." no longer persists after data loads
+
+### Performance
+
+- `status.py` startup optimized by scanning only `do_ocr:true` records instead of all meta.jsons
+
+---
+
+## [1.4.12] — 2026-04-30
+
+### Added
+
+- Real-time OCR progress in Dashboard via background refresh timer (4s polling during `_runAction`)
+
+### Fixed
+
+- Dashboard `exec` replaced with `spawn` for actions, enabling live progress output
+- Loading flicker on sidebar reopen
+
+---
+
+## [1.4.11] — 2026-04-30
+
+### Fixed
+
+- Author field missing `header_title` key causing blank panel in some locale setups
+- Language detection fallback, config summary i18n gaps
+- Inline all i18n strings into `main.js` (removed `require/` dependency for side-by-side loading)
+- Corrected `versions.json` minAppVersion for plugin compatibility
+
+---
 
 ### Added
 

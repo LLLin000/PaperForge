@@ -36,7 +36,10 @@ def ensure_ocr_meta(vault: Path, row: dict) -> dict:
     key = row["zotero_key"]
     meta_path = paths["ocr"] / key / "meta.json"
     meta_path.parent.mkdir(parents=True, exist_ok=True)
-    meta = read_json(meta_path) if meta_path.exists() else {}
+    try:
+        meta = read_json(meta_path) if meta_path.exists() else {}
+    except Exception:
+        meta = {}
     meta.setdefault("zotero_key", key)
     meta.setdefault("source_pdf", row.get("pdf_path", ""))
     meta.setdefault("ocr_provider", "PaddleOCR-VL-1.5")
@@ -239,13 +242,27 @@ def normalize_obsidian_markdown(text: str) -> str:
     )
     normalized = re.sub("(?m)^†\\s*(.+)$", lambda match: f"[^equal]: {match.group(1).strip()}", normalized)
     normalized = re.sub(
-        r"(?<!\\)(\*{1,3})\s*=\s*(?=p\s*<)",
-        lambda m: f"$^{{{m.group(1)}}}$ = ",
+        r"(?<!\\)(\*{1,3})\s*(?:=\s*)?(p\s*<\s*[\d]+(?:\.[\d]+)?)",
+        lambda m: f"${m.group(1)}{m.group(2).strip()}$",
         normalized,
     )
     normalized = re.sub(
-        r"(?<!\\)(\*{1,3})\s*(?=p\s*<)",
-        lambda m: f"$^{{{m.group(1)}}}$ ",
+        r"\$\^\{\*\}\$\s*=\s*p\s*<\s*([\d]+(?:\.[\d]+)?)",
+        lambda m: f"$*p < {m.group(1)}$",
+        normalized,
+    )
+    normalized = re.sub(
+        r"\$\^\{\*\}\$\s*(p\s*<\s*[\d]+(?:\.[\d]+)?)",
+        lambda m: f"$*{m.group(1).strip()}$",
+        normalized,
+    )
+    normalized = re.sub(
+        r"(?<!\$)\bp\s*<\s*[\d]+(?:\.[\d]+)?",
+        lambda m: (
+            f"${m.group(0).strip()}$"
+            if normalized[: m.start()].count("$") % 2 == 0
+            else m.group(0)
+        ),
         normalized,
     )
     normalized = re.sub("([A-Za-z])(\\$[^$\\n]+\\$)", "\\1 \\2", normalized)
@@ -330,7 +347,6 @@ def block_sort_key(block: dict) -> tuple[int, int, int, int]:
 
 def clean_block_text(text: str) -> str:
     text = html.unescape(normalize_obsidian_markdown(text)).strip()
-    text = re.sub("([a-z])and ([A-Z])", "\\1 and \\2", text)
     return text
 
 
@@ -668,6 +684,17 @@ def is_formal_figure_legend(text: str) -> bool:
             cleaned,
             flags=re.IGNORECASE,
         )
+    )
+
+
+def is_numbered_figure_caption(text: str) -> bool:
+    cleaned = clean_block_text(text)
+    if not re.match(r"^(?:Figure|Fig\.?)\s+\d+\b", cleaned, flags=re.IGNORECASE):
+        return False
+    return not re.match(
+        r"^(?:Figure|Fig\.?)\s+\d+\s+(?:shows?|illustrates?|depicts?|describes?|summarizes?)\b",
+        cleaned,
+        flags=re.IGNORECASE,
     )
 
 
@@ -1048,7 +1075,7 @@ def caption_group_assignments(blocks: list[dict]) -> tuple[dict[int, list[dict]]
         if block.get("block_label") not in {"figure_title", "paragraph_title", "text"}:
             continue
         text = clean_block_text(block.get("block_content", ""))
-        if re.match("^(?:Figure|Fig\\.?)\\s+\\d+", text, flags=re.IGNORECASE):
+        if is_numbered_figure_caption(text):
             figure_captions.append(block)
         elif re.match("^(?:Table|Extended\\s+Data\\s+Table|Supplementary\\s+Table)\\s+\\d+", text, flags=re.IGNORECASE):
             table_captions.append(block)
@@ -1063,6 +1090,11 @@ def caption_group_assignments(blocks: list[dict]) -> tuple[dict[int, list[dict]]
             for caption in figure_captions:
                 cb = caption.get("block_bbox", [0, 0, 0, 0])
                 if bbox[1] < cb[1]:
+                    horizontal_overlap = _bbox_horizontal_overlap(bbox, cb)
+                    center_delta = abs(_bbox_center_x(bbox) - _bbox_center_x(cb))
+                    width_gate = max(140, min(_bbox_width(bbox), _bbox_width(cb)) * 0.6)
+                    if horizontal_overlap <= 0 and center_delta > width_gate:
+                        continue
                     distance = cb[1] - bbox[1]
                     if best_distance is None or distance < best_distance:
                         best_caption = caption
@@ -1194,6 +1226,33 @@ def render_page_blocks(
                 continue
             if raw_reference_blocks and bbox[1] >= first_reference_y - 10:
                 reference_continuations.append(block)
+                continue
+            if is_numbered_figure_caption(text):
+                linked_media = figure_caption_map.get(block.get("block_id"), []) or table_caption_map.get(
+                    block.get("block_id"), []
+                )
+                if linked_media and page_image:
+                    rendered_caption_media_ids.update(item.get("block_id") for item in linked_media)
+                    union_bbox = [
+                        min(item["block_bbox"][0] for item in linked_media),
+                        min(item["block_bbox"][1] for item in linked_media),
+                        max(item["block_bbox"][2] for item in linked_media),
+                        max(item["block_bbox"][3] for item in linked_media),
+                    ]
+                    asset_kind = "figure" if block.get("block_id") in figure_caption_map else "table"
+                    asset_path = (
+                        images_dir
+                        / "blocks"
+                        / f"page_{page_index:03d}_{asset_kind}_{union_bbox[0]}_{union_bbox[1]}_{union_bbox[2]}_{union_bbox[3]}.jpg"
+                    )
+                    if crop_block_asset(page_image, union_bbox, asset_path):
+                        rendered.append(_image_embed_for_obsidian(asset_path.relative_to(vault)))
+                    if asset_kind == "table":
+                        for item in linked_media:
+                            if item.get("block_label") == "table" and item.get("block_content"):
+                                rendered.append(clean_block_text(item.get("block_content", "")))
+                                break
+                rendered.append(text)
                 continue
             if page_index == 1 and (not first_page_meta_done):
                 if handle_first_page_metadata_lines(text, rendered, affiliation_buffer, deferred_meta, footnotes):
@@ -1425,6 +1484,25 @@ def run_ocr(vault: Path, verbose: bool = False, no_progress: bool = False) -> in
                     "pdf_path": pdf_attachments[0]["path"] if pdf_attachments else "",
                 }
             )
+    for row in target_rows:
+        key = row["zotero_key"]
+        meta = ensure_ocr_meta(vault, row)
+        if str(meta.get("ocr_status", "") or "").strip().lower() == "error":
+            meta["ocr_status"] = "pending"
+            meta["ocr_job_id"] = ""
+            meta["ocr_started_at"] = ""
+            meta["ocr_finished_at"] = ""
+            meta["retry_count"] = 0
+            write_json(paths["ocr"] / key / "meta.json", meta)
+        status, _error = validate_ocr_meta(paths, meta)
+        if status == "done_incomplete":
+            meta["ocr_status"] = "pending"
+            meta["ocr_job_id"] = ""
+            meta["ocr_started_at"] = ""
+            meta["ocr_finished_at"] = ""
+            meta["error"] = _error
+            meta["retry_count"] = 0
+            write_json(paths["ocr"] / key / "meta.json", meta)
     ocr_queue = sync_ocr_queue(paths, target_rows)
     max_items_raw = os.environ.get("PADDLEOCR_MAX_ITEMS", "").strip()
     max_items = 3
@@ -1473,14 +1551,11 @@ def run_ocr(vault: Path, verbose: bool = False, no_progress: bool = False) -> in
             try:
                 response = retry_with_meta(_do_poll, meta_path_poll, meta["ocr_job_id"], token)
             except Exception as e:
-                from paperforge.ocr_diagnostics import classify_error
-
-                state, suggestion = classify_error(e, getattr(e, "response", None))
-                meta["ocr_status"] = state
+                meta["ocr_status"] = "pending"
                 meta["error"] = str(e)
-                meta["suggestion"] = suggestion
-                meta["library_record"] = key
-                queue_row["queue_status"] = state
+                meta["last_error"] = str(e)
+                meta["retry_count"] = int(meta.get("retry_count", 0)) + 1
+                queue_row["queue_status"] = "pending"
                 write_json(paths["ocr"] / key / "meta.json", meta)
                 changed += 1
                 active_submitted = max(0, active_submitted - 1)
@@ -1489,15 +1564,12 @@ def run_ocr(vault: Path, verbose: bool = False, no_progress: bool = False) -> in
                 payload = response.json()["data"]
                 state = payload["state"]
             except (json.JSONDecodeError, KeyError) as e:
-                from paperforge.ocr_diagnostics import classify_error
-
-                state, suggestion = classify_error(e, None)
-                meta["ocr_status"] = state
+                meta["ocr_status"] = "pending"
                 meta["error"] = f"API schema mismatch during polling: {e}"
-                meta["suggestion"] = suggestion
-                meta["library_record"] = key
+                meta["last_error"] = meta["error"]
                 meta["raw_response"] = response.text[:1000]
-                queue_row["queue_status"] = state
+                meta["retry_count"] = int(meta.get("retry_count", 0)) + 1
+                queue_row["queue_status"] = "pending"
                 write_json(paths["ocr"] / key / "meta.json", meta)
                 changed += 1
                 active_submitted = max(0, active_submitted - 1)
@@ -1507,15 +1579,25 @@ def run_ocr(vault: Path, verbose: bool = False, no_progress: bool = False) -> in
                 queue_row["queue_status"] = state
                 meta["error"] = ""
             elif state == "done":
-                result_url = payload["resultUrl"]["jsonUrl"]
-                result_response = requests.get(result_url, timeout=120)
-                result_response.raise_for_status()
-                lines = [line.strip() for line in result_response.text.splitlines() if line.strip()]
-                all_results = []
-                for line in lines:
-                    page_payload = json.loads(line)["result"]
-                    all_results.append(page_payload)
-                page_num, markdown_path, json_path, fulltext_md_path = postprocess_ocr_result(vault, key, all_results)
+                try:
+                    result_url = payload["resultUrl"]["jsonUrl"]
+                    result_response = requests.get(result_url, timeout=120)
+                    result_response.raise_for_status()
+                    lines = [line.strip() for line in result_response.text.splitlines() if line.strip()]
+                    all_results = []
+                    for line in lines:
+                        page_payload = json.loads(line)["result"]
+                        all_results.append(page_payload)
+                    page_num, markdown_path, json_path, fulltext_md_path = postprocess_ocr_result(vault, key, all_results)
+                except Exception as e:
+                    meta["ocr_status"] = "pending"
+                    meta["error"] = str(e)
+                    meta["retry_count"] = int(meta.get("retry_count", 0)) + 1
+                    queue_row["queue_status"] = "pending"
+                    write_json(paths["ocr"] / key / "meta.json", meta)
+                    changed += 1
+                    active_submitted = max(0, active_submitted - 1)
+                    continue
                 meta["ocr_status"] = "done"
                 # Per D-01: auto_analyze_after_ocr opt-in workflow streamlining
                 cfg_path = vault / "paperforge.json"
@@ -1567,130 +1649,169 @@ def run_ocr(vault: Path, verbose: bool = False, no_progress: bool = False) -> in
             resp.raise_for_status()
             return resp
 
-    # Batch upload loop: process all pending items (not just max_items)
-    while True:
+    # Combined upload + poll loop: process all items in batches up to max_items concurrency
+    import time as _time
+    poll_interval = int(os.environ.get("PAPERFORGE_POLL_INTERVAL", "15"))
+    max_poll_cycles = int(os.environ.get("PAPERFORGE_POLL_MAX_CYCLES", "60"))
+    for _cycle in range(max_poll_cycles):
+        remaining = [r for r in ocr_queue if r.get("queue_status", "") not in ("done", "nopdf", "blocked")]
+        if not remaining:
+            break
         available_slots = max(0, max_items - active_submitted)
-        if available_slots <= 0:
-            break
-        upload_items = [r for r in ocr_queue if r.get("queue_status", "") not in ("done", "queued", "running")]
-        if not upload_items:
-            break
-
-        upload_items = [r for r in ocr_queue if r.get("queue_status", "") not in ("done", "queued", "running")]
-        for queue_row in progress_bar(upload_items, desc="Uploading", disable=no_progress):
-            if available_slots <= 0:
-                break
-            key = queue_row["zotero_key"]
-            meta = ensure_ocr_meta(vault, queue_row)
-            status = str(meta.get("ocr_status", "pending") or "pending").strip().lower()
-            if status == "done":
-                queue_changed = True
-                continue
-            if status in {"queued", "running"} and meta.get("ocr_job_id"):
-                continue
-            resolved_pdf = resolve_pdf_path(
-                queue_row.get("pdf_path", ""),
-                queue_row.get("has_pdf", False),
-                vault,
-                paths.get("zotero_dir") if "zotero_dir" in paths else None,
-            )
-            if not resolved_pdf:
-                meta["ocr_status"] = "nopdf"
-                meta["error"] = "PDF not found or not readable"
-                queue_row["queue_status"] = "nopdf"
-                write_json(paths["ocr"] / key / "meta.json", meta)
-                changed += 1
-                continue
-            if not token:
-                meta["ocr_status"] = "blocked"
-                meta["error"] = "PaddleOCR not configured"
-                queue_row["queue_status"] = "blocked"
-                write_json(paths["ocr"] / key / "meta.json", meta)
-                changed += 1
-                continue
-            meta_path_upload = paths["ocr"] / key / "meta.json"
-            try:
-                response = retry_with_meta(_do_upload, meta_path_upload, token, resolved_pdf)
-            except Exception as e:
-                from paperforge.ocr_diagnostics import classify_error
-
-                state, suggestion = classify_error(e, getattr(e, "response", None))
-                meta["ocr_status"] = state
-                meta["error"] = str(e)
-                meta["suggestion"] = suggestion
-                meta["library_record"] = key
-                queue_row["queue_status"] = state
-                write_json(paths["ocr"] / key / "meta.json", meta)
-                changed += 1
-                continue
-            meta["ocr_job_id"] = response.json()["data"]["jobId"]
-            meta["ocr_status"] = "queued"
-            meta["ocr_started_at"] = datetime.now(timezone.utc).isoformat()
-            _submitted.add(key)
-            meta["error"] = ""
-            queue_row["queue_status"] = "queued"
-            write_json(paths["ocr"] / key / "meta.json", meta)
-            changed += 1
-            available_slots -= 1
-    # Persistent poll: wait for newly submitted jobs to complete
-    # Only polls items that were JUST uploaded in this run (not pre-existing queued)
-    freshly_queued = {r["zotero_key"] for r in ocr_queue if r.get("queue_status") == "queued" and r.get("zotero_key") in _submitted}
-    if freshly_queued and token:
-        import time as _time
-        max_cycles = int(os.environ.get("PAPERFORGE_POLL_MAX_CYCLES", "20"))  # ~5 min at 15s intervals
-        for _cycle in range(max_cycles):
-            pending = [r for r in ocr_queue if r.get("queue_status") in ("queued", "running") and r.get("zotero_key") in _submitted]
-            if not pending:
-                break
-            for queue_row in progress_bar(pending, desc="Waiting OCR", disable=no_progress):
+        if available_slots > 0:
+            upload_items = [
+                r
+                for r in remaining
+                if r.get("queue_status", "") not in ("queued", "running")
+            ][:available_slots]
+            for queue_row in upload_items:
                 key = queue_row["zotero_key"]
                 meta = ensure_ocr_meta(vault, queue_row)
-                job_id = meta.get("ocr_job_id", "")
-                if not job_id:
+                _sanitized_temp = None
+                status = str(meta.get("ocr_status", "pending") or "pending").strip().lower()
+                if status in {"done", "queued", "running"}:
                     continue
-                try:
-                    response = retry_with_meta(_do_poll, paths["ocr"] / key / "meta.json", job_id, token)
-                    payload = response.json()["data"]
-                    state = payload["state"]
-                except Exception:
+                resolved_pdf = resolve_pdf_path(
+                    queue_row.get("pdf_path", ""),
+                    queue_row.get("has_pdf", False),
+                    vault,
+                    paths.get("zotero_dir") if "zotero_dir" in paths else None,
+                )
+                if not resolved_pdf:
+                    meta["ocr_status"] = "nopdf"
+                    queue_row["queue_status"] = "nopdf"
+                    write_json(paths["ocr"] / key / "meta.json", meta)
+                    changed += 1
                     continue
-                if state == "done":
-                    result_url = payload["resultUrl"]["jsonUrl"]
+                if not token:
+                    meta["ocr_status"] = "blocked"
+                    queue_row["queue_status"] = "blocked"
+                    write_json(paths["ocr"] / key / "meta.json", meta)
+                    changed += 1
+                    continue
+                upload_pdf = resolved_pdf
+                if meta.get("needs_sanitize"):
                     try:
-                        result_response = requests.get(result_url, timeout=120)
-                        result_response.raise_for_status()
-                        lines = [l.strip() for l in result_response.text.splitlines() if l.strip()]
-                        results = [json.loads(l)["result"] for l in lines]
-                        page_num, md_path, json_path, fulltext_md_path = postprocess_ocr_result(vault, key, results)
-                        meta["ocr_status"] = "done"
-                        meta["ocr_finished_at"] = datetime.now(timezone.utc).isoformat()
-                        meta["page_count"] = page_num
-                        meta["markdown_path"] = md_path
-                        meta["json_path"] = json_path
-                        meta["fulltext_md_path"] = fulltext_md_path
-                        meta["error"] = ""
-                        queue_row["queue_status"] = "done"
-                        queue_changed = True
-                        changed += 1
+                        import tempfile
+                        doc = fitz.open(str(resolved_pdf))
+                        _sanitized_temp = Path(tempfile.mktemp(suffix=".pdf"))
+                        doc.save(str(_sanitized_temp), garbage=4, deflate=True, clean=True)
+                        doc.close()
+                        upload_pdf = _sanitized_temp
+                        meta["needs_sanitize"] = False
                     except Exception:
                         pass
-                elif state in ("error", "failed"):
+                if int(meta.get("retry_count", 0)) >= 3:
                     meta["ocr_status"] = "error"
-                    meta["error"] = payload.get("errorMsg", "Unknown OCR failure")
+                    meta["error"] = meta.get("error", "") or "Upload failed after 3 retries"
                     queue_row["queue_status"] = "error"
+                    write_json(paths["ocr"] / key / "meta.json", meta)
                     changed += 1
-                else:
-                    meta["ocr_status"] = state
-                    queue_row["queue_status"] = state
+                    continue
+                try:
+                    response = retry_with_meta(_do_upload, paths["ocr"] / key / "meta.json", token, upload_pdf)
+                    meta["ocr_job_id"] = response.json()["data"]["jobId"]
+                except Exception as e:
+                    if _sanitized_temp is not None and _sanitized_temp.exists():
+                        _sanitized_temp.unlink(missing_ok=True)
+                    import requests as _requests
+                    if isinstance(e, _requests.exceptions.HTTPError):
+                        _status = getattr(getattr(e, 'response', None), 'status_code', 0)
+                        if _status == 401:
+                            meta["ocr_status"] = "blocked"
+                            meta["error"] = "PaddleOCR token invalid"
+                            meta["retry_count"] = 3
+                            queue_row["queue_status"] = "blocked"
+                            write_json(paths["ocr"] / key / "meta.json", meta)
+                            changed += 1
+                            continue
+                    if isinstance(e, FileNotFoundError):
+                        meta["ocr_status"] = "nopdf"
+                        meta["error"] = "PDF not found"
+                        queue_row["queue_status"] = "nopdf"
+                        write_json(paths["ocr"] / key / "meta.json", meta)
+                        changed += 1
+                        continue
+                    retry_count = int(meta.get("retry_count", 0)) + 1
+                    meta["retry_count"] = retry_count
+                    meta["error"] = str(e)
+                    meta["last_error"] = str(e)
+                    meta["ocr_status"] = "pending"
+                    queue_row["queue_status"] = "pending"
+                    write_json(paths["ocr"] / key / "meta.json", meta)
+                    changed += 1
+                    continue
+                meta["ocr_status"] = "queued"
+                meta["ocr_started_at"] = datetime.now(timezone.utc).isoformat()
+                meta["error"] = ""
+                queue_row["queue_status"] = "queued"
                 write_json(paths["ocr"] / key / "meta.json", meta)
-            if pending:
-                _time.sleep(int(os.environ.get("PAPERFORGE_POLL_INTERVAL", "15")))
-        if pending:
-            logger.warning("OCR poll timeout: %d jobs still pending", len(pending))
+                changed += 1
+                active_submitted += 1
+            if _sanitized_temp is not None and _sanitized_temp.exists():
+                _sanitized_temp.unlink(missing_ok=True)
+        poll_items = [r for r in remaining if r.get("queue_status") in ("queued", "running")]
+        for queue_row in poll_items:
+            key = queue_row["zotero_key"]
+            meta = ensure_ocr_meta(vault, queue_row)
+            job_id = meta.get("ocr_job_id", "")
+            if not job_id:
+                continue
+            try:
+                response = retry_with_meta(_do_poll, paths["ocr"] / key / "meta.json", job_id, token)
+                payload = response.json()["data"]
+                state = payload["state"]
+            except Exception:
+                continue
+            if state == "done":
+                try:
+                    result_url = payload["resultUrl"]["jsonUrl"]
+                    result_response = requests.get(result_url, timeout=120)
+                    if result_response.status_code == 404:
+                        meta["ocr_status"] = "pending"
+                        meta["ocr_job_id"] = ""
+                        meta["needs_sanitize"] = True
+                        meta["error"] = "Result object not found on provider (404)"
+                        meta["retry_count"] = 0
+                        queue_row["queue_status"] = "pending"
+                        write_json(paths["ocr"] / key / "meta.json", meta)
+                        changed += 1
+                        active_submitted = max(0, active_submitted - 1)
+                        continue
+                    result_response.raise_for_status()
+                    lines = [l.strip() for l in result_response.text.splitlines() if l.strip()]
+                    results = [json.loads(l)["result"] for l in lines]
+                    page_num, md_path, json_path, fulltext_md_path = postprocess_ocr_result(vault, key, results)
+                except Exception:
+                    continue
+                meta["ocr_status"] = "done"
+                meta["ocr_finished_at"] = datetime.now(timezone.utc).isoformat()
+                meta["page_count"] = page_num
+                meta["markdown_path"] = md_path
+                meta["json_path"] = json_path
+                meta["fulltext_md_path"] = fulltext_md_path
+                meta["error"] = ""
+                queue_row["queue_status"] = "done"
+                queue_changed = True
+                active_submitted = max(0, active_submitted - 1)
+            elif state in ("error", "failed"):
+                meta["error"] = payload.get("errorMsg", "Unknown OCR failure")
+                meta["ocr_status"] = "queued"
+                queue_row["queue_status"] = "queued"
+            else:
+                meta["ocr_status"] = state
+                queue_row["queue_status"] = state
+            write_json(paths["ocr"] / key / "meta.json", meta)
+            changed += 1
+        if any(r.get("queue_status") in ("queued", "running") for r in ocr_queue):
+            _time.sleep(poll_interval)
     if queue_changed:
         ocr_queue = [row for row in ocr_queue if str(row.get("queue_status", "")).lower() != "done"]
     write_ocr_queue(paths, ocr_queue)
-    _sync.run_selection_sync(vault)
-    _sync.run_index_refresh(vault)
+    try:
+        _sync.run_selection_sync(vault)
+        _sync.run_index_refresh(vault)
+    except Exception as e:
+        logger.error("Post-OCR sync failed: %s", e)
     print(f"ocr: updated {changed} records")
     return 0

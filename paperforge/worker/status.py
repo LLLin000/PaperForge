@@ -418,18 +418,54 @@ def run_status(vault: Path, verbose: bool = False, json_output: bool = False) ->
     ocr_pending = 0
     ocr_processing = 0
     ocr_failed = 0
+    # Count from library records first — picks up do_ocr:true items before meta.json exists
+    do_ocr_keys: set[str] = set()
+    if paths["library_records"].exists():
+        for record_path in paths["library_records"].rglob("*.md"):
+            try:
+                text = record_path.read_text(encoding="utf-8")
+                if re.search(r"^do_ocr:\s*true\s*$", text, re.MULTILINE):
+                    m = re.search(r"^zotero_key:\s*(\S+)", text, re.MULTILINE)
+                    if m:
+                        do_ocr_keys.add(m.group(1))
+            except Exception:
+                continue
+    ocr_total += len(do_ocr_keys)
+    # Check meta.json for each do_ocr key
+    for key in do_ocr_keys:
+        meta_path = paths["ocr"] / key / "meta.json"
+        if not meta_path.exists():
+            ocr_pending += 1
+            continue
+        try:
+            meta = read_json(meta_path)
+        except Exception:
+            ocr_failed += 1
+            continue
+        status = str(meta.get("ocr_status", "")).strip().lower()
+        if status == "done":
+            ocr_done += 1
+        elif status in ("queued", "running", "processing"):
+            ocr_processing += 1
+        elif status == "pending":
+            ocr_pending += 1
+        else:
+            ocr_failed += 1
+    # Also count any extra meta.jsons that aren't in do_ocr keys (e.g. legacy items)
     if paths["ocr"].exists():
         for meta_path in paths["ocr"].glob("*/meta.json"):
-            ocr_total += 1
             try:
                 meta = read_json(meta_path)
             except Exception:
                 ocr_failed += 1
                 continue
+            if str(meta.get("zotero_key", "")).strip() in do_ocr_keys:
+                continue
+            ocr_total += 1
             status = str(meta.get("ocr_status", "")).strip().lower()
             if status == "done":
                 ocr_done += 1
-            elif status == "processing":
+            elif status in ("queued", "running", "processing"):
                 ocr_processing += 1
             elif status == "pending":
                 ocr_pending += 1
@@ -451,6 +487,7 @@ def run_status(vault: Path, verbose: bool = False, json_output: bool = False) ->
 
     if json_output:
         data = {
+            "version": __import__("paperforge").__version__,
             "vault": str(vault),
             "system_dir": cfg["system_dir"],
             "resources_dir": cfg["resources_dir"],
@@ -460,11 +497,11 @@ def run_status(vault: Path, verbose: bool = False, json_output: bool = False) ->
             "formal_notes": note_count,
             "bases": base_count,
             "ocr": {
-                "done": ocr_done,
+                "total": ocr_total,
                 "pending": ocr_pending,
                 "processing": ocr_processing,
+                "done": ocr_done,
                 "failed": ocr_failed,
-                "total": ocr_total,
             },
             "path_errors": path_error_count,
             "env_configured": len(env_found) > 0,

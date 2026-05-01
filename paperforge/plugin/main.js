@@ -70,6 +70,11 @@ class PaperForgeStatusView extends ItemView {
 
     async onOpen() {
         this._buildPanel();
+        if (this._cachedStats) {
+            this._metricsEl.empty();
+            this._renderStats(this._cachedStats);
+            this._renderOcr(this._cachedStats);
+        }
         this._fetchStats();
     }
 
@@ -132,24 +137,30 @@ class PaperForgeStatusView extends ItemView {
     /*  Fetch & Render Stats                                                  */
     /* ---------------------------------------------------------------------- */
     _fetchStats(quiet) {
-        if (!quiet) {
+        if (!quiet && !this._cachedStats) {
             this._metricsEl.empty();
             this._metricsEl.createEl('div', { cls: 'paperforge-status-loading', text: 'Loading...' });
+        } else if (quiet && !this._cachedStats) {
+            return;
         }
 
         const vp = this.app.vault.adapter.basePath;
         exec('python -m paperforge status --json', { cwd: vp, timeout: 30000 }, (err, stdout) => {
-            if (quiet) { this._metricsEl.empty(); }
             if (err) {
+                if (this._cachedStats) return;
                 this._metricsEl.createEl('div', { cls: 'paperforge-status-error', text: 'Cannot reach PaperForge CLI.\nMake sure paperforge is installed and in your PATH.' });
                 return;
             }
             try {
                 const d = JSON.parse(stdout);
+                this._cachedStats = d;
+                this._metricsEl.empty();
                 this._renderStats(d);
                 this._renderOcr(d);
             } catch {
-                this._metricsEl.createEl('div', { cls: 'paperforge-status-error', text: 'Invalid response from paperforge status.' });
+                if (!this._cachedStats) {
+                    this._metricsEl.createEl('div', { cls: 'paperforge-status-error', text: 'Invalid response from paperforge status.' });
+                }
             }
         });
     }
@@ -191,16 +202,24 @@ class PaperForgeStatusView extends ItemView {
 
         /* Badge */
         this._ocrBadge.removeClass('active', 'idle');
-        if (processing > 0 || pending > 0) {
+        if (processing > 0) {
             this._ocrBadge.addClass('active');
-            this._ocrBadge.setText('Active');
+            this._ocrBadge.setText('Processing');
+        } else if (pending > 0) {
+            this._ocrBadge.addClass('idle');
+            this._ocrBadge.setText('Pending');
         } else {
             this._ocrBadge.addClass('idle');
             this._ocrBadge.setText('Idle');
         }
 
-        /* Segmented progress bar */
+        /* Progress bar */
         this._ocrTrack.empty();
+        if (processing > 0) {
+            this._ocrTrack.addClass('paperforge-processing');
+        } else {
+            this._ocrTrack.removeClass('paperforge-processing');
+        }
         const segs = [
             { cls: 'pending', count: pending },
             { cls: 'active', count: processing },
@@ -221,7 +240,7 @@ class PaperForgeStatusView extends ItemView {
         this._ocrCounts.empty();
         const labels = [
             { cls: 'pending', value: pending, label: 'Pending' },
-            { cls: 'active', value: processing, label: 'Active' },
+            { cls: 'active', value: processing, label: 'Processing' },
             { cls: 'done', value: done, label: 'Done' },
             { cls: 'failed', value: failed, label: 'Failed' },
         ];
