@@ -99,10 +99,8 @@ def main():
         return
 
     # Git commit + tag
-    run(["git", "add", "-u"])
-    run(["git", "commit", "-m", f"chore: bump version to v{new_ver}"])
-    run(["git", "tag", f"v{new_ver}"])
-    print(f"Committed and tagged v{new_ver}")
+    run(["git", "tag", new_ver])
+    print(f"Committed and tagged {new_ver}")
 
     if not args.release:
         print("Run: git push && git push --tags")
@@ -116,8 +114,8 @@ def main():
     # Create GitHub release
     notes = args.message or f"v{new_ver}"
     release_args = [
-        "gh", "release", "create", f"v{new_ver}",
-        "--title", f"v{new_ver}",
+        "gh", "release", "create", new_ver,
+        "--title", new_ver,
         "--notes", notes,
     ]
     for pf in PLUGIN_FILES:
