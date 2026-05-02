@@ -1,11 +1,6 @@
-```
-    ______  ___  ______ _________________ ___________ _____  _____
-    | ___ \/ _ \ | ___ \  ___| ___ \  ___|  _  | ___ \  __ \|  ___|
-    | |_/ / /_\ \| |_/ / |__ | |_/ / |_  | | | | |_/ / |  \/| |__
-    |  __/|  _  ||  __/|  __||    /|  _| | | | |    /| | __ |  __|
-    | |   | | | || |   | |___| |\ \| |   \ \_/ / |\ \| |_\ \| |___
-    \_|   \_| |_/\_|   \____/\_| \_\_|    \___/\_| \_|\____/\____/
-```
+<p align="center">
+  <img src="docs/images/paperforge-banner.png" alt="PaperForge banner" width="100%" />
+</p>
 
 # PaperForge
 
@@ -13,57 +8,62 @@
 [![Python](https://img.shields.io/pypi/pyversions/paperforge?style=for-the-badge&logo=python&logoColor=white&color=3775A9)](https://python.org)
 [![License](https://img.shields.io/badge/license-CC%20BY--NC--SA%204.0-lightgreen?style=for-the-badge)](LICENSE)
 
-[简体中文](README.zh-CN.md) · **English**
+**简体中文** · [English](README.en.md)
 
-**Obsidian + Zotero literature pipeline. One plugin install, no terminal required.**
+> **铸知识为器，启洞见之明。**
+>
+> **Forge Knowledge, Empower Insight.**
+
+PaperForge 是一个面向研究者的 Obsidian 文献工作台。
+它接住 Zotero 里的论文、PDF、图表与 OCR 结果，把零散材料整理为可检索、可追问、可精读的结构化知识资产。
+
+从同步文献，到抽取全文与图表，再到 AI 深读与批判性梳理，整条链路尽量留在同一个知识环境里完成。
 
 ```text
-Download plugin → Enable in Obsidian → Open wizard → Fill config → Click Install → Done
+下载插件 → 在 Obsidian 启用 → 打开安装向导 → 填写配置 → 点击安装 → 开始使用
 ```
 
-*"From PDF to structured reading notes — all inside Obsidian."*
+## 从文献到洞见
 
----
+PaperForge 不是单纯的 OCR 工具，也不只是 Zotero 到 Obsidian 的搬运脚本。
+它更像一座知识炉：把原始论文、附件和图表炼成真正能被研究流程使用的材料。
 
-## What PaperForge Does
+| 层级 | 产出 | 用途 |
+|------|------|------|
+| **索引卡片** | 带结构化 frontmatter 的记录（标题、作者、期刊、DOI、标签、摘要） | 搜索、浏览、Base 视图筛选 |
+| **全文语料** | OCR 提取的 `fulltext.md` | 提供给 LLM、RAG、检索问答 |
+| **图表数据库** | 图表图片、caption 与 figure-map | 多模态分析、图表定位、证据追踪 |
+| **精读笔记** | AI 三阶段分析、图表解读、批判评估 | 文献综述、研究设计、写作准备 |
 
-PaperForge turns your Zotero library into an AI-ready literature knowledge base:
+## 为什么值得试试
 
-| Layer | What you get | How to use it |
-|-------|-------------|---------------|
-| **Literature index** | Structured notes with frontmatter (title, authors, journal, DOI, tags, abstract) | Search, browse, filter via Base views |
-| **Full-text corpus** | OCR-extracted markdown (`fulltext.md`) | Feed to LLMs for RAG or question answering |
-| **Figure database** | Figure-map with images + captions for every chart/table | Multimodal AI: "show me Figure 3 and explain" |
-| **Deep reading** | AI-written 3-pass analysis with chart review and critical evaluation | Literature synthesis, systematic reviews |
+- **安装路径短**：插件安装 + 向导配置，不要求用户长期在终端里维护流水线。
+- **工作流完整**：同步、OCR、图表、精读、Agent 命令都围绕同一个 Vault 组织。
+- **对 AI 友好**：输出不是一堆散文件，而是适合检索、提问、精读和后续写作的结构化资产。
+- **保留研究现场**：PaperForge 不取代 Zotero 与 Obsidian，而是把它们接成一条可持续使用的研究链。
 
----
+## 安装
 
-## Install
+### Obsidian 插件（推荐）
 
-### Obsidian Plugin (Recommended)
+1. 从 [最新 Release](https://github.com/LLLin000/PaperForge/releases/latest) 下载插件文件。
+2. 复制到 `vault/.obsidian/plugins/paperforge/`。
+3. 在 Obsidian 中启用 `PaperForge`。
+4. 打开设置页，点击 `打开安装向导`。
+5. 跟随 5 步向导完成安装：概览 → 目录配置 → Agent 与密钥 → 安装 → 完成。
 
-1. **Download** the plugin files from the [latest release](https://github.com/LLLin000/PaperForge/releases/latest)
+> 安装向导会自动检测 Python、Zotero 和 Better BibTeX 是否就绪。
 
-2. **Copy** into your vault: `{vault}/.obsidian/plugins/paperforge/`
+### 前置准备
 
-3. **Enable** in Obsidian: Settings → Community Plugins → PaperForge
+| 软件 | 用途 | 获取 |
+|------|------|------|
+| Python 3.9+ | 运行 PaperForge CLI 与后端流程 | https://python.org |
+| Zotero | 文献管理 | https://zotero.org |
+| Better BibTeX | Zotero JSON 自动导出 | https://retorque.re/zotero-better-bibtex/ |
+| PaddleOCR Key | OCR 文本与版面提取 | https://aistudio.baidu.com/paddleocr |
 
-4. **Open the wizard**: Settings → PaperForge → "打开安装向导"
-
-5. **Follow 5 steps**: Overview → Directory Config → Agent & Keys → Install → Done
-
-> The wizard auto-detects Python, Zotero, and Better BibTeX before starting.
-
-### Prerequisites
-
-| Software | Purpose | Get it |
-|----------|---------|--------|
-| Python 3.9+ | Run PaperForge CLI | https://python.org |
-| Zotero | Literature management | https://zotero.org |
-| Better BibTeX | Zotero plugin for JSON export | https://retorque.re/zotero-better-bibtex/ |
-| PaddleOCR Key | OCR text extraction | https://aistudio.baidu.com/paddleocr |
-
-### CLI (Advanced)
+### 命令行安装（高级用户）
 
 ```bash
 cd /path/to/your/vault
@@ -71,74 +71,59 @@ pip install git+https://github.com/LLLin000/PaperForge.git
 python -m paperforge setup --headless --agent opencode --paddleocr-key <key>
 ```
 
----
+## 使用方式
 
-## Usage (All in Obsidian)
+全部核心流程都可以从 Obsidian 内启动。
 
-| Action | How |
-|--------|-----|
-| **Open Dashboard** | `Ctrl+P` → "PaperForge: Open Dashboard", or click sidebar book icon |
-| **Sync Literature** | Dashboard → "Sync Library" — pulls from Zotero, generates notes |
-| **Run OCR** | Dashboard → "Run OCR" — extracts full text & figures |
-| **Deep Read** | `/pf-deep <zotero_key>` — AI 3-pass analysis (must run in AI agent) |
-| **Quick Query** | `/pf-paper <zotero_key>` — fast paper Q&A |
+| 操作 | 方式 |
+|------|------|
+| **打开 Dashboard** | `Ctrl+P` → `PaperForge: Open Dashboard`，或点击左侧图标 |
+| **同步文献** | Dashboard → `Sync Library`，从 Zotero 拉取数据并生成笔记 |
+| **运行 OCR** | Dashboard → `Run OCR`，提取 PDF 全文与图表 |
+| **AI 精读** | `/pf-deep <zotero_key>`，执行三阶段深度分析 |
+| **快速问答** | `/pf-paper <zotero_key>`，对单篇论文快速提问 |
 
 ### Dashboard
 
-```
-┌──────────────────────────────────┐
-│  PaperForge                   ↻  │
-│                                  │
-│  [Papers: 550] [Notes: 520] [...]│
-│                                  │
-│  OCR Pipeline  [Active]          │
-│  ████████████░░░░░░░ 80%         │
-│  Pending: 10  Active: 2  Done: 8│
-│                                  │
-│  Quick Actions                   │
-│  [Sync Library] [Run OCR]        │
-└──────────────────────────────────┘
-```
+<p align="center">
+  <img src="docs/images/paperforge-dashboard.png" alt="PaperForge dashboard" width="92%" />
+</p>
 
----
+## 命令参考
 
-## Commands
+### Obsidian 命令面板
 
-### Obsidian Command Palette (`Ctrl+P`)
+| 命令 | 说明 |
+|------|------|
+| `PaperForge: Open Dashboard` | 打开状态面板与快捷操作 |
+| `PaperForge: Sync Library` | 同步 Zotero 并生成笔记 |
+| `PaperForge: Run OCR` | 提取全文和图表 |
 
-| Command | Description |
-|---------|-------------|
-| `PaperForge: Open Dashboard` | Open status panel with metrics and quick actions |
-| `PaperForge: Sync Library` | Sync Zotero and generate notes |
-| `PaperForge: Run OCR` | Extract PDF full text and figures |
+### Agent 命令
 
-### Agent Commands
+| 命令 | 说明 | 前置条件 |
+|------|------|---------|
+| `/pf-deep <key>` | 完整三阶段精读 | OCR 完成 |
+| `/pf-paper <key>` | 快速文献问答 | 已有正式笔记 |
+| `/pf-sync` | 同步 Zotero | 已安装 |
+| `/pf-ocr` | 运行 OCR | 已安装 |
+| `/pf-status` | 查看系统状态 | 已安装 |
 
-| Command | Description | Requires |
-|---------|-------------|----------|
-| `/pf-deep <key>` | Full 3-pass deep reading | OCR complete |
-| `/pf-paper <key>` | Quick Q&A | Formal note exists |
-| `/pf-sync` | Sync Zotero | Installed |
-| `/pf-ocr` | Run OCR | Installed |
-| `/pf-status` | System status | Installed |
+### CLI 命令
 
-### CLI (Optional)
+| 命令 | 说明 |
+|------|------|
+| `paperforge sync` | 同步 Zotero 并生成笔记 |
+| `paperforge ocr` | 运行 OCR |
+| `paperforge status` | 查看系统概览 |
+| `paperforge doctor` | 诊断配置问题 |
+| `paperforge update` | 更新 PaperForge |
 
-| Command | Description |
-|---------|-------------|
-| `paperforge sync` | Sync Zotero, generate notes |
-| `paperforge ocr` | Run OCR |
-| `paperforge status` | System overview |
-| `paperforge doctor` | Diagnose configuration |
-| `paperforge update` | Auto-update |
+## 支持的 Agent 平台
 
----
-
-## Supported Agent Platforms
-
-| Platform | Agent Commands | Setup |
-|----------|---------------|-------|
-| **OpenCode** | Full support (all `/pf-*` commands) | `.opencode/command/` + `.opencode/skills/` |
+| 平台 | Agent 命令 | 部署位置 |
+|------|-----------|---------|
+| **OpenCode** | 完整支持全部 `/pf-*` 命令 | `.opencode/command/` + `.opencode/skills/` |
 | **Claude Code** | `/pf-deep`, `/pf-paper` | `.claude/skills/` |
 | **Cursor** | `/pf-deep`, `/pf-paper` | `.cursor/skills/` |
 | **GitHub Copilot** | `/pf-deep`, `/pf-paper` | `.github/skills/` |
@@ -146,80 +131,72 @@ python -m paperforge setup --headless --agent opencode --paddleocr-key <key>
 | **Codex** | `$pf-deep`, `$pf-paper` | `.codex/skills/` |
 | **Cline** | `/pf-deep`, `/pf-paper` | `.clinerules/` |
 
-Select your platform in the wizard — files are deployed automatically.
+在安装向导中选择你的平台，相关文件会自动部署。
 
----
+## 配置
 
-## Configuration
+安装向导会处理绝大多数配置。默认生成的结构如下：
 
-All config is handled by the setup wizard. Generated files:
-
-```
+```text
 vault/
-├── paperforge.json          ← directory config + agent platform
+├── paperforge.json          ← 目录配置 + Agent 平台
 ├── System/
 │   └── PaperForge/
-│       ├── .env             ← PaddleOCR API key
-│       ├── exports/         ← Better BibTeX JSON exports go here
+│       ├── .env             ← PaddleOCR API Key
+│       ├── exports/         ← Better BibTeX JSON 导出目录
 │       └── config/          ← domain-collections.json
 ├── Resources/
-│   ├── Notes/               ← formal literature notes (metadata + deep reading)
-│   └── Index_Cards/         ← index records (one per paper, by domain)
-└── Base/                   ← Obsidian Base views (filterable table views)
+│   ├── Notes/               ← 正文笔记（元数据 + 精读笔记）
+│   └── Index_Cards/         ← 索引卡片（按领域组织）
+└── Base/                    ← Obsidian Base 视图
 ```
 
-Environment variables (optional overrides):
+可选环境变量：
 
-| Variable | Default | Description |
-|----------|---------|-------------|
+| 变量 | 默认值 | 说明 |
+|------|--------|------|
 | `PADDLEOCR_API_TOKEN` | — | PaddleOCR API Key |
-| `PAPERFORGE_LOG_LEVEL` | `INFO` | Logging level |
+| `PAPERFORGE_LOG_LEVEL` | `INFO` | 日志级别 |
 
----
+## 更新
 
-## Update
-
-Auto-update on every Obsidian restart (can be disabled in plugin settings). Or manually:
+默认可在 Obsidian 重启时自动更新，也可以手动执行：
 
 ```bash
 paperforge update
-# or
+# 或
 pip install --upgrade git+https://github.com/LLLin000/PaperForge.git
 ```
 
----
+## 文档
 
-## Documentation
+| 文档 | 内容 |
+|------|------|
+| [安装指南](docs/setup-guide.md) | 从零开始的完整教程 |
+| [快速安装](docs/INSTALLATION.md) | 简洁版安装步骤 |
+| [安装后指南](AGENTS.md) | 首次使用与工作流说明 |
+| [变更日志](CHANGELOG.md) | 版本历史 |
+| [贡献指南](CONTRIBUTING.md) | 开发环境与协作约定 |
 
-| Document | Content |
-|----------|---------|
-| [Setup Guide](docs/setup-guide.md) | Step-by-step from zero to running |
-| [Quick Install](docs/INSTALLATION.md) | Concise install instructions |
-| [Post-Install Guide](AGENTS.md) | First-time user guide and workflow |
-| [Changelog](CHANGELOG.md) | Version history |
-| [Contributing](CONTRIBUTING.md) | Dev setup and conventions |
+## 协议
 
----
+[CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/)。
+仅限非商业使用，详见 [LICENSE](LICENSE)。
 
-## License
+## 致谢
 
-[CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/) — Non-commercial use only.
-See [LICENSE](LICENSE) for details.
+PaperForge 站在这些优秀项目的肩膀上：
 
----
+| 项目 | 作用 |
+|------|------|
+| [PaddleOCR / PaddleOCR-VL](https://github.com/PaddlePaddle/PaddleOCR) | PDF OCR 引擎，负责文字提取、版面检测与图表分割 |
+| [Obsidian](https://obsidian.md) | 知识工作台与插件宿主 |
+| [Better BibTeX for Zotero](https://retorque.re/zotero-better-bibtex/) | 文献元数据自动导出 |
+| [PyMuPDF (fitz)](https://github.com/pymupdf/PyMuPDF) | 本地 PDF 验证与净化 |
+| [requests](https://github.com/psf/requests) | OCR API HTTP 客户端 |
+| [tenacity](https://github.com/jd/tenacity) | 指数退避重试机制 |
+| [Pillow](https://python-pillow.org) | 图表图片处理 |
+| [tqdm](https://github.com/tqdm/tqdm) | 进度条 |
+| [textual](https://github.com/Textualize/textual) | TUI 组件与诊断向导 |
 
-## Acknowledgments
-
-PaperForge stands on the shoulders of these excellent projects:
-
-| Project | Role |
-|---------|------|
-| [PaddleOCR / PaddleOCR-VL](https://github.com/PaddlePaddle/PaddleOCR) | PDF OCR engine — text extraction, layout detection, figure segmentation |
-| [Obsidian](https://obsidian.md) | Note-taking platform — plugin host, vault file structure |
-| [Better BibTeX for Zotero](https://retorque.re/zotero-better-bibtex/) | Auto-export citation data as JSON |
-| [PyMuPDF (fitz)](https://github.com/pymupdf/PyMuPDF) | Local PDF validation and sanitization |
-| [requests](https://github.com/psf/requests) | HTTP client for OCR API |
-| [tenacity](https://github.com/jd/tenacity) | Retry logic with exponential backoff |
-| [Pillow](https://python-pillow.org) | Image processing for figure assets |
-| [tqdm](https://github.com/tqdm/tqdm) | Progress bars |
-| [textual](https://github.com/Textualize/textual) | TUI components (diagnostic wizard) |
+> 把论文、PDF、图表与注释从零散材料炼成真正可用的知识器物，这就是 PaperForge 想做的事。
