@@ -86,7 +86,7 @@ python -m paperforge setup --headless --agent opencode --paddleocr-key <key>
 ### Dashboard
 
 <p align="center">
-  <img src="docs/images/paperforge-dashboard.png" alt="PaperForge dashboard" width="92%" />
+  <img src="docs/images/paperforge-dashboard.png" alt="PaperForge dashboard" width="78%" />
 </p>
 
 ## 命令参考
