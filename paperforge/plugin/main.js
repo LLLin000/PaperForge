@@ -1,7 +1,15 @@
-const { Plugin, Notice, ItemView, Modal, Setting, PluginSettingTab } = require('obsidian');
+const { Plugin, Notice, ItemView, Modal, Setting, PluginSettingTab, addIcon } = require('obsidian');
 const { exec } = require('node:child_process');
 
 const VIEW_TYPE_PAPERFORGE = 'paperforge-status';
+const PF_ICON_ID = 'paperforge';
+const PF_RIBBON_SVG = `
+    <path d="M62 10H26c-4.4 0-8 3.6-8 8v64c0 4.4 3.6 8 8 8h48c4.4 0 8-3.6 8-8V30z" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M62 10v20h20" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="32" y="38" width="36" height="28" rx="6" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M42 46v12" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round"/>
+    <path d="M50 42v20" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round"/>
+    <path d="M58 48v8" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round"/>`;
 
 // ── i18n: language pack (auto-detected from Obsidian config) ──
 const LANG = {
@@ -10,6 +18,111 @@ const LANG = {
 };
 
 let T = LANG.zh;
+
+Object.assign(LANG.en, {
+    desc: 'Obsidian + Zotero literature pipeline. Sync papers, generate notes, run OCR, and read deeply in one place.',
+    setup_done: 'PaperForge environment is ready',
+    setup_pending: 'Not installed yet. Finish the preparation items below, then open the wizard.',
+    section_prep: 'Preparation',
+    section_prep_desc: 'Before first use, finish these 5 preparation items, then open the setup wizard:',
+    section_guide: 'How To Use',
+    section_config: 'Current Configuration',
+    prep_python_desc: 'Python must be available from the command line. If you are not sure, click below to auto-detect.',
+    prep_zotero_desc: 'Install Zotero from https://www.zotero.org',
+    prep_bbt_desc: 'In Zotero: Tools -> Add-ons -> install Better BibTeX.',
+    prep_export: 'Better BibTeX Auto-export',
+    prep_export_desc: 'In Zotero, right-click the collection you want to sync -> Export Collection -> BetterBibTeX JSON -> enable "Keep updated" -> save the JSON file into the exports folder shown below. Obsidian Base views will use the JSON filename as the Base name:',
+    prep_export_path_label: 'Save the exported JSON file into this folder:',
+    prep_key_desc: 'Get your API key from https://aistudio.baidu.com/paddleocr',
+    guide_open: 'Open Main Panel',
+    guide_open_desc: 'Press Ctrl+P and run "PaperForge: Open Main Panel", or click the PaperForge icon in the left sidebar.',
+    guide_sync_desc: 'In the main panel, click Sync Library to import papers from Zotero into Obsidian and generate notes automatically.',
+    guide_ocr_desc: 'In the main panel, click Run OCR to extract full text and figures from PDFs for later reading and analysis.',
+    btn_install: 'Open Setup Wizard',
+    btn_install_desc: 'Check whether the environment is ready, then open the step-by-step setup wizard',
+    btn_reconfig_desc: 'Open the setup wizard again to change directories, platform, or API keys',
+    wizard_step2: 'Directory Setup',
+    wizard_step3: 'Platform & Keys',
+    wizard_intro: 'This wizard walks you through the full setup. In most cases, the default values are fine to keep.',
+    wizard_dir_hint: 'The resources directory is the main folder for your literature data. PaperForge will create these folders inside it:',
+    wizard_dir_sub_hint: 'Sub-folders under the resources directory:',
+    wizard_sys_hint: 'System folders stored at the vault root:',
+    wizard_agent_hint: 'Choose the AI agent platform you use most often. PaperForge will place the matching command and skill files in the correct location.',
+    wizard_keys_hint: 'Enter your PaddleOCR API key below. If you want PaperForge to auto-locate Zotero PDFs, you can also fill in the Zotero data directory.',
+    wizard_preview: 'After installation, system files and agent config stay at the vault root, while literature data is stored under the resources directory.',
+    field_zotero_placeholder: 'Optional. Helps auto-locate PDF attachments in Zotero storage',
+    install_btn: 'Start Install',
+    install_complete: 'Installation complete!',
+    install_failed: 'Installation failed: ',
+    complete_title: 'Setup Complete',
+    complete_summary: 'Saved Configuration',
+    complete_next: 'Recommended next steps',
+    complete_step1_desc: 'Press Ctrl+P and run "PaperForge: Open Main Panel", or click the PaperForge icon in the left sidebar.',
+    complete_step2_desc: 'In the main panel, click Sync Library to bring papers from Zotero into Obsidian and generate notes.',
+    complete_step3_desc: 'In the main panel, click Run OCR to extract full text and figures from PDFs.',
+    complete_step4: 'Configure Better BibTeX Auto-export',
+    complete_export_path: 'Save Better BibTeX JSON exports into:',
+    nav_prev: 'Back',
+    nav_next: 'Next',
+    validate_fail: 'Please complete the required fields below',
+    validate_vault: 'Vault path is required',
+    validate_resources: 'Resources directory is required',
+    validate_notes: 'Notes directory is required',
+    validate_index: 'Index directory is required',
+    validate_base: 'Base directory is required',
+    validate_key: 'PaddleOCR API key is required',
+    validate_system: 'System directory is required',
+    notice_python_missing: 'Python was not detected. Install Python 3.9+ and add it to PATH.',
+    api_key_set: 'Entered',
+    api_key_missing: 'Missing',
+    not_set: 'Not entered',
+});
+
+Object.assign(LANG.zh, {
+    desc: 'Obsidian + Zotero 文献管理流水线。自动同步文献、生成笔记、OCR 提取全文，一站式完成文献整理与精读。',
+    setup_done: 'PaperForge 环境已准备完成',
+    setup_pending: '尚未完成安装。请先完成下面的准备，再打开安装向导。',
+    section_prep_desc: '第一次使用前，请先完成下面 5 项准备。完成后再打开安装向导：',
+    prep_python_desc: '确认系统可以直接运行 Python 命令。如果不确定，点击下方按钮自动检测。',
+    prep_zotero_desc: '先安装 Zotero：https://www.zotero.org',
+    prep_bbt_desc: '在 Zotero 中依次打开：工具 -> 插件 -> 安装 Better BibTeX。',
+    prep_export: 'Better BibTeX 自动导出设置',
+    prep_export_desc: '在 Zotero 中右键需要同步的文献分类 -> 选择“导出分类” -> 选择 BetterBibTeX JSON -> 勾选“保持更新” -> 把导出的 JSON 文件保存到下面这个 exports 文件夹。之后 Obsidian Base 会根据 JSON 文件名自动建立对应名称：',
+    prep_export_path_label: '请把导出的 JSON 文件保存到这个文件夹：',
+    guide_open: '打开主面板',
+    guide_open_desc: '按 Ctrl+P，输入 PaperForge: 打开主面板；或点击左侧的 PaperForge 图标。',
+    guide_sync_desc: '在主面板点击 Sync Library，把 Zotero 中的文献同步到 Obsidian，并自动生成笔记。',
+    guide_ocr_desc: '在主面板点击 Run OCR，从 PDF 中提取全文和图表，供后续精读和分析使用。',
+    btn_install_desc: '先检查环境是否就绪，再打开分步安装向导',
+    btn_reconfig_desc: '重新打开安装向导，修改目录、平台或密钥配置',
+    wizard_step2: '目录配置',
+    wizard_step3: '平台与密钥',
+    wizard_intro: '这个向导会一步步帮你完成安装。大部分选项保持默认即可，安装时会自动创建所需目录。',
+    wizard_dir_hint: '资源目录是文献数据的主目录。PaperForge 会在里面创建以下子目录：',
+    wizard_dir_sub_hint: '资源目录中的子目录：',
+    wizard_sys_hint: '位于 Vault 根目录的系统文件：',
+    wizard_agent_hint: '选择你平时使用的 AI Agent 平台。安装完成后，PaperForge 会把对应的命令和技能文件放到正确位置。',
+    wizard_keys_hint: '下面填写 PaddleOCR API 密钥；如果你希望自动定位 Zotero 中的 PDF，也可以补充 Zotero 数据目录。',
+    wizard_preview: '安装后：系统文件和 Agent 配置位于 Vault 根目录，文献数据统一放在资源目录内。以后仍可在设置页修改。',
+    field_zotero_placeholder: '可选。填写后可帮助自动定位 Zotero 存储中的 PDF 附件',
+    install_complete: '安装完成！',
+    install_failed: '安装失败：',
+    complete_title: 'PaperForge 安装完成',
+    complete_summary: '已保存的安装配置',
+    complete_next: '建议下一步',
+    complete_step1_desc: '按 Ctrl+P，输入 PaperForge: 打开主面板；或点击左侧的 PaperForge 图标。',
+    complete_step2_desc: '在主面板点击 Sync Library，把 Zotero 文献同步到 Obsidian，并自动生成笔记。',
+    complete_step3_desc: '在主面板点击 Run OCR，从 PDF 中提取全文和图表。',
+    complete_step4: '配置 Better BibTeX 自动导出',
+    complete_export_path: 'Better BibTeX 导出的 JSON 文件请保存到：',
+    nav_prev: '上一步',
+    nav_next: '下一步',
+    validate_fail: '下面这些必填项还没有填写完整',
+    notice_python_missing: '未检测到 Python。请先安装 Python 3.9+，并确保它已加入 PATH。',
+    api_key_set: '已填写',
+    api_key_missing: '未填写',
+    not_set: '未填写',
+});
 
 function langFromApp(app) {
     try {
@@ -66,7 +179,7 @@ class PaperForgeStatusView extends ItemView {
 
     getViewType() { return VIEW_TYPE_PAPERFORGE; }
     getDisplayText() { return 'PaperForge'; }
-    getIcon() { return 'book-open'; }
+    getIcon() { return PF_ICON_ID; }
 
     async onOpen() {
         this._buildPanel();
@@ -380,10 +493,11 @@ class PaperForgeSettingTab extends PluginSettingTab {
             const row = prep.createEl('div', { cls: 'paperforge-guide-item' });
             row.createEl('strong', { text: t(kTitle) });
             row.createEl('span', { text: ' — ' + t(kDesc) });
+            if (kTitle === 'prep_export') {
+                const expRow = prep.createEl('div', { cls: 'paperforge-guide-item' });
+                expRow.createEl('span', { text: `${t('prep_export_path_label')} ${vaultPath}/${this.plugin.settings.system_dir || 'System'}/PaperForge/exports/` });
+            }
         }
-        // Export path (dynamic, needs vault path)
-        const expRow = prep.createEl('div', { cls: 'paperforge-guide-item' });
-        expRow.createEl('span', { text: `${vaultPath}/${this.plugin.settings.system_dir || 'System'}/PaperForge/exports/library.json` });
 
         /* ── Pre-check status area ── */
         this._checkEl = containerEl.createEl('div', { cls: 'paperforge-message' });
@@ -854,7 +968,7 @@ class PaperForgeSetupModal extends Modal {
             [t('complete_step2'), t('complete_step2_desc')],
             [t('complete_step3'), t('complete_step3_desc')],
             [t('complete_step4'), t('complete_step4_desc')],
-            ['', `${vault}/${s.system_dir}/PaperForge/exports/library.json`],
+            ['', `${t('complete_export_path')} ${vault}/${s.system_dir}/PaperForge/exports/`],
         ];
         for (const [title, desc] of steps) {
             const item = nextList.createEl('div', { cls: 'paperforge-nextstep-item' });
@@ -870,13 +984,14 @@ module.exports = class PaperForgePlugin extends Plugin {
         T = (langFromApp(this.app) === 'zh') ? LANG.zh : LANG.en;
         this.registerView(VIEW_TYPE_PAPERFORGE, (leaf) => new PaperForgeStatusView(leaf));
 
-        this.addRibbonIcon('book-open', 'PaperForge Dashboard', () => PaperForgeStatusView.open(this));
+        try { addIcon(PF_ICON_ID, PF_RIBBON_SVG); } catch (_) {}
+        this.addRibbonIcon(PF_ICON_ID, 'PaperForge Dashboard', () => PaperForgeStatusView.open(this));
 
         this.addSettingTab(new PaperForgeSettingTab(this.app, this));
 
         this.addCommand({
             id: 'paperforge-status-panel',
-            name: 'PaperForge: Open Dashboard',
+            name: `PaperForge: ${t('guide_open')}`,
             callback: () => PaperForgeStatusView.open(this),
         });
 
@@ -898,9 +1013,9 @@ module.exports = class PaperForgePlugin extends Plugin {
             });
         }
 
-        /* ── Auto-update PaperForge (non-blocking) ── */
+        /* ── Auto-update PaperForge (deferred — don't slow startup) ── */
         if (this.settings.auto_update !== false) {
-            this._autoUpdate();
+            setTimeout(() => this._autoUpdate(), 3000);
         }
     }
 
