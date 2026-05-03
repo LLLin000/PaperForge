@@ -5,6 +5,7 @@ import re
 from pathlib import Path
 
 from paperforge.config import load_vault_config, paperforge_paths
+from paperforge.worker.asset_index import refresh_index_entry
 from paperforge.worker._domain import load_domain_config
 from paperforge.worker._utils import (
     _resolve_formal_note_path,
@@ -141,6 +142,10 @@ def repair_pdf_paths(
                             fixed += 1
                             if verbose:
                                 logger.info("fixed path for %s: %s", zotero_key, new_wikilink)
+                            try:
+                                refresh_index_entry(vault, zotero_key)
+                            except Exception as e:
+                                logger.warning("Failed to refresh index for %s: %s", zotero_key, e)
                         continue
 
         # For all errors, try resolving the current pdf_path
@@ -150,13 +155,17 @@ def repair_pdf_paths(
             if current_pdf:
                 raw_path = current_pdf.strip("[]")
                 resolved = resolve_pdf_path(raw_path, True, vault, zotero_dir)
-                if resolved:
-                    new_text = update_frontmatter_field(text, "path_error", "")
-                    if new_text != text:
-                        record_path.write_text(new_text, encoding="utf-8")
-                        fixed += 1
-                        if verbose:
-                            logger.info("cleared path_error for %s", zotero_key)
+                    if resolved:
+                        new_text = update_frontmatter_field(text, "path_error", "")
+                        if new_text != text:
+                            record_path.write_text(new_text, encoding="utf-8")
+                            fixed += 1
+                            if verbose:
+                                logger.info("cleared path_error for %s", zotero_key)
+                            try:
+                                refresh_index_entry(vault, zotero_key)
+                            except Exception as e:
+                                logger.warning("Failed to refresh index for %s: %s", zotero_key, e)
                 else:
                     if verbose:
                         logger.warning("%s path still unresolved", zotero_key)
@@ -328,6 +337,11 @@ def run_repair(vault: Path, paths: dict, verbose: bool = False, fix: bool = Fals
                 result["fixed"] += fixed_count
                 if verbose and fixed_count > 0:
                     logger.info("fixed %d files for %s", fixed_count, zotero_key)
+                if fixed_count > 0:
+                    try:
+                        refresh_index_entry(vault, zotero_key)
+                    except Exception as e:
+                        logger.warning("Failed to refresh index for %s: %s", zotero_key, e)
     # Path error detection and repair
     path_errors = _detect_path_errors(paths, verbose)
     if path_errors["total"] > 0:
