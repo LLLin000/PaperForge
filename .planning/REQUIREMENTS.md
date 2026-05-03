@@ -1,68 +1,117 @@
-# Requirements: PaperForge Lite
+# Requirements: PaperForge
 
-> **Defined:** 2026-04-29
-> **Core Value:** A new user downloads one Obsidian plugin and completes full PaperForge installation without touching a terminal.
+**Defined:** 2026-05-03
+**Core Value:** Researchers always know what papers they have, what state those papers are in, and whether each paper is reliably usable by AI with traceable fulltext, figures, notes, and source links.
 
----
+## v1 Requirements
 
-## Previous Milestones (Validated)
+Requirements for milestone v1.6: AI-Ready Literature Asset Foundation.
 
-All v1.0–v1.4 requirements shipped and validated. See `MILESTONES.md` for completion details.
+### Configuration Truth
 
----
+- [ ] **CONF-01**: User can configure PaperForge from a single canonical config source (`paperforge.json`) that is interpreted consistently by CLI, workers, setup flow, and plugin.
+- [ ] **CONF-02**: User can upgrade an existing vault and keep working even if legacy top-level config keys are still present; the system reads them compatibly and writes the normalized shape going forward.
+- [ ] **CONF-03**: User can inspect the effective runtime configuration and see which values are authoritative versus UI cache values.
+- [ ] **CONF-04**: User can safely edit plugin settings without creating a second runtime truth that disagrees with Python commands.
 
-## v1.5 Requirements
+### Canonical Asset Index
 
-### Settings Tab (SETUP)
+- [ ] **ASSET-01**: User can rebuild a canonical literature asset index from existing library-records, OCR outputs, and formal notes without manual repair of the index file itself.
+- [ ] **ASSET-02**: User can rely on the canonical index to represent one paper as one unified asset record with stable identifiers, paths, provenance, and schema version.
+- [ ] **ASSET-03**: User can refresh the canonical index incrementally after sync, OCR, deep-reading, or repair operations without corrupting existing data.
+- [ ] **ASSET-04**: User can recover safely from interrupted writes because canonical index updates are atomic and Windows-safe.
 
-**Goal:** Obsidian plugin settings tab exposes all setup_wizard.py configuration fields with persistence.
+### Lifecycle And Health
 
-- [x] **SETUP-01**: Settings tab renders all setup_wizard.py fields — vault path, system_dir, resources_dir, literature_dir, control_dir, agent_config_dir, PaddleOCR API token, Zotero data directory. Each field has a clear Chinese label and tooltip.
-- [x] **SETUP-02**: Settings persist across Obsidian restarts via `loadData()`/`saveData()` with `DEFAULT_SETTINGS` merge pattern. Fresh installs (null data) get pre-filled defaults without crashing.
-- [ ] **SETUP-03**: Field changes update in-memory immediately; disk writes are debounced at 500ms to prevent `data.json` corruption from every-keystroke saves. Settings tab state survives tab switching without data loss.
+- [ ] **STATE-01**: User can see each paper's derived lifecycle state such as imported, indexed, PDF-ready, fulltext-ready, deep-read, and AI-context-ready.
+- [ ] **STATE-02**: User can see why a paper is not ready, with concrete health findings covering PDF, path resolution, OCR, note linkage, and generated assets.
+- [ ] **STATE-03**: User can see the recommended next step for each paper or collection, such as sync, OCR, repair, deep-read, or rebuild index.
+- [ ] **STATE-04**: User can trust that readiness states are derived from source artifacts rather than hand-edited status fields.
 
-### Install & UX (INST)
+### Surface Convergence
 
-**Goal:** One-click install button with polished, human-readable feedback.
+- [ ] **SURF-01**: User sees the same lifecycle and health meaning in `paperforge status`, plugin dashboard, and generated Base views.
+- [ ] **SURF-02**: User can run repair and doctor flows that fix source artifacts first and then rebuild derived state, instead of patching the canonical index directly.
+- [ ] **SURF-03**: User can use plugin dashboard actions as a thin shell over CLI commands, without JS re-implementing lifecycle or health rules.
+- [ ] **SURF-04**: User can open library queues and health views that are derived from the canonical index rather than duplicated filtering logic spread across the system.
 
-- [x] **INST-01**: "Install" button triggers full setup pipeline — writes `paperforge.json`, creates directory structure, runs environment check, generates agent configs. Button disables during execution to prevent double-clicks.
-- [x] **INST-02**: All feedback is polished Chinese text via Obsidian notices — friendly step-by-step progress ("正在创建目录... ✓", "正在写入配置文件... ✓"), clear success/failure messages. Raw Python tracebacks or terminal stderr are never shown directly to the user.
-- [x] **INST-03**: Install button validates all fields before spawning subprocess — reports specific field-level errors in friendly language (e.g., "未找到 Vault 路径，请检查设置"). Prevents cryptic failures mid-install.
-- [x] **INST-04**: Existing sidebar (`PaperForgeStatusView`) and command palette actions (`Sync Library`, `Run OCR`) continue working unchanged alongside the new settings tab. Settings tab code is strictly self-contained — no reach into sidebar internals.
+### Maturity And AI Context
 
----
+- [ ] **AIC-01**: User can see a transparent Library Maturity or Workflow Level for a paper or library, with explainable criteria rather than a black-box score.
+- [ ] **AIC-02**: User can generate a traceable context pack for a single paper that includes the relevant metadata, fulltext, note links, and provenance.
+- [ ] **AIC-03**: User can generate a collection-level context pack from canonical assets without hardcoding discipline-specific extraction schemas.
+- [ ] **AIC-04**: User can use AI context entry points such as ask-this-paper or ask-this-collection only when the system can explain what source assets were included.
+
+### Brownfield Rollout
+
+- [ ] **MIG-01**: User can upgrade an existing PaperForge vault to v1.6 and detect stale or incompatible assets before they silently break dashboard or workflow behavior.
+- [ ] **MIG-02**: User can rebuild generated artifacts safely during migration without losing hand-authored notes or user intent fields.
+- [ ] **MIG-03**: User can run doctor and repair commands that explicitly identify migration issues in old configs, old index formats, old Base templates, or partial OCR assets.
+- [ ] **MIG-04**: User can recover from a failed migration with a documented, reversible rebuild path.
+
+## v2 Requirements
+
+Deferred to future release. Tracked but not in the current roadmap.
+
+### Specialized Extraction
+
+- **EXTR-01**: User can define and save domain-specific extraction schemas such as PICO, mechanism tables, or parameter tables.
+- **EXTR-02**: User can run schema-driven batch extraction jobs over context packs and persist structured outputs.
+- **EXTR-03**: User can manage prompt templates and extraction profiles independently from core asset state.
+
+### Extended AI Workflows
+
+- **AIX-01**: User can compose multi-step review workspaces over multiple collections with reusable saved workflows.
+- **AIX-02**: User can audit and compare context-pack outputs across repeated AI runs.
 
 ## Out of Scope
 
 | Feature | Reason |
 |---------|--------|
-| Plugin sidebar redesign | Sidebar stays as-is for v1.5; enhancement deferred to future |
-| Plugin auto-update detection | Deferred to when listed on Obsidian Community Plugins |
-| TypeScript migration | Plugin is pure JS CommonJS; conversion is out of scope |
-| Build system (esbuild/webpack) | Plugin ships as single `main.js`; adding build step breaks current release |
-| Multi-language i18n | Chinese-only is sufficient for target audience |
-| Plugin published to Community Plugins | Deferred until v1.5 stabilizes settings UX |
-
----
+| Hardcoded PICO, mechanism, parameter, or other discipline-specific extraction products as core built-ins | This milestone focuses on reusable asset infrastructure, not field-specific output schemas |
+| Replacing Zotero, Better BibTeX, or Obsidian Bases | PaperForge is built on top of those systems rather than competing with them |
+| Automatically triggering deep-reading agents from workers | The worker/agent split remains intentional and should stay explicit |
+| Per-prompt button sprawl in the plugin | Prompt-specific workflows stay templates or optional frameworks, not core product logic |
+| Cloud multi-user sync or hosted service features | v1.6 remains local-first and single-user |
+| Litmaps or ResearchRabbit-style discovery graph productization | Discovery tooling is outside this milestone's asset-foundation scope |
+| Moving business logic from Python into the plugin | The plugin must remain a thin shell over CLI and canonical index outputs |
 
 ## Traceability
 
+Which phases cover which requirements. Updated during roadmap creation.
+
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SETUP-01 | Phase 20 | Complete |
-| SETUP-02 | Phase 20 | Complete |
-| SETUP-03 | Phase 20 | Pending |
-| INST-01 | Phase 21 | Complete |
-| INST-02 | Phase 21 | Complete |
-| INST-03 | Phase 21 | Complete |
-| INST-04 | Phase 21 | Complete |
+| CONF-01 | Phase [N] | Pending |
+| CONF-02 | Phase [N] | Pending |
+| CONF-03 | Phase [N] | Pending |
+| CONF-04 | Phase [N] | Pending |
+| ASSET-01 | Phase [N] | Pending |
+| ASSET-02 | Phase [N] | Pending |
+| ASSET-03 | Phase [N] | Pending |
+| ASSET-04 | Phase [N] | Pending |
+| STATE-01 | Phase [N] | Pending |
+| STATE-02 | Phase [N] | Pending |
+| STATE-03 | Phase [N] | Pending |
+| STATE-04 | Phase [N] | Pending |
+| SURF-01 | Phase [N] | Pending |
+| SURF-02 | Phase [N] | Pending |
+| SURF-03 | Phase [N] | Pending |
+| SURF-04 | Phase [N] | Pending |
+| AIC-01 | Phase [N] | Pending |
+| AIC-02 | Phase [N] | Pending |
+| AIC-03 | Phase [N] | Pending |
+| AIC-04 | Phase [N] | Pending |
+| MIG-01 | Phase [N] | Pending |
+| MIG-02 | Phase [N] | Pending |
+| MIG-03 | Phase [N] | Pending |
+| MIG-04 | Phase [N] | Pending |
 
 **Coverage:**
-- v1.5 requirements: 7 total
-- Mapped to phases: 7
-- Unmapped: 0 ✓
+- v1 requirements: 24 total
+- Mapped to phases: 0
+- Unmapped: 24 ⚠️
 
 ---
-
-*Requirements defined: 2026-04-29*
-*Last updated: 2026-04-29 after v1.5 requirements definition*
+*Requirements defined: 2026-05-03*
+*Last updated: 2026-05-03 after v1.6 requirements definition*
