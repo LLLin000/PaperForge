@@ -8,7 +8,13 @@ import sys
 from json import JSONDecodeError
 from pathlib import Path
 
-from paperforge.config import load_vault_config, paperforge_paths
+from paperforge.config import (
+    load_vault_config,
+    paperforge_paths,
+    read_paperforge_json,
+    CONFIG_PATH_KEYS,
+    get_paperforge_schema_version,
+)
 from paperforge.worker._domain import load_domain_config
 from paperforge.worker._utils import (
     pipeline_paths,
@@ -300,6 +306,39 @@ def run_doctor(vault: Path, verbose: bool = False) -> int:
         add_check("BBT 导出", "warn", "导出文件存在但无有效 citation key")
     else:
         add_check("BBT 导出", "fail", "未找到 JSON 导出文件", "在 Zotero Better BibTeX 设置中配置导出路径")
+
+    # Config Migration check
+    pf_data = read_paperforge_json(vault)
+    if pf_data:
+        has_stale_top_level = any(k in pf_data for k in CONFIG_PATH_KEYS)
+        if has_stale_top_level:
+            backup_path = vault / "paperforge.json.bak"
+            backup_hint = f" (backup: {backup_path})" if backup_path.exists() else ""
+            add_check(
+                "Config Migration",
+                "warn",
+                f"paperforge.json has stale top-level path keys -- run `paperforge sync` to auto-migrate{backup_hint}",
+                "Run `paperforge sync` to auto-migrate to vault_config canonical format",
+            )
+        else:
+            add_check(
+                "Config Migration",
+                "pass",
+                "paperforge.json uses canonical vault_config format",
+            )
+
+        # Schema version check
+        sv = get_paperforge_schema_version(vault)
+        if sv >= 2:
+            add_check("Config Migration", "pass", f"schema_version: {sv}")
+        else:
+            add_check(
+                "Config Migration",
+                "info",
+                f"schema_version: {sv} (migration available via `paperforge sync`)",
+            )
+    else:
+        add_check("Config Migration", "info", "paperforge.json not found -- new install?")
 
     env_api_key = (
         os.environ.get("PADDLEOCR_API_TOKEN") or os.environ.get("PADDLEOCR_API_KEY") or os.environ.get("OCR_TOKEN")
