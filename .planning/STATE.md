@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.6
 milestone_name: AI-Ready Literature Asset Foundation
 status: Ready to execute
-stopped_at: Completed 22-01-PLAN.md
-last_updated: "2026-05-03T14:43:30.072Z"
+stopped_at: Completed 22-02-PLAN.md
+last_updated: "2026-05-03T14:59:30.150Z"
 progress:
   total_phases: 5
   completed_phases: 0
   total_plans: 4
-  completed_plans: 1
+  completed_plans: 2
 ---
 
 # Project State
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-05-03)
 ## Current Position
 
 Phase: 22 (configuration-truth-compatibility) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 
 ## Performance Metrics
 
@@ -48,6 +48,7 @@ Plan: 2 of 3
 - Trend: Stable
 
 | Phase 22-configuration-truth-compatibility P01 | 4 min | 3 tasks | 3 files |
+| Phase 22-configuration-truth-compatibility P02 | 6 min | 3 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -60,6 +61,7 @@ Recent decisions affecting current work:
 - `formal-library.json` evolves into the canonical derived asset index rather than introducing a parallel index.
 - Plugin remains a thin shell over CLI logic and canonical index outputs.
 - [Phase 22-configuration-truth-compatibility]: schema_version is metadata excluded from load_vault_config() path config output; use get_paperforge_schema_version() instead
+- [Phase 22-configuration-truth-compatibility]: Added paddleocr_api_key and zotero_data_dir to DEFAULT_SETTINGS to prevent data loss from saveSettings() key filtering — Plan omitted these keys from DEFAULT_SETTINGS, but saveSettings() now filters persisted keys to only DEFAULT_SETTINGS entries - would have permanently deleted user API keys and Zotero paths
 
 ### Pending Todos
 
@@ -72,6 +74,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-03T14:43:23.249Z
-Stopped at: Completed 22-01-PLAN.md
+Last session: 2026-05-03T14:59:30.147Z
+Stopped at: Completed 22-02-PLAN.md
 Resume file: None

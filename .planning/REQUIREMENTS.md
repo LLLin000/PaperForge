@@ -12,7 +12,7 @@ Requirements for milestone v1.6: AI-Ready Literature Asset Foundation.
 - [x] **CONF-01**: User can configure PaperForge from a single canonical config source (`paperforge.json`) that is interpreted consistently by CLI, workers, setup flow, and plugin.
 - [x] **CONF-02**: User can upgrade an existing vault and keep working even if legacy top-level config keys are still present; the system reads them compatibly and writes the normalized shape going forward.
 - [ ] **CONF-03**: User can inspect the effective runtime configuration and see which values are authoritative versus UI cache values.
-- [ ] **CONF-04**: User can safely edit plugin settings without creating a second runtime truth that disagrees with Python commands.
+- [x] **CONF-04**: User can safely edit plugin settings without creating a second runtime truth that disagrees with Python commands.
 
 ### Canonical Asset Index
 
@@ -85,7 +85,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CONF-01 | Phase 22 | Complete |
 | CONF-02 | Phase 22 | Complete |
 | CONF-03 | Phase 22 | Pending |
-| CONF-04 | Phase 22 | Pending |
+| CONF-04 | Phase 22 | Complete |
 | ASSET-01 | Phase 23 | Pending |
 | ASSET-02 | Phase 23 | Pending |
 | ASSET-03 | Phase 23 | Pending |
