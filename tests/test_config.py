@@ -470,3 +470,59 @@ def test_resolve_vault_precedence_cwd_last(tmp_path: Path):
 
     result = resolve_vault(cli_vault=None, env={}, cwd=tmp_path)
     assert result == tmp_path
+
+
+# ---------------------------------------------------------------------------
+# schema_version — CONF-01
+# ---------------------------------------------------------------------------
+
+
+def test_default_config_has_schema_version():
+    """DEFAULT_CONFIG must contain schema_version key with value '2'."""
+    from paperforge.config import DEFAULT_CONFIG
+
+    assert "schema_version" in DEFAULT_CONFIG
+    assert DEFAULT_CONFIG["schema_version"] == "2"
+
+
+def test_config_keys_includes_schema_version():
+    """CONFIG_KEYS must include schema_version (auto-derived from DEFAULT_CONFIG)."""
+    from paperforge.config import CONFIG_KEYS
+
+    assert "schema_version" in CONFIG_KEYS
+
+
+def test_get_paperforge_schema_version_defaults_to_1(tmp_path: Path):
+    """get_paperforge_schema_version returns 1 when no schema_version in paperforge.json."""
+    from paperforge.config import get_paperforge_schema_version
+
+    vault = tmp_path / "no_schema"
+    vault.mkdir()
+    (vault / "paperforge.json").write_text("{}", encoding="utf-8")
+    assert get_paperforge_schema_version(vault) == 1
+
+
+def test_get_paperforge_schema_version_reads_2(tmp_path: Path):
+    """get_paperforge_schema_version returns 2 when schema_version is '2'."""
+    import json
+    from paperforge.config import get_paperforge_schema_version
+
+    vault = tmp_path / "schema_v2"
+    vault.mkdir()
+    (vault / "paperforge.json").write_text(
+        json.dumps({"schema_version": "2"}), encoding="utf-8"
+    )
+    assert get_paperforge_schema_version(vault) == 2
+
+
+def test_load_vault_config_excludes_schema_version(tmp_path: Path):
+    """load_vault_config output must NOT contain schema_version key."""
+    from paperforge.config import load_vault_config
+
+    vault = tmp_path / "exclude_schema"
+    vault.mkdir()
+    (vault / "paperforge.json").write_text(
+        '{"schema_version": "2"}', encoding="utf-8"
+    )
+    cfg = load_vault_config(vault)
+    assert "schema_version" not in cfg
