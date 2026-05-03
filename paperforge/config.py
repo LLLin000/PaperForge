@@ -167,7 +167,8 @@ def load_vault_config(
     vault: Path,
     env: dict[str, str] | None = None,
     overrides: dict[str, str] | None = None,
-) -> dict[str, str]:
+    trace_sources: bool = False,
+) -> dict[str, str] | tuple[dict[str, str], dict[str, str]]:
     """Load the full PaperForge configuration for a vault.
 
     Merges configuration sources in locked precedence order:
@@ -185,12 +186,18 @@ def load_vault_config(
         vault: Path to the vault root.
         env: Optional dict of environment variables. If None, uses os.environ.
         overrides: Optional dict of explicit overrides. Highest precedence.
+        trace_sources: If True, returns (config_dict, source_trace) where
+                       source_trace maps each key to its winning source
+                       ("default", "vault_config", "top_level", "env", "override").
 
     Returns:
-        Dict with keys: system_dir, resources_dir, literature_dir, control_dir,
-        base_dir, skill_dir, command_dir.
+        When trace_sources=False: dict with keys system_dir, resources_dir,
+        literature_dir, control_dir, base_dir, skill_dir, command_dir.
+        When trace_sources=True: tuple of (config_dict, source_trace).
     """
     env = env if env is not None else os.environ
+
+    trace: dict[str, str] = {}  # key -> source name
 
     # Start with defaults
     config: dict[str, str] = dict(DEFAULT_CONFIG)
@@ -205,11 +212,15 @@ def load_vault_config(
         for key in CONFIG_KEYS:
             if key in nested and nested[key]:
                 config[key] = nested[key]
+                if trace_sources:
+                    trace[key] = "vault_config"
 
     # 3. Merge top-level legacy keys (override nested for backward compat)
     for key in CONFIG_KEYS:
         if key in pf_data and pf_data[key]:
             config[key] = pf_data[key]
+            if trace_sources:
+                trace[key] = "top_level"
 
     # 4. Merge environment variables
     for config_key, env_var in ENV_KEYS.items():
@@ -217,16 +228,22 @@ def load_vault_config(
             continue  # vault is handled separately in resolve_vault
         if env_var in env and env[env_var]:
             config[config_key] = env[env_var]
+            if trace_sources:
+                trace[config_key] = "env"
 
     # 5. Merge explicit overrides (highest precedence)
     if overrides:
         for key in CONFIG_KEYS:
             if key in overrides and overrides[key]:
                 config[key] = overrides[key]
+                if trace_sources:
+                    trace[key] = "override"
 
     # schema_version is metadata, not a path config key — exclude from output
     config.pop("schema_version", None)
 
+    if trace_sources:
+        return config, trace
     return config
 
 
