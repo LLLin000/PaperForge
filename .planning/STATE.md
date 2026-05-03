@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.6
 milestone_name: AI-Ready Literature Asset Foundation
-status: Ready to execute
-stopped_at: Completed 23-02-PLAN.md
-last_updated: "2026-05-03T16:47:21.330Z"
+status: Phase complete — ready for verification
+stopped_at: Completed 23-03-PLAN.md
+last_updated: "2026-05-03T16:57:01.815Z"
 progress:
   total_phases: 5
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 7
-  completed_plans: 5
+  completed_plans: 6
 ---
 
 # Project State
@@ -52,6 +52,7 @@ Plan: 3 of 3
 | Phase 22-configuration-truth-compatibility P03 | 8 min | 3 tasks | 3 files |
 | Phase 23-canonical-asset-index-safe-rebuilds P01 | 7 min | 3 tasks | 3 files |
 | Phase 23-canonical-asset-index-safe-rebuilds P02 | 5 min | 3 tasks | 4 files |
+| Phase 23-canonical-asset-index-safe-rebuilds P03 | 8 min | 4 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -68,6 +69,7 @@ Recent decisions affecting current work:
 - [Phase 22-configuration-truth-compatibility]: Clean dict replace replaces existing_config.update() to avoid accumulating stale top-level keys in setup wizard paperforge.json output
 - [Phase 23-canonical-asset-index-safe-rebuilds]: Lazy imports inside build_index avoid circular import between sync.py and asset_index.py
 - [Phase 23-canonical-asset-index-safe-rebuilds]: Orphaned-record cleanup stays in sync.py; only the core build loop moves to asset_index
+- [Phase 23-canonical-asset-index-safe-rebuilds]: OCR captures done keys before queue filter to pass to incremental refresh; deep-reading refreshes ALL records; repair triggers refresh for path and divergence fixes; run_index_refresh keeps full-rebuild default; incremental is opt-in from single-paper workers
 
 ### Pending Todos
 
@@ -80,6 +82,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-03T16:47:21.327Z
-Stopped at: Completed 23-02-PLAN.md
+Last session: 2026-05-03T16:57:01.812Z
+Stopped at: Completed 23-03-PLAN.md
 Resume file: None
