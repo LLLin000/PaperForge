@@ -13,6 +13,7 @@ from paperforge.worker._utils import (
     write_json,
     yaml_quote,
 )
+from paperforge.worker.asset_index import refresh_index_entry
 from paperforge.worker.base_views import ensure_base_views
 from paperforge.worker.sync import has_deep_reading_content
 
@@ -135,4 +136,13 @@ def run_deep_reading(vault: Path, verbose: bool = False) -> int:
     report_path = paths["pipeline"] / "deep-reading-queue.md"
     report_path.write_text("\n".join(report_lines), encoding="utf-8")
     print(f"deep-reading: synced {synced} records, {len(pending_queue)} pending")
+
+    # Refresh canonical index for each paper (even if synced==0, formal note content may have changed)
+    for record in records:
+        key = record["zotero_key"]
+        if key:
+            try:
+                refresh_index_entry(vault, key)
+            except Exception:
+                logger.warning("Failed to refresh index entry for %s", key)
     return 0
