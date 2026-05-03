@@ -27,6 +27,8 @@ from paperforge.worker._utils import (
     yaml_quote,
 )
 
+import paperforge.worker.asset_index as asset_index
+
 logger = logging.getLogger(__name__)
 
 
@@ -1682,68 +1684,8 @@ def run_index_refresh(vault: Path, verbose: bool = False) -> int:
         domain = domain_lookup.get(export_path.name, export_path.stem)
         export_rows = load_export_rows(export_path)
         exports[domain] = {row["key"]: row for row in export_rows}
-    selected_keys = None
-    index_rows = []
-    lit_root = paths["literature"]
-    for export_path in sorted(paths["exports"].glob("*.json")):
-        domain = domain_lookup.get(export_path.name, export_path.stem)
-        export_rows = load_export_rows(export_path)
-        for item in export_rows:
-            key = item["key"]
-            if selected_keys is not None and key not in selected_keys:
-                continue
-            collection_meta = collection_fields(item.get("collections", []))
-            pdf_attachments = [a for a in item.get("attachments", []) if a.get("contentType") == "application/pdf"]
-            meta_path = paths["ocr"] / key / "meta.json"
-            meta = read_json(meta_path) if meta_path.exists() else {}
-            if meta:
-                validated_ocr_status, validated_error = validate_ocr_meta(paths, meta)
-                meta["ocr_status"] = validated_ocr_status
-                if validated_error:
-                    meta["error"] = validated_error
-                    write_json(meta_path, meta)
-            title_slug = slugify_filename(item["title"])
-            note_path = lit_root / domain / f"{key} - {title_slug}.md"
-            if note_path.parent.exists():
-                for stale_note in note_path.parent.glob(f"{key} - *.md"):
-                    if stale_note != note_path:
-                        stale_note.unlink()
-            entry = {
-                "zotero_key": key,
-                "domain": domain,
-                "title": item["title"],
-                "authors": item.get("authors", []),
-                "abstract": item.get("abstract", ""),
-                "journal": item.get("journal", ""),
-                "year": item.get("year", ""),
-                "doi": item.get("doi", ""),
-                "pmid": item.get("pmid", ""),
-                "collection_path": " | ".join(item.get("collections", [])),
-                "collections": collection_meta.get("collections", []),
-                "collection_tags": collection_meta.get("collection_tags", []),
-                "collection_group": collection_meta.get("collection_group", []),
-                "has_pdf": bool(pdf_attachments),
-                "pdf_path": obsidian_wikilink_for_pdf(pdf_attachments[0]["path"], vault, zotero_dir)
-                if pdf_attachments
-                else "",
-                "ocr_status": meta.get("ocr_status", "pending"),
-                "ocr_job_id": meta.get("ocr_job_id", ""),
-                "ocr_md_path": obsidian_wikilink_for_path(vault, meta.get("markdown_path", "")),
-                "ocr_json_path": meta.get("json_path", ""),
-                "deep_reading_status": "done"
-                if note_path.exists() and has_deep_reading_content(note_path.read_text(encoding="utf-8"))
-                else "pending",
-                "note_path": str(note_path.relative_to(vault)).replace("\\", "/"),
-                "deep_reading_md_path": str(note_path.relative_to(vault)).replace("\\", "/")
-                if note_path.exists() and has_deep_reading_content(note_path.read_text(encoding="utf-8"))
-                else "",
-            }
-            note_path.parent.mkdir(parents=True, exist_ok=True)
-            existing_text = note_path.read_text(encoding="utf-8") if note_path.exists() else ""
-            note_path.write_text(frontmatter_note(entry, existing_text), encoding="utf-8")
-            index_rows.append(entry)
-    write_json(paths["index"], index_rows)
-    print(f"index-refresh: wrote {len(index_rows)} index rows")
+    # Delegate to asset_index.build_index() for the core build loop
+    count = asset_index.build_index(vault, verbose)
     control_records_dir = paths["library_records"]
     if control_records_dir.exists():
         for domain_dir in control_records_dir.iterdir():
