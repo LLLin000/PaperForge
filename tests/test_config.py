@@ -526,3 +526,111 @@ def test_load_vault_config_excludes_schema_version(tmp_path: Path):
     )
     cfg = load_vault_config(vault)
     assert "schema_version" not in cfg
+
+
+# ---------------------------------------------------------------------------
+# migrate_paperforge_json — CONF-02 legacy migration
+# ---------------------------------------------------------------------------
+
+
+def test_migrate_legacy_top_level_keys(tmp_path: Path):
+    """Legacy top-level path keys are migrated to vault_config block."""
+    import json
+    from paperforge.config import migrate_paperforge_json
+
+    vault = tmp_path / "legacy_migrate"
+    vault.mkdir()
+    data = {
+        "system_dir": "OldSystem",
+        "resources_dir": "OldRes",
+        "version": "1.4",
+        "vault_config": {
+            "system_dir": "99_System",
+            "resources_dir": "03_Resources",
+        },
+    }
+    (vault / "paperforge.json").write_text(json.dumps(data), encoding="utf-8")
+
+    assert migrate_paperforge_json(vault) is True
+
+    result = json.loads((vault / "paperforge.json").read_text(encoding="utf-8"))
+    assert "system_dir" not in result, "top-level key removed"
+    assert result["vault_config"]["system_dir"] == "OldSystem", "top-level fills vault_config gap"
+    assert result["vault_config"]["resources_dir"] == "03_Resources", "existing vault_config preserved"
+    assert result["schema_version"] == "2"
+    assert (vault / "paperforge.json.bak").exists(), "backup created"
+
+
+def test_migrate_idempotent(tmp_path: Path):
+    """Already-migrated files return False (no-op)."""
+    import json
+    from paperforge.config import migrate_paperforge_json
+
+    vault = tmp_path / "already_migrated"
+    vault.mkdir()
+    (vault / "paperforge.json").write_text(
+        json.dumps({"vault_config": {"system_dir": "99_System"}, "schema_version": "2"}),
+        encoding="utf-8",
+    )
+
+    assert migrate_paperforge_json(vault) is False
+
+
+def test_migrate_no_file(tmp_path: Path):
+    """No paperforge.json returns False."""
+    from paperforge.config import migrate_paperforge_json
+
+    vault = tmp_path / "no_file"
+    vault.mkdir()
+
+    assert migrate_paperforge_json(vault) is False
+
+
+def test_migrate_non_path_keys_survive(tmp_path: Path):
+    """Non-path top-level keys survive migration in output root."""
+    import json
+    from paperforge.config import migrate_paperforge_json
+
+    vault = tmp_path / "non_path_survive"
+    vault.mkdir()
+    data = {
+        "system_dir": "OldSystem",
+        "version": "1.4",
+        "agent_platform": "opencode",
+        "vault_config": {},
+    }
+    (vault / "paperforge.json").write_text(json.dumps(data), encoding="utf-8")
+
+    migrate_paperforge_json(vault)
+
+    result = json.loads((vault / "paperforge.json").read_text(encoding="utf-8"))
+    assert "version" in result
+    assert result["version"] == "1.4"
+    assert "agent_platform" in result
+    assert result["agent_platform"] == "opencode"
+    assert result["vault_config"]["system_dir"] == "OldSystem"
+
+
+def test_migrate_no_vault_config_block_creates_it(tmp_path: Path):
+    """Top-level keys without vault_config block create a new vault_config."""
+    import json
+    from paperforge.config import migrate_paperforge_json
+
+    vault = tmp_path / "creates_vc"
+    vault.mkdir()
+    data = {
+        "system_dir": "OldSystem",
+        "resources_dir": "OldRes",
+        "literature_dir": "OldLit",
+        "version": "1.4",
+    }
+    (vault / "paperforge.json").write_text(json.dumps(data), encoding="utf-8")
+
+    migrate_paperforge_json(vault)
+
+    result = json.loads((vault / "paperforge.json").read_text(encoding="utf-8"))
+    assert "vault_config" in result
+    assert result["vault_config"]["system_dir"] == "OldSystem"
+    assert result["vault_config"]["resources_dir"] == "OldRes"
+    assert result["vault_config"]["literature_dir"] == "OldLit"
+    assert result["schema_version"] == "2"
