@@ -54,7 +54,7 @@ class TestBuildEnvelope:
         assert envelope["paper_count"] == 0
         assert envelope["items"] == []
         assert "generated_at" in envelope
-        assert envelope["generated_at"].endswith("Z")
+        assert envelope["generated_at"].endswith("+08:00") or envelope["generated_at"].endswith("Z")
 
     def test_with_items(self) -> None:
         """Envelope with 3 items has matching paper_count."""
@@ -76,11 +76,11 @@ class TestBuildEnvelope:
             assert envelope["paper_count"] == n
             assert len(envelope["items"]) == n
 
-    def test_generated_at_is_utc_iso(self) -> None:
-        """generated_at ends with Z and is parseable."""
+    def test_generated_at_is_beijing_time(self) -> None:
+        """generated_at ends with +08:00 (Beijing time) and is parseable."""
         envelope = build_envelope([])
         ts = envelope["generated_at"]
-        assert ts.endswith("Z")
+        assert ts.endswith("+08:00")
         # Should be ISO-format date (rough check): YYYY-MM-DDT...
         assert "T" in ts
 

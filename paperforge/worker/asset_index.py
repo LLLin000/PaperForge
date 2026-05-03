@@ -27,7 +27,7 @@ import json
 import logging
 import os
 import tempfile
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
 import filelock
@@ -87,7 +87,7 @@ def build_envelope(items: list[dict]) -> dict:
     """
     return {
         "schema_version": CURRENT_SCHEMA_VERSION,
-        "generated_at": datetime.utcnow().isoformat() + "Z",
+        "generated_at": datetime.now(timezone(timedelta(hours=8))).isoformat(),
         "paper_count": len(items),
         "items": items,
     }
