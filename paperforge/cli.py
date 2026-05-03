@@ -173,6 +173,11 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Run index-refresh only",
     )
+    p_sync.add_argument(
+        "--rebuild-index",
+        action="store_true",
+        help="Force full rebuild of the canonical asset index",
+    )
 
     # selection-sync (backward compat)
     sub.add_parser("selection-sync", help="Sync Zotero selection to library records")
