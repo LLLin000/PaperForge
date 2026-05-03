@@ -2010,7 +2010,7 @@ PADDLEOCR_MODEL=PaddleOCR-VL-1.5
         )
     print(f"    [OK] domain-collections.json")
 
-    # paperforge.json
+    # paperforge.json -- canonical format: path keys only in vault_config block
     pf_json = vault / "paperforge.json"
     existing_config = {}
     if pf_json.exists():
@@ -2018,23 +2018,19 @@ PADDLEOCR_MODEL=PaddleOCR-VL-1.5
             existing_config = json.loads(pf_json.read_text(encoding="utf-8"))
         except Exception:
             existing_config = {}
-    existing_config.update({
+    config = {
         "version": existing_config.get("version", "1.4.3"),
+        "schema_version": "2",
         "agent_platform": agent_config.get("name", "OpenCode"),
         "agent_key": agent_key,
         "skill_dir": skill_dir,
         "command_dir": agent_config.get("command_dir", ""),
-        "system_dir": system_dir,
-        "resources_dir": resources_dir,
-        "literature_dir": literature_dir,
-        "control_dir": control_dir,
-        "base_dir": base_dir,
         "paperforge_path": f"{system_dir}/PaperForge",
         "zotero_data_dir": zotero_data or "",
         "zotero_link": f"{system_dir}/Zotero",
         "vault_config": built_vault_config,
-    })
-    pf_json.write_text(json.dumps(existing_config, indent=2, ensure_ascii=False), encoding="utf-8")
+    }
+    pf_json.write_text(json.dumps(config, indent=2, ensure_ascii=False), encoding="utf-8")
     print(f"    [OK] paperforge.json")
 
     # =========================================================================
