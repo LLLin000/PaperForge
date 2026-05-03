@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 from pathlib import Path
 from typing import Any
 
@@ -331,3 +332,83 @@ def paths_as_strings(paths: dict[str, Path]) -> dict[str, str]:
         dict mapping path names to string paths.
     """
     return {name: str(path) for name, path in paths.items()}
+
+
+# ---------------------------------------------------------------------------
+# Migration: legacy top-level keys to vault_config block
+# ---------------------------------------------------------------------------
+
+CONFIG_PATH_KEYS: tuple[str, ...] = (
+    "system_dir",
+    "resources_dir",
+    "literature_dir",
+    "control_dir",
+    "base_dir",
+)
+
+
+def migrate_paperforge_json(vault: Path) -> bool:
+    """Migrate paperforge.json from legacy top-level keys to vault_config block.
+
+    If the file has top-level path keys (system_dir, resources_dir, etc.),
+    this function:
+      1. Reads the full existing content.
+      2. Merges top-level path values into the ``vault_config`` block (top-level
+         values fill gaps when vault_config is missing a key).
+      3. Removes those top-level path keys from the root.
+      4. Sets ``schema_version`` to ``"2"``.
+      5. Backs up the original as ``paperforge.json.bak`` (first time only).
+      6. Writes the cleaned file.
+
+    Returns:
+        True if migration was performed, False if no migration was needed.
+
+    The function is idempotent -- calling it on an already-migrated file is a
+    no-op (returns False).
+    """
+    path = vault / "paperforge.json"
+    if not path.exists():
+        return False
+
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return False
+    if not isinstance(data, dict):
+        return False
+
+    # Detect legacy top-level path keys
+    has_top_level_keys = any(k in data for k in CONFIG_PATH_KEYS)
+    if not has_top_level_keys:
+        return False  # Already migrated or fresh install
+
+    # --- Build the cleaned output ---
+
+    # 1. Non-path top-level keys to preserve (everything except path keys and vault_config)
+    non_path_keys = {
+        k: v for k, v in data.items()
+        if k not in CONFIG_PATH_KEYS and k != "vault_config"
+    }
+
+    # 2. Build vault_config: start with existing vault_config, fill gaps from top-level
+    vault_config = dict(data.get("vault_config", {}) or {})
+    for key in CONFIG_PATH_KEYS:
+        if key not in vault_config and key in data and data[key]:
+            vault_config[key] = data[key]
+
+    # 3. Assemble output
+    output = dict(non_path_keys)
+    output["vault_config"] = vault_config
+    output["schema_version"] = "2"
+
+    # 4. Backup original (first time only)
+    backup_path = path.with_suffix(".json.bak")
+    if not backup_path.exists():
+        shutil.copy2(str(path), str(backup_path))
+
+    # 5. Write
+    path.write_text(
+        json.dumps(output, indent=2, ensure_ascii=False),
+        encoding="utf-8",
+    )
+    return True
