@@ -203,22 +203,113 @@ def migrate_legacy_index(vault: Path) -> bool:
 
 
 # ---------------------------------------------------------------------------
-# Full index build  (extracted from sync.run_index_refresh)
+# Single-entry builder  (shared by full rebuild and incremental refresh)
+# ---------------------------------------------------------------------------
+
+
+def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: Path) -> dict:
+    """Construct a single canonical index entry from a BBT export *item*.
+
+    This helper is used by both ``build_index()`` (all items) and
+    ``refresh_index_entry()`` (single item).  It:
+
+    1. Gathers OCR meta, PDF paths, deep-reading state.
+    2. Writes / updates the formal Obsidian note via ``frontmatter_note()``.
+    3. Returns the entry dict with all fields (including workspace paths).
+
+    Lazy imports inside avoid circular dependencies with ``sync.py``.
+    """
+    # Lazy imports to avoid circular deps with sync.py
+    from paperforge.worker.ocr import validate_ocr_meta
+    from paperforge.worker._utils import read_json, write_json, slugify_filename
+    from paperforge.worker.sync import (
+        collection_fields,
+        frontmatter_note,
+        has_deep_reading_content,
+        obsidian_wikilink_for_path,
+        obsidian_wikilink_for_pdf,
+    )
+
+    key = item["key"]
+    collection_meta = collection_fields(item.get("collections", []))
+    pdf_attachments = [
+        a for a in item.get("attachments", []) if a.get("contentType") == "application/pdf"
+    ]
+    meta_path = paths["ocr"] / key / "meta.json"
+    meta = read_json(meta_path) if meta_path.exists() else {}
+    if meta:
+        validated_ocr_status, validated_error = validate_ocr_meta(paths, meta)
+        meta["ocr_status"] = validated_ocr_status
+        if validated_error:
+            meta["error"] = validated_error
+            write_json(meta_path, meta)
+    title_slug = slugify_filename(item["title"])
+    note_path = paths["literature"] / domain / f"{key} - {title_slug}.md"
+    if note_path.parent.exists():
+        for stale_note in note_path.parent.glob(f"{key} - *.md"):
+            if stale_note != note_path:
+                stale_note.unlink()
+
+    # ---- entry dict -------------------------------------------------------
+    entry = {
+        "zotero_key": key,
+        "domain": domain,
+        "title": item["title"],
+        "authors": item.get("authors", []),
+        "abstract": item.get("abstract", ""),
+        "journal": item.get("journal", ""),
+        "year": item.get("year", ""),
+        "doi": item.get("doi", ""),
+        "pmid": item.get("pmid", ""),
+        "collection_path": " | ".join(item.get("collections", [])),
+        "collections": collection_meta.get("collections", []),
+        "collection_tags": collection_meta.get("collection_tags", []),
+        "collection_group": collection_meta.get("collection_group", []),
+        "has_pdf": bool(pdf_attachments),
+        "pdf_path": (
+            obsidian_wikilink_for_pdf(pdf_attachments[0]["path"], vault, zotero_dir)
+            if pdf_attachments
+            else ""
+        ),
+        "ocr_status": meta.get("ocr_status", "pending"),
+        "ocr_job_id": meta.get("ocr_job_id", ""),
+        "ocr_md_path": obsidian_wikilink_for_path(vault, meta.get("markdown_path", "")),
+        "ocr_json_path": meta.get("json_path", ""),
+        "deep_reading_status": (
+            "done"
+            if note_path.exists() and has_deep_reading_content(note_path.read_text(encoding="utf-8"))
+            else "pending"
+        ),
+        "note_path": str(note_path.relative_to(vault)).replace("\\", "/"),
+        "deep_reading_md_path": (
+            str(note_path.relative_to(vault)).replace("\\", "/")
+            if note_path.exists() and has_deep_reading_content(note_path.read_text(encoding="utf-8"))
+            else ""
+        ),
+    }
+
+    # Write / update the formal note
+    note_path.parent.mkdir(parents=True, exist_ok=True)
+    existing_text = note_path.read_text(encoding="utf-8") if note_path.exists() else ""
+    note_path.write_text(frontmatter_note(entry, existing_text), encoding="utf-8")
+
+    return entry
+
+
+# ---------------------------------------------------------------------------
+# Full index build
 # ---------------------------------------------------------------------------
 
 
 def build_index(vault: Path, verbose: bool = False) -> int:
     """Full rebuild of the canonical asset index for *vault*.
 
-    This function is extracted from the legacy ``sync.run_index_refresh()``
-    loop (lines 1686-1746 of sync.py).  It:
-
+    This function is the core build loop:
     1. Reads all Better BibTeX export JSON files.
-    2. For each paper entry, gathers metadata (OCR, deep-reading status,
-       PDF paths, etc.) and writes/updates the formal Obsidian note.
-    3. Builds a list of entry dicts.
-    4. Writes the canonical index via ``atomic_write_index`` with the
-       versioned envelope.
+    2. For each paper entry, delegates to ``_build_entry()`` for metadata
+       collection and formal note writing.
+    3. Wraps the entries in a versioned envelope.
+    4. Writes the index atomically via ``atomic_write_index``.
 
     The orphaned-record cleanup that follows in ``run_index_refresh()`` is
     **not** included here.
@@ -226,22 +317,11 @@ def build_index(vault: Path, verbose: bool = False) -> int:
     Returns:
         Number of items written to the index.
     """
-    # Lazy imports to avoid circular dependencies — sync.py imports this
-    # module at module level, so importing from sync.py at module level
-    # here would cause a circular import.
+    # Lazy imports to avoid circular dependencies with sync.py
     from paperforge.config import load_vault_config
-    from paperforge.worker._utils import pipeline_paths, read_json, slugify_filename, write_json  # noqa: F811
+    from paperforge.worker._utils import pipeline_paths, read_json  # noqa: F811
     from paperforge.worker.base_views import ensure_base_views
-    from paperforge.worker.ocr import validate_ocr_meta
-    from paperforge.worker.sync import (
-        collection_fields,
-        frontmatter_note,
-        has_deep_reading_content,
-        load_domain_config,
-        load_export_rows,
-        obsidian_wikilink_for_path,
-        obsidian_wikilink_for_pdf,
-    )
+    from paperforge.worker.sync import load_domain_config, load_export_rows
 
     paths = pipeline_paths(vault)
     config = load_domain_config(paths)
@@ -252,76 +332,26 @@ def build_index(vault: Path, verbose: bool = False) -> int:
     if migrated:
         print("Legacy index format detected and backed up. Rebuilding with envelope...")
 
-    domain_lookup = {entry["export_file"]: entry["domain"] for entry in config["domains"]}
+    # Schema version check — mismatch triggers full rebuild
+    existing_data = read_index(vault)
+    if isinstance(existing_data, dict) and existing_data.get("schema_version") != CURRENT_SCHEMA_VERSION:
+        print(
+            f"Schema version mismatch: index has {existing_data.get('schema_version')}, "
+            f"need {CURRENT_SCHEMA_VERSION}. Rebuilding..."
+        )
 
     cfg = load_vault_config(vault)
     zotero_dir = vault / cfg.get("system_dir", "99_System") / "Zotero"
 
+    domain_lookup = {entry["export_file"]: entry["domain"] for entry in config["domains"]}
+
     index_rows: list[dict] = []
-    lit_root = paths["literature"]
 
     for export_path in sorted(paths["exports"].glob("*.json")):
         domain = domain_lookup.get(export_path.name, export_path.stem)
         export_rows = load_export_rows(export_path)
         for item in export_rows:
-            key = item["key"]
-            collection_meta = collection_fields(item.get("collections", []))
-            pdf_attachments = [
-                a for a in item.get("attachments", []) if a.get("contentType") == "application/pdf"
-            ]
-            meta_path = paths["ocr"] / key / "meta.json"
-            meta = read_json(meta_path) if meta_path.exists() else {}
-            if meta:
-                validated_ocr_status, validated_error = validate_ocr_meta(paths, meta)
-                meta["ocr_status"] = validated_ocr_status
-                if validated_error:
-                    meta["error"] = validated_error
-                    write_json(meta_path, meta)
-            title_slug = slugify_filename(item["title"])
-            note_path = lit_root / domain / f"{key} - {title_slug}.md"
-            if note_path.parent.exists():
-                for stale_note in note_path.parent.glob(f"{key} - *.md"):
-                    if stale_note != note_path:
-                        stale_note.unlink()
-            entry = {
-                "zotero_key": key,
-                "domain": domain,
-                "title": item["title"],
-                "authors": item.get("authors", []),
-                "abstract": item.get("abstract", ""),
-                "journal": item.get("journal", ""),
-                "year": item.get("year", ""),
-                "doi": item.get("doi", ""),
-                "pmid": item.get("pmid", ""),
-                "collection_path": " | ".join(item.get("collections", [])),
-                "collections": collection_meta.get("collections", []),
-                "collection_tags": collection_meta.get("collection_tags", []),
-                "collection_group": collection_meta.get("collection_group", []),
-                "has_pdf": bool(pdf_attachments),
-                "pdf_path": (
-                    obsidian_wikilink_for_pdf(pdf_attachments[0]["path"], vault, zotero_dir)
-                    if pdf_attachments
-                    else ""
-                ),
-                "ocr_status": meta.get("ocr_status", "pending"),
-                "ocr_job_id": meta.get("ocr_job_id", ""),
-                "ocr_md_path": obsidian_wikilink_for_path(vault, meta.get("markdown_path", "")),
-                "ocr_json_path": meta.get("json_path", ""),
-                "deep_reading_status": (
-                    "done"
-                    if note_path.exists() and has_deep_reading_content(note_path.read_text(encoding="utf-8"))
-                    else "pending"
-                ),
-                "note_path": str(note_path.relative_to(vault)).replace("\\", "/"),
-                "deep_reading_md_path": (
-                    str(note_path.relative_to(vault)).replace("\\", "/")
-                    if note_path.exists() and has_deep_reading_content(note_path.read_text(encoding="utf-8"))
-                    else ""
-                ),
-            }
-            note_path.parent.mkdir(parents=True, exist_ok=True)
-            existing_text = note_path.read_text(encoding="utf-8") if note_path.exists() else ""
-            note_path.write_text(frontmatter_note(entry, existing_text), encoding="utf-8")
+            entry = _build_entry(item, vault, paths, domain, zotero_dir)
             index_rows.append(entry)
 
     # Atomically write the envelope-wrapped index
@@ -330,3 +360,91 @@ def build_index(vault: Path, verbose: bool = False) -> int:
     atomic_write_index(index_path, envelope)
     print(f"index-refresh: wrote {len(index_rows)} index rows")
     return len(index_rows)
+
+
+# ---------------------------------------------------------------------------
+# Incremental refresh
+# ---------------------------------------------------------------------------
+
+
+def refresh_index_entry(vault: Path, key: str) -> bool:
+    """Incrementally refresh a single index entry identified by *key*.
+
+    *key* is the Zotero citation key (8-character alphanumeric).
+
+    Behaviour:
+    * If the index does not exist → delegates to ``build_index()`` (full rebuild).
+    * If the index is in legacy bare-list format → delegates to ``build_index()``.
+    * If the index is envelope format:
+        1. Reads the existing ``items`` list.
+        2. Finds the entry whose ``zotero_key`` matches *key*.
+        3. Rebuilds that single entry via ``_build_entry()`` (same code path
+           as a full rebuild, guaranteeing field consistency).
+        4. If *key* is not found in the items list, builds a new entry and
+           appends it (handles newly-synced papers).
+        5. Writes the updated envelope back atomically.
+
+    Returns:
+        ``True`` if incremental refresh was performed,
+        ``False`` if a full rebuild was triggered instead.
+    """
+    from paperforge.config import load_vault_config
+    from paperforge.worker._utils import pipeline_paths
+    from paperforge.worker.sync import load_domain_config, load_export_rows
+
+    paths = pipeline_paths(vault)
+
+    # Read existing index
+    existing = read_index(vault)
+    if existing is None:
+        build_index(vault)
+        return False
+
+    if is_legacy_format(existing):
+        build_index(vault)
+        return False
+
+    # Envelope format — incremental refresh
+    items = existing.get("items", [])
+
+    # Find the export item for the requested key
+    config = load_domain_config(paths)
+    domain_lookup = {entry["export_file"]: entry["domain"] for entry in config["domains"]}
+    cfg = load_vault_config(vault)
+    zotero_dir = vault / cfg.get("system_dir", "99_System") / "Zotero"
+
+    found_item = None
+    found_domain = ""
+    for export_path in sorted(paths["exports"].glob("*.json")):
+        domain = domain_lookup.get(export_path.name, export_path.stem)
+        export_rows = load_export_rows(export_path)
+        for item in export_rows:
+            if item["key"] == key:
+                found_item = item
+                found_domain = domain
+                break
+        if found_item:
+            break
+
+    if found_item is None:
+        logger.warning("Key %s not found in any export — cannot refresh", key)
+        return False
+
+    # Build single entry and update the items list
+    new_entry = _build_entry(found_item, vault, paths, found_domain, zotero_dir)
+
+    replaced = False
+    for i, existing_entry in enumerate(items):
+        if existing_entry.get("zotero_key") == key:
+            items[i] = new_entry
+            replaced = True
+            break
+    if not replaced:
+        items.append(new_entry)
+
+    # Write back atomically
+    index_path = paths["index"]
+    envelope = build_envelope(items)
+    atomic_write_index(index_path, envelope)
+    logger.info("refresh_index_entry: updated entry %s (%s)", key, found_domain)
+    return True
