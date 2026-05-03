@@ -16,10 +16,10 @@ Requirements for milestone v1.6: AI-Ready Literature Asset Foundation.
 
 ### Canonical Asset Index
 
-- [ ] **ASSET-01**: User can rebuild a canonical literature asset index from existing library-records, OCR outputs, and formal notes without manual repair of the index file itself.
-- [ ] **ASSET-02**: User can rely on the canonical index to represent one paper as one unified asset record with stable identifiers, paths, provenance, and schema version.
+- [x] **ASSET-01**: User can rebuild a canonical literature asset index from existing library-records, OCR outputs, and formal notes without manual repair of the index file itself.
+- [x] **ASSET-02**: User can rely on the canonical index to represent one paper as one unified asset record with stable identifiers, paths, provenance, and schema version.
 - [ ] **ASSET-03**: User can refresh the canonical index incrementally after sync, OCR, deep-reading, or repair operations without corrupting existing data.
-- [ ] **ASSET-04**: User can recover safely from interrupted writes because canonical index updates are atomic and Windows-safe.
+- [x] **ASSET-04**: User can recover safely from interrupted writes because canonical index updates are atomic and Windows-safe.
 
 ### Lifecycle And Health
 
@@ -45,7 +45,7 @@ Requirements for milestone v1.6: AI-Ready Literature Asset Foundation.
 ### Brownfield Rollout
 
 - [ ] **MIG-01**: User can upgrade an existing PaperForge vault to v1.6 and detect stale or incompatible assets before they silently break dashboard or workflow behavior.
-- [ ] **MIG-02**: User can rebuild generated artifacts safely during migration without losing hand-authored notes or user intent fields.
+- [x] **MIG-02**: User can rebuild generated artifacts safely during migration without losing hand-authored notes or user intent fields.
 - [ ] **MIG-03**: User can run doctor and repair commands that explicitly identify migration issues in old configs, old index formats, old Base templates, or partial OCR assets.
 - [ ] **MIG-04**: User can recover from a failed migration with a documented, reversible rebuild path.
 
@@ -86,10 +86,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CONF-02 | Phase 22 | Complete |
 | CONF-03 | Phase 22 | Complete |
 | CONF-04 | Phase 22 | Complete |
-| ASSET-01 | Phase 23 | Pending |
-| ASSET-02 | Phase 23 | Pending |
+| ASSET-01 | Phase 23 | Complete |
+| ASSET-02 | Phase 23 | Complete |
 | ASSET-03 | Phase 23 | Pending |
-| ASSET-04 | Phase 23 | Pending |
+| ASSET-04 | Phase 23 | Complete |
 | STATE-01 | Phase 24 | Pending |
 | STATE-02 | Phase 24 | Pending |
 | STATE-03 | Phase 24 | Pending |
@@ -103,7 +103,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | AIC-03 | Phase 26 | Pending |
 | AIC-04 | Phase 26 | Pending |
 | MIG-01 | Phase 25 | Pending |
-| MIG-02 | Phase 23 | Pending |
+| MIG-02 | Phase 23 | Complete |
 | MIG-03 | Phase 25 | Pending |
 | MIG-04 | Phase 25 | Pending |
 
