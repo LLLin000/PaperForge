@@ -64,7 +64,12 @@ Plans:
   3. After `sync`, `ocr`, `deep-reading`, or `repair`, user can refresh the index incrementally and see affected papers update without unrelated asset records being corrupted.
   4. If an index write is interrupted, the previous readable index remains intact and user can rerun the rebuild safely on Windows.
   5. During migration or rebuild, generated artifacts can be regenerated without losing hand-authored notes or user intent fields.
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+- [x] 23-01-PLAN.md — Core asset_index module: envelope format, atomic writes, filelock, extract build_index from sync.py
+- [ ] 23-02-PLAN.md — Legacy migration, incremental refresh by key, workspace path fields, --rebuild-index flag
+- [ ] 23-03-PLAN.md — Integration wiring: OCR, deep-reading, repair call incremental refresh + integration tests
 
 ### Phase 24: Derived Lifecycle, Health & Maturity
 **Goal**: Users can understand each paper's lifecycle state, health findings, maturity level, and next best action from source-derived evidence instead of hand-edited status flags.
@@ -109,7 +114,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 22. Configuration Truth & Compatibility | 3/3 | Complete   | 2026-05-03 |
-| 23. Canonical Asset Index & Safe Rebuilds | 0/TBD | Not started | - |
+| 23. Canonical Asset Index & Safe Rebuilds | 0/3 | Planned   | - |
 | 24. Derived Lifecycle, Health & Maturity | 0/TBD | Not started | - |
 | 25. Surface Convergence, Doctor & Repair | 0/TBD | Not started | - |
 | 26. Traceable AI Context Packs | 0/TBD | Not started | - |
