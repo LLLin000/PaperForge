@@ -82,36 +82,36 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CONF-01 | Phase [N] | Pending |
-| CONF-02 | Phase [N] | Pending |
-| CONF-03 | Phase [N] | Pending |
-| CONF-04 | Phase [N] | Pending |
-| ASSET-01 | Phase [N] | Pending |
-| ASSET-02 | Phase [N] | Pending |
-| ASSET-03 | Phase [N] | Pending |
-| ASSET-04 | Phase [N] | Pending |
-| STATE-01 | Phase [N] | Pending |
-| STATE-02 | Phase [N] | Pending |
-| STATE-03 | Phase [N] | Pending |
-| STATE-04 | Phase [N] | Pending |
-| SURF-01 | Phase [N] | Pending |
-| SURF-02 | Phase [N] | Pending |
-| SURF-03 | Phase [N] | Pending |
-| SURF-04 | Phase [N] | Pending |
-| AIC-01 | Phase [N] | Pending |
-| AIC-02 | Phase [N] | Pending |
-| AIC-03 | Phase [N] | Pending |
-| AIC-04 | Phase [N] | Pending |
-| MIG-01 | Phase [N] | Pending |
-| MIG-02 | Phase [N] | Pending |
-| MIG-03 | Phase [N] | Pending |
-| MIG-04 | Phase [N] | Pending |
+| CONF-01 | Phase 22 | Pending |
+| CONF-02 | Phase 22 | Pending |
+| CONF-03 | Phase 22 | Pending |
+| CONF-04 | Phase 22 | Pending |
+| ASSET-01 | Phase 23 | Pending |
+| ASSET-02 | Phase 23 | Pending |
+| ASSET-03 | Phase 23 | Pending |
+| ASSET-04 | Phase 23 | Pending |
+| STATE-01 | Phase 24 | Pending |
+| STATE-02 | Phase 24 | Pending |
+| STATE-03 | Phase 24 | Pending |
+| STATE-04 | Phase 24 | Pending |
+| SURF-01 | Phase 25 | Pending |
+| SURF-02 | Phase 25 | Pending |
+| SURF-03 | Phase 25 | Pending |
+| SURF-04 | Phase 25 | Pending |
+| AIC-01 | Phase 24 | Pending |
+| AIC-02 | Phase 26 | Pending |
+| AIC-03 | Phase 26 | Pending |
+| AIC-04 | Phase 26 | Pending |
+| MIG-01 | Phase 25 | Pending |
+| MIG-02 | Phase 23 | Pending |
+| MIG-03 | Phase 25 | Pending |
+| MIG-04 | Phase 25 | Pending |
 
 **Coverage:**
 - v1 requirements: 24 total
-- Mapped to phases: 0
-- Unmapped: 24 ⚠️
+- Mapped to phases: 24
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-05-03*
-*Last updated: 2026-05-03 after v1.6 requirements definition*
+*Last updated: 2026-05-03 after v1.6 roadmap creation*
