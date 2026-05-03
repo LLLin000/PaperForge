@@ -68,7 +68,7 @@ Plans:
 
 Plans:
 - [x] 23-01-PLAN.md — Core asset_index module: envelope format, atomic writes, filelock, extract build_index from sync.py
-- [ ] 23-02-PLAN.md — Legacy migration, incremental refresh by key, workspace path fields, --rebuild-index flag
+- [x] 23-02-PLAN.md — Legacy migration, incremental refresh by key, workspace path fields, --rebuild-index flag
 - [ ] 23-03-PLAN.md — Integration wiring: OCR, deep-reading, repair call incremental refresh + integration tests
 
 ### Phase 24: Derived Lifecycle, Health & Maturity
@@ -114,7 +114,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 22. Configuration Truth & Compatibility | 3/3 | Complete   | 2026-05-03 |
-| 23. Canonical Asset Index & Safe Rebuilds | 0/3 | Planned   | - |
+| 23. Canonical Asset Index & Safe Rebuilds | 2/3 | In Progress|  |
 | 24. Derived Lifecycle, Health & Maturity | 0/TBD | Not started | - |
 | 25. Surface Convergence, Doctor & Repair | 0/TBD | Not started | - |
 | 26. Traceable AI Context Packs | 0/TBD | Not started | - |

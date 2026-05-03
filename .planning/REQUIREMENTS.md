@@ -18,7 +18,7 @@ Requirements for milestone v1.6: AI-Ready Literature Asset Foundation.
 
 - [x] **ASSET-01**: User can rebuild a canonical literature asset index from existing library-records, OCR outputs, and formal notes without manual repair of the index file itself.
 - [x] **ASSET-02**: User can rely on the canonical index to represent one paper as one unified asset record with stable identifiers, paths, provenance, and schema version.
-- [ ] **ASSET-03**: User can refresh the canonical index incrementally after sync, OCR, deep-reading, or repair operations without corrupting existing data.
+- [x] **ASSET-03**: User can refresh the canonical index incrementally after sync, OCR, deep-reading, or repair operations without corrupting existing data.
 - [x] **ASSET-04**: User can recover safely from interrupted writes because canonical index updates are atomic and Windows-safe.
 
 ### Lifecycle And Health
@@ -88,7 +88,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CONF-04 | Phase 22 | Complete |
 | ASSET-01 | Phase 23 | Complete |
 | ASSET-02 | Phase 23 | Complete |
-| ASSET-03 | Phase 23 | Pending |
+| ASSET-03 | Phase 23 | Complete |
 | ASSET-04 | Phase 23 | Complete |
 | STATE-01 | Phase 24 | Pending |
 | STATE-02 | Phase 24 | Pending |
