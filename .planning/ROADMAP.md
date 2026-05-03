@@ -29,7 +29,7 @@ v1.6 turns PaperForge's existing sync, OCR, deep-reading, status, plugin, and `f
 - Decimal phases (22.1, 22.2...): Urgent insertions after roadmap approval
 
 - [x] **Phase 22: Configuration Truth & Compatibility** - Make `paperforge.json` the single runtime truth across CLI, workers, setup, and plugin. (completed 2026-05-03)
-- [ ] **Phase 23: Canonical Asset Index & Safe Rebuilds** - Upgrade `formal-library.json` into a rebuildable, atomic, per-paper asset index.
+- [x] **Phase 23: Canonical Asset Index & Safe Rebuilds** - Upgrade `formal-library.json` into a rebuildable, atomic, per-paper asset index. (completed 2026-05-03)
 - [ ] **Phase 24: Derived Lifecycle, Health & Maturity** - Compute readiness, health findings, maturity, and next steps from source artifacts.
 - [ ] **Phase 25: Surface Convergence, Doctor & Repair** - Make status, plugin dashboard, Base views, doctor, and repair consume the same canonical semantics.
 - [ ] **Phase 26: Traceable AI Context Packs** - Generate explainable paper and collection context packs from canonical assets.
@@ -69,7 +69,7 @@ Plans:
 Plans:
 - [x] 23-01-PLAN.md — Core asset_index module: envelope format, atomic writes, filelock, extract build_index from sync.py
 - [x] 23-02-PLAN.md — Legacy migration, incremental refresh by key, workspace path fields, --rebuild-index flag
-- [ ] 23-03-PLAN.md — Integration wiring: OCR, deep-reading, repair call incremental refresh + integration tests
+- [x] 23-03-PLAN.md — Integration wiring: OCR, deep-reading, repair call incremental refresh + integration tests
 
 ### Phase 24: Derived Lifecycle, Health & Maturity
 **Goal**: Users can understand each paper's lifecycle state, health findings, maturity level, and next best action from source-derived evidence instead of hand-edited status flags.
@@ -114,7 +114,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 22. Configuration Truth & Compatibility | 3/3 | Complete   | 2026-05-03 |
-| 23. Canonical Asset Index & Safe Rebuilds | 2/3 | In Progress|  |
+| 23. Canonical Asset Index & Safe Rebuilds | 3/3 | Complete   | 2026-05-03 |
 | 24. Derived Lifecycle, Health & Maturity | 0/TBD | Not started | - |
 | 25. Surface Convergence, Doctor & Repair | 0/TBD | Not started | - |
 | 26. Traceable AI Context Packs | 0/TBD | Not started | - |
