@@ -116,6 +116,15 @@ None.
 
 Plan 02 complete. Ready for Plan 03 (likely lifecycle state derivation, maturity models, or health diagnostics).
 
+## Self-Check: PASSED
+
+- [x] SUMMARY.md exists at `.planning/phases/23-canonical-asset-index-safe-rebuilds/23-02-SUMMARY.md`
+- [x] Task 1 commit `6da4116` exists
+- [x] Task 2 commit `2fd3726` exists
+- [x] Task 3 commit `2886afa` exists
+- [x] Metadata commit `566fc0c` exists
+- [x] All 14 asset_index tests pass
+
 ---
 
 *Phase: 23-canonical-asset-index-safe-rebuilds*
