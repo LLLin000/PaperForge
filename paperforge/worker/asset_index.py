@@ -31,6 +31,7 @@ from datetime import datetime
 from pathlib import Path
 
 import filelock
+import shutil
 
 from paperforge.config import paperforge_paths
 
@@ -142,6 +143,66 @@ def atomic_write_index(path: Path, data: dict) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Index read / legacy migration
+# ---------------------------------------------------------------------------
+
+
+def read_index(vault: Path) -> dict | list | None:
+    """Read the existing index file and return its parsed content.
+
+    Returns:
+        The parsed JSON data (dict for envelope, list for legacy bare-list),
+        or ``None`` if the file does not exist or is corrupt.
+    """
+    path = get_index_path(vault)
+    if not path.exists():
+        return None
+    try:
+        with open(path, "r", encoding="utf-8") as fh:
+            return json.load(fh)
+    except (json.JSONDecodeError, OSError) as exc:
+        logger.warning("Corrupt index at %s, treating as missing: %s", path, exc)
+        return None
+
+
+def is_legacy_format(data) -> bool:
+    """Return ``True`` if *data* is a bare list (pre-v1.6 legacy format).
+
+    The current envelope format is a dict with ``"schema_version"``;
+    the legacy format is a plain list of entry dicts.
+    """
+    return isinstance(data, list)
+
+
+def migrate_legacy_index(vault: Path) -> bool:
+    """Detect a legacy bare-list index and back it up before rebuild.
+
+    If the existing index is in legacy format (a bare list), this function
+    copies it to ``<index>.bak`` and returns ``True`` to signal that a
+    rebuild should happen.  If the file is already envelope format, does
+    not exist, or is corrupt, returns ``False`` (no action needed).
+
+    The backup is idempotent — calling repeatedly overwrites the previous
+    backup with the latest legacy state.
+    """
+    path = get_index_path(vault)
+    if not path.exists():
+        return False
+
+    data = read_index(vault)
+    if data is None:
+        return False
+    if not is_legacy_format(data):
+        return False
+
+    bak_path = path.with_suffix(".json.bak")
+    shutil.copy2(str(path), str(bak_path))
+    logger.info("Legacy format detected at %s, backed up to %s", path, bak_path)
+    print(f"Legacy format detected at {path}, backed up to {bak_path}")
+    return True
+
+
+# ---------------------------------------------------------------------------
 # Full index build  (extracted from sync.run_index_refresh)
 # ---------------------------------------------------------------------------
 
@@ -185,6 +246,12 @@ def build_index(vault: Path, verbose: bool = False) -> int:
     paths = pipeline_paths(vault)
     config = load_domain_config(paths)
     ensure_base_views(vault, paths, config)
+
+    # Legacy format migration — detect bare-list format and back up before rebuild
+    migrated = migrate_legacy_index(vault)
+    if migrated:
+        print("Legacy index format detected and backed up. Rebuilding with envelope...")
+
     domain_lookup = {entry["export_file"]: entry["domain"] for entry in config["domains"]}
 
     cfg = load_vault_config(vault)
