@@ -1,10 +1,23 @@
-# PaperForge Lite Release Hardening
+# PaperForge
 
 ## What This Is
 
-PaperForge Lite is a polished local Obsidian + Zotero literature workflow for medical researchers. It takes a new user from registration/configuration through Better BibTeX export, Obsidian Base queue control, PaddleOCR processing, formal literature note generation, and `/pf-deep` deep reading. The UX is smooth, code is clean, and failures are diagnosed clearly.
+PaperForge is a local-first Obsidian + Zotero literature asset manager for researchers. It turns Zotero exports, PDFs, OCR fulltext, figures, notes, and AI outputs into a structured, traceable, reusable research library instead of a pile of disconnected files.
 
-v1.5 moves the setup/configuration entry point from terminal CLI into the Obsidian plugin itself — a settings tab where users fill in paths and API keys, then click one button for full installation. The plugin becomes the single artifact a new user needs to download.
+The system still includes sync, OCR, Base views, and agent-assisted deep reading, but the product direction is shifting from "help me run one task" toward "help me maintain a long-lived AI-ready literature knowledge base."
+
+## Current Milestone: v1.6 AI-Ready Literature Asset Foundation
+
+**Goal:** Reposition PaperForge around long-term literature asset management by unifying configuration, lifecycle state, health diagnostics, and AI-ready context generation.
+
+**Target features:**
+- Unify configuration truth so `paperforge.json` becomes the single source of truth across CLI, workers, and plugin.
+- Upgrade the existing library index into a canonical asset index carrying lifecycle, health, readiness, and maturity data.
+- Define a clear state model separating user intent, machine-produced assets, and derived index state.
+- Introduce library health surfaces: PDF Health, OCR Health, Template/Base Health, and general Library Health.
+- Keep the Obsidian plugin as a thin shell over CLI logic, with Dashboard views driven by the canonical index.
+- Add Library Maturity / Workflow Level scoring with next-step recommendations.
+- Provide reusable AI context entry points such as ask-this-paper, ask-this-collection, and copy-context-pack.
 
 ## Completed Milestone: v1.4 Code Health & UX Hardening
 
@@ -52,7 +65,7 @@ v1.5 moves the setup/configuration entry point from terminal CLI into the Obsidi
 
 ## Core Value
 
-A new user can install PaperForge, configure their own vault paths and PaddleOCR credentials, then run the full literature pipeline with copy-pasteable commands that diagnose failures clearly.
+Researchers always know what papers they have, what state those papers are in, and whether each paper is reliably usable by AI with traceable fulltext, figures, notes, and source links.
 
 ## Requirements
 
@@ -104,7 +117,13 @@ A new user can install PaperForge, configure their own vault paths and PaddleOCR
 
 ### Active
 
-None.
+- [ ] Single configuration truth across plugin, CLI, worker, and setup flows.
+- [ ] Canonical literature asset index derived from existing sync/OCR/deep-reading outputs.
+- [ ] Stable lifecycle model for imported, indexed, OCR-ready, fulltext-ready, figure-ready, deep-read, and AI-context-ready states.
+- [ ] Health diagnostics that expose broken PDFs, OCR failures, path drift, template/Base drift, and incomplete assets.
+- [ ] Plugin Dashboard that reads the canonical index instead of recomputing state independently.
+- [ ] Library Maturity scoring and next-step recommendations.
+- [ ] Reusable AI context packaging without hardcoding discipline-specific extraction schemas.
 
 ### Out of Scope
 
@@ -112,7 +131,10 @@ None.
 - Automatically triggering deep-reading agents from workers — the Lite architecture intentionally keeps worker automation and agent reasoning separate.
 - Cloud-hosted multi-user service — this project targets local single-user vault workflows.
 - Full OCR provider abstraction — deferred (PaddleOCR path/env consistency is the priority).
-- Plugin sidebar redesign — sidebar stays as-is for v1.5; enhancement deferred to future milestone.
+- Discipline-specific extraction products (PICO tables, mechanism tables, parameter tables) as core built-ins — PaperForge should provide a framework, not hardcoded scholarly schemas.
+- Replacing Zotero, Better BibTeX, or Obsidian Bases — the system is built around those primitives.
+- Automatically turning every prompt into a fixed UI button — prompt-specific workflows stay optional templates, not core product logic.
+- Cloud multi-user collaboration or hosted sync — this milestone remains local-first and single-user.
 - Plugin auto-update — deferred to when listed on Obsidian Community Plugins.
 - Plugin published to Obsidian Community Plugins — deferred until after v1.5 stabilizes the settings experience.
 
@@ -154,6 +176,8 @@ The v1.1 milestone was completed after a manual sandbox audit from `tests/sandbo
 
 **v1.5 shipped (2026-04-29):** Settings tab with all 8 wizard fields, debounced persistence, one-click "安装配置" button, client-side field validation with Chinese errors, subprocess orchestration via `python -m paperforge setup --headless`, step-by-step Chinese progress notices, and color-coded status area. Plugin becomes single download artifact — no terminal required for new user setup.
 
+**v1.6 focus:** Consolidate the next layer of product evolution into one milestone instead of splitting it across several small releases. The emphasis is not on more one-off extraction buttons, but on durable asset state, asset health, maturity-guided workflow progression, and AI-ready context packaging.
+
 ## Constraints
 
 - **Local-first:** Must work in a user's Obsidian vault without a daemon or cloud service.
@@ -163,6 +187,8 @@ The v1.1 milestone was completed after a manual sandbox audit from `tests/sandbo
 - **Credential safety:** API keys belong in `.env` or user environment variables and must not be committed.
 - **Agent independence:** Users should not need an agent to inspect `paperforge.json` just to build a worker command.
 - **Sandbox realism:** `tests/sandbox` must remain safe, deterministic, and representative of a GitHub user trying the project locally.
+- **Thin-shell plugin:** Obsidian plugin UI must not become a second implementation of lifecycle or health logic already owned by Python workers.
+- **Traceability:** AI-facing outputs must remain traceable back to original PDFs, OCR outputs, and notes.
 
 ## Key Decisions
 
@@ -180,6 +206,8 @@ The v1.1 milestone was completed after a manual sandbox audit from `tests/sandbo
 | Package rename to `paperforge` | Naming consistency with CLI brand | ✓ Implemented v1.2 |
 | Extract shared worker utilities to `_utils.py` | ~1,610 lines of duplicate utility code exist across 7 worker modules; single source of truth reduces maintenance burden | ✓ Implemented v1.4 |
 | Settings tab in Obsidian plugin as setup entry point | Eliminates terminal requirement for new users; plugin becomes single download artifact. CLI/Agent unchanged — plugin is a new UI surface | ✓ Implemented v1.5 |
+| Reposition PaperForge around literature assets, not one-off prompts | Long-term user value comes from clean, traceable, AI-ready libraries rather than hardcoded extraction buttons | — Active for v1.6 |
+| Keep plugin as thin shell over CLI and canonical index | Avoids duplicated business logic and configuration drift between JS and Python layers | — Active for v1.6 |
 
 ## Evolution
 
@@ -198,4 +226,5 @@ This document evolves at phase transitions and milestone boundaries.
 3. Audit Out of Scope.
 4. Update Context with current state.
 
----\n*Last updated: 2026-04-29 — v1.5 shipped (Phases 20-21: Obsidian Plugin Setup Integration)*
+---
+*Last updated: 2026-05-03 after milestone v1.6 initialization*
