@@ -1675,6 +1675,18 @@ def analyze_selected_keys(paths: dict[str, Path]) -> set[str]:
 
 
 def run_index_refresh(vault: Path, verbose: bool = False, rebuild_index: bool = False) -> int:
+    """Refresh the canonical asset index.
+
+    Default behavior: full rebuild. This is the safe default because
+    selection-sync may affect many papers. Workers that modify individual
+    papers (ocr, deep-reading, repair) use asset_index.refresh_index_entry()
+    for incremental refresh by key.
+
+    Args:
+        vault: Path to the vault root.
+        verbose: If True, print detailed progress.
+        rebuild_index: If True, force full rebuild (default: True for sync).
+    """
     from paperforge.worker.base_views import ensure_base_views
     from paperforge.worker.ocr import validate_ocr_meta
 
