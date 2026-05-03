@@ -2,16 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.6
 milestone_name: AI-Ready Literature Asset Foundation
-status: planning
-stopped_at: Phase 22 context gathered
-last_updated: "2026-05-03T14:23:03.258Z"
-last_activity: 2026-05-03 — Created v1.6 roadmap and traceability mapping
+status: Ready to execute
+stopped_at: Completed 22-01-PLAN.md
+last_updated: "2026-05-03T14:43:30.072Z"
 progress:
   total_phases: 5
   completed_phases: 0
-  total_plans: 3
-  completed_plans: 0
-  percent: 0
+  total_plans: 4
+  completed_plans: 1
 ---
 
 # Project State
@@ -21,16 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-03)
 
 **Core value:** Researchers always know what papers they have, what state those papers are in, and whether each paper is reliably usable by AI with traceable fulltext, figures, notes, and source links.
-**Current focus:** Phase 22 — Configuration Truth & Compatibility
+**Current focus:** Phase 22 — configuration-truth-compatibility
 
 ## Current Position
 
-Phase: 22 of 26 (Configuration Truth & Compatibility)
-Plan: 0 of TBD in current phase
-Status: Planned
-Last activity: 2026-05-03 — Created Phase 22 plans (3 plans, 2 waves)
-
-Progress: [████░░░░░░] 40% (plans created)
+Phase: 22 (configuration-truth-compatibility) — EXECUTING
+Plan: 2 of 3
 
 ## Performance Metrics
 
@@ -53,6 +47,8 @@ Progress: [████░░░░░░] 40% (plans created)
 - Last 5 plans: Not normalized in historical records
 - Trend: Stable
 
+| Phase 22-configuration-truth-compatibility P01 | 4 min | 3 tasks | 3 files |
+
 ## Accumulated Context
 
 ### Decisions
@@ -63,6 +59,7 @@ Recent decisions affecting current work:
 - v1.6 stays Python-first: config, lifecycle, health, maturity, and context-pack rules remain Python-owned.
 - `formal-library.json` evolves into the canonical derived asset index rather than introducing a parallel index.
 - Plugin remains a thin shell over CLI logic and canonical index outputs.
+- [Phase 22-configuration-truth-compatibility]: schema_version is metadata excluded from load_vault_config() path config output; use get_paperforge_schema_version() instead
 
 ### Pending Todos
 
@@ -75,6 +72,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-03T14:23:03.254Z
-Stopped at: Phase 22 context gathered
-Resume file: .planning/phases/22-configuration-truth-compatibility/22-CONTEXT.md
+Last session: 2026-05-03T14:43:23.249Z
+Stopped at: Completed 22-01-PLAN.md
+Resume file: None

@@ -48,7 +48,7 @@ v1.6 turns PaperForge's existing sync, OCR, deep-reading, status, plugin, and `f
 **Plans**: 3 plans
 
 Plans:
-- [ ] 22-01-PLAN.md — Python config layer: schema_version, migration engine, sync hook
+- [x] 22-01-PLAN.md — Python config layer: schema_version, migration engine, sync hook
 - [ ] 22-02-PLAN.md — Plugin config truth: read paperforge.json, remove DEFAULT_SETTINGS path fields
 - [ ] 22-03-PLAN.md — Setup wizard cleanup: vault_config-only output + doctor migration detection + config source tracing
 
@@ -108,7 +108,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 22. Configuration Truth & Compatibility | 0/TBD | Not started | - |
+| 22. Configuration Truth & Compatibility | 1/3 | In Progress|  |
 | 23. Canonical Asset Index & Safe Rebuilds | 0/TBD | Not started | - |
 | 24. Derived Lifecycle, Health & Maturity | 0/TBD | Not started | - |
 | 25. Surface Convergence, Doctor & Repair | 0/TBD | Not started | - |
