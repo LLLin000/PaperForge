@@ -155,17 +155,17 @@ def repair_pdf_paths(
             if current_pdf:
                 raw_path = current_pdf.strip("[]")
                 resolved = resolve_pdf_path(raw_path, True, vault, zotero_dir)
-                    if resolved:
-                        new_text = update_frontmatter_field(text, "path_error", "")
-                        if new_text != text:
-                            record_path.write_text(new_text, encoding="utf-8")
-                            fixed += 1
-                            if verbose:
-                                logger.info("cleared path_error for %s", zotero_key)
-                            try:
-                                refresh_index_entry(vault, zotero_key)
-                            except Exception as e:
-                                logger.warning("Failed to refresh index for %s: %s", zotero_key, e)
+                if resolved:
+                    new_text = update_frontmatter_field(text, "path_error", "")
+                    if new_text != text:
+                        record_path.write_text(new_text, encoding="utf-8")
+                        fixed += 1
+                        if verbose:
+                            logger.info("cleared path_error for %s", zotero_key)
+                        try:
+                            refresh_index_entry(vault, zotero_key)
+                        except Exception as e:
+                            logger.warning("Failed to refresh index for %s: %s", zotero_key, e)
                 else:
                     if verbose:
                         logger.warning("%s path still unresolved", zotero_key)
