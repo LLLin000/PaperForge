@@ -1,30 +1,32 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.5
-milestone_name: Obsidian Plugin Setup Integration
-status: Milestone complete
-stopped_at: Completed Phase 21 (One-Click Install & Polished UX) — both plans delivered
-last_updated: "2026-04-29T14:46:07.284Z"
+milestone: v1.6
+milestone_name: AI-Ready Literature Asset Foundation
+status: Defining requirements
+stopped_at: New milestone initialized
+last_updated: "2026-05-03"
 progress:
-  total_phases: 2
-  completed_phases: 2
-  total_plans: 3
-  completed_plans: 3
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-04-29)
+See: .planning/PROJECT.md (updated 2026-05-03)
 
-**Core value:** A new user downloads one Obsidian plugin and completes full PaperForge installation without touching a terminal.
-**Current focus:** Phase 21 — one-click-install-and-polished-ux
+**Core value:** Researchers always know what papers they have, what state those papers are in, and whether each paper is reliably usable by AI with traceable fulltext, figures, notes, and source links.
+**Current focus:** Milestone v1.6 definition
 
 ## Current Position
 
-Phase: 21
-Plan: Not started
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-05-03 — Milestone v1.6 started
 
 ## Performance Metrics
 
@@ -76,6 +78,7 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-29T14:40:05.625Z
+Last session: 2026-05-02
+Last Activity: All 20 phases (01-21) learnings extracted — 355 items total (161 decisions, 75 lessons, 76 patterns, 43 surprises)
 Stopped at: Completed Phase 21 (One-Click Install & Polished UX) — both plans delivered
 Resume file: None
