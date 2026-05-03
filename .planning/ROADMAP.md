@@ -28,7 +28,7 @@ v1.6 turns PaperForge's existing sync, OCR, deep-reading, status, plugin, and `f
 - Integer phases (22, 23, 24...): Planned milestone work
 - Decimal phases (22.1, 22.2...): Urgent insertions after roadmap approval
 
-- [ ] **Phase 22: Configuration Truth & Compatibility** - Make `paperforge.json` the single runtime truth across CLI, workers, setup, and plugin.
+- [x] **Phase 22: Configuration Truth & Compatibility** - Make `paperforge.json` the single runtime truth across CLI, workers, setup, and plugin. (completed 2026-05-03)
 - [ ] **Phase 23: Canonical Asset Index & Safe Rebuilds** - Upgrade `formal-library.json` into a rebuildable, atomic, per-paper asset index.
 - [ ] **Phase 24: Derived Lifecycle, Health & Maturity** - Compute readiness, health findings, maturity, and next steps from source artifacts.
 - [ ] **Phase 25: Surface Convergence, Doctor & Repair** - Make status, plugin dashboard, Base views, doctor, and repair consume the same canonical semantics.
@@ -50,7 +50,7 @@ v1.6 turns PaperForge's existing sync, OCR, deep-reading, status, plugin, and `f
 Plans:
 - [x] 22-01-PLAN.md — Python config layer: schema_version, migration engine, sync hook
 - [x] 22-02-PLAN.md — Plugin config truth: read paperforge.json, remove DEFAULT_SETTINGS path fields
-- [ ] 22-03-PLAN.md — Setup wizard cleanup: vault_config-only output + doctor migration detection + config source tracing
+- [x] 22-03-PLAN.md — Setup wizard cleanup: vault_config-only output + doctor migration detection + config source tracing
 
 **UI hint**: yes
 
@@ -108,7 +108,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 22. Configuration Truth & Compatibility | 2/3 | In Progress|  |
+| 22. Configuration Truth & Compatibility | 3/3 | Complete   | 2026-05-03 |
 | 23. Canonical Asset Index & Safe Rebuilds | 0/TBD | Not started | - |
 | 24. Derived Lifecycle, Health & Maturity | 0/TBD | Not started | - |
 | 25. Surface Convergence, Doctor & Repair | 0/TBD | Not started | - |

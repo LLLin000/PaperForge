@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.6
 milestone_name: AI-Ready Literature Asset Foundation
-status: Ready to execute
-stopped_at: Completed 22-02-PLAN.md
-last_updated: "2026-05-03T14:59:30.150Z"
+status: Phase complete — ready for verification
+stopped_at: Completed 22-03-PLAN.md
+last_updated: "2026-05-03T15:13:06.843Z"
 progress:
   total_phases: 5
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 4
-  completed_plans: 2
+  completed_plans: 3
 ---
 
 # Project State
@@ -49,6 +49,7 @@ Plan: 3 of 3
 
 | Phase 22-configuration-truth-compatibility P01 | 4 min | 3 tasks | 3 files |
 | Phase 22-configuration-truth-compatibility P02 | 6 min | 3 tasks | 1 files |
+| Phase 22-configuration-truth-compatibility P03 | 8 min | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -62,6 +63,7 @@ Recent decisions affecting current work:
 - Plugin remains a thin shell over CLI logic and canonical index outputs.
 - [Phase 22-configuration-truth-compatibility]: schema_version is metadata excluded from load_vault_config() path config output; use get_paperforge_schema_version() instead
 - [Phase 22-configuration-truth-compatibility]: Added paddleocr_api_key and zotero_data_dir to DEFAULT_SETTINGS to prevent data loss from saveSettings() key filtering — Plan omitted these keys from DEFAULT_SETTINGS, but saveSettings() now filters persisted keys to only DEFAULT_SETTINGS entries - would have permanently deleted user API keys and Zotero paths
+- [Phase 22-configuration-truth-compatibility]: Clean dict replace replaces existing_config.update() to avoid accumulating stale top-level keys in setup wizard paperforge.json output
 
 ### Pending Todos
 
@@ -74,6 +76,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-03T14:59:30.147Z
-Stopped at: Completed 22-02-PLAN.md
+Last session: 2026-05-03T15:13:04.067Z
+Stopped at: Completed 22-03-PLAN.md
 Resume file: None
