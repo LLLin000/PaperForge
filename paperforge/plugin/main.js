@@ -445,11 +445,18 @@ class PaperForgeSettingTab extends PluginSettingTab {
         super(app, plugin);
         this.plugin = plugin;
         this._saveTimeout = null;
+        this._pfConfig = null;  // cached paperforge.json config
+    }
+
+    /** Reload path config from paperforge.json */
+    _refreshPfConfig() {
+        this._pfConfig = this.plugin.readPaperforgeJson();
     }
 
     display() {
         const { containerEl } = this;
         containerEl.empty();
+        this._refreshPfConfig();
 
         const vaultPath = this.app.vault.adapter.basePath;
         if (!this.plugin.settings.vault_path) {
@@ -492,7 +499,7 @@ class PaperForgeSettingTab extends PluginSettingTab {
             row.createEl('span', { text: ' — ' + t(kDesc) });
             if (kTitle === 'prep_export') {
                 const expRow = prep.createEl('div', { cls: 'paperforge-guide-item' });
-                expRow.createEl('span', { text: `${t('prep_export_path_label')} ${vaultPath}/${this.plugin.settings.system_dir || '99_System'}/PaperForge/exports/` });
+                expRow.createEl('span', { text: `${t('prep_export_path_label')} ${vaultPath}/${this._pfConfig.system_dir}/PaperForge/exports/` });
             }
         }
 
@@ -537,13 +544,14 @@ class PaperForgeSettingTab extends PluginSettingTab {
             containerEl.createEl('h3', { text: t('section_config') });
             const summary = containerEl.createEl('div', { cls: 'paperforge-summary' });
             const s = this.plugin.settings;
+            const pf = this._pfConfig;  // source of truth for path fields
             const items = [
                 { label: t('dir_vault'), val: vaultPath },
-                { label: t('dir_resources'), val: `${vaultPath}/${s.resources_dir}` },
-                { label: '  ' + t('dir_notes'), val: `${vaultPath}/${s.resources_dir}/${s.literature_dir}` },
-                { label: '  ' + t('dir_index'), val: `${vaultPath}/${s.resources_dir}/${s.control_dir}` },
-                { label: t('dir_base'), val: `${vaultPath}/${s.base_dir}` },
-                { label: t('dir_system'), val: `${vaultPath}/${s.system_dir}` },
+                { label: t('dir_resources'), val: `${vaultPath}/${pf.resources_dir}` },
+                { label: '  ' + t('dir_notes'), val: `${vaultPath}/${pf.resources_dir}/${pf.literature_dir}` },
+                { label: '  ' + t('dir_index'), val: `${vaultPath}/${pf.resources_dir}/${pf.control_dir}` },
+                { label: t('dir_base'), val: `${vaultPath}/${pf.base_dir}` },
+                { label: t('dir_system'), val: `${vaultPath}/${pf.system_dir}` },
                 { label: 'API Key', val: s.paddleocr_api_key ? t('api_key_set') : t('api_key_missing') },
                 { label: t('field_zotero_data'), val: s.zotero_data_dir || t('not_set') },
             ];
