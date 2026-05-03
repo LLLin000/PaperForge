@@ -17,6 +17,7 @@ from PIL import Image
 from paperforge.config import paperforge_paths
 from paperforge.worker import sync as _sync
 from paperforge.worker._progress import progress_bar
+from paperforge.worker.asset_index import refresh_index_entry
 from paperforge.worker._retry import retry_with_meta
 from paperforge.worker._utils import (
     pipeline_paths,
@@ -1805,13 +1806,31 @@ def run_ocr(vault: Path, verbose: bool = False, no_progress: bool = False) -> in
             changed += 1
         if any(r.get("queue_status") in ("queued", "running") for r in ocr_queue):
             _time.sleep(poll_interval)
+    # Collect completed OCR keys for incremental index refresh (before filtering)
+    _done_ocr_keys = (
+        [r.get("zotero_key", "") for r in ocr_queue if r.get("queue_status") == "done"]
+        if queue_changed
+        else []
+    )
     if queue_changed:
         ocr_queue = [row for row in ocr_queue if str(row.get("queue_status", "")).lower() != "done"]
     write_ocr_queue(paths, ocr_queue)
     try:
         _sync.run_selection_sync(vault)
+        if _done_ocr_keys:
+            # Incremental refresh per completed OCR key
+            done_keys = [k for k in _done_ocr_keys if k]
+            for ocr_key in done_keys:
+                refresh_index_entry(vault, ocr_key)
+            if verbose:
+                print(f"ocr: refreshed {len(done_keys)} index entries incrementally")
+        else:
+            # No OCR completed this run — full rebuild for safety (sync may have changed records)
+            _sync.run_index_refresh(vault)
+    except ImportError:
+        # Fallback: if asset_index module not available (pre-migration), use full rebuild
         _sync.run_index_refresh(vault)
     except Exception as e:
-        logger.error("Post-OCR sync failed: %s", e)
+        logger.error("Post-OCR index refresh failed: %s", e)
     print(f"ocr: updated {changed} records")
     return 0
