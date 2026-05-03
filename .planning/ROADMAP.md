@@ -45,7 +45,13 @@ v1.6 turns PaperForge's existing sync, OCR, deep-reading, status, plugin, and `f
   2. User can edit settings through the plugin or setup flow, then run `paperforge sync`, `paperforge ocr`, or `paperforge status` and observe the same resolved paths and runtime behavior.
   3. User can open an older vault with legacy top-level config keys and keep using existing commands successfully while PaperForge writes the normalized config shape going forward.
   4. User can change plugin settings without creating a second runtime truth that disagrees with Python-owned config resolution.
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+- [ ] 22-01-PLAN.md — Python config layer: schema_version, migration engine, sync hook
+- [ ] 22-02-PLAN.md — Plugin config truth: read paperforge.json, remove DEFAULT_SETTINGS path fields
+- [ ] 22-03-PLAN.md — Setup wizard cleanup: vault_config-only output + doctor migration detection + config source tracing
+
 **UI hint**: yes
 
 ### Phase 23: Canonical Asset Index & Safe Rebuilds
