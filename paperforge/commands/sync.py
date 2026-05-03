@@ -72,6 +72,7 @@ def run(args: argparse.Namespace) -> int:
     dry_run = getattr(args, "dry_run", False)
     selection_only = getattr(args, "selection", False)
     index_only = getattr(args, "index", False)
+    rebuild_index = getattr(args, "rebuild_index", False)
     domain = getattr(args, "domain", None)
 
     if dry_run:
@@ -98,7 +99,7 @@ def run(args: argparse.Namespace) -> int:
 
     if not selection_only:
         run_index_refresh = _get_run_index_refresh()
-        code = run_index_refresh(vault, verbose=getattr(args, "verbose", False))
+        code = run_index_refresh(vault, verbose=getattr(args, "verbose", False), rebuild_index=rebuild_index)
         if code != 0 and exit_code == 0:
             exit_code = code
 

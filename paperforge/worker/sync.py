@@ -1631,6 +1631,12 @@ def frontmatter_note(entry: dict, existing_text: str = "") -> str:
             f"deep_reading_status: {yaml_quote(entry.get('deep_reading_status', 'pending'))}",
             f"deep_reading_md_path: {yaml_quote(deep_reading_path)}",
             f"pdf_path: {yaml_quote(entry.get('pdf_path', ''))}",
+            # Workspace paths (Phase 22 paper workspace layout, mirrored for Base view)
+            f"paper_root: {yaml_quote(entry.get('paper_root', ''))}",
+            f"main_note_path: {yaml_quote(entry.get('main_note_path', ''))}",
+            f"fulltext_path: {yaml_quote(entry.get('fulltext_path', ''))}",
+            f"deep_reading_path: {yaml_quote(entry.get('deep_reading_path', ''))}",
+            f"ai_path: {yaml_quote(entry.get('ai_path', ''))}",
             "tags:",
             "  - 文献阅读",
             f"  - {entry.get('domain', '')}",
@@ -1668,7 +1674,7 @@ def analyze_selected_keys(paths: dict[str, Path]) -> set[str]:
     return {key for key, row in load_control_actions(paths).items() if row.get("analyze")}
 
 
-def run_index_refresh(vault: Path, verbose: bool = False) -> int:
+def run_index_refresh(vault: Path, verbose: bool = False, rebuild_index: bool = False) -> int:
     from paperforge.worker.base_views import ensure_base_views
     from paperforge.worker.ocr import validate_ocr_meta
 

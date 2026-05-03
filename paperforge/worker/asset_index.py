@@ -286,6 +286,12 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
             if note_path.exists() and has_deep_reading_content(note_path.read_text(encoding="utf-8"))
             else ""
         ),
+        # Workspace path fields (Phase 22 paper workspace structure, per D-12)
+        "paper_root": f"Literature/{domain}/{key} - {title_slug}/",
+        "main_note_path": f"Literature/{domain}/{key} - {title_slug}/{key} - {title_slug}.md",
+        "fulltext_path": f"Literature/{domain}/{key} - {title_slug}/fulltext.md",
+        "deep_reading_path": f"Literature/{domain}/{key} - {title_slug}/deep-reading.md",
+        "ai_path": f"Literature/{domain}/{key} - {title_slug}/ai/",
     }
 
     # Write / update the formal note
