@@ -986,6 +986,8 @@ class PaperForgeSetupModal extends Modal {
 module.exports = class PaperForgePlugin extends Plugin {
     async onload() {
         await this.loadSettings();
+        // Clean stale path fields from plugin data.json (migrated to paperforge.json)
+        this.saveSettings();
         T = (langFromApp(this.app) === 'zh') ? LANG.zh : LANG.en;
         this.registerView(VIEW_TYPE_PAPERFORGE, (leaf) => new PaperForgeStatusView(leaf));
 
@@ -1074,6 +1076,66 @@ module.exports = class PaperForgePlugin extends Plugin {
         } catch (e) {
             console.warn('PaperForge: Failed to read paperforge.json, using defaults', e);
             return DEFAULTS;
+        }
+    }
+
+    /**
+     * Write path configuration back to paperforge.json vault_config block.
+     * Reads the existing file, updates vault_config with the new values,
+     * and writes back preserving all other keys.
+     */
+    savePaperforgeJson(pathConfig) {
+        const fs = require('fs');
+        const path = require('path');
+        const vaultPath = this.app.vault.adapter.basePath;
+        const pfPath = path.join(vaultPath, 'paperforge.json');
+
+        let data = {};
+        try {
+            if (fs.existsSync(pfPath)) {
+                data = JSON.parse(fs.readFileSync(pfPath, 'utf-8'));
+            }
+        } catch (e) {
+            console.warn('PaperForge: Failed to read paperforge.json for update', e);
+        }
+
+        // Ensure vault_config block exists
+        if (!data.vault_config || typeof data.vault_config !== 'object') {
+            data.vault_config = {};
+        }
+
+        // Update vault_config with new path values
+        const validPathKeys = ['system_dir', 'resources_dir', 'literature_dir', 'control_dir', 'base_dir'];
+        for (const key of validPathKeys) {
+            if (pathConfig[key] !== undefined) {
+                data.vault_config[key] = pathConfig[key];
+            }
+        }
+
+        // Ensure schema_version
+        if (!data.schema_version) {
+            data.schema_version = '2';
+        }
+
+        // Remove any stale top-level path keys (they were migrated to vault_config)
+        for (const key of validPathKeys) {
+            delete data[key];
+        }
+
+        try {
+            fs.writeFileSync(pfPath, JSON.stringify(data, null, 2), 'utf-8');
+            // Refresh the in-memory settings
+            if (this.settings) {
+                const pfConfig = this.readPaperforgeJson();
+                this.settings.system_dir = pfConfig.system_dir;
+                this.settings.resources_dir = pfConfig.resources_dir;
+                this.settings.literature_dir = pfConfig.literature_dir;
+                this.settings.control_dir = pfConfig.control_dir;
+                this.settings.base_dir = pfConfig.base_dir;
+            }
+        } catch (e) {
+            console.error('PaperForge: Failed to write paperforge.json', e);
+            new Notice('PaperForge: Failed to save configuration to paperforge.json');
         }
     }
 
