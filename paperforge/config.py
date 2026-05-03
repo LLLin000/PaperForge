@@ -46,6 +46,7 @@ def load_simple_env(env_path: Path) -> None:
 # ---------------------------------------------------------------------------
 
 DEFAULT_CONFIG: dict[str, str] = {
+    "schema_version": "2",
     "system_dir": "99_System",
     "resources_dir": "03_Resources",
     "literature_dir": "Literature",
@@ -93,6 +94,21 @@ def read_paperforge_json(vault: Path) -> dict[str, Any]:
     if not isinstance(data, dict):
         return {}
     return data
+
+
+# ---------------------------------------------------------------------------
+# Schema version resolver
+# ---------------------------------------------------------------------------
+
+
+def get_paperforge_schema_version(vault: Path) -> int:
+    """Return the schema_version from paperforge.json, defaulting to 1 if absent."""
+    data = read_paperforge_json(vault)
+    raw = data.get("schema_version", "1")
+    try:
+        return int(raw)
+    except (ValueError, TypeError):
+        return 1
 
 
 # ---------------------------------------------------------------------------
@@ -160,6 +176,10 @@ def load_vault_config(
       4. Process environment variables
       5. Explicit ``overrides`` dict
 
+    Note:
+        ``schema_version`` is not a path config key and is excluded from the
+        merged output (use ``get_paperforge_schema_version()`` instead).
+
     Args:
         vault: Path to the vault root.
         env: Optional dict of environment variables. If None, uses os.environ.
@@ -173,6 +193,7 @@ def load_vault_config(
 
     # Start with defaults
     config: dict[str, str] = dict(DEFAULT_CONFIG)
+    config.pop("schema_version", None)
 
     # Read paperforge.json
     pf_data = read_paperforge_json(vault)
@@ -201,6 +222,9 @@ def load_vault_config(
         for key in CONFIG_KEYS:
             if key in overrides and overrides[key]:
                 config[key] = overrides[key]
+
+    # schema_version is metadata, not a path config key — exclude from output
+    config.pop("schema_version", None)
 
     return config
 
