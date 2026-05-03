@@ -144,15 +144,12 @@ function t(key) { return (T && T[key]) || (LANG.en[key]) || key; }
 
 const DEFAULT_SETTINGS = {
     vault_path: '',
-    system_dir: 'System',
-    resources_dir: 'Resources',
-    literature_dir: 'Notes',
-    control_dir: 'Index_Cards',
-    base_dir: 'Base',
     setup_complete: false,
     auto_update: true,
     agent_platform: 'opencode',
     language: '',
+    paddleocr_api_key: '',
+    zotero_data_dir: '',
 };
 
 const ACTIONS = [
@@ -495,7 +492,7 @@ class PaperForgeSettingTab extends PluginSettingTab {
             row.createEl('span', { text: ' — ' + t(kDesc) });
             if (kTitle === 'prep_export') {
                 const expRow = prep.createEl('div', { cls: 'paperforge-guide-item' });
-                expRow.createEl('span', { text: `${t('prep_export_path_label')} ${vaultPath}/${this.plugin.settings.system_dir || 'System'}/PaperForge/exports/` });
+                expRow.createEl('span', { text: `${t('prep_export_path_label')} ${vaultPath}/${this.plugin.settings.system_dir || '99_System'}/PaperForge/exports/` });
             }
         }
 
@@ -1030,15 +1027,71 @@ module.exports = class PaperForgePlugin extends Plugin {
         });
     }
 
+    /**
+     * Read path configuration from the canonical paperforge.json file.
+     * Falls back to Python-level DEFAULT_CONFIG values if file does not exist.
+     * Returns {system_dir, resources_dir, literature_dir, control_dir, base_dir}.
+     */
+    readPaperforgeJson() {
+        const fs = require('fs');
+        const path = require('path');
+        const vaultPath = this.app.vault.adapter.basePath;
+        const pfPath = path.join(vaultPath, 'paperforge.json');
+
+        // Python DEFAULT_CONFIG values as fallback (must match config.py exactly)
+        const DEFAULTS = {
+            system_dir: '99_System',
+            resources_dir: '03_Resources',
+            literature_dir: 'Literature',
+            control_dir: 'LiteratureControl',
+            base_dir: '05_Bases',
+        };
+
+        try {
+            if (!fs.existsSync(pfPath)) {
+                return DEFAULTS;
+            }
+            const raw = fs.readFileSync(pfPath, 'utf-8');
+            const data = JSON.parse(raw);
+
+            // Try vault_config block first (canonical), fall back to top-level (legacy)
+            const vc = data.vault_config || {};
+            return {
+                system_dir: vc.system_dir || data.system_dir || DEFAULTS.system_dir,
+                resources_dir: vc.resources_dir || data.resources_dir || DEFAULTS.resources_dir,
+                literature_dir: vc.literature_dir || data.literature_dir || DEFAULTS.literature_dir,
+                control_dir: vc.control_dir || data.control_dir || DEFAULTS.control_dir,
+                base_dir: vc.base_dir || data.base_dir || DEFAULTS.base_dir,
+            };
+        } catch (e) {
+            console.warn('PaperForge: Failed to read paperforge.json, using defaults', e);
+            return DEFAULTS;
+        }
+    }
+
     onunload() {
         this.app.workspace.detachLeavesOfType(VIEW_TYPE_PAPERFORGE);
     }
 
     async loadSettings() {
         this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+        // Path fields come from paperforge.json, not from DEFAULT_SETTINGS or plugin data.json
+        const pfConfig = this.readPaperforgeJson();
+        this.settings.system_dir = pfConfig.system_dir;
+        this.settings.resources_dir = pfConfig.resources_dir;
+        this.settings.literature_dir = pfConfig.literature_dir;
+        this.settings.control_dir = pfConfig.control_dir;
+        this.settings.base_dir = pfConfig.base_dir;
     }
 
     async saveSettings() {
-        await this.saveData(this.settings);
+        // Only persist non-path settings to plugin data.json
+        const dataToSave = {};
+        for (const key of Object.keys(DEFAULT_SETTINGS)) {
+            if (key in this.settings) {
+                dataToSave[key] = this.settings[key];
+            }
+        }
+        await this.saveData(dataToSave);
     }
 };
