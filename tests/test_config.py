@@ -542,11 +542,10 @@ def test_migrate_legacy_top_level_keys(tmp_path: Path):
     vault.mkdir()
     data = {
         "system_dir": "OldSystem",
-        "resources_dir": "OldRes",
+        "literature_dir": "OldLit",
         "version": "1.4",
         "vault_config": {
             "system_dir": "99_System",
-            "resources_dir": "03_Resources",
         },
     }
     (vault / "paperforge.json").write_text(json.dumps(data), encoding="utf-8")
@@ -555,8 +554,11 @@ def test_migrate_legacy_top_level_keys(tmp_path: Path):
 
     result = json.loads((vault / "paperforge.json").read_text(encoding="utf-8"))
     assert "system_dir" not in result, "top-level key removed"
-    assert result["vault_config"]["system_dir"] == "OldSystem", "top-level fills vault_config gap"
-    assert result["vault_config"]["resources_dir"] == "03_Resources", "existing vault_config preserved"
+    assert "literature_dir" not in result, "top-level key removed"
+    # system_dir already exists in vault_config — existing value preserved
+    assert result["vault_config"]["system_dir"] == "99_System", "existing vault_config preserved"
+    # literature_dir is only at top-level (gap in vault_config) — filled from top-level
+    assert result["vault_config"]["literature_dir"] == "OldLit", "top-level fills vault_config gap"
     assert result["schema_version"] == "2"
     assert (vault / "paperforge.json.bak").exists(), "backup created"
 
