@@ -23,10 +23,10 @@ Requirements for milestone v1.6: AI-Ready Literature Asset Foundation.
 
 ### Lifecycle And Health
 
-- [ ] **STATE-01**: User can see each paper's derived lifecycle state such as imported, indexed, PDF-ready, fulltext-ready, deep-read, and AI-context-ready.
-- [ ] **STATE-02**: User can see why a paper is not ready, with concrete health findings covering PDF, path resolution, OCR, note linkage, and generated assets.
-- [ ] **STATE-03**: User can see the recommended next step for each paper or collection, such as sync, OCR, repair, deep-read, or rebuild index.
-- [ ] **STATE-04**: User can trust that readiness states are derived from source artifacts rather than hand-edited status fields.
+- [x] **STATE-01**: User can see each paper's derived lifecycle state such as imported, indexed, PDF-ready, fulltext-ready, deep-read, and AI-context-ready.
+- [x] **STATE-02**: User can see why a paper is not ready, with concrete health findings covering PDF, path resolution, OCR, note linkage, and generated assets.
+- [x] **STATE-03**: User can see the recommended next step for each paper or collection, such as sync, OCR, repair, deep-read, or rebuild index.
+- [x] **STATE-04**: User can trust that readiness states are derived from source artifacts rather than hand-edited status fields.
 
 ### Surface Convergence
 
@@ -37,7 +37,7 @@ Requirements for milestone v1.6: AI-Ready Literature Asset Foundation.
 
 ### Maturity And AI Context
 
-- [ ] **AIC-01**: User can see a transparent Library Maturity or Workflow Level for a paper or library, with explainable criteria rather than a black-box score.
+- [x] **AIC-01**: User can see a transparent Library Maturity or Workflow Level for a paper or library, with explainable criteria rather than a black-box score.
 - [ ] **AIC-02**: User can generate a traceable context pack for a single paper that includes the relevant metadata, fulltext, note links, and provenance.
 - [ ] **AIC-03**: User can generate a collection-level context pack from canonical assets without hardcoding discipline-specific extraction schemas.
 - [ ] **AIC-04**: User can use AI context entry points such as ask-this-paper or ask-this-collection only when the system can explain what source assets were included.
@@ -90,15 +90,15 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ASSET-02 | Phase 23 | Complete |
 | ASSET-03 | Phase 23 | Complete |
 | ASSET-04 | Phase 23 | Complete |
-| STATE-01 | Phase 24 | Pending |
-| STATE-02 | Phase 24 | Pending |
-| STATE-03 | Phase 24 | Pending |
-| STATE-04 | Phase 24 | Pending |
+| STATE-01 | Phase 24 | Complete |
+| STATE-02 | Phase 24 | Complete |
+| STATE-03 | Phase 24 | Complete |
+| STATE-04 | Phase 24 | Complete |
 | SURF-01 | Phase 25 | Pending |
 | SURF-02 | Phase 25 | Pending |
 | SURF-03 | Phase 25 | Pending |
 | SURF-04 | Phase 25 | Pending |
-| AIC-01 | Phase 24 | Pending |
+| AIC-01 | Phase 24 | Complete |
 | AIC-02 | Phase 26 | Pending |
 | AIC-03 | Phase 26 | Pending |
 | AIC-04 | Phase 26 | Pending |
