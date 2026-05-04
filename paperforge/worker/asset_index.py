@@ -256,6 +256,10 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
             if stale_note != note_path:
                 stale_note.unlink()
 
+    # Workspace paths (Phase 26: flat-to-workspace migration)
+    workspace_dir = paths["literature"] / domain / f"{key} - {title_slug}"
+    main_note_path = workspace_dir / f"{key} - {title_slug}.md"
+
     # ---- entry dict -------------------------------------------------------
     entry = {
         "zotero_key": key,
@@ -306,10 +310,21 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
     entry["maturity"] = compute_maturity(entry)
     entry["next_step"] = compute_next_step(entry)
 
-    # Write / update the formal note
-    note_path.parent.mkdir(parents=True, exist_ok=True)
-    existing_text = note_path.read_text(encoding="utf-8") if note_path.exists() else ""
-    note_path.write_text(frontmatter_note(entry, existing_text), encoding="utf-8")
+    # Write / update the formal note — workspace-aware (Phase 26: flat-to-workspace)
+    if workspace_dir.exists():
+        # Workspace exists — read from and write to workspace paths
+        existing_text = main_note_path.read_text(encoding="utf-8") if main_note_path.exists() else ""
+        write_target = main_note_path
+        # Ensure subdirs exist
+        for d in [workspace_dir, workspace_dir / "ai"]:
+            d.mkdir(parents=True, exist_ok=True)
+    else:
+        # Legacy: read from flat path, write to flat path (transitional)
+        existing_text = note_path.read_text(encoding="utf-8") if note_path.exists() else ""
+        write_target = note_path
+        note_path.parent.mkdir(parents=True, exist_ok=True)
+
+    write_target.write_text(frontmatter_note(entry, existing_text), encoding="utf-8")
 
     return entry
 
