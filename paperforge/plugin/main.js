@@ -1,5 +1,7 @@
 const { Plugin, Notice, ItemView, Modal, Setting, PluginSettingTab, addIcon } = require('obsidian');
 const { exec } = require('node:child_process');
+const fs = require('fs');
+const path = require('path');
 
 const VIEW_TYPE_PAPERFORGE = 'paperforge-status';
 const PF_ICON_ID = 'paperforge';
@@ -247,6 +249,7 @@ class PaperForgeStatusView extends ItemView {
     /*  Fetch & Render Stats                                                  */
     /* ---------------------------------------------------------------------- */
     _fetchStats(quiet) {
+        // Phase 25: Read canonical index JSON directly (D-05)
         if (!quiet && !this._cachedStats) {
             this._metricsEl.empty();
             this._metricsEl.createEl('div', { cls: 'paperforge-status-loading', text: 'Loading...' });
@@ -255,24 +258,86 @@ class PaperForgeStatusView extends ItemView {
         }
 
         const vp = this.app.vault.adapter.basePath;
-        exec('python -m paperforge status --json', { cwd: vp, timeout: 30000 }, (err, stdout) => {
-            if (err) {
-                if (this._cachedStats) return;
-                this._metricsEl.createEl('div', { cls: 'paperforge-status-error', text: 'Cannot reach PaperForge CLI.\nMake sure paperforge is installed and in your PATH.' });
-                return;
-            }
-            try {
-                const d = JSON.parse(stdout);
-                this._cachedStats = d;
-                this._metricsEl.empty();
-                this._renderStats(d);
-                this._renderOcr(d);
-            } catch {
-                if (!this._cachedStats) {
-                    this._metricsEl.createEl('div', { cls: 'paperforge-status-error', text: 'Invalid response from paperforge status.' });
+        const plugin = this.app.plugins.plugins['paperforge'];
+        const systemDir = plugin?.settings?.system_dir || '99_System';
+        const indexPath = path.join(vp, systemDir, 'PaperForge', 'indexes', 'formal-library.json');
+
+        try {
+            const raw = fs.readFileSync(indexPath, 'utf-8');
+            const index = JSON.parse(raw);
+            const items = index.items || [];
+
+            // D-06: Single-pass aggregation — no item references held after loop
+            const lifecycleCounts = {};
+            const healthCounts = {
+                pdf_health: { healthy: 0, unhealthy: 0 },
+                ocr_health: { healthy: 0, unhealthy: 0 },
+                note_health: { healthy: 0, unhealthy: 0 },
+                asset_health: { healthy: 0, unhealthy: 0 },
+            };
+            let ocrTotal = 0, ocrDone = 0, ocrPending = 0, ocrProcessing = 0, ocrFailed = 0;
+            let formalNotes = 0;
+
+            for (const item of items) {
+                if (item.note_path) formalNotes++;
+
+                const lifecycle = item.lifecycle || 'pdf_ready';
+                lifecycleCounts[lifecycle] = (lifecycleCounts[lifecycle] || 0) + 1;
+
+                const health = item.health || {};
+                for (const dim of ['pdf_health', 'ocr_health', 'note_health', 'asset_health']) {
+                    const val = health[dim] || 'healthy';
+                    if (val === 'healthy') healthCounts[dim].healthy++;
+                    else healthCounts[dim].unhealthy++;
                 }
+
+                const ocrStatus = item.ocr_status || '';
+                ocrTotal++;
+                if (ocrStatus === 'done') ocrDone++;
+                else if (ocrStatus === 'pending') ocrPending++;
+                else if (ocrStatus === 'processing' || ocrStatus === 'queued' || ocrStatus === 'running') ocrProcessing++;
+                else ocrFailed++;
             }
-        });
+
+            this._cachedStats = {
+                version: this._cachedStats?.version || '\u2014',
+                total_papers: items.length,
+                formal_notes: formalNotes,
+                exports: 0,
+                bases: 0,
+                ocr: { total: ocrTotal, pending: ocrPending, processing: ocrProcessing, done: ocrDone, failed: ocrFailed },
+                path_errors: 0,
+                lifecycle_level_counts: lifecycleCounts,
+                health_aggregate: healthCounts,
+            };
+
+            this._metricsEl.empty();
+            this._renderStats(this._cachedStats);
+            this._renderOcr(this._cachedStats);
+        } catch (err) {
+            // D-07: Fallback — spawn CLI if file is missing or corrupt
+            if (!quiet && !this._cachedStats) {
+                this._metricsEl.createEl('div', { cls: 'paperforge-status-loading', text: 'No index \u2014 trying CLI...' });
+            }
+            exec('python -m paperforge status --json', { cwd: vp, timeout: 30000 }, (err2, stdout) => {
+                if (err2) {
+                    if (this._cachedStats) return;
+                    this._metricsEl.createEl('div', { cls: 'paperforge-status-error', text: 'Cannot reach PaperForge CLI.\nMake sure paperforge is installed and in your PATH.' });
+                    return;
+                }
+                try {
+                    const d = JSON.parse(stdout);
+                    this._cachedStats = d;
+                    this._metricsEl.empty();
+                    this._renderStats(d);
+                    this._renderOcr(d);
+                } catch {
+                    if (!this._cachedStats) {
+                        this._metricsEl.createEl('div', { cls: 'paperforge-status-error', text: 'Invalid response from paperforge status.' });
+                    }
+                }
+            });
+        }
     }
 
     /* ── Metric Cards ── */
