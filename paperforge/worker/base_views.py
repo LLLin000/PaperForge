@@ -60,15 +60,15 @@ def build_base_views(domain: str) -> list[dict]:
                 "first_author",
                 "journal",
                 "impact_factor",
-                "has_pdf",
-                "do_ocr",
-                "analyze",
-                "ocr_status",
+                "lifecycle",
+                "maturity_level",
+                "next_step",
                 "deep_reading_status",
                 "pdf_path",
                 "fulltext_md_path",
             ],
             "filter": None,
+            "sort": [{"field": "lifecycle", "direction": "asc"}],
         },
         {
             "name": "推荐分析",
@@ -78,40 +78,45 @@ def build_base_views(domain: str) -> list[dict]:
                 "first_author",
                 "journal",
                 "impact_factor",
-                "has_pdf",
-                "do_ocr",
-                "analyze",
-                "ocr_status",
+                "lifecycle",
+                "maturity_level",
+                "next_step",
                 "deep_reading_status",
                 "pdf_path",
                 "fulltext_md_path",
             ],
-            "filter": "analyze = true AND recommend_analyze = true",
+            "filter": "lifecycle != 'indexed'",
+            "sort": [{"field": "lifecycle", "direction": "asc"}],
         },
         {
             "name": "待 OCR",
-            "order": ["year", "first_author", "title", "has_pdf", "do_ocr", "ocr_status", "pdf_path"],
-            "filter": 'do_ocr = true AND ocr_status = "pending"',
+            "order": ["year", "first_author", "title", "lifecycle", "next_step", "pdf_path"],
+            "filter": "lifecycle = 'pdf_ready'",
+            "sort": [{"field": "lifecycle", "direction": "asc"}],
         },
         {
             "name": "OCR 完成",
-            "order": ["year", "first_author", "title", "has_pdf", "do_ocr", "ocr_status", "pdf_path"],
-            "filter": 'ocr_status = "done"',
+            "order": ["year", "first_author", "title", "lifecycle", "maturity_level", "next_step", "pdf_path"],
+            "filter": "lifecycle = 'fulltext_ready' OR lifecycle = 'deep_read_done' OR lifecycle = 'ai_context_ready'",
+            "sort": [{"field": "lifecycle", "direction": "asc"}],
         },
         {
             "name": "待深度阅读",
-            "order": ["year", "first_author", "title", "has_pdf", "do_ocr", "analyze", "ocr_status", "deep_reading_status", "pdf_path"],
-            "filter": 'analyze = true AND ocr_status = "done" AND deep_reading_status = "pending"',
+            "order": ["year", "first_author", "title", "lifecycle", "maturity_level", "next_step", "pdf_path"],
+            "filter": "lifecycle = 'fulltext_ready'",
+            "sort": [{"field": "lifecycle", "direction": "asc"}],
         },
         {
             "name": "深度阅读完成",
-            "order": ["year", "first_author", "title", "has_pdf", "do_ocr", "analyze", "ocr_status", "deep_reading_status", "pdf_path"],
-            "filter": 'deep_reading_status = "done"',
+            "order": ["year", "first_author", "title", "lifecycle", "maturity_level", "next_step", "pdf_path"],
+            "filter": "lifecycle = 'deep_read_done' OR lifecycle = 'ai_context_ready'",
+            "sort": [{"field": "lifecycle", "direction": "asc"}],
         },
         {
             "name": "正式卡片",
-            "order": ["title", "year", "first_author", "journal", "impact_factor", "has_pdf", "deep_reading_status", "pdf_path"],
-            "filter": 'deep_reading_status = "done"',
+            "order": ["title", "year", "first_author", "journal", "impact_factor", "lifecycle", "maturity_level", "next_step", "pdf_path"],
+            "filter": "lifecycle = 'deep_read_done' OR lifecycle = 'ai_context_ready'",
+            "sort": [{"field": "lifecycle", "direction": "asc"}],
         },
         {
             "name": "全记录",
@@ -121,15 +126,15 @@ def build_base_views(domain: str) -> list[dict]:
                 "first_author",
                 "journal",
                 "impact_factor",
-                "has_pdf",
-                "do_ocr",
-                "analyze",
-                "ocr_status",
+                "lifecycle",
+                "maturity_level",
+                "next_step",
                 "deep_reading_status",
                 "pdf_path",
                 "fulltext_md_path",
             ],
             "filter": None,
+            "sort": [{"field": "lifecycle", "direction": "asc"}],
         },
     ]
 
@@ -174,6 +179,11 @@ def _render_views_section(views: list[dict]) -> str:
             lines.append(f"      - {col}")
         if v["filter"]:
             lines.append(f"    filter: '{v['filter']}'")
+        if v.get("sort"):
+            lines.append("    sort:")
+            for sort_item in v["sort"]:
+                lines.append(f"      - field: {sort_item['field']}")
+                lines.append(f"        direction: {sort_item['direction']}")
     return "\n".join(lines)
 
 
@@ -209,14 +219,12 @@ def merge_base_views(existing_content: str | None, new_views: list[dict]) -> str
     displayName: "Journal"
   impact_factor:
     displayName: "IF"
-  has_pdf:
-    displayName: "PDF"
-  do_ocr:
-    displayName: "OCR"
-  analyze:
-    displayName: "Analyze"
-  ocr_status:
-    displayName: "OCR Status"
+  lifecycle:
+    displayName: "Lifecycle"
+  maturity_level:
+    displayName: "Maturity"
+  next_step:
+    displayName: "Next Step"
   deep_reading_status:
     displayName: "Deep Reading"
   pdf_path:
@@ -264,6 +272,11 @@ views:
             rendered += f"    filter: '{v['filter']}'\n"
         else:
             rendered += "\n"
+        if v.get("sort"):
+            rendered += "    sort:\n"
+            for sort_item in v["sort"]:
+                rendered += f"      - field: {sort_item['field']}\n"
+                rendered += f"        direction: {sort_item['direction']}\n"
         new_pf_blocks.append((v["name"], rendered))
 
     rebuilt_views_lines = []
@@ -340,6 +353,11 @@ def _build_base_yaml(folder_filter: str, views: list[dict]) -> str:
             views_yaml += f"    filter: '{v['filter']}'\n"
         else:
             views_yaml += "\n"
+        if v.get("sort"):
+            views_yaml += "    sort:\n"
+            for sort_item in v["sort"]:
+                views_yaml += f"      - field: {sort_item['field']}\n"
+                views_yaml += f"        direction: {sort_item['direction']}\n"
     views_yaml = views_yaml.rstrip("\n")
     return f"""filters:
   and:
@@ -357,14 +375,12 @@ properties:
     displayName: "Journal"
   impact_factor:
     displayName: "IF"
-  has_pdf:
-    displayName: "PDF"
-  do_ocr:
-    displayName: "OCR"
-  analyze:
-    displayName: "Analyze"
-  ocr_status:
-    displayName: "OCR Status"
+  lifecycle:
+    displayName: "Lifecycle"
+  maturity_level:
+    displayName: "Maturity"
+  next_step:
+    displayName: "Next Step"
   deep_reading_status:
     displayName: "Deep Reading"
   pdf_path:
