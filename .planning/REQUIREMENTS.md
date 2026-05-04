@@ -11,8 +11,8 @@ Requirements for milestone v1.7: Context-Aware Dashboard.
 
 - [x] **DASH-01**: User opens a `.base` file — plugin dashboard shows collection-level domain statistics.
 - [x] **DASH-02**: User opens a paper card (`.md` with `zotero_key` in frontmatter) — plugin dashboard shows per-paper lifecycle, health, maturity, and next-step.
-- [ ] **DASH-03**: User opens any other file or no file — plugin dashboard shows the existing global library overview.
-- [ ] **DASH-04**: User switches active file — dashboard auto-refreshes to the correct mode without manual intervention.
+- [x] **DASH-03**: User opens any other file or no file — plugin dashboard shows the existing global library overview.
+- [x] **DASH-04**: User switches active file — dashboard auto-refreshes to the correct mode without manual intervention.
 
 ### Per-Paper Dashboard
 
@@ -36,7 +36,7 @@ Requirements for milestone v1.7: Context-Aware Dashboard.
 ### Auto-Refresh
 
 - [x] **REFR-01**: Dashboard refreshes when the canonical index file changes.
-- [ ] **REFR-02**: Dashboard refreshes when the active file changes.
+- [x] **REFR-02**: Dashboard refreshes when the active file changes.
 
 ## v2 Requirements
 
@@ -64,10 +64,10 @@ Deferred to future milestone.
 | COMP-03 | Phase 27 | Complete |
 | DASH-01 | Phase 28 | Complete |
 | DASH-02 | Phase 28 | Complete |
-| DASH-03 | Phase 28 | Pending |
-| DASH-04 | Phase 28 | Pending |
+| DASH-03 | Phase 28 | Complete |
+| DASH-04 | Phase 28 | Complete |
 | REFR-01 | Phase 28 | Complete |
-| REFR-02 | Phase 28 | Pending |
+| REFR-02 | Phase 28 | Complete |
 | PAPER-01 | Phase 29 | Pending |
 | PAPER-02 | Phase 29 | Pending |
 | PAPER-03 | Phase 29 | Pending |
