@@ -398,6 +398,41 @@ class PaperForgeStatusView extends ItemView {
         });
     }
 
+    /* ── Index Loading (D-11, D-17, D-19) ── */
+    _loadIndex() {
+        const vp = this.app.vault.adapter.basePath;
+        const plugin = this.app.plugins.plugins['paperforge'];
+        const systemDir = plugin?.settings?.system_dir || '99_System';
+        const indexPath = path.join(vp, systemDir, 'PaperForge', 'indexes', 'formal-library.json');
+        try {
+            const raw = fs.readFileSync(indexPath, 'utf-8');
+            return JSON.parse(raw);
+        } catch {
+            return null;
+        }
+    }
+
+    /* ── Cached Index Accessor (D-14) ── */
+    _getCachedIndex() {
+        if (!this._cachedItems) {
+            const index = this._loadIndex();
+            this._cachedItems = index ? (index.items || []) : [];
+        }
+        return this._cachedItems;
+    }
+
+    /* ── Single Paper Lookup by Key (D-12, D-18) ── */
+    _findEntry(key) {
+        if (!key) return null;
+        return this._getCachedIndex().find(item => item.zotero_key === key) || null;
+    }
+
+    /* ── Filter Papers by Domain (D-13, D-16) ── */
+    _filterByDomain(domain) {
+        if (!domain) return [];
+        return this._getCachedIndex().filter(item => item.domain === domain);
+    }
+
     /* ── Metric Cards (Enhanced D-04, D-05, D-06) ── */
     _renderStats(d) {
         this._versionBadge.setText(d.version ? 'v' + d.version : 'v\u2014');
