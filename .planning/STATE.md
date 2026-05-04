@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.7
 milestone_name: Context-Aware Dashboard
 status: Phase complete — ready for verification
-stopped_at: Completed 28-01-PLAN.md
-last_updated: "2026-05-04T06:59:31.373Z"
+stopped_at: Completed 28-02-PLAN.md
+last_updated: "2026-05-04T15:05:30.000Z"
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 4
-  completed_plans: 3
+  completed_plans: 4
 ---
 
 # Project State
@@ -63,6 +63,7 @@ Plans: 2 of 2 planned
 | Phase 27-component-library P01 | 3 min | 3 tasks | 1 files |
 | Phase 27-component-library P02 | 3 min | 3 tasks | 1 files |
 | Phase 28-dashboard-shell-context-detection P01 | 1 min | 2 tasks | 2 files |
+| Phase 28-dashboard-shell-context-detection P02 | 5 min | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -98,6 +99,9 @@ Recent decisions affecting current work:
 - [Phase 28-dashboard-shell-context-detection]: _loadIndex() returns null (not empty object) on failure so callers can distinguish missing/corrupt from empty index (D-17)
 - [Phase 28-dashboard-shell-context-detection]: _getCachedIndex() returns [] when index missing, not null — callers iterate safely without null checks (D-14)
 - [Phase 28-dashboard-shell-context-detection]: Path resolution in _loadIndex() duplicates _fetchStats() intentionally — self-contained, no hidden coupling; existing _fetchStats() left untouched
+- [Phase 28-dashboard-shell-context-detection 02]: 300ms debounce for active-leaf-change based on agent discretion in CONTEXT.md
+- [Phase 28-dashboard-shell-context-detection 02]: OCR components created in _renderGlobalMode() not _buildPanel() for lean structural shell
+- [Phase 28-dashboard-shell-context-detection 02]: Event refs stored as {event, ref} objects for Obsidian version compatibility
 
 ### Pending Todos
 
@@ -110,6 +114,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-04T06:59:31.370Z
-Stopped at: Completed 28-01-PLAN.md
+Last session: 2026-05-04T15:05:30.000Z
+Stopped at: Completed 28-02-PLAN.md
 Resume file: None

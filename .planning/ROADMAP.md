@@ -38,7 +38,7 @@
 **Milestone Goal:** Make PaperForge's plugin dashboard context-aware—showing different views based on the active file (Base, paper card, or global). Uses pure CSS/DOM components: metric cards, lifecycle stepper, health matrix, maturity gauge, bar charts.
 
 - [x] **Phase 27: Component Library** — Pure CSS/DOM visualization building blocks using Obsidian design tokens (2 plans planned)
-- [ ] **Phase 28: Dashboard Shell & Context Detection** — Auto-detect active file type and switch to correct dashboard mode
+- [x] **Phase 28: Dashboard Shell & Context Detection** — Auto-detect active file type and switch to correct dashboard mode (completed 2026-05-04)
 - [ ] **Phase 29: Per-Paper View** — Lifecycle stepper, health matrix, maturity gauge, and next-step guidance for individual papers
 - [ ] **Phase 30: Collection View** — Domain-level lifecycle/health aggregation for Base files
 
@@ -75,7 +75,7 @@ Plans:
 **Plans**: 2 plans
 Plans:
 - [x] 28-01-PLAN.md — Index utilities (load/cache/lookup) + CSS for mode-aware shell
-- [ ] 28-02-PLAN.md — Context detection, mode switching, event subscriptions, auto-refresh, mode-aware header
+- [x] 28-02-PLAN.md — Context detection, mode switching, event subscriptions, auto-refresh, mode-aware header
 **UI hint**: yes
 
 ### Phase 29: Per-Paper View
@@ -115,7 +115,7 @@ Plans:
 | 25. Surface Convergence, Doctor & Repair | v1.6 | 3/3 | Complete | 2026-05-04 |
 | 26. Traceable AI Context Packs | v1.6 | 3/3 | Complete | 2026-05-04 |
 | 27. Component Library | v1.7 | 2/2 | Complete   | 2026-05-04 |
-| 28. Dashboard Shell & Context Detection | v1.7 | 1/2 | In Progress|  |
+| 28. Dashboard Shell & Context Detection | v1.7 | 2/2 | Complete   | 2026-05-04 |
 | 29. Per-Paper View | v1.7 | 0/TBD | Not started | - |
 | 30. Collection View | v1.7 | 0/TBD | Not started | - |
 
