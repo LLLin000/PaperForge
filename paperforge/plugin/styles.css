@@ -104,7 +104,7 @@
     text-align: center;
     position: relative;
     overflow: hidden;
-    transition: border-color 0.15s;
+    transition: border-color 0.15s, opacity 0.3s;
 }
 
 .paperforge-metric-card::before {
@@ -128,6 +128,7 @@
     line-height: 1.1;
     color: var(--text-normal);
     letter-spacing: -0.5px;
+    transition: opacity 0.3s;
 }
 
 .paperforge-metric-label {
@@ -140,6 +141,22 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+/* Optional progress bar inside metric card (D-05) */
+.paperforge-metric-progress {
+    margin-top: 10px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--background-modifier-border);
+    overflow: hidden;
+}
+
+.paperforge-metric-progress-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: var(--metric-color, var(--interactive-accent));
+    transition: width 0.3s;
 }
 
 /* ==========================================================================
@@ -655,4 +672,56 @@
 @keyframes paperforge-pulse {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.4; }
+}
+
+/* ==========================================================================
+   SECTION 7 — Loading Skeleton & Empty States
+   ========================================================================== */
+.paperforge-loading {
+    position: relative;
+    overflow: hidden;
+}
+
+.paperforge-loading > * {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.paperforge-loading::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.08) 50%,
+        transparent 100%
+    );
+    background-size: 200% 100%;
+    animation: paperforge-shimmer 1.5s ease-in-out infinite;
+    pointer-events: none;
+}
+
+@keyframes paperforge-shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* Dark mode adjustment: lighter shimmer is slightly dimmer */
+.theme-dark .paperforge-loading::after {
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.04) 50%,
+        transparent 100%
+    );
+    background-size: 200% 100%;
+}
+
+.paperforge-empty-state {
+    text-align: center;
+    padding: 24px 12px;
+    color: var(--text-muted);
+    font-size: var(--font-ui-small);
+    font-style: italic;
 }
