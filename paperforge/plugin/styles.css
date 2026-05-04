@@ -928,3 +928,121 @@
     pointer-events: none;
     z-index: 100;
 }
+
+/* ==========================================================================
+   SECTION 11 — Maturity Gauge
+   ========================================================================== */
+.paperforge-maturity-gauge {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.paperforge-maturity-gauge .gauge-track {
+    display: flex;
+    gap: 4px;
+    height: 16px;
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--background-modifier-border);
+}
+
+.paperforge-maturity-gauge .gauge-segment {
+    flex: 1;
+    height: 100%;
+    border-radius: 2px;
+    background: var(--background-modifier-border);
+    transition: background 0.3s;
+}
+
+.paperforge-maturity-gauge .gauge-segment.filled {
+    background: var(--interactive-accent);
+}
+
+/* Gradient variant: each filled segment gets progressively richer color */
+.paperforge-maturity-gauge .gauge-segment.filled.level-1 { background: var(--color-cyan); }
+.paperforge-maturity-gauge .gauge-segment.filled.level-2 { background: var(--color-blue); }
+.paperforge-maturity-gauge .gauge-segment.filled.level-3 { background: var(--color-purple); }
+.paperforge-maturity-gauge .gauge-segment.filled.level-4 { background: var(--color-green); }
+.paperforge-maturity-gauge .gauge-segment.filled.level-5 { background: var(--color-yellow); }
+.paperforge-maturity-gauge .gauge-segment.filled.level-6 { background: var(--color-red); }
+
+.paperforge-maturity-gauge .gauge-level {
+    font-size: var(--font-ui-medium);
+    font-weight: var(--font-bold);
+    color: var(--text-normal);
+    text-align: center;
+}
+
+.paperforge-maturity-gauge .gauge-blockers {
+    list-style: disc;
+    padding-left: 20px;
+    margin: 4px 0 0;
+}
+
+.paperforge-maturity-gauge .gauge-blockers li {
+    font-size: var(--font-ui-smaller);
+    color: var(--text-muted);
+    line-height: 1.5;
+}
+
+/* ==========================================================================
+   SECTION 12 — Bar Chart
+   ========================================================================== */
+.paperforge-bar-chart {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 4px 0;
+}
+
+.paperforge-bar-chart .bar-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.paperforge-bar-chart .bar-label {
+    font-size: var(--font-ui-smaller);
+    color: var(--text-muted);
+    flex: 0 0 90px;
+    text-align: right;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-weight: var(--font-medium);
+}
+
+.paperforge-bar-chart .bar-track {
+    flex: 1;
+    height: 20px;
+    border-radius: 4px;
+    background: var(--background-modifier-border);
+    overflow: hidden;
+    position: relative;
+}
+
+.paperforge-bar-chart .bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    background: var(--interactive-accent);
+    transition: width 0.3s;
+    min-width: 2px;
+}
+
+.paperforge-bar-chart .bar-count {
+    font-size: var(--font-ui-smaller);
+    font-weight: var(--font-bold);
+    color: var(--text-normal);
+    flex: 0 0 30px;
+    text-align: left;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Color variants for bar fills based on lifecycle stage */
+.paperforge-bar-chart .bar-fill.stage-imported { background: var(--color-cyan); }
+.paperforge-bar-chart .bar-fill.stage-indexed { background: var(--color-blue); }
+.paperforge-bar-chart .bar-fill.stage-pdf-ready { background: var(--color-purple); }
+.paperforge-bar-chart .bar-fill.stage-fulltext-ready { background: var(--color-green); }
+.paperforge-bar-chart .bar-fill.stage-deep-read { background: var(--color-yellow); }
+.paperforge-bar-chart .bar-fill.stage-ai-ready { background: var(--color-red); }
