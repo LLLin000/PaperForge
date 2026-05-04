@@ -74,7 +74,7 @@ Plans:
    5. When `formal-library.json` is modified externally (by sync/ocr/repair workers) → dashboard detects the change within 2 seconds and refreshes the current view with updated data, preserving the current mode.
 **Plans**: 2 plans
 Plans:
-- [ ] 28-01-PLAN.md — Index utilities (load/cache/lookup) + CSS for mode-aware shell
+- [x] 28-01-PLAN.md — Index utilities (load/cache/lookup) + CSS for mode-aware shell
 - [ ] 28-02-PLAN.md — Context detection, mode switching, event subscriptions, auto-refresh, mode-aware header
 **UI hint**: yes
 
@@ -115,7 +115,7 @@ Plans:
 | 25. Surface Convergence, Doctor & Repair | v1.6 | 3/3 | Complete | 2026-05-04 |
 | 26. Traceable AI Context Packs | v1.6 | 3/3 | Complete | 2026-05-04 |
 | 27. Component Library | v1.7 | 2/2 | Complete   | 2026-05-04 |
-| 28. Dashboard Shell & Context Detection | v1.7 | 2/2 | Planned | - |
+| 28. Dashboard Shell & Context Detection | v1.7 | 1/2 | In Progress|  |
 | 29. Per-Paper View | v1.7 | 0/TBD | Not started | - |
 | 30. Collection View | v1.7 | 0/TBD | Not started | - |
 
