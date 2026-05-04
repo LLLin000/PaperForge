@@ -210,6 +210,30 @@ def build_parser() -> argparse.ArgumentParser:
     doctor_parser = ocr_sub.add_parser("doctor", help="Diagnose OCR configuration and connectivity")
     doctor_parser.add_argument("--live", action="store_true", help="Run live PDF test (L4)")
 
+    # context (Phase 26: traceable AI context packs)
+    p_context = sub.add_parser("context", help="Generate traceable AI context pack for paper(s)")
+    p_context.add_argument(
+        "key",
+        nargs="?",
+        metavar="KEY",
+        help="Zotero citation key for a single paper (outputs single JSON object)",
+    )
+    p_context.add_argument(
+        "--domain",
+        metavar="DOMAIN",
+        help="Filter by domain (outputs JSON array)",
+    )
+    p_context.add_argument(
+        "--collection",
+        metavar="PATH",
+        help="Filter by collection path (prefix match, outputs JSON array)",
+    )
+    p_context.add_argument(
+        "--all",
+        action="store_true",
+        help="Output all entries in the canonical index (JSON array)",
+    )
+
     # base-refresh
     p_base = sub.add_parser("base-refresh", help="Refresh Obsidian Base view files")
     p_base.add_argument(
@@ -400,6 +424,11 @@ def main(argv: list[str] | None = None) -> int:
         from paperforge.commands import deep
 
         return deep.run(args)
+
+    if args.command == "context":
+        from paperforge.commands import context
+
+        return context.run(args)
 
     if args.command == "repair":
         from paperforge.commands import repair
