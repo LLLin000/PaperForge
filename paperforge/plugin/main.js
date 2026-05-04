@@ -229,11 +229,36 @@ class PaperForgeStatusView extends ItemView {
         this._modeSubscribers = [];     // reused by both workspace and vault events
         this._leafChangeTimer = null;   // debounce timer for active-leaf-change
 
+        // Subscribe to file change events (D-08, D-09)
+        this._setupEventSubscriptions();
+
         // Initial data load per D-10
         this._detectAndSwitch();
     }
 
-    onClose() { /* no-op */ }
+    onClose() {
+        // Unsubscribe from all event subscriptions (D-08, D-09)
+        if (this._modeSubscribers && this._modeSubscribers.length > 0) {
+            for (const sub of this._modeSubscribers) {
+                if (sub.event === 'active-leaf-change') {
+                    this.app.workspace.off('active-leaf-change', sub.ref);
+                } else if (sub.event === 'modify') {
+                    this.app.vault.off('modify', sub.ref);
+                }
+            }
+            this._modeSubscribers = [];
+        }
+
+        // Clear debounce timer
+        if (this._leafChangeTimer) {
+            clearTimeout(this._leafChangeTimer);
+            this._leafChangeTimer = null;
+        }
+
+        // Clear cached data
+        this._cachedItems = null;
+        this._cachedStats = null;
+    }
 
     /* ---------------------------------------------------------------------- */
     /*  Build Panel                                                           */
@@ -971,6 +996,76 @@ class PaperForgeStatusView extends ItemView {
             this._messageEl.setText(msg);
             this._messageEl.className = `paperforge-message msg-${cls}`;
         }
+    }
+
+    /* ── Mode-Aware Header (D-07) ── */
+    _renderModeHeader(mode) {
+        this._modeContextEl.empty();
+
+        // Build mode badge
+        const badge = this._modeContextEl.createEl('span', { cls: 'paperforge-mode-badge' });
+        let modeName = '';
+
+        switch (mode) {
+            case 'global':
+                badge.addClass('global');
+                badge.setText('Global');
+                this._headerTitle.setText('PaperForge');
+                break;
+
+            case 'paper':
+                badge.addClass('paper');
+                badge.setText('Paper');
+                if (this._currentPaperEntry && this._currentPaperEntry.title) {
+                    modeName = this._currentPaperEntry.title;
+                } else if (this._currentPaperKey) {
+                    modeName = this._currentPaperKey;
+                    // Show warning if entry not found (D-18)
+                    this._modeContextEl.createEl('span', {
+                        cls: 'paperforge-mode-warning',
+                        text: 'Not found in index',
+                    });
+                } else {
+                    modeName = 'Unknown paper';
+                }
+                this._headerTitle.setText(modeName);
+                break;
+
+            case 'collection':
+                badge.addClass('collection');
+                badge.setText('Collection');
+                modeName = this._currentDomain || 'Unknown Domain';
+                this._headerTitle.setText(modeName);
+                break;
+        }
+
+        if (modeName) {
+            this._modeContextEl.createEl('span', {
+                cls: 'paperforge-mode-name',
+                text: modeName,
+            });
+        }
+    }
+
+    /* ── Event Subscriptions (D-08, D-09, D-19) ── */
+    _setupEventSubscriptions() {
+        // D-08: Active leaf change -- debounced with 300ms delay
+        const leafHandler = this.app.workspace.on('active-leaf-change', () => {
+            clearTimeout(this._leafChangeTimer);
+            this._leafChangeTimer = setTimeout(() => {
+                this._detectAndSwitch();
+            }, 300);
+        });
+        this._modeSubscribers.push({ event: 'active-leaf-change', ref: leafHandler });
+
+        // D-09: File modification -- filter to formal-library.json only
+        const modifyHandler = this.app.vault.on('modify', (file) => {
+            if (file && file.path && file.path.endsWith('formal-library.json')) {
+                this._invalidateIndex();  // D-14: invalidate cache
+                this._refreshCurrentMode();
+            }
+        });
+        this._modeSubscribers.push({ event: 'modify', ref: modifyHandler });
     }
 
     /* ── Static: open or reveal view ── */
