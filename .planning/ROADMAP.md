@@ -81,7 +81,11 @@ Plans:
   3. User can see a recommended next step for a paper or collection, such as `sync`, `ocr`, `repair`, `/pf-deep`, or rebuild index.
   4. User can trust that readiness states are computed from source artifacts rather than hand-edited status fields.
   5. User can see a transparent maturity/workflow level with explainable criteria instead of a black-box score.
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 24-01-PLAN.md — Pure derivation functions: compute_lifecycle, compute_health, compute_maturity, compute_next_step (TDD)
+- [ ] 24-02-PLAN.md — Integration wiring: embed derived state fields in canonical index entries
 
 ### Phase 25: Surface Convergence, Doctor & Repair
 **Goal**: Users see one consistent library-state model across `paperforge status`, doctor/repair flows, plugin dashboard, and generated Base views, with migration-safe repair paths.
@@ -115,7 +119,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 22. Configuration Truth & Compatibility | 3/3 | Complete   | 2026-05-03 |
 | 23. Canonical Asset Index & Safe Rebuilds | 3/3 | Complete   | 2026-05-03 |
-| 24. Derived Lifecycle, Health & Maturity | 0/TBD | Not started | - |
+| 24. Derived Lifecycle, Health & Maturity | 0/2 | Planned | - |
 | 25. Surface Convergence, Doctor & Repair | 0/TBD | Not started | - |
 | 26. Traceable AI Context Packs | 0/TBD | Not started | - |
 
