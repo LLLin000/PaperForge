@@ -466,3 +466,97 @@ def refresh_index_entry(vault: Path, key: str) -> bool:
     atomic_write_index(index_path, envelope)
     logger.info("refresh_index_entry: updated entry %s (%s)", key, found_domain)
     return True
+
+
+# ---------------------------------------------------------------------------
+# Index summarization  (Phase 25: consumed by status --json and doctor)
+# ---------------------------------------------------------------------------
+
+
+def summarize_index(vault: Path) -> dict | None:
+    """Read the canonical index and return summary aggregates.
+
+    Returns a dict with lifecycle counts, per-dimension health counts,
+    and maturity distribution — or ``None`` if the index is missing,
+    corrupt, or in legacy bare-list format.
+
+    The caller (``status.py``) handles filesystem fallback when this
+    returns ``None``.
+
+    Return shape::
+
+        {
+            "paper_count": int,
+            "lifecycle_level_counts": {
+                "indexed": int,
+                "pdf_ready": int,
+                "fulltext_ready": int,
+                "deep_read_done": int,
+                "ai_context_ready": int,
+            },
+            "health_aggregate": {
+                "pdf_health": {"healthy": int, "unhealthy": int},
+                "ocr_health": {"healthy": int, "unhealthy": int},
+                "note_health": {"healthy": int, "unhealthy": int},
+                "asset_health": {"healthy": int, "unhealthy": int},
+            },
+            "maturity_distribution": {
+                "1": int, "2": int, "3": int,
+                "4": int, "5": int, "6": int,
+            },
+        }
+    """
+    data = read_index(vault)
+    if data is None:
+        return None
+    if is_legacy_format(data):
+        return None
+
+    items = data.get("items", []) if isinstance(data, dict) else []
+
+    # Pre-seeded empty counts
+    lifecycle_counts: dict[str, int] = {
+        "indexed": 0,
+        "pdf_ready": 0,
+        "fulltext_ready": 0,
+        "deep_read_done": 0,
+        "ai_context_ready": 0,
+    }
+    health_keys = ["pdf_health", "ocr_health", "note_health", "asset_health"]
+    health_agg: dict[str, dict[str, int]] = {
+        k: {"healthy": 0, "unhealthy": 0} for k in health_keys
+    }
+    maturity_dist: dict[str, int] = {str(i): 0 for i in range(1, 7)}
+
+    for entry in items:
+        if not isinstance(entry, dict):
+            continue
+
+        # Lifecycle
+        lc = entry.get("lifecycle", "pdf_ready")
+        if lc in lifecycle_counts:
+            lifecycle_counts[lc] += 1
+        else:
+            lifecycle_counts["pdf_ready"] += 1
+
+        # Health
+        health: dict = entry.get("health", {})
+        for hk in health_keys:
+            val = health.get(hk, "healthy") if isinstance(health, dict) else "healthy"
+            if val == "healthy":
+                health_agg[hk]["healthy"] += 1
+            else:
+                health_agg[hk]["unhealthy"] += 1
+
+        # Maturity
+        maturity: dict = entry.get("maturity", {})
+        level = maturity.get("level", 1) if isinstance(maturity, dict) else 1
+        level_str = str(min(max(int(level), 1), 6))
+        maturity_dist[level_str] += 1
+
+    return {
+        "paper_count": len(items),
+        "lifecycle_level_counts": lifecycle_counts,
+        "health_aggregate": health_agg,
+        "maturity_distribution": maturity_dist,
+    }
