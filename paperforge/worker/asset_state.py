@@ -91,10 +91,11 @@ def compute_health(entry: dict) -> dict[str, str]:
     ocr_health = ocr_messages.get(ocr_status, "OCR pending: run `paperforge ocr`")
 
     # Note health
-    if not note_path:
-        note_health = "Formal note missing: run `paperforge sync` to regenerate"
-    else:
-        note_health = "healthy"
+    note_health = (
+        "Formal note missing: run `paperforge sync` to regenerate"
+        if not note_path
+        else "healthy"
+    )
 
     # Asset health — check all four workspace paths
     workspace_paths = {
