@@ -84,7 +84,7 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 24-01-PLAN.md — Pure derivation functions: compute_lifecycle, compute_health, compute_maturity, compute_next_step (TDD)
+- [x] 24-01-PLAN.md — Pure derivation functions: compute_lifecycle, compute_health, compute_maturity, compute_next_step (TDD)
 - [ ] 24-02-PLAN.md — Integration wiring: embed derived state fields in canonical index entries
 
 ### Phase 25: Surface Convergence, Doctor & Repair
@@ -119,7 +119,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 22. Configuration Truth & Compatibility | 3/3 | Complete   | 2026-05-03 |
 | 23. Canonical Asset Index & Safe Rebuilds | 3/3 | Complete   | 2026-05-03 |
-| 24. Derived Lifecycle, Health & Maturity | 0/2 | Planned | - |
+| 24. Derived Lifecycle, Health & Maturity | 1/2 | In Progress|  |
 | 25. Surface Convergence, Doctor & Repair | 0/TBD | Not started | - |
 | 26. Traceable AI Context Packs | 0/TBD | Not started | - |
 
