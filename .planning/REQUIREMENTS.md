@@ -16,10 +16,10 @@ Requirements for milestone v1.7: Context-Aware Dashboard.
 
 ### Per-Paper Dashboard
 
-- [ ] **PAPER-01**: User sees a lifecycle stepper showing the current state and which stages are complete.
-- [ ] **PAPER-02**: User sees a health matrix (PDF/OCR/Note/Asset dimensions) with color-coded status.
-- [ ] **PAPER-03**: User sees maturity level (1-6) as a segmented progress bar with blocking checks listed.
-- [ ] **PAPER-04**: User sees a recommended next step (sync/ocr/pf-deep/ready) with an action trigger.
+- [x] **PAPER-01**: User sees a lifecycle stepper showing the current state and which stages are complete.
+- [x] **PAPER-02**: User sees a health matrix (PDF/OCR/Note/Asset dimensions) with color-coded status.
+- [x] **PAPER-03**: User sees maturity level (1-6) as a segmented progress bar with blocking checks listed.
+- [x] **PAPER-04**: User sees a recommended next step (sync/ocr/pf-deep/ready) with an action trigger.
 
 ### Collection Dashboard
 
@@ -68,10 +68,10 @@ Deferred to future milestone.
 | DASH-04 | Phase 28 | Complete |
 | REFR-01 | Phase 28 | Complete |
 | REFR-02 | Phase 28 | Complete |
-| PAPER-01 | Phase 29 | Pending |
-| PAPER-02 | Phase 29 | Pending |
-| PAPER-03 | Phase 29 | Pending |
-| PAPER-04 | Phase 29 | Pending |
+| PAPER-01 | Phase 29 | Complete |
+| PAPER-02 | Phase 29 | Complete |
+| PAPER-03 | Phase 29 | Complete |
+| PAPER-04 | Phase 29 | Complete |
 | COLL-01 | Phase 30 | Pending |
 | COLL-02 | Phase 30 | Pending |
 | COLL-03 | Phase 30 | Pending |
