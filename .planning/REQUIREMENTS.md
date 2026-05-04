@@ -59,27 +59,27 @@ Deferred to future milestone.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DASH-01 | Phase [N] | Pending |
-| DASH-02 | Phase [N] | Pending |
-| DASH-03 | Phase [N] | Pending |
-| DASH-04 | Phase [N] | Pending |
-| PAPER-01 | Phase [N] | Pending |
-| PAPER-02 | Phase [N] | Pending |
-| PAPER-03 | Phase [N] | Pending |
-| PAPER-04 | Phase [N] | Pending |
-| COLL-01 | Phase [N] | Pending |
-| COLL-02 | Phase [N] | Pending |
-| COLL-03 | Phase [N] | Pending |
-| COMP-01 | Phase [N] | Pending |
-| COMP-02 | Phase [N] | Pending |
-| COMP-03 | Phase [N] | Pending |
-| REFR-01 | Phase [N] | Pending |
-| REFR-02 | Phase [N] | Pending |
+| COMP-01 | Phase 27 | Pending |
+| COMP-02 | Phase 27 | Pending |
+| COMP-03 | Phase 27 | Pending |
+| DASH-01 | Phase 28 | Pending |
+| DASH-02 | Phase 28 | Pending |
+| DASH-03 | Phase 28 | Pending |
+| DASH-04 | Phase 28 | Pending |
+| REFR-01 | Phase 28 | Pending |
+| REFR-02 | Phase 28 | Pending |
+| PAPER-01 | Phase 29 | Pending |
+| PAPER-02 | Phase 29 | Pending |
+| PAPER-03 | Phase 29 | Pending |
+| PAPER-04 | Phase 29 | Pending |
+| COLL-01 | Phase 30 | Pending |
+| COLL-02 | Phase 30 | Pending |
+| COLL-03 | Phase 30 | Pending |
 
 **Coverage:**
 - v1 requirements: 16 total
-- Mapped to phases: 0
-- Unmapped: 16 ⚠️
+- Mapped to phases: 16
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-05-04*
