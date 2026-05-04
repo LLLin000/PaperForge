@@ -187,6 +187,24 @@ const ACTIONS = [
         cmd: 'repair',
         okMsg: 'Repair complete',
     },
+    {
+        id: 'paperforge-copy-context',
+        title: 'Copy Context',
+        desc: 'Copy this paper\u2019s canonical index entry JSON to clipboard for AI use',
+        icon: '\u2139',  // ℹ
+        cmd: 'context',
+        needsKey: true,
+        okMsg: 'Context copied',
+    },
+    {
+        id: 'paperforge-copy-collection-context',
+        title: 'Copy Collection Context',
+        desc: 'Copy canonical index entries for all visible papers to clipboard',
+        icon: '\u2261',  // ≡
+        cmd: 'context',
+        needsFilter: true,
+        okMsg: 'Collection context copied',
+    },
 ];
 
 class PaperForgeStatusView extends ItemView {
@@ -444,11 +462,53 @@ class PaperForgeStatusView extends ItemView {
 
     /* ── Run Action ── */
     _runAction(a, card) {
+        // Guard: prevent running the same action simultaneously
+        if (card.classList.contains('running')) {
+            return;
+        }
         card.addClass('running');
         const vp = this.app.vault.adapter.basePath;
         this._showMessage('Processing...', 'running');
+
+        // Resolve extra arguments based on action flags
+        let extraArgs = [];
+
+        if (a.needsKey) {
+            // Resolve zotero_key from active file frontmatter
+            const activeFile = this.app.workspace.getActiveFile();
+            let key = null;
+            if (activeFile) {
+                const cache = this.app.metadataCache.getFileCache(activeFile);
+                if (cache && cache.frontmatter && cache.frontmatter.zotero_key) {
+                    key = cache.frontmatter.zotero_key;
+                } else if (cache && cache.frontmatter) {
+                    this._showMessage('[!!] No zotero_key in active note frontmatter', 'error');
+                    new Notice('[!!] Open a paper note with a zotero_key in its frontmatter first', 6000);
+                    card.removeClass('running');
+                    return;
+                } else {
+                    this._showMessage('[!!] No frontmatter in active note', 'error');
+                    new Notice('[!!] The active note has no frontmatter with a zotero_key', 6000);
+                    card.removeClass('running');
+                    return;
+                }
+            } else {
+                this._showMessage('[!!] No active note open', 'error');
+                new Notice('[!!] Open a paper note with a zotero_key in its frontmatter first', 6000);
+                card.removeClass('running');
+                return;
+            }
+            extraArgs = [key];
+        }
+
+        if (a.needsFilter) {
+            // Default to --all for the initial implementation
+            extraArgs = ['--all'];
+        }
+
         const { spawn } = require('node:child_process');
-        const child = spawn('python', ['-m', 'paperforge', a.cmd], { cwd: vp, timeout: 600000 });
+        const cmdTimeout = a.needsFilter ? 60000 : (a.needsKey ? 30000 : 600000);
+        const child = spawn('python', ['-m', 'paperforge', a.cmd, ...extraArgs], { cwd: vp, timeout: cmdTimeout });
         const log = [];
         const startTime = Date.now();
         const pollTimer = setInterval(() => this._fetchStats(true), 4000);
@@ -458,6 +518,62 @@ class PaperForgeStatusView extends ItemView {
                 const clean = l.trim();
                 if (clean) { log.push(clean); this._showMessage(log.slice(-8).join('\n'), 'running'); }
             }
+        });
+        child.stderr.on('data', (data) => {
+            const lines = data.toString('utf-8').split('\n').filter(Boolean);
+            for (const l of lines) {
+                if (l.includes('\r') || l.includes('%') || l.includes('█')) continue;
+                const trim = l.trim();
+                if (trim && !trim.match(/^\d+%|^\|/)) { log.push(trim); this._showMessage(log.slice(-8).join('\n'), 'running'); }
+            }
+        });
+        child.on('close', (code) => {
+            clearInterval(pollTimer);
+            card.removeClass('running');
+            const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+            if (code !== 0) {
+                const last = log.slice(-3).join(' | ') || 'exit code ' + code;
+                this._showMessage('[!!] ' + last, 'error');
+                new Notice('[!!] ' + a.cmd + ' failed: ' + last, 8000);
+            } else if (a.needsKey || a.needsFilter) {
+                // Context actions: copy JSON output to clipboard
+                const output = log.join('\n');
+                if (output.trim()) {
+                    try {
+                        JSON.parse(output);
+                        navigator.clipboard.writeText(output).then(() => {
+                            const summary = `${elapsed}s \u2014 ${output.length} chars copied`;
+                            this._showMessage('[OK] ' + a.title + ': ' + summary, 'ok');
+                            new Notice('[OK] ' + a.okMsg + ' \u2014 ' + output.length + ' chars');
+                        }).catch((err) => {
+                            this._showMessage('[!!] Clipboard write failed: ' + err.message, 'error');
+                            new Notice('[!!] Clipboard error', 6000);
+                        });
+                    } catch (e) {
+                        this._showMessage('[!!] Invalid JSON from ' + a.title, 'error');
+                        new Notice('[!!] ' + a.title + ' returned invalid JSON: ' + e.message.slice(0, 100), 8000);
+                    }
+                } else {
+                    this._showMessage('[!!] No output from context command', 'error');
+                    new Notice('[!!] Context command returned empty output', 8000);
+                }
+                this._fetchStats(true);
+            } else {
+                // Existing actions (sync, ocr, doctor, repair): build summary from log lines
+                const updated = log.filter(l => l.match(/updated \d+/));
+                const lastUpdated = updated.pop() || log[log.length - 1] || '';
+                const summary = `${elapsed}s \u2014 ${lastUpdated}`;
+                this._showMessage('[OK] ' + a.title + ': ' + summary, 'ok');
+                new Notice('[OK] ' + a.okMsg);
+                this._fetchStats(true);
+            }
+        });
+        child.on('error', (err) => {
+            card.removeClass('running');
+            this._showMessage('[!!] ' + err.message, 'error');
+            new Notice('[!!] Cannot start: ' + err.message, 8000);
+        });
+    }
         });
         child.stderr.on('data', (data) => {
             const lines = data.toString('utf-8').split('\n').filter(Boolean);
@@ -1100,6 +1216,40 @@ module.exports = class PaperForgePlugin extends Plugin {
                 },
             });
         }
+
+        /* ── Command palette: context actions (use view\u2019s _runAction for key resolution) ── */
+        this.addCommand({
+            id: 'paperforge-copy-context',
+            name: 'Copy Context: Copy active paper\u2019s index entry JSON to clipboard',
+            callback: () => {
+                const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_PAPERFORGE);
+                if (leaves.length > 0 && leaves[0].view instanceof PaperForgeStatusView) {
+                    const action = ACTIONS.find(a => a.id === 'paperforge-copy-context');
+                    if (action) {
+                        const tempCard = document.createElement('div');
+                        leaves[0].view._runAction(action, tempCard);
+                    }
+                } else {
+                    new Notice('[!!] Open PaperForge Dashboard first (click sidebar icon)', 5000);
+                }
+            },
+        });
+        this.addCommand({
+            id: 'paperforge-copy-collection-context',
+            name: 'Copy Collection Context: Copy all canonical index entries to clipboard',
+            callback: () => {
+                const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_PAPERFORGE);
+                if (leaves.length > 0 && leaves[0].view instanceof PaperForgeStatusView) {
+                    const action = ACTIONS.find(a => a.id === 'paperforge-copy-collection-context');
+                    if (action) {
+                        const tempCard = document.createElement('div');
+                        leaves[0].view._runAction(action, tempCard);
+                    }
+                } else {
+                    new Notice('[!!] Open PaperForge Dashboard first (click sidebar icon)', 5000);
+                }
+            },
+        });
 
         /* ── Auto-update PaperForge (deferred — don't slow startup) ── */
         if (this.settings.auto_update !== false) {
