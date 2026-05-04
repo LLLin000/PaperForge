@@ -37,7 +37,7 @@
 
 **Milestone Goal:** Make PaperForge's plugin dashboard context-aware—showing different views based on the active file (Base, paper card, or global). Uses pure CSS/DOM components: metric cards, lifecycle stepper, health matrix, maturity gauge, bar charts.
 
-- [ ] **Phase 27: Component Library** — Pure CSS/DOM visualization building blocks using Obsidian design tokens
+- [x] **Phase 27: Component Library** — Pure CSS/DOM visualization building blocks using Obsidian design tokens (2 plans planned)
 - [ ] **Phase 28: Dashboard Shell & Context Detection** — Auto-detect active file type and switch to correct dashboard mode
 - [ ] **Phase 29: Per-Paper View** — Lifecycle stepper, health matrix, maturity gauge, and next-step guidance for individual papers
 - [ ] **Phase 30: Collection View** — Domain-level lifecycle/health aggregation for Base files
@@ -51,12 +51,15 @@
 **Depends on**: Phase 26 (canonical index exists, dashboard ItemView exists)
 **Requirements**: COMP-01, COMP-02, COMP-03
 **Success Criteria** (what must be TRUE):
-  1. Metric card component renders key counts (papers, domains, formal notes) using Obsidian CSS variables, adapts to light/dark theme, and shows a loading skeleton while data is pending.
-  2. Lifecycle stepper component renders stage markers (imported → fulltext_ready → deep_read_done → ai_context_ready) with the current stage highlighted and completed stages visually marked, responsive across sidebar and full-width breakpoints.
-  3. Health matrix component renders a 4-dimension grid (PDF, OCR, Note, Asset) with color-coded cells (green/yellow/red) and dimension labels visible at all breakpoint sizes.
-  4. Maturity gauge renders as a segmented progress bar (levels 1-6) with level labels on hover/tap and blocking checks listed when level is below 6.
-  5. Bar chart component renders lifecycle distribution from numeric category data as horizontal CSS bars with proportional widths, category labels, and smooth CSS transitions on data change.
-**Plans**: TBD
+   1. Metric card component renders key counts (papers, domains, formal notes) using Obsidian CSS variables, adapts to light/dark theme, and shows a loading skeleton while data is pending.
+   2. Lifecycle stepper component renders stage markers (imported → fulltext_ready → deep_read_done → ai_context_ready) with the current stage highlighted and completed stages visually marked, responsive across sidebar and full-width breakpoints.
+   3. Health matrix component renders a 4-dimension grid (PDF, OCR, Note, Asset) with color-coded cells (green/yellow/red) and dimension labels visible at all breakpoint sizes.
+   4. Maturity gauge renders as a segmented progress bar (levels 1-6) with level labels on hover/tap and blocking checks listed when level is below 6.
+   5. Bar chart component renders lifecycle distribution from numeric category data as horizontal CSS bars with proportional widths, category labels, and smooth CSS transitions on data change.
+**Plans**: 2 plans
+Plans:
+- [x] 27-01-PLAN.md — Component CSS: all 5 components' styling in styles.css (loading skeleton, enhanced metric card, lifecycle stepper, health matrix, maturity gauge, bar chart)
+- [ ] 27-02-PLAN.md — Component JS: all 5 render methods on PaperForgeStatusView (skeleton utility, enhanced _renderStats, lifecycle stepper, health matrix, maturity gauge, bar chart)
 **UI hint**: yes
 
 ### Phase 28: Dashboard Shell & Context Detection
@@ -108,7 +111,7 @@
 | 24. Derived Lifecycle, Health & Maturity | v1.6 | 2/2 | Complete | 2026-05-04 |
 | 25. Surface Convergence, Doctor & Repair | v1.6 | 3/3 | Complete | 2026-05-04 |
 | 26. Traceable AI Context Packs | v1.6 | 3/3 | Complete | 2026-05-04 |
-| 27. Component Library | v1.7 | 0/TBD | Not started | - |
+| 27. Component Library | v1.7 | 1/2 | In Progress|  |
 | 28. Dashboard Shell & Context Detection | v1.7 | 0/TBD | Not started | - |
 | 29. Per-Paper View | v1.7 | 0/TBD | Not started | - |
 | 30. Collection View | v1.7 | 0/TBD | Not started | - |

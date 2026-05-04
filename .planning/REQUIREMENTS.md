@@ -29,9 +29,9 @@ Requirements for milestone v1.7: Context-Aware Dashboard.
 
 ### Component Library
 
-- [ ] **COMP-01**: All dashboard visualizations use pure CSS/DOM (metric cards, lifecycle stepper, health matrix, maturity gauge, bar charts). No npm dependencies.
-- [ ] **COMP-02**: Components use Obsidian CSS variables for consistent theming.
-- [ ] **COMP-03**: Components have loading states, CSS transitions, and responsive breakpoints.
+- [x] **COMP-01**: All dashboard visualizations use pure CSS/DOM (metric cards, lifecycle stepper, health matrix, maturity gauge, bar charts). No npm dependencies.
+- [x] **COMP-02**: Components use Obsidian CSS variables for consistent theming.
+- [x] **COMP-03**: Components have loading states, CSS transitions, and responsive breakpoints.
 
 ### Auto-Refresh
 
@@ -59,9 +59,9 @@ Deferred to future milestone.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| COMP-01 | Phase 27 | Pending |
-| COMP-02 | Phase 27 | Pending |
-| COMP-03 | Phase 27 | Pending |
+| COMP-01 | Phase 27 | Complete |
+| COMP-02 | Phase 27 | Complete |
+| COMP-03 | Phase 27 | Complete |
 | DASH-01 | Phase 28 | Pending |
 | DASH-02 | Phase 28 | Pending |
 | DASH-03 | Phase 28 | Pending |
