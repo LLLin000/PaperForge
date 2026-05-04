@@ -32,7 +32,7 @@ v1.6 turns PaperForge's existing sync, OCR, deep-reading, status, plugin, and `f
 - [x] **Phase 23: Canonical Asset Index & Safe Rebuilds** - Upgrade `formal-library.json` into a rebuildable, atomic, per-paper asset index. (completed 2026-05-03)
 - [x] **Phase 24: Derived Lifecycle, Health & Maturity** - Compute readiness, health findings, maturity, and next steps from source artifacts. (completed 2026-05-04)
 - [x] **Phase 25: Surface Convergence, Doctor & Repair** - Make status, plugin dashboard, Base views, doctor, and repair consume the same canonical semantics. (completed 2026-05-04)
-- [ ] **Phase 26: Traceable AI Context Packs** - Generate explainable paper and collection context packs from canonical assets.
+- [x] **Phase 26: Traceable AI Context Packs** - Generate explainable paper and collection context packs from canonical assets. (completed 2026-05-04)
 
 ## Phase Details
 
@@ -119,7 +119,7 @@ Plans:
 Plans:
 - [x] 26-01-PLAN.md — Flat-to-workspace note migration (copy flat notes, split deep-reading, _build_entry workspace write)
 - [x] 26-02-PLAN.md — CLI `paperforge context` command (key/domain/collection/all modes, provenance, AI readiness explanation)
-- [ ] 26-03-PLAN.md — Plugin Copy Context buttons (per-paper and collection-level clipboard JSON output)
+- [x] 26-03-PLAN.md — Plugin Copy Context buttons (per-paper and collection-level clipboard JSON output)
 
 ## Progress
 
@@ -131,7 +131,7 @@ Plans:
 | 23. Canonical Asset Index & Safe Rebuilds | 3/3 | Complete   | 2026-05-03 |
 | 24. Derived Lifecycle, Health & Maturity | 2/2 | Complete   | 2026-05-04 |
 | 25. Surface Convergence, Doctor & Repair | 3/3 | Complete   | 2026-05-04 |
-| 26. Traceable AI Context Packs | 2/3 | In Progress|  |
+| 26. Traceable AI Context Packs | 3/3 | Complete   | 2026-05-04 |
 
 ---
 
