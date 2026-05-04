@@ -395,6 +395,94 @@ def run_doctor(vault: Path, verbose: bool = False) -> int:
     else:
         add_check("Agent 脚本", "warn", "literature-qa skill 目录未找到", "确认 agent_config_dir 配置正确")
 
+    # --- Index Health section (Phase 25: derived from canonical index) ---
+    try:
+        from paperforge.worker.asset_index import read_index as _read_idx, summarize_index as _summarize_idx
+
+        _summary = _summarize_idx(vault)
+    except Exception:
+        _summary = None
+
+    if _summary and _summary.get("paper_count", 0) > 0:
+        _health = _summary.get("health_aggregate", {})
+
+        def _health_status(dim: dict) -> tuple[str, str]:
+            healthy = dim.get("healthy", 0)
+            unhealthy = dim.get("unhealthy", 0)
+            total = healthy + unhealthy
+            if total == 0:
+                return ("pass", "0 papers")
+            if unhealthy == 0:
+                return ("pass", f"{healthy}/{total} healthy")
+            if healthy == 0:
+                return ("fail", f"0/{total} healthy -- run doctor/repair")
+            return ("warn", f"{healthy}/{total} healthy, {unhealthy} issues")
+
+        for _dim_name, _dim_key in [
+            ("PDF Health", "pdf_health"),
+            ("OCR Health", "ocr_health"),
+            ("Note Health", "note_health"),
+            ("Asset Health", "asset_health"),
+        ]:
+            _dim = _health.get(_dim_key, {})
+            if not isinstance(_dim, dict):
+                _dim = {"healthy": 0, "unhealthy": 0}
+            _st, _msg = _health_status(_dim)
+            add_check("Index Health", _st, f"{_dim_name}: {_msg}")
+
+        # Brownfield migration detection (MIG-01, MIG-03)
+        _idx_data = _read_idx(vault)
+        if isinstance(_idx_data, dict):
+            _sv = _idx_data.get("schema_version", "0")
+            try:
+                if int(_sv) < 2:
+                    add_check(
+                        "Index Health", "warn",
+                        f"Legacy index schema v{_sv} -- consider rebuild to v2",
+                        "Run `paperforge sync --rebuild-index`",
+                    )
+            except (ValueError, TypeError):
+                pass
+
+        # Legacy Base templates (pre-lifecycle format)
+        _bases_dir = paths.get("bases")
+        if _bases_dir and _bases_dir.exists():
+            _legacy = 0
+            for _bp in _bases_dir.glob("*.base"):
+                try:
+                    _content = _bp.read_text(encoding="utf-8")
+                    if "has_pdf" in _content and "lifecycle" not in _content:
+                        _legacy += 1
+                except Exception:
+                    continue
+            if _legacy > 0:
+                add_check(
+                    "Index Health", "warn",
+                    f"{_legacy} Base file(s) use legacy columns (has_pdf, do_ocr) instead of lifecycle",
+                    "Run `paperforge sync` to regenerate Base views",
+                )
+
+        # Partial OCR assets
+        _ocr_dir = paths.get("ocr")
+        if _ocr_dir and _ocr_dir.exists():
+            _partial = 0
+            for _mp in _ocr_dir.glob("*/meta.json"):
+                try:
+                    _meta = json.loads(_mp.read_text(encoding="utf-8"))
+                    _os = str(_meta.get("ocr_status", "")).strip().lower()
+                    if _os == "done_incomplete":
+                        _partial += 1
+                except Exception:
+                    continue
+            if _partial > 0:
+                add_check(
+                    "Index Health", "warn",
+                    f"{_partial} partial OCR asset(s) found",
+                    "Re-run `paperforge ocr` on affected items",
+                )
+    else:
+        add_check("Index Health", "info", "No canonical index -- run `paperforge sync` to generate")
+
     print("PaperForge Doctor")
     print("=" * 40)
     current_category = ""
@@ -404,7 +492,7 @@ def run_doctor(vault: Path, verbose: bool = False) -> int:
             if current_category:
                 print()
             current_category = category
-        status_tag = {"pass": "[PASS]", "fail": "[FAIL]", "warn": "[WARN]"}[status]
+        status_tag = {"pass": "[PASS]", "fail": "[FAIL]", "warn": "[WARN]", "info": "[INFO]"}.get(status, "[INFO]")
         print(f"{status_tag} {category} — {message}")
         if status == "fail" and fix:
             fix_map.setdefault(category, [])
@@ -447,6 +535,14 @@ def run_status(vault: Path, verbose: bool = False, json_output: bool = False) ->
     paths = pipeline_paths(vault)
     cfg = load_vault_config(vault)
     config = load_domain_config(paths)
+
+    # Phase 25: read canonical index summary (falls back gracefully)
+    try:
+        from paperforge.worker.asset_index import summarize_index
+
+        summary = summarize_index(vault)
+    except Exception:
+        summary = None
     ensure_base_views(vault, paths, config)
     export_files = sorted(paths["exports"].glob("*.json"))
     record_count = sum(1 for _ in paths["library_records"].rglob("*.md")) if paths["library_records"].exists() else 0
@@ -524,6 +620,15 @@ def run_status(vault: Path, verbose: bool = False, json_output: bool = False) ->
             except Exception:
                 continue
 
+    # Phase 25: index-derived aggregates (None when index unavailable)
+    lifecycle_level_counts = None
+    health_aggregate = None
+    maturity_distribution = None
+    if summary is not None:
+        lifecycle_level_counts = summary["lifecycle_level_counts"]
+        health_aggregate = summary["health_aggregate"]
+        maturity_distribution = summary["maturity_distribution"]
+
     if json_output:
         data = {
             "version": __import__("paperforge").__version__,
@@ -544,6 +649,10 @@ def run_status(vault: Path, verbose: bool = False, json_output: bool = False) ->
             },
             "path_errors": path_error_count,
             "env_configured": len(env_found) > 0,
+            # Phase 25: lifecycle/health/maturity from canonical index (None when unavailable)
+            "lifecycle_level_counts": lifecycle_level_counts,
+            "health_aggregate": health_aggregate,
+            "maturity_distribution": maturity_distribution,
         }
         print(_json.dumps(data, indent=2, ensure_ascii=False))
         return 0
@@ -559,6 +668,18 @@ def run_status(vault: Path, verbose: bool = False, json_output: bool = False) ->
     print(f"- library_records: {record_count}")
     print(f"- formal_notes: {note_count}")
     print(f"- bases: {base_count}")
+    # Phase 25: index section (only when canonical index available)
+    if summary is not None:
+        lc = lifecycle_level_counts
+        print(f"- index: {summary['paper_count']} papers")
+        print(f"  lifecycle: indexed={lc['indexed']} pdf_ready={lc['pdf_ready']} "
+              f"fulltext_ready={lc['fulltext_ready']} deep_read={lc['deep_read_done']} "
+              f"ai_ready={lc['ai_context_ready']}")
+        ha = health_aggregate
+        print(f"  health: pdf={ha['pdf_health']['healthy']}/{ha['pdf_health']['unhealthy']} "
+              f"ocr={ha['ocr_health']['healthy']}/{ha['ocr_health']['unhealthy']} "
+              f"note={ha['note_health']['healthy']}/{ha['note_health']['unhealthy']} "
+              f"asset={ha['asset_health']['healthy']}/{ha['asset_health']['unhealthy']}")
     print(f"- ocr: {ocr_done}/{ocr_total} done (pending: {ocr_pending}, processing: {ocr_processing}, failed: {ocr_failed})")
     print(f"- path_errors: {path_error_count}")
     if path_error_count > 0:
