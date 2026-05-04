@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.6
 milestone_name: AI-Ready Literature Asset Foundation
 status: Phase complete — ready for verification
-stopped_at: Completed 24-01-PLAN.md
-last_updated: "2026-05-04T02:38:22.553Z"
+stopped_at: Completed 25-02-PLAN.md
+last_updated: "2026-05-04T03:25:20.939Z"
 progress:
   total_phases: 5
-  completed_phases: 2
-  total_plans: 9
-  completed_plans: 7
+  completed_phases: 3
+  total_plans: 12
+  completed_plans: 9
 ---
 
 # Project State
@@ -53,6 +53,8 @@ Plan: 3 of 3
 | Phase 23-canonical-asset-index-safe-rebuilds P01 | 7 min | 3 tasks | 3 files |
 | Phase 23-canonical-asset-index-safe-rebuilds P02 | 5 min | 3 tasks | 4 files |
 | Phase 23-canonical-asset-index-safe-rebuilds P03 | 8 min | 4 tasks | 5 files |
+| Phase 24-derived-lifecycle-health-maturity P02 | 25min | 3 tasks | 2 files |
+| Phase 25-surface-convergence-doctor-repair P02 | 2min | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -70,6 +72,9 @@ Recent decisions affecting current work:
 - [Phase 23-canonical-asset-index-safe-rebuilds]: Lazy imports inside build_index avoid circular import between sync.py and asset_index.py
 - [Phase 23-canonical-asset-index-safe-rebuilds]: Orphaned-record cleanup stays in sync.py; only the core build loop moves to asset_index
 - [Phase 23-canonical-asset-index-safe-rebuilds]: OCR captures done keys before queue filter to pass to incremental refresh; deep-reading refreshes ALL records; repair triggers refresh for path and divergence fixes; run_index_refresh keeps full-rebuild default; incremental is opt-in from single-paper workers
+- [Phase 24-derived-lifecycle-health-maturity]: Lazy import of asset_state functions inside _build_entry() follows existing pattern — avoids circular dependency risk with sync.py — Same pattern already used for ocr.py and sync.py imports in _build_entry()
+- [Phase 24-derived-lifecycle-health-maturity]: Derived fields inserted after entry dict construction but before formal note write — keeps machine-only fields out of user-visible Obsidian note frontmatter — Lifecycle/health/maturity/next_step are machine-derived and should not appear in user-editable markdown frontmatter
+- [Phase 25-surface-convergence-doctor-repair]: Plugin dashboard reads formal-library.json directly via readFileSync instead of spawning Python CLI — SURF-03 per D-05, D-06, D-07: plugin consumes same canonical semantics from canonical index
 
 ### Pending Todos
 
@@ -82,6 +87,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-04T02:38:22.550Z
-Stopped at: Completed 24-01-PLAN.md
+Last session: 2026-05-04T03:25:20.936Z
+Stopped at: Completed 25-02-PLAN.md
 Resume file: None

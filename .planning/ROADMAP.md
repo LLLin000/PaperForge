@@ -102,7 +102,7 @@ Plans:
 
 Plans:
 - [ ] 25-01-PLAN.md — status --json source migration + doctor Index Health + brownfield detection
-- [ ] 25-02-PLAN.md — Plugin dashboard direct JSON read + doctor/repair Quick Actions
+- [x] 25-02-PLAN.md — Plugin dashboard direct JSON read + doctor/repair Quick Actions
 - [ ] 25-03-PLAN.md — Base views lifecycle columns + repair source-first rebuild pattern
 
 ### Phase 26: Traceable AI Context Packs
