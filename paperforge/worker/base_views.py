@@ -178,7 +178,7 @@ def _render_views_section(views: list[dict]) -> str:
         for col in v["order"]:
             lines.append(f"      - {col}")
         if v["filter"]:
-            lines.append(f"    filter: '{v['filter']}'")
+            lines.append(f'    filter: "{v["filter"]}"')
         if v.get("sort"):
             lines.append("    sort:")
             for sort_item in v["sort"]:
@@ -269,7 +269,7 @@ views:
         for col in v["order"]:
             rendered += f"      - {col}\n"
         if v["filter"]:
-            rendered += f"    filter: '{v['filter']}'\n"
+            rendered += f'    filter: "{v["filter"]}"\n'
         else:
             rendered += "\n"
         if v.get("sort"):
@@ -350,7 +350,7 @@ def _build_base_yaml(folder_filter: str, views: list[dict]) -> str:
         for col in v["order"]:
             views_yaml += f"      - {col}\n"
         if v["filter"]:
-            views_yaml += f"    filter: '{v['filter']}'\n"
+            views_yaml += f'    filter: "{v["filter"]}"\n'
         else:
             views_yaml += "\n"
         if v.get("sort"):
