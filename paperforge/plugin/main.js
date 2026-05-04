@@ -952,21 +952,93 @@ class PaperForgeStatusView extends ItemView {
         }
     }
 
-    /* ── Collection Mode Render (placeholder -- Phase 30 fills this in) ── */
+    /* ── Collection Mode Render (Phase 30) ── */
     _renderCollectionMode() {
         const domain = this._currentDomain || 'Unknown';
         const domainItems = this._filterByDomain(domain);
 
-        if (domainItems.length > 0) {
-            this._contentEl.createEl('div', {
-                cls: 'paperforge-content-placeholder',
-                text: 'Collection view for "' + domain + '" -- ' + domainItems.length + ' papers. Phase 30 will add lifecycle distribution bar chart, aggregated health summary, and paper count here.',
-            });
-        } else {
-            this._contentEl.createEl('div', {
-                cls: 'paperforge-content-placeholder',
-                text: 'No papers found in domain "' + domain + '". Sync some papers first.',
-            });
+        const view = this._contentEl.createEl('div', { cls: 'paperforge-collection-view' });
+
+        // --- Empty state ---
+        if (domainItems.length === 0) {
+            this._renderEmptyState(view, 'No papers found in domain "' + domain + '". Sync some papers first.');
+            return;
+        }
+
+        // --- Single-pass aggregation ---
+        const lifecycleCounts = {};
+        const healthAgg = {
+            pdf_health: { healthy: 0, unhealthy: 0 },
+            ocr_health: { healthy: 0, unhealthy: 0 },
+            note_health: { healthy: 0, unhealthy: 0 },
+            asset_health: { healthy: 0, unhealthy: 0 },
+        };
+        let fulltextReady = 0;
+        let deepRead = 0;
+
+        for (const item of domainItems) {
+            const lifecycle = item.lifecycle || 'pdf_ready';
+            lifecycleCounts[lifecycle] = (lifecycleCounts[lifecycle] || 0) + 1;
+
+            if (['fulltext_ready', 'deep_read', 'ai_ready'].includes(lifecycle)) fulltextReady++;
+            if (['deep_read', 'ai_ready'].includes(lifecycle)) deepRead++;
+
+            const health = item.health || {};
+            for (const dim of ['pdf_health', 'ocr_health', 'note_health', 'asset_health']) {
+                const val = health[dim] || 'healthy';
+                if (val === 'healthy') healthAgg[dim].healthy++;
+                else healthAgg[dim].unhealthy++;
+            }
+        }
+
+        // --- Metric cards row (D-03) ---
+        const metrics = view.createEl('div', { cls: 'paperforge-collection-metrics' });
+        const totalPapers = domainItems.length;
+
+        const metricCards = [
+            { value: totalPapers, label: 'Papers', color: 'var(--color-cyan)', barMax: 0 },
+            { value: fulltextReady, label: 'Fulltext Ready', color: 'var(--color-green)', barMax: totalPapers },
+            { value: deepRead, label: 'Deep Read', color: 'var(--color-yellow)', barMax: totalPapers },
+        ];
+        for (const m of metricCards) {
+            const card = metrics.createEl('div', { cls: 'paperforge-metric-card' });
+            card.style.setProperty('--metric-color', m.color);
+            card.createEl('div', { cls: 'paperforge-metric-value', text: (m.value)?.toString() || '\u2014' });
+            card.createEl('div', { cls: 'paperforge-metric-label', text: m.label });
+            if (m.barMax > 0) {
+                this._buildMetricBar(card, m.value, m.barMax);
+            }
+        }
+
+        // --- Lifecycle distribution bar chart (D-04) ---
+        this._renderBarChart(view, lifecycleCounts);
+
+        // --- Health overview (D-05) ---
+        this._renderCollectionHealth(view, healthAgg);
+    }
+
+    /* ── Collection Health Overview (Phase 30, D-05) ── */
+    _renderCollectionHealth(container, healthAgg) {
+        if (!healthAgg) return;
+
+        const dimensions = [
+            { key: 'pdf_health', label: 'PDF Health', okLabel: 'Healthy', failLabel: 'Broken' },
+            { key: 'ocr_health', label: 'OCR Health', okLabel: 'Done', failLabel: 'Pending/Failed' },
+            { key: 'note_health', label: 'Note Health', okLabel: 'Present', failLabel: 'Missing' },
+            { key: 'asset_health', label: 'Asset Health', okLabel: 'Valid', failLabel: 'Drifted' },
+        ];
+
+        const grid = container.createEl('div', { cls: 'paperforge-collection-health' });
+
+        for (const dim of dimensions) {
+            const data = healthAgg[dim.key] || { healthy: 0, unhealthy: 0 };
+            const cell = grid.createEl('div', { cls: 'paperforge-collection-health-cell' });
+            cell.createEl('div', { cls: 'paperforge-collection-health-cell-label', text: dim.label });
+
+            const counts = cell.createEl('div', { cls: 'paperforge-collection-health-counts' });
+            const okSpan = counts.createEl('span', { cls: 'ok', text: String(data.healthy) + ' ' + dim.okLabel });
+            counts.createEl('span', { text: ' \u00B7 ' });
+            const failSpan = counts.createEl('span', { cls: 'fail', text: String(data.unhealthy) + ' ' + dim.failLabel });
         }
     }
 
