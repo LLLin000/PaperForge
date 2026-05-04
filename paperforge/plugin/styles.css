@@ -1265,3 +1265,61 @@
     opacity: 0.6;
     pointer-events: none;
 }
+
+/* ==========================================================================
+   SECTION 17 — Collection View Layout
+   ========================================================================== */
+.paperforge-collection-view {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.paperforge-collection-metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 10px;
+}
+
+.paperforge-collection-health {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.paperforge-collection-health-cell {
+    background: var(--background-secondary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: var(--radius-m);
+    padding: 14px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    position: relative;
+}
+
+.paperforge-collection-health-cell-label {
+    font-size: var(--font-ui-smaller);
+    font-weight: var(--font-semibold);
+    color: var(--text-normal);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.paperforge-collection-health-counts {
+    font-size: var(--font-ui-small);
+    color: var(--text-muted);
+    line-height: 1.6;
+}
+
+.paperforge-collection-health-counts .ok {
+    color: var(--color-green);
+}
+
+.paperforge-collection-health-counts .warn {
+    color: var(--color-yellow);
+}
+
+.paperforge-collection-health-counts .fail {
+    color: var(--color-red);
+}
