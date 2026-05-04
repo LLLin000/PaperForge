@@ -59,7 +59,7 @@
 **Plans**: 2 plans
 Plans:
 - [x] 27-01-PLAN.md — Component CSS: all 5 components' styling in styles.css (loading skeleton, enhanced metric card, lifecycle stepper, health matrix, maturity gauge, bar chart)
-- [ ] 27-02-PLAN.md — Component JS: all 5 render methods on PaperForgeStatusView (skeleton utility, enhanced _renderStats, lifecycle stepper, health matrix, maturity gauge, bar chart)
+- [x] 27-02-PLAN.md — Component JS: all 5 render methods on PaperForgeStatusView (skeleton utility, enhanced _renderStats, lifecycle stepper, health matrix, maturity gauge, bar chart)
 **UI hint**: yes
 
 ### Phase 28: Dashboard Shell & Context Detection
@@ -111,7 +111,7 @@ Plans:
 | 24. Derived Lifecycle, Health & Maturity | v1.6 | 2/2 | Complete | 2026-05-04 |
 | 25. Surface Convergence, Doctor & Repair | v1.6 | 3/3 | Complete | 2026-05-04 |
 | 26. Traceable AI Context Packs | v1.6 | 3/3 | Complete | 2026-05-04 |
-| 27. Component Library | v1.7 | 1/2 | In Progress|  |
+| 27. Component Library | v1.7 | 2/2 | Complete   | 2026-05-04 |
 | 28. Dashboard Shell & Context Detection | v1.7 | 0/TBD | Not started | - |
 | 29. Per-Paper View | v1.7 | 0/TBD | Not started | - |
 | 30. Collection View | v1.7 | 0/TBD | Not started | - |
