@@ -4,18 +4,18 @@
 
 PaperForge is a local-first Obsidian + Zotero literature asset manager. It turns Zotero exports, PDFs, OCR fulltext, figures, notes, and AI outputs into a structured, traceable, reusable research library. v1.6 adds unified configuration, canonical asset indexing, derived lifecycle/health/maturity, surface convergence, AI context entry points, and safe workspace migration.
 
-## Current Milestone: v1.6 AI-Ready Literature Asset Foundation
+## Current Milestone: v1.7 Context-Aware Dashboard
 
-**Goal:** Reposition PaperForge around long-term literature asset management by unifying configuration, lifecycle state, health diagnostics, and AI-ready context generation.
+**Goal:** Make PaperForge's plugin dashboard context-aware—showing different views based on the active file (Base, paper card, or global). Uses pure CSS/DOM components: metric cards, lifecycle stepper, health matrix, maturity gauge, bar charts.
 
 **Target features:**
-- Unify configuration truth so `paperforge.json` becomes the single source of truth across CLI, workers, and plugin.
-- Upgrade the existing library index into a canonical asset index carrying lifecycle, health, readiness, and maturity data.
-- Define a clear state model separating user intent, machine-produced assets, and derived index state.
-- Introduce library health surfaces: PDF Health, OCR Health, Template/Base Health, and general Library Health.
-- Keep the Obsidian plugin as a thin shell over CLI logic, with Dashboard views driven by the canonical index.
-- Add Library Maturity / Workflow Level scoring with next-step recommendations.
-- Provide reusable AI context entry points such as ask-this-paper, ask-this-collection, and copy-context-pack.
+- Auto-detect active file type and switch dashboard mode accordingly.
+- Per-paper dashboard with lifecycle stepper, health matrix, maturity gauge, and next-step guidance.
+- Collection dashboard for Base files with domain-level lifecycle/health aggregation.
+- Global dashboard retains and enhances existing library overview.
+- Pure CSS component library (no npm dependencies).
+
+## Completed Milestone: v1.6 AI-Ready Literature Asset Foundation
 
 ## Completed Milestone: v1.4 Code Health & UX Hardening
 
