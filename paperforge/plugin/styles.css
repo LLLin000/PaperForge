@@ -725,3 +725,206 @@
     font-size: var(--font-ui-small);
     font-style: italic;
 }
+
+/* ==========================================================================
+   SECTION 9 — Lifecycle Stepper
+   ========================================================================== */
+.paperforge-lifecycle-stepper {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding: 8px 0;
+    position: relative;
+}
+
+.paperforge-lifecycle-stepper .step {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    position: relative;
+    min-height: 36px;
+}
+
+.paperforge-lifecycle-stepper .step-indicator {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: var(--font-bold);
+    position: relative;
+    z-index: 1;
+    background: var(--background-modifier-border);
+    color: var(--text-muted);
+    border: 2px solid var(--background-modifier-border);
+    transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+
+/* Connecting line between steps via ::before on each step (D-09) */
+.paperforge-lifecycle-stepper .step::before {
+    content: '';
+    position: absolute;
+    left: 22px;  /* centers under the 24px indicator circle */
+    top: 32px;   /* below the indicator */
+    bottom: -8px;
+    width: 2px;
+    background: var(--background-modifier-border);
+    z-index: 0;
+}
+
+.paperforge-lifecycle-stepper .step:last-child::before {
+    display: none;
+}
+
+.paperforge-lifecycle-stepper .step-label {
+    font-size: var(--font-ui-small);
+    color: var(--text-muted);
+    font-weight: var(--font-medium);
+    line-height: 1.3;
+}
+
+/* -- State: completed (D-10) -- */
+.paperforge-lifecycle-stepper .step.completed .step-indicator {
+    background: var(--color-green);
+    border-color: var(--color-green);
+    color: var(--text-on-accent);
+}
+
+.paperforge-lifecycle-stepper .step.completed .step-indicator::after {
+    content: '\2713';  /* checkmark */
+}
+
+.paperforge-lifecycle-stepper .step.completed .step-label {
+    color: var(--text-normal);
+}
+
+.paperforge-lifecycle-stepper .step.completed::before {
+    background: var(--color-green);
+}
+
+/* -- State: current (D-10) -- */
+.paperforge-lifecycle-stepper .step.current .step-indicator {
+    background: var(--interactive-accent);
+    border-color: var(--interactive-accent);
+    color: var(--text-on-accent);
+    animation: paperforge-step-pulse 2s ease-in-out infinite;
+}
+
+@keyframes paperforge-step-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(255,255,255,0.3); }
+    50% { box-shadow: 0 0 0 6px rgba(255,255,255,0); }
+}
+
+.paperforge-lifecycle-stepper .step.current .step-label {
+    color: var(--text-normal);
+    font-weight: var(--font-semibold);
+}
+
+/* -- State: pending (D-10) -- */
+.paperforge-lifecycle-stepper .step.pending .step-indicator {
+    opacity: 0.4;
+}
+
+.paperforge-lifecycle-stepper .step.pending .step-label {
+    opacity: 0.5;
+}
+
+/* ==========================================================================
+   SECTION 10 — Health Matrix
+   ========================================================================== */
+.paperforge-health-matrix {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.paperforge-health-cell {
+    background: var(--background-secondary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: var(--radius-m);
+    padding: 14px 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    cursor: help;
+    transition: border-color 0.15s;
+    position: relative;
+}
+
+.paperforge-health-cell:hover {
+    border-color: var(--interactive-accent);
+}
+
+.paperforge-health-cell-icon {
+    font-size: 18px;
+    line-height: 1;
+}
+
+.paperforge-health-cell-label {
+    font-size: var(--font-ui-smaller);
+    font-weight: var(--font-medium);
+    color: var(--text-normal);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+/* Status coloring (D-14) */
+.paperforge-health-cell.ok {
+    border-left: 3px solid var(--color-green);
+}
+
+.paperforge-health-cell.ok .paperforge-health-cell-icon {
+    color: var(--color-green);
+}
+
+.paperforge-health-cell.warn {
+    border-left: 3px solid var(--color-yellow);
+}
+
+.paperforge-health-cell.warn .paperforge-health-cell-icon {
+    color: var(--color-yellow);
+}
+
+.paperforge-health-cell.fail {
+    border-left: 3px solid var(--color-red);
+}
+
+.paperforge-health-cell.fail .paperforge-health-cell-icon {
+    color: var(--color-red);
+}
+
+/* Tooltip on hover (D-16) */
+.paperforge-health-cell[title]:hover::after {
+    content: attr(title);
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--background-modifier-hover);
+    color: var(--text-normal);
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: var(--radius-s);
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 100;
+    border: 1px solid var(--background-modifier-border);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.paperforge-health-cell[title]:hover::before {
+    content: '';
+    position: absolute;
+    bottom: calc(100% + 2px);
+    left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-top-color: var(--background-modifier-border);
+    pointer-events: none;
+    z-index: 100;
+}
