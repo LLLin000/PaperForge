@@ -374,20 +374,57 @@ class PaperForgeStatusView extends ItemView {
         }
     }
 
-    /* ── Metric Cards ── */
+    /* ── Loading Skeleton Utility (D-24) ── */
+    _renderSkeleton(container) {
+        container.addClass('paperforge-loading');
+    }
+
+    /* ── Empty State Utility (D-25) ── */
+    _renderEmptyState(container, message) {
+        container.createEl('div', {
+            cls: 'paperforge-empty-state',
+            text: message || 'No data',
+        });
+    }
+
+    /* ── Metric Progress Bar Helper (D-05) ── */
+    _buildMetricBar(card, value, max) {
+        if (max <= 0) return;
+        const pct = Math.min(100, (value / max) * 100);
+        const bar = card.createEl('div', { cls: 'paperforge-metric-progress' });
+        bar.createEl('div', {
+            cls: 'paperforge-metric-progress-fill',
+            attr: { style: `width:${pct.toFixed(1)}%` },
+        });
+    }
+
+    /* ── Metric Cards (Enhanced D-04, D-05, D-06) ── */
     _renderStats(d) {
         this._versionBadge.setText(d.version ? 'v' + d.version : 'v\u2014');
 
+        if (!d || typeof d.total_papers === 'undefined') {
+            this._renderSkeleton(this._metricsEl);
+            return;
+        }
+
+        this._metricsEl.removeClass('paperforge-loading');
+
+        const totalPapers = d.total_papers || 0;
+        const totalFormal = d.formal_notes || 0;
+
         const metrics = [
-            { value: d.total_papers, label: 'Papers', color: 'var(--color-cyan)' },
-            { value: d.formal_notes, label: 'Notes', color: 'var(--color-blue)' },
-            { value: d.exports, label: 'Exports', color: 'var(--color-purple)' },
+            { value: totalPapers, label: 'Papers', color: 'var(--color-cyan)', barMax: 0 },
+            { value: totalFormal, label: 'Formal Notes', color: 'var(--color-blue)', barMax: totalPapers },
+            { value: d.exports || 0, label: 'Exports', color: 'var(--color-purple)', barMax: 0 },
         ];
         for (const m of metrics) {
             const card = this._metricsEl.createEl('div', { cls: 'paperforge-metric-card' });
             card.style.setProperty('--metric-color', m.color);
-            card.createEl('div', { cls: 'paperforge-metric-value', text: m.value?.toString() || '\u2014' });
+            card.createEl('div', { cls: 'paperforge-metric-value', text: (m.value)?.toString() || '\u2014' });
             card.createEl('div', { cls: 'paperforge-metric-label', text: m.label });
+            if (m.barMax > 0) {
+                this._buildMetricBar(card, m.value, m.barMax);
+            }
         }
     }
 
@@ -457,6 +494,146 @@ class PaperForgeStatusView extends ItemView {
             const cnt = this._ocrCounts.createEl('div', { cls: 'paperforge-ocr-count' });
             cnt.createEl('div', { cls: 'paperforge-ocr-count-value', text: l.value.toString() });
             cnt.createEl('div', { cls: 'paperforge-ocr-count-label', text: l.label });
+        }
+    }
+
+    /* ── Lifecycle Stepper (D-07 through D-11) ── */
+    _renderLifecycleStepper(container, lifecycle, currentStage) {
+        if (!lifecycle || !currentStage) {
+            this._renderSkeleton(container);
+            return;
+        }
+
+        const stages = [
+            { key: 'imported', label: 'Imported' },
+            { key: 'indexed', label: 'Indexed' },
+            { key: 'pdf_ready', label: 'PDF Ready' },
+            { key: 'fulltext_ready', label: 'Fulltext Ready' },
+            { key: 'deep_read', label: 'Deep Read' },
+            { key: 'ai_ready', label: 'AI Ready' },
+        ];
+
+        const stepper = container.createEl('div', { cls: 'paperforge-lifecycle-stepper' });
+        let foundCurrent = false;
+
+        for (const stage of stages) {
+            const step = stepper.createEl('div', { cls: 'step' });
+            step.createEl('div', { cls: 'step-indicator' });
+            step.createEl('div', { cls: 'step-label', text: stage.label });
+
+            if (stage.key === currentStage) {
+                step.addClass('current');
+                foundCurrent = true;
+            } else if (!foundCurrent) {
+                step.addClass('completed');
+            } else {
+                step.addClass('pending');
+            }
+        }
+    }
+
+    /* ── Health Matrix (D-12 through D-16) ── */
+    _renderHealthMatrix(container, health) {
+        if (!health) {
+            this._renderSkeleton(container);
+            return;
+        }
+
+        const dimensions = [
+            { key: 'pdf_health', label: 'PDF Health', iconOk: '\u2713', iconWarn: '\u26A0', iconFail: '\u2717' },
+            { key: 'ocr_health', label: 'OCR Health', iconOk: '\u2713', iconWarn: '\u26A0', iconFail: '\u2717' },
+            { key: 'note_health', label: 'Note Health', iconOk: '\u2713', iconWarn: '\u26A0', iconFail: '\u2717' },
+            { key: 'asset_health', label: 'Asset Health', iconOk: '\u2713', iconWarn: '\u26A0', iconFail: '\u2717' },
+        ];
+
+        const matrix = container.createEl('div', { cls: 'paperforge-health-matrix' });
+
+        for (const dim of dimensions) {
+            const status = health[dim.key] || 'healthy';
+            const cell = matrix.createEl('div', { cls: 'paperforge-health-cell' });
+
+            let icon, statusClass, tooltip;
+            if (status === 'healthy' || status === 'ok') {
+                icon = dim.iconOk;
+                statusClass = 'ok';
+                tooltip = `${dim.label}: OK`;
+            } else if (status === 'warn' || status === 'warning' || status === 'degraded') {
+                icon = dim.iconWarn;
+                statusClass = 'warn';
+                tooltip = `${dim.label}: Needs Attention`;
+            } else {
+                icon = dim.iconFail;
+                statusClass = 'fail';
+                tooltip = `${dim.label}: Failed`;
+            }
+
+            cell.addClass(statusClass);
+            cell.setAttribute('title', tooltip);
+            cell.createEl('div', { cls: 'paperforge-health-cell-icon', text: icon });
+            cell.createEl('div', { cls: 'paperforge-health-cell-label', text: dim.label });
+        }
+    }
+
+    /* ── Maturity Gauge (D-17 through D-20) ── */
+    _renderMaturityGauge(container, maturityLevel, blockingChecks) {
+        if (maturityLevel == null || maturityLevel === undefined) {
+            this._renderSkeleton(container);
+            return;
+        }
+
+        const gauge = container.createEl('div', { cls: 'paperforge-maturity-gauge' });
+        const track = gauge.createEl('div', { cls: 'gauge-track' });
+        const currentLevel = Math.max(1, Math.min(6, Math.round(maturityLevel)));
+
+        for (let i = 1; i <= 6; i++) {
+            const seg = track.createEl('div', { cls: 'gauge-segment' });
+            if (i <= currentLevel) {
+                seg.addClass('filled');
+                seg.addClass(`level-${i}`);
+            }
+        }
+
+        gauge.createEl('div', { cls: 'gauge-level', text: `Level ${currentLevel} / 6` });
+
+        if (currentLevel < 6 && blockingChecks && blockingChecks.length > 0) {
+            const list = gauge.createEl('ul', { cls: 'gauge-blockers' });
+            for (const check of blockingChecks) {
+                list.createEl('li', { text: check });
+            }
+        }
+    }
+
+    /* ── Bar Chart (D-21 through D-23) ── */
+    _renderBarChart(container, lifecycleCounts) {
+        if (!lifecycleCounts || Object.keys(lifecycleCounts).length === 0) {
+            this._renderEmptyState(container, 'No lifecycle data');
+            return;
+        }
+
+        const stages = [
+            { key: 'imported', label: 'Imported', cls: 'stage-imported' },
+            { key: 'indexed', label: 'Indexed', cls: 'stage-indexed' },
+            { key: 'pdf_ready', label: 'PDF Ready', cls: 'stage-pdf-ready' },
+            { key: 'fulltext_ready', label: 'Fulltext Ready', cls: 'stage-fulltext-ready' },
+            { key: 'deep_read', label: 'Deep Read', cls: 'stage-deep-read' },
+            { key: 'ai_ready', label: 'AI Ready', cls: 'stage-ai-ready' },
+        ];
+
+        const chart = container.createEl('div', { cls: 'paperforge-bar-chart' });
+        const maxCount = Math.max(1, ...stages.map(s => lifecycleCounts[s.key] || 0));
+
+        for (const stage of stages) {
+            const count = lifecycleCounts[stage.key] || 0;
+            const pct = (count / maxCount) * 100;
+
+            const row = chart.createEl('div', { cls: 'bar-row' });
+            row.createEl('div', { cls: 'bar-label', text: stage.label });
+            const track = row.createEl('div', { cls: 'bar-track' });
+            const fill = track.createEl('div', {
+                cls: `bar-fill ${stage.cls}`,
+                attr: { style: `width:${pct.toFixed(1)}%` },
+            });
+            row.createEl('div', { cls: 'bar-count', text: count.toString() });
         }
     }
 
