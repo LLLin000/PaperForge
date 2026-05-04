@@ -23,9 +23,9 @@ Requirements for milestone v1.7: Context-Aware Dashboard.
 
 ### Collection Dashboard
 
-- [ ] **COLL-01**: User sees domain-level paper count and lifecycle distribution from canonical index.
-- [ ] **COLL-02**: User sees aggregated health overview for the domain (PDF/OCR/Note/Asset counts).
-- [ ] **COLL-03**: User sees a lifecycle distribution bar chart for the domain.
+- [x] **COLL-01**: User sees domain-level paper count and lifecycle distribution from canonical index.
+- [x] **COLL-02**: User sees aggregated health overview for the domain (PDF/OCR/Note/Asset counts).
+- [x] **COLL-03**: User sees a lifecycle distribution bar chart for the domain.
 
 ### Component Library
 
@@ -72,14 +72,14 @@ Deferred to future milestone.
 | PAPER-02 | Phase 29 | Complete |
 | PAPER-03 | Phase 29 | Complete |
 | PAPER-04 | Phase 29 | Complete |
-| COLL-01 | Phase 30 | Pending |
-| COLL-02 | Phase 30 | Pending |
-| COLL-03 | Phase 30 | Pending |
+| COLL-01 | Phase 30 | Complete |
+| COLL-02 | Phase 30 | Complete |
+| COLL-03 | Phase 30 | Complete |
 
 **Coverage:**
 - v1 requirements: 16 total
-- Mapped to phases: 16
-- Unmapped: 0 ✓
+- Completed: 16
+- Pending: 0 ✓
 
 ---
 *Requirements defined: 2026-05-04*

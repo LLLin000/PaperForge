@@ -14,7 +14,7 @@
 - ✅ **v1.4 Code Health & UX Hardening** — Phases 13-19 (shipped 2026-04-28)
 - ✅ **v1.5 Obsidian Plugin Setup Integration** — Phases 20-21 (shipped 2026-04-29)
 - ✅ **v1.6 AI-Ready Literature Asset Foundation** — Phases 22-26 (shipped 2026-05-04)
-- 📋 **v1.7 Context-Aware Dashboard** — Phases 27-30 (planned)
+- ✅ **v1.7 Context-Aware Dashboard** — Phases 27-30 (shipped 2026-05-04)
 
 *Archive: `.planning/milestones/v1.6-ROADMAP.md`*
 
@@ -40,7 +40,7 @@
 - [x] **Phase 27: Component Library** — Pure CSS/DOM visualization building blocks using Obsidian design tokens (2 plans planned)
 - [x] **Phase 28: Dashboard Shell & Context Detection** — Auto-detect active file type and switch to correct dashboard mode (completed 2026-05-04)
 - [x] **Phase 29: Per-Paper View** — Lifecycle stepper, health matrix, maturity gauge, and next-step guidance for individual papers (completed 2026-05-04)
-- [ ] **Phase 30: Collection View** — Domain-level lifecycle/health aggregation for Base files
+- [x] **Phase 30: Collection View** — Domain-level lifecycle/health aggregation for Base files
 
 ---
 
@@ -119,7 +119,7 @@ Plans:
 | 27. Component Library | v1.7 | 2/2 | Complete   | 2026-05-04 |
 | 28. Dashboard Shell & Context Detection | v1.7 | 2/2 | Complete   | 2026-05-04 |
 | 29. Per-Paper View | v1.7 | 1/1 | Complete   | 2026-05-04 |
-| 30. Collection View | v1.7 | 0/TBD | Not started | - |
+| 30. Collection View | v1.7 | 1/1 | Complete   | 2026-05-04 |
 
 ---
 

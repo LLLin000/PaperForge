@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.7
 milestone_name: Context-Aware Dashboard
-status: Planning complete
-stopped_at: Completed 29-01-PLAN.md
-last_updated: "2026-05-04T08:18:38.480Z"
+status: Complete
+stopped_at: Completed 30-01-PLAN.md
+last_updated: "2026-05-04T14:02:52.377Z"
 progress:
   total_phases: 4
-  completed_phases: 3
-  total_plans: 5
-  completed_plans: 5
+  completed_phases: 4
+  total_plans: 6
+  completed_plans: 6
 ---
 
 # Project State
@@ -23,8 +23,10 @@ See: .planning/PROJECT.md (updated 2026-05-03)
 
 ## Current Position
 
-Phase: 29 (per-paper-view) — PLANNING COMPLETE
+Phase: 30 (collection-view) — COMPLETE
 Plans: 1 of 1 planned
+
+Milestone v1.7 (Context-Aware Dashboard): ALL PHASES COMPLETE
 
 ## Performance Metrics
 
@@ -65,6 +67,7 @@ Plans: 1 of 1 planned
 | Phase 28-dashboard-shell-context-detection P01 | 1 min | 2 tasks | 2 files |
 | Phase 28-dashboard-shell-context-detection P02 | 5 min | 2 tasks | 1 files |
 | Phase 29 P01 | 10 min | 2 tasks | 2 files |
+| Phase 30 P01 | 2 min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -111,6 +114,10 @@ None yet.
 - [Phase 29-per-paper-view]: _renderPaperMode() uses entry.next_step string → maps to 6-state stepInfo object for human-readable label + action trigger, with /pf-deep as clipboard copy (no CLI action)
 - [Phase 29-per-paper-view]: Contextual action row created inside _renderPaperMode() before components — Copy Context reuses existing ACTIONS.paperforge-copy-context (needsKey), Open Fulltext uses new _openFulltext() with vault.getAbstractFileByPath + workspace.openLinkText
 - [Phase 29-per-paper-view]: Next-step action trigger for sync/ocr/repair calls ACTIONS.find by cmd + _runAction(); /pf-deep copies key via clipboard; ready shows "Copy Context" shortcut — all three paths are explicit in _renderNextStepCard
+- [Phase 30-collection-view]: Fulltext-ready threshold = lifecycle in [fulltext_ready, deep_read, ai_ready]; deep-read threshold = lifecycle in [deep_read, ai_ready]
+- [Phase 30-collection-view]: Health dimension labels: PDF (Healthy/Broken), OCR (Done/Pending-Failed), Note (Present/Missing), Asset (Valid/Drifted)
+- [Phase 30-collection-view]: Metric cards: Papers (cyan, no bar), Fulltext Ready (green, progress bar), Deep Read (yellow, progress bar)
+- [Phase 30-collection-view]: Health aggregation computed inline from domain-filtered items (not from _cachedStats global aggregate)
 
 ### Blockers/Concerns
 
@@ -119,6 +126,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-04T08:18:38.476Z
-Stopped at: Completed 29-01-PLAN.md
+Last session: 2026-05-04T14:02:52.374Z
+Stopped at: Completed 30-01-PLAN.md
 Resume file: None
