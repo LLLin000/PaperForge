@@ -10,6 +10,8 @@ Provide CLI commands and plugin entry points that output per-paper and per-colle
 
 Does NOT cover LLMWiki concept network (v1.7), evidence extraction frameworks (v2.0), or figure gallery.
 
+Includes: migration of existing flat literature notes (`Literature/<domain>/<key> - <Title>.md`) into the new paper workspace structure (`Literature/<domain>/<key> - <Title>/<key> - <Title>.md` + `deep-reading.md`) without losing the `## 🔍 精读` deep reading content.
+
 </domain>
 
 <decisions>
@@ -40,6 +42,13 @@ Does NOT cover LLMWiki concept network (v1.7), evidence extraction frameworks (v
 
 ### Dependencies
 - **D-10:** No new dependencies. Everything uses existing `asset_index.py` index reading.
+
+### Migration
+- **D-11:** Existing flat `Literature/<domain>/<key> - <Title>.md` files are migrated to paper workspace on first sync.
+- **D-12:** Migration is copy-not-move: original file is copied into workspace dir as the main note, original is preserved.
+- **D-13:** `## 🔍 精读` section is extracted from the main note and written into a separate `deep-reading.md` file.
+- **D-14:** Canonical index paths are updated to point to the new workspace structure.
+- **D-15:** Migration is idempotent: already-migrated papers are skipped.
 
 ### the agent's Discretion
 - Output format details (indentation, field ordering)
