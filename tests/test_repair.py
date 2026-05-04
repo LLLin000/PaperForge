@@ -338,6 +338,75 @@ class TestRunRepairFixMode:
         assert meta["ocr_status"] == "pending"
 
 
+class TestRepairRebuildsIndex:
+    def test_repair_calls_build_index_after_fix(self, tmp_path, monkeypatch):
+        import paperforge.worker.asset_index
+
+        call_count = 0
+
+        def _capture_call(*args, **kwargs):
+            nonlocal call_count
+            call_count += 1
+            return 0
+
+        monkeypatch.setattr(paperforge.worker.asset_index, "build_index", _capture_call)
+        vault = _make_vault(tmp_path)
+        paths = pipeline_paths(vault)
+        records_dir = vault / "03_Resources" / "LiteratureControl" / "library-records" / "骨科"
+        records_dir.mkdir(parents=True, exist_ok=True)
+        _write_library_record(records_dir, "KEY001", "骨科", "done", do_ocr="false")
+        _write_formal_note(vault / "03_Resources" / "Literature", "KEY001", "骨科", "done")
+        run_repair(vault, paths, verbose=False, fix=True)
+        assert call_count >= 1, "build_index was not called during fix=True"
+
+    def test_repair_does_not_call_build_index_dry_run(self, tmp_path, monkeypatch):
+        import paperforge.worker.asset_index
+
+        call_count = 0
+
+        def _capture_call(*args, **kwargs):
+            nonlocal call_count
+            call_count += 1
+            return 0
+
+        monkeypatch.setattr(paperforge.worker.asset_index, "build_index", _capture_call)
+        vault = _make_vault(tmp_path)
+        paths = pipeline_paths(vault)
+        records_dir = vault / "03_Resources" / "LiteratureControl" / "library-records" / "骨科"
+        records_dir.mkdir(parents=True, exist_ok=True)
+        _write_library_record(records_dir, "KEY001", "骨科", "done", do_ocr="false")
+        _write_formal_note(vault / "03_Resources" / "Literature", "KEY001", "骨科", "done")
+        run_repair(vault, paths, verbose=False, fix=False)
+        assert call_count == 0, "build_index was called during dry-run (fix=False)"
+
+    def test_repair_rebuilt_in_result(self, tmp_path):
+        vault = _make_vault(tmp_path)
+        paths = pipeline_paths(vault)
+        records_dir = vault / "03_Resources" / "LiteratureControl" / "library-records" / "骨科"
+        records_dir.mkdir(parents=True, exist_ok=True)
+        _write_library_record(records_dir, "KEY001", "骨科", "done", do_ocr="false")
+        _write_formal_note(vault / "03_Resources" / "Literature", "KEY001", "骨科", "done")
+        result = run_repair(vault, paths, verbose=False, fix=True)
+        assert "rebuilt" in result
+        assert isinstance(result["rebuilt"], int)
+
+    def test_repair_rebuild_fallback_on_error(self, tmp_path, monkeypatch):
+        import paperforge.worker.asset_index
+
+        def _failing_build(*args, **kwargs):
+            raise RuntimeError("Simulated build failure")
+
+        monkeypatch.setattr(paperforge.worker.asset_index, "build_index", _failing_build)
+        vault = _make_vault(tmp_path)
+        paths = pipeline_paths(vault)
+        records_dir = vault / "03_Resources" / "LiteratureControl" / "library-records" / "骨科"
+        records_dir.mkdir(parents=True, exist_ok=True)
+        _write_library_record(records_dir, "KEY001", "骨科", "done")
+        _write_meta(paths["ocr"], "KEY001", "pending")
+        result = run_repair(vault, paths, verbose=False, fix=True)
+        assert result["rebuilt"] == -1
+
+
 class TestRunRepairReturnStructure:
     def test_result_has_all_keys(self, tmp_path):
         vault = _make_vault(tmp_path)
@@ -347,10 +416,12 @@ class TestRunRepairReturnStructure:
         assert "divergent" in result
         assert "fixed" in result
         assert "errors" in result
+        assert "rebuilt" in result
         assert isinstance(result["scanned"], int)
         assert isinstance(result["divergent"], list)
         assert isinstance(result["fixed"], int)
         assert isinstance(result["errors"], list)
+        assert isinstance(result["rebuilt"], int)
 
     def test_divergent_item_has_required_fields(self, tmp_path):
         vault = _make_vault(tmp_path)

@@ -190,7 +190,7 @@ def run_repair(vault: Path, paths: dict, verbose: bool = False, fix: bool = Fals
     Returns:
         dict with scanned, divergent, fixed, errors counts
     """
-    result = {"scanned": 0, "divergent": [], "fixed": 0, "errors": []}
+    result = {"scanned": 0, "divergent": [], "fixed": 0, "errors": [], "rebuilt": 0}
     config = load_domain_config(paths)
     {entry["export_file"]: entry["domain"] for entry in config["domains"]}
     record_paths = list(paths["library_records"].rglob("*.md"))
@@ -354,6 +354,31 @@ def run_repair(vault: Path, paths: dict, verbose: bool = False, fix: bool = Fals
             print("[repair] Tip: run with --fix-paths to attempt auto-resolution")
     elif verbose:
         print("[repair] No path errors found")
+
+    # Phase 25: Full rebuild after repair (D-12)
+    # After fixing source artifacts, rebuild the canonical index so all derived
+    # state fields (lifecycle, health, maturity, next_step) reflect the repaired state.
+    if fix or fix_paths:
+        try:
+            from paperforge.worker.asset_index import build_index
+
+            rebuilt_count = build_index(vault, verbose)
+            print(f"[repair] Rebuilt canonical index: {rebuilt_count} entries")
+            result["rebuilt"] = rebuilt_count
+
+            print()
+            print(f"[repair] All source artifacts repaired. Canonical index rebuilt with {rebuilt_count} entries.")
+            print("[repair] Run `paperforge status` or open the plugin dashboard to verify.")
+            if rebuilt_count > 0:
+                print("[repair] If the result looks incomplete, run `paperforge sync --rebuild-index`")
+                print("[repair] to regenerate from scratch (existing .bak file available for recovery).")
+        except Exception as e:
+            logger.error("Failed to rebuild index after repair: %s", e)
+            print(f"[repair] WARNING: Index rebuild failed: {e}")
+            result["rebuilt"] = -1
+    else:
+        # dry-run mode: no rebuild needed
+        pass
 
     result["path_errors"] = path_errors
     return result
