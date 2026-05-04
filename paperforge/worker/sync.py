@@ -1674,6 +1674,81 @@ def analyze_selected_keys(paths: dict[str, Path]) -> set[str]:
     return {key for key, row in load_control_actions(paths).items() if row.get("analyze")}
 
 
+def migrate_to_workspace(vault: Path, paths: dict) -> int:
+    """Migrate flat literature notes into paper workspace directories.
+
+    Copies each flat note at Literature/<domain>/<key> - <Title>.md into:
+      Literature/<domain>/<key> - <Title>/<key> - <Title>.md
+    Extracts ## 🔍 精读 into:
+      Literature/<domain>/<key> - <Title>/deep-reading.md
+    Creates:
+      Literature/<domain>/<key> - <Title>/ai/  (empty directory)
+
+    Idempotent: skips papers whose workspace directory already exists.
+    The original flat note is preserved (copy-not-move per D-12).
+
+    Returns: number of papers migrated (0 means all are already workspace).
+    """
+    index = asset_index.read_index(vault)
+    if index is None:
+        return 0  # No index yet — nothing to migrate
+
+    items = index.get("items", []) if isinstance(index, dict) else []
+    migrated = 0
+
+    for entry in items:
+        key = entry.get("zotero_key", "")
+        domain = entry.get("domain", "")
+        title = entry.get("title", "")
+        if not key or not domain:
+            continue
+
+        # Compute paths using the same slugify as _build_entry
+        title_slug = slugify_filename(title)
+        workspace_dir = paths["literature"] / domain / f"{key} - {title_slug}"
+
+        # Skip if already migrated
+        if workspace_dir.exists():
+            continue
+
+        # Find the flat note path
+        flat_note_path = paths["literature"] / domain / f"{key} - {title_slug}.md"
+        if not flat_note_path.exists():
+            # Try other potential flat note paths (e.g. slightly different slug)
+            candidates = list((paths["literature"] / domain).glob(f"{key} - *.md"))
+            if candidates:
+                flat_note_path = candidates[0]
+            else:
+                continue  # No flat note to migrate
+
+        # Create workspace directory
+        workspace_dir.mkdir(parents=True, exist_ok=True)
+
+        # Read flat note content
+        content = flat_note_path.read_text(encoding="utf-8")
+
+        # Write main note to workspace (copy of flat note)
+        main_note_path = workspace_dir / f"{key} - {title_slug}.md"
+        main_note_path.write_text(content, encoding="utf-8")
+
+        # Extract deep-reading section and write to separate file
+        preserved = extract_preserved_deep_reading(content)
+        if preserved:
+            deep_reading_path = workspace_dir / "deep-reading.md"
+            deep_reading_path.write_text(preserved, encoding="utf-8")
+
+        # Create ai/ directory
+        ai_dir = workspace_dir / "ai"
+        ai_dir.mkdir(exist_ok=True)
+
+        migrated += 1
+
+    if migrated > 0:
+        print(f"migrate_to_workspace: migrated {migrated} paper(s) to workspace structure")
+
+    return migrated
+
+
 def run_index_refresh(vault: Path, verbose: bool = False, rebuild_index: bool = False) -> int:
     """Refresh the canonical asset index.
 
@@ -1702,6 +1777,8 @@ def run_index_refresh(vault: Path, verbose: bool = False, rebuild_index: bool = 
         domain = domain_lookup.get(export_path.name, export_path.stem)
         export_rows = load_export_rows(export_path)
         exports[domain] = {row["key"]: row for row in export_rows}
+    # Migrate flat notes to workspace before build_index (D-11: first-sync migration)
+    migrate_to_workspace(vault, paths)
     # Delegate to asset_index.build_index() for the core build loop
     count = asset_index.build_index(vault, verbose)
     control_records_dir = paths["library_records"]
