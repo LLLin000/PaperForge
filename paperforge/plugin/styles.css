@@ -1126,3 +1126,142 @@
     color: var(--text-warning);
     margin-left: auto;
 }
+
+/* ==========================================================================
+   SECTION 15 — Per-Paper View Layout
+   ========================================================================== */
+.paperforge-paper-view {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.paperforge-paper-header {
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.paperforge-paper-title {
+    font-size: var(--font-ui-large);
+    font-weight: var(--font-semibold);
+    color: var(--text-normal);
+    line-height: 1.4;
+    margin: 0 0 6px 0;
+}
+
+.paperforge-paper-meta {
+    font-size: var(--font-ui-small);
+    color: var(--text-muted);
+    line-height: 1.5;
+}
+
+.paperforge-paper-authors {
+    display: inline;
+}
+
+.paperforge-paper-year {
+    display: inline;
+}
+
+.paperforge-paper-year::before {
+    content: " \u00B7  ";
+}
+
+.paperforge-paper-actions {
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.paperforge-contextual-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    font-size: var(--font-ui-small);
+    font-weight: var(--font-semibold);
+    color: var(--text-normal);
+    background: var(--background-secondary-alt);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: var(--radius-m);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    user-select: none;
+}
+
+.paperforge-contextual-btn:hover {
+    background: var(--background-modifier-hover);
+    color: var(--text-accent);
+}
+
+.paperforge-contextual-btn:active {
+    transform: scale(0.97);
+}
+
+.paperforge-contextual-btn-icon {
+    font-size: 14px;
+    line-height: 1;
+}
+
+/* ==========================================================================
+   SECTION 16 — Next-Step Recommendation Card
+   ========================================================================== */
+.paperforge-next-step-card {
+    background: var(--background-secondary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: var(--radius-m);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.paperforge-next-step-card.ready {
+    border-color: var(--color-green);
+    background: color-mix(in srgb, var(--color-green) 8%, var(--background-secondary));
+}
+
+.paperforge-next-step-label {
+    font-size: var(--font-ui-smaller);
+    font-weight: var(--font-semibold);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+}
+
+.paperforge-next-step-text {
+    font-size: var(--font-ui-small);
+    color: var(--text-normal);
+    line-height: 1.5;
+}
+
+.paperforge-next-step-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    font-size: var(--font-ui-small);
+    font-weight: var(--font-semibold);
+    color: var(--text-on-accent);
+    background: var(--interactive-accent);
+    border: none;
+    border-radius: var(--radius-m);
+    cursor: pointer;
+    transition: opacity 0.15s;
+    align-self: flex-start;
+    user-select: none;
+}
+
+.paperforge-next-step-trigger:hover {
+    opacity: 0.85;
+}
+
+.paperforge-next-step-trigger:active {
+    transform: scale(0.97);
+}
+
+.paperforge-next-step-trigger.running {
+    opacity: 0.6;
+    pointer-events: none;
+}
