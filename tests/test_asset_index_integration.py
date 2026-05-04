@@ -358,3 +358,105 @@ class TestWorkspacePaths:
         assert "\\" not in entry["fulltext_path"]
         assert "\\" not in entry["deep_reading_path"]
         assert "\\" not in entry["ai_path"]
+
+
+# ---------------------------------------------------------------------------
+# Tests: Derived state fields (Phase 24)
+# ---------------------------------------------------------------------------
+
+
+class TestDerivedStateFields:
+    """Lifecycle, health, maturity, next_step fields in index entries."""
+
+    def test_all_four_fields_present_after_full_build(self, tmp_path: Path) -> None:
+        """build_index() produces entries with lifecycle, health, maturity, next_step."""
+        from paperforge.worker.asset_index import build_index, read_index
+
+        items = [_make_export_item("AAA", "Paper A")]
+        vault = _setup_incremental_vault(tmp_path, items)
+        build_index(vault)
+
+        result = read_index(vault)
+        entry = result["items"][0]
+
+        assert "lifecycle" in entry, "entry must have lifecycle field"
+        assert "health" in entry, "entry must have health field"
+        assert "maturity" in entry, "entry must have maturity field"
+        assert "next_step" in entry, "entry must have next_step field"
+
+    def test_all_four_fields_present_after_incremental_refresh(self, tmp_path: Path) -> None:
+        """refresh_index_entry() produces entries with lifecycle, health, maturity, next_step."""
+        from paperforge.worker.asset_index import read_index, refresh_index_entry
+
+        items = [_make_export_item("AAA", "Paper A")]
+        vault = _setup_incremental_vault(tmp_path, items)
+        _write_index(vault, [{"zotero_key": "AAA", "title": "Paper A"}])
+        refresh_index_entry(vault, "AAA")
+
+        result = read_index(vault)
+        entry = result["items"][0]
+
+        assert "lifecycle" in entry
+        assert "health" in entry
+        assert "maturity" in entry
+        assert "next_step" in entry
+
+    def test_lifecycle_is_valid_state(self, tmp_path: Path) -> None:
+        """lifecycle field is one of the six valid state strings."""
+        from paperforge.worker.asset_index import build_index, read_index
+
+        items = [_make_export_item("AAA", "Paper A")]
+        vault = _setup_incremental_vault(tmp_path, items)
+        build_index(vault)
+
+        entry = read_index(vault)["items"][0]
+        valid = {"indexed", "pdf_ready", "fulltext_ready", "deep_read_done", "ai_context_ready"}
+        assert entry["lifecycle"] in valid, f"got {entry['lifecycle']}"
+
+    def test_health_has_four_dimensions(self, tmp_path: Path) -> None:
+        """health field is a dict with pdf_health, ocr_health, note_health, asset_health."""
+        from paperforge.worker.asset_index import build_index, read_index
+
+        items = [_make_export_item("AAA", "Paper A")]
+        vault = _setup_incremental_vault(tmp_path, items)
+        build_index(vault)
+
+        health = read_index(vault)["items"][0]["health"]
+        assert isinstance(health, dict), f"health should be dict, got {type(health)}"
+        assert "pdf_health" in health
+        assert "ocr_health" in health
+        assert "note_health" in health
+        assert "asset_health" in health
+        for v in health.values():
+            assert isinstance(v, str) and len(v) > 0, f"health value should be non-empty string"
+
+    def test_maturity_structure(self, tmp_path: Path) -> None:
+        """maturity field is a dict with level (int 1-6), level_name (str), checks (6 bools), blocking."""
+        from paperforge.worker.asset_index import build_index, read_index
+
+        items = [_make_export_item("AAA", "Paper A")]
+        vault = _setup_incremental_vault(tmp_path, items)
+        build_index(vault)
+
+        mat = read_index(vault)["items"][0]["maturity"]
+        assert isinstance(mat, dict)
+        assert isinstance(mat["level"], int) and 1 <= mat["level"] <= 6
+        assert isinstance(mat["level_name"], str) and len(mat["level_name"]) > 0
+        assert isinstance(mat["checks"], dict)
+        for check_name in ("metadata", "pdf", "fulltext", "figure", "ai", "review"):
+            assert check_name in mat["checks"], f"missing check: {check_name}"
+            assert isinstance(mat["checks"][check_name], bool)
+        # blocking is a string or None
+        assert mat["blocking"] is None or isinstance(mat["blocking"], str)
+
+    def test_next_step_is_valid_action(self, tmp_path: Path) -> None:
+        """next_step is one of the six valid action strings."""
+        from paperforge.worker.asset_index import build_index, read_index
+
+        items = [_make_export_item("AAA", "Paper A")]
+        vault = _setup_incremental_vault(tmp_path, items)
+        build_index(vault)
+
+        next_step = read_index(vault)["items"][0]["next_step"]
+        valid = {"sync", "ocr", "repair", "/pf-deep", "rebuild index", "ready"}
+        assert next_step in valid, f"got {next_step}"
