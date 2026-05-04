@@ -31,7 +31,7 @@ v1.6 turns PaperForge's existing sync, OCR, deep-reading, status, plugin, and `f
 - [x] **Phase 22: Configuration Truth & Compatibility** - Make `paperforge.json` the single runtime truth across CLI, workers, setup, and plugin. (completed 2026-05-03)
 - [x] **Phase 23: Canonical Asset Index & Safe Rebuilds** - Upgrade `formal-library.json` into a rebuildable, atomic, per-paper asset index. (completed 2026-05-03)
 - [x] **Phase 24: Derived Lifecycle, Health & Maturity** - Compute readiness, health findings, maturity, and next steps from source artifacts. (completed 2026-05-04)
-- [ ] **Phase 25: Surface Convergence, Doctor & Repair** - Make status, plugin dashboard, Base views, doctor, and repair consume the same canonical semantics.
+- [x] **Phase 25: Surface Convergence, Doctor & Repair** - Make status, plugin dashboard, Base views, doctor, and repair consume the same canonical semantics. (completed 2026-05-04)
 - [ ] **Phase 26: Traceable AI Context Packs** - Generate explainable paper and collection context packs from canonical assets.
 
 ## Phase Details
@@ -102,8 +102,8 @@ Plans:
 
 Plans:
 - [x] 25-01-PLAN.md — status --json source migration + doctor Index Health + brownfield detection
-- [ ] 25-02-PLAN.md — Plugin dashboard direct JSON read + doctor/repair Quick Actions
-- [ ] 25-03-PLAN.md — Base views lifecycle columns + repair source-first rebuild pattern
+- [x] 25-02-PLAN.md — Plugin dashboard direct JSON read + doctor/repair Quick Actions
+- [x] 25-03-PLAN.md — Base views lifecycle columns + repair source-first rebuild pattern
 
 ### Phase 26: Traceable AI Context Packs
 **Goal**: Users can generate explainable, reusable AI context packs for one paper or a collection using only canonical, traceable PaperForge assets.
@@ -125,7 +125,7 @@ Plans:
 | 22. Configuration Truth & Compatibility | 3/3 | Complete   | 2026-05-03 |
 | 23. Canonical Asset Index & Safe Rebuilds | 3/3 | Complete   | 2026-05-03 |
 | 24. Derived Lifecycle, Health & Maturity | 2/2 | Complete   | 2026-05-04 |
-| 25. Surface Convergence, Doctor & Repair | 1/3 | In Progress | - |
+| 25. Surface Convergence, Doctor & Repair | 3/3 | Complete   | 2026-05-04 |
 | 26. Traceable AI Context Packs | 0/TBD | Not started | - |
 
 ---

@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.6
 milestone_name: AI-Ready Literature Asset Foundation
 status: Phase complete — ready for verification
-stopped_at: Completed 25-01-PLAN.md
-last_updated: "2026-05-04T03:28:00.954Z"
+stopped_at: Completed 25-03-PLAN.md
+last_updated: "2026-05-04T03:36:26.987Z"
 progress:
   total_phases: 5
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 12
-  completed_plans: 10
+  completed_plans: 11
 ---
 
 # Project State
@@ -56,6 +56,7 @@ Plan: 3 of 3
 | Phase 24-derived-lifecycle-health-maturity P02 | 25min | 3 tasks | 2 files |
 | Phase 25-surface-convergence-doctor-repair P02 | 2min | 2 tasks | 1 files |
 | Phase 25-surface-convergence-doctor-repair P01 | 5 min | 3 tasks | 4 files |
+| Phase 25-surface-convergence-doctor-repair P03 | 13min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -76,6 +77,9 @@ Recent decisions affecting current work:
 - [Phase 24-derived-lifecycle-health-maturity]: Lazy import of asset_state functions inside _build_entry() follows existing pattern — avoids circular dependency risk with sync.py — Same pattern already used for ocr.py and sync.py imports in _build_entry()
 - [Phase 24-derived-lifecycle-health-maturity]: Derived fields inserted after entry dict construction but before formal note write — keeps machine-only fields out of user-visible Obsidian note frontmatter — Lifecycle/health/maturity/next_step are machine-derived and should not appear in user-editable markdown frontmatter
 - [Phase 25-surface-convergence-doctor-repair]: Plugin dashboard reads formal-library.json directly via readFileSync instead of spawning Python CLI — SURF-03 per D-05, D-06, D-07: plugin consumes same canonical semantics from canonical index
+- [Phase 25-surface-convergence-doctor-repair]: Use English column display names (Lifecycle, Maturity, Next Step) in Base view properties — The agent's discretion — Base is a technical view, English labels suffice
+- [Phase 25-surface-convergence-doctor-repair]: Double-quote YAML wrapping for filters containing single-quoted lifecycle values — Prevents YAML parse errors when filter values contain single quotes like lifecycle = 'fulltext_ready'
+- [Phase 25-surface-convergence-doctor-repair]: Lazy import build_index inside fix conditional block to avoid circular dependency with asset_index — Follows existing lazy import pattern established in Phase 23
 
 ### Pending Todos
 
@@ -88,6 +92,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-04T03:28:00.950Z
-Stopped at: Completed 25-01-PLAN.md
+Last session: 2026-05-04T03:36:26.983Z
+Stopped at: Completed 25-03-PLAN.md
 Resume file: None
