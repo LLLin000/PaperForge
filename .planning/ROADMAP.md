@@ -102,7 +102,7 @@ Plans:
 
 Plans:
 - [x] 25-01-PLAN.md — status --json source migration + doctor Index Health + brownfield detection
-- [x] 25-02-PLAN.md — Plugin dashboard direct JSON read + doctor/repair Quick Actions
+- [ ] 25-02-PLAN.md — Plugin dashboard direct JSON read + doctor/repair Quick Actions
 - [ ] 25-03-PLAN.md — Base views lifecycle columns + repair source-first rebuild pattern
 
 ### Phase 26: Traceable AI Context Packs
@@ -125,7 +125,7 @@ Plans:
 | 22. Configuration Truth & Compatibility | 3/3 | Complete   | 2026-05-03 |
 | 23. Canonical Asset Index & Safe Rebuilds | 3/3 | Complete   | 2026-05-03 |
 | 24. Derived Lifecycle, Health & Maturity | 2/2 | Complete   | 2026-05-04 |
-| 25. Surface Convergence, Doctor & Repair | 0/3 | Not started | - |
+| 25. Surface Convergence, Doctor & Repair | 1/3 | In Progress | - |
 | 26. Traceable AI Context Packs | 0/TBD | Not started | - |
 
 ---
