@@ -30,7 +30,7 @@ v1.6 turns PaperForge's existing sync, OCR, deep-reading, status, plugin, and `f
 
 - [x] **Phase 22: Configuration Truth & Compatibility** - Make `paperforge.json` the single runtime truth across CLI, workers, setup, and plugin. (completed 2026-05-03)
 - [x] **Phase 23: Canonical Asset Index & Safe Rebuilds** - Upgrade `formal-library.json` into a rebuildable, atomic, per-paper asset index. (completed 2026-05-03)
-- [ ] **Phase 24: Derived Lifecycle, Health & Maturity** - Compute readiness, health findings, maturity, and next steps from source artifacts.
+- [x] **Phase 24: Derived Lifecycle, Health & Maturity** - Compute readiness, health findings, maturity, and next steps from source artifacts. (completed 2026-05-04)
 - [ ] **Phase 25: Surface Convergence, Doctor & Repair** - Make status, plugin dashboard, Base views, doctor, and repair consume the same canonical semantics.
 - [ ] **Phase 26: Traceable AI Context Packs** - Generate explainable paper and collection context packs from canonical assets.
 
@@ -85,7 +85,7 @@ Plans:
 
 Plans:
 - [x] 24-01-PLAN.md — Pure derivation functions: compute_lifecycle, compute_health, compute_maturity, compute_next_step (TDD)
-- [ ] 24-02-PLAN.md — Integration wiring: embed derived state fields in canonical index entries
+- [x] 24-02-PLAN.md — Integration wiring: embed derived state fields in canonical index entries
 
 ### Phase 25: Surface Convergence, Doctor & Repair
 **Goal**: Users see one consistent library-state model across `paperforge status`, doctor/repair flows, plugin dashboard, and generated Base views, with migration-safe repair paths.
@@ -97,8 +97,13 @@ Plans:
   3. User can run `paperforge doctor` or `paperforge repair` on an older vault and get explicit findings for stale configs, old index formats, old Base/templates, or partial OCR assets before those issues silently break workflows.
   4. User can repair source artifacts first and then rebuild derived state, and the repaired result is reflected across CLI, plugin, and Base surfaces without hand-editing the canonical index.
   5. If migration or rebuild fails, user has a documented and reversible rebuild path that restores working generated surfaces without losing notes or intent fields.
-**Plans**: TBD
+**Plans**: 3 plans
 **UI hint**: yes
+
+Plans:
+- [ ] 25-01-PLAN.md — status --json source migration + doctor Index Health + brownfield detection
+- [ ] 25-02-PLAN.md — Plugin dashboard direct JSON read + doctor/repair Quick Actions
+- [ ] 25-03-PLAN.md — Base views lifecycle columns + repair source-first rebuild pattern
 
 ### Phase 26: Traceable AI Context Packs
 **Goal**: Users can generate explainable, reusable AI context packs for one paper or a collection using only canonical, traceable PaperForge assets.
@@ -119,8 +124,8 @@ Plans:
 |-------|----------------|--------|-----------|
 | 22. Configuration Truth & Compatibility | 3/3 | Complete   | 2026-05-03 |
 | 23. Canonical Asset Index & Safe Rebuilds | 3/3 | Complete   | 2026-05-03 |
-| 24. Derived Lifecycle, Health & Maturity | 1/2 | In Progress|  |
-| 25. Surface Convergence, Doctor & Repair | 0/TBD | Not started | - |
+| 24. Derived Lifecycle, Health & Maturity | 2/2 | Complete   | 2026-05-04 |
+| 25. Surface Convergence, Doctor & Repair | 0/3 | Not started | - |
 | 26. Traceable AI Context Packs | 0/TBD | Not started | - |
 
 ---
