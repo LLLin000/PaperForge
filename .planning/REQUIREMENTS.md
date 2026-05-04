@@ -32,7 +32,7 @@ Requirements for milestone v1.6: AI-Ready Literature Asset Foundation.
 
 - [ ] **SURF-01**: User sees the same lifecycle and health meaning in `paperforge status`, plugin dashboard, and generated Base views.
 - [ ] **SURF-02**: User can run repair and doctor flows that fix source artifacts first and then rebuild derived state, instead of patching the canonical index directly.
-- [ ] **SURF-03**: User can use plugin dashboard actions as a thin shell over CLI commands, without JS re-implementing lifecycle or health rules.
+- [x] **SURF-03**: User can use plugin dashboard actions as a thin shell over CLI commands, without JS re-implementing lifecycle or health rules.
 - [ ] **SURF-04**: User can open library queues and health views that are derived from the canonical index rather than duplicated filtering logic spread across the system.
 
 ### Maturity And AI Context
@@ -96,7 +96,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | STATE-04 | Phase 24 | Complete |
 | SURF-01 | Phase 25 | Pending |
 | SURF-02 | Phase 25 | Pending |
-| SURF-03 | Phase 25 | Pending |
+| SURF-03 | Phase 25 | Complete |
 | SURF-04 | Phase 25 | Pending |
 | AIC-01 | Phase 24 | Complete |
 | AIC-02 | Phase 26 | Pending |
