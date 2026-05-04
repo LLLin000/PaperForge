@@ -2,9 +2,7 @@
 
 ## What This Is
 
-PaperForge is a local-first Obsidian + Zotero literature asset manager for researchers. It turns Zotero exports, PDFs, OCR fulltext, figures, notes, and AI outputs into a structured, traceable, reusable research library instead of a pile of disconnected files.
-
-The system still includes sync, OCR, Base views, and agent-assisted deep reading, but the product direction is shifting from "help me run one task" toward "help me maintain a long-lived AI-ready literature knowledge base."
+PaperForge is a local-first Obsidian + Zotero literature asset manager. It turns Zotero exports, PDFs, OCR fulltext, figures, notes, and AI outputs into a structured, traceable, reusable research library. v1.6 adds unified configuration, canonical asset indexing, derived lifecycle/health/maturity, surface convergence, AI context entry points, and safe workspace migration.
 
 ## Current Milestone: v1.6 AI-Ready Literature Asset Foundation
 
@@ -208,6 +206,20 @@ The v1.1 milestone was completed after a manual sandbox audit from `tests/sandbo
 | Settings tab in Obsidian plugin as setup entry point | Eliminates terminal requirement for new users; plugin becomes single download artifact. CLI/Agent unchanged — plugin is a new UI surface | ✓ Implemented v1.5 |
 | Reposition PaperForge around literature assets, not one-off prompts | Long-term user value comes from clean, traceable, AI-ready libraries rather than hardcoded extraction buttons | — Active for v1.6 |
 | Keep plugin as thin shell over CLI and canonical index | Avoids duplicated business logic and configuration drift between JS and Python layers | — Active for v1.6 |
+
+## Research Lock
+
+Research has been frozen at milestone boundaries to avoid redundant re-research.  
+
+**v1.6 (Literature Asset Foundation)** — product direction and architecture are settled:
+- Asset lifecycle, canonical index, thin-shell plugin, paper workspace direction, ai/ in workspace, Python-owned health/maturity rules.  
+- No re-research needed unless architecture or product direction changes materially.  
+
+**v1.7 (LLMWiki Concept Network)** — direction settled:
+- Cross-paper synthesis layer, concept/mechanism network, source-traceable, human-reviewable.  
+- No re-research on "whether to build a wiki" or "first use case."  
+
+See: `.planning/research/MILESTONE-RESEARCH-LOCK.md` for the full lock definition.
 
 ## Evolution
 

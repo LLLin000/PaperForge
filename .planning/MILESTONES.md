@@ -1,5 +1,28 @@
 # Milestones: PaperForge Lite Release Hardening
 
+## v1.6 AI-Ready Literature Asset Foundation (Shipped: 2026-05-04)
+
+**Phases completed:** 6 phases, 15 plans, 40 tasks
+
+**Key accomplishments:**
+
+- schema_version marker, top-level-to-vault_config migration engine, and auto-trigger in sync command
+- Refactored Obsidian plugin to read path configuration from `paperforge.json` (vault_config block), eliminating the second runtime truth problem where plugin DEFAULT_SETTINGS had wrong defaults (System/Resources/Notes/Index_Cards/Base instead of Python's 99_System/03_Resources/Literature/LiteratureControl/05_Bases).
+- Setup wizard writes canonical vault_config-only paperforge.json with schema_version, doctor detects stale legacy config with migration guidance, and load_vault_config supports optional config source tracing for CONF-03 runtime inspection.
+- Extracted index generation from sync.py into asset_index.py with versioned envelope format, atomic writes (tempfile + os.replace + filelock), and 14 passing tests
+- Legacy bare-list auto-migration, incremental refresh by Zotero key, workspace path fields in every index entry, and --rebuild-index CLI flag for the canonical asset index
+- Wire incremental index refresh into OCR, deep-reading, and repair workers; document sync.py default convention; add integration tests
+- Four pure derivation functions (lifecycle, health, maturity, next-step) consuming canonical index entry dicts with full test coverage via TDD
+- All four compute functions from asset_state.py wired into _build_entry() — every canonical index entry now carries embedded lifecycle, health, maturity, and next_step fields derived from source artifacts
+- status --json reads lifecycle/health/maturity from canonical index; doctor shows Index Health section with per-dimension health counts and brownfield detection
+- Plugin dashboard reads formal-library.json directly via readFileSync instead of spawning Python CLI, with doctor and repair as one-click Quick Action buttons
+- Base views lifecycle column migration and repair source-first rebuild with build_index() call
+- Flat literature notes copied into per-paper workspace directories with ## 🔍 精读 extraction and ai/ directory creation, wired into run_index_refresh() for first-sync migration, with workspace-aware _build_entry() writing and backward-compatible flat fallback
+- paperforge context CLI command that reads the canonical index and outputs JSON context entries with provenance traces and AI readiness explanations
+- Plugin "Copy Context" and "Copy Collection Context" Quick Actions with zotero_key resolution from active note frontmatter, clipboard copy with JSON validation
+
+---
+
 **Project:** PaperForge Lite — Local Obsidian + Zotero literature workflow for medical researchers
 
 ---
