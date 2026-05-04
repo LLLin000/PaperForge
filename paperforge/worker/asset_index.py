@@ -229,6 +229,12 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
         obsidian_wikilink_for_path,
         obsidian_wikilink_for_pdf,
     )
+    from paperforge.worker.asset_state import (
+        compute_lifecycle,
+        compute_health,
+        compute_maturity,
+        compute_next_step,
+    )
 
     key = item["key"]
     collection_meta = collection_fields(item.get("collections", []))
@@ -293,6 +299,12 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
         "deep_reading_path": f"Literature/{domain}/{key} - {title_slug}/deep-reading.md",
         "ai_path": f"Literature/{domain}/{key} - {title_slug}/ai/",
     }
+
+    # ---- derived state (Phase 24: lifecycle, health, maturity, next-step) ----
+    entry["lifecycle"] = compute_lifecycle(entry)
+    entry["health"] = compute_health(entry)
+    entry["maturity"] = compute_maturity(entry)
+    entry["next_step"] = compute_next_step(entry)
 
     # Write / update the formal note
     note_path.parent.mkdir(parents=True, exist_ok=True)
