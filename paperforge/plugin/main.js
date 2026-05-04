@@ -810,26 +810,145 @@ class PaperForgeStatusView extends ItemView {
         this._fetchStats();
     }
 
-    /* ── Per-Paper Mode Render (placeholder -- Phase 29 fills this in) ── */
+    /* ── Per-Paper Mode Render (D-01 through D-09, Phase 29) ── */
     _renderPaperMode() {
-        if (this._currentPaperEntry) {
-            // Entry found -- render paper info placeholder (D-18)
-            this._contentEl.createEl('div', {
-                cls: 'paperforge-content-placeholder',
-                text: 'Per-paper view for "' + (this._currentPaperEntry.title || this._currentPaperKey) + '" -- Phase 29 will add lifecycle stepper, health matrix, maturity gauge, and next-step panel here.',
-            });
-        } else if (this._currentPaperKey) {
+        const entry = this._currentPaperEntry;
+        const key = this._currentPaperKey;
+
+        // --- Handle loading / empty / not-found states (D-03) ---
+        if (!key) {
+            // No key at all (defensive fallback)
+            this._renderEmptyState(this._contentEl, 'No paper data available.');
+            return;
+        }
+
+        if (!entry) {
             // Key exists but entry not found in index (D-18)
             this._contentEl.createEl('div', {
                 cls: 'paperforge-content-placeholder',
-                text: 'Paper "' + this._currentPaperKey + '" not found in canonical index. The paper may not have been synced yet.',
+                text: 'Paper "' + key + '" not found in canonical index. Sync first.',
             });
+            return;
+        }
+
+        // --- Create per-paper view container (D-04 through D-09) ---
+        const view = this._contentEl.createEl('div', { cls: 'paperforge-paper-view' });
+
+        // ============ Contextual Action Buttons Row (D-10, D-11, D-12, D-13) ============
+        const actionsRow = view.createEl('div', { cls: 'paperforge-paper-actions' });
+
+        // "Copy Context" button (D-11) — reuse existing paperforge-copy-context action
+        const ctxBtn = actionsRow.createEl('button', { cls: 'paperforge-contextual-btn' });
+        ctxBtn.createEl('span', { cls: 'paperforge-contextual-btn-icon', text: '\u2139' });
+        ctxBtn.createEl('span', { text: 'Copy Context' });
+        ctxBtn.addEventListener('click', () => {
+            const action = ACTIONS.find(a => a.id === 'paperforge-copy-context');
+            if (action) this._runAction(action, ctxBtn);
+        });
+
+        // "Open Fulltext" button (D-12) — open fulltext.md in Obsidian
+        if (entry.fulltext_path) {
+            const ftBtn = actionsRow.createEl('button', { cls: 'paperforge-contextual-btn' });
+            ftBtn.createEl('span', { cls: 'paperforge-contextual-btn-icon', text: '\uD83D\uDCC4' });
+            ftBtn.createEl('span', { text: 'Open Fulltext' });
+            ftBtn.addEventListener('click', () => this._openFulltext(entry.fulltext_path));
+        }
+
+        // ============ Paper Metadata Header (D-04) ============
+        const header = view.createEl('div', { cls: 'paperforge-paper-header' });
+        const titleText = entry.title || 'Untitled';
+        header.createEl('div', { cls: 'paperforge-paper-title', text: titleText });
+
+        const meta = header.createEl('div', { cls: 'paperforge-paper-meta' });
+        if (entry.authors && entry.authors.length > 0) {
+            const authorsStr = entry.authors.join(', ');
+            meta.createEl('span', { cls: 'paperforge-paper-authors', text: authorsStr });
+        }
+        if (entry.year) {
+            meta.createEl('span', { cls: 'paperforge-paper-year', text: String(entry.year) });
+        }
+
+        // ============ Lifecycle Stepper (D-05) ============
+        this._renderLifecycleStepper(view, entry, entry.lifecycle);
+
+        // ============ Health Matrix (D-06) ============
+        this._renderHealthMatrix(view, entry.health);
+
+        // ============ Maturity Gauge (D-07) ============
+        const maturity = entry.maturity || {};
+        this._renderMaturityGauge(view, maturity.level, maturity.blocking);
+
+        // ============ Next-Step Recommendation Card (D-08, D-09) ============
+        this._renderNextStepCard(view, entry, key);
+    }
+
+    /* ── Next-Step Recommendation Card (D-08, D-09) ── */
+    _renderNextStepCard(container, entry, key) {
+        const nextStep = entry.next_step || 'ready';
+
+        // Map next_step value to human-readable info
+        const stepInfo = {
+            'sync':         { label: 'Sync Needed',    text: 'This paper needs to be synced from Zotero. Click to run sync.',             cmd: 'sync',     icon: '\u21BB' },
+            'ocr':          { label: 'OCR Needed',     text: 'Fulltext is missing but PDF is present. Click to run OCR.',                  cmd: 'ocr',      icon: '\u229E' },
+            'repair':       { label: 'Repair Needed',  text: 'State divergence or path errors detected. Click to repair.',                 cmd: 'repair',   icon: '\u21BA' },
+            'rebuild index':{ label: 'Rebuild Needed', text: 'Index may be stale. Click to run sync to rebuild.',                          cmd: 'sync',     icon: '\u21BB' },
+            '/pf-deep':     { label: 'Ready for Deep Reading', text: 'Fulltext is ready. Copy key to use /pf-deep in OpenCode.',          cmd: null,       icon: '\uD83D\uDD0D' },
+            'ready':        { label: 'All Set',        text: 'This paper is fully processed and ready for use.',                           cmd: 'ready',    icon: '\u2713' },
+        };
+
+        const info = stepInfo[nextStep] || stepInfo['ready'];
+
+        // Build the card
+        const card = container.createEl('div', { cls: 'paperforge-next-step-card' });
+        if (nextStep === 'ready') card.addClass('ready');
+
+        card.createEl('div', { cls: 'paperforge-next-step-label', text: 'Recommended Next Step' });
+        card.createEl('div', { cls: 'paperforge-next-step-text', text: info.text });
+
+        if (info.cmd && info.cmd !== 'ready') {
+            // Action button for sync/ocr/repair/rebuild index — reuse existing _runAction
+            const trigger = card.createEl('button', { cls: 'paperforge-next-step-trigger' });
+            trigger.createEl('span', { text: info.icon + '  ' + info.label });
+            trigger.addEventListener('click', () => {
+                const action = ACTIONS.find(a => a.cmd === info.cmd);
+                if (action) this._runAction(action, trigger);
+            });
+        } else if (nextStep === '/pf-deep') {
+            // Copy zotero_key to clipboard for /pf-deep (D-09)
+            const trigger = card.createEl('button', { cls: 'paperforge-next-step-trigger' });
+            trigger.createEl('span', { text: '\uD83D\uDCCB  Copy Key for /pf-deep' });
+            trigger.addEventListener('click', () => {
+                navigator.clipboard.writeText(key).then(() => {
+                    trigger.setText('\u2713  Copied!');
+                    new Notice('Zotero key copied: ' + key);
+                }).catch(() => {
+                    new Notice('[!!] Clipboard write failed', 6000);
+                });
+            });
+        } else if (nextStep === 'ready') {
+            // Show "Copy Context" shortcut for ready state (D-09)
+            const trigger = card.createEl('button', { cls: 'paperforge-next-step-trigger' });
+            trigger.createEl('span', { text: '\u2139  Copy Context' });
+            trigger.addEventListener('click', () => {
+                const action = ACTIONS.find(a => a.id === 'paperforge-copy-context');
+                if (action) this._runAction(action, trigger);
+            });
+        }
+    }
+
+    /* ── Open Fulltext File in Obsidian (D-12) ── */
+    _openFulltext(fulltextPath) {
+        if (!fulltextPath) {
+            new Notice('[!!] No fulltext path available for this paper', 6000);
+            return;
+        }
+        // fulltext_path is relative to vault root (e.g., "Literature/domain/key - Title/fulltext.md")
+        // Use Obsidian API to open the file
+        const file = this.app.vault.getAbstractFileByPath(fulltextPath);
+        if (file) {
+            this.app.workspace.openLinkText(file.path, '');
         } else {
-            // No key and no entry (defensive fallback)
-            this._contentEl.createEl('div', {
-                cls: 'paperforge-content-placeholder',
-                text: 'No paper data available.',
-            });
+            new Notice('[!!] Fulltext file not found: ' + fulltextPath, 6000);
         }
     }
 
