@@ -171,6 +171,22 @@ const ACTIONS = [
         cmd: 'ocr',
         okMsg: 'OCR started',
     },
+    {
+        id: 'paperforge-doctor',
+        title: 'Run Doctor',
+        desc: 'Verify PaperForge setup \u2014 check configs, Zotero, paths, and index health',
+        icon: '\u2695',  // ⚕
+        cmd: 'doctor',
+        okMsg: 'Doctor complete',
+    },
+    {
+        id: 'paperforge-repair',
+        title: 'Repair Issues',
+        desc: 'Fix three-way state divergence, path errors, and rebuild index',
+        icon: '\u21BA',  // ↺
+        cmd: 'repair',
+        okMsg: 'Repair complete',
+    },
 ];
 
 class PaperForgeStatusView extends ItemView {
