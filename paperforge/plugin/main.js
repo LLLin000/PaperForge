@@ -208,7 +208,16 @@ const ACTIONS = [
 ];
 
 class PaperForgeStatusView extends ItemView {
-    constructor(leaf) { super(leaf); }
+    constructor(leaf) {
+        super(leaf);
+        this._currentMode = null;       // 'global' | 'paper' | 'collection' (D-05)
+        this._currentDomain = null;     // domain name when in collection mode (D-15)
+        this._currentPaperKey = null;   // zotero_key when in per-paper mode (D-03)
+        this._currentPaperEntry = null; // full entry when in per-paper mode
+        this._cachedItems = null;       // lazy-loaded index items (Plan 28-01)
+        this._modeSubscribers = [];     // event handler refs for cleanup
+        this._leafChangeTimer = null;   // debounce timer for active-leaf-change
+    }
 
     getViewType() { return VIEW_TYPE_PAPERFORGE; }
     getDisplayText() { return 'PaperForge'; }
@@ -216,12 +225,12 @@ class PaperForgeStatusView extends ItemView {
 
     async onOpen() {
         this._buildPanel();
-        if (this._cachedStats) {
-            this._metricsEl.empty();
-            this._renderStats(this._cachedStats);
-            this._renderOcr(this._cachedStats);
-        }
-        this._fetchStats();
+        this._contentEl = this.containerEl.querySelector('.paperforge-content-area');
+        this._modeSubscribers = [];     // reused by both workspace and vault events
+        this._leafChangeTimer = null;   // debounce timer for active-leaf-change
+
+        // Initial data load per D-10
+        this._detectAndSwitch();
     }
 
     onClose() { /* no-op */ }
@@ -239,44 +248,31 @@ class PaperForgeStatusView extends ItemView {
 
         const headerLeft = header.createEl('div', { cls: 'paperforge-header-left' });
         headerLeft.createEl('div', { cls: 'paperforge-header-logo', text: 'P' });
-        headerLeft.createEl('h3', { cls: 'paperforge-header-title', text: 'PaperForge' });
+
+        // Mode context area (populated by _renderModeHeader)
+        this._modeContextEl = headerLeft.createEl('div', { cls: 'paperforge-mode-context' });
+
+        this._headerTitle = headerLeft.createEl('h3', { cls: 'paperforge-header-title', text: 'PaperForge' });
         this._versionBadge = headerLeft.createEl('span', { cls: 'paperforge-header-badge', text: 'v\u2014' });
 
         const refreshBtn = header.createEl('button', { cls: 'paperforge-header-refresh', attr: { 'aria-label': 'Refresh' } });
         refreshBtn.innerHTML = '\u21BB';
-        refreshBtn.addEventListener('click', () => this._fetchStats());
+        refreshBtn.addEventListener('click', () => {
+            this._invalidateIndex();
+            this._detectAndSwitch();
+        });
 
         /* ── Status Message (command output) ── */
         this._messageEl = root.createEl('div', { cls: 'paperforge-message' });
 
-        /* ── Metric Cards (populated by _renderStats) ── */
-        this._metricsEl = root.createEl('div', { cls: 'paperforge-metrics' });
+        /* ── Mode-Switched Content Area (per D-06) ── */
+        this._contentEl = root.createEl('div', { cls: 'paperforge-content-area' });
 
-        /* ── OCR Pipeline ── */
-        this._ocrSection = root.createEl('div', { cls: 'paperforge-ocr-section' });
-        this._ocrSection.style.display = 'none';
-
-        const ocrHeader = this._ocrSection.createEl('div', { cls: 'paperforge-ocr-header' });
-        ocrHeader.createEl('h4', { cls: 'paperforge-ocr-title', text: 'OCR Pipeline' });
-        this._ocrBadge = ocrHeader.createEl('span', { cls: 'paperforge-ocr-badge idle', text: 'Idle' });
-
-        this._ocrTrack = this._ocrSection.createEl('div', { cls: 'paperforge-progress-track' });
-        this._ocrCounts = this._ocrSection.createEl('div', { cls: 'paperforge-ocr-counts' });
-        this._ocrEmpty = this._ocrSection.createEl('div', { cls: 'paperforge-ocr-empty', text: 'No OCR tasks yet. Mark papers with do_ocr: true to start.' });
-
-        /* ── Quick Actions ── */
+        /* ── Quick Actions (visible in all modes per D-07 / "Specific Ideas") ── */
         const actions = root.createEl('div', { cls: 'paperforge-actions-section' });
         actions.createEl('h4', { cls: 'paperforge-actions-title', text: 'Quick Actions' });
-
-        const actionsGrid = actions.createEl('div', { cls: 'paperforge-actions-grid' });
-        for (const a of ACTIONS) {
-            const card = actionsGrid.createEl('div', { cls: 'paperforge-action-card' });
-            card.createEl('div', { cls: 'paperforge-action-card-icon', text: a.icon });
-            card.createEl('div', { cls: 'paperforge-action-card-title', text: a.title });
-            card.createEl('div', { cls: 'paperforge-action-card-desc', text: a.desc });
-            card.createEl('div', { cls: 'paperforge-action-card-hint', text: 'Click to run' });
-            card.addEventListener('click', () => this._runAction(a, card));
-        }
+        this._actionsGrid = actions.createEl('div', { cls: 'paperforge-actions-grid' });
+        this._renderActions();  // extracted so actions can be re-rendered per mode
     }
 
     /* ---------------------------------------------------------------------- */
@@ -672,6 +668,189 @@ class PaperForgeStatusView extends ItemView {
         }
     }
 
+    /* ── Render Quick Actions (extracted from _buildPanel for mode-aware reuse) ── */
+    _renderActions() {
+        this._actionsGrid.empty();
+        for (const a of ACTIONS) {
+            const card = this._actionsGrid.createEl('div', { cls: 'paperforge-action-card' });
+            card.createEl('div', { cls: 'paperforge-action-card-icon', text: a.icon });
+            card.createEl('div', { cls: 'paperforge-action-card-title', text: a.title });
+            card.createEl('div', { cls: 'paperforge-action-card-desc', text: a.desc });
+            card.createEl('div', { cls: 'paperforge-action-card-hint', text: 'Click to run' });
+            card.addEventListener('click', () => this._runAction(a, card));
+        }
+    }
+
+    /* ── Invalidate cached index (D-14) ── */
+    _invalidateIndex() {
+        this._cachedItems = null;
+    }
+
+    /* ── Context Detection & Mode Switch (D-01, D-02, D-03, D-04, D-10) ── */
+    _detectAndSwitch() {
+        const activeFile = this.app.workspace.getActiveFile();
+
+        if (!activeFile) {
+            // No active file -> global mode (D-04)
+            this._switchMode('global');
+            return;
+        }
+
+        const ext = activeFile.extension;
+
+        if (ext === 'base') {
+            // .base file -> collection mode (D-02, D-15)
+            this._currentDomain = activeFile.basename;
+            this._currentPaperKey = null;
+            this._currentPaperEntry = null;
+            this._switchMode('collection');
+            return;
+        }
+
+        if (ext === 'md') {
+            // .md file -- check for zotero_key in frontmatter (D-03)
+            const cache = this.app.metadataCache.getFileCache(activeFile);
+            const key = cache && cache.frontmatter && cache.frontmatter.zotero_key;
+
+            if (key) {
+                // Has zotero_key -> per-paper mode (D-03)
+                this._currentPaperKey = key;
+                this._currentPaperEntry = this._findEntry(key);
+                this._currentDomain = null;
+                this._switchMode('paper');
+            } else {
+                // .md without zotero_key -> global mode (D-04)
+                this._currentDomain = null;
+                this._currentPaperKey = null;
+                this._currentPaperEntry = null;
+                this._switchMode('global');
+            }
+            return;
+        }
+
+        // Any other file type -> global mode (D-04)
+        this._currentDomain = null;
+        this._currentPaperKey = null;
+        this._currentPaperEntry = null;
+        this._switchMode('global');
+    }
+
+    /* ── Mode Switching (D-05, D-06) ── */
+    _switchMode(mode) {
+        if (this._currentMode === mode) {
+            // Already in this mode -- just refresh if needed (D-04)
+            this._refreshCurrentMode();
+            return;
+        }
+
+        this._currentMode = mode;
+
+        // Clear existing content (D-06)
+        this._contentEl.empty();
+        this._contentEl.removeClass('switching');
+
+        // Update header (D-07)
+        this._renderModeHeader(mode);
+
+        // Render mode-specific content (D-06)
+        switch (mode) {
+            case 'global':
+                this._renderGlobalMode();
+                break;
+            case 'paper':
+                this._renderPaperMode();
+                break;
+            case 'collection':
+                this._renderCollectionMode();
+                break;
+        }
+    }
+
+    /* ── Global Mode Render (existing dashboard, extracted from _fetchStats + _renderOcr) ── */
+    _renderGlobalMode() {
+        // Metric cards
+        this._metricsEl = this._contentEl.createEl('div', { cls: 'paperforge-metrics' });
+
+        // OCR pipeline section (_renderOcr expects these instance vars)
+        this._ocrSection = this._contentEl.createEl('div', { cls: 'paperforge-ocr-section' });
+        this._ocrSection.style.display = 'none';
+        const ocrHeader = this._ocrSection.createEl('div', { cls: 'paperforge-ocr-header' });
+        ocrHeader.createEl('h4', { cls: 'paperforge-ocr-title', text: 'OCR Pipeline' });
+        this._ocrBadge = ocrHeader.createEl('span', { cls: 'paperforge-ocr-badge idle', text: 'Idle' });
+        this._ocrTrack = this._ocrSection.createEl('div', { cls: 'paperforge-progress-track' });
+        this._ocrCounts = this._ocrSection.createEl('div', { cls: 'paperforge-ocr-counts' });
+        this._ocrEmpty = this._ocrSection.createEl('div', { cls: 'paperforge-ocr-empty', text: 'No OCR tasks yet. Mark papers with do_ocr: true to start.' });
+
+        this._cachedStats = null; // force fresh load
+        this._fetchStats();
+    }
+
+    /* ── Per-Paper Mode Render (placeholder -- Phase 29 fills this in) ── */
+    _renderPaperMode() {
+        if (this._currentPaperEntry) {
+            // Entry found -- render paper info placeholder (D-18)
+            this._contentEl.createEl('div', {
+                cls: 'paperforge-content-placeholder',
+                text: 'Per-paper view for "' + (this._currentPaperEntry.title || this._currentPaperKey) + '" -- Phase 29 will add lifecycle stepper, health matrix, maturity gauge, and next-step panel here.',
+            });
+        } else if (this._currentPaperKey) {
+            // Key exists but entry not found in index (D-18)
+            this._contentEl.createEl('div', {
+                cls: 'paperforge-content-placeholder',
+                text: 'Paper "' + this._currentPaperKey + '" not found in canonical index. The paper may not have been synced yet.',
+            });
+        } else {
+            // No key and no entry (defensive fallback)
+            this._contentEl.createEl('div', {
+                cls: 'paperforge-content-placeholder',
+                text: 'No paper data available.',
+            });
+        }
+    }
+
+    /* ── Collection Mode Render (placeholder -- Phase 30 fills this in) ── */
+    _renderCollectionMode() {
+        const domain = this._currentDomain || 'Unknown';
+        const domainItems = this._filterByDomain(domain);
+
+        if (domainItems.length > 0) {
+            this._contentEl.createEl('div', {
+                cls: 'paperforge-content-placeholder',
+                text: 'Collection view for "' + domain + '" -- ' + domainItems.length + ' papers. Phase 30 will add lifecycle distribution bar chart, aggregated health summary, and paper count here.',
+            });
+        } else {
+            this._contentEl.createEl('div', {
+                cls: 'paperforge-content-placeholder',
+                text: 'No papers found in domain "' + domain + '". Sync some papers first.',
+            });
+        }
+    }
+
+    /* ── Refresh current mode (called on index change, D-09, REFR-01) ── */
+    _refreshCurrentMode() {
+        if (!this._currentMode) return;
+        this._contentEl.empty();
+        this._contentEl.addClass('switching');
+        this._invalidateIndex(); // force fresh data load
+
+        switch (this._currentMode) {
+            case 'global':
+                this._renderGlobalMode();
+                break;
+            case 'paper':
+                this._renderPaperMode();
+                break;
+            case 'collection':
+                this._renderCollectionMode();
+                break;
+        }
+
+        // Brief delay before removing switching class for smooth fade transition
+        setTimeout(() => {
+            if (this._contentEl) this._contentEl.removeClass('switching');
+        }, 50);
+    }
+
     /* ── Run Action ── */
     _runAction(a, card) {
         // Guard: prevent running the same action simultaneously
@@ -785,46 +964,6 @@ class PaperForgeStatusView extends ItemView {
             this._showMessage('[!!] ' + err.message, 'error');
             new Notice('[!!] Cannot start: ' + err.message, 8000);
         });
-    }
-        });
-        child.stderr.on('data', (data) => {
-            const lines = data.toString('utf-8').split('\n').filter(Boolean);
-            for (const l of lines) {
-                if (l.includes('\r') || l.includes('%') || l.includes('█')) continue;
-                const trim = l.trim();
-                if (trim && !trim.match(/^\d+%|^\|/)) { log.push(trim); this._showMessage(log.slice(-8).join('\n'), 'running'); }
-            }
-        });
-        child.on('close', (code) => {
-            clearInterval(pollTimer);
-            card.removeClass('running');
-            const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-            if (code !== 0) {
-                const last = log.slice(-3).join(' | ') || 'exit code ' + code;
-                this._showMessage('[!!] ' + last, 'error');
-                new Notice('[!!] ' + a.cmd + ' failed: ' + last, 8000);
-            } else {
-                // Build a summary from log lines
-                const updated = log.filter(l => l.match(/updated \d+/));
-                const lastUpdated = updated.pop() || log[log.length - 1] || '';
-                const summary = `${elapsed}s — ${lastUpdated}`;
-                this._showMessage('[OK] ' + a.title + ': ' + summary, 'ok');
-                new Notice('[OK] ' + a.okMsg);
-                this._fetchStats(true);
-            }
-        });
-        child.on('error', (err) => {
-            card.removeClass('running');
-            this._showMessage('[!!] ' + err.message, 'error');
-            new Notice('[!!] Cannot start: ' + err.message, 8000);
-        });
-    }
-
-    _showMessage(msg, cls) {
-        if (this._messageEl) {
-            this._messageEl.setText(msg);
-            this._messageEl.className = `paperforge-message msg-${cls}`;
-        }
     }
 
     _showMessage(msg, cls) {
