@@ -1,5 +1,20 @@
 # Milestones: PaperForge Lite Release Hardening
 
+## v1.7 Context-Aware Dashboard (Shipped: 2026-05-04)
+
+**Phases completed:** 4 phases, 6 plans, 14 tasks
+
+**Key accomplishments:**
+
+- Pure CSS dashboard components for the PaperForge plugin -- loading skeleton, metric card, lifecycle stepper, health matrix, maturity gauge, and bar chart -- all themed via Obsidian CSS variables
+- 5 new DOM render methods on PaperForgeStatusView: loading skeleton utilities, enhanced metric cards, 6-stage lifecycle stepper, 2x2 health matrix, 6-segment maturity gauge, and lifecycle-proportional bar chart -- all using createEl() DOM API with CSS classes from Plan 27-01
+- Index loading utilities (_loadIndex, _getCachedIndex, _findEntry, _filterByDomain) on PaperForgeStatusView + CSS Sections 13-14 for mode-aware dashboard content area and header context
+- Mode-aware dashboard routing with _detectAndSwitch, _switchMode, debounced event subscriptions, mode header rendering, and lifecycle cleanup in PaperForgeStatusView
+- Full per-paper dashboard rendering pipeline: lifecycle stepper, health matrix, maturity gauge, next-step recommendation card, contextual actions, and paper metadata header
+- Domain-level aggregated dashboard: metric cards (papers/fulltext-ready/deep-read), lifecycle bar chart, and health overview grid with healthy/unhealthy counts for PDF/OCR/Note/Asset dimensions
+
+---
+
 ## v1.6 AI-Ready Literature Asset Foundation (Shipped: 2026-05-04)
 
 **Phases completed:** 6 phases, 15 plans, 40 tasks
