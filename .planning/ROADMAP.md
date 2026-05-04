@@ -39,7 +39,7 @@
 
 - [x] **Phase 27: Component Library** — Pure CSS/DOM visualization building blocks using Obsidian design tokens (2 plans planned)
 - [x] **Phase 28: Dashboard Shell & Context Detection** — Auto-detect active file type and switch to correct dashboard mode (completed 2026-05-04)
-- [ ] **Phase 29: Per-Paper View** — Lifecycle stepper, health matrix, maturity gauge, and next-step guidance for individual papers
+- [x] **Phase 29: Per-Paper View** — Lifecycle stepper, health matrix, maturity gauge, and next-step guidance for individual papers (completed 2026-05-04)
 - [ ] **Phase 30: Collection View** — Domain-level lifecycle/health aggregation for Base files
 
 ---
@@ -88,8 +88,10 @@ Plans:
   3. Maturity gauge shows the current level (1-6) as filled segments with the numeric level displayed, and below the gauge lists which checks are currently blocking advancement to the next level.
   4. Next-step panel recommends exactly one concrete action with a one-line explanation of why (e.g., "Run OCR — fulltext is missing but PDF is present"). If the paper is already ai_context_ready, the panel shows "Ready" with no action needed.
   5. Next-step panel includes a clickable action trigger that either executes the recommended CLI command (sync/ocr) via the existing action runner, or copies the zotero_key for `/pf-deep`, or confirms readiness with a "Copy Context" shortcut.
-**Plans**: TBD
+**Plans**: 1 plan
 **UI hint**: yes
+Plans:
+- [x] 29-01-PLAN.md — Per-paper view wiring: metadata header, lifecycle stepper, health matrix, maturity gauge, next-step card, contextual actions
 
 ### Phase 30: Collection View
 **Goal**: User can see aggregated domain-level lifecycle and health statistics when viewing any Base file in the PaperForge dashboard.
@@ -116,7 +118,7 @@ Plans:
 | 26. Traceable AI Context Packs | v1.6 | 3/3 | Complete | 2026-05-04 |
 | 27. Component Library | v1.7 | 2/2 | Complete   | 2026-05-04 |
 | 28. Dashboard Shell & Context Detection | v1.7 | 2/2 | Complete   | 2026-05-04 |
-| 29. Per-Paper View | v1.7 | 0/TBD | Not started | - |
+| 29. Per-Paper View | v1.7 | 1/1 | Complete   | 2026-05-04 |
 | 30. Collection View | v1.7 | 0/TBD | Not started | - |
 
 ---

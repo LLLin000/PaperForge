@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.7
 milestone_name: Context-Aware Dashboard
-status: Phase complete — ready for verification
-stopped_at: Completed 28-02-PLAN.md
-last_updated: "2026-05-04T15:05:30.000Z"
+status: Planning complete
+stopped_at: Completed 29-01-PLAN.md
+last_updated: "2026-05-04T08:18:38.480Z"
 progress:
   total_phases: 4
-  completed_phases: 1
-  total_plans: 4
-  completed_plans: 4
+  completed_phases: 3
+  total_plans: 5
+  completed_plans: 5
 ---
 
 # Project State
@@ -23,8 +23,8 @@ See: .planning/PROJECT.md (updated 2026-05-03)
 
 ## Current Position
 
-Phase: 28 (dashboard-shell-context-detection) — PLANNING COMPLETE
-Plans: 2 of 2 planned
+Phase: 29 (per-paper-view) — PLANNING COMPLETE
+Plans: 1 of 1 planned
 
 ## Performance Metrics
 
@@ -64,6 +64,7 @@ Plans: 2 of 2 planned
 | Phase 27-component-library P02 | 3 min | 3 tasks | 1 files |
 | Phase 28-dashboard-shell-context-detection P01 | 1 min | 2 tasks | 2 files |
 | Phase 28-dashboard-shell-context-detection P02 | 5 min | 2 tasks | 1 files |
+| Phase 29 P01 | 10 min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -107,6 +108,10 @@ Recent decisions affecting current work:
 
 None yet.
 
+- [Phase 29-per-paper-view]: _renderPaperMode() uses entry.next_step string → maps to 6-state stepInfo object for human-readable label + action trigger, with /pf-deep as clipboard copy (no CLI action)
+- [Phase 29-per-paper-view]: Contextual action row created inside _renderPaperMode() before components — Copy Context reuses existing ACTIONS.paperforge-copy-context (needsKey), Open Fulltext uses new _openFulltext() with vault.getAbstractFileByPath + workspace.openLinkText
+- [Phase 29-per-paper-view]: Next-step action trigger for sync/ocr/repair calls ACTIONS.find by cmd + _runAction(); /pf-deep copies key via clipboard; ready shows "Copy Context" shortcut — all three paths are explicit in _renderNextStepCard
+
 ### Blockers/Concerns
 
 - Brownfield rollout must protect existing vaults, old Base templates, partial OCR assets, and legacy config shapes.
@@ -114,6 +119,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-04T15:05:30.000Z
-Stopped at: Completed 28-02-PLAN.md
+Last session: 2026-05-04T08:18:38.476Z
+Stopped at: Completed 29-01-PLAN.md
 Resume file: None
