@@ -67,12 +67,15 @@ Plans:
 **Depends on**: Phase 27 (components must exist to render into each mode)
 **Requirements**: DASH-01, DASH-02, DASH-03, DASH-04, REFR-01, REFR-02
 **Success Criteria** (what must be TRUE):
-  1. User opens a `.base` file → dashboard header shows the domain name and the view switches to collection mode, without any manual button click.
-  2. User opens a paper card (`.md` with `zotero_key` in frontmatter) → dashboard header shows the paper title and the view switches to per-paper mode, without any manual button click.
-  3. User opens any other file or no file → dashboard shows the existing global library overview (metric cards, OCR pipeline, Quick Actions).
-  4. User switches active file via tab click or Ctrl+Tab → dashboard transitions to the correct mode within observable time (< 500ms), with the previous mode's data released from memory.
-  5. When `formal-library.json` is modified externally (by sync/ocr/repair workers) → dashboard detects the change within 2 seconds and refreshes the current view with updated data, preserving the current mode.
-**Plans**: TBD
+   1. User opens a `.base` file → dashboard header shows the domain name and the view switches to collection mode, without any manual button click.
+   2. User opens a paper card (`.md` with `zotero_key` in frontmatter) → dashboard header shows the paper title and the view switches to per-paper mode, without any manual button click.
+   3. User opens any other file or no file → dashboard shows the existing global library overview (metric cards, OCR pipeline, Quick Actions).
+   4. User switches active file via tab click or Ctrl+Tab → dashboard transitions to the correct mode within observable time (< 500ms), with the previous mode's data released from memory.
+   5. When `formal-library.json` is modified externally (by sync/ocr/repair workers) → dashboard detects the change within 2 seconds and refreshes the current view with updated data, preserving the current mode.
+**Plans**: 2 plans
+Plans:
+- [ ] 28-01-PLAN.md — Index utilities (load/cache/lookup) + CSS for mode-aware shell
+- [ ] 28-02-PLAN.md — Context detection, mode switching, event subscriptions, auto-refresh, mode-aware header
 **UI hint**: yes
 
 ### Phase 29: Per-Paper View
@@ -112,7 +115,7 @@ Plans:
 | 25. Surface Convergence, Doctor & Repair | v1.6 | 3/3 | Complete | 2026-05-04 |
 | 26. Traceable AI Context Packs | v1.6 | 3/3 | Complete | 2026-05-04 |
 | 27. Component Library | v1.7 | 2/2 | Complete   | 2026-05-04 |
-| 28. Dashboard Shell & Context Detection | v1.7 | 0/TBD | Not started | - |
+| 28. Dashboard Shell & Context Detection | v1.7 | 2/2 | Planned | - |
 | 29. Per-Paper View | v1.7 | 0/TBD | Not started | - |
 | 30. Collection View | v1.7 | 0/TBD | Not started | - |
 
