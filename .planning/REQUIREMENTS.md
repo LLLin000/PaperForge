@@ -38,9 +38,9 @@ Requirements for milestone v1.6: AI-Ready Literature Asset Foundation.
 ### Maturity And AI Context
 
 - [x] **AIC-01**: User can see a transparent Library Maturity or Workflow Level for a paper or library, with explainable criteria rather than a black-box score.
-- [ ] **AIC-02**: User can generate a traceable context pack for a single paper that includes the relevant metadata, fulltext, note links, and provenance.
-- [ ] **AIC-03**: User can generate a collection-level context pack from canonical assets without hardcoding discipline-specific extraction schemas.
-- [ ] **AIC-04**: User can use AI context entry points such as ask-this-paper or ask-this-collection only when the system can explain what source assets were included.
+- [x] **AIC-02**: User can generate a traceable context pack for a single paper that includes the relevant metadata, fulltext, note links, and provenance.
+- [x] **AIC-03**: User can generate a collection-level context pack from canonical assets without hardcoding discipline-specific extraction schemas.
+- [x] **AIC-04**: User can use AI context entry points such as ask-this-paper or ask-this-collection only when the system can explain what source assets were included.
 
 ### Brownfield Rollout
 
@@ -99,9 +99,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SURF-03 | Phase 25 | Complete |
 | SURF-04 | Phase 25 | Complete |
 | AIC-01 | Phase 24 | Complete |
-| AIC-02 | Phase 26 | Pending |
-| AIC-03 | Phase 26 | Pending |
-| AIC-04 | Phase 26 | Pending |
+| AIC-02 | Phase 26 | Complete |
+| AIC-03 | Phase 26 | Complete |
+| AIC-04 | Phase 26 | Complete |
 | MIG-01 | Phase 25 | Complete |
 | MIG-02 | Phase 23 | Complete |
 | MIG-03 | Phase 25 | Complete |

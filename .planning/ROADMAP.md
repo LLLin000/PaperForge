@@ -114,7 +114,12 @@ Plans:
   2. User can generate a collection-level context pack from canonical assets without requiring hardcoded discipline-specific extraction schemas.
   3. User can only invoke AI context entry points when PaperForge can explain what source assets were included or why pack generation is blocked.
   4. User can trace every item in a context pack back to the originating PDF, OCR output, and formal note.
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+- [x] 26-01-PLAN.md — Flat-to-workspace note migration (copy flat notes, split deep-reading, _build_entry workspace write)
+- [x] 26-02-PLAN.md — CLI `paperforge context` command (key/domain/collection/all modes, provenance, AI readiness explanation)
+- [ ] 26-03-PLAN.md — Plugin Copy Context buttons (per-paper and collection-level clipboard JSON output)
 
 ## Progress
 
@@ -126,7 +131,7 @@ Plans:
 | 23. Canonical Asset Index & Safe Rebuilds | 3/3 | Complete   | 2026-05-03 |
 | 24. Derived Lifecycle, Health & Maturity | 2/2 | Complete   | 2026-05-04 |
 | 25. Surface Convergence, Doctor & Repair | 3/3 | Complete   | 2026-05-04 |
-| 26. Traceable AI Context Packs | 0/TBD | Not started | - |
+| 26. Traceable AI Context Packs | 2/3 | In Progress|  |
 
 ---
 
