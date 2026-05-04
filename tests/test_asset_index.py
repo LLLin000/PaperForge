@@ -22,6 +22,7 @@ from paperforge.worker.asset_index import (
     build_envelope,
     build_index,
     get_index_path,
+    summarize_index,
 )
 
 
@@ -209,6 +210,103 @@ class TestBuildIndexEmpty:
         assert index_path.exists()
         envelope = json.loads(index_path.read_text(encoding="utf-8"))
         assert envelope["paper_count"] == 0
+
+
+class TestSummarizeIndex:
+    """summarize_index(vault) -> dict | None"""
+
+    def _write_envelope(self, vault: Path, items: list[dict]) -> None:
+        """Helper: write an envelope-format index to the vault."""
+        from paperforge.worker.asset_index import atomic_write_index, build_envelope
+
+        idx_path = get_index_path(vault)
+        idx_path.parent.mkdir(parents=True, exist_ok=True)
+        envelope = build_envelope(items)
+        atomic_write_index(idx_path, envelope)
+
+    def test_summarize_index_returns_aggregates(self, tmp_path: Path) -> None:
+        """3 items at different lifecycle states produce correct counts."""
+        vault = _minimal_vault(tmp_path)
+        items = [
+            {
+                "zotero_key": "AAA",
+                "lifecycle": "indexed",
+                "health": {
+                    "pdf_health": "healthy",
+                    "ocr_health": "healthy",
+                    "note_health": "healthy",
+                    "asset_health": "healthy",
+                },
+                "maturity": {"level": 1},
+            },
+            {
+                "zotero_key": "BBB",
+                "lifecycle": "fulltext_ready",
+                "health": {
+                    "pdf_health": "healthy",
+                    "ocr_health": "healthy",
+                    "note_health": "PDF path missing",
+                    "asset_health": "healthy",
+                },
+                "maturity": {"level": 3},
+            },
+            {
+                "zotero_key": "CCC",
+                "lifecycle": "ai_context_ready",
+                "health": {
+                    "pdf_health": "healthy",
+                    "ocr_health": "healthy",
+                    "note_health": "healthy",
+                    "asset_health": "healthy",
+                },
+                "maturity": {"level": 6},
+            },
+        ]
+        self._write_envelope(vault, items)
+        result = summarize_index(vault)
+        assert result is not None
+        assert result["paper_count"] == 3
+        assert result["lifecycle_level_counts"]["indexed"] == 1
+        assert result["lifecycle_level_counts"]["fulltext_ready"] == 1
+        assert result["lifecycle_level_counts"]["ai_context_ready"] == 1
+        # Unhealthy in note_health due to "PDF path missing"
+        assert result["health_aggregate"]["note_health"]["unhealthy"] == 1
+        assert result["health_aggregate"]["note_health"]["healthy"] == 2
+        assert result["maturity_distribution"]["1"] == 1
+        assert result["maturity_distribution"]["3"] == 1
+        assert result["maturity_distribution"]["6"] == 1
+
+    def test_summarize_index_missing_index_returns_none(self, tmp_path: Path) -> None:
+        """When index file does not exist, returns None."""
+        vault = _minimal_vault(tmp_path)
+        # Do NOT write an index file
+        result = summarize_index(vault)
+        assert result is None
+
+    def test_summarize_index_legacy_format_returns_none(self, tmp_path: Path) -> None:
+        """When index is a bare list (legacy), returns None."""
+        vault = _minimal_vault(tmp_path)
+        idx_path = get_index_path(vault)
+        idx_path.parent.mkdir(parents=True, exist_ok=True)
+        # Legacy format: bare list
+        idx_path.write_text(json.dumps([{"zotero_key": "AAA"}]), encoding="utf-8")
+        result = summarize_index(vault)
+        assert result is None
+
+    def test_summarize_index_empty_items_all_zeros(self, tmp_path: Path) -> None:
+        """When items list is empty, all counts are zero."""
+        vault = _minimal_vault(tmp_path)
+        self._write_envelope(vault, [])
+        result = summarize_index(vault)
+        assert result is not None
+        assert result["paper_count"] == 0
+        for key in ("indexed", "pdf_ready", "fulltext_ready", "deep_read_done", "ai_context_ready"):
+            assert result["lifecycle_level_counts"][key] == 0
+        for dim in ("pdf_health", "ocr_health", "note_health", "asset_health"):
+            assert result["health_aggregate"][dim]["healthy"] == 0
+            assert result["health_aggregate"][dim]["unhealthy"] == 0
+        for level in range(1, 7):
+            assert result["maturity_distribution"][str(level)] == 0
 
 
 # ---------------------------------------------------------------------------
