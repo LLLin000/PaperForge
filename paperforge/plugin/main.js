@@ -1447,6 +1447,32 @@ class PaperForgeSettingTab extends PluginSettingTab {
                     }
                 } catch {}
             }
+            // Fallback: search inside user-configured zotero_data_dir
+            if (!bbtOk && zotDataDir) {
+                try {
+                    // Direct: zotero_data_dir/better-bibtex (custom layout)
+                    if (fs.existsSync(path.join(zotDataDir, 'better-bibtex'))) {
+                        bbtOk = true;
+                    }
+                    // Profile-based: zotero_data_dir/Profiles/*/extensions/better-bibtex*
+                    if (!bbtOk) {
+                        const altProfilesDir = path.join(zotDataDir, 'Profiles');
+                        if (fs.existsSync(altProfilesDir)) {
+                            for (const p of fs.readdirSync(altProfilesDir)) {
+                                const extDir = path.join(altProfilesDir, p, 'extensions');
+                                if (fs.existsSync(extDir)) {
+                                    for (const d of fs.readdirSync(extDir)) {
+                                        if (d.startsWith('better-bibtex')) {
+                                            bbtOk = true; break;
+                                        }
+                                    }
+                                    if (bbtOk) break;
+                                }
+                            }
+                        }
+                    }
+                } catch {}
+            }
             results.push({ label: 'Better BibTeX', ok: bbtOk, detail: bbtOk ? t('check_bbt_ok') : t('check_bbt_fail') });
 
             /* Render */
