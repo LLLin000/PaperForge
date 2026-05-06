@@ -32,6 +32,7 @@ paperforge sync      # 生成正式笔记和 library-records
 - [ ] 正式笔记已生成（`paperforge sync` 生成）
 - [ ] library-record 存在（用于定位论文）
 - [ ] `fulltext.md` 存在（推荐，用于基于原文回答；如不存在则基于元数据回答）
+- [ ] discussion.py 模块可用（`python -m paperforge.worker.discussion --help` 可执行）
 
 > **注意**：与 `/pf-deep` 不同，`<prefix>pf-paper` **不强制要求** OCR 完成。没有 OCR 时基于论文元数据和公开信息回答。
 
@@ -70,6 +71,8 @@ Zotero Key: [key]
 请问有什么问题？
 ```
 
+会话结束后，讨论记录将自动保存至论文工作区 `ai/discussion.json` 和 `ai/discussion.md`。
+
 ### 回答原则
 
 - **严格基于** `fulltext.md` 中的文本内容回答
@@ -91,6 +94,43 @@ Zotero Key: [key]
 ### OCR 文件缺失
 - **表现**：`fulltext.md` 不存在
 - **处理**：Agent 基于元数据和公开信息回答，并告知用户"OCR 文本不可用，回答基于元数据"
+
+## 8. 保存讨论记录
+
+在 Q&A 会话结束时，Agent 必须将本次讨论记录保存到论文工作区的 `ai/` 目录中。
+
+**操作步骤：**
+
+1. 在会话中积累所有 Q&A 对 —— 每次用户提问和 Agent 回答都记录为一对：
+   ```json
+   {
+     "question": "用户的问题",
+     "answer": "Agent 的回答",
+     "source": "user_question",
+     "timestamp": "2026-05-06T12:00:00+08:00"
+   }
+   ```
+   其中 `source` 为 `"user_question"`（用户提问）或 `"agent_analysis"`（Agent 主动分析）。
+
+2. 会话结束时，将 Q&A 对序列化为 JSON 字符串，调用 CLI：
+   ```bash
+   python -m paperforge.worker.discussion record <ZOTERO_KEY> \
+       --vault "<VAULT_PATH>" \
+       --agent pf-paper \
+       --model "<MODEL_NAME>" \
+       --qa-pairs '<JSON_ARRAY>'
+   ```
+
+3. CLI 返回 JSON：
+   ```json
+   {"status": "ok", "json_path": "Literature/{domain}/{key} - {title}/ai/discussion.json", "md_path": "Literature/{domain}/{key} - {title}/ai/discussion.md"}
+   ```
+   如果 `status` 为 `"error"`，记录错误信息但不中断会话流程。
+
+**注意：**
+- 仅 `/pf-paper` 记录讨论。`/pf-deep` 不记录（精读内容已写入正式笔记）。
+- 如果论文没有 library-record（无法解析 domain/title），记录会失败但不影响正常使用。
+- 所有 Q&A 内容以 UTF-8 编码写入，支持中文。
 
 ## See Also
 
