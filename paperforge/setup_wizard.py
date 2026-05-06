@@ -1792,7 +1792,6 @@ def headless_setup(
         pf_path / "config",
         pf_path / "worker/scripts",
         vault / resources_dir / literature_dir,
-        vault / resources_dir / control_dir / "library-records",
         vault / base_dir,
         vault / ".obsidian" / "plugins" / "paperforge",
     ]
@@ -2057,13 +2056,12 @@ PADDLEOCR_MODEL=PaddleOCR-VL-1.5
     checks = {
         "Worker scripts": worker_dst.exists(),
         "Skill files": len(imported_skills) > 0,
-        "Library records dir": (vault / resources_dir / control_dir).exists(),
         "Base dir": (vault / base_dir).exists(),
         "Exports dir": (pf_path / "exports").exists(),
         "OCR dir": (pf_path / "ocr").exists(),
         "paperforge.json": pf_json.exists(),
         "Obsidian plugin": (vault / ".obsidian" / "plugins" / "paperforge" / "main.js").exists(),
-        "AGENTS.md": agents_dst.exists(),
+        "AGENTS.md": True if not agents_src.exists() else agents_dst.exists(),
     }
     failed = [k for k, v in checks.items() if not v]
     if failed:

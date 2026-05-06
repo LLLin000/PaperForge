@@ -651,10 +651,13 @@ class PaperForgeStatusView extends ItemView {
 
         gauge.createEl('div', { cls: 'gauge-level', text: `Level ${currentLevel} / 6` });
 
-        if (currentLevel < 6 && blockingChecks && blockingChecks.length > 0) {
-            const list = gauge.createEl('ul', { cls: 'gauge-blockers' });
-            for (const check of blockingChecks) {
-                list.createEl('li', { text: check });
+        if (currentLevel < 6 && blockingChecks) {
+            const blockers = typeof blockingChecks === 'string' ? [blockingChecks] : blockingChecks;
+            if (blockers.length > 0) {
+                const list = gauge.createEl('ul', { cls: 'gauge-blockers' });
+                for (const check of blockers) {
+                    list.createEl('li', { text: check });
+                }
             }
         }
     }
@@ -1049,6 +1052,8 @@ class PaperForgeStatusView extends ItemView {
         this._contentEl.addClass('switching');
         this._invalidateIndex(); // force fresh data load
 
+        this._renderModeHeader(this._currentMode);
+
         switch (this._currentMode) {
             case 'global':
                 this._renderGlobalMode();
@@ -1207,6 +1212,7 @@ class PaperForgeStatusView extends ItemView {
             case 'paper':
                 badge.addClass('paper');
                 badge.setText('Paper');
+                this._headerTitle.setText('Paper');
                 if (this._currentPaperEntry && this._currentPaperEntry.title) {
                     modeName = this._currentPaperEntry.title;
                 } else if (this._currentPaperKey) {
@@ -1219,14 +1225,13 @@ class PaperForgeStatusView extends ItemView {
                 } else {
                     modeName = 'Unknown paper';
                 }
-                this._headerTitle.setText(modeName);
                 break;
 
             case 'collection':
                 badge.addClass('collection');
                 badge.setText('Collection');
+                this._headerTitle.setText('Collection');
                 modeName = this._currentDomain || 'Unknown Domain';
-                this._headerTitle.setText(modeName);
                 break;
         }
 
