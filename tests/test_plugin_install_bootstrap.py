@@ -1,0 +1,57 @@
+from __future__ import annotations
+
+from pathlib import Path
+
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
+PLUGIN_MAIN = REPO_ROOT / "paperforge" / "plugin" / "main.js"
+
+
+def test_plugin_install_bootstraps_pip_before_setup() -> None:
+    """First-time plugin install must install the Python package before setup."""
+    source = PLUGIN_MAIN.read_text(encoding="utf-8")
+    assert "python -m paperforge" in source or "'-m', 'paperforge'" in source
+    assert (
+        '"-m", "pip", "install"' in source
+        or "-m', 'pip', 'install'" in source
+    ), "plugin install flow should bootstrap pip install before running paperforge setup"
+
+
+def test_plugin_validates_setup_complete_against_paperforge_json() -> None:
+    """setup_complete must be cross-checked against real vault config."""
+    source = PLUGIN_MAIN.read_text(encoding="utf-8")
+    assert "setup_complete" in source
+    assert "paperforge.json" in source, "plugin should verify setup_complete against paperforge.json"
+
+
+def test_setup_args_global_vault_before_subcommand() -> None:
+    """Global --vault argument must appear before subcommand 'setup'."""
+    source = PLUGIN_MAIN.read_text(encoding="utf-8")
+    # Check that '--vault' appears before 'setup' in the setupArgs array
+    vault_pos = source.find("'--vault'")
+    setup_pos = source.find("'setup'")
+    assert vault_pos > 0 and setup_pos > 0
+    assert vault_pos < setup_pos, (
+        f"'--vault' (pos {vault_pos}) must appear before 'setup' (pos {setup_pos}) "
+        "in setupArgs, because --vault is a global paperforge argument"
+    )
+
+
+def test_setup_wizard_flat_command_falls_back_to_packaged_command_files() -> None:
+    """pip-installed setup must deploy OpenCode commands from packaged command_files."""
+    source = (REPO_ROOT / "paperforge" / "setup_wizard.py").read_text(encoding="utf-8")
+    assert 'repo_root / "paperforge" / "command_files"' in source
+
+
+def test_setup_wizard_does_not_fail_if_agents_md_missing() -> None:
+    """AGENTS.md is optional for pip-installed package deployments."""
+    source = (REPO_ROOT / "paperforge" / "setup_wizard.py").read_text(encoding="utf-8")
+    assert 'True if not agents_src.exists() else agents_dst.exists()' in source
+
+
+def test_setup_wizard_uses_manual_zotero_path_for_checks() -> None:
+    """Informational checks should honor user-provided zotero_data_dir."""
+    source = (REPO_ROOT / "paperforge" / "setup_wizard.py").read_text(encoding="utf-8")
+    assert "manual_zotero_path = Path(zotero_data).expanduser() if zotero_data else None" in source
+    assert "checker.check_zotero(manual_zotero_path)" in source
+    assert "checker.check_bbt(manual_zotero_path)" in source
