@@ -21,7 +21,8 @@ ROOT = Path(__file__).resolve().parent.parent
 
 FILES_TO_UPDATE = {
     "__init__": ROOT / "paperforge" / "__init__.py",
-    "manifest": ROOT / "paperforge" / "plugin" / "manifest.json",
+    "plugin_manifest": ROOT / "paperforge" / "plugin" / "manifest.json",
+    "root_manifest": ROOT / "manifest.json",
     "versions": ROOT / "paperforge" / "plugin" / "versions.json",
 }
 
