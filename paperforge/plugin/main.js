@@ -1,5 +1,7 @@
 const { Plugin, Notice, ItemView, Modal, Setting, PluginSettingTab, addIcon } = require('obsidian');
 const { exec } = require('node:child_process');
+const fs = require('fs');
+const path = require('path');
 
 const VIEW_TYPE_PAPERFORGE = 'paperforge-status';
 const PF_ICON_ID = 'paperforge';
@@ -144,15 +146,12 @@ function t(key) { return (T && T[key]) || (LANG.en[key]) || key; }
 
 const DEFAULT_SETTINGS = {
     vault_path: '',
-    system_dir: 'System',
-    resources_dir: 'Resources',
-    literature_dir: 'Notes',
-    control_dir: 'Index_Cards',
-    base_dir: 'Base',
     setup_complete: false,
     auto_update: true,
     agent_platform: 'opencode',
     language: '',
+    paddleocr_api_key: '',
+    zotero_data_dir: '',
 };
 
 const ACTIONS = [
@@ -172,10 +171,53 @@ const ACTIONS = [
         cmd: 'ocr',
         okMsg: 'OCR started',
     },
+    {
+        id: 'paperforge-doctor',
+        title: 'Run Doctor',
+        desc: 'Verify PaperForge setup \u2014 check configs, Zotero, paths, and index health',
+        icon: '\u2695',  // ⚕
+        cmd: 'doctor',
+        okMsg: 'Doctor complete',
+    },
+    {
+        id: 'paperforge-repair',
+        title: 'Repair Issues',
+        desc: 'Fix three-way state divergence, path errors, and rebuild index',
+        icon: '\u21BA',  // ↺
+        cmd: 'repair',
+        okMsg: 'Repair complete',
+    },
+    {
+        id: 'paperforge-copy-context',
+        title: 'Copy Context',
+        desc: 'Copy this paper\u2019s canonical index entry JSON to clipboard for AI use',
+        icon: '\u2139',  // ℹ
+        cmd: 'context',
+        needsKey: true,
+        okMsg: 'Context copied',
+    },
+    {
+        id: 'paperforge-copy-collection-context',
+        title: 'Copy Collection Context',
+        desc: 'Copy canonical index entries for all visible papers to clipboard',
+        icon: '\u2261',  // ≡
+        cmd: 'context',
+        needsFilter: true,
+        okMsg: 'Collection context copied',
+    },
 ];
 
 class PaperForgeStatusView extends ItemView {
-    constructor(leaf) { super(leaf); }
+    constructor(leaf) {
+        super(leaf);
+        this._currentMode = null;       // 'global' | 'paper' | 'collection' (D-05)
+        this._currentDomain = null;     // domain name when in collection mode (D-15)
+        this._currentPaperKey = null;   // zotero_key when in per-paper mode (D-03)
+        this._currentPaperEntry = null; // full entry when in per-paper mode
+        this._cachedItems = null;       // lazy-loaded index items (Plan 28-01)
+        this._modeSubscribers = [];     // event handler refs for cleanup
+        this._leafChangeTimer = null;   // debounce timer for active-leaf-change
+    }
 
     getViewType() { return VIEW_TYPE_PAPERFORGE; }
     getDisplayText() { return 'PaperForge'; }
@@ -183,15 +225,40 @@ class PaperForgeStatusView extends ItemView {
 
     async onOpen() {
         this._buildPanel();
-        if (this._cachedStats) {
-            this._metricsEl.empty();
-            this._renderStats(this._cachedStats);
-            this._renderOcr(this._cachedStats);
-        }
-        this._fetchStats();
+        this._contentEl = this.containerEl.querySelector('.paperforge-content-area');
+        this._modeSubscribers = [];     // reused by both workspace and vault events
+        this._leafChangeTimer = null;   // debounce timer for active-leaf-change
+
+        // Subscribe to file change events (D-08, D-09)
+        this._setupEventSubscriptions();
+
+        // Initial data load per D-10
+        this._detectAndSwitch();
     }
 
-    onClose() { /* no-op */ }
+    onClose() {
+        // Unsubscribe from all event subscriptions (D-08, D-09)
+        if (this._modeSubscribers && this._modeSubscribers.length > 0) {
+            for (const sub of this._modeSubscribers) {
+                if (sub.event === 'active-leaf-change') {
+                    this.app.workspace.off('active-leaf-change', sub.ref);
+                } else if (sub.event === 'modify') {
+                    this.app.vault.off('modify', sub.ref);
+                }
+            }
+            this._modeSubscribers = [];
+        }
+
+        // Clear debounce timer
+        if (this._leafChangeTimer) {
+            clearTimeout(this._leafChangeTimer);
+            this._leafChangeTimer = null;
+        }
+
+        // Clear cached data
+        this._cachedItems = null;
+        this._cachedStats = null;
+    }
 
     /* ---------------------------------------------------------------------- */
     /*  Build Panel                                                           */
@@ -206,50 +273,38 @@ class PaperForgeStatusView extends ItemView {
 
         const headerLeft = header.createEl('div', { cls: 'paperforge-header-left' });
         headerLeft.createEl('div', { cls: 'paperforge-header-logo', text: 'P' });
-        headerLeft.createEl('h3', { cls: 'paperforge-header-title', text: 'PaperForge' });
+
+        // Mode context area (populated by _renderModeHeader)
+        this._modeContextEl = headerLeft.createEl('div', { cls: 'paperforge-mode-context' });
+
+        this._headerTitle = headerLeft.createEl('h3', { cls: 'paperforge-header-title', text: 'PaperForge' });
         this._versionBadge = headerLeft.createEl('span', { cls: 'paperforge-header-badge', text: 'v\u2014' });
 
         const refreshBtn = header.createEl('button', { cls: 'paperforge-header-refresh', attr: { 'aria-label': 'Refresh' } });
         refreshBtn.innerHTML = '\u21BB';
-        refreshBtn.addEventListener('click', () => this._fetchStats());
+        refreshBtn.addEventListener('click', () => {
+            this._invalidateIndex();
+            this._detectAndSwitch();
+        });
 
         /* ── Status Message (command output) ── */
         this._messageEl = root.createEl('div', { cls: 'paperforge-message' });
 
-        /* ── Metric Cards (populated by _renderStats) ── */
-        this._metricsEl = root.createEl('div', { cls: 'paperforge-metrics' });
+        /* ── Mode-Switched Content Area (per D-06) ── */
+        this._contentEl = root.createEl('div', { cls: 'paperforge-content-area' });
 
-        /* ── OCR Pipeline ── */
-        this._ocrSection = root.createEl('div', { cls: 'paperforge-ocr-section' });
-        this._ocrSection.style.display = 'none';
-
-        const ocrHeader = this._ocrSection.createEl('div', { cls: 'paperforge-ocr-header' });
-        ocrHeader.createEl('h4', { cls: 'paperforge-ocr-title', text: 'OCR Pipeline' });
-        this._ocrBadge = ocrHeader.createEl('span', { cls: 'paperforge-ocr-badge idle', text: 'Idle' });
-
-        this._ocrTrack = this._ocrSection.createEl('div', { cls: 'paperforge-progress-track' });
-        this._ocrCounts = this._ocrSection.createEl('div', { cls: 'paperforge-ocr-counts' });
-        this._ocrEmpty = this._ocrSection.createEl('div', { cls: 'paperforge-ocr-empty', text: 'No OCR tasks yet. Mark papers with do_ocr: true to start.' });
-
-        /* ── Quick Actions ── */
+        /* ── Quick Actions (visible in all modes per D-07 / "Specific Ideas") ── */
         const actions = root.createEl('div', { cls: 'paperforge-actions-section' });
         actions.createEl('h4', { cls: 'paperforge-actions-title', text: 'Quick Actions' });
-
-        const actionsGrid = actions.createEl('div', { cls: 'paperforge-actions-grid' });
-        for (const a of ACTIONS) {
-            const card = actionsGrid.createEl('div', { cls: 'paperforge-action-card' });
-            card.createEl('div', { cls: 'paperforge-action-card-icon', text: a.icon });
-            card.createEl('div', { cls: 'paperforge-action-card-title', text: a.title });
-            card.createEl('div', { cls: 'paperforge-action-card-desc', text: a.desc });
-            card.createEl('div', { cls: 'paperforge-action-card-hint', text: 'Click to run' });
-            card.addEventListener('click', () => this._runAction(a, card));
-        }
+        this._actionsGrid = actions.createEl('div', { cls: 'paperforge-actions-grid' });
+        this._renderActions();  // extracted so actions can be re-rendered per mode
     }
 
     /* ---------------------------------------------------------------------- */
     /*  Fetch & Render Stats                                                  */
     /* ---------------------------------------------------------------------- */
     _fetchStats(quiet) {
+        // Phase 25: Read canonical index JSON directly (D-05)
         if (!quiet && !this._cachedStats) {
             this._metricsEl.empty();
             this._metricsEl.createEl('div', { cls: 'paperforge-status-loading', text: 'Loading...' });
@@ -258,40 +313,174 @@ class PaperForgeStatusView extends ItemView {
         }
 
         const vp = this.app.vault.adapter.basePath;
-        exec('python -m paperforge status --json', { cwd: vp, timeout: 30000 }, (err, stdout) => {
-            if (err) {
-                if (this._cachedStats) return;
-                this._metricsEl.createEl('div', { cls: 'paperforge-status-error', text: 'Cannot reach PaperForge CLI.\nMake sure paperforge is installed and in your PATH.' });
-                return;
-            }
-            try {
-                const d = JSON.parse(stdout);
-                this._cachedStats = d;
-                this._metricsEl.empty();
-                this._renderStats(d);
-                this._renderOcr(d);
-            } catch {
-                if (!this._cachedStats) {
-                    this._metricsEl.createEl('div', { cls: 'paperforge-status-error', text: 'Invalid response from paperforge status.' });
+        const plugin = this.app.plugins.plugins['paperforge'];
+        const systemDir = plugin?.settings?.system_dir || '99_System';
+        const indexPath = path.join(vp, systemDir, 'PaperForge', 'indexes', 'formal-library.json');
+
+        try {
+            const raw = fs.readFileSync(indexPath, 'utf-8');
+            const index = JSON.parse(raw);
+            const items = index.items || [];
+
+            // D-06: Single-pass aggregation — no item references held after loop
+            const lifecycleCounts = {};
+            const healthCounts = {
+                pdf_health: { healthy: 0, unhealthy: 0 },
+                ocr_health: { healthy: 0, unhealthy: 0 },
+                note_health: { healthy: 0, unhealthy: 0 },
+                asset_health: { healthy: 0, unhealthy: 0 },
+            };
+            let ocrTotal = 0, ocrDone = 0, ocrPending = 0, ocrProcessing = 0, ocrFailed = 0;
+            let formalNotes = 0;
+
+            for (const item of items) {
+                if (item.note_path) formalNotes++;
+
+                const lifecycle = item.lifecycle || 'pdf_ready';
+                lifecycleCounts[lifecycle] = (lifecycleCounts[lifecycle] || 0) + 1;
+
+                const health = item.health || {};
+                for (const dim of ['pdf_health', 'ocr_health', 'note_health', 'asset_health']) {
+                    const val = health[dim] || 'healthy';
+                    if (val === 'healthy') healthCounts[dim].healthy++;
+                    else healthCounts[dim].unhealthy++;
                 }
+
+                const ocrStatus = item.ocr_status || '';
+                ocrTotal++;
+                if (ocrStatus === 'done') ocrDone++;
+                else if (ocrStatus === 'pending') ocrPending++;
+                else if (ocrStatus === 'processing' || ocrStatus === 'queued' || ocrStatus === 'running') ocrProcessing++;
+                else ocrFailed++;
             }
+
+            this._cachedStats = {
+                version: this._cachedStats?.version || '\u2014',
+                total_papers: items.length,
+                formal_notes: formalNotes,
+                exports: 0,
+                bases: 0,
+                ocr: { total: ocrTotal, pending: ocrPending, processing: ocrProcessing, done: ocrDone, failed: ocrFailed },
+                path_errors: 0,
+                lifecycle_level_counts: lifecycleCounts,
+                health_aggregate: healthCounts,
+            };
+
+            this._metricsEl.empty();
+            this._renderStats(this._cachedStats);
+            this._renderOcr(this._cachedStats);
+        } catch (err) {
+            // D-07: Fallback — spawn CLI if file is missing or corrupt
+            if (!quiet && !this._cachedStats) {
+                this._metricsEl.createEl('div', { cls: 'paperforge-status-loading', text: 'No index \u2014 trying CLI...' });
+            }
+            exec('python -m paperforge status --json', { cwd: vp, timeout: 30000 }, (err2, stdout) => {
+                if (err2) {
+                    if (this._cachedStats) return;
+                    this._metricsEl.createEl('div', { cls: 'paperforge-status-error', text: 'Cannot reach PaperForge CLI.\nMake sure paperforge is installed and in your PATH.' });
+                    return;
+                }
+                try {
+                    const d = JSON.parse(stdout);
+                    this._cachedStats = d;
+                    this._metricsEl.empty();
+                    this._renderStats(d);
+                    this._renderOcr(d);
+                } catch {
+                    if (!this._cachedStats) {
+                        this._metricsEl.createEl('div', { cls: 'paperforge-status-error', text: 'Invalid response from paperforge status.' });
+                    }
+                }
+            });
+        }
+    }
+
+    /* ── Loading Skeleton Utility (D-24) ── */
+    _renderSkeleton(container) {
+        container.addClass('paperforge-loading');
+    }
+
+    /* ── Empty State Utility (D-25) ── */
+    _renderEmptyState(container, message) {
+        container.createEl('div', {
+            cls: 'paperforge-empty-state',
+            text: message || 'No data',
         });
     }
 
-    /* ── Metric Cards ── */
+    /* ── Metric Progress Bar Helper (D-05) ── */
+    _buildMetricBar(card, value, max) {
+        if (max <= 0) return;
+        const pct = Math.min(100, (value / max) * 100);
+        const bar = card.createEl('div', { cls: 'paperforge-metric-progress' });
+        bar.createEl('div', {
+            cls: 'paperforge-metric-progress-fill',
+            attr: { style: `width:${pct.toFixed(1)}%` },
+        });
+    }
+
+    /* ── Index Loading (D-11, D-17, D-19) ── */
+    _loadIndex() {
+        const vp = this.app.vault.adapter.basePath;
+        const plugin = this.app.plugins.plugins['paperforge'];
+        const systemDir = plugin?.settings?.system_dir || '99_System';
+        const indexPath = path.join(vp, systemDir, 'PaperForge', 'indexes', 'formal-library.json');
+        try {
+            const raw = fs.readFileSync(indexPath, 'utf-8');
+            return JSON.parse(raw);
+        } catch {
+            return null;
+        }
+    }
+
+    /* ── Cached Index Accessor (D-14) ── */
+    _getCachedIndex() {
+        if (!this._cachedItems) {
+            const index = this._loadIndex();
+            this._cachedItems = index ? (index.items || []) : [];
+        }
+        return this._cachedItems;
+    }
+
+    /* ── Single Paper Lookup by Key (D-12, D-18) ── */
+    _findEntry(key) {
+        if (!key) return null;
+        return this._getCachedIndex().find(item => item.zotero_key === key) || null;
+    }
+
+    /* ── Filter Papers by Domain (D-13, D-16) ── */
+    _filterByDomain(domain) {
+        if (!domain) return [];
+        return this._getCachedIndex().filter(item => item.domain === domain);
+    }
+
+    /* ── Metric Cards (Enhanced D-04, D-05, D-06) ── */
     _renderStats(d) {
         this._versionBadge.setText(d.version ? 'v' + d.version : 'v\u2014');
 
+        if (!d || typeof d.total_papers === 'undefined') {
+            this._renderSkeleton(this._metricsEl);
+            return;
+        }
+
+        this._metricsEl.removeClass('paperforge-loading');
+
+        const totalPapers = d.total_papers || 0;
+        const totalFormal = d.formal_notes || 0;
+
         const metrics = [
-            { value: d.total_papers, label: 'Papers', color: 'var(--color-cyan)' },
-            { value: d.formal_notes, label: 'Notes', color: 'var(--color-blue)' },
-            { value: d.exports, label: 'Exports', color: 'var(--color-purple)' },
+            { value: totalPapers, label: 'Papers', color: 'var(--color-cyan)', barMax: 0 },
+            { value: totalFormal, label: 'Formal Notes', color: 'var(--color-blue)', barMax: totalPapers },
+            { value: d.exports || 0, label: 'Exports', color: 'var(--color-purple)', barMax: 0 },
         ];
         for (const m of metrics) {
             const card = this._metricsEl.createEl('div', { cls: 'paperforge-metric-card' });
             card.style.setProperty('--metric-color', m.color);
-            card.createEl('div', { cls: 'paperforge-metric-value', text: m.value?.toString() || '\u2014' });
+            card.createEl('div', { cls: 'paperforge-metric-value', text: (m.value)?.toString() || '\u2014' });
             card.createEl('div', { cls: 'paperforge-metric-label', text: m.label });
+            if (m.barMax > 0) {
+                this._buildMetricBar(card, m.value, m.barMax);
+            }
         }
     }
 
@@ -364,13 +553,569 @@ class PaperForgeStatusView extends ItemView {
         }
     }
 
+    /* ── Lifecycle Stepper (D-07 through D-11) ── */
+    _renderLifecycleStepper(container, lifecycle, currentStage) {
+        if (!lifecycle || !currentStage) {
+            this._renderSkeleton(container);
+            return;
+        }
+
+        const stages = [
+            { key: 'imported', label: 'Imported' },
+            { key: 'indexed', label: 'Indexed' },
+            { key: 'pdf_ready', label: 'PDF Ready' },
+            { key: 'fulltext_ready', label: 'Fulltext Ready' },
+            { key: 'deep_read', label: 'Deep Read' },
+            { key: 'ai_ready', label: 'AI Ready' },
+        ];
+
+        const stepper = container.createEl('div', { cls: 'paperforge-lifecycle-stepper' });
+        let foundCurrent = false;
+
+        for (const stage of stages) {
+            const step = stepper.createEl('div', { cls: 'step' });
+            step.createEl('div', { cls: 'step-indicator' });
+            step.createEl('div', { cls: 'step-label', text: stage.label });
+
+            if (stage.key === currentStage) {
+                step.addClass('current');
+                foundCurrent = true;
+            } else if (!foundCurrent) {
+                step.addClass('completed');
+            } else {
+                step.addClass('pending');
+            }
+        }
+    }
+
+    /* ── Health Matrix (D-12 through D-16) ── */
+    _renderHealthMatrix(container, health) {
+        if (!health) {
+            this._renderSkeleton(container);
+            return;
+        }
+
+        const dimensions = [
+            { key: 'pdf_health', label: 'PDF Health', iconOk: '\u2713', iconWarn: '\u26A0', iconFail: '\u2717' },
+            { key: 'ocr_health', label: 'OCR Health', iconOk: '\u2713', iconWarn: '\u26A0', iconFail: '\u2717' },
+            { key: 'note_health', label: 'Note Health', iconOk: '\u2713', iconWarn: '\u26A0', iconFail: '\u2717' },
+            { key: 'asset_health', label: 'Asset Health', iconOk: '\u2713', iconWarn: '\u26A0', iconFail: '\u2717' },
+        ];
+
+        const matrix = container.createEl('div', { cls: 'paperforge-health-matrix' });
+
+        for (const dim of dimensions) {
+            const status = health[dim.key] || 'healthy';
+            const cell = matrix.createEl('div', { cls: 'paperforge-health-cell' });
+
+            let icon, statusClass, tooltip;
+            if (status === 'healthy' || status === 'ok') {
+                icon = dim.iconOk;
+                statusClass = 'ok';
+                tooltip = `${dim.label}: OK`;
+            } else if (status === 'warn' || status === 'warning' || status === 'degraded') {
+                icon = dim.iconWarn;
+                statusClass = 'warn';
+                tooltip = `${dim.label}: Needs Attention`;
+            } else {
+                icon = dim.iconFail;
+                statusClass = 'fail';
+                tooltip = `${dim.label}: Failed`;
+            }
+
+            cell.addClass(statusClass);
+            cell.setAttribute('title', tooltip);
+            cell.createEl('div', { cls: 'paperforge-health-cell-icon', text: icon });
+            cell.createEl('div', { cls: 'paperforge-health-cell-label', text: dim.label });
+        }
+    }
+
+    /* ── Maturity Gauge (D-17 through D-20) ── */
+    _renderMaturityGauge(container, maturityLevel, blockingChecks) {
+        if (maturityLevel == null || maturityLevel === undefined) {
+            this._renderSkeleton(container);
+            return;
+        }
+
+        const gauge = container.createEl('div', { cls: 'paperforge-maturity-gauge' });
+        const track = gauge.createEl('div', { cls: 'gauge-track' });
+        const currentLevel = Math.max(1, Math.min(6, Math.round(maturityLevel)));
+
+        for (let i = 1; i <= 6; i++) {
+            const seg = track.createEl('div', { cls: 'gauge-segment' });
+            if (i <= currentLevel) {
+                seg.addClass('filled');
+                seg.addClass(`level-${i}`);
+            }
+        }
+
+        gauge.createEl('div', { cls: 'gauge-level', text: `Level ${currentLevel} / 6` });
+
+        if (currentLevel < 6 && blockingChecks && blockingChecks.length > 0) {
+            const list = gauge.createEl('ul', { cls: 'gauge-blockers' });
+            for (const check of blockingChecks) {
+                list.createEl('li', { text: check });
+            }
+        }
+    }
+
+    /* ── Bar Chart (D-21 through D-23) ── */
+    _renderBarChart(container, lifecycleCounts) {
+        if (!lifecycleCounts || Object.keys(lifecycleCounts).length === 0) {
+            this._renderEmptyState(container, 'No lifecycle data');
+            return;
+        }
+
+        const stages = [
+            { key: 'imported', label: 'Imported', cls: 'stage-imported' },
+            { key: 'indexed', label: 'Indexed', cls: 'stage-indexed' },
+            { key: 'pdf_ready', label: 'PDF Ready', cls: 'stage-pdf-ready' },
+            { key: 'fulltext_ready', label: 'Fulltext Ready', cls: 'stage-fulltext-ready' },
+            { key: 'deep_read', label: 'Deep Read', cls: 'stage-deep-read' },
+            { key: 'ai_ready', label: 'AI Ready', cls: 'stage-ai-ready' },
+        ];
+
+        const chart = container.createEl('div', { cls: 'paperforge-bar-chart' });
+        const maxCount = Math.max(1, ...stages.map(s => lifecycleCounts[s.key] || 0));
+
+        for (const stage of stages) {
+            const count = lifecycleCounts[stage.key] || 0;
+            const pct = (count / maxCount) * 100;
+
+            const row = chart.createEl('div', { cls: 'bar-row' });
+            row.createEl('div', { cls: 'bar-label', text: stage.label });
+            const track = row.createEl('div', { cls: 'bar-track' });
+            const fill = track.createEl('div', {
+                cls: `bar-fill ${stage.cls}`,
+                attr: { style: `width:${pct.toFixed(1)}%` },
+            });
+            row.createEl('div', { cls: 'bar-count', text: count.toString() });
+        }
+    }
+
+    /* ── Render Quick Actions (extracted from _buildPanel for mode-aware reuse) ── */
+    _renderActions() {
+        this._actionsGrid.empty();
+        for (const a of ACTIONS) {
+            const card = this._actionsGrid.createEl('div', { cls: 'paperforge-action-card' });
+            card.createEl('div', { cls: 'paperforge-action-card-icon', text: a.icon });
+            card.createEl('div', { cls: 'paperforge-action-card-title', text: a.title });
+            card.createEl('div', { cls: 'paperforge-action-card-desc', text: a.desc });
+            card.createEl('div', { cls: 'paperforge-action-card-hint', text: 'Click to run' });
+            card.addEventListener('click', () => this._runAction(a, card));
+        }
+    }
+
+    /* ── Invalidate cached index (D-14) ── */
+    _invalidateIndex() {
+        this._cachedItems = null;
+    }
+
+    /* ── Context Detection & Mode Switch (D-01, D-02, D-03, D-04, D-10) ── */
+    _detectAndSwitch() {
+        const activeFile = this.app.workspace.getActiveFile();
+
+        if (!activeFile) {
+            // No active file -> global mode (D-04)
+            this._switchMode('global');
+            return;
+        }
+
+        const ext = activeFile.extension;
+
+        if (ext === 'base') {
+            // .base file -> collection mode (D-02, D-15)
+            this._currentDomain = activeFile.basename;
+            this._currentPaperKey = null;
+            this._currentPaperEntry = null;
+            this._switchMode('collection');
+            return;
+        }
+
+        if (ext === 'md') {
+            // .md file -- check for zotero_key in frontmatter (D-03)
+            const cache = this.app.metadataCache.getFileCache(activeFile);
+            const key = cache && cache.frontmatter && cache.frontmatter.zotero_key;
+
+            if (key) {
+                // Has zotero_key -> per-paper mode (D-03)
+                this._currentPaperKey = key;
+                this._currentPaperEntry = this._findEntry(key);
+                this._currentDomain = null;
+                this._switchMode('paper');
+            } else {
+                // .md without zotero_key -> global mode (D-04)
+                this._currentDomain = null;
+                this._currentPaperKey = null;
+                this._currentPaperEntry = null;
+                this._switchMode('global');
+            }
+            return;
+        }
+
+        // Any other file type -> global mode (D-04)
+        this._currentDomain = null;
+        this._currentPaperKey = null;
+        this._currentPaperEntry = null;
+        this._switchMode('global');
+    }
+
+    /* ── Mode Switching (D-05, D-06) ── */
+    _switchMode(mode) {
+        if (this._currentMode === mode) {
+            // Already in this mode -- just refresh if needed (D-04)
+            this._refreshCurrentMode();
+            return;
+        }
+
+        this._currentMode = mode;
+
+        // Clear existing content (D-06)
+        this._contentEl.empty();
+        this._contentEl.removeClass('switching');
+
+        // Update header (D-07)
+        this._renderModeHeader(mode);
+
+        // Render mode-specific content (D-06)
+        switch (mode) {
+            case 'global':
+                this._renderGlobalMode();
+                break;
+            case 'paper':
+                this._renderPaperMode();
+                break;
+            case 'collection':
+                this._renderCollectionMode();
+                break;
+        }
+    }
+
+    /* ── Global Mode Render (existing dashboard, extracted from _fetchStats + _renderOcr) ── */
+    _renderGlobalMode() {
+        // Metric cards
+        this._metricsEl = this._contentEl.createEl('div', { cls: 'paperforge-metrics' });
+
+        // OCR pipeline section (_renderOcr expects these instance vars)
+        this._ocrSection = this._contentEl.createEl('div', { cls: 'paperforge-ocr-section' });
+        this._ocrSection.style.display = 'none';
+        const ocrHeader = this._ocrSection.createEl('div', { cls: 'paperforge-ocr-header' });
+        ocrHeader.createEl('h4', { cls: 'paperforge-ocr-title', text: 'OCR Pipeline' });
+        this._ocrBadge = ocrHeader.createEl('span', { cls: 'paperforge-ocr-badge idle', text: 'Idle' });
+        this._ocrTrack = this._ocrSection.createEl('div', { cls: 'paperforge-progress-track' });
+        this._ocrCounts = this._ocrSection.createEl('div', { cls: 'paperforge-ocr-counts' });
+        this._ocrEmpty = this._ocrSection.createEl('div', { cls: 'paperforge-ocr-empty', text: 'No OCR tasks yet. Mark papers with do_ocr: true to start.' });
+
+        this._cachedStats = null; // force fresh load
+        this._fetchStats();
+    }
+
+    /* ── Per-Paper Mode Render (D-01 through D-09, Phase 29) ── */
+    _renderPaperMode() {
+        const entry = this._currentPaperEntry;
+        const key = this._currentPaperKey;
+
+        // --- Handle loading / empty / not-found states (D-03) ---
+        if (!key) {
+            // No key at all (defensive fallback)
+            this._renderEmptyState(this._contentEl, 'No paper data available.');
+            return;
+        }
+
+        if (!entry) {
+            // Key exists but entry not found in index (D-18)
+            this._contentEl.createEl('div', {
+                cls: 'paperforge-content-placeholder',
+                text: 'Paper "' + key + '" not found in canonical index. Sync first.',
+            });
+            return;
+        }
+
+        // --- Create per-paper view container (D-04 through D-09) ---
+        const view = this._contentEl.createEl('div', { cls: 'paperforge-paper-view' });
+
+        // ============ Contextual Action Buttons Row (D-10, D-11, D-12, D-13) ============
+        const actionsRow = view.createEl('div', { cls: 'paperforge-paper-actions' });
+
+        // "Copy Context" button (D-11) — reuse existing paperforge-copy-context action
+        const ctxBtn = actionsRow.createEl('button', { cls: 'paperforge-contextual-btn' });
+        ctxBtn.createEl('span', { cls: 'paperforge-contextual-btn-icon', text: '\u2139' });
+        ctxBtn.createEl('span', { text: 'Copy Context' });
+        ctxBtn.addEventListener('click', () => {
+            const action = ACTIONS.find(a => a.id === 'paperforge-copy-context');
+            if (action) this._runAction(action, ctxBtn);
+        });
+
+        // "Open Fulltext" button (D-12) — open fulltext.md in Obsidian
+        if (entry.fulltext_path) {
+            const ftBtn = actionsRow.createEl('button', { cls: 'paperforge-contextual-btn' });
+            ftBtn.createEl('span', { cls: 'paperforge-contextual-btn-icon', text: '\uD83D\uDCC4' });
+            ftBtn.createEl('span', { text: 'Open Fulltext' });
+            ftBtn.addEventListener('click', () => this._openFulltext(entry.fulltext_path));
+        }
+
+        // ============ Paper Metadata Header (D-04) ============
+        const header = view.createEl('div', { cls: 'paperforge-paper-header' });
+        const titleText = entry.title || 'Untitled';
+        header.createEl('div', { cls: 'paperforge-paper-title', text: titleText });
+
+        const meta = header.createEl('div', { cls: 'paperforge-paper-meta' });
+        if (entry.authors && entry.authors.length > 0) {
+            const authorsStr = entry.authors.join(', ');
+            meta.createEl('span', { cls: 'paperforge-paper-authors', text: authorsStr });
+        }
+        if (entry.year) {
+            meta.createEl('span', { cls: 'paperforge-paper-year', text: String(entry.year) });
+        }
+
+        // ============ Lifecycle Stepper (D-05) ============
+        this._renderLifecycleStepper(view, entry, entry.lifecycle);
+
+        // ============ Health Matrix (D-06) ============
+        this._renderHealthMatrix(view, entry.health);
+
+        // ============ Maturity Gauge (D-07) ============
+        const maturity = entry.maturity || {};
+        this._renderMaturityGauge(view, maturity.level, maturity.blocking);
+
+        // ============ Next-Step Recommendation Card (D-08, D-09) ============
+        this._renderNextStepCard(view, entry, key);
+    }
+
+    /* ── Next-Step Recommendation Card (D-08, D-09) ── */
+    _renderNextStepCard(container, entry, key) {
+        const nextStep = entry.next_step || 'ready';
+
+        // Map next_step value to human-readable info
+        const stepInfo = {
+            'sync':         { label: 'Sync Needed',    text: 'This paper needs to be synced from Zotero. Click to run sync.',             cmd: 'sync',     icon: '\u21BB' },
+            'ocr':          { label: 'OCR Needed',     text: 'Fulltext is missing but PDF is present. Click to run OCR.',                  cmd: 'ocr',      icon: '\u229E' },
+            'repair':       { label: 'Repair Needed',  text: 'State divergence or path errors detected. Click to repair.',                 cmd: 'repair',   icon: '\u21BA' },
+            'rebuild index':{ label: 'Rebuild Needed', text: 'Index may be stale. Click to run sync to rebuild.',                          cmd: 'sync',     icon: '\u21BB' },
+            '/pf-deep':     { label: 'Ready for Deep Reading', text: 'Fulltext is ready. Copy key to use /pf-deep in OpenCode.',          cmd: null,       icon: '\uD83D\uDD0D' },
+            'ready':        { label: 'All Set',        text: 'This paper is fully processed and ready for use.',                           cmd: 'ready',    icon: '\u2713' },
+        };
+
+        const info = stepInfo[nextStep] || stepInfo['ready'];
+
+        // Build the card
+        const card = container.createEl('div', { cls: 'paperforge-next-step-card' });
+        if (nextStep === 'ready') card.addClass('ready');
+
+        card.createEl('div', { cls: 'paperforge-next-step-label', text: 'Recommended Next Step' });
+        card.createEl('div', { cls: 'paperforge-next-step-text', text: info.text });
+
+        if (info.cmd && info.cmd !== 'ready') {
+            // Action button for sync/ocr/repair/rebuild index — reuse existing _runAction
+            const trigger = card.createEl('button', { cls: 'paperforge-next-step-trigger' });
+            trigger.createEl('span', { text: info.icon + '  ' + info.label });
+            trigger.addEventListener('click', () => {
+                const action = ACTIONS.find(a => a.cmd === info.cmd);
+                if (action) this._runAction(action, trigger);
+            });
+        } else if (nextStep === '/pf-deep') {
+            // Copy zotero_key to clipboard for /pf-deep (D-09)
+            const trigger = card.createEl('button', { cls: 'paperforge-next-step-trigger' });
+            trigger.createEl('span', { text: '\uD83D\uDCCB  Copy Key for /pf-deep' });
+            trigger.addEventListener('click', () => {
+                navigator.clipboard.writeText(key).then(() => {
+                    trigger.setText('\u2713  Copied!');
+                    new Notice('Zotero key copied: ' + key);
+                }).catch(() => {
+                    new Notice('[!!] Clipboard write failed', 6000);
+                });
+            });
+        } else if (nextStep === 'ready') {
+            // Show "Copy Context" shortcut for ready state (D-09)
+            const trigger = card.createEl('button', { cls: 'paperforge-next-step-trigger' });
+            trigger.createEl('span', { text: '\u2139  Copy Context' });
+            trigger.addEventListener('click', () => {
+                const action = ACTIONS.find(a => a.id === 'paperforge-copy-context');
+                if (action) this._runAction(action, trigger);
+            });
+        }
+    }
+
+    /* ── Open Fulltext File in Obsidian (D-12) ── */
+    _openFulltext(fulltextPath) {
+        if (!fulltextPath) {
+            new Notice('[!!] No fulltext path available for this paper', 6000);
+            return;
+        }
+        // fulltext_path is relative to vault root (e.g., "Literature/domain/key - Title/fulltext.md")
+        // Use Obsidian API to open the file
+        const file = this.app.vault.getAbstractFileByPath(fulltextPath);
+        if (file) {
+            this.app.workspace.openLinkText(file.path, '');
+        } else {
+            new Notice('[!!] Fulltext file not found: ' + fulltextPath, 6000);
+        }
+    }
+
+    /* ── Collection Mode Render (Phase 30) ── */
+    _renderCollectionMode() {
+        const domain = this._currentDomain || 'Unknown';
+        const domainItems = this._filterByDomain(domain);
+
+        const view = this._contentEl.createEl('div', { cls: 'paperforge-collection-view' });
+
+        // --- Empty state ---
+        if (domainItems.length === 0) {
+            this._renderEmptyState(view, 'No papers found in domain "' + domain + '". Sync some papers first.');
+            return;
+        }
+
+        // --- Single-pass aggregation ---
+        const lifecycleCounts = {};
+        const healthAgg = {
+            pdf_health: { healthy: 0, unhealthy: 0 },
+            ocr_health: { healthy: 0, unhealthy: 0 },
+            note_health: { healthy: 0, unhealthy: 0 },
+            asset_health: { healthy: 0, unhealthy: 0 },
+        };
+        let fulltextReady = 0;
+        let deepRead = 0;
+
+        for (const item of domainItems) {
+            const lifecycle = item.lifecycle || 'pdf_ready';
+            lifecycleCounts[lifecycle] = (lifecycleCounts[lifecycle] || 0) + 1;
+
+            if (['fulltext_ready', 'deep_read', 'ai_ready'].includes(lifecycle)) fulltextReady++;
+            if (['deep_read', 'ai_ready'].includes(lifecycle)) deepRead++;
+
+            const health = item.health || {};
+            for (const dim of ['pdf_health', 'ocr_health', 'note_health', 'asset_health']) {
+                const val = health[dim] || 'healthy';
+                if (val === 'healthy') healthAgg[dim].healthy++;
+                else healthAgg[dim].unhealthy++;
+            }
+        }
+
+        // --- Metric cards row (D-03) ---
+        const metrics = view.createEl('div', { cls: 'paperforge-collection-metrics' });
+        const totalPapers = domainItems.length;
+
+        const metricCards = [
+            { value: totalPapers, label: 'Papers', color: 'var(--color-cyan)', barMax: 0 },
+            { value: fulltextReady, label: 'Fulltext Ready', color: 'var(--color-green)', barMax: totalPapers },
+            { value: deepRead, label: 'Deep Read', color: 'var(--color-yellow)', barMax: totalPapers },
+        ];
+        for (const m of metricCards) {
+            const card = metrics.createEl('div', { cls: 'paperforge-metric-card' });
+            card.style.setProperty('--metric-color', m.color);
+            card.createEl('div', { cls: 'paperforge-metric-value', text: (m.value)?.toString() || '\u2014' });
+            card.createEl('div', { cls: 'paperforge-metric-label', text: m.label });
+            if (m.barMax > 0) {
+                this._buildMetricBar(card, m.value, m.barMax);
+            }
+        }
+
+        // --- Lifecycle distribution bar chart (D-04) ---
+        this._renderBarChart(view, lifecycleCounts);
+
+        // --- Health overview (D-05) ---
+        this._renderCollectionHealth(view, healthAgg);
+    }
+
+    /* ── Collection Health Overview (Phase 30, D-05) ── */
+    _renderCollectionHealth(container, healthAgg) {
+        if (!healthAgg) return;
+
+        const dimensions = [
+            { key: 'pdf_health', label: 'PDF Health', okLabel: 'Healthy', failLabel: 'Broken' },
+            { key: 'ocr_health', label: 'OCR Health', okLabel: 'Done', failLabel: 'Pending/Failed' },
+            { key: 'note_health', label: 'Note Health', okLabel: 'Present', failLabel: 'Missing' },
+            { key: 'asset_health', label: 'Asset Health', okLabel: 'Valid', failLabel: 'Drifted' },
+        ];
+
+        const grid = container.createEl('div', { cls: 'paperforge-collection-health' });
+
+        for (const dim of dimensions) {
+            const data = healthAgg[dim.key] || { healthy: 0, unhealthy: 0 };
+            const cell = grid.createEl('div', { cls: 'paperforge-collection-health-cell' });
+            cell.createEl('div', { cls: 'paperforge-collection-health-cell-label', text: dim.label });
+
+            const counts = cell.createEl('div', { cls: 'paperforge-collection-health-counts' });
+            const okSpan = counts.createEl('span', { cls: 'ok', text: String(data.healthy) + ' ' + dim.okLabel });
+            counts.createEl('span', { text: ' \u00B7 ' });
+            const failSpan = counts.createEl('span', { cls: 'fail', text: String(data.unhealthy) + ' ' + dim.failLabel });
+        }
+    }
+
+    /* ── Refresh current mode (called on index change, D-09, REFR-01) ── */
+    _refreshCurrentMode() {
+        if (!this._currentMode) return;
+        this._contentEl.empty();
+        this._contentEl.addClass('switching');
+        this._invalidateIndex(); // force fresh data load
+
+        switch (this._currentMode) {
+            case 'global':
+                this._renderGlobalMode();
+                break;
+            case 'paper':
+                this._renderPaperMode();
+                break;
+            case 'collection':
+                this._renderCollectionMode();
+                break;
+        }
+
+        // Brief delay before removing switching class for smooth fade transition
+        setTimeout(() => {
+            if (this._contentEl) this._contentEl.removeClass('switching');
+        }, 50);
+    }
+
     /* ── Run Action ── */
     _runAction(a, card) {
+        // Guard: prevent running the same action simultaneously
+        if (card.classList.contains('running')) {
+            return;
+        }
         card.addClass('running');
         const vp = this.app.vault.adapter.basePath;
         this._showMessage('Processing...', 'running');
+
+        // Resolve extra arguments based on action flags
+        let extraArgs = [];
+
+        if (a.needsKey) {
+            // Resolve zotero_key from active file frontmatter
+            const activeFile = this.app.workspace.getActiveFile();
+            let key = null;
+            if (activeFile) {
+                const cache = this.app.metadataCache.getFileCache(activeFile);
+                if (cache && cache.frontmatter && cache.frontmatter.zotero_key) {
+                    key = cache.frontmatter.zotero_key;
+                } else if (cache && cache.frontmatter) {
+                    this._showMessage('[!!] No zotero_key in active note frontmatter', 'error');
+                    new Notice('[!!] Open a paper note with a zotero_key in its frontmatter first', 6000);
+                    card.removeClass('running');
+                    return;
+                } else {
+                    this._showMessage('[!!] No frontmatter in active note', 'error');
+                    new Notice('[!!] The active note has no frontmatter with a zotero_key', 6000);
+                    card.removeClass('running');
+                    return;
+                }
+            } else {
+                this._showMessage('[!!] No active note open', 'error');
+                new Notice('[!!] Open a paper note with a zotero_key in its frontmatter first', 6000);
+                card.removeClass('running');
+                return;
+            }
+            extraArgs = [key];
+        }
+
+        if (a.needsFilter) {
+            // Default to --all for the initial implementation
+            extraArgs = ['--all'];
+        }
+
         const { spawn } = require('node:child_process');
-        const child = spawn('python', ['-m', 'paperforge', a.cmd], { cwd: vp, timeout: 600000 });
+        const cmdTimeout = a.needsFilter ? 60000 : (a.needsKey ? 30000 : 600000);
+        const child = spawn('python', ['-m', 'paperforge', a.cmd, ...extraArgs], { cwd: vp, timeout: cmdTimeout });
         const log = [];
         const startTime = Date.now();
         const pollTimer = setInterval(() => this._fetchStats(true), 4000);
@@ -397,11 +1142,34 @@ class PaperForgeStatusView extends ItemView {
                 const last = log.slice(-3).join(' | ') || 'exit code ' + code;
                 this._showMessage('[!!] ' + last, 'error');
                 new Notice('[!!] ' + a.cmd + ' failed: ' + last, 8000);
+            } else if (a.needsKey || a.needsFilter) {
+                // Context actions: copy JSON output to clipboard
+                const output = log.join('\n');
+                if (output.trim()) {
+                    try {
+                        JSON.parse(output);
+                        navigator.clipboard.writeText(output).then(() => {
+                            const summary = `${elapsed}s \u2014 ${output.length} chars copied`;
+                            this._showMessage('[OK] ' + a.title + ': ' + summary, 'ok');
+                            new Notice('[OK] ' + a.okMsg + ' \u2014 ' + output.length + ' chars');
+                        }).catch((err) => {
+                            this._showMessage('[!!] Clipboard write failed: ' + err.message, 'error');
+                            new Notice('[!!] Clipboard error', 6000);
+                        });
+                    } catch (e) {
+                        this._showMessage('[!!] Invalid JSON from ' + a.title, 'error');
+                        new Notice('[!!] ' + a.title + ' returned invalid JSON: ' + e.message.slice(0, 100), 8000);
+                    }
+                } else {
+                    this._showMessage('[!!] No output from context command', 'error');
+                    new Notice('[!!] Context command returned empty output', 8000);
+                }
+                this._fetchStats(true);
             } else {
-                // Build a summary from log lines
+                // Existing actions (sync, ocr, doctor, repair): build summary from log lines
                 const updated = log.filter(l => l.match(/updated \d+/));
                 const lastUpdated = updated.pop() || log[log.length - 1] || '';
-                const summary = `${elapsed}s — ${lastUpdated}`;
+                const summary = `${elapsed}s \u2014 ${lastUpdated}`;
                 this._showMessage('[OK] ' + a.title + ': ' + summary, 'ok');
                 new Notice('[OK] ' + a.okMsg);
                 this._fetchStats(true);
@@ -421,11 +1189,74 @@ class PaperForgeStatusView extends ItemView {
         }
     }
 
-    _showMessage(msg, cls) {
-        if (this._messageEl) {
-            this._messageEl.setText(msg);
-            this._messageEl.className = `paperforge-message msg-${cls}`;
+    /* ── Mode-Aware Header (D-07) ── */
+    _renderModeHeader(mode) {
+        this._modeContextEl.empty();
+
+        // Build mode badge
+        const badge = this._modeContextEl.createEl('span', { cls: 'paperforge-mode-badge' });
+        let modeName = '';
+
+        switch (mode) {
+            case 'global':
+                badge.addClass('global');
+                badge.setText('Global');
+                this._headerTitle.setText('PaperForge');
+                break;
+
+            case 'paper':
+                badge.addClass('paper');
+                badge.setText('Paper');
+                if (this._currentPaperEntry && this._currentPaperEntry.title) {
+                    modeName = this._currentPaperEntry.title;
+                } else if (this._currentPaperKey) {
+                    modeName = this._currentPaperKey;
+                    // Show warning if entry not found (D-18)
+                    this._modeContextEl.createEl('span', {
+                        cls: 'paperforge-mode-warning',
+                        text: 'Not found in index',
+                    });
+                } else {
+                    modeName = 'Unknown paper';
+                }
+                this._headerTitle.setText(modeName);
+                break;
+
+            case 'collection':
+                badge.addClass('collection');
+                badge.setText('Collection');
+                modeName = this._currentDomain || 'Unknown Domain';
+                this._headerTitle.setText(modeName);
+                break;
         }
+
+        if (modeName) {
+            this._modeContextEl.createEl('span', {
+                cls: 'paperforge-mode-name',
+                text: modeName,
+            });
+        }
+    }
+
+    /* ── Event Subscriptions (D-08, D-09, D-19) ── */
+    _setupEventSubscriptions() {
+        // D-08: Active leaf change -- debounced with 300ms delay
+        const leafHandler = this.app.workspace.on('active-leaf-change', () => {
+            clearTimeout(this._leafChangeTimer);
+            this._leafChangeTimer = setTimeout(() => {
+                this._detectAndSwitch();
+            }, 300);
+        });
+        this._modeSubscribers.push({ event: 'active-leaf-change', ref: leafHandler });
+
+        // D-09: File modification -- filter to formal-library.json only
+        const modifyHandler = this.app.vault.on('modify', (file) => {
+            if (file && file.path && file.path.endsWith('formal-library.json')) {
+                this._invalidateIndex();  // D-14: invalidate cache
+                this._refreshCurrentMode();
+            }
+        });
+        this._modeSubscribers.push({ event: 'modify', ref: modifyHandler });
     }
 
     /* ── Static: open or reveal view ── */
@@ -448,11 +1279,18 @@ class PaperForgeSettingTab extends PluginSettingTab {
         super(app, plugin);
         this.plugin = plugin;
         this._saveTimeout = null;
+        this._pfConfig = null;  // cached paperforge.json config
+    }
+
+    /** Reload path config from paperforge.json */
+    _refreshPfConfig() {
+        this._pfConfig = this.plugin.readPaperforgeJson();
     }
 
     display() {
         const { containerEl } = this;
         containerEl.empty();
+        this._refreshPfConfig();
 
         const vaultPath = this.app.vault.adapter.basePath;
         if (!this.plugin.settings.vault_path) {
@@ -495,7 +1333,7 @@ class PaperForgeSettingTab extends PluginSettingTab {
             row.createEl('span', { text: ' — ' + t(kDesc) });
             if (kTitle === 'prep_export') {
                 const expRow = prep.createEl('div', { cls: 'paperforge-guide-item' });
-                expRow.createEl('span', { text: `${t('prep_export_path_label')} ${vaultPath}/${this.plugin.settings.system_dir || 'System'}/PaperForge/exports/` });
+                expRow.createEl('span', { text: `${t('prep_export_path_label')} ${vaultPath}/${this._pfConfig.system_dir}/PaperForge/exports/` });
             }
         }
 
@@ -540,13 +1378,14 @@ class PaperForgeSettingTab extends PluginSettingTab {
             containerEl.createEl('h3', { text: t('section_config') });
             const summary = containerEl.createEl('div', { cls: 'paperforge-summary' });
             const s = this.plugin.settings;
+            const pf = this._pfConfig;  // source of truth for path fields
             const items = [
                 { label: t('dir_vault'), val: vaultPath },
-                { label: t('dir_resources'), val: `${vaultPath}/${s.resources_dir}` },
-                { label: '  ' + t('dir_notes'), val: `${vaultPath}/${s.resources_dir}/${s.literature_dir}` },
-                { label: '  ' + t('dir_index'), val: `${vaultPath}/${s.resources_dir}/${s.control_dir}` },
-                { label: t('dir_base'), val: `${vaultPath}/${s.base_dir}` },
-                { label: t('dir_system'), val: `${vaultPath}/${s.system_dir}` },
+                { label: t('dir_resources'), val: `${vaultPath}/${pf.resources_dir}` },
+                { label: '  ' + t('dir_notes'), val: `${vaultPath}/${pf.resources_dir}/${pf.literature_dir}` },
+                { label: '  ' + t('dir_index'), val: `${vaultPath}/${pf.resources_dir}/${pf.control_dir}` },
+                { label: t('dir_base'), val: `${vaultPath}/${pf.base_dir}` },
+                { label: t('dir_system'), val: `${vaultPath}/${pf.system_dir}` },
                 { label: 'API Key', val: s.paddleocr_api_key ? t('api_key_set') : t('api_key_missing') },
                 { label: t('field_zotero_data'), val: s.zotero_data_dir || t('not_set') },
             ];
@@ -577,6 +1416,7 @@ class PaperForgeSettingTab extends PluginSettingTab {
             // Try common install locations
             const progFiles = process.env.ProgramFiles || '';
             const localAppData = process.env.LOCALAPPDATA || '';
+            const home = process.env.USERPROFILE || process.env.HOME || '';
             const zotInstallDirs = [
                 path.join(progFiles, 'Zotero'),
                 path.join(progFiles, '(x86)', 'Zotero'),
@@ -602,6 +1442,32 @@ class PaperForgeSettingTab extends PluginSettingTab {
                         for (const p of fs.readdirSync(profilesDir)) {
                             if (fs.existsSync(path.join(profilesDir, p, 'extensions', 'better-bibtex@retorque.re'))) {
                                 bbtOk = true; break;
+                            }
+                        }
+                    }
+                } catch {}
+            }
+            // Fallback: search inside user-configured zotero_data_dir
+            if (!bbtOk && zotDataDir) {
+                try {
+                    // Direct: zotero_data_dir/better-bibtex (custom layout)
+                    if (fs.existsSync(path.join(zotDataDir, 'better-bibtex'))) {
+                        bbtOk = true;
+                    }
+                    // Profile-based: zotero_data_dir/Profiles/*/extensions/better-bibtex*
+                    if (!bbtOk) {
+                        const altProfilesDir = path.join(zotDataDir, 'Profiles');
+                        if (fs.existsSync(altProfilesDir)) {
+                            for (const p of fs.readdirSync(altProfilesDir)) {
+                                const extDir = path.join(altProfilesDir, p, 'extensions');
+                                if (fs.existsSync(extDir)) {
+                                    for (const d of fs.readdirSync(extDir)) {
+                                        if (d.startsWith('better-bibtex')) {
+                                            bbtOk = true; break;
+                                        }
+                                    }
+                                    if (bbtOk) break;
+                                }
                             }
                         }
                     }
@@ -981,6 +1847,8 @@ class PaperForgeSetupModal extends Modal {
 module.exports = class PaperForgePlugin extends Plugin {
     async onload() {
         await this.loadSettings();
+        // Clean stale path fields from plugin data.json (migrated to paperforge.json)
+        this.saveSettings();
         T = (langFromApp(this.app) === 'zh') ? LANG.zh : LANG.en;
         this.registerView(VIEW_TYPE_PAPERFORGE, (leaf) => new PaperForgeStatusView(leaf));
 
@@ -1013,6 +1881,40 @@ module.exports = class PaperForgePlugin extends Plugin {
             });
         }
 
+        /* ── Command palette: context actions (use view\u2019s _runAction for key resolution) ── */
+        this.addCommand({
+            id: 'paperforge-copy-context',
+            name: 'Copy Context: Copy active paper\u2019s index entry JSON to clipboard',
+            callback: () => {
+                const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_PAPERFORGE);
+                if (leaves.length > 0 && leaves[0].view instanceof PaperForgeStatusView) {
+                    const action = ACTIONS.find(a => a.id === 'paperforge-copy-context');
+                    if (action) {
+                        const tempCard = document.createElement('div');
+                        leaves[0].view._runAction(action, tempCard);
+                    }
+                } else {
+                    new Notice('[!!] Open PaperForge Dashboard first (click sidebar icon)', 5000);
+                }
+            },
+        });
+        this.addCommand({
+            id: 'paperforge-copy-collection-context',
+            name: 'Copy Collection Context: Copy all canonical index entries to clipboard',
+            callback: () => {
+                const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_PAPERFORGE);
+                if (leaves.length > 0 && leaves[0].view instanceof PaperForgeStatusView) {
+                    const action = ACTIONS.find(a => a.id === 'paperforge-copy-collection-context');
+                    if (action) {
+                        const tempCard = document.createElement('div');
+                        leaves[0].view._runAction(action, tempCard);
+                    }
+                } else {
+                    new Notice('[!!] Open PaperForge Dashboard first (click sidebar icon)', 5000);
+                }
+            },
+        });
+
         /* ── Auto-update PaperForge (deferred — don't slow startup) ── */
         if (this.settings.auto_update !== false) {
             setTimeout(() => this._autoUpdate(), 3000);
@@ -1030,15 +1932,131 @@ module.exports = class PaperForgePlugin extends Plugin {
         });
     }
 
+    /**
+     * Read path configuration from the canonical paperforge.json file.
+     * Falls back to Python-level DEFAULT_CONFIG values if file does not exist.
+     * Returns {system_dir, resources_dir, literature_dir, control_dir, base_dir}.
+     */
+    readPaperforgeJson() {
+        const fs = require('fs');
+        const path = require('path');
+        const vaultPath = this.app.vault.adapter.basePath;
+        const pfPath = path.join(vaultPath, 'paperforge.json');
+
+        // Python DEFAULT_CONFIG values as fallback (must match config.py exactly)
+        const DEFAULTS = {
+            system_dir: '99_System',
+            resources_dir: '03_Resources',
+            literature_dir: 'Literature',
+            control_dir: 'LiteratureControl',
+            base_dir: '05_Bases',
+        };
+
+        try {
+            if (!fs.existsSync(pfPath)) {
+                return DEFAULTS;
+            }
+            const raw = fs.readFileSync(pfPath, 'utf-8');
+            const data = JSON.parse(raw);
+
+            // Try vault_config block first (canonical), fall back to top-level (legacy)
+            const vc = data.vault_config || {};
+            return {
+                system_dir: vc.system_dir || data.system_dir || DEFAULTS.system_dir,
+                resources_dir: vc.resources_dir || data.resources_dir || DEFAULTS.resources_dir,
+                literature_dir: vc.literature_dir || data.literature_dir || DEFAULTS.literature_dir,
+                control_dir: vc.control_dir || data.control_dir || DEFAULTS.control_dir,
+                base_dir: vc.base_dir || data.base_dir || DEFAULTS.base_dir,
+            };
+        } catch (e) {
+            console.warn('PaperForge: Failed to read paperforge.json, using defaults', e);
+            return DEFAULTS;
+        }
+    }
+
+    /**
+     * Write path configuration back to paperforge.json vault_config block.
+     * Reads the existing file, updates vault_config with the new values,
+     * and writes back preserving all other keys.
+     */
+    savePaperforgeJson(pathConfig) {
+        const fs = require('fs');
+        const path = require('path');
+        const vaultPath = this.app.vault.adapter.basePath;
+        const pfPath = path.join(vaultPath, 'paperforge.json');
+
+        let data = {};
+        try {
+            if (fs.existsSync(pfPath)) {
+                data = JSON.parse(fs.readFileSync(pfPath, 'utf-8'));
+            }
+        } catch (e) {
+            console.warn('PaperForge: Failed to read paperforge.json for update', e);
+        }
+
+        // Ensure vault_config block exists
+        if (!data.vault_config || typeof data.vault_config !== 'object') {
+            data.vault_config = {};
+        }
+
+        // Update vault_config with new path values
+        const validPathKeys = ['system_dir', 'resources_dir', 'literature_dir', 'control_dir', 'base_dir'];
+        for (const key of validPathKeys) {
+            if (pathConfig[key] !== undefined) {
+                data.vault_config[key] = pathConfig[key];
+            }
+        }
+
+        // Ensure schema_version
+        if (!data.schema_version) {
+            data.schema_version = '2';
+        }
+
+        // Remove any stale top-level path keys (they were migrated to vault_config)
+        for (const key of validPathKeys) {
+            delete data[key];
+        }
+
+        try {
+            fs.writeFileSync(pfPath, JSON.stringify(data, null, 2), 'utf-8');
+            // Refresh the in-memory settings
+            if (this.settings) {
+                const pfConfig = this.readPaperforgeJson();
+                this.settings.system_dir = pfConfig.system_dir;
+                this.settings.resources_dir = pfConfig.resources_dir;
+                this.settings.literature_dir = pfConfig.literature_dir;
+                this.settings.control_dir = pfConfig.control_dir;
+                this.settings.base_dir = pfConfig.base_dir;
+            }
+        } catch (e) {
+            console.error('PaperForge: Failed to write paperforge.json', e);
+            new Notice('PaperForge: Failed to save configuration to paperforge.json');
+        }
+    }
+
     onunload() {
         this.app.workspace.detachLeavesOfType(VIEW_TYPE_PAPERFORGE);
     }
 
     async loadSettings() {
         this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+        // Path fields come from paperforge.json, not from DEFAULT_SETTINGS or plugin data.json
+        const pfConfig = this.readPaperforgeJson();
+        this.settings.system_dir = pfConfig.system_dir;
+        this.settings.resources_dir = pfConfig.resources_dir;
+        this.settings.literature_dir = pfConfig.literature_dir;
+        this.settings.control_dir = pfConfig.control_dir;
+        this.settings.base_dir = pfConfig.base_dir;
     }
 
     async saveSettings() {
-        await this.saveData(this.settings);
+        // Only persist non-path settings to plugin data.json
+        const dataToSave = {};
+        for (const key of Object.keys(DEFAULT_SETTINGS)) {
+            if (key in this.settings) {
+                dataToSave[key] = this.settings[key];
+            }
+        }
+        await this.saveData(dataToSave);
     }
 };
