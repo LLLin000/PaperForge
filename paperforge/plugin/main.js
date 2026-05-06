@@ -1298,6 +1298,16 @@ class PaperForgeSettingTab extends PluginSettingTab {
             this._debouncedSave();
         }
 
+        /* ── Validate setup_complete against paperforge.json ── */
+        if (this.plugin.settings.setup_complete) {
+            const fs = require('fs');
+            const path = require('path');
+            if (!fs.existsSync(path.join(vaultPath, 'paperforge.json'))) {
+                this.plugin.settings.setup_complete = false;
+                this._debouncedSave();
+            }
+        }
+
         /* ── Header ── */
         containerEl.createEl('h2', { text: t('header_title') || 'PaperForge' });
         containerEl.createEl('p', {
@@ -1432,46 +1442,35 @@ class PaperForgeSettingTab extends PluginSettingTab {
             }
             results.push({ label: 'Zotero', ok: zotOk, detail: zotOk ? t('check_zotero_ok') : t('check_zotero_fail') });
 
-            /* 3 — Better BibTeX (check Zotero extensions dir) */
-            let bbtOk = false;
-            const appData = process.env.APPDATA || '';
-            if (appData) {
-                const profilesDir = path.join(appData, 'Zotero', 'Zotero', 'Profiles');
+            /* 3 — Better BibTeX (recursive search) */
+            function scanBbt(dir) {
+                if (!dir) return false;
                 try {
-                    if (fs.existsSync(profilesDir)) {
-                        for (const p of fs.readdirSync(profilesDir)) {
-                            if (fs.existsSync(path.join(profilesDir, p, 'extensions', 'better-bibtex@retorque.re'))) {
-                                bbtOk = true; break;
-                            }
-                        }
-                    }
-                } catch {}
-            }
-            // Fallback: search inside user-configured zotero_data_dir
-            if (!bbtOk && zotDataDir) {
-                try {
-                    // Direct: zotero_data_dir/better-bibtex (custom layout)
-                    if (fs.existsSync(path.join(zotDataDir, 'better-bibtex'))) {
-                        bbtOk = true;
-                    }
-                    // Profile-based: zotero_data_dir/Profiles/*/extensions/better-bibtex*
-                    if (!bbtOk) {
-                        const altProfilesDir = path.join(zotDataDir, 'Profiles');
-                        if (fs.existsSync(altProfilesDir)) {
-                            for (const p of fs.readdirSync(altProfilesDir)) {
-                                const extDir = path.join(altProfilesDir, p, 'extensions');
-                                if (fs.existsSync(extDir)) {
-                                    for (const d of fs.readdirSync(extDir)) {
-                                        if (d.startsWith('better-bibtex')) {
-                                            bbtOk = true; break;
-                                        }
-                                    }
-                                    if (bbtOk) break;
+                    if (!fs.existsSync(dir)) return false;
+                    for (const entry of fs.readdirSync(dir)) {
+                        const full = path.join(dir, entry);
+                        try {
+                            if (fs.statSync(full).isDirectory()) {
+                                if (entry.startsWith('better-bibtex')) return true;
+                                // Recurse one level into common Zotero subdirs
+                                if (entry === 'extensions' || entry === 'Profiles') {
+                                    if (scanBbt(full)) return true;
                                 }
                             }
-                        }
+                        } catch {}
                     }
                 } catch {}
+                return false;
+            }
+            let bbtOk = false;
+            const appData = process.env.APPDATA || '';
+            // 1) Standard: %APPDATA%\Zotero\Zotero\
+            if (!bbtOk && appData) {
+                bbtOk = scanBbt(path.join(appData, 'Zotero', 'Zotero'));
+            }
+            // 2) Fallback: user-configured zotero_data_dir
+            if (!bbtOk && zotDataDir) {
+                bbtOk = scanBbt(zotDataDir);
             }
             results.push({ label: 'Better BibTeX', ok: bbtOk, detail: bbtOk ? t('check_bbt_ok') : t('check_bbt_fail') });
 
