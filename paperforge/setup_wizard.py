@@ -281,9 +281,9 @@ class EnvChecker:
                 pass
         return None
 
-    def check_zotero(self) -> CheckResult:
+    def check_zotero(self, manual_path: Path | None = None) -> CheckResult:
         r = self.results["zotero"]
-        path = self._find_zotero()
+        path = self._find_zotero(manual_path)
         if path:
             r.passed = True
             r.detail = str(path)
@@ -293,13 +293,46 @@ class EnvChecker:
             r.action_required = True
         return r
 
-    def check_bbt(self) -> CheckResult:
+    def check_bbt(self, manual_path: Path | None = None) -> CheckResult:
         r = self.results["bbt"]
         system = platform.system()
         bbt_found = False
         bbt_path = None
 
-        if system == "Windows":
+        if manual_path and manual_path.exists():
+            direct_candidates = [
+                manual_path / "better-bibtex",
+                manual_path / "extensions",
+                manual_path / "Profiles",
+            ]
+            for candidate in direct_candidates:
+                if not candidate.exists():
+                    continue
+                if candidate.name == "better-bibtex":
+                    bbt_found = True
+                    bbt_path = candidate
+                    break
+                if candidate.name == "extensions":
+                    for entry in candidate.iterdir():
+                        if entry.name.startswith("better-bibtex"):
+                            bbt_found = True
+                            bbt_path = entry
+                            break
+                if candidate.name == "Profiles":
+                    for profile in candidate.iterdir():
+                        ext_dir = profile / "extensions"
+                        if ext_dir.exists():
+                            for entry in ext_dir.iterdir():
+                                if entry.name.startswith("better-bibtex"):
+                                    bbt_found = True
+                                    bbt_path = entry
+                                    break
+                        if bbt_found:
+                            break
+                if bbt_found:
+                    break
+
+        if system == "Windows" and not bbt_found:
             appdata = os.environ.get("APPDATA", "")
             if appdata:
                 profiles = Path(appdata) / "Zotero" / "Zotero" / "Profiles"
@@ -1841,14 +1874,16 @@ def headless_setup(
     if not skip_checks:
         print("[*] Phase 3: Environment checks (non-blocking)...")
 
-        zot = checker.check_zotero()
+        manual_zotero_path = Path(zotero_data).expanduser() if zotero_data else None
+
+        zot = checker.check_zotero(manual_zotero_path)
         if zot.passed:
             print(f"    [OK] Zotero: {zot.detail}")
         else:
             print(f"    [WARN] Zotero not found — install from https://zotero.org")
             print(f"    {zot.detail}")
 
-        bbt = checker.check_bbt()
+        bbt = checker.check_bbt(manual_zotero_path)
         if bbt.passed:
             print(f"    [OK] Better BibTeX: {bbt.detail}")
         else:
