@@ -1642,6 +1642,8 @@ def _deploy_flat_command(
     """Deploy skills in flat .md command format (OpenCode)."""
     imported = []
     command_src = repo_root / "command"
+    if not (command_src.exists() and command_src.is_dir()):
+        command_src = repo_root / "paperforge" / "command_files"
     command_dst = vault / command_dir
     if not (command_src.exists() and command_src.is_dir()):
         return imported
@@ -1979,6 +1981,9 @@ def headless_setup(
         ]:
             text = text.replace(old, new)
         agents_dst.write_text(text, encoding="utf-8")
+        print(f"    [OK] AGENTS.md")
+    else:
+        print(f"    [WARN] AGENTS.md source not found; skipping")
 
     # =========================================================================
     # Phase 5: Create config files
@@ -2077,7 +2082,7 @@ PADDLEOCR_MODEL=PaddleOCR-VL-1.5
         "OCR dir": (pf_path / "ocr").exists(),
         "paperforge.json": pf_json.exists(),
         "Obsidian plugin": (vault / ".obsidian" / "plugins" / "paperforge" / "main.js").exists(),
-        "AGENTS.md": agents_dst.exists(),
+        "AGENTS.md": True if not agents_src.exists() else agents_dst.exists(),
     }
     failed = [k for k, v in checks.items() if not v]
     if failed:

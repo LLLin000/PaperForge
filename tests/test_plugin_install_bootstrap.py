@@ -35,3 +35,15 @@ def test_setup_args_global_vault_before_subcommand() -> None:
         f"'--vault' (pos {vault_pos}) must appear before 'setup' (pos {setup_pos}) "
         "in setupArgs, because --vault is a global paperforge argument"
     )
+
+
+def test_setup_wizard_flat_command_falls_back_to_packaged_command_files() -> None:
+    """pip-installed setup must deploy OpenCode commands from packaged command_files."""
+    source = (REPO_ROOT / "paperforge" / "setup_wizard.py").read_text(encoding="utf-8")
+    assert 'repo_root / "paperforge" / "command_files"' in source
+
+
+def test_setup_wizard_does_not_fail_if_agents_md_missing() -> None:
+    """AGENTS.md is optional for pip-installed package deployments."""
+    source = (REPO_ROOT / "paperforge" / "setup_wizard.py").read_text(encoding="utf-8")
+    assert 'True if not agents_src.exists() else agents_dst.exists()' in source

@@ -53,6 +53,7 @@ version = {attr = "paperforge.__version__"}
 paperforge = [
     "py.typed",
     "skills/literature-qa/prompt_deep_subagent.md",
+    "skills/literature-qa/scripts/*.md",
     "skills/literature-qa/chart-reading/*.md",
     "skills/literature-qa/chart-reading/*",
     "command_files/*.md",
