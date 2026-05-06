@@ -32,11 +32,15 @@ def run(args: argparse.Namespace) -> int:
     vault = getattr(args, "vault_path", None)
     paths = getattr(args, "paths", None)
     if vault is None:
-        from paperforge.config import load_vault_config, paperforge_paths, resolve_vault
+        from paperforge.config import resolve_vault
+        from paperforge.worker._utils import pipeline_paths
 
         vault = resolve_vault(cli_vault=getattr(args, "vault", None))
-        cfg = load_vault_config(vault)
-        paths = paperforge_paths(vault, cfg)
+        paths = pipeline_paths(vault)
+    elif paths is None or "config" not in paths:
+        from paperforge.worker._utils import pipeline_paths
+
+        paths = pipeline_paths(vault)
 
     run_repair = _get_run_repair()
     result = run_repair(

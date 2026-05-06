@@ -124,7 +124,8 @@ def yaml_list(key: str, values) -> list[str]:
 
 def slugify_filename(text: str) -> str:
     cleaned = re.sub('[<>:"/\\\\|?*]+', "", text).strip()
-    return cleaned[:120] or "untitled"
+    cleaned = cleaned[:120].rstrip(" .")
+    return cleaned or "untitled"
 
 
 def _extract_year(value: str) -> str:

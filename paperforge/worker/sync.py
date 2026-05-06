@@ -618,8 +618,8 @@ def has_deep_reading_content(text: str) -> bool:
 def library_record_markdown(row: dict) -> str:
     lines = [
         "---",
-        f"zotero_key: {row.get('zotero_key', '')}",
-        f"domain: {row.get('domain', '')}",
+        f"zotero_key: {yaml_quote(row.get('zotero_key', ''))}",
+        f"domain: {yaml_quote(row.get('domain', ''))}",
         f"title: {yaml_quote(row.get('title', ''))}",
         f"year: {row.get('year', '')}",
         f"doi: {yaml_quote(row.get('doi', ''))}",

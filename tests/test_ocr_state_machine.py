@@ -11,6 +11,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
+import requests
 
 
 def _make_vault(tmp_path: Path) -> tuple[Path, Path, Path, Path]:
