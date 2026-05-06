@@ -26,7 +26,7 @@ Object.assign(LANG.en, {
     setup_done: 'PaperForge environment is ready',
     setup_pending: 'Not installed yet. Finish the preparation items below, then open the wizard.',
     section_prep: 'Preparation',
-    section_prep_desc: 'Before first use, finish these 5 preparation items, then open the setup wizard:',
+    section_prep_desc: 'Before first use, finish these 4 preparation items. Better BibTeX auto-export is configured after setup:',
     section_guide: 'How To Use',
     section_config: 'Current Configuration',
     prep_python_desc: 'Python must be available from the command line. If you are not sure, click below to auto-detect.',
@@ -38,7 +38,7 @@ Object.assign(LANG.en, {
     prep_key_desc: 'Get your API key from https://aistudio.baidu.com/paddleocr',
     guide_open: 'Open Main Panel',
     guide_open_desc: 'Press Ctrl+P and run "PaperForge: Open Main Panel", or click the PaperForge icon in the left sidebar.',
-    guide_sync_desc: 'In the main panel, click Sync Library to import papers from Zotero into Obsidian and generate notes automatically.',
+    guide_sync_desc: 'After Better BibTeX JSON export is configured, click Sync Library to import papers from Zotero into Obsidian and generate notes automatically.',
     guide_ocr_desc: 'In the main panel, click Run OCR to extract full text and figures from PDFs for later reading and analysis.',
     btn_install: 'Open Setup Wizard',
     btn_install_desc: 'Check whether the environment is ready, then open the step-by-step setup wizard',
@@ -46,12 +46,13 @@ Object.assign(LANG.en, {
     wizard_step2: 'Directory Setup',
     wizard_step3: 'Platform & Keys',
     wizard_intro: 'This wizard walks you through the full setup. In most cases, the default values are fine to keep.',
-    wizard_dir_hint: 'The resources directory is the main folder for your literature data. PaperForge will create these folders inside it:',
-    wizard_dir_sub_hint: 'Sub-folders under the resources directory:',
-    wizard_sys_hint: 'System folders stored at the vault root:',
+    wizard_dir_hint: 'PaperForge stores user-facing literature data under the resources directory. These folders will live there:',
+    wizard_dir_sub_hint: 'Resolved folder preview based on the names below:',
+    wizard_sys_hint: 'These folders live at the vault root, outside the resources directory:',
     wizard_agent_hint: 'Choose the AI agent platform you use most often. PaperForge will place the matching command and skill files in the correct location.',
     wizard_keys_hint: 'Enter your PaddleOCR API key below. If you want PaperForge to auto-locate Zotero PDFs, you can also fill in the Zotero data directory.',
-    wizard_preview: 'After installation, system files and agent config stay at the vault root, while literature data is stored under the resources directory.',
+    wizard_preview: 'After installation, system files stay at the vault root while literature data stays under the resources directory.',
+    wizard_safety: 'Safety: if the selected folders already contain files, setup preserves existing files and only creates missing PaperForge folders and files.',
     field_zotero_placeholder: 'Optional. Helps auto-locate PDF attachments in Zotero storage',
     install_btn: 'Start Install',
     install_validating: 'Validating setup...',
@@ -63,8 +64,9 @@ Object.assign(LANG.en, {
     complete_next: 'Recommended next steps',
     complete_step1_desc: 'Press Ctrl+P and run "PaperForge: Open Main Panel", or click the PaperForge icon in the left sidebar.',
     complete_step2_desc: 'In the main panel, click Sync Library to bring papers from Zotero into Obsidian and generate notes.',
-    complete_step3_desc: 'In the main panel, click Run OCR to extract full text and figures from PDFs.',
+    complete_step3_desc: 'In the Obsidian Base view, mark do_ocr:true on papers, then run OCR in the main panel.',
     complete_step4: 'Configure Better BibTeX Auto-export',
+    complete_step4_desc: 'In Zotero, right-click the library or collection you want to sync -> Export -> Better BibTeX JSON -> enable "Keep updated".',
     complete_export_path: 'Save Better BibTeX JSON exports into:',
     nav_prev: 'Back',
     nav_next: 'Next',
@@ -86,7 +88,7 @@ Object.assign(LANG.zh, {
     desc: 'Obsidian + Zotero 文献管理流水线。自动同步文献、生成笔记、OCR 提取全文，一站式完成文献整理与精读。',
     setup_done: 'PaperForge 环境已准备完成',
     setup_pending: '尚未完成安装。请先完成下面的准备，再打开安装向导。',
-    section_prep_desc: '第一次使用前，请先完成下面 5 项准备。完成后再打开安装向导：',
+    section_prep_desc: '第一次使用前，请先完成下面 4 项准备。Better BibTeX 自动导出放在安装完成后配置：',
     prep_python_desc: '确认系统可以直接运行 Python 命令。如果不确定，点击下方按钮自动检测。',
     prep_zotero_desc: '先安装 Zotero：https://www.zotero.org',
     prep_bbt_desc: '在 Zotero 中依次打开：工具 -> 插件 -> 安装 Better BibTeX。',
@@ -95,19 +97,20 @@ Object.assign(LANG.zh, {
     prep_export_path_label: '请把导出的 JSON 文件保存到这个文件夹：',
     guide_open: '打开主面板',
     guide_open_desc: '按 Ctrl+P，输入 PaperForge: 打开主面板；或点击左侧的 PaperForge 图标。',
-    guide_sync_desc: '在主面板点击 Sync Library，把 Zotero 中的文献同步到 Obsidian，并自动生成笔记。',
+    guide_sync_desc: '先完成 Better BibTeX JSON 自动导出配置，再在主面板点击 Sync Library，把 Zotero 文献同步到 Obsidian 并自动生成笔记。',
     guide_ocr_desc: '在主面板点击 Run OCR，从 PDF 中提取全文和图表，供后续精读和分析使用。',
     btn_install_desc: '先检查环境是否就绪，再打开分步安装向导',
     btn_reconfig_desc: '重新打开安装向导，修改目录、平台或密钥配置',
     wizard_step2: '目录配置',
     wizard_step3: '平台与密钥',
     wizard_intro: '这个向导会一步步帮你完成安装。大部分选项保持默认即可，安装时会自动创建所需目录。',
-    wizard_dir_hint: '资源目录是文献数据的主目录。PaperForge 会在里面创建以下子目录：',
-    wizard_dir_sub_hint: '资源目录中的子目录：',
-    wizard_sys_hint: '位于 Vault 根目录的系统文件：',
+    wizard_dir_hint: '资源目录用于存放用户可见的文献数据。下面这些目录都会位于资源目录内部：',
+    wizard_dir_sub_hint: '根据下面的目录名，最终路径会是：',
+    wizard_sys_hint: '这些目录位于 Vault 根目录，不属于资源目录：',
     wizard_agent_hint: '选择你平时使用的 AI Agent 平台。安装完成后，PaperForge 会把对应的命令和技能文件放到正确位置。',
     wizard_keys_hint: '下面填写 PaddleOCR API 密钥；如果你希望自动定位 Zotero 中的 PDF，也可以补充 Zotero 数据目录。',
-    wizard_preview: '安装后：系统文件和 Agent 配置位于 Vault 根目录，文献数据统一放在资源目录内。以后仍可在设置页修改。',
+    wizard_preview: '安装后：系统文件位于 Vault 根目录，文献数据统一放在资源目录内。以后仍可在设置页修改。',
+    wizard_safety: '安全说明：如果你选择的目录里已经有文件，安装向导会保留已有内容，只补充缺失的 PaperForge 文件和目录。',
     field_zotero_placeholder: '可选。填写后可帮助自动定位 Zotero 存储中的 PDF 附件',
     install_validating: '正在校验安装环境...',
     install_bootstrapping: '未检测到 PaperForge Python 包，正在自动安装...',
@@ -117,9 +120,10 @@ Object.assign(LANG.zh, {
     complete_summary: '已保存的安装配置',
     complete_next: '建议下一步',
     complete_step1_desc: '按 Ctrl+P，输入 PaperForge: 打开主面板；或点击左侧的 PaperForge 图标。',
-    complete_step2_desc: '在主面板点击 Sync Library，把 Zotero 文献同步到 Obsidian，并自动生成笔记。',
-    complete_step3_desc: '在主面板点击 Run OCR，从 PDF 中提取全文和图表。',
+    complete_step2_desc: '在主面板点击 Sync Library，把 Zotero 文献同步到 Obsidian 并自动生成笔记。',
+    complete_step3_desc: '在 Obsidian Base 视图中将文献的 do_ocr 设为 true，然后在主面板点击 Run OCR。',
     complete_step4: '配置 Better BibTeX 自动导出',
+    complete_step4_desc: '在 Zotero 中右键要同步的文献库或分类 -> 导出 -> 选择 Better BibTeX JSON -> 勾选“保持更新”。',
     complete_export_path: 'Better BibTeX 导出的 JSON 文件请保存到：',
     nav_prev: '上一步',
     nav_next: '下一步',
@@ -1548,17 +1552,12 @@ class PaperForgeSettingTab extends PluginSettingTab {
             ['prep_python', 'prep_python_desc'],
             ['prep_zotero', 'prep_zotero_desc'],
             ['prep_bbt', 'prep_bbt_desc'],
-            ['prep_export', 'prep_export_desc'],
             ['prep_key', 'prep_key_desc'],
         ];
         for (const [kTitle, kDesc] of prepData) {
             const row = prep.createEl('div', { cls: 'paperforge-guide-item' });
             row.createEl('strong', { text: t(kTitle) });
             row.createEl('span', { text: ' — ' + t(kDesc) });
-            if (kTitle === 'prep_export') {
-                const expRow = prep.createEl('div', { cls: 'paperforge-guide-item' });
-                expRow.createEl('span', { text: `${t('prep_export_path_label')} ${vaultPath}/${this._pfConfig.system_dir}/PaperForge/exports/` });
-            }
         }
 
         /* ── Pre-check status area ── */
@@ -1805,6 +1804,21 @@ class PaperForgeSetupModal extends Modal {
             </div>`;
 
         el.createEl('p', { text: t('wizard_preview'), cls: 'paperforge-modal-hint' });
+        el.createEl('p', { text: t('wizard_safety'), cls: 'paperforge-modal-hint' });
+
+        const summary = el.createEl('div', { cls: 'paperforge-summary' });
+        const overviewItems = [
+            { label: t('dir_resources'), val: `${vault}/${s.resources_dir || '03_Resources'}` },
+            { label: t('dir_notes'), val: `${vault}/${s.resources_dir || '03_Resources'}/${s.literature_dir || 'Literature'}` },
+            { label: t('dir_index'), val: `${vault}/${s.resources_dir || '03_Resources'}/${s.control_dir || 'LiteratureControl'}` },
+            { label: t('dir_base'), val: `${vault}/${s.base_dir || '05_Bases'}` },
+            { label: t('dir_system'), val: `${vault}/${s.system_dir || '99_System'}` },
+        ];
+        for (const item of overviewItems) {
+            const row = summary.createEl('div', { cls: 'paperforge-summary-row' });
+            row.createEl('span', { cls: 'paperforge-summary-label', text: item.label });
+            row.createEl('span', { cls: 'paperforge-summary-value', text: item.val });
+        }
     }
 
     /* ── Step 2: Directory Config (editable) ── */
@@ -1830,6 +1844,21 @@ class PaperForgeSetupModal extends Modal {
 
         this._modalInput(el, t('dir_system'), 'system_dir', s.system_dir, 'System');
         this._modalInput(el, t('dir_base'), 'base_dir', s.base_dir, 'Base');
+
+        el.createEl('p', { text: t('wizard_safety'), cls: 'paperforge-modal-hint' });
+        const preview = el.createEl('div', { cls: 'paperforge-summary' });
+        const previewItems = [
+            { label: t('dir_resources'), val: `${vault}/${s.resources_dir || ''}` },
+            { label: t('dir_notes'), val: `${vault}/${s.resources_dir || ''}/${s.literature_dir || ''}` },
+            { label: t('dir_index'), val: `${vault}/${s.resources_dir || ''}/${s.control_dir || ''}` },
+            { label: t('dir_system'), val: `${vault}/${s.system_dir || ''}` },
+            { label: t('dir_base'), val: `${vault}/${s.base_dir || ''}` },
+        ];
+        for (const item of previewItems) {
+            const row = preview.createEl('div', { cls: 'paperforge-summary-row' });
+            row.createEl('span', { cls: 'paperforge-summary-label', text: item.label });
+            row.createEl('span', { cls: 'paperforge-summary-value', text: item.val });
+        }
     }
 
     /* ── Step 3: Keys, Zotero & Agent ── */
@@ -2076,11 +2105,11 @@ class PaperForgeSetupModal extends Modal {
         el.createEl('h3', { text: t('complete_next') });
         const nextList = el.createEl('div', { cls: 'paperforge-nextsteps' });
         const steps = [
+            [t('complete_step4'), t('complete_step4_desc')],
+            ['', `${t('complete_export_path')} ${vault}/${s.system_dir}/PaperForge/exports/`],
             [t('complete_step1'), t('complete_step1_desc')],
             [t('complete_step2'), t('complete_step2_desc')],
             [t('complete_step3'), t('complete_step3_desc')],
-            [t('complete_step4'), t('complete_step4_desc')],
-            ['', `${t('complete_export_path')} ${vault}/${s.system_dir}/PaperForge/exports/`],
         ];
         for (const [title, desc] of steps) {
             const item = nextList.createEl('div', { cls: 'paperforge-nextstep-item' });
