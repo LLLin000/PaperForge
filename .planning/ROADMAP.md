@@ -52,7 +52,7 @@
 - [ ] **Phase 32: Deep-Reading Mode Detection** — Plugin routes deep-reading.md to dedicated dashboard mode
 - [ ] **Phase 33: Deep-Reading Dashboard Rendering** — Status bar, Pass 1 summary, empty-state AI Q&A card
 - [x] **Phase 34: Jump to Deep Reading Button** — Per-paper dashboard card links to deep-reading.md (completed 2026-05-06)
-- [ ] **Phase 35: AI Discussion Recorder** — Python module writes discussion.md + discussion.json into ai/
+- [x] **Phase 35: AI Discussion Recorder** — Python module writes discussion.md + discussion.json into ai/ (completed 2026-05-06)
 - [ ] **Phase 36: Integration Verification** — End-to-end pipeline verified with CJK encoding and vault.adapter.read
 
 ---
@@ -118,7 +118,10 @@
   3. Re-running an agent session for the same paper appends a new session entry rather than overwriting previous discussions, using atomic read-modify-write via `tempfile.NamedTemporaryFile` + `os.replace()`
   4. Discussion files are written with explicit `encoding='utf-8'` and `newline='\n'` and are readable in Obsidian without mojibake on Windows CJK systems
   5. `discussion.py` uses only Python stdlib (`json`, `pathlib`, `datetime`, `tempfile`, `os`) — zero new dependencies
-**Plans**: TBD
+**Plans**: 1 plan
+
+Plans:
+- [x] 35-01-PLAN.md — Python module (discussion.py) + pf-paper.md integration
 
 ### Phase 36: Integration Verification
 **Goal**: End-to-end pipeline verified: agent session writes discussion files → dashboard reads and renders AI Q&A history via vault.adapter.read(). Windows CJK encoding and no-btoa() constraints validated.
@@ -146,7 +149,7 @@
 | 32. Deep-Reading Mode Detection | 0/TBD | Not started | - |
 | 33. Deep-Reading Dashboard Rendering | 0/TBD | Not started | - |
 | 34. Jump to Deep Reading Button | 1/1 | Complete    | 2026-05-06 |
-| 35. AI Discussion Recorder | 0/TBD | Not started | - |
+| 35. AI Discussion Recorder | 1/1 | Complete   | 2026-05-06 |
 | 36. Integration Verification | 0/TBD | Not started | - |
 
 ---

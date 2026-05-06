@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.8
 milestone_name: AI Discussion & Deep-Reading Dashboard
-status: Ready to plan
-stopped_at: Phase 35 context gathered
-last_updated: "2026-05-06T06:55:03.559Z"
+status: Phase complete — ready for verification
+stopped_at: Completed 35-01-PLAN.md (AI Discussion Recorder)
+last_updated: "2026-05-06T15:30:34.254Z"
 progress:
   total_phases: 6
-  completed_phases: 1
-  total_plans: 4
-  completed_plans: 1
+  completed_phases: 2
+  total_plans: 5
+  completed_plans: 2
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-06)
 
 **Core value:** Researchers always know what papers have, what state those papers are in, and whether each paper is reliably usable by AI with traceable fulltext, figures, notes, and source links.
-**Current focus:** Phase 34 — Jump to Deep Reading Button
+**Current focus:** Phase 35 — ai-discussion-recorder
 
 ## Current Position
 
-Phase: 35
-Plan: Not started
+Phase: 35 (ai-discussion-recorder) — EXECUTING
+Plan: 1 of 1
 
 ## Performance Metrics
 
@@ -52,6 +52,7 @@ Recent decisions affecting current work:
 - [Phase 33] _renderDeepReadingMode() is async — reads deep-reading.md and discussion.json via vault.read(). Contains modeGuard for race condition safety.
 - [Phase 33] Pass 1 extraction uses marker priority: **一句话总览** → ## Pass 1 → **文章摘要**, cuts at next major section break.
 - [Phase 33] AI Q&A: sessions-based collapsible groups, dialog bubble format (question/answer different colors), default collapsed.
+- [Phase 35-ai-discussion-recorder]: Only /pf-paper records discussions; /pf-deep explicitly excluded per D-05
 
 ### Pending Todos
 
@@ -68,6 +69,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-06T06:55:03.554Z
-Stopped at: Phase 35 context gathered
-Resume file: .planning/phases/35-ai-discussion-recorder/35-CONTEXT.md
+Last session: 2026-05-06T15:30:34.251Z
+Stopped at: Completed 35-01-PLAN.md (AI Discussion Recorder)
+Resume file: None

@@ -7,9 +7,9 @@
 
 ### AI Discussion Recording
 
-- [ ] **AI-01**: `paperforge/worker/discussion.py` writes discussion.md (human-readable Q&A, `问题:` / `解答:` format, chronological sections) into paper workspace `ai/` directory.
-- [ ] **AI-02**: `paperforge/worker/discussion.py` writes discussion.json (structured, sessions[] array with `schema_version`, `timestamp`, `qa_pairs[]` per session) into paper workspace `ai/` directory.
-- [ ] **AI-03**: `/pf-paper` and `/pf-deep` agent sessions trigger discussion recorder at session completion, producing both files.
+- [x] **AI-01**: `paperforge/worker/discussion.py` writes discussion.md (human-readable Q&A, `问题:` / `解答:` format, chronological sections) into paper workspace `ai/` directory.
+- [x] **AI-02**: `paperforge/worker/discussion.py` writes discussion.json (structured, sessions[] array with `schema_version`, `timestamp`, `qa_pairs[]` per session) into paper workspace `ai/` directory.
+- [x] **AI-03**: `/pf-paper` and `/pf-deep` agent sessions trigger discussion recorder at session completion, producing both files.
 
 ### Deep-Reading Dashboard
 
@@ -57,9 +57,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| AI-01 | Phase 35 | Pending |
-| AI-02 | Phase 35 | Pending |
-| AI-03 | Phase 35 | Pending |
+| AI-01 | Phase 35 | Complete |
+| AI-02 | Phase 35 | Complete |
+| AI-03 | Phase 35 | Complete |
 | DEEP-01 | Phase 32 | Pending |
 | DEEP-02 | Phase 33 | Pending |
 | DEEP-03 | Phase 33 | Pending |
