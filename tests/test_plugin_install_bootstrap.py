@@ -47,3 +47,11 @@ def test_setup_wizard_does_not_fail_if_agents_md_missing() -> None:
     """AGENTS.md is optional for pip-installed package deployments."""
     source = (REPO_ROOT / "paperforge" / "setup_wizard.py").read_text(encoding="utf-8")
     assert 'True if not agents_src.exists() else agents_dst.exists()' in source
+
+
+def test_setup_wizard_uses_manual_zotero_path_for_checks() -> None:
+    """Informational checks should honor user-provided zotero_data_dir."""
+    source = (REPO_ROOT / "paperforge" / "setup_wizard.py").read_text(encoding="utf-8")
+    assert "manual_zotero_path = Path(zotero_data).expanduser() if zotero_data else None" in source
+    assert "checker.check_zotero(manual_zotero_path)" in source
+    assert "checker.check_bbt(manual_zotero_path)" in source
