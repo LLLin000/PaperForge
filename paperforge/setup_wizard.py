@@ -20,6 +20,8 @@ import sys
 import webbrowser
 from pathlib import Path
 
+from paperforge import __version__
+
 if sys.platform == "win32":
     import winreg
 else:
@@ -2024,7 +2026,7 @@ PADDLEOCR_MODEL=PaddleOCR-VL-1.5
         except Exception:
             existing_config = {}
     existing_config.update({
-        "version": existing_config.get("version", "1.4.3"),
+        "version": existing_config.get("version", __version__),
         "agent_platform": agent_config.get("name", "OpenCode"),
         "agent_key": agent_key,
         "skill_dir": skill_dir,
@@ -2096,7 +2098,7 @@ PADDLEOCR_MODEL=PaddleOCR-VL-1.5
     # =========================================================================
     print()
     print("=" * 60)
-    print("  PaperForge v1.4.2 installation complete!")
+    print(f"  PaperForge v{__version__} installation complete!")
     print("=" * 60)
     print()
     print("Next steps:")
