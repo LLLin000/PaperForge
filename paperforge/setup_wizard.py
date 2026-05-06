@@ -790,15 +790,12 @@ class ZoteroStep(StepScreen):
             system_dir = getattr(self.app, "vault_config", {}).get("system_dir", "99_System")
             junction_path = vault / system_dir / "Zotero"
 
-            # Remove existing
             if junction_path.exists() or junction_path.is_symlink():
-                try:
-                    if sys.platform == "win32":
-                        subprocess.run(["cmd", "/c", "rmdir", str(junction_path)], check=True, capture_output=True)
-                    else:
-                        junction_path.unlink()
-                except Exception:
-                    pass
+                self.app.zotero_data_dir = str(zotero_data)
+                self.app.zotero_link = str(junction_path)
+                self.set_status("已存在 Zotero 目录/链接，安装向导不会覆盖已有内容", True)
+                self.app.post_message(StepPassed(self.step_idx))
+                return
 
             try:
                 junction_path.parent.mkdir(parents=True, exist_ok=True)
@@ -867,8 +864,8 @@ class JsonStep(StepScreen):
 **Better BibTeX 自动导出**是 PaperForge 的数据来源。
 
 **配置步骤：**
-1. Zotero → 文件 → 导出库...
-2. 格式选择 **Better BibTeX**
+1. 在 Zotero 中，对要同步的文献库或分类右键 → **导出...**
+2. 格式选择 **Better BibTeX JSON**
 3. 保存到：`{system_dir}/PaperForge/exports/`
 4. **[必须] 勾选 "保持更新"** — 这是自动同步的关键！
 
@@ -1058,7 +1055,7 @@ class DeployStep(StepScreen):
         if worker_src.exists():
             import shutil
 
-            shutil.copy2(worker_src, worker_dst)
+            _copy_file_incremental(worker_src, worker_dst)
             # Also copy other worker modules
             for mod in [
                 "ocr.py",
@@ -1071,13 +1068,13 @@ class DeployStep(StepScreen):
             ]:
                 mod_src = repo_root / "paperforge/worker" / mod
                 if mod_src.exists():
-                    shutil.copy2(mod_src, pf_path / "worker/scripts" / mod)
+                    _copy_file_incremental(mod_src, pf_path / "worker/scripts" / mod)
         else:
             # Fallback to old pipeline location for backward compatibility
             worker_src = repo_root / "pipeline/worker/scripts/literature_pipeline.py"
             worker_dst = pf_path / "worker/scripts/literature_pipeline.py"
             if worker_src.exists():
-                shutil.copy2(worker_src, worker_dst)
+                _copy_file_incremental(worker_src, worker_dst)
             else:
                 self.set_status(f"错误：找不到 worker 脚本: {worker_src}", False)
                 return False
@@ -1088,7 +1085,7 @@ class DeployStep(StepScreen):
             ld_src = repo_root / "skills/literature-qa/scripts/ld_deep.py"
         ld_dst = vault / skill_dir / "literature-qa/scripts/ld_deep.py"
         if ld_src.exists():
-            shutil.copy2(ld_src, ld_dst)
+            _copy_file_incremental(ld_src, ld_dst)
         else:
             self.set_status(f"错误：找不到 ld_deep.py: {ld_src}", False)
             return False
@@ -1099,7 +1096,7 @@ class DeployStep(StepScreen):
             prompt_src = repo_root / "skills/literature-qa/prompt_deep_subagent.md"
         prompt_dst = vault / skill_dir / "literature-qa/prompt_deep_subagent.md"
         if prompt_src.exists():
-            shutil.copy2(prompt_src, prompt_dst)
+            _copy_file_incremental(prompt_src, prompt_dst)
         else:
             self.set_status(f"错误：找不到 prompt_deep_subagent.md: {prompt_src}", False)
             return False
@@ -1111,7 +1108,7 @@ class DeployStep(StepScreen):
         chart_dst = vault / skill_dir / "literature-qa/chart-reading"
         if chart_src.exists() and chart_src.is_dir():
             for f in chart_src.glob("*.md"):
-                shutil.copy2(f, chart_dst / f.name)
+                _copy_file_incremental(f, chart_dst / f.name)
 
         # Copy OpenCode command files when the target platform supports them.
         if getattr(self.app, "agent_key", "") == "opencode":
@@ -1123,15 +1120,20 @@ class DeployStep(StepScreen):
                 command_dst.mkdir(parents=True, exist_ok=True)
                 for f in command_src.glob("*.md"):
                     text = apply_user_paths(f.read_text(encoding="utf-8"), skill_dir)
-                    (command_dst / f.name).write_text(text, encoding="utf-8")
+                    _write_text_incremental(command_dst / f.name, text)
 
         # Copy user-facing docs. AGENTS.md is regenerated below with the chosen paths.
         docs_src = repo_root / "docs"
         docs_dst = vault / "docs"
         if docs_src.exists() and docs_src.is_dir():
-            shutil.copytree(docs_src, docs_dst, dirs_exist_ok=True)
-            for doc in docs_dst.rglob("*.md"):
-                doc.write_text(apply_user_paths(doc.read_text(encoding="utf-8"), skill_dir), encoding="utf-8")
+            for src_doc in docs_src.rglob("*.md"):
+                rel = src_doc.relative_to(docs_src)
+                text = apply_user_paths(src_doc.read_text(encoding="utf-8"), skill_dir)
+                _write_text_incremental(docs_dst / rel, text)
+            for src_other in docs_src.rglob("*"):
+                if src_other.is_dir() or src_other.suffix.lower() == ".md":
+                    continue
+                _copy_file_incremental(src_other, docs_dst / src_other.relative_to(docs_src))
 
         # 5. 创建 .env（放到 PaperForge 目录下）
         from textual.widgets import Input
@@ -1161,7 +1163,15 @@ PADDLEOCR_MODEL=PaddleOCR-VL-1.5
 # Zotero data directory selected during setup
 ZOTERO_DATA_DIR={getattr(self.app, 'zotero_data_dir', '')}
 """
-        env_path.write_text(env_content, encoding="utf-8")
+        _merge_env_incremental(
+            env_path,
+            {
+                "PADDLEOCR_API_TOKEN": api_key,
+                "PADDLEOCR_JOB_URL": api_url,
+                "PADDLEOCR_MODEL": "PaddleOCR-VL-1.5",
+                "ZOTERO_DATA_DIR": getattr(self.app, "zotero_data_dir", ""),
+            },
+        )
 
         # Create a minimal domain mapping. The worker will keep this usable even
         # before JSON exports exist, and will infer domains from export filenames.
@@ -1214,7 +1224,7 @@ ZOTERO_DATA_DIR={getattr(self.app, 'zotero_data_dir', '')}
         agents_dst = vault / "AGENTS.md"
         if agents_src.exists():
             agents_text = apply_user_paths(agents_src.read_text(encoding="utf-8"), skill_dir)
-            agents_dst.write_text(agents_text, encoding="utf-8")
+            _write_text_incremental(agents_dst, agents_text)
 
         # 7. 验证文件完整性
         self.set_status("验证文件完整性...", None)
@@ -1286,7 +1296,17 @@ PaperForge 已完成安装和初始化。以下是立即开始使用的步骤：
 
 ### 首次使用步骤：
 
-**1. 同步 Zotero 文献并生成正式笔记**
+**1. 配置 Better BibTeX 自动导出**
+1. 在 Zotero 中，对要同步的文献库或分类右键 → 导出
+2. 格式选择 **Better BibTeX JSON**
+3. 保存到：`{system_dir}/PaperForge/exports/`
+4. **必须勾选 "保持更新"**
+
+**2. 在 Obsidian 里启用插件并打开 Dashboard**
+1. `Settings -> Community Plugins -> Installed -> PaperForge -> Enable`
+2. `Ctrl+P` 搜索 `PaperForge`
+
+**3. 同步 Zotero 文献并生成正式笔记**
 ```bash
 paperforge sync
 ```
@@ -1297,12 +1317,10 @@ paperforge sync --selection  # 仅同步 Zotero 到 library-records
 paperforge sync --index      # 仅根据现有 library-records 生成正式笔记
 ```
 
-**2. 标记精读文献**
-在 Obsidian 中打开 library-records 文件，设置：
-- `do_ocr: true`
-- `analyze: true`
+**4. 在 Base 视图中标记 OCR**
+打开 Obsidian Base 视图，找到该文献，将 `do_ocr` 设为 `true`。
 
-**3. 运行 OCR**
+**5. 运行 OCR**
 ```bash
 paperforge ocr
 ```
@@ -1312,7 +1330,10 @@ paperforge ocr
 paperforge ocr --diagnose
 ```
 
-**4. 执行精读**
+**6. 在 Base 视图中标记精读**
+OCR 完成后，在 Base 视图中找到该文献，将 `analyze` 设为 `true`。
+
+**7. 执行精读**
 在 OpenCode Agent 中输入：
 ```
 /pf-deep <zotero_key>
@@ -1598,6 +1619,80 @@ def _substitute_vars(
     return text
 
 
+def _copy_file_incremental(src: Path, dst: Path) -> bool:
+    """Copy a file only when the destination is missing."""
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    if dst.exists():
+        return False
+    shutil.copy2(src, dst)
+    return True
+
+
+def _write_text_incremental(dst: Path, text: str) -> bool:
+    """Write a text file only when the destination is missing."""
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    if dst.exists():
+        return False
+    dst.write_text(text, encoding="utf-8")
+    return True
+
+
+def _copy_tree_incremental(src_dir: Path, dst_dir: Path) -> tuple[int, int]:
+    """Copy an entire tree without overwriting existing files."""
+    created = 0
+    skipped = 0
+    for src in src_dir.rglob("*"):
+        rel = src.relative_to(src_dir)
+        dst = dst_dir / rel
+        if src.is_dir():
+            dst.mkdir(parents=True, exist_ok=True)
+            continue
+        if _copy_file_incremental(src, dst):
+            created += 1
+        else:
+            skipped += 1
+    return created, skipped
+
+
+def _merge_env_incremental(env_path: Path, values: dict[str, str]) -> str:
+    """Create .env if missing, otherwise append only missing keys."""
+    lines = [
+        "# PaperForge configuration",
+        f"PADDLEOCR_API_TOKEN={values['PADDLEOCR_API_TOKEN']}",
+        f"PADDLEOCR_JOB_URL={values['PADDLEOCR_JOB_URL']}",
+        f"PADDLEOCR_MODEL={values['PADDLEOCR_MODEL']}",
+    ]
+    if "ZOTERO_DATA_DIR" in values:
+        lines.append(f"ZOTERO_DATA_DIR={values['ZOTERO_DATA_DIR']}")
+
+    if not env_path.exists():
+        env_path.parent.mkdir(parents=True, exist_ok=True)
+        env_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        return "created"
+
+    existing_text = env_path.read_text(encoding="utf-8")
+    existing_keys = {
+        line.split("=", 1)[0].strip()
+        for line in existing_text.splitlines()
+        if line.strip() and not line.lstrip().startswith("#") and "=" in line
+    }
+    missing_lines = [
+        f"{key}={value}"
+        for key, value in values.items()
+        if key not in existing_keys
+    ]
+    if not missing_lines:
+        return "preserved"
+
+    suffix = "\n".join(missing_lines) + "\n"
+    if existing_text and not existing_text.endswith("\n"):
+        existing_text += "\n"
+    if existing_text.strip():
+        existing_text += "\n"
+    env_path.write_text(existing_text + suffix, encoding="utf-8")
+    return "extended"
+
+
 def _deploy_skill_directory(
     vault: Path,
     skill_dir: str,
@@ -1628,26 +1723,25 @@ def _deploy_skill_directory(
     if deep_src.exists():
         text = deep_src.read_text(encoding="utf-8")
         text = _substitute_vars(text, system_dir, resources_dir, literature_dir, control_dir, base_dir, skill_dir, prefix)
-        (pf_deep_dst / "SKILL.md").write_text(text, encoding="utf-8")
+        _write_text_incremental(pf_deep_dst / "SKILL.md", text)
         imported.append("pf-deep")
 
     # ld_deep.py
     ld_src = src_scripts / "ld_deep.py"
     ld_dst = pf_deep_dst / "scripts" / "ld_deep.py"
     if ld_src.exists():
-        ld_dst.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(ld_src, ld_dst)
+        _copy_file_incremental(ld_src, ld_dst)
 
     # subagent prompt
     if src_prompt.exists():
-        shutil.copy2(src_prompt, pf_deep_dst / "prompt_deep_subagent.md")
+        _copy_file_incremental(src_prompt, pf_deep_dst / "prompt_deep_subagent.md")
 
     # chart-reading guides
     if src_charts.exists() and src_charts.is_dir():
         chart_dst = pf_deep_dst / "chart-reading"
         chart_dst.mkdir(parents=True, exist_ok=True)
         for f in src_charts.glob("*.md"):
-            shutil.copy2(f, chart_dst / f.name)
+            _copy_file_incremental(f, chart_dst / f.name)
 
     # --- pf-paper: lightweight paper Q&A skill ---
     pf_paper_dst = vault / skill_dir / "pf-paper"
@@ -1657,7 +1751,7 @@ def _deploy_skill_directory(
     if paper_src.exists():
         text = paper_src.read_text(encoding="utf-8")
         text = _substitute_vars(text, system_dir, resources_dir, literature_dir, control_dir, base_dir, skill_dir, prefix)
-        (pf_paper_dst / "SKILL.md").write_text(text, encoding="utf-8")
+        _write_text_incremental(pf_paper_dst / "SKILL.md", text)
         imported.append("pf-paper")
 
     return imported
@@ -1687,7 +1781,7 @@ def _deploy_flat_command(
     for f in command_src.glob("pf-*.md"):
         text = f.read_text(encoding="utf-8")
         text = _substitute_vars(text, system_dir, resources_dir, literature_dir, control_dir, base_dir, skill_dir)
-        (command_dst / f.name).write_text(text, encoding="utf-8")
+        _write_text_incremental(command_dst / f.name, text)
         imported.append(f.stem)
 
     return imported
@@ -1715,14 +1809,13 @@ def _deploy_rules_file(
     pf_deep_dst.mkdir(parents=True, exist_ok=True)
     ld_src = src_scripts / "ld_deep.py"
     if ld_src.exists():
-        (pf_deep_dst / "scripts").mkdir(parents=True, exist_ok=True)
-        shutil.copy2(ld_src, pf_deep_dst / "scripts" / "ld_deep.py")
+        _copy_file_incremental(ld_src, pf_deep_dst / "scripts" / "ld_deep.py")
     if src_prompt.exists():
-        shutil.copy2(src_prompt, pf_deep_dst / "prompt_deep_subagent.md")
+        _copy_file_incremental(src_prompt, pf_deep_dst / "prompt_deep_subagent.md")
     if src_charts.exists() and src_charts.is_dir():
         (pf_deep_dst / "chart-reading").mkdir(parents=True, exist_ok=True)
         for f in src_charts.glob("*.md"):
-            shutil.copy2(f, pf_deep_dst / "chart-reading" / f.name)
+            _copy_file_incremental(f, pf_deep_dst / "chart-reading" / f.name)
 
     imported.append("clinerules")
     return imported
@@ -1899,9 +1992,10 @@ def headless_setup(
             zotero_data_hint = zotero_data or "<你的Zotero数据目录>"
             if sys.platform == "win32":
                 print(f"    首次安装需要配置 BBT 自动导出：")
-                print(f"    1. Zotero → 文件 → 导出库 → Better BibTeX")
-                print(f"    2. 保存到 vault 的 {system_dir}/PaperForge/exports/")
-                print(f'    3. 勾选 "保持更新"')
+                print(f"    1. 在 Zotero 中右键要同步的文献库或分类 → 导出")
+                print(f"    2. 格式选择 Better BibTeX JSON")
+                print(f"    3. 保存到 vault 的 {system_dir}/PaperForge/exports/")
+                print(f'    4. 勾选 "保持更新"')
             else:
                 print(f"    Configure BBT auto-export to: {system_dir}/PaperForge/exports/")
             print(f"    完成后运行: paperforge sync")
@@ -1932,13 +2026,13 @@ def headless_setup(
         print(f"Error: worker script not found: {worker_src}", file=sys.stderr)
         return 4
 
-    shutil.copy2(worker_src, worker_dst)
+    _copy_file_incremental(worker_src, worker_dst)
     for mod in ["ocr.py", "repair.py", "status.py", "deep_reading.py",
                 "update.py", "base_views.py", "__init__.py",
                 "_utils.py", "_progress.py", "_retry.py"]:
         mod_src = repo_root / "paperforge/worker" / mod
         if mod_src.exists():
-            shutil.copy2(mod_src, pf_path / "worker/scripts" / mod)
+            _copy_file_incremental(mod_src, pf_path / "worker/scripts" / mod)
     print(f"    [OK] worker scripts")
 
     # Deploy skills based on agent format
@@ -1990,16 +2084,23 @@ def headless_setup(
     docs_src = repo_root / "docs"
     docs_dst = vault / "docs"
     if docs_src.exists() and docs_src.is_dir():
-        shutil.copytree(docs_src, docs_dst, dirs_exist_ok=True)
-    print(f"    [OK] docs")
+        created, skipped = _copy_tree_incremental(docs_src, docs_dst)
+        print(f"    [OK] docs (created {created}, preserved {skipped})")
+    else:
+        print(f"    [WARN] docs source not found: {docs_src}")
 
     # Obsidian plugin
     plugin_src = repo_root / "paperforge/plugin"
     plugin_dst = vault / ".obsidian" / "plugins" / "paperforge"
     if plugin_src.exists() and plugin_src.is_dir():
+        created = 0
+        skipped = 0
         for f in plugin_src.glob("*"):
-            shutil.copy2(f, plugin_dst / f.name)
-        print(f"    [OK] Obsidian plugin")
+            if _copy_file_incremental(f, plugin_dst / f.name):
+                created += 1
+            else:
+                skipped += 1
+        print(f"    [OK] Obsidian plugin (created {created}, preserved {skipped})")
     else:
         print(f"    [WARN] Plugin source not found: {plugin_src}")
 
@@ -2017,7 +2118,7 @@ def headless_setup(
             ("<skill_dir>", skill_dir),
         ]:
             text = text.replace(old, new)
-        agents_dst.write_text(text, encoding="utf-8")
+        _write_text_incremental(agents_dst, text)
         print(f"    [OK] AGENTS.md")
     else:
         print(f"    [WARN] AGENTS.md source not found; skipping")
@@ -2029,13 +2130,16 @@ def headless_setup(
 
     # .env
     if paddleocr_key:
-        env_content = f"""# PaperForge 配置文件
-PADDLEOCR_API_TOKEN={paddleocr_key}
-PADDLEOCR_JOB_URL={paddleocr_url}
-PADDLEOCR_MODEL=PaddleOCR-VL-1.5
-"""
-        (pf_path / ".env").write_text(env_content, encoding="utf-8")
-        print(f"    [OK] .env")
+        env_status = _merge_env_incremental(
+            pf_path / ".env",
+            {
+                "PADDLEOCR_API_TOKEN": paddleocr_key,
+                "PADDLEOCR_JOB_URL": paddleocr_url,
+                "PADDLEOCR_MODEL": "PaddleOCR-VL-1.5",
+                "ZOTERO_DATA_DIR": zotero_data or "",
+            },
+        )
+        print(f"    [OK] .env ({env_status})")
     else:
         print(f"    [INFO] No PaddleOCR key — create {pf_path}/.env manually")
 
@@ -2136,16 +2240,19 @@ PADDLEOCR_MODEL=PaddleOCR-VL-1.5
     print(f"  PaperForge v{__version__} installation complete!")
     print("=" * 60)
     print()
+    print("Safety note:")
+    print("  Existing files in the target vault were preserved; setup only created missing files and folders.")
+    print()
     print("Next steps:")
-    print("  1. Open Obsidian → Settings → Community Plugins → Enable 'PaperForge'")
-    print("  2. Press Ctrl+P and type 'PaperForge' to see CLI commands")
+    print(f"  1. In Zotero, export the library or a collection as Better BibTeX JSON into: {vault / system_dir / 'PaperForge' / 'exports'}")
+    print("     Enable 'Keep updated' so Zotero keeps the JSON in sync.")
+    print("  2. Open Obsidian → Settings → Community Plugins → Enable 'PaperForge'")
+    print("  3. Press Ctrl+P and type 'PaperForge' to open the dashboard")
     print()
     print("First-run workflow:")
-    print(f"  3. Configure Better BibTeX auto-export to: {system_dir}/PaperForge/exports/")
-    print("     (Zotero → Export Library → Better BibTeX → Keep Updated)")
     print("  4. Add papers to Zotero, then run: paperforge sync")
-    print("  5. Mark papers with do_ocr:true in library-records")
-    print("  6. Run: paperforge ocr")
+    print("  5. In Obsidian Base view, mark do_ocr:true, then run: paperforge ocr")
+    print("  6. After OCR done, mark analyze:true in Base view")
     print("  7. Use /pf-deep <key> in your AI agent for deep reading")
     print()
 

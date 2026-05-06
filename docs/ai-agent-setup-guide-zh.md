@@ -177,6 +177,8 @@ python -c "from paperforge.setup_wizard import EnvChecker; from pathlib import P
 
 ### Step 5: 创建目录并部署文件
 
+重要安全规则：这个安装流程必须是增量式的。如果目标 Vault 或所选目录里已经有文件，PaperForge 只能创建缺失的目录和文件，不能覆盖已有内容。
+
 把 Step 0 收集到的所有信息拼成一条命令：
 
 ```bash
@@ -238,20 +240,24 @@ python -m paperforge status
 
 ### Step 7: 告诉用户下一步
 
-> 安装完成。接下来你需要做 3 件事：
+> 安装完成。接下来你需要做 4 件事：
 >
 > **1. 配置 Zotero 自动导出 JSON（必须）**
 > PaperForge 的数据来源，不做这一步 sync 无法工作：
 > - 打开 Zotero
-> - 文件 → 导出库 → 格式选 Better BibTeX
-> - 保存到 Vault 里的 <system_dir>/PaperForge/exports/
+> - 对要同步的文献库或分类右键 → 导出
+> - 格式选 Better BibTeX JSON
 > - 必须勾选 "保持更新"
+> - 保存到 Vault 里的 <system_dir>/PaperForge/exports/
 >
 > **2. 在 Obsidian 里启用 PaperForge 插件**
 > - 设置 → 社区插件 → 已安装 → PaperForge → 启用
-> - Ctrl+P 输入 "PaperForge"
+> - Ctrl+P 输入 "PaperForge"，打开 Dashboard
 >
-> **3. 若跳过了 PaddleOCR Key**
+> **3. 同步文献**
+> - 在 Dashboard 中点击 `Sync Library`
+>
+> **4. 若跳过了 PaddleOCR Key**
 > - 在 <system_dir>/PaperForge/.env 里添加：
 >   PADDLEOCR_API_TOKEN=<你的key>
 

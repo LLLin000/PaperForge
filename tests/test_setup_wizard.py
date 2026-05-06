@@ -456,3 +456,57 @@ def test_headless_setup_cline_rules_file(tmp_path: Path, monkeypatch: pytest.Mon
     pf_deep = clinerules / "pf-deep"
     assert pf_deep.exists(), f"pf-deep subdir not created under .clinerules"
     assert (pf_deep / "scripts" / "ld_deep.py").exists(), "ld_deep.py not created under .clinerules"
+
+
+def test_headless_setup_preserves_existing_files(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Setup should create missing files without overwriting existing user content."""
+    from paperforge.setup_wizard import headless_setup
+    import paperforge.setup_wizard as sw
+
+    def patched_check_deps(self) -> CheckResult:
+        r = CheckResult("Dependencies")
+        r.passed = True
+        r.detail = "mocked"
+        return r
+
+    monkeypatch.setattr(sw.EnvChecker, "check_dependencies", patched_check_deps)
+
+    docs_file = tmp_path / "docs" / "setup-guide.md"
+    docs_file.parent.mkdir(parents=True)
+    docs_file.write_text("user doc\n", encoding="utf-8")
+
+    agents_file = tmp_path / "AGENTS.md"
+    agents_file.write_text("custom agents\n", encoding="utf-8")
+
+    env_file = tmp_path / "99_System" / "PaperForge" / ".env"
+    env_file.parent.mkdir(parents=True)
+    env_file.write_text("PADDLEOCR_API_TOKEN=keep-me\n", encoding="utf-8")
+
+    plugin_main = tmp_path / ".obsidian" / "plugins" / "paperforge" / "main.js"
+    plugin_main.parent.mkdir(parents=True)
+    plugin_main.write_text("custom plugin\n", encoding="utf-8")
+
+    existing_note = tmp_path / "03_Resources" / "Literature" / "existing.md"
+    existing_note.parent.mkdir(parents=True)
+    existing_note.write_text("keep note\n", encoding="utf-8")
+
+    rv = headless_setup(
+        vault=tmp_path,
+        agent_key="opencode",
+        paddleocr_key="new-token",
+        system_dir="99_System",
+        resources_dir="03_Resources",
+        literature_dir="Literature",
+        control_dir="LiteratureControl",
+        base_dir="05_Bases",
+        skip_checks=True,
+    )
+
+    assert rv == 0
+    assert docs_file.read_text(encoding="utf-8") == "user doc\n"
+    assert agents_file.read_text(encoding="utf-8") == "custom agents\n"
+    env_text = env_file.read_text(encoding="utf-8")
+    assert "PADDLEOCR_API_TOKEN=keep-me" in env_text
+    assert "PADDLEOCR_API_TOKEN=new-token" not in env_text
+    assert plugin_main.read_text(encoding="utf-8") == "custom plugin\n"
+    assert existing_note.read_text(encoding="utf-8") == "keep note\n"
