@@ -18,7 +18,7 @@ import pytest
 
 from paperforge.config import paperforge_paths
 from paperforge.worker._utils import scan_library_records
-from paperforge.worker.sync import run_index_refresh, run_selection_sync
+from paperforge.worker.sync import run_index_refresh, run_selection_sync, update_frontmatter_field
 
 
 class TestSelectionSyncProducesLibraryRecords:
@@ -164,9 +164,16 @@ class TestIndexRefreshProducesFormalNotes:
 class TestOcrQueueStates:
     """E2E: OCR queue and state transitions are correct after pipeline run."""
 
+    def _set_analyze_true(self, test_vault: Path) -> None:
+        paths = paperforge_paths(test_vault)
+        record_path = paths["library_records"] / "骨科" / "TSTONE001.md"
+        text = record_path.read_text(encoding="utf-8")
+        record_path.write_text(update_frontmatter_field(text, "analyze", True), encoding="utf-8")
+
     def test_scan_library_records_returns_tstone001(self, test_vault: Path) -> None:
         """Verify TSTONE001 appears in library records scan with analyze=true."""
         run_selection_sync(test_vault)
+        self._set_analyze_true(test_vault)
         records = scan_library_records(test_vault)
         tstone = [r for r in records if r["zotero_key"] == "TSTONE001"]
         assert len(tstone) >= 1, "TSTONE001 should be in library records scan"
@@ -176,6 +183,7 @@ class TestOcrQueueStates:
     def test_tstone001_ocr_status_done(self, test_vault: Path) -> None:
         """Verify TSTONE001 has OCR status 'done' (fixture has meta.json with ocr_status: done)."""
         run_selection_sync(test_vault)
+        self._set_analyze_true(test_vault)
         records = scan_library_records(test_vault)
         tstone = [r for r in records if r["zotero_key"] == "TSTONE001"]
         assert len(tstone) >= 1
@@ -210,6 +218,7 @@ class TestOcrQueueStates:
             )
 
         # Stage 4: OCR state is consistent
+        self._set_analyze_true(test_vault)
         records = scan_library_records(test_vault)
         tstone = [r for r in records if r["zotero_key"] == "TSTONE001"]
         assert len(tstone) >= 1

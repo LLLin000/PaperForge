@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import argparse
 import json
 import re
+from unittest.mock import patch
 
 from paperforge.worker.repair import run_repair
 from paperforge.worker.sync import pipeline_paths
@@ -438,3 +440,43 @@ class TestRunRepairReturnStructure:
         assert "formal_note_ocr_status" in item
         assert "meta_ocr_status" in item
         assert "reason" in item
+
+
+class TestRepairCommandPaths:
+    def test_repair_command_uses_pipeline_paths_with_config(self, tmp_path):
+        vault = _make_vault(tmp_path)
+        captured = {}
+
+        def _fake_run_repair(vault_arg, paths_arg, verbose=False, fix=False, fix_paths=False):
+            captured["vault"] = vault_arg
+            captured["paths"] = paths_arg
+            return {"scanned": 0, "divergent": [], "fixed": 0, "errors": [], "path_errors": {"total": 0}, "rebuilt": 0}
+
+        from paperforge.commands import repair as repair_cmd
+
+        args = argparse.Namespace(vault_path=None, paths=None, vault=str(vault), verbose=False, fix=False, fix_paths=False)
+        with patch.object(repair_cmd, "_get_run_repair", return_value=_fake_run_repair):
+            code = repair_cmd.run(args)
+
+        assert code == 0
+        assert captured["vault"] == vault
+        assert "config" in captured["paths"]
+
+    def test_repair_command_upgrades_legacy_paths_arg(self, tmp_path):
+        vault = _make_vault(tmp_path)
+        captured = {}
+
+        def _fake_run_repair(vault_arg, paths_arg, verbose=False, fix=False, fix_paths=False):
+            captured["paths"] = paths_arg
+            return {"scanned": 0, "divergent": [], "fixed": 0, "errors": [], "path_errors": {"total": 0}, "rebuilt": 0}
+
+        from paperforge.commands import repair as repair_cmd
+        from paperforge.config import paperforge_paths
+
+        legacy_paths = paperforge_paths(vault)
+        args = argparse.Namespace(vault_path=vault, paths=legacy_paths, vault=str(vault), verbose=False, fix=False, fix_paths=False)
+        with patch.object(repair_cmd, "_get_run_repair", return_value=_fake_run_repair):
+            code = repair_cmd.run(args)
+
+        assert code == 0
+        assert "config" in captured["paths"]

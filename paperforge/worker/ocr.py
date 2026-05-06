@@ -65,6 +65,13 @@ def ensure_ocr_meta(vault: Path, row: dict) -> dict:
     return meta
 
 
+def _read_meta_or_empty(meta_path: Path) -> dict:
+    try:
+        return read_json(meta_path) if meta_path.exists() else {}
+    except Exception:
+        return {}
+
+
 def validate_ocr_meta(paths: dict[str, Path], meta: dict) -> tuple[str, str]:
     status = str(meta.get("ocr_status", "pending") or "pending").strip().lower()
     if status != "done":
@@ -161,7 +168,7 @@ def sync_ocr_queue(paths: dict[str, Path], target_rows: list[dict]) -> list[dict
         if not target.get("has_pdf"):
             continue
         meta_path = paths["ocr"] / key / "meta.json"
-        meta = read_json(meta_path) if meta_path.exists() else {}
+        meta = _read_meta_or_empty(meta_path)
         status = str(meta.get("ocr_status", "pending") or "pending").strip().lower()
         if status in {"done", "blocked"}:
             continue
@@ -181,7 +188,7 @@ def sync_ocr_queue(paths: dict[str, Path], target_rows: list[dict]) -> list[dict
         if not row.get("has_pdf"):
             continue
         meta_path = paths["ocr"] / key / "meta.json"
-        meta = read_json(meta_path) if meta_path.exists() else {}
+        meta = _read_meta_or_empty(meta_path)
         status = str(meta.get("ocr_status", "pending") or "pending").strip().lower()
         if status in {"done", "blocked"}:
             continue

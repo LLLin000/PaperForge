@@ -1,5 +1,5 @@
 const { Plugin, Notice, ItemView, Modal, Setting, PluginSettingTab, addIcon } = require('obsidian');
-const { exec } = require('node:child_process');
+const { exec, execFile } = require('node:child_process');
 const fs = require('fs');
 const path = require('path');
 
@@ -185,6 +185,7 @@ const ACTIONS = [
         desc: 'Fix three-way state divergence, path errors, and rebuild index',
         icon: '\u21BA',  // ↺
         cmd: 'repair',
+        args: ['--fix', '--fix-paths'],
         okMsg: 'Repair complete',
     },
     {
@@ -206,6 +207,20 @@ const ACTIONS = [
         okMsg: 'Collection context copied',
     },
 ];
+
+function resolvePythonExecutable(vaultPath) {
+    const candidates = [
+        path.join(vaultPath, '.paperforge-test-venv', 'Scripts', 'python.exe'),
+        path.join(vaultPath, '.venv', 'Scripts', 'python.exe'),
+        path.join(vaultPath, 'venv', 'Scripts', 'python.exe'),
+    ];
+    for (const candidate of candidates) {
+        try {
+            if (fs.existsSync(candidate)) return candidate;
+        } catch {}
+    }
+    return 'python';
+}
 
 class PaperForgeStatusView extends ItemView {
     constructor(leaf) {
@@ -375,7 +390,8 @@ class PaperForgeStatusView extends ItemView {
             if (!quiet && !this._cachedStats) {
                 this._metricsEl.createEl('div', { cls: 'paperforge-status-loading', text: 'No index \u2014 trying CLI...' });
             }
-            exec('python -m paperforge status --json', { cwd: vp, timeout: 30000 }, (err2, stdout) => {
+            const pythonExe = resolvePythonExecutable(vp);
+            execFile(pythonExe, ['-m', 'paperforge', 'status', '--json'], { cwd: vp, timeout: 30000 }, (err2, stdout) => {
                 if (err2) {
                     if (this._cachedStats) return;
                     this._metricsEl.createEl('div', { cls: 'paperforge-status-error', text: 'Cannot reach PaperForge CLI.\nMake sure paperforge is installed and in your PATH.' });
@@ -1262,7 +1278,7 @@ class PaperForgeStatusView extends ItemView {
         this._showMessage('Processing...', 'running');
 
         // Resolve extra arguments based on action flags
-        let extraArgs = [];
+        let extraArgs = Array.isArray(a.args) ? [...a.args] : [];
 
         if (a.needsKey) {
             // Resolve zotero_key from active file frontmatter
@@ -1289,17 +1305,18 @@ class PaperForgeStatusView extends ItemView {
                 card.removeClass('running');
                 return;
             }
-            extraArgs = [key];
+            extraArgs = [...extraArgs, key];
         }
 
         if (a.needsFilter) {
             // Default to --all for the initial implementation
-            extraArgs = ['--all'];
+            extraArgs = [...extraArgs, '--all'];
         }
 
         const { spawn } = require('node:child_process');
         const cmdTimeout = a.needsFilter ? 60000 : (a.needsKey ? 30000 : 600000);
-        const child = spawn('python', ['-m', 'paperforge', a.cmd, ...extraArgs], { cwd: vp, timeout: cmdTimeout });
+        const pythonExe = resolvePythonExecutable(vp);
+        const child = spawn(pythonExe, ['-m', 'paperforge', a.cmd, ...extraArgs], { cwd: vp, timeout: cmdTimeout });
         const log = [];
         const startTime = Date.now();
         const pollTimer = setInterval(() => this._fetchStats(true), 4000);
@@ -1324,8 +1341,14 @@ class PaperForgeStatusView extends ItemView {
             const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
             if (code !== 0) {
                 const last = log.slice(-3).join(' | ') || 'exit code ' + code;
-                this._showMessage('[!!] ' + last, 'error');
-                new Notice('[!!] ' + a.cmd + ' failed: ' + last, 8000);
+                if (a.cmd === 'repair' && code === 1) {
+                    this._showMessage('[WARN] ' + last, 'running');
+                    new Notice('[WARN] Repair completed with remaining issues: ' + last, 8000);
+                    this._fetchStats(true);
+                } else {
+                    this._showMessage('[!!] ' + last, 'error');
+                    new Notice('[!!] ' + a.cmd + ' failed: ' + last, 8000);
+                }
             } else if (a.needsKey || a.needsFilter) {
                 // Context actions: copy JSON output to clipboard
                 const output = log.join('\n');
