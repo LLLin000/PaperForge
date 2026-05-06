@@ -1677,6 +1677,8 @@ def _deploy_flat_command(
     """Deploy skills in flat .md command format (OpenCode)."""
     imported = []
     command_src = repo_root / "command"
+    if not (command_src.exists() and command_src.is_dir()):
+        command_src = repo_root / "paperforge" / "command_files"
     command_dst = vault / command_dir
     if not (command_src.exists() and command_src.is_dir()):
         return imported
@@ -2015,6 +2017,9 @@ def headless_setup(
         ]:
             text = text.replace(old, new)
         agents_dst.write_text(text, encoding="utf-8")
+        print(f"    [OK] AGENTS.md")
+    else:
+        print(f"    [WARN] AGENTS.md source not found; skipping")
 
     # =========================================================================
     # Phase 5: Create config files
