@@ -1,201 +1,218 @@
-# Technology Stack
+# Stack Research — v1.8 AI Discussion Recording & Deep-Reading Dashboard
 
-**Project:** PaperForge v1.6 literature asset foundation
-**Researched:** 2026-05-03
+**Domain:** AI discussion recording + deep-reading dashboard mode for PaperForge Obsidian plugin
+**Researched:** 2026-05-06
+**Confidence:** HIGH
+
+## Executive Summary
+
+v1.8 adds two new capabilities to the existing PaperForge stack: (1) AI discussion recording that captures `/pf-paper` and agent chat interactions into structured `ai/` records, and (2) a 4th dashboard mode activated when the user views `deep-reading.md`. Both features extend the existing thin-shell plugin architecture — the plugin reads JSON from the filesystem and renders Pure CSS/DOM components; the Python side provides templates and optional recording helpers. **No new npm dependencies, no new Python packages.** All additions are new modules/files within the existing architecture.
 
 ## Recommended Stack
 
-This milestone should stay **Python-first for business logic** and **CommonJS Obsidian-shell only for UI**. The plugin should render the canonical index and invoke CLI commands; it should not recompute lifecycle, health, maturity, or AI-context state on the JavaScript side.
+### Core Technologies (unchanged from v1.6–v1.7)
 
-### Core Framework
 | Technology | Version | Purpose | Why |
 |------------|---------|---------|-----|
-| Python | 3.10+ (existing) | Single owner of config, lifecycle, health, maturity, context-pack generation | Already owns workers/CLI and is the only place that can safely unify business rules without duplicating them in the plugin |
-| Pydantic | 2.13.3 | Typed models for `paperforge.json`, canonical asset index, health records, maturity scoring payloads, AI context manifests | Best fit for strict runtime validation plus `model_json_schema()` generation from one source of truth; keeps Python authoritative and produces machine-readable contracts for the plugin/tests |
-| Obsidian plugin (`main.js`, CommonJS) | existing thin shell | Dashboard/settings/commands only | Current plugin already shells out to `python -m paperforge status --json`; extend that pattern instead of adding a second domain layer |
+| Obsidian CommonJS plugin | existing (`main.js`) | Dashboard/settings/commands UI | Pure Obsidian API — no bundler, no npm deps, no build step |
+| Python 3.10+ | existing | Single owner of business logic, templates, schema | Already owns config, lifecycle, health, maturity, index; extends naturally to discussion templates |
+| Filesystem JSON | UTF-8, no schema library needed | `discussion.json` per paper | Plugin reads via `fs.readFileSync`, localStorage-free, vault-native, traceable |
+| Filesystem Markdown | Obsidian-flavored | `discussion.md` per paper | Human-readable, Obsidian-editable, wikilink-compatible |
 
-### Database
-| Technology | Version | Purpose | Why |
-|------------|---------|---------|-----|
-| Filesystem JSON snapshot | UTF-8 JSON, schema-versioned | Canonical derived literature asset index | Local-first, Git/backup friendly, easy for Python to emit and plugin to read, no daemon/service required |
-| Optional JSONL append log | UTF-8 JSON Lines | Append-only lifecycle/diagnostic history if needed later | Good long-lived audit primitive without committing to SQLite/event sourcing in v1.6 |
+### File Format Additions (NEW for v1.8)
 
-### Infrastructure
-| Technology | Version | Purpose | Why |
-|------------|---------|---------|-----|
-| filelock | 3.29.0 | Cross-process locking around index/context-pack writes | Verified cross-platform, and on Windows uses OS-level locking; prevents sync/OCR/plugin-triggered commands from corrupting shared JSON files |
-| `tempfile` + `os.replace` | stdlib | Atomic file writes | Windows-safe write pattern for canonical JSON artifacts; avoids partial writes when commands are interrupted |
-| `pathlib`, `hashlib`, `json` | stdlib | Path normalization, content fingerprints, serialization | Already aligned with current codebase and enough for local asset indexing |
+#### 1. `discussion.json` — Structured AI Q&A Record
 
-### Supporting Libraries
-| Library | Version | Purpose | When to Use |
-|---------|---------|---------|-------------|
-| jsonschema | 4.26.0 | Validate emitted JSON artifacts against generated schemas in tests and `doctor`-style diagnostics | Use in Python tests/tooling, not as plugin runtime logic |
+**Location:** `<paper_workspace>/ai/discussion.json`
 
-## File-Format Standards
-
-### 1. `paperforge.json` stays the human-edited source of truth
-- Keep it as the canonical config file.
-- Add `schema_version`.
-- Validate it in Python with a `PaperForgeConfig` Pydantic model.
-- Keep secrets out of it; API keys remain in `.env` / environment.
-
-Recommended structure for new v1.6 fields:
+**Schema (v1):**
 
 ```json
 {
   "schema_version": "1",
-  "vault_config": { ...existing paths... },
-  "index": {
-    "output": "<system_dir>/PaperForge/indexes/library-assets.v1.json"
-  },
-  "health": {
-    "enable_maturity_scoring": true
-  },
-  "context": {
-    "output_dir": "<system_dir>/PaperForge/context",
-    "default_max_chars": 24000
+  "paper_key": "ABCDEFG",
+  "generated_at": "2026-05-06T12:00:00+08:00",
+  "source": "/pf-paper",                    // or "/pf-deep", "agent-chat"
+  "history": [
+    {
+      "index": 1,
+      "timestamp": "2026-05-06T12:00:00+08:00",
+      "question": "这篇论文的主要发现是什么？",
+      "answer": "该研究发现...",
+      "tags": ["background", "results"],
+      "agent_model": "deepseek-v4-pro"
+    }
+  ],
+  "summary": {
+    "total_qa": 5,
+    "last_updated": "2026-05-06T12:30:00+08:00",
+    "top_tags": ["methods", "results"]
   }
 }
 ```
 
-### 2. Canonical asset index = one derived snapshot file
-Recommended path:
+**Why this shape:**
+- `schema_version` for forward compatibility
+- `history[]` is a flat append-only list (no nested threads — keeps dashboard rendering simple)
+- `index` field enables stable references even if history is reordered
+- `tags` enable future dashboard filtering without schema change
+- `summary` provides pre-computed metadata the plugin can read with a single parse (avoids looping through all history entries for total count)
 
-`<system_dir>/PaperForge/indexes/library-assets.v1.json`
+**Integration:** Plugin reads this file directly via `fs.readFileSync` when rendering the deep-reading dashboard. No Python intermediary needed for read path.
 
-Recommended top-level shape:
+#### 2. `discussion.md` — Human-Readable Q&A Log
 
-```json
-{
-  "schema_version": "1",
-  "generated_at": "2026-05-03T12:00:00Z",
-  "paperforge_version": "1.6.x",
-  "vault": { "...": "..." },
-  "summary": { "...": "..." },
-  "assets": [
-    {
-      "zotero_key": "ABCDEFG",
-      "intent": { "analyze": true, "do_ocr": true },
-      "artifacts": { "pdf": {...}, "ocr": {...}, "formal_note": {...}, "figures": {...} },
-      "derived": {
-        "lifecycle_state": "fulltext_ready",
-        "health": { "library": "healthy", "pdf": "healthy", "ocr": "warning" },
-        "maturity": { "level": 3, "score": 0.72, "next_steps": ["run_deep_reading"] },
-        "ai_ready": true
-      }
+**Location:** `<paper_workspace>/ai/discussion.md`
+
+**Template format:**
+
+```markdown
+# AI 讨论记录 — 文献标题
+
+> **来源:** /pf-paper | **生成时间:** 2026-05-06 12:00 | **模型:** deepseek-v4-pro
+
+---
+
+## 讨论 1
+
+**问题:** 这篇论文的主要发现是什么？
+
+**解答:** 该研究发现...
+
+*标签: `background`, `results`*
+
+---
+
+## 讨论 2
+
+**问题:** 研究者用了什么统计方法？
+
+**解答:** ...
+
+*标签: `methods`*
+```
+
+**Why this format:**
+- Each discussion is a `## 讨论 N` section — natural Obsidian heading hierarchy
+- `**问题:**` and `**解答:**` bold markers are scannable in both Reading and Source mode
+- Horizontal rules (`---`) visually separate discussions
+- Tags as inline code spans — searchable in Obsidian's global search
+- Frontmatter-compatible metadata line at top
+
+### Plugin JS Additions (NEW for v1.8 — no new npm deps)
+
+All additions stay within the single `paperforge/plugin/main.js` file and `paperforge/plugin/styles.css`.
+
+| Module/Function | Type | Purpose |
+|---------|------|---------|
+| `_detectAndSwitch()` extension | Mode detection logic | Add `deep-reading` as 4th mode: detect when active file path ends with `deep-reading.md` and resolve paper context from workspace path |
+| `_renderDeepReadingMode()` | New render function | Renders deep-reading dashboard: status bar, Pass 1 summary, AI discussion history |
+| `_renderDiscussionHistory()` | New render function | Reads `discussion.json` from paper `ai/` directory and renders Q&A cards |
+| `_readDiscussionJson(key)` | New utility | Resolves `ai_path` → reads `discussion.json` → returns parsed object or null |
+| `_renderPass1Summary()` | New render function | Renders Pass 1 overview extracted from deep-reading.md content |
+| `_renderPaperMode()` extension | Existing function | Add "Jump to Deep Reading" contextual button when `deep_reading_path` exists |
+| `_versionBadge` fix | Bug fix | Restore version display by reading from `paperforge/__init__.py` `__version__` or `manifest.json` |
+| "ai" row removal | Bug fix | Remove the meaningless "ai" UI row (track down which render path creates it) |
+
+**Mode detection logic (how `_detectAndSwitch()` grows):**
+
+```javascript
+// Existing: checks for .base, .md with zotero_key
+// NEW: check if active file basename is "deep-reading.md"
+if (ext === 'md' && activeFile.basename === 'deep-reading') {
+    // Resolve paper key from parent directory name
+    const parentDir = activeFile.parent.path;  // e.g., "Literature/骨科/ABC12345 - Title"
+    const match = parentDir.match(/([A-Z0-9]{8})/);
+    if (match) {
+        this._currentPaperKey = match[1];
+        this._currentPaperEntry = this._findEntry(match[1]);
+        this._switchMode('deep-reading');
+        return;
     }
-  ]
 }
 ```
 
-Rules:
-- `library-record` frontmatter remains **user intent**.
-- `meta.json`, formal notes, OCR files, figure-map stay **machine artifacts**.
-- `library-assets.v1.json` is **derived state only**.
-- Plugin reads this file; it does not infer the state itself.
+### CSS Additions (NEW for v1.8)
 
-### 3. Generated schema file
-Recommended path:
+All additions go into the existing `paperforge/plugin/styles.css` file after Section 17.
 
-`<system_dir>/PaperForge/indexes/library-assets.schema.json`
+| CSS Class | Purpose |
+|-----------|---------|
+| `.paperforge-deep-reading-view` | Root container for deep-reading mode layout (flex column, gap: 20px) |
+| `.paperforge-dr-status-bar` | Status indicator bar: shows Pass 1/2/3 completion, OCR status badge, last-updated timestamp |
+| `.paperforge-dr-pass-summary` | Pass 1 summary card: bordered card with muted background for the overview text |
+| `.paperforge-dr-discussion-card` | Individual Q&A card: question in bold, answer below, tag chips, timestamp |
+| `.paperforge-dr-discussion-list` | Scrollable container for stacked discussion cards |
+| `.paperforge-dr-tag-chip` | Small pill for tags (font-size: 10px, border-radius: 8px) |
+| `.paperforge-dr-empty` | Empty state: "No AI discussions recorded yet" with muted styling |
+| `.paperforge-dr-section-title` | Section header within deep-reading view (uppercase, letter-spaced) |
 
-Generate from Pydantic via `model_json_schema()`. This gives:
-- a contract for future migrations,
-- validation in tests/doctor,
-- a stable interface for the plugin without duplicating Python rules.
+### Python Additions (NEW for v1.8 — no new dependencies)
 
-### 4. AI context pack format
-Use a folder, not a database blob:
+| File | Purpose |
+|------|---------|
+| `paperforge/worker/discussion.py` | NEW module: `record_discussion(key, vault, question, answer, source, model)` — writes both `discussion.md` and `discussion.json` to paper `ai/` directory |
+| `paperforge/worker/discussion.py` | `load_discussion_json(key, vault)` → dict — reads existing discussion.json, returns parsed dict |
+| `paperforge/worker/discussion.py` | `append_discussion(key, vault, qa_pair)` — appends to existing discussion history (read-modify-write atomic via tempfile + os.replace) |
 
-`<system_dir>/PaperForge/context/<scope>/<id>/`
+**Why a separate module:**
+- Discussion recording crosses the Worker/Agent boundary (Agent generates content, Worker writes files)
+- Keeps discussion I/O isolated from OCR, sync, and index logic
+- Enables future `/pf-discuss` command or discussion-search features without refactoring
 
-Contents:
-- `manifest.json` — typed metadata, provenance, hashes, included files
-- `context.md` — user/LLM-ready packaged text
+**No new Python packages required.** All I/O uses `json`, `pathlib`, and `datetime` (stdlib). Atomic write uses the same `tempfile` + `os.replace` pattern already proven in `asset_index.py`.
 
-This is Obsidian-compatible, inspectable, and easy to copy/share locally.
+### Integration Points (with existing canonical index)
 
-## Implementation Primitives
-
-1. **Python domain models**
-   - `PaperForgeConfig`
-   - `AssetIndex`
-   - `AssetRecord`
-   - `AssetHealth`
-   - `LifecycleState`
-   - `MaturityReport`
-   - `ContextPackManifest`
-
-2. **One index builder module**
-   - Example boundary: `paperforge/indexing/`
-   - Reads library-records, OCR `meta.json`, formal notes, figure-map, exports
-   - Produces the canonical index snapshot
-
-3. **One health engine**
-   - Example boundary: `paperforge/health/`
-   - Pure functions: PDF health, OCR health, Base/template health, overall library health
-   - Reused by `status`, `doctor`, plugin dashboard, context pack generation
-
-4. **One context-pack generator**
-   - Example boundary: `paperforge/context/`
-   - Builds `ask-this-paper`, `ask-this-collection`, `copy-context-pack` payloads from canonical index + source artifacts
-
-5. **One write discipline**
-   - `FileLock(...).acquire()` around derived-artifact writes
-   - write temp file
-   - `os.replace()` into final path
-
-6. **One plugin integration contract**
-   - Plugin invokes CLI commands such as `paperforge index refresh`, `paperforge status --json`, `paperforge context pack ...`
-   - Plugin reads `library-assets.v1.json`
-   - Plugin never re-implements scoring/health/lifecycle logic
-
-## What Should Stay in Stdlib / Current Stack
-
-| Keep | Why |
-|------|-----|
-| `json` | Canonical index is not large enough to justify a binary or DB format yet |
-| `pathlib` | Existing code is already path-centric and Windows-aware |
-| `hashlib` | Enough for PDF/fulltext/context-pack fingerprints and stale-cache detection |
-| Existing CLI/worker module pattern | Already proven in v1.2-v1.5 and matches the thin-shell plugin goal |
-| Existing Obsidian CommonJS plugin style | No build-system migration needed for this milestone |
+| Integration | Direction | How |
+|-------------|-----------|-----|
+| `ai_path` in canonical index | Read by plugin | Already exists: `entry.ai_path` = `"Literature/<domain>/<key> - <Title>/ai/"` |
+| Resolve `discussion.json` path | Plugin computed | `path.join(vaultPath, entry.ai_path, 'discussion.json')` |
+| Deep-reading mode detection | Plugin computed | Check `activeFile.basename === 'deep-reading'` + resolve key from parent directory |
+| Jump-to-deep-reading button visibility | Plugin check | `entry.deep_reading_path` non-empty → show button |
+| Discussion recording write path | Python writes | `record_discussion()` resolves paths via `paperforge_paths()` → writes to workspace ai/ |
 
 ## What NOT to Add
 
-| Category | Recommended | Alternative | Why Not |
-|----------|-------------|-------------|---------|
-| Index storage | JSON snapshot + optional JSONL history | SQLite | Adds migration/query complexity and hides state from the vault filesystem without solving a proven scale bottleneck |
-| Config typing | Pydantic model on top of current loader | `pydantic-settings` | Helpful for env-heavy apps, but PaperForge's real source of truth is `paperforge.json`; adding another settings layer is unnecessary in v1.6 |
-| Plugin validation | Python-generated schema + version check | AJV / Zod in plugin | Creates a second contract surface in JS and pushes business rules toward the plugin |
-| File watching | Explicit refresh after worker commands | watchdog / daemon | Violates the local-simple architecture and is unnecessary for user-triggered workflows |
-| Search/index engine | Current filesystem artifacts + canonical JSON | Elasticsearch / LanceDB / vector DB | Overkill for milestone scope; AI packaging needs traceable bundles first, not semantic infra |
-| YAML parser | Current narrow frontmatter handling + Python indexer | PyYAML / round-trip YAML libs | Extra dependency and formatting churn risk; users do not need full YAML mutation for v1.6 |
+| Category | Avoid | Why | Use Instead |
+|----------|-------|-----|-------------|
+| JS dependencies | Any npm package (React, Vue, chart libs, date-fns) | Plugin must stay pure Obsidian CommonJS; adding a build chain breaks the single-file deployment model and Obsidian Community Plugin requirements | Pure DOM API (`createEl`, `addClass`, `setText`) |
+| Database for discussions | SQLite, IndexedDB, localStorage | Discussions belong to the paper workspace — they must be vault-native, backup-friendly, and git-trackable | Filesystem JSON + Markdown in `ai/` |
+| Python dependencies for discussion | `pydantic`, `jsonschema` | Overkill for a flat Q&A list; adds import cost and version coupling for a simple structure | Plain `dict` with documented keys, validated by `assert` in tests |
+| Second plugin file | Splitting `main.js` into modules | Adds complexity without benefit at ~2100 lines; Obsidian plugin import resolution is fragile | Inline functions in `main.js` (as all existing render functions are) |
+| Schema library in plugin | AJV, Zod, or custom JSON validator | Plugin should read, not validate; schema enforcement lives in Python tests | Trust but handle: `try/catch` around `JSON.parse`, fallback to empty state |
+| New CLI command (v1.8) | `paperforge discuss` or `paperforge record` | Discussion recording happens inside Agent sessions; adding a CLI command would require users to manually run it after each Q&A | Python module callable from Agent scripts (`/pf-paper` → calls `record_discussion()` internally) |
+
+## Version Compatibility
+
+| Component | Current Version | Notes |
+|-----------|----------------|-------|
+| PaperForge Python | 1.4.15 (→ 1.8.0) | No breaking changes to existing CLI or index schema |
+| Canonical index schema | v2 (`formal-library.json`) | `ai_path` field already present; no schema version bump needed |
+| Obsidian API | 1.5+ | Existing API surface used (ItemView, metadataCache, vault.adapter) |
+| Node.js (for Obsidian) | 18+ (Electron embedded) | `fs.readFileSync`, `path.join` — all stdlib since Node 0.x |
 
 ## Installation
 
+No new installation steps. v1.8 is additive:
+
 ```bash
-# Core additions
-pip install "pydantic>=2.13,<3" "filelock>=3.29,<4"
+# No new pip packages needed
+# No new npm packages needed
 
-# Dev / contract validation
-pip install -D "jsonschema>=4.26,<5"
+# Plugin update: replace main.js + styles.css + manifest.json + versions.json
+# Python update: add paperforge/worker/discussion.py
 ```
-
-## Integration Notes for Existing Architecture
-
-- Extend `paperforge.config` to return validated Pydantic-backed config objects, but keep current precedence semantics.
-- Add a dedicated `index refresh` command that all relevant workers can call after successful mutations.
-- Refactor `status --json` to consume the canonical index instead of recounting raw files independently.
-- Have the plugin dashboard read index summary fields first, and shell out only for refresh/actions.
-- Keep OCR/fulltext/figure outputs where they already live; the new index should reference them, not relocate them.
 
 ## Sources
 
-- Pydantic docs via Context7 — typed models, validation, `model_dump()`, `model_json_schema()` — HIGH confidence — https://context7.com/pydantic/pydantic
-- Pydantic PyPI JSON — current version `2.13.3` — HIGH confidence — https://pypi.org/pypi/pydantic/json
-- filelock docs via Context7 — platform-aware locking, Windows OS-level locking — HIGH confidence — https://context7.com/tox-dev/filelock
-- filelock PyPI JSON — current version `3.29.0` — HIGH confidence — https://pypi.org/pypi/filelock/json
-- jsonschema docs via Context7 — Draft 2020-12 validator support — HIGH confidence — https://context7.com/python-jsonschema/jsonschema/v4.25.1
-- jsonschema PyPI JSON — current version `4.26.0` — HIGH confidence — https://pypi.org/pypi/jsonschema/json
-- Existing repo context: `pyproject.toml`, `paperforge/config.py`, `paperforge/worker/status.py`, `paperforge/plugin/main.js` — HIGH confidence
+- Existing codebase analysis: `paperforge/plugin/main.js` (2067 lines), `paperforge/plugin/styles.css` (1325 lines), `paperforge/worker/asset_index.py` (577 lines), `paperforge/worker/asset_state.py` (243 lines), `paperforge/worker/sync.py` (1829 lines) — HIGH confidence
+- `.planning/PROJECT.md` — v1.8 milestone definition, ai/ directory already created per paper — HIGH confidence
+- AGENTS.md — Lite architecture, Worker/Agent split, plugin thin-shell constraint — HIGH confidence
+- `.planning/research/STACK.md` (v1.6) — existing stack decisions, Pydantic version, filelock version, "what NOT to add" — HIGH confidence
+- Actual test fixtures: `tests/test_asset_state.py` — ai_path field verified in lifecycle/health computation — HIGH confidence
+
+---
+
+*Stack research for: PaperForge v1.8 AI Discussion Recording & Deep-Reading Dashboard*
+*Researched: 2026-05-06*

@@ -1040,12 +1040,10 @@
 }
 
 /* Color variants for bar fills based on lifecycle stage */
-.paperforge-bar-chart .bar-fill.stage-imported { background: var(--color-cyan); }
 .paperforge-bar-chart .bar-fill.stage-indexed { background: var(--color-blue); }
 .paperforge-bar-chart .bar-fill.stage-pdf-ready { background: var(--color-purple); }
 .paperforge-bar-chart .bar-fill.stage-fulltext-ready { background: var(--color-green); }
 .paperforge-bar-chart .bar-fill.stage-deep-read { background: var(--color-yellow); }
-.paperforge-bar-chart .bar-fill.stage-ai-ready { background: var(--color-red); }
 
 /* ==========================================================================
    SECTION 13 — Mode-Aware Content Area
@@ -1322,4 +1320,140 @@
 
 .paperforge-collection-health-counts .fail {
     color: var(--color-red);
+}
+
+/* ==========================================================================
+   SECTION 33 — Deep-Reading Dashboard Mode
+   ========================================================================== */
+.paperforge-mode-deepreading {
+    display: flex;
+    flex-direction: column;
+    gap: var(--size-4-4, 16px);
+}
+
+.paperforge-deepreading-card {
+    background: var(--background-primary-alt);
+    border-radius: var(--radius-m, 8px);
+    padding: var(--size-4-4, 16px);
+}
+
+.paperforge-deepreading-card-title {
+    font-weight: 600;
+    font-size: var(--font-ui-medium);
+    margin-bottom: var(--size-4-2, 8px);
+}
+
+.paperforge-deepreading-card-header.collapsible {
+    cursor: pointer;
+    user-select: none;
+}
+
+.paperforge-deepreading-card-header:hover {
+    opacity: 0.8;
+}
+
+.paperforge-deepreading-card-body.collapsed {
+    display: none;
+}
+
+.paperforge-deepreading-status-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.paperforge-deepreading-status-row {
+    display: flex;
+    justify-content: space-between;
+    padding: var(--size-4-1, 4px) 0;
+    border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.paperforge-deepreading-status-row:last-child {
+    border-bottom: none;
+}
+
+.paperforge-deepreading-status-label {
+    color: var(--text-muted);
+    font-size: var(--font-ui-small);
+}
+
+.paperforge-deepreading-status-value {
+    font-size: var(--font-ui-small);
+}
+
+.paperforge-deepreading-pass1-content {
+    line-height: 1.6;
+}
+
+.paperforge-deepreading-pass1-subheading {
+    margin: var(--size-4-2, 8px) 0 var(--size-4-1, 4px);
+    color: var(--text-accent);
+}
+
+.paperforge-deepreading-pass1-marker {
+    font-weight: 600;
+    color: var(--text-normal);
+    margin: var(--size-4-2, 8px) 0;
+}
+
+.paperforge-deepreading-pass1-text {
+    color: var(--text-muted);
+    margin: var(--size-4-1, 4px) 0;
+}
+
+.paperforge-deepreading-empty {
+    color: var(--text-faint);
+    font-size: var(--font-ui-small);
+    padding: var(--size-4-2, 8px);
+    text-align: center;
+}
+
+/* Session grouping */
+.paperforge-deepreading-session {
+    margin-bottom: var(--size-4-3, 12px);
+}
+
+.paperforge-deepreading-session-header {
+    display: flex;
+    justify-content: space-between;
+    font-size: var(--font-ui-small);
+    color: var(--text-faint);
+    margin-bottom: var(--size-4-2, 8px);
+    padding-bottom: var(--size-4-1, 4px);
+    border-bottom: 1px dashed var(--background-modifier-border);
+}
+
+.paperforge-deepreading-session-date {
+    color: var(--text-muted);
+}
+
+/* Dialog bubbles */
+.paperforge-deepreading-bubble {
+    padding: var(--size-4-2, 8px) var(--size-4-3, 12px);
+    border-radius: var(--radius-s, 6px);
+    margin-bottom: var(--size-4-2, 8px);
+    max-width: 90%;
+}
+
+.paperforge-deepreading-bubble.question {
+    background: var(--interactive-accent);
+    color: var(--text-on-accent);
+    margin-right: auto;
+}
+
+.paperforge-deepreading-bubble.answer {
+    background: var(--background-secondary-alt);
+    color: var(--text-normal);
+    margin-left: auto;
+}
+
+.paperforge-deepreading-bubble .bubble-label {
+    font-size: var(--font-smallest, 10px);
+    opacity: 0.7;
+    margin-bottom: 2px;
+}
+
+.paperforge-deepreading-bubble .bubble-text {
+    font-size: var(--font-ui-small);
+    line-height: 1.5;
 }

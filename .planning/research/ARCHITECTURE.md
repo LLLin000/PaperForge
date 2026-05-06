@@ -1,560 +1,371 @@
-# Architecture Patterns
+# Architecture Research: v1.8 AI Discussion & Deep-Reading Dashboard
 
-**Domain:** PaperForge v1.6 literature asset foundation integration
-**Researched:** 2026-05-03
+**Domain:** Obsidian plugin dashboard + Python CLI hybrid
+**Researched:** 2026-05-06
+**Confidence:** HIGH (verified against existing source code at `paperforge/plugin/main.js` and `paperforge/worker/asset_index.py`)
 
-## Recommended Architecture
+## System Overview
 
-Evolve the existing `formal-library.json` into the canonical asset index rather than introducing a second competing index. The current code already has a single write point for the file in `paperforge/worker/sync.py` (`run_index_refresh`) and a stable path contract in `_utils.pipeline_paths()["index"]`. Reusing that artifact preserves the current layout, minimizes migration risk, and avoids a new “which index is truth?” problem.
-
-The target model should be:
-
-```text
-paperforge.json / vault_config                    -> configuration truth
-library-records/*.md                              -> user intent truth
-ocr/<key>/meta.json + fulltext/images/json        -> OCR asset truth
-Literature/<domain>/<key> - <title>.md            -> formal note + deep-reading truth
-indexes/formal-library.json                       -> canonical derived read model
-plugin dashboard / status / health / maturity UI  -> thin-shell views over canonical index
+```
+┌──────────────────────────────────────────────────────────────────┐
+│                     Obsidian Plugin (JS/TS) — THIN SHELL          │
+│  ┌────────────────────────────────────────────────────────────┐  │
+│  │              PaperForgeStatusView (_detectAndSwitch)        │  │
+│  │   Mode Detection:                                           │  │
+│  │     no file      → 'global'                                 │  │
+│  │     .base file   → 'collection'                             │  │
+│  │     deep-reading.md → 'deep-reading'    ←── NEW v1.8        │  │
+│  │     .md + zotero_key → 'paper'                            │  │
+│  │     .md other    → 'global'                                 │  │
+│  ├────────────────────────────────────────────────────────────┤  │
+│  │  _renderGlobalMode()    │ _renderCollectionMode()          │  │
+│  │  _renderPaperMode()     │ _renderDeepReadingMode() ← NEW   │  │
+│  ├────────────────────────────────────────────────────────────┤  │
+│  │  _getCachedIndex() ──reads── formal-library.json           │  │
+│  │  _renderDeepReadingMode ──reads── deep-reading.md         │  │
+│  │                         ──reads── ai/discussion.json       │  │
+│  └────────────────────────────────────────────────────────────┘  │
+├──────────────────────────────────────────────────────────────────┤
+│                     File System (Obsidian Vault)                  │
+│  ┌────────────────────────────────────────────────────────────┐  │
+│  │  Literature/{domain}/{key} - {title}/                       │  │
+│  │    ├── {key} - {title}.md          (formal note)            │  │
+│  │    ├── deep-reading.md             (extracted from note)    │  │
+│  │    ├── fulltext.md                 (OCR output)             │  │
+│  │    ├── figures/                    (extracted charts)       │  │
+│  │    └── ai/                         ←── v1.6 created         │  │
+│  │         ├── discussion.json        ←── NEW v1.8 JS reads   │  │
+│  │         └── discussion.md          ←── NEW v1.8 Python writes│  │
+│  └────────────────────────────────────────────────────────────┘  │
+├──────────────────────────────────────────────────────────────────┤
+│                     Python CLI (paperforge)                       │
+│  ┌────────────────────────────────────────────────────────────┐  │
+│  │  paperforge/worker/sync.py     — generates deep-reading.md  │  │
+│  │  paperforge/worker/asset_index.py — builds formal-library.json│ │
+│  │  paperforge/skills/literature-qa/ld_deep.py — /pf-deep      │  │
+│  │  paperforge/commands/context.py — AI context packs          │  │
+│  │  [NEW] AI discussion recorder  — writes ai/discussion.*     │  │
+│  └────────────────────────────────────────────────────────────┘  │
+└──────────────────────────────────────────────────────────────────┘
 ```
 
-This keeps PaperForge local-first and file-based, but makes one important shift: lifecycle, health, readiness, and maturity are no longer recomputed ad hoc by each surface. They are derived once in Python and published through the canonical index.
+## Component Responsibilities
 
-## Architecture Diagram
+| Component | Responsibility | Owner | Modified in v1.8 |
+|-----------|----------------|-------|------------------|
+| `_detectAndSwitch()` | Active file → mode resolution | JS | **YES** — add `deep-reading.md` detection |
+| `_switchMode()` | Dispatch to mode renderer | JS | **YES** — add `case 'deep-reading'` |
+| `_renderDeepReadingMode()` | Deep-reading dashboard UI | JS | **NEW** — entirely new method |
+| `_renderPaperMode()` | Per-paper dashboard | JS | **YES** — add "Jump to Deep Reading" button |
+| `_buildEnvelope()` | Index envelope with version | Python | **YES** — add `paperforge_version` |
+| `_fetchStats()` | Global dashboard data | JS | **YES** — read version from envelope |
+| AI discussion recorder | Write `discussion.json` + `discussion.md` | Python | **NEW** — agent-level module |
+| `ld_deep.py` / `/pf-deep` | Deep reading scaffold + validation | Python | No change |
+| `sync.py` `migrate_to_workspace()` | Creates `ai/` directory | Python | No change (already done) |
 
-```text
-                   +----------------------+
-                   |  paperforge.json     |
-                   |  vault_config        |
-                   +----------+-----------+
-                              |
-                              v
-                    paperforge.config.py
-                              |
-         +--------------------+--------------------+
-         |                    |                    |
-         v                    v                    v
- selection-sync         ocr worker          deep-reading sync
- (user intent mirror)   (asset producer)    (agent-result sync)
-         |                    |                    |
-         +--------------------+--------------------+
-                              |
-                              v
-              NEW: asset index builder / state resolver
-                              |
-                              v
-     <system_dir>/PaperForge/indexes/formal-library.json
-                              |
-              +---------------+----------------+
-              |                                |
-              v                                v
-     CLI JSON views/status              Obsidian plugin dashboard
-     doctor/repair summaries            Base-support mirror fields
+## Mode Detection Flow (v1.8)
+
+```
+_detectAndSwitch()
+    │
+    ├─ activeFile === null ──────────────────────────→ 'global'
+    │
+    ├─ activeFile.extension === 'base' ──────────────→ 'collection'
+    │
+    ├─ activeFile.extension === 'md'
+    │    │
+    │    ├─ basename === 'deep-reading'               ←── NEW CHECK (BEFORE zotero_key)
+    │    │    AND path matches workspace pattern
+    │    │    │
+    │    │    ├─ extract parent key from path → 'deep-reading'
+    │    │    │   (Literature/{domain}/{key} - {title}/deep-reading.md)
+    │    │    └─ set _currentDeepReadingKey, _currentDeepReadingEntry
+    │    │
+    │    └─ frontmatter has zotero_key ──────────────→ 'paper'
+    │
+    └─ fallback ────────────────────────────────────→ 'global'
 ```
 
-## Decision: Evolve `formal-library.json`, do not add a second canonical index
+**Critical ordering**: The `deep-reading.md` check must come BEFORE the generic `.md + zotero_key` check. Why: `deep-reading.md` is extracted from the formal note and may carry the same frontmatter (including `zotero_key`). We need to route it to the deep-reading dashboard, not the per-paper dashboard.
 
-### Recommendation
+**Detection strategy**: Check `activeFile.basename === 'deep-reading'` AND verify the parent directory matches workspace naming pattern `{8-char key} - {slug}`. Extract the zotero_key from the parent directory name (first 8 characters before ` - `).
 
-Keep the path:
+## deep-reading.md Detection — Integration Details
 
-`<system_dir>/PaperForge/indexes/formal-library.json`
+The detection needs to handle the workspace path structure:
 
-but change its schema from a bare list of note rows to a versioned envelope:
+```
+Literature/{domain}/{zotero_key} - {title_slug}/deep-reading.md
+```
+
+```javascript
+// Proposed addition to _detectAndSwitch(), inserted before the .md + zotero_key check:
+if (ext === 'md' && activeFile.basename === 'deep-reading') {
+    // Check if parent directory matches workspace pattern
+    const parentDir = activeFile.parent ? activeFile.parent.name : '';
+    const workspaceMatch = parentDir.match(/^([A-Z0-9]{8})\s+-\s+(.+)$/);
+    if (workspaceMatch) {
+        const extractedKey = workspaceMatch[1];
+        this._currentPaperKey = extractedKey;
+        this._currentPaperEntry = this._findEntry(extractedKey);
+        this._currentDomain = null;
+        this._switchMode('deep-reading');
+        return;
+    }
+    // Not in a workspace dir — fall through to global
+    this._switchMode('global');
+    return;
+}
+```
+
+## New: _renderDeepReadingMode() Component Design
+
+### Data Sources
+| Source | How Read | Fields Used |
+|--------|----------|-------------|
+| `formal-library.json` | `_findEntry(key)` via `_getCachedIndex()` | lifecycle, health, ocr_status, deep_reading_status, maturity, title, year, authors |
+| `deep-reading.md` | `this.app.vault.getAbstractFileByPath()` → `read()` | Pass 1 summary, full text sections |
+| `ai/discussion.json` | `fs.readFileSync()` (same pattern as index) | AI Q&A history, session metadata |
+
+### Sub-Components
+```
+_renderDeepReadingMode()
+    │
+    ├─ [Status Bar] — inline row showing:
+    │     lifecycle badge, ocr_status badge, deep_reading_status badge, maturity level
+    │
+    ├─ [Paper Info Header] — title, authors, year, domain
+    │     (reuses existing _renderPaperMode header pattern)
+    │
+    ├─ [Pass 1 Summary Section] — "## 1. 第一遍：概览" content from deep-reading.md
+    │     Rendered as formatted callout block
+    │
+    ├─ [AI Discussion History] — "## AI 问答记录" section
+    │     ├─ discussion.json → rendered as Q&A accordion/cards
+    │     │   Each session: model badge, timestamp, command, message pairs
+    │     └─ Empty state: "No AI discussions yet. Use /pf-deep or /pf-paper in OpenCode."
+    │
+    └─ [Navigation] — "← Back to Paper" link
+          Opens the formal note: this.app.workspace.openLinkText(entry.main_note_path, '')
+```
+
+### discussion.json Schema (Python → JS contract)
 
 ```json
 {
-  "schema_version": "2",
-  "generated_at": "2026-05-03T12:00:00Z",
-  "config_snapshot": {
-    "system_dir": "99_System",
-    "resources_dir": "03_Resources",
-    "literature_dir": "Literature",
-    "control_dir": "LiteratureControl",
-    "base_dir": "05_Bases"
-  },
-  "summary": {
-    "total_assets": 0,
-    "health": {},
-    "maturity": {}
-  },
-  "items": [
+  "format_version": "1",
+  "zotero_key": "ABCDEFGH",
+  "sessions": [
     {
-      "zotero_key": "ABCDEFG",
-      "domain": "骨科",
-      "title": "...",
-      "intent": { "analyze": false, "do_ocr": false },
-      "assets": { "pdf": {}, "ocr": {}, "note": {}, "figures": {} },
-      "state": { "lifecycle": "ocr_ready", "ai_ready": false },
-      "health": { "library": "healthy", "pdf": "ok", "ocr": "pending" },
-      "maturity": { "score": 35, "level": 2, "next_step": "run_ocr" },
-      "paths": { "record": "...", "note": "...", "ocr_meta": "..." }
+      "session_id": "2026-05-06T143022",
+      "timestamp": "2026-05-06T14:30:22+08:00",
+      "model": "deepseek-v4-pro",
+      "command": "/pf-deep",
+      "summary": "三阶段精读：生物力学分析",
+      "message_count": 12,
+      "messages": [
+        {
+          "role": "user",
+          "content": "/pf-deep ABCDEFGH",
+          "timestamp": "2026-05-06T14:30:22+08:00"
+        },
+        {
+          "role": "assistant",
+          "content": "## Pass 1: 概览\n\n...",
+          "timestamp": "2026-05-06T14:31:05+08:00"
+        }
+      ]
     }
   ]
 }
 ```
 
-### Why not a new file?
+**Design rationale**: Sessions array allows append-only writes. The `summary` field provides a one-line title for the dashboard card. `message_count` enables quick size display without parsing all messages. Individual messages are kept (not just summary) for potential future expand/collapse UI.
 
-| Option | Verdict | Why |
-|---|---|---|
-| Add `asset-index.json` beside `formal-library.json` | Reject | Duplicates responsibility and creates migration drift immediately |
-| Rename `formal-library.json` to a new filename | Reject for v1.6 | Touches path contracts and upgrade logic without enough payoff |
-| Evolve `formal-library.json` in place | Accept | Lowest-risk change, existing path already centralized |
+## Python vs JS Ownership Boundaries
 
-### Migration rule
+| Concern | Python Owns | JS Owns | Rationale |
+|---------|-------------|---------|-----------|
+| Lifecycle computation | ALL (`compute_lifecycle`) | Reads result | Business logic stays in Python |
+| Health computation | ALL (`compute_health`) | Reads result | Business logic stays in Python |
+| Maturity computation | ALL (`compute_maturity`) | Reads result | Business logic stays in Python |
+| Next-step recommendation | ALL (`compute_next_step`) | Reads result | Business logic stays in Python |
+| `discussion.json` writing | ALL (agent commands) | Reads only | Agent interaction produces the data |
+| `discussion.md` writing | ALL (agent commands) | Reads only | Human-readable companion to JSON |
+| Deep-reading content | ALL (`ld_deep.py`, `sync.py`) | Reads via vault API | Parsing/building is Python domain |
+| Deep-reading dashboard rendering | None | ALL (CSS + DOM) | Plugin renders, never computes |
+| "Jump to" button logic | None | ALL (openLinkText) | Obsidian API operation |
+| Version number | Writer (`build_envelope`) | Reader (`_fetchStats`) | Source of truth: `paperforge/__init__.py` |
 
-Add one tolerant reader in Python that accepts both:
-- legacy list format
-- new envelope format with `items`
+**Thin-shell rule preserved**: The JS plugin NEVER computes lifecycle, health, maturity, or next-step. It only reads pre-computed values from `formal-library.json` or directly from workspace files. All business logic remains in Python.
 
-Writers should emit only the new envelope after v1.6 migration.
+## Key Data Flow: AI Discussion Recording
 
-## Data Ownership Boundaries
-
-### 1. Configuration truth
-
-**Authoritative source:** `paperforge.json` + `vault_config`
-
-**Owner:** `paperforge/config.py`
-
-**Rule:** plugin settings are not runtime truth. They are only a UI cache/draft until written back through Python.
-
-Implication:
-- `paperforge/plugin/main.js` should stop owning independent defaults like `System`, `Resources`, `Notes`, `Index_Cards`, `Base`.
-- plugin should load resolved config from Python or from `paperforge.json`, then persist only as a mirror.
-- any config-changing UI should write via setup/config command flow, not invent JS-only state.
-
-### 2. User intent truth
-
-**Authoritative source:** `library-records/<domain>/<key>.md` frontmatter
-
-**User-owned fields:**
-- `analyze`
-- `do_ocr`
-- future manual workflow flags
-
-**Machine-mirrored fields:**
-- `has_pdf`
-- `pdf_path`
-- `ocr_status`
-- `deep_reading_status`
-- `fulltext_md_path`
-- future `asset_state`, `library_health`, `maturity_score`, `next_step`
-
-Rule: users may edit intent fields; workers may overwrite mirrored fields.
-
-### 3. OCR asset truth
-
-**Authoritative source:**
-- `ocr/<key>/meta.json`
-- `ocr/<key>/fulltext.md`
-- `ocr/<key>/json/result.json`
-- `ocr/<key>/images/*`
-
-**Owner:** `paperforge/worker/ocr.py`
-
-Rule: no other component should invent OCR completion state without validating these files.
-
-### 4. Deep-reading truth
-
-**Authoritative source:** formal note content under `## 🔍 精读`
-
-**Owner:** agent output + `has_deep_reading_content()` / `run_deep_reading()`
-
-Rule: `deep_reading_status` is derived from actual note content, not from the plugin.
-
-### 5. Canonical derived truth
-
-**Authoritative source for lifecycle/health/maturity/dashboard:** `formal-library.json`
-
-**Owner:** new asset-index builder in Python
-
-Rule: plugin, `status`, health UI, and future context pack features read from this index instead of recomputing from filesystem independently.
-
-## Recommended New/Modified Artifacts
-
-### New Python modules
-
-| Artifact | Type | Responsibility |
-|---|---|---|
-| `paperforge/worker/asset_index.py` | New | Read all source artifacts, derive canonical item rows, write `formal-library.json` |
-| `paperforge/worker/asset_state.py` | New | Pure lifecycle/readiness/health/maturity derivation functions |
-| `paperforge/worker/context_pack.py` | New | Build per-paper/per-collection AI context packs from canonical items |
-| `paperforge/commands/config.py` | New | JSON get/set surface for plugin config sync |
-| `paperforge/commands/context_pack.py` | New | CLI wrapper for ask-this-paper / ask-this-collection / copy-context-pack |
-
-### Modified Python modules
-
-| Artifact | Change |
-|---|---|
-| `paperforge/config.py` | Make resolved config the single runtime truth; expose stable JSON-serializable config payload |
-| `paperforge/worker/sync.py` | Split note-writing from index-building; call asset index refresh after selection/index changes |
-| `paperforge/worker/ocr.py` | After each touched key, refresh canonical index rows for those keys |
-| `paperforge/worker/deep_reading.py` | Refresh canonical index after syncing deep-reading status |
-| `paperforge/worker/status.py` | Read summary counts from canonical index instead of recounting raw files where possible |
-| `paperforge/worker/repair.py` | Repair source artifacts first, then refresh canonical index |
-| `paperforge/worker/base_views.py` | Add derived display columns/filters fed by mirrored fields from canonical index |
-| `paperforge/setup_wizard.py` | Stop writing duplicated top-level path fields unless needed for backward compatibility; prefer `vault_config` |
-| `paperforge/plugin/main.js` | Read config/dashboard data from Python, never own lifecycle logic |
-
-### Modified on-disk artifacts
-
-| Artifact | Status | Notes |
-|---|---|---|
-| `<system_dir>/PaperForge/indexes/formal-library.json` | Evolve | Canonical index envelope |
-| `library-records/*.md` | Extend | Add derived mirror fields for Base/UI filtering |
-| `paperforge.json` | Tighten | Single config truth; preserve legacy top-level keys only as compatibility shim |
-
-### New on-disk artifacts
-
-| Artifact | Purpose |
-|---|---|
-| `<system_dir>/PaperForge/indexes/context-packs/<key>.md` | Cached per-paper AI context pack |
-| `<system_dir>/PaperForge/indexes/context-packs/collections/<slug>.md` | Cached per-collection AI context pack |
-| `<system_dir>/PaperForge/indexes/health-report.json` | Optional summarized health snapshot for dashboard and diagnostics |
-
-## State Model
-
-The new model should explicitly separate intent, assets, and derived state.
-
-### Intent layer
-
-From `library-record` frontmatter:
-
-```text
-analyze
-do_ocr
+```
+User runs /pf-deep <key> in OpenCode Agent
+    ↓
+ld_deep.py prepares scaffold, generates deep-reading content
+    ↓
+Agent conversation complete
+    ↓
+[NEW: AI Discussion Recorder module] (Python)
+    ├─ Captures conversation messages
+    ├─ Writes ai/discussion.md  (human-readable markdown log)
+    └─ Writes ai/discussion.json (structured JSON)
+    ↓
+User opens deep-reading.md in Obsidian
+    ↓
+_detectAndSwitch() detects deep-reading.md → 'deep-reading' mode
+    ↓
+_renderDeepReadingMode() reads:
+    ├─ formal-library.json → lifecycle/health/maturity badges
+    ├─ deep-reading.md → Pass 1 summary text
+    └─ ai/discussion.json → AI Q&A history cards
 ```
 
-This is what the user wants.
+## "Jump to Deep Reading" Button — Integration Point
 
-### Asset layer
+**Location**: `_renderPaperMode()`, after the next-step card, as an additional contextual action.
 
-Observed from files:
+**Condition**: Show when `entry.deep_reading_path` is non-empty AND `entry.deep_reading_status === 'done'`.
 
-```text
-export present?
-pdf resolvable?
-ocr meta present?
-ocr payload complete?
-formal note present?
-deep-reading content present?
-figure assets present?
-```
-
-This is what actually exists.
-
-### Derived state layer
-
-Computed in Python only:
-
-```text
-imported
-indexed
-pdf_ready
-ocr_requested
-ocr_processing
-fulltext_ready
-figure_ready
-deep_read_ready
-deep_read_done
-ai_context_ready
-```
-
-Recommended item schema section:
-
-```json
-"state": {
-  "lifecycle": "fulltext_ready",
-  "readiness": {
-    "pdf": true,
-    "ocr": true,
-    "deep_read": false,
-    "ai_context": false
-  },
-  "next_actions": ["generate_context_pack", "run_pf_deep"]
+```javascript
+// In _renderPaperMode(), after _renderNextStepCard():
+if (entry.deep_reading_path && entry.deep_reading_status === 'done') {
+    const drBtn = view.createEl('button', { cls: 'paperforge-contextual-btn deep-reading-btn' });
+    drBtn.createEl('span', { cls: 'paperforge-contextual-btn-icon', text: '\uD83D\uDD0D' });
+    drBtn.createEl('span', { text: 'Jump to Deep Reading' });
+    drBtn.addEventListener('click', () => {
+        this.app.workspace.openLinkText(entry.deep_reading_path, '');
+    });
 }
 ```
 
-## Read/Write Flow
+## Bug Fix Analysis
 
-### Worker write flow
+### 1. Version Number Not Displaying
 
-```text
-Zotero export change
-  -> run_selection_sync()
-  -> update library-records (intent + mirrors)
-  -> refresh_asset_index(keys=changed)
+**Root cause**: `_fetchStats()` at line 358 uses `version: this._cachedStats?.version || '\u2014'` but the `formal-library.json` envelope (from `build_envelope()`) has no `version` field — only `schema_version`, `generated_at`, `paper_count`, `items`.
 
-OCR job change
-  -> run_ocr()
-  -> update meta.json/fulltext/assets
-  -> refresh_asset_index(keys=touched)
+**Fix strategy**:
+- **Python** (`asset_index.py`): Add `paperforge_version` to `build_envelope()`:
+  ```python
+  from paperforge import __version__
+  return {
+      "schema_version": CURRENT_SCHEMA_VERSION,
+      "paperforge_version": __version__,
+      "generated_at": ...,
+      "paper_count": len(items),
+      "items": items,
+  }
+  ```
+- **JS** (`main.js`): Read from envelope in `_fetchStats()`:
+  ```javascript
+  version: index.paperforge_version || index.version || '\u2014'
+  ```
 
-Deep-reading state change
-  -> run_deep_reading()
-  -> sync deep_reading_status mirror
-  -> refresh_asset_index(keys=touched)
+### 2. Meaningless "ai" Row in Dashboard
 
-Repair change
-  -> run_repair()
-  -> fix source artifacts
-  -> refresh_asset_index(keys=fixed)
-```
+**Root cause**: Unknown — likely a leftover from an earlier Phase 25-26 UI experiment. Need to inspect what creates this row. Based on the state report (`STATE.md` line 61: 'Dashboard bug: "ai" row is meaningless'), this is a rendering artifact in the global dashboard view.
 
-### Plugin read/write flow
+**Fix strategy**: Audit `_renderGlobalMode()` and `_fetchStats()` for any rendering that produces an "ai" label or row. The canonical index entry has `ai_path` as a path string, and the lifecycle includes `ai_context_ready`. If any UI component renders raw field names, filter it out or map to a human label.
 
-```text
-Plugin action button
-  -> spawn `python -m paperforge <command>`
-  -> command mutates source artifacts
-  -> command refreshes canonical index
-  -> plugin re-reads JSON summary/query output
+## Architectural Patterns Used
 
-Plugin dashboard load
-  -> spawn `python -m paperforge status --json` for summary
-  -> spawn `python -m paperforge context-pack/index query --json` for lists/detail
-  -> render only; no lifecycle recomputation in JS
-```
+### Pattern 1: Mode Dispatch (existing, extended)
 
-### Critical rule
+**What**: `_detectAndSwitch()` → `_switchMode()` → `case 'mode': renderX()`
+**When**: Adding any new dashboard context
+**v1.8 extension**: Add `case 'deep-reading': this._renderDeepReadingMode()` to the switch
+**Trade-offs**: Linear dispatch is simple but the switch statement grows. Acceptable for 4 modes.
 
-The plugin should never determine:
-- whether OCR is truly complete
-- whether a paper is AI-ready
-- whether health is red/yellow/green
-- what the next step should be
+### Pattern 2: File-based Index as Bridge
 
-Those are Python-derived fields.
+**What**: `formal-library.json` is the contract between Python and JS. Python writes derived fields (lifecycle, health, maturity, next_step). JS reads and renders.
+**When**: Any time JS needs to display computed state
+**v1.8 use**: Deep-reading dashboard reads lifecycle/health/maturity from index, only reads `discussion.json` directly for AI-specific data.
+**Trade-offs**: Adds a file dependency but eliminates cross-runtime communication complexity.
 
-## Integration Points in Existing Code
+### Pattern 3: ReadFileSync Data Loading
 
-### `paperforge/config.py`
-
-Current strength: already centralizes precedence. Current problem: plugin defaults drift from Python defaults and setup writes both top-level keys and `vault_config`.
-
-Recommendation:
-- keep `load_vault_config()` as the only resolver
-- add a JSON export helper used by plugin
-- prefer nested `vault_config` as canonical
-- keep top-level path keys only as compatibility read support, not required write support
-
-### `paperforge/worker/sync.py`
-
-Current role is overloaded:
-1. ingest export rows
-2. write library-records
-3. write formal notes
-4. write `formal-library.json`
-
-Recommendation:
-- leave `run_selection_sync()` focused on control records
-- leave `run_index_refresh()` focused on formal notes
-- move canonical index assembly into `asset_index.py`
-- have both call `refresh_asset_index()` rather than hand-building `index_rows`
-
-This is the cleanest way to integrate new lifecycle/health fields without making `sync.py` larger.
-
-### `paperforge/worker/ocr.py`
-
-Current role is already the source of OCR truth via `meta.json` and validation. Keep it that way.
-
-Recommendation:
-- do not push health logic into the plugin
-- after status transitions, refresh canonical rows for touched keys
-- expose validated OCR health in index as derived fields, not ad hoc status strings scattered across surfaces
-
-### `paperforge/worker/deep_reading.py`
-
-Current role is status synchronization, which fits v1.6 well.
-
-Recommendation:
-- continue deriving deep-read completion from note content
-- publish the result into canonical index and mirrored record fields
-- let maturity scoring depend on this derived state
-
-### `paperforge/worker/status.py`
-
-Current role manually counts files and scans frontmatter.
-
-Recommendation:
-- keep doctor-style filesystem checks in place
-- move dashboard/status summaries to canonical index summary where possible
-- use raw scans only as fallback if index missing/corrupt
-
-This gives one consistent count across CLI and plugin.
-
-### `paperforge/worker/repair.py`
-
-Current role already handles state divergence.
-
-Recommendation:
-- extend it to compare source artifacts vs canonical index freshness
-- never repair the index directly; repair sources, then rebuild index
-
-### `paperforge/worker/base_views.py`
-
-Current Base strategy is still good. Do not replace Bases with a new system.
-
-Recommendation:
-- add columns like `asset_state`, `library_health`, `maturity_level`, `next_step`
-- continue filtering on `analyze`, `do_ocr`, `ocr_status`, `deep_reading_status`
-- derive these extra display fields from canonical index and mirror them back into library-record frontmatter during refresh
-
-This preserves current user workflow while making the dashboard and Bases agree.
-
-### `paperforge/plugin/main.js`
-
-Current plugin is correctly thin in command execution, but too independent in configuration and too limited in dashboard data.
-
-Recommendation:
-- keep CommonJS and the current shell approach; do not do a front-end rewrite
-- add a config fetch path from Python
-- add dashboard JSON fetches backed by canonical index
-- keep all writes as CLI subprocesses
-- keep settings as UI cache only, not truth
-
-## Patterns to Follow
-
-### Pattern 1: Canonical read model over file truths
-**What:** derive one authoritative JSON read model from multiple file-backed truths.
-**When:** whenever multiple surfaces need the same counts, health, lifecycle, or readiness logic.
-**Example:**
-
-```python
-item = build_asset_item(
-    export_row=export_row,
-    record=parse_library_record(record_path),
-    ocr_meta=load_meta(meta_path),
-    note_state=inspect_note(note_path),
-)
-```
-
-### Pattern 2: User-intent fields stay editable, derived fields stay overwriteable
-**What:** keep manual controls and machine mirrors separate in the same markdown record.
-**When:** preserving current Base workflow without losing canonical derivation.
-**Example:**
-
-```yaml
-analyze: true          # user-owned
-do_ocr: true           # user-owned
-asset_state: "ocr_ready"      # machine-owned mirror
-library_health: "warning"     # machine-owned mirror
-maturity_score: 55            # machine-owned mirror
-```
-
-### Pattern 3: Thin-shell plugin, thick Python semantics
-**What:** JS renders and triggers commands; Python decides meaning.
-**When:** any dashboard, health, maturity, or AI-ready feature.
-**Example:**
-
-```text
-plugin -> python -m paperforge status --json -> render cards
-plugin -> python -m paperforge context-pack PAPER123 --json -> render/copy
-```
+**What**: JS reads JSON files with `fs.readFileSync(indexPath, 'utf-8')` + caching via `_cachedItems`
+**When**: All dashboard data loading
+**v1.8 extension**: Same pattern for `discussion.json`: `fs.readFileSync(discussionPath, 'utf-8')` from `ai/` directory.
+**Trade-offs**: Requires vault-relative path resolution. OK because `this.app.vault.adapter.basePath` provides vault root.
 
 ## Anti-Patterns to Avoid
 
-### Anti-Pattern 1: Second lifecycle implementation in the plugin
-**What:** JS infers OCR/deep-read/health from file presence or cached settings.
-**Why bad:** guaranteed drift from CLI and workers.
-**Instead:** plugin reads Python-produced JSON only.
+### Anti-Pattern 1: Business Logic in JS
 
-### Anti-Pattern 2: Treating `formal-library.json` as user-editable data
-**What:** manual edits or plugin patch writes into canonical index.
-**Why bad:** index becomes a source instead of a read model.
-**Instead:** source artifacts change first; index is regenerated.
+**What people do**: Re-implement lifecycle or health computation in JavaScript
+**Why it's wrong**: Creates configuration drift between Python and JS, violates thin-shell constraint
+**Do this instead**: Only read pre-computed values from the canonical index. The JS plugin is a view layer only.
 
-### Anti-Pattern 3: Making `library-record` the source of all truth
-**What:** stuffing every derived health/lifecycle decision into frontmatter and reading only that.
-**Why bad:** repeats current divergence problems.
-**Instead:** frontmatter stores intent plus mirrors; source truths remain separate.
+### Anti-Pattern 2: Two Frontmatter Sources of Truth
 
-### Anti-Pattern 4: Creating a greenfield asset database layer
-**What:** SQLite/daemon/service rewrite for v1.6.
-**Why bad:** violates local-first simplicity and existing file-based contract.
-**Instead:** improve the current JSON + markdown architecture.
+**What people do**: Read deep-reading status from frontmatter AND from the index, compare them
+**Why it's wrong**: Creates reconciliation bugs. The index IS the canonical source.
+**Do this instead**: Deep-reading dashboard gets all status fields from `_findEntry(key)` which reads from `_getCachedIndex()`.
 
-## Scalability Considerations
+### Anti-Pattern 3: Filename-based heuristic for mode detection
 
-| Concern | At 100 users/papers | At 10K papers | At 1M papers |
-|---|---|---|---|
-| Index rebuild cost | Full rebuild acceptable | Prefer keyed/incremental refresh | Would need sharding or DB, out of scope |
-| Plugin dashboard load | Read whole index fine | Add filtered JSON queries and summary endpoints | Full file read impractical |
-| Base mirrors | Direct frontmatter update fine | Batch writes should be keyed and minimal | Too many markdown rewrites |
-| Context packs | On-demand generation fine | Cache per paper/collection | Need streaming/chunking |
+**What people do**: Check if filename === "deep-reading.md" without verifying workspace context
+**Why it's wrong**: A user could have any file named "deep-reading.md" anywhere in their vault
+**Do this instead**: Verify parent directory matches workspace pattern `{8-char key} - {title_slug}` and the file is inside `Literature/{domain}/`
 
-For v1.6, optimize for incremental per-key refresh, not a new database.
+## Recommended Build Order
 
-## Suggested Build Order
+Based on dependency analysis, the suggested build order for v1.8 phases:
 
-### Phase 1: Configuration truth hardening
-- Normalize plugin defaults to Python defaults
-- Add config JSON read surface
-- Make `vault_config` the canonical write target
-- Verify plugin, CLI, setup, and workers resolve identical paths
+1. **Phase 31a: Fix version number display** — 1 change Python (build_envelope), 1 change JS (_fetchStats). Low risk, no dependencies.
 
-### Phase 2: Canonical index builder
-- Add `asset_index.py`
-- Evolve `formal-library.json` schema
-- Add tolerant legacy reader
-- Make `run_index_refresh()` delegate index writing here
+2. **Phase 31b: Fix "ai" row bug** — Audit and remove. Depends on understanding current rendering, which we already have.
 
-### Phase 3: Unified state + health derivation
-- Add lifecycle/readiness/health/maturity pure functions in `asset_state.py`
-- Feed from library-records, OCR meta, formal notes
-- Mirror selected display fields back into library-record frontmatter
+3. **Phase 32: Add deep-reading mode detection** — Extend `_detectAndSwitch()` and `_switchMode()`. Pure JS change. No dependency on Python.
 
-### Phase 4: Status/repair/dashboard convergence
-- Make `status --json` read canonical summary
-- Make `repair` rebuild index after fixes
-- Update plugin dashboard to read canonical summaries/query endpoints
+4. **Phase 33: Build _renderDeepReadingMode() component** — New render method with status bar, Pass 1 summary, and placeholder for AI history. Depends on Phase 32.
 
-### Phase 5: Maturity scoring + next-step recommendations
-- Add scoring rules to canonical items
-- Surface next-step guidance in plugin and Base views
+5. **Phase 34: Add "Jump to Deep Reading" button** — Modify `_renderPaperMode()`. Depends on Phase 33 (need consistent deep-reading path resolution).
 
-### Phase 6: AI context packs
-- Generate per-paper and per-collection context packs from canonical items
-- Store pack paths/readiness in index
-- Keep pack bodies outside the main index to avoid bloat
+6. **Phase 35: AI discussion recorder (Python)** — Write `discussion.md` + `discussion.json` in `ai/`. Depends on nothing (standalone Python module).
 
-## Practical Field Additions
+7. **Phase 36: Wire AI Q&A history into deep-reading dashboard** — Read `discussion.json` in `_renderDeepReadingMode()`. Depends on Phase 33 and Phase 35.
 
-Recommended mirrored `library-record` fields for Bases/UI:
+**Rationale**: Fixes first (low risk, quick wins), then detection infrastructure, then rendering, finally data pipeline.
 
-```yaml
-asset_state: "fulltext_ready"
-pdf_health: "ok"
-ocr_health: "warning"
-template_health: "ok"
-library_health: "warning"
-maturity_score: 62
-maturity_level: 3
-next_step: "run_pf_deep"
-context_pack_ready: false
-```
+## Scaling Considerations
 
-Recommended canonical index sections per item:
+| Scale | Architecture Note |
+|-------|-------------------|
+| ~10 papers | All modes fast. Direct file reads adequate. |
+| ~100 papers | Index scan for `_findEntry()` is O(n). Acceptable for this scale. |
+| ~1000 papers | `_findEntry()` is still linear scan of items array. Consider Map-based lookup if performance becomes issue. |
+| ~10K papers | `_getCachedIndex()` loads full JSON into memory (potentially 10+ MB). Consider paginated index or lazy loading. |
 
-```json
-"intent": {},
-"assets": {},
-"state": {},
-"health": {},
-"maturity": {},
-"recommendations": {},
-"paths": {}
-```
+*For v1.8: Current scale is ~100 papers. Existing linear scan is fine. No premature optimization needed.*
+
+## Integration Points Summary
+
+| Point | From | To | Data | Trigger |
+|-------|------|----|------|---------|
+| Index reading | `formal-library.json` | `_getCachedIndex()` | All entry fields | On mode switch, on modify event |
+| Deep-reading content | `deep-reading.md` | `_renderDeepReadingMode()` | Markdown text | On deep-reading mode entry |
+| AI discussion history | `ai/discussion.json` | `_renderDeepReadingMode()` | Session array | On deep-reading mode entry |
+| AI discussion writing | Agent command (/pf-deep, /pf-paper) | `ai/discussion.*` | Full conversation | After agent interaction complete |
+| Version number | `build_envelope()` | `_fetchStats()` | `paperforge_version` string | On index rebuild |
+| Jump to deep-reading | `_renderPaperMode()` button | `app.workspace.openLinkText()` | `deep_reading_path` | User click |
 
 ## Sources
 
-- Internal code inspection: `paperforge/config.py` — config precedence and path resolution
-- Internal code inspection: `paperforge/worker/_utils.py` — existing `formal-library.json` path contract
-- Internal code inspection: `paperforge/worker/sync.py` — current library-record/note/index write flow
-- Internal code inspection: `paperforge/worker/ocr.py` — OCR truth and validation flow
-- Internal code inspection: `paperforge/worker/deep_reading.py` — deep-reading state sync
-- Internal code inspection: `paperforge/worker/status.py` — current summary/dashboard JSON producer
-- Internal code inspection: `paperforge/worker/repair.py` — divergence repair model
-- Internal code inspection: `paperforge/plugin/main.js` — current plugin thin-shell pattern and config drift risk
+- **Verified against source**: `paperforge/plugin/main.js` (lines 1-2067) — existing mode detection, switch, and rendering
+- **Verified against source**: `paperforge/worker/asset_index.py` (lines 1-577) — `_build_entry()`, `build_envelope()`, `read_index()`
+- **Verified against source**: `paperforge/worker/asset_state.py` (lines 1-243) — lifecycle, health, maturity, next-step computation
+- **Verified against source**: `paperforge/worker/sync.py` (lines 1677-1749) — `migrate_to_workspace()`, ai/ directory creation
+- **Project context**: `.planning/PROJECT.md` — v1.8 requirements and thin-shell constraint
+- **Project state**: `.planning/STATE.md` — bug reports (ai row, version number)
+
+---
+
+*Architecture research for: PaperForge v1.8 AI Discussion & Deep-Reading Dashboard*
+*Researched: 2026-05-06*
+*Confidence: HIGH — all integration points verified against existing source code*

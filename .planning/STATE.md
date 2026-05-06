@@ -1,73 +1,37 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.7
-milestone_name: Context-Aware Dashboard
-status: v1.7 milestone complete
-stopped_at: Completed 30-01-PLAN.md
-last_updated: "2026-05-04T14:22:05.370Z"
+milestone: v1.8
+milestone_name: AI Discussion & Deep-Reading Dashboard
+status: Ready to plan
+stopped_at: Phase 35 context gathered
+last_updated: "2026-05-06T06:55:03.559Z"
 progress:
-  total_phases: 4
-  completed_phases: 4
-  total_plans: 6
-  completed_plans: 6
+  total_phases: 6
+  completed_phases: 1
+  total_plans: 4
+  completed_plans: 1
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-05-03)
+See: .planning/PROJECT.md (updated 2026-05-06)
 
-**Core value:** Researchers always know what papers they have, what state those papers are in, and whether each paper is reliably usable by AI with traceable fulltext, figures, notes, and source links.
-**Current focus:** Phase 23 — canonical-asset-index-safe-rebuilds
+**Core value:** Researchers always know what papers have, what state those papers are in, and whether each paper is reliably usable by AI with traceable fulltext, figures, notes, and source links.
+**Current focus:** Phase 34 — Jump to Deep Reading Button
 
 ## Current Position
 
-Phase: 30 (collection-view) — COMPLETE
-Plans: 1 of 1 planned
-
-Milestone v1.7 (Context-Aware Dashboard): ALL PHASES COMPLETE
+Phase: 35
+Plan: Not started
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 41
+- Total plans completed: 42 (across v1.0-v1.8)
 - Average duration: Not yet tracked consistently
-- Total execution time: Not yet tracked consistently
-
-**By Phase:**
-
-| Phase | Plans | Total | Avg/Plan |
-|-------|-------|-------|----------|
-| 20. Plugin Settings Shell & Persistence | 1/1 | Not tracked | Not tracked |
-| 21. One-Click Install & Polished UX | 2/2 | Not tracked | Not tracked |
-| 22-26. v1.6 roadmap | 0/TBD | - | - |
-
-**Recent Trend:**
-
-- Last 5 plans: Not normalized in historical records
-- Trend: Stable
-
-| Phase 22-configuration-truth-compatibility P01 | 4 min | 3 tasks | 3 files |
-| Phase 22-configuration-truth-compatibility P02 | 6 min | 3 tasks | 1 files |
-| Phase 22-configuration-truth-compatibility P03 | 8 min | 3 tasks | 3 files |
-| Phase 23-canonical-asset-index-safe-rebuilds P01 | 7 min | 3 tasks | 3 files |
-| Phase 23-canonical-asset-index-safe-rebuilds P02 | 5 min | 3 tasks | 4 files |
-| Phase 23-canonical-asset-index-safe-rebuilds P03 | 8 min | 4 tasks | 5 files |
-| Phase 24-derived-lifecycle-health-maturity P02 | 25min | 3 tasks | 2 files |
-| Phase 25-surface-convergence-doctor-repair P02 | 2min | 2 tasks | 1 files |
-| Phase 25-surface-convergence-doctor-repair P01 | 5 min | 3 tasks | 4 files |
-| Phase 25-surface-convergence-doctor-repair P03 | 13min | 2 tasks | 5 files |
-| Phase 26-traceable-ai-context-packs P02 | 60 min | 3 tasks | 5 files |
-| Phase 26-traceable-ai-context-packs P01 | 4 min | 2 tasks | 3 files |
-| Phase 26-traceable-ai-context-packs P03 | 2 min | 3 tasks | 1 files |
-| Phase 27-component-library P01 | 3 min | 3 tasks | 1 files |
-| Phase 27-component-library P02 | 3 min | 3 tasks | 1 files |
-| Phase 28-dashboard-shell-context-detection P01 | 1 min | 2 tasks | 2 files |
-| Phase 28-dashboard-shell-context-detection P02 | 5 min | 2 tasks | 1 files |
-| Phase 29 P01 | 10 min | 2 tasks | 2 files |
-| Phase 30 P01 | 2 min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -76,56 +40,34 @@ Milestone v1.7 (Context-Aware Dashboard): ALL PHASES COMPLETE
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
-- v1.6 stays Python-first: config, lifecycle, health, maturity, and context-pack rules remain Python-owned.
-- `formal-library.json` evolves into the canonical derived asset index rather than introducing a parallel index.
-- Plugin remains a thin shell over CLI logic and canonical index outputs.
-- [Phase 22-configuration-truth-compatibility]: schema_version is metadata excluded from load_vault_config() path config output; use get_paperforge_schema_version() instead
-- [Phase 22-configuration-truth-compatibility]: Added paddleocr_api_key and zotero_data_dir to DEFAULT_SETTINGS to prevent data loss from saveSettings() key filtering — Plan omitted these keys from DEFAULT_SETTINGS, but saveSettings() now filters persisted keys to only DEFAULT_SETTINGS entries - would have permanently deleted user API keys and Zotero paths
-- [Phase 22-configuration-truth-compatibility]: Clean dict replace replaces existing_config.update() to avoid accumulating stale top-level keys in setup wizard paperforge.json output
-- [Phase 23-canonical-asset-index-safe-rebuilds]: Lazy imports inside build_index avoid circular import between sync.py and asset_index.py
-- [Phase 23-canonical-asset-index-safe-rebuilds]: Orphaned-record cleanup stays in sync.py; only the core build loop moves to asset_index
-- [Phase 23-canonical-asset-index-safe-rebuilds]: OCR captures done keys before queue filter to pass to incremental refresh; deep-reading refreshes ALL records; repair triggers refresh for path and divergence fixes; run_index_refresh keeps full-rebuild default; incremental is opt-in from single-paper workers
-- [Phase 24-derived-lifecycle-health-maturity]: Lazy import of asset_state functions inside _build_entry() follows existing pattern — avoids circular dependency risk with sync.py — Same pattern already used for ocr.py and sync.py imports in _build_entry()
-- [Phase 24-derived-lifecycle-health-maturity]: Derived fields inserted after entry dict construction but before formal note write — keeps machine-only fields out of user-visible Obsidian note frontmatter — Lifecycle/health/maturity/next_step are machine-derived and should not appear in user-editable markdown frontmatter
-- [Phase 25-surface-convergence-doctor-repair]: Plugin dashboard reads formal-library.json directly via readFileSync instead of spawning Python CLI — SURF-03 per D-05, D-06, D-07: plugin consumes same canonical semantics from canonical index
-- [Phase 25-surface-convergence-doctor-repair]: Use English column display names (Lifecycle, Maturity, Next Step) in Base view properties — The agent's discretion — Base is a technical view, English labels suffice
-- [Phase 25-surface-convergence-doctor-repair]: Double-quote YAML wrapping for filters containing single-quoted lifecycle values — Prevents YAML parse errors when filter values contain single quotes like lifecycle = 'fulltext_ready'
-- [Phase 25-surface-convergence-doctor-repair]: Lazy import build_index inside fix conditional block to avoid circular dependency with asset_index — Follows existing lazy import pattern established in Phase 23
-- [Phase 26-traceable-ai-context-packs]: context command wraps canonical index entries with _provenance (9 path keys) and _ai_readiness (blocking explanation) — D-01, D-06, D-09, D-10
-- [Phase 26-traceable-ai-context-packs]: Migration runs before build_index() — ensures _build_entry sees workspace dir
-- [Phase 26-traceable-ai-context-packs]: Collection context defaults to --all filter (no Base view filter reading yet in initial implementation)
-- [Phase 26-traceable-ai-context-packs]: Context actions use variable timeout: 30s for single paper, 60s for collection, 600s for existing sync/ocr/doctor/repair
-- [Phase 27-component-library]: Gauge gradient progression uses cyan/blue/purple/green/yellow/red per-level colors matching lifecycle stage mapping — Visual consistency across gauge and bar chart components at agent discretion per D-17-D-18
-- [Phase 27-component-library]: Pure CSS tooltip via [title]:hover::after/::before with arrow pointer using Obsidian CSS variables — No JS required for tooltips per D-16; keeps component CSS-only
-- [Phase 27-component-library]: Status classes applied via variable in _renderHealthMatrix -- enables DRY handling of healthy/warning/failed status values
-- [Phase 27-component-library]: Bar fill CSS classes use template literal for dynamic stage color -- matches Plan 27-01 color variant selectors
-- [Phase 27-component-library]: Bar chart returns empty state rather than skeleton when data is empty -- more informative for user
-- [Phase 28-dashboard-shell-context-detection]: _loadIndex() returns null (not empty object) on failure so callers can distinguish missing/corrupt from empty index (D-17)
-- [Phase 28-dashboard-shell-context-detection]: _getCachedIndex() returns [] when index missing, not null — callers iterate safely without null checks (D-14)
-- [Phase 28-dashboard-shell-context-detection]: Path resolution in _loadIndex() duplicates _fetchStats() intentionally — self-contained, no hidden coupling; existing _fetchStats() left untouched
-- [Phase 28-dashboard-shell-context-detection 02]: 300ms debounce for active-leaf-change based on agent discretion in CONTEXT.md
-- [Phase 28-dashboard-shell-context-detection 02]: OCR components created in _renderGlobalMode() not _buildPanel() for lean structural shell
-- [Phase 28-dashboard-shell-context-detection 02]: Event refs stored as {event, ref} objects for Obsidian version compatibility
+- v1.8 roadmap: 6 phases (31-36) covering 10 requirements across bug fixes, mode detection, dashboard rendering, navigation, AI recording, and integration.
+- discussion.json uses sessions-based schema (sessions[] → qa_pairs[]) with schema_version "1" envelope from day one.
+- Plugin reads discussion.json via app.vault.adapter.read() (NOT fs.readFileSync) because it lives in vault-internal paper workspace.
+- Mode detection checks deep-reading.md filename BEFORE zotero_key frontmatter to prevent per-paper mode hijacking.
+- Phase 35 (Python) runs parallel to Phases 32-34 (JS) — no runtime dependency.
+- [Phase 31] paperforge_version added to formal-library.json envelope for version display in plugin header.
+- [Phase 31] "AI Ready" lifecycle stage removed from plugin dashboard (unreachable key mismatch: Python returns ai_context_ready, JS had ai_ready).
+- [Phase 31] Lifecycle stage keys in plugin aligned with Python compute values: deep_read_done not deep_read.
+- [Phase 31] Collection mode lifecycle thresholds fixed to match actual lifecycle values instead of mismatched keys.
+- [Phase 33] _renderDeepReadingMode() is async — reads deep-reading.md and discussion.json via vault.read(). Contains modeGuard for race condition safety.
+- [Phase 33] Pass 1 extraction uses marker priority: **一句话总览** → ## Pass 1 → **文章摘要**, cuts at next major section break.
+- [Phase 33] AI Q&A: sessions-based collapsible groups, dialog bubble format (question/answer different colors), default collapsed.
 
 ### Pending Todos
 
 None yet.
 
-- [Phase 29-per-paper-view]: _renderPaperMode() uses entry.next_step string → maps to 6-state stepInfo object for human-readable label + action trigger, with /pf-deep as clipboard copy (no CLI action)
-- [Phase 29-per-paper-view]: Contextual action row created inside _renderPaperMode() before components — Copy Context reuses existing ACTIONS.paperforge-copy-context (needsKey), Open Fulltext uses new _openFulltext() with vault.getAbstractFileByPath + workspace.openLinkText
-- [Phase 29-per-paper-view]: Next-step action trigger for sync/ocr/repair calls ACTIONS.find by cmd + _runAction(); /pf-deep copies key via clipboard; ready shows "Copy Context" shortcut — all three paths are explicit in _renderNextStepCard
-- [Phase 30-collection-view]: Fulltext-ready threshold = lifecycle in [fulltext_ready, deep_read, ai_ready]; deep-read threshold = lifecycle in [deep_read, ai_ready]
-- [Phase 30-collection-view]: Health dimension labels: PDF (Healthy/Broken), OCR (Done/Pending-Failed), Note (Present/Missing), Asset (Valid/Drifted)
-- [Phase 30-collection-view]: Metric cards: Papers (cyan, no bar), Fulltext Ready (green, progress bar), Deep Read (yellow, progress bar)
-- [Phase 30-collection-view]: Health aggregation computed inline from domain-filtered items (not from _cachedStats global aggregate)
-
 ### Blockers/Concerns
 
-- Brownfield rollout must protect existing vaults, old Base templates, partial OCR assets, and legacy config shapes.
-- AI context entry points should ship only after provenance and readiness are trustworthy.
+- Agent integration surface for discussion recording: exact callback/handoff protocol for `/pf-paper` and `/pf-deep` completion needs implementation-level confirmation during Phase 35 planning.
+- [Phase 33 resolved] Deep-reading.md content parsing: marker-based extraction with regex fallback now implemented. Content includes `**一句话总览**` paragraph + `###` sub-sections.
+- [Phase 32 resolved] active-leaf-change double-fire — mitigated by `_currentMode + _currentFilePath` identity guard in `_switchMode()`.
+- [Phase 32 resolved] Mode detection — `_resolveModeForFile()` pure function checks deep-reading.md filename + parent directory pattern BEFORE zotero_key frontmatter.
+- [Phase 31 resolved] Version display bug fixed — paperforge_version now flows through formal-library.json envelope. Version shown matches __init__.py version (currently 1.4.15).
+- [Phase 31 resolved] "AI Ready" row removed from per-paper dashboard lifecycle stepper and bar chart.
 
 ## Session Continuity
 
-Last session: 2026-05-04T14:02:52.374Z
-Stopped at: Completed 30-01-PLAN.md
-Resume file: None
+Last session: 2026-05-06T06:55:03.554Z
+Stopped at: Phase 35 context gathered
+Resume file: .planning/phases/35-ai-discussion-recorder/35-CONTEXT.md
