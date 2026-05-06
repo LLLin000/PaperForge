@@ -177,6 +177,8 @@ python -c "from paperforge.setup_wizard import EnvChecker; from pathlib import P
 
 ### Step 5: Create directories and deploy files
 
+Important safety rule: this setup flow is additive. If the target vault or selected directories already contain files, PaperForge should create only missing directories/files and preserve existing content.
+
 Assemble one command from all Step 0 values:
 
 ```bash
@@ -243,15 +245,19 @@ python -m paperforge status
 > **1. Configure Zotero auto-export JSON (required)**
 > This is PaperForge's data source. Sync won't work without it:
 > - Open Zotero
-> - File → Export Library → Format: Better BibTeX
-> - Save to <system_dir>/PaperForge/exports/ in your vault
+> - Right-click the library or collection you want to sync → Export
+> - Format: Better BibTeX JSON
 > - Must check "Keep Updated"
+> - Save to <system_dir>/PaperForge/exports/ in your vault
 >
 > **2. Enable PaperForge plugin in Obsidian**
 > - Settings → Community Plugins → Installed → PaperForge → Enable
-> - Ctrl+P, type "PaperForge"
+> - Ctrl+P, type "PaperForge" and open the dashboard
 >
-> **3. If you skipped PaddleOCR Key**
+> **3. Sync literature**
+> - In the dashboard, click `Sync Library`
+>
+> **4. If you skipped PaddleOCR Key**
 > - Add to <system_dir>/PaperForge/.env:
 >   PADDLEOCR_API_TOKEN=<your key>
 
