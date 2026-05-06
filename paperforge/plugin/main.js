@@ -1416,6 +1416,7 @@ class PaperForgeSettingTab extends PluginSettingTab {
             // Try common install locations
             const progFiles = process.env.ProgramFiles || '';
             const localAppData = process.env.LOCALAPPDATA || '';
+            const home = process.env.USERPROFILE || process.env.HOME || '';
             const zotInstallDirs = [
                 path.join(progFiles, 'Zotero'),
                 path.join(progFiles, '(x86)', 'Zotero'),

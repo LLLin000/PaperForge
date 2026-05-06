@@ -1,6 +1,6 @@
 # PaperForge - Agent Guide
 
-> 本文档面向 **安装完成后的新用户** 和 **AI Agent**。安装步骤见 [setup-guide.md](docs/setup-guide.md) 或快速版 [INSTALLATION.md](docs/INSTALLATION.md)。
+> 本文档面向 **安装完成后的新用户** 和 **AI Agent**。安装步骤见 [setup-guide.md](docs/setup-guide.md) 或快速版 [INSTALLATION.md](docs/INSTALLATION.md)。Docs 版本与 v1.4.13 对应。
 
 ---
 
@@ -12,7 +12,7 @@
 [ ] Obsidian 已打开当前 Vault
 [ ] PaperForge 已安装 (pip install git+https://github.com/LLLin000/PaperForge.git)
 [ ] PaddleOCR API Key 已配置（在 .env 中）
-[ ] 目录结构已创建（setup.py 会自动完成）
+[ ] 目录结构已创建（安装向导会自动完成）
 [ ] Zotero 数据目录已链接到 <system_dir>/Zotero
 ```
 
@@ -32,7 +32,7 @@ PaperForge 采用 **两层设计**：
 
 | 层级 | 组件 | 触发方式 | 作用 |
 |------|------|----------|------|
-| **Worker 层** | `literature_pipeline.py`（4 个 workers） | Python CLI | 后台自动化 |
+| **Worker 层** | `paperforge/worker/`（7 个 worker 模块） | Python CLI | 后台自动化 |
 | **Agent 层** | `/pf-deep`, `/pf-paper` 命令 | 用户手动触发 | 交互式精读 |
 
 **关键区别**：
@@ -93,16 +93,16 @@ Zotero 添加文献
 │
 ├── <system_dir>/
 │   ├── PaperForge/
-│   │   ├── exports/                   ← Better BibTeX 自动导出的 JSON
-│   │   │   └── library.json
-│   │   ├── ocr/                       ← OCR 结果（每个文献一个子目录）
-│   │   │   └── ABCDEFG/               ← Zotero key 作为目录名
-│   │   │       ├── fulltext.md        ← OCR 提取的全文
-│   │   │       ├── images/            ← 图表切割图片
-│   │   │       ├── meta.json          ← OCR 元数据（含 ocr_status）
-│   │   │       └── figure-map.json    ← 图表索引（自动创建）
-│   │   └── worker/scripts/
-│   │       └── literature_pipeline.py ← 核心脚本
+│   │       ├── exports/                   ← Better BibTeX 自动导出的 JSON
+│   │       │   └── library.json
+│   │       ├── ocr/                       ← OCR 结果（每个文献一个子目录）
+│   │       │   └── ABCDEFG/               ← Zotero key 作为目录名
+│   │       │       ├── fulltext.md        ← OCR 提取的全文
+│   │       │       ├── images/            ← 图表切割图片
+│   │       │       ├── meta.json          ← OCR 元数据（含 ocr_status）
+│   │       │       └── figure-map.json    ← 图表索引（自动创建）
+│   │       ├── indexes/                   ← 索引缓存（formal-library.json 等）
+│   │       └── config/                    ← 领域-收藏夹映射等配置
 │   └── Zotero/                        ← Junction/Symlink 到 Zotero 数据目录
 │
 ├── <agent_config_dir>/                         ← OpenCode Agent 配置（自动创建）
@@ -125,6 +125,10 @@ Zotero 添加文献
 | `<resources_dir>/<control_dir>/library-records/` | 文献状态跟踪（analyze, ocr_status 等） | sync（selection-sync 阶段）生成，用户修改状态 |
 | `<system_dir>/PaperForge/exports/` | Better BibTeX JSON 导出 | Zotero 自动导出 |
 | `<system_dir>/PaperForge/ocr/` | OCR 全文 + 图表切割 | ocr worker 生成 |
+| `<system_dir>/PaperForge/indexes/` | 索引缓存（formal-library.json） | sync 生成 |
+| `<system_dir>/PaperForge/config/` | 领域-收藏夹映射等 | 用户/安装向导配置 |
+| `<system_dir>/PaperForge/indexes/` | 索引缓存（formal-library.json） | sync 生成 |
+| `<system_dir>/PaperForge/config/` | 领域-收藏夹映射等 | 用户/安装向导配置 |
 | `<system_dir>/Zotero/` | Zotero 数据目录的链接 | 安装时手动创建 junction |
 
 ---
@@ -145,10 +149,8 @@ Zotero 添加文献
   # 仅根据现有 library-records 生成正式笔记
   paperforge sync --index
   # Legacy (备用):
-  # python <system_dir>/PaperForge/worker/scripts/literature_pipeline.py \
-  #   --vault "{vault路径}" selection-sync
-  # python <system_dir>/PaperForge/worker/scripts/literature_pipeline.py \
-  #   --vault "{vault路径}" index-refresh
+  # python -m paperforge sync --selection --vault "{vault路径}"
+  # python -m paperforge sync --index --vault "{vault路径}"
   ```
 
 ### ocr
@@ -166,8 +168,7 @@ Zotero 添加文献
   # 诊断模式（不运行，仅检查状态）
   paperforge ocr --diagnose
   # Legacy (备用):
-  # python <system_dir>/PaperForge/worker/scripts/literature_pipeline.py \
-  #   --vault "{vault路径}" ocr
+  # python -m paperforge ocr --vault "{vault路径}"
   ```
 
 ### deep-reading
@@ -180,8 +181,7 @@ Zotero 添加文献
   paperforge deep-reading
   paperforge deep-reading --verbose  # 显示阻塞条目的修复指令
   # Legacy (备用):
-  # python <system_dir>/PaperForge/worker/scripts/literature_pipeline.py \
-  #   --vault "{vault路径}" deep-reading
+  # python -m paperforge deep-reading --vault "{vault路径}"
   ```
 
 ---
@@ -328,7 +328,7 @@ pdf_link: "[[99_System/Zotero/storage/KEY/文件名.pdf]]"
 
 ---
 
-## 7. 第一次使用指南（手把手）
+## 8. 第一次使用指南（手把手）
 
 ### Step 1: 确认 Zotero 有文献
 
@@ -400,7 +400,7 @@ Agent 会自动：
 
 ---
 
-## 8. 常用命令速查
+## 9. 常用命令速查
 
 ```bash
 # 检测 Zotero 新条目并生成正式笔记
@@ -459,7 +459,7 @@ paperforge doctor
 
 ---
 
-## 9. 常见问题
+## 10. 常见问题
 
 ### Q: 运行 sync 后没有生成 library-records？
 - 检查 Better BibTeX JSON 导出路径是否正确
@@ -485,7 +485,7 @@ paperforge doctor
 
 ---
 
-## 10. 升级与维护
+## 11. 升级与维护
 
 ### 更新 PaperForge 代码
 
@@ -551,7 +551,7 @@ cp -r 新下载的代码/* <vault_path>/
 
 ---
 
-## 11. 命令迁移说明（v1.1 → v1.2）
+## 12. 命令迁移说明（v1.1 → v1.2）
 
 从 v1.2 开始，PaperForge 采用统一的命令接口：
 
@@ -565,7 +565,7 @@ cp -r 新下载的代码/* <vault_path>/
 
 ---
 
-## 12. 开发者指南（AI Agent 必读）
+## 13. 开发者指南（AI Agent 必读）
 
 ### 版本号管理
 
@@ -630,7 +630,7 @@ gh release create v1.4.12 \
 # 提交前运行 ruff lint + format + 一致性审计
 ruff check --fix paperforge/ && ruff format paperforge/
 
-# 运行测试（317 tests）
+# 运行测试（462 tests）
 pytest tests/ -q --tb=short
 ```
 
