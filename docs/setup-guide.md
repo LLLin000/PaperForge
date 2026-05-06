@@ -44,6 +44,8 @@
 2. Zotero 中已有至少一篇带 PDF 附件的文献
 3. Better BibTeX 插件已安装（Zotero → 工具 → 插件 → 搜索 Better BibTeX）
 
+> 安装向导是**增量式**的：如果你选择的 Vault 或目录里已经有文件，PaperForge 只会创建缺失的目录和文件，不会删除已有内容。
+
 ---
 
 ## 2. 安装 PaperForge
@@ -93,47 +95,45 @@ paperforge setup
 
 你会看到一个图形化界面（终端内的交互式界面）。
 
+这一步会把 PaperForge 需要的文件部署到当前 Vault，包括 `.obsidian/plugins/paperforge/`。在这一步完成之前，Obsidian 里还不能启用插件，也不能打开 Dashboard。
+
 ### 3.2 向导步骤详解
 
-**第 1 步：选择 Agent 平台**
-- 选择你用哪个 AI 编程工具：OpenCode / Cursor / Claude Code / Windsurf / GitHub Copilot / Cline / Augment / Trae
-- 这决定了后续脚本部署的位置
+**第 1 步：概览**
+- 向导会先展示目录层级，帮助你理解哪些内容在 Vault 根目录，哪些内容在 `resources_dir` 下面
+- 重点关系是：
+  - `<resources_dir>/<literature_dir>/`：正式文献笔记
+  - `<resources_dir>/<control_dir>/library-records/`：每篇文献的状态跟踪
+  - `<system_dir>/PaperForge/exports/`：Better BibTeX JSON 导出目录
+- 这一步也会明确说明：如果目标目录里已有文件，安装只做增量创建，不覆盖已有内容
+
+**第 2 步：目录配置**
+- 在这里设置目录名称，而不是手动创建目录
+- 默认结构如下：
+  - `99_System`：系统文件、OCR 结果、exports、worker
+  - `03_Resources`：用户文献数据根目录
+  - `03_Resources/Literature`：正式文献笔记
+  - `03_Resources/LiteratureControl/library-records`：状态卡片
+  - `05_Bases`：Obsidian Base 视图
+
+**第 3 步：平台与密钥**
+- 选择 Agent 平台：OpenCode / Cursor / Claude Code / Windsurf / GitHub Copilot / Cline / Augment / Trae
 - **如果不确定，选 OpenCode**
+- 填写 PaddleOCR API Key
+- 可选填写 Zotero 数据目录，便于自动定位 PDF
 
-**第 2 步：配置 Vault 路径**
-- Vault 是你的 Obsidian 笔记库根目录
-- 如果已经在 Obsidian 中打开了一个 vault，直接输入该目录路径
-- 如果还没有 vault，建议先创建一个空目录
-
-**第 3 步：配置目录名称**
-- **系统目录（system_dir）**：PaperForge 内部文件存放的目录，默认 `99_System`
-  - 包含：OCR 结果、Zotero 导出、配置文件
-  - 建议保持默认，或改为 `System`
-- **资源目录（resources_dir）**：文献笔记存放的目录，默认 `03_Resources`
-  - 包含：文献索引、library-records
-  - 建议保持默认
-
-**第 4 步：配置 Zotero 数据目录**
-- 向导会自动检测 Zotero 数据目录位置
-- 如果自动检测失败，手动输入路径：
-  - Windows 默认：`C:\Users\你的用户名\Zotero`
-  - macOS 默认：`~/Zotero`
-- 向导会自动创建 junction/symlink 链接到 vault 内
-
-**第 5 步：配置 PaddleOCR API Key**
-- 输入从 https://paddleocr.baidu.com 获取的 API Token
-- API URL 保持默认即可：`https://paddleocr.aistudio-app.com/api/v2/ocr/jobs`
-
-**第 6 步：一键部署**
+**第 4 步：安装**
 - 向导会自动：
-  1. 创建 vault 目录结构
-  2. 复制 worker 脚本
-  3. 复制精读脚本（ld_deep.py）
-  4. 复制图表阅读指南
-  5. 复制 Agent 命令文件
-  6. 生成 `.env` 配置文件
-  7. 生成 `paperforge.json`
-  8. 验证文件完整性
+  1. 创建缺失目录
+  2. 部署 worker、技能和插件文件
+  3. 写入 `paperforge.json`
+  4. 创建或补充 `.env`
+  5. 验证安装结果
+
+**第 5 步：完成**
+- 先回到 Obsidian 启用插件：`Settings -> Community Plugins -> Installed -> PaperForge -> Enable`
+- 然后再配置 Better BibTeX 自动导出
+- 最后才是打开 Dashboard、运行 `Sync Library`、运行 OCR
 
 ### 3.3 安装后文件结构
 
@@ -156,14 +156,13 @@ your-vault/
 │       └── .env                   # PaddleOCR API Key
 │
 ├── [resources_dir]/               # 你自定义的资源目录
-│   └── [literature_dir]/          # 文献笔记
-│       └── [domain]/              # 按 Zotero 分类
-│           └── [key] - [Title].md # 正式文献笔记
-│
-├── [control_dir]/                 # 文献状态控制
-│   └── library-records/
-│       └── [domain]/
-│           └── [key].md           # 单条文献状态
+│   ├── [literature_dir]/          # 正式文献笔记
+│   │   └── [domain]/              # 按 Zotero 分类
+│   │       └── [key] - [Title].md # 正式文献笔记
+│   └── [control_dir]/             # 文献状态控制
+│       └── library-records/
+│           └── [domain]/
+│               └── [key].md       # 单条文献状态
 │
 ├── [base_dir]/                    # Obsidian Base 视图
 │   └── [domain].base             # 每个分类一个 Base
@@ -185,17 +184,20 @@ your-vault/
 
 ### 4.1 配置 Better BibTeX 自动导出
 
+这一步要在安装向导完成后再做，因为 `exports/` 目录要先由安装流程创建。
+
 这一步是关键——PaperForge 通过 Better BibTeX 的自动导出 JSON 来感知 Zotero 中的文献变化。
 
-1. 打开 Zotero → Edit → Preferences → Better BibTeX
-2. **勾选 "Keep updated"**（自动导出）
-3. **导出格式**：选择 **Better BibLaTeX**
-4. **导出路径**设置为：
+1. 打开 Zotero
+2. 对你要同步的文献库或分类右键 → **Export... / 导出...**
+3. **导出格式**：选择 **Better BibTeX JSON**
+4. **勾选 "Keep updated"**（自动导出）
+5. **导出路径**设置为：
    ```
    {你的Vault路径}/[system_dir]/PaperForge/exports/library.json
    ```
    例如：`C:\MyVault\99_System\PaperForge\exports\library.json`
-5. **点击 OK 保存**
+6. **点击保存**
 
 ### 4.2 按分类导出（可选）
 
@@ -279,18 +281,9 @@ paperforge sync
 - `[base_dir]/` 下有了 `.base` 文件（Base 视图）
 - 在 Obsidian 的 Base 插件中可以看到控制面板
 
-### 6.3 标记要精读的文献
+### 6.3 在 Base 视图中标记 OCR
 
-在 Obsidian 中找到 `library-records/[domain]/[key].md`，修改 frontmatter：
-
-```yaml
----
-do_ocr: true      # 需要 OCR 提取全文
-analyze: true     # 需要精读
----
-```
-
-保存后，该文献会进入 OCR 队列。
+在 Obsidian Base 视图中找到该文献，将 `do_ocr` 设为 `true`。保存后该文献会进入 OCR 队列。
 
 ### 6.4 运行 OCR
 
@@ -318,7 +311,11 @@ ocr: updated 2 records
 - `[system_dir]/PaperForge/ocr/[key]/meta.json` — OCR 元数据
 - `[system_dir]/PaperForge/ocr/[key]/figure-map.json` — 图表索引
 
-### 6.5 执行精读
+### 6.5 在 Base 视图中标记精读
+
+OCR 完成后，在 Obsidian Base 视图中找到该文献，将 `analyze` 设为 `true`。
+
+### 6.6 执行精读
 
 在 OpenCode 中（或你选择的 Agent 平台）输入：
 

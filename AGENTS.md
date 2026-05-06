@@ -8,21 +8,26 @@
 
 ```
 [ ] Zotero 已安装 + Better BibTeX 插件已启用
-[ ] Better BibTeX 已配置自动导出 JSON（见下方配置）
 [ ] Obsidian 已打开当前 Vault
 [ ] PaperForge 已安装 (pip install git+https://github.com/LLLin000/PaperForge.git)
 [ ] PaddleOCR API Key 已配置（在 .env 中）
-[ ] 目录结构已创建（setup.py 会自动完成）
+[ ] 目录结构已创建（安装向导会自动完成）
 [ ] Zotero 数据目录已链接到 <system_dir>/Zotero
+[ ] Better BibTeX 已按下方步骤导出 JSON 到 <system_dir>/PaperForge/exports/
 ```
+
+> 安装向导是增量式的：如果你选择的 Vault 或目录里已经有文件，PaperForge 只会补充缺失的目录和文件，不会删除已有内容。
 
 ### Better BibTeX 自动导出配置
 
-1. Zotero → Edit → Preferences → Better BibTeX
-2. 勾选 **"Keep updated"**（自动导出）
-3. 选择导出格式：**Better BibLaTeX** 或 **Better BibTeX**
-4. 导出路径设置为：`{你的Vault路径}/<system_dir>/PaperForge/exports/library.json`
-5. 点击 OK，JSON 文件会自动生成并保持同步
+这一步应在安装向导完成之后再做，因为 `exports/` 目录需要先由安装流程创建。
+
+1. 打开 Zotero
+2. 对你要同步的文献库或分类右键 → `导出...`
+3. 选择格式：**Better BibTeX JSON**
+4. 勾选 **"Keep updated"**（自动导出）
+5. 保存到：`{你的Vault路径}/<system_dir>/PaperForge/exports/`
+6. JSON 文件名会作为 Base 名称，例如 `library.json`、`骨科.json`
 
 ---
 
@@ -330,11 +335,15 @@ pdf_link: "[[99_System/Zotero/storage/KEY/文件名.pdf]]"
 
 ## 7. 第一次使用指南（手把手）
 
-### Step 1: 确认 Zotero 有文献
+### Step 1: 完成 Better BibTeX 自动导出
+
+先按上面的步骤把 JSON 导出到 `<system_dir>/PaperForge/exports/`。这一步没完成前，`sync` 不会读到文献。
+
+### Step 2: 确认 Zotero 有文献
 
 确保 Zotero 中已有至少一篇带 PDF 的文献，且 Better BibTeX 已导出 JSON。
 
-### Step 2: 运行 sync
+### Step 3: 运行 sync
 
 ```bash
 # 在 Vault 根目录执行
@@ -354,15 +363,11 @@ paperforge sync
 > - `paperforge sync --selection` — 仅同步 Zotero 到 library-records
 > - `paperforge sync --index` — 仅根据现有 library-records 生成正式笔记
 
-### Step 3: 标记要精读的文献
+### Step 4: 在 Base 视图中标记 OCR
 
-在 Obsidian 中：
-1. 打开 `<resources_dir>/<control_dir>/library-records/骨科/XXXXXXX.md`
-2. 将 `do_ocr: false` 改为 `do_ocr: true`
-3. 将 `analyze: false` 改为 `analyze: true`
-4. 保存文件
+打开 Obsidian Base 视图，找到该文献，将 `do_ocr` 设为 `true`。
 
-### Step 4: 运行 OCR
+### Step 5: 运行 OCR
 
 ```bash
 paperforge ocr
@@ -370,21 +375,18 @@ paperforge ocr
 
 等待完成（可能需要几分钟）。
 
-### Step 5: 检查 OCR 状态
+### Step 6: 在 Base 视图中标记精读
 
+OCR 完成后，在 Base 视图中找到该文献，将 `analyze` 设为 `true`。
+
+### Step 7: 执行精读
+
+先确认队列就绪：
 ```bash
 paperforge deep-reading
 ```
 
-预期输出：
-```
-## 就绪 (1 篇) — OCR 完成
-- `XXXXXXX` | 骨科 | 论文标题
-```
-
-### Step 6: 执行精读
-
-在 OpenCode Agent 中输入：
+然后在 OpenCode Agent 中输入：
 ```
 /pf-deep XXXXXXX
 ```
@@ -394,7 +396,7 @@ Agent 会自动：
 2. 逐阶段填写精读内容
 3. 验证结构完整性
 
-### Step 7: 查看结果
+### Step 8: 查看结果
 
 在 Obsidian 中打开正式笔记，找到 `## 🔍 精读` 区域，精读已完成。
 
