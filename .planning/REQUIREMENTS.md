@@ -1,86 +1,78 @@
 # Requirements: PaperForge
 
-**Defined:** 2026-05-04
+**Defined:** 2026-05-06
 **Core Value:** Researchers always know what papers they have, what state those papers are in, and whether each paper is reliably usable by AI with traceable fulltext, figures, notes, and source links.
 
-## v1 Requirements
+## v1.8 Requirements
 
-Requirements for milestone v1.7: Context-Aware Dashboard.
+### AI Discussion Recording
 
-### Context Detection
+- [ ] **AI-01**: `paperforge/worker/discussion.py` writes discussion.md (human-readable Q&A, `问题:` / `解答:` format, chronological sections) into paper workspace `ai/` directory.
+- [ ] **AI-02**: `paperforge/worker/discussion.py` writes discussion.json (structured, sessions[] array with `schema_version`, `timestamp`, `qa_pairs[]` per session) into paper workspace `ai/` directory.
+- [ ] **AI-03**: `/pf-paper` and `/pf-deep` agent sessions trigger discussion recorder at session completion, producing both files.
 
-- [x] **DASH-01**: User opens a `.base` file — plugin dashboard shows collection-level domain statistics.
-- [x] **DASH-02**: User opens a paper card (`.md` with `zotero_key` in frontmatter) — plugin dashboard shows per-paper lifecycle, health, maturity, and next-step.
-- [x] **DASH-03**: User opens any other file or no file — plugin dashboard shows the existing global library overview.
-- [x] **DASH-04**: User switches active file — dashboard auto-refreshes to the correct mode without manual intervention.
+### Deep-Reading Dashboard
 
-### Per-Paper Dashboard
+- [ ] **DEEP-01**: `_detectAndSwitch()` recognizes `deep-reading.md` as the `deep-reading` mode, checked BEFORE the `zotero_key` branch to prevent routing to per-paper mode.
+- [ ] **DEEP-02**: `_renderDeepReadingMode()` renders: status bar (figure-map, OCR state, Pass 1/2/3 completion), Pass 1 full-text summary card (extracted from deep-reading.md), and AI Q&A history card (from `discussion.json`).
+- [ ] **DEEP-03**: All four empty-state conditions render user-facing messages ("暂无" or equivalent) rather than errors: (a) missing discussion.json, (b) empty sessions, (c) missing Pass 1 content, (d) deep-reading.md not found.
 
-- [x] **PAPER-01**: User sees a lifecycle stepper showing the current state and which stages are complete.
-- [x] **PAPER-02**: User sees a health matrix (PDF/OCR/Note/Asset dimensions) with color-coded status.
-- [x] **PAPER-03**: User sees maturity level (1-6) as a segmented progress bar with blocking checks listed.
-- [x] **PAPER-04**: User sees a recommended next step (sync/ocr/pf-deep/ready) with an action trigger.
+### Navigation & Polish
 
-### Collection Dashboard
+- [ ] **NAV-01**: Per-paper dashboard card has a "Jump to Deep Reading" button that opens `deep-reading.md` via `openLinkText()`, verifying file existence with `getAbstractFileByPath()` before navigating.
+- [ ] **NAV-02**: Plugin version number is read and displayed (from `paperforge/__init__.py` or `manifest.json` build-time embedding).
+- [ ] **NAV-03**: Meaningless "ai" row is removed from plugin rendering.
 
-- [x] **COLL-01**: User sees domain-level paper count and lifecycle distribution from canonical index.
-- [x] **COLL-02**: User sees aggregated health overview for the domain (PDF/OCR/Note/Asset counts).
-- [x] **COLL-03**: User sees a lifecycle distribution bar chart for the domain.
+### Integration Verification
 
-### Component Library
-
-- [x] **COMP-01**: All dashboard visualizations use pure CSS/DOM (metric cards, lifecycle stepper, health matrix, maturity gauge, bar charts). No npm dependencies.
-- [x] **COMP-02**: Components use Obsidian CSS variables for consistent theming.
-- [x] **COMP-03**: Components have loading states, CSS transitions, and responsive breakpoints.
-
-### Auto-Refresh
-
-- [x] **REFR-01**: Dashboard refreshes when the canonical index file changes.
-- [x] **REFR-02**: Dashboard refreshes when the active file changes.
+- [ ] **INTEG-01**: End-to-end test: `/pf-paper` → discussion files created → dashboard shows AI Q&A history on deep-reading.md open. Windows CJK encoding verified; no `btoa()` on Chinese paths.
 
 ## v2 Requirements
 
-Deferred to future milestone.
+Deferred to future release. Tracked but not in current roadmap.
 
-### LLMWiki
+### AI Discussion Recording
 
-- **LLM-01**: User can explore a cross-paper concept network built from AI atoms and canonical index entries.
-- **LLM-02**: User can navigate concept pages with source traceability back to originating papers.
+- **AI-04**: Threaded discussion format (nested Q&A threads within sessions, instead of flat qa_pairs[]).
+- **AI-05**: Discussion search/retrieval across all papers by keyword or date range.
+
+### Deep-Reading Dashboard
+
+- **DEEP-04**: Inline editing of Pass 1 summary from dashboard (two-way sync with deep-reading.md).
+- **DEEP-05**: Figure thumbnail previews in dashboard status bar (embeds from figure-map.json images).
 
 ## Out of Scope
 
 | Feature | Reason |
 |---------|--------|
-| LLMWiki concept network | v1.8 — depends on dashboard being stable first |
-| External chart libraries (Chart.js, D3) | Pure CSS/DOM keeps plugin self-contained |
-| Plugin auto-update | Deferred to Obsidian Community Plugins listing |
+| Auto-recording every agent interaction | Recording is voluntary/session-end only — agents must explicitly trigger. Auto-capture would produce noise and violate user privacy expectations. |
+| Dashboard replacing deep-reading.md | Dashboard is an index INTO the deep-reading note, not a replacement. Full content lives in .md file. |
+| Real-time dashboard syncing during agent sessions | Dashboard refreshes on active-leaf-change only. Polling or websocket sync would violate thin-shell constraint. |
+| Discussion analytics/categorization | V1.8 records raw Q&A. Tagging, categorization, and cross-paper analysis deferred to v2. |
+| Figure preview carousel in dashboard | Deferred to v2. Status bar shows figure count and map existence only. |
 
 ## Traceability
 
+Which phases cover which requirements. Updated during roadmap creation.
+
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| COMP-01 | Phase 27 | Complete |
-| COMP-02 | Phase 27 | Complete |
-| COMP-03 | Phase 27 | Complete |
-| DASH-01 | Phase 28 | Complete |
-| DASH-02 | Phase 28 | Complete |
-| DASH-03 | Phase 28 | Complete |
-| DASH-04 | Phase 28 | Complete |
-| REFR-01 | Phase 28 | Complete |
-| REFR-02 | Phase 28 | Complete |
-| PAPER-01 | Phase 29 | Complete |
-| PAPER-02 | Phase 29 | Complete |
-| PAPER-03 | Phase 29 | Complete |
-| PAPER-04 | Phase 29 | Complete |
-| COLL-01 | Phase 30 | Complete |
-| COLL-02 | Phase 30 | Complete |
-| COLL-03 | Phase 30 | Complete |
+| AI-01 | Phase 35 | Pending |
+| AI-02 | Phase 35 | Pending |
+| AI-03 | Phase 35 | Pending |
+| DEEP-01 | Phase 32 | Pending |
+| DEEP-02 | Phase 33 | Pending |
+| DEEP-03 | Phase 33 | Pending |
+| NAV-01 | Phase 34 | Pending |
+| NAV-02 | Phase 31 | Pending |
+| NAV-03 | Phase 31 | Pending |
+| INTEG-01 | Phase 36 | Pending |
 
 **Coverage:**
-- v1 requirements: 16 total
-- Completed: 16
-- Pending: 0 ✓
+- v1.8 requirements: 10 total
+- Mapped to phases: 10 ✓
+- Unmapped: 0
 
 ---
-*Requirements defined: 2026-05-04*
-*Last updated: 2026-05-04 after v1.7 requirements definition*
+*Requirements defined: 2026-05-06*
+*Last updated: 2026-05-06 — traceability updated during roadmap creation*

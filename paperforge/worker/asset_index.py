@@ -26,13 +26,14 @@ from __future__ import annotations
 import json
 import logging
 import os
+import shutil
 import tempfile
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import filelock
-import shutil
 
+from paperforge import __version__ as _paperforge_version
 from paperforge.config import paperforge_paths
 
 logger = logging.getLogger(__name__)
@@ -82,6 +83,7 @@ def build_envelope(items: list[dict]) -> dict:
             "schema_version": "2",
             "generated_at": "2026-05-04T12:34:56Z",
             "paper_count": len(items),
+            "paperforge_version": "1.8.0",
             "items": items,
         }
     """
@@ -89,6 +91,7 @@ def build_envelope(items: list[dict]) -> dict:
         "schema_version": CURRENT_SCHEMA_VERSION,
         "generated_at": datetime.now(timezone(timedelta(hours=8))).isoformat(),
         "paper_count": len(items),
+        "paperforge_version": _paperforge_version,
         "items": items,
     }
 
@@ -158,7 +161,7 @@ def read_index(vault: Path) -> dict | list | None:
     if not path.exists():
         return None
     try:
-        with open(path, "r", encoding="utf-8") as fh:
+        with open(path, encoding="utf-8") as fh:
             return json.load(fh)
     except (json.JSONDecodeError, OSError) as exc:
         logger.warning("Corrupt index at %s, treating as missing: %s", path, exc)
@@ -220,20 +223,20 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
     Lazy imports inside avoid circular dependencies with ``sync.py``.
     """
     # Lazy imports to avoid circular deps with sync.py
+    from paperforge.worker._utils import read_json, slugify_filename, write_json
+    from paperforge.worker.asset_state import (
+        compute_health,
+        compute_lifecycle,
+        compute_maturity,
+        compute_next_step,
+    )
     from paperforge.worker.ocr import validate_ocr_meta
-    from paperforge.worker._utils import read_json, write_json, slugify_filename
     from paperforge.worker.sync import (
         collection_fields,
         frontmatter_note,
         has_deep_reading_content,
         obsidian_wikilink_for_path,
         obsidian_wikilink_for_pdf,
-    )
-    from paperforge.worker.asset_state import (
-        compute_lifecycle,
-        compute_health,
-        compute_maturity,
-        compute_next_step,
     )
 
     key = item["key"]
@@ -352,7 +355,7 @@ def build_index(vault: Path, verbose: bool = False) -> int:
     """
     # Lazy imports to avoid circular dependencies with sync.py
     from paperforge.config import load_vault_config
-    from paperforge.worker._utils import pipeline_paths, read_json  # noqa: F811
+    from paperforge.worker._utils import pipeline_paths  # noqa: F811
     from paperforge.worker.base_views import ensure_base_views
     from paperforge.worker.sync import load_domain_config, load_export_rows
 

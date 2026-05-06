@@ -2,18 +2,28 @@
 
 ## What This Is
 
-PaperForge is a local-first Obsidian + Zotero literature asset manager. It turns Zotero exports, PDFs, OCR fulltext, figures, notes, and AI outputs into a structured, traceable, reusable research library. v1.6 adds unified configuration, canonical asset indexing, derived lifecycle/health/maturity, surface convergence, AI context entry points, and safe workspace migration.
+PaperForge is a local-first Obsidian + Zotero literature asset manager. It turns Zotero exports, PDFs, OCR fulltext, figures, notes, and AI outputs into a structured, traceable, reusable research library. v1.7 adds context-aware dashboard routing with lifecycle/health/maturity visualization. v1.8 adds AI discussion recording and deep-reading dashboard integration.
 
-## Current Milestone: v1.7 Context-Aware Dashboard
+## Current Milestone: v1.8 AI Discussion & Deep-Reading Dashboard
 
-**Goal:** Make PaperForge's plugin dashboard context-aware—showing different views based on the active file (Base, paper card, or global). Uses pure CSS/DOM components: metric cards, lifecycle stepper, health matrix, maturity gauge, bar charts.
+**Goal:** Capture AI-paper discussions into structured ai/ records and extend the per-paper dashboard with deep-reading content and AI interaction history.
 
 **Target features:**
-- Auto-detect active file type and switch dashboard mode accordingly.
-- Per-paper dashboard with lifecycle stepper, health matrix, maturity gauge, and next-step guidance.
-- Collection dashboard for Base files with domain-level lifecycle/health aggregation.
-- Global dashboard retains and enhances existing library overview.
-- Pure CSS component library (no npm dependencies).
+- AI discussion recorder producing `discussion.md` (human-readable Q&A) + `discussion.json` (dashboard-consumable) in each paper's workspace `ai/` directory.
+- Deep-reading dashboard mode: status bar, Pass 1 full-text summary, and AI Q&A history when viewing `deep-reading.md`.
+- "Jump to Deep Reading" button on the per-paper dashboard card.
+- Bug fixes: remove meaningless "ai" UI row; restore version number display.
+
+## Completed Milestone: v1.7 Context-Aware Dashboard
+
+**Status:** COMPLETE (2026-05-04)
+
+**Delivered:**
+- Pure CSS dashboard components (metric cards, lifecycle stepper, health matrix, maturity gauge, bar chart)
+- Mode-aware dashboard routing with auto-detect and debounced switching
+- Full per-paper dashboard: lifecycle stepper, health matrix, maturity gauge, next-step recommendations
+- Collection dashboard: domain-level metric cards, lifecycle bar chart, health grid aggregation
+- Global dashboard with enhanced library overview
 
 ## Completed Milestone: v1.6 AI-Ready Literature Asset Foundation
 
@@ -115,13 +125,11 @@ Researchers always know what papers they have, what state those papers are in, a
 
 ### Active
 
-- [ ] Single configuration truth across plugin, CLI, worker, and setup flows.
-- [ ] Canonical literature asset index derived from existing sync/OCR/deep-reading outputs.
-- [ ] Stable lifecycle model for imported, indexed, OCR-ready, fulltext-ready, figure-ready, deep-read, and AI-context-ready states.
-- [ ] Health diagnostics that expose broken PDFs, OCR failures, path drift, template/Base drift, and incomplete assets.
-- [ ] Plugin Dashboard that reads the canonical index instead of recomputing state independently.
-- [ ] Library Maturity scoring and next-step recommendations.
-- [ ] Reusable AI context packaging without hardcoding discipline-specific extraction schemas.
+- [ ] AI discussion recorder: `/pf-paper` and agent chats produce `discussion.md` (Q&A) + `discussion.json` (structured) in workspace `ai/`.
+- [ ] Deep-reading dashboard mode with status bar, Pass 1 summary, and AI Q&A history.
+- [ ] "Jump to Deep Reading" button on per-paper dashboard card.
+- [ ] Bug fix: remove meaningless "ai" row from plugin UI.
+- [ ] Bug fix: restore version number display in plugin.
 
 ### Out of Scope
 
@@ -239,4 +247,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state.
 
 ---
-*Last updated: 2026-05-03 after milestone v1.6 initialization*
+*Last updated: 2026-05-06 after milestone v1.8 initialization*
