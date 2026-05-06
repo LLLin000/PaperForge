@@ -54,6 +54,8 @@ Object.assign(LANG.en, {
     wizard_preview: 'After installation, system files and agent config stay at the vault root, while literature data is stored under the resources directory.',
     field_zotero_placeholder: 'Optional. Helps auto-locate PDF attachments in Zotero storage',
     install_btn: 'Start Install',
+    install_validating: 'Validating setup...',
+    install_bootstrapping: 'PaperForge Python package not found. Installing automatically...',
     install_complete: 'Installation complete!',
     install_failed: 'Installation failed: ',
     complete_title: 'Setup Complete',
@@ -107,6 +109,8 @@ Object.assign(LANG.zh, {
     wizard_keys_hint: '下面填写 PaddleOCR API 密钥；如果你希望自动定位 Zotero 中的 PDF，也可以补充 Zotero 数据目录。',
     wizard_preview: '安装后：系统文件和 Agent 配置位于 Vault 根目录，文献数据统一放在资源目录内。以后仍可在设置页修改。',
     field_zotero_placeholder: '可选。填写后可帮助自动定位 Zotero 存储中的 PDF 附件',
+    install_validating: '正在校验安装环境...',
+    install_bootstrapping: '未检测到 PaperForge Python 包，正在自动安装...',
     install_complete: '安装完成！',
     install_failed: '安装失败：',
     complete_title: 'PaperForge 安装完成',
@@ -1715,7 +1719,32 @@ class PaperForgeSetupModal extends Modal {
         }
 
         const { spawn } = require('node:child_process');
-        const args = [
+        const runPython = (args, options = {}) => new Promise((resolve, reject) => {
+            const child = spawn('python', args, {
+                cwd: s.vault_path.trim(),
+                env: process.env,
+                timeout: 120000,
+                ...options,
+            });
+            let stdout = '';
+            let stderr = '';
+            child.stdout.on('data', (data) => {
+                const text = data.toString('utf-8');
+                stdout += text;
+                if (options.logStdout) this._processSetupOutput(text);
+            });
+            child.stderr.on('data', (data) => {
+                const text = data.toString('utf-8');
+                stderr += text;
+                this._log('[stderr] ' + text.trim());
+            });
+            child.on('close', (code) => {
+                code === 0 ? resolve({ stdout, stderr }) : reject(new Error(stderr.trim() || stdout.trim() || `exit code ${code}`));
+            });
+            child.on('error', (err) => reject(err));
+        });
+
+        const setupArgs = [
             '-m', 'paperforge',
             '--vault', s.vault_path.trim(),
             'setup', '--headless',
@@ -1728,29 +1757,26 @@ class PaperForgeSetupModal extends Modal {
             '--agent', s.agent_platform || 'opencode',
         ];
         if (s.zotero_data_dir && s.zotero_data_dir.trim()) {
-            args.push('--zotero-data', s.zotero_data_dir.trim());
+            setupArgs.push('--zotero-data', s.zotero_data_dir.trim());
         }
 
         try {
-            await new Promise((resolve, reject) => {
-                const child = spawn('python', args, {
-                    cwd: s.vault_path.trim(),
-                    env: process.env,
-                    timeout: 120000,
-                });
-                child.stdout.on('data', (data) => {
-                    const text = data.toString('utf-8');
-                    this._processSetupOutput(text);
-                });
-                child.stderr.on('data', (data) => {
-                    const text = data.toString('utf-8');
-                    this._log('[stderr] ' + text.trim());
-                });
-                child.on('close', (code) => {
-                    code === 0 ? resolve() : reject(new Error(`exit code ${code}`));
-                });
-                child.on('error', (err) => reject(err));
-            });
+            let hasPaperforge = true;
+            try {
+                await runPython(['-m', 'paperforge', '--version']);
+            } catch {
+                hasPaperforge = false;
+            }
+
+            if (!hasPaperforge) {
+                this._log(t('install_bootstrapping'));
+                await runPython([
+                    '-m', 'pip', 'install', '--upgrade',
+                    'git+https://github.com/LLLin000/PaperForge.git',
+                ]);
+            }
+
+            await runPython(setupArgs, { logStdout: true });
             this._log(t('install_complete'));
             s.setup_complete = true;
             await this.plugin.saveSettings();
