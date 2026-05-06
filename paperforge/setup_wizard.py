@@ -2075,19 +2075,29 @@ PADDLEOCR_MODEL=PaddleOCR-VL-1.5
     print(f"    [OK] paperforge.json")
 
     # =========================================================================
-    # Phase 6: pip install
+    # Phase 6: pip install (skip if already registered)
     # =========================================================================
     print("[*] Phase 6: Registering paperforge CLI...")
     try:
-        result = subprocess.run(
-            [sys.executable, "-m", "pip", "install", "-e", str(repo_root)],
-            capture_output=True, text=True, timeout=120,
-        )
-        if result.returncode == 0:
-            print(f"    [OK] paperforge CLI registered")
+        # Check if paperforge is already importable
+        already_installed = False
+        try:
+            import paperforge
+            already_installed = True
+        except ImportError:
+            pass
+        if already_installed:
+            print(f"    [OK] paperforge CLI already registered")
         else:
-            stderr_short = result.stderr[:200] if result.stderr else ""
-            print(f"    [WARN] pip install: {stderr_short}", file=sys.stderr)
+            result = subprocess.run(
+                [sys.executable, "-m", "pip", "install", "-e", str(repo_root)],
+                capture_output=True, text=True, timeout=120,
+            )
+            if result.returncode == 0:
+                print(f"    [OK] paperforge CLI registered")
+            else:
+                stderr_short = result.stderr[:200] if result.stderr else ""
+                print(f"    [WARN] pip install: {stderr_short}", file=sys.stderr)
     except Exception as e:
         print(f"    [WARN] pip install skipped: {e}")
 
