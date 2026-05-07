@@ -148,9 +148,9 @@ class TestStatusJsonIndexSource:
         captured = capsys.readouterr().out
         assert code == 0
         data = json.loads(captured)
-        assert data["lifecycle_level_counts"] is None
-        assert data["health_aggregate"] is None
-        assert data["maturity_distribution"] is None
+        assert data["lifecycle_level_counts"] == {}
+        assert data["health_aggregate"] == {}
+        assert data["maturity_distribution"] == {}
 
     def test_status_text_output_includes_index_section(self, tmp_path: Path, capsys) -> None:
         """Text output contains 'lifecycle:' line when index is present."""

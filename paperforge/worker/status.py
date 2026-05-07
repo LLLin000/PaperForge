@@ -680,10 +680,10 @@ def run_status(vault: Path, verbose: bool = False, json_output: bool = False) ->
             except Exception:
                 continue
 
-    # Phase 25: index-derived aggregates (None when index unavailable)
-    lifecycle_level_counts = None
-    health_aggregate = None
-    maturity_distribution = None
+    # Phase 25: index-derived aggregates (empty dict when index unavailable)
+    lifecycle_level_counts = {}
+    health_aggregate = {}
+    maturity_distribution = {}
     if summary is not None:
         lifecycle_level_counts = summary["lifecycle_level_counts"]
         health_aggregate = summary["health_aggregate"]
@@ -709,7 +709,7 @@ def run_status(vault: Path, verbose: bool = False, json_output: bool = False) ->
             },
             "path_errors": path_error_count,
             "env_configured": len(env_found) > 0,
-            # Phase 25: lifecycle/health/maturity from canonical index (None when unavailable)
+            # Phase 25: lifecycle/health/maturity from canonical index ({} when unavailable)
             "lifecycle_level_counts": lifecycle_level_counts,
             "health_aggregate": health_aggregate,
             "maturity_distribution": maturity_distribution,

@@ -195,9 +195,9 @@ def compute_next_step(entry: dict) -> str:
     2. has_pdf=False → "sync" (add PDF in Zotero)
     3. has_pdf=True AND ocr_status in (pending, nopdf) → "ocr"
     4. ocr_status="processing" → "ready" (OCR already running)
-    5. ocr_status="done" AND deep_reading_status="pending" → "/pf-deep"
-    6. note_path empty → "sync"
-    7. Any workspace path empty → "sync"
+    5. note_path empty → "sync" (workspace integrity before /pf-deep)
+    6. Any workspace path empty → "sync" (workspace integrity before /pf-deep)
+    7. ocr_status="done" AND deep_reading_status="pending" → "/pf-deep"
     8. Otherwise → "ready"
     """
     has_pdf = bool(entry.get("has_pdf", False))
@@ -221,15 +221,11 @@ def compute_next_step(entry: dict) -> str:
     if ocr_status == "processing":
         return "ready"
 
-    # 5. OCR done, deep reading pending → /pf-deep
-    if ocr_status == "done" and deep_reading_status == "pending":
-        return "/pf-deep"
-
-    # 6. Formal note missing → sync
+    # 5. Formal note missing → sync (workspace integrity before /pf-deep)
     if not note_path:
         return "sync"
 
-    # 7. Any workspace path missing → sync
+    # 6. Any workspace path missing → sync (workspace integrity before /pf-deep)
     workspace_paths = [
         entry.get("fulltext_path", ""),
         entry.get("deep_reading_path", ""),
@@ -238,6 +234,10 @@ def compute_next_step(entry: dict) -> str:
     ]
     if not all(workspace_paths):
         return "sync"
+
+    # 7. OCR done, deep reading pending → /pf-deep
+    if ocr_status == "done" and deep_reading_status == "pending":
+        return "/pf-deep"
 
     # 8. Everything ready
     return "ready"
