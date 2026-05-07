@@ -363,10 +363,11 @@ class TestBuildEntryWorkspaceWrite:
         assert "title:" in content, "Frontmatter should contain title"
         assert "zotero_key:" in content, "Frontmatter should contain zotero_key"
 
-        # Verify entry has workspace paths
-        expected_root = f"Literature/骨科/{key} - {title_slug}/"
+        # Verify entry has workspace paths — config-resolved (Phase 46: PATH-01)
+        lit_rel = str(paths["literature"].relative_to(vault)).replace("\\", "/")
+        expected_root = f"{lit_rel}/骨科/{key} - {title_slug}/"
         assert entry["paper_root"] == expected_root
-        assert entry["main_note_path"].startswith(f"Literature/骨科/{key} - {title_slug}/")
+        assert entry["main_note_path"].startswith(f"{lit_rel}/骨科/{key} - {title_slug}/")
         assert entry["ai_path"] == f"{expected_root}ai/"
 
     def test_build_entry_flat_fallback_for_unmigrated_paper(
