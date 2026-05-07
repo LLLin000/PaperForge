@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 from pathlib import Path
 from typing import Any
 
@@ -46,11 +47,12 @@ def load_simple_env(env_path: Path) -> None:
 # ---------------------------------------------------------------------------
 
 DEFAULT_CONFIG: dict[str, str] = {
-    "system_dir": "99_System",
-    "resources_dir": "03_Resources",
+    "schema_version": "2",
+    "system_dir": "System",
+    "resources_dir": "Resources",
     "literature_dir": "Literature",
     "control_dir": "LiteratureControl",
-    "base_dir": "05_Bases",
+    "base_dir": "Bases",
     "skill_dir": ".opencode/skills",
     "command_dir": ".opencode/command",
 }
@@ -60,7 +62,7 @@ ENV_KEYS: dict[str, str] = {
     "vault": "PAPERFORGE_VAULT",
     "system_dir": "PAPERFORGE_SYSTEM_DIR",
     "resources_dir": "PAPERFORGE_RESOURCES_DIR",
-    "literature_dir": "paperforgeRATURE_DIR",
+    "literature_dir": "PAPERFORGE_LITERATURE_DIR",
     "control_dir": "PAPERFORGE_CONTROL_DIR",
     "base_dir": "PAPERFORGE_BASE_DIR",
     "skill_dir": "PAPERFORGE_SKILL_DIR",
@@ -93,6 +95,21 @@ def read_paperforge_json(vault: Path) -> dict[str, Any]:
     if not isinstance(data, dict):
         return {}
     return data
+
+
+# ---------------------------------------------------------------------------
+# Schema version resolver
+# ---------------------------------------------------------------------------
+
+
+def get_paperforge_schema_version(vault: Path) -> int:
+    """Return the schema_version from paperforge.json, defaulting to 1 if absent."""
+    data = read_paperforge_json(vault)
+    raw = data.get("schema_version", "1")
+    try:
+        return int(raw)
+    except (ValueError, TypeError):
+        return 1
 
 
 # ---------------------------------------------------------------------------
@@ -150,7 +167,8 @@ def load_vault_config(
     vault: Path,
     env: dict[str, str] | None = None,
     overrides: dict[str, str] | None = None,
-) -> dict[str, str]:
+    trace_sources: bool = False,
+) -> dict[str, str] | tuple[dict[str, str], dict[str, str]]:
     """Load the full PaperForge configuration for a vault.
 
     Merges configuration sources in locked precedence order:
@@ -160,19 +178,30 @@ def load_vault_config(
       4. Process environment variables
       5. Explicit ``overrides`` dict
 
+    Note:
+        ``schema_version`` is not a path config key and is excluded from the
+        merged output (use ``get_paperforge_schema_version()`` instead).
+
     Args:
         vault: Path to the vault root.
         env: Optional dict of environment variables. If None, uses os.environ.
         overrides: Optional dict of explicit overrides. Highest precedence.
+        trace_sources: If True, returns (config_dict, source_trace) where
+                       source_trace maps each key to its winning source
+                       ("default", "vault_config", "top_level", "env", "override").
 
     Returns:
-        Dict with keys: system_dir, resources_dir, literature_dir, control_dir,
-        base_dir, skill_dir, command_dir.
+        When trace_sources=False: dict with keys system_dir, resources_dir,
+        literature_dir, control_dir, base_dir, skill_dir, command_dir.
+        When trace_sources=True: tuple of (config_dict, source_trace).
     """
     env = env if env is not None else os.environ
 
+    trace: dict[str, str] = {}  # key -> source name
+
     # Start with defaults
     config: dict[str, str] = dict(DEFAULT_CONFIG)
+    config.pop("schema_version", None)
 
     # Read paperforge.json
     pf_data = read_paperforge_json(vault)
@@ -183,11 +212,15 @@ def load_vault_config(
         for key in CONFIG_KEYS:
             if key in nested and nested[key]:
                 config[key] = nested[key]
+                if trace_sources:
+                    trace[key] = "vault_config"
 
     # 3. Merge top-level legacy keys (override nested for backward compat)
     for key in CONFIG_KEYS:
         if key in pf_data and pf_data[key]:
             config[key] = pf_data[key]
+            if trace_sources:
+                trace[key] = "top_level"
 
     # 4. Merge environment variables
     for config_key, env_var in ENV_KEYS.items():
@@ -195,13 +228,22 @@ def load_vault_config(
             continue  # vault is handled separately in resolve_vault
         if env_var in env and env[env_var]:
             config[config_key] = env[env_var]
+            if trace_sources:
+                trace[config_key] = "env"
 
     # 5. Merge explicit overrides (highest precedence)
     if overrides:
         for key in CONFIG_KEYS:
             if key in overrides and overrides[key]:
                 config[key] = overrides[key]
+                if trace_sources:
+                    trace[key] = "override"
 
+    # schema_version is metadata, not a path config key — exclude from output
+    config.pop("schema_version", None)
+
+    if trace_sources:
+        return config, trace
     return config
 
 
@@ -286,7 +328,7 @@ def paperforge_paths(
         "resources": resources,
         "literature": literature,
         "control": control,
-        "library_records": control,
+        "library_records": control / "library-records",
         "bases": bases,
         "worker_script": worker_script,
         "skill_dir": skill_path,
@@ -307,3 +349,85 @@ def paths_as_strings(paths: dict[str, Path]) -> dict[str, str]:
         dict mapping path names to string paths.
     """
     return {name: str(path) for name, path in paths.items()}
+
+
+# ---------------------------------------------------------------------------
+# Migration: legacy top-level keys to vault_config block
+# ---------------------------------------------------------------------------
+
+CONFIG_PATH_KEYS: tuple[str, ...] = (
+    "system_dir",
+    "resources_dir",
+    "literature_dir",
+    "control_dir",
+    "base_dir",
+    "skill_dir",
+    "command_dir",
+)
+
+
+def migrate_paperforge_json(vault: Path) -> bool:
+    """Migrate paperforge.json from legacy top-level keys to vault_config block.
+
+    If the file has top-level path keys (system_dir, resources_dir, etc.),
+    this function:
+      1. Reads the full existing content.
+      2. Merges top-level path values into the ``vault_config`` block (top-level
+         values fill gaps when vault_config is missing a key).
+      3. Removes those top-level path keys from the root.
+      4. Sets ``schema_version`` to ``"2"``.
+      5. Backs up the original as ``paperforge.json.bak`` (first time only).
+      6. Writes the cleaned file.
+
+    Returns:
+        True if migration was performed, False if no migration was needed.
+
+    The function is idempotent -- calling it on an already-migrated file is a
+    no-op (returns False).
+    """
+    path = vault / "paperforge.json"
+    if not path.exists():
+        return False
+
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return False
+    if not isinstance(data, dict):
+        return False
+
+    # Detect legacy top-level path keys
+    has_top_level_keys = any(k in data for k in CONFIG_PATH_KEYS)
+    if not has_top_level_keys:
+        return False  # Already migrated or fresh install
+
+    # --- Build the cleaned output ---
+
+    # 1. Non-path top-level keys to preserve (everything except path keys and vault_config)
+    non_path_keys = {
+        k: v for k, v in data.items()
+        if k not in CONFIG_PATH_KEYS and k != "vault_config"
+    }
+
+    # 2. Build vault_config: start with existing vault_config, fill gaps from top-level
+    vault_config = dict(data.get("vault_config", {}) or {})
+    for key in CONFIG_PATH_KEYS:
+        if key not in vault_config and key in data and data[key]:
+            vault_config[key] = data[key]
+
+    # 3. Assemble output
+    output = dict(non_path_keys)
+    output["vault_config"] = vault_config
+    output["schema_version"] = "2"
+
+    # 4. Backup original (first time only)
+    backup_path = path.with_suffix(".json.bak")
+    if not backup_path.exists():
+        shutil.copy2(str(path), str(backup_path))
+
+    # 5. Write
+    path.write_text(
+        json.dumps(output, indent=2, ensure_ascii=False),
+        encoding="utf-8",
+    )
+    return True

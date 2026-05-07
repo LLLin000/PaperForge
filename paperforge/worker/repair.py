@@ -5,9 +5,8 @@ import re
 from pathlib import Path
 
 from paperforge.config import load_vault_config, paperforge_paths
-from paperforge.worker._domain import load_domain_config
+from paperforge.worker.asset_index import refresh_index_entry
 from paperforge.worker._utils import (
-    _resolve_formal_note_path,
     read_json,
     write_json,
 )
@@ -30,7 +29,7 @@ def _find_export_for_domain(paths: dict[str, Path], domain: str) -> Path | None:
 
 
 def _detect_path_errors(paths: dict[str, Path], verbose: bool = False) -> dict:
-    """Scan library-records for path_error fields.
+    """Scan formal literature notes for path_error fields.
 
     Returns dict with:
         - total: total count of records with path_error
@@ -38,9 +37,11 @@ def _detect_path_errors(paths: dict[str, Path], verbose: bool = False) -> dict:
         - records: list of record dicts with keys: path, zotero_key, domain, path_error, bbt_path_raw
     """
     result: dict = {"total": 0, "by_type": {}, "records": []}
-    if not paths["library_records"].exists():
+    if not paths["literature"].exists():
         return result
-    for record_path in paths["library_records"].rglob("*.md"):
+    for record_path in paths["literature"].rglob("*.md"):
+        if record_path.name in ("fulltext.md", "deep-reading.md", "discussion.md"):
+            continue
         try:
             text = record_path.read_text(encoding="utf-8")
         except Exception as e:
@@ -89,7 +90,7 @@ def repair_pdf_paths(
     from paperforge.pdf_resolver import resolve_pdf_path
 
     cfg = load_vault_config(vault)
-    zotero_dir = vault / cfg.get("system_dir", "99_System") / "Zotero"
+    zotero_dir = vault / cfg.get("system_dir", "System") / "Zotero"
 
     # Cache export rows by domain to avoid reloading
     domain_exports: dict[str, list[dict]] = {}
@@ -141,6 +142,10 @@ def repair_pdf_paths(
                             fixed += 1
                             if verbose:
                                 logger.info("fixed path for %s: %s", zotero_key, new_wikilink)
+                            try:
+                                refresh_index_entry(vault, zotero_key)
+                            except Exception as e:
+                                logger.warning("Failed to refresh index for %s: %s", zotero_key, e)
                         continue
 
         # For all errors, try resolving the current pdf_path
@@ -157,6 +162,10 @@ def repair_pdf_paths(
                         fixed += 1
                         if verbose:
                             logger.info("cleared path_error for %s", zotero_key)
+                        try:
+                            refresh_index_entry(vault, zotero_key)
+                        except Exception as e:
+                            logger.warning("Failed to refresh index for %s: %s", zotero_key, e)
                 else:
                     if verbose:
                         logger.warning("%s path still unresolved", zotero_key)
@@ -181,10 +190,8 @@ def run_repair(vault: Path, paths: dict, verbose: bool = False, fix: bool = Fals
     Returns:
         dict with scanned, divergent, fixed, errors counts
     """
-    result = {"scanned": 0, "divergent": [], "fixed": 0, "errors": []}
-    config = load_domain_config(paths)
-    {entry["export_file"]: entry["domain"] for entry in config["domains"]}
-    record_paths = list(paths["library_records"].rglob("*.md"))
+    result = {"scanned": 0, "divergent": [], "fixed": 0, "errors": [], "rebuilt": 0}
+    record_paths = [p for p in paths["literature"].rglob("*.md") if p.name not in ("fulltext.md", "deep-reading.md", "discussion.md")]
     for record_path in record_paths:
         try:
             record_text = record_path.read_text(encoding="utf-8")
@@ -197,17 +204,24 @@ def run_repair(vault: Path, paths: dict, verbose: bool = False, fix: bool = Fals
         zotero_key = key_match.group(1).strip()
         domain = record_path.parent.name
         result["scanned"] += 1
-        lib_ocr_match = re.search('^ocr_status:\\s*"?(.+?)"?\\s*$', record_text, re.MULTILINE)
-        lib_ocr_status = lib_ocr_match.group(1).strip() if lib_ocr_match else "pending"
-        note_path = _resolve_formal_note_path(vault, zotero_key, domain)
-        note_ocr_status = None
-        if note_path and note_path.exists():
-            try:
-                note_text = note_path.read_text(encoding="utf-8")
-                note_status_match = re.search('^ocr_status:\\s*"?(.+?)"?\\s*$', note_text, re.MULTILINE)
-                note_ocr_status = note_status_match.group(1).strip() if note_status_match else None
-            except Exception:
-                pass
+        note_ocr_match = re.search('^ocr_status:\\s*"?(.+?)"?\\s*$', record_text, re.MULTILINE)
+        note_ocr_status = note_ocr_match.group(1).strip() if note_ocr_match else "pending"
+        index_ocr_status = None
+        try:
+            index_data = read_json(paths["index"])
+            if isinstance(index_data, dict):
+                items = index_data.get("items", [])
+            elif isinstance(index_data, list):
+                items = index_data
+            else:
+                items = []
+            for entry in items:
+                if isinstance(entry, dict) and entry.get("zotero_key") == zotero_key:
+                    idx_status = entry.get("ocr_status", "")
+                    index_ocr_status = str(idx_status).strip().lower() if idx_status else None
+                    break
+        except Exception as e:
+            logger.warning("Failed to load index for %s: %s", zotero_key, e)
         meta_path = paths["ocr"] / zotero_key / "meta.json"
         meta_ocr_status = None
         meta_validated_status = None
@@ -232,26 +246,29 @@ def run_repair(vault: Path, paths: dict, verbose: bool = False, fix: bool = Fals
         if meta_validated_status == "done_incomplete":
             is_divergent = True
             div_reason = f"meta validation: done_incomplete ({validated_error})"
-        elif lib_ocr_status == "done" and meta_ocr_status in ("pending", "processing", None):
+        elif note_ocr_status == "done" and meta_ocr_status in ("pending", "processing", None):
             is_divergent = True
-            div_reason = f"library_record done but meta {meta_ocr_status or 'missing'}"
-        elif note_ocr_status == "done" and (meta_ocr_status is None or meta_validated_status == "done_incomplete"):
+            div_reason = f"formal_note done but meta {meta_ocr_status or 'missing'}"
+        elif index_ocr_status == "done" and (meta_ocr_status is None or meta_validated_status == "done_incomplete"):
             is_divergent = True
-            div_reason = "formal_note done but meta.json missing/invalid"
+            div_reason = "index done but meta.json missing/invalid"
         elif (
-            lib_ocr_status != "pending"
-            and meta_ocr_status is not None
+            meta_ocr_status is not None
             and meta_validated_status is not None
-            and lib_ocr_status != meta_validated_status
+            and note_ocr_status != meta_validated_status
+            and not (
+                note_ocr_status == "pending"
+                and meta_validated_status == "pending"
+            )
         ):
             is_divergent = True
-            div_reason = f"library_record={lib_ocr_status} vs meta post-validation={meta_validated_status}"
+            div_reason = f"formal_note={note_ocr_status} vs meta post-validation={meta_validated_status}"
         if is_divergent:
             item = {
                 "zotero_key": zotero_key,
                 "domain": domain,
-                "library_record_ocr_status": lib_ocr_status,
                 "formal_note_ocr_status": note_ocr_status,
+                "index_ocr_status": index_ocr_status,
                 "meta_ocr_status": meta_validated_status or meta_ocr_status,
                 "reason": div_reason,
             }
@@ -259,8 +276,8 @@ def run_repair(vault: Path, paths: dict, verbose: bool = False, fix: bool = Fals
             if verbose:
                 logger.info("divergent: %s | %s", zotero_key, div_reason)
             if fix:
-                fixed_library_record = False
-                fixed_formal_note = False
+                fixed_formal_note_primary = False
+                fixed_index_entry = False
                 fixed_meta = False
                 new_status = "pending"
                 if meta_ocr_status is None or meta_validated_status == "done_incomplete":
@@ -268,16 +285,26 @@ def run_repair(vault: Path, paths: dict, verbose: bool = False, fix: bool = Fals
                     new_record_text = update_frontmatter_field(record_text, "ocr_status", new_status)
                     if new_record_text != record_text:
                         record_path.write_text(new_record_text, encoding="utf-8")
-                        fixed_library_record = True
-                    if note_path and note_path.exists():
+                        fixed_formal_note_primary = True
+                    if index_ocr_status is not None:
                         try:
-                            note_text = note_path.read_text(encoding="utf-8")
-                            new_note_text = update_frontmatter_field(note_text, "ocr_status", new_status)
-                            if new_note_text != note_text:
-                                note_path.write_text(new_note_text, encoding="utf-8")
-                                fixed_formal_note = True
-                        except Exception:
-                            pass
+                            index_data = read_json(paths["index"])
+                            if isinstance(index_data, dict):
+                                idx_items = index_data.get("items", [])
+                            elif isinstance(index_data, list):
+                                idx_items = index_data
+                            else:
+                                idx_items = []
+                            for entry in idx_items:
+                                if isinstance(entry, dict) and entry.get("zotero_key") == zotero_key:
+                                    entry["ocr_status"] = new_status
+                                    break
+                            if isinstance(index_data, dict):
+                                index_data["items"] = idx_items
+                                write_json(paths["index"], index_data)
+                            fixed_index_entry = True
+                        except Exception as e:
+                            logger.warning("Failed to update index entry for %s: %s", zotero_key, e)
                     if meta_validated_status is not None and meta_validated_status != "done":
                         if meta_path.exists():
                             try:
@@ -285,49 +312,66 @@ def run_repair(vault: Path, paths: dict, verbose: bool = False, fix: bool = Fals
                                 meta["ocr_status"] = "pending"
                                 write_json(meta_path, meta)
                                 fixed_meta = True
-                            except Exception:
-                                pass
+                            except Exception as e:
+                                logger.warning("Failed to reset meta ocr_status for %s: %s", zotero_key, e)
                     record_do_ocr_match = re.search(r"^do_ocr:\s*(true|false)$", new_record_text, re.MULTILINE)
                     is_do_ocr = record_do_ocr_match and record_do_ocr_match.group(1) == "true"
                     if not is_do_ocr:
                         final_record_text = update_frontmatter_field(new_record_text, "do_ocr", "true")
                         if final_record_text != new_record_text:
                             record_path.write_text(final_record_text, encoding="utf-8")
-                            fixed_library_record = True
-                elif lib_ocr_status == "done" and meta_ocr_status in ("pending", "processing"):
+                            fixed_formal_note_primary = True
+                elif note_ocr_status == "done" and meta_ocr_status in ("pending", "processing"):
                     new_status = "pending"
                     new_record_text = update_frontmatter_field(record_text, "ocr_status", new_status)
                     if new_record_text != record_text:
                         record_path.write_text(new_record_text, encoding="utf-8")
-                        fixed_library_record = True
-                    if note_path and note_path.exists():
+                        fixed_formal_note_primary = True
+                    if index_ocr_status is not None:
                         try:
-                            note_text = note_path.read_text(encoding="utf-8")
-                            new_note_text = update_frontmatter_field(note_text, "ocr_status", new_status)
-                            if new_note_text != note_text:
-                                note_path.write_text(new_note_text, encoding="utf-8")
-                                fixed_formal_note = True
-                        except Exception:
-                            pass
+                            index_data = read_json(paths["index"])
+                            if isinstance(index_data, dict):
+                                idx_items = index_data.get("items", [])
+                            elif isinstance(index_data, list):
+                                idx_items = index_data
+                            else:
+                                idx_items = []
+                            for entry in idx_items:
+                                if isinstance(entry, dict) and entry.get("zotero_key") == zotero_key:
+                                    entry["ocr_status"] = new_status
+                                    break
+                            if isinstance(index_data, dict):
+                                index_data["items"] = idx_items
+                                write_json(paths["index"], index_data)
+                            fixed_index_entry = True
+                        except Exception as e:
+                            logger.warning("Failed to update index entry for %s: %s", zotero_key, e)
                     if meta_path.exists():
                         try:
                             meta = read_json(meta_path)
                             meta["ocr_status"] = "pending"
                             write_json(meta_path, meta)
                             fixed_meta = True
-                        except Exception:
-                            pass
+                        except Exception as e:
+                            logger.warning("Failed to reset meta ocr_status for %s: %s", zotero_key, e)
                     record_do_ocr_match = re.search(r"^do_ocr:\s*(true|false)$", new_record_text, re.MULTILINE)
                     is_do_ocr = record_do_ocr_match and record_do_ocr_match.group(1) == "true"
                     if not is_do_ocr:
                         final_record_text = update_frontmatter_field(new_record_text, "do_ocr", "true")
                         if final_record_text != new_record_text:
                             record_path.write_text(final_record_text, encoding="utf-8")
-                            fixed_library_record = True
-                fixed_count = sum([fixed_library_record, fixed_formal_note, fixed_meta])
+                            fixed_formal_note_primary = True
+                else:
+                    print(f"[WARNING] No --fix handler for {zotero_key}: {div_reason}")
+                fixed_count = sum([fixed_formal_note_primary, fixed_index_entry, fixed_meta])
                 result["fixed"] += fixed_count
                 if verbose and fixed_count > 0:
                     logger.info("fixed %d files for %s", fixed_count, zotero_key)
+                if fixed_count > 0:
+                    try:
+                        refresh_index_entry(vault, zotero_key)
+                    except Exception as e:
+                        logger.warning("Failed to refresh index for %s: %s", zotero_key, e)
     # Path error detection and repair
     path_errors = _detect_path_errors(paths, verbose)
     if path_errors["total"] > 0:
@@ -340,6 +384,31 @@ def run_repair(vault: Path, paths: dict, verbose: bool = False, fix: bool = Fals
             print("[repair] Tip: run with --fix-paths to attempt auto-resolution")
     elif verbose:
         print("[repair] No path errors found")
+
+    # Phase 25: Full rebuild after repair (D-12)
+    # After fixing source artifacts, rebuild the canonical index so all derived
+    # state fields (lifecycle, health, maturity, next_step) reflect the repaired state.
+    if fix or fix_paths:
+        try:
+            from paperforge.worker.asset_index import build_index
+
+            rebuilt_count = build_index(vault, verbose)
+            print(f"[repair] Rebuilt canonical index: {rebuilt_count} entries")
+            result["rebuilt"] = rebuilt_count
+
+            print()
+            print(f"[repair] All source artifacts repaired. Canonical index rebuilt with {rebuilt_count} entries.")
+            print("[repair] Run `paperforge status` or open the plugin dashboard to verify.")
+            if rebuilt_count > 0:
+                print("[repair] If the result looks incomplete, run `paperforge sync --rebuild-index`")
+                print("[repair] to regenerate from scratch (existing .bak file available for recovery).")
+        except Exception as e:
+            logger.error("Failed to rebuild index after repair: %s", e)
+            print(f"[repair] WARNING: Index rebuild failed: {e}")
+            result["rebuilt"] = -1
+    else:
+        # dry-run mode: no rebuild needed
+        pass
 
     result["path_errors"] = path_errors
     return result

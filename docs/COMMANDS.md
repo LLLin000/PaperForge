@@ -27,7 +27,7 @@
 | `/pf-deep <key>` | 对单篇论文进行 figure-by-figure 深度精读 |
 | `/pf-paper <key>` | 加载论文 OCR 文本，进入问答模式 |
 | `paperforge ocr` | 处理所有标记 `do_ocr: true` 的文献 |
-| `paperforge sync` | 检测 Zotero 新条目，生成 library-records 和正式笔记 |
+| `paperforge sync` | 检测 Zotero 新条目，直接生成正式笔记 |
 | `paperforge status` | 检查安装状态、配置、路径连通性 |
 
 ---
@@ -41,16 +41,15 @@
 paperforge sync
 ```
 - 检测 Zotero JSON 中的新条目
-- 创建 `library-records/<domain>/<key>.md`
 - 生成正式笔记 `<resources_dir>/<literature_dir>/<domain>/<key> - Title.md`
 
 ### 第二步：标记 OCR
-在 Obsidian 中打开 library-record 文件，将 `do_ocr: false` 改为 `do_ocr: true`。
+在 Obsidian 中打开 formal note 文件，将 `do_ocr: false` 改为 `do_ocr: true`。
 
 或使用命令行批量修改（高级用户）：
 ```bash
 # 示例：批量标记某领域的所有文献
-grep -l "do_ocr: false" <resources_dir>/<control_dir>/library-records/骨科/*.md | xargs sed -i 's/do_ocr: false/do_ocr: true/'
+grep -l "do_ocr: false" <resources_dir>/<literature_dir>/骨科/*.md | xargs sed -i 's/do_ocr: false/do_ocr: true/'
 ```
 
 ### 第三步：运行 OCR
@@ -62,7 +61,7 @@ paperforge ocr
 - 输出到 `<system_dir>/PaperForge/ocr/<key>/`
 
 ### 第四步：标记精读
-在 library-record 中将 `analyze: false` 改为 `analyze: true`。
+在 formal note 中将 `analyze: false` 改为 `analyze: true`。
 
 ### 第五步：执行精读
 在 Agent 对话中输入：
@@ -70,7 +69,7 @@ paperforge ocr
 /pf-deep ABCDEFG
 ```
 Agent 自动：
-1. 检查 OCR 状态和 library-record
+1. 检查 OCR 状态和 formal note
 2. 生成 `## 精读` 骨架
 3. 逐阶段填写精读内容（Pass 1/2/3）
 4. 验证结构完整性

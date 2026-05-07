@@ -21,7 +21,7 @@
 
 PaperForge is a local-first literature workflow that bridges Zotero (reference management) and Obsidian (knowledge management) for medical researchers. The system is intentionally split into two distinct layers: the **Worker layer** and the **Agent layer**. This separation is the defining architectural choice of the project.
 
-The **Worker layer** (`literature_pipeline.py` and the `paperforge/commands/` package) handles all automated, mechanical tasks: detecting new literature from Zotero via Better BibTeX JSON export, generating library records and formal notes, running OCR through the PaddleOCR API, and maintaining state consistency across the system. Workers are deterministic, idempotent where possible, and designed to run without human intervention. They are triggered by CLI commands such as `paperforge sync` or `paperforge ocr`.
+The **Worker layer** (`literature_pipeline.py` and the `paperforge/commands/` package) handles all automated, mechanical tasks: detecting new literature from Zotero via Better BibTeX JSON export, generating formal notes, running OCR through the PaddleOCR API, and maintaining state consistency across the system. Workers are deterministic, idempotent where possible, and designed to run without human intervention. They are triggered by CLI commands such as `paperforge sync` or `paperforge ocr`.
 
 The **Agent layer** (OpenCode Agent skills like `/pf-deep` and `/pf-paper`) handles interactive, cognitive tasks: deep reading, critical analysis, figure interpretation, and synthesis writing. Agents require human direction — they are triggered by explicit user commands and operate on data prepared by the Worker layer. An Agent never triggers a Worker automatically, and a Worker never triggers an Agent automatically.
 
@@ -39,37 +39,29 @@ The complete pipeline flows from Zotero to Obsidian through six stages, with fil
 |  (User   |     auto-export        |  <system_dir>/PaperForge/ |
 |  Library)|                        |  exports/                 |
 +----------+                        +------------+--------------+
-                                                 |
-                              paperforge sync --selection
-                                                 |
-                                                 v
-+-----------------------------------+  +---------------------------+
-|  library-records/<domain>/<key>.md|  |  Markdown + YAML          |
-|  (Control Files)                  |  |  frontmatter              |
-+-----------------------------------+  +---------------------------+
-                                                 |
-                              paperforge sync --index
-                                                 |
-                                                 v
+                                                  |
+                                          paperforge sync
+                                                  |
+                                                  v
 +-----------------------------------+  +---------------------------+
 |  Literature/<domain>/<key> -      |  |  Markdown + YAML          |
 |  <Title>.md (Formal Notes)        |  |  frontmatter              |
 +-----------------------------------+  +---------------------------+
-                                                 |
-                              User sets do_ocr: true
-                                                 |
-                                                 v
+                                                  |
+                               User sets do_ocr: true
+                                                  |
+                                                  v
 +-----------------------------------+  +---------------------------+
 |  <system_dir>/PaperForge/ocr/     |  |  fulltext.md (Markdown)   |
 |  <key>/ (OCR Output)              |  |  images/ (PNG/JPEG)       |
 |                                   |  |  meta.json (JSON)         |
 |                                   |  |  figure-map.json (JSON)   |
 +-----------------------------------+  +---------------------------+
-                                                 |
-                              User sets analyze: true
-                              paperforge deep-reading (check queue)
-                                                 |
-                                                 v
+                                                  |
+                               User sets analyze: true
+                               paperforge deep-reading (check queue)
+                                                  |
+                                                  v
 +-----------------------------------+  +---------------------------+
 |  /pf-deep <zotero_key>            |  |  Agent-generated Markdown |
 |  (Agent Deep Reading)             |  |  inserted into Formal     |
@@ -82,11 +74,10 @@ The complete pipeline flows from Zotero to Obsidian through six stages, with fil
 | Stage | Input | Output | Trigger | Actor |
 |-------|-------|--------|---------|-------|
 | **1. Export** | Zotero items | `library.json` | Automatic (BBT "Keep updated") | Better BibTeX |
-| **2. Selection Sync** | `library.json` | `library-records/<key>.md` | `paperforge sync --selection` | Worker |
-| **3. Index Refresh** | `library-records/*.md` | `Literature/<key> - <Title>.md` | `paperforge sync --index` | Worker |
-| **4. OCR** | PDF attachments | `ocr/<key>/` directory | `paperforge ocr` | Worker |
-| **5. Queue Check** | `library-records` frontmatter | Console table | `paperforge deep-reading` | Worker |
-| **6. Deep Reading** | OCR output + formal note | Annotated formal note | `/pf-deep <key>` | Agent |
+| **2. Sync** | `library.json` | `Literature/<key> - <Title>.md` | `paperforge sync` | Worker |
+| **3. OCR** | PDF attachments | `ocr/<key>/` directory | `paperforge ocr` | Worker |
+| **4. Queue Check** | Formal note frontmatter | Console table | `paperforge deep-reading` | Worker |
+| **5. Deep Reading** | OCR output + formal note | Annotated formal note | `/pf-deep <key>` | Agent |
 
 ### State Machine (OCR)
 
@@ -118,19 +109,12 @@ PaperForge uses **5 core directories** under the Obsidian vault root. All paths 
 ```
 {vault_root}/
 |
-|-- <resources_dir>/                          # User data and notes
-|   |-- <literature_dir>/                     # Formal literature notes
+|-- <resources_dir/>                          # User data and notes
+|   |-- <literature_dir/>                     # Formal literature notes (with frontmatter tracking)
 |   |   |-- 骨科/
-|   |   |   |-- ABCDEFG - Paper Title.md      # Generated by index-refresh
+|   |   |   |-- ABCDEFG - Paper Title.md      # Generated by sync
 |   |   |-- 运动医学/
 |   |   |   |-- HIJKLMN - Another Title.md
-|   |   |
-|   |-- <control_dir>/                        # State tracking
-|   |   |-- library-records/                  # Generated by selection-sync
-|   |   |   |-- 骨科/
-|   |   |   |   |-- ABCDEFG.md                # User-editable control file
-|   |   |   |-- 运动医学/
-|   |   |   |   |-- HIJKLMN.md
 |
 |-- <system_dir>/                             # System-generated data
 |   |-- PaperForge/
@@ -172,8 +156,7 @@ PaperForge uses **5 core directories** under the Obsidian vault root. All paths 
 
 | Directory | Purpose | Generated By | Modified By |
 |-----------|---------|--------------|-------------|
-| `<resources_dir>/<literature_dir>/` | Final output: formal notes with frontmatter + deep reading annotations | `sync --index` (Worker) | Agent (writes `## 精读`), User |
-| `<resources_dir>/<control_dir>/library-records/` | State tracking: per-paper metadata flags (`do_ocr`, `analyze`, `ocr_status`) | `sync --selection` (Worker) | User (toggles flags), Worker (updates status) |
+| `<resources_dir>/<literature_dir>/` | Final output: formal notes with frontmatter + deep reading annotations | `paperforge sync` (Worker) | Agent (writes `## 精读`), User |
 | `<system_dir>/PaperForge/exports/` | Better BibTeX JSON export | Zotero + BBT (external) | Read-only for PaperForge |
 | `<system_dir>/PaperForge/ocr/` | OCR extraction results: text, images, metadata | `paperforge ocr` (Worker) | Read-only for Agent |
 | `<system_dir>/Zotero/` | Junction or symlink to Zotero data directory | User (installation step) | Read-only for PaperForge |
@@ -313,7 +296,7 @@ The `load_vault_config()` function in `paperforge/config.py` merges sources in t
 - **Worker layer**: Automated, deterministic, CLI-triggered. Handles mechanical tasks.
 - **Agent layer**: Interactive, reasoning-driven, user-triggered. Handles cognitive tasks.
 
-Workers never trigger Agents, and Agents never trigger Workers. The handoff point is the `library-record` frontmatter: users set `do_ocr: true` or `analyze: true`, then run the appropriate worker or agent command.
+Workers never trigger Agents, and Agents never trigger Workers. The handoff point is the formal note frontmatter: users set `do_ocr: true` or `analyze: true`, then run the appropriate worker or agent command.
 **Consequences:**
 - (+) Clear mental model: users understand what runs automatically vs. on demand.
 - (+) Isolated failure domains: an OCR failure cannot corrupt an Agent's analysis.
@@ -329,14 +312,14 @@ Workers never trigger Agents, and Agents never trigger Workers. The handoff poin
 **Context:** PaddleOCR API calls are asynchronous and may take minutes for large PDFs. The system must handle pending, processing, completed, and failed states without blocking the user.
 **Decision:** Track OCR status through a finite state machine (`pending` -> `processing` -> `done`/`failed`) persisted in two places:
 1. Per-paper `meta.json` in `<system_dir>/PaperForge/ocr/<key>/`
-2. Per-paper `ocr_status` field in the `library-record` frontmatter
+2. Per-paper `ocr_status` field in the formal note frontmatter
 
-The `paperforge ocr` command scans all library-records for `do_ocr: true` and `ocr_status != done`, uploads PDFs, and updates both persistence layers. The `paperforge deep-reading` command checks `ocr_status == done` before listing a paper as "ready."
+The `paperforge ocr` command scans all formal notes for `do_ocr: true` and `ocr_status != done`, uploads PDFs, and updates both persistence layers. The `paperforge deep-reading` command checks `ocr_status == done` before listing a paper as "ready."
 **Consequences:**
 - (+) Resilient to crashes: status is persisted, not in-memory.
 - (+) Idempotent: re-running `paperforge ocr` skips already-done papers.
 - (+) Observable: users can check status without re-running the worker.
-- (-) Requires two-phase commit: `meta.json` and `library-record` must stay in sync.
+- (-) Requires dual persistence: `meta.json` and formal note frontmatter must stay in sync.
 
 ---
 
@@ -344,13 +327,13 @@ The `paperforge ocr` command scans all library-records for `do_ocr: true` and `o
 
 **Status:** Accepted
 **Phase:** 3 (Base Views)
-**Context:** Obsidian Base views (`.base` files) provide a database-like UI for library-records. Hardcoded paths in Base views break when users customize their directory structure.
+**Context:** Obsidian Base views (`.base` files) provide a database-like UI for formal notes. Hardcoded paths in Base views break when users customize their directory structure.
 **Decision:** Generate Base views from Jinja2 templates at setup time, injecting resolved paths from `paperforge_paths()`. Templates live in `paperforge/templates/bases/` and are rendered into `<base_dir>/` with user-configured directory names substituted.
 **Consequences:**
 - (+) Base views work out of the box regardless of directory configuration.
 - (+) Users can customize paths in `paperforge.json` without breaking views.
 - (+) Template-based generation is easier to maintain than static files.
-- (-) Requires template maintenance when new fields are added to library-records.
+- (-) Requires template maintenance when new fields are added to formal notes.
 
 ---
 
@@ -412,12 +395,12 @@ Smoke tests (Phase 8) use these fixtures to validate end-to-end behavior without
 
 **Status:** Accepted
 **Phase:** 7 (Repair & Consistency)
-**Context:** Over time, three sources of truth for a paper's status can diverge: the formal note frontmatter, the library-record frontmatter, and the actual OCR output directory. Users may manually edit one without updating the others.
-**Decision:** Implement `paperforge repair` with three-way divergence detection:
-1. Scan all library-records
-2. Compare `ocr_status` in library-record vs. formal note vs. `meta.json`
+**Context:** Over time, two sources of truth for a paper's status can diverge: the formal note frontmatter and the actual OCR output directory. Users may manually edit one without updating the other.
+**Decision:** Implement `paperforge repair` with divergence detection:
+1. Scan all formal notes
+2. Compare `ocr_status` in formal note vs. `meta.json`
 3. Report discrepancies in a structured table
-4. With `--fix`, propagate the most reliable source (OCR directory > library-record > formal note)
+4. With `--fix`, propagate the most reliable source (OCR directory > formal note)
 
 Default mode is `--dry-run`: show discrepancies without modifying files.
 **Consequences:**
@@ -425,6 +408,7 @@ Default mode is `--dry-run`: show discrepancies without modifying files.
 - (+) Safe by default: dry-run lets users review before applying.
 - (+) Verbose mode explains exactly which source was chosen and why.
 - (-) Cannot detect semantic divergence (e.g., user intentionally wants different statuses).
+
 
 ---
 
@@ -497,7 +481,7 @@ Old commands remain as backward-compatible aliases in `cli.py` but are deprecate
 - (+) Junctions are transparently resolved; users don't need to know the real Zotero data dir path.
 - (+) Path errors are visible, diagnosable, and auto-repairable.
 - (-) `storage:` prefix semantics are overloaded: it means "relative to Zotero data dir" in `pdf_resolver.py`, but the actual Zotero structure has an intermediate `storage/` directory. This requires `zotero_dir` configuration to point to the correct level.
-- (-) One extra frontmatter field (`path_error`) adds noise to library-records; it is omitted when empty.
+- (-) One extra frontmatter field (`path_error`) adds noise to formal notes; it is omitted when empty.
 
 ---
 

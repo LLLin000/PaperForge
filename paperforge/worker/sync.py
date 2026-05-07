@@ -7,6 +7,7 @@ import re
 import urllib.parse
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Optional
 from xml.etree import ElementTree as ET
 
 import requests
@@ -27,7 +28,39 @@ from paperforge.worker._utils import (
     yaml_quote,
 )
 
+import paperforge.worker.asset_index as asset_index
+
 logger = logging.getLogger(__name__)
+
+
+def _read_frontmatter_bool_from_text(text: str, key: str, default: bool = False) -> bool:
+    match = re.search(rf"^{re.escape(key)}:\s*(?:[\"'])?(true|false)(?:[\"'])?\s*$", text, re.MULTILINE | re.IGNORECASE)
+    if not match:
+        return default
+    return match.group(1).lower() == "true"
+
+
+def _read_frontmatter_optional_bool_from_text(text: str, key: str) -> Optional[bool]:
+    match = re.search(rf"^{re.escape(key)}:\s*(?:[\"'])?(true|false)(?:[\"'])?\s*$", text, re.MULTILINE | re.IGNORECASE)
+    if not match:
+        return None
+    return match.group(1).lower() == "true"
+
+
+def _legacy_control_flags(paths: dict[str, Path], zotero_key: str) -> dict[str, Optional[bool]]:
+    records_root = paths.get("library_records")
+    if not records_root or not records_root.exists():
+        return {"do_ocr": None, "analyze": None}
+    for record_path in records_root.rglob(f"{zotero_key}.md"):
+        try:
+            text = record_path.read_text(encoding="utf-8")
+        except Exception:
+            continue
+        return {
+            "do_ocr": _read_frontmatter_optional_bool_from_text(text, "do_ocr"),
+            "analyze": _read_frontmatter_optional_bool_from_text(text, "analyze"),
+        }
+    return {"do_ocr": None, "analyze": None}
 
 
 def load_export_inventory(paths: dict[str, Path]) -> dict[str, dict]:
@@ -613,66 +646,6 @@ def has_deep_reading_content(text: str) -> bool:
     return has_prose_sentence or non_placeholder_chars >= 20
 
 
-def library_record_markdown(row: dict) -> str:
-    lines = [
-        "---",
-        f"zotero_key: {row.get('zotero_key', '')}",
-        f"domain: {row.get('domain', '')}",
-        f"title: {yaml_quote(row.get('title', ''))}",
-        f"year: {row.get('year', '')}",
-        f"doi: {yaml_quote(row.get('doi', ''))}",
-        f"date: {yaml_quote(row.get('date', ''))}",
-        f"collection_path: {yaml_quote(row.get('collection_path', ''))}",
-        f"has_pdf: {('true' if row.get('has_pdf') else 'false')}",
-        f"pdf_path: {yaml_quote(row.get('pdf_path', ''))}",
-        f"bbt_path_raw: {yaml_quote(row.get('bbt_path_raw', ''))}",
-        f"zotero_storage_key: {yaml_quote(row.get('zotero_storage_key', ''))}",
-        f"attachment_count: {row.get('attachment_count', 0)}",
-    ]
-    # supplementary as YAML list of wikilinks (already formatted by caller)
-    supplementary = row.get("supplementary", [])
-    if supplementary:
-        lines.append("supplementary:")
-        for wikilink in supplementary:
-            lines.append(f"  - {yaml_quote(wikilink)}")
-    else:
-        lines.append("supplementary: []")
-    # path_error only emitted when there is an actual error
-    if row.get("path_error"):
-        lines.append(f"path_error: {yaml_quote(row.get('path_error', ''))}")
-    lines.extend(
-        [
-            f"fulltext_md_path: {yaml_quote(row.get('fulltext_md_path', ''))}",
-            f"recommend_analyze: {('true' if row.get('recommend_analyze') else 'false')}",
-            f"analyze: {('true' if row.get('analyze') else 'false')}",
-            f"do_ocr: {('true' if row.get('do_ocr') else 'false')}",
-            f"ocr_status: {yaml_quote(row.get('ocr_status', 'pending'))}",
-            f"deep_reading_status: {yaml_quote(row.get('deep_reading_status', 'pending'))}",
-            f"analysis_note: {yaml_quote(row.get('analysis_note', ''))}",
-        ]
-    )
-    lines.extend(yaml_list("collection_group", row.get("collection_group", [])))
-    lines.extend(yaml_list("collections", row.get("collections", [])))
-    lines.extend(yaml_list("collection_tags", row.get("collection_tags", [])))
-    lines.append(f"first_author: {yaml_quote(row.get('first_author', ''))}")
-    lines.append(f"journal: {yaml_quote(row.get('journal', ''))}")
-    lines.append(f"impact_factor: {yaml_quote(row.get('impact_factor', ''))}")
-    lines.extend(
-        [
-            "---",
-            "",
-            f"# {row.get('title', '')}",
-            "",
-            "正式库控制记录。",
-            "",
-            "- `recommend_analyze` 仅由 `has_pdf=true` 推导。",
-            "- `analyze` 控制是否生成正式文献卡片。",
-            "- `do_ocr` 控制 OCR 任务。",
-            "- `deep_reading_status` 仅两级：`pending`（未精读）/ `done`（已精读）。",
-            "",
-        ]
-    )
-    return "\n".join(lines)
 
 
 def _add_missing_frontmatter_fields(existing_content: str, new_fields: dict[str, str]) -> str:
@@ -707,38 +680,31 @@ def update_frontmatter_field(content: str, key: str, value: str) -> str:
     return new_content
 
 
-def parse_existing_library_record(path: Path) -> dict:
-    if not path.exists():
-        return {}
-    text = path.read_text(encoding="utf-8")
-    result = {}
-    for key in ("analyze", "recommend_analyze", "do_ocr"):
-        match = re.search(f"^{key}:\\s*(true|false)$", text, re.MULTILINE)
-        if match:
-            result[key] = match.group(1) == "true"
-    for key in ("ocr_status", "analysis_note"):
-        match = re.search(f'^{key}:\\s*"?(.*?)"?$', text, re.MULTILINE)
-        if match:
-            result[key] = match.group(1)
-    for key in ("deep_reading_status",):
-        match = re.search(f'^{key}:\\s*"?(.*?)"?$', text, re.MULTILINE)
-        if match:
-            result[key] = match.group(1)
-    return result
-
-
 def load_control_actions(paths: dict[str, Path]) -> dict[str, dict]:
     actions = {}
-    if not paths["library_records"].exists():
+    lit_root = paths.get("literature")
+    if not lit_root or not lit_root.exists():
         return actions
-    for record in paths["library_records"].rglob("*.md"):
-        text = record.read_text(encoding="utf-8")
-        key_match = re.search("^zotero_key:\\s*(.+)$", text, re.MULTILINE)
+    for note_file in lit_root.rglob("*.md"):
+        if note_file.name in ("fulltext.md", "deep-reading.md", "discussion.md"):
+            continue
+        try:
+            text = note_file.read_text(encoding="utf-8")
+        except Exception:
+            continue
+        key_match = re.search(r"^zotero_key:\s*(.+)$", text, re.MULTILINE)
         if not key_match:
             continue
         zotero_key = key_match.group(1).strip()
-        row = parse_existing_library_record(record)
-        actions[zotero_key] = {"analyze": row.get("analyze", False), "do_ocr": row.get("do_ocr", False)}
+        do_ocr = False
+        do_ocr_match = re.search(r"^do_ocr:\s*(?:[\"'])?(true|false)(?:[\"'])?\s*$", text, re.MULTILINE | re.IGNORECASE)
+        if do_ocr_match:
+            do_ocr = do_ocr_match.group(1).lower() == "true"
+        analyze = False
+        analyze_match = re.search(r"^analyze:\s*(?:[\"'])?(true|false)(?:[\"'])?\s*$", text, re.MULTILINE | re.IGNORECASE)
+        if analyze_match:
+            analyze = analyze_match.group(1).lower() == "true"
+        actions[zotero_key] = {"analyze": analyze, "do_ocr": do_ocr}
     return actions
 
 
@@ -761,13 +727,9 @@ def run_selection_sync(vault: Path, verbose: bool = False) -> int:
             from paperforge.pdf_resolver import resolve_pdf_path
 
             cfg = load_vault_config(vault)
-            zotero_dir = vault / cfg.get("system_dir", "99_System") / "Zotero"
+            zotero_dir = vault / cfg.get("system_dir", "System") / "Zotero"
             resolved_pdf = resolve_pdf_path(raw_pdf_path, has_pdf, vault, zotero_dir)
             collection_meta = collection_fields(item.get("collections", []))
-            record_dir = paths["library_records"] / domain
-            record_dir.mkdir(parents=True, exist_ok=True)
-            record_path = record_dir / f"{item['key']}.md"
-            existing = parse_existing_library_record(record_path)
             meta_path = paths["ocr"] / item["key"] / "meta.json"
             meta = read_json(meta_path) if meta_path.exists() else {}
             validated_ocr_status, validated_error = validate_ocr_meta(paths, meta) if meta else ("pending", "")
@@ -800,66 +762,11 @@ def run_selection_sync(vault: Path, verbose: bool = False) -> int:
                     if wikilink:
                         supplementary_wikilinks.append(wikilink)
             pdf_wikilink = obsidian_wikilink_for_pdf(resolved_pdf, vault, zotero_dir) if resolved_pdf else ""
-            content = library_record_markdown(
-                {
-                    "zotero_key": item["key"],
-                    "domain": domain,
-                    "title": item.get("title", ""),
-                    "year": item.get("year", ""),
-                    "doi": item.get("doi", ""),
-                    "date": item.get("date", ""),
-                    "collection_path": " | ".join(item.get("collections", [])),
-                    "collections": collection_meta.get("collections", []),
-                    "collection_tags": collection_meta.get("collection_tags", []),
-                    "collection_group": collection_meta.get("collection_group", []),
-                    "has_pdf": has_pdf,
-                    "pdf_path": pdf_wikilink,
-                    "bbt_path_raw": item.get("bbt_path_raw", ""),
-                    "zotero_storage_key": item.get("zotero_storage_key", ""),
-                    "attachment_count": item.get("attachment_count", 0),
-                    "supplementary": supplementary_wikilinks,
-                    "path_error": item.get("path_error", ""),
-                    "recommend_analyze": bool(pdf_attachments),
-                    "analyze": existing.get("analyze", False),
-                    "do_ocr": existing.get("do_ocr", False),
-                    "ocr_status": record_ocr_status,
-                    "fulltext_md_path": fulltext_md_path,
-                    "deep_reading_status": "done" if note_text and has_deep_reading_content(note_text) else "pending",
-                    "analysis_note": existing.get("analysis_note", ""),
-                    "first_author": first_author,
-                    "journal": journal,
-                    "impact_factor": impact_factor,
-                }
-            )
-            if record_path.exists():
-                existing_content = record_path.read_text(encoding="utf-8")
-                updated_content = _add_missing_frontmatter_fields(
-                    existing_content,
-                    {
-                        "first_author": first_author,
-                        "journal": journal,
-                        "impact_factor": impact_factor,
-                        "bbt_path_raw": item.get("bbt_path_raw", ""),
-                        "zotero_storage_key": item.get("zotero_storage_key", ""),
-                        "attachment_count": str(item.get("attachment_count", 0)),
-                        "path_error": item.get("path_error", ""),
-                    },
-                )
-                updated_content = update_frontmatter_field(updated_content, "has_pdf", has_pdf)
-                updated_content = update_frontmatter_field(updated_content, "pdf_path", pdf_wikilink)
-                updated_content = update_frontmatter_field(updated_content, "ocr_status", record_ocr_status)
-                updated_content = update_frontmatter_field(
-                    updated_content,
-                    "deep_reading_status",
-                    "done" if note_text and has_deep_reading_content(note_text) else "pending",
-                )
-                updated_content = update_frontmatter_field(updated_content, "fulltext_md_path", fulltext_md_path or "")
-                if updated_content != existing_content:
-                    record_path.write_text(updated_content, encoding="utf-8")
-                    updated += 1
-            else:
-                written += 1
-                record_path.write_text(content, encoding="utf-8")
+
+            # Phase 37: library-records deprecated — skip creation.
+            # Formal notes now carry workflow flags (do_ocr, analyze) directly.
+            # Existing library-records are migrated via Phase 40 logic.
+            updated += 1
     print(f"selection-sync: wrote {written} records, updated {updated} records")
     return 0
 
@@ -1594,47 +1501,40 @@ def next_key(domain: str, export_rows: list[dict]) -> str:
 
 
 def frontmatter_note(entry: dict, existing_text: str = "") -> str:
-    deep_reading_path = entry.get("deep_reading_md_path", "")
     preserved_deep = extract_preserved_deep_reading(existing_text)
+    first_author = entry.get("first_author", "")
+    if not first_author:
+        authors = entry.get("authors", [])
+        first_author = authors[0] if authors else ""
     lines = [
         "---",
-        f"title: {yaml_quote(entry['title'])}",
+        f"title: {yaml_quote(entry.get('title', ''))}",
         f"year: {entry.get('year', '')}",
-        "type: article",
         f"journal: {yaml_quote(entry.get('journal', ''))}",
-        "authors:",
+        f"first_author: {yaml_quote(first_author)}",
+        f"zotero_key: {yaml_quote(entry.get('zotero_key', ''))}",
+        f"domain: {yaml_quote(entry.get('domain', ''))}",
+        f"doi: {yaml_quote(entry.get('doi', ''))}",
+        f"pmid: {yaml_quote(entry.get('pmid', ''))}",
+        f"collection_path: {yaml_quote(entry.get('collection_path', ''))}",
+        f"impact_factor: {yaml_quote(entry.get('impact_factor', ''))}",
     ]
-    for author in entry.get("authors", []):
-        lines.append(f"  - {yaml_quote(author)}")
-    lines.extend(
-        [
-            f"collection_path: {yaml_quote(entry.get('collection_path', ''))}",
-            f"domain: {yaml_quote(entry.get('domain', ''))}",
-            f"zotero_key: {yaml_quote(entry.get('zotero_key', ''))}",
-            f"doi: {yaml_quote(entry.get('doi', ''))}",
-            f"pmid: {yaml_quote(entry.get('pmid', ''))}",
-        ]
-    )
-    lines.extend(yaml_list("collection_group", entry.get("collection_group", [])))
-    lines.extend(yaml_list("collections", entry.get("collections", [])))
-    lines.extend(yaml_list("collection_tags", entry.get("collection_tags", [])))
     lines.extend(yaml_block(entry.get("abstract", "")))
     lines.extend(
         [
             f"has_pdf: {('true' if entry.get('has_pdf') else 'false')}",
+            f"do_ocr: {('true' if entry.get('do_ocr') else 'false')}",
+            f"analyze: {('true' if entry.get('analyze') else 'false')}",
             f"ocr_status: {yaml_quote(entry.get('ocr_status', 'pending'))}",
-            f"ocr_job_id: {yaml_quote(entry.get('ocr_job_id', ''))}",
-            f"ocr_md_path: {yaml_quote(entry.get('ocr_md_path', ''))}",
-            f"ocr_json_path: {yaml_quote(entry.get('ocr_json_path', ''))}",
             f"deep_reading_status: {yaml_quote(entry.get('deep_reading_status', 'pending'))}",
-            f"deep_reading_md_path: {yaml_quote(deep_reading_path)}",
             f"pdf_path: {yaml_quote(entry.get('pdf_path', ''))}",
+            f"fulltext_md_path: {yaml_quote('[[{}]]'.format(entry['fulltext_path']) if entry.get('ocr_status') == 'done' and entry.get('fulltext_path') else '')}",
             "tags:",
             "  - 文献阅读",
             f"  - {entry.get('domain', '')}",
             "---",
             "",
-            f"# {entry['title']}",
+            f"# {entry.get('title', '')}",
             "",
             "## 📄 文献基本信息",
             "",
@@ -1649,12 +1549,6 @@ def frontmatter_note(entry: dict, existing_text: str = "") -> str:
             "",
             entry.get("abstract", "") or "暂无摘要",
             "",
-            "## 💡 文献内容总结",
-            "",
-            "- 由 sync worker 自动生成的正式文献卡片。",
-            "- 精读笔记（Deep Reading）仅由 /pf-deep 命令维护；sync --index 只保留已有内容，不自动生成。",
-            "- 如需精读，请在 Base 中勾选 analyze，OCR 完成后运行 /pf-deep <zotero_key>。",
-            "",
         ]
     )
     if preserved_deep:
@@ -1666,7 +1560,158 @@ def analyze_selected_keys(paths: dict[str, Path]) -> set[str]:
     return {key for key, row in load_control_actions(paths).items() if row.get("analyze")}
 
 
-def run_index_refresh(vault: Path, verbose: bool = False) -> int:
+def migrate_to_workspace(vault: Path, paths: dict) -> int:
+    """Migrate flat literature notes into paper workspace directories.
+
+    Copies each flat note at <literature_dir>/<domain>/<key> - <Title>.md into:
+      <literature_dir>/<domain>/<key> - <Title>/<key> - <Title>.md
+    Extracts ## 🔍 精读 into:
+      <literature_dir>/<domain>/<key> - <Title>/deep-reading.md
+    Creates:
+      <literature_dir>/<domain>/<key> - <Title>/ai/  (empty directory)
+
+    Idempotent: skips papers whose workspace directory already exists.
+    The original flat note is preserved (copy-not-move per D-12).
+
+    Returns: number of papers migrated (0 means all are already workspace).
+    """
+    index = asset_index.read_index(vault)
+    items = index.get("items", []) if isinstance(index, dict) else []
+    indexed_entries: dict[str, dict] = {
+        str(entry.get("zotero_key", "") or "").strip(): entry
+        for entry in items
+        if str(entry.get("zotero_key", "") or "").strip()
+    }
+
+    flat_notes: list[tuple[Path, str, str]] = []
+    lit_root = paths.get("literature")
+    if lit_root and lit_root.exists():
+        for note_path in lit_root.rglob("*.md"):
+            if note_path.name in ("fulltext.md", "deep-reading.md", "discussion.md"):
+                continue
+            relative = note_path.relative_to(lit_root)
+            if len(relative.parts) != 2:
+                continue
+            domain = relative.parts[0]
+            try:
+                text = note_path.read_text(encoding="utf-8")
+            except Exception:
+                continue
+            key_match = re.search(r'^zotero_key:\s*"?(\S+?)"?\s*$', text, re.MULTILINE)
+            zotero_key = key_match.group(1) if key_match else ""
+            if not zotero_key:
+                stem = note_path.stem
+                if " - " not in stem:
+                    continue
+                zotero_key = stem.split(" - ", 1)[0].strip()
+            if not zotero_key:
+                continue
+            flat_notes.append((note_path, domain, zotero_key))
+
+    if not indexed_entries and not flat_notes:
+        return 0
+
+    migrated = 0
+
+    for flat_note_path, domain, key in flat_notes:
+        entry = indexed_entries.get(key, {})
+        title = str(entry.get("title", "") or "").strip()
+        if not title:
+            title_match = re.search(r'^title:\s*["\']?(.+?)["\']?\s*$', flat_note_path.read_text(encoding="utf-8"), re.MULTILINE)
+            title = title_match.group(1).strip() if title_match else ""
+        stem = flat_note_path.stem
+        if title:
+            title_slug = slugify_filename(title)
+        elif " - " in stem:
+            title_slug = stem.split(" - ", 1)[1].strip()
+        else:
+            title_slug = stem.strip()
+        workspace_dir = paths["literature"] / domain / f"{key} - {title_slug}"
+        main_note_path = workspace_dir / f"{key} - {title_slug}.md"
+        legacy_flags = _legacy_control_flags(paths, key)
+
+        if workspace_dir.exists():
+            if main_note_path.exists() and any(value is not None for value in legacy_flags.values()):
+                try:
+                    workspace_content = main_note_path.read_text(encoding="utf-8")
+                    flat_content = flat_note_path.read_text(encoding="utf-8")
+                    updated_content = workspace_content
+                    for field in ("do_ocr", "analyze"):
+                        legacy_value = legacy_flags[field]
+                        if legacy_value is None:
+                            continue
+                        workspace_value = _read_frontmatter_optional_bool_from_text(workspace_content, field)
+                        flat_value = _read_frontmatter_optional_bool_from_text(flat_content, field)
+                        if workspace_value is None or workspace_value == flat_value:
+                            updated_content = update_frontmatter_field(
+                                updated_content,
+                                field,
+                                "true" if legacy_value else "false",
+                            )
+                    if updated_content != workspace_content:
+                        main_note_path.write_text(updated_content, encoding="utf-8")
+                except Exception:
+                    pass
+            continue
+
+        # Create workspace directory
+        workspace_dir.mkdir(parents=True, exist_ok=True)
+
+        # Read flat note content
+        content = flat_note_path.read_text(encoding="utf-8")
+        if legacy_flags["do_ocr"] is not None:
+            content = update_frontmatter_field(content, "do_ocr", "true" if legacy_flags["do_ocr"] else "false")
+        if legacy_flags["analyze"] is not None:
+            content = update_frontmatter_field(content, "analyze", "true" if legacy_flags["analyze"] else "false")
+
+        # Write main note to workspace (copy of flat note)
+        main_note_path.write_text(content, encoding="utf-8")
+
+        # Extract deep-reading section and write to separate file
+        preserved = extract_preserved_deep_reading(content)
+        if preserved:
+            deep_reading_path = workspace_dir / "deep-reading.md"
+            deep_reading_path.write_text(preserved, encoding="utf-8")
+
+        # Create ai/ directory
+        ai_dir = workspace_dir / "ai"
+        ai_dir.mkdir(exist_ok=True)
+
+        # WS-04: Bridge OCR fulltext to workspace if available
+        meta_path = paths.get("ocr", Path()) / key / "meta.json"
+        if meta_path.exists():
+            try:
+                meta = read_json(meta_path)
+                if meta.get("ocr_status") == "done":
+                    source_fulltext = meta_path.parent / "fulltext.md"
+                    target_fulltext = workspace_dir / "fulltext.md"
+                    if source_fulltext.exists() and not target_fulltext.exists():
+                        import shutil
+                        shutil.copy2(str(source_fulltext), str(target_fulltext))
+            except Exception:
+                pass
+
+        migrated += 1
+
+    if migrated > 0:
+        print(f"migrate_to_workspace: migrated {migrated} paper(s) to workspace structure")
+
+    return migrated
+
+
+def run_index_refresh(vault: Path, verbose: bool = False, rebuild_index: bool = False) -> int:
+    """Refresh the canonical asset index.
+
+    Default behavior: full rebuild. This is the safe default because
+    selection-sync may affect many papers. Workers that modify individual
+    papers (ocr, deep-reading, repair) use asset_index.refresh_index_entry()
+    for incremental refresh by key.
+
+    Args:
+        vault: Path to the vault root.
+        verbose: If True, print detailed progress.
+        rebuild_index: If True, force full rebuild (default: True for sync).
+    """
     from paperforge.worker.base_views import ensure_base_views
     from paperforge.worker.ocr import validate_ocr_meta
 
@@ -1676,75 +1721,17 @@ def run_index_refresh(vault: Path, verbose: bool = False) -> int:
     domain_lookup = {entry["export_file"]: entry["domain"] for entry in config["domains"]}
 
     cfg = load_vault_config(vault)
-    zotero_dir = vault / cfg.get("system_dir", "99_System") / "Zotero"
+    zotero_dir = vault / cfg.get("system_dir", "System") / "Zotero"
     exports = {}
     for export_path in sorted(paths["exports"].glob("*.json")):
         domain = domain_lookup.get(export_path.name, export_path.stem)
         export_rows = load_export_rows(export_path)
         exports[domain] = {row["key"]: row for row in export_rows}
-    selected_keys = None
-    index_rows = []
-    lit_root = paths["literature"]
-    for export_path in sorted(paths["exports"].glob("*.json")):
-        domain = domain_lookup.get(export_path.name, export_path.stem)
-        export_rows = load_export_rows(export_path)
-        for item in export_rows:
-            key = item["key"]
-            if selected_keys is not None and key not in selected_keys:
-                continue
-            collection_meta = collection_fields(item.get("collections", []))
-            pdf_attachments = [a for a in item.get("attachments", []) if a.get("contentType") == "application/pdf"]
-            meta_path = paths["ocr"] / key / "meta.json"
-            meta = read_json(meta_path) if meta_path.exists() else {}
-            if meta:
-                validated_ocr_status, validated_error = validate_ocr_meta(paths, meta)
-                meta["ocr_status"] = validated_ocr_status
-                if validated_error:
-                    meta["error"] = validated_error
-                    write_json(meta_path, meta)
-            title_slug = slugify_filename(item["title"])
-            note_path = lit_root / domain / f"{key} - {title_slug}.md"
-            if note_path.parent.exists():
-                for stale_note in note_path.parent.glob(f"{key} - *.md"):
-                    if stale_note != note_path:
-                        stale_note.unlink()
-            entry = {
-                "zotero_key": key,
-                "domain": domain,
-                "title": item["title"],
-                "authors": item.get("authors", []),
-                "abstract": item.get("abstract", ""),
-                "journal": item.get("journal", ""),
-                "year": item.get("year", ""),
-                "doi": item.get("doi", ""),
-                "pmid": item.get("pmid", ""),
-                "collection_path": " | ".join(item.get("collections", [])),
-                "collections": collection_meta.get("collections", []),
-                "collection_tags": collection_meta.get("collection_tags", []),
-                "collection_group": collection_meta.get("collection_group", []),
-                "has_pdf": bool(pdf_attachments),
-                "pdf_path": obsidian_wikilink_for_pdf(pdf_attachments[0]["path"], vault, zotero_dir)
-                if pdf_attachments
-                else "",
-                "ocr_status": meta.get("ocr_status", "pending"),
-                "ocr_job_id": meta.get("ocr_job_id", ""),
-                "ocr_md_path": obsidian_wikilink_for_path(vault, meta.get("markdown_path", "")),
-                "ocr_json_path": meta.get("json_path", ""),
-                "deep_reading_status": "done"
-                if note_path.exists() and has_deep_reading_content(note_path.read_text(encoding="utf-8"))
-                else "pending",
-                "note_path": str(note_path.relative_to(vault)).replace("\\", "/"),
-                "deep_reading_md_path": str(note_path.relative_to(vault)).replace("\\", "/")
-                if note_path.exists() and has_deep_reading_content(note_path.read_text(encoding="utf-8"))
-                else "",
-            }
-            note_path.parent.mkdir(parents=True, exist_ok=True)
-            existing_text = note_path.read_text(encoding="utf-8") if note_path.exists() else ""
-            note_path.write_text(frontmatter_note(entry, existing_text), encoding="utf-8")
-            index_rows.append(entry)
-    write_json(paths["index"], index_rows)
-    print(f"index-refresh: wrote {len(index_rows)} index rows")
-    control_records_dir = paths["library_records"]
+    # Migrate flat notes to workspace before build_index (D-11: first-sync migration)
+    migrate_to_workspace(vault, paths)
+    # Delegate to asset_index.build_index() for the core build loop
+    count = asset_index.build_index(vault, verbose)
+    control_records_dir = paths["literature"]
     if control_records_dir.exists():
         for domain_dir in control_records_dir.iterdir():
             if not domain_dir.is_dir():
@@ -1753,14 +1740,19 @@ def run_index_refresh(vault: Path, verbose: bool = False) -> int:
             domain_export_keys = set(exports.get(domain, {}).keys())
             records_by_title = {}
             records_info = {}
-            for record_file in domain_dir.glob("*.md"):
+            for record_file in domain_dir.rglob("*.md"):
+                if record_file.name in ("fulltext.md", "deep-reading.md", "discussion.md"):
+                    continue
                 try:
                     content = record_file.read_text(encoding="utf-8")
+                    key_match = re.search(r"^zotero_key:\s*(.+)$", content, re.MULTILINE)
+                    if not key_match:
+                        continue
+                    key = key_match.group(1).strip()
                     title_match = re.search("^title:\\s*[\"\\']?(.+)[\"\\']?\\s*$", content, re.MULTILINE)
                     title = title_match.group(1) if title_match else ""
                     has_pdf = "has_pdf: true" in content
                     normalized = re.sub("[^a-z0-9]", "", title.lower())[:20]
-                    key = record_file.stem
                     records_info[key] = {
                         "file": record_file,
                         "title": title,
@@ -1789,4 +1781,40 @@ def run_index_refresh(vault: Path, verbose: bool = False) -> int:
                     pass
             if deleted_count > 0:
                 print(f"index-refresh: cleaned {deleted_count} orphaned records in {domain}")
+
+    # Clean up flat notes: delete only if confirmed by canonical index + workspace
+    index_data = asset_index.read_index(vault)
+    ws_keys = set()
+    if isinstance(index_data, dict):
+        for item in index_data.get("items", []):
+            ws_dir = paths["literature"] / item.get("domain", "") / (item.get("zotero_key", "") + " - " + slugify_filename(item.get("title", "")))
+            if ws_dir.is_dir():
+                ws_keys.add(item.get("zotero_key"))
+
+    lit_dir = paths["literature"]
+    cleaned_flat = 0
+    if lit_dir.exists() and ws_keys:
+        for domain_dir in sorted(lit_dir.iterdir()):
+            if not domain_dir.is_dir():
+                continue
+            for flat_note in list(domain_dir.glob("*.md")):
+                try:
+                    text = flat_note.read_text(encoding="utf-8")
+                    m = re.search(r"^zotero_key:\s*\"?(\S+?)\"?\s*$", text, re.MULTILINE)
+                    key = m.group(1) if m else ""
+                except Exception:
+                    continue
+                if key and key in ws_keys:
+                    try:
+                        flat_note.unlink()
+                        cleaned_flat += 1
+                    except Exception:
+                        pass
+    if cleaned_flat > 0:
+        print(f"index-refresh: cleaned {cleaned_flat} flat note(s) (migrated to workspace)")
+
+    if control_records_dir.exists():
+        total = sum(1 for _ in control_records_dir.rglob("*.md"))
+        print(f"index-refresh: {total} formal note(s) in literature")
+
     return 0

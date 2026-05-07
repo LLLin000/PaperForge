@@ -141,7 +141,7 @@ class TestEnvCheckerInit:
     def test_init_with_vault_path(self, tmp_path: Path) -> None:
         checker = EnvChecker(tmp_path)
         assert checker.vault == tmp_path
-        assert checker.system_dir == "99_System"
+        assert checker.system_dir == "System"
         assert set(checker.results.keys()) == {"python", "vault", "zotero", "bbt", "json"}
 
     def test_results_are_checkresult_instances(self, tmp_path: Path) -> None:
@@ -152,7 +152,7 @@ class TestEnvCheckerInit:
 
     def test_get_exports_dir(self, tmp_path: Path) -> None:
         checker = EnvChecker(tmp_path)
-        expected = tmp_path / "99_System" / "PaperForge" / "exports"
+        expected = tmp_path / "System" / "PaperForge" / "exports"
         assert checker.get_exports_dir() == expected
 
     def test_get_exports_dir_custom_system_dir(self, tmp_path: Path) -> None:
@@ -192,15 +192,15 @@ class TestEnvCheckerCheckVault:
 
     def test_existing_directories_passes(self, tmp_path: Path) -> None:
         """Vault with correct structure should pass."""
-        (tmp_path / "99_System" / "PaperForge" / "exports").mkdir(parents=True)
-        (tmp_path / "99_System" / "PaperForge" / "ocr").mkdir(parents=True)
+        (tmp_path / "System" / "PaperForge" / "exports").mkdir(parents=True)
+        (tmp_path / "System" / "PaperForge" / "ocr").mkdir(parents=True)
         checker = EnvChecker(tmp_path)
         result = checker.check_vault()
         assert result.passed is True
 
     def test_partial_directories_fails(self, tmp_path: Path) -> None:
         """Vault with only one required dir should fail."""
-        (tmp_path / "99_System" / "PaperForge" / "exports").mkdir(parents=True)
+        (tmp_path / "System" / "PaperForge" / "exports").mkdir(parents=True)
         checker = EnvChecker(tmp_path)
         result = checker.check_vault()
         assert result.passed is False
@@ -292,7 +292,7 @@ class TestEnvCheckerCheckJson:
         assert result.passed is False
 
     def test_valid_json_exports_pass(self, tmp_path: Path) -> None:
-        exports_dir = tmp_path / "99_System" / "PaperForge" / "exports"
+        exports_dir = tmp_path / "System" / "PaperForge" / "exports"
         exports_dir.mkdir(parents=True)
         (exports_dir / "test.json").write_text(
             json.dumps({"items": [{"key": "TEST"}]}),
@@ -304,7 +304,7 @@ class TestEnvCheckerCheckJson:
         assert "JSON" in result.detail
 
     def test_invalid_json_fails(self, tmp_path: Path) -> None:
-        exports_dir = tmp_path / "99_System" / "PaperForge" / "exports"
+        exports_dir = tmp_path / "System" / "PaperForge" / "exports"
         exports_dir.mkdir(parents=True)
         (exports_dir / "bad.json").write_text("{invalid}", encoding="utf-8")
         checker = EnvChecker(tmp_path)
@@ -312,7 +312,7 @@ class TestEnvCheckerCheckJson:
         assert result.passed is False
 
     def test_empty_exports_fails(self, tmp_path: Path) -> None:
-        exports_dir = tmp_path / "99_System" / "PaperForge" / "exports"
+        exports_dir = tmp_path / "System" / "PaperForge" / "exports"
         exports_dir.mkdir(parents=True)
         checker = EnvChecker(tmp_path)
         result = checker.check_json()

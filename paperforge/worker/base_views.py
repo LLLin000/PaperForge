@@ -44,11 +44,15 @@ PAPERFORGE_VIEW_PREFIX = "# PAPERFORGE_VIEW: "
 def build_base_views(domain: str) -> list[dict]:
     """Build the 8-view list for a domain Base file.
 
+    Uses workflow gate columns (has_pdf, do_ocr, analyze, ocr_status)
+    matching the master version's Base views.  See REQUIREMENTS.md
+    §Reference Vault Learnings for the ground-truth pattern.
+
     Args:
-        domain: The domain name (e.g., "骨科") — passed for compatibility but each view has fixed name/filter.
+        domain: The domain name (e.g., "骨科").
 
     Returns:
-        List of 8 view dicts, each with keys: name (str), order (list), filter (str|None).
+        List of 8 view dicts, each with keys: name, order, filter, sort.
     """
     return [
         {
@@ -86,32 +90,32 @@ def build_base_views(domain: str) -> list[dict]:
                 "pdf_path",
                 "fulltext_md_path",
             ],
-            "filter": "analyze = true AND recommend_analyze = true",
+            "filter": "analyze = true AND has_pdf = true",
         },
         {
             "name": "待 OCR",
             "order": ["year", "first_author", "title", "has_pdf", "do_ocr", "ocr_status", "pdf_path"],
-            "filter": 'do_ocr = true AND ocr_status = "pending"',
+            "filter": "do_ocr = true AND ocr_status = 'pending'",
         },
         {
             "name": "OCR 完成",
             "order": ["year", "first_author", "title", "has_pdf", "do_ocr", "ocr_status", "pdf_path"],
-            "filter": 'ocr_status = "done"',
+            "filter": "ocr_status = 'done'",
         },
         {
             "name": "待深度阅读",
             "order": ["year", "first_author", "title", "has_pdf", "do_ocr", "analyze", "ocr_status", "deep_reading_status", "pdf_path"],
-            "filter": 'analyze = true AND ocr_status = "done" AND deep_reading_status = "pending"',
+            "filter": "analyze = true AND ocr_status = 'done' AND deep_reading_status = 'pending'",
         },
         {
             "name": "深度阅读完成",
             "order": ["year", "first_author", "title", "has_pdf", "do_ocr", "analyze", "ocr_status", "deep_reading_status", "pdf_path"],
-            "filter": 'deep_reading_status = "done"',
+            "filter": "deep_reading_status = 'done'",
         },
         {
             "name": "正式卡片",
             "order": ["title", "year", "first_author", "journal", "impact_factor", "has_pdf", "deep_reading_status", "pdf_path"],
-            "filter": 'deep_reading_status = "done"',
+            "filter": "deep_reading_status = 'done'",
         },
         {
             "name": "全记录",
@@ -146,7 +150,6 @@ def substitute_config_placeholders(content: str, paths: dict[str, Path]) -> str:
         Unrecognized placeholders are left unchanged.
     """
     substitutions = {
-        "LIBRARY_RECORDS": paths.get("library_records"),
         "LITERATURE": paths.get("literature"),
         "CONTROL_DIR": paths.get("control"),
     }
@@ -173,7 +176,12 @@ def _render_views_section(views: list[dict]) -> str:
         for col in v["order"]:
             lines.append(f"      - {col}")
         if v["filter"]:
-            lines.append(f"    filter: '{v['filter']}'")
+            lines.append(f'    filter: "{v["filter"]}"')
+        if v.get("sort"):
+            lines.append("    sort:")
+            for sort_item in v["sort"]:
+                lines.append(f"      - field: {sort_item['field']}")
+                lines.append(f"        direction: {sort_item['direction']}")
     return "\n".join(lines)
 
 
@@ -230,6 +238,7 @@ def merge_base_views(existing_content: str | None, new_views: list[dict]) -> str
         return f"""filters:
   and:
     - file.inFolder("{new_views[0]["name"]}")
+    - file.extension = "md"
 {PROPERTIES_YAML}
 views:
 {fresh_views_yaml}"""
@@ -261,9 +270,14 @@ views:
         for col in v["order"]:
             rendered += f"      - {col}\n"
         if v["filter"]:
-            rendered += f"    filter: '{v['filter']}'\n"
+            rendered += f'    filter: "{v["filter"]}"\n'
         else:
             rendered += "\n"
+        if v.get("sort"):
+            rendered += "    sort:\n"
+            for sort_item in v["sort"]:
+                rendered += f"      - field: {sort_item['field']}\n"
+                rendered += f"        direction: {sort_item['direction']}\n"
         new_pf_blocks.append((v["name"], rendered))
 
     rebuilt_views_lines = []
@@ -337,13 +351,19 @@ def _build_base_yaml(folder_filter: str, views: list[dict]) -> str:
         for col in v["order"]:
             views_yaml += f"      - {col}\n"
         if v["filter"]:
-            views_yaml += f"    filter: '{v['filter']}'\n"
+            views_yaml += f'    filter: "{v["filter"]}"\n'
         else:
             views_yaml += "\n"
+        if v.get("sort"):
+            views_yaml += "    sort:\n"
+            for sort_item in v["sort"]:
+                views_yaml += f"      - field: {sort_item['field']}\n"
+                views_yaml += f"        direction: {sort_item['direction']}\n"
     views_yaml = views_yaml.rstrip("\n")
     return f"""filters:
   and:
     - file.inFolder("{folder_filter}")
+    - file.extension = "md"
 properties:
   zotero_key:
     displayName: "Zotero Key"
@@ -404,12 +424,12 @@ def ensure_base_views(vault: Path, paths: dict[str, Path], config: dict, force: 
         seen_domains.add(domain)
 
         domain_views = build_base_views(domain)
-        folder_filter = f"${{LIBRARY_RECORDS}}/{domain}"
+        folder_filter = f"${{LITERATURE}}/{domain}"
         base_path = paths["bases"] / f"{slugify_filename(domain)}.base"
         refresh_base(base_path, folder_filter, domain_views)
 
     hub_views = build_base_views("Literature Hub")
     hub_path = paths["bases"] / "Literature Hub.base"
-    refresh_base(hub_path, "${LIBRARY_RECORDS}", hub_views)
+    refresh_base(hub_path, "${LITERATURE}", hub_views)
 
     # PaperForge.base intentionally removed (v1.4.1) — duplicates Literature Hub

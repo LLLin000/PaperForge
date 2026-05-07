@@ -173,6 +173,11 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Run index-refresh only",
     )
+    p_sync.add_argument(
+        "--rebuild-index",
+        action="store_true",
+        help="Force full rebuild of the canonical asset index",
+    )
 
     # selection-sync (backward compat)
     sub.add_parser("selection-sync", help="Sync Zotero selection to library records")
@@ -205,6 +210,30 @@ def build_parser() -> argparse.ArgumentParser:
     doctor_parser = ocr_sub.add_parser("doctor", help="Diagnose OCR configuration and connectivity")
     doctor_parser.add_argument("--live", action="store_true", help="Run live PDF test (L4)")
 
+    # context (Phase 26: traceable AI context packs)
+    p_context = sub.add_parser("context", help="Generate traceable AI context pack for paper(s)")
+    p_context.add_argument(
+        "key",
+        nargs="?",
+        metavar="KEY",
+        help="Zotero citation key for a single paper (outputs single JSON object)",
+    )
+    p_context.add_argument(
+        "--domain",
+        metavar="DOMAIN",
+        help="Filter by domain (outputs JSON array)",
+    )
+    p_context.add_argument(
+        "--collection",
+        metavar="PATH",
+        help="Filter by collection path (prefix match, outputs JSON array)",
+    )
+    p_context.add_argument(
+        "--all",
+        action="store_true",
+        help="Output all entries in the canonical index (JSON array)",
+    )
+
     # base-refresh
     p_base = sub.add_parser("base-refresh", help="Refresh Obsidian Base view files")
     p_base.add_argument(
@@ -221,7 +250,7 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_parser("update", help="Update PaperForge to the latest version")
 
     # setup wizard
-    p_setup = sub.add_parser("setup", help="Run the setup wizard (Textual-based)")
+    p_setup = sub.add_parser("setup", help="Set up PaperForge in a vault (use --headless for non-interactive)")
     p_setup.add_argument(
         "--headless",
         action="store_true",
@@ -248,12 +277,12 @@ def build_parser() -> argparse.ArgumentParser:
     p_setup.add_argument(
         "--system-dir",
         metavar="NAME",
-        help="System directory name (default: 99_System)",
+        help="System directory name (default: System)",
     )
     p_setup.add_argument(
         "--resources-dir",
         metavar="NAME",
-        help="Resources directory name (default: 03_Resources)",
+        help="Resources directory name (default: Resources)",
     )
     p_setup.add_argument(
         "--literature-dir",
@@ -268,7 +297,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_setup.add_argument(
         "--base-dir",
         metavar="NAME",
-        help="Base directory name (default: 05_Bases)",
+        help="Base directory name (default: Bases)",
     )
     p_setup.add_argument(
         "--zotero-data",
@@ -396,6 +425,11 @@ def main(argv: list[str] | None = None) -> int:
 
         return deep.run(args)
 
+    if args.command == "context":
+        from paperforge.commands import context
+
+        return context.run(args)
+
     if args.command == "repair":
         from paperforge.commands import repair
 
@@ -430,11 +464,9 @@ def main(argv: list[str] | None = None) -> int:
                 paddleocr_key=getattr(args, "paddleocr_key", None),
                 paddleocr_url=getattr(args, "paddleocr_url",
                     "https://paddleocr.aistudio-app.com/api/v2/ocr/jobs"),
-                system_dir=getattr(args, "system_dir", None) or "99_System",
-                resources_dir=getattr(args, "resources_dir", None) or "03_Resources",
-                literature_dir=getattr(args, "literature_dir", None) or "Literature",
-                control_dir=getattr(args, "control_dir", None) or "LiteratureControl",
-                base_dir=getattr(args, "base_dir", None) or "05_Bases",
+            system_dir=getattr(args, "system_dir", None) or "System",
+            resources_dir=getattr(args, "resources_dir", None) or "Resources",
+            base_dir=getattr(args, "base_dir", None) or "Bases",
                 zotero_data=getattr(args, "zotero_data", None),
                 skip_checks=getattr(args, "skip_checks", False),
             )

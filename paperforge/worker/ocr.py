@@ -17,6 +17,7 @@ from PIL import Image
 from paperforge.config import paperforge_paths
 from paperforge.worker import sync as _sync
 from paperforge.worker._progress import progress_bar
+from paperforge.worker.asset_index import refresh_index_entry
 from paperforge.worker._retry import retry_with_meta
 from paperforge.worker._utils import (
     pipeline_paths,
@@ -62,6 +63,13 @@ def ensure_ocr_meta(vault: Path, row: dict) -> dict:
     meta.setdefault("last_error", None)
     meta.setdefault("last_attempt_at", None)
     return meta
+
+
+def _read_meta_or_empty(meta_path: Path) -> dict:
+    try:
+        return read_json(meta_path) if meta_path.exists() else {}
+    except Exception:
+        return {}
 
 
 def validate_ocr_meta(paths: dict[str, Path], meta: dict) -> tuple[str, str]:
@@ -160,7 +168,7 @@ def sync_ocr_queue(paths: dict[str, Path], target_rows: list[dict]) -> list[dict
         if not target.get("has_pdf"):
             continue
         meta_path = paths["ocr"] / key / "meta.json"
-        meta = read_json(meta_path) if meta_path.exists() else {}
+        meta = _read_meta_or_empty(meta_path)
         status = str(meta.get("ocr_status", "pending") or "pending").strip().lower()
         if status in {"done", "blocked"}:
             continue
@@ -180,7 +188,7 @@ def sync_ocr_queue(paths: dict[str, Path], target_rows: list[dict]) -> list[dict
         if not row.get("has_pdf"):
             continue
         meta_path = paths["ocr"] / key / "meta.json"
-        meta = read_json(meta_path) if meta_path.exists() else {}
+        meta = _read_meta_or_empty(meta_path)
         status = str(meta.get("ocr_status", "pending") or "pending").strip().lower()
         if status in {"done", "blocked"}:
             continue
@@ -737,6 +745,54 @@ def estimate_body_column_width(blocks: list[dict], page_width: int = 0) -> int:
     return widths[len(widths) // 2]
 
 
+def is_body_paragraph_like_text_block(
+    block: dict,
+    body_column_width: int = 0,
+    cluster_bboxes: list[list[int]] | None = None,
+    caption_bbox: list[int] | None = None,
+) -> bool:
+    if block.get("block_label") not in {"text", "paragraph_title", "abstract"}:
+        return False
+    text = clean_block_text(block.get("block_content", ""))
+    if not text or is_formal_figure_legend(text) or is_subfigure_label(text):
+        return False
+    bbox = [int(value) for value in block.get("block_bbox", [0, 0, 0, 0])]
+    width = _bbox_width(bbox)
+    height = _bbox_height(bbox)
+    if width <= 0 or height <= 0:
+        return False
+    if body_column_width and width < int(body_column_width * 0.72):
+        return False
+    if (not body_column_width) and width < 360:
+        return False
+    if height < 110:
+        return False
+    sentence_breaks = len(re.findall(r"[.!?](?:\s|$)", text))
+    if len(text) < 180 and sentence_breaks < 2:
+        return False
+    if caption_bbox is not None:
+        caption_gap = int(caption_bbox[1]) - int(bbox[3])
+        if not (24 <= caption_gap <= 720):
+            return False
+    if cluster_bboxes:
+        nearest_vertical_gap = None
+        for cluster_bbox in cluster_bboxes:
+            if _bbox_vertical_overlap(bbox, cluster_bbox) > 0:
+                return False
+            gap = None
+            if int(bbox[3]) <= int(cluster_bbox[1]):
+                gap = int(cluster_bbox[1]) - int(bbox[3])
+            elif int(cluster_bbox[3]) <= int(bbox[1]):
+                gap = int(bbox[1]) - int(cluster_bbox[3])
+            if gap is None:
+                continue
+            if nearest_vertical_gap is None or gap < nearest_vertical_gap:
+                nearest_vertical_gap = gap
+        if nearest_vertical_gap is not None and nearest_vertical_gap > 140:
+            return False
+    return True
+
+
 def _precaption_media_region(
     caption_bbox: list[int],
     cluster_bboxes: list[list[int]],
@@ -834,6 +890,13 @@ def compute_precaption_composite_regions(blocks: list[dict], page_width: int = 0
                     continue
                 width = _bbox_width(bbox)
                 text = clean_block_text(block.get("block_content", ""))
+                if is_body_paragraph_like_text_block(
+                    block,
+                    body_column_width=body_column_width,
+                    cluster_bboxes=cluster_bboxes,
+                    caption_bbox=caption_bbox,
+                ):
+                    continue
                 if (
                     text
                     and (
@@ -969,6 +1032,13 @@ def is_embedded_figure_text_block(block: dict, blocks: list[dict], page_width: i
             and (not stacked_media_above)
         ):
             return False
+    if is_body_paragraph_like_text_block(
+        block,
+        body_column_width=body_column_width,
+        cluster_bboxes=cluster_bboxes,
+        caption_bbox=nearest_caption_below,
+    ):
+        return False
     score = 0.0
     if is_subfigure_label(text):
         score += 4.0
@@ -1605,10 +1675,10 @@ def run_ocr(vault: Path, verbose: bool = False, no_progress: bool = False) -> in
                     try:
                         pf_cfg = read_json(cfg_path)
                         if pf_cfg.get("auto_analyze_after_ocr", False):
-                            record_glob = list(paths["library_records"].rglob(f"{key}.md"))
-                            if record_glob:
-                                record_path = record_glob[0]
-                                text = record_path.read_text(encoding="utf-8")
+                            note_glob = list(paths["literature"].rglob(f"{key} - *.md"))
+                            if note_glob:
+                                note_path = max(note_glob, key=lambda p: len(p.parents))
+                                text = note_path.read_text(encoding="utf-8")
                                 text = re.sub(
                                     r"^analyze:.*$",
                                     "analyze: true",
@@ -1616,7 +1686,7 @@ def run_ocr(vault: Path, verbose: bool = False, no_progress: bool = False) -> in
                                     count=1,
                                     flags=re.MULTILINE,
                                 )
-                                record_path.write_text(text, encoding="utf-8")
+                                note_path.write_text(text, encoding="utf-8")
                     except Exception:
                         logger.warning("auto_analyze_after_ocr: failed for %s", key, exc_info=True)
                 meta["ocr_finished_at"] = datetime.now(timezone.utc).isoformat()
@@ -1805,13 +1875,31 @@ def run_ocr(vault: Path, verbose: bool = False, no_progress: bool = False) -> in
             changed += 1
         if any(r.get("queue_status") in ("queued", "running") for r in ocr_queue):
             _time.sleep(poll_interval)
+    # Collect completed OCR keys for incremental index refresh (before filtering)
+    _done_ocr_keys = (
+        [r.get("zotero_key", "") for r in ocr_queue if r.get("queue_status") == "done"]
+        if queue_changed
+        else []
+    )
     if queue_changed:
         ocr_queue = [row for row in ocr_queue if str(row.get("queue_status", "")).lower() != "done"]
     write_ocr_queue(paths, ocr_queue)
     try:
         _sync.run_selection_sync(vault)
+        if _done_ocr_keys:
+            # Incremental refresh per completed OCR key
+            done_keys = [k for k in _done_ocr_keys if k]
+            for ocr_key in done_keys:
+                refresh_index_entry(vault, ocr_key)
+            if verbose:
+                print(f"ocr: refreshed {len(done_keys)} index entries incrementally")
+        else:
+            # No OCR completed this run — full rebuild for safety (sync may have changed records)
+            _sync.run_index_refresh(vault)
+    except ImportError:
+        # Fallback: if asset_index module not available (pre-migration), use full rebuild
         _sync.run_index_refresh(vault)
     except Exception as e:
-        logger.error("Post-OCR sync failed: %s", e)
+        logger.error("Post-OCR index refresh failed: %s", e)
     print(f"ocr: updated {changed} records")
     return 0

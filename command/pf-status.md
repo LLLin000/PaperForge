@@ -8,7 +8,7 @@
 
 - 安装完整性（Python 包、依赖）
 - 配置文件（`paperforge.json`、`.env`）
-- 路径连通性（exports、ocr、library-records、literature 目录）
+- 路径连通性（exports、ocr、literature 目录）
 - Zotero 数据目录链接状态
 - Better BibTeX 导出文件状态
 
@@ -66,13 +66,11 @@ PaperForge Lite v1.2
 [路径检查]
 ✓ exports: <system_dir>/PaperForge/exports/
 ✓ ocr: <system_dir>/PaperForge/ocr/
-✓ library-records: <resources_dir>/<control_dir>/library-records/
 ✓ literature: <resources_dir>/<literature_dir>/
 ✓ Zotero: <system_dir>/Zotero/
 
 [数据检查]
 ✓ library.json: 存在，包含 150 条文献
-✓ library-records: 150 条记录
 ✓ 正式笔记: 150 篇
 
 状态: 一切正常 ✅

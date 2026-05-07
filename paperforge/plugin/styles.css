@@ -104,7 +104,7 @@
     text-align: center;
     position: relative;
     overflow: hidden;
-    transition: border-color 0.15s;
+    transition: border-color 0.15s, opacity 0.3s;
 }
 
 .paperforge-metric-card::before {
@@ -128,6 +128,7 @@
     line-height: 1.1;
     color: var(--text-normal);
     letter-spacing: -0.5px;
+    transition: opacity 0.3s;
 }
 
 .paperforge-metric-label {
@@ -140,6 +141,22 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+/* Optional progress bar inside metric card (D-05) */
+.paperforge-metric-progress {
+    margin-top: 10px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--background-modifier-border);
+    overflow: hidden;
+}
+
+.paperforge-metric-progress-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: var(--metric-color, var(--interactive-accent));
+    transition: width 0.3s;
 }
 
 /* ==========================================================================
@@ -564,6 +581,10 @@
 }
 .paperforge-step-btn.mod-cta:hover { opacity: 0.9; }
 
+.paperforge-apikey-status { margin-left: 8px; font-size: var(--font-ui-smaller); }
+.paperforge-apikey-status.ok { color: var(--color-green); }
+.paperforge-apikey-status.error { color: var(--color-red); }
+
 .paperforge-modal-hint {
     font-size: var(--font-ui-smaller); color: var(--text-muted);
     margin-top: 12px; padding: 6px 10px;
@@ -655,4 +676,788 @@
 @keyframes paperforge-pulse {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.4; }
+}
+
+/* ==========================================================================
+   SECTION 7 — Loading Skeleton & Empty States
+   ========================================================================== */
+.paperforge-loading {
+    position: relative;
+    overflow: hidden;
+}
+
+.paperforge-loading > * {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.paperforge-loading::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.08) 50%,
+        transparent 100%
+    );
+    background-size: 200% 100%;
+    animation: paperforge-shimmer 1.5s ease-in-out infinite;
+    pointer-events: none;
+}
+
+@keyframes paperforge-shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* Dark mode adjustment: lighter shimmer is slightly dimmer */
+.theme-dark .paperforge-loading::after {
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.04) 50%,
+        transparent 100%
+    );
+    background-size: 200% 100%;
+}
+
+.paperforge-empty-state {
+    text-align: center;
+    padding: 24px 12px;
+    color: var(--text-muted);
+    font-size: var(--font-ui-small);
+    font-style: italic;
+}
+
+/* ==========================================================================
+   SECTION 9 — Lifecycle Stepper
+   ========================================================================== */
+.paperforge-lifecycle-stepper {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding: 8px 0;
+    position: relative;
+}
+
+.paperforge-lifecycle-stepper .step {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    position: relative;
+    min-height: 36px;
+}
+
+.paperforge-lifecycle-stepper .step-indicator {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: var(--font-bold);
+    position: relative;
+    z-index: 1;
+    background: var(--background-modifier-border);
+    color: var(--text-muted);
+    border: 2px solid var(--background-modifier-border);
+    transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+
+/* Connecting line between steps via ::before on each step (D-09) */
+.paperforge-lifecycle-stepper .step::before {
+    content: '';
+    position: absolute;
+    left: 22px;  /* centers under the 24px indicator circle */
+    top: 32px;   /* below the indicator */
+    bottom: -8px;
+    width: 2px;
+    background: var(--background-modifier-border);
+    z-index: 0;
+}
+
+.paperforge-lifecycle-stepper .step:last-child::before {
+    display: none;
+}
+
+.paperforge-lifecycle-stepper .step-label {
+    font-size: var(--font-ui-small);
+    color: var(--text-muted);
+    font-weight: var(--font-medium);
+    line-height: 1.3;
+}
+
+/* -- State: completed (D-10) -- */
+.paperforge-lifecycle-stepper .step.completed .step-indicator {
+    background: var(--color-green);
+    border-color: var(--color-green);
+    color: var(--text-on-accent);
+}
+
+.paperforge-lifecycle-stepper .step.completed .step-indicator::after {
+    content: '\2713';  /* checkmark */
+}
+
+.paperforge-lifecycle-stepper .step.completed .step-label {
+    color: var(--text-normal);
+}
+
+.paperforge-lifecycle-stepper .step.completed::before {
+    background: var(--color-green);
+}
+
+/* -- State: current (D-10) -- */
+.paperforge-lifecycle-stepper .step.current .step-indicator {
+    background: var(--interactive-accent);
+    border-color: var(--interactive-accent);
+    color: var(--text-on-accent);
+    animation: paperforge-step-pulse 2s ease-in-out infinite;
+}
+
+@keyframes paperforge-step-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(255,255,255,0.3); }
+    50% { box-shadow: 0 0 0 6px rgba(255,255,255,0); }
+}
+
+.paperforge-lifecycle-stepper .step.current .step-label {
+    color: var(--text-normal);
+    font-weight: var(--font-semibold);
+}
+
+/* -- State: pending (D-10) -- */
+.paperforge-lifecycle-stepper .step.pending .step-indicator {
+    opacity: 0.4;
+}
+
+.paperforge-lifecycle-stepper .step.pending .step-label {
+    opacity: 0.5;
+}
+
+/* ==========================================================================
+   SECTION 10 — Health Matrix
+   ========================================================================== */
+.paperforge-health-matrix {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.paperforge-health-cell {
+    background: var(--background-secondary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: var(--radius-m);
+    padding: 14px 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    cursor: help;
+    transition: border-color 0.15s;
+    position: relative;
+}
+
+.paperforge-health-cell:hover {
+    border-color: var(--interactive-accent);
+}
+
+.paperforge-health-cell-icon {
+    font-size: 18px;
+    line-height: 1;
+}
+
+.paperforge-health-cell-label {
+    font-size: var(--font-ui-smaller);
+    font-weight: var(--font-medium);
+    color: var(--text-normal);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+/* Status coloring (D-14) */
+.paperforge-health-cell.ok {
+    border-left: 3px solid var(--color-green);
+}
+
+.paperforge-health-cell.ok .paperforge-health-cell-icon {
+    color: var(--color-green);
+}
+
+.paperforge-health-cell.warn {
+    border-left: 3px solid var(--color-yellow);
+}
+
+.paperforge-health-cell.warn .paperforge-health-cell-icon {
+    color: var(--color-yellow);
+}
+
+.paperforge-health-cell.fail {
+    border-left: 3px solid var(--color-red);
+}
+
+.paperforge-health-cell.fail .paperforge-health-cell-icon {
+    color: var(--color-red);
+}
+
+/* Tooltip on hover (D-16) */
+.paperforge-health-cell[title]:hover::after {
+    content: attr(title);
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--background-modifier-hover);
+    color: var(--text-normal);
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: var(--radius-s);
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 100;
+    border: 1px solid var(--background-modifier-border);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.paperforge-health-cell[title]:hover::before {
+    content: '';
+    position: absolute;
+    bottom: calc(100% + 2px);
+    left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-top-color: var(--background-modifier-border);
+    pointer-events: none;
+    z-index: 100;
+}
+
+/* ==========================================================================
+   SECTION 11 — Maturity Gauge
+   ========================================================================== */
+.paperforge-maturity-gauge {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.paperforge-maturity-gauge .gauge-track {
+    display: flex;
+    gap: 4px;
+    height: 16px;
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--background-modifier-border);
+}
+
+.paperforge-maturity-gauge .gauge-segment {
+    flex: 1;
+    height: 100%;
+    border-radius: 2px;
+    background: var(--background-modifier-border);
+    transition: background 0.3s;
+}
+
+.paperforge-maturity-gauge .gauge-segment.filled {
+    background: var(--interactive-accent);
+}
+
+/* Gradient variant: each filled segment gets progressively richer color */
+.paperforge-maturity-gauge .gauge-segment.filled.level-1 { background: var(--color-cyan); }
+.paperforge-maturity-gauge .gauge-segment.filled.level-2 { background: var(--color-blue); }
+.paperforge-maturity-gauge .gauge-segment.filled.level-3 { background: var(--color-purple); }
+.paperforge-maturity-gauge .gauge-segment.filled.level-4 { background: var(--color-green); }
+.paperforge-maturity-gauge .gauge-segment.filled.level-5 { background: var(--color-yellow); }
+.paperforge-maturity-gauge .gauge-segment.filled.level-6 { background: var(--color-red); }
+
+.paperforge-maturity-gauge .gauge-level {
+    font-size: var(--font-ui-medium);
+    font-weight: var(--font-bold);
+    color: var(--text-normal);
+    text-align: center;
+}
+
+.paperforge-maturity-gauge .gauge-blockers {
+    list-style: disc;
+    padding-left: 20px;
+    margin: 4px 0 0;
+}
+
+.paperforge-maturity-gauge .gauge-blockers li {
+    font-size: var(--font-ui-smaller);
+    color: var(--text-muted);
+    line-height: 1.5;
+}
+
+/* ==========================================================================
+   SECTION 12 — Bar Chart
+   ========================================================================== */
+.paperforge-bar-chart {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 4px 0;
+}
+
+.paperforge-bar-chart .bar-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.paperforge-bar-chart .bar-label {
+    font-size: var(--font-ui-smaller);
+    color: var(--text-muted);
+    flex: 0 0 90px;
+    text-align: right;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-weight: var(--font-medium);
+}
+
+.paperforge-bar-chart .bar-track {
+    flex: 1;
+    height: 20px;
+    border-radius: 4px;
+    background: var(--background-modifier-border);
+    overflow: hidden;
+    position: relative;
+}
+
+.paperforge-bar-chart .bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    background: var(--interactive-accent);
+    transition: width 0.3s;
+    min-width: 2px;
+}
+
+.paperforge-bar-chart .bar-count {
+    font-size: var(--font-ui-smaller);
+    font-weight: var(--font-bold);
+    color: var(--text-normal);
+    flex: 0 0 30px;
+    text-align: left;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Color variants for bar fills based on lifecycle stage */
+.paperforge-bar-chart .bar-fill.stage-indexed { background: var(--color-blue); }
+.paperforge-bar-chart .bar-fill.stage-pdf-ready { background: var(--color-purple); }
+.paperforge-bar-chart .bar-fill.stage-fulltext-ready { background: var(--color-green); }
+.paperforge-bar-chart .bar-fill.stage-deep-read { background: var(--color-yellow); }
+
+/* ==========================================================================
+   SECTION 13 — Mode-Aware Content Area
+   ========================================================================== */
+.paperforge-content-area {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    transition: opacity 0.2s ease;
+}
+
+.paperforge-content-area.switching {
+    opacity: 0.4;
+    pointer-events: none;
+}
+
+.paperforge-content-placeholder {
+    text-align: center;
+    padding: 32px 12px;
+    color: var(--text-muted);
+    font-size: var(--font-ui-small);
+    border: 1px dashed var(--background-modifier-border);
+    border-radius: var(--radius-m);
+    background: var(--background-secondary);
+    font-style: italic;
+}
+
+/* ==========================================================================
+   SECTION 14 — Mode-Aware Header Context
+   ========================================================================== */
+.paperforge-mode-context {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    flex: 1;
+}
+
+.paperforge-mode-badge {
+    font-size: 10px;
+    font-weight: var(--font-semibold);
+    padding: 2px 8px;
+    border-radius: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    line-height: 1.4;
+    flex-shrink: 0;
+}
+
+.paperforge-mode-badge.global {
+    background: var(--interactive-accent);
+    color: var(--text-on-accent);
+}
+
+.paperforge-mode-badge.paper {
+    background: var(--color-cyan);
+    color: var(--text-on-accent);
+}
+
+.paperforge-mode-badge.collection {
+    background: var(--color-purple);
+    color: var(--text-on-accent);
+}
+
+.paperforge-mode-name {
+    font-size: var(--font-ui-small);
+    font-weight: var(--font-semibold);
+    color: var(--text-normal);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+    line-height: 1.3;
+}
+
+.paperforge-mode-warning {
+    font-size: var(--font-ui-smaller);
+    color: var(--text-warning);
+    margin-left: auto;
+}
+
+/* ==========================================================================
+   SECTION 15 — Per-Paper View Layout
+   ========================================================================== */
+.paperforge-paper-view {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.paperforge-paper-header {
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.paperforge-paper-title {
+    font-size: var(--font-ui-large);
+    font-weight: var(--font-semibold);
+    color: var(--text-normal);
+    line-height: 1.4;
+    margin: 0 0 6px 0;
+}
+
+.paperforge-paper-meta {
+    font-size: var(--font-ui-small);
+    color: var(--text-muted);
+    line-height: 1.5;
+}
+
+.paperforge-paper-authors {
+    display: inline;
+}
+
+.paperforge-paper-year {
+    display: inline;
+}
+
+.paperforge-paper-year::before {
+    content: " · ";
+}
+
+.paperforge-paper-actions {
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.paperforge-contextual-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    font-size: var(--font-ui-small);
+    font-weight: var(--font-semibold);
+    color: var(--text-normal);
+    background: var(--background-secondary-alt);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: var(--radius-m);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    user-select: none;
+}
+
+.paperforge-contextual-btn:hover {
+    background: var(--background-modifier-hover);
+    color: var(--text-accent);
+}
+
+.paperforge-contextual-btn:active {
+    transform: scale(0.97);
+}
+
+.paperforge-contextual-btn-icon {
+    font-size: 14px;
+    line-height: 1;
+}
+
+/* ==========================================================================
+   SECTION 16 — Next-Step Recommendation Card
+   ========================================================================== */
+.paperforge-next-step-card {
+    background: var(--background-secondary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: var(--radius-m);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.paperforge-next-step-card.ready {
+    border-color: var(--color-green);
+    background: color-mix(in srgb, var(--color-green) 8%, var(--background-secondary));
+}
+
+.paperforge-next-step-label {
+    font-size: var(--font-ui-smaller);
+    font-weight: var(--font-semibold);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+}
+
+.paperforge-next-step-text {
+    font-size: var(--font-ui-small);
+    color: var(--text-normal);
+    line-height: 1.5;
+}
+
+.paperforge-next-step-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    font-size: var(--font-ui-small);
+    font-weight: var(--font-semibold);
+    color: var(--text-on-accent);
+    background: var(--interactive-accent);
+    border: none;
+    border-radius: var(--radius-m);
+    cursor: pointer;
+    transition: opacity 0.15s;
+    align-self: flex-start;
+    user-select: none;
+}
+
+.paperforge-next-step-trigger:hover {
+    opacity: 0.85;
+}
+
+.paperforge-next-step-trigger:active {
+    transform: scale(0.97);
+}
+
+.paperforge-next-step-trigger.running {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+/* ==========================================================================
+   SECTION 17 — Collection View Layout
+   ========================================================================== */
+.paperforge-collection-view {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.paperforge-collection-metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 10px;
+}
+
+.paperforge-collection-health {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.paperforge-collection-health-cell {
+    background: var(--background-secondary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: var(--radius-m);
+    padding: 14px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    position: relative;
+}
+
+.paperforge-collection-health-cell-label {
+    font-size: var(--font-ui-smaller);
+    font-weight: var(--font-semibold);
+    color: var(--text-normal);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.paperforge-collection-health-counts {
+    font-size: var(--font-ui-small);
+    color: var(--text-muted);
+    line-height: 1.6;
+}
+
+.paperforge-collection-health-counts .ok {
+    color: var(--color-green);
+}
+
+.paperforge-collection-health-counts .warn {
+    color: var(--color-yellow);
+}
+
+.paperforge-collection-health-counts .fail {
+    color: var(--color-red);
+}
+
+/* ==========================================================================
+   SECTION 33 — Deep-Reading Dashboard Mode
+   ========================================================================== */
+.paperforge-mode-deepreading {
+    display: flex;
+    flex-direction: column;
+    gap: var(--size-4-4, 16px);
+}
+
+.paperforge-deepreading-card {
+    background: var(--background-primary-alt);
+    border-radius: var(--radius-m, 8px);
+    padding: var(--size-4-4, 16px);
+}
+
+.paperforge-deepreading-card-title {
+    font-weight: 600;
+    font-size: var(--font-ui-medium);
+    margin-bottom: var(--size-4-2, 8px);
+}
+
+.paperforge-deepreading-card-header.collapsible {
+    cursor: pointer;
+    user-select: none;
+}
+
+.paperforge-deepreading-card-header:hover {
+    opacity: 0.8;
+}
+
+.paperforge-deepreading-card-body.collapsed {
+    display: none;
+}
+
+.paperforge-deepreading-status-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.paperforge-deepreading-status-row {
+    display: flex;
+    justify-content: space-between;
+    padding: var(--size-4-1, 4px) 0;
+    border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.paperforge-deepreading-status-row:last-child {
+    border-bottom: none;
+}
+
+.paperforge-deepreading-status-label {
+    color: var(--text-muted);
+    font-size: var(--font-ui-small);
+}
+
+.paperforge-deepreading-status-value {
+    font-size: var(--font-ui-small);
+}
+
+.paperforge-deepreading-pass1-content {
+    line-height: 1.6;
+}
+
+.paperforge-deepreading-pass1-subheading {
+    margin: var(--size-4-2, 8px) 0 var(--size-4-1, 4px);
+    color: var(--text-accent);
+}
+
+.paperforge-deepreading-pass1-marker {
+    font-weight: 600;
+    color: var(--text-normal);
+    margin: var(--size-4-2, 8px) 0;
+}
+
+.paperforge-deepreading-pass1-text {
+    color: var(--text-muted);
+    margin: var(--size-4-1, 4px) 0;
+}
+
+.paperforge-deepreading-empty {
+    color: var(--text-faint);
+    font-size: var(--font-ui-small);
+    padding: var(--size-4-2, 8px);
+    text-align: center;
+}
+
+/* Session grouping */
+.paperforge-deepreading-session {
+    margin-bottom: var(--size-4-3, 12px);
+}
+
+.paperforge-deepreading-session-header {
+    display: flex;
+    justify-content: space-between;
+    font-size: var(--font-ui-small);
+    color: var(--text-faint);
+    margin-bottom: var(--size-4-2, 8px);
+    padding-bottom: var(--size-4-1, 4px);
+    border-bottom: 1px dashed var(--background-modifier-border);
+}
+
+.paperforge-deepreading-session-date {
+    color: var(--text-muted);
+}
+
+/* Dialog bubbles */
+.paperforge-deepreading-bubble {
+    padding: var(--size-4-2, 8px) var(--size-4-3, 12px);
+    border-radius: var(--radius-s, 6px);
+    margin-bottom: var(--size-4-2, 8px);
+    max-width: 90%;
+}
+
+.paperforge-deepreading-bubble.question {
+    background: var(--interactive-accent);
+    color: var(--text-on-accent);
+    margin-right: auto;
+}
+
+.paperforge-deepreading-bubble.answer {
+    background: var(--background-secondary-alt);
+    color: var(--text-normal);
+    margin-left: auto;
+}
+
+.paperforge-deepreading-bubble .bubble-label {
+    font-size: var(--font-smallest, 10px);
+    opacity: 0.7;
+    margin-bottom: 2px;
+}
+
+.paperforge-deepreading-bubble .bubble-text {
+    font-size: var(--font-ui-small);
+    line-height: 1.5;
 }

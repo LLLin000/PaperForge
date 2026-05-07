@@ -125,6 +125,11 @@ def create_test_vault() -> Path:
         'journal: "Journal of Shoulder and Elbow Surgery"\n'
         'impact_factor: "5.2"\n'
         'category: "骨科"\n'
+        'zotero_key: "TSTONE001"\n'
+        'domain: "骨科"\n'
+        "analyze: true\n"
+        "do_ocr: true\n"
+        'ocr_status: "done"\n'
         "tags:\n"
         "  - 文献阅读\n"
         "  - 骨科\n"

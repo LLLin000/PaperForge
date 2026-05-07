@@ -23,7 +23,7 @@ def stub_run_selection_sync(vault: Path, verbose: bool = False) -> int:
     return 0
 
 
-def stub_run_index_refresh(vault: Path, verbose: bool = False) -> int:
+def stub_run_index_refresh(vault: Path, verbose: bool = False, rebuild_index: bool = False) -> int:
     CAPTURED_CALLS.append(("run_index_refresh", vault))
     return 0
 

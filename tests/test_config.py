@@ -115,18 +115,18 @@ def env_dict() -> dict[str, str]:
 # ---------------------------------------------------------------------------
 
 
-def test_default_system_dir_is_99_System():
-    """Built-in default for system_dir must be '99_System'."""
+def test_default_system_dir_is_System():
+    """Built-in default for system_dir must be 'System'."""
     from paperforge.config import DEFAULT_CONFIG
 
-    assert DEFAULT_CONFIG["system_dir"] == "99_System"
+    assert DEFAULT_CONFIG["system_dir"] == "System"
 
 
-def test_default_resources_dir_is_03_Resources():
-    """Built-in default for resources_dir must be '03_Resources'."""
+def test_default_resources_dir_is_Resources():
+    """Built-in default for resources_dir must be 'Resources'."""
     from paperforge.config import DEFAULT_CONFIG
 
-    assert DEFAULT_CONFIG["resources_dir"] == "03_Resources"
+    assert DEFAULT_CONFIG["resources_dir"] == "Resources"
 
 
 def test_default_literature_dir():
@@ -144,7 +144,7 @@ def test_default_control_dir():
 def test_default_base_dir():
     from paperforge.config import DEFAULT_CONFIG
 
-    assert DEFAULT_CONFIG["base_dir"] == "05_Bases"
+    assert DEFAULT_CONFIG["base_dir"] == "Bases"
 
 
 def test_default_skill_dir():
@@ -172,7 +172,7 @@ def test_env_keys_has_all_required_overrides():
         "PAPERFORGE_VAULT",
         "PAPERFORGE_SYSTEM_DIR",
         "PAPERFORGE_RESOURCES_DIR",
-        "paperforgeRATURE_DIR",
+        "PAPERFORGE_LITERATURE_DIR",
         "PAPERFORGE_CONTROL_DIR",
         "PAPERFORGE_BASE_DIR",
         "PAPERFORGE_SKILL_DIR",
@@ -277,8 +277,8 @@ def test_defaults_used_when_no_json(tmp_path: Path):
     vault.mkdir()
 
     cfg = load_vault_config(vault)
-    assert cfg["system_dir"] == "99_System"
-    assert cfg["resources_dir"] == "03_Resources"
+    assert cfg["system_dir"] == "System"
+    assert cfg["resources_dir"] == "Resources"
 
 
 # ---------------------------------------------------------------------------
@@ -470,3 +470,169 @@ def test_resolve_vault_precedence_cwd_last(tmp_path: Path):
 
     result = resolve_vault(cli_vault=None, env={}, cwd=tmp_path)
     assert result == tmp_path
+
+
+# ---------------------------------------------------------------------------
+# schema_version — CONF-01
+# ---------------------------------------------------------------------------
+
+
+def test_default_config_has_schema_version():
+    """DEFAULT_CONFIG must contain schema_version key with value '2'."""
+    from paperforge.config import DEFAULT_CONFIG
+
+    assert "schema_version" in DEFAULT_CONFIG
+    assert DEFAULT_CONFIG["schema_version"] == "2"
+
+
+def test_config_keys_includes_schema_version():
+    """CONFIG_KEYS must include schema_version (auto-derived from DEFAULT_CONFIG)."""
+    from paperforge.config import CONFIG_KEYS
+
+    assert "schema_version" in CONFIG_KEYS
+
+
+def test_get_paperforge_schema_version_defaults_to_1(tmp_path: Path):
+    """get_paperforge_schema_version returns 1 when no schema_version in paperforge.json."""
+    from paperforge.config import get_paperforge_schema_version
+
+    vault = tmp_path / "no_schema"
+    vault.mkdir()
+    (vault / "paperforge.json").write_text("{}", encoding="utf-8")
+    assert get_paperforge_schema_version(vault) == 1
+
+
+def test_get_paperforge_schema_version_reads_2(tmp_path: Path):
+    """get_paperforge_schema_version returns 2 when schema_version is '2'."""
+    import json
+    from paperforge.config import get_paperforge_schema_version
+
+    vault = tmp_path / "schema_v2"
+    vault.mkdir()
+    (vault / "paperforge.json").write_text(
+        json.dumps({"schema_version": "2"}), encoding="utf-8"
+    )
+    assert get_paperforge_schema_version(vault) == 2
+
+
+def test_load_vault_config_excludes_schema_version(tmp_path: Path):
+    """load_vault_config output must NOT contain schema_version key."""
+    from paperforge.config import load_vault_config
+
+    vault = tmp_path / "exclude_schema"
+    vault.mkdir()
+    (vault / "paperforge.json").write_text(
+        '{"schema_version": "2"}', encoding="utf-8"
+    )
+    cfg = load_vault_config(vault)
+    assert "schema_version" not in cfg
+
+
+# ---------------------------------------------------------------------------
+# migrate_paperforge_json — CONF-02 legacy migration
+# ---------------------------------------------------------------------------
+
+
+def test_migrate_legacy_top_level_keys(tmp_path: Path):
+    """Legacy top-level path keys are migrated to vault_config block."""
+    import json
+    from paperforge.config import migrate_paperforge_json
+
+    vault = tmp_path / "legacy_migrate"
+    vault.mkdir()
+    data = {
+        "system_dir": "OldSystem",
+        "literature_dir": "OldLit",
+        "version": "1.4",
+        "vault_config": {
+            "system_dir": "99_System",
+        },
+    }
+    (vault / "paperforge.json").write_text(json.dumps(data), encoding="utf-8")
+
+    assert migrate_paperforge_json(vault) is True
+
+    result = json.loads((vault / "paperforge.json").read_text(encoding="utf-8"))
+    assert "system_dir" not in result, "top-level key removed"
+    assert "literature_dir" not in result, "top-level key removed"
+    # system_dir already exists in vault_config — existing value preserved
+    assert result["vault_config"]["system_dir"] == "99_System", "existing vault_config preserved"
+    # literature_dir is only at top-level (gap in vault_config) — filled from top-level
+    assert result["vault_config"]["literature_dir"] == "OldLit", "top-level fills vault_config gap"
+    assert result["schema_version"] == "2"
+    assert (vault / "paperforge.json.bak").exists(), "backup created"
+
+
+def test_migrate_idempotent(tmp_path: Path):
+    """Already-migrated files return False (no-op)."""
+    import json
+    from paperforge.config import migrate_paperforge_json
+
+    vault = tmp_path / "already_migrated"
+    vault.mkdir()
+    (vault / "paperforge.json").write_text(
+        json.dumps({"vault_config": {"system_dir": "99_System"}, "schema_version": "2"}),
+        encoding="utf-8",
+    )
+
+    assert migrate_paperforge_json(vault) is False
+
+
+def test_migrate_no_file(tmp_path: Path):
+    """No paperforge.json returns False."""
+    from paperforge.config import migrate_paperforge_json
+
+    vault = tmp_path / "no_file"
+    vault.mkdir()
+
+    assert migrate_paperforge_json(vault) is False
+
+
+def test_migrate_non_path_keys_survive(tmp_path: Path):
+    """Non-path top-level keys survive migration in output root."""
+    import json
+    from paperforge.config import migrate_paperforge_json
+
+    vault = tmp_path / "non_path_survive"
+    vault.mkdir()
+    data = {
+        "system_dir": "OldSystem",
+        "version": "1.4",
+        "agent_platform": "opencode",
+        "vault_config": {},
+    }
+    (vault / "paperforge.json").write_text(json.dumps(data), encoding="utf-8")
+
+    migrate_paperforge_json(vault)
+
+    result = json.loads((vault / "paperforge.json").read_text(encoding="utf-8"))
+    assert "version" in result
+    assert result["version"] == "1.4"
+    assert "agent_platform" in result
+    assert result["agent_platform"] == "opencode"
+    assert result["vault_config"]["system_dir"] == "OldSystem"
+
+
+def test_migrate_no_vault_config_block_creates_it(tmp_path: Path):
+    """Top-level keys without vault_config block create a new vault_config."""
+    import json
+    from paperforge.config import migrate_paperforge_json
+
+    vault = tmp_path / "creates_vc"
+    vault.mkdir()
+    data = {
+        "system_dir": "OldSystem",
+        "resources_dir": "OldRes",
+        "literature_dir": "OldLit",
+        "version": "1.4",
+    }
+    (vault / "paperforge.json").write_text(json.dumps(data), encoding="utf-8")
+
+    migrate_paperforge_json(vault)
+
+    result = json.loads((vault / "paperforge.json").read_text(encoding="utf-8"))
+    assert "vault_config" in result
+    assert result["vault_config"]["system_dir"] == "OldSystem"
+    assert result["vault_config"]["resources_dir"] == "OldRes"
+    assert result["vault_config"]["literature_dir"] == "OldLit"
+    assert result["schema_version"] == "2"

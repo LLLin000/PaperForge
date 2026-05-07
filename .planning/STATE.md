@@ -1,81 +1,83 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.5
-milestone_name: Obsidian Plugin Setup Integration
-status: Milestone complete
-stopped_at: Completed Phase 21 (One-Click Install & Polished UX) — both plans delivered
-last_updated: "2026-04-29T14:46:07.284Z"
+milestone: v1.11
+milestone_name: Merge Gate — v1.9 Ripple Remediation
+status: Milestone Complete
+stopped_at: v1.11 shipped — all 5 phases, 10 plans, 27 requirements complete
+last_updated: "2026-05-07T23:59:59.999Z"
+last_activity: 2026-05-07 — v1.11 milestone completed and archived
 progress:
-  total_phases: 2
-  completed_phases: 2
-  total_plans: 3
-  completed_plans: 3
+  total_phases: 5
+  completed_phases: 5
+  total_plans: 10
+  completed_plans: 10
+  percent: 100
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-04-29)
+See: .planning/PROJECT.md (updated 2026-05-07)
 
-**Core value:** A new user downloads one Obsidian plugin and completes full PaperForge installation without touching a terminal.
-**Current focus:** Phase 21 — one-click-install-and-polished-ux
+**Core value:** Researchers always know what papers they have, what state those papers are in, and whether each paper is reliably usable by AI with traceable fulltext, figures, notes, and source links.
+**Current focus:** v1.11 shipped. Next milestone TBD.
 
 ## Current Position
 
-Phase: 21
-Plan: Not started
+Milestone: v1.11 Merge Gate — COMPLETE
+Phases: 46-50 (5/5 complete)
+Plans: 10/10 complete
+Status: Milestone Complete — all 27 requirements satisfied
+Last activity: 2026-05-07 — v1.11 milestone completed and archived
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 38 (across Phases 1-19)
-- Average duration: Not yet tracked
-- Total execution time: Not yet tracked
+- Total plans completed: 10
+- Total execution time: ~0.5 hours
 
-**By Phase (most recent):**
+**By Phase:**
 
-| Phase | Milestone | Plans | Status |
-|-------|-----------|-------|--------|
-| 19. Testing | v1.4 | 3/3 | Complete |
-| 20. Plugin Settings Shell | v1.5 | 3/3 | Complete |
-| 21. One-Click Install | v1.5 | 2/2 | Planned |
+| Phase | Plans | Total |
+|-------|-------|-------|
+| 46 | 2 | ~5 min |
+| 47 | 2 | ~18 min |
+| 48 | 2 | ~15 min |
+| 49 | 3 | ~8 min |
+| 50 | 1 | ~4 min |
 
-**Recent Trend:** v1.4 averaged ~1 day per phase. Target for v1.5 should be similar.
-
-*Updated after each plan completion*
-| Phase 20 P20 | 2min | 3 tasks | 1 files |
-| Phase 21 P21-01 | — | 3 tasks | 2 files |
-| Phase 21 P21-02 | — | 2 tasks | 1 files |
-| Phase 21-one-click-install-and-polished-ux P01 | 5 min | 3 tasks | 2 files |
-| Phase 21-one-click-install-and-polished-ux P02 | 5 min | 2 tasks | 1 files |
+*Updated after milestone completion*
 
 ## Accumulated Context
 
-### Decisions
+### Previous milestones (v1.9-v1.11)
 
-- **v1.5**: Settings tab in Obsidian plugin as setup entry point — eliminates terminal requirement; plugin becomes single download artifact. Zero new npm or Python dependencies. (See PROJECT.md Key Decisions)
+- v1.9 eliminated library-records, created per-workspace paper-meta.json, slimmed formal note frontmatter
+- v1.10 fixed cross-cutting dependency drift left by v1.9 (4 phases, all complete)
+- v1.11 resolved all v1.9 ripple effects: config-resolved index paths, library-records deprecation cleanup, TUI removal, module hardening, repair blind spots (5 phases, 10 plans, 27 requirements)
 
-Recent decisions affecting current work:
+### v1.11 phase structure (5 phases, 27 requirements) — COMPLETE
 
-- **Phase 20**: Plugin settings use Obsidian's `PluginSettingTab` API, `loadData()`/`saveData()` for persistence, `Setting` form builder for UI. No TypeScript, no build system. Plugin is pure JS CommonJS (`paperforge/plugin/main.js`).
-- **Phase 20-21**: Settings tab is purely additive — zero changes to existing `PaperForgeStatusView` sidebar or `ACTIONS[]` definitions.
-- **Phase 21**: Subprocess orchestration uses `node:child_process.spawn` (not `exec`) for non-blocking setup execution with stdout/stderr parsing.
-- [Phase 21-one-click-install-and-polished-ux]: Settings tab is purely additive — zero changes to PaperForgeStatusView sidebar or ACTIONS[] definitions
-- [Phase 21-one-click-install-and-polished-ux]: Subprocess uses spawn (not exec) for stdout streaming, --headless (not --non-interactive), API key via --paddleocr-key flag
+| Phase | Goal | Reqs | Status |
+|-------|------|------|--------|
+| 46 - Index Path Resolution | Config-resolved paths across 5 workspace fields + 11 consumers | PATH 01-06 (6) | Complete |
+| 47 - Library-Records Deprecation Cleanup | Zero residual traces in production code and documentation | LEGACY 01-07 (7) | Complete |
+| 48 - Textual TUI Removal | Broken Textual TUI removed; headless-only setup workflow | DEPR 01-03 (3) | Complete |
+| 49 - Module Hardening | Production-grade safety guards in discussion.py, main.js, asset_state.py | HARDEN 01-07 (7) | Complete |
+| 50 - Repair Blind Spots | All 6 divergence types detected and handled by fix mode | REPAIR 01-04 (4) | Complete |
 
-### Pending Todos
+### Diagnosed v1.9 ripple effects (all resolved)
 
-None yet.
-
-### Blockers/Concerns
-
-- **Phase 20**: Critical pitfalls from research — debounced saves (500ms) prevent `data.json` corruption; `display()` lifecycle requires immediate in-memory update on change; `loadData()` null merge via `Object.assign({}, DEFAULTS, data || {})`
-- **Phase 21**: Windows path encoding with spaces/Unicode requires `spawn` with proper quoting; raw stderr must be parsed into friendly Chinese messages before Notice display; button double-click prevention via `setDisabled(true)`
+1. **[FIXED] Index hardcodes "Literature/" path** — resolved by Phase 46 (PATH-01). Config-resolved paths now in all 5 workspace fields.
+2. **[FIXED] Library-records deprecation incomplete** — resolved by Phase 47 (LEGACY-01 through LEGACY-07). Zero residual traces in production code, documentation, and user-facing labels.
+3. **[FIXED] Setup wizard TUI broken and unreachable** — resolved by Phase 48 (DEPR-01 through DEPR-03). Broken Textual TUI removed; headless-only redirect with clean message.
+4. **[FIXED] New modules lack hardening** — resolved by Phase 49 (HARDEN-01 through HARDEN-07). discussion.py, main.js, asset_state.py, and repair.py all hardened.
 
 ## Session Continuity
 
-Last session: 2026-04-29T14:40:05.625Z
-Stopped at: Completed Phase 21 (One-Click Install & Polished UX) — both plans delivered
-Resume file: None
+Milestone: v1.11 Merge Gate — COMPLETE and ARCHIVED.
+Archive: `.planning/milestones/v1.11-ROADMAP.md`
+Resume file: None — milestone finalised.
