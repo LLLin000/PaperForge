@@ -115,18 +115,18 @@ def env_dict() -> dict[str, str]:
 # ---------------------------------------------------------------------------
 
 
-def test_default_system_dir_is_99_System():
-    """Built-in default for system_dir must be '99_System'."""
+def test_default_system_dir_is_System():
+    """Built-in default for system_dir must be 'System'."""
     from paperforge.config import DEFAULT_CONFIG
 
-    assert DEFAULT_CONFIG["system_dir"] == "99_System"
+    assert DEFAULT_CONFIG["system_dir"] == "System"
 
 
-def test_default_resources_dir_is_03_Resources():
-    """Built-in default for resources_dir must be '03_Resources'."""
+def test_default_resources_dir_is_Resources():
+    """Built-in default for resources_dir must be 'Resources'."""
     from paperforge.config import DEFAULT_CONFIG
 
-    assert DEFAULT_CONFIG["resources_dir"] == "03_Resources"
+    assert DEFAULT_CONFIG["resources_dir"] == "Resources"
 
 
 def test_default_literature_dir():
@@ -144,7 +144,7 @@ def test_default_control_dir():
 def test_default_base_dir():
     from paperforge.config import DEFAULT_CONFIG
 
-    assert DEFAULT_CONFIG["base_dir"] == "05_Bases"
+    assert DEFAULT_CONFIG["base_dir"] == "Bases"
 
 
 def test_default_skill_dir():
@@ -172,7 +172,7 @@ def test_env_keys_has_all_required_overrides():
         "PAPERFORGE_VAULT",
         "PAPERFORGE_SYSTEM_DIR",
         "PAPERFORGE_RESOURCES_DIR",
-        "paperforgeRATURE_DIR",
+        "PAPERFORGE_LITERATURE_DIR",
         "PAPERFORGE_CONTROL_DIR",
         "PAPERFORGE_BASE_DIR",
         "PAPERFORGE_SKILL_DIR",
@@ -277,8 +277,8 @@ def test_defaults_used_when_no_json(tmp_path: Path):
     vault.mkdir()
 
     cfg = load_vault_config(vault)
-    assert cfg["system_dir"] == "99_System"
-    assert cfg["resources_dir"] == "03_Resources"
+    assert cfg["system_dir"] == "System"
+    assert cfg["resources_dir"] == "Resources"
 
 
 # ---------------------------------------------------------------------------
