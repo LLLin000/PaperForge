@@ -26,6 +26,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
 import shutil
 import tempfile
 from datetime import datetime, timedelta, timezone
@@ -210,6 +211,20 @@ def migrate_legacy_index(vault: Path) -> bool:
 # ---------------------------------------------------------------------------
 
 
+def _read_frontmatter_bool(note_path: Path, key: str, default: bool = False) -> bool:
+    """Read a boolean field from a formal note's YAML frontmatter."""
+    if not note_path or not note_path.exists():
+        return default
+    try:
+        text = note_path.read_text(encoding="utf-8")
+        m = re.search(rf"^{key}:\s*(?:[\"'])?(true|false)(?:[\"'])?\s*$", text, re.MULTILINE | re.IGNORECASE)
+        if m:
+            return m.group(1).lower() == "true"
+    except Exception:
+        pass
+    return default
+
+
 def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: Path) -> dict:
     """Construct a single canonical index entry from a BBT export *item*.
 
@@ -289,8 +304,8 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
         "collection_tags": collection_meta.get("collection_tags", []),
         "collection_group": collection_meta.get("collection_group", []),
         "has_pdf": bool(pdf_attachments),
-        "do_ocr": bool(pdf_attachments),
-        "analyze": bool(pdf_attachments),
+        "do_ocr": _read_frontmatter_bool(main_note_path, "do_ocr") or _read_frontmatter_bool(note_path, "do_ocr") or meta.get("do_ocr") is True or meta.get("ocr_status") == "done",
+        "analyze": _read_frontmatter_bool(main_note_path, "analyze") or _read_frontmatter_bool(note_path, "analyze") or meta.get("analyze") is True or meta.get("deep_reading_status") == "done",
         "pdf_path": (
             obsidian_wikilink_for_pdf(pdf_attachments[0]["path"], vault, zotero_dir)
             if pdf_attachments
@@ -302,21 +317,25 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
         "ocr_json_path": meta.get("json_path", ""),
         "deep_reading_status": (
             "done"
+            if main_note_path.exists() and has_deep_reading_content(main_note_path.read_text(encoding="utf-8"))
+            else "done"
             if note_path.exists() and has_deep_reading_content(note_path.read_text(encoding="utf-8"))
             else "pending"
         ),
-        "note_path": str(note_path.relative_to(vault)).replace("\\", "/"),
+        "note_path": str((main_note_path if main_note_path.exists() else note_path).relative_to(vault)).replace("\\", "/"),
         "deep_reading_md_path": (
-            str(note_path.relative_to(vault)).replace("\\", "/")
+            str(main_note_path.relative_to(vault)).replace("\\", "/")
+            if main_note_path.exists() and has_deep_reading_content(main_note_path.read_text(encoding="utf-8"))
+            else str(note_path.relative_to(vault)).replace("\\", "/")
             if note_path.exists() and has_deep_reading_content(note_path.read_text(encoding="utf-8"))
             else ""
         ),
-        # Workspace path fields (Phase 22 paper workspace structure, per D-12)
-        "paper_root": f"Literature/{domain}/{key} - {title_slug}/",
-        "main_note_path": f"Literature/{domain}/{key} - {title_slug}/{key} - {title_slug}.md",
-        "fulltext_path": f"Literature/{domain}/{key} - {title_slug}/fulltext.md",
-        "deep_reading_path": f"Literature/{domain}/{key} - {title_slug}/deep-reading.md",
-        "ai_path": f"Literature/{domain}/{key} - {title_slug}/ai/",
+        # Workspace path fields — config-resolved via paths["literature"] (Phase 46: PATH-01)
+        "paper_root": str(workspace_dir.relative_to(vault)).replace("\\", "/") + "/",
+        "main_note_path": str(main_note_path.relative_to(vault)).replace("\\", "/"),
+        "fulltext_path": str((workspace_dir / "fulltext.md").relative_to(vault)).replace("\\", "/"),
+        "deep_reading_path": str((workspace_dir / "deep-reading.md").relative_to(vault)).replace("\\", "/"),
+        "ai_path": str((workspace_dir / "ai").relative_to(vault)).replace("\\", "/") + "/",
     }
 
     # ---- derived state (Phase 24: lifecycle, health, maturity, next-step) ----
@@ -391,7 +410,7 @@ def build_index(vault: Path, verbose: bool = False) -> int:
         )
 
     cfg = load_vault_config(vault)
-    zotero_dir = vault / cfg.get("system_dir", "99_System") / "Zotero"
+    zotero_dir = vault / cfg.get("system_dir", "System") / "Zotero"
 
     domain_lookup = {entry["export_file"]: entry["domain"] for entry in config["domains"]}
 
@@ -461,7 +480,7 @@ def refresh_index_entry(vault: Path, key: str) -> bool:
     config = load_domain_config(paths)
     domain_lookup = {entry["export_file"]: entry["domain"] for entry in config["domains"]}
     cfg = load_vault_config(vault)
-    zotero_dir = vault / cfg.get("system_dir", "99_System") / "Zotero"
+    zotero_dir = vault / cfg.get("system_dir", "System") / "Zotero"
 
     found_item = None
     found_domain = ""
