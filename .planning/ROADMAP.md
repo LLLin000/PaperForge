@@ -1,6 +1,6 @@
 # Roadmap: PaperForge
 
-**Current milestone:** v1.9 Frontmatter Rationalization & Library-Record Deprecation — Planned
+**Current milestone:** v1.9 shipped. Ready for next milestone.
 **Phase numbering:** Continuous. v1.8 partial ended at Phase 36. v1.9 begins at Phase 37.
 
 ---
@@ -15,7 +15,7 @@
 - ✅ **v1.5 Obsidian Plugin Setup Integration** — Phases 20-21 (shipped 2026-04-29)
 - ✅ **v1.6 AI-Ready Literature Asset Foundation** — Phases 22-26 (shipped 2026-05-04)
 - ✅ **v1.7 Context-Aware Dashboard** — Phases 27-30 (shipped 2026-05-04)
-- 📋 **v1.8 AI Discussion & Deep-Reading Dashboard** — Phases 31-36 (partial — 2/6 phases complete, paused for v1.9)
+- ✅ **v1.8 AI Discussion & Deep-Reading Dashboard** — Phases 31-36 (shipped 2026-05-07)
 - ✅ **v1.9 Frontmatter Rationalization & Library-Record Deprecation** — Phases 37-41 (shipped 2026-05-07)
 
 *Archive: `.planning/milestones/`*
@@ -48,12 +48,12 @@
 <details>
 <summary>📋 v1.8 AI Discussion & Deep-Reading Dashboard (Phases 31-36) — PAUSED</summary>
 
-- [ ] Phase 31: Bug Fixes — Restore version display; remove meaningless "ai" UI row
-- [ ] Phase 32: Deep-Reading Mode Detection — Plugin routes deep-reading.md to dedicated dashboard mode
-- [ ] Phase 33: Deep-Reading Dashboard Rendering — Status bar, Pass 1 summary, empty-state AI Q&A card
+- [x] Phase 31: Bug Fixes — Restore version display; remove meaningless "ai" UI row
+- [x] Phase 32: Deep-Reading Mode Detection — Plugin routes deep-reading.md to dedicated dashboard mode
+- [x] Phase 33: Deep-Reading Dashboard Rendering — Status bar, Pass 1 summary, empty-state AI Q&A card
 - [x] Phase 34: Jump to Deep Reading Button — Per-paper dashboard card links to deep-reading.md (completed 2026-05-06)
 - [x] Phase 35: AI Discussion Recorder — Python module writes discussion.md + discussion.json into ai/ (completed 2026-05-06)
-- [ ] Phase 36: Integration Verification — End-to-end pipeline verified with CJK encoding and vault.adapter.read
+- [x] Phase 36: Integration Verification — End-to-end pipeline verified with CJK encoding and vault.adapter.read
 
 </details>
 
@@ -75,8 +75,12 @@
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
+| 31. Bug Fixes | — | Complete | 2026-05-07 |
+| 32. Deep-Reading Mode Detection | — | Complete | 2026-05-07 |
+| 33. Deep-Reading Dashboard Rendering | — | Complete | 2026-05-07 |
 | 34. Jump to Deep Reading Button | 1/1 | Complete | 2026-05-06 |
 | 35. AI Discussion Recorder | 1/1 | Complete | 2026-05-06 |
+| 36. Integration Verification | — | Complete | 2026-05-07 |
 | 37. Frontmatter Rationalization | 1/1 | Complete | 2026-05-07 |
 | 38. Workspace Stabilization | 1/1 | Complete | 2026-05-07 |
 | 39. Base View Fix | — | Complete | 2026-05-07 |
