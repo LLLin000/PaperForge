@@ -155,87 +155,88 @@ def _resolve_formal_note_path(vault: Path, zotero_key: str, domain: str) -> Path
     return None
 
 
-def scan_library_records(vault: Path) -> list[dict]:
-    """Scan library-records for analyze=true entries.
+def get_analyze_queue(vault: Path) -> list[dict]:
+    """Scan formal literature notes for analyze=true entries.
 
-    Pure data acquisition -- no side effects, no categorization.
-    Returns all library records with analyze=true regardless of deep_reading_status.
-    Caller filters and categorizes as needed.
+    Reads frontmatter directly from formal notes — no intermediary index.
+    This eliminates the stale-index problem: when a user ticks analyze in
+    the Base view (which updates formal note frontmatter), the queue picks
+    it up immediately without requiring a sync.
 
-    Return value fields (per D-03):
+    Return value fields:
       - zotero_key: str
       - domain: str
       - title: str
-      - analyze: bool (always True in results, included for symmetrical interface)
+      - analyze: bool (always True in results)
       - do_ocr: bool
-      - deep_reading_status: str ("pending" | "done" -- from frontmatter, not validated)
-      - ocr_status: str ("pending" | "processing" | "done" | "failed" -- from meta.json)
-      - note_path: Path | None (resolved via _resolve_formal_note_path)
+      - deep_reading_status: str
+      - ocr_status: str
+      - note_path: Path | None
     """
     from paperforge.config import paperforge_paths
 
     paths = paperforge_paths(vault)
-    records_root = paths.get("library_records")
-    ocr_root = paths.get("ocr")
+    lit_root = paths.get("literature")
 
-    if not records_root or not records_root.exists():
+    if not lit_root or not lit_root.exists():
         return []
 
-    results: list[dict] = []
-    for domain_dir in sorted(records_root.iterdir()):
-        if not domain_dir.is_dir():
+    results = []
+    for note_file in lit_root.rglob("*.md"):
+        if note_file.name in ("fulltext.md", "deep-reading.md", "discussion.md"):
             continue
-        domain = domain_dir.name
-        for record_path in sorted(domain_dir.glob("*.md")):
-            try:
-                text = record_path.read_text(encoding="utf-8")
-            except Exception:
-                continue
+        try:
+            text = note_file.read_text(encoding="utf-8")
+        except Exception:
+            continue
 
-            # Extract frontmatter fields
-            zotero_key_match = re.search(r"^zotero_key:\s*(.+)$", text, re.MULTILINE)
-            analyze_match = re.search(r"^analyze:\s*(true|false)$", text, re.MULTILINE)
-            title_match = re.search(r'^title:\s*"?(.+?)"?$', text, re.MULTILINE)
-            do_ocr_match = re.search(r"^do_ocr:\s*(true|false)$", text, re.MULTILINE)
-            status_match = re.search(r'^deep_reading_status:\s*"?(.*?)"?$', text, re.MULTILINE)
+        # Quick exit: check analyze before extracting other fields
+        analyze_match = re.search(r"^analyze:\s*(?:[\"'])?(true|false)(?:[\"'])?\s*$", text, re.MULTILINE | re.IGNORECASE)
+        if not analyze_match or analyze_match.group(1).lower() != "true":
+            continue
 
-            zotero_key = (
-                zotero_key_match.group(1).strip().strip('"').strip("'") if zotero_key_match else record_path.stem
-            )
-            is_analyze = analyze_match is not None and analyze_match.group(1) == "true"
-            title = title_match.group(1).strip().strip('"') if title_match else ""
-            do_ocr = do_ocr_match is not None and do_ocr_match.group(1) == "true"
-            dr_status = status_match.group(1).strip() if status_match else "pending"
+        zotero_key = ""
+        key_match = re.search(r'^zotero_key:\s*"?(.+?)"?\s*$', text, re.MULTILINE)
+        if key_match:
+            zotero_key = key_match.group(1).strip()
 
-            if not is_analyze:
-                continue
+        domain = ""
+        domain_match = re.search(r'^domain:\s*"?(.+?)"?\s*$', text, re.MULTILINE)
+        if domain_match:
+            domain = domain_match.group(1).strip()
 
-            # Check OCR status from meta.json
-            meta_path = ocr_root / zotero_key / "meta.json"
-            ocr_status = "pending"
-            if meta_path.exists():
-                try:
-                    meta = read_json(meta_path)
-                    ocr_status = str(meta.get("ocr_status", "pending")).strip().lower()
-                except Exception:
-                    pass
+        title = ""
+        title_match = re.search(r'^title:\s*"?(.+?)"?\s*$', text, re.MULTILINE)
+        if title_match:
+            title = title_match.group(1).strip()
 
-            # Resolve formal note path
-            note_path = _resolve_formal_note_path(vault, zotero_key, domain)
+        do_ocr = False
+        do_ocr_match = re.search(r"^do_ocr:\s*(?:[\"'])?(true|false)(?:[\"'])?\s*$", text, re.MULTILINE | re.IGNORECASE)
+        if do_ocr_match:
+            do_ocr = do_ocr_match.group(1).lower() == "true"
 
-            results.append(
-                {
-                    "zotero_key": zotero_key,
-                    "domain": domain,
-                    "title": title,
-                    "analyze": True,
-                    "do_ocr": do_ocr,
-                    "deep_reading_status": dr_status,
-                    "ocr_status": ocr_status,
-                    "note_path": note_path,
-                }
-            )
+        ocr_status = "pending"
+        ocr_match = re.search(r'^ocr_status:\s*"?(.+?)"?\s*$', text, re.MULTILINE)
+        if ocr_match:
+            ocr_status = ocr_match.group(1).strip()
 
+        dr_status = "pending"
+        dr_match = re.search(r'^deep_reading_status:\s*"?(.+?)"?\s*$', text, re.MULTILINE)
+        if dr_match:
+            dr_status = dr_match.group(1).strip()
+
+        results.append({
+            "zotero_key": zotero_key,
+            "domain": domain,
+            "title": title,
+            "analyze": True,
+            "do_ocr": do_ocr,
+            "ocr_status": ocr_status,
+            "deep_reading_status": dr_status,
+            "note_path": note_file,
+        })
+
+    results.sort(key=lambda r: (r["domain"], r["zotero_key"]))
     return results
 
 
