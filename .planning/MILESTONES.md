@@ -1,5 +1,20 @@
 # Milestones: PaperForge Lite Release Hardening
 
+## v1.8 AI Discussion & Deep-Reading Dashboard (Shipped: 2026-05-07)
+
+**Phases completed:** 6 phases (31-36)
+
+**Key accomplishments:**
+
+- Version display restored, "AI Ready" lifecycle stage removed from dashboard (Phase 31)
+- Deep-reading mode detection: `_resolveModeForFile()` prioritises deep-reading.md → zotero_key → global (Phase 32)
+- Deep-reading dashboard rendering: status card + Pass 1 extraction + AI Q&A collapsible history (Phase 33)
+- "Jump to Deep Reading" button on per-paper dashboard card (Phase 34)
+- AI discussion recorder: `discussion.py` writes atomic discussion.md + discussion.json into workspace ai/ (Phase 35)
+- Full E2E integration verification with CJK encoding and vault.read API (Phase 36)
+
+---
+
 ## v1.9 Frontmatter Rationalization & Library-Record Deprecation (Shipped: 2026-05-07)
 
 **Phases completed:** 5 phases, 28 requirements (all verified)

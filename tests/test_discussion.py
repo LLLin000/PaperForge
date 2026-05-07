@@ -62,6 +62,27 @@ def _create_minimal_vault(tmp_path: Path, zotero_key: str = "TSTONE001",
         encoding="utf-8",
     )
 
+    # Create canonical index (Phase 38: _find_paper_metadata reads from index)
+    indexes_dir = vault / "99_System" / "PaperForge" / "indexes"
+    indexes_dir.mkdir(parents=True, exist_ok=True)
+    canonical_index = {
+        "schema_version": "2",
+        "generated_at": "2026-05-07T00:00:00+08:00",
+        "paperforge_version": "1.4.15",
+        "paper_count": 1,
+        "items": [
+            {
+                "zotero_key": zotero_key,
+                "domain": domain,
+                "title": title,
+                "ai_path": f"Literature/{domain}/{zotero_key} - {title}/ai/",
+            }
+        ],
+    }
+    (indexes_dir / "formal-library.json").write_text(
+        json.dumps(canonical_index, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
+
     return vault
 
 
