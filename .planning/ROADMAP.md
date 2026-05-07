@@ -171,7 +171,11 @@ Plans:
   3. `paperforge sync` no longer constructs `record_path` or calls `parse_existing_library_record()` — dead code removed, sync completes without errors
   4. Setup wizard post-install instructions describe a single `paperforge sync` workflow (not old `--selection`/`--index` two-phase flow)
   5. `paperforge repair` docstring reads "Scan formal literature notes" (not "library-records") and `ld_deep.py` return dict contains only active path keys
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 47-001-PLAN.md — Python source cleanup: status.py label/scan path, sync.py dead code + docstrings, ld_deep.py records key, repair.py + discussion.py docstrings (LEGACY-01, 02, 03, 04, 07)
+- [ ] 47-002-PLAN.md — Documentation cleanup: setup_wizard.py post-install text, 10 command file copies in command/ + paperforge/command_files/ (LEGACY-05, 06)
 
 ### Phase 48: Textual TUI Removal
 **Goal**: The broken Textual TUI setup wizard is removed entirely. `paperforge setup` (bare, no `--headless`) prints a help message redirecting users to `--headless` or the plugin settings tab. All TUI classes, import paths, and the `textual` optional dependency are purged. Documentation updated to reflect headless-only setup. `headless_setup()` and all shared utilities preserved intact.
@@ -232,7 +236,7 @@ Plans:
 | 44. Documentation Update | v1.10 | — | Complete | 2026-05-07 |
 | 45. Validation & Release Gate | v1.10 | — | Complete | 2026-05-07 |
 | 46. Index Path Resolution | v1.11 | 2/2 | Complete | 2026-05-07 |
-| 47. Library-Records Deprecation Cleanup | v1.11 | 0/0 | Not started | - |
+| 47. Library-Records Deprecation Cleanup | v1.11 | 0/2 | Planning | 2026-05-07 |
 | 48. Textual TUI Removal | v1.11 | 0/0 | Not started | - |
 | 49. Module Hardening | v1.11 | 0/0 | Not started | - |
 | 50. Repair Blind Spots | v1.11 | 0/0 | Not started | - |
