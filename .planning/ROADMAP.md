@@ -174,7 +174,7 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 47-001-PLAN.md — Python source cleanup: status.py label/scan path, sync.py dead code + docstrings, ld_deep.py records key, repair.py + discussion.py docstrings (LEGACY-01, 02, 03, 04, 07)
+- [x] 47-001-PLAN.md — Python source cleanup: status.py label/scan path, sync.py dead code + docstrings, ld_deep.py records key, repair.py + discussion.py docstrings (LEGACY-01, 02, 03, 04, 07)
 - [ ] 47-002-PLAN.md — Documentation cleanup: setup_wizard.py post-install text, 10 command file copies in command/ + paperforge/command_files/ (LEGACY-05, 06)
 
 ### Phase 48: Textual TUI Removal
@@ -236,7 +236,7 @@ Plans:
 | 44. Documentation Update | v1.10 | — | Complete | 2026-05-07 |
 | 45. Validation & Release Gate | v1.10 | — | Complete | 2026-05-07 |
 | 46. Index Path Resolution | v1.11 | 2/2 | Complete | 2026-05-07 |
-| 47. Library-Records Deprecation Cleanup | v1.11 | 0/2 | Planning | 2026-05-07 |
+| 47. Library-Records Deprecation Cleanup | v1.11 | 1/2 | In Progress|  |
 | 48. Textual TUI Removal | v1.11 | 0/0 | Not started | - |
 | 49. Module Hardening | v1.11 | 0/0 | Not started | - |
 | 50. Repair Blind Spots | v1.11 | 0/0 | Not started | - |
