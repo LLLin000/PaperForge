@@ -91,7 +91,7 @@ def _find_paper_metadata(vault: Path, zotero_key: str) -> dict | None:
 def _build_ai_dir(vault: Path, domain: str, key: str, title: str) -> Path:
     """Construct the ai/ directory path for a paper's workspace.
 
-    Pattern: Literature/{domain}/{key} - {title_slug}/ai/
+    Pattern: {literature_dir}/{domain}/{key} - {title_slug}/ai/
     Uses paperforge_paths for portable path resolution (per D-01).
     """
     try:
