@@ -151,7 +151,6 @@ def substitute_config_placeholders(content: str, paths: dict[str, Path]) -> str:
     """
     substitutions = {
         "LITERATURE": paths.get("literature"),
-        "LIBRARY_RECORDS": paths.get("library_records"),
         "CONTROL_DIR": paths.get("control"),
     }
     result = content
@@ -239,6 +238,7 @@ def merge_base_views(existing_content: str | None, new_views: list[dict]) -> str
         return f"""filters:
   and:
     - file.inFolder("{new_views[0]["name"]}")
+    - file.extension = "md"
 {PROPERTIES_YAML}
 views:
 {fresh_views_yaml}"""
@@ -363,6 +363,7 @@ def _build_base_yaml(folder_filter: str, views: list[dict]) -> str:
     return f"""filters:
   and:
     - file.inFolder("{folder_filter}")
+    - file.extension = "md"
 properties:
   zotero_key:
     displayName: "Zotero Key"
@@ -376,12 +377,14 @@ properties:
     displayName: "Journal"
   impact_factor:
     displayName: "IF"
-  lifecycle:
-    displayName: "Lifecycle"
-  maturity_level:
-    displayName: "Maturity"
-  next_step:
-    displayName: "Next Step"
+  has_pdf:
+    displayName: "PDF"
+  do_ocr:
+    displayName: "OCR"
+  analyze:
+    displayName: "Analyze"
+  ocr_status:
+    displayName: "OCR Status"
   deep_reading_status:
     displayName: "Deep Reading"
   pdf_path:
