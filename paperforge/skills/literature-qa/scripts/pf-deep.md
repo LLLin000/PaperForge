@@ -44,7 +44,7 @@ python .opencode/skills/pf-deep/scripts/ld_deep.py prepare --vault "<VAULT_PATH>
 
 Agent 根据返回的 `status` 决定是否进入精读流程，不自行读取 frontmatter。
 
-**队列模式** (`/pf-deep queue`)：Agent 运行：
+**队列模式**（无参数时自动检测）：Agent 运行：
 ```bash
 python .opencode/skills/pf-deep/scripts/ld_deep.py queue --vault "<VAULT_PATH>"
 ```
@@ -75,13 +75,13 @@ python .opencode/skills/pf-deep/scripts/ld_deep.py queue --vault "<VAULT_PATH>"
 <prefix>pf-deep 10.1016/j.jse.2018.01.001
 ```
 
-### 批量从待精读队列启动
+### 无参数：自动检测队列
 
 ```bash
-<prefix>pf-deep queue
+<prefix>pf-deep
 ```
 
-当不提供具体 key/标题时，agent 自动执行以下流程：
+当不提供具体 key/标题时，agent 自动检测精读队列：
 
 1. 运行 `python .opencode/skills/pf-deep/scripts/ld_deep.py queue --vault "<VAULT_PATH>"` 扫描队列
 2. 解析输出的 JSON，按 OCR 状态分组展示

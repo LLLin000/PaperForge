@@ -612,12 +612,14 @@ def extract_preserved_deep_reading(text: str) -> str:
 
 
 def has_deep_reading_content(text: str) -> bool:
-    """Return True only if the deep-reading section contains *substantive* content.
+    """Return True only if the deep-reading section passes a three-anchor check.
 
-    A scaffold alone (filled with placeholders like '（待补充）') does NOT count.
-    We strip out structural lines (section headers, callout headers, empty lists)
-    and placeholder text, then require at least one prose sentence or 20 chars
-    of actual content.
+    For deep_reading_status to be "done", ALL three of these must have
+    substantive content (not just template scaffolding):
+
+    1. **Clarity**（清晰度）： — text after the colon
+    2. **Figure 导读** — at least one list item with content
+    3. **遗留问题** — at least one non-empty entry
     """
     preserved = extract_preserved_deep_reading(text)
     if not preserved:
@@ -625,25 +627,51 @@ def has_deep_reading_content(text: str) -> bool:
     body = preserved.replace(DEEP_READING_HEADER, "").strip()
     if not body:
         return False
-    lines = body.splitlines()
-    non_placeholder_chars = 0
-    has_prose_sentence = False
-    for line in lines:
-        stripped = line.strip()
-        if not stripped:
-            continue
-        if stripped.startswith("### "):
-            continue
-        if re.match("^>\\s*\\[!", stripped):
-            continue
-        if "（待补充）" in stripped:
-            continue
-        if re.match("^[-*]\\s*$", stripped):
-            continue
-        non_placeholder_chars += len(stripped)
-        if re.search("[\\u4e00-\\u9fff]", stripped) and re.search("[。！？\\.\\!\\?]$", stripped):
-            has_prose_sentence = True
-    return has_prose_sentence or non_placeholder_chars >= 20
+
+    # Anchor 1: Clarity
+    clarity_ok = bool(re.search(
+        r'-\s*\*\*Clarity\*\*（清晰度）：(.+)', body
+    )) and not re.search(
+        r'-\s*\*\*Clarity\*\*（清晰度）：\s*$', body, re.MULTILINE
+    )
+
+    # Anchor 2: Figure 导读 — at least one list item with content after colon
+    figure_sec = _extract_section(body, r'\*\*Figure 导读\*\*')
+    figure_ok = False
+    if figure_sec:
+        for line in figure_sec.splitlines():
+            s = line.strip()
+            if s.startswith('- ') and '：' in s:
+                _, after = s.split('：', 1)
+                if after.strip() and after.strip() != '（待补充）':
+                    figure_ok = True
+                    break
+
+    # Anchor 3: 遗留问题 — at least one non-empty line beneath marker
+    issue_sec = _extract_section(body, r'\*\*遗留问题\*\*')
+    if not issue_sec:
+        issue_sec = _extract_section(body, r'####\s*遗留问题')
+    issue_ok = False
+    if issue_sec:
+        dirty = [l.strip() for l in issue_sec.splitlines() if l.strip()]
+        substantive = [l for l in dirty if l not in ('-', '（待补充）', '', '**遗留问题**')]
+        issue_ok = bool(substantive)
+
+    return clarity_ok and figure_ok and issue_ok
+
+
+def _extract_section(body: str, section_header: str) -> str | None:
+    """Return block of text from *section_header* to the next section break.
+
+    Section break is either a ``##`` / ``###`` header or end of string.
+    """
+    m = re.search(
+        section_header + r'\n*(.*?)(?=\n(?:#{1,3})\s|\Z)',
+        body, re.DOTALL,
+    )
+    if m:
+        return m.group(1).strip()
+    return None
 
 
 
@@ -695,7 +723,7 @@ def load_control_actions(paths: dict[str, Path]) -> dict[str, dict]:
         key_match = re.search(r"^zotero_key:\s*(.+)$", text, re.MULTILINE)
         if not key_match:
             continue
-        zotero_key = key_match.group(1).strip()
+        zotero_key = key_match.group(1).strip().strip('"').strip("'")
         do_ocr = False
         do_ocr_match = re.search(r"^do_ocr:\s*(?:[\"'])?(true|false)(?:[\"'])?\s*$", text, re.MULTILINE | re.IGNORECASE)
         if do_ocr_match:

@@ -17,13 +17,11 @@ from __future__ import annotations
 def compute_lifecycle(entry: dict) -> str:
     """Derive the current lifecycle state from an index entry.
 
-    Six progressive states (deepest achieved wins):
+    Four progressive states (deepest achieved wins):
     - **indexed**: has_pdf=False (entry exists in index, no PDF available)
     - **pdf_ready**: has_pdf=True, ocr NOT validated done
     - **fulltext_ready**: ocr_status == "done" (validated), deep_reading NOT done
-    - **deep_read_done**: OCR done AND deep-reading done, but workspace paths incomplete
-    - **ai_context_ready**: OCR done AND deep-reading done AND all four workspace paths
-      (ai_path, fulltext_path, deep_reading_path, main_note_path) are non-empty strings
+    - **deep_read_done**: OCR done AND deep-reading done
 
     Uses .get() with safe defaults for all field accesses.
     """
@@ -37,17 +35,8 @@ def compute_lifecycle(entry: dict) -> str:
 
     # OCR validated done opens the door to fulltext_ready and beyond
     if ocr_status == "done":
-        # ai_context_ready: deep-reading also done AND all workspace paths present
         if deep_reading_status == "done":
-            ai_path = entry.get("ai_path", "")
-            fulltext_path = entry.get("fulltext_path", "")
-            deep_reading_path = entry.get("deep_reading_path", "")
-            main_note_path = entry.get("main_note_path", "")
-            if all([ai_path, fulltext_path, deep_reading_path, main_note_path]):
-                return "ai_context_ready"
             return "deep_read_done"
-
-        # fulltext_ready: OCR done but deep-reading not yet done
         return "fulltext_ready"
 
     # pdf_ready: has PDF attachment but OCR not validated done
@@ -121,47 +110,36 @@ def compute_health(entry: dict) -> dict[str, str]:
 
 
 def compute_maturity(entry: dict) -> dict:
-    """Compute maturity level 1-6 with per-check pass/fail breakdown.
+    """Compute maturity level 1-4 with per-check pass/fail breakdown.
 
     Maturity levels (progressive, each level requires all previous):
-    1. **Metadata**: always True (entry existence implies metadata)
+    1. **Indexed**: entry exists (always True)
     2. **PDF Ready**: has_pdf=True
     3. **Fulltext Ready**: ocr_status="done"
-    4. **Figure Ready**: OCR done AND ocr_json_path non-empty
-    5. **AI Ready**: lifecycle == "ai_context_ready"
-    6. **Review Ready**: all checks pass
+    4. **Deep Read**: lifecycle >= deep_read_done
 
     Returns a dict with:
-    - ``level``: int (1-6)
+    - ``level``: int (1-4)
     - ``level_name``: str (human-readable)
     - ``checks``: dict[str, bool] per dimension
-    - ``blocking``: str | None (which check blocks next level, or None at level 6)
+    - ``blocking``: str | None (which check blocks next level, or None at level 4)
 
     Delegates to ``compute_lifecycle`` internally — no duplicate derivation logic.
     """
     lifecycle = compute_lifecycle(entry)
     has_pdf = bool(entry.get("has_pdf", False))
     ocr_status = entry.get("ocr_status", "pending")
-    ocr_json_path = entry.get("ocr_json_path", "")
+    deep_read = lifecycle == "deep_read_done"
 
     checks = {
-        "metadata": True,  # entry exists means it has metadata
+        "indexed": True,
         "pdf": has_pdf,
         "fulltext": ocr_status == "done",
-        "figure": ocr_status == "done" and bool(ocr_json_path),
-        "ai": lifecycle == "ai_context_ready",
-        "review": lifecycle == "ai_context_ready",  # all previous checks pass
+        "deep_read": deep_read,
     }
 
-    level_names = [
-        "Metadata",
-        "PDF Ready",
-        "Fulltext Ready",
-        "Figure Ready",
-        "AI Ready",
-        "Review Ready",
-    ]
-    check_order = ["metadata", "pdf", "fulltext", "figure", "ai", "review"]
+    level_names = ["Indexed", "PDF Ready", "Fulltext Ready", "Deep Read"]
+    check_order = ["indexed", "pdf", "fulltext", "deep_read"]
 
     # Determine level: highest level where all checks up to that point pass
     level = 1
@@ -171,10 +149,10 @@ def compute_maturity(entry: dict) -> dict:
         else:
             break
 
-    # blocking: first failing check after the achieved level, or None at level 6
+    # blocking: first failing check after the achieved level, or None at level 4
     blocking = None
-    if level < 6:
-        blocking = check_order[level]  # the first check that failed
+    if level < 4:
+        blocking = check_order[level]
 
     return {
         "level": level,

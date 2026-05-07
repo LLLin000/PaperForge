@@ -162,10 +162,10 @@ class TestComputeMaturity:
     """compute_maturity(entry) -> dict"""
 
     def test_empty_entry_level_1(self) -> None:
-        """Empty entry: level=1, metadata=True, pdf=False, blocking='pdf'."""
+        """Empty entry: level=1, indexed=True, pdf=False, blocking='pdf'."""
         result = compute_maturity({})
         assert result["level"] == 1
-        assert result["checks"]["metadata"] is True
+        assert result["checks"]["indexed"] is True
         assert result["checks"]["pdf"] is False
         assert result["blocking"] == "pdf"
 
@@ -178,34 +178,31 @@ class TestComputeMaturity:
         }
         result = compute_maturity(entry)
         assert result["level"] == 2
-        assert result["checks"]["metadata"] is True
+        assert result["checks"]["indexed"] is True
         assert result["checks"]["pdf"] is True
         assert result["checks"]["fulltext"] is False
         assert result["blocking"] == "fulltext"
 
-    def test_fulltext_figure_level_4(self) -> None:
-        """OCR done, ocr_json_path non-empty, deep_read pending → level=4, blocking='ai'."""
+    def test_fulltext_level_3(self) -> None:
+        """OCR done, deep_read pending → level=3, blocking='deep_read'."""
         entry = {
             "has_pdf": True,
             "ocr_status": "done",
-            "ocr_json_path": "99_System/PaperForge/ocr/KEY/result.json",
             "deep_reading_status": "pending",
         }
         result = compute_maturity(entry)
-        assert result["level"] == 4
-        assert result["checks"]["metadata"] is True
+        assert result["level"] == 3
+        assert result["checks"]["indexed"] is True
         assert result["checks"]["pdf"] is True
         assert result["checks"]["fulltext"] is True
-        assert result["checks"]["figure"] is True
-        assert result["checks"]["ai"] is False
-        assert result["blocking"] == "ai"
+        assert result["checks"]["deep_read"] is False
+        assert result["blocking"] == "deep_read"
 
-    def test_fully_ready_level_6(self) -> None:
-        """All checks pass → level=6, blocking=None."""
+    def test_deep_read_level_4(self) -> None:
+        """All checks pass → level=4, blocking=None."""
         entry = {
             "has_pdf": True,
             "ocr_status": "done",
-            "ocr_json_path": "99_System/PaperForge/ocr/KEY/result.json",
             "deep_reading_status": "done",
             "ai_path": "Literature/骨科/KEY/ai/",
             "fulltext_path": "Literature/骨科/KEY/fulltext.md",
@@ -213,23 +210,21 @@ class TestComputeMaturity:
             "main_note_path": "Literature/骨科/KEY/KEY - Title.md",
         }
         result = compute_maturity(entry)
-        assert result["level"] == 6
-        assert result["checks"]["metadata"] is True
+        assert result["level"] == 4
+        assert result["checks"]["indexed"] is True
         assert result["checks"]["pdf"] is True
         assert result["checks"]["fulltext"] is True
-        assert result["checks"]["figure"] is True
-        assert result["checks"]["ai"] is True
-        assert result["checks"]["review"] is True
+        assert result["checks"]["deep_read"] is True
         assert result["blocking"] is None
 
-    def test_metadata_check_always_true(self) -> None:
-        """Empty title/authors still passes metadata check (entry existence is enough)."""
+    def test_indexed_check_always_true(self) -> None:
+        """Empty title/authors still passes indexed check (entry existence is enough)."""
         entry = {
             "title": "",
             "authors": [],
         }
         result = compute_maturity(entry)
-        assert result["checks"]["metadata"] is True
+        assert result["checks"]["indexed"] is True
         assert result["level"] >= 1
 
     def test_maturity_calls_lifecycle(self) -> None:
@@ -237,7 +232,6 @@ class TestComputeMaturity:
         entry = {
             "has_pdf": True,
             "ocr_status": "done",
-            "ocr_json_path": "99_System/PaperForge/ocr/KEY/result.json",
             "deep_reading_status": "done",
             "ai_path": "Literature/骨科/KEY/ai/",
             "fulltext_path": "Literature/骨科/KEY/fulltext.md",
@@ -245,8 +239,7 @@ class TestComputeMaturity:
             "main_note_path": "Literature/骨科/KEY/KEY - Title.md",
         }
         result = compute_maturity(entry)
-        assert result["checks"]["ai"] is True  # lifecycle is ai_context_ready
-        assert result["checks"]["review"] is True
+        assert result["checks"]["deep_read"] is True  # lifecycle is deep_read_done or ai_context_ready
 
 
 class TestComputeNextStep:

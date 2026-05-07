@@ -17,6 +17,22 @@ from PIL import Image
 from paperforge.config import paperforge_paths
 from paperforge.worker import sync as _sync
 from paperforge.worker._progress import progress_bar
+
+
+def _read_dotenv(vault: Path, key: str) -> str:
+    """Read *key* from vault/.env or System/PaperForge/.env, return empty if not found."""
+    for dotenv_path in (vault / ".env", paperforge_paths(vault).get("pipeline", Path()) / ".env"):
+        try:
+            for line in dotenv_path.read_text(encoding="utf-8").splitlines():
+                line = line.strip()
+                if line.startswith("#") or "=" not in line:
+                    continue
+                k, _, v = line.partition("=")
+                if k.strip() == key:
+                    return v.strip().strip('"').strip("'")
+        except (OSError, UnicodeDecodeError):
+            continue
+    return ""
 from paperforge.worker.asset_index import refresh_index_entry
 from paperforge.worker._retry import retry_with_meta
 from paperforge.worker._utils import (
@@ -1592,6 +1608,9 @@ def run_ocr(vault: Path, verbose: bool = False, no_progress: bool = False) -> in
                 token = str(winreg.QueryValueEx(env_key, "PADDLEOCR_API_TOKEN")[0]).strip()
         except Exception:
             token = ""
+    if not token:
+        # Fallback: parse vault-root .env
+        token = _read_dotenv(vault, "PADDLEOCR_API_TOKEN")
     job_url = os.environ.get("PADDLEOCR_JOB_URL", "https://paddleocr.aistudio-app.com/api/v2/ocr/jobs").strip()
     model = os.environ.get("PADDLEOCR_MODEL", "PaddleOCR-VL-1.5").strip()
     optional_payload = {"useDocOrientationClassify": False, "useDocUnwarping": False, "useChartRecognition": False}

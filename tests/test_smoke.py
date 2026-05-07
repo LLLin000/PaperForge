@@ -62,14 +62,14 @@ class TestSetupWizard:
     """Task 1a: setup wizard pip install step."""
 
     def test_setup_wizard_pip_install(self, test_vault: Path) -> None:
-        """Verify setup wizard's _deploy method calls pip install -e ."""
+        """Verify setup wizard's Phase 6 calls pip install --upgrade."""
         from paperforge.setup_wizard import headless_setup
 
         source = Path(headless_setup.__code__.co_filename).read_text(encoding="utf-8")
         assert (
-            '"-m", "pip", "install", "-e"' in source or "pip install -e" in source
-        ), "setup wizard should call pip install -e"
-        assert "repo_root" in source, "setup wizard should reference repo_root"
+            '"install", "--upgrade"' in source or "pip install --upgrade" in source
+        ), "setup wizard should call pip install --upgrade"
+        assert "pyproject.toml" in source, "setup wizard should reference pyproject.toml"
 
 
 class TestDoctorImportability:
