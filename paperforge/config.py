@@ -48,11 +48,11 @@ def load_simple_env(env_path: Path) -> None:
 
 DEFAULT_CONFIG: dict[str, str] = {
     "schema_version": "2",
-    "system_dir": "99_System",
-    "resources_dir": "03_Resources",
+    "system_dir": "System",
+    "resources_dir": "Resources",
     "literature_dir": "Literature",
     "control_dir": "LiteratureControl",
-    "base_dir": "05_Bases",
+    "base_dir": "Bases",
     "skill_dir": ".opencode/skills",
     "command_dir": ".opencode/command",
 }
@@ -62,7 +62,7 @@ ENV_KEYS: dict[str, str] = {
     "vault": "PAPERFORGE_VAULT",
     "system_dir": "PAPERFORGE_SYSTEM_DIR",
     "resources_dir": "PAPERFORGE_RESOURCES_DIR",
-    "literature_dir": "paperforgeRATURE_DIR",
+    "literature_dir": "PAPERFORGE_LITERATURE_DIR",
     "control_dir": "PAPERFORGE_CONTROL_DIR",
     "base_dir": "PAPERFORGE_BASE_DIR",
     "skill_dir": "PAPERFORGE_SKILL_DIR",
@@ -328,7 +328,7 @@ def paperforge_paths(
         "resources": resources,
         "literature": literature,
         "control": control,
-        "library_records": control,
+        "library_records": control / "library-records",
         "bases": bases,
         "worker_script": worker_script,
         "skill_dir": skill_path,
@@ -361,6 +361,8 @@ CONFIG_PATH_KEYS: tuple[str, ...] = (
     "literature_dir",
     "control_dir",
     "base_dir",
+    "skill_dir",
+    "command_dir",
 )
 
 
