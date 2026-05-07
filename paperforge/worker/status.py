@@ -121,10 +121,10 @@ def _summarize_errors(errors: list[str]) -> str:
 
 
 def check_pdf_paths(vault: Path, paths: dict, add_check) -> None:
-    """Sample up to 5 library records and validate their pdf_path wikilinks."""
-    record_paths = list(paths["library_records"].rglob("*.md"))
+    """Sample up to 5 formal notes and validate their pdf_path wikilinks."""
+    record_paths = list(paths["literature"].rglob("*.md"))
     if not record_paths:
-        add_check("Path Resolution", "pass", "No library records to check")
+        add_check("Path Resolution", "pass", "No formal notes to check")
         return
     import random
 
@@ -163,8 +163,8 @@ def check_pdf_paths(vault: Path, paths: dict, add_check) -> None:
 
 
 def check_wikilink_format(vault: Path, paths: dict, add_check) -> None:
-    """Verify all pdf_path values in library-records use [[...]] format."""
-    record_paths = list(paths["library_records"].rglob("*.md"))
+    """Verify all pdf_path values in formal notes use [[...]] format."""
+    record_paths = list(paths["literature"].rglob("*.md"))
     bad_paths: list[str] = []
     for record_path in record_paths:
         try:
@@ -522,15 +522,15 @@ def run_doctor(vault: Path, verbose: bool = False) -> int:
         except Exception:
             pass
 
-        # LRD-05: Stale library-records detection
-        _lr_dir = paths.get("library_records")
+        # LRD-05: Stale record detection in control directory
+        _lr_dir = paths.get("control")
         if _lr_dir and _lr_dir.exists():
             _stale_count = sum(1 for _ in _lr_dir.rglob("*.md"))
             if _stale_count > 0:
                 add_check(
                     "Index Health", "warn",
-                    f"{_stale_count} stale library-record(s) found — library-records are deprecated in v1.9",
-                    "Manually delete the library-records directory after confirming migration",
+                    f"{_stale_count} stale record(s) found in control directory",
+                    "Review and remove stale files from the control directory",
                 )
     else:
         add_check("Index Health", "info", "No canonical index -- run `paperforge sync` to generate")
@@ -597,7 +597,11 @@ def run_status(vault: Path, verbose: bool = False, json_output: bool = False) ->
         summary = None
     ensure_base_views(vault, paths, config)
     export_files = sorted(paths["exports"].glob("*.json"))
-    record_count = sum(1 for _ in paths["library_records"].rglob("*.md")) if paths["library_records"].exists() else 0
+    record_count = (
+        sum(1 for p in paths["literature"].rglob("*.md") if p.name not in ("fulltext.md", "deep-reading.md", "discussion.md"))
+        if paths["literature"].exists()
+        else 0
+    )
     note_count = sum(1 for _ in paths["literature"].rglob("*.md")) if paths["literature"].exists() else 0
     base_count = sum(1 for _ in paths["bases"].glob("*.base")) if paths["bases"].exists() else 0
     ocr_done = 0
@@ -605,12 +609,14 @@ def run_status(vault: Path, verbose: bool = False, json_output: bool = False) ->
     ocr_pending = 0
     ocr_processing = 0
     ocr_failed = 0
-    # Count from library records first — picks up do_ocr:true items before meta.json exists
+    # Count from formal notes — picks up do_ocr:true items before meta.json exists
     do_ocr_keys: set[str] = set()
-    if paths["library_records"].exists():
-        for record_path in paths["library_records"].rglob("*.md"):
+    if paths["literature"].exists():
+        for note_path in paths["literature"].rglob("*.md"):
+            if note_path.name in ("fulltext.md", "deep-reading.md", "discussion.md"):
+                continue
             try:
-                text = record_path.read_text(encoding="utf-8")
+                text = note_path.read_text(encoding="utf-8")
                 if re.search(r"^do_ocr:\s*true\s*$", text, re.MULTILINE):
                     m = re.search(r"^zotero_key:\s*(\S+)", text, re.MULTILINE)
                     if m:
@@ -661,12 +667,14 @@ def run_status(vault: Path, verbose: bool = False, json_output: bool = False) ->
     env_paths = [vault / ".env", paths["pipeline"] / ".env"]
     env_found = [str(path.relative_to(vault)).replace("\\", "/") for path in env_paths if path.exists()]
 
-    # Count path errors
+    # Count path errors from formal notes
     path_error_count = 0
-    if paths["library_records"].exists():
-        for record_path in paths["library_records"].rglob("*.md"):
+    if paths["literature"].exists():
+        for note_path in paths["literature"].rglob("*.md"):
+            if note_path.name in ("fulltext.md", "deep-reading.md", "discussion.md"):
+                continue
             try:
-                text = record_path.read_text(encoding="utf-8")
+                text = note_path.read_text(encoding="utf-8")
                 if re.search(r'^path_error:\s*"(.+?)"\s*$', text, re.MULTILINE):
                     path_error_count += 1
             except Exception:
@@ -717,7 +725,7 @@ def run_status(vault: Path, verbose: bool = False, json_output: bool = False) ->
     print(f"- control_dir: {cfg['control_dir']}")
     print(f"- exports: {len(export_files)} JSON file(s)")
     print(f"- domains: {len(config.get('domains', []))}")
-    print(f"- library_records: {record_count}")
+    print(f"- formal_notes: {record_count}")
     print(f"- formal_notes: {note_count}")
     print(f"- bases: {base_count}")
     # Phase 25: index section (only when canonical index available)
