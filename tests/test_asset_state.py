@@ -286,14 +286,49 @@ class TestComputeNextStep:
         assert result == "ready"
 
     def test_ready_for_deep_read_returns_pf_deep(self) -> None:
-        """OCR done, deep_reading pending → '/pf-deep'."""
+        """OCR done, deep_reading pending, all integrity checks pass → '/pf-deep'."""
         entry = {
             "has_pdf": True,
             "ocr_status": "done",
             "deep_reading_status": "pending",
+            "note_path": "Literature/骨科/KEY - Title.md",
+            "fulltext_path": "Literature/骨科/KEY/fulltext.md",
+            "deep_reading_path": "Literature/骨科/KEY/deep-reading.md",
+            "main_note_path": "Literature/骨科/KEY/KEY - Title.md",
+            "ai_path": "Literature/骨科/KEY/ai/",
         }
         result = compute_next_step(entry)
         assert result == "/pf-deep"
+
+    def test_missing_note_blocks_pf_deep(self) -> None:
+        """OCR done, deep_read pending, note_path empty → 'sync', not '/pf-deep'."""
+        entry = {
+            "has_pdf": True,
+            "ocr_status": "done",
+            "deep_reading_status": "pending",
+            "note_path": "",
+            "fulltext_path": "Literature/骨科/KEY/fulltext.md",
+            "deep_reading_path": "Literature/骨科/KEY/deep-reading.md",
+            "main_note_path": "Literature/骨科/KEY/KEY - Title.md",
+            "ai_path": "Literature/骨科/KEY/ai/",
+        }
+        result = compute_next_step(entry)
+        assert result == "sync"
+
+    def test_missing_workspace_path_blocks_pf_deep(self) -> None:
+        """OCR done, deep_read pending, note_path present but ai_path empty → 'sync'."""
+        entry = {
+            "has_pdf": True,
+            "ocr_status": "done",
+            "deep_reading_status": "pending",
+            "note_path": "Literature/骨科/KEY - Title.md",
+            "fulltext_path": "Literature/骨科/KEY/fulltext.md",
+            "deep_reading_path": "Literature/骨科/KEY/deep-reading.md",
+            "main_note_path": "Literature/骨科/KEY/KEY - Title.md",
+            "ai_path": "",
+        }
+        result = compute_next_step(entry)
+        assert result == "sync"
 
     def test_fully_ready_returns_ready(self) -> None:
         """All done, all paths present → 'ready'."""
