@@ -30,11 +30,11 @@ def load_config(vault: Path) -> dict:
 
     # Legacy fallback for pre-01-03 installs
     defaults = {
-        "system_dir": "99_System",
-        "resources_dir": "03_Resources",
+        "system_dir": "System",
+        "resources_dir": "Resources",
         "literature_dir": "Literature",
         "control_dir": "LiteratureControl",
-        "base_dir": "05_Bases",
+        "base_dir": "Bases",
         "skill_dir": ".opencode/skills",
     }
     config_path = vault / "paperforge.json"
@@ -59,7 +59,7 @@ def resolve_vault_for_validate() -> Path:
 
 def validate_python_deps() -> list[tuple[bool, str]]:
     results = []
-    required = {"requests": "requests", "pymupdf": "fitz", "pillow": "PIL", "textual": "textual"}
+    required = {"requests": "requests", "pymupdf": "fitz", "pillow": "PIL"}
     for package, import_name in required.items():
         try:
             __import__(import_name)

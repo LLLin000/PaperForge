@@ -53,6 +53,16 @@ class TestSlugifyFilename:
     def test_leading_trailing_spaces(self) -> None:
         assert slugify_filename("  hello  ") == "hello"
 
+    def test_truncation_does_not_leave_trailing_space(self) -> None:
+        title = (
+            "Dynamics and Crosstalk between Gut Microbiota, Metabolome, and Fecal "
+            "Calprotectin in Very Preterm Infants: Insights into Feeding Intolerance"
+        )
+        assert slugify_filename(title) == (
+            "Dynamics and Crosstalk between Gut Microbiota, Metabolome, and Fecal "
+            "Calprotectin in Very Preterm Infants Insights into"
+        )
+
 
 class TestExtractYear:
     """_extract_year(value: str) -> str"""

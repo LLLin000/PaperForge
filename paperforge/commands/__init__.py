@@ -7,6 +7,7 @@ _COMMAND_REGISTRY: dict[str, str] = {
     "deep": "paperforge.commands.deep",
     "repair": "paperforge.commands.repair",
     "status": "paperforge.commands.status",
+    "context": "paperforge.commands.context",
 }
 
 

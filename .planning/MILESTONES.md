@@ -1,5 +1,76 @@
 # Milestones: PaperForge Lite Release Hardening
 
+## v1.8 AI Discussion & Deep-Reading Dashboard (Shipped: 2026-05-07)
+
+**Phases completed:** 6 phases (31-36)
+
+**Key accomplishments:**
+
+- Version display restored, "AI Ready" lifecycle stage removed from dashboard (Phase 31)
+- Deep-reading mode detection: `_resolveModeForFile()` prioritises deep-reading.md → zotero_key → global (Phase 32)
+- Deep-reading dashboard rendering: status card + Pass 1 extraction + AI Q&A collapsible history (Phase 33)
+- "Jump to Deep Reading" button on per-paper dashboard card (Phase 34)
+- AI discussion recorder: `discussion.py` writes atomic discussion.md + discussion.json into workspace ai/ (Phase 35)
+- Full E2E integration verification with CJK encoding and vault.read API (Phase 36)
+
+---
+
+## v1.9 Frontmatter Rationalization & Library-Record Deprecation (Shipped: 2026-05-07)
+
+**Phases completed:** 5 phases, 28 requirements (all verified)
+**Tests:** 188 passing
+
+**Key accomplishments:**
+
+- Slimmed formal note frontmatter from 28 to 16 fields: identity (title/year/journal/first_author/zotero_key/domain/doi/pmid/collection_path/impact_factor/abstract/tags) + workflow (has_pdf/do_ocr/analyze/ocr_status/deep_reading_status) + pdf_path
+- Created `paper_meta.py` — per-workspace JSON for internal pipeline state (OCR jobs, health, maturity, version)
+- Removed `library_record_markdown()` and all library-record generation from sync — new users never see library-records
+- Unconditional workspace creation — new papers get workspace directories on first sync (no flat fallback)
+- Fulltext bridge from OCR output to workspace; discussion.py reads from canonical index
+- Base views restored to workflow-gate filters (has_pdf/do_ocr/analyze/ocr_status → do_ocr=true, analyze=true+ocr_status=done) pointing to Literature/
+- Version badge fixed to read paperforge_version from canonical index envelope
+- Doctor detects stale library-records directory and workspace integrity issues
+
+---
+
+## v1.7 Context-Aware Dashboard (Shipped: 2026-05-04)
+
+**Phases completed:** 4 phases, 6 plans, 14 tasks
+
+**Key accomplishments:**
+
+- Pure CSS dashboard components for the PaperForge plugin -- loading skeleton, metric card, lifecycle stepper, health matrix, maturity gauge, and bar chart -- all themed via Obsidian CSS variables
+- 5 new DOM render methods on PaperForgeStatusView: loading skeleton utilities, enhanced metric cards, 6-stage lifecycle stepper, 2x2 health matrix, 6-segment maturity gauge, and lifecycle-proportional bar chart -- all using createEl() DOM API with CSS classes from Plan 27-01
+- Index loading utilities (_loadIndex, _getCachedIndex, _findEntry, _filterByDomain) on PaperForgeStatusView + CSS Sections 13-14 for mode-aware dashboard content area and header context
+- Mode-aware dashboard routing with _detectAndSwitch, _switchMode, debounced event subscriptions, mode header rendering, and lifecycle cleanup in PaperForgeStatusView
+- Full per-paper dashboard rendering pipeline: lifecycle stepper, health matrix, maturity gauge, next-step recommendation card, contextual actions, and paper metadata header
+- Domain-level aggregated dashboard: metric cards (papers/fulltext-ready/deep-read), lifecycle bar chart, and health overview grid with healthy/unhealthy counts for PDF/OCR/Note/Asset dimensions
+
+---
+
+## v1.6 AI-Ready Literature Asset Foundation (Shipped: 2026-05-04)
+
+**Phases completed:** 6 phases, 15 plans, 40 tasks
+
+**Key accomplishments:**
+
+- schema_version marker, top-level-to-vault_config migration engine, and auto-trigger in sync command
+- Refactored Obsidian plugin to read path configuration from `paperforge.json` (vault_config block), eliminating the second runtime truth problem where plugin DEFAULT_SETTINGS had wrong defaults (System/Resources/Notes/Index_Cards/Base instead of Python's 99_System/03_Resources/Literature/LiteratureControl/05_Bases).
+- Setup wizard writes canonical vault_config-only paperforge.json with schema_version, doctor detects stale legacy config with migration guidance, and load_vault_config supports optional config source tracing for CONF-03 runtime inspection.
+- Extracted index generation from sync.py into asset_index.py with versioned envelope format, atomic writes (tempfile + os.replace + filelock), and 14 passing tests
+- Legacy bare-list auto-migration, incremental refresh by Zotero key, workspace path fields in every index entry, and --rebuild-index CLI flag for the canonical asset index
+- Wire incremental index refresh into OCR, deep-reading, and repair workers; document sync.py default convention; add integration tests
+- Four pure derivation functions (lifecycle, health, maturity, next-step) consuming canonical index entry dicts with full test coverage via TDD
+- All four compute functions from asset_state.py wired into _build_entry() — every canonical index entry now carries embedded lifecycle, health, maturity, and next_step fields derived from source artifacts
+- status --json reads lifecycle/health/maturity from canonical index; doctor shows Index Health section with per-dimension health counts and brownfield detection
+- Plugin dashboard reads formal-library.json directly via readFileSync instead of spawning Python CLI, with doctor and repair as one-click Quick Action buttons
+- Base views lifecycle column migration and repair source-first rebuild with build_index() call
+- Flat literature notes copied into per-paper workspace directories with ## 🔍 精读 extraction and ai/ directory creation, wired into run_index_refresh() for first-sync migration, with workspace-aware _build_entry() writing and backward-compatible flat fallback
+- paperforge context CLI command that reads the canonical index and outputs JSON context entries with provenance traces and AI readiness explanations
+- Plugin "Copy Context" and "Copy Collection Context" Quick Actions with zotero_key resolution from active note frontmatter, clipboard copy with JSON validation
+
+---
+
 **Project:** PaperForge Lite — Local Obsidian + Zotero literature workflow for medical researchers
 
 ---
@@ -201,3 +272,18 @@
 
 ---
 *Milestone v1.3 completed: 2026-04-24*
+
+---
+
+## v1.10 Dependency Cleanup (Shipped: 2026-05-07)
+
+**Phases completed:** 4 phases (42-45), 29 requirements
+
+**Key accomplishments:**
+
+- OCR/status workers read `do_ocr`/`analyze` from formal note frontmatter (same pattern as `get_analyze_queue()`) — core workflow unbroken for post-v1.9 papers
+- `load_control_actions()` rewritten to scan Literature/; `auto_analyze_after_ocr` writes to formal notes
+- Repair worker re-anchored: three-way divergence scan compares formal note frontmatter vs canonical index vs meta.json
+- 14 hardcoded old directory defaults (`99_System`, `03_Resources`, `05_Bases`) updated to clean names across asset_index/sync/repair/setup_wizard/validate_setup/.gitignore/CLI
+- 9 documentation files updated (AGENTS.md, 5 skill files, 3 docs) — zero remaining library-records references
+- 473 tests pass, 0 regressions

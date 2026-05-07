@@ -11,7 +11,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from paperforge.worker._utils import scan_library_records
+from paperforge.worker._utils import get_analyze_queue
 
 logger = logging.getLogger(__name__)
 
@@ -29,14 +29,13 @@ def _load_vault_config(vault: Path) -> dict:
 def _paperforge_paths(vault: Path) -> dict[str, Path]:
     """Build PaperForge path inventory for /pf-deep — delegates to shared resolver.
 
-    Returns ocr, records, literature keys matching shared resolver output.
+    Returns ocr, literature keys matching shared resolver output.
     """
     from paperforge.config import paperforge_paths as _shared_paperforge_paths
 
     shared = _shared_paperforge_paths(vault)
     return {
         "ocr": shared["ocr"],
-        "records": shared["library_records"],
         "literature": shared["literature"],
     }
 
@@ -1323,55 +1322,105 @@ def prepare_deep_reading(vault: Path, zotero_key: str, force: bool = False) -> d
     }
 
     paths = _paperforge_paths(vault)
-    records_root = paths["records"]
     literature_root = paths["literature"]
     ocr_root = paths["ocr"]
 
-    # 1. Find library-record
-    record_path: Path | None = None
-    domain: str | None = None
-    if records_root.exists():
-        for domain_dir in records_root.iterdir():
-            if not domain_dir.is_dir():
-                continue
-            candidate = domain_dir / f"{zotero_key}.md"
-            if candidate.exists():
-                record_path = candidate
-                domain = domain_dir.name
-                break
+    # 0. Refresh canonical index entry so upstream frontmatter changes are reflected
+    try:
+        from paperforge.worker.asset_index import refresh_index_entry
 
-    if record_path is None:
-        # Fallback: search by zotero_key in frontmatter
-        for domain_dir in records_root.iterdir():
-            if not domain_dir.is_dir():
-                continue
+        refresh_index_entry(vault, zotero_key)
+    except Exception:
+        pass
+
+    # 1. Look up from canonical index (fast, no file scanning)
+    domain: str | None = None
+    title: str = ""
+    try:
+        from paperforge.worker.asset_index import read_index
+
+        index = read_index(vault)
+        if index:
+            items = index.get("items") if isinstance(index, dict) else index
+            for entry in items:
+                if entry.get("zotero_key") == zotero_key:
+                    domain = entry.get("domain")
+                    title = entry.get("title", "")
+                    if not entry.get("analyze"):
+                        result["message"] = (
+                            f"[ERROR] analyze=False for {zotero_key}. "
+                            "Set analyze: true in formal note frontmatter first."
+                        )
+                        return result
+                    if entry.get("deep_reading_status") == "done" and not force:
+                        result["message"] = (
+                            "[WARN] deep_reading_status already 'done'. Use --force to re-run."
+                        )
+                        return result
+                    break
+    except Exception:
+        pass
+
+    # 2. Fallback: search formal notes by zotero_key pattern
+    if domain is None:
+        if literature_root.exists():
+            for candidate in literature_root.rglob(f"*.md"):
+                try:
+                    text = candidate.read_text(encoding="utf-8")
+                    key_match = re.search(rf'^zotero_key:\s*"?{re.escape(zotero_key)}"?', text, re.MULTILINE)
+                    if key_match:
+                        domain_match = re.search(r"^domain:\s*(.+)$", text, re.MULTILINE)
+                        domain = domain_match.group(1).strip() if domain_match else candidate.parent.name
+                        from paperforge.worker.asset_index import _read_frontmatter_bool
+
+                        if not _read_frontmatter_bool(candidate, "analyze"):
+                            result["message"] = (
+                                f"[ERROR] analyze=False for {zotero_key} in {candidate}. "
+                                "Set analyze: true first."
+                            )
+                            return result
+                        break
+                except Exception:
+                    continue
+
+    if domain is None:
+        result["message"] = f"[ERROR] Paper not found for zotero_key={zotero_key}. Run paperforge sync first."
+        return result
+
+    # 3. Find formal note by domain + key
+    formal_note: Path | None = None
+    if literature_root.exists() and domain:
+        domain_dir = literature_root / domain
+        if domain_dir.exists():
             for candidate in domain_dir.glob("*.md"):
+                if candidate.name.startswith(f"{zotero_key} ") or candidate.name.startswith(f"{zotero_key} -"):
+                    formal_note = candidate
+                    break
+            if formal_note is None:
+                for candidate in domain_dir.glob("*.md"):
+                    try:
+                        text = candidate.read_text(encoding="utf-8")
+                        if re.search(rf'^zotero_key:\s*"?{re.escape(zotero_key)}"?', text, re.MULTILINE):
+                            formal_note = candidate
+                            break
+                    except Exception:
+                        continue
+
+    if formal_note is None:
+        for candidate in literature_root.rglob("*.md"):
+            try:
                 text = candidate.read_text(encoding="utf-8")
                 if re.search(rf'^zotero_key:\s*"?{re.escape(zotero_key)}"?', text, re.MULTILINE):
-                    record_path = candidate
-                    domain = domain_dir.name
+                    formal_note = candidate
                     break
-            if record_path:
-                break
+            except Exception:
+                continue
 
-    if record_path is None:
-        result["message"] = f"[ERROR] Library record not found for zotero_key={zotero_key}"
+    if formal_note is None:
+        result["message"] = f"[ERROR] Formal note not found for {zotero_key}. Run paperforge sync first."
         return result
 
-    record_text = record_path.read_text(encoding="utf-8")
-
-    # 2. Check analyze flag
-    analyze_match = re.search(r"^analyze:\s*(true|false)$", record_text, re.MULTILINE)
-    if not analyze_match or analyze_match.group(1) != "true":
-        result["message"] = f"[ERROR] analyze != true in {record_path}. Set analyze: true first."
-        return result
-
-    # 3. Check deep_reading_status
-    status_match = re.search(r'^deep_reading_status:\s*"?(.*?)"?$', record_text, re.MULTILINE)
-    dr_status = status_match.group(1).strip() if status_match else "pending"
-    if dr_status == "done" and not force:
-        result["message"] = "[WARN] deep_reading_status already 'done'. Use --force to re-run."
-        return result
+    result["formal_note"] = str(formal_note)
 
     # 4. Check OCR / fulltext availability
     ocr_dir = ocr_root / zotero_key
@@ -1379,7 +1428,7 @@ def prepare_deep_reading(vault: Path, zotero_key: str, force: bool = False) -> d
     meta_path = ocr_dir / "meta.json"
 
     if not fulltext_md.exists():
-        result["message"] = f"[ERROR] OCR fulltext not found: {fulltext_md}. Run OCR first."
+        result["message"] = f"[ERROR] OCR fulltext not found: {fulltext_md}. Run paperforge ocr first."
         return result
 
     ocr_status = "pending"
@@ -1392,38 +1441,6 @@ def prepare_deep_reading(vault: Path, zotero_key: str, force: bool = False) -> d
         return result
 
     result["fulltext_md"] = str(fulltext_md)
-
-    # 5. Find formal note
-    formal_note: Path | None = None
-    if literature_root.exists() and domain:
-        domain_dir = literature_root / domain
-        if domain_dir.exists():
-            # Try exact match first
-            for candidate in domain_dir.glob("*.md"):
-                if candidate.name.startswith(f"{zotero_key} ") or candidate.name.startswith(f"{zotero_key} -"):
-                    formal_note = candidate
-                    break
-            # Fallback: search by frontmatter zotero_key
-            if formal_note is None:
-                for candidate in domain_dir.glob("*.md"):
-                    text = candidate.read_text(encoding="utf-8")
-                    if re.search(rf'^zotero_key:\s*"?{re.escape(zotero_key)}"?', text, re.MULTILINE):
-                        formal_note = candidate
-                        break
-
-    if formal_note is None:
-        # Try global search
-        for candidate in literature_root.rglob("*.md"):
-            text = candidate.read_text(encoding="utf-8")
-            if re.search(rf'^zotero_key:\s*"?{re.escape(zotero_key)}"?', text, re.MULTILINE):
-                formal_note = candidate
-                break
-
-    if formal_note is None:
-        result["message"] = f"[ERROR] Formal note not found in {literature_root}. Run sync --index first."
-        return result
-
-    result["formal_note"] = str(formal_note)
 
     # Save original note content for rollback
     original_note_text = formal_note.read_text(encoding="utf-8")
@@ -1501,12 +1518,11 @@ def prepare_deep_reading(vault: Path, zotero_key: str, force: bool = False) -> d
 
 
 def scan_deep_reading_queue(vault: Path) -> list[dict]:
-    """Scan library-records for analyze=true + deep_reading_status!=done entries.
+    """Scan canonical index for analyze=true + deep_reading_status!=done entries.
 
-    Thin wrapper around scan_library_records() in _utils.py.
-    Re-exported from _utils.py for backward compatibility.
+    Thin wrapper around get_analyze_queue() in _utils.py.
     """
-    all_records = scan_library_records(vault)
+    all_records = get_analyze_queue(vault)
     # Filter: only records that still need deep reading
     queue = [r for r in all_records if r["deep_reading_status"] != "done"]
     # Sort: OCR completed first, then by domain, then by key
@@ -1569,9 +1585,15 @@ def main() -> int:
     full_validate_parser.add_argument("--figures", help="Comma-separated selected figure numbers to validate")
     full_validate_parser.add_argument("--tables", help="Comma-separated selected table numbers to validate")
 
-    queue_parser = subparsers.add_parser("queue", help="List papers awaiting deep reading from library records")
+    queue_parser = subparsers.add_parser("queue", help="List papers awaiting deep reading from canonical index")
     queue_parser.add_argument("--vault", type=Path, required=True, help="Path to the vault root")
     queue_parser.add_argument("--format", choices=["json", "table"], default="json", help="Output format")
+
+    prepare_parser = subparsers.add_parser("prepare", help="Auto-detect and prepare a paper for deep reading")
+    prepare_parser.add_argument("--vault", type=Path, required=True, help="Path to the vault root")
+    prepare_parser.add_argument("--key", required=True, help="Zotero key")
+    prepare_parser.add_argument("--force", action="store_true", help="Re-run even if deep_reading_status=done")
+    prepare_parser.add_argument("--format", choices=["json", "table"], default="json", help="Output format")
 
     map_parser = subparsers.add_parser("figure-map", help="Build caption-driven figure/table map from OCR fulltext")
     map_parser.add_argument("fulltext", type=Path, help="OCR fulltext markdown path")
@@ -1591,16 +1613,10 @@ def main() -> int:
     pp_parser.add_argument("--figures", type=int, required=True, help="Expected number of figures")
     pp_parser.add_argument("--format", choices=["json", "text"], default="text", help="Output format")
 
-    prepare_parser = subparsers.add_parser("prepare", help="One-click prepare all mechanical steps for deep reading")
-    prepare_parser.add_argument("zotero_key", help="Zotero citation key")
-    prepare_parser.add_argument("--vault", type=Path, required=True, help="Path to vault root")
-    prepare_parser.add_argument("--format", choices=["json", "text"], default="text", help="Output format")
-    prepare_parser.add_argument("--force", action="store_true", help="Force re-run even if deep_reading_status is done")
-
     args = parser.parse_args()
 
     if args.command == "prepare":
-        result = prepare_deep_reading(args.vault, args.zotero_key, force=args.force)
+        result = prepare_deep_reading(args.vault, args.key, force=args.force)
         if args.format == "json":
             print(json.dumps(result, ensure_ascii=False, indent=2))
         else:
@@ -1704,7 +1720,14 @@ def main() -> int:
     if args.command == "queue":
         queue = scan_deep_reading_queue(args.vault)
         if args.format == "json":
-            print(json.dumps(queue, ensure_ascii=False, indent=2))
+            # Convert Path objects to strings for JSON serialization
+            serializable = []
+            for row in queue:
+                r = dict(row)
+                if hasattr(r.get("note_path"), "__fspath__"):
+                    r["note_path"] = str(r["note_path"])
+                serializable.append(r)
+            print(json.dumps(serializable, ensure_ascii=False, indent=2))
         else:
             ready = [row for row in queue if row["ocr_status"] == "done"]
             blocked = [row for row in queue if row["ocr_status"] != "done"]

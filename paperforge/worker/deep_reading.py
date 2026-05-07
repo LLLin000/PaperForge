@@ -1,18 +1,17 @@
 from __future__ import annotations
 
 import logging
-import re
 from pathlib import Path
 
 from paperforge.config import paperforge_paths
 from paperforge.worker._domain import load_domain_config
 from paperforge.worker._utils import (
+    get_analyze_queue,
     pipeline_paths,
     read_json,
-    scan_library_records,
     write_json,
-    yaml_quote,
 )
+from paperforge.worker.asset_index import refresh_index_entry
 from paperforge.worker.base_views import ensure_base_views
 from paperforge.worker.sync import has_deep_reading_content
 
@@ -23,22 +22,21 @@ logger = logging.getLogger(__name__)
 
 
 def run_deep_reading(vault: Path, verbose: bool = False) -> int:
-    """Sync deep-reading status between formal notes and library records.
+    """Sync deep-reading status and report pending queue.
 
     This worker does NOT generate content. It only:
-    1. Scans formal literature notes for `## 🔍 精读` content
-    2. Updates library-records/*.md frontmatter to match actual state
-    3. Reports the queue of papers awaiting deep reading
+    1. Scans formal literature notes for `## 🔍 精读` content from canonical index
+    2. Reports the queue of papers awaiting deep reading (analyze=true, ocr_status=done)
+    3. Refreshes canonical index entries
 
     Actual content filling is done via /pf-deep (agent-driven).
     """
     paths = pipeline_paths(vault)
     config = load_domain_config(paths)
     ensure_base_views(vault, paths, config)
-    {entry["export_file"]: entry["domain"] for entry in config["domains"]}
     synced = 0
     pending_queue: list[dict] = []
-    records = scan_library_records(vault)
+    records = get_analyze_queue(vault)
 
     for record in records:
         key = record["zotero_key"]
@@ -53,17 +51,7 @@ def run_deep_reading(vault: Path, verbose: bool = False) -> int:
         correct_status = "done" if has_content else "pending"
 
         if record["deep_reading_status"] != correct_status:
-            record_dir = paths["library_records"] / domain
-            record_path = record_dir / f"{key}.md"
-            record_text = record_path.read_text(encoding="utf-8")
-            new_text = re.sub(
-                '^deep_reading_status:\\s*"?.*?"?$',
-                f"deep_reading_status: {yaml_quote(correct_status)}",
-                record_text,
-                flags=re.MULTILINE,
-                count=1,
-            )
-            record_path.write_text(new_text, encoding="utf-8")
+            refresh_index_entry(vault, key)
             synced += 1
 
         if correct_status == "pending":
@@ -135,4 +123,13 @@ def run_deep_reading(vault: Path, verbose: bool = False) -> int:
     report_path = paths["pipeline"] / "deep-reading-queue.md"
     report_path.write_text("\n".join(report_lines), encoding="utf-8")
     print(f"deep-reading: synced {synced} records, {len(pending_queue)} pending")
+
+    # Refresh canonical index for each paper (even if synced==0, formal note content may have changed)
+    for record in records:
+        key = record["zotero_key"]
+        if key:
+            try:
+                refresh_index_entry(vault, key)
+            except Exception:
+                logger.warning("Failed to refresh index entry for %s", key)
     return 0

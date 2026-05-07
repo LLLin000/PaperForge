@@ -21,11 +21,10 @@
 # 1. 安装
 pip install git+https://github.com/LLLin000/PaperForge.git
 
-# 2. 运行安装向导（会把插件文件部署到当前 Vault）
-paperforge setup
-```
+# 2. 运行安装向导（headless 模式，会把插件文件部署到当前 Vault）
+paperforge setup --headless --agent opencode --paddleocr-key <your-key>
 
-向导会引导你完成 Vault 配置、Zotero 链接、API Key 设置，并把插件文件部署到 `.obsidian/plugins/paperforge/`。
+向导会自动完成环境检测、目录创建、文件部署和配置写入。如果已有配置文件，安装只做增量补充。
 
 安装向导完成后，才进入 Obsidian 启用插件；启用之前不能打开 Dashboard。
 
@@ -33,7 +32,7 @@ paperforge setup
 
 ## Better BibTeX 配置
 
-这一步在 `paperforge setup` 完成之后再做，因为导出目录要先由安装向导创建。
+这一步在 `paperforge setup --headless` 完成之后再做，因为导出目录要先由安装向导创建。
 
 1. 打开 Zotero
 2. 对你要同步的库或分类右键 → `Export...` / `导出...`

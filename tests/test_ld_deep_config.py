@@ -87,16 +87,16 @@ class TestDeepPaperforgePaths:
     """Test ld_deep._paperforge_paths returns expected keys and values."""
 
     def test_paperforge_paths_returns_expected_keys(self, tmp_vault: Path) -> None:
-        """_paperforge_paths returns ocr, records, literature keys."""
+        """_paperforge_paths returns ocr, literature keys."""
         import ld_deep
 
         paths = ld_deep._paperforge_paths(tmp_vault)
 
-        for key in ["ocr", "records", "literature"]:
+        for key in ["ocr", "literature"]:
             assert key in paths, f"Missing expected key: {key}"
 
     def test_paperforge_paths_values_match_shared_resolver(self, tmp_vault: Path) -> None:
-        """Values for ocr, records, literature match paperforge_paths()."""
+        """Values for ocr, literature match paperforge_paths()."""
         import ld_deep
 
         from paperforge.config import paperforge_paths as shared_paths
@@ -104,9 +104,8 @@ class TestDeepPaperforgePaths:
         shared = shared_paths(tmp_vault)
         ld_paths = ld_deep._paperforge_paths(tmp_vault)
 
-        # ld_deep only exposes ocr, records, literature
+        # ld_deep only exposes ocr, literature (records key was removed in v1.9)
         assert ld_paths["ocr"] == shared["ocr"]
-        assert ld_paths["records"] == shared["library_records"]
         assert ld_paths["literature"] == shared["literature"]
 
     def test_paperforge_paths_custom_paperforge_json(self, tmp_vault: Path) -> None:

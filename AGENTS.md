@@ -1,6 +1,6 @@
 # PaperForge - Agent Guide
 
-> 本文档面向 **安装完成后的新用户** 和 **AI Agent**。安装步骤见 [setup-guide.md](docs/setup-guide.md) 或快速版 [INSTALLATION.md](docs/INSTALLATION.md)。
+> 本文档面向 **安装完成后的新用户** 和 **AI Agent**。安装步骤见 [setup-guide.md](docs/setup-guide.md) 或快速版 [INSTALLATION.md](docs/INSTALLATION.md)。Docs 版本与 v1.4.13 对应。
 
 ---
 
@@ -37,7 +37,7 @@ PaperForge 采用 **两层设计**：
 
 | 层级 | 组件 | 触发方式 | 作用 |
 |------|------|----------|------|
-| **Worker 层** | `literature_pipeline.py`（4 个 workers） | Python CLI | 后台自动化 |
+| **Worker 层** | `paperforge/worker/`（7 个 worker 模块） | Python CLI | 后台自动化 |
 | **Agent 层** | `/pf-deep`, `/pf-paper` 命令 | 用户手动触发 | 交互式精读 |
 
 **关键区别**：
@@ -64,13 +64,11 @@ PaperForge 采用 **两层设计**：
 Zotero 添加文献
     ↓ Better BibTeX 自动导出 JSON
 <system_dir>/PaperForge/exports/library.json
-    ↓ 运行 sync（selection-sync 阶段）
-<resources_dir>/<control_dir>/library-records/<domain>/<key>.md
-    ↓ 运行 sync（index-refresh 阶段）
-<resources_dir>/<literature_dir>/<domain>/<key> - <Title>.md（正式笔记）
-    ↓ 用户在 library-record 中设置 do_ocr: true
+    ↓ 运行 sync
+<resources_dir>/<literature_dir>/<domain>/<key> - <Title>.md（正式笔记，含 frontmatter）
+    ↓ 用户在正式笔记 frontmatter 中设置 do_ocr: true
 运行 ocr → <system_dir>/PaperForge/ocr/<key>/
-    ↓ 用户在 library-record 中设置 analyze: true
+    ↓ 用户在正式笔记 frontmatter 中设置 analyze: true
 运行 deep-reading（查看队列，确认就绪）
     ↓ 用户执行 Agent 命令
 /pf-deep <zotero_key>
@@ -85,29 +83,23 @@ Zotero 添加文献
 ```
 {你的Vault根目录}/
 ├── <resources_dir>/
-│   ├── <literature_dir>/                    ← 正式文献笔记（index-refresh 生成）
+│   ├── <literature_dir>/                    ← 正式文献笔记（sync 生成，含 frontmatter 状态跟踪）
 │   │   ├── 骨科/
 │   │   ├── 运动医学/
 │   │   └── ...（你的分类）
-│   └── <control_dir>/             ← 状态跟踪
-│       └── library-records/           ← selection-sync 输出
-│           ├── 骨科/
-│           │   └── ABCDEFG.md         ← 单条文献状态记录
-│           └── 运动医学/
-│               └── HIJKLMN.md
 │
 ├── <system_dir>/
 │   ├── PaperForge/
-│   │   ├── exports/                   ← Better BibTeX 自动导出的 JSON
-│   │   │   └── library.json
-│   │   ├── ocr/                       ← OCR 结果（每个文献一个子目录）
-│   │   │   └── ABCDEFG/               ← Zotero key 作为目录名
-│   │   │       ├── fulltext.md        ← OCR 提取的全文
-│   │   │       ├── images/            ← 图表切割图片
-│   │   │       ├── meta.json          ← OCR 元数据（含 ocr_status）
-│   │   │       └── figure-map.json    ← 图表索引（自动创建）
-│   │   └── worker/scripts/
-│   │       └── literature_pipeline.py ← 核心脚本
+│   │       ├── exports/                   ← Better BibTeX 自动导出的 JSON
+│   │       │   └── library.json
+│   │       ├── ocr/                       ← OCR 结果（每个文献一个子目录）
+│   │       │   └── ABCDEFG/               ← Zotero key 作为目录名
+│   │       │       ├── fulltext.md        ← OCR 提取的全文
+│   │       │       ├── images/            ← 图表切割图片
+│   │       │       ├── meta.json          ← OCR 元数据（含 ocr_status）
+│   │       │       └── figure-map.json    ← 图表索引（自动创建）
+│   │       ├── indexes/                   ← 索引缓存（formal-library.json 等）
+│   │       └── config/                    ← 领域-收藏夹映射等配置
 │   └── Zotero/                        ← Junction/Symlink 到 Zotero 数据目录
 │
 ├── <agent_config_dir>/                         ← OpenCode Agent 配置（自动创建）
@@ -126,10 +118,11 @@ Zotero 添加文献
 
 | 目录 | 内容 | 谁生成/修改 |
 |------|------|------------|
-| `<resources_dir>/<literature_dir>/` | 正式文献笔记（含 frontmatter + 精读内容） | sync（index-refresh 阶段）生成，Agent 写入精读 |
-| `<resources_dir>/<control_dir>/library-records/` | 文献状态跟踪（analyze, ocr_status 等） | sync（selection-sync 阶段）生成，用户修改状态 |
+| `<resources_dir>/<literature_dir>/` | 正式文献笔记（含 frontmatter + 精读内容） | sync 生成，Agent 写入精读 |
 | `<system_dir>/PaperForge/exports/` | Better BibTeX JSON 导出 | Zotero 自动导出 |
 | `<system_dir>/PaperForge/ocr/` | OCR 全文 + 图表切割 | ocr worker 生成 |
+| `<system_dir>/PaperForge/indexes/` | 索引缓存（formal-library.json） | sync 生成 |
+| `<system_dir>/PaperForge/config/` | 领域-收藏夹映射等 | 用户/安装向导配置 |
 | `<system_dir>/Zotero/` | Zotero 数据目录的链接 | 安装时手动创建 junction |
 
 ---
@@ -137,28 +130,20 @@ Zotero 添加文献
 ## 4. 核心 Workers（Lite 版，4 个）
 
 ### sync
-- **作用**：检测 Zotero 中的新条目并生成正式文献笔记（selection-sync + index-refresh 的统一入口）
+- **作用**：检测 Zotero 中的新条目并生成正式文献笔记
 - **运行时机**：添加新文献到 Zotero 后，或需要更新笔记格式时
 - **输出**：
-  - `<resources_dir>/<control_dir>/library-records/<domain>/<key>.md`
   - `<resources_dir>/<literature_dir>/<domain>/<key> - <Title>.md`
 - **示例**：
   ```bash
   paperforge sync
-  # 仅同步 Zotero 到 library-records
-  paperforge sync --selection
-  # 仅根据现有 library-records 生成正式笔记
-  paperforge sync --index
   # Legacy (备用):
-  # python <system_dir>/PaperForge/worker/scripts/literature_pipeline.py \
-  #   --vault "{vault路径}" selection-sync
-  # python <system_dir>/PaperForge/worker/scripts/literature_pipeline.py \
-  #   --vault "{vault路径}" index-refresh
+  # python -m paperforge sync --vault "{vault路径}"
   ```
 
 ### ocr
 - **作用**：将 PDF 上传到 PaddleOCR API，提取全文文本和图表
-- **触发条件**：library-record 中 `do_ocr: true`
+- **触发条件**：正式笔记 frontmatter 中 `do_ocr: true`
 - **输出**：`<system_dir>/PaperForge/ocr/<key>/` 目录
   - `fulltext.md`：提取的全文（含 `<!-- page N -->` 分页标记）
   - `images/`：自动切割的图表图片
@@ -171,12 +156,11 @@ Zotero 添加文献
   # 诊断模式（不运行，仅检查状态）
   paperforge ocr --diagnose
   # Legacy (备用):
-  # python <system_dir>/PaperForge/worker/scripts/literature_pipeline.py \
-  #   --vault "{vault路径}" ocr
+  # python -m paperforge ocr --vault "{vault路径}"
   ```
 
 ### deep-reading
-- **作用**：扫描所有 library-records，列出 `analyze=true` 且 OCR 完成的文献
+- **作用**：扫描所有正式笔记，列出 `analyze=true` 且 OCR 完成的文献
 - **运行时机**：用户想看看哪些文献可以开始精读了
 - **输出**：控制台表格，显示队列状态
 - **重要**：这只是**查看队列**，不会自动触发 Agent 精读
@@ -185,8 +169,7 @@ Zotero 添加文献
   paperforge deep-reading
   paperforge deep-reading --verbose  # 显示阻塞条目的修复指令
   # Legacy (备用):
-  # python <system_dir>/PaperForge/worker/scripts/literature_pipeline.py \
-  #   --vault "{vault路径}" deep-reading
+  # python -m paperforge deep-reading --vault "{vault路径}"
   ```
 
 ---
@@ -207,7 +190,7 @@ PaperForge 的命令分为两类：
 
 > **v1.4 新增**：所有命令支持全局 `--verbose` / `-v` 参数（如 `paperforge sync --verbose`），输出 DEBUG 级别的诊断信息到 stderr，不影响 stdout 的正常输出。
 
-> **v1.4 新增 — auto_analyze_after_ocr**：如果开启了 `paperforge.json` 中的 `auto_analyze_after_ocr`，OCR 完成后 `analyze` 会自动设为 `true`，无需手动修改 library-record。
+> **v1.4 新增 — auto_analyze_after_ocr**：如果开启了 `paperforge.json` 中的 `auto_analyze_after_ocr`，OCR 完成后 `analyze` 会自动设为 `true`，无需手动修改 formal note frontmatter。
 
 ### 必须 Agent 执行的命令
 
@@ -217,7 +200,7 @@ PaperForge 的命令分为两类：
 **前置条件**：OCR 完成 (`ocr_status: done`)
 
 执行流程：
-1. **prepare 阶段**（自动）：查找 library-record、检查 OCR、生成 figure-map
+1. **prepare 阶段**（自动）：查找正式笔记、检查 OCR、生成 figure-map
 2. **精读阶段**（Agent 执行）：Pass 1 概览 → Pass 2 精读还原 → Pass 3 深度理解
 3. **验证阶段**（自动）：检查 callout 间距、section 完整性
 
@@ -242,7 +225,7 @@ PaperForge 支持三种 Better BibTeX 导出路径格式，并统一转换为 Ob
 
 ### Wikilink 生成规则
 
-- 所有 PDF 路径在 library-record 中存储为 **Obsidian wikilink** 格式：`[[relative/path/to/file.pdf]]`
+- 所有 PDF 路径在正式笔记中存储为 **Obsidian wikilink** 格式：`[[relative/path/to/file.pdf]]`
 - 使用正斜杠 `/`（即使 Windows 系统）
 - 支持中文文件名，无需转义
 - 示例：`[[99_System/Zotero/storage/KEY/中文论文.pdf]]`
@@ -274,9 +257,9 @@ mklink /J "C:\你的Vault\99_System\Zotero" "C:\Users\用户名\Zotero"
 
 ## 7. Frontmatter 字段参考
 
-### Library Record（`library-records/<domain>/<key>.md`）
+### Formal Note（`Literature/<domain>/<key> - <Title>.md`）
 
-这是**用户控制工作流的核心**。每个文献对应一个 record 文件：
+这是**用户控制工作流的核心**。每个文献对应一个 formal note 文件，frontmatter 包含元数据 + 工作流控制字段：
 
 ```yaml
 ---
@@ -306,34 +289,14 @@ analysis_note: ""                # 预留字段
 ```
 
 **用户操作方式**：
-- 在 Obsidian 中打开 library-record 文件
+- 在 Obsidian 中打开 formal note 文件
 - 修改 `analyze: false` → `analyze: true` 标记要精读的文献
 - 修改 `do_ocr: false` → `do_ocr: true` 触发 OCR
 - 或使用 Obsidian Base 视图批量操作
 
-### Formal Note（`Literature/<domain>/<key> - <Title>.md`）
-
-这是最终产出的笔记，包含元数据 + 精读内容：
-
-```yaml
----
-title: "论文标题"
-year: 2024
-type: "journal"
-journal: "Journal Name"
-impact_factor: 5.2
-category: "骨科"
-tags:
-  - 文献阅读
-  - 子分类
-keywords: ["keyword1", "keyword2"]
-pdf_link: "[[99_System/Zotero/storage/KEY/文件名.pdf]]"
----
-```
-
 ---
 
-## 7. 第一次使用指南（手把手）
+## 8. 第一次使用指南（手把手）
 
 ### Step 1: 完成 Better BibTeX 自动导出
 
@@ -353,15 +316,11 @@ paperforge sync
 预期输出：
 ```
 [INFO] Found 5 new items
-[INFO] Created library-records/骨科/XXXXXXX.md
+[INFO] Created 骨科/XXXXXXX.md
 [INFO] Generated 5 formal notes
 [INFO] Output: <resources_dir>/<literature_dir>/骨科/XXXXXXX - Title.md
 ...
 ```
-
-> 如需分阶段执行：
-> - `paperforge sync --selection` — 仅同步 Zotero 到 library-records
-> - `paperforge sync --index` — 仅根据现有 library-records 生成正式笔记
 
 ### Step 4: 在 Base 视图中标记 OCR
 
@@ -402,20 +361,14 @@ Agent 会自动：
 
 ---
 
-## 8. 常用命令速查
+## 9. 常用命令速查
 
 ```bash
 # 检测 Zotero 新条目并生成正式笔记
 paperforge sync
 paperforge sync --verbose      # 显示详细诊断信息
 
-# 仅同步 Zotero 到 library-records
-paperforge sync --selection
-paperforge sync --selection --verbose
 
-# 仅根据现有 library-records 生成正式笔记
-paperforge sync --index
-paperforge sync --index --verbose
 
 # 运行 OCR（处理 do_ocr=true 的文献）
 paperforge ocr
@@ -461,9 +414,9 @@ paperforge doctor
 
 ---
 
-## 9. 常见问题
+## 10. 常见问题
 
-### Q: 运行 sync 后没有生成 library-records？
+### Q: 运行 sync 后没有生成正式笔记？
 - 检查 Better BibTeX JSON 导出路径是否正确
 - 检查 JSON 文件是否包含文献数据
 - 确认 Zotero 中该文献有 citation key
@@ -474,7 +427,7 @@ paperforge doctor
 - 查看 `<system_dir>/PaperForge/ocr/<key>/meta.json` 中的错误信息
 
 ### Q: /pf-deep 提示 OCR 未完成？
-- 确认 library-record 中 `ocr_status: done`
+- 确认正式笔记 frontmatter 中 `ocr_status: done`
 - 如 OCR 失败，可重新设置 `do_ocr: true` 再运行 ocr worker
 
 ### Q: Base 视图中 pdf_path 显示为绝对路径？
@@ -483,11 +436,11 @@ paperforge doctor
 
 ### Q: 可以批量操作吗？
 - 可以。使用 Obsidian Base 视图批量修改 `do_ocr` 和 `analyze` 字段
-- 或使用脚本批量修改 library-records 中的 frontmatter
+- 或使用脚本批量修改 formal note frontmatter
 
 ---
 
-## 10. 升级与维护
+## 11. 升级与维护
 
 ### 更新 PaperForge 代码
 
@@ -553,7 +506,7 @@ cp -r 新下载的代码/* <vault_path>/
 
 ---
 
-## 11. 命令迁移说明（v1.1 → v1.2）
+## 12. 命令迁移说明（v1.1 → v1.2）
 
 从 v1.2 开始，PaperForge 采用统一的命令接口：
 
@@ -567,7 +520,7 @@ cp -r 新下载的代码/* <vault_path>/
 
 ---
 
-## 12. 开发者指南（AI Agent 必读）
+## 13. 开发者指南（AI Agent 必读）
 
 ### 版本号管理
 
@@ -632,7 +585,7 @@ gh release create v1.4.12 \
 # 提交前运行 ruff lint + format + 一致性审计
 ruff check --fix paperforge/ && ruff format paperforge/
 
-# 运行测试（317 tests）
+# 运行测试（462 tests）
 pytest tests/ -q --tb=short
 ```
 

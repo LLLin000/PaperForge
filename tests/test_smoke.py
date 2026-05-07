@@ -63,9 +63,9 @@ class TestSetupWizard:
 
     def test_setup_wizard_pip_install(self, test_vault: Path) -> None:
         """Verify setup wizard's _deploy method calls pip install -e ."""
-        import setup_wizard
+        from paperforge.setup_wizard import headless_setup
 
-        source = Path(setup_wizard.__file__).read_text(encoding="utf-8")
+        source = Path(headless_setup.__code__.co_filename).read_text(encoding="utf-8")
         assert (
             '"-m", "pip", "install", "-e"' in source or "pip install -e" in source
         ), "setup wizard should call pip install -e"
