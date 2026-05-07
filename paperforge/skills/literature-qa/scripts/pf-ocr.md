@@ -1,6 +1,6 @@
 ---
 name: pf-ocr
-description: Process the PDF OCR queue for library-records marked do_ocr: true. Uploads PDFs to PaddleOCR API and extracts fulltext with figures.
+description: Process the PDF OCR queue for formal notes marked do_ocr: true. Uploads PDFs to PaddleOCR API and extracts fulltext with figures.
 allowed-tools: [Bash]
 ---
 
@@ -8,7 +8,7 @@ allowed-tools: [Bash]
 
 ## Purpose
 
-处理 library-records 中 `do_ocr: true` 的 PDF OCR 队列。
+处理正式笔记 frontmatter 中 `do_ocr: true` 的 PDF OCR 队列。
 
 `paperforge ocr` 会自动读取 `paperforge.json` 定位 ocr 目录和 worker 脚本，运行 OCR 并自动诊断结果。
 
@@ -20,7 +20,7 @@ paperforge ocr
 
 ## Prerequisites
 
-- [ ] library-record 中 `do_ocr: true` 已设置
+- [ ] formal note frontmatter 中 `do_ocr: true` 已设置
 - [ ] PDF 附件存在（`has_pdf: true`）
 - [ ] PaddleOCR API Key 已配置（`.env` 中 `PADDLEOCR_API_TOKEN`）
 - [ ] 网络连接正常（可访问 PaddleOCR 服务）
@@ -98,5 +98,5 @@ OCR 完成后，每个文献生成以下文件：
 
 ## See Also
 
-- [pf-sync](pf-sync.md) — 文献同步（生成 library-records）
+- [pf-sync](pf-sync.md) — 文献同步（生成正式笔记）
 - [pf-deep](pf-deep.md) — 深度精读（依赖 OCR 结果）

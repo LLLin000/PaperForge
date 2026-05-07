@@ -225,6 +225,33 @@ def _read_frontmatter_bool(note_path: Path, key: str, default: bool = False) -> 
     return default
 
 
+def _read_frontmatter_optional_bool(note_path: Path, key: str) -> bool | None:
+    if not note_path or not note_path.exists():
+        return None
+    try:
+        text = note_path.read_text(encoding="utf-8")
+        m = re.search(rf"^{re.escape(key)}:\s*(?:[\"'])?(true|false)(?:[\"'])?\s*$", text, re.MULTILINE | re.IGNORECASE)
+        if m:
+            return m.group(1).lower() == "true"
+    except Exception:
+        pass
+    return None
+
+
+def _read_legacy_control_bool(records_root: Path, zotero_key: str, key: str) -> bool | None:
+    if not records_root or not records_root.exists() or not zotero_key:
+        return None
+    for record_path in records_root.rglob(f"{zotero_key}.md"):
+        try:
+            text = record_path.read_text(encoding="utf-8")
+        except Exception:
+            continue
+        match = re.search(rf"^{re.escape(key)}:\s*(?:[\"'])?(true|false)(?:[\"'])?\s*$", text, re.MULTILINE | re.IGNORECASE)
+        if match:
+            return match.group(1).lower() == "true"
+    return None
+
+
 def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: Path) -> dict:
     """Construct a single canonical index entry from a BBT export *item*.
 
@@ -281,12 +308,42 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
     # Workspace paths (Phase 26: flat-to-workspace migration)
     workspace_dir = paths["literature"] / domain / f"{key} - {title_slug}"
     main_note_path = workspace_dir / f"{key} - {title_slug}.md"
+    deep_reading_file = workspace_dir / "deep-reading.md"
+    target_fulltext = workspace_dir / "fulltext.md"
+    source_fulltext = paths["ocr"] / key / "fulltext.md"
+
+    workspace_dir.mkdir(parents=True, exist_ok=True)
+    (workspace_dir / "ai").mkdir(parents=True, exist_ok=True)
+    if meta.get("ocr_status") == "done" and source_fulltext.exists() and not target_fulltext.exists():
+        shutil.copy2(str(source_fulltext), str(target_fulltext))
+        logger.info("Bridged fulltext.md to workspace for %s", key)
+
+    fulltext_exists = target_fulltext.exists()
+    deep_reading_exists = deep_reading_file.exists()
 
     # ---- entry dict -------------------------------------------------------
     authors = item.get("authors", [])
     first_author = authors[0] if authors else ""
     extra = item.get("extra", "")
     impact_factor = lookup_impact_factor(item.get("journal", ""), extra, vault)
+    legacy_records_root = paths.get("library_records")
+    legacy_do_ocr = _read_legacy_control_bool(legacy_records_root, key, "do_ocr")
+    legacy_analyze = _read_legacy_control_bool(legacy_records_root, key, "analyze")
+    note_do_ocr = _read_frontmatter_optional_bool(main_note_path, "do_ocr")
+    if note_do_ocr is None:
+        note_do_ocr = _read_frontmatter_optional_bool(note_path, "do_ocr")
+    note_analyze = _read_frontmatter_optional_bool(main_note_path, "analyze")
+    if note_analyze is None:
+        note_analyze = _read_frontmatter_optional_bool(note_path, "analyze")
+
+    do_ocr_value = note_do_ocr if note_do_ocr is not None else legacy_do_ocr
+    if do_ocr_value is None:
+        do_ocr_value = meta.get("do_ocr") is True or meta.get("ocr_status") == "done"
+
+    analyze_value = note_analyze if note_analyze is not None else legacy_analyze
+    if analyze_value is None:
+        analyze_value = meta.get("analyze") is True or meta.get("deep_reading_status") == "done"
+
     entry = {
         "zotero_key": key,
         "domain": domain,
@@ -304,8 +361,8 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
         "collection_tags": collection_meta.get("collection_tags", []),
         "collection_group": collection_meta.get("collection_group", []),
         "has_pdf": bool(pdf_attachments),
-        "do_ocr": _read_frontmatter_bool(main_note_path, "do_ocr") or _read_frontmatter_bool(note_path, "do_ocr") or meta.get("do_ocr") is True or meta.get("ocr_status") == "done",
-        "analyze": _read_frontmatter_bool(main_note_path, "analyze") or _read_frontmatter_bool(note_path, "analyze") or meta.get("analyze") is True or meta.get("deep_reading_status") == "done",
+        "do_ocr": do_ocr_value,
+        "analyze": analyze_value,
         "pdf_path": (
             obsidian_wikilink_for_pdf(pdf_attachments[0]["path"], vault, zotero_dir)
             if pdf_attachments
@@ -330,11 +387,11 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
             if note_path.exists() and has_deep_reading_content(note_path.read_text(encoding="utf-8"))
             else ""
         ),
-        # Workspace path fields — config-resolved via paths["literature"] (Phase 46: PATH-01)
+        # Workspace path fields are only advertised when the backing files/dirs exist.
         "paper_root": str(workspace_dir.relative_to(vault)).replace("\\", "/") + "/",
         "main_note_path": str(main_note_path.relative_to(vault)).replace("\\", "/"),
-        "fulltext_path": str((workspace_dir / "fulltext.md").relative_to(vault)).replace("\\", "/"),
-        "deep_reading_path": str((workspace_dir / "deep-reading.md").relative_to(vault)).replace("\\", "/"),
+        "fulltext_path": str(target_fulltext.relative_to(vault)).replace("\\", "/") if fulltext_exists else "",
+        "deep_reading_path": str(deep_reading_file.relative_to(vault)).replace("\\", "/") if deep_reading_exists else "",
         "ai_path": str((workspace_dir / "ai").relative_to(vault)).replace("\\", "/") + "/",
     }
 
@@ -345,22 +402,12 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
     entry["next_step"] = compute_next_step(entry)
 
     # --- Workspace: always create and write to workspace path (Phase 38: no flat fallback) ---
-    workspace_dir.mkdir(parents=True, exist_ok=True)
-    (workspace_dir / "ai").mkdir(parents=True, exist_ok=True)
     existing_text = main_note_path.read_text(encoding="utf-8") if main_note_path.exists() else ""
 
     main_note_path.write_text(frontmatter_note(entry, existing_text), encoding="utf-8")
 
     # Write per-workspace paper-meta.json (Phase 37: internal state outside frontmatter)
     write_paper_meta(workspace_dir, entry, paperforge_version=PAPERFORGE_VERSION)
-
-    # Fulltext bridge (WS-02): copy OCR output into workspace
-    if entry.get("ocr_status") == "done":
-        source_fulltext = paths["ocr"] / key / "fulltext.md"
-        target_fulltext = workspace_dir / "fulltext.md"
-        if source_fulltext.exists() and not target_fulltext.exists():
-            shutil.copy2(str(source_fulltext), str(target_fulltext))
-            logger.info("Bridged fulltext.md to workspace for %s", key)
 
     return entry
 

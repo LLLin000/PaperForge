@@ -24,20 +24,31 @@ allowed-tools: [Read, Bash, Edit]
 
 ```bash
 # 准备阶段（间接）
-paperforge sync      # 生成 library-records 和正式笔记
-paperforge ocr       # 完成 OCR 提取
-paperforge deep-reading  # 查看精读队列状态
+python .opencode/skills/pf-deep/scripts/ld_deep.py prepare --vault "<VAULT_PATH>" --key <ZOTERO_KEY>
+# 返回 JSON：{status, formal_note, fulltext_md, figures, tables}
 ```
 
-> `<prefix>pf-deep` 是 **Agent 层命令**，无直接 CLI 等效命令。其依赖的数据由上述 CLI 命令准备。
+> `<prefix>pf-deep` 是 **Agent 层命令**，通过 Python 代码自动检测论文状态，无需先行 CLI 准备。
 
-## Prerequisites
+## Detection（自动检测，无需手动 sync）
 
-- [ ] library-record 已创建（`paperforge sync` 生成）
-- [ ] `analyze: true` 已设置（在 library-record frontmatter 中）
-- [ ] OCR 已完成（`ocr_status: done`）
-- [ ] `fulltext.md` 存在且非空
-- [ ] 正式笔记文件存在
+启动时，Agent 执行以下 Python 检测命令，代码会自动判断是否需要精读：
+
+```bash
+python .opencode/skills/pf-deep/scripts/ld_deep.py prepare --vault "<VAULT_PATH>" --key <ZOTERO_KEY>
+```
+
+返回 JSON：
+- `status: "ok"` → 就绪，可以开始精读
+- `status: "error"` → 被阻塞（`message` 说明原因：analyze=false / OCR 未完成 / 未找到论文）
+
+Agent 根据返回的 `status` 决定是否进入精读流程，不自行读取 frontmatter。
+
+**队列模式** (`/pf-deep queue`)：Agent 运行：
+```bash
+python .opencode/skills/pf-deep/scripts/ld_deep.py queue --vault "<VAULT_PATH>"
+```
+代码自动扫描 canonical index 中 `analyze=true` 且 `deep_reading_status=pending` 的论文，按 OCR 状态分组。
 
 ## Arguments
 
@@ -72,10 +83,11 @@ paperforge deep-reading  # 查看精读队列状态
 
 当不提供具体 key/标题时，agent 自动执行以下流程：
 
-1. 运行 `paperforge deep-reading` 查看精读队列
-2. 解析输出的队列状态
-3. 按 OCR 状态分组展示
-4. 由用户选择篇目
+1. 运行 `python .opencode/skills/pf-deep/scripts/ld_deep.py queue --vault "<VAULT_PATH>"` 扫描队列
+2. 解析输出的 JSON，按 OCR 状态分组展示
+3. 由用户选择篇目
+
+无需先跑 `paperforge sync`。
 
 ## Output
 

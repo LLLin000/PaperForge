@@ -581,6 +581,10 @@
 }
 .paperforge-step-btn.mod-cta:hover { opacity: 0.9; }
 
+.paperforge-apikey-status { margin-left: 8px; font-size: var(--font-ui-smaller); }
+.paperforge-apikey-status.ok { color: var(--color-green); }
+.paperforge-apikey-status.error { color: var(--color-red); }
+
 .paperforge-modal-hint {
     font-size: var(--font-ui-smaller); color: var(--text-muted);
     margin-top: 12px; padding: 6px 10px;

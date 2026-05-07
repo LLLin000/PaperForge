@@ -7,6 +7,7 @@ import re
 import urllib.parse
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Optional
 from xml.etree import ElementTree as ET
 
 import requests
@@ -30,6 +31,36 @@ from paperforge.worker._utils import (
 import paperforge.worker.asset_index as asset_index
 
 logger = logging.getLogger(__name__)
+
+
+def _read_frontmatter_bool_from_text(text: str, key: str, default: bool = False) -> bool:
+    match = re.search(rf"^{re.escape(key)}:\s*(?:[\"'])?(true|false)(?:[\"'])?\s*$", text, re.MULTILINE | re.IGNORECASE)
+    if not match:
+        return default
+    return match.group(1).lower() == "true"
+
+
+def _read_frontmatter_optional_bool_from_text(text: str, key: str) -> Optional[bool]:
+    match = re.search(rf"^{re.escape(key)}:\s*(?:[\"'])?(true|false)(?:[\"'])?\s*$", text, re.MULTILINE | re.IGNORECASE)
+    if not match:
+        return None
+    return match.group(1).lower() == "true"
+
+
+def _legacy_control_flags(paths: dict[str, Path], zotero_key: str) -> dict[str, Optional[bool]]:
+    records_root = paths.get("library_records")
+    if not records_root or not records_root.exists():
+        return {"do_ocr": None, "analyze": None}
+    for record_path in records_root.rglob(f"{zotero_key}.md"):
+        try:
+            text = record_path.read_text(encoding="utf-8")
+        except Exception:
+            continue
+        return {
+            "do_ocr": _read_frontmatter_optional_bool_from_text(text, "do_ocr"),
+            "analyze": _read_frontmatter_optional_bool_from_text(text, "analyze"),
+        }
+    return {"do_ocr": None, "analyze": None}
 
 
 def load_export_inventory(paths: dict[str, Path]) -> dict[str, dict]:
@@ -1545,45 +1576,95 @@ def migrate_to_workspace(vault: Path, paths: dict) -> int:
     Returns: number of papers migrated (0 means all are already workspace).
     """
     index = asset_index.read_index(vault)
-    if index is None:
-        return 0  # No index yet — nothing to migrate
-
     items = index.get("items", []) if isinstance(index, dict) else []
+    indexed_entries: dict[str, dict] = {
+        str(entry.get("zotero_key", "") or "").strip(): entry
+        for entry in items
+        if str(entry.get("zotero_key", "") or "").strip()
+    }
+
+    flat_notes: list[tuple[Path, str, str]] = []
+    lit_root = paths.get("literature")
+    if lit_root and lit_root.exists():
+        for note_path in lit_root.rglob("*.md"):
+            if note_path.name in ("fulltext.md", "deep-reading.md", "discussion.md"):
+                continue
+            relative = note_path.relative_to(lit_root)
+            if len(relative.parts) != 2:
+                continue
+            domain = relative.parts[0]
+            try:
+                text = note_path.read_text(encoding="utf-8")
+            except Exception:
+                continue
+            key_match = re.search(r'^zotero_key:\s*"?(\S+?)"?\s*$', text, re.MULTILINE)
+            zotero_key = key_match.group(1) if key_match else ""
+            if not zotero_key:
+                stem = note_path.stem
+                if " - " not in stem:
+                    continue
+                zotero_key = stem.split(" - ", 1)[0].strip()
+            if not zotero_key:
+                continue
+            flat_notes.append((note_path, domain, zotero_key))
+
+    if not indexed_entries and not flat_notes:
+        return 0
+
     migrated = 0
 
-    for entry in items:
-        key = entry.get("zotero_key", "")
-        domain = entry.get("domain", "")
-        title = entry.get("title", "")
-        if not key or not domain:
-            continue
-
-        # Compute paths using the same slugify as _build_entry
-        title_slug = slugify_filename(title)
+    for flat_note_path, domain, key in flat_notes:
+        entry = indexed_entries.get(key, {})
+        title = str(entry.get("title", "") or "").strip()
+        if not title:
+            title_match = re.search(r'^title:\s*["\']?(.+?)["\']?\s*$', flat_note_path.read_text(encoding="utf-8"), re.MULTILINE)
+            title = title_match.group(1).strip() if title_match else ""
+        stem = flat_note_path.stem
+        if title:
+            title_slug = slugify_filename(title)
+        elif " - " in stem:
+            title_slug = stem.split(" - ", 1)[1].strip()
+        else:
+            title_slug = stem.strip()
         workspace_dir = paths["literature"] / domain / f"{key} - {title_slug}"
+        main_note_path = workspace_dir / f"{key} - {title_slug}.md"
+        legacy_flags = _legacy_control_flags(paths, key)
 
-        # Skip if already migrated
         if workspace_dir.exists():
+            if main_note_path.exists() and any(value is not None for value in legacy_flags.values()):
+                try:
+                    workspace_content = main_note_path.read_text(encoding="utf-8")
+                    flat_content = flat_note_path.read_text(encoding="utf-8")
+                    updated_content = workspace_content
+                    for field in ("do_ocr", "analyze"):
+                        legacy_value = legacy_flags[field]
+                        if legacy_value is None:
+                            continue
+                        workspace_value = _read_frontmatter_optional_bool_from_text(workspace_content, field)
+                        flat_value = _read_frontmatter_optional_bool_from_text(flat_content, field)
+                        if workspace_value is None or workspace_value == flat_value:
+                            updated_content = update_frontmatter_field(
+                                updated_content,
+                                field,
+                                "true" if legacy_value else "false",
+                            )
+                    if updated_content != workspace_content:
+                        main_note_path.write_text(updated_content, encoding="utf-8")
+                except Exception:
+                    pass
             continue
-
-        # Find the flat note path
-        flat_note_path = paths["literature"] / domain / f"{key} - {title_slug}.md"
-        if not flat_note_path.exists():
-            # Try other potential flat note paths (e.g. slightly different slug)
-            candidates = list((paths["literature"] / domain).glob(f"{key} - *.md"))
-            if candidates:
-                flat_note_path = candidates[0]
-            else:
-                continue  # No flat note to migrate
 
         # Create workspace directory
         workspace_dir.mkdir(parents=True, exist_ok=True)
 
         # Read flat note content
         content = flat_note_path.read_text(encoding="utf-8")
+        if legacy_flags["do_ocr"] is not None:
+            content = update_frontmatter_field(content, "do_ocr", "true" if legacy_flags["do_ocr"] else "false")
+        if legacy_flags["analyze"] is not None:
+            content = update_frontmatter_field(content, "analyze", "true" if legacy_flags["analyze"] else "false")
 
         # Write main note to workspace (copy of flat note)
-        main_note_path = workspace_dir / f"{key} - {title_slug}.md"
         main_note_path.write_text(content, encoding="utf-8")
 
         # Extract deep-reading section and write to separate file
