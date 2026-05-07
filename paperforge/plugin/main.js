@@ -1188,22 +1188,20 @@ class PaperForgeStatusView extends ItemView {
         }
 
         // --- Single-pass aggregation ---
-        const lifecycleCounts = {};
         const healthAgg = {
             pdf_health: { healthy: 0, unhealthy: 0 },
             ocr_health: { healthy: 0, unhealthy: 0 },
             note_health: { healthy: 0, unhealthy: 0 },
             asset_health: { healthy: 0, unhealthy: 0 },
         };
+        let hasPdf = 0;
         let fulltextReady = 0;
         let deepRead = 0;
 
         for (const item of domainItems) {
-            const lifecycle = item.lifecycle || 'pdf_ready';
-            lifecycleCounts[lifecycle] = (lifecycleCounts[lifecycle] || 0) + 1;
-
-            if (['fulltext_ready', 'deep_read_done', 'ai_context_ready'].includes(lifecycle)) fulltextReady++;
-            if (['deep_read_done', 'ai_context_ready'].includes(lifecycle)) deepRead++;
+            if (item.has_pdf) hasPdf++;
+            if (item.ocr_status === 'done') fulltextReady++;
+            if (item.deep_reading_status === 'done') deepRead++;
 
             const health = item.health || {};
             for (const dim of ['pdf_health', 'ocr_health', 'note_health', 'asset_health']) {
@@ -1232,8 +1230,13 @@ class PaperForgeStatusView extends ItemView {
             }
         }
 
-        // --- Lifecycle distribution bar chart (D-04) ---
-        this._renderBarChart(view, lifecycleCounts);
+        // --- Lifecycle distribution bar chart (cumulative, D-04) ---
+        this._renderBarChart(view, {
+            indexed: totalPapers - hasPdf,
+            pdf_ready: hasPdf,
+            fulltext_ready: fulltextReady,
+            deep_read_done: deepRead,
+        });
 
         // --- Health overview (D-05) ---
         this._renderCollectionHealth(view, healthAgg);
