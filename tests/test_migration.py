@@ -272,12 +272,136 @@ class TestMigrateToWorkspace:
         assert marker.read_text(encoding="utf-8") == "do-not-overwrite"
 
     def test_migrate_returns_zero_when_no_index(self, tmp_path: Path) -> None:
-        """No index file means nothing to migrate — returns 0."""
+        """Legacy flat notes still migrate even before the canonical index exists."""
         vault = _minimal_vault(tmp_path)
         _ensure_domain_config(vault)
-        # Do NOT write an index
+
+        content = (
+            "---\n"
+            "title: Legacy Flat Note\n"
+            "zotero_key: LEG001\n"
+            "do_ocr: false\n"
+            "analyze: false\n"
+            "---\n\n"
+            "# Legacy Flat Note\n\n"
+            "## 🔍 精读\n\n"
+            "Legacy deep-reading content.\n"
+        )
+        _create_flat_note(vault, "LEG001", "骨科", "Legacy Flat Note", content)
+
+        count = self._call_migrate(vault)
+        assert count == 1
+
+        from paperforge.worker._utils import pipeline_paths
+
+        paths = pipeline_paths(vault)
+        workspace_dir = paths["literature"] / "骨科" / "LEG001 - Legacy Flat Note"
+        assert workspace_dir.is_dir()
+        assert (workspace_dir / "LEG001 - Legacy Flat Note.md").exists()
+        assert (workspace_dir / "deep-reading.md").exists()
+
+    def test_migrate_promotes_legacy_library_record_flags(self, tmp_path: Path) -> None:
+        """Legacy library-record control flags are copied into the workspace note."""
+        vault = _minimal_vault(tmp_path)
+        _ensure_domain_config(vault)
+
+        content = "---\ntitle: Legacy Flags\nzotero_key: LEG002\ndo_ocr: false\nanalyze: false\n---\n\n# Legacy Flags\n"
+        _create_flat_note(vault, "LEG002", "骨科", "Legacy Flags", content)
+
+        from paperforge.worker._utils import pipeline_paths
+
+        paths = pipeline_paths(vault)
+        records_dir = paths["library_records"] / "骨科"
+        records_dir.mkdir(parents=True, exist_ok=True)
+        (records_dir / "LEG002.md").write_text(
+            "---\nzotero_key: LEG002\ndo_ocr: true\nanalyze: true\n---\n",
+            encoding="utf-8",
+        )
+
+        count = self._call_migrate(vault)
+        assert count == 1
+
+        workspace_note = paths["literature"] / "骨科" / "LEG002 - Legacy Flags" / "LEG002 - Legacy Flags.md"
+        note_text = workspace_note.read_text(encoding="utf-8")
+        assert 'do_ocr: "true"' in note_text
+        assert 'analyze: "true"' in note_text
+
+    def test_migrate_legacy_record_false_overrides_stale_true(self, tmp_path: Path) -> None:
+        """Legacy library-record false values should override stale true flags in flat notes."""
+        vault = _minimal_vault(tmp_path)
+        _ensure_domain_config(vault)
+
+        content = "---\ntitle: Legacy False Flags\nzotero_key: LEG003\ndo_ocr: true\nanalyze: true\n---\n\n# Legacy False Flags\n"
+        _create_flat_note(vault, "LEG003", "骨科", "Legacy False Flags", content)
+
+        from paperforge.worker._utils import pipeline_paths
+
+        paths = pipeline_paths(vault)
+        records_dir = paths["library_records"] / "骨科"
+        records_dir.mkdir(parents=True, exist_ok=True)
+        (records_dir / "LEG003.md").write_text(
+            "---\nzotero_key: LEG003\ndo_ocr: false\nanalyze: false\n---\n",
+            encoding="utf-8",
+        )
+
+        count = self._call_migrate(vault)
+        assert count == 1
+
+        workspace_note = paths["literature"] / "骨科" / "LEG003 - Legacy False Flags" / "LEG003 - Legacy False Flags.md"
+        note_text = workspace_note.read_text(encoding="utf-8")
+        assert 'do_ocr: "false"' in note_text
+        assert 'analyze: "false"' in note_text
+
+    def test_migrate_uses_frontmatter_title_when_filename_is_noncanonical(self, tmp_path: Path) -> None:
+        """Legacy files named only by key should still migrate via frontmatter title."""
+        vault = _minimal_vault(tmp_path)
+        _ensure_domain_config(vault)
+
+        from paperforge.worker._utils import pipeline_paths
+
+        paths = pipeline_paths(vault)
+        lit_dir = paths["literature"] / "骨科"
+        lit_dir.mkdir(parents=True, exist_ok=True)
+        legacy_path = lit_dir / "LEG004.md"
+        legacy_path.write_text(
+            "---\ntitle: Noncanonical Legacy Name\nzotero_key: LEG004\n---\n\n# Noncanonical Legacy Name\n",
+            encoding="utf-8",
+        )
+
+        count = self._call_migrate(vault)
+        assert count == 1
+
+        workspace_note = paths["literature"] / "骨科" / "LEG004 - Noncanonical Legacy Name" / "LEG004 - Noncanonical Legacy Name.md"
+        assert workspace_note.exists()
+
+    def test_migrate_reconciles_existing_workspace_flags_from_legacy_records(self, tmp_path: Path) -> None:
+        """Already-migrated workspace notes are reconciled when they still mirror stale flat-note flags."""
+        vault = _minimal_vault(tmp_path)
+        _ensure_domain_config(vault)
+
+        content = "---\ntitle: Existing Workspace\nzotero_key: LEG005\ndo_ocr: true\nanalyze: true\n---\n\n# Existing Workspace\n"
+        _create_flat_note(vault, "LEG005", "骨科", "Existing Workspace", content)
+
+        from paperforge.worker._utils import pipeline_paths
+
+        paths = pipeline_paths(vault)
+        workspace_dir = paths["literature"] / "骨科" / "LEG005 - Existing Workspace"
+        workspace_dir.mkdir(parents=True, exist_ok=True)
+        workspace_note = workspace_dir / "LEG005 - Existing Workspace.md"
+        workspace_note.write_text(content, encoding="utf-8")
+
+        records_dir = paths["library_records"] / "骨科"
+        records_dir.mkdir(parents=True, exist_ok=True)
+        (records_dir / "LEG005.md").write_text(
+            "---\nzotero_key: LEG005\ndo_ocr: false\nanalyze: false\n---\n",
+            encoding="utf-8",
+        )
+
         count = self._call_migrate(vault)
         assert count == 0
+        updated_text = workspace_note.read_text(encoding="utf-8")
+        assert 'do_ocr: "false"' in updated_text
+        assert 'analyze: "false"' in updated_text
 
 
 # ---------------------------------------------------------------------------

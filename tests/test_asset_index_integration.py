@@ -321,12 +321,12 @@ class TestWorkspacePaths:
         assert "deep_reading_path" in entry
         assert "ai_path" in entry
 
-        # Paths should be non-empty strings
+        # Workspace root/main note/ai dir should always exist; file-backed paths only when assets exist
         assert isinstance(entry["paper_root"], str) and len(entry["paper_root"]) > 0
         assert isinstance(entry["main_note_path"], str) and len(entry["main_note_path"]) > 0
-        assert isinstance(entry["fulltext_path"], str) and len(entry["fulltext_path"]) > 0
-        assert isinstance(entry["deep_reading_path"], str) and len(entry["deep_reading_path"]) > 0
         assert isinstance(entry["ai_path"], str) and len(entry["ai_path"]) > 0
+        assert entry["fulltext_path"] == ""
+        assert entry["deep_reading_path"] == ""
 
     def test_path_fields_consistent_after_incremental(self, tmp_path: Path) -> None:
         """After incremental refresh, the targeted entry has consistent path fields."""
@@ -358,6 +358,43 @@ class TestWorkspacePaths:
         assert "\\" not in entry["fulltext_path"]
         assert "\\" not in entry["deep_reading_path"]
         assert "\\" not in entry["ai_path"]
+
+    def test_file_backed_paths_only_present_when_workspace_assets_exist(self, tmp_path: Path) -> None:
+        """fulltext/deep-reading paths should only be advertised when the files exist."""
+        from paperforge.worker.asset_index import read_index, refresh_index_entry
+
+        items = [_make_export_item("AAA", "Paper A")]
+        items[0]["attachments"] = [{"contentType": "application/pdf", "path": "storage:AAA/paper.pdf"}]
+        vault = _setup_incremental_vault(tmp_path, items)
+        paths = _pipeline_paths(vault)
+
+        zotero_pdf = vault / "99_System" / "Zotero" / "storage" / "AAA"
+        zotero_pdf.mkdir(parents=True, exist_ok=True)
+        (zotero_pdf / "paper.pdf").write_text("pdf", encoding="utf-8")
+
+        ocr_dir = paths["ocr"] / "AAA"
+        ocr_dir.mkdir(parents=True, exist_ok=True)
+        (ocr_dir / "meta.json").write_text(
+            json.dumps({"zotero_key": "AAA", "ocr_status": "done", "page_count": 1}),
+            encoding="utf-8",
+        )
+
+        workspace_dir = paths["literature"] / "test_domain" / "AAA - Paper A"
+        workspace_dir.mkdir(parents=True, exist_ok=True)
+        (workspace_dir / "AAA - Paper A.md").write_text(
+            "---\ntitle: Paper A\nzotero_key: AAA\n---\n\n## 🔍 精读\n\nDone.\n",
+            encoding="utf-8",
+        )
+        (workspace_dir / "deep-reading.md").write_text("## 🔍 精读\n\nDone.\n", encoding="utf-8")
+
+        _write_index(vault, [{"zotero_key": "AAA", "title": "Paper A"}])
+        refresh_index_entry(vault, "AAA")
+
+        entry = read_index(vault)["items"][0]
+        assert entry["deep_reading_path"].endswith("deep-reading.md")
+        assert entry["fulltext_path"] == ""
+        assert entry["lifecycle"] == "pdf_ready"
+        assert entry["ocr_status"] == "done_incomplete"
 
 
 # ---------------------------------------------------------------------------

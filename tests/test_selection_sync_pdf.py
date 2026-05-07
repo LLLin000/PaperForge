@@ -116,7 +116,7 @@ class TestCanonicalIndexOcrState:
         entry = next((e for e in index.get("items", []) if e.get("zotero_key") == "VALID"), None)
         assert entry is not None, "VALID should be in canonical index"
         assert entry["has_pdf"] is True
-        assert entry["do_ocr"] is True
+        assert entry["do_ocr"] is False  # do_ocr defaults to False (user-controlled)
         assert entry["ocr_status"] == "pending"
 
     def test_pdf_with_ocr_done_meta(self, tmp_path: Path) -> None:
