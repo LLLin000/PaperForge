@@ -414,7 +414,7 @@ def ensure_base_views(vault: Path, paths: dict[str, Path], config: dict, force: 
         else:
             merged = _build_base_yaml(resolved_filter, views)
         merged = substitute_config_placeholders(merged, paths)
-        if base_path.exists() and base_path.read_text(encoding="utf-8") == merged:
+        if base_path.exists() and base_path.read_text(encoding="utf-8").replace("\r\n", "\n") == merged:
             return  # no change, skip write
         base_path.write_text(merged, encoding="utf-8")
 
