@@ -254,13 +254,14 @@ class PaperForgeStatusView extends ItemView {
     async onOpen() {
         this._buildPanel();
         this._contentEl = this.containerEl.querySelector('.paperforge-content-area');
-        this._modeSubscribers = [];     // reused by both workspace and vault events
-        this._leafChangeTimer = null;   // debounce timer for active-leaf-change
+        this._modeSubscribers = [];
+        this._leafChangeTimer = null;
 
-        // Subscribe to file change events (D-08, D-09)
         this._setupEventSubscriptions();
 
-        // Initial data load per D-10
+        // Fetch Python package version (once, not from index)
+        this._fetchVersion();
+
         this._detectAndSwitch();
     }
 
@@ -331,6 +332,18 @@ class PaperForgeStatusView extends ItemView {
     /* ---------------------------------------------------------------------- */
     /*  Fetch & Render Stats                                                  */
     /* ---------------------------------------------------------------------- */
+    _fetchVersion() {
+        const vp = this.app.vault.adapter.basePath;
+        const pythonExe = resolvePythonExecutable(vp);
+        execFile(pythonExe, ['-m', 'paperforge', '--version'], { cwd: vp, timeout: 10000 }, (err, stdout) => {
+            if (!err && stdout) {
+                const v = stdout.trim();
+                this._paperforgeVersion = v.startsWith('v') ? v : 'v' + v;
+                if (this._versionBadge) this._versionBadge.setText(this._paperforgeVersion);
+            }
+        });
+    }
+
     _fetchStats(quiet) {
         // Phase 25: Read canonical index JSON directly (D-05)
         if (!quiet && !this._cachedStats) {
@@ -485,7 +498,7 @@ class PaperForgeStatusView extends ItemView {
 
     /* ── Metric Cards (Enhanced D-04, D-05, D-06) ── */
     _renderStats(d) {
-        this._versionBadge.setText(d.version ? 'v' + d.version : 'v\u2014');
+        this._versionBadge.setText(this._paperforgeVersion || (d.version ? 'v' + d.version : 'v\u2014'));
 
         if (!d || typeof d.total_papers === 'undefined') {
             this._renderSkeleton(this._metricsEl);
