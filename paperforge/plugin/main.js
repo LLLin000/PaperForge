@@ -335,7 +335,7 @@ class PaperForgeStatusView extends ItemView {
     _fetchVersion() {
         const vp = this.app.vault.adapter.basePath;
         const pythonExe = resolvePythonExecutable(vp);
-        execFile(pythonExe, ['-m', 'paperforge', '--version'], { cwd: vp, timeout: 10000 }, (err, stdout) => {
+        execFile(pythonExe, ['-c', 'import paperforge; print(paperforge.__version__)'], { cwd: vp, timeout: 10000 }, (err, stdout) => {
             if (!err && stdout) {
                 const v = stdout.trim();
                 this._paperforgeVersion = v.startsWith('v') ? v : 'v' + v;
@@ -2157,7 +2157,7 @@ class PaperForgeSetupModal extends Modal {
         try {
             let hasPaperforge = true;
             try {
-                await runPython(['-m', 'paperforge', '--version']);
+                await runPython(['-c', 'import paperforge']);
             } catch {
                 hasPaperforge = false;
             }

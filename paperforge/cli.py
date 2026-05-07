@@ -116,10 +116,13 @@ def _import_worker_functions() -> None:
 # Build parser
 # ---------------------------------------------------------------------------
 def build_parser() -> argparse.ArgumentParser:
+    from paperforge import __version__
+
     parser = argparse.ArgumentParser(
         prog="paperforge",
-        description="PaperForge — Obsidian + Zotero literature pipeline CLI",
+        description="PaperForge \u2014 Obsidian + Zotero literature pipeline CLI",
     )
+    parser.add_argument("--version", action="version", version=f"paperforge {__version__}")
     parser.add_argument(
         "--vault",
         metavar="VAULT",
