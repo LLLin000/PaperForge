@@ -110,8 +110,8 @@ class TestIncrementalMerge:
         ensure_base_views(self.vault, self.paths, self.config, force=False)
         content1 = domain_base.read_text(encoding="utf-8")
 
-        ocr_done_filter_old = "lifecycle = 'fulltext_ready' OR lifecycle = 'deep_read_done' OR lifecycle = 'ai_context_ready'"
-        ocr_done_filter_modified = "lifecycle = 'fulltext_ready' AND extra_check = true"
+        ocr_done_filter_old = "ocr_status = 'done'"
+        ocr_done_filter_modified = "ocr_status = 'done' AND extra_check = true"
 
         modified = content1.replace(ocr_done_filter_old, ocr_done_filter_modified)
         domain_base.write_text(modified, encoding="utf-8")

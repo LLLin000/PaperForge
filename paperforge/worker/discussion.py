@@ -56,11 +56,9 @@ def _today_str(iso_stamp: str) -> str:
 
 
 def _find_paper_metadata(vault: Path, zotero_key: str) -> dict | None:
-    """Scan library-records to find domain and title for a zotero_key.
+    """Look up paper metadata from the canonical index.
 
-    Returns dict with 'domain' and 'title' or None if not found.
-    Supports both flat (records directly in control dir) and nested
-    (records in control/library-records/) structures.
+    Returns dict with 'domain' and 'title' and 'ai_path' or None if not found.
     """
     try:
         paths = paperforge_paths(vault)
@@ -68,34 +66,25 @@ def _find_paper_metadata(vault: Path, zotero_key: str) -> dict | None:
         logger.warning("Failed to resolve PaperForge paths: %s", exc)
         return None
 
-    records_root = paths.get("library_records")
-    if not records_root or not records_root.exists():
-        logger.warning("library_records path does not exist: %s", records_root)
+    index_path = paths.get("index")
+    if not index_path or not index_path.exists():
+        logger.warning("Canonical index does not exist: %s", index_path)
         return None
 
-    # Handle nested structure: if library-records/ subdirectory exists,
-    # that is the actual records root
-    nested = records_root / "library-records"
-    if nested.exists() and nested.is_dir():
-        records_root = nested
+    try:
+        index = json.loads(index_path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError) as exc:
+        logger.warning("Failed to read canonical index: %s", exc)
+        return None
 
-    # Search strategy: find the record file by zotero_key anywhere
-    # under the records root using rglob
-    key_pattern = re.compile(
-        rf'^zotero_key:\s*"?{re.escape(zotero_key)}"?\s*$', re.MULTILINE
-    )
-    for md_file in sorted(records_root.rglob("*.md")):
-        try:
-            text = md_file.read_text(encoding="utf-8")
-        except Exception:
-            continue
-        if key_pattern.search(text):
-            domain_match = re.search(r"^domain:\s*(.+)$", text, re.MULTILINE)
-            title_match = re.search(r'^title:\s*"?(.+?)"?$', text, re.MULTILINE)
-            domain = domain_match.group(1).strip().strip('"') if domain_match else md_file.parent.name
-            title = title_match.group(1).strip().strip('"') if title_match else ""
-            return {"domain": domain, "title": title}
-
+    items = index.get("items", []) if isinstance(index, dict) else []
+    for entry in items:
+        if entry.get("zotero_key") == zotero_key:
+            return {
+                "domain": entry.get("domain", ""),
+                "title": entry.get("title", ""),
+                "ai_path": entry.get("ai_path", ""),
+            }
     return None
 
 
@@ -266,16 +255,18 @@ def record_session(
         return {"status": "error", "message": f"Error finding paper metadata: {exc}"}
 
     if meta is None:
-        return {"status": "error", "message": f"Paper not found in library-records: {zotero_key}"}
+        return {"status": "error", "message": f"Paper not found in canonical index: {zotero_key}"}
 
     domain = meta["domain"]
     paper_title = meta["title"] or zotero_key
 
-    # --- Build paths ---
-    try:
+    # --- Build paths (WS-03: use ai_path from canonical index) ---
+    ai_path_str = meta.get("ai_path", "")
+    if ai_path_str:
+        ai_dir = vault_path / ai_path_str.replace("/", "\\") if os.name == "nt" else vault_path / ai_path_str
+    else:
+        # Fallback: construct from metadata
         ai_dir = _build_ai_dir(vault_path, domain, zotero_key, paper_title)
-    except Exception as exc:
-        return {"status": "error", "message": f"Error constructing ai path: {exc}"}
 
     json_path = ai_dir / "discussion.json"
     md_path = ai_dir / "discussion.md"

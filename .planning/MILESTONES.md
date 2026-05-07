@@ -1,5 +1,23 @@
 # Milestones: PaperForge Lite Release Hardening
 
+## v1.9 Frontmatter Rationalization & Library-Record Deprecation (Shipped: 2026-05-07)
+
+**Phases completed:** 5 phases, 28 requirements (all verified)
+**Tests:** 188 passing
+
+**Key accomplishments:**
+
+- Slimmed formal note frontmatter from 28 to 16 fields: identity (title/year/journal/first_author/zotero_key/domain/doi/pmid/collection_path/impact_factor/abstract/tags) + workflow (has_pdf/do_ocr/analyze/ocr_status/deep_reading_status) + pdf_path
+- Created `paper_meta.py` — per-workspace JSON for internal pipeline state (OCR jobs, health, maturity, version)
+- Removed `library_record_markdown()` and all library-record generation from sync — new users never see library-records
+- Unconditional workspace creation — new papers get workspace directories on first sync (no flat fallback)
+- Fulltext bridge from OCR output to workspace; discussion.py reads from canonical index
+- Base views restored to workflow-gate filters (has_pdf/do_ocr/analyze/ocr_status → do_ocr=true, analyze=true+ocr_status=done) pointing to Literature/
+- Version badge fixed to read paperforge_version from canonical index envelope
+- Doctor detects stale library-records directory and workspace integrity issues
+
+---
+
 ## v1.7 Context-Aware Dashboard (Shipped: 2026-05-04)
 
 **Phases completed:** 4 phases, 6 plans, 14 tasks

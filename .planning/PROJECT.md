@@ -2,17 +2,30 @@
 
 ## What This Is
 
-PaperForge is a local-first Obsidian + Zotero literature asset manager. It turns Zotero exports, PDFs, OCR fulltext, figures, notes, and AI outputs into a structured, traceable, reusable research library. v1.7 adds context-aware dashboard routing with lifecycle/health/maturity visualization. v1.8 adds AI discussion recording and deep-reading dashboard integration.
+PaperForge is a local-first Obsidian + Zotero literature asset manager. It turns Zotero exports, PDFs, OCR fulltext, figures, notes, and AI outputs into a structured, traceable, reusable research library. v1.9 consolidated the fragmented tracking layers (library-records + formal notes) into a single per-workspace structure with slim frontmatter and paper-meta.json for internal state.
 
-## Current Milestone: v1.8 AI Discussion & Deep-Reading Dashboard
+## Current State: v1.9 Shipped (2026-05-07)
+
+**Next:** Planning v2.0 or continued v1.8 feature work.
+
+## Completed Milestone: v1.9 Frontmatter Rationalization & Library-Record Deprecation
+
+**Status:** COMPLETE (2026-05-07)
+**Archive:** `.planning/milestones/v1.9-ROADMAP.md`
+
+**Delivered:**
+- Slimmed formal note frontmatter (28 → 16 fields); per-workspace paper-meta.json for internal state
+- Library-record generation removed; sync no longer creates library-records
+- Unconditional workspace creation on first sync; flat-to-workspace migration with fulltext bridge
+- Base views restored to workflow-gate filters (has_pdf/do_ocr/analyze/ocr_status), pointing to Literature/
+- Version badge fixed; lifecycle keys aligned; doctor workspace integrity + stale library-records checks
+- 188 tests passing, 0 failures
+
+## In Progress: v1.8 AI Discussion & Deep-Reading Dashboard (paused)
 
 **Goal:** Capture AI-paper discussions into structured ai/ records and extend the per-paper dashboard with deep-reading content and AI interaction history.
 
-**Target features:**
-- AI discussion recorder producing `discussion.md` (human-readable Q&A) + `discussion.json` (dashboard-consumable) in each paper's workspace `ai/` directory.
-- Deep-reading dashboard mode: status bar, Pass 1 full-text summary, and AI Q&A history when viewing `deep-reading.md`.
-- "Jump to Deep Reading" button on the per-paper dashboard card.
-- Bug fixes: remove meaningless "ai" UI row; restore version number display.
+**Status:** Phases 31-35 partial — 2/6 phases complete. Paused to prioritize v1.9 structural foundation before surfacing more dashboard features.
 
 ## Completed Milestone: v1.7 Context-Aware Dashboard
 
@@ -125,11 +138,24 @@ Researchers always know what papers they have, what state those papers are in, a
 
 ### Active
 
+<!-- v1.9 shipped — all Active requirements moved to Validated below -->
+
 - [ ] AI discussion recorder: `/pf-paper` and agent chats produce `discussion.md` (Q&A) + `discussion.json` (structured) in workspace `ai/`.
 - [ ] Deep-reading dashboard mode with status bar, Pass 1 summary, and AI Q&A history.
 - [ ] "Jump to Deep Reading" button on per-paper dashboard card.
 - [ ] Bug fix: remove meaningless "ai" row from plugin UI.
 - [ ] Bug fix: restore version number display in plugin.
+
+### Validated (v1.9)
+
+- ✓ Library-records directory eliminated: sync no longer creates `<control_dir>/library-records/`; new users never see it.
+- ✓ Upgrading users get lossless library-record → formal note frontmatter migration on first sync (via `_build_entry()` defaults + paper_meta.py).
+- ✓ Base views fixed: removed ghost lifecycle/maturity_level/next_step; restored has_pdf/do_ocr/analyze/ocr_status; folder filter points to Literature/.
+- ✓ Formal note frontmatter slimmed to identity fields + workflow flags + pdf_path; redundant fields removed.
+- ✓ Per-workspace paper-meta.json stores OCR backend data, derived state details, and debug fields.
+- ✓ Workspace folder construction: new papers create workspace on first sync (no flat-first-then-migrate); fulltext.md bridged from OCR output.
+- ✓ Path construction unified: discussion.py reads workspace paths from canonical index instead of reconstructing independently.
+- ✓ Plugin dashboard: version badge reads paperforge_version from index envelope; lifecycle keys aligned; CSS components verified.
 
 ### Out of Scope
 
@@ -143,6 +169,7 @@ Researchers always know what papers they have, what state those papers are in, a
 - Cloud multi-user collaboration or hosted sync — this milestone remains local-first and single-user.
 - Plugin auto-update — deferred to when listed on Obsidian Community Plugins.
 - Plugin published to Obsidian Community Plugins — deferred until after v1.5 stabilizes the settings experience.
+- v1.8 dashboard features (deep-reading mode, Jump to Deep Reading, AI discussion recorder) — paused, not cancelled; will resume after v1.9 cleans the structural foundation.
 
 ## Context
 
@@ -184,6 +211,15 @@ The v1.1 milestone was completed after a manual sandbox audit from `tests/sandbo
 
 **v1.6 focus:** Consolidate the next layer of product evolution into one milestone instead of splitting it across several small releases. The emphasis is not on more one-off extraction buttons, but on durable asset state, asset health, maturity-guided workflow progression, and AI-ready context packaging.
 
+**v1.9 focus:** The feature branch (milestone/v1.6-ai-ready-asset-foundation) accumulated 117 commits of v1.6-v1.8 work. Before merging to master, structural cleanup is needed: library-records (a v1.0 tracking layer) must be deprecated in favor of formal note frontmatter; Base views regressed in v1.7 (lost workflow flags, gained unwritten ghost fields); frontmatter grew to 47 unique fields across two note types. This milestone fixes the foundation so incremental PRs can land cleanly on master.
+
+Key gaps identified on feature branch:
+- Base views declare lifecycle/maturity_level/next_step but NO .md writer exists for these fields — columns permanently empty
+- Base views lost has_pdf/do_ocr/analyze/ocr_status — users cannot batch-toggle workflow from Obsidian
+- _build_entry() declares fulltext_path in workspace but no code copies OCR output there — broken link
+- New papers go flat-first-then-migrate — should create workspace directly
+- discussion.py builds ai/ path independently instead of reading from canonical index
+
 ## Constraints
 
 - **Local-first:** Must work in a user's Obsidian vault without a daemon or cloud service.
@@ -214,6 +250,10 @@ The v1.1 milestone was completed after a manual sandbox audit from `tests/sandbo
 | Settings tab in Obsidian plugin as setup entry point | Eliminates terminal requirement for new users; plugin becomes single download artifact. CLI/Agent unchanged — plugin is a new UI surface | ✓ Implemented v1.5 |
 | Reposition PaperForge around literature assets, not one-off prompts | Long-term user value comes from clean, traceable, AI-ready libraries rather than hardcoded extraction buttons | — Active for v1.6 |
 | Keep plugin as thin shell over CLI and canonical index | Avoids duplicated business logic and configuration drift between JS and Python layers | — Active for v1.6 |
+| Deprecate library-records in favor of formal notes | Two tracking layers (library-records + formal notes) create divergence, double the frontmatter surface, and confuse users. Formal notes already carry most metadata; adding workflow flags makes them self-sufficient. | ✓ Integrated |
+| Separate Base views (workflow batch ops) from Dashboard (derived state viz) | lifecycle/maturity/next_step already have rich visualization in the Obsidian plugin dashboard; duplicating them in Base views as empty columns adds noise. Base views focus on user-actionable workflow gates. | ✓ Implemented |
+| Per-workspace paper-meta.json for internal state | Frontmatter is the user-facing surface; internal pipeline data (OCR jobs, health details, debug fields) belongs in a machine-readable JSON file. Keeps formal notes clean while preserving all state for tools. | ✓ Implemented |
+| Unconditional workspace creation on first sync | Flat-note fallback created confusion and required separate migration step. Always creating workspace dirs simplifies the architecture and eliminates the flat-first-then-migrate path. | ✓ Implemented |
 
 ## Research Lock
 
@@ -226,6 +266,11 @@ Research has been frozen at milestone boundaries to avoid redundant re-research.
 **v1.7 (LLMWiki Concept Network)** — direction settled:
 - Cross-paper synthesis layer, concept/mechanism network, source-traceable, human-reviewable.  
 - No re-research on "whether to build a wiki" or "first use case."  
+
+**v1.9 (Frontmatter Rationalization)** — no new research needed:
+- All pieces already exist on the feature branch: workspace migration, derived state, canonical index, Base generation, frontmatter writing.
+- This milestone is structural cleanup — rewire, remove, and fix existing code, not invent new capabilities.
+- Skip research for this milestone.
 
 See: `.planning/research/MILESTONE-RESEARCH-LOCK.md` for the full lock definition.
 
@@ -247,4 +292,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state.
 
 ---
-*Last updated: 2026-05-06 after milestone v1.8 initialization*
+*Last updated: 2026-05-07 after v1.9 milestone completion*

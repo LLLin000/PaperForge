@@ -615,66 +615,6 @@ def has_deep_reading_content(text: str) -> bool:
     return has_prose_sentence or non_placeholder_chars >= 20
 
 
-def library_record_markdown(row: dict) -> str:
-    lines = [
-        "---",
-        f"zotero_key: {yaml_quote(row.get('zotero_key', ''))}",
-        f"domain: {yaml_quote(row.get('domain', ''))}",
-        f"title: {yaml_quote(row.get('title', ''))}",
-        f"year: {row.get('year', '')}",
-        f"doi: {yaml_quote(row.get('doi', ''))}",
-        f"date: {yaml_quote(row.get('date', ''))}",
-        f"collection_path: {yaml_quote(row.get('collection_path', ''))}",
-        f"has_pdf: {('true' if row.get('has_pdf') else 'false')}",
-        f"pdf_path: {yaml_quote(row.get('pdf_path', ''))}",
-        f"bbt_path_raw: {yaml_quote(row.get('bbt_path_raw', ''))}",
-        f"zotero_storage_key: {yaml_quote(row.get('zotero_storage_key', ''))}",
-        f"attachment_count: {row.get('attachment_count', 0)}",
-    ]
-    # supplementary as YAML list of wikilinks (already formatted by caller)
-    supplementary = row.get("supplementary", [])
-    if supplementary:
-        lines.append("supplementary:")
-        for wikilink in supplementary:
-            lines.append(f"  - {yaml_quote(wikilink)}")
-    else:
-        lines.append("supplementary: []")
-    # path_error only emitted when there is an actual error
-    if row.get("path_error"):
-        lines.append(f"path_error: {yaml_quote(row.get('path_error', ''))}")
-    lines.extend(
-        [
-            f"fulltext_md_path: {yaml_quote(row.get('fulltext_md_path', ''))}",
-            f"recommend_analyze: {('true' if row.get('recommend_analyze') else 'false')}",
-            f"analyze: {('true' if row.get('analyze') else 'false')}",
-            f"do_ocr: {('true' if row.get('do_ocr') else 'false')}",
-            f"ocr_status: {yaml_quote(row.get('ocr_status', 'pending'))}",
-            f"deep_reading_status: {yaml_quote(row.get('deep_reading_status', 'pending'))}",
-            f"analysis_note: {yaml_quote(row.get('analysis_note', ''))}",
-        ]
-    )
-    lines.extend(yaml_list("collection_group", row.get("collection_group", [])))
-    lines.extend(yaml_list("collections", row.get("collections", [])))
-    lines.extend(yaml_list("collection_tags", row.get("collection_tags", [])))
-    lines.append(f"first_author: {yaml_quote(row.get('first_author', ''))}")
-    lines.append(f"journal: {yaml_quote(row.get('journal', ''))}")
-    lines.append(f"impact_factor: {yaml_quote(row.get('impact_factor', ''))}")
-    lines.extend(
-        [
-            "---",
-            "",
-            f"# {row.get('title', '')}",
-            "",
-            "正式库控制记录。",
-            "",
-            "- `recommend_analyze` 仅由 `has_pdf=true` 推导。",
-            "- `analyze` 控制是否生成正式文献卡片。",
-            "- `do_ocr` 控制 OCR 任务。",
-            "- `deep_reading_status` 仅两级：`pending`（未精读）/ `done`（已精读）。",
-            "",
-        ]
-    )
-    return "\n".join(lines)
 
 
 def _add_missing_frontmatter_fields(existing_content: str, new_fields: dict[str, str]) -> str:
@@ -802,66 +742,11 @@ def run_selection_sync(vault: Path, verbose: bool = False) -> int:
                     if wikilink:
                         supplementary_wikilinks.append(wikilink)
             pdf_wikilink = obsidian_wikilink_for_pdf(resolved_pdf, vault, zotero_dir) if resolved_pdf else ""
-            content = library_record_markdown(
-                {
-                    "zotero_key": item["key"],
-                    "domain": domain,
-                    "title": item.get("title", ""),
-                    "year": item.get("year", ""),
-                    "doi": item.get("doi", ""),
-                    "date": item.get("date", ""),
-                    "collection_path": " | ".join(item.get("collections", [])),
-                    "collections": collection_meta.get("collections", []),
-                    "collection_tags": collection_meta.get("collection_tags", []),
-                    "collection_group": collection_meta.get("collection_group", []),
-                    "has_pdf": has_pdf,
-                    "pdf_path": pdf_wikilink,
-                    "bbt_path_raw": item.get("bbt_path_raw", ""),
-                    "zotero_storage_key": item.get("zotero_storage_key", ""),
-                    "attachment_count": item.get("attachment_count", 0),
-                    "supplementary": supplementary_wikilinks,
-                    "path_error": item.get("path_error", ""),
-                    "recommend_analyze": bool(pdf_attachments),
-                    "analyze": existing.get("analyze", False),
-                    "do_ocr": existing.get("do_ocr", False),
-                    "ocr_status": record_ocr_status,
-                    "fulltext_md_path": fulltext_md_path,
-                    "deep_reading_status": "done" if note_text and has_deep_reading_content(note_text) else "pending",
-                    "analysis_note": existing.get("analysis_note", ""),
-                    "first_author": first_author,
-                    "journal": journal,
-                    "impact_factor": impact_factor,
-                }
-            )
-            if record_path.exists():
-                existing_content = record_path.read_text(encoding="utf-8")
-                updated_content = _add_missing_frontmatter_fields(
-                    existing_content,
-                    {
-                        "first_author": first_author,
-                        "journal": journal,
-                        "impact_factor": impact_factor,
-                        "bbt_path_raw": item.get("bbt_path_raw", ""),
-                        "zotero_storage_key": item.get("zotero_storage_key", ""),
-                        "attachment_count": str(item.get("attachment_count", 0)),
-                        "path_error": item.get("path_error", ""),
-                    },
-                )
-                updated_content = update_frontmatter_field(updated_content, "has_pdf", has_pdf)
-                updated_content = update_frontmatter_field(updated_content, "pdf_path", pdf_wikilink)
-                updated_content = update_frontmatter_field(updated_content, "ocr_status", record_ocr_status)
-                updated_content = update_frontmatter_field(
-                    updated_content,
-                    "deep_reading_status",
-                    "done" if note_text and has_deep_reading_content(note_text) else "pending",
-                )
-                updated_content = update_frontmatter_field(updated_content, "fulltext_md_path", fulltext_md_path or "")
-                if updated_content != existing_content:
-                    record_path.write_text(updated_content, encoding="utf-8")
-                    updated += 1
-            else:
-                written += 1
-                record_path.write_text(content, encoding="utf-8")
+
+            # Phase 37: library-records deprecated — skip creation.
+            # Formal notes now carry workflow flags (do_ocr, analyze) directly.
+            # Existing library-records are migrated via Phase 40 logic.
+            updated += 1
     print(f"selection-sync: wrote {written} records, updated {updated} records")
     return 0
 
@@ -1596,53 +1481,39 @@ def next_key(domain: str, export_rows: list[dict]) -> str:
 
 
 def frontmatter_note(entry: dict, existing_text: str = "") -> str:
-    deep_reading_path = entry.get("deep_reading_md_path", "")
     preserved_deep = extract_preserved_deep_reading(existing_text)
+    first_author = entry.get("first_author", "")
+    if not first_author:
+        authors = entry.get("authors", [])
+        first_author = authors[0] if authors else ""
     lines = [
         "---",
-        f"title: {yaml_quote(entry['title'])}",
+        f"title: {yaml_quote(entry.get('title', ''))}",
         f"year: {entry.get('year', '')}",
-        "type: article",
         f"journal: {yaml_quote(entry.get('journal', ''))}",
-        "authors:",
+        f"first_author: {yaml_quote(first_author)}",
+        f"zotero_key: {yaml_quote(entry.get('zotero_key', ''))}",
+        f"domain: {yaml_quote(entry.get('domain', ''))}",
+        f"doi: {yaml_quote(entry.get('doi', ''))}",
+        f"pmid: {yaml_quote(entry.get('pmid', ''))}",
+        f"collection_path: {yaml_quote(entry.get('collection_path', ''))}",
+        f"impact_factor: {yaml_quote(entry.get('impact_factor', ''))}",
     ]
-    for author in entry.get("authors", []):
-        lines.append(f"  - {yaml_quote(author)}")
-    lines.extend(
-        [
-            f"collection_path: {yaml_quote(entry.get('collection_path', ''))}",
-            f"domain: {yaml_quote(entry.get('domain', ''))}",
-            f"zotero_key: {yaml_quote(entry.get('zotero_key', ''))}",
-            f"doi: {yaml_quote(entry.get('doi', ''))}",
-            f"pmid: {yaml_quote(entry.get('pmid', ''))}",
-        ]
-    )
-    lines.extend(yaml_list("collection_group", entry.get("collection_group", [])))
-    lines.extend(yaml_list("collections", entry.get("collections", [])))
-    lines.extend(yaml_list("collection_tags", entry.get("collection_tags", [])))
     lines.extend(yaml_block(entry.get("abstract", "")))
     lines.extend(
         [
             f"has_pdf: {('true' if entry.get('has_pdf') else 'false')}",
+            f"do_ocr: {('true' if entry.get('do_ocr') else 'false')}",
+            f"analyze: {('true' if entry.get('analyze') else 'false')}",
             f"ocr_status: {yaml_quote(entry.get('ocr_status', 'pending'))}",
-            f"ocr_job_id: {yaml_quote(entry.get('ocr_job_id', ''))}",
-            f"ocr_md_path: {yaml_quote(entry.get('ocr_md_path', ''))}",
-            f"ocr_json_path: {yaml_quote(entry.get('ocr_json_path', ''))}",
             f"deep_reading_status: {yaml_quote(entry.get('deep_reading_status', 'pending'))}",
-            f"deep_reading_md_path: {yaml_quote(deep_reading_path)}",
             f"pdf_path: {yaml_quote(entry.get('pdf_path', ''))}",
-            # Workspace paths (Phase 22 paper workspace layout, mirrored for Base view)
-            f"paper_root: {yaml_quote(entry.get('paper_root', ''))}",
-            f"main_note_path: {yaml_quote(entry.get('main_note_path', ''))}",
-            f"fulltext_path: {yaml_quote(entry.get('fulltext_path', ''))}",
-            f"deep_reading_path: {yaml_quote(entry.get('deep_reading_path', ''))}",
-            f"ai_path: {yaml_quote(entry.get('ai_path', ''))}",
             "tags:",
             "  - 文献阅读",
             f"  - {entry.get('domain', '')}",
             "---",
             "",
-            f"# {entry['title']}",
+            f"# {entry.get('title', '')}",
             "",
             "## 📄 文献基本信息",
             "",
@@ -1656,12 +1527,6 @@ def frontmatter_note(entry: dict, existing_text: str = "") -> str:
             "## 摘要",
             "",
             entry.get("abstract", "") or "暂无摘要",
-            "",
-            "## 💡 文献内容总结",
-            "",
-            "- 由 sync worker 自动生成的正式文献卡片。",
-            "- 精读笔记（Deep Reading）仅由 /pf-deep 命令维护；sync --index 只保留已有内容，不自动生成。",
-            "- 如需精读，请在 Base 中勾选 analyze，OCR 完成后运行 /pf-deep <zotero_key>。",
             "",
         ]
     )
@@ -1740,6 +1605,20 @@ def migrate_to_workspace(vault: Path, paths: dict) -> int:
         # Create ai/ directory
         ai_dir = workspace_dir / "ai"
         ai_dir.mkdir(exist_ok=True)
+
+        # WS-04: Bridge OCR fulltext to workspace if available
+        meta_path = paths.get("ocr", Path()) / key / "meta.json"
+        if meta_path.exists():
+            try:
+                meta = read_json(meta_path)
+                if meta.get("ocr_status") == "done":
+                    source_fulltext = meta_path.parent / "fulltext.md"
+                    target_fulltext = workspace_dir / "fulltext.md"
+                    if source_fulltext.exists() and not target_fulltext.exists():
+                        import shutil
+                        shutil.copy2(str(source_fulltext), str(target_fulltext))
+            except Exception:
+                pass
 
         migrated += 1
 
