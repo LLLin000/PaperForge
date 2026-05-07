@@ -8,6 +8,34 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [1.4.17rc1] — 2026-05-07
+
+### Added
+
+- **Upgrade migration safeguards**: legacy flat notes migrated even without pre-existing canonical index; legacy `do_ocr`/`analyze` control flags preserved from `library-records` including explicit false values; already-migrated workspace notes reconciled on subsequent sync
+- **Non-canonical filename migration**: legacy files named only by key (`LEG001.md`) correctly migrate via frontmatter title
+
+### Changed
+
+- **Index path integrity**: `fulltext_path` and `deep_reading_path` in canonical index only advertised when backing files actually exist — consumers (dashboard, context, lifecycle) no longer see false-ready assets
+- **Python >= 3.10 now required** (was 3.8 in setup_wizard, 3.9 in plugin UI). All setup checks, plugin notices, and documentation aligned
+- **TUI removed**: `paperforge setup` without `--headless` now prints redirect message; all Textual classes, imports, and the `textual` dependency purged from `pyproject.toml`
+- **Library-records fully deprecated**: zero residual references in production code and 10 command file copies; `paperforge status` label now `formal_notes` not `library_records`
+- **Config-resolved paths**: 5 workspace-path index fields and 11 downstream consumers use user's configured `literature_dir` instead of hardcoded `"Literature/"`; env var typo `PAPERFORGERATURE_DIR` fixed to `PAPERFORGE_LITERATURE_DIR`
+
+### Fixed
+
+- **OCR state machine tests**: ambient token isolation and write-through mocking restored for deterministic offline test runs (2 previously-failing tests now pass)
+- **Repair blind spots**: condition 4 (`ocr_status: pending` vs `meta done/failed`) now detected; all 6 divergence types handled or explicitly warned; bare `except:pass` replaced with `logger.warning()`
+
+### Security
+
+- **Module hardening**: discussion.py — file locking (filelock), markdown character escaping, UTC timestamps; main.js — API key via environment variable not CLI args, `createEl()` instead of `innerHTML`; asset_state.py — workspace integrity checks before `/pf-deep` recommendation; status.py — empty dicts instead of null for JSON consumers
+
+### Merged milestones
+
+v1.6 (AI-ready literature asset foundation) through v1.11 (merge gate remediation) consolidated into a single merge to master.
+
 ## [1.4.13] — 2026-05-01
 
 ### Added
