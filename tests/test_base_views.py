@@ -90,29 +90,39 @@ class TestBuildBaseViews:
 
 
 class TestSubstituteConfigPlaceholders:
-    def test_substitutes_library_records(self, tmp_path):
-        content = "${LIBRARY_RECORDS}/骨科"
+    def test_substitutes_literature(self, tmp_path):
+        content = "${LITERATURE}/骨科"
         vault = tmp_path / "Vault"
         vault.mkdir()
-        lib_rec = vault / "03_Resources" / "LiteratureControl" / "library-records"
-        lib_rec.mkdir(parents=True)
-        result = substitute_config_placeholders(content, {"library_records": lib_rec, "vault": vault})
-        assert "${LIBRARY_RECORDS}" not in result
-        assert "03_Resources/LiteratureControl/library-records" in result
+        lit = vault / "Resources" / "Literature"
+        lit.mkdir(parents=True)
+        result = substitute_config_placeholders(content, {"literature": lit, "vault": vault})
+        assert "${LITERATURE}" not in result
+        assert "Resources/Literature" in result
+
+    def test_substitutes_control_dir(self, tmp_path):
+        content = "${CONTROL_DIR}/records"
+        vault = tmp_path / "Vault"
+        vault.mkdir()
+        ctrl = vault / "System"
+        ctrl.mkdir()
+        result = substitute_config_placeholders(content, {"control": ctrl, "vault": vault})
+        assert "${CONTROL_DIR}" not in result
+        assert "System/records" in result
 
     def test_substitutes_multiple_placeholders(self, tmp_path):
-        content = "${LIBRARY_RECORDS} and ${LITERATURE}"
+        content = "${LITERATURE} and ${CONTROL_DIR}"
         vault = tmp_path / "Vault"
         vault.mkdir()
-        lib_rec = vault / "LR"
         lit = vault / "LIT"
-        lib_rec.mkdir()
+        ctrl = vault / "CTRL"
         lit.mkdir()
+        ctrl.mkdir()
         result = substitute_config_placeholders(
-            content, {"library_records": lib_rec, "literature": lit, "vault": vault}
+            content, {"literature": lit, "control": ctrl, "vault": vault}
         )
-        assert "${LIBRARY_RECORDS}" not in result
         assert "${LITERATURE}" not in result
+        assert "${CONTROL_DIR}" not in result
 
     def test_unknown_placeholder_unchanged(self):
         content = "${UNKNOWN_PLACEHOLDER}/骨科"
@@ -120,10 +130,10 @@ class TestSubstituteConfigPlaceholders:
         assert "${UNKNOWN_PLACEHOLDER}" in result
 
     def test_backslash_conversion(self, tmp_path):
-        content = "${LIBRARY_RECORDS}"
+        content = "${LITERATURE}"
         vault = tmp_path / "Vault"
         vault.mkdir()
-        lib_rec = vault / "LR"
-        lib_rec.mkdir()
-        result = substitute_config_placeholders(content, {"library_records": lib_rec, "vault": vault})
+        lit = vault / "LR"
+        lit.mkdir()
+        result = substitute_config_placeholders(content, {"literature": lit, "vault": vault})
         assert "\\" not in result  # Should use forward slash
