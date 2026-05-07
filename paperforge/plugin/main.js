@@ -2164,9 +2164,10 @@ class PaperForgeSetupModal extends Modal {
 
             if (!hasPaperforge) {
                 this._log(t('install_bootstrapping'));
+                const ver = this.plugin.manifest.version || '1.4.17rc2';
                 await runPython([
                     '-m', 'pip', 'install', '--upgrade',
-                    'git+https://github.com/LLLin000/PaperForge.git',
+                    `git+https://github.com/LLLin000/PaperForge.git@${ver}`,
                 ]);
             }
 
@@ -2366,15 +2367,30 @@ module.exports = class PaperForgePlugin extends Plugin {
     _autoUpdate() {
         const vp = this.app.vault.adapter.basePath;
         const pythonExe = resolvePythonExecutable(vp);
-        const spawn = require('node:child_process').spawn;
-        const child = spawn(pythonExe, ['-m', 'pip', 'install', '--upgrade', 'git+https://github.com/LLLin000/PaperForge.git'], { cwd: vp, timeout: 120000 });
-        let stdout = '';
-        child.stdout.on('data', (data) => { stdout += data.toString('utf-8'); });
-        child.on('close', (code) => {
-            if (code !== 0) return;
-            const result = stdout.trim().replace(/\n\s*\n/g, '\n');
-            if (result.includes('already satisfied') || result.includes('already up-to-date')) return;
-            new Notice('[OK] PaperForge CLI updated', 5000);
+        const ver = this.manifest.version || '1.4.17rc2';
+        const url = `git+https://github.com/LLLin000/PaperForge.git@${ver}`;
+
+        // Check if installed package version matches plugin version
+        const { execFile } = require('node:child_process');
+        execFile(pythonExe, ['-c', 'import paperforge; print(paperforge.__version__)'], { cwd: vp, timeout: 10000 }, (err, stdout) => {
+            if (err) {
+                // Not installed — install now
+                const spawn = require('node:child_process').spawn;
+                const child = spawn(pythonExe, ['-m', 'pip', 'install', '--upgrade', url], { cwd: vp, timeout: 120000 });
+                child.on('close', (code) => {
+                    if (code === 0) new Notice('[OK] PaperForge CLI installed', 5000);
+                });
+                return;
+            }
+            const pyVer = stdout.trim();
+            if (pyVer !== ver) {
+                // Mismatch — upgrade
+                const spawn = require('node:child_process').spawn;
+                const child = spawn(pythonExe, ['-m', 'pip', 'install', '--upgrade', url], { cwd: vp, timeout: 120000 });
+                child.on('close', (code) => {
+                    if (code === 0) new Notice(`[OK] PaperForge ${pyVer} -> ${ver}`, 5000);
+                });
+            }
         });
     }
 
