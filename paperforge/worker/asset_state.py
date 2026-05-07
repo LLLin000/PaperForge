@@ -86,10 +86,9 @@ def compute_health(entry: dict) -> dict[str, str]:
         else "healthy"
     )
 
-    # Asset health — check all four workspace paths
+    # Asset health — check three workspace paths (deep reading lives in main note)
     workspace_paths = {
         "fulltext_path": entry.get("fulltext_path", ""),
-        "deep_reading_path": entry.get("deep_reading_path", ""),
         "main_note_path": entry.get("main_note_path", ""),
         "ai_path": entry.get("ai_path", ""),
     }
@@ -206,7 +205,6 @@ def compute_next_step(entry: dict) -> str:
     # 6. Any workspace path missing → sync (workspace integrity before /pf-deep)
     workspace_paths = [
         entry.get("fulltext_path", ""),
-        entry.get("deep_reading_path", ""),
         entry.get("main_note_path", ""),
         entry.get("ai_path", ""),
     ]

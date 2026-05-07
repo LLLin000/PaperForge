@@ -1695,12 +1695,6 @@ def migrate_to_workspace(vault: Path, paths: dict) -> int:
         # Write main note to workspace (copy of flat note)
         main_note_path.write_text(content, encoding="utf-8")
 
-        # Extract deep-reading section and write to separate file
-        preserved = extract_preserved_deep_reading(content)
-        if preserved:
-            deep_reading_path = workspace_dir / "deep-reading.md"
-            deep_reading_path.write_text(preserved, encoding="utf-8")
-
         # Create ai/ directory
         ai_dir = workspace_dir / "ai"
         ai_dir.mkdir(exist_ok=True)
