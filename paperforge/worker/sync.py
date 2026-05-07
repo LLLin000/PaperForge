@@ -649,38 +649,31 @@ def update_frontmatter_field(content: str, key: str, value: str) -> str:
     return new_content
 
 
-def parse_existing_library_record(path: Path) -> dict:
-    if not path.exists():
-        return {}
-    text = path.read_text(encoding="utf-8")
-    result = {}
-    for key in ("analyze", "recommend_analyze", "do_ocr"):
-        match = re.search(f"^{key}:\\s*(true|false)$", text, re.MULTILINE)
-        if match:
-            result[key] = match.group(1) == "true"
-    for key in ("ocr_status", "analysis_note"):
-        match = re.search(f'^{key}:\\s*"?(.*?)"?$', text, re.MULTILINE)
-        if match:
-            result[key] = match.group(1)
-    for key in ("deep_reading_status",):
-        match = re.search(f'^{key}:\\s*"?(.*?)"?$', text, re.MULTILINE)
-        if match:
-            result[key] = match.group(1)
-    return result
-
-
 def load_control_actions(paths: dict[str, Path]) -> dict[str, dict]:
     actions = {}
-    if not paths["library_records"].exists():
+    lit_root = paths.get("literature")
+    if not lit_root or not lit_root.exists():
         return actions
-    for record in paths["library_records"].rglob("*.md"):
-        text = record.read_text(encoding="utf-8")
-        key_match = re.search("^zotero_key:\\s*(.+)$", text, re.MULTILINE)
+    for note_file in lit_root.rglob("*.md"):
+        if note_file.name in ("fulltext.md", "deep-reading.md", "discussion.md"):
+            continue
+        try:
+            text = note_file.read_text(encoding="utf-8")
+        except Exception:
+            continue
+        key_match = re.search(r"^zotero_key:\s*(.+)$", text, re.MULTILINE)
         if not key_match:
             continue
         zotero_key = key_match.group(1).strip()
-        row = parse_existing_library_record(record)
-        actions[zotero_key] = {"analyze": row.get("analyze", False), "do_ocr": row.get("do_ocr", False)}
+        do_ocr = False
+        do_ocr_match = re.search(r"^do_ocr:\s*(?:[\"'])?(true|false)(?:[\"'])?\s*$", text, re.MULTILINE | re.IGNORECASE)
+        if do_ocr_match:
+            do_ocr = do_ocr_match.group(1).lower() == "true"
+        analyze = False
+        analyze_match = re.search(r"^analyze:\s*(?:[\"'])?(true|false)(?:[\"'])?\s*$", text, re.MULTILINE | re.IGNORECASE)
+        if analyze_match:
+            analyze = analyze_match.group(1).lower() == "true"
+        actions[zotero_key] = {"analyze": analyze, "do_ocr": do_ocr}
     return actions
 
 
@@ -703,13 +696,9 @@ def run_selection_sync(vault: Path, verbose: bool = False) -> int:
             from paperforge.pdf_resolver import resolve_pdf_path
 
             cfg = load_vault_config(vault)
-            zotero_dir = vault / cfg.get("system_dir", "99_System") / "Zotero"
+            zotero_dir = vault / cfg.get("system_dir", "System") / "Zotero"
             resolved_pdf = resolve_pdf_path(raw_pdf_path, has_pdf, vault, zotero_dir)
             collection_meta = collection_fields(item.get("collections", []))
-            record_dir = paths["library_records"] / domain
-            record_dir.mkdir(parents=True, exist_ok=True)
-            record_path = record_dir / f"{item['key']}.md"
-            existing = parse_existing_library_record(record_path)
             meta_path = paths["ocr"] / item["key"] / "meta.json"
             meta = read_json(meta_path) if meta_path.exists() else {}
             validated_ocr_status, validated_error = validate_ocr_meta(paths, meta) if meta else ("pending", "")
@@ -1508,6 +1497,7 @@ def frontmatter_note(entry: dict, existing_text: str = "") -> str:
             f"ocr_status: {yaml_quote(entry.get('ocr_status', 'pending'))}",
             f"deep_reading_status: {yaml_quote(entry.get('deep_reading_status', 'pending'))}",
             f"pdf_path: {yaml_quote(entry.get('pdf_path', ''))}",
+            f"fulltext_md_path: {yaml_quote('[[{}]]'.format(entry['fulltext_path']) if entry.get('ocr_status') == 'done' and entry.get('fulltext_path') else '')}",
             "tags:",
             "  - 文献阅读",
             f"  - {entry.get('domain', '')}",
@@ -1542,12 +1532,12 @@ def analyze_selected_keys(paths: dict[str, Path]) -> set[str]:
 def migrate_to_workspace(vault: Path, paths: dict) -> int:
     """Migrate flat literature notes into paper workspace directories.
 
-    Copies each flat note at Literature/<domain>/<key> - <Title>.md into:
-      Literature/<domain>/<key> - <Title>/<key> - <Title>.md
+    Copies each flat note at <literature_dir>/<domain>/<key> - <Title>.md into:
+      <literature_dir>/<domain>/<key> - <Title>/<key> - <Title>.md
     Extracts ## 🔍 精读 into:
-      Literature/<domain>/<key> - <Title>/deep-reading.md
+      <literature_dir>/<domain>/<key> - <Title>/deep-reading.md
     Creates:
-      Literature/<domain>/<key> - <Title>/ai/  (empty directory)
+      <literature_dir>/<domain>/<key> - <Title>/ai/  (empty directory)
 
     Idempotent: skips papers whose workspace directory already exists.
     The original flat note is preserved (copy-not-move per D-12).
@@ -1650,7 +1640,7 @@ def run_index_refresh(vault: Path, verbose: bool = False, rebuild_index: bool = 
     domain_lookup = {entry["export_file"]: entry["domain"] for entry in config["domains"]}
 
     cfg = load_vault_config(vault)
-    zotero_dir = vault / cfg.get("system_dir", "99_System") / "Zotero"
+    zotero_dir = vault / cfg.get("system_dir", "System") / "Zotero"
     exports = {}
     for export_path in sorted(paths["exports"].glob("*.json")):
         domain = domain_lookup.get(export_path.name, export_path.stem)
@@ -1660,7 +1650,7 @@ def run_index_refresh(vault: Path, verbose: bool = False, rebuild_index: bool = 
     migrate_to_workspace(vault, paths)
     # Delegate to asset_index.build_index() for the core build loop
     count = asset_index.build_index(vault, verbose)
-    control_records_dir = paths["library_records"]
+    control_records_dir = paths["literature"]
     if control_records_dir.exists():
         for domain_dir in control_records_dir.iterdir():
             if not domain_dir.is_dir():
@@ -1669,14 +1659,19 @@ def run_index_refresh(vault: Path, verbose: bool = False, rebuild_index: bool = 
             domain_export_keys = set(exports.get(domain, {}).keys())
             records_by_title = {}
             records_info = {}
-            for record_file in domain_dir.glob("*.md"):
+            for record_file in domain_dir.rglob("*.md"):
+                if record_file.name in ("fulltext.md", "deep-reading.md", "discussion.md"):
+                    continue
                 try:
                     content = record_file.read_text(encoding="utf-8")
+                    key_match = re.search(r"^zotero_key:\s*(.+)$", content, re.MULTILINE)
+                    if not key_match:
+                        continue
+                    key = key_match.group(1).strip()
                     title_match = re.search("^title:\\s*[\"\\']?(.+)[\"\\']?\\s*$", content, re.MULTILINE)
                     title = title_match.group(1) if title_match else ""
                     has_pdf = "has_pdf: true" in content
                     normalized = re.sub("[^a-z0-9]", "", title.lower())[:20]
-                    key = record_file.stem
                     records_info[key] = {
                         "file": record_file,
                         "title": title,
@@ -1705,4 +1700,40 @@ def run_index_refresh(vault: Path, verbose: bool = False, rebuild_index: bool = 
                     pass
             if deleted_count > 0:
                 print(f"index-refresh: cleaned {deleted_count} orphaned records in {domain}")
+
+    # Clean up flat notes: delete only if confirmed by canonical index + workspace
+    index_data = asset_index.read_index(vault)
+    ws_keys = set()
+    if isinstance(index_data, dict):
+        for item in index_data.get("items", []):
+            ws_dir = paths["literature"] / item.get("domain", "") / (item.get("zotero_key", "") + " - " + slugify_filename(item.get("title", "")))
+            if ws_dir.is_dir():
+                ws_keys.add(item.get("zotero_key"))
+
+    lit_dir = paths["literature"]
+    cleaned_flat = 0
+    if lit_dir.exists() and ws_keys:
+        for domain_dir in sorted(lit_dir.iterdir()):
+            if not domain_dir.is_dir():
+                continue
+            for flat_note in list(domain_dir.glob("*.md")):
+                try:
+                    text = flat_note.read_text(encoding="utf-8")
+                    m = re.search(r"^zotero_key:\s*\"?(\S+?)\"?\s*$", text, re.MULTILINE)
+                    key = m.group(1) if m else ""
+                except Exception:
+                    continue
+                if key and key in ws_keys:
+                    try:
+                        flat_note.unlink()
+                        cleaned_flat += 1
+                    except Exception:
+                        pass
+    if cleaned_flat > 0:
+        print(f"index-refresh: cleaned {cleaned_flat} flat note(s) (migrated to workspace)")
+
+    if control_records_dir.exists():
+        total = sum(1 for _ in control_records_dir.rglob("*.md"))
+        print(f"index-refresh: {total} formal note(s) in literature")
+
     return 0
