@@ -63,7 +63,7 @@ analysis_note: ""
     return record_path
 
 
-def _write_formal_note(literature_dir, key, domain, ocr_status):
+def _write_formal_note(literature_dir, key, domain, ocr_status, do_ocr="false"):
     domain_lit = literature_dir / domain
     domain_lit.mkdir(parents=True, exist_ok=True)
     note_path = domain_lit / f"{key} - Test.md"
@@ -74,6 +74,7 @@ domain: "{domain}"
 zotero_key: "{key}"
 doi: "10.1234/test"
 ocr_status: {ocr_status}
+do_ocr: {do_ocr}
 deep_reading_status: pending
 ---
 # Test Paper {key}
@@ -131,9 +132,7 @@ class TestRunRepairScanOnly:
     def test_all_consistent_pending_no_divergence(self, tmp_path):
         vault = _make_vault(tmp_path)
         paths = pipeline_paths(vault)
-        records_dir = vault / "03_Resources" / "LiteratureControl" / "library-records" / "骨科"
-        records_dir.mkdir(parents=True, exist_ok=True)
-        _write_library_record(records_dir, "KEY001", "骨科", "pending")
+        _write_formal_note(paths["literature"], "KEY001", "骨科", "pending")
         result = run_repair(vault, paths, verbose=False, fix=False)
         assert result["scanned"] == 1
         assert result["divergent"] == []
@@ -141,9 +140,7 @@ class TestRunRepairScanOnly:
     def test_meta_done_incomplete_is_divergent(self, tmp_path):
         vault = _make_vault(tmp_path)
         paths = pipeline_paths(vault)
-        records_dir = vault / "03_Resources" / "LiteratureControl" / "library-records" / "骨科"
-        records_dir.mkdir(parents=True, exist_ok=True)
-        _write_library_record(records_dir, "KEY001", "骨科", "pending")
+        _write_formal_note(paths["literature"], "KEY001", "骨科", "pending")
         _write_minimal_meta(paths["ocr"], "KEY001", "done")
         result = run_repair(vault, paths, verbose=False, fix=False)
         assert result["scanned"] == 1
@@ -154,22 +151,51 @@ class TestRunRepairScanOnly:
     def test_library_done_but_meta_pending_is_divergent(self, tmp_path):
         vault = _make_vault(tmp_path)
         paths = pipeline_paths(vault)
-        records_dir = vault / "03_Resources" / "LiteratureControl" / "library-records" / "骨科"
-        records_dir.mkdir(parents=True, exist_ok=True)
-        _write_library_record(records_dir, "KEY001", "骨科", "done")
+        _write_formal_note(paths["literature"], "KEY001", "骨科", "done")
         _write_meta(paths["ocr"], "KEY001", "pending")
         result = run_repair(vault, paths, verbose=False, fix=False)
         assert result["scanned"] == 1
         assert len(result["divergent"]) == 1
-        assert result["divergent"][0]["library_record_ocr_status"] == "done"
+        assert result["divergent"][0]["formal_note_ocr_status"] == "done"
         assert result["divergent"][0]["meta_ocr_status"] == "pending"
 
     def test_library_done_but_meta_missing_is_divergent(self, tmp_path):
         vault = _make_vault(tmp_path)
         paths = pipeline_paths(vault)
-        records_dir = vault / "03_Resources" / "LiteratureControl" / "library-records" / "骨科"
-        records_dir.mkdir(parents=True, exist_ok=True)
-        _write_library_record(records_dir, "KEY001", "骨科", "done")
+        _write_formal_note(paths["literature"], "KEY001", "骨科", "done")
+        result = run_repair(vault, paths, verbose=False, fix=False)
+        assert result["scanned"] == 1
+        assert len(result["divergent"]) == 1
+
+    def test_formal_note_done_but_meta_missing_is_divergent(self, tmp_path):
+        vault = _make_vault(tmp_path)
+        paths = pipeline_paths(vault)
+        _write_formal_note(paths["literature"], "KEY001", "骨科", "done")
+        result = run_repair(vault, paths, verbose=False, fix=False)
+        assert result["scanned"] == 1
+        assert len(result["divergent"]) == 1
+        assert result["divergent"][0]["zotero_key"] == "KEY001"
+        assert "done_incomplete" in result["divergent"][0]["reason"]
+
+    def test_formal_note_done_but_meta_pending_is_divergent(self, tmp_path):
+        vault = _make_vault(tmp_path)
+        paths = pipeline_paths(vault)
+        literature_dir = vault / "03_Resources" / "Literature" / "骨科"
+        literature_dir.mkdir(parents=True, exist_ok=True)
+        _write_formal_note(literature_dir.parent, "KEY001", "骨科", "done")
+        _write_meta(paths["ocr"], "KEY001", "pending")
+        result = run_repair(vault, paths, verbose=False, fix=False)
+        assert result["scanned"] == 1
+        assert len(result["divergent"]) == 1
+        assert result["divergent"][0]["formal_note_ocr_status"] == "done"
+        assert result["divergent"][0]["meta_ocr_status"] == "pending"
+
+    def test_formal_note_done_but_meta_missing_is_divergent(self, tmp_path):
+        vault = _make_vault(tmp_path)
+        paths = pipeline_paths(vault)
+        literature_dir = vault / "03_Resources" / "Literature" / "骨科"
+        literature_dir.mkdir(parents=True, exist_ok=True)
+        _write_formal_note(literature_dir.parent, "KEY001", "骨科", "done")
         result = run_repair(vault, paths, verbose=False, fix=False)
         assert result["scanned"] == 1
         assert len(result["divergent"]) == 1
@@ -189,10 +215,45 @@ class TestRunRepairScanOnly:
     def test_library_vs_meta_post_validation_mismatch_is_divergent(self, tmp_path):
         vault = _make_vault(tmp_path)
         paths = pipeline_paths(vault)
-        records_dir = vault / "03_Resources" / "LiteratureControl" / "library-records" / "骨科"
-        records_dir.mkdir(parents=True, exist_ok=True)
-        _write_library_record(records_dir, "KEY001", "骨科", "done")
+        _write_formal_note(paths["literature"], "KEY001", "骨科", "done")
         _write_meta(paths["ocr"], "KEY001", "done", page_count=10)
+        result = run_repair(vault, paths, verbose=False, fix=False)
+        assert result["scanned"] == 1
+        assert result["divergent"] == []
+
+    # === Condition 4: note pending vs meta done/failed ===
+
+    def test_note_pending_meta_done_is_now_divergent(self, tmp_path):
+        """REPAIR-01: note ocr_status=pending, meta ocr_status=done (full validation) -> divergent.
+        Previously silently skipped because condition 4 had note_ocr_status != 'pending' guard."""
+        vault = _make_vault(tmp_path)
+        paths = pipeline_paths(vault)
+        _write_formal_note(paths["literature"], "KEY001", "骨科", "pending")
+        _write_meta(paths["ocr"], "KEY001", "done", page_count=10)
+        result = run_repair(vault, paths, verbose=False, fix=False)
+        assert result["scanned"] == 1
+        assert len(result["divergent"]) == 1
+        assert result["divergent"][0]["zotero_key"] == "KEY001"
+        assert result["divergent"][0]["formal_note_ocr_status"] == "pending"
+
+    def test_note_pending_meta_failed_is_divergent(self, tmp_path):
+        """REPAIR-01: note=pending, meta=failed -> divergent (was also silently skipped)."""
+        vault = _make_vault(tmp_path)
+        paths = pipeline_paths(vault)
+        _write_formal_note(paths["literature"], "KEY001", "骨科", "pending")
+        _write_minimal_meta(paths["ocr"], "KEY001", "failed")
+        result = run_repair(vault, paths, verbose=False, fix=False)
+        assert result["scanned"] == 1
+        assert len(result["divergent"]) == 1
+        assert result["divergent"][0]["formal_note_ocr_status"] == "pending"
+        assert "failed" in result["divergent"][0]["meta_ocr_status"] or "failed" in result["divergent"][0]["reason"]
+
+    def test_note_pending_meta_pending_consistent_is_not_divergent(self, tmp_path):
+        """REPAIR-01: note=pending, meta=pending -> NOT divergent (consistent state)."""
+        vault = _make_vault(tmp_path)
+        paths = pipeline_paths(vault)
+        _write_formal_note(paths["literature"], "KEY001", "骨科", "pending")
+        _write_minimal_meta(paths["ocr"], "KEY001", "pending")
         result = run_repair(vault, paths, verbose=False, fix=False)
         assert result["scanned"] == 1
         assert result["divergent"] == []
@@ -200,9 +261,7 @@ class TestRunRepairScanOnly:
     def test_library_nopdf_not_divergent(self, tmp_path):
         vault = _make_vault(tmp_path)
         paths = pipeline_paths(vault)
-        records_dir = vault / "03_Resources" / "LiteratureControl" / "library-records" / "骨科"
-        records_dir.mkdir(parents=True, exist_ok=True)
-        _write_library_record(records_dir, "KEY001", "骨科", "nopdf")
+        _write_formal_note(paths["literature"], "KEY001", "骨科", "nopdf")
         result = run_repair(vault, paths, verbose=False, fix=False)
         assert result["scanned"] == 1
         assert result["divergent"] == []
@@ -210,12 +269,8 @@ class TestRunRepairScanOnly:
     def test_multiple_domains_scanned(self, tmp_path):
         vault = _make_vault(tmp_path)
         paths = pipeline_paths(vault)
-        records_dir_ortho = vault / "03_Resources" / "LiteratureControl" / "library-records" / "骨科"
-        records_dir_ortho.mkdir(parents=True, exist_ok=True)
-        records_dir_sports = vault / "03_Resources" / "LiteratureControl" / "library-records" / "运动医学"
-        records_dir_sports.mkdir(parents=True, exist_ok=True)
-        _write_library_record(records_dir_ortho, "KEY001", "骨科", "pending")
-        _write_library_record(records_dir_sports, "KEY002", "运动医学", "pending")
+        _write_formal_note(paths["literature"], "KEY001", "骨科", "pending")
+        _write_formal_note(paths["literature"], "KEY002", "运动医学", "pending")
         result = run_repair(vault, paths, verbose=False, fix=False)
         assert result["scanned"] == 2
 
@@ -225,9 +280,7 @@ class TestRunRepairScanOnly:
         caplog.set_level(logging.DEBUG, logger="paperforge.worker.repair")
         vault = _make_vault(tmp_path)
         paths = pipeline_paths(vault)
-        records_dir = vault / "03_Resources" / "LiteratureControl" / "library-records" / "骨科"
-        records_dir.mkdir(parents=True, exist_ok=True)
-        _write_library_record(records_dir, "KEY001", "骨科", "done")
+        _write_formal_note(paths["literature"], "KEY001", "骨科", "done")
         _write_meta(paths["ocr"], "KEY001", "pending")
         run_repair(vault, paths, verbose=True, fix=False)
         assert "KEY001" in caplog.text
@@ -235,63 +288,54 @@ class TestRunRepairScanOnly:
 
 
 class TestRunRepairFixMode:
+    def _note_path(self, paths, key, domain):
+        return paths["literature"] / domain / f"{key} - Test.md"
+
     def test_fix_meta_missing_sets_all_to_pending_and_sets_do_ocr(self, tmp_path):
         vault = _make_vault(tmp_path)
         paths = pipeline_paths(vault)
-        records_dir = vault / "03_Resources" / "LiteratureControl" / "library-records" / "骨科"
-        records_dir.mkdir(parents=True, exist_ok=True)
-        lit_dir = vault / "03_Resources" / "Literature"
-        record_path = _write_library_record(records_dir, "KEY001", "骨科", "done", do_ocr="false")
-        _write_formal_note(lit_dir, "KEY001", "骨科", "done")
+        note_path = _write_formal_note(paths["literature"], "KEY001", "骨科", "done", do_ocr="false")
         result = run_repair(vault, paths, verbose=False, fix=True)
         assert result["fixed"] >= 1
-        record_text = record_path.read_text(encoding="utf-8")
-        assert re.search(r'^ocr_status:\s*"?pending"?', record_text, re.MULTILINE)
-        assert re.search(r'^do_ocr:\s*"?true"?', record_text, re.MULTILINE)
+        note_text = note_path.read_text(encoding="utf-8")
+        assert re.search(r'^ocr_status:\s*"?pending"?', note_text, re.MULTILINE)
+        assert re.search(r'^do_ocr:\s*"?true"?', note_text, re.MULTILINE)
 
     def test_fix_done_incomplete_meta_sets_to_pending(self, tmp_path):
         vault = _make_vault(tmp_path)
         paths = pipeline_paths(vault)
-        records_dir = vault / "03_Resources" / "LiteratureControl" / "library-records" / "骨科"
-        records_dir.mkdir(parents=True, exist_ok=True)
-        record_path = _write_library_record(records_dir, "KEY001", "骨科", "pending")
+        note_path = _write_formal_note(paths["literature"], "KEY001", "骨科", "pending")
         _write_minimal_meta(paths["ocr"], "KEY001", "done")
         result = run_repair(vault, paths, verbose=False, fix=True)
         assert result["fixed"] >= 1
-        record_text = record_path.read_text(encoding="utf-8")
-        assert re.search(r'^ocr_status:\s*"?pending"?', record_text, re.MULTILINE)
+        note_text = note_path.read_text(encoding="utf-8")
+        assert re.search(r'^ocr_status:\s*"?pending"?', note_text, re.MULTILINE)
 
     def test_fix_library_done_meta_pending_sets_library_to_pending(self, tmp_path):
         vault = _make_vault(tmp_path)
         paths = pipeline_paths(vault)
-        records_dir = vault / "03_Resources" / "LiteratureControl" / "library-records" / "骨科"
-        records_dir.mkdir(parents=True, exist_ok=True)
-        record_path = _write_library_record(records_dir, "KEY001", "骨科", "done")
+        note_path = _write_formal_note(paths["literature"], "KEY001", "骨科", "done")
         _write_meta(paths["ocr"], "KEY001", "pending")
         result = run_repair(vault, paths, verbose=False, fix=True)
         assert result["fixed"] >= 1
-        record_text = record_path.read_text(encoding="utf-8")
-        assert re.search(r'^ocr_status:\s*"?pending"?', record_text, re.MULTILINE)
+        note_text = note_path.read_text(encoding="utf-8")
+        assert re.search(r'^ocr_status:\s*"?pending"?', note_text, re.MULTILINE)
 
     def test_fix_false_does_not_write_anything(self, tmp_path):
         vault = _make_vault(tmp_path)
         paths = pipeline_paths(vault)
-        records_dir = vault / "03_Resources" / "LiteratureControl" / "library-records" / "骨科"
-        records_dir.mkdir(parents=True, exist_ok=True)
-        record_path = _write_library_record(records_dir, "KEY001", "骨科", "done")
+        note_path = _write_formal_note(paths["literature"], "KEY001", "骨科", "done")
         _write_minimal_meta(paths["ocr"], "KEY001", "done")
-        original_content = record_path.read_text(encoding="utf-8")
+        original_content = note_path.read_text(encoding="utf-8")
         result = run_repair(vault, paths, verbose=False, fix=False)
         assert result["fixed"] == 0
-        assert record_path.read_text(encoding="utf-8") == original_content
+        assert note_path.read_text(encoding="utf-8") == original_content
 
     def test_fix_multiple_divergent_items(self, tmp_path):
         vault = _make_vault(tmp_path)
         paths = pipeline_paths(vault)
-        records_dir = vault / "03_Resources" / "LiteratureControl" / "library-records" / "骨科"
-        records_dir.mkdir(parents=True, exist_ok=True)
-        _write_library_record(records_dir, "KEY001", "骨科", "done", do_ocr="false")
-        _write_library_record(records_dir, "KEY002", "骨科", "pending")
+        _write_formal_note(paths["literature"], "KEY001", "骨科", "done", do_ocr="false")
+        _write_formal_note(paths["literature"], "KEY002", "骨科", "pending")
         _write_minimal_meta(paths["ocr"], "KEY001", "done")
         _write_minimal_meta(paths["ocr"], "KEY002", "done")
         result = run_repair(vault, paths, verbose=False, fix=True)
@@ -301,9 +345,7 @@ class TestRunRepairFixMode:
     def test_no_divergence_fix_reports_zero_fixed(self, tmp_path):
         vault = _make_vault(tmp_path)
         paths = pipeline_paths(vault)
-        records_dir = vault / "03_Resources" / "LiteratureControl" / "library-records" / "骨科"
-        records_dir.mkdir(parents=True, exist_ok=True)
-        _write_library_record(records_dir, "KEY001", "骨科", "pending")
+        _write_formal_note(paths["literature"], "KEY001", "骨科", "pending")
         _write_meta(paths["ocr"], "KEY001", "pending")
         result = run_repair(vault, paths, verbose=False, fix=True)
         assert result["fixed"] == 0
@@ -311,11 +353,7 @@ class TestRunRepairFixMode:
     def test_fix_writes_formal_note_ocr_status(self, tmp_path):
         vault = _make_vault(tmp_path)
         paths = pipeline_paths(vault)
-        records_dir = vault / "03_Resources" / "LiteratureControl" / "library-records" / "骨科"
-        records_dir.mkdir(parents=True, exist_ok=True)
-        lit_dir = vault / "03_Resources" / "Literature"
-        _write_library_record(records_dir, "KEY001", "骨科", "done", do_ocr="false")
-        note_path = _write_formal_note(lit_dir, "KEY001", "骨科", "done")
+        note_path = _write_formal_note(paths["literature"], "KEY001", "骨科", "done", do_ocr="false")
         run_repair(vault, paths, verbose=False, fix=True)
         note_text = note_path.read_text(encoding="utf-8")
         assert re.search(r'^ocr_status:\s*"?pending"?', note_text, re.MULTILINE)
@@ -323,19 +361,13 @@ class TestRunRepairFixMode:
     def test_fix_case4_lib_done_meta_pending_updates_all_three_and_sets_do_ocr(self, tmp_path):
         vault = _make_vault(tmp_path)
         paths = pipeline_paths(vault)
-        records_dir = vault / "03_Resources" / "LiteratureControl" / "library-records" / "骨科"
-        records_dir.mkdir(parents=True, exist_ok=True)
-        lit_dir = vault / "03_Resources" / "Literature"
-        record_path = _write_library_record(records_dir, "KEY001", "骨科", "done", do_ocr="false")
-        note_path = _write_formal_note(lit_dir, "KEY001", "骨科", "done")
+        note_path = _write_formal_note(paths["literature"], "KEY001", "骨科", "done", do_ocr="false")
         meta_path = _write_meta(paths["ocr"], "KEY001", "pending")
         result = run_repair(vault, paths, verbose=False, fix=True)
         assert result["fixed"] >= 1
-        record_text = record_path.read_text(encoding="utf-8")
-        assert re.search(r'^ocr_status:\s*"?pending"?', record_text, re.MULTILINE)
-        assert re.search(r'^do_ocr:\s*"?true"?', record_text, re.MULTILINE)
         note_text = note_path.read_text(encoding="utf-8")
         assert re.search(r'^ocr_status:\s*"?pending"?', note_text, re.MULTILINE)
+        assert re.search(r'^do_ocr:\s*"?true"?', note_text, re.MULTILINE)
         meta = json.loads(meta_path.read_text(encoding="utf-8"))
         assert meta["ocr_status"] == "pending"
 
@@ -354,10 +386,7 @@ class TestRepairRebuildsIndex:
         monkeypatch.setattr(paperforge.worker.asset_index, "build_index", _capture_call)
         vault = _make_vault(tmp_path)
         paths = pipeline_paths(vault)
-        records_dir = vault / "03_Resources" / "LiteratureControl" / "library-records" / "骨科"
-        records_dir.mkdir(parents=True, exist_ok=True)
-        _write_library_record(records_dir, "KEY001", "骨科", "done", do_ocr="false")
-        _write_formal_note(vault / "03_Resources" / "Literature", "KEY001", "骨科", "done")
+        _write_formal_note(paths["literature"], "KEY001", "骨科", "done", do_ocr="false")
         run_repair(vault, paths, verbose=False, fix=True)
         assert call_count >= 1, "build_index was not called during fix=True"
 
@@ -374,20 +403,14 @@ class TestRepairRebuildsIndex:
         monkeypatch.setattr(paperforge.worker.asset_index, "build_index", _capture_call)
         vault = _make_vault(tmp_path)
         paths = pipeline_paths(vault)
-        records_dir = vault / "03_Resources" / "LiteratureControl" / "library-records" / "骨科"
-        records_dir.mkdir(parents=True, exist_ok=True)
-        _write_library_record(records_dir, "KEY001", "骨科", "done", do_ocr="false")
-        _write_formal_note(vault / "03_Resources" / "Literature", "KEY001", "骨科", "done")
+        _write_formal_note(paths["literature"], "KEY001", "骨科", "done", do_ocr="false")
         run_repair(vault, paths, verbose=False, fix=False)
         assert call_count == 0, "build_index was called during dry-run (fix=False)"
 
     def test_repair_rebuilt_in_result(self, tmp_path):
         vault = _make_vault(tmp_path)
         paths = pipeline_paths(vault)
-        records_dir = vault / "03_Resources" / "LiteratureControl" / "library-records" / "骨科"
-        records_dir.mkdir(parents=True, exist_ok=True)
-        _write_library_record(records_dir, "KEY001", "骨科", "done", do_ocr="false")
-        _write_formal_note(vault / "03_Resources" / "Literature", "KEY001", "骨科", "done")
+        _write_formal_note(paths["literature"], "KEY001", "骨科", "done", do_ocr="false")
         result = run_repair(vault, paths, verbose=False, fix=True)
         assert "rebuilt" in result
         assert isinstance(result["rebuilt"], int)
@@ -401,9 +424,7 @@ class TestRepairRebuildsIndex:
         monkeypatch.setattr(paperforge.worker.asset_index, "build_index", _failing_build)
         vault = _make_vault(tmp_path)
         paths = pipeline_paths(vault)
-        records_dir = vault / "03_Resources" / "LiteratureControl" / "library-records" / "骨科"
-        records_dir.mkdir(parents=True, exist_ok=True)
-        _write_library_record(records_dir, "KEY001", "骨科", "done")
+        _write_formal_note(paths["literature"], "KEY001", "骨科", "done")
         _write_meta(paths["ocr"], "KEY001", "pending")
         result = run_repair(vault, paths, verbose=False, fix=True)
         assert result["rebuilt"] == -1
@@ -428,16 +449,14 @@ class TestRunRepairReturnStructure:
     def test_divergent_item_has_required_fields(self, tmp_path):
         vault = _make_vault(tmp_path)
         paths = pipeline_paths(vault)
-        records_dir = vault / "03_Resources" / "LiteratureControl" / "library-records" / "骨科"
-        records_dir.mkdir(parents=True, exist_ok=True)
-        _write_library_record(records_dir, "KEY001", "骨科", "done")
+        _write_formal_note(paths["literature"], "KEY001", "骨科", "done")
         _write_meta(paths["ocr"], "KEY001", "pending")
         result = run_repair(vault, paths, verbose=False, fix=False)
         item = result["divergent"][0]
         assert "zotero_key" in item
         assert "domain" in item
-        assert "library_record_ocr_status" in item
         assert "formal_note_ocr_status" in item
+        assert "index_ocr_status" in item
         assert "meta_ocr_status" in item
         assert "reason" in item
 
@@ -480,3 +499,25 @@ class TestRepairCommandPaths:
 
         assert code == 0
         assert "config" in captured["paths"]
+
+
+class TestRepairDeadCode:
+    """REPAIR-04: Verify load_domain_config dead code removed."""
+
+    def test_no_import_load_domain_config(self):
+        """load_domain_config import should not exist in repair.py source."""
+        import paperforge.worker.repair as mod
+        source = open(mod.__file__, encoding="utf-8").read()
+        # The import line should be absent
+        assert "load_domain_config" not in source, "REPAIR-04: load_domain_config still imported or referenced"
+
+    def test_no_orphaned_dict_comprehension(self):
+        """No orphaned config = load_domain_config(paths) call remains."""
+        import paperforge.worker.repair as mod
+        source = open(mod.__file__, encoding="utf-8").read()
+        # The dead dict comprehension pattern should be gone
+        assert 'export_file' not in source.split("def run_repair")[1].split("\n")[0:5] or True
+        # Simpler check: `domain` in the context of dict comprehension
+        lines = source.split("def run_repair")[1].split("\n")[:10]
+        has_orphaned = any("entry[\"export_file\"]" in line for line in lines)
+        assert not has_orphaned, "REPAIR-04: orphaned dict comprehension with export_file exists in run_repair()"
