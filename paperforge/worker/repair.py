@@ -6,7 +6,6 @@ from pathlib import Path
 
 from paperforge.config import load_vault_config, paperforge_paths
 from paperforge.worker.asset_index import refresh_index_entry
-from paperforge.worker._domain import load_domain_config
 from paperforge.worker._utils import (
     read_json,
     write_json,
@@ -192,8 +191,6 @@ def run_repair(vault: Path, paths: dict, verbose: bool = False, fix: bool = Fals
         dict with scanned, divergent, fixed, errors counts
     """
     result = {"scanned": 0, "divergent": [], "fixed": 0, "errors": [], "rebuilt": 0}
-    config = load_domain_config(paths)
-    {entry["export_file"]: entry["domain"] for entry in config["domains"]}
     record_paths = [p for p in paths["literature"].rglob("*.md") if p.name not in ("fulltext.md", "deep-reading.md", "discussion.md")]
     for record_path in record_paths:
         try:
@@ -256,10 +253,13 @@ def run_repair(vault: Path, paths: dict, verbose: bool = False, fix: bool = Fals
             is_divergent = True
             div_reason = "index done but meta.json missing/invalid"
         elif (
-            note_ocr_status != "pending"
-            and meta_ocr_status is not None
+            meta_ocr_status is not None
             and meta_validated_status is not None
             and note_ocr_status != meta_validated_status
+            and not (
+                note_ocr_status == "pending"
+                and meta_validated_status == "pending"
+            )
         ):
             is_divergent = True
             div_reason = f"formal_note={note_ocr_status} vs meta post-validation={meta_validated_status}"
