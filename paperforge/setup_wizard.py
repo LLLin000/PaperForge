@@ -748,15 +748,6 @@ def headless_setup(
         d.mkdir(parents=True, exist_ok=True)
     print(f"    [OK] {len(dirs)} directories ready")
 
-    # Zotero data directory auto-detection (before junction creation)
-    if zotero_data is None and not skip_checks:
-        detected = checker._find_zotero()
-        if detected:
-            home_zotero = Path.home() / "Zotero"
-            if home_zotero.exists() and (home_zotero / "zotero.sqlite").exists():
-                zotero_data = str(home_zotero)
-                print(f"    [OK] Zotero data auto-detected: {zotero_data}")
-
     # Zotero junction (creates <system_dir>/Zotero -> actual Zotero data dir)
     if zotero_data and zotero_data.strip():
         zotero_link_path = vault / system_dir / "Zotero"
@@ -826,6 +817,19 @@ def headless_setup(
             else:
                 print(f"    Configure BBT auto-export to: {system_dir}/PaperForge/exports/")
             print(f"    完成后运行: paperforge sync")
+
+    # Zotero data directory detection
+    if zotero_data is None and not skip_checks:
+        detected = checker._find_zotero()
+        if detected:
+            # _find_zotero returns the .exe path; we need the data directory
+            zotero_home = detected.parent.parent if detected.parent.name == "Zotero" else detected.parent
+            data_candidate = Path(str(zotero_home)).parent if "Zotero" in str(zotero_home) else zotero_home
+            # Common Zotero data dir: ~/Zotero on all platforms
+            home_zotero = Path.home() / "Zotero"
+            if home_zotero.exists() and (home_zotero / "zotero.sqlite").exists():
+                zotero_data = str(home_zotero)
+                print(f"    [OK] Zotero data detected: {zotero_data}")
 
     # =========================================================================
     # Phase 4: Deploy files
