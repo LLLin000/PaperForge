@@ -947,19 +947,17 @@ def headless_setup(
     print("[*] Phase 5: Creating config files...")
 
     # .env
-    if paddleocr_key:
-        env_status = _merge_env_incremental(
-            pf_path / ".env",
-            {
-                "PADDLEOCR_API_TOKEN": paddleocr_key,
-                "PADDLEOCR_JOB_URL": paddleocr_url,
-                "PADDLEOCR_MODEL": "PaddleOCR-VL-1.5",
-                "ZOTERO_DATA_DIR": zotero_data or "",
-            },
-        )
-        print(f"    [OK] .env ({env_status})")
-    else:
-        print(f"    [INFO] No PaddleOCR key — create {pf_path}/.env manually")
+    raw_key = paddleocr_key or os.environ.get("PADDLEOCR_API_TOKEN", "").strip()
+    env_status = _merge_env_incremental(
+        vault / ".env",
+        {
+            "PADDLEOCR_API_TOKEN": raw_key,
+            "PADDLEOCR_JOB_URL": paddleocr_url,
+            "PADDLEOCR_MODEL": "PaddleOCR-VL-1.5",
+            "ZOTERO_DATA_DIR": zotero_data or "",
+        },
+    )
+    print(f"    [OK] .env ({env_status})")
 
     # Domain config (populated from whatever JSONs already exist in exports/)
     domain_config = pf_path / "config" / "domain-collections.json"
@@ -988,7 +986,7 @@ def headless_setup(
         "agent_platform": agent_config.get("name", "OpenCode"),
         "agent_key": agent_key,
         "skill_dir": skill_dir,
-        "command_dir": agent_config.get("command_dir", ""),
+        "command_dir": agent_config.get("command_dir") or "",
         "paperforge_path": f"{system_dir}/PaperForge",
         "zotero_data_dir": zotero_data or "",
         "zotero_link": f"{system_dir}/Zotero",
@@ -997,30 +995,34 @@ def headless_setup(
     pf_json.write_text(json.dumps(config, indent=2, ensure_ascii=False), encoding="utf-8")
     print(f"    [OK] paperforge.json")
 
-    # =========================================================================
-    # Phase 6: pip install (skip if already registered)
-    # =========================================================================
-    print("[*] Phase 6: Registering paperforge CLI...")
+    # Phase 6: pip install — always upgrade
+    print("[*] Phase 6: Installing/upgrading paperforge CLI...")
     try:
-        # Check if paperforge is already importable
-        already_installed = False
         try:
-            import paperforge
-            already_installed = True
+            import paperforge as _pf
+            current_ver = getattr(_pf, '__version__', '?')
         except ImportError:
-            pass
-        if already_installed:
-            print(f"    [OK] paperforge CLI already registered")
+            current_ver = 'not installed'
+        # If repo_root is the source repository (has pyproject.toml), install from it.
+        # Otherwise (site-packages copy) install from GitHub.
+        if (repo_root / "pyproject.toml").exists():
+            install_target = [str(repo_root)]
         else:
-            result = subprocess.run(
-                [sys.executable, "-m", "pip", "install", "-e", str(repo_root)],
-                capture_output=True, text=True, timeout=120,
+            install_target = [f"git+https://github.com/LLLin000/PaperForge.git"]
+        result = subprocess.run(
+            [sys.executable, "-m", "pip", "install", "--upgrade"] + install_target,
+            capture_output=True, text=True, timeout=120,
+        )
+        if result.returncode == 0:
+            _new = subprocess.run(
+                [sys.executable, "-c", "import paperforge; print(getattr(paperforge, '__version__', '?'))"],
+                capture_output=True, text=True, timeout=15,
             )
-            if result.returncode == 0:
-                print(f"    [OK] paperforge CLI registered")
-            else:
-                stderr_short = result.stderr[:200] if result.stderr else ""
-                print(f"    [WARN] pip install: {stderr_short}", file=sys.stderr)
+            new_ver = _new.stdout.strip() or '?'
+            print(f"    [OK] paperforge {current_ver} -> {new_ver}")
+        else:
+            stderr_short = result.stderr[:200] if result.stderr else ""
+            print(f"    [WARN] pip install failed: {stderr_short}", file=sys.stderr)
     except Exception as e:
         print(f"    [WARN] pip install skipped: {e}")
 

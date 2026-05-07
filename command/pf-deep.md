@@ -37,8 +37,7 @@ paperforge deep-reading  # 查看精读队列状态
 
 | 参数 | 必需 | 说明 |
 |------|------|------|
-| `<query>` | 是（queue 模式除外） | Zotero key、标题片段、DOI、PMID 或关键词 |
-| `queue` | 否 | 启动批量精读队列模式 |
+| `<query>` | 否 | Zotero key、标题片段、DOI、PMID 或关键词（不提供则自动检测精读队列） |
 
 ### 参数说明
 
@@ -53,29 +52,28 @@ paperforge deep-reading  # 查看精读队列状态
 ### 单篇精读（已知 key）
 
 ```bash
-/pf-deep XGT9Z257
-/pf-deep Predictive findings on magnetic resonance imaging
-/pf-deep 10.1016/j.jse.2018.01.001
+<prefix>pf-deep XGT9Z257
+<prefix>pf-deep Predictive findings on magnetic resonance imaging
+<prefix>pf-deep 10.1016/j.jse.2018.01.001
 ```
 
-### 批量从待精读队列启动
+### 无参数：自动检测队列
 
 ```bash
-/pf-deep queue
+<prefix>pf-deep
 ```
 
-当不提供具体 key/标题时，agent 自动执行以下流程：
+当不提供具体 key/标题时，`<prefix>pf-deep` 无参数自动检测精读队列：
 
-1. 运行 `paperforge deep-reading` 查看精读队列（或 `python -m paperforge deep-reading --vault {{VAULT}}` 获取 JSON 格式队列）
-2. 解析输出的队列状态（`analyze=true` + `deep_reading_status != done` + `ocr_status`）
-3. 按 OCR 状态分组展示：
+1. 运行 `paperforge --vault {{VAULT}} deep-reading` 同步精读状态
+2. 运行 `python .opencode/skills/pf-deep/scripts/ld_deep.py queue --vault "{{VAULT}}"` 获取 JSON 格式队列
+3. 解析队列状态（`analyze=true` + `deep_reading_status != done` + `ocr_status`）
+4. 按 OCR 状态分组展示：
    - **就绪**：OCR 已完成，可直接精读
    - **阻塞**：OCR 未完成，需先跑 `paperforge ocr`
-4. 由用户选择篇目：
-   - 若只有 1 篇就绪 -> 直接执行单篇精读（等同于 `/pf-deep <key>`）
+5. 由用户选择篇目：
+   - 若只有 1 篇就绪 -> 直接执行单篇精读（等同于 `<prefix>pf-deep <key>`）
    - 若多篇 -> 展示清单，用户选择后批量 spawn subagent 并行处理
-
-> **注意**：`queue` 模式只扫描正式笔记 frontmatter，不扫描正式卡片。只有在 Base 里勾选 `analyze=true` 的论文才会进入队列。
 
 ## Output
 

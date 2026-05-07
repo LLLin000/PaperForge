@@ -186,6 +186,8 @@ const ACTIONS = [
         icon: '\u2695',  // ⚕
         cmd: 'doctor',
         okMsg: 'Doctor complete',
+        disabled: true,
+        disabledMsg: 'Run Doctor will be available in a future update.',
     },
     {
         id: 'paperforge-repair',
@@ -195,6 +197,8 @@ const ACTIONS = [
         cmd: 'repair',
         args: ['--fix', '--fix-paths'],
         okMsg: 'Repair complete',
+        disabled: true,
+        disabledMsg: 'Repair Issues will be available in a future update.',
     },
     {
         id: 'paperforge-copy-context',
@@ -662,9 +666,10 @@ class PaperForgeStatusView extends ItemView {
 
         const gauge = container.createEl('div', { cls: 'paperforge-maturity-gauge' });
         const track = gauge.createEl('div', { cls: 'gauge-track' });
-        const currentLevel = Math.max(1, Math.min(6, Math.round(maturityLevel)));
+        const maxLevel = 4;
+        const currentLevel = Math.max(1, Math.min(maxLevel, Math.round(maturityLevel)));
 
-        for (let i = 1; i <= 6; i++) {
+        for (let i = 1; i <= maxLevel; i++) {
             const seg = track.createEl('div', { cls: 'gauge-segment' });
             if (i <= currentLevel) {
                 seg.addClass('filled');
@@ -672,9 +677,9 @@ class PaperForgeStatusView extends ItemView {
             }
         }
 
-        gauge.createEl('div', { cls: 'gauge-level', text: `Level ${currentLevel} / 6` });
+        gauge.createEl('div', { cls: 'gauge-level', text: `Level ${currentLevel} / ${maxLevel}` });
 
-        if (currentLevel < 6 && blockingChecks) {
+        if (currentLevel < maxLevel && blockingChecks) {
             const blockers = typeof blockingChecks === 'string' ? [blockingChecks] : blockingChecks;
             if (blockers.length > 0) {
                 const list = gauge.createEl('ul', { cls: 'gauge-blockers' });
@@ -722,10 +727,11 @@ class PaperForgeStatusView extends ItemView {
         this._actionsGrid.empty();
         for (const a of ACTIONS) {
             const card = this._actionsGrid.createEl('div', { cls: 'paperforge-action-card' });
+            if (a.disabled) card.addClass('disabled');
             card.createEl('div', { cls: 'paperforge-action-card-icon', text: a.icon });
             card.createEl('div', { cls: 'paperforge-action-card-title', text: a.title });
             card.createEl('div', { cls: 'paperforge-action-card-desc', text: a.desc });
-            card.createEl('div', { cls: 'paperforge-action-card-hint', text: 'Click to run' });
+            card.createEl('div', { cls: 'paperforge-action-card-hint', text: a.disabled ? 'Coming soon' : 'Click to run' });
             card.addEventListener('click', () => this._runAction(a, card));
         }
     }
@@ -1277,6 +1283,11 @@ class PaperForgeStatusView extends ItemView {
 
     /* ── Run Action ── */
     _runAction(a, card) {
+        // Guard: disabled actions show coming-soon notice
+        if (a.disabled) {
+            new Notice(`[i] ${a.disabledMsg || 'This action is not yet available.'}`, 6000);
+            return;
+        }
         // Guard: prevent running the same action simultaneously
         if (card.classList.contains('running')) {
             return;
@@ -2266,6 +2277,10 @@ module.exports = class PaperForgePlugin extends Plugin {
                 id: a.id,
                 name: `PaperForge: ${a.title}`,
                 callback: () => {
+                    if (a.disabled) {
+                        new Notice(`[i] ${a.disabledMsg || 'This action is not yet available.'}`, 6000);
+                        return;
+                    }
                     const vp = this.app.vault.adapter.basePath;
                     new Notice(`PaperForge: running ${a.cmd}...`);
                     exec(`python -m paperforge ${a.cmd}`, { cwd: vp, timeout: 300000 }, (err, stdout, stderr) => {
@@ -2321,12 +2336,16 @@ module.exports = class PaperForgePlugin extends Plugin {
 
     _autoUpdate() {
         const vp = this.app.vault.adapter.basePath;
-        exec('python -m paperforge update', { cwd: vp, timeout: 60000 }, (err, stdout) => {
-            if (err) return;
-            const result = stdout.trim();
-            if (result.includes('already up to date') || result.includes('already up-to-date')) return;
-            const firstLine = result.split('\n')[0].slice(0, 80);
-            new Notice(`[OK] PaperForge 已更新: ${firstLine}`, 6000);
+        const pythonExe = resolvePythonExecutable(vp);
+        const spawn = require('node:child_process').spawn;
+        const child = spawn(pythonExe, ['-m', 'pip', 'install', '--upgrade', 'git+https://github.com/LLLin000/PaperForge.git'], { cwd: vp, timeout: 120000 });
+        let stdout = '';
+        child.stdout.on('data', (data) => { stdout += data.toString('utf-8'); });
+        child.on('close', (code) => {
+            if (code !== 0) return;
+            const result = stdout.trim().replace(/\n\s*\n/g, '\n');
+            if (result.includes('already satisfied') || result.includes('already up-to-date')) return;
+            new Notice('[OK] PaperForge CLI updated', 5000);
         });
     }
 

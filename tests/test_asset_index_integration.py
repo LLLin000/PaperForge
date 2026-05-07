@@ -468,19 +468,18 @@ class TestDerivedStateFields:
             assert isinstance(v, str) and len(v) > 0, f"health value should be non-empty string"
 
     def test_maturity_structure(self, tmp_path: Path) -> None:
-        """maturity field is a dict with level (int 1-6), level_name (str), checks (6 bools), blocking."""
-        from paperforge.worker.asset_index import build_index, read_index
-
+        """maturity field is a dict with level (int 1-4), level_name (str), checks (4 bools), blocking."""
         items = [_make_export_item("AAA", "Paper A")]
         vault = _setup_incremental_vault(tmp_path, items)
+        from paperforge.worker.asset_index import build_index, read_index
         build_index(vault)
-
-        mat = read_index(vault)["items"][0]["maturity"]
-        assert isinstance(mat, dict)
-        assert isinstance(mat["level"], int) and 1 <= mat["level"] <= 6
+        entry = read_index(vault)["items"][0]
+        from paperforge.worker.asset_state import compute_maturity
+        mat = compute_maturity(entry)
+        assert isinstance(mat["level"], int) and 1 <= mat["level"] <= 4
         assert isinstance(mat["level_name"], str) and len(mat["level_name"]) > 0
         assert isinstance(mat["checks"], dict)
-        for check_name in ("metadata", "pdf", "fulltext", "figure", "ai", "review"):
+        for check_name in ("indexed", "pdf", "fulltext", "deep_read"):
             assert check_name in mat["checks"], f"missing check: {check_name}"
             assert isinstance(mat["checks"][check_name], bool)
         # blocking is a string or None
