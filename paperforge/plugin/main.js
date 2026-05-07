@@ -338,7 +338,7 @@ class PaperForgeStatusView extends ItemView {
 
         const vp = this.app.vault.adapter.basePath;
         const plugin = this.app.plugins.plugins['paperforge'];
-        const systemDir = plugin?.settings?.system_dir || '99_System';
+        const systemDir = plugin?.settings?.system_dir || 'System';
         const indexPath = path.join(vp, systemDir, 'PaperForge', 'indexes', 'formal-library.json');
 
         try {
@@ -448,7 +448,7 @@ class PaperForgeStatusView extends ItemView {
     _loadIndex() {
         const vp = this.app.vault.adapter.basePath;
         const plugin = this.app.plugins.plugins['paperforge'];
-        const systemDir = plugin?.settings?.system_dir || '99_System';
+        const systemDir = plugin?.settings?.system_dir || 'System';
         const indexPath = path.join(vp, systemDir, 'PaperForge', 'indexes', 'formal-library.json');
         try {
             const raw = fs.readFileSync(indexPath, 'utf-8');
@@ -1773,12 +1773,35 @@ class PaperForgeSetupModal extends Modal {
                 .addEventListener('click', () => { this._step--; this._render(); });
         }
         if (this._step < 5) {
-            nav.createEl('button', { cls: 'paperforge-step-btn mod-cta', text: t('nav_next') })
-                .addEventListener('click', () => { this._step++; this._render(); });
+            const nextBtn = nav.createEl('button', { cls: 'paperforge-step-btn mod-cta', text: t('nav_next') });
+            nextBtn.addEventListener('click', () => {
+                if (this._step === 3 && !this._validateStep3()) return;
+                this._step++;
+                this._render();
+            });
         } else {
             nav.createEl('button', { cls: 'paperforge-step-btn', text: t('nav_close') })
                 .addEventListener('click', () => this.close());
         }
+    }
+
+    _validateStep3() {
+        const s = this.plugin.settings;
+        const fs = require('fs');
+
+        // Check API key validated
+        if (!this._apiKeyValidated) {
+            new Notice('请先验证 PaddleOCR API 密钥');
+            return false;
+        }
+
+        // Check Zotero data directory exists
+        if (!s.zotero_data_dir || !fs.existsSync(s.zotero_data_dir)) {
+            new Notice('Zotero 数据目录不存在，请填写正确路径');
+            return false;
+        }
+
+        return true;
     }
 
     /* ── Step 1: Overview ── */
@@ -1789,29 +1812,33 @@ class PaperForgeSetupModal extends Modal {
         const s = this.plugin.settings;
         const vault = this.app.vault.adapter.basePath;
         const tree = el.createEl('div', { cls: 'paperforge-dir-tree' });
-        tree.innerHTML = `
-            <div class="paperforge-dir-node root">📁 Vault (${vault})</div>
-            <div class="paperforge-dir-children">
-                <div class="paperforge-dir-node folder">📁 ${s.resources_dir || 'Resources'}/ — 文献资源根目录
-                    <div class="paperforge-dir-children">
-                        <div class="paperforge-dir-node file">📁 ${s.literature_dir || 'Notes'}/ — 正文笔记</div>
-                        <div class="paperforge-dir-node file">📁 ${s.control_dir || 'Index_Cards'}/ — 索引卡片</div>
-                    </div>
-                </div>
-                <div class="paperforge-dir-node folder">📁 ${s.base_dir || 'Base'}/ — Base 视图文件</div>
-                <div class="paperforge-dir-node folder">📁 ${s.system_dir || 'System'}/ — 系统文件</div>
-            </div>`;
+        // HARDEN-05: Use createEl() DOM API instead of innerHTML to prevent XSS
+        // from user-configured directory names containing HTML/script tags.
+        const rootNode = tree.createEl('div', { cls: 'paperforge-dir-node root' });
+        rootNode.textContent = `📁 Vault (${vault})`;
+
+        const children = tree.createEl('div', { cls: 'paperforge-dir-children' });
+
+        const resourcesFolder = children.createEl('div', { cls: 'paperforge-dir-node folder' });
+        resourcesFolder.textContent = `📁 ${s.resources_dir || 'Resources'}/ — 文献卡片目录（Base 数据来源）`;
+        const resourcesChildren = resourcesFolder.createEl('div', { cls: 'paperforge-dir-children' });
+        resourcesChildren.createEl('div', { cls: 'paperforge-dir-node file',
+            text: `📁 ${s.literature_dir || 'Literature'}/ — 文献卡片` });
+
+        children.createEl('div', { cls: 'paperforge-dir-node folder',
+            text: `📁 ${s.base_dir || 'Bases'}/ — 数据管理面板` });
+        children.createEl('div', { cls: 'paperforge-dir-node folder',
+            text: `📁 ${s.system_dir || 'System'}/ — Zotero 软链接 + PaperForge 系统文件夹` });
 
         el.createEl('p', { text: t('wizard_preview'), cls: 'paperforge-modal-hint' });
         el.createEl('p', { text: t('wizard_safety'), cls: 'paperforge-modal-hint' });
 
         const summary = el.createEl('div', { cls: 'paperforge-summary' });
         const overviewItems = [
-            { label: t('dir_resources'), val: `${vault}/${s.resources_dir || '03_Resources'}` },
-            { label: t('dir_notes'), val: `${vault}/${s.resources_dir || '03_Resources'}/${s.literature_dir || 'Literature'}` },
-            { label: t('dir_index'), val: `${vault}/${s.resources_dir || '03_Resources'}/${s.control_dir || 'LiteratureControl'}` },
-            { label: t('dir_base'), val: `${vault}/${s.base_dir || '05_Bases'}` },
-            { label: t('dir_system'), val: `${vault}/${s.system_dir || '99_System'}` },
+            { label: t('dir_resources'), val: `${vault}/${s.resources_dir || 'Resources'}` },
+            { label: t('dir_notes'), val: `${vault}/${s.resources_dir || 'Resources'}/${s.literature_dir || 'Literature'}` },
+            { label: t('dir_base'), val: `${vault}/${s.base_dir || 'Bases'}` },
+            { label: t('dir_system'), val: `${vault}/${s.system_dir || 'System'}` },
         ];
         for (const item of overviewItems) {
             const row = summary.createEl('div', { cls: 'paperforge-summary-row' });
@@ -1832,17 +1859,16 @@ class PaperForgeSetupModal extends Modal {
 
         el.createEl('p', { text: t('wizard_dir_hint'), cls: 'paperforge-modal-hint' });
 
-        this._modalInput(el, t('dir_resources'), 'resources_dir', s.resources_dir, 'Resources');
+        this._modalInput(el, '资源目录（创建文献卡片目录的地方）', 'resources_dir', s.resources_dir, 'Resources');
 
         el.createEl('p', { text: t('wizard_dir_sub_hint'), cls: 'paperforge-modal-hint' });
 
-        this._modalInput(el, t('dir_notes'), 'literature_dir', s.literature_dir, 'Notes');
-        this._modalInput(el, t('dir_index'), 'control_dir', s.control_dir, 'Index_Cards');
+        this._modalInput(el, '文献卡片目录（存放文献卡片的地方，Base 数据来源）', 'literature_dir', s.literature_dir, 'Literature');
 
         el.createEl('p', { text: t('wizard_sys_hint'), cls: 'paperforge-modal-hint' });
 
-        this._modalInput(el, t('dir_system'), 'system_dir', s.system_dir, 'System');
-        this._modalInput(el, t('dir_base'), 'base_dir', s.base_dir, 'Base');
+        this._modalInput(el, '系统目录（存放 Zotero 软链接和 PaperForge 系统文件）', 'system_dir', s.system_dir, 'System');
+        this._modalInput(el, 'Base 目录（存放数据管理面板的地方）', 'base_dir', s.base_dir, 'Bases');
 
         el.createEl('p', { text: t('wizard_safety'), cls: 'paperforge-modal-hint' });
         const preview = el.createEl('div', { cls: 'paperforge-summary' });
@@ -1891,8 +1917,104 @@ class PaperForgeSetupModal extends Modal {
 
         el.createEl('p', { text: t('wizard_keys_hint'), cls: 'paperforge-modal-hint' });
 
-        this._modalSecret(el, t('field_paddleocr'), 'paddleocr_api_key', s.paddleocr_api_key, 'API Key');
-        this._modalInput(el, t('field_zotero_data'), 'zotero_data_dir', s.zotero_data_dir || '', t('field_zotero_placeholder'));
+        // PaddleOCR API Key with validate button
+        const apiRow = el.createEl('div', { cls: 'paperforge-modal-field' });
+        apiRow.createEl('label', { cls: 'paperforge-modal-label', text: t('field_paddleocr') });
+        const apiInput = apiRow.createEl('input', {
+            cls: 'paperforge-modal-input',
+            attr: { type: 'password', placeholder: 'API Key' }
+        });
+        apiInput.value = s.paddleocr_api_key || '';
+        this._apiKeyValidated = false;
+        this._apiKeyStatus = apiRow.createEl('span', { cls: 'paperforge-apikey-status', text: '' });
+        const validateBtn = apiRow.createEl('button', { cls: 'paperforge-step-btn', text: '验证' });
+        validateBtn.addEventListener('click', () => this._validateApiKey(apiInput.value, validateBtn));
+        apiInput.addEventListener('input', () => {
+            s.paddleocr_api_key = apiInput.value;
+            this._apiKeyValidated = false;
+            this._apiKeyStatus.textContent = '';
+            this._apiKeyStatus.className = 'paperforge-apikey-status';
+        });
+        if (this._pendingSave) clearTimeout(this._pendingSave);
+        this._pendingSave = setTimeout(() => { this.plugin.saveSettings(); this._pendingSave = null; }, 500);
+
+        // Zotero data directory (now required)
+        const zotRow = el.createEl('div', { cls: 'paperforge-modal-field' });
+        zotRow.createEl('label', { cls: 'paperforge-modal-label', text: t('field_zotero_data') });
+        const zotInput = zotRow.createEl('input', {
+            cls: 'paperforge-modal-input',
+            attr: { type: 'text', placeholder: 'Zotero 数据目录路径（必填）' }
+        });
+        zotInput.value = s.zotero_data_dir || '';
+        zotInput.addEventListener('input', () => {
+            s.zotero_data_dir = zotInput.value;
+            if (this._pendingSave) clearTimeout(this._pendingSave);
+            this._pendingSave = setTimeout(() => { this.plugin.saveSettings(); this._pendingSave = null; }, 500);
+        });
+    }
+
+    _validateApiKey(key, btn) {
+        if (!key || key.length < 10) {
+            this._apiKeyStatus.textContent = '密钥格式不正确';
+            this._apiKeyStatus.className = 'paperforge-apikey-status error';
+            return;
+        }
+        btn.disabled = true;
+        btn.textContent = '验证中…';
+        this._apiKeyStatus.textContent = '正在验证…';
+        this._apiKeyStatus.className = 'paperforge-apikey-status';
+
+        const https = require('https');
+        const postData = JSON.stringify({ model: 'PaddleOCR-VL-1.5' });
+        const options = {
+            hostname: 'paddleocr.aistudio-app.com',
+            path: '/api/v2/ocr/jobs',
+            method: 'POST',
+            headers: {
+                'Authorization': 'bearer ' + key,
+                'Content-Type': 'application/json',
+                'Content-Length': Buffer.byteLength(postData),
+            },
+            timeout: 10000,
+        };
+        const req = https.request(options, (res) => {
+            btn.disabled = false;
+            btn.textContent = '验证';
+            let body = '';
+            res.on('data', (chunk) => body += chunk);
+            res.on('end', () => {
+                try {
+                    const json = JSON.parse(body);
+                    if (res.statusCode === 400 && json.code === 10001) {
+                        // 400 code=10001 = auth passed, file missing (expected)
+                        this._apiKeyStatus.textContent = '✓ 密钥有效';
+                        this._apiKeyStatus.className = 'paperforge-apikey-status ok';
+                        this._apiKeyValidated = true;
+                    } else if (res.statusCode === 401) {
+                        this._apiKeyStatus.textContent = '验证失败：密钥无效';
+                        this._apiKeyStatus.className = 'paperforge-apikey-status error';
+                        this._apiKeyValidated = false;
+                    } else {
+                        this._apiKeyStatus.textContent = '验证失败：API 返回 ' + res.statusCode;
+                        this._apiKeyStatus.className = 'paperforge-apikey-status error';
+                        this._apiKeyValidated = false;
+                    }
+                } catch (e) {
+                    this._apiKeyStatus.textContent = '验证失败：无法解析响应';
+                    this._apiKeyStatus.className = 'paperforge-apikey-status error';
+                    this._apiKeyValidated = false;
+                }
+            });
+        });
+        req.on('error', (e) => {
+            btn.disabled = false;
+            btn.textContent = '验证';
+            this._apiKeyStatus.textContent = '验证失败：无法连接 (' + e.message + ')';
+            this._apiKeyStatus.className = 'paperforge-apikey-status error';
+            this._apiKeyValidated = false;
+        });
+        req.write(postData);
+        req.end();
     }
 
     /* ── Modal form helpers ── */
@@ -1997,7 +2119,6 @@ class PaperForgeSetupModal extends Modal {
             '-m', 'paperforge',
             '--vault', s.vault_path.trim(),
             'setup', '--headless',
-            '--paddleocr-key', s.paddleocr_api_key.trim(),
             '--system-dir', s.system_dir.trim(),
             '--resources-dir', s.resources_dir.trim(),
             '--literature-dir', s.literature_dir.trim(),
@@ -2025,7 +2146,10 @@ class PaperForgeSetupModal extends Modal {
                 ]);
             }
 
-            await runPython(setupArgs, { logStdout: true });
+            await runPython(setupArgs, {
+                logStdout: true,
+                env: { ...process.env, PADDLEOCR_API_TOKEN: s.paddleocr_api_key.trim() },
+            });
             this._log(t('install_complete'));
             s.setup_complete = true;
             await this.plugin.saveSettings();
@@ -2219,11 +2343,11 @@ module.exports = class PaperForgePlugin extends Plugin {
 
         // Python DEFAULT_CONFIG values as fallback (must match config.py exactly)
         const DEFAULTS = {
-            system_dir: '99_System',
-            resources_dir: '03_Resources',
+            system_dir: 'System',
+            resources_dir: 'Resources',
             literature_dir: 'Literature',
             control_dir: 'LiteratureControl',
-            base_dir: '05_Bases',
+            base_dir: 'Bases',
         };
 
         try {
