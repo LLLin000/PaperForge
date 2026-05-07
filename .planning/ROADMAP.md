@@ -202,7 +202,12 @@ Plans:
   4. Obsidian plugin spawns OCR subprocess with `PADDLEOCR_API_TOKEN` in environment variable (not command-line argument) — API key not visible in process list via Task Manager
   5. Plugin directory tree renders via `createEl()` DOM API (not `innerHTML` assignment) — no XSS vector from user-configured directory names containing HTML/script tags
   6. `paperforge status --json` returns `lifecycle_level_counts`, `health_aggregate`, and `maturity_distribution` as empty dicts `{}` (not `null`) when no canonical index exists — downstream JSON parsers do not crash on field access
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+- [ ] `49-001-PLAN.md` — discussion.py hardening: UTC timestamps (HARDEN-03), markdown escaping (HARDEN-02), file locking (HARDEN-01)
+- [ ] `49-002-PLAN.md` — main.js hardening: API key via env var (HARDEN-04), createEl() not innerHTML (HARDEN-05)
+- [ ] `49-003-PLAN.md` — asset_state.py + status.py hardening: reorder next_step checks (HARDEN-06), empty dicts not null (HARDEN-07)
 **UI hint**: yes
 
 ### Phase 50: Repair Blind Spots
