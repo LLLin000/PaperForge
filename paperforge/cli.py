@@ -250,7 +250,7 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_parser("update", help="Update PaperForge to the latest version")
 
     # setup wizard
-    p_setup = sub.add_parser("setup", help="Run the setup wizard (Textual-based)")
+    p_setup = sub.add_parser("setup", help="Set up PaperForge in a vault (use --headless for non-interactive)")
     p_setup.add_argument(
         "--headless",
         action="store_true",
@@ -277,12 +277,12 @@ def build_parser() -> argparse.ArgumentParser:
     p_setup.add_argument(
         "--system-dir",
         metavar="NAME",
-        help="System directory name (default: 99_System)",
+        help="System directory name (default: System)",
     )
     p_setup.add_argument(
         "--resources-dir",
         metavar="NAME",
-        help="Resources directory name (default: 03_Resources)",
+        help="Resources directory name (default: Resources)",
     )
     p_setup.add_argument(
         "--literature-dir",
@@ -297,7 +297,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_setup.add_argument(
         "--base-dir",
         metavar="NAME",
-        help="Base directory name (default: 05_Bases)",
+        help="Base directory name (default: Bases)",
     )
     p_setup.add_argument(
         "--zotero-data",
@@ -464,11 +464,9 @@ def main(argv: list[str] | None = None) -> int:
                 paddleocr_key=getattr(args, "paddleocr_key", None),
                 paddleocr_url=getattr(args, "paddleocr_url",
                     "https://paddleocr.aistudio-app.com/api/v2/ocr/jobs"),
-                system_dir=getattr(args, "system_dir", None) or "99_System",
-                resources_dir=getattr(args, "resources_dir", None) or "03_Resources",
-                literature_dir=getattr(args, "literature_dir", None) or "Literature",
-                control_dir=getattr(args, "control_dir", None) or "LiteratureControl",
-                base_dir=getattr(args, "base_dir", None) or "05_Bases",
+            system_dir=getattr(args, "system_dir", None) or "System",
+            resources_dir=getattr(args, "resources_dir", None) or "Resources",
+            base_dir=getattr(args, "base_dir", None) or "Bases",
                 zotero_data=getattr(args, "zotero_data", None),
                 skip_checks=getattr(args, "skip_checks", False),
             )
