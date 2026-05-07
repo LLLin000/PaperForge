@@ -379,7 +379,7 @@ class PaperForgeStatusView extends ItemView {
             }
 
             this._cachedStats = {
-                version: this._cachedStats?.version || '\u2014',
+                version: index.paperforge_version || this._cachedStats?.version || '\u2014',
                 total_papers: items.length,
                 formal_notes: formalNotes,
                 exports: 0,

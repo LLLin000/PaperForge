@@ -372,7 +372,7 @@ class TestBuildEntryWorkspaceWrite:
     def test_build_entry_flat_fallback_for_unmigrated_paper(
         self, tmp_path: Path, mock_build_entry_item: dict
     ) -> None:
-        """When workspace dir does NOT exist, _build_entry falls back to flat path."""
+        """When workspace dir does NOT exist, _build_entry creates it (Phase 38)."""
         vault, paths, zotero_dir = self._setup_vault(tmp_path)
 
         from paperforge.worker._utils import slugify_filename
@@ -381,30 +381,31 @@ class TestBuildEntryWorkspaceWrite:
         title_slug = slugify_filename(mock_build_entry_item["title"])
 
         # Do NOT create workspace dir — simulate unmigrated paper
-        # But do create the flat parent dir
         flat_dir = paths["literature"] / "骨科"
         flat_dir.mkdir(parents=True, exist_ok=True)
 
         # Call _build_entry
         entry = self._call_build_entry(vault, mock_build_entry_item, paths, zotero_dir)
 
-        # Assert note is written to flat path (backward compat)
-        flat_path = flat_dir / f"{key} - {title_slug}.md"
-        assert flat_path.exists(), "Note should be written to flat path (fallback)"
-
-        # Workspace dir should NOT be created
+        # Phase 38: _build_entry ALWAYS creates workspace dir
         workspace_dir = flat_dir / f"{key} - {title_slug}"
-        assert not workspace_dir.exists(), "Workspace dir should NOT be created (flat fallback)"
+        assert workspace_dir.exists(), "Workspace should be created"
+        ws_note = workspace_dir / f"{key} - {title_slug}.md"
+        assert ws_note.exists(), "Workspace note should exist"
+
+        # Flat path should NOT exist (no legacy flat note was present)
+        flat_path = flat_dir / f"{key} - {title_slug}.md"
+        assert not flat_path.exists(), "Flat note should NOT be created (always workspace now)"
 
         # Verify frontmatter
-        content = flat_path.read_text(encoding="utf-8")
+        content = ws_note.read_text(encoding="utf-8")
         assert content.startswith("---")
         assert "title:" in content
 
     def test_build_entry_new_paper_creates_workspace(
         self, tmp_path: Path, mock_build_entry_item: dict
     ) -> None:
-        """Brand new paper with neither flat note nor workspace creates workspace dir."""
+        """Brand new paper creates workspace dir directly (Phase 38)."""
         vault, paths, zotero_dir = self._setup_vault(tmp_path)
 
         from paperforge.worker._utils import slugify_filename
@@ -412,39 +413,22 @@ class TestBuildEntryWorkspaceWrite:
         key = mock_build_entry_item["key"]
         title_slug = slugify_filename(mock_build_entry_item["title"])
 
-        # Simulate a brand new paper: _build_entry is called because
-        # run_index_refresh calls build_index which calls _build_entry.
-        # Before the build, migrate_to_workspace runs but found nothing to migrate
-        # (no flat note). Then _build_entry sees no workspace dir.
-        # But with flat-to-workspace logic:
-        #   - No flat note exists
-        #   - No workspace dir exists
-        #   - So it falls back to flat path, creating the flat note
-        # This is the current behavior (Phase 26 does NOT change new-paper behavior).
-        #
-        # Actually, the desired behavior per the plan is that new papers
-        # should create workspace structure directly. Let me verify this
-        # by ensuring the workspace dir IS created in _build_entry when
-        # neither workspace nor flat note exist.
-
-        # Create the parent literature dir
+        # Create the parent literature dir (no flat note, no workspace)
         lit_dir = paths["literature"] / "骨科"
         lit_dir.mkdir(parents=True, exist_ok=True)
 
         # Call _build_entry
         entry = self._call_build_entry(vault, mock_build_entry_item, paths, zotero_dir)
 
-        # The plan says new papers should still create flat paths as fallback.
-        # (The workspace dir won't exist for new papers unless migration ran first.)
-        # For Phase 26, _build_entry writes to flat path by default (no workspace).
-        # The workspace paths in the entry are declared but not created yet.
-        flat_path = lit_dir / f"{key} - {title_slug}.md"
-        assert flat_path.exists(), "Note should be written to flat path for new papers"
-
-        # Workspace dir should NOT be created by _build_entry for new papers
+        # Phase 38: workspace dir IS created by _build_entry for new papers
         workspace_dir = lit_dir / f"{key} - {title_slug}"
-        # In the current code, _build_entry falls back to flat path when workspace_dir doesn't exist.
-        assert not workspace_dir.exists(), "Workspace dir should not be auto-created by _build_entry"
+        assert workspace_dir.exists(), "Workspace dir should be auto-created by _build_entry"
+        ws_note = workspace_dir / f"{key} - {title_slug}.md"
+        assert ws_note.exists(), "Workspace note should exist"
+
+        # Flat path should NOT exist
+        flat_path = lit_dir / f"{key} - {title_slug}.md"
+        assert not flat_path.exists(), "Flat note should NOT be created"
 
 
 # ---------------------------------------------------------------------------

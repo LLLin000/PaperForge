@@ -44,11 +44,15 @@ PAPERFORGE_VIEW_PREFIX = "# PAPERFORGE_VIEW: "
 def build_base_views(domain: str) -> list[dict]:
     """Build the 8-view list for a domain Base file.
 
+    Uses workflow gate columns (has_pdf, do_ocr, analyze, ocr_status)
+    matching the master version's Base views.  See REQUIREMENTS.md
+    §Reference Vault Learnings for the ground-truth pattern.
+
     Args:
-        domain: The domain name (e.g., "骨科") — passed for compatibility but each view has fixed name/filter.
+        domain: The domain name (e.g., "骨科").
 
     Returns:
-        List of 8 view dicts, each with keys: name (str), order (list), filter (str|None).
+        List of 8 view dicts, each with keys: name, order, filter, sort.
     """
     return [
         {
@@ -60,15 +64,15 @@ def build_base_views(domain: str) -> list[dict]:
                 "first_author",
                 "journal",
                 "impact_factor",
-                "lifecycle",
-                "maturity_level",
-                "next_step",
+                "has_pdf",
+                "do_ocr",
+                "analyze",
+                "ocr_status",
                 "deep_reading_status",
                 "pdf_path",
                 "fulltext_md_path",
             ],
             "filter": None,
-            "sort": [{"field": "lifecycle", "direction": "asc"}],
         },
         {
             "name": "推荐分析",
@@ -78,45 +82,40 @@ def build_base_views(domain: str) -> list[dict]:
                 "first_author",
                 "journal",
                 "impact_factor",
-                "lifecycle",
-                "maturity_level",
-                "next_step",
+                "has_pdf",
+                "do_ocr",
+                "analyze",
+                "ocr_status",
                 "deep_reading_status",
                 "pdf_path",
                 "fulltext_md_path",
             ],
-            "filter": "lifecycle != 'indexed'",
-            "sort": [{"field": "lifecycle", "direction": "asc"}],
+            "filter": "analyze = true AND has_pdf = true",
         },
         {
             "name": "待 OCR",
-            "order": ["year", "first_author", "title", "lifecycle", "next_step", "pdf_path"],
-            "filter": "lifecycle = 'pdf_ready'",
-            "sort": [{"field": "lifecycle", "direction": "asc"}],
+            "order": ["year", "first_author", "title", "has_pdf", "do_ocr", "ocr_status", "pdf_path"],
+            "filter": "do_ocr = true AND ocr_status = 'pending'",
         },
         {
             "name": "OCR 完成",
-            "order": ["year", "first_author", "title", "lifecycle", "maturity_level", "next_step", "pdf_path"],
-            "filter": "lifecycle = 'fulltext_ready' OR lifecycle = 'deep_read_done' OR lifecycle = 'ai_context_ready'",
-            "sort": [{"field": "lifecycle", "direction": "asc"}],
+            "order": ["year", "first_author", "title", "has_pdf", "do_ocr", "ocr_status", "pdf_path"],
+            "filter": "ocr_status = 'done'",
         },
         {
             "name": "待深度阅读",
-            "order": ["year", "first_author", "title", "lifecycle", "maturity_level", "next_step", "pdf_path"],
-            "filter": "lifecycle = 'fulltext_ready'",
-            "sort": [{"field": "lifecycle", "direction": "asc"}],
+            "order": ["year", "first_author", "title", "has_pdf", "do_ocr", "analyze", "ocr_status", "deep_reading_status", "pdf_path"],
+            "filter": "analyze = true AND ocr_status = 'done' AND deep_reading_status = 'pending'",
         },
         {
             "name": "深度阅读完成",
-            "order": ["year", "first_author", "title", "lifecycle", "maturity_level", "next_step", "pdf_path"],
-            "filter": "lifecycle = 'deep_read_done' OR lifecycle = 'ai_context_ready'",
-            "sort": [{"field": "lifecycle", "direction": "asc"}],
+            "order": ["year", "first_author", "title", "has_pdf", "do_ocr", "analyze", "ocr_status", "deep_reading_status", "pdf_path"],
+            "filter": "deep_reading_status = 'done'",
         },
         {
             "name": "正式卡片",
-            "order": ["title", "year", "first_author", "journal", "impact_factor", "lifecycle", "maturity_level", "next_step", "pdf_path"],
-            "filter": "lifecycle = 'deep_read_done' OR lifecycle = 'ai_context_ready'",
-            "sort": [{"field": "lifecycle", "direction": "asc"}],
+            "order": ["title", "year", "first_author", "journal", "impact_factor", "has_pdf", "deep_reading_status", "pdf_path"],
+            "filter": "deep_reading_status = 'done'",
         },
         {
             "name": "全记录",
@@ -126,15 +125,15 @@ def build_base_views(domain: str) -> list[dict]:
                 "first_author",
                 "journal",
                 "impact_factor",
-                "lifecycle",
-                "maturity_level",
-                "next_step",
+                "has_pdf",
+                "do_ocr",
+                "analyze",
+                "ocr_status",
                 "deep_reading_status",
                 "pdf_path",
                 "fulltext_md_path",
             ],
             "filter": None,
-            "sort": [{"field": "lifecycle", "direction": "asc"}],
         },
     ]
 
@@ -151,8 +150,8 @@ def substitute_config_placeholders(content: str, paths: dict[str, Path]) -> str:
         Unrecognized placeholders are left unchanged.
     """
     substitutions = {
-        "LIBRARY_RECORDS": paths.get("library_records"),
         "LITERATURE": paths.get("literature"),
+        "LIBRARY_RECORDS": paths.get("library_records"),
         "CONTROL_DIR": paths.get("control"),
     }
     result = content
@@ -219,12 +218,14 @@ def merge_base_views(existing_content: str | None, new_views: list[dict]) -> str
     displayName: "Journal"
   impact_factor:
     displayName: "IF"
-  lifecycle:
-    displayName: "Lifecycle"
-  maturity_level:
-    displayName: "Maturity"
-  next_step:
-    displayName: "Next Step"
+  has_pdf:
+    displayName: "PDF"
+  do_ocr:
+    displayName: "OCR"
+  analyze:
+    displayName: "Analyze"
+  ocr_status:
+    displayName: "OCR Status"
   deep_reading_status:
     displayName: "Deep Reading"
   pdf_path:
@@ -420,12 +421,12 @@ def ensure_base_views(vault: Path, paths: dict[str, Path], config: dict, force: 
         seen_domains.add(domain)
 
         domain_views = build_base_views(domain)
-        folder_filter = f"${{LIBRARY_RECORDS}}/{domain}"
+        folder_filter = f"${{LITERATURE}}/{domain}"
         base_path = paths["bases"] / f"{slugify_filename(domain)}.base"
         refresh_base(base_path, folder_filter, domain_views)
 
     hub_views = build_base_views("Literature Hub")
     hub_path = paths["bases"] / "Literature Hub.base"
-    refresh_base(hub_path, "${LIBRARY_RECORDS}", hub_views)
+    refresh_base(hub_path, "${LITERATURE}", hub_views)
 
     # PaperForge.base intentionally removed (v1.4.1) — duplicates Literature Hub

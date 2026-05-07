@@ -231,6 +231,7 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
         compute_next_step,
     )
     from paperforge.worker.ocr import validate_ocr_meta
+    from paperforge.worker.paper_meta import write_paper_meta
     from paperforge.worker.sync import (
         collection_fields,
         frontmatter_note,
@@ -238,6 +239,9 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
         obsidian_wikilink_for_path,
         obsidian_wikilink_for_pdf,
     )
+    from paperforge.worker._utils import lookup_impact_factor
+    from paperforge import __version__ as PAPERFORGE_VERSION
+    import shutil
 
     key = item["key"]
     collection_meta = collection_fields(item.get("collections", []))
@@ -264,13 +268,19 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
     main_note_path = workspace_dir / f"{key} - {title_slug}.md"
 
     # ---- entry dict -------------------------------------------------------
+    authors = item.get("authors", [])
+    first_author = authors[0] if authors else ""
+    extra = item.get("extra", "")
+    impact_factor = lookup_impact_factor(item.get("journal", ""), extra, vault)
     entry = {
         "zotero_key": key,
         "domain": domain,
         "title": item["title"],
-        "authors": item.get("authors", []),
+        "authors": authors,
+        "first_author": first_author,
         "abstract": item.get("abstract", ""),
         "journal": item.get("journal", ""),
+        "impact_factor": impact_factor,
         "year": item.get("year", ""),
         "doi": item.get("doi", ""),
         "pmid": item.get("pmid", ""),
@@ -279,6 +289,8 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
         "collection_tags": collection_meta.get("collection_tags", []),
         "collection_group": collection_meta.get("collection_group", []),
         "has_pdf": bool(pdf_attachments),
+        "do_ocr": bool(pdf_attachments),
+        "analyze": bool(pdf_attachments),
         "pdf_path": (
             obsidian_wikilink_for_pdf(pdf_attachments[0]["path"], vault, zotero_dir)
             if pdf_attachments
@@ -313,21 +325,23 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
     entry["maturity"] = compute_maturity(entry)
     entry["next_step"] = compute_next_step(entry)
 
-    # Write / update the formal note — workspace-aware (Phase 26: flat-to-workspace)
-    if workspace_dir.exists():
-        # Workspace exists — read from and write to workspace paths
-        existing_text = main_note_path.read_text(encoding="utf-8") if main_note_path.exists() else ""
-        write_target = main_note_path
-        # Ensure subdirs exist
-        for d in [workspace_dir, workspace_dir / "ai"]:
-            d.mkdir(parents=True, exist_ok=True)
-    else:
-        # Legacy: read from flat path, write to flat path (transitional)
-        existing_text = note_path.read_text(encoding="utf-8") if note_path.exists() else ""
-        write_target = note_path
-        note_path.parent.mkdir(parents=True, exist_ok=True)
+    # --- Workspace: always create and write to workspace path (Phase 38: no flat fallback) ---
+    workspace_dir.mkdir(parents=True, exist_ok=True)
+    (workspace_dir / "ai").mkdir(parents=True, exist_ok=True)
+    existing_text = main_note_path.read_text(encoding="utf-8") if main_note_path.exists() else ""
 
-    write_target.write_text(frontmatter_note(entry, existing_text), encoding="utf-8")
+    main_note_path.write_text(frontmatter_note(entry, existing_text), encoding="utf-8")
+
+    # Write per-workspace paper-meta.json (Phase 37: internal state outside frontmatter)
+    write_paper_meta(workspace_dir, entry, paperforge_version=PAPERFORGE_VERSION)
+
+    # Fulltext bridge (WS-02): copy OCR output into workspace
+    if entry.get("ocr_status") == "done":
+        source_fulltext = paths["ocr"] / key / "fulltext.md"
+        target_fulltext = workspace_dir / "fulltext.md"
+        if source_fulltext.exists() and not target_fulltext.exists():
+            shutil.copy2(str(source_fulltext), str(target_fulltext))
+            logger.info("Bridged fulltext.md to workspace for %s", key)
 
     return entry
 

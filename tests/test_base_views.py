@@ -1,4 +1,4 @@
-"""Tests for the 8-view Base generation system (Phase 3, Plan 01)."""
+"""Tests for the 8-view Base generation system (Phase 39: workflow-gate views)."""
 
 from paperforge.worker.base_views import (
     build_base_views,
@@ -34,59 +34,59 @@ class TestBuildBaseViews:
     def test_pending_ocr_filter(self):
         views = build_base_views("骨科")
         pending = next(v for v in views if v["name"] == "待 OCR")
-        assert "lifecycle = 'pdf_ready'" in pending["filter"]
+        assert "do_ocr = true" in pending["filter"]
+        assert "ocr_status = 'pending'" in pending["filter"]
 
     def test_ocr_done_filter(self):
         views = build_base_views("骨科")
         done = next(v for v in views if v["name"] == "OCR 完成")
-        assert "lifecycle = 'fulltext_ready'" in done["filter"]
+        assert "ocr_status = 'done'" in done["filter"]
 
     def test_deep_reading_pending_filter(self):
         views = build_base_views("骨科")
         pending = next(v for v in views if v["name"] == "待深度阅读")
-        assert "lifecycle = 'fulltext_ready'" in pending["filter"]
+        assert "analyze = true" in pending["filter"]
+        assert "ocr_status = 'done'" in pending["filter"]
+        assert "deep_reading_status = 'pending'" in pending["filter"]
 
-    def test_build_base_views_includes_lifecycle_columns(self):
+    def test_build_base_views_includes_workflow_flags(self):
         views = build_base_views("骨科")
-        for v in views:
-            assert "lifecycle" in v["order"], f"View '{v['name']}' missing lifecycle"
-            assert "next_step" in v["order"], f"View '{v['name']}' missing next_step"
-            # Most views include maturity_level; "待 OCR" skips it since OCR isn't done yet
-            if v["name"] not in ("待 OCR",):
-                assert "maturity_level" in v["order"], f"View '{v['name']}' missing maturity_level"
-
-    def test_build_base_views_removes_old_columns(self):
-        views = build_base_views("骨科")
-        old_fields = {"has_pdf", "do_ocr", "analyze", "ocr_status"}
         for v in views:
             order_set = set(v["order"])
-            assert old_fields.isdisjoint(order_set), f"View '{v['name']}' still contains old fields"
+            assert "has_pdf" in order_set, f"View '{v['name']}' missing has_pdf"
+            if v["name"] not in ("正式卡片",):
+                assert "do_ocr" in order_set, f"View '{v['name']}' missing do_ocr"
+            if v["name"] not in ("正式卡片", "待 OCR", "OCR 完成"):
+                assert "analyze" in order_set, f"View '{v['name']}' missing analyze"
 
-    def test_build_base_views_filters_use_lifecycle(self):
+    def test_build_base_views_removes_ghost_columns(self):
+        views = build_base_views("骨科")
+        ghost_fields = {"lifecycle", "maturity_level", "next_step"}
+        for v in views:
+            order_set = set(v["order"])
+            assert ghost_fields.isdisjoint(order_set), f"View '{v['name']}' still contains ghost lifecycle columns"
+
+    def test_build_base_views_filters_use_workflow_gates(self):
         views = build_base_views("骨科")
         for v in views:
             if v["filter"] is not None:
-                assert "lifecycle " in v["filter"], f"View '{v['name']}' filter does not use lifecycle"
+                assert "lifecycle" not in v["filter"], f"View '{v['name']}' filter uses lifecycle instead of workflow gates"
 
-    def test_build_base_views_has_sort(self):
+    def test_build_base_views_has_no_sort(self):
         views = build_base_views("骨科")
         for v in views:
-            assert "sort" in v, f"View '{v['name']}' missing sort key"
-            assert isinstance(v["sort"], list)
-            assert len(v["sort"]) == 1
-            assert v["sort"][0] == {"field": "lifecycle", "direction": "asc"}
+            assert "sort" not in v, f"View '{v['name']}' should not have sort key (lifecycle removed from frontmatter)"
 
     def test_properties_yaml_updated(self):
         from paperforge.worker.base_views import merge_base_views
-        # Access the PROPERTIES_YAML constant by inspecting fresh Base output
         fresh = merge_base_views(None, build_base_views("骨科"))
-        assert "lifecycle:" in fresh
-        assert "maturity_level:" in fresh
-        assert "next_step:" in fresh
-        assert "has_pdf:" not in fresh
-        assert "do_ocr:" not in fresh
-        assert "analyze:" not in fresh
-        assert "ocr_status:" not in fresh
+        assert "lifecycle:" not in fresh
+        assert "maturity_level:" not in fresh
+        assert "next_step:" not in fresh
+        assert "has_pdf:" in fresh
+        assert "do_ocr:" in fresh
+        assert "analyze:" in fresh
+        assert "ocr_status:" in fresh
 
 
 class TestSubstituteConfigPlaceholders:

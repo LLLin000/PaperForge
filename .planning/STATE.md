@@ -1,30 +1,36 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.8
-milestone_name: AI Discussion & Deep-Reading Dashboard
-status: Phase complete — ready for verification
-stopped_at: Completed 35-01-PLAN.md (AI Discussion Recorder)
-last_updated: "2026-05-06T15:30:34.254Z"
+milestone: v1.9
+milestone_name: Frontmatter Rationalization & Library-Record Deprecation
+status: planning
+stopped_at: Roadmap creation complete — Phase 37 ready for `/gsd-plan-phase 37`
+last_updated: "2026-05-07T02:06:56.248Z"
+last_activity: 2026-05-07
 progress:
-  total_phases: 6
+  total_phases: 5
   completed_phases: 2
-  total_plans: 5
-  completed_plans: 2
+  total_plans: 2
+  completed_plans: 5
+  percent: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-05-06)
+See: .planning/PROJECT.md (updated 2026-05-07)
 
-**Core value:** Researchers always know what papers have, what state those papers are in, and whether each paper is reliably usable by AI with traceable fulltext, figures, notes, and source links.
-**Current focus:** Phase 35 — ai-discussion-recorder
+**Core value:** Researchers always know what papers they have, what state those papers are in, and whether each paper is reliably usable by AI with traceable fulltext, figures, notes, and source links.
+**Current focus:** Milestone v1.9 — Phase 37 ready to plan
 
 ## Current Position
 
-Phase: 35 (ai-discussion-recorder) — EXECUTING
-Plan: 1 of 1
+Phase: 37 of 41 (Frontmatter Rationalization)
+Plan: None yet
+Status: Ready to plan
+Last activity: 2026-05-07
+
+Progress: [░░░░░░░░░░] 0% (0/5 phases complete)
 
 ## Performance Metrics
 
@@ -33,6 +39,11 @@ Plan: 1 of 1
 - Total plans completed: 42 (across v1.0-v1.8)
 - Average duration: Not yet tracked consistently
 
+**Recent Trend:**
+
+- Last milestone (v1.7): 4 phases, 6 plans, ~3 days
+- Current milestone: 5 phases planned, TBD plans
+
 ## Accumulated Context
 
 ### Decisions
@@ -40,19 +51,11 @@ Plan: 1 of 1
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
-- v1.8 roadmap: 6 phases (31-36) covering 10 requirements across bug fixes, mode detection, dashboard rendering, navigation, AI recording, and integration.
-- discussion.json uses sessions-based schema (sessions[] → qa_pairs[]) with schema_version "1" envelope from day one.
-- Plugin reads discussion.json via app.vault.adapter.read() (NOT fs.readFileSync) because it lives in vault-internal paper workspace.
-- Mode detection checks deep-reading.md filename BEFORE zotero_key frontmatter to prevent per-paper mode hijacking.
-- Phase 35 (Python) runs parallel to Phases 32-34 (JS) — no runtime dependency.
-- [Phase 31] paperforge_version added to formal-library.json envelope for version display in plugin header.
-- [Phase 31] "AI Ready" lifecycle stage removed from plugin dashboard (unreachable key mismatch: Python returns ai_context_ready, JS had ai_ready).
-- [Phase 31] Lifecycle stage keys in plugin aligned with Python compute values: deep_read_done not deep_read.
-- [Phase 31] Collection mode lifecycle thresholds fixed to match actual lifecycle values instead of mismatched keys.
-- [Phase 33] _renderDeepReadingMode() is async — reads deep-reading.md and discussion.json via vault.read(). Contains modeGuard for race condition safety.
-- [Phase 33] Pass 1 extraction uses marker priority: **一句话总览** → ## Pass 1 → **文章摘要**, cuts at next major section break.
-- [Phase 33] AI Q&A: sessions-based collapsible groups, dialog bubble format (question/answer different colors), default collapsed.
-- [Phase 35-ai-discussion-recorder]: Only /pf-paper records discussions; /pf-deep explicitly excluded per D-05
+- **Phase 37 (FM):** Frontmatter must slim first — everything else depends on knowing the final frontmatter field list. Workspace path fields and OCR infra fields move to paper-meta.json; formal notes only carry identity + workflow flags + pdf_path.
+- **Phase 38 (WS):** Workspace creation and fulltext bridging are path-construction fixes independent of the UI surface. Can follow immediately after FM since the data shape is settled.
+- **Phase 39 (BASE):** Base views depend on Phase 37 — they need to know which fields exist in frontmatter before declaring properties. Folder filter repoints from LiteratureControl/ to Literature/.
+- **Phase 40 (LRD):** Library-record removal depends on Base views pointing to Literature/ first — removing library-records before Base views are fixed breaks the workflow surface.
+- **Phase 41 (PLG):** Plugin verification comes last because it reads from the canonical index produced by FM+WS. Version badge fix (PLG-04) and lifecycle key alignment (PLG-05) are technically independent but grouped for cohesive verification.
 
 ### Pending Todos
 
@@ -60,15 +63,14 @@ None yet.
 
 ### Blockers/Concerns
 
-- Agent integration surface for discussion recording: exact callback/handoff protocol for `/pf-paper` and `/pf-deep` completion needs implementation-level confirmation during Phase 35 planning.
-- [Phase 33 resolved] Deep-reading.md content parsing: marker-based extraction with regex fallback now implemented. Content includes `**一句话总览**` paragraph + `###` sub-sections.
-- [Phase 32 resolved] active-leaf-change double-fire — mitigated by `_currentMode + _currentFilePath` identity guard in `_switchMode()`.
-- [Phase 32 resolved] Mode detection — `_resolveModeForFile()` pure function checks deep-reading.md filename + parent directory pattern BEFORE zotero_key frontmatter.
-- [Phase 31 resolved] Version display bug fixed — paperforge_version now flows through formal-library.json envelope. Version shown matches __init__.py version (currently 1.4.15).
-- [Phase 31 resolved] "AI Ready" row removed from per-paper dashboard lifecycle stepper and bar chart.
+- **v1.8 partial state:** Phases 34-35 completed on the feature branch; Phases 31-33, 36 incomplete. v1.9 structural cleanup must not regress the v1.8 deliverables (deep-reading mode detection, dashboard rendering, Jump to Deep Reading button, AI discussion recorder).
+- **Feature branch divergence:** The milestone/v1.6-ai-ready-asset-foundation branch has 117 commits. v1.9 work must reconcile against master.
+- **Reference vault ground truth:** Plugin dashboard behavior in `D:\L\Med\Research_LitControl_Sandbox` is authoritative — deviations in the current branch must be intentional and documented, not accidental regressions.
+- **fulltext_path gap:** Workspace entries declare the path but no existing code copies OCR output there — this is a known hole that WS-02 must fill.
+- **Legacy upgrade path:** Users with old flat notes need lossless migration of both frontmatter (LRD-02) and workspace structure (WS-04).
 
 ## Session Continuity
 
-Last session: 2026-05-06T15:30:34.251Z
-Stopped at: Completed 35-01-PLAN.md (AI Discussion Recorder)
+Last session: 2026-05-07 00:19
+Stopped at: Roadmap creation complete — Phase 37 ready for `/gsd-plan-phase 37`
 Resume file: None

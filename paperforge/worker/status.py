@@ -480,6 +480,58 @@ def run_doctor(vault: Path, verbose: bool = False) -> int:
                     f"{_partial} partial OCR asset(s) found",
                     "Re-run `paperforge ocr` on affected items",
                 )
+
+        # WS-05: Workspace integrity checks
+        try:
+            from paperforge.worker.asset_index import read_index as _ws_read_idx
+            _idx_content = _ws_read_idx(vault)
+            _items = _idx_content.get("items", []) if isinstance(_idx_content, dict) else []
+            _missing_workspace = 0
+            _missing_fulltext = 0
+            _ws_literature = paths.get("literature")
+            for _e in _items:
+                _key = _e.get("zotero_key", "")
+                _dom = _e.get("domain", "")
+                _title = _e.get("title", "")
+                if not _key or not _dom:
+                    continue
+                from paperforge.worker._utils import slugify_filename
+                _slug = slugify_filename(_title or _key)
+                _ws_dir = _ws_literature / _dom / f"{_key} - {_slug}"
+                if not _ws_dir.exists():
+                    _missing_workspace += 1
+                    continue
+                if _e.get("ocr_status") == "done":
+                    _ft = _ws_dir / "fulltext.md"
+                    if not _ft.exists():
+                        _missing_fulltext += 1
+            if _missing_workspace > 0:
+                add_check(
+                    "Index Health", "warn",
+                    f"{_missing_workspace} paper(s) missing workspace directories",
+                    "Run `paperforge sync` to create workspace folders",
+                )
+            if _missing_fulltext > 0:
+                add_check(
+                    "Index Health", "warn",
+                    f"{_missing_fulltext} paper(s) missing fulltext.md in workspace",
+                    "Re-run OCR or run `paperforge sync` to bridge fulltext",
+                )
+            if _missing_workspace == 0 and _missing_fulltext == 0 and _items:
+                add_check("Index Health", "pass", "Workspace integrity: all papers valid")
+        except Exception:
+            pass
+
+        # LRD-05: Stale library-records detection
+        _lr_dir = paths.get("library_records")
+        if _lr_dir and _lr_dir.exists():
+            _stale_count = sum(1 for _ in _lr_dir.rglob("*.md"))
+            if _stale_count > 0:
+                add_check(
+                    "Index Health", "warn",
+                    f"{_stale_count} stale library-record(s) found — library-records are deprecated in v1.9",
+                    "Manually delete the library-records directory after confirming migration",
+                )
     else:
         add_check("Index Health", "info", "No canonical index -- run `paperforge sync` to generate")
 
