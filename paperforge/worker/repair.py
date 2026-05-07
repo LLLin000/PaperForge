@@ -220,8 +220,8 @@ def run_repair(vault: Path, paths: dict, verbose: bool = False, fix: bool = Fals
                     idx_status = entry.get("ocr_status", "")
                     index_ocr_status = str(idx_status).strip().lower() if idx_status else None
                     break
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Failed to load index for %s: %s", zotero_key, e)
         meta_path = paths["ocr"] / zotero_key / "meta.json"
         meta_ocr_status = None
         meta_validated_status = None
@@ -303,8 +303,8 @@ def run_repair(vault: Path, paths: dict, verbose: bool = False, fix: bool = Fals
                                 index_data["items"] = idx_items
                                 write_json(paths["index"], index_data)
                             fixed_index_entry = True
-                        except Exception:
-                            pass
+                        except Exception as e:
+                            logger.warning("Failed to update index entry for %s: %s", zotero_key, e)
                     if meta_validated_status is not None and meta_validated_status != "done":
                         if meta_path.exists():
                             try:
@@ -312,8 +312,8 @@ def run_repair(vault: Path, paths: dict, verbose: bool = False, fix: bool = Fals
                                 meta["ocr_status"] = "pending"
                                 write_json(meta_path, meta)
                                 fixed_meta = True
-                            except Exception:
-                                pass
+                            except Exception as e:
+                                logger.warning("Failed to reset meta ocr_status for %s: %s", zotero_key, e)
                     record_do_ocr_match = re.search(r"^do_ocr:\s*(true|false)$", new_record_text, re.MULTILINE)
                     is_do_ocr = record_do_ocr_match and record_do_ocr_match.group(1) == "true"
                     if not is_do_ocr:
@@ -344,16 +344,16 @@ def run_repair(vault: Path, paths: dict, verbose: bool = False, fix: bool = Fals
                                 index_data["items"] = idx_items
                                 write_json(paths["index"], index_data)
                             fixed_index_entry = True
-                        except Exception:
-                            pass
+                        except Exception as e:
+                            logger.warning("Failed to update index entry for %s: %s", zotero_key, e)
                     if meta_path.exists():
                         try:
                             meta = read_json(meta_path)
                             meta["ocr_status"] = "pending"
                             write_json(meta_path, meta)
                             fixed_meta = True
-                        except Exception:
-                            pass
+                        except Exception as e:
+                            logger.warning("Failed to reset meta ocr_status for %s: %s", zotero_key, e)
                     record_do_ocr_match = re.search(r"^do_ocr:\s*(true|false)$", new_record_text, re.MULTILINE)
                     is_do_ocr = record_do_ocr_match and record_do_ocr_match.group(1) == "true"
                     if not is_do_ocr:
@@ -361,6 +361,8 @@ def run_repair(vault: Path, paths: dict, verbose: bool = False, fix: bool = Fals
                         if final_record_text != new_record_text:
                             record_path.write_text(final_record_text, encoding="utf-8")
                             fixed_formal_note_primary = True
+                else:
+                    print(f"[WARNING] No --fix handler for {zotero_key}: {div_reason}")
                 fixed_count = sum([fixed_formal_note_primary, fixed_index_entry, fixed_meta])
                 result["fixed"] += fixed_count
                 if verbose and fixed_count > 0:

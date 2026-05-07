@@ -501,6 +501,105 @@ class TestRepairCommandPaths:
         assert "config" in captured["paths"]
 
 
+class TestRepairExceptionLogging:
+    """REPAIR-03: Verify bare except:pass blocks replaced with logger.warning()."""
+
+    def test_index_load_failure_logs_warning(self, tmp_path, caplog):
+        """Index load exception at line 223 logs warning."""
+        import logging
+        caplog.set_level(logging.WARNING, logger="paperforge.worker.repair")
+        vault = _make_vault(tmp_path)
+        paths = pipeline_paths(vault)
+        _write_formal_note(paths["literature"], "KEY001", "骨科", "pending")
+        # Corrupt the index file to trigger read failure
+        paths["index"].parent.mkdir(parents=True, exist_ok=True)
+        paths["index"].write_text("{corrupt_json}", encoding="utf-8")
+        run_repair(vault, paths, verbose=False, fix=False)
+        assert "Failed to load index" in caplog.text
+        assert "KEY001" in caplog.text
+
+    def test_index_write_failure_first_branch_logs_warning(self, tmp_path, caplog, monkeypatch):
+        """Index write exception in first --fix branch at line 306 logs warning."""
+        import logging
+        import paperforge.worker.repair as repair_mod
+        caplog.set_level(logging.WARNING, logger="paperforge.worker.repair")
+
+        def _failing_write(_path, _data):
+            raise OSError("Simulated write failure")
+
+        monkeypatch.setattr(repair_mod, "write_json", _failing_write)
+
+        vault = _make_vault(tmp_path)
+        paths = pipeline_paths(vault)
+        _write_formal_note(paths["literature"], "KEY001", "骨科", "done", do_ocr="false")
+        # Trigger condition 1 (done_incomplete) via minimal meta
+        _write_minimal_meta(paths["ocr"], "KEY001", "done")
+        # Create valid index with entry so index_ocr_status is set
+        paths["index"].parent.mkdir(parents=True, exist_ok=True)
+        paths["index"].write_text(json.dumps({"items": [{"zotero_key": "KEY001", "ocr_status": "done"}]}), encoding="utf-8")
+        run_repair(vault, paths, verbose=False, fix=True)
+        assert "Failed to update index" in caplog.text
+        assert "KEY001" in caplog.text
+
+    def test_index_write_failure_second_branch_logs_warning(self, tmp_path, caplog, monkeypatch):
+        """Index write exception in second --fix branch at line 347 logs warning."""
+        import logging
+        import paperforge.worker.repair as repair_mod
+        caplog.set_level(logging.WARNING, logger="paperforge.worker.repair")
+
+        def _failing_write(_path, _data):
+            raise OSError("Simulated write failure")
+
+        monkeypatch.setattr(repair_mod, "write_json", _failing_write)
+
+        vault = _make_vault(tmp_path)
+        paths = pipeline_paths(vault)
+        _write_formal_note(paths["literature"], "KEY001", "骨科", "done", do_ocr="false")
+        # Trigger condition 2 (note done, meta pending) via write_meta
+        _write_meta(paths["ocr"], "KEY001", "pending")
+        # Create valid index with entry
+        paths["index"].parent.mkdir(parents=True, exist_ok=True)
+        paths["index"].write_text(json.dumps({"items": [{"zotero_key": "KEY001", "ocr_status": "done"}]}), encoding="utf-8")
+        run_repair(vault, paths, verbose=False, fix=True)
+        assert "Failed to update index" in caplog.text
+        assert "KEY001" in caplog.text
+
+    def test_meta_write_failure_logs_warning(self, tmp_path, caplog, monkeypatch):
+        """Meta write exception in second --fix branch at line 355 logs warning."""
+        import logging
+        import paperforge.worker.repair as repair_mod
+        caplog.set_level(logging.WARNING, logger="paperforge.worker.repair")
+
+        def _failing_write(_path, _data):
+            raise OSError("Simulated meta write failure")
+
+        monkeypatch.setattr(repair_mod, "write_json", _failing_write)
+
+        vault = _make_vault(tmp_path)
+        paths = pipeline_paths(vault)
+        _write_formal_note(paths["literature"], "KEY001", "骨科", "done", do_ocr="false")
+        meta_path = _write_meta(paths["ocr"], "KEY001", "pending")
+        # No index needed (no index_ocr_status, skips index write, goes to meta write)
+        run_repair(vault, paths, verbose=False, fix=True)
+        assert "Failed to reset meta" in caplog.text
+        assert "KEY001" in caplog.text
+
+
+class TestRepairFixModeWarning:
+    """REPAIR-02: --fix mode else clause warns on unhandled types."""
+
+    def test_unhandled_divergence_prints_warning(self, tmp_path, capsys):
+        """Condition 4 divergence (note pending vs meta done) with no --fix handler prints [WARNING]."""
+        vault = _make_vault(tmp_path)
+        paths = pipeline_paths(vault)
+        _write_formal_note(paths["literature"], "KEY001", "骨科", "pending")
+        _write_meta(paths["ocr"], "KEY001", "done", page_count=10)
+        run_repair(vault, paths, verbose=False, fix=True)
+        captured = capsys.readouterr()
+        assert "[WARNING]" in captured.out
+        assert "KEY001" in captured.out
+
+
 class TestRepairDeadCode:
     """REPAIR-04: Verify load_domain_config dead code removed."""
 
