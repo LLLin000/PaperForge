@@ -133,7 +133,7 @@ class EnvChecker:
     def __init__(self, vault: Path):
         self.vault = vault
         self.manual_zotero_path: Path | None = None
-        self.system_dir: str = "99_System"  # 可由用户自定义
+        self.system_dir: str = "System"  # 可由用户自定义
         self.results: dict[str, CheckResult] = {
             "python": CheckResult("Python 版本"),
             "vault": CheckResult("Vault 结构"),
@@ -610,15 +610,9 @@ Obsidian Vault/
 修改下方名称（留空使用默认值）：
         """)
         yield Static("系统文件夹名称:", classes="step-title")
-        yield Input(value="99_System", id="input-system-dir")
-        yield Static("资源文件夹名称:", classes="step-title")
-        yield Input(value="03_Resources", id="input-resources-dir")
-        yield Static("文献子文件夹名称:", classes="step-title")
-        yield Input(value="Literature", id="input-literature-dir")
-        yield Static("文献索引文件夹名称:", classes="step-title")
-        yield Input(value="LiteratureControl", id="input-control-dir")
-        yield Static("Obsidian Base 文件夹名称:", classes="step-title")
-        yield Input(value="05_Bases", id="input-base-dir")
+        yield Input(value="System", id="input-system-dir")
+        yield Input(value="Resources", id="input-resources-dir")
+        yield Input(value="Bases", id="input-base-dir")
         yield Horizontal(
             Button("✓ 确认并创建目录", id="btn-setup-vault", variant="primary"),
             id="btn-row",
@@ -644,11 +638,9 @@ Obsidian Vault/
             self.checker.vault = vault_path
 
             # 获取目录名称
-            system_dir = self.query_one("#input-system-dir", Input).value.strip() or "99_System"
-            resources_dir = self.query_one("#input-resources-dir", Input).value.strip() or "03_Resources"
-            literature_dir = self.query_one("#input-literature-dir", Input).value.strip() or "Literature"
-            control_dir = self.query_one("#input-control-dir", Input).value.strip() or "LiteratureControl"
-            base_dir = self.query_one("#input-base-dir", Input).value.strip() or "05_Bases"
+            system_dir = self.query_one("#input-system-dir", Input).value.strip() or "System"
+            resources_dir = self.query_one("#input-resources-dir", Input).value.strip() or "Resources"
+            base_dir = self.query_one("#input-base-dir", Input).value.strip() or "Bases"
 
             # 解析路径（支持名称、相对路径、绝对路径）
             def resolve_path(base: Path, path_str: str) -> Path:
@@ -677,7 +669,6 @@ Obsidian Vault/
 
             # 创建目录
             dirs_to_create = [
-                resources_path / control_dir,
                 base_path,
                 system_path / "PaperForge" / "exports",
                 system_path / "PaperForge" / "ocr",
@@ -787,7 +778,7 @@ class ZoteroStep(StepScreen):
                 return
 
             # 在 Vault 外部，创建 Junction
-            system_dir = getattr(self.app, "vault_config", {}).get("system_dir", "99_System")
+            system_dir = getattr(self.app, "vault_config", {}).get("system_dir", "System")
             junction_path = vault / system_dir / "Zotero"
 
             if junction_path.exists() or junction_path.is_symlink():
@@ -859,7 +850,7 @@ class JsonStep(StepScreen):
 
     def compose(self) -> ComposeResult:
         yield from super().compose()
-        system_dir = getattr(self.app, "vault_config", {}).get("system_dir", "99_System")
+        system_dir = getattr(self.app, "vault_config", {}).get("system_dir", "System")
         yield Markdown(f"""
 **Better BibTeX 自动导出**是 PaperForge 的数据来源。
 
@@ -975,11 +966,11 @@ class DeployStep(StepScreen):
         """Deploy scripts and create config files."""
         vault = self.checker.vault
         vault_config = getattr(self.app, "vault_config", {})
-        system_dir = vault_config.get("system_dir", "99_System")
-        resources_dir = vault_config.get("resources_dir", "03_Resources")
+        system_dir = vault_config.get("system_dir", "System")
+        resources_dir = vault_config.get("resources_dir", "Resources")
         literature_dir = vault_config.get("literature_dir", "Literature")
         control_dir = vault_config.get("control_dir", "LiteratureControl")
-        base_dir = vault_config.get("base_dir", "05_Bases")
+        base_dir = vault_config.get("base_dir", "Bases")
 
         def apply_user_paths(text: str, skill_dir_value: str = "") -> str:
             agent_config_dir = str(Path(skill_dir_value or ".opencode/skills").parent).replace("\\", "/")
@@ -1038,7 +1029,6 @@ class DeployStep(StepScreen):
             pf_path / "config",
             pf_path / "worker/scripts",
             vault / resources_dir / literature_dir,
-        vault / resources_dir / control_dir,
             vault / base_dir,
             vault / skill_dir / "literature-qa/scripts",
             vault / skill_dir / "literature-qa/chart-reading",
@@ -1288,7 +1278,7 @@ class DoneStep(StepScreen):
     def compose(self) -> ComposeResult:
         yield from super().compose()
         vault_config = getattr(self.app, "vault_config", {})
-        system_dir = vault_config.get("system_dir", "99_System")
+        system_dir = vault_config.get("system_dir", "System")
         yield Markdown(f"""
 ## 安装完成！
 
@@ -1306,16 +1296,14 @@ PaperForge 已完成安装和初始化。以下是立即开始使用的步骤：
 1. `Settings -> Community Plugins -> Installed -> PaperForge -> Enable`
 2. `Ctrl+P` 搜索 `PaperForge`
 
-**3. 同步 Zotero 文献并生成正式笔记**
+**3. 同步 Zotero 并生成正式笔记**
 ```bash
 paperforge sync
 ```
 
-如需分阶段执行：
-```bash
-paperforge sync --selection  # 仅同步 Zotero 到 library-records
-paperforge sync --index      # 仅根据现有 library-records 生成正式笔记
-```
+`paperforge sync` 自动完成所有同步操作（检测新文献、解析 PDF、生成正式笔记）。
+
+`--selection` 和 `--index` 参数已废弃——无需分阶段执行。
 
 **4. 在 Base 视图中标记 OCR**
 打开 Obsidian Base 视图，找到该文献，将 `do_ocr` 设为 `true`。
@@ -1826,11 +1814,11 @@ def headless_setup(
     agent_key: str = "opencode",
     paddleocr_key: str | None = None,
     paddleocr_url: str = "https://paddleocr.aistudio-app.com/api/v2/ocr/jobs",
-    system_dir: str = "99_System",
-    resources_dir: str = "03_Resources",
+    system_dir: str = "System",
+    resources_dir: str = "Resources",
     literature_dir: str = "Literature",
     control_dir: str = "LiteratureControl",
-    base_dir: str = "05_Bases",
+    base_dir: str = "Bases",
     zotero_data: str | None = None,
     skip_checks: bool = False,
     repo_root: Path | None = None,
