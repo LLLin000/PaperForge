@@ -52,10 +52,10 @@
 
 **Root cause:** `repair.py` three-way divergence detection and `--fix` mode have logic gaps where detected problems are silently skipped.
 
-- [ ] **REPAIR-01**: `repair.py:252,258` condition 4 detects `note_ocr_status == "pending"` vs `meta done/failed` divergence. Previously required `note_ocr_status != "pending"` to trigger, missing this case entirely.
-- [ ] **REPAIR-02**: `repair.py:278-363` `--fix` covers all 6 detected divergence types (not just the 2 currently handled). Unhandled types produce a warning line in console output so the user is not silently misled.
-- [ ] **REPAIR-03**: `repair.py:226,306-307,347-348,355-356` bare `except Exception: pass` blocks replaced with `logger.warning()` calls. Index write failures during fix are logged rather than silently ignored.
-- [ ] **REPAIR-04**: `repair.py:196` dead `load_domain_config` call and unused dict comprehension removed.
+- [x] **REPAIR-01**: `repair.py:252,258` condition 4 detects `note_ocr_status == "pending"` vs `meta done/failed` divergence. Previously required `note_ocr_status != "pending"` to trigger, missing this case entirely.
+- [x] **REPAIR-02**: `repair.py:278-363` `--fix` covers all 6 detected divergence types (not just the 2 currently handled). Unhandled types produce a warning line in console output so the user is not silently misled.
+- [x] **REPAIR-03**: `repair.py:226,306-307,347-348,355-356` bare `except Exception: pass` blocks replaced with `logger.warning()` calls. Index write failures during fix are logged rather than silently ignored.
+- [x] **REPAIR-04**: `repair.py:196` dead `load_domain_config` call and unused dict comprehension removed.
 
 ## Out of Scope
 
@@ -93,10 +93,10 @@
 | HARDEN-05 | Phase 49 | Complete |
 | HARDEN-06 | Phase 49 | Complete |
 | HARDEN-07 | Phase 49 | Complete |
-| REPAIR-01 | Phase 50 | Pending |
-| REPAIR-02 | Phase 50 | Pending |
-| REPAIR-03 | Phase 50 | Pending |
-| REPAIR-04 | Phase 50 | Pending |
+| REPAIR-01 | Phase 50 | Complete |
+| REPAIR-02 | Phase 50 | Complete |
+| REPAIR-03 | Phase 50 | Complete |
+| REPAIR-04 | Phase 50 | Complete |
 
 **Coverage:**
 - v1 requirements: 27 total

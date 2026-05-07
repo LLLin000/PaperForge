@@ -90,7 +90,7 @@
 - [ ] **Phase 47: Library-Records Deprecation Cleanup** — Zero residual traces in production code and documentation
 - [x] **Phase 48: Textual TUI Removal** — 2 plans: TUI code removal, documentation updates (completed 2026-05-07)
 - [ ] **Phase 49: Module Hardening** — Production-grade safety guards in discussion.py, main.js, asset_state.py
-- [ ] **Phase 50: Repair Blind Spots** — All 6 divergence types detected and handled by fix mode
+- [x] **Phase 50: Repair Blind Spots** — All 6 divergence types detected and handled by fix mode (completed 2026-05-07)
 
 ---
 
@@ -219,7 +219,10 @@ Plans:
   2. `paperforge repair --fix` handles all 6 detected divergence types — no silently skipped conditions; any unhandled type produces an explicit `[WARNING]` line in console output
   3. `paperforge repair --fix` logs (rather than silently ignores) index write failures during fix operations — `logger.warning()` calls replace bare `except Exception: pass` blocks
   4. Dead `load_domain_config` call and unused dict comprehension removed from `repair.py:196` — no unreachable code or unused imports
-**Plans**: TBD
+**Plans**: 1 plan
+
+Plans:
+- [x] 50-001-PLAN.md — All 4 REPAIR fixes: dead code removal, condition 4 detection, --fix mode coverage, silent exception logging
 
 ---
 
@@ -246,7 +249,7 @@ Plans:
 | 47. Library-Records Deprecation Cleanup | v1.11 | 1/2 | In Progress|  |
 | 48. Textual TUI Removal | v1.11 | 3/2 | Complete   | 2026-05-07 |
 | 49. Module Hardening | v1.11 | 1/3 | In Progress|  |
-| 50. Repair Blind Spots | v1.11 | 0/0 | Not started | - |
+| 50. Repair Blind Spots | v1.11 | 1/1 | Complete   | 2026-05-07 |
 
 ---
 *Roadmap updated: 2026-05-07 — v1.11 milestone phases created*
