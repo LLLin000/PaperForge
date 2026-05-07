@@ -99,7 +99,7 @@ def _build_ai_dir(vault: Path, domain: str, key: str, title: str) -> Path:
         lit_root = paths["literature"]
     except Exception:
         # Fallback to default structure if config loading fails
-        lit_root = vault / "03_Resources" / "Literature"
+        lit_root = vault / "Resources" / "Literature"
     title_slug = slugify_filename(title) if title else key
     ai_dir = lit_root / domain / f"{key} - {title_slug}" / "ai"
     return ai_dir
@@ -263,7 +263,7 @@ def record_session(
     # --- Build paths (WS-03: use ai_path from canonical index) ---
     ai_path_str = meta.get("ai_path", "")
     if ai_path_str:
-        ai_dir = vault_path / ai_path_str.replace("/", "\\") if os.name == "nt" else vault_path / ai_path_str
+        ai_dir = vault_path / ai_path_str
     else:
         # Fallback: construct from metadata
         ai_dir = _build_ai_dir(vault_path, domain, zotero_key, paper_title)
