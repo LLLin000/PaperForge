@@ -2,11 +2,29 @@
 
 ## What This Is
 
-PaperForge is a local-first Obsidian + Zotero literature asset manager. It turns Zotero exports, PDFs, OCR fulltext, figures, notes, and AI outputs into a structured, traceable, reusable research library. v1.9 consolidated the fragmented tracking layers (library-records + formal notes) into a single per-workspace structure with slim frontmatter and paper-meta.json for internal state.
+PaperForge is a local-first Obsidian + Zotero literature asset manager. It turns Zotero exports, PDFs, OCR fulltext, figures, notes, and AI outputs into a structured, traceable, reusable research library. v1.9 consolidated the fragmented tracking layers (library-records + formal notes) into a single per-workspace structure with slim frontmatter and paper-meta.json for internal state. v1.10 fixed cross-cutting dependency drift. v1.11 resolved all v1.9 ripple effects (index paths, library-records cleanup, TUI removal, module hardening, repair blind spots).
 
-## Current State: v1.9 Shipped (2026-05-07)
+## Completed Milestone: v1.10 Dependency Cleanup
 
-**Next:** Planning v2.0 or continued v1.8 feature work.
+**Status:** COMPLETE (2026-05-07)
+
+**Delivered:**
+- OCR/status/repair workers read workflow state from formal note frontmatter — no library-records dependency
+- 14 hardcoded old directory defaults updated to clean names
+- 9 documentation files updated for v1.9 structure
+- 473 tests pass, 0 regressions
+
+## Completed Milestone: v1.11 Merge Gate — v1.9 Ripple Remediation
+
+**Status:** COMPLETE (2026-05-07)
+**Archive:** `.planning/milestones/v1.11-ROADMAP.md`
+
+**Delivered:**
+- Index path resolution: 5 workspace fields use config-resolved `literature_dir` (not hardcoded `"Literature/"`); env var typo fixed; legacy config migration
+- Library-records deprecation cleanup: zero residual traces in production code, documentation, and user-facing labels
+- Textual TUI removal: broken TUI classes removed; `paperforge setup` prints headless redirect; 3 docs updated
+- Module hardening: discussion.py (file locking, markdown escaping, UTC timestamps), main.js (API key via env, createEl(), async I/O), asset_state.py (next_step ordering, null JSON outputs), repair.py (all 6 divergence types detected)
+- Repair blind spots: condition 4 divergence detection, --fix mode coverage, silent exception logging, dead code removal
 
 ## Completed Milestone: v1.9 Frontmatter Rationalization & Library-Record Deprecation
 
@@ -136,15 +154,28 @@ Researchers always know what papers they have, what state those papers are in, a
 - ✓ **SETUP-05**: Install button validates all fields before execution, shows specific field-level errors in friendly language — Phase 21
 - ✓ **SETUP-06**: Existing sidebar and command palette actions continue working unchanged alongside new settings tab — Phase 21
 
-### Active
+### Validated (v1.11)
 
-<!-- v1.9 shipped — all Active requirements moved to Validated below -->
+- ✓ **REMED-01**: Index workspace path fields use config-resolved literature_dir (not hardcoded "Literature/")
+- ✓ **REMED-02**: All library-records residual traces removed — dead code, stale docstrings, wrong scan dirs, misleading labels
+- ✓ **REMED-03**: Setup wizard TUI removed; headless-only redirect with clean message
+- ✓ **REMED-04**: Discussion recorder hardened: file locking, markdown escaping, UTC timezone, QA key validation
+- ✓ **REMED-05**: Plugin hardened: API key via env not CLI args, innerHTML replaced with createEl, sync I/O→async
+- ✓ **REMED-06**: Asset state/repair logic fixed: next_step ordering, null JSON outputs, repair divergence blind spots
+- ✓ **REMED-07**: 5 command files updated to reflect v1.9 workflow (no library-records references)
 
-- [ ] AI discussion recorder: `/pf-paper` and agent chats produce `discussion.md` (Q&A) + `discussion.json` (structured) in workspace `ai/`.
-- [ ] Deep-reading dashboard mode with status bar, Pass 1 summary, and AI Q&A history.
-- [ ] "Jump to Deep Reading" button on per-paper dashboard card.
-- [ ] Bug fix: remove meaningless "ai" row from plugin UI.
-- [ ] Bug fix: restore version number display in plugin.
+### Validated (v1.10)
+
+- ✓ OCR worker reads `do_ocr` from formal note frontmatter (same `get_analyze_queue()` logic as analyze), not from deprecated library-records.
+- ✓ Status worker reads `do_ocr`/path counts from formal notes + canonical index, not from library-records.
+- ✓ Repair worker three-way divergence scan and path error detection re-anchored to formal notes + canonical index.
+- ✓ `load_control_actions()` rewritten to scan formal note frontmatter; orphan cleanup targets Literature/.
+- ✓ 14 hardcoded old defaults (`99_System`/`03_Resources`/`05_Bases`) updated in production code to match `DEFAULT_CONFIG`.
+- ✓ 5 skill files (pf-sync/pf-ocr/pf-status/pf-paper/pf-deep) updated to reflect library-records deprecation.
+- ✓ AGENTS.md, docs/setup-guide.md, docs/ARCHITECTURE.md, docs/COMMANDS.md updated.
+- ✓ setup_wizard function signatures and cli.py help text updated to clean directory names.
+- ✓ `.gitignore` patterns updated for new clean directory defaults.
+- ✓ All tests pass after changes (473 passed, 0 regressions).
 
 ### Validated (v1.9)
 
@@ -156,6 +187,14 @@ Researchers always know what papers they have, what state those papers are in, a
 - ✓ Workspace folder construction: new papers create workspace on first sync (no flat-first-then-migrate); fulltext.md bridged from OCR output.
 - ✓ Path construction unified: discussion.py reads workspace paths from canonical index instead of reconstructing independently.
 - ✓ Plugin dashboard: version badge reads paperforge_version from index envelope; lifecycle keys aligned; CSS components verified.
+
+### Validated (v1.8)
+
+- ✓ AI discussion recorder: `/pf-paper` and agent chats produce `discussion.md` + `discussion.json` in workspace `ai/`.
+- ✓ Deep-reading dashboard mode with status bar, Pass 1 summary, and AI Q&A history.
+- ✓ "Jump to Deep Reading" button on per-paper dashboard card.
+- ✓ Bug fix: removed meaningless "ai" row from plugin UI.
+- ✓ Bug fix: restored version number display in plugin.
 
 ### Out of Scope
 
@@ -292,4 +331,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state.
 
 ---
-*Last updated: 2026-05-07 after v1.9 milestone completion*
+*Last updated: 2026-05-07 after milestone v1.11 completion*

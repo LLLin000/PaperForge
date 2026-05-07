@@ -272,3 +272,18 @@
 
 ---
 *Milestone v1.3 completed: 2026-04-24*
+
+---
+
+## v1.10 Dependency Cleanup (Shipped: 2026-05-07)
+
+**Phases completed:** 4 phases (42-45), 29 requirements
+
+**Key accomplishments:**
+
+- OCR/status workers read `do_ocr`/`analyze` from formal note frontmatter (same pattern as `get_analyze_queue()`) — core workflow unbroken for post-v1.9 papers
+- `load_control_actions()` rewritten to scan Literature/; `auto_analyze_after_ocr` writes to formal notes
+- Repair worker re-anchored: three-way divergence scan compares formal note frontmatter vs canonical index vs meta.json
+- 14 hardcoded old directory defaults (`99_System`, `03_Resources`, `05_Bases`) updated to clean names across asset_index/sync/repair/setup_wizard/validate_setup/.gitignore/CLI
+- 9 documentation files updated (AGENTS.md, 5 skill files, 3 docs) — zero remaining library-records references
+- 473 tests pass, 0 regressions

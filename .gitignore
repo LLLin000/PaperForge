@@ -20,9 +20,12 @@ build/
 config.json
 
 # Data (user-specific)
+Bases/
 05_Bases/
+System/
 99_System/
 00_Inbox/
+Resources/
 03_Resources/
 
 # Test sandbox (wizard output)

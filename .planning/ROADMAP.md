@@ -1,7 +1,7 @@
 # Roadmap: PaperForge
 
-**Current milestone:** v1.11 — Merge Gate (v1.9 Ripple Remediation)
-**Phase numbering:** Continuous. v1.10 ended at Phase 45. v1.11 starts at Phase 46.
+**All milestones shipped up to v1.11.** Next milestone TBD.
+**Phase numbering:** Continuous. v1.10 ended at Phase 45. v1.11 ended at Phase 50.
 
 ---
 
@@ -18,7 +18,7 @@
 - ✅ **v1.8 AI Discussion & Deep-Reading Dashboard** — Phases 31-36 (shipped 2026-05-07)
 - ✅ **v1.9 Frontmatter Rationalization & Library-Record Deprecation** — Phases 37-41 (shipped 2026-05-07)
 - ✅ **v1.10 Dependency Cleanup** — Phases 42-45 (shipped 2026-05-07)
-- 🚧 **v1.11 Merge Gate — v1.9 Ripple Remediation** — Phases 46-50 (in progress)
+- ✅ **v1.11 Merge Gate — v1.9 Ripple Remediation** — Phases 46-50 (shipped 2026-05-07)
 
 *Archive: `.planning/milestones/`*
 
@@ -82,14 +82,14 @@
 
 </details>
 
-### 🚧 v1.11 Merge Gate — v1.9 Ripple Remediation (Current)
+### ✅ v1.11 Merge Gate — v1.9 Ripple Remediation (Shipped 2026-05-07)
 
 **Milestone Goal:** Resolve all 27 findings from the v1.6-ai-ready-asset-foundation branch review before merging to master. Fix cascading v1.9 structural ripple across four root cause clusters: index path hardcoding, library-records residual traces, setup wizard TUI removal, and new module hardening gaps.
 
-- [x] **Phase 46: Index Path Resolution** — 2 plans: config-resolved paths, env var/placeholder fixes
-- [ ] **Phase 47: Library-Records Deprecation Cleanup** — Zero residual traces in production code and documentation
+- [x] **Phase 46: Index Path Resolution** — 2 plans: config-resolved paths, env var/placeholder fixes (completed 2026-05-07)
+- [x] **Phase 47: Library-Records Deprecation Cleanup** — Zero residual traces in production code and documentation (completed 2026-05-07)
 - [x] **Phase 48: Textual TUI Removal** — 2 plans: TUI code removal, documentation updates (completed 2026-05-07)
-- [ ] **Phase 49: Module Hardening** — Production-grade safety guards in discussion.py, main.js, asset_state.py
+- [x] **Phase 49: Module Hardening** — Production-grade safety guards in discussion.py, main.js, asset_state.py (completed 2026-05-07)
 - [x] **Phase 50: Repair Blind Spots** — All 6 divergence types detected and handled by fix mode (completed 2026-05-07)
 
 ---
@@ -175,7 +175,7 @@ Plans:
 
 Plans:
 - [x] 47-001-PLAN.md — Python source cleanup: status.py label/scan path, sync.py dead code + docstrings, ld_deep.py records key, repair.py + discussion.py docstrings (LEGACY-01, 02, 03, 04, 07)
-- [ ] 47-002-PLAN.md — Documentation cleanup: setup_wizard.py post-install text, 10 command file copies in command/ + paperforge/command_files/ (LEGACY-05, 06)
+- [x] 47-002-PLAN.md — Documentation cleanup: setup_wizard.py post-install text, 10 command file copies in command/ + paperforge/command_files/ (LEGACY-05, 06)
 
 ### Phase 48: Textual TUI Removal
 **Goal**: The broken Textual TUI setup wizard is removed entirely. `paperforge setup` (bare, no `--headless`) prints a help message redirecting users to `--headless` or the plugin settings tab. All TUI classes, import paths, and the `textual` optional dependency are purged. Documentation updated to reflect headless-only setup. `headless_setup()` and all shared utilities preserved intact.
@@ -188,8 +188,8 @@ Plans:
   4. Post-install instruction text and headless completion message describe headless-only workflow; `--non-interactive` CLI option removed; `textual` removed from project optional dependencies
   5. `headless_setup()`, shared utilities (`EnvChecker`, `AGENT_CONFIGS`, `_copy_file_incremental`, `_merge_env_incremental`) preserved and fully functional — zero behavior change for the headless code path
 **Plans**: 2 plans
-- [ ] `48-001-PLAN.md` — TUI code removal (DEPR-01, DEPR-03): remove textual imports/classes from setup_wizard.py, replace main() with help message, update cli.py help text, remove textual from pyproject.toml
-- [ ] `48-002-PLAN.md` — Documentation updates (DEPR-02): update setup-guide.md and INSTALLATION.md for headless-only workflow
+- [x] `48-001-PLAN.md` — TUI code removal (DEPR-01, DEPR-03): remove textual imports/classes from setup_wizard.py, replace main() with help message, update cli.py help text, remove textual from pyproject.toml
+- [x] `48-002-PLAN.md` — Documentation updates (DEPR-02): update setup-guide.md and INSTALLATION.md for headless-only workflow
 
 ### Phase 49: Module Hardening
 **Goal**: New modules built during v1.6-v1.8 (discussion.py, asset_state.py, main.js) have production-grade safety guards: file locking prevents concurrent write corruption, markdown special characters are escaped, timestamps use UTC, API keys pass via environment not CLI args, DOM rendering avoids XSS vectors, and empty-state outputs are safe JSON.
@@ -205,9 +205,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] `49-001-PLAN.md` — discussion.py hardening: UTC timestamps (HARDEN-03), markdown escaping (HARDEN-02), file locking (HARDEN-01)
-- [ ] `49-002-PLAN.md` — main.js hardening: API key via env var (HARDEN-04), createEl() not innerHTML (HARDEN-05)
-- [ ] `49-003-PLAN.md` — asset_state.py + status.py hardening: reorder next_step checks (HARDEN-06), empty dicts not null (HARDEN-07)
+- [x] `49-001-PLAN.md` — discussion.py hardening: UTC timestamps (HARDEN-03), markdown escaping (HARDEN-02), file locking (HARDEN-01)
+- [x] `49-002-PLAN.md` — main.js hardening: API key via env var (HARDEN-04), createEl() not innerHTML (HARDEN-05)
+- [x] `49-003-PLAN.md` — asset_state.py + status.py hardening: reorder next_step checks (HARDEN-06), empty dicts not null (HARDEN-07)
 **UI hint**: yes
 
 ### Phase 50: Repair Blind Spots
@@ -246,10 +246,10 @@ Plans:
 | 44. Documentation Update | v1.10 | — | Complete | 2026-05-07 |
 | 45. Validation & Release Gate | v1.10 | — | Complete | 2026-05-07 |
 | 46. Index Path Resolution | v1.11 | 2/2 | Complete | 2026-05-07 |
-| 47. Library-Records Deprecation Cleanup | v1.11 | 1/2 | In Progress|  |
-| 48. Textual TUI Removal | v1.11 | 3/2 | Complete   | 2026-05-07 |
-| 49. Module Hardening | v1.11 | 1/3 | In Progress|  |
-| 50. Repair Blind Spots | v1.11 | 1/1 | Complete   | 2026-05-07 |
+| 47. Library-Records Deprecation Cleanup | v1.11 | 2/2 | Complete | 2026-05-07 |
+| 48. Textual TUI Removal | v1.11 | 3/2 | Complete | 2026-05-07 |
+| 49. Module Hardening | v1.11 | 3/3 | Complete | 2026-05-07 |
+| 50. Repair Blind Spots | v1.11 | 1/1 | Complete | 2026-05-07 |
 
 ---
-*Roadmap updated: 2026-05-07 — v1.11 milestone phases created*
+*Roadmap updated: 2026-05-07 — v1.11 milestone complete*
