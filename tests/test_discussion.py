@@ -11,6 +11,8 @@ import os
 import tempfile
 from pathlib import Path
 
+import filelock
+
 import pytest
 
 from paperforge.worker.discussion import record_session
@@ -180,6 +182,103 @@ class TestRecordSession:
         # MD: two ## session headings
         md_content = Path(r2["md_path"]).read_text(encoding="utf-8")
         assert md_content.count("## ") >= 2
+
+    def test_utc_timestamp(self, tmp_path: Path) -> None:
+        """HARDEN-03: started timestamp uses UTC (not CST/UTC+8)."""
+        vault = _create_minimal_vault(tmp_path)
+        result = record_session(
+            vault_path=vault, zotero_key="TSTONE001",
+            agent="pf-paper", model="gpt-4", qa_pairs=_sample_qa_pairs(),
+        )
+        assert result["status"] == "ok"
+        data = json.loads(Path(result["json_path"]).read_text(encoding="utf-8"))
+        started = data["sessions"][0]["started"]
+        # UTC offset is either +00:00 or Z
+        assert started.endswith("+00:00") or started.endswith("Z"), f"Expected UTC, got: {started}"
+
+    def test_markdown_escaping(self, tmp_path: Path) -> None:
+        """HARDEN-02: Markdown special chars in QA are escaped in discussion.md."""
+        vault = _create_minimal_vault(tmp_path)
+        qa = [
+            {
+                "question": "What does *italic* and **bold** mean?",
+                "answer": "Use # for headings and [link](url) syntax _underscore_ `code`",
+                "source": "user_question",
+                "timestamp": "2026-05-06T12:00:00+00:00",
+            },
+        ]
+        result = record_session(
+            vault_path=vault, zotero_key="TSTONE001",
+            agent="pf-paper", model="gpt-4", qa_pairs=qa,
+        )
+        assert result["status"] == "ok"
+        md = Path(result["md_path"]).read_text(encoding="utf-8")
+        # Verify escaped forms exist (not bare markdown)
+        assert "\\*italic\\*" in md, f"Expected escaped asterisks in: {md}"
+        assert "\\*\\*bold\\*\\*" in md
+        assert "\\_" in md
+        assert "\\`" in md
+
+    def test_markdown_escaping_cjk(self, tmp_path: Path) -> None:
+        """HARDEN-02: CJK characters preserved alongside escaped markdown chars."""
+        vault = _create_minimal_vault(tmp_path, title="中文测试")
+        qa = [
+            {
+                "question": "什么是*p值*和#显著性？",
+                "answer": "_效应量_为0.5`[95% CI]",
+                "source": "user_question",
+                "timestamp": "2026-05-06T12:00:00+00:00",
+            },
+        ]
+        result = record_session(
+            vault_path=vault, zotero_key="TSTONE001",
+            agent="pf-paper", model="gpt-4", qa_pairs=qa,
+        )
+        assert result["status"] == "ok"
+        md = Path(result["md_path"]).read_text(encoding="utf-8")
+        # CJK preserved
+        assert "什么是" in md
+        assert "效应量" in md
+        # Special chars escaped
+        assert "\\*p值\\*" in md
+        assert "\\_" in md
+        assert "\\`" in md
+
+    def test_file_lock_prevents_concurrent_write(self, tmp_path: Path) -> None:
+        """HARDEN-01: File lock (.json.lock) is created during record_session()."""
+        vault = _create_minimal_vault(tmp_path)
+        result = record_session(
+            vault_path=vault, zotero_key="TSTONE001",
+            agent="pf-paper", model="gpt-4", qa_pairs=_sample_qa_pairs(),
+        )
+        assert result["status"] == "ok"
+        json_path = Path(result["json_path"])
+        # Lock file should NOT remain after successful write (released + cleaned up)
+        lock_path = json_path.with_suffix(".json.lock")
+        assert not lock_path.exists(), "Lock file should be released after write"
+
+    def test_lock_timeout_returns_error(self, tmp_path: Path) -> None:
+        """HARDEN-01: When lock cannot be acquired, returns error status."""
+        vault = _create_minimal_vault(tmp_path)
+        # First call to create the json file
+        r1 = record_session(
+            vault_path=vault, zotero_key="TSTONE001",
+            agent="pf-paper", model="gpt-4", qa_pairs=_sample_qa_pairs(),
+        )
+        assert r1["status"] == "ok"
+        json_path = Path(r1["json_path"])
+
+        # Hold an exclusive lock to simulate concurrent access
+        lock_path = json_path.with_suffix(".json.lock")
+        external_lock = filelock.FileLock(lock_path, timeout=1)
+        with external_lock:
+            # This should fail because lock is held
+            r2 = record_session(
+                vault_path=vault, zotero_key="TSTONE001",
+                agent="pf-paper", model="gpt-4", qa_pairs=_sample_qa_pairs(),
+            )
+            assert r2["status"] == "error"
+            assert "Concurrent access" in r2.get("message", "")
 
     def test_missing_vault(self, tmp_path: Path) -> None:
         """Test 3: Non-existent vault returns error status."""

@@ -21,7 +21,8 @@ import re
 import sys
 import tempfile
 import uuid
-from datetime import datetime, timezone, timedelta
+import filelock
+from datetime import datetime, timezone
 from pathlib import Path
 
 from paperforge.config import paperforge_paths
@@ -36,8 +37,13 @@ logger = logging.getLogger(__name__)
 _SCHEMA_VERSION = "1"
 _ISO_FORMAT = "%Y-%m-%dT%H:%M:%S%z"
 _MD_SEPARATOR = "---"
+_MD_SPECIAL_CHARS = re.compile(r'([*#\[\]_`])')
+"""Regex for markdown special characters that must be escaped in QA text fields."""
 
-_CST = timezone(timedelta(hours=8))
+LOCK_TIMEOUT = 10
+"""Seconds to wait for cross-process file lock before raising filelock.Timeout."""
+
+_CST = timezone.utc
 
 
 # ---------------------------------------------------------------------------
@@ -46,8 +52,18 @@ _CST = timezone(timedelta(hours=8))
 
 
 def _now_iso() -> str:
-    """Return current time in ISO 8601 with timezone (CST, UTC+8)."""
+    """Return current time in ISO 8601 with UTC timezone."""
     return datetime.now(_CST).isoformat()
+
+
+def _escape_md(text: str) -> str:
+    """Escape markdown special characters in QA text fields.
+
+    Escapes: *, #, [, ], _, ` -- prevents broken Obsidian formatting
+    when user questions or AI answers contain these characters.
+    Does not double-escape already-escaped characters.
+    """
+    return _MD_SPECIAL_CHARS.sub(r'\\\1', text)
 
 
 def _today_str(iso_stamp: str) -> str:
@@ -167,8 +183,8 @@ def _build_md_session(session: dict) -> str:
     model = session["model"]
     lines = [f"## {date_str} -- {agent} ({model})\n"]
     for qa in session["qa_pairs"]:
-        lines.append(f"**问题:** {qa['question']}")
-        lines.append(f"**解答:** {qa['answer']}\n")
+        lines.append(f"**问题:** {_escape_md(qa['question'])}")
+        lines.append(f"**解答:** {_escape_md(qa['answer'])}\n")
     lines.append(f"{_MD_SEPARATOR}\n")
     return "\n".join(lines)
 
@@ -277,49 +293,52 @@ def record_session(
     except Exception as exc:
         return {"status": "error", "message": f"Error building session: {exc}"}
 
-    # --- Write discussion.json (atomic, append) ---
+    # --- Write discussion.json + discussion.md (atomic, locked) ---
+    # HARDEN-01: Cross-process file lock prevents concurrent write corruption.
+    # Uses same filelock pattern as asset_index.py: lock on .json.lock suffix,
+    # timeout after LOCK_TIMEOUT seconds.
+    lock_path = json_path.with_suffix(".json.lock")
+    lock = filelock.FileLock(lock_path, timeout=LOCK_TIMEOUT)
     try:
-        existing_sessions = []
-        if json_path.exists():
-            try:
-                existing_data = json.loads(json_path.read_text(encoding="utf-8"))
-                existing_sessions = existing_data.get("sessions", [])
-            except (json.JSONDecodeError, OSError) as exc:
-                logger.warning("Corrupted discussion.json, starting fresh: %s", exc)
-                existing_sessions = []
+        with lock:
+            # Write discussion.json
+            existing_sessions = []
+            if json_path.exists():
+                try:
+                    existing_data = json.loads(json_path.read_text(encoding="utf-8"))
+                    existing_sessions = existing_data.get("sessions", [])
+                except (json.JSONDecodeError, OSError) as exc:
+                    logger.warning("Corrupted discussion.json, starting fresh: %s", exc)
+                    existing_sessions = []
 
-        envelope = {
-            "schema_version": "1",
-            "paper_key": zotero_key,
-            "sessions": [*existing_sessions, session],
-        }
-        _atomic_write_json(json_path, envelope)
+            envelope = {
+                "schema_version": "1",
+                "paper_key": zotero_key,
+                "sessions": [*existing_sessions, session],
+            }
+            _atomic_write_json(json_path, envelope)
+
+            # Write discussion.md
+            existing_md = ""
+            if md_path.exists():
+                try:
+                    existing_md = md_path.read_text(encoding="utf-8")
+                except (OSError, UnicodeDecodeError) as exc:
+                    logger.warning("Could not read existing discussion.md: %s", exc)
+                    existing_md = ""
+
+            header = _build_md_header(paper_title)
+            session_md = _build_md_session(session)
+            content = _md_content(existing_md, header, session_md)
+            _atomic_write_md(md_path, content)
+    except filelock.Timeout:
+        logger.warning("Could not acquire lock for discussion files: %s", lock_path)
+        return {"status": "error",
+                "message": "Concurrent access conflict. Please try again."}
     except Exception as exc:
-        logger.warning("Failed to write discussion.json: %s", exc)
-        return {"status": "error", "message": f"Failed to write discussion.json: {exc}"}
-
-    # --- Write discussion.md (atomic, append) ---
-    try:
-        existing_md = ""
-        if md_path.exists():
-            try:
-                existing_md = md_path.read_text(encoding="utf-8")
-            except (OSError, UnicodeDecodeError) as exc:
-                logger.warning("Could not read existing discussion.md: %s", exc)
-                existing_md = ""
-
-        header = _build_md_header(paper_title)
-        session_md = _build_md_session(session)
-        content = _md_content(existing_md, header, session_md)
-        _atomic_write_md(md_path, content)
-    except Exception as exc:
-        logger.warning("Failed to write discussion.md: %s", exc)
-        # JSON already written; return partial success
-        return {
-            "status": "error",
-            "message": f"Failed to write discussion.md: {exc}",
-            "json_path": str(json_path),
-        }
+        logger.warning("Failed to write discussion files: %s", exc)
+        return {"status": "error",
+                "message": f"Failed to write discussion files: {exc}"}
 
     return {
         "status": "ok",
