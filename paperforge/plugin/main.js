@@ -2249,6 +2249,22 @@ class PaperForgeSetupModal extends Modal {
             row.createEl('span', { cls: 'paperforge-summary-label', text: item.label });
             row.createEl('span', { cls: 'paperforge-summary-value', text: item.val });
         }
+        // PaperForge version (fetched async)
+        const verRow = summary.createEl('div', { cls: 'paperforge-summary-row' });
+        verRow.createEl('span', { cls: 'paperforge-summary-label', text: 'PaperForge' });
+        const verVal = verRow.createEl('span', { cls: 'paperforge-summary-value', text: '\u2014' });
+        {
+            const vp = vault;
+            const pythonExe = resolvePythonExecutable(vp);
+            execFile(pythonExe, ['-c', 'import paperforge; print(paperforge.__version__)'], { cwd: vp, timeout: 10000 }, (err, stdout) => {
+                if (!err && stdout) verVal.textContent = 'v' + stdout.trim();
+            });
+        }
+        for (const item of items) {
+            const row = summary.createEl('div', { cls: 'paperforge-summary-row' });
+            row.createEl('span', { cls: 'paperforge-summary-label', text: item.label });
+            row.createEl('span', { cls: 'paperforge-summary-value', text: item.val });
+        }
         el.createEl('h3', { text: t('complete_next') });
         const nextList = el.createEl('div', { cls: 'paperforge-nextsteps' });
         const steps = [
