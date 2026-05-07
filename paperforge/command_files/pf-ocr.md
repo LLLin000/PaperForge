@@ -2,7 +2,7 @@
 
 ## Purpose
 
-处理 library-records 中 `do_ocr: true` 的 PDF OCR 队列。
+处理正式笔记 frontmatter 中 `do_ocr: true` 的 PDF OCR 队列。
 
 `paperforge ocr` 会自动读取 `paperforge.json` 定位 ocr 目录和 worker 脚本，运行 OCR 并自动诊断结果。
 
@@ -20,7 +20,7 @@ python -m paperforge ocr --vault .
 
 ## Prerequisites
 
-- [ ] library-record 中 `do_ocr: true` 已设置
+- [ ] formal note frontmatter 中 `do_ocr: true` 已设置
 - [ ] PDF 附件存在（`has_pdf: true`）
 - [ ] PaddleOCR API Key 已配置（`.env` 中 `PADDLEOCR_API_TOKEN`）
 - [ ] 网络连接正常（可访问 PaddleOCR 服务）
@@ -122,7 +122,7 @@ OCR 完成后，每个文献生成以下文件：
 > `/pf-ocr` 是 **CLI 命令**，Agent 层不直接提供 `/pf-ocr` 聊天命令。
 >
 > 用户需要：
-> 1. 在 Obsidian 中将 library-record 的 `do_ocr` 设为 `true`
+> 1. 在 Obsidian 中将正式笔记的 `do_ocr` 设为 `true`
 > 2. 在终端运行 `paperforge ocr`
 > 3. 或在 Agent 对话中要求 Agent 执行上述步骤
 
@@ -136,7 +136,7 @@ OCR 完成后，每个文献生成以下文件：
 
 ## See Also
 
-- [pf-sync](pf-sync.md) — 文献同步（生成 library-records）
+- [pf-sync](pf-sync.md) — 文献同步（生成正式笔记）
 - [pf-deep](pf-deep.md) — 深度精读（依赖 OCR 结果）
 - [AGENTS.md](../AGENTS.md) — 完整使用指南、架构说明、常见问题
 - [docs/COMMANDS.md](../docs/COMMANDS.md) — 命令总览与矩阵

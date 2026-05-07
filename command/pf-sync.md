@@ -2,12 +2,9 @@
 
 ## Purpose
 
-同步 Zotero Better BibTeX JSON 导出到 library-records，并生成/更新正式文献笔记。
+同步 Zotero Better BibTeX JSON 导出并生成/更新正式文献笔记。
 
-`paperforge sync` 是 `selection-sync` 和 `index-refresh` 的统一入口：
-
-1. **selection-sync 阶段**：检测 Zotero JSON 中的新条目，创建 library-records
-2. **index-refresh 阶段**：基于 library-records 和 Zotero 元数据生成正式文献笔记
+`paperforge sync` 自动检测 Zotero JSON 中的新条目并直接生成正式文献笔记。
 
 自动读取 `paperforge.json` 定位 exports 目录、control 目录和 literature 目录。
 
@@ -37,23 +34,7 @@ python -m paperforge sync --vault .
 |------|------|------|
 | `--dry-run` | 否 | 预览变更，不实际写入文件 |
 | `--domain <DOMAIN>` | 否 | 仅同步指定领域（如 `骨科`） |
-| `--selection` | 否 | 仅执行 selection-sync 阶段 |
-| `--index` | 否 | 仅执行 index-refresh 阶段 |
 | `--vault <PATH>` | 否 | 指定 Vault 根目录（默认当前目录） |
-
-### 分阶段执行
-
-仅同步 Zotero 到 library-records：
-
-```bash
-paperforge sync --selection
-```
-
-仅根据现有 library-records 生成正式笔记：
-
-```bash
-paperforge sync --index
-```
 
 预览同步结果（不实际写入）：
 
@@ -70,14 +51,8 @@ paperforge sync --domain 骨科
 ## Example
 
 ```bash
-# 完整同步（selection + index）
+# 完整同步
 paperforge sync
-
-# 仅创建/更新 library-records
-paperforge sync --selection
-
-# 仅生成正式笔记
-paperforge sync --index
 
 # 预览模式
 paperforge sync --dry-run
@@ -91,19 +66,8 @@ paperforge sync --vault /path/to/vault
 
 ## Output
 
-### selection-sync 阶段
-
 ```
 [INFO] Found 5 new items
-[INFO] Created library-records/骨科/XXXXXXX.md
-```
-
-生成文件：
-- `<resources_dir>/<control_dir>/library-records/<domain>/<key>.md`
-
-### index-refresh 阶段
-
-```
 [INFO] Generated 5 formal notes
 [INFO] Output: <resources_dir>/<literature_dir>/骨科/XXXXXXX - Title.md
 ```
