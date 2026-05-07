@@ -88,7 +88,7 @@
 
 - [x] **Phase 46: Index Path Resolution** — 2 plans: config-resolved paths, env var/placeholder fixes
 - [ ] **Phase 47: Library-Records Deprecation Cleanup** — Zero residual traces in production code and documentation
-- [ ] **Phase 48: Textual TUI Removal** — Broken Textual TUI removed; headless-only setup workflow
+- [x] **Phase 48: Textual TUI Removal** — 2 plans: TUI code removal, documentation updates (completed 2026-05-07)
 - [ ] **Phase 49: Module Hardening** — Production-grade safety guards in discussion.py, main.js, asset_state.py
 - [ ] **Phase 50: Repair Blind Spots** — All 6 divergence types detected and handled by fix mode
 
@@ -187,7 +187,9 @@ Plans:
   3. All three documentation files (`docs/setup-guide.md`, `docs/INSTALLATION.md`, `README.md`) reference only `paperforge setup --headless` — no bare `paperforge setup` without `--headless` flag
   4. Post-install instruction text and headless completion message describe headless-only workflow; `--non-interactive` CLI option removed; `textual` removed from project optional dependencies
   5. `headless_setup()`, shared utilities (`EnvChecker`, `AGENT_CONFIGS`, `_copy_file_incremental`, `_merge_env_incremental`) preserved and fully functional — zero behavior change for the headless code path
-**Plans**: TBD
+**Plans**: 2 plans
+- [ ] `48-001-PLAN.md` — TUI code removal (DEPR-01, DEPR-03): remove textual imports/classes from setup_wizard.py, replace main() with help message, update cli.py help text, remove textual from pyproject.toml
+- [ ] `48-002-PLAN.md` — Documentation updates (DEPR-02): update setup-guide.md and INSTALLATION.md for headless-only workflow
 
 ### Phase 49: Module Hardening
 **Goal**: New modules built during v1.6-v1.8 (discussion.py, asset_state.py, main.js) have production-grade safety guards: file locking prevents concurrent write corruption, markdown special characters are escaped, timestamps use UTC, API keys pass via environment not CLI args, DOM rendering avoids XSS vectors, and empty-state outputs are safe JSON.
@@ -237,7 +239,7 @@ Plans:
 | 45. Validation & Release Gate | v1.10 | — | Complete | 2026-05-07 |
 | 46. Index Path Resolution | v1.11 | 2/2 | Complete | 2026-05-07 |
 | 47. Library-Records Deprecation Cleanup | v1.11 | 1/2 | In Progress|  |
-| 48. Textual TUI Removal | v1.11 | 0/0 | Not started | - |
+| 48. Textual TUI Removal | v1.11 | 3/2 | Complete   | 2026-05-07 |
 | 49. Module Hardening | v1.11 | 0/0 | Not started | - |
 | 50. Repair Blind Spots | v1.11 | 0/0 | Not started | - |
 
