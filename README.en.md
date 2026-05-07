@@ -55,7 +55,7 @@ PaperForge connects the full path from source literature to structured insight.
 
 | Software | Purpose | Get it |
 |----------|---------|--------|
-| Python 3.9+ | Run PaperForge CLI and backend tasks | https://python.org |
+| Python 3.10+ | Run PaperForge CLI and backend tasks | https://python.org |
 | Zotero | Literature management | https://zotero.org |
 | Better BibTeX | Auto-export metadata as JSON | https://retorque.re/zotero-better-bibtex/ |
 | PaddleOCR Key | OCR text and layout extraction | https://aistudio.baidu.com/paddleocr |
