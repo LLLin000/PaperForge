@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.11
 milestone_name: Merge Gate — v1.9 Ripple Remediation
 status: completed
-stopped_at: Completed 47 - Library-Records Deprecation Cleanup
-last_updated: "2026-05-07T11:24:40.290Z"
-last_activity: 2026-05-07 — Phase 46 executed (PATH-01 through PATH-06)
+stopped_at: Completed 48 - Textual TUI Removal (48-001, 48-002)
+last_updated: "2026-05-07T11:44:47.723Z"
+last_activity: 2026-05-07 — Phase 48 executed (DEPR-01 through DEPR-03)
 progress:
   total_phases: 9
   completed_phases: 0
-  total_plans: 4
-  completed_plans: 6
+  total_plans: 6
+  completed_plans: 7
   percent: 20
 ---
 
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-05-07)
 
 ## Current Position
 
-Phase: 46 of 50 (Index Path Resolution) — COMPLETE
-Plan: —
-Status: Phase 46 complete (2/2 plans)
-Last activity: 2026-05-07 — Phase 46 executed (PATH-01 through PATH-06)
+Phase: 48 of 50 (Textual TUI Removal) — COMPLETE
+Plan: — 2/2 plans complete
+Status: Phase 48 complete (2/2 plans). TUI code removed, textual dependency purged, docs updated.
+Last activity: 2026-05-07 — Phase 48 executed (48-001, 48-002)
 
 Progress: [████████░░] 20%
 
@@ -53,6 +53,7 @@ Progress: [████████░░] 20%
 
 *Updated after each plan completion*
 | Phase 47-library-records-deprecation-cleanup P001-002 | 18min | 4 tasks | 16 files |
+| Phase 48-textual-tui-removal P001-002 | 15min | 5 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -75,11 +76,11 @@ Progress: [████████░░] 20%
 
 1. **[FIXED] Index hardcodes "Literature/" path** — resolved by Phase 46 (PATH-01). Config-resolved paths now in all 5 workspace fields.
 2. **Library-records deprecation incomplete**: 15 residual traces across 10 .py files + 5 .md command files. (Phase 47 target)
-3. **Setup wizard TUI broken and unreachable**: NameError crash at line 662. Both real install paths (plugin settings tab, AI agents) use `--headless`. Textual TUI is dead code — needs removal, not repair. (Phase 48 target)
+3. **[FIXED] Setup wizard TUI broken and unreachable**: NameError crash at line 662. Both real install paths (plugin settings tab, AI agents) use `--headless`. Textual TUI is dead code — removed by Phase 48. `headless_setup()` preserved intact.
 4. **New modules lack hardening**: discussion.py (no locking/escaping/timezone), main.js (API key exposure/XSS/sync I/O), asset_state.py (broken next_step/null JSON), repair.py (divergence blind spots). (Phase 49 target)
 
 ## Session Continuity
 
-Last session: 2026-05-07T11:24:40.286Z
-Stopped at: Completed 47 - Library-Records Deprecation Cleanup
+Last session: 2026-05-07T11:44:47.723Z
+Stopped at: Completed 48 - Textual TUI Removal (DEPR-01 through DEPR-03)
 Resume file: None
