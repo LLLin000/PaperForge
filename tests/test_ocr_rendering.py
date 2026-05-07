@@ -126,3 +126,85 @@ def test_render_page_blocks_links_media_for_text_caption(tmp_path: Path) -> None
 
     assert any(line.startswith("![[") for line in rendered)
     assert any(line.startswith("Figure 4 RT-qPCR results.") for line in rendered)
+
+
+def test_embedded_figure_text_excludes_body_paragraph_like_text() -> None:
+    from paperforge.worker.ocr import is_embedded_figure_text_block
+
+    blocks = [
+        {
+            "block_id": 1,
+            "block_label": "paragraph_title",
+            "block_bbox": [80, 530, 269, 554],
+            "block_content": "Immunohistochemistry",
+        },
+        {
+            "block_id": 2,
+            "block_label": "text",
+            "block_bbox": [78, 577, 498, 915],
+            "block_content": (
+                "To determine which cells express these proteins, we performed immunohistochemical analyses "
+                "for Tyk2, S100A9, and ZNF 217 from the same tissues used in 2-DE. Positively stained cells "
+                "of Tyk2 and ZNF 217 were located at cytoplasm of epithelial cells. Although the majority of "
+                "cases of SCC and adjacent normal tissues showed cytoplasmic S100A9 positivity of epithelial "
+                "cells, some cases also showed nuclear S100A9 positivity, as shown in Fig. 3."
+            ),
+        },
+        {
+            "block_id": 3,
+            "block_label": "image",
+            "block_bbox": [272, 964, 610, 1421],
+            "block_content": "",
+        },
+        {
+            "block_id": 4,
+            "block_label": "image",
+            "block_bbox": [620, 964, 933, 1421],
+            "block_content": "",
+        },
+        {
+            "block_id": 5,
+            "block_label": "figure_title",
+            "block_bbox": [78, 1448, 1129, 1511],
+            "block_content": (
+                "Fig. 3. Immunohistochemical staining in SCC and adjacent normal tissues. Sections from SCC and "
+                "nontumorous tissue were immunostained with antibodies against Tyk2 (left), S100A9 (middle), "
+                "and ZNF 217 (right)."
+            ),
+        },
+    ]
+
+    assert is_embedded_figure_text_block(blocks[1], blocks, page_width=1200, page_height=1600) is False
+
+
+def test_embedded_figure_text_keeps_narrow_in_figure_note() -> None:
+    from paperforge.worker.ocr import is_embedded_figure_text_block
+
+    blocks = [
+        {
+            "block_id": 1,
+            "block_label": "chart",
+            "block_bbox": [320, 260, 620, 1080],
+            "block_content": "",
+        },
+        {
+            "block_id": 2,
+            "block_label": "chart",
+            "block_bbox": [640, 260, 920, 1080],
+            "block_content": "",
+        },
+        {
+            "block_id": 3,
+            "block_label": "text",
+            "block_bbox": [470, 1090, 760, 1160],
+            "block_content": "Patient A\nAge 42\nHPV16 positive",
+        },
+        {
+            "block_id": 4,
+            "block_label": "figure_title",
+            "block_bbox": [300, 1180, 980, 1250],
+            "block_content": "Figure 2. Representative pathology records and imaging findings.",
+        },
+    ]
+
+    assert is_embedded_figure_text_block(blocks[2], blocks, page_width=1200, page_height=1600) is True

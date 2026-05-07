@@ -72,6 +72,7 @@ class TestSelectionSyncCompletesCleanly:
         assert "deep_reading_status:" in text
         assert "first_author:" in text
         assert "journal:" in text
+        assert "fulltext_md_path:" in text
 
     def test_formal_note_pdf_wikilink_is_valid(self, test_vault: Path) -> None:
         """Verify pdf_path is a valid Obsidian wikilink with forward slashes."""
