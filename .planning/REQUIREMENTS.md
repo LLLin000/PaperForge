@@ -32,21 +32,21 @@
 
 **Root cause:** The Textual TUI setup wizard (`paperforge setup` without `--headless`) is broken (NameError crash), unreachable from either real install workflow (plugin settings tab uses `--headless`, AI agents use `--headless`), and adds ~1200 lines of Textual-dependent code to maintain.
 
-- [ ] **DEPR-01**: `paperforge setup` (bare, no `--headless`) prints a help message redirecting to `--headless` or the plugin settings tab. Textual TUI classes removed from `setup_wizard.py`: `WelcomeStep`, `DirOverviewStep`, `VaultStep`, `PlatformStep`, `DeployStep`, `DoneStep`, `SetupWizardApp`, `ContentSwitcher`, `StepScreen`, and all TUI-only import paths. `headless_setup()` and shared utilities (`EnvChecker`, `AGENT_CONFIGS`, `_copy_file_incremental`, `_merge_env_incremental`) preserved.
-- [ ] **DEPR-02**: Three documentation files updated: `docs/setup-guide.md`, `docs/INSTALLATION.md`, `README.md` — all bare `paperforge setup` references changed to `paperforge setup --headless`.
-- [ ] **DEPR-03**: Post-install instruction text in `setup_wizard.py:1306-1307` and `headless_setup` completion message updated to reflect headless-only workflow. `--non-interactive` removed from CLI options. `textual` removed from project optional dependencies.
+- [x] **DEPR-01**: `paperforge setup` (bare, no `--headless`) prints a help message redirecting to `--headless` or the plugin settings tab. Textual TUI classes removed from `setup_wizard.py`: `WelcomeStep`, `DirOverviewStep`, `VaultStep`, `PlatformStep`, `DeployStep`, `DoneStep`, `SetupWizardApp`, `ContentSwitcher`, `StepScreen`, and all TUI-only import paths. `headless_setup()` and shared utilities (`EnvChecker`, `AGENT_CONFIGS`, `_copy_file_incremental`, `_merge_env_incremental`) preserved.
+- [x] **DEPR-02**: Three documentation files updated: `docs/setup-guide.md`, `docs/INSTALLATION.md`, `README.md` — all bare `paperforge setup` references changed to `paperforge setup --headless`.
+- [x] **DEPR-03**: Post-install instruction text in `setup_wizard.py:1306-1307` and `headless_setup` completion message updated to reflect headless-only workflow. `--non-interactive` removed from CLI options. `textual` removed from project optional dependencies.
 
 ### HARDEN — Module Hardening (7 requirements)
 
 **Root cause:** New modules (`discussion.py`, `asset_state.py`) and the Obsidian plugin were built quickly during v1.6-v1.8 and lack safety hardening.
 
-- [ ] **HARDEN-01**: `discussion.py:281-314` file-level locking around JSON and MD read-modify-write cycles. Concurrent `/pf-paper` and `/pf-deep` calls for the same paper do not silently drop sessions.
-- [ ] **HARDEN-02**: `discussion.py:170-171` Markdown special characters (`*`, `#`, `[`, `_`, `` ` ``) escaped in QA question/answer fields. Individual QA dict keys validated before building session.
-- [ ] **HARDEN-03**: `discussion.py:40` hardcoded CST (UTC+8) replaced with UTC. All timestamps use `datetime.now(timezone.utc)`.
-- [ ] **HARDEN-04**: `main.js:2116` PaddleOCR API key passed via environment variable, not command-line argument. `spawn()` with `env: { PADDLEOCR_API_TOKEN: ... }`.
-- [ ] **HARDEN-05**: `main.js:1815` `innerHTML` assignment replaced with `createEl()` DOM API for directory tree rendering. No XSS vector from user-configured directory names.
-- [ ] **HARDEN-06**: `asset_state.py:225-226` workspace integrity checks performed before returning `"/pf-deep"`. Checks currently at lines 233-240 moved before line 226.
-- [ ] **HARDEN-07**: `status.py:687-690` `lifecycle_level_counts`, `health_aggregate`, `maturity_distribution` return empty dicts `{}` when no canonical index exists (not `null`/`None`). Downstream JSON parsers do not crash on field access.
+- [x] **HARDEN-01**: `discussion.py:281-314` file-level locking around JSON and MD read-modify-write cycles. Concurrent `/pf-paper` and `/pf-deep` calls for the same paper do not silently drop sessions.
+- [x] **HARDEN-02**: `discussion.py:170-171` Markdown special characters (`*`, `#`, `[`, `_`, `` ` ``) escaped in QA question/answer fields. Individual QA dict keys validated before building session.
+- [x] **HARDEN-03**: `discussion.py:40` hardcoded CST (UTC+8) replaced with UTC. All timestamps use `datetime.now(timezone.utc)`.
+- [x] **HARDEN-04**: `main.js:2116` PaddleOCR API key passed via environment variable, not command-line argument. `spawn()` with `env: { PADDLEOCR_API_TOKEN: ... }`.
+- [x] **HARDEN-05**: `main.js:1815` `innerHTML` assignment replaced with `createEl()` DOM API for directory tree rendering. No XSS vector from user-configured directory names.
+- [x] **HARDEN-06**: `asset_state.py:225-226` workspace integrity checks performed before returning `"/pf-deep"`. Checks currently at lines 233-240 moved before line 226.
+- [x] **HARDEN-07**: `status.py:687-690` `lifecycle_level_counts`, `health_aggregate`, `maturity_distribution` return empty dicts `{}` when no canonical index exists (not `null`/`None`). Downstream JSON parsers do not crash on field access.
 
 ### REPAIR — Repair Blind Spots (4 requirements)
 
@@ -83,16 +83,16 @@
 | LEGACY-05 | Phase 47 | Complete |
 | LEGACY-06 | Phase 47 | Complete |
 | LEGACY-07 | Phase 47 | Complete |
-| DEPR-01 | Phase 48 | Pending |
-| DEPR-02 | Phase 48 | Pending |
-| DEPR-03 | Phase 48 | Pending |
-| HARDEN-01 | Phase 49 | Pending |
-| HARDEN-02 | Phase 49 | Pending |
-| HARDEN-03 | Phase 49 | Pending |
-| HARDEN-04 | Phase 49 | Pending |
-| HARDEN-05 | Phase 49 | Pending |
-| HARDEN-06 | Phase 49 | Pending |
-| HARDEN-07 | Phase 49 | Pending |
+| DEPR-01 | Phase 48 | Complete |
+| DEPR-02 | Phase 48 | Complete |
+| DEPR-03 | Phase 48 | Complete |
+| HARDEN-01 | Phase 49 | Complete |
+| HARDEN-02 | Phase 49 | Complete |
+| HARDEN-03 | Phase 49 | Complete |
+| HARDEN-04 | Phase 49 | Complete |
+| HARDEN-05 | Phase 49 | Complete |
+| HARDEN-06 | Phase 49 | Complete |
+| HARDEN-07 | Phase 49 | Complete |
 | REPAIR-01 | Phase 50 | Pending |
 | REPAIR-02 | Phase 50 | Pending |
 | REPAIR-03 | Phase 50 | Pending |

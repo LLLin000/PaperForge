@@ -245,7 +245,7 @@ Plans:
 | 46. Index Path Resolution | v1.11 | 2/2 | Complete | 2026-05-07 |
 | 47. Library-Records Deprecation Cleanup | v1.11 | 1/2 | In Progress|  |
 | 48. Textual TUI Removal | v1.11 | 3/2 | Complete   | 2026-05-07 |
-| 49. Module Hardening | v1.11 | 0/0 | Not started | - |
+| 49. Module Hardening | v1.11 | 1/3 | In Progress|  |
 | 50. Repair Blind Spots | v1.11 | 0/0 | Not started | - |
 
 ---
