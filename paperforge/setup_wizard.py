@@ -1004,11 +1004,12 @@ def headless_setup(
         except ImportError:
             current_ver = 'not installed'
         # If repo_root is the source repository (has pyproject.toml), install from it.
-        # Otherwise (site-packages copy) install from GitHub.
+        # Otherwise (site-packages copy) install from GitHub tagged release.
         if (repo_root / "pyproject.toml").exists():
             install_target = [str(repo_root)]
         else:
-            install_target = [f"git+https://github.com/LLLin000/PaperForge.git"]
+            from paperforge import __version__ as _pv
+            install_target = [f"git+https://github.com/LLLin000/PaperForge.git@{_pv}"]
         result = subprocess.run(
             [sys.executable, "-m", "pip", "install", "--upgrade"] + install_target,
             capture_output=True, text=True, timeout=120,
