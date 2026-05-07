@@ -16,7 +16,7 @@
 
 ```bash
 # 准备阶段（间接）
-paperforge sync      # 生成正式笔记和 library-records
+paperforge sync      # 生成正式笔记
 ```
 
 > `/pf-paper` 是 **Agent 层命令**，无直接 CLI 等效命令。
@@ -24,7 +24,7 @@ paperforge sync      # 生成正式笔记和 library-records
 ## Prerequisites
 
 - [ ] 正式笔记已生成（`paperforge sync` 生成）
-- [ ] library-record 存在（用于定位论文）
+- [ ] 正式笔记已生成（用于定位论文）
 - [ ] `fulltext.md` 存在（推荐，用于基于原文回答；如不存在则基于元数据回答）
 
 > **注意**：与 `/pf-deep` 不同，`/pf-paper` **不强制要求** OCR 完成。没有 OCR 时基于论文元数据和公开信息回答。

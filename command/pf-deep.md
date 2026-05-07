@@ -18,7 +18,7 @@
 
 ```bash
 # 准备阶段（间接）
-paperforge sync      # 生成 library-records 和正式笔记
+paperforge sync      # 生成正式笔记
 paperforge ocr       # 完成 OCR 提取
 paperforge deep-reading  # 查看精读队列状态
 ```
@@ -27,8 +27,8 @@ paperforge deep-reading  # 查看精读队列状态
 
 ## Prerequisites
 
-- [ ] library-record 已创建（`paperforge sync` 生成）
-- [ ] `analyze: true` 已设置（在 library-record frontmatter 中）
+- [ ] 正式笔记已生成（`paperforge sync` 生成）
+- [ ] `analyze: true` 已设置（在正式笔记 frontmatter 中）
 - [ ] OCR 已完成（`ocr_status: done`）
 - [ ] `fulltext.md` 存在且非空
 - [ ] 正式笔记文件存在
@@ -75,7 +75,7 @@ paperforge deep-reading  # 查看精读队列状态
    - 若只有 1 篇就绪 -> 直接执行单篇精读（等同于 `/pf-deep <key>`）
    - 若多篇 -> 展示清单，用户选择后批量 spawn subagent 并行处理
 
-> **注意**：`queue` 模式只扫描 `library-records`（Base 控制记录），不扫描正式卡片。只有在 Base 里勾选 `analyze=true` 的论文才会进入队列。
+> **注意**：`queue` 模式只扫描正式笔记 frontmatter，不扫描正式卡片。只有在 Base 里勾选 `analyze=true` 的论文才会进入队列。
 
 ## Output
 
@@ -120,8 +120,8 @@ Agent 在正式笔记中创建或更新 `## 精读` 区域，包含：
 
 | 变量 | 示例值 | 获取方式 |
 |------|--------|---------|
-| `{{ZOTERO_KEY}}` | `Y5KQ4JQ7` | 从 library-record 或 JSON 导出中获取 |
-| `{{FORMAL_NOTE}}` | `<Vault>/<resources_dir>/<literature_dir>/骨科/Y5KQ4JQ7 - title.md` | 从 `paperforge paths --json` 或 library-record 中获取 |
+| `{{ZOTERO_KEY}}` | `Y5KQ4JQ7` | 从 JSON 导出中获取 |
+| `{{FORMAL_NOTE}}` | `<Vault>/<resources_dir>/<literature_dir>/骨科/Y5KQ4JQ7 - title.md` | 从 `paperforge paths --json` 中获取 |
 | `{{FULLTEXT_MD}}` | `<Vault>/<system_dir>/PaperForge/ocr/Y5KQ4JQ7/fulltext.md` | 由 OCR worker 生成在 ocr 目录下 |
 | `{{SCRIPT}}` | `<Vault>/<skill_dir>/literature-qa/scripts/ld_deep.py` | 从 `paperforge paths --json` 获取 `ld_deep_script` 字段 |
 
