@@ -391,7 +391,7 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
         "paper_root": str(workspace_dir.relative_to(vault)).replace("\\", "/") + "/",
         "main_note_path": str(main_note_path.relative_to(vault)).replace("\\", "/"),
         "fulltext_path": str(target_fulltext.relative_to(vault)).replace("\\", "/") if fulltext_exists else "",
-        "deep_reading_path": str(deep_reading_file.relative_to(vault)).replace("\\", "/") if deep_reading_exists else "",
+        "deep_reading_path": "",  # deprecated: deep reading content now lives in main note as ## 🔍 精读
         "ai_path": str((workspace_dir / "ai").relative_to(vault)).replace("\\", "/") + "/",
     }
 
