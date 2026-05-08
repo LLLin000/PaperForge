@@ -110,98 +110,7 @@ Object.assign(LANG.en, {
     ocr_queue_remove: 'Remove from OCR Queue',
     ocr_queue_added: 'Added to OCR queue',
     ocr_queue_removed: 'Removed from OCR queue',
-    run_pending_ocr: 'Run All Pending OCR',
-    run_pending_ocr_desc: 'Run OCR on all papers waiting in the queue',
-    no_pending_ocr: 'All OCR tasks done',
 
-    /* ── DASH-02: /pf-deep Handoff (Plan 54-001) ── */
-    copy_pf_deep_cmd: 'Copy /pf-deep Command',
-    copied: 'Copied!',
-    run_in_agent: 'Run in {0}',
-
-    /* ── DASH-03: Privacy Warning (Plan 54-003) ── */
-    ocr_privacy_title: 'OCR Privacy Notice',
-    ocr_privacy_warning: 'OCR will upload PDFs to the PaddleOCR API for processing. Do not upload sensitive or confidential documents.',
-    ocr_understand: 'I Understand',
-});
-
-Object.assign(LANG.zh, {
-    desc: 'Obsidian + Zotero 文献管理流水线。自动同步文献、生成笔记、OCR 提取全文，一站式完成文献整理与精读。',
-    setup_done: 'PaperForge 环境已准备完成',
-    setup_pending: '尚未完成安装。请先完成下面的准备，再打开安装向导。',
-    section_prep_desc: '第一次使用前，请先完成下面 4 项准备。Better BibTeX 自动导出放在安装完成后配置：',
-    prep_python_desc: '确认系统可以直接运行 Python 命令。如果不确定，点击下方按钮自动检测。',
-    prep_zotero_desc: '先安装 Zotero：https://www.zotero.org',
-    prep_bbt_desc: '在 Zotero 中依次打开：工具 -> 插件 -> 安装 Better BibTeX。',
-    prep_export: 'Better BibTeX 自动导出设置',
-    prep_export_desc: '在 Zotero 中右键需要同步的文献分类 -> 选择“导出分类” -> 选择 BetterBibTeX JSON -> 勾选“保持更新” -> 把导出的 JSON 文件保存到下面这个 exports 文件夹。之后 Obsidian Base 会根据 JSON 文件名自动建立对应名称：',
-    prep_export_path_label: '请把导出的 JSON 文件保存到这个文件夹：',
-    guide_open: '打开主面板',
-    guide_open_desc: '按 Ctrl+P，输入 PaperForge: 打开主面板；或点击左侧的 PaperForge 图标。',
-    guide_sync_desc: '先完成 Better BibTeX JSON 自动导出配置，再在主面板点击 Sync Library，把 Zotero 文献同步到 Obsidian 并自动生成笔记。',
-    guide_ocr_desc: '在主面板点击 Run OCR，从 PDF 中提取全文和图表，供后续精读和分析使用。',
-    btn_install_desc: '先检查环境是否就绪，再打开分步安装向导',
-    btn_reconfig_desc: '重新打开安装向导，修改目录、平台或密钥配置',
-    wizard_step2: '目录配置',
-    wizard_step3: '平台与密钥',
-    wizard_intro: '这个向导会一步步帮你完成安装。大部分选项保持默认即可，安装时会自动创建所需目录。',
-    wizard_dir_hint: '资源目录用于存放用户可见的文献数据。下面这些目录都会位于资源目录内部：',
-    wizard_dir_sub_hint: '根据下面的目录名，最终路径会是：',
-    wizard_sys_hint: '这些目录位于 Vault 根目录，不属于资源目录：',
-    wizard_agent_hint: '选择你平时使用的 AI Agent 平台。安装完成后，PaperForge 会把对应的命令和技能文件放到正确位置。',
-    wizard_keys_hint: '下面填写 PaddleOCR API 密钥；如果你希望自动定位 Zotero 中的 PDF，也可以补充 Zotero 数据目录。',
-    wizard_preview: '安装后：系统文件位于 Vault 根目录，文献数据统一放在资源目录内。以后仍可在设置页修改。',
-    wizard_safety: '安全说明：如果你选择的目录里已经有文件，安装向导会保留已有内容，只补充缺失的 PaperForge 文件和目录。',
-    field_zotero_placeholder: '必填。Zotero 数据目录路径，用于解析 PDF 附件位置。',
-    install_validating: '正在校验安装环境...',
-    install_bootstrapping: '未检测到 PaperForge Python 包，正在自动安装...',
-    install_complete: '安装完成！',
-    install_failed: '安装失败：',
-    complete_title: 'PaperForge 安装完成',
-    complete_summary: '已保存的安装配置',
-    complete_next: '建议下一步',
-    complete_step1_desc: '按 Ctrl+P，输入 PaperForge: 打开主面板；或点击左侧的 PaperForge 图标。',
-    complete_step2_desc: '在主面板点击 Sync Library，把 Zotero 文献同步到 Obsidian 并自动生成笔记。',
-    complete_step3_desc: '在 Obsidian Base 视图中将文献的 do_ocr 设为 true，然后在主面板点击 Run OCR。',
-    complete_step4: '配置 Better BibTeX 自动导出',
-    complete_step4_desc: '在 Zotero 中右键要同步的文献库或分类 -> 导出 -> 选择 Better BibTeX JSON -> 勾选“保持更新”。',
-    complete_export_path: 'Better BibTeX 导出的 JSON 文件请保存到：',
-    nav_prev: '上一步',
-    nav_next: '下一步',
-    validate_fail: '下面这些必填项还没有填写完整',
-    notice_python_missing: '未检测到 Python。请先安装 Python 3.10+，并确保它已加入 PATH。',
-    api_key_set: '已填写',
-    api_key_missing: '未填写',
-    not_set: '未填写',
-    field_python_interp: 'Python 解释器',
-    field_python_custom: '自定义路径',
-    btn_validate: '验证',
-
-    /* ── Runtime Health (Task 2) ── */
-    runtime_health: '运行时状态',
-    runtime_health_desc: '检查已安装的 paperforge Python 包是否与插件版本一致',
-    runtime_health_plugin_ver: '插件 v{0}',
-    runtime_health_package_ver: 'Python 包 v{0}',
-    runtime_health_match: '一致',
-    runtime_health_mismatch: '不一致',
-    runtime_health_checking: '正在检查...',
-    runtime_health_sync: '同步运行时',
-    runtime_health_syncing: '正在同步...',
-    runtime_health_sync_done: '运行时已同步至 v{0}',
-    runtime_health_sync_fail: '同步失败: {0}',
-    dashboard_drift_warning: 'PaperForge CLI (v{0}) 与插件 (v{1}) 版本不一致，请打开设置 → 运行时状态进行同步。',
-
-    /* ── Copy Diagnostic (Task 3) ── */
-    error_copy_diagnostic: '复制诊断信息',
-    error_copied: '已复制',
-
-    /* ── DASH-01: OCR Queue (Plan 54-001) ── */
-    ocr_queue_add: '加入 OCR 队列',
-    ocr_queue_remove: '移出 OCR 队列',
-    ocr_queue_added: '已加入 OCR 队列',
-    ocr_queue_removed: '已移出 OCR 队列',
-    run_pending_ocr: '运行所有待处理 OCR',
-    run_pending_ocr_desc: '对队列中所有等待处理的文献运行 OCR',
     no_pending_ocr: '所有 OCR 任务已完成',
 
     /* ── DASH-02: /pf-deep Handoff (Plan 54-001) ── */
@@ -747,8 +656,7 @@ class PaperForgeStatusView extends ItemView {
             cnt.createEl('div', { cls: 'paperforge-ocr-count-label', text: l.label });
         }
 
-        // ── Dynamic: "Run All Pending OCR" when items are in queue (DASH-01) ──
-        this._renderPendingOcrAction(pending);
+
     }
 
     /* ── Lifecycle Stepper (D-07 through D-11) ── */
@@ -902,25 +810,6 @@ class PaperForgeStatusView extends ItemView {
             card.createEl('div', { cls: 'paperforge-action-card-desc', text: a.desc });
             card.createEl('div', { cls: 'paperforge-action-card-hint', text: a.disabled ? 'Coming soon' : 'Click to run' });
             card.addEventListener('click', () => this._runAction(a, card));
-        }
-    }
-
-    /* ── Dynamic "Run All Pending OCR" action (DASH-01) ── */
-    _renderPendingOcrAction(pending) {
-        // Remove stale pending action card if any
-        const existing = this._actionsGrid.querySelector('.paperforge-pending-ocr-action');
-        if (existing) existing.remove();
-
-        if (pending > 0) {
-            const card = this._actionsGrid.createEl('div', { cls: 'paperforge-action-card paperforge-pending-ocr-action' });
-            card.createEl('div', { cls: 'paperforge-action-card-icon', text: '\u229E' });
-            card.createEl('div', { cls: 'paperforge-action-card-title', text: t('run_pending_ocr') });
-            card.createEl('div', { cls: 'paperforge-action-card-desc', text: pending + ' ' + t('run_pending_ocr_desc') });
-            card.createEl('div', { cls: 'paperforge-action-card-hint', text: 'Click to run' });
-            card.addEventListener('click', () => {
-                const action = ACTIONS.find(a => a.id === 'paperforge-ocr');
-                if (action) this._runAction(action, card);
-            });
         }
     }
 

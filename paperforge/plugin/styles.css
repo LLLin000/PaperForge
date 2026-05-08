@@ -1529,12 +1529,6 @@
     margin-left: 8px;
 }
 
-/* ── DASH-01: Pending OCR Action Card ── */
-.paperforge-pending-ocr-action {
-    border-color: var(--color-orange);
-    background: color-mix(in srgb, var(--color-orange) 8%, var(--background-secondary));
-}
-
 /* ── DASH-02: Agent Platform Label ── */
 .paperforge-agent-platform-label {
     font-size: var(--font-ui-smaller);
