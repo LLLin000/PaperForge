@@ -8,6 +8,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- **Setup Wizard i18n**: Added comprehensive Chinese/English support for the plugin setup wizard, including directory descriptions and field labels.
+- **Enhanced Directory Defaults**: Updated default directory structure to use numbered prefixes (`99_System`, `03_Resources`, `05_Bases`) for better organization in the Obsidian file explorer.
+- **New Directory Field**: Added configuration for `control_dir` (LiteratureControl/Index_Cards) in the setup modal.
+
+### Changed
+
+- **Setup Flow Refactoring**: Migrated manual HTTPS-based API key validation to a more robust headless setup process via the PaperForge CLI.
+- **Improved Python/PATH Resolution**: Enhanced environment detection on macOS/Linux to handle restricted GUI execution environments (e.g., launching Obsidian from Finder).
+- **Update System**: The plugin's auto-update feature now leverages the built-in `paperforge update` command for improved reliability across different installation methods.
+
+### Fixed
+
+- **XSS Protection**: Replaced `innerHTML` with `createEl()` DOM API in setup modal previews to prevent potential XSS from user-configured directory names.
+- **Modal Input Reliability**: Added debouncing to settings saves within the setup modal to prevent race conditions during rapid input.
+
 ## [1.4.17rc1] — 2026-05-07
 
 ### Added
