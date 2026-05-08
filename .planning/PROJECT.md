@@ -4,6 +4,21 @@
 
 PaperForge is a local-first Obsidian + Zotero literature asset manager. It turns Zotero exports, PDFs, OCR fulltext, figures, notes, and AI outputs into a structured, traceable, reusable research library. v1.9 consolidated the fragmented tracking layers (library-records + formal notes) into a single per-workspace structure with slim frontmatter and paper-meta.json for internal state. v1.10 fixed cross-cutting dependency drift. v1.11 resolved all v1.9 ripple effects (index paths, library-records cleanup, TUI removal, module hardening, repair blind spots).
 
+## Current Milestone: v2.0 Testing Infrastructure — 6-Layer Quality Gates
+
+**Goal:** Establish a multi-layer testing infrastructure that covers version consistency, Python units, CLI contracts, plugin-backend integration, temp vault E2E workflows, user journey contracts, and destructive scenarios — with CI matrix, golden datasets, and snapshot testing.
+
+**Target features:**
+- Level 0: Version/build consistency checking (check_version_sync.py)
+- Level 1: Python unit tests (config, BBT parser, PDF resolver, OCR state machine, etc.)
+- Level 2: CLI contract tests (--json schema stability)
+- Level 3: Plugin-backend integration tests (plugin runtime helpers)
+- Level 4: Temp vault E2E tests (automatic vault creation, mock OCR, full workflow)
+- Level 5: User journey tests (UX Contract doc + journey scripts)
+- Level 6: Destructive/abnormal scenario tests (chaos matrix)
+- Fixtures: Golden dataset (zotero/ JSON fixtures, PDF fixtures, expected snapshots)
+- CI: GitHub Actions matrix (win/mac/linux, py3.10-3.12, node 20)
+
 ## Completed Milestone: v1.10 Dependency Cleanup
 
 **Status:** COMPLETE (2026-05-07)
@@ -331,4 +346,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state.
 
 ---
-*Last updated: 2026-05-07 after milestone v1.11 completion*
+*Last updated: 2026-05-08 after milestone v2.0 initiation*
