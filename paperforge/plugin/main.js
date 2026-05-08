@@ -1335,30 +1335,29 @@ class PaperForgeStatusView extends ItemView {
         if (!this._currentMode) return;
         this._contentEl.empty();
         this._contentEl.addClass('switching');
-        this._invalidateIndex(); // force fresh data load
+        this._invalidateIndex();
         this._currentPaperEntry = this._currentPaperKey ? this._findEntry(this._currentPaperKey) : null;
 
         this._renderModeHeader(this._currentMode);
 
-        switch (this._currentMode) {
-            case 'global':
-                this._renderGlobalMode();
-                break;
-            case 'paper':
-                this._renderPaperMode();
-                break;
-            case 'collection':
-                this._renderCollectionMode();
-                break;
-            case 'deep-reading':
-                this._renderDeepReadingMode();
-                break;
+        try {
+            switch (this._currentMode) {
+                case 'global':
+                    this._renderGlobalMode();
+                    break;
+                case 'paper':
+                    this._renderPaperMode();
+                    break;
+                case 'collection':
+                    this._renderCollectionMode();
+                    break;
+            }
+        } finally {
+            // Always remove switching, even if render throws
+            setTimeout(() => {
+                if (this._contentEl) this._contentEl.removeClass('switching');
+            }, 50);
         }
-
-        // Brief delay before removing switching class for smooth fade transition
-        setTimeout(() => {
-            if (this._contentEl) this._contentEl.removeClass('switching');
-        }, 50);
     }
 
     /* ── Run Action ── */
@@ -1487,12 +1486,14 @@ class PaperForgeStatusView extends ItemView {
                 const summary = `${elapsed}s \u2014 ${lastUpdated}`;
                 this._showMessage('[OK] ' + a.title + ': ' + summary, 'ok');
                 new Notice('[OK] ' + a.okMsg);
+                if (this._contentEl) this._contentEl.removeClass('switching');
                 this._cachedStats = null;
                 this._fetchStats();
             }
         });
         child.on('error', (err) => {
             card.removeClass('running');
+            if (this._contentEl) this._contentEl.removeClass('switching');
             this._showMessage('[!!] ' + err.message, 'error');
             new Notice('[!!] Cannot start: ' + err.message, 8000);
         });
