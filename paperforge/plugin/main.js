@@ -347,6 +347,24 @@ function resolvePythonExecutable(vaultPath, settings) {
     return { path: 'python', source: 'auto-detected', extraArgs: [] };
 }
 
+function overlayEntryWorkflowState(app, entry) {
+    if (!entry || !entry.note_path) return entry;
+    const noteFile = app.vault.getAbstractFileByPath(entry.note_path);
+    if (!noteFile) return entry;
+    const cache = app.metadataCache.getFileCache(noteFile);
+    const fm = cache && cache.frontmatter;
+    if (!fm) return entry;
+    const merged = { ...entry };
+    for (const key of ['do_ocr', 'analyze', 'ocr_status', 'deep_reading_status']) {
+        if (Object.prototype.hasOwnProperty.call(fm, key)) merged[key] = fm[key];
+    }
+    return merged;
+}
+
+function patchEntryWorkflowState(entry, patch) {
+    return entry ? { ...entry, ...patch } : entry;
+}
+
 class PaperForgeStatusView extends ItemView {
     constructor(leaf) {
         super(leaf);
@@ -614,7 +632,15 @@ class PaperForgeStatusView extends ItemView {
     /* ── Single Paper Lookup by Key (D-12, D-18) ── */
     _findEntry(key) {
         if (!key) return null;
-        return this._getCachedIndex().find(item => item.zotero_key === key) || null;
+        const entry = this._getCachedIndex().find(item => item.zotero_key === key) || null;
+        return overlayEntryWorkflowState(this.app, entry);
+    }
+
+    _patchCachedEntry(key, patch) {
+        if (!key || !this._cachedItems) return;
+        const idx = this._cachedItems.findIndex(item => item.zotero_key === key);
+        if (idx === -1) return;
+        this._cachedItems[idx] = patchEntryWorkflowState(this._cachedItems[idx], patch);
     }
 
     /* ── Filter Papers by Domain (D-13, D-16) ── */
@@ -915,21 +941,7 @@ class PaperForgeStatusView extends ItemView {
         }
 
         if (ext === 'md') {
-            // D-01: Check deep-reading.md FIRST — before zotero_key frontmatter
-            if (file.name === 'deep-reading.md') {
-                const parentDir = file.parent ? file.parent.name : '';
-                // D-02: Parent directory must match {8-char-key} - {Title}
-                if (/^[A-Z0-9]{8} - .+$/.test(parentDir)) {
-                    const cache = this.app.metadataCache.getFileCache(file);
-                    const key = cache && cache.frontmatter && cache.frontmatter.zotero_key;
-                    if (key) {
-                        return { mode: 'deep-reading', filePath, key, domain: null };
-                    }
-                }
-                // D-03: Fall through to normal .md handling
-            }
-
-            // Standard .md — check for zotero_key in frontmatter (D-03)
+            // Standard .md — check for zotero_key in frontmatter.
             const cache = this.app.metadataCache.getFileCache(file);
             const key = cache && cache.frontmatter && cache.frontmatter.zotero_key;
             if (key) {
@@ -980,9 +992,6 @@ class PaperForgeStatusView extends ItemView {
                 break;
             case 'collection':
                 this._renderCollectionMode();
-                break;
-            case 'deep-reading':
-                this._renderDeepReadingMode();
                 break;
         }
     }
@@ -1094,6 +1103,8 @@ class PaperForgeStatusView extends ItemView {
             await this.app.fileManager.processFrontMatter(noteFile, (fm) => {
                 fm.do_ocr = newValue;
             });
+            this._patchCachedEntry(key, { do_ocr: newValue });
+            this._currentPaperEntry = patchEntryWorkflowState(this._currentPaperEntry, { do_ocr: newValue });
             new Notice(newValue ? t('ocr_queue_added') : t('ocr_queue_removed'));
             this._refreshCurrentMode();
         });
@@ -1158,29 +1169,13 @@ class PaperForgeStatusView extends ItemView {
             const labelEl = card.createEl('div', { cls: 'paperforge-agent-platform-label' });
             labelEl.setText(t('run_in_agent').replace('{0}', platform));
         } else if (nextStep === 'ready') {
-            if (entry.deep_reading_path && entry.deep_reading_status === 'done') {
-                // D-01, D-03: Jump-to-deep-reading button replaces Copy Context when deep reading exists
-                const trigger = card.createEl('button', { cls: 'paperforge-next-step-trigger' });
-                trigger.createEl('span', { text: '\uD83D\uDD0D  ' + t('jump_to_deep_reading') });
-                trigger.addEventListener('click', () => {
-                    // D-04: Follow _openFulltext() pattern — verify file, open, error Notice
-                    const drFile = this.app.vault.getAbstractFileByPath(entry.deep_reading_path);
-                    if (drFile) {
-                        this.app.workspace.openLinkText(drFile.path, '');
-                    } else {
-                        // D-05: File missing from disk despite index claiming it exists
-                        new Notice('[!!] ' + t('deep_reading_not_found'), 6000);
-                    }
-                });
-            } else {
-                // D-02, D-03: Fall back to existing Copy Context button
-                const trigger = card.createEl('button', { cls: 'paperforge-next-step-trigger' });
-                trigger.createEl('span', { text: '\u2139  Copy Context' });
-                trigger.addEventListener('click', () => {
-                    const action = ACTIONS.find(a => a.id === 'paperforge-copy-context');
-                    if (action) this._runAction(action, trigger);
-                });
-            }
+            // Fall back to existing Copy Context button.
+            const trigger = card.createEl('button', { cls: 'paperforge-next-step-trigger' });
+            trigger.createEl('span', { text: '\u2139  Copy Context' });
+            trigger.addEventListener('click', () => {
+                const action = ACTIONS.find(a => a.id === 'paperforge-copy-context');
+                if (action) this._runAction(action, trigger);
+            });
         }
     }
 
@@ -1198,43 +1193,6 @@ class PaperForgeStatusView extends ItemView {
         } else {
             new Notice('[!!] Fulltext file not found: ' + fulltextPath, 6000);
         }
-    }
-
-    /* ── Deep-Reading Mode Render (Phase 33) ── */
-    async _renderDeepReadingMode() {
-        const entry = this._currentPaperEntry;
-        const modeGuard = () => this._currentMode === 'deep-reading';
-        const view = this._contentEl.createEl('div', { cls: 'paperforge-mode-deepreading' });
-
-        // Read deep-reading.md content
-        let deepReadingText = '';
-        if (entry && entry.deep_reading_path) {
-            const drFile = this.app.vault.getAbstractFileByPath(entry.deep_reading_path);
-            if (drFile) {
-                deepReadingText = await this.app.vault.read(drFile);
-            }
-            if (!modeGuard()) return; // Guard: mode switched during async read
-        }
-
-        // Read discussion.json
-        let discussionData = null;
-        if (entry && entry.ai_path) {
-            const aiPath = entry.ai_path.replace(/^\[\[/, '').replace(/\]\]$/, '');
-            const djPath = aiPath + 'discussion.json';
-            const djFile = this.app.vault.getAbstractFileByPath(djPath);
-            if (djFile) {
-                try {
-                    const raw = await this.app.vault.read(djFile);
-                    if (!modeGuard()) return; // Guard: mode switched
-                    discussionData = JSON.parse(raw);
-                } catch (e) { /* file missing or parse error */ }
-            }
-        }
-
-        // Render sections
-        this._renderDeepStatusCard(view, entry);
-        this._renderDeepPass1Card(view, deepReadingText);
-        this._renderDeepQACard(view, discussionData);
     }
 
     /* ── Deep-Reading Status Card ── */
@@ -1458,6 +1416,7 @@ class PaperForgeStatusView extends ItemView {
         this._contentEl.empty();
         this._contentEl.addClass('switching');
         this._invalidateIndex(); // force fresh data load
+        this._currentPaperEntry = this._currentPaperKey ? this._findEntry(this._currentPaperKey) : null;
 
         this._renderModeHeader(this._currentMode);
 
@@ -1702,6 +1661,11 @@ class PaperForgeStatusView extends ItemView {
         const modifyHandler = this.app.vault.on('modify', (file) => {
             if (file && file.path && file.path.endsWith('formal-library.json')) {
                 this._invalidateIndex();  // D-14: invalidate cache
+                this._refreshCurrentMode();
+                return;
+            }
+            if (file && this._currentPaperEntry && file.path === this._currentPaperEntry.note_path) {
+                this._currentPaperEntry = this._findEntry(this._currentPaperKey);
                 this._refreshCurrentMode();
             }
         });
