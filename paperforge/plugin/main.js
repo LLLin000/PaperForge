@@ -1567,7 +1567,8 @@ class PaperForgeStatusView extends ItemView {
                 const summary = `${elapsed}s \u2014 ${lastUpdated}`;
                 this._showMessage('[OK] ' + a.title + ': ' + summary, 'ok');
                 new Notice('[OK] ' + a.okMsg);
-                this._fetchStats(true);
+                this._cachedStats = null;
+                this._fetchStats();
             }
         });
         child.on('error', (err) => {
