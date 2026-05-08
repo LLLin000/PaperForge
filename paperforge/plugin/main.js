@@ -160,6 +160,7 @@ const DEFAULT_SETTINGS = {
     language: '',
     paddleocr_api_key: '',
     zotero_data_dir: '',
+    python_path: '',
 };
 
 const ACTIONS = [
@@ -220,18 +221,49 @@ const ACTIONS = [
     },
 ];
 
-function resolvePythonExecutable(vaultPath) {
-    const candidates = [
+function resolvePythonExecutable(vaultPath, settings) {
+    // 1. Manual override — absolute source of truth
+    if (settings && settings.python_path && settings.python_path.trim()) {
+        const manualPath = settings.python_path.trim();
+        if (fs.existsSync(manualPath)) {
+            return { path: manualPath, source: 'manual', extraArgs: [] };
+        }
+    }
+
+    // 2. Venv candidates
+    const venvCandidates = [
         path.join(vaultPath, '.paperforge-test-venv', 'Scripts', 'python.exe'),
         path.join(vaultPath, '.venv', 'Scripts', 'python.exe'),
         path.join(vaultPath, 'venv', 'Scripts', 'python.exe'),
     ];
-    for (const candidate of candidates) {
+    for (const candidate of venvCandidates) {
         try {
-            if (fs.existsSync(candidate)) return candidate;
+            if (fs.existsSync(candidate)) return { path: candidate, source: 'auto-detected', extraArgs: [] };
         } catch {}
     }
-    return 'python';
+
+    // 3. System candidates — test each with --version, pick first that succeeds
+    const { execFileSync } = require('node:child_process');
+    const systemCandidates = [
+        { path: 'py', extraArgs: ['-3'] },
+        { path: 'python', extraArgs: [] },
+        { path: 'python3', extraArgs: [] },
+    ];
+    for (const candidate of systemCandidates) {
+        try {
+            const verOut = execFileSync(candidate.path, [...candidate.extraArgs, '--version'], {
+                encoding: 'utf-8',
+                timeout: 5000,
+                windowsHide: true,
+            });
+            if (verOut && verOut.toLowerCase().includes('python')) {
+                return { path: candidate.path, source: 'auto-detected', extraArgs: candidate.extraArgs };
+            }
+        } catch {}
+    }
+
+    // 4. Last-resort fallback
+    return { path: 'python', source: 'auto-detected', extraArgs: [] };
 }
 
 class PaperForgeStatusView extends ItemView {
@@ -334,7 +366,7 @@ class PaperForgeStatusView extends ItemView {
     /* ---------------------------------------------------------------------- */
     _fetchVersion() {
         const vp = this.app.vault.adapter.basePath;
-        const pythonExe = resolvePythonExecutable(vp);
+        const { path: pythonExe } = resolvePythonExecutable(vp);
         execFile(pythonExe, ['-c', 'import paperforge; print(paperforge.__version__)'], { cwd: vp, timeout: 10000 }, (err, stdout) => {
             if (!err && stdout) {
                 const v = stdout.trim();
@@ -415,7 +447,7 @@ class PaperForgeStatusView extends ItemView {
             if (!quiet && !this._cachedStats) {
                 this._metricsEl.createEl('div', { cls: 'paperforge-status-loading', text: 'No index \u2014 trying CLI...' });
             }
-            const pythonExe = resolvePythonExecutable(vp);
+            const { path: pythonExe } = resolvePythonExecutable(vp);
             execFile(pythonExe, ['-m', 'paperforge', 'status', '--json'], { cwd: vp, timeout: 30000 }, (err2, stdout) => {
                 if (err2) {
                     if (this._cachedStats) return;
@@ -1350,7 +1382,7 @@ class PaperForgeStatusView extends ItemView {
 
         const { spawn } = require('node:child_process');
         const cmdTimeout = a.needsFilter ? 60000 : (a.needsKey ? 30000 : 600000);
-        const pythonExe = resolvePythonExecutable(vp);
+        const { path: pythonExe } = resolvePythonExecutable(vp);
         const child = spawn(pythonExe, ['-m', 'paperforge', a.cmd, ...extraArgs], { cwd: vp, timeout: cmdTimeout });
         const log = [];
         const startTime = Date.now();
@@ -2259,7 +2291,7 @@ class PaperForgeSetupModal extends Modal {
         const verVal = verRow.createEl('span', { cls: 'paperforge-summary-value', text: '\u2014' });
         {
             const vp = vault;
-            const pythonExe = resolvePythonExecutable(vp);
+            const { path: pythonExe } = resolvePythonExecutable(vp);
             execFile(pythonExe, ['-c', 'import paperforge; print(paperforge.__version__)'], { cwd: vp, timeout: 10000 }, (err, stdout) => {
                 if (!err && stdout) verVal.textContent = 'v' + stdout.trim();
             });
@@ -2369,7 +2401,7 @@ module.exports = class PaperForgePlugin extends Plugin {
 
     _autoUpdate() {
         const vp = this.app.vault.adapter.basePath;
-        const pythonExe = resolvePythonExecutable(vp);
+        const { path: pythonExe } = resolvePythonExecutable(vp);
         const ver = this.manifest.version || '1.4.17rc2';
         const url = `git+https://github.com/LLLin000/PaperForge.git@${ver}`;
 
@@ -2512,6 +2544,17 @@ module.exports = class PaperForgePlugin extends Plugin {
         this.settings.literature_dir = pfConfig.literature_dir;
         this.settings.control_dir = pfConfig.control_dir;
         this.settings.base_dir = pfConfig.base_dir;
+
+        // Re-validate saved python_path override
+        if (this.settings.python_path && this.settings.python_path.trim()) {
+            const pp = this.settings.python_path.trim();
+            if (!fs.existsSync(pp)) {
+                console.warn(`PaperForge: Saved python_path "${pp}" no longer exists — showing stale warning`);
+                this.settings._python_path_stale = true;
+            } else {
+                this.settings._python_path_stale = false;
+            }
+        }
     }
 
     async saveSettings() {
