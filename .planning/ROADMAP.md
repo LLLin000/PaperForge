@@ -1,7 +1,7 @@
 # Roadmap: PaperForge
 
-**All milestones shipped up to v1.11.** Next milestone TBD.
-**Phase numbering:** Continuous. v1.10 ended at Phase 45. v1.11 ended at Phase 50.
+**All milestones shipped up to v1.11.**
+**Phase numbering:** Continuous. v1.10 ended at Phase 45. v1.11 ended at Phase 50. v2.0 starts at Phase 51.
 
 ---
 
@@ -19,6 +19,7 @@
 - ✅ **v1.9 Frontmatter Rationalization & Library-Record Deprecation** — Phases 37-41 (shipped 2026-05-07)
 - ✅ **v1.10 Dependency Cleanup** — Phases 42-45 (shipped 2026-05-07)
 - ✅ **v1.11 Merge Gate — v1.9 Ripple Remediation** — Phases 46-50 (shipped 2026-05-07)
+- 🚧 **v2.0 Testing Infrastructure — 6-Layer Quality Gates** — Phases 51-55 (planning)
 
 *Archive: `.planning/milestones/`*
 
@@ -91,6 +92,18 @@
 - [x] **Phase 48: Textual TUI Removal** — 2 plans: TUI code removal, documentation updates (completed 2026-05-07)
 - [x] **Phase 49: Module Hardening** — Production-grade safety guards in discussion.py, main.js, asset_state.py (completed 2026-05-07)
 - [x] **Phase 50: Repair Blind Spots** — All 6 divergence types detected and handled by fix mode (completed 2026-05-07)
+
+---
+
+### 🚧 v2.0 Testing Infrastructure — 6-Layer Quality Gates (Planning)
+
+**Milestone Goal:** Establish a multi-layer testing infrastructure covering version consistency (L0), Python unit tests (L1), CLI contracts (L2), plugin-backend integration (L3), temp vault E2E workflows (L4), user journey contracts (L5), and destructive scenarios (L6) — with CI matrix, golden datasets, and snapshot testing.
+
+- [ ] **Phase 51: Testing Foundation** — Fixture hierarchy, L0 version checker, L1 unit test relocation, PR check CI
+- [ ] **Phase 52: Golden Datasets & CLI Contracts** — Fixture files, CLI `--json` contract tests with snapshot assertions
+- [ ] **Phase 53: Plugin Tests & Temp Vault E2E** — Vitest plugin tests, temp vault E2E workflows, Node 20 CI
+- [x] **Phase 54: User Journey & Chaos Tests** — UX contract, journey scripts, destructive scenario tests, chaos CI (completed 2026-05-08)
+- [ ] **Phase 55: CI Optimization & Consistency Audit** — Plasma matrix, full gate, path-filtered triggers, mock validation audit
 
 ---
 
@@ -224,6 +237,83 @@ Plans:
 Plans:
 - [x] 50-001-PLAN.md — All 4 REPAIR fixes: dead code removal, condition 4 detection, --fix mode coverage, silent exception logging
 
+### Phase 51: Testing Foundation
+**Goal**: Establish the testing framework — version consistency checker (L0), existing unit test relocation to `tests/unit/` (L1), 5-level hierarchical pytest fixtures, and PR check CI pipeline.
+**Depends on**: Nothing (first v2.0 phase; v1.11 shipped)
+**Requirements**: VC-01, VC-02, UNIT-01, UNIT-02, UNIT-03, UNIT-04, UNIT-05, UNIT-06, UNIT-07, UNIT-08, CI-01
+**Success Criteria** (what must be TRUE):
+  1. `scripts/check_version_sync.py` validates all 6+ version declarations (`__init__.__version__`, manifest.json, versions.json, CHANGELOG) and fails on mismatch — CI gate blocks push on version drift
+  2. All existing 473+ tests pass under `tests/unit/` directory structure with zero behavior modifications — `pytest tests/unit/` succeeds
+  3. `tests/conftest.py` provides 5-level fixture hierarchy (`empty_vault` -> `config_vault` -> `vault_with_export` -> `vault_with_ocr` -> `full_test_vault`) — each level usable independently by downstream test layers
+  4. `ci-pr-checks.yml` runs L0 (version check on ubuntu) + L1 (unit tests on 3 OS x 3 Python matrix) with total wall-clock under 2 minutes
+  5. `pyproject.toml` updated with test markers (`unit`, `cli`, `e2e`, `journey`, `chaos`, `slow`), testpaths, and new dependencies (pytest-snapshot, pytest-timeout, pytest-mock, responses, coverage)
+**Plans**: TBD
+
+### Phase 52: Golden Datasets & CLI Contracts
+**Goal**: Build the shared `fixtures/` golden dataset (Zotero JSON, PDF samples, mock OCR responses, expected snapshots) and CLI contract tests (L2) with subprocess invoker and shape-specific snapshot assertions.
+**Depends on**: Phase 51 (fixture hierarchy conftest provides base structure; test runner configured)
+**Requirements**: FIX-01, FIX-02, FIX-03, FIX-04, FIX-05, CLI-01, CLI-02, CLI-03
+**Success Criteria** (what must be TRUE):
+  1. `fixtures/` directory contains 8+ Zotero JSON variants (valid, empty, malformed, missing keys, CJK content, multi-attachment, 3 path formats), 4 minimal valid PDFs (including CJK filenames), 5 mock OCR response fixtures (submit, poll, result, error, timeout), and expected output snapshots — all tracked in `MANIFEST.json` with `used_by`, `generated`, `desc` fields
+  2. All 7 CLI commands (`status`, `sync`, `ocr`, `doctor`, `repair`, `context`, `setup`) return stable `--json` output with consistent schema — error responses use `ok`, `error_code`, `message`, `details`, `suggestions` fields
+  3. `pytest-snapshot` tests pass with shape-specific assertions (normalized dynamic fields, subset matching) — snapshot updates require explicit `--snapshot-update` flag and deliberate commit
+  4. Mock OCR backend using `responses` library produces deterministic, replayable PaddleOCR responses for all API states — no external HTTP calls during test execution
+**Plans**: 2 plans
+
+Plans:
+- [ ] 52-001-PLAN.md — Golden Datasets: Zotero JSON variants (10), PDF fixtures (4 generated), mock OCR responses (6+), expected snapshots, MANIFEST.json, vault_builder.py (FIX-01, FIX-02, FIX-03, FIX-04, FIX-05)
+- [ ] 52-002-PLAN.md — CLI Contract Tests: conftest with cli_invoker + mock_ocr_backend, pytest-snapshot integration, contract tests for all 7 commands + error codes (CLI-01, CLI-02, CLI-03)
+
+### Phase 53: Plugin Tests & Temp Vault E2E
+**Goal**: Build plugin-backend integration tests (L3) with Vitest + obsidian-test-mocks, and full temp vault end-to-end tests (L4) covering sync, OCR, status, doctor, and repair workflows.
+**Depends on**: Phase 52 (CLI contract outputs define the interface L3 plugin tests validate against; golden datasets provide E2E input data)
+**Requirements**: PLUG-01, PLUG-02, PLUG-03, E2E-01, E2E-02, E2E-03, E2E-04, E2E-05, CI-04
+**Success Criteria** (what must be TRUE):
+  1. `tests/plugin/` runs on Vitest + obsidian-test-mocks + jsdom — `resolvePythonExecutable`, `getPluginVersion`, and `checkRuntimeVersion` have passing tests
+  2. Plugin error classification covers all 5 error patterns (Python missing, import failed, version mismatch, pip install failure, timeout) — `buildRuntimeInstallCommand` and `parseRuntimeStatus` dispatch tests pass
+  3. Temp vault fixture (`tmp_path`-based) produces a disposable Vault with config, directories, mock Zotero data, and mock OCR state — usable by all E2E tests
+  4. Full E2E pipeline test: BBT JSON -> formal notes -> canonical index -> Base views completes in temp vault without external dependencies
+  5. OCR E2E test: mock PaddleOCR backend via `responses` HTTP interception processes `do_ocr: true` paper through pending -> processing -> done states
+  6. Multi-domain sync test verifies multiple Zotero collections sync correctly, producing domain-separated formal notes and index entries
+  7. Node 20 CI runner executes all plugin Vitest tests in `ci.yml` — L3 gate passes on PR to main
+**Plans**: 2 plans
+
+Plans:
+- [ ] 53-001-PLAN.md — Plugin source extraction & Vitest tests (L3): extract src/runtime.js, src/errors.js, src/commands.js; set up Vitest + obsidian-test-mocks + jsdom; write & pass plugin tests; add Node 20 CI runner
+- [ ] 53-002-PLAN.md — Temp vault E2E tests (L4): E2E conftest with temp vault fixture; sync pipeline, multi-domain sync, OCR mock E2E, status/doctor/repair E2E tests
+**UI hint**: yes
+
+### Phase 54: User Journey & Chaos Tests
+**Goal**: Document and implement user journey tests (L5) against verifiable UX contracts, plus destructive/abnormal scenario tests (L6) with safety contracts, Docker isolation, and weekly CI schedule.
+**Depends on**: Phase 53 (E2E vault infrastructure reused by journey tests; mock systems shared with chaos tests)
+**Requirements**: JNY-01, JNY-02, JNY-03, CHAOS-01, CHAOS-02, CHAOS-03, CHAOS-04, CI-05
+**Success Criteria** (what must be TRUE):
+  1. `docs/ux-contract.md` defines concrete, verifiable step sequences for installation, sync, OCR, and dashboard workflows — each step has a single measurable outcome
+  2. New user onboarding journey test (`install -> sync -> OCR -> analyze -> deep-read`) completes in temp vault with journey fixture pack at each stage
+  3. Daily workflow journey test (`existing user adds paper -> syncs -> OCRs -> reads`) completes in pre-configured temp vault with existing papers
+  4. `CHAOS_MATRIX.md` documents all destructive scenarios with triggers, expected behavior, and safety contracts — no undocumented failure modes
+  5. Corrupted input tests (malformed JSON, corrupt PDF, broken meta.json, missing frontmatter) produce graceful error messages — no unhandled crashes
+  6. Network failure tests (OCR API timeout, HTTP 401, 500, DNS unreachable) use mock backend and produce actionable error messages
+  7. Filesystem error tests (permission denied, locked files, missing directories) use isolation assertion (`assert "tmp" in str(vault)`) — no real vault damage
+  8. `ci-chaos.yml` runs on weekly schedule + manual trigger with Docker isolation — chaos tests excluded from regular CI gate
+**Plans**: 3 plans
+
+Plans:
+- [x] 54-001-PLAN.md — UX Contract + Journey Tests: docs/ux-contract.md, journey fixture pack, onboarding + daily workflow tests (JNY-01, JNY-02, JNY-03)
+- [x] 54-002-PLAN.md — Chaos Matrix + Chaos Tests: CHAOS_MATRIX.md, corrupted input, network failure, filesystem error tests with isolation guards (CHAOS-01, CHAOS-02, CHAOS-03, CHAOS-04)
+- [x] 54-003-PLAN.md — CI Chaos Workflow: ci-chaos.yml with weekly schedule + manual trigger (CI-05)
+
+### Phase 55: CI Optimization & Consistency Audit
+**Goal**: Harden CI with plasma matrix strategy, full L0-L4 merge gate, path-filtered triggers, and cross-layer consistency audit that validates L1 mocks against L4 ground truth.
+**Depends on**: Phase 54 (all test layers L0-L6 exist in CI; optimization decisions informed by actual run data)
+**Requirements**: CI-02, CI-03
+**Success Criteria** (what must be TRUE):
+  1. `ci.yml` full gate runs L0 through L4 on merge to main — `re-actors/alls-green` provides single-status check for branch protection
+  2. Plasma CI matrix: L1 on 3 OS x 3 Python (fast); L2 on 2 Python x 1 OS; L3-L5 on single config — total CI budget under configured concurrent runner limit
+  3. Path-filtered CI triggers prevent unnecessary jobs: changes to `paperforge/ocr.py` trigger L1+L2+L4; changes to `paperforge/plugin/main.js` trigger L3 only; version files trigger L0 only
+  4. Consistency audit test validates L1 mock expectations against L4 real pipeline output — `pytest tests/audit/` detects mock drift before it reaches production
+**Plans**: TBD
+
 ---
 
 ## Progress
@@ -250,6 +340,11 @@ Plans:
 | 48. Textual TUI Removal | v1.11 | 3/2 | Complete | 2026-05-07 |
 | 49. Module Hardening | v1.11 | 3/3 | Complete | 2026-05-07 |
 | 50. Repair Blind Spots | v1.11 | 1/1 | Complete | 2026-05-07 |
+| 51. Testing Foundation | v2.0 | 0/0 | Not started | - |
+| 52. Golden Datasets & CLI Contracts | v2.0 | 2/2 | Planning | 2026-05-08 |
+| 53. Plugin Tests & Temp Vault E2E | v2.0 | 0/2 | Planning | - |
+| 54. User Journey & Chaos Tests | v2.0 | 3/3 | Complete   | 2026-05-08 |
+| 55. CI Optimization & Consistency Audit | v2.0 | 0/0 | Not started | - |
 
 ---
-*Roadmap updated: 2026-05-07 — v1.11 milestone complete*
+*Roadmap updated: 2026-05-08 — v2.0 milestone phases created*
