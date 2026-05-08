@@ -82,6 +82,9 @@ Object.assign(LANG.en, {
     api_key_set: 'Entered',
     api_key_missing: 'Missing',
     not_set: 'Not entered',
+    field_python_interp: 'Python Interpreter',
+    field_python_custom: 'Custom Path',
+    btn_validate: 'Validate',
 });
 
 Object.assign(LANG.zh, {
@@ -132,6 +135,9 @@ Object.assign(LANG.zh, {
     api_key_set: '已填写',
     api_key_missing: '未填写',
     not_set: '未填写',
+    field_python_interp: 'Python 解释器',
+    field_python_custom: '自定义路径',
+    btn_validate: '验证',
 });
 
 function langFromApp(app) {
@@ -1613,6 +1619,54 @@ class PaperForgeSettingTab extends PluginSettingTab {
             statusLabel.addClass('paperforge-setup-pending');
         }
 
+        /* ── Python Interpreter Section ── */
+        const vaultPathForPython = this.app.vault.adapter.basePath;
+        const pyResult = resolvePythonExecutable(vaultPathForPython, this.plugin.settings);
+        const pyPath = pyResult.path;
+        const pySource = this.plugin.settings._python_path_stale ? 'stale' : pyResult.source;
+
+        // 2a — Read-only current interpreter row
+        const pyInterpSetting = new Setting(containerEl)
+            .setName(t('field_python_interp'))
+            .setDesc(this._getPythonDesc(pyPath, pySource));
+        this._pythonInterpDescEl = pyInterpSetting.descEl;
+
+        // 2b+2c — Manual override text input + Validate button
+        const customSetting = new Setting(containerEl)
+            .setName(t('field_python_custom'))
+            .setDesc('');
+        this._customPathDescEl = customSetting.descEl;
+
+        customSetting.addText(text => {
+            text.setPlaceholder('e.g. C:\\Python310\\python.exe')
+                .setValue(this.plugin.settings.python_path || '')
+                .onChange(value => {
+                    this.plugin.settings.python_path = value;
+                    this.plugin.saveSettings();
+
+                    // Clear stale flag when user modifies the path
+                    if (value && value.trim()) {
+                        const fs = require('fs');
+                        const exists = fs.existsSync(value.trim());
+                        this.plugin.settings._python_path_stale = !exists;
+                    } else {
+                        this.plugin.settings._python_path_stale = false;
+                    }
+
+                    // Re-render the read-only Python interpreter row desc
+                    const pyResult2 = resolvePythonExecutable(this.app.vault.adapter.basePath, this.plugin.settings);
+                    const pySource2 = this.plugin.settings._python_path_stale ? 'stale' : pyResult2.source;
+                    if (this._pythonInterpDescEl) {
+                        this._pythonInterpDescEl.textContent = this._getPythonDesc(pyResult2.path, pySource2);
+                    }
+                });
+        });
+
+        customSetting.addButton(btn => {
+            btn.setButtonText(t('btn_validate'))
+                .onClick(() => this._validatePythonOverride());
+        });
+
         /* ── Preparation Guide ── */
         containerEl.createEl('h3', { text: t('section_prep') });
         containerEl.createEl('p', { text: t('section_prep_desc'), cls: 'paperforge-settings-desc' });
@@ -1687,6 +1741,102 @@ class PaperForgeSettingTab extends PluginSettingTab {
                 row.createEl('span', { cls: 'paperforge-summary-value', text: item.val });
             }
         }
+    }
+
+    _getPythonDesc(pyPath, source) {
+        if (source === 'stale') {
+            return `[!!] ${pyPath} (stale — path no longer exists, update or clear the override below)`;
+        }
+        if (source === 'manual') {
+            return `${pyPath} (manual)`;
+        }
+        return `${pyPath} (auto-detected)`;
+    }
+
+    _refreshPythonInterpDesc(pyPath, source) {
+        const desc = this._pythonInterpDescEl;
+        if (desc) {
+            if (source === 'stale') {
+                desc.textContent = `[!!] ${pyPath} (stale — path no longer exists, update or clear the override below)`;
+            } else if (source === 'manual') {
+                desc.textContent = `${pyPath} (manual)`;
+            } else {
+                desc.textContent = `${pyPath} (auto-detected)`;
+            }
+        }
+    }
+
+    _validatePythonOverride() {
+        const fs = require('fs');
+        const { execFile } = require('node:child_process');
+        const customPath = this.plugin.settings.python_path ? this.plugin.settings.python_path.trim() : '';
+        const desc = this._customPathDescEl;
+
+        if (!customPath) {
+            const msg = '请输入路径 / Enter a path first';
+            if (desc) desc.textContent = msg;
+            new Notice(msg);
+            return;
+        }
+
+        // Check exists
+        if (!fs.existsSync(customPath)) {
+            const msg = '路径不存在 / Path does not exist';
+            if (desc) desc.innerHTML = `<span style="color:var(--text-error)">\u2717 ${msg}</span>`;
+            new Notice(msg, 4000);
+            return;
+        }
+
+        // Check executable
+        try {
+            fs.accessSync(customPath, fs.constants.X_OK);
+        } catch {
+            const msg = '不可执行 / Not executable';
+            if (desc) desc.innerHTML = `<span style="color:var(--text-error)">\u2717 ${msg}</span>`;
+            new Notice(msg, 4000);
+            return;
+        }
+
+        // Check version >= 3.10
+        execFile(customPath, ['--version'], { timeout: 8000 }, (verErr, verOut) => {
+            if (verErr || !verOut) {
+                const msg = '无法运行 / Cannot run';
+                if (desc) desc.innerHTML = `<span style="color:var(--text-error)">\u2717 ${msg}</span>`;
+                new Notice(msg, 4000);
+                return;
+            }
+
+            const match = verOut.match(/Python (\d+)\.(\d+)/);
+            if (!match) {
+                const msg = '无法解析版本 / Cannot parse version';
+                if (desc) desc.innerHTML = `<span style="color:var(--text-error)">\u2717 ${msg}</span>`;
+                new Notice(msg, 4000);
+                return;
+            }
+
+            const major = parseInt(match[1], 10);
+            const minor = parseInt(match[2], 10);
+
+            if (major < 3 || (major === 3 && minor < 10)) {
+                const msg = 'Python 版本过低，需要 3.10+ / Python version too low, need 3.10+';
+                if (desc) desc.innerHTML = `<span style="color:var(--text-error)">\u2717 ${msg}</span>`;
+                new Notice(msg, 4000);
+                return;
+            }
+
+            // Check pip
+            execFile(customPath, ['-m', 'pip', '--version'], { timeout: 8000 }, (pipErr) => {
+                if (pipErr) {
+                    const warnMsg = `\u2713 Python ${major}.${minor} 有效，但未检测到 pip / Valid, but pip not found`;
+                    if (desc) desc.innerHTML = `<span style="color:var(--text-warning)">\u26A0 ${warnMsg}</span>`;
+                    new Notice(warnMsg, 4000);
+                } else {
+                    const okMsg = `\u2713 Python ${major}.${minor} 有效 / Valid`;
+                    if (desc) desc.innerHTML = `<span style="color:var(--text-accent)">${okMsg}</span>`;
+                    new Notice(okMsg, 4000);
+                }
+            });
+        });
     }
 
     _debouncedSave() {
