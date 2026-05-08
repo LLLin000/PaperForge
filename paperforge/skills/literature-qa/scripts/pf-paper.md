@@ -66,11 +66,9 @@ paperforge sync      # 生成正式笔记
 ```
 已加载论文: [title] ([year], [journal])
 Zotero Key: [key]
-请基于论文原文回答问题。如信息未在论文中提及，会明确说明。
+结束对话时说"保存记录"即可保存讨论。
 请问有什么问题？
 ```
-
-会话结束后，讨论记录将自动保存至论文工作区 `ai/discussion.json` 和 `ai/discussion.md`。
 
 ### 回答原则
 
@@ -94,52 +92,16 @@ Zotero Key: [key]
 - **表现**：`fulltext.md` 不存在
 - **处理**：Agent 基于元数据和公开信息回答，并告知用户"OCR 文本不可用，回答基于元数据"
 
-## 8. 保存讨论记录（结束前必须执行）
+## Saving Discussion Record
 
-**> 此步骤不可跳过，否则本场对话记录将丢失。** 在 Q&A 会话结束时，Agent 必须将本次讨论记录写入论文工作区的 `ai/` 目录。
-
-### 记录格式
-
-会话期间累加每对 Q&A：
-
-```json
-{
-  "question": "用户的问题",
-  "answer": "Agent 的回答",
-  "source": "user_question",
-  "timestamp": "2026-05-06T12:00:00+08:00"
-}
-```
-
-其中 `source` 为 `"user_question"`（用户提问）或 `"agent_analysis"`（Agent 主动分析）。
-
-### 写入命令
-
-会话结束时，将所有 Q&A 序列化为 JSON 数组并执行：
-
-```bash
-python -m paperforge.worker.discussion record <ZOTERO_KEY> \
-    --vault "<VAULT_PATH>" \
-    --agent pf-paper \
-    --model "<MODEL_NAME>" \
-    --qa-pairs '<JSON_ARRAY>'
-```
-
-### 验证
-
-CLI 返回：
-```json
-{"status": "ok", "json_path": "Literature/{domain}/{key} - {title}/ai/discussion.json", "md_path": "Literature/{domain}/{key} - {title}/ai/discussion.md"}
-```
-
-如果 `status` 为 `"error"`，记录错误信息并重试，不要跳过。
+当用户说"保存"、"结束"、"完成"等关键词时（或显式输入 `{prefix}pf-end <key>`），必须执行记录保存。具体步骤见 [pf-end](pf-end.md)。
 
 ### 注意事项
 
-- 仅 `/pf-paper` 记录讨论。`/pf-deep` 不记录（精读内容已写入正式笔记）。
+- 仅 `/pf-paper` Q&A 需要记录。`/pf-deep` 不记录（精读内容已写入正式笔记）。
 - 如果无法从 formal-library.json 找到论文 domain/title，记录失败不应影响用户使用。
-- 所有 Q&A 以 UTF-8 编码写入，支持中文。
 
 ## See Also
 
+- [pf-end](pf-end.md) — 结束对话并保存记录
 - [pf-deep](pf-deep.md) — 完整三阶段精读

@@ -112,8 +112,21 @@ Zotero Key: [key]
 
 > **Future**：计划支持。预计通过工具调用或文件附件实现。
 
+## Saving Discussion Record
+
+当用户说"保存"、"结束"、"完成"等关键词时（或显式输入 `/pf-end <key>`），执行记录保存：
+
+```bash
+python -m paperforge.worker.discussion record <KEY> \
+    --vault "<VAULT_PATH>" --agent pf-paper \
+    --model "<MODEL>" --qa-pairs '<JSON_ARRAY>'
+```
+
+写入 `ai/discussion.json` + `ai/discussion.md`。见 [pf-end](pf-end.md)。
+
 ## See Also
 
+- [pf-end](pf-end.md) — 结束对话并保存记录
 - [pf-deep](pf-deep.md) — 完整三阶段精读
-- [AGENTS.md](../AGENTS.md) — 完整使用指南、架构说明、常见问题
-- [docs/COMMANDS.md](../docs/COMMANDS.md) — 命令总览与矩阵
+- [AGENTS.md](../AGENTS.md) — 完整使用指南
+- [docs/COMMANDS.md](../docs/COMMANDS.md) — 命令总览
