@@ -8,22 +8,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
-### Added
+### Fixed
 
-- **Setup Wizard i18n**: Added comprehensive Chinese/English support for the plugin setup wizard, including directory descriptions and field labels.
-- **Enhanced Directory Defaults**: Updated default directory structure to use numbered prefixes (`99_System`, `03_Resources`, `05_Bases`) for better organization in the Obsidian file explorer.
-- **New Directory Field**: Added configuration for `control_dir` (LiteratureControl/Index_Cards) in the setup modal.
+- **Obsidian plugin (macOS)**: Environment pre-check and CLI spawning now prefer Homebrew / pyenv Python and a richer `PATH`, instead of failing on GUI Obsidian’s minimal environment or Apple Command Line Tools `python3` only.
+- **Obsidian plugin**: Better BibTeX detection now follows Zotero’s real layout (`Profiles/<profile>/extensions/`) and performs a safe shallow scan for a `better-bibtex` folder next to `storage` (configured data dir or `~/Zotero`).
+- **Obsidian plugin**: Zotero install detection includes `/Applications/Zotero.app` (and user Applications) on macOS.
+- **Obsidian plugin**: Setup wizard uses `pip install --user` on non-Windows and surfaces a clearer error when `paperforge` is still missing after bootstrap (common with Apple CLT Python).
 
 ### Changed
 
-- **Setup Flow Refactoring**: Migrated manual HTTPS-based API key validation to a more robust headless setup process via the PaperForge CLI.
-- **Improved Python/PATH Resolution**: Enhanced environment detection on macOS/Linux to handle restricted GUI execution environments (e.g., launching Obsidian from Finder).
-- **Update System**: The plugin's auto-update feature now leverages the built-in `paperforge update` command for improved reliability across different installation methods.
-
-### Fixed
-
-- **XSS Protection**: Replaced `innerHTML` with `createEl()` DOM API in setup modal previews to prevent potential XSS from user-configured directory names.
-- **Modal Input Reliability**: Added debouncing to settings saves within the setup modal to prevent race conditions during rapid input.
+- **Obsidian plugin**: Setup wizard Base directory preview, tree label, and input placeholder unified to **`05_Bases`** to avoid accidental creation of a separate `Base/` folder.
 
 ## [1.4.17rc1] — 2026-05-07
 
