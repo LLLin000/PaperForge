@@ -86,8 +86,13 @@ Plan list:
   2. Before OCR upload starts, the Dashboard shows a clear privacy warning that PDFs are sent to the PaddleOCR API.
   3. After OCR is ready, the Dashboard provides the paper's `zotero_key`, copies the full `/pf-deep <key>` command, and tells the user which Agent context to run it in.
   4. A new user following the main docs is guided to the plugin-first install path before older terminal-first entry points.
-**Plans**: TBD
+**Plans**: 3 plans
 **UI hint**: yes
+
+Plan list:
+- [ ] 54-001-PLAN.md — OCR queue buttons + /pf-deep handoff (DASH-01, DASH-02)
+- [ ] 54-002-PLAN.md — Doc cleanup: remove competing install entry points (CLEAN-01)
+- [ ] 54-003-PLAN.md — OCR privacy warning modal (DASH-03)
 
 ---
 
@@ -98,7 +103,7 @@ Plan list:
 | 51. Runtime Selection & Setup Gate | 1/1 | Planned | - |
 | 52. Runtime Alignment & Failure Closure | 1/1 | Planned | - |
 | 53. Doctor Verdict Surface | 1/1 | Complete   | 2026-05-08 |
-| 54. Dashboard Workflow Closure & Onboarding Surface | 0/TBD | Not started | - |
+| 54. Dashboard Workflow Closure & Onboarding Surface | 3/3 | Planned | - |
 
 ---
 *Roadmap updated: 2026-05-08 — v1.12 roadmap created*
