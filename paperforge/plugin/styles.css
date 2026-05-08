@@ -1518,3 +1518,58 @@
 .paperforge-copy-diag-btn:hover {
     background: var(--interactive-hover, #d0d0d0);
 }
+
+/* ==========================================================================
+   SECTION 37 — DASH-01: OCR Queue Hint (per-paper)
+   ========================================================================== */
+.paperforge-ocr-queue-hint {
+    font-size: var(--font-ui-smaller);
+    color: var(--text-muted);
+    font-style: italic;
+    margin-left: 8px;
+}
+
+/* ── DASH-01: Pending OCR Action Card ── */
+.paperforge-pending-ocr-action {
+    border-color: var(--color-orange);
+    background: color-mix(in srgb, var(--color-orange) 8%, var(--background-secondary));
+}
+
+/* ── DASH-02: Agent Platform Label ── */
+.paperforge-agent-platform-label {
+    font-size: var(--font-ui-smaller);
+    color: var(--text-muted);
+    margin-top: -4px;
+    font-style: italic;
+}
+
+/* ==========================================================================
+   SECTION 38 — DASH-03: OCR Privacy Warning Modal
+   ========================================================================== */
+.paperforge-ocr-privacy-modal h2 {
+    margin-top: 8px;
+    margin-bottom: 16px;
+    font-size: var(--font-ui-large);
+    font-weight: var(--font-semibold);
+}
+
+.paperforge-ocr-privacy-warning {
+    background: var(--background-secondary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: var(--radius-m);
+    padding: 16px;
+    margin-bottom: 20px;
+    line-height: 1.6;
+}
+
+.paperforge-ocr-privacy-warning p {
+    margin: 0;
+    color: var(--text-normal);
+    font-size: var(--font-ui-small);
+}
+
+.paperforge-ocr-privacy-actions {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: 8px;
+}
