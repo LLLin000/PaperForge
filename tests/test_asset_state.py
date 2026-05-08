@@ -68,19 +68,18 @@ class TestComputeLifecycle:
         result = compute_lifecycle(entry)
         assert result == "deep_read_done"
 
-    def test_ai_context_ready(self) -> None:
-        """All conditions met: OCR done, deep_read done, all workspace paths non-empty."""
+    def test_deep_read_done_when_workspace_paths_present(self) -> None:
+        """Deep-reading lives in the main note, so lifecycle still tops out at deep_read_done."""
         entry = {
             "has_pdf": True,
             "ocr_status": "done",
             "deep_reading_status": "done",
             "ai_path": "Literature/骨科/KEY/ai/",
             "fulltext_path": "Literature/骨科/KEY/fulltext.md",
-            "deep_reading_path": "Literature/骨科/KEY/deep-reading.md",
             "main_note_path": "Literature/骨科/KEY/KEY - Title.md",
         }
         result = compute_lifecycle(entry)
-        assert result == "ai_context_ready"
+        assert result == "deep_read_done"
 
     def test_missing_one_workspace_path_returns_deep_read_done(self) -> None:
         """OCR done AND deep_read done but fulltext_path is missing → deep_read_done."""
@@ -90,7 +89,6 @@ class TestComputeLifecycle:
             "deep_reading_status": "done",
             "ai_path": "Literature/骨科/KEY/ai/",
             "fulltext_path": "",
-            "deep_reading_path": "Literature/骨科/KEY/deep-reading.md",
             "main_note_path": "Literature/骨科/KEY/KEY - Title.md",
         }
         result = compute_lifecycle(entry)
