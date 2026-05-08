@@ -1,0 +1,24 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  plugin-tests:
+    name: Plugin Tests (L3)
+    runs-on: ubuntu-latest
+    if: contains(join(github.event.head_commit.modified, ' '), 'paperforge/plugin/') || contains(join(github.event.head_commit.added, ' '), 'paperforge/plugin/') || github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: paperforge/plugin/package-lock.json
+      - run: npm ci
+        working-directory: paperforge/plugin
+      - run: npx vitest run --reporter=verbose
+        working-directory: paperforge/plugin
