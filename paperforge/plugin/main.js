@@ -1,7 +1,190 @@
 const { Plugin, Notice, ItemView, Modal, Setting, PluginSettingTab, addIcon } = require('obsidian');
-const { exec, execFile } = require('node:child_process');
+const { exec } = require('node:child_process');
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
+
+/**
+ * Obsidian on macOS is often launched from Finder with a minimal PATH (no Homebrew).
+ * Resolve a Python executable and enrich PATH so CLI/spawn find python3 + paperforge.
+ */
+function paperforgeEnrichedEnv() {
+    const env = { ...process.env };
+    const plat = process.platform;
+    const home = os.homedir();
+    const extras = [];
+    if (plat === 'darwin') {
+        extras.push('/opt/homebrew/bin', '/usr/local/bin', '/usr/bin', `${home}/.local/bin`);
+    } else if (plat === 'linux') {
+        extras.push('/usr/local/bin', '/usr/bin', `${home}/.local/bin`);
+    }
+    const cur = env.PATH || '';
+    env.PATH = [...extras, cur].filter(Boolean).join(path.delimiter);
+    return env;
+}
+
+function shellQuoteForExec(cmd) {
+    if (!cmd) return "''";
+    if (/[\s'"\\]/.test(cmd)) return `'${cmd.replace(/'/g, "'\\''")}'`;
+    return cmd;
+}
+
+/** Apple CLT Python often cannot install packages usefully; prefer Homebrew / pyenv. */
+function isLikelyAppleStubPython(resolvedAbsPath) {
+    const n = String(resolvedAbsPath).toLowerCase().replace(/\\/g, '/');
+    return n.includes('commandlinetools') || n.includes('/library/developer/commandlinetools');
+}
+
+function collectDarwinPythonCandidates(home) {
+    return [
+        '/opt/homebrew/bin/python3',
+        '/usr/local/bin/python3',
+        path.join(home, '.local', 'bin', 'python3'),
+        path.join(home, '.pyenv', 'shims', 'python3'),
+        '/usr/bin/python3',
+    ];
+}
+
+/** Prefer concrete paths on macOS/Linux so GUI Obsidian still finds Python. */
+function getPaperforgePythonCmd() {
+    const plat = process.platform;
+    const home = os.homedir();
+    if (plat === 'darwin') {
+        let stubFallback = null;
+        for (const p of collectDarwinPythonCandidates(home)) {
+            try {
+                if (!p || !fs.existsSync(p)) continue;
+                let resolved = p;
+                try {
+                    resolved = fs.realpathSync(p);
+                } catch (_) { /* keep p */ }
+                if (isLikelyAppleStubPython(resolved)) {
+                    if (!stubFallback) stubFallback = p;
+                    continue;
+                }
+                return p;
+            } catch (_) { /* ignore */ }
+        }
+        if (stubFallback) return stubFallback;
+        return 'python3';
+    }
+    const candidates = [];
+    if (plat === 'linux') {
+        candidates.push('/usr/bin/python3', '/usr/local/bin/python3', path.join(home, '.local', 'bin', 'python3'), path.join(home, '.pyenv', 'shims', 'python3'));
+    }
+    for (const p of candidates) {
+        try {
+            if (p && fs.existsSync(p)) return p;
+        } catch (_) { /* ignore */ }
+    }
+    if (plat === 'win32') return 'python';
+    return 'python3';
+}
+
+function paperforgePythonExecArgs(scriptTail) {
+    const py = shellQuoteForExec(getPaperforgePythonCmd());
+    return `${py} ${scriptTail}`;
+}
+
+/**
+ * Try `python --version` style checks until one succeeds (for settings pre-check).
+ */
+function tryExecPythonVersion(callback) {
+    const plat = process.platform;
+    const home = os.homedir();
+    const tried = new Set();
+    const list = [];
+    if (plat === 'darwin') {
+        const nonStub = [];
+        const stub = [];
+        for (const p of collectDarwinPythonCandidates(home)) {
+            try {
+                if (!fs.existsSync(p)) continue;
+                let resolved = p;
+                try {
+                    resolved = fs.realpathSync(p);
+                } catch (_) { /* keep p */ }
+                if (isLikelyAppleStubPython(resolved)) stub.push(p);
+                else nonStub.push(p);
+            } catch (_) { /* ignore */ }
+        }
+        list.push(...nonStub, ...stub);
+    } else if (plat === 'linux') {
+        list.push('/usr/bin/python3', '/usr/local/bin/python3', path.join(home, '.local', 'bin', 'python3'), path.join(home, '.pyenv', 'shims', 'python3'));
+    }
+    list.push(plat === 'win32' ? 'python' : 'python3', 'python');
+    const candidates = list.filter((c) => {
+        if (!c || tried.has(c)) return false;
+        tried.add(c);
+        return true;
+    });
+    let i = 0;
+    const next = () => {
+        if (i >= candidates.length) {
+            callback(new Error('Python not found'), '', null);
+            return;
+        }
+        const py = candidates[i++];
+        if (py.includes(path.sep) || py.startsWith('/')) {
+            try {
+                if (!fs.existsSync(py)) {
+                    next();
+                    return;
+                }
+            } catch (_) {
+                next();
+                return;
+            }
+        }
+        exec(`${shellQuoteForExec(py)} --version`, { timeout: 8000, env: paperforgeEnrichedEnv() }, (err, stdout) => {
+            if (!err && stdout) callback(null, stdout.trim(), py);
+            else next();
+        });
+    };
+    next();
+}
+
+/** Match Zotero extension folders for Better BibTeX (IDs vary; user folders may be `better-bibtex`). */
+function dirLooksLikeBetterBibtexFolder(entryName) {
+    const compact = String(entryName).toLowerCase().replace(/[^a-z0-9]/g, '');
+    return compact.includes('betterbibtex');
+}
+
+/** Only immediate subfolders — safe for Zotero data dirs (avoids walking storage/). */
+function scanBbtDirectChildren(dir) {
+    if (!dir) return false;
+    try {
+        if (!fs.existsSync(dir)) return false;
+        for (const entry of fs.readdirSync(dir)) {
+            const full = path.join(dir, entry);
+            try {
+                if (fs.statSync(full).isDirectory() && dirLooksLikeBetterBibtexFolder(entry)) return true;
+            } catch (_) { /* ignore */ }
+        }
+    } catch (_) { /* ignore */ }
+    return false;
+}
+
+/** Real Zotero layout: Profiles/<profile>/extensions/<better-bibtex@…>/ */
+function scanBbtUnderProfiles(profilesDir) {
+    if (!profilesDir) return false;
+    try {
+        if (!fs.existsSync(profilesDir)) return false;
+        for (const prof of fs.readdirSync(profilesDir)) {
+            const extDir = path.join(profilesDir, prof, 'extensions');
+            try {
+                if (!fs.existsSync(extDir)) continue;
+                for (const entry of fs.readdirSync(extDir)) {
+                    const full = path.join(extDir, entry);
+                    try {
+                        if (fs.statSync(full).isDirectory() && dirLooksLikeBetterBibtexFolder(entry)) return true;
+                    } catch (_) { /* ignore */ }
+                }
+            } catch (_) { /* ignore */ }
+        }
+    } catch (_) { /* ignore */ }
+    return false;
+}
 
 const VIEW_TYPE_PAPERFORGE = 'paperforge-status';
 const PF_ICON_ID = 'paperforge';
@@ -15,8 +198,8 @@ const PF_RIBBON_SVG = `
 
 // ── i18n: language pack (auto-detected from Obsidian config) ──
 const LANG = {
-    en: { header_title:'PaperForge',desc:'Obsidian + Zotero literature pipeline.',setup_done:'✓ PaperForge environment configured',setup_pending:'Not installed — complete preparation and open the wizard',section_prep:'Prerequisites',section_prep_desc:'Before first use, complete the following:',section_guide:'Usage',section_config:'Configuration',prep_python:'Python 3.10+',prep_python_desc:'Must be callable from command line. Click below to auto-detect.',prep_zotero:'Zotero Desktop',prep_zotero_desc:'Install Zotero (https://www.zotero.org)',prep_bbt:'Better BibTeX',prep_bbt_desc:'Zotero → Tools → Add-ons → Install Better BibTeX',prep_export:'BBT Auto-export',prep_export_desc:'Right-click collection → Export → BetterBibTeX JSON → Keep updated → to:',prep_key:'PaddleOCR Key',prep_key_desc:'Get free key at https://aistudio.baidu.com/paddleocr',guide_open:'Open Dashboard',guide_open_desc:'Ctrl+P → "PaperForge: Open Dashboard", or sidebar book icon',guide_sync:'Sync Literature',guide_sync_desc:'Dashboard → Sync Library — pull from Zotero, generate notes',guide_ocr:'Run OCR',guide_ocr_desc:'Dashboard → Run OCR — extract PDF text & figures',btn_install:'Open Wizard',btn_reconfig:'Reconfigure',btn_install_desc:'Auto-detect environment, then open setup wizard',btn_reconfig_desc:'Re-run wizard to change directories or keys',wizard_step1:'Overview',wizard_step2:'Dirs',wizard_step3:'Agent',wizard_step4:'Install',wizard_step5:'Done',wizard_title:'PaperForge Setup Wizard',wizard_intro:'This wizard will guide you through the complete setup.',wizard_dir_hint:'The resources directory is the root for all literature data. Sub-directories inside it:',wizard_dir_sub_hint:'Two sub-directories within resources:',wizard_sys_hint:'System directories (at vault root):',wizard_agent_hint:'Select your AI Agent platform. Skill files deploy in the correct format.',wizard_keys_hint:'API key and Zotero:',wizard_preview:'System/agent files at vault root. Literature (notes, index) under resources.',dir_vault:'Vault Path',dir_resources:'Resource Dir',dir_notes:'Notes Dir',dir_index:'Index Dir',dir_system:'System Dir',dir_base:'Base Dir',field_paddleocr:'PaddleOCR API Key',field_zotero_data:'Zotero Data Dir',field_zotero_placeholder:'Optional, for auto PDF detection',label_agent:'Agent Platform',check_python_ok:'Ready',check_python_fail:'Not found',check_zotero_ok:'Found',check_zotero_fail:'Not detected',check_bbt_ok:'Installed',check_bbt_fail:'Not detected',install_btn:'Install',install_btn_running:'Installing...',install_btn_retry:'Retry',install_complete:'✓ Installation complete!',install_failed:'✗ Installation failed: ',complete_title:'✓ Setup Complete',complete_summary:'Configuration',complete_next:'Next Steps',complete_step1:'Open Dashboard',complete_step1_desc:'Ctrl+P → "PaperForge: Open Dashboard" or sidebar book icon',complete_step2:'Sync Literature',complete_step2_desc:'Dashboard → Sync Library — pull from Zotero',complete_step3:'Run OCR',complete_step3_desc:'Dashboard → Run OCR — extract full text & figures',complete_step4:'Configure BBT Auto-export',nav_prev:'← Back',nav_next:'Next →',nav_close:'Close',validate_fail:'Validation failed',validate_vault:'Vault path not set',validate_resources:'Resource dir not set',validate_notes:'Notes dir not set',validate_index:'Index dir not set',validate_base:'Base dir not set',validate_key:'API key not set',validate_system:'System dir not set',notice_python_missing:'Python not detected. Install Python 3.10+ and add to PATH.',notice_check_fail:'Missing: ',panel_actions:'Quick Actions',action_running:'Running ',api_key_set:'Configured ✓',api_key_missing:'Not configured ✗',not_set:'Not set',jump_to_deep_reading:'Open Deep Reading',deep_reading_not_found:'Deep reading file not found', },
-    zh: { header_title:'PaperForge',desc:'Obsidian + Zotero 文献管理流水线。自动同步文献、生成笔记、OCR 提取全文，一站式文献精读工作流。',setup_done:'✓ PaperForge 环境已配置完成',setup_pending:'尚未安装，完成安装准备后点击安装向导',section_prep:'安装准备',section_prep_desc:'首次使用前，请依次完成以下准备：',section_guide:'操作方式',section_config:'当前配置',prep_python:'Python 3.10+',prep_python_desc:'确保 Python 可命令行调用。点击下方按钮自动检测。',prep_zotero:'Zotero 桌面版',prep_zotero_desc:'安装 Zotero (https://www.zotero.org)',prep_bbt:'Better BibTeX',prep_bbt_desc:'Zotero → 工具 → 插件 → 安装 Better BibTeX',prep_export:'BBT 自动导出',prep_export_desc:'右键文献子分类 → 导出分类 → BetterBibTeX JSON → 勾选保持更新 → 导出到（JSON 文件名即为 Base 名）：',prep_key:'PaddleOCR Key',prep_key_desc:'在 https://aistudio.baidu.com/paddleocr 获取 API Key',guide_open:'打开 Dashboard',guide_open_desc:'Ctrl+P → 输入 PaperForge: Open Dashboard，或点左侧书本图标',guide_sync:'同步文献',guide_sync_desc:'Dashboard 中点 Sync Library，从 Zotero 拉取文献生成笔记',guide_ocr:'运行 OCR',guide_ocr_desc:'Dashboard 中点 Run OCR，提取 PDF 全文与图表',btn_install:'打开安装向导',btn_reconfig:'重新配置',btn_install_desc:'自动检测 Python + 前置环境，通过后打开分步安装向导',btn_reconfig_desc:'重新运行安装向导，修改目录或密钥配置',wizard_step1:'概览',wizard_step2:'目录',wizard_step3:'Agent',wizard_step4:'安装',wizard_step5:'完成',wizard_title:'PaperForge 安装向导',wizard_intro:'本向导将引导您完成 PaperForge 环境的完整配置。安装过程会自动创建所有目录结构，无需手动操作。',wizard_dir_hint:'资源目录是文献数据的统一根目录，以下子目录将创建在其内部：',wizard_dir_sub_hint:'资源目录内的两个子目录：',wizard_sys_hint:'独立于资源目录的系统文件：',wizard_agent_hint:'选择你使用的 AI Agent 平台，安装时将按对应格式部署技能文件：',wizard_keys_hint:'以下为 API 密钥与 Zotero 配置：',wizard_preview:'系统文件和 Agent 配置位于 Vault 根目录下。文献数据（正文、索引）统一存放在资源目录内。安装后仍可在设置中修改。',dir_vault:'Vault 路径',dir_resources:'资源目录',dir_notes:'正文目录',dir_index:'索引目录',dir_system:'系统目录',dir_base:'Base 目录',field_paddleocr:'PaddleOCR API 密钥',field_zotero_data:'Zotero 数据目录',field_zotero_placeholder:'可选，用于自动检测 PDF',label_agent:'Agent 平台',check_python_ok:'已就绪',check_python_fail:'未安装',check_zotero_ok:'已安装',check_zotero_fail:'未检测到',check_bbt_ok:'已安装',check_bbt_fail:'未检测到',install_btn:'开始安装',install_btn_running:'正在安装...',install_btn_retry:'重试',install_complete:'✓ 安装完成！',install_failed:'✗ 安装失败：',complete_title:'✓ PaperForge 安装完成',complete_summary:'当前完整配置',complete_next:'下一步操作',complete_step1:'打开 PaperForge Dashboard',complete_step1_desc:'Ctrl+P → 输入 PaperForge: Open Dashboard，或点左侧书本图标',complete_step2:'同步文献',complete_step2_desc:'Dashboard 中点 Sync Library，从 Zotero 拉取文献生成笔记',complete_step3:'运行 OCR',complete_step3_desc:'Dashboard 中点 Run OCR，提取 PDF 全文与图表',complete_step4:'配置 BBT 自动导出',nav_prev:'← 上一步',nav_next:'下一步 →',nav_close:'关闭',validate_fail:'配置验证失败',validate_vault:'Vault 路径未填写',validate_resources:'资源目录未填写',validate_notes:'正文目录未填写',validate_index:'索引目录未填写',validate_base:'Base 目录未填写',validate_key:'PaddleOCR API 密钥未填写',validate_system:'系统目录未填写',notice_python_missing:'Python 未检测到，请先安装 Python 3.10+ 并加入 PATH',notice_check_fail:'未通过: ',panel_actions:'快捷操作',action_running:'正在执行 ',api_key_set:'已配置 ✓',api_key_missing:'未配置 ✗',not_set:'未设置',jump_to_deep_reading:'跳转到精读',deep_reading_not_found:'精读文件未找到', }
+    en: { header_title:'PaperForge',desc:'Obsidian + Zotero literature pipeline.',setup_done:'✓ PaperForge environment configured',setup_pending:'Not installed — complete preparation and open the wizard',section_prep:'Prerequisites',section_prep_desc:'Before first use, complete the following:',section_guide:'Usage',section_config:'Configuration',prep_python:'Python 3.9+',prep_python_desc:'Must be callable from command line. Click below to auto-detect.',prep_zotero:'Zotero Desktop',prep_zotero_desc:'Install Zotero (https://www.zotero.org)',prep_bbt:'Better BibTeX',prep_bbt_desc:'Zotero → Tools → Add-ons → Install Better BibTeX',prep_export:'BBT Auto-export',prep_export_desc:'Right-click collection → Export → BetterBibTeX JSON → Keep updated → to:',prep_key:'PaddleOCR Key',prep_key_desc:'Get free key at https://aistudio.baidu.com/paddleocr',guide_open:'Open Dashboard',guide_open_desc:'Ctrl+P → "PaperForge: Open Dashboard", or sidebar book icon',guide_sync:'Sync Literature',guide_sync_desc:'Dashboard → Sync Library — pull from Zotero, generate notes',guide_ocr:'Run OCR',guide_ocr_desc:'Dashboard → Run OCR — extract PDF text & figures',btn_install:'Open Wizard',btn_reconfig:'Reconfigure',btn_install_desc:'Auto-detect environment, then open setup wizard',btn_reconfig_desc:'Re-run wizard to change directories or keys',wizard_step1:'Overview',wizard_step2:'Dirs',wizard_step3:'Agent',wizard_step4:'Install',wizard_step5:'Done',wizard_title:'PaperForge Setup Wizard',wizard_intro:'This wizard will guide you through the complete setup.',wizard_dir_hint:'The resources directory is the root for all literature data. Sub-directories inside it:',wizard_dir_sub_hint:'Two sub-directories within resources:',wizard_sys_hint:'System directories (at vault root):',wizard_agent_hint:'Select your AI Agent platform. Skill files deploy in the correct format.',wizard_keys_hint:'API key and Zotero:',wizard_preview:'System/agent files at vault root. Literature (notes, index) under resources.',dir_vault:'Vault Path',dir_resources:'Resource Dir',dir_notes:'Notes Dir',dir_index:'Index Dir',dir_system:'System Dir',dir_base:'Base Dir',field_paddleocr:'PaddleOCR API Key',field_zotero_data:'Zotero Data Dir',field_zotero_placeholder:'Optional, for auto PDF detection',label_agent:'Agent Platform',check_python_ok:'Ready',check_python_fail:'Not found',check_zotero_ok:'Found',check_zotero_fail:'Not detected',check_bbt_ok:'Installed',check_bbt_fail:'Not detected',install_btn:'Install',install_btn_running:'Installing...',install_btn_retry:'Retry',install_complete:'✓ Installation complete!',install_failed:'✗ Installation failed: ',complete_title:'✓ Setup Complete',complete_summary:'Configuration',complete_next:'Next Steps',complete_step1:'Open Dashboard',complete_step1_desc:'Ctrl+P → "PaperForge: Open Dashboard" or sidebar book icon',complete_step2:'Sync Literature',complete_step2_desc:'Dashboard → Sync Library — pull from Zotero',complete_step3:'Run OCR',complete_step3_desc:'Dashboard → Run OCR — extract full text & figures',complete_step4:'Configure BBT Auto-export',nav_prev:'← Back',nav_next:'Next →',nav_close:'Close',validate_fail:'Validation failed',validate_vault:'Vault path not set',validate_resources:'Resource dir not set',validate_notes:'Notes dir not set',validate_index:'Index dir not set',validate_base:'Base dir not set',validate_key:'API key not set',validate_system:'System dir not set',notice_python_missing:'Python not detected. Install Python 3.9+ and add to PATH.',notice_check_fail:'Missing: ',panel_actions:'Quick Actions',action_running:'Running ',api_key_set:'Configured ✓',api_key_missing:'Not configured ✗',not_set:'Not set', },
+    zh: { header_title:'PaperForge',desc:'Obsidian + Zotero 文献管理流水线。自动同步文献、生成笔记、OCR 提取全文，一站式文献精读工作流。',setup_done:'✓ PaperForge 环境已配置完成',setup_pending:'尚未安装，完成安装准备后点击安装向导',section_prep:'安装准备',section_prep_desc:'首次使用前，请依次完成以下准备：',section_guide:'操作方式',section_config:'当前配置',prep_python:'Python 3.9+',prep_python_desc:'确保 Python 可命令行调用。点击下方按钮自动检测。',prep_zotero:'Zotero 桌面版',prep_zotero_desc:'安装 Zotero (https://www.zotero.org)',prep_bbt:'Better BibTeX',prep_bbt_desc:'Zotero → 工具 → 插件 → 安装 Better BibTeX',prep_export:'BBT 自动导出',prep_export_desc:'右键文献子分类 → 导出分类 → BetterBibTeX JSON → 勾选保持更新 → 导出到（JSON 文件名即为 Base 名）：',prep_key:'PaddleOCR Key',prep_key_desc:'在 https://aistudio.baidu.com/paddleocr 获取 API Key',guide_open:'打开 Dashboard',guide_open_desc:'Ctrl+P → 输入 PaperForge: Open Dashboard，或点左侧书本图标',guide_sync:'同步文献',guide_sync_desc:'Dashboard 中点 Sync Library，从 Zotero 拉取文献生成笔记',guide_ocr:'运行 OCR',guide_ocr_desc:'Dashboard 中点 Run OCR，提取 PDF 全文与图表',btn_install:'打开安装向导',btn_reconfig:'重新配置',btn_install_desc:'自动检测 Python + 前置环境，通过后打开分步安装向导',btn_reconfig_desc:'重新运行安装向导，修改目录或密钥配置',wizard_step1:'概览',wizard_step2:'目录',wizard_step3:'Agent',wizard_step4:'安装',wizard_step5:'完成',wizard_title:'PaperForge 安装向导',wizard_intro:'本向导将引导您完成 PaperForge 环境的完整配置。安装过程会自动创建所有目录结构，无需手动操作。',wizard_dir_hint:'资源目录是文献数据的统一根目录，以下子目录将创建在其内部：',wizard_dir_sub_hint:'资源目录内的两个子目录：',wizard_sys_hint:'独立于资源目录的系统文件：',wizard_agent_hint:'选择你使用的 AI Agent 平台，安装时将按对应格式部署技能文件：',wizard_keys_hint:'以下为 API 密钥与 Zotero 配置：',wizard_preview:'系统文件和 Agent 配置位于 Vault 根目录下。文献数据（正文、索引）统一存放在资源目录内。安装后仍可在设置中修改。',dir_vault:'Vault 路径',dir_resources:'资源目录',dir_notes:'正文目录',dir_index:'索引目录',dir_system:'系统目录',dir_base:'Base 目录',field_paddleocr:'PaddleOCR API 密钥',field_zotero_data:'Zotero 数据目录',field_zotero_placeholder:'可选，用于自动检测 PDF',label_agent:'Agent 平台',check_python_ok:'已就绪',check_python_fail:'未安装',check_zotero_ok:'已安装',check_zotero_fail:'未检测到',check_bbt_ok:'已安装',check_bbt_fail:'未检测到',install_btn:'开始安装',install_btn_running:'正在安装...',install_btn_retry:'重试',install_complete:'✓ 安装完成！',install_failed:'✗ 安装失败：',complete_title:'✓ PaperForge 安装完成',complete_summary:'当前完整配置',complete_next:'下一步操作',complete_step1:'打开 PaperForge Dashboard',complete_step1_desc:'Ctrl+P → 输入 PaperForge: Open Dashboard，或点左侧书本图标',complete_step2:'同步文献',complete_step2_desc:'Dashboard 中点 Sync Library，从 Zotero 拉取文献生成笔记',complete_step3:'运行 OCR',complete_step3_desc:'Dashboard 中点 Run OCR，提取 PDF 全文与图表',complete_step4:'配置 BBT 自动导出',nav_prev:'← 上一步',nav_next:'下一步 →',nav_close:'关闭',validate_fail:'配置验证失败',validate_vault:'Vault 路径未填写',validate_resources:'资源目录未填写',validate_notes:'正文目录未填写',validate_index:'索引目录未填写',validate_base:'Base 目录未填写',validate_key:'PaddleOCR API 密钥未填写',validate_system:'系统目录未填写',notice_python_missing:'Python 未检测到，请先安装 Python 3.9+ 并加入 PATH',notice_check_fail:'未通过: ',panel_actions:'快捷操作',action_running:'正在执行 ',api_key_set:'已配置 ✓',api_key_missing:'未配置 ✗',not_set:'未设置', }
 };
 
 let T = LANG.zh;
@@ -78,7 +261,7 @@ Object.assign(LANG.en, {
     validate_base: 'Base directory is required',
     validate_key: 'PaddleOCR API key is required',
     validate_system: 'System directory is required',
-    notice_python_missing: 'Python was not detected. Install Python 3.10+ and add it to PATH.',
+    notice_python_missing: 'Python was not detected. Install Python 3.9+ and add it to PATH.',
     api_key_set: 'Entered',
     api_key_missing: 'Missing',
     not_set: 'Not entered',
@@ -128,7 +311,7 @@ Object.assign(LANG.zh, {
     nav_prev: '上一步',
     nav_next: '下一步',
     validate_fail: '下面这些必填项还没有填写完整',
-    notice_python_missing: '未检测到 Python。请先安装 Python 3.10+，并确保它已加入 PATH。',
+    notice_python_missing: '未检测到 Python。请先安装 Python 3.9+，并确保它已加入 PATH。',
     api_key_set: '已填写',
     api_key_missing: '未填写',
     not_set: '未填写',
@@ -186,8 +369,6 @@ const ACTIONS = [
         icon: '\u2695',  // ⚕
         cmd: 'doctor',
         okMsg: 'Doctor complete',
-        disabled: true,
-        disabledMsg: 'Run Doctor will be available in a future update.',
     },
     {
         id: 'paperforge-repair',
@@ -195,10 +376,7 @@ const ACTIONS = [
         desc: 'Fix three-way state divergence, path errors, and rebuild index',
         icon: '\u21BA',  // ↺
         cmd: 'repair',
-        args: ['--fix', '--fix-paths'],
         okMsg: 'Repair complete',
-        disabled: true,
-        disabledMsg: 'Repair Issues will be available in a future update.',
     },
     {
         id: 'paperforge-copy-context',
@@ -220,28 +398,13 @@ const ACTIONS = [
     },
 ];
 
-function resolvePythonExecutable(vaultPath) {
-    const candidates = [
-        path.join(vaultPath, '.paperforge-test-venv', 'Scripts', 'python.exe'),
-        path.join(vaultPath, '.venv', 'Scripts', 'python.exe'),
-        path.join(vaultPath, 'venv', 'Scripts', 'python.exe'),
-    ];
-    for (const candidate of candidates) {
-        try {
-            if (fs.existsSync(candidate)) return candidate;
-        } catch {}
-    }
-    return 'python';
-}
-
 class PaperForgeStatusView extends ItemView {
     constructor(leaf) {
         super(leaf);
-        this._currentMode = null;       // 'global' | 'paper' | 'collection' | 'deep-reading' (D-05)
+        this._currentMode = null;       // 'global' | 'paper' | 'collection' (D-05)
         this._currentDomain = null;     // domain name when in collection mode (D-15)
         this._currentPaperKey = null;   // zotero_key when in per-paper mode (D-03)
         this._currentPaperEntry = null; // full entry when in per-paper mode
-        this._currentFilePath = null;   // active file path for identity guard (D-06)
         this._cachedItems = null;       // lazy-loaded index items (Plan 28-01)
         this._modeSubscribers = [];     // event handler refs for cleanup
         this._leafChangeTimer = null;   // debounce timer for active-leaf-change
@@ -254,14 +417,13 @@ class PaperForgeStatusView extends ItemView {
     async onOpen() {
         this._buildPanel();
         this._contentEl = this.containerEl.querySelector('.paperforge-content-area');
-        this._modeSubscribers = [];
-        this._leafChangeTimer = null;
+        this._modeSubscribers = [];     // reused by both workspace and vault events
+        this._leafChangeTimer = null;   // debounce timer for active-leaf-change
 
+        // Subscribe to file change events (D-08, D-09)
         this._setupEventSubscriptions();
 
-        // Fetch Python package version (once, not from index)
-        this._fetchVersion();
-
+        // Initial data load per D-10
         this._detectAndSwitch();
     }
 
@@ -332,18 +494,6 @@ class PaperForgeStatusView extends ItemView {
     /* ---------------------------------------------------------------------- */
     /*  Fetch & Render Stats                                                  */
     /* ---------------------------------------------------------------------- */
-    _fetchVersion() {
-        const vp = this.app.vault.adapter.basePath;
-        const pythonExe = resolvePythonExecutable(vp);
-        execFile(pythonExe, ['-c', 'import paperforge; print(paperforge.__version__)'], { cwd: vp, timeout: 10000 }, (err, stdout) => {
-            if (!err && stdout) {
-                const v = stdout.trim();
-                this._paperforgeVersion = v.startsWith('v') ? v : 'v' + v;
-                if (this._versionBadge) this._versionBadge.setText(this._paperforgeVersion);
-            }
-        });
-    }
-
     _fetchStats(quiet) {
         // Phase 25: Read canonical index JSON directly (D-05)
         if (!quiet && !this._cachedStats) {
@@ -355,7 +505,7 @@ class PaperForgeStatusView extends ItemView {
 
         const vp = this.app.vault.adapter.basePath;
         const plugin = this.app.plugins.plugins['paperforge'];
-        const systemDir = plugin?.settings?.system_dir || 'System';
+        const systemDir = plugin?.settings?.system_dir || '99_System';
         const indexPath = path.join(vp, systemDir, 'PaperForge', 'indexes', 'formal-library.json');
 
         try {
@@ -396,7 +546,7 @@ class PaperForgeStatusView extends ItemView {
             }
 
             this._cachedStats = {
-                version: index.paperforge_version || this._cachedStats?.version || '\u2014',
+                version: this._cachedStats?.version || '\u2014',
                 total_papers: items.length,
                 formal_notes: formalNotes,
                 exports: 0,
@@ -415,8 +565,7 @@ class PaperForgeStatusView extends ItemView {
             if (!quiet && !this._cachedStats) {
                 this._metricsEl.createEl('div', { cls: 'paperforge-status-loading', text: 'No index \u2014 trying CLI...' });
             }
-            const pythonExe = resolvePythonExecutable(vp);
-            execFile(pythonExe, ['-m', 'paperforge', 'status', '--json'], { cwd: vp, timeout: 30000 }, (err2, stdout) => {
+            exec(paperforgePythonExecArgs('-m paperforge status --json'), { cwd: vp, timeout: 30000, env: paperforgeEnrichedEnv() }, (err2, stdout) => {
                 if (err2) {
                     if (this._cachedStats) return;
                     this._metricsEl.createEl('div', { cls: 'paperforge-status-error', text: 'Cannot reach PaperForge CLI.\nMake sure paperforge is installed and in your PATH.' });
@@ -465,7 +614,7 @@ class PaperForgeStatusView extends ItemView {
     _loadIndex() {
         const vp = this.app.vault.adapter.basePath;
         const plugin = this.app.plugins.plugins['paperforge'];
-        const systemDir = plugin?.settings?.system_dir || 'System';
+        const systemDir = plugin?.settings?.system_dir || '99_System';
         const indexPath = path.join(vp, systemDir, 'PaperForge', 'indexes', 'formal-library.json');
         try {
             const raw = fs.readFileSync(indexPath, 'utf-8');
@@ -498,7 +647,7 @@ class PaperForgeStatusView extends ItemView {
 
     /* ── Metric Cards (Enhanced D-04, D-05, D-06) ── */
     _renderStats(d) {
-        this._versionBadge.setText(this._paperforgeVersion || (d.version ? 'v' + d.version : 'v\u2014'));
+        this._versionBadge.setText(d.version ? 'v' + d.version : 'v\u2014');
 
         if (!d || typeof d.total_papers === 'undefined') {
             this._renderSkeleton(this._metricsEl);
@@ -603,10 +752,12 @@ class PaperForgeStatusView extends ItemView {
         }
 
         const stages = [
+            { key: 'imported', label: 'Imported' },
             { key: 'indexed', label: 'Indexed' },
             { key: 'pdf_ready', label: 'PDF Ready' },
             { key: 'fulltext_ready', label: 'Fulltext Ready' },
-            { key: 'deep_read_done', label: 'Deep Read' },
+            { key: 'deep_read', label: 'Deep Read' },
+            { key: 'ai_ready', label: 'AI Ready' },
         ];
 
         const stepper = container.createEl('div', { cls: 'paperforge-lifecycle-stepper' });
@@ -679,10 +830,9 @@ class PaperForgeStatusView extends ItemView {
 
         const gauge = container.createEl('div', { cls: 'paperforge-maturity-gauge' });
         const track = gauge.createEl('div', { cls: 'gauge-track' });
-        const maxLevel = 4;
-        const currentLevel = Math.max(1, Math.min(maxLevel, Math.round(maturityLevel)));
+        const currentLevel = Math.max(1, Math.min(6, Math.round(maturityLevel)));
 
-        for (let i = 1; i <= maxLevel; i++) {
+        for (let i = 1; i <= 6; i++) {
             const seg = track.createEl('div', { cls: 'gauge-segment' });
             if (i <= currentLevel) {
                 seg.addClass('filled');
@@ -690,15 +840,12 @@ class PaperForgeStatusView extends ItemView {
             }
         }
 
-        gauge.createEl('div', { cls: 'gauge-level', text: `Level ${currentLevel} / ${maxLevel}` });
+        gauge.createEl('div', { cls: 'gauge-level', text: `Level ${currentLevel} / 6` });
 
-        if (currentLevel < maxLevel && blockingChecks) {
-            const blockers = typeof blockingChecks === 'string' ? [blockingChecks] : blockingChecks;
-            if (blockers.length > 0) {
-                const list = gauge.createEl('ul', { cls: 'gauge-blockers' });
-                for (const check of blockers) {
-                    list.createEl('li', { text: check });
-                }
+        if (currentLevel < 6 && blockingChecks && blockingChecks.length > 0) {
+            const list = gauge.createEl('ul', { cls: 'gauge-blockers' });
+            for (const check of blockingChecks) {
+                list.createEl('li', { text: check });
             }
         }
     }
@@ -711,10 +858,12 @@ class PaperForgeStatusView extends ItemView {
         }
 
         const stages = [
+            { key: 'imported', label: 'Imported', cls: 'stage-imported' },
             { key: 'indexed', label: 'Indexed', cls: 'stage-indexed' },
             { key: 'pdf_ready', label: 'PDF Ready', cls: 'stage-pdf-ready' },
             { key: 'fulltext_ready', label: 'Fulltext Ready', cls: 'stage-fulltext-ready' },
-            { key: 'deep_read_done', label: 'Deep Read', cls: 'stage-deep-read' },
+            { key: 'deep_read', label: 'Deep Read', cls: 'stage-deep-read' },
+            { key: 'ai_ready', label: 'AI Ready', cls: 'stage-ai-ready' },
         ];
 
         const chart = container.createEl('div', { cls: 'paperforge-bar-chart' });
@@ -740,11 +889,10 @@ class PaperForgeStatusView extends ItemView {
         this._actionsGrid.empty();
         for (const a of ACTIONS) {
             const card = this._actionsGrid.createEl('div', { cls: 'paperforge-action-card' });
-            if (a.disabled) card.addClass('disabled');
             card.createEl('div', { cls: 'paperforge-action-card-icon', text: a.icon });
             card.createEl('div', { cls: 'paperforge-action-card-title', text: a.title });
             card.createEl('div', { cls: 'paperforge-action-card-desc', text: a.desc });
-            card.createEl('div', { cls: 'paperforge-action-card-hint', text: a.disabled ? 'Coming soon' : 'Click to run' });
+            card.createEl('div', { cls: 'paperforge-action-card-hint', text: 'Click to run' });
             card.addEventListener('click', () => this._runAction(a, card));
         }
     }
@@ -754,65 +902,64 @@ class PaperForgeStatusView extends ItemView {
         this._cachedItems = null;
     }
 
-    /* ── Pure Mode Resolution (D-07, Phase 32) ── */
-    _resolveModeForFile(file) {
-        if (!file) return { mode: 'global', filePath: null, key: null, domain: null };
+    /* ── Context Detection & Mode Switch (D-01, D-02, D-03, D-04, D-10) ── */
+    _detectAndSwitch() {
+        const activeFile = this.app.workspace.getActiveFile();
 
-        const ext = file.extension;
-        const filePath = file.path;
+        if (!activeFile) {
+            // No active file -> global mode (D-04)
+            this._switchMode('global');
+            return;
+        }
+
+        const ext = activeFile.extension;
 
         if (ext === 'base') {
-            return { mode: 'collection', filePath, key: null, domain: file.basename };
+            // .base file -> collection mode (D-02, D-15)
+            this._currentDomain = activeFile.basename;
+            this._currentPaperKey = null;
+            this._currentPaperEntry = null;
+            this._switchMode('collection');
+            return;
         }
 
         if (ext === 'md') {
-            // D-01: Check deep-reading.md FIRST — before zotero_key frontmatter
-            if (file.name === 'deep-reading.md') {
-                const parentDir = file.parent ? file.parent.name : '';
-                // D-02: Parent directory must match {8-char-key} - {Title}
-                if (/^[A-Z0-9]{8} - .+$/.test(parentDir)) {
-                    const cache = this.app.metadataCache.getFileCache(file);
-                    const key = cache && cache.frontmatter && cache.frontmatter.zotero_key;
-                    if (key) {
-                        return { mode: 'deep-reading', filePath, key, domain: null };
-                    }
-                }
-                // D-03: Fall through to normal .md handling
-            }
-
-            // Standard .md — check for zotero_key in frontmatter (D-03)
-            const cache = this.app.metadataCache.getFileCache(file);
+            // .md file -- check for zotero_key in frontmatter (D-03)
+            const cache = this.app.metadataCache.getFileCache(activeFile);
             const key = cache && cache.frontmatter && cache.frontmatter.zotero_key;
+
             if (key) {
-                return { mode: 'paper', filePath, key, domain: null };
+                // Has zotero_key -> per-paper mode (D-03)
+                this._currentPaperKey = key;
+                this._currentPaperEntry = this._findEntry(key);
+                this._currentDomain = null;
+                this._switchMode('paper');
+            } else {
+                // .md without zotero_key -> global mode (D-04)
+                this._currentDomain = null;
+                this._currentPaperKey = null;
+                this._currentPaperEntry = null;
+                this._switchMode('global');
             }
-            return { mode: 'global', filePath, key: null, domain: null };
+            return;
         }
 
-        return { mode: 'global', filePath, key: null, domain: null };
-    }
-
-    /* ── Context Detection & Mode Switch (D-01, D-02, D-03, D-04, D-10) ── */
-    _detectAndSwitch() {
-        const resolved = this._resolveModeForFile(this.app.workspace.getActiveFile());
-
-        this._currentDomain = resolved.domain || null;
-        this._currentPaperKey = resolved.key || null;
-        this._currentPaperEntry = resolved.key ? this._findEntry(resolved.key) : null;
-
-        this._switchMode(resolved.mode, resolved.filePath);
+        // Any other file type -> global mode (D-04)
+        this._currentDomain = null;
+        this._currentPaperKey = null;
+        this._currentPaperEntry = null;
+        this._switchMode('global');
     }
 
     /* ── Mode Switching (D-05, D-06) ── */
-    _switchMode(mode, filePath) {
-        // D-06: Identity guard — check BOTH mode AND file path
-        if (this._currentMode === mode && this._currentFilePath === filePath) {
+    _switchMode(mode) {
+        if (this._currentMode === mode) {
+            // Already in this mode -- just refresh if needed (D-04)
             this._refreshCurrentMode();
             return;
         }
 
         this._currentMode = mode;
-        this._currentFilePath = filePath;
 
         // Clear existing content (D-06)
         this._contentEl.empty();
@@ -831,9 +978,6 @@ class PaperForgeStatusView extends ItemView {
                 break;
             case 'collection':
                 this._renderCollectionMode();
-                break;
-            case 'deep-reading':
-                this._renderDeepReadingMode();
                 break;
         }
     }
@@ -973,29 +1117,13 @@ class PaperForgeStatusView extends ItemView {
                 });
             });
         } else if (nextStep === 'ready') {
-            if (entry.deep_reading_path && entry.deep_reading_status === 'done') {
-                // D-01, D-03: Jump-to-deep-reading button replaces Copy Context when deep reading exists
-                const trigger = card.createEl('button', { cls: 'paperforge-next-step-trigger' });
-                trigger.createEl('span', { text: '\uD83D\uDD0D  ' + t('jump_to_deep_reading') });
-                trigger.addEventListener('click', () => {
-                    // D-04: Follow _openFulltext() pattern — verify file, open, error Notice
-                    const drFile = this.app.vault.getAbstractFileByPath(entry.deep_reading_path);
-                    if (drFile) {
-                        this.app.workspace.openLinkText(drFile.path, '');
-                    } else {
-                        // D-05: File missing from disk despite index claiming it exists
-                        new Notice('[!!] ' + t('deep_reading_not_found'), 6000);
-                    }
-                });
-            } else {
-                // D-02, D-03: Fall back to existing Copy Context button
-                const trigger = card.createEl('button', { cls: 'paperforge-next-step-trigger' });
-                trigger.createEl('span', { text: '\u2139  Copy Context' });
-                trigger.addEventListener('click', () => {
-                    const action = ACTIONS.find(a => a.id === 'paperforge-copy-context');
-                    if (action) this._runAction(action, trigger);
-                });
-            }
+            // Show "Copy Context" shortcut for ready state (D-09)
+            const trigger = card.createEl('button', { cls: 'paperforge-next-step-trigger' });
+            trigger.createEl('span', { text: '\u2139  Copy Context' });
+            trigger.addEventListener('click', () => {
+                const action = ACTIONS.find(a => a.id === 'paperforge-copy-context');
+                if (action) this._runAction(action, trigger);
+            });
         }
     }
 
@@ -1015,165 +1143,6 @@ class PaperForgeStatusView extends ItemView {
         }
     }
 
-    /* ── Deep-Reading Mode Render (Phase 33) ── */
-    async _renderDeepReadingMode() {
-        const entry = this._currentPaperEntry;
-        const modeGuard = () => this._currentMode === 'deep-reading';
-        const view = this._contentEl.createEl('div', { cls: 'paperforge-mode-deepreading' });
-
-        // Read deep-reading.md content
-        let deepReadingText = '';
-        if (entry && entry.deep_reading_path) {
-            const drFile = this.app.vault.getAbstractFileByPath(entry.deep_reading_path);
-            if (drFile) {
-                deepReadingText = await this.app.vault.read(drFile);
-            }
-            if (!modeGuard()) return; // Guard: mode switched during async read
-        }
-
-        // Read discussion.json
-        let discussionData = null;
-        if (entry && entry.ai_path) {
-            const aiPath = entry.ai_path.replace(/^\[\[/, '').replace(/\]\]$/, '');
-            const djPath = aiPath + 'discussion.json';
-            const djFile = this.app.vault.getAbstractFileByPath(djPath);
-            if (djFile) {
-                try {
-                    const raw = await this.app.vault.read(djFile);
-                    if (!modeGuard()) return; // Guard: mode switched
-                    discussionData = JSON.parse(raw);
-                } catch (e) { /* file missing or parse error */ }
-            }
-        }
-
-        // Render sections
-        this._renderDeepStatusCard(view, entry);
-        this._renderDeepPass1Card(view, deepReadingText);
-        this._renderDeepQACard(view, discussionData);
-    }
-
-    /* ── Deep-Reading Status Card ── */
-    _renderDeepStatusCard(container, entry) {
-        const card = container.createEl('div', { cls: 'paperforge-deepreading-card' });
-        card.createEl('div', { cls: 'paperforge-deepreading-card-title', text: '\uD83D\uDCCA \u72B6\u6001\u6982\u89C8' });
-
-        if (!entry) {
-            card.createEl('div', { cls: 'paperforge-deepreading-empty', text: '\u6682\u65E0\u6570\u636E' });
-            return;
-        }
-
-        const statusItems = [
-            { label: 'Figure-Map', value: entry.figure_map ? '\u2705 \u5DF2\u751F\u6210' : '\u23F3 \u5F85\u751F\u6210' },
-            { label: 'OCR \u72B6\u6001', value: entry.ocr_status === 'done' ? '\u2705 \u5DF2\u5B8C\u6210' : '\u23F3 ' + (entry.ocr_status || '\u5F85\u5904\u7406') },
-            { label: 'Pass \u5B8C\u6210', value: this._getPassCompletion(entry) },
-            { label: '\u5065\u5EB7\u72B6\u51B5', value: entry.health && entry.health.pdf_health === 'healthy' ? '\u2705 \u6B63\u5E38' : '\u26A0\uFE0F \u9700\u5173\u6CE8' },
-        ];
-
-        const list = card.createEl('div', { cls: 'paperforge-deepreading-status-list' });
-        for (const item of statusItems) {
-            const row = list.createEl('div', { cls: 'paperforge-deepreading-status-row' });
-            row.createEl('span', { cls: 'paperforge-deepreading-status-label', text: item.label });
-            row.createEl('span', { cls: 'paperforge-deepreading-status-value', text: item.value });
-        }
-    }
-
-    _getPassCompletion(entry) {
-        const status = entry.deep_reading_status || 'pending';
-        if (status === 'done') return '\u2705 3/3 (\u5DF2\u5B8C\u6210)';
-        return '\u23F3 \u5F85\u5B8C\u6210';
-    }
-
-    /* ── Deep-Reading Pass 1 Summary Card ── */
-    _renderDeepPass1Card(container, text) {
-        const card = container.createEl('div', { cls: 'paperforge-deepreading-card' });
-        card.createEl('div', { cls: 'paperforge-deepreading-card-title', text: '\uD83D\uDCDD Pass 1 \u603B\u7ED3' });
-
-        if (!text || text.trim() === '') {
-            card.createEl('div', { cls: 'paperforge-deepreading-empty', text: '\u6682\u65E0 Pass 1 \u603B\u7ED3' });
-            return;
-        }
-
-        const extracted = this._extractPass1Content(text);
-        if (!extracted) {
-            card.createEl('div', { cls: 'paperforge-deepreading-empty', text: '\u6682\u65E0 Pass 1 \u603B\u7ED3' });
-            return;
-        }
-
-        const content = card.createEl('div', { cls: 'paperforge-deepreading-pass1-content' });
-        const lines = extracted.split('\n').filter(l => l.trim());
-        for (const line of lines) {
-            if (line.startsWith('### ')) {
-                content.createEl('h4', { cls: 'paperforge-deepreading-pass1-subheading', text: line.replace('### ', '') });
-            } else if (line.startsWith('**') && line.endsWith('**')) {
-                content.createEl('p', { cls: 'paperforge-deepreading-pass1-marker', text: line });
-            } else if (line.trim()) {
-                content.createEl('p', { cls: 'paperforge-deepreading-pass1-text', text: line });
-            }
-        }
-    }
-
-    _extractPass1Content(text) {
-        const markers = ['**\u4E00\u53E5\u8BDD\u603B\u89C8**', '## Pass 1', '**\u6587\u7AE0\u6458\u8981**'];
-        for (const marker of markers) {
-            const idx = text.indexOf(marker);
-            if (idx !== -1) {
-                const after = idx + marker.length;
-                // Cut at next major section marker
-                const cutMarkers = ['**\u8BC1\u636E\u8FB9\u754C**', '**Figure \u5BFC\u8BFB**', '**\u4E3B\u8981\u53D1\u73B0**'];
-                let nextCut = text.length;
-                for (const cm of cutMarkers) {
-                    const ci = text.indexOf(cm, after);
-                    if (ci !== -1 && ci < nextCut) nextCut = ci;
-                }
-                return text.substring(after, nextCut).trim();
-            }
-        }
-        return null;
-    }
-
-    /* ── Deep-Reading AI Q&A History Card ── */
-    _renderDeepQACard(container, data) {
-        const card = container.createEl('div', { cls: 'paperforge-deepreading-card' });
-
-        // D-10: Collapsible header
-        const header = card.createEl('div', { cls: 'paperforge-deepreading-card-header collapsible' });
-        header.createEl('div', { cls: 'paperforge-deepreading-card-title', text: '\uD83D\uDCAC AI \u95EE\u7B54\u8BB0\u5F55' });
-
-        const body = card.createEl('div', { cls: 'paperforge-deepreading-card-body collapsed' });
-
-        // Toggle collapse
-        header.addEventListener('click', () => {
-            body.classList.toggle('collapsed');
-        });
-
-        // D-12: Empty states
-        if (!data || !data.sessions || data.sessions.length === 0) {
-            body.createEl('div', { cls: 'paperforge-deepreading-empty', text: !data ? '\u6682\u65E0\u8BA8\u8BBA\u8BB0\u5F55' : '\u6682\u65E0\u95EE\u7B54\u5185\u5BB9' });
-            return;
-        }
-
-        // D-08: Sessions-based grouping
-        for (const session of data.sessions) {
-            const sessionEl = body.createEl('div', { cls: 'paperforge-deepreading-session' });
-            const sessionHeader = sessionEl.createEl('div', { cls: 'paperforge-deepreading-session-header' });
-            sessionHeader.createEl('span', { text: session.model || 'AI' });
-            sessionHeader.createEl('span', { cls: 'paperforge-deepreading-session-date', text: session.started || '' });
-
-            // D-09: Dialog bubbles
-            if (session.qa_pairs) {
-                for (const qa of session.qa_pairs) {
-                    const qBubble = sessionEl.createEl('div', { cls: 'paperforge-deepreading-bubble question' });
-                    qBubble.createEl('div', { cls: 'bubble-label', text: '\u95EE\u9898' });
-                    qBubble.createEl('div', { cls: 'bubble-text', text: qa.question });
-
-                    const aBubble = sessionEl.createEl('div', { cls: 'paperforge-deepreading-bubble answer' });
-                    aBubble.createEl('div', { cls: 'bubble-label', text: '\u89E3\u7B54' });
-                    aBubble.createEl('div', { cls: 'bubble-text', text: qa.answer });
-                }
-            }
-        }
-    }
-
     /* ── Collection Mode Render (Phase 30) ── */
     _renderCollectionMode() {
         const domain = this._currentDomain || 'Unknown';
@@ -1188,20 +1157,22 @@ class PaperForgeStatusView extends ItemView {
         }
 
         // --- Single-pass aggregation ---
+        const lifecycleCounts = {};
         const healthAgg = {
             pdf_health: { healthy: 0, unhealthy: 0 },
             ocr_health: { healthy: 0, unhealthy: 0 },
             note_health: { healthy: 0, unhealthy: 0 },
             asset_health: { healthy: 0, unhealthy: 0 },
         };
-        let hasPdf = 0;
         let fulltextReady = 0;
         let deepRead = 0;
 
         for (const item of domainItems) {
-            if (item.has_pdf) hasPdf++;
-            if (item.ocr_status === 'done') fulltextReady++;
-            if (item.deep_reading_status === 'done') deepRead++;
+            const lifecycle = item.lifecycle || 'pdf_ready';
+            lifecycleCounts[lifecycle] = (lifecycleCounts[lifecycle] || 0) + 1;
+
+            if (['fulltext_ready', 'deep_read', 'ai_ready'].includes(lifecycle)) fulltextReady++;
+            if (['deep_read', 'ai_ready'].includes(lifecycle)) deepRead++;
 
             const health = item.health || {};
             for (const dim of ['pdf_health', 'ocr_health', 'note_health', 'asset_health']) {
@@ -1230,13 +1201,8 @@ class PaperForgeStatusView extends ItemView {
             }
         }
 
-        // --- Lifecycle distribution bar chart (cumulative, D-04) ---
-        this._renderBarChart(view, {
-            indexed: totalPapers - hasPdf,
-            pdf_ready: hasPdf,
-            fulltext_ready: fulltextReady,
-            deep_read_done: deepRead,
-        });
+        // --- Lifecycle distribution bar chart (D-04) ---
+        this._renderBarChart(view, lifecycleCounts);
 
         // --- Health overview (D-05) ---
         this._renderCollectionHealth(view, healthAgg);
@@ -1274,8 +1240,6 @@ class PaperForgeStatusView extends ItemView {
         this._contentEl.addClass('switching');
         this._invalidateIndex(); // force fresh data load
 
-        this._renderModeHeader(this._currentMode);
-
         switch (this._currentMode) {
             case 'global':
                 this._renderGlobalMode();
@@ -1285,9 +1249,6 @@ class PaperForgeStatusView extends ItemView {
                 break;
             case 'collection':
                 this._renderCollectionMode();
-                break;
-            case 'deep-reading':
-                this._renderDeepReadingMode();
                 break;
         }
 
@@ -1299,11 +1260,6 @@ class PaperForgeStatusView extends ItemView {
 
     /* ── Run Action ── */
     _runAction(a, card) {
-        // Guard: disabled actions show coming-soon notice
-        if (a.disabled) {
-            new Notice(`[i] ${a.disabledMsg || 'This action is not yet available.'}`, 6000);
-            return;
-        }
         // Guard: prevent running the same action simultaneously
         if (card.classList.contains('running')) {
             return;
@@ -1313,7 +1269,7 @@ class PaperForgeStatusView extends ItemView {
         this._showMessage('Processing...', 'running');
 
         // Resolve extra arguments based on action flags
-        let extraArgs = Array.isArray(a.args) ? [...a.args] : [];
+        let extraArgs = [];
 
         if (a.needsKey) {
             // Resolve zotero_key from active file frontmatter
@@ -1340,18 +1296,18 @@ class PaperForgeStatusView extends ItemView {
                 card.removeClass('running');
                 return;
             }
-            extraArgs = [...extraArgs, key];
+            extraArgs = [key];
         }
 
         if (a.needsFilter) {
             // Default to --all for the initial implementation
-            extraArgs = [...extraArgs, '--all'];
+            extraArgs = ['--all'];
         }
 
         const { spawn } = require('node:child_process');
         const cmdTimeout = a.needsFilter ? 60000 : (a.needsKey ? 30000 : 600000);
-        const pythonExe = resolvePythonExecutable(vp);
-        const child = spawn(pythonExe, ['-m', 'paperforge', a.cmd, ...extraArgs], { cwd: vp, timeout: cmdTimeout });
+        const pyExe = getPaperforgePythonCmd();
+        const child = spawn(pyExe, ['-m', 'paperforge', a.cmd, ...extraArgs], { cwd: vp, timeout: cmdTimeout, env: paperforgeEnrichedEnv() });
         const log = [];
         const startTime = Date.now();
         const pollTimer = setInterval(() => this._fetchStats(true), 4000);
@@ -1376,14 +1332,8 @@ class PaperForgeStatusView extends ItemView {
             const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
             if (code !== 0) {
                 const last = log.slice(-3).join(' | ') || 'exit code ' + code;
-                if (a.cmd === 'repair' && code === 1) {
-                    this._showMessage('[WARN] ' + last, 'running');
-                    new Notice('[WARN] Repair completed with remaining issues: ' + last, 8000);
-                    this._fetchStats(true);
-                } else {
-                    this._showMessage('[!!] ' + last, 'error');
-                    new Notice('[!!] ' + a.cmd + ' failed: ' + last, 8000);
-                }
+                this._showMessage('[!!] ' + last, 'error');
+                new Notice('[!!] ' + a.cmd + ' failed: ' + last, 8000);
             } else if (a.needsKey || a.needsFilter) {
                 // Context actions: copy JSON output to clipboard
                 const output = log.join('\n');
@@ -1449,7 +1399,6 @@ class PaperForgeStatusView extends ItemView {
             case 'paper':
                 badge.addClass('paper');
                 badge.setText('Paper');
-                this._headerTitle.setText('Paper');
                 if (this._currentPaperEntry && this._currentPaperEntry.title) {
                     modeName = this._currentPaperEntry.title;
                 } else if (this._currentPaperKey) {
@@ -1462,26 +1411,14 @@ class PaperForgeStatusView extends ItemView {
                 } else {
                     modeName = 'Unknown paper';
                 }
+                this._headerTitle.setText(modeName);
                 break;
 
             case 'collection':
                 badge.addClass('collection');
                 badge.setText('Collection');
-                this._headerTitle.setText('Collection');
                 modeName = this._currentDomain || 'Unknown Domain';
-                break;
-
-            case 'deep-reading':
-                badge.addClass('deep-reading');
-                badge.setText('Deep');
-                this._headerTitle.setText('Deep Reading');
-                if (this._currentPaperEntry && this._currentPaperEntry.title) {
-                    modeName = this._currentPaperEntry.title;
-                } else if (this._currentPaperKey) {
-                    modeName = this._currentPaperKey;
-                } else {
-                    modeName = 'Unknown paper';
-                }
+                this._headerTitle.setText(modeName);
                 break;
         }
 
@@ -1663,28 +1600,42 @@ class PaperForgeSettingTab extends PluginSettingTab {
     }
 
     _preCheck(onPass) {
-        exec('python --version', { timeout: 8000 }, (pyErr, pyOut) => {
+        tryExecPythonVersion((pyErr, pyOut) => {
             const results = [];
             const fs = require('fs');
             const path = require('path');
 
             /* 1 — Python */
-            results.push({ label: 'Python', ok: !pyErr, detail: pyErr ? t('check_python_fail') : pyOut.trim() });
+            results.push({ label: 'Python', ok: !pyErr, detail: pyErr ? t('check_python_fail') : pyOut });
 
             /* 2 — Zotero (check install + data dir) */
             let zotOk = false;
-            // Try common install locations
-            const progFiles = process.env.ProgramFiles || '';
-            const localAppData = process.env.LOCALAPPDATA || '';
-            const home = process.env.USERPROFILE || process.env.HOME || '';
-            const zotInstallDirs = [
-                path.join(progFiles, 'Zotero'),
-                path.join(progFiles, '(x86)', 'Zotero'),
-                path.join(localAppData, 'Programs', 'Zotero'),
-                path.join(localAppData, 'Zotero'),
-                path.join(home, 'AppData', 'Local', 'Programs', 'Zotero'),
-            ].filter(Boolean);
-            zotOk = zotInstallDirs.some(d => { try { return fs.existsSync(d); } catch { return false; } });
+            const home = process.env.HOME || process.env.USERPROFILE || os.homedir() || '';
+            if (process.platform === 'darwin') {
+                const macZot = [
+                    '/Applications/Zotero.app',
+                    path.join(home, 'Applications', 'Zotero.app'),
+                ];
+                zotOk = macZot.some(d => { try { return fs.existsSync(d); } catch { return false; } });
+            } else if (process.platform === 'win32') {
+                const progFiles = process.env.ProgramFiles || '';
+                const localAppData = process.env.LOCALAPPDATA || '';
+                const zotInstallDirs = [
+                    path.join(progFiles, 'Zotero'),
+                    path.join(progFiles, '(x86)', 'Zotero'),
+                    path.join(localAppData, 'Programs', 'Zotero'),
+                    path.join(localAppData, 'Zotero'),
+                    path.join(home, 'AppData', 'Local', 'Programs', 'Zotero'),
+                ].filter(Boolean);
+                zotOk = zotInstallDirs.some(d => { try { return fs.existsSync(d); } catch { return false; } });
+            } else {
+                const linuxPaths = [
+                    path.join(home, '.local', 'share', 'zotero', 'zotero'),
+                    '/usr/bin/zotero',
+                    '/usr/local/bin/zotero',
+                ];
+                zotOk = linuxPaths.some(d => { try { return fs.existsSync(d); } catch { return false; } });
+            }
             // Fallback: check if data dir is configured
             const zotDataDir = this.plugin.settings.zotero_data_dir;
             if (!zotOk && zotDataDir) {
@@ -1692,35 +1643,25 @@ class PaperForgeSettingTab extends PluginSettingTab {
             }
             results.push({ label: 'Zotero', ok: zotOk, detail: zotOk ? t('check_zotero_ok') : t('check_zotero_fail') });
 
-            /* 3 — Better BibTeX (recursive search) */
-            function scanBbt(dir) {
-                if (!dir) return false;
-                try {
-                    if (!fs.existsSync(dir)) return false;
-                    for (const entry of fs.readdirSync(dir)) {
-                        const full = path.join(dir, entry);
-                        try {
-                            if (fs.statSync(full).isDirectory()) {
-                                if (entry.startsWith('better-bibtex')) return true;
-                                // Recurse one level into common Zotero subdirs
-                                if (entry === 'extensions' || entry === 'Profiles') {
-                                    if (scanBbt(full)) return true;
-                                }
-                            }
-                        } catch {}
-                    }
-                } catch {}
-                return false;
-            }
+            /* 3 — Better BibTeX: Profiles … extensions, plus top-level folder next to storage */
             let bbtOk = false;
             const appData = process.env.APPDATA || '';
-            // 1) Standard: %APPDATA%\Zotero\Zotero\
-            if (!bbtOk && appData) {
-                bbtOk = scanBbt(path.join(appData, 'Zotero', 'Zotero'));
+            if (process.platform === 'win32' && appData) {
+                bbtOk = scanBbtUnderProfiles(path.join(appData, 'Zotero', 'Zotero', 'Profiles'));
             }
-            // 2) Fallback: user-configured zotero_data_dir
-            if (!bbtOk && zotDataDir) {
-                bbtOk = scanBbt(zotDataDir);
+            if (!bbtOk && process.platform === 'darwin' && home) {
+                bbtOk = scanBbtUnderProfiles(path.join(home, 'Library', 'Application Support', 'Zotero', 'Profiles'));
+            }
+            if (!bbtOk && process.platform !== 'win32' && process.platform !== 'darwin' && home) {
+                bbtOk = scanBbtUnderProfiles(path.join(home, '.zotero', 'zotero', 'Profiles'));
+            }
+            // Custom Zotero data directory (often …/Zotero with better-bibtex next to storage/)
+            if (!bbtOk && zotDataDir && String(zotDataDir).trim()) {
+                bbtOk = scanBbtDirectChildren(zotDataDir.trim());
+            }
+            // Typical custom location on macOS/Linux: ~/Zotero
+            if (!bbtOk && home) {
+                bbtOk = scanBbtDirectChildren(path.join(home, 'Zotero'));
             }
             results.push({ label: 'Better BibTeX', ok: bbtOk, detail: bbtOk ? t('check_bbt_ok') : t('check_bbt_fail') });
 
@@ -1800,35 +1741,12 @@ class PaperForgeSetupModal extends Modal {
                 .addEventListener('click', () => { this._step--; this._render(); });
         }
         if (this._step < 5) {
-            const nextBtn = nav.createEl('button', { cls: 'paperforge-step-btn mod-cta', text: t('nav_next') });
-            nextBtn.addEventListener('click', () => {
-                if (this._step === 3 && !this._validateStep3()) return;
-                this._step++;
-                this._render();
-            });
+            nav.createEl('button', { cls: 'paperforge-step-btn mod-cta', text: t('nav_next') })
+                .addEventListener('click', () => { this._step++; this._render(); });
         } else {
             nav.createEl('button', { cls: 'paperforge-step-btn', text: t('nav_close') })
                 .addEventListener('click', () => this.close());
         }
-    }
-
-    _validateStep3() {
-        const s = this.plugin.settings;
-        const fs = require('fs');
-
-        // Check API key validated
-        if (!this._apiKeyValidated) {
-            new Notice('请先验证 PaddleOCR API 密钥');
-            return false;
-        }
-
-        // Check Zotero data directory exists
-        if (!s.zotero_data_dir || !fs.existsSync(s.zotero_data_dir)) {
-            new Notice('Zotero 数据目录不存在，请填写正确路径');
-            return false;
-        }
-
-        return true;
     }
 
     /* ── Step 1: Overview ── */
@@ -1839,33 +1757,29 @@ class PaperForgeSetupModal extends Modal {
         const s = this.plugin.settings;
         const vault = this.app.vault.adapter.basePath;
         const tree = el.createEl('div', { cls: 'paperforge-dir-tree' });
-        // HARDEN-05: Use createEl() DOM API instead of innerHTML to prevent XSS
-        // from user-configured directory names containing HTML/script tags.
-        const rootNode = tree.createEl('div', { cls: 'paperforge-dir-node root' });
-        rootNode.textContent = `📁 Vault (${vault})`;
-
-        const children = tree.createEl('div', { cls: 'paperforge-dir-children' });
-
-        const resourcesFolder = children.createEl('div', { cls: 'paperforge-dir-node folder' });
-        resourcesFolder.textContent = `📁 ${s.resources_dir || 'Resources'}/ — 文献卡片目录（Base 数据来源）`;
-        const resourcesChildren = resourcesFolder.createEl('div', { cls: 'paperforge-dir-children' });
-        resourcesChildren.createEl('div', { cls: 'paperforge-dir-node file',
-            text: `📁 ${s.literature_dir || 'Literature'}/ — 文献卡片` });
-
-        children.createEl('div', { cls: 'paperforge-dir-node folder',
-            text: `📁 ${s.base_dir || 'Bases'}/ — 数据管理面板` });
-        children.createEl('div', { cls: 'paperforge-dir-node folder',
-            text: `📁 ${s.system_dir || 'System'}/ — Zotero 软链接 + PaperForge 系统文件夹` });
+        tree.innerHTML = `
+            <div class="paperforge-dir-node root">📁 Vault (${vault})</div>
+            <div class="paperforge-dir-children">
+                <div class="paperforge-dir-node folder">📁 ${s.resources_dir || 'Resources'}/ — 文献资源根目录
+                    <div class="paperforge-dir-children">
+                        <div class="paperforge-dir-node file">📁 ${s.literature_dir || 'Notes'}/ — 正文笔记</div>
+                        <div class="paperforge-dir-node file">📁 ${s.control_dir || 'Index_Cards'}/ — 索引卡片</div>
+                    </div>
+                </div>
+                <div class="paperforge-dir-node folder">📁 ${s.base_dir || '05_Bases'}/ — Base 视图文件</div>
+                <div class="paperforge-dir-node folder">📁 ${s.system_dir || 'System'}/ — 系统文件</div>
+            </div>`;
 
         el.createEl('p', { text: t('wizard_preview'), cls: 'paperforge-modal-hint' });
         el.createEl('p', { text: t('wizard_safety'), cls: 'paperforge-modal-hint' });
 
         const summary = el.createEl('div', { cls: 'paperforge-summary' });
         const overviewItems = [
-            { label: t('dir_resources'), val: `${vault}/${s.resources_dir || 'Resources'}` },
-            { label: t('dir_notes'), val: `${vault}/${s.resources_dir || 'Resources'}/${s.literature_dir || 'Literature'}` },
-            { label: t('dir_base'), val: `${vault}/${s.base_dir || 'Bases'}` },
-            { label: t('dir_system'), val: `${vault}/${s.system_dir || 'System'}` },
+            { label: t('dir_resources'), val: `${vault}/${s.resources_dir || '03_Resources'}` },
+            { label: t('dir_notes'), val: `${vault}/${s.resources_dir || '03_Resources'}/${s.literature_dir || 'Literature'}` },
+            { label: t('dir_index'), val: `${vault}/${s.resources_dir || '03_Resources'}/${s.control_dir || 'LiteratureControl'}` },
+            { label: t('dir_base'), val: `${vault}/${s.base_dir || '05_Bases'}` },
+            { label: t('dir_system'), val: `${vault}/${s.system_dir || '99_System'}` },
         ];
         for (const item of overviewItems) {
             const row = summary.createEl('div', { cls: 'paperforge-summary-row' });
@@ -1886,16 +1800,17 @@ class PaperForgeSetupModal extends Modal {
 
         el.createEl('p', { text: t('wizard_dir_hint'), cls: 'paperforge-modal-hint' });
 
-        this._modalInput(el, '资源目录（创建文献卡片目录的地方）', 'resources_dir', s.resources_dir, 'Resources');
+        this._modalInput(el, t('dir_resources'), 'resources_dir', s.resources_dir, 'Resources');
 
         el.createEl('p', { text: t('wizard_dir_sub_hint'), cls: 'paperforge-modal-hint' });
 
-        this._modalInput(el, '文献卡片目录（存放文献卡片的地方，Base 数据来源）', 'literature_dir', s.literature_dir, 'Literature');
+        this._modalInput(el, t('dir_notes'), 'literature_dir', s.literature_dir, 'Notes');
+        this._modalInput(el, t('dir_index'), 'control_dir', s.control_dir, 'Index_Cards');
 
         el.createEl('p', { text: t('wizard_sys_hint'), cls: 'paperforge-modal-hint' });
 
-        this._modalInput(el, '系统目录（存放 Zotero 软链接和 PaperForge 系统文件）', 'system_dir', s.system_dir, 'System');
-        this._modalInput(el, 'Base 目录（存放数据管理面板的地方）', 'base_dir', s.base_dir, 'Bases');
+        this._modalInput(el, t('dir_system'), 'system_dir', s.system_dir, 'System');
+        this._modalInput(el, t('dir_base'), 'base_dir', s.base_dir, '05_Bases');
 
         el.createEl('p', { text: t('wizard_safety'), cls: 'paperforge-modal-hint' });
         const preview = el.createEl('div', { cls: 'paperforge-summary' });
@@ -1904,7 +1819,7 @@ class PaperForgeSetupModal extends Modal {
             { label: t('dir_notes'), val: `${vault}/${s.resources_dir || ''}/${s.literature_dir || ''}` },
             { label: t('dir_index'), val: `${vault}/${s.resources_dir || ''}/${s.control_dir || ''}` },
             { label: t('dir_system'), val: `${vault}/${s.system_dir || ''}` },
-            { label: t('dir_base'), val: `${vault}/${s.base_dir || ''}` },
+            { label: t('dir_base'), val: `${vault}/${s.base_dir || '05_Bases'}` },
         ];
         for (const item of previewItems) {
             const row = preview.createEl('div', { cls: 'paperforge-summary-row' });
@@ -1944,104 +1859,8 @@ class PaperForgeSetupModal extends Modal {
 
         el.createEl('p', { text: t('wizard_keys_hint'), cls: 'paperforge-modal-hint' });
 
-        // PaddleOCR API Key with validate button
-        const apiRow = el.createEl('div', { cls: 'paperforge-modal-field' });
-        apiRow.createEl('label', { cls: 'paperforge-modal-label', text: t('field_paddleocr') });
-        const apiInput = apiRow.createEl('input', {
-            cls: 'paperforge-modal-input',
-            attr: { type: 'password', placeholder: 'API Key' }
-        });
-        apiInput.value = s.paddleocr_api_key || '';
-        this._apiKeyValidated = false;
-        this._apiKeyStatus = apiRow.createEl('span', { cls: 'paperforge-apikey-status', text: '' });
-        const validateBtn = apiRow.createEl('button', { cls: 'paperforge-step-btn', text: '验证' });
-        validateBtn.addEventListener('click', () => this._validateApiKey(apiInput.value, validateBtn));
-        apiInput.addEventListener('input', () => {
-            s.paddleocr_api_key = apiInput.value;
-            this._apiKeyValidated = false;
-            this._apiKeyStatus.textContent = '';
-            this._apiKeyStatus.className = 'paperforge-apikey-status';
-        });
-        if (this._pendingSave) clearTimeout(this._pendingSave);
-        this._pendingSave = setTimeout(() => { this.plugin.saveSettings(); this._pendingSave = null; }, 500);
-
-        // Zotero data directory (now required)
-        const zotRow = el.createEl('div', { cls: 'paperforge-modal-field' });
-        zotRow.createEl('label', { cls: 'paperforge-modal-label', text: t('field_zotero_data') });
-        const zotInput = zotRow.createEl('input', {
-            cls: 'paperforge-modal-input',
-            attr: { type: 'text', placeholder: 'Zotero 数据目录路径（必填）' }
-        });
-        zotInput.value = s.zotero_data_dir || '';
-        zotInput.addEventListener('input', () => {
-            s.zotero_data_dir = zotInput.value;
-            if (this._pendingSave) clearTimeout(this._pendingSave);
-            this._pendingSave = setTimeout(() => { this.plugin.saveSettings(); this._pendingSave = null; }, 500);
-        });
-    }
-
-    _validateApiKey(key, btn) {
-        if (!key || key.length < 10) {
-            this._apiKeyStatus.textContent = '密钥格式不正确';
-            this._apiKeyStatus.className = 'paperforge-apikey-status error';
-            return;
-        }
-        btn.disabled = true;
-        btn.textContent = '验证中…';
-        this._apiKeyStatus.textContent = '正在验证…';
-        this._apiKeyStatus.className = 'paperforge-apikey-status';
-
-        const https = require('https');
-        const postData = JSON.stringify({ model: 'PaddleOCR-VL-1.5' });
-        const options = {
-            hostname: 'paddleocr.aistudio-app.com',
-            path: '/api/v2/ocr/jobs',
-            method: 'POST',
-            headers: {
-                'Authorization': 'bearer ' + key,
-                'Content-Type': 'application/json',
-                'Content-Length': Buffer.byteLength(postData),
-            },
-            timeout: 10000,
-        };
-        const req = https.request(options, (res) => {
-            btn.disabled = false;
-            btn.textContent = '验证';
-            let body = '';
-            res.on('data', (chunk) => body += chunk);
-            res.on('end', () => {
-                try {
-                    const json = JSON.parse(body);
-                    if (res.statusCode === 400 && json.code === 10001) {
-                        // 400 code=10001 = auth passed, file missing (expected)
-                        this._apiKeyStatus.textContent = '✓ 密钥有效';
-                        this._apiKeyStatus.className = 'paperforge-apikey-status ok';
-                        this._apiKeyValidated = true;
-                    } else if (res.statusCode === 401) {
-                        this._apiKeyStatus.textContent = '验证失败：密钥无效';
-                        this._apiKeyStatus.className = 'paperforge-apikey-status error';
-                        this._apiKeyValidated = false;
-                    } else {
-                        this._apiKeyStatus.textContent = '验证失败：API 返回 ' + res.statusCode;
-                        this._apiKeyStatus.className = 'paperforge-apikey-status error';
-                        this._apiKeyValidated = false;
-                    }
-                } catch (e) {
-                    this._apiKeyStatus.textContent = '验证失败：无法解析响应';
-                    this._apiKeyStatus.className = 'paperforge-apikey-status error';
-                    this._apiKeyValidated = false;
-                }
-            });
-        });
-        req.on('error', (e) => {
-            btn.disabled = false;
-            btn.textContent = '验证';
-            this._apiKeyStatus.textContent = '验证失败：无法连接 (' + e.message + ')';
-            this._apiKeyStatus.className = 'paperforge-apikey-status error';
-            this._apiKeyValidated = false;
-        });
-        req.write(postData);
-        req.end();
+        this._modalSecret(el, t('field_paddleocr'), 'paddleocr_api_key', s.paddleocr_api_key, 'API Key');
+        this._modalInput(el, t('field_zotero_data'), 'zotero_data_dir', s.zotero_data_dir || '', t('field_zotero_placeholder'));
     }
 
     /* ── Modal form helpers ── */
@@ -2117,10 +1936,11 @@ class PaperForgeSetupModal extends Modal {
         }
 
         const { spawn } = require('node:child_process');
+        const pyExe = getPaperforgePythonCmd();
         const runPython = (args, options = {}) => new Promise((resolve, reject) => {
-            const child = spawn('python', args, {
+            const child = spawn(pyExe, args, {
                 cwd: s.vault_path.trim(),
-                env: process.env,
+                env: paperforgeEnrichedEnv(),
                 timeout: 120000,
                 ...options,
             });
@@ -2146,6 +1966,7 @@ class PaperForgeSetupModal extends Modal {
             '-m', 'paperforge',
             '--vault', s.vault_path.trim(),
             'setup', '--headless',
+            '--paddleocr-key', s.paddleocr_api_key.trim(),
             '--system-dir', s.system_dir.trim(),
             '--resources-dir', s.resources_dir.trim(),
             '--literature-dir', s.literature_dir.trim(),
@@ -2160,24 +1981,22 @@ class PaperForgeSetupModal extends Modal {
         try {
             let hasPaperforge = true;
             try {
-                await runPython(['-c', 'import paperforge']);
+                await runPython(['-m', 'paperforge', '--version']);
             } catch {
                 hasPaperforge = false;
             }
 
             if (!hasPaperforge) {
                 this._log(t('install_bootstrapping'));
-                const ver = this.plugin.manifest.version || '1.4.17rc2';
-                await runPython([
-                    '-m', 'pip', 'install', '--upgrade',
-                    `git+https://github.com/LLLin000/PaperForge.git@${ver}`,
-                ]);
+                const pipArgs = ['-m', 'pip', 'install', '--upgrade'];
+                if (process.platform !== 'win32') {
+                    pipArgs.push('--user');
+                }
+                pipArgs.push('git+https://github.com/LLLin000/PaperForge.git');
+                await runPython(pipArgs);
             }
 
-            await runPython(setupArgs, {
-                logStdout: true,
-                env: { ...process.env, PADDLEOCR_API_TOKEN: s.paddleocr_api_key.trim() },
-            });
+            await runPython(setupArgs, { logStdout: true });
             this._log(t('install_complete'));
             s.setup_complete = true;
             await this.plugin.saveSettings();
@@ -2219,6 +2038,9 @@ class PaperForgeSetupModal extends Modal {
     }
 
     _formatSetupError(raw) {
+        if (process.platform === 'darwin' && /No module named ['"]?paperforge/i.test(raw)) {
+            return 'PaperForge not installed — install Python from Homebrew or python.org (Apple CLT /Library/Developer/CommandLineTools python often fails); then: python3 -m pip install --user git+https://github.com/LLLin000/PaperForge.git';
+        }
         const patterns = [
             { match: /command not found|No such file|not recognized/i, msg: 'Python not found' },
             { match: /paperforge.*not found|cannot import|ModuleNotFoundError|No module named/i, msg: 'PaperForge not installed' },
@@ -2248,22 +2070,6 @@ class PaperForgeSetupModal extends Modal {
             { label: 'API Key', val: s.paddleocr_api_key ? t('api_key_set') : t('api_key_missing') },
             { label: t('field_zotero_data'), val: s.zotero_data_dir || t('not_set') },
         ];
-        for (const item of items) {
-            const row = summary.createEl('div', { cls: 'paperforge-summary-row' });
-            row.createEl('span', { cls: 'paperforge-summary-label', text: item.label });
-            row.createEl('span', { cls: 'paperforge-summary-value', text: item.val });
-        }
-        // PaperForge version (fetched async)
-        const verRow = summary.createEl('div', { cls: 'paperforge-summary-row' });
-        verRow.createEl('span', { cls: 'paperforge-summary-label', text: 'PaperForge' });
-        const verVal = verRow.createEl('span', { cls: 'paperforge-summary-value', text: '\u2014' });
-        {
-            const vp = vault;
-            const pythonExe = resolvePythonExecutable(vp);
-            execFile(pythonExe, ['-c', 'import paperforge; print(paperforge.__version__)'], { cwd: vp, timeout: 10000 }, (err, stdout) => {
-                if (!err && stdout) verVal.textContent = 'v' + stdout.trim();
-            });
-        }
         for (const item of items) {
             const row = summary.createEl('div', { cls: 'paperforge-summary-row' });
             row.createEl('span', { cls: 'paperforge-summary-label', text: item.label });
@@ -2310,13 +2116,9 @@ module.exports = class PaperForgePlugin extends Plugin {
                 id: a.id,
                 name: `PaperForge: ${a.title}`,
                 callback: () => {
-                    if (a.disabled) {
-                        new Notice(`[i] ${a.disabledMsg || 'This action is not yet available.'}`, 6000);
-                        return;
-                    }
                     const vp = this.app.vault.adapter.basePath;
                     new Notice(`PaperForge: running ${a.cmd}...`);
-                    exec(`python -m paperforge ${a.cmd}`, { cwd: vp, timeout: 300000 }, (err, stdout, stderr) => {
+                    exec(paperforgePythonExecArgs(`-m paperforge ${a.cmd}`), { cwd: vp, timeout: 300000, env: paperforgeEnrichedEnv() }, (err, stdout, stderr) => {
                         if (err) {
                             new Notice(`[!!] ${a.cmd} failed: ${(stderr || err.message).slice(0, 120)}`, 8000);
                             return;
@@ -2369,31 +2171,12 @@ module.exports = class PaperForgePlugin extends Plugin {
 
     _autoUpdate() {
         const vp = this.app.vault.adapter.basePath;
-        const pythonExe = resolvePythonExecutable(vp);
-        const ver = this.manifest.version || '1.4.17rc2';
-        const url = `git+https://github.com/LLLin000/PaperForge.git@${ver}`;
-
-        // Check if installed package version matches plugin version
-        const { execFile } = require('node:child_process');
-        execFile(pythonExe, ['-c', 'import paperforge; print(paperforge.__version__)'], { cwd: vp, timeout: 10000 }, (err, stdout) => {
-            if (err) {
-                // Not installed — install now
-                const spawn = require('node:child_process').spawn;
-                const child = spawn(pythonExe, ['-m', 'pip', 'install', '--upgrade', url], { cwd: vp, timeout: 120000 });
-                child.on('close', (code) => {
-                    if (code === 0) new Notice('[OK] PaperForge CLI installed', 5000);
-                });
-                return;
-            }
-            const pyVer = stdout.trim();
-            if (pyVer !== ver) {
-                // Mismatch — upgrade
-                const spawn = require('node:child_process').spawn;
-                const child = spawn(pythonExe, ['-m', 'pip', 'install', '--upgrade', url], { cwd: vp, timeout: 120000 });
-                child.on('close', (code) => {
-                    if (code === 0) new Notice(`[OK] PaperForge ${pyVer} -> ${ver}`, 5000);
-                });
-            }
+        exec(paperforgePythonExecArgs('-m paperforge update'), { cwd: vp, timeout: 60000, env: paperforgeEnrichedEnv() }, (err, stdout) => {
+            if (err) return;
+            const result = stdout.trim();
+            if (result.includes('already up to date') || result.includes('already up-to-date')) return;
+            const firstLine = result.split('\n')[0].slice(0, 80);
+            new Notice(`[OK] PaperForge 已更新: ${firstLine}`, 6000);
         });
     }
 
@@ -2410,11 +2193,11 @@ module.exports = class PaperForgePlugin extends Plugin {
 
         // Python DEFAULT_CONFIG values as fallback (must match config.py exactly)
         const DEFAULTS = {
-            system_dir: 'System',
-            resources_dir: 'Resources',
+            system_dir: '99_System',
+            resources_dir: '03_Resources',
             literature_dir: 'Literature',
             control_dir: 'LiteratureControl',
-            base_dir: 'Bases',
+            base_dir: '05_Bases',
         };
 
         try {
