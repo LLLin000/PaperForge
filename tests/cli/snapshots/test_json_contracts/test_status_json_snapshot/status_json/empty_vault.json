@@ -16,7 +16,7 @@
     "failed": 0
   },
   "path_errors": 0,
-  "env_configured": false,
+  "env_configured": true,
   "lifecycle_level_counts": {},
   "health_aggregate": {},
   "maturity_distribution": {}
