@@ -1,0 +1,5 @@
+{
+  "job_id": "mock-job-001",
+  "status": "queued",
+  "estimated_time_seconds": 15
+}

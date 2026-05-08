@@ -1,0 +1,41 @@
+{
+  "items": [
+    {
+      "key": "FIXT0009",
+      "itemKey": "FIXT0009",
+      "itemType": "journalArticle",
+      "title": "肩袖修复中锚钉固定的生物力学比较",
+      "creators": [
+        {
+          "creatorType": "author",
+          "firstName": "伟",
+          "lastName": "王"
+        },
+        {
+          "creatorType": "author",
+          "firstName": "明",
+          "lastName": "李"
+        }
+      ],
+      "publicationTitle": "中华骨科杂志",
+      "date": "2024-08-20",
+      "DOI": "10.3760/cma.j.cn112345-20240820-00001",
+      "PMID": "89012345",
+      "abstractNote": "比较不同锚钉固定在肩袖修复中的生物力学性能。",
+      "attachments": [
+        {
+          "path": "storage:FIXT0009/锚钉固定.pdf",
+          "contentType": "application/pdf"
+        }
+      ],
+      "collections": ["骨科"]
+    }
+  ],
+  "collections": {
+    "骨科": {
+      "name": "骨科",
+      "parent": "",
+      "items": ["FIXT0009"]
+    }
+  }
+}

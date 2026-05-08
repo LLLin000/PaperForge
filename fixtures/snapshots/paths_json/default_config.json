@@ -1,0 +1,5 @@
+{
+  "vault": "<VAULT>",
+  "worker_script": "<VAULT>/System/PaperForge/paperforge/worker",
+  "ld_deep_script": "<VAULT>/.opencode/skills/literature-qa/scripts/ld_deep.py"
+}

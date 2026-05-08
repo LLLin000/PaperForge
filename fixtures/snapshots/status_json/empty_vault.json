@@ -1,0 +1,15 @@
+{
+  "total_papers": 0,
+  "formal_notes": 0,
+  "do_ocr": 0,
+  "analyze": 0,
+  "ocr_done": 0,
+  "ocr_pending": 0,
+  "ocr_failed": 0,
+  "path_errors": 0,
+  "deep_reading_done": 0,
+  "deep_reading_pending": 0,
+  "version": "<VERSION>",
+  "vault": "<VAULT>",
+  "generated_at": "<TIMESTAMP>"
+}

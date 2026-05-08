@@ -1,0 +1,41 @@
+{
+  "items": [
+    {
+      "key": "FIXT0006",
+      "itemKey": "FIXT0006",
+      "itemType": "journalArticle",
+      "title": "Hip Arthroscopy Outcomes for Femoroacetabular Impingement: A 5-Year Follow-Up",
+      "creators": [
+        {
+          "creatorType": "author",
+          "firstName": "Henry",
+          "lastName": "Taylor"
+        },
+        {
+          "creatorType": "author",
+          "firstName": "Iris",
+          "lastName": "Chen"
+        }
+      ],
+      "publicationTitle": "Arthroscopy: The Journal of Arthroscopic and Related Surgery",
+      "date": "2024-07-01",
+      "DOI": "10.1016/j.arthro.2024.07.005",
+      "PMID": "67890123",
+      "abstractNote": "Five-year follow-up study on hip arthroscopy outcomes for FAI using standardized storage: path format.",
+      "attachments": [
+        {
+          "path": "storage:FIXT0006/FIXT0006.pdf",
+          "contentType": "application/pdf"
+        }
+      ],
+      "collections": ["orthopedic"]
+    }
+  ],
+  "collections": {
+    "orthopedic": {
+      "name": "orthopedic",
+      "parent": "",
+      "items": ["FIXT0006"]
+    }
+  }
+}
