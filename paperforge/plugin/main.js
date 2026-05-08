@@ -16,7 +16,7 @@ const PF_RIBBON_SVG = `
 // ── i18n: language pack (auto-detected from Obsidian config) ──
 const LANG = {
     en: { header_title:'PaperForge',desc:'Obsidian + Zotero literature pipeline.',setup_done:'✓ PaperForge environment configured',setup_pending:'Not installed — complete preparation and open the wizard',section_prep:'Prerequisites',section_prep_desc:'Before first use, complete the following:',section_guide:'Usage',section_config:'Configuration',prep_python:'Python 3.10+',prep_python_desc:'Must be callable from command line. Click below to auto-detect.',prep_zotero:'Zotero Desktop',prep_zotero_desc:'Install Zotero (https://www.zotero.org)',prep_bbt:'Better BibTeX',prep_bbt_desc:'Zotero → Tools → Add-ons → Install Better BibTeX',prep_export:'BBT Auto-export',prep_export_desc:'Right-click collection → Export → BetterBibTeX JSON → Keep updated → to:',prep_key:'PaddleOCR Key',prep_key_desc:'Get free key at https://aistudio.baidu.com/paddleocr',guide_open:'Open Dashboard',guide_open_desc:'Ctrl+P → "PaperForge: Open Dashboard", or sidebar book icon',guide_sync:'Sync Literature',guide_sync_desc:'Dashboard → Sync Library — pull from Zotero, generate notes',guide_ocr:'Run OCR',guide_ocr_desc:'Dashboard → Run OCR — extract PDF text & figures',btn_install:'Open Wizard',btn_reconfig:'Reconfigure',btn_install_desc:'Auto-detect environment, then open setup wizard',btn_reconfig_desc:'Re-run wizard to change directories or keys',wizard_step1:'Overview',wizard_step2:'Dirs',wizard_step3:'Agent',wizard_step4:'Install',wizard_step5:'Done',wizard_title:'PaperForge Setup Wizard',wizard_intro:'This wizard will guide you through the complete setup.',wizard_dir_hint:'The resources directory is the root for all literature data. Sub-directories inside it:',wizard_dir_sub_hint:'Two sub-directories within resources:',wizard_sys_hint:'System directories (at vault root):',wizard_agent_hint:'Select your AI Agent platform. Skill files deploy in the correct format.',wizard_keys_hint:'API key and Zotero:',wizard_preview:'System/agent files at vault root. Literature (notes, index) under resources.',dir_vault:'Vault Path',dir_resources:'Resource Dir',dir_notes:'Notes Dir',dir_index:'Index Dir',dir_system:'System Dir',dir_base:'Base Dir',field_paddleocr:'PaddleOCR API Key',field_zotero_data:'Zotero Data Dir',field_zotero_placeholder:'Optional, for auto PDF detection',label_agent:'Agent Platform',check_python_ok:'Ready',check_python_fail:'Not found',check_zotero_ok:'Found',check_zotero_fail:'Not detected',check_bbt_ok:'Installed',check_bbt_fail:'Not detected',install_btn:'Install',install_btn_running:'Installing...',install_btn_retry:'Retry',install_complete:'✓ Installation complete!',install_failed:'✗ Installation failed: ',complete_title:'✓ Setup Complete',complete_summary:'Configuration',complete_next:'Next Steps',complete_step1:'Open Dashboard',complete_step1_desc:'Ctrl+P → "PaperForge: Open Dashboard" or sidebar book icon',complete_step2:'Sync Literature',complete_step2_desc:'Dashboard → Sync Library — pull from Zotero',complete_step3:'Run OCR',complete_step3_desc:'Dashboard → Run OCR — extract full text & figures',complete_step4:'Configure BBT Auto-export',nav_prev:'← Back',nav_next:'Next →',nav_close:'Close',validate_fail:'Validation failed',validate_vault:'Vault path not set',validate_resources:'Resource dir not set',validate_notes:'Notes dir not set',validate_index:'Index dir not set',validate_base:'Base dir not set',validate_key:'API key not set',validate_system:'System dir not set',notice_python_missing:'Python not detected. Install Python 3.10+ and add to PATH.',notice_check_fail:'Missing: ',panel_actions:'Quick Actions',action_running:'Running ',api_key_set:'Configured ✓',api_key_missing:'Not configured ✗',not_set:'Not set',jump_to_deep_reading:'Open Deep Reading',deep_reading_not_found:'Deep reading file not found', },
-    zh: { header_title:'PaperForge',desc:'Obsidian + Zotero 文献管理流水线。自动同步文献、生成笔记、OCR 提取全文，一站式文献精读工作流。',setup_done:'✓ PaperForge 环境已配置完成',setup_pending:'尚未安装，完成安装准备后点击安装向导',section_prep:'安装准备',section_prep_desc:'首次使用前，请依次完成以下准备：',section_guide:'操作方式',section_config:'当前配置',prep_python:'Python 3.10+',prep_python_desc:'确保 Python 可命令行调用。点击下方按钮自动检测。',prep_zotero:'Zotero 桌面版',prep_zotero_desc:'安装 Zotero (https://www.zotero.org)',prep_bbt:'Better BibTeX',prep_bbt_desc:'Zotero → 工具 → 插件 → 安装 Better BibTeX',prep_export:'BBT 自动导出',prep_export_desc:'右键文献子分类 → 导出分类 → BetterBibTeX JSON → 勾选保持更新 → 导出到（JSON 文件名即为 Base 名）：',prep_key:'PaddleOCR Key',prep_key_desc:'在 https://aistudio.baidu.com/paddleocr 获取 API Key',guide_open:'打开 Dashboard',guide_open_desc:'Ctrl+P → 输入 PaperForge: Open Dashboard，或点左侧书本图标',guide_sync:'同步文献',guide_sync_desc:'Dashboard 中点 Sync Library，从 Zotero 拉取文献生成笔记',guide_ocr:'运行 OCR',guide_ocr_desc:'Dashboard 中点 Run OCR，提取 PDF 全文与图表',btn_install:'打开安装向导',btn_reconfig:'重新配置',btn_install_desc:'自动检测 Python + 前置环境，通过后打开分步安装向导',btn_reconfig_desc:'重新运行安装向导，修改目录或密钥配置',wizard_step1:'概览',wizard_step2:'目录',wizard_step3:'Agent',wizard_step4:'安装',wizard_step5:'完成',wizard_title:'PaperForge 安装向导',wizard_intro:'本向导将引导您完成 PaperForge 环境的完整配置。安装过程会自动创建所有目录结构，无需手动操作。',wizard_dir_hint:'资源目录是文献数据的统一根目录，以下子目录将创建在其内部：',wizard_dir_sub_hint:'资源目录内的两个子目录：',wizard_sys_hint:'独立于资源目录的系统文件：',wizard_agent_hint:'选择你使用的 AI Agent 平台，安装时将按对应格式部署技能文件：',wizard_keys_hint:'以下为 API 密钥与 Zotero 配置：',wizard_preview:'系统文件和 Agent 配置位于 Vault 根目录下。文献数据（正文、索引）统一存放在资源目录内。安装后仍可在设置中修改。',dir_vault:'Vault 路径',dir_resources:'资源目录',dir_notes:'正文目录',dir_index:'索引目录',dir_system:'系统目录',dir_base:'Base 目录',field_paddleocr:'PaddleOCR API 密钥',field_zotero_data:'Zotero 数据目录',field_zotero_placeholder:'可选，用于自动检测 PDF',label_agent:'Agent 平台',check_python_ok:'已就绪',check_python_fail:'未安装',check_zotero_ok:'已安装',check_zotero_fail:'未检测到',check_bbt_ok:'已安装',check_bbt_fail:'未检测到',install_btn:'开始安装',install_btn_running:'正在安装...',install_btn_retry:'重试',install_complete:'✓ 安装完成！',install_failed:'✗ 安装失败：',complete_title:'✓ PaperForge 安装完成',complete_summary:'当前完整配置',complete_next:'下一步操作',complete_step1:'打开 PaperForge Dashboard',complete_step1_desc:'Ctrl+P → 输入 PaperForge: Open Dashboard，或点左侧书本图标',complete_step2:'同步文献',complete_step2_desc:'Dashboard 中点 Sync Library，从 Zotero 拉取文献生成笔记',complete_step3:'运行 OCR',complete_step3_desc:'Dashboard 中点 Run OCR，提取 PDF 全文与图表',complete_step4:'配置 BBT 自动导出',nav_prev:'← 上一步',nav_next:'下一步 →',nav_close:'关闭',validate_fail:'配置验证失败',validate_vault:'Vault 路径未填写',validate_resources:'资源目录未填写',validate_notes:'正文目录未填写',validate_index:'索引目录未填写',validate_base:'Base 目录未填写',validate_key:'PaddleOCR API 密钥未填写',validate_system:'系统目录未填写',notice_python_missing:'Python 未检测到，请先安装 Python 3.10+ 并加入 PATH',notice_check_fail:'未通过: ',panel_actions:'快捷操作',action_running:'正在执行 ',api_key_set:'已配置 ✓',api_key_missing:'未配置 ✗',not_set:'未设置',jump_to_deep_reading:'跳转到精读',deep_reading_not_found:'精读文件未找到', }
+    zh: { header_title:'PaperForge',desc:'Obsidian + Zotero 文献管理流水线。自动同步文献、生成笔记、OCR 提取全文，一站式文献精读工作流。',setup_done:'✓ PaperForge 环境已配置完成',setup_pending:'尚未安装，完成安装准备后点击安装向导',section_prep:'安装准备',section_prep_desc:'首次使用前，请依次完成以下准备：',section_guide:'操作方式',section_config:'当前配置',prep_python:'Python 3.10+',prep_python_desc:'确保 Python 可命令行调用。点击下方按钮自动检测。',prep_zotero:'Zotero 桌面版',prep_zotero_desc:'安装 Zotero (https://www.zotero.org)',prep_bbt:'Better BibTeX',prep_bbt_desc:'Zotero → 工具 → 插件 → 安装 Better BibTeX',prep_export:'BBT 自动导出',prep_export_desc:'右键文献子分类 → 导出分类 → BetterBibTeX JSON → 勾选保持更新 → 导出到（JSON 文件名即为 Base 名）：',prep_key:'PaddleOCR Key',prep_key_desc:'在 https://aistudio.baidu.com/paddleocr 获取 API Key',guide_open:'打开 Dashboard',guide_open_desc:'Ctrl+P → 输入 PaperForge: Open Dashboard，或点左侧书本图标',guide_sync:'同步文献',guide_sync_desc:'Dashboard 中点 Sync Library，从 Zotero 拉取文献生成笔记',guide_ocr:'运行 OCR',guide_ocr_desc:'Dashboard 中点 Run OCR，提取 PDF 全文与图表',btn_install:'打开安装向导',btn_reconfig:'重新配置',btn_install_desc:'自动检测 Python + 前置环境，通过后打开分步安装向导',btn_reconfig_desc:'重新运行安装向导，修改目录或密钥配置',wizard_step1:'概览',wizard_step2:'目录',wizard_step3:'Agent',wizard_step4:'安装',wizard_step5:'完成',wizard_title:'PaperForge 安装向导',wizard_intro:'本向导将引导您完成 PaperForge 环境的完整配置。安装过程会自动创建所有目录结构，无需手动操作。',wizard_dir_hint:'资源目录是文献数据的统一根目录，以下子目录将创建在其内部：',wizard_dir_sub_hint:'资源目录内的两个子目录：',wizard_sys_hint:'独立于资源目录的系统文件：',wizard_agent_hint:'选择你使用的 AI Agent 平台，安装时将按对应格式部署技能文件：',wizard_keys_hint:'以下为 API 密钥与 Zotero 配置：',wizard_preview:'系统文件和 Agent 配置位于 Vault 根目录下。文献数据（正文、索引）统一存放在资源目录内。安装后仍可在设置中修改。',dir_vault:'Vault 路径',dir_resources:'资源目录',dir_notes:'正文目录',dir_index:'索引目录',dir_system:'系统目录',dir_base:'Base 目录',field_paddleocr:'PaddleOCR API 密钥',field_zotero_data:'Zotero 数据目录',field_zotero_placeholder:'可选，用于自动检测 PDF',label_agent:'Agent 平台',check_python_ok:'已就绪',check_python_fail:'未安装',check_zotero_ok:'已安装',check_zotero_fail:'未检测到',check_bbt_ok:'已安装',check_bbt_fail:'未检测到',install_btn:'开始安装',install_btn_running:'正在安装...',install_btn_retry:'重试',install_complete:'✓ 安装完成！',install_failed:'✗ 安装失败：',complete_title:'✓ PaperForge 安装完成',complete_summary:'当前完整配置',complete_next:'下一步操作',complete_step1:'打开 PaperForge Dashboard',complete_step1_desc:'Ctrl+P → 输入 PaperForge: Open Dashboard，或点左侧书本图标',complete_step2:'同步文献',complete_step2_desc:'Dashboard 中点 Sync Library，从 Zotero 拉取文献生成笔记',complete_step3:'运行 OCR',complete_step3_desc:'Dashboard 中点 Run OCR，提取 PDF 全文与图表',complete_step4:'配置 BBT 自动导出',nav_prev:'← 上一步',nav_next:'下一步 →',nav_close:'关闭',validate_fail:'配置验证失败',validate_vault:'Vault 路径未填写',validate_resources:'资源目录未填写',validate_notes:'正文目录未填写',validate_index:'索引目录未填写',validate_base:'Base 目录未填写',validate_key:'PaddleOCR API 密钥未填写',validate_zotero:'Zotero 数据目录为必填项',validate_system:'系统目录未填写',notice_python_missing:'Python 未检测到，请先安装 Python 3.10+ 并加入 PATH',notice_check_fail:'未通过: ',panel_actions:'快捷操作',action_running:'正在执行 ',api_key_set:'已配置 ✓',api_key_missing:'未配置 ✗',not_set:'未设置',jump_to_deep_reading:'跳转到精读',deep_reading_not_found:'精读文件未找到', }
 };
 
 let T = LANG.zh;
@@ -53,7 +53,7 @@ Object.assign(LANG.en, {
     wizard_keys_hint: 'Enter your PaddleOCR API key below. If you want PaperForge to auto-locate Zotero PDFs, you can also fill in the Zotero data directory.',
     wizard_preview: 'After installation, system files stay at the vault root while literature data stays under the resources directory.',
     wizard_safety: 'Safety: if the selected folders already contain files, setup preserves existing files and only creates missing PaperForge folders and files.',
-    field_zotero_placeholder: 'Optional. Helps auto-locate PDF attachments in Zotero storage',
+    field_zotero_placeholder: 'Required. Path to Zotero data directory for PDF attachment resolution.',
     install_btn: 'Start Install',
     install_validating: 'Validating setup...',
     install_bootstrapping: 'PaperForge Python package not found. Installing automatically...',
@@ -77,6 +77,7 @@ Object.assign(LANG.en, {
     validate_index: 'Index directory is required',
     validate_base: 'Base directory is required',
     validate_key: 'PaddleOCR API key is required',
+    validate_zotero: 'Zotero data directory is required',
     validate_system: 'System directory is required',
     notice_python_missing: 'Python was not detected. Install Python 3.10+ and add it to PATH.',
     api_key_set: 'Entered',
@@ -114,7 +115,7 @@ Object.assign(LANG.zh, {
     wizard_keys_hint: '下面填写 PaddleOCR API 密钥；如果你希望自动定位 Zotero 中的 PDF，也可以补充 Zotero 数据目录。',
     wizard_preview: '安装后：系统文件位于 Vault 根目录，文献数据统一放在资源目录内。以后仍可在设置页修改。',
     wizard_safety: '安全说明：如果你选择的目录里已经有文件，安装向导会保留已有内容，只补充缺失的 PaperForge 文件和目录。',
-    field_zotero_placeholder: '可选。填写后可帮助自动定位 Zotero 存储中的 PDF 附件',
+    field_zotero_placeholder: '必填。Zotero 数据目录路径，用于解析 PDF 附件位置。',
     install_validating: '正在校验安装环境...',
     install_bootstrapping: '未检测到 PaperForge Python 包，正在自动安装...',
     install_complete: '安装完成！',
@@ -372,8 +373,9 @@ class PaperForgeStatusView extends ItemView {
     /* ---------------------------------------------------------------------- */
     _fetchVersion() {
         const vp = this.app.vault.adapter.basePath;
-        const { path: pythonExe } = resolvePythonExecutable(vp);
-        execFile(pythonExe, ['-c', 'import paperforge; print(paperforge.__version__)'], { cwd: vp, timeout: 10000 }, (err, stdout) => {
+        const plugin = this.app.plugins.plugins['paperforge'];
+        const { path: pythonExe, extraArgs = [] } = resolvePythonExecutable(vp, plugin?.settings);
+        execFile(pythonExe, [...extraArgs, '-c', 'import paperforge; print(paperforge.__version__)'], { cwd: vp, timeout: 10000 }, (err, stdout) => {
             if (!err && stdout) {
                 const v = stdout.trim();
                 this._paperforgeVersion = v.startsWith('v') ? v : 'v' + v;
@@ -453,8 +455,9 @@ class PaperForgeStatusView extends ItemView {
             if (!quiet && !this._cachedStats) {
                 this._metricsEl.createEl('div', { cls: 'paperforge-status-loading', text: 'No index \u2014 trying CLI...' });
             }
-            const { path: pythonExe } = resolvePythonExecutable(vp);
-            execFile(pythonExe, ['-m', 'paperforge', 'status', '--json'], { cwd: vp, timeout: 30000 }, (err2, stdout) => {
+            const plugin = this.app.plugins.plugins['paperforge'];
+            const { path: pythonExe, extraArgs = [] } = resolvePythonExecutable(vp, plugin?.settings);
+            execFile(pythonExe, [...extraArgs, '-m', 'paperforge', 'status', '--json'], { cwd: vp, timeout: 30000 }, (err2, stdout) => {
                 if (err2) {
                     if (this._cachedStats) return;
                     this._metricsEl.createEl('div', { cls: 'paperforge-status-error', text: 'Cannot reach PaperForge CLI.\nMake sure paperforge is installed and in your PATH.' });
@@ -1388,8 +1391,8 @@ class PaperForgeStatusView extends ItemView {
 
         const { spawn } = require('node:child_process');
         const cmdTimeout = a.needsFilter ? 60000 : (a.needsKey ? 30000 : 600000);
-        const { path: pythonExe } = resolvePythonExecutable(vp);
-        const child = spawn(pythonExe, ['-m', 'paperforge', a.cmd, ...extraArgs], { cwd: vp, timeout: cmdTimeout });
+        const { path: pythonExe, extraArgs: pyExtra = [] } = resolvePythonExecutable(vp, this.app.plugins.plugins['paperforge']?.settings);
+        const child = spawn(pythonExe, [...pyExtra, '-m', 'paperforge', a.cmd, ...extraArgs], { cwd: vp, timeout: cmdTimeout });
         const log = [];
         const startTime = Date.now();
         const pollTimer = setInterval(() => this._fetchStats(true), 4000);
@@ -1845,10 +1848,13 @@ class PaperForgeSettingTab extends PluginSettingTab {
     }
 
     _preCheck(onPass) {
-        exec('python --version', { timeout: 8000 }, (pyErr, pyOut) => {
+        const fs = require('fs');
+        const path = require('path');
+        const { execFile } = require('node:child_process');
+        const vaultPath = this.app.vault.adapter.basePath;
+        const { path: pythonExe, extraArgs = [] } = resolvePythonExecutable(vaultPath, this.plugin?.settings);
+        execFile(pythonExe, [...extraArgs, '--version'], { timeout: 8000 }, (pyErr, pyOut) => {
             const results = [];
-            const fs = require('fs');
-            const path = require('path');
 
             /* 1 — Python */
             results.push({ label: 'Python', ok: !pyErr, detail: pyErr ? t('check_python_fail') : pyOut.trim() });
@@ -2004,9 +2010,23 @@ class PaperForgeSetupModal extends Modal {
             return false;
         }
 
-        // Check Zotero data directory exists
-        if (!s.zotero_data_dir || !fs.existsSync(s.zotero_data_dir)) {
-            new Notice('Zotero 数据目录不存在，请填写正确路径');
+        // Check Zotero data directory: required + exists + is directory + has storage/
+        if (!s.zotero_data_dir || !s.zotero_data_dir.trim()) {
+            new Notice('Zotero 数据目录为必填项，请填写路径');
+            return false;
+        }
+        const zotPath = s.zotero_data_dir.trim();
+        if (!fs.existsSync(zotPath)) {
+            new Notice('Zotero 数据目录路径不存在');
+            return false;
+        }
+        if (!fs.statSync(zotPath).isDirectory()) {
+            new Notice('Zotero 数据目录路径不是一个目录');
+            return false;
+        }
+        const storagePath = path.join(zotPath, 'storage');
+        if (!fs.existsSync(storagePath) || !fs.statSync(storagePath).isDirectory()) {
+            new Notice('Zotero 数据目录中未找到 storage/ 子目录');
             return false;
         }
 
@@ -2152,7 +2172,7 @@ class PaperForgeSetupModal extends Modal {
         zotRow.createEl('label', { cls: 'paperforge-modal-label', text: t('field_zotero_data') });
         const zotInput = zotRow.createEl('input', {
             cls: 'paperforge-modal-input',
-            attr: { type: 'text', placeholder: 'Zotero 数据目录路径（必填）' }
+            attr: { type: 'text', placeholder: t('field_zotero_placeholder') }
         });
         zotInput.value = s.zotero_data_dir || '';
         zotInput.addEventListener('input', () => {
@@ -2300,7 +2320,8 @@ class PaperForgeSetupModal extends Modal {
 
         const { spawn } = require('node:child_process');
         const runPython = (args, options = {}) => new Promise((resolve, reject) => {
-            const child = spawn('python', args, {
+            const { path: pyExe, extraArgs: pyExtra = [] } = resolvePythonExecutable(s.vault_path.trim(), this.plugin.settings);
+            const child = spawn(pyExe, [...pyExtra, ...args], {
                 cwd: s.vault_path.trim(),
                 env: process.env,
                 timeout: 120000,
@@ -2335,9 +2356,7 @@ class PaperForgeSetupModal extends Modal {
             '--base-dir', s.base_dir.trim(),
             '--agent', s.agent_platform || 'opencode',
         ];
-        if (s.zotero_data_dir && s.zotero_data_dir.trim()) {
-            setupArgs.push('--zotero-data', s.zotero_data_dir.trim());
-        }
+        setupArgs.push('--zotero-data', s.zotero_data_dir.trim());
 
         try {
             let hasPaperforge = true;
@@ -2387,6 +2406,7 @@ class PaperForgeSetupModal extends Modal {
         if (!s.control_dir || !s.control_dir.trim()) errors.push(t('validate_index'));
         if (!s.base_dir || !s.base_dir.trim()) errors.push(t('validate_base'));
         if (!s.paddleocr_api_key || !s.paddleocr_api_key.trim()) errors.push(t('validate_key'));
+        if (!s.zotero_data_dir || !s.zotero_data_dir.trim()) errors.push(t('validate_zotero'));
         return errors;
     }
 
@@ -2441,8 +2461,8 @@ class PaperForgeSetupModal extends Modal {
         const verVal = verRow.createEl('span', { cls: 'paperforge-summary-value', text: '\u2014' });
         {
             const vp = vault;
-            const { path: pythonExe } = resolvePythonExecutable(vp);
-            execFile(pythonExe, ['-c', 'import paperforge; print(paperforge.__version__)'], { cwd: vp, timeout: 10000 }, (err, stdout) => {
+            const { path: pythonExe, extraArgs = [] } = resolvePythonExecutable(vp, this.plugin.settings);
+            execFile(pythonExe, [...extraArgs, '-c', 'import paperforge; print(paperforge.__version__)'], { cwd: vp, timeout: 10000 }, (err, stdout) => {
                 if (!err && stdout) verVal.textContent = 'v' + stdout.trim();
             });
         }
@@ -2498,7 +2518,8 @@ module.exports = class PaperForgePlugin extends Plugin {
                     }
                     const vp = this.app.vault.adapter.basePath;
                     new Notice(`PaperForge: running ${a.cmd}...`);
-                    exec(`python -m paperforge ${a.cmd}`, { cwd: vp, timeout: 300000 }, (err, stdout, stderr) => {
+                    const { path: cmdPythonExe, extraArgs: cmdExtra = [] } = resolvePythonExecutable(vp, this.settings);
+                    execFile(cmdPythonExe, [...cmdExtra, '-m', 'paperforge', a.cmd], { cwd: vp, timeout: 300000 }, (err, stdout, stderr) => {
                         if (err) {
                             new Notice(`[!!] ${a.cmd} failed: ${(stderr || err.message).slice(0, 120)}`, 8000);
                             return;
@@ -2551,17 +2572,17 @@ module.exports = class PaperForgePlugin extends Plugin {
 
     _autoUpdate() {
         const vp = this.app.vault.adapter.basePath;
-        const { path: pythonExe } = resolvePythonExecutable(vp);
+        const { path: pythonExe, extraArgs = [] } = resolvePythonExecutable(vp, this.settings);
         const ver = this.manifest.version || '1.4.17rc2';
         const url = `git+https://github.com/LLLin000/PaperForge.git@${ver}`;
 
         // Check if installed package version matches plugin version
         const { execFile } = require('node:child_process');
-        execFile(pythonExe, ['-c', 'import paperforge; print(paperforge.__version__)'], { cwd: vp, timeout: 10000 }, (err, stdout) => {
+        execFile(pythonExe, [...extraArgs, '-c', 'import paperforge; print(paperforge.__version__)'], { cwd: vp, timeout: 10000 }, (err, stdout) => {
             if (err) {
                 // Not installed — install now
                 const spawn = require('node:child_process').spawn;
-                const child = spawn(pythonExe, ['-m', 'pip', 'install', '--upgrade', url], { cwd: vp, timeout: 120000 });
+                const child = spawn(pythonExe, [...extraArgs, '-m', 'pip', 'install', '--upgrade', url], { cwd: vp, timeout: 120000 });
                 child.on('close', (code) => {
                     if (code === 0) new Notice('[OK] PaperForge CLI installed', 5000);
                 });
@@ -2571,7 +2592,7 @@ module.exports = class PaperForgePlugin extends Plugin {
             if (pyVer !== ver) {
                 // Mismatch — upgrade
                 const spawn = require('node:child_process').spawn;
-                const child = spawn(pythonExe, ['-m', 'pip', 'install', '--upgrade', url], { cwd: vp, timeout: 120000 });
+                const child = spawn(pythonExe, [...extraArgs, '-m', 'pip', 'install', '--upgrade', url], { cwd: vp, timeout: 120000 });
                 child.on('close', (code) => {
                     if (code === 0) new Notice(`[OK] PaperForge ${pyVer} -> ${ver}`, 5000);
                 });
