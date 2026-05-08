@@ -4,12 +4,16 @@ from __future__ import annotations
 
 import json
 import shutil
+import sys
 from collections.abc import Generator
 from pathlib import Path
 
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
 SANDBOX_DIR = REPO_ROOT / "tests" / "sandbox"
 FIXTURE_VAULT = SANDBOX_DIR / "00_TestVault"
 OCR_FIXTURE = SANDBOX_DIR / "ocr-complete" / "TSTONE001"

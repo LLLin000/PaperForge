@@ -335,6 +335,27 @@ def _query_resolved_package(
         return None
 
 
+def _query_resolved_module(interp: str, extra_args: list[str], module_name: str) -> dict | None:
+    """Import a module under the resolved interpreter and return version/file info."""
+    script = (
+        "import importlib, json; "
+        f"m=importlib.import_module({module_name!r}); "
+        "print(json.dumps({"
+        "'version': getattr(m, '__version__', None), "
+        "'file': getattr(m, '__file__', None)"
+        "}))"
+    )
+    try:
+        cmd = [interp] + extra_args + ["-c", script]
+        result = subprocess.run(cmd, capture_output=True, timeout=15, text=True)
+        if result.returncode != 0:
+            return None
+        output = (result.stdout or "").strip()
+        return json.loads(output) if output else None
+    except (subprocess.TimeoutExpired, FileNotFoundError, PermissionError, OSError, json.JSONDecodeError):
+        return None
+
+
 def run_doctor(vault: Path, verbose: bool = False) -> int:
     """Validate PaperForge setup and report by category.
 
@@ -355,15 +376,16 @@ def run_doctor(vault: Path, verbose: bool = False) -> int:
     pf_pkg_info = _query_resolved_package(interp, extra_args, "paperforge")
 
     sys_version = sys.version_info
-    if sys_version.major >= 3 and sys_version.minor >= 10:
-        add_check("Python 环境", "pass", f"Python {sys_version.major}.{sys_version.minor}.{sys_version.micro}")
-    else:
-        add_check(
-            "Python 环境",
-            "fail",
-            f"Python {sys_version.major}.{sys_version.minor} (需要 3.10+)",
-            "升级 Python 到 3.10 或更高版本",
-        )
+    current_process_status = "pass" if sys_version.major >= 3 and sys_version.minor >= 10 else "warn"
+    current_process_fix = ""
+    if current_process_status == "warn":
+        current_process_fix = "建议使用插件已解析的解释器运行 doctor，或升级当前 shell Python 到 3.10+"
+    add_check(
+        "Python 环境",
+        current_process_status,
+        f"当前诊断进程 Python {sys_version.major}.{sys_version.minor}.{sys_version.micro}",
+        current_process_fix,
+    )
 
     # --- Plugin-resolved interpreter checks ---
     add_check("Python 环境 (插件)", "pass",
@@ -381,6 +403,8 @@ def run_doctor(vault: Path, verbose: bool = False) -> int:
             f"无法获取 {interp} 的 Python 版本",
             f"验证 {interp} 是一个有效的 Python 解释器")
 
+    resolved_pf_module = _query_resolved_module(interp, extra_args, "paperforge")
+
     if pf_pkg_info is not None:
         pkg_version = pf_pkg_info.get("Version", "?")
         pkg_location = pf_pkg_info.get("Location", "?")
@@ -391,47 +415,50 @@ def run_doctor(vault: Path, verbose: bool = False) -> int:
         else:
             add_check("PaperForge 包", "warn",
                 f"v{pkg_version} 已安装 (插件版本 v{expected_version}) - 版本不匹配",
-                f"运行: {interp} -m pip install --upgrade git+https://github.com/LLLin000/PaperForge.git")
+                f"运行: {interp} -m pip install --upgrade git+https://github.com/LLLin000/PaperForge.git@{expected_version}")
     else:
+        expected_version = __import__("paperforge").__version__
         add_check("PaperForge 包", "fail",
             f"PaperForge 未安装在 {interp} 中",
-            f"运行: {interp} -m pip install -e .")
+            f"运行: {interp} -m pip install --upgrade git+https://github.com/LLLin000/PaperForge.git@{expected_version}")
 
     # Wrong-environment detection
-    current_package_path = os.path.dirname(__import__("paperforge").__file__)
-    if pf_pkg_info is not None and pf_pkg_info.get("Location"):
-        loc = pf_pkg_info["Location"]
-        if loc and loc != current_package_path:
+    current_package_file = os.path.normcase(os.path.abspath(__import__("paperforge").__file__))
+    resolved_package_file = None
+    if resolved_pf_module and resolved_pf_module.get("file"):
+        resolved_package_file = os.path.normcase(os.path.abspath(str(resolved_pf_module["file"])))
+    if resolved_package_file and resolved_package_file != current_package_file:
             add_check("PaperForge 包", "warn",
-                f"包路径不一致: 已解析解释器 -> {loc} | 当前诊断进程 -> {current_package_path}",
+                f"包路径不一致: 已解析解释器 -> {resolved_package_file} | 当前诊断进程 -> {current_package_file}",
                 "建议: 使用已解析解释器运行 doctor，或统一 Python 环境")
 
     # --- Per-module dependency checks (Phase 53: DOCTOR-03) ---
     for mod_info in _MODULE_MANIFEST:
         mod_name = mod_info["import"]
-        try:
-            mod = __import__(mod_name)
-            ver = getattr(mod, "__version__", None)
-            ver_str = f" ({ver})" if ver else ""
-
-            # PyYAML specific: warn if version < 6.0
-            if mod_name == "yaml" and ver:
-                try:
-                    ver_parts = str(ver).split(".")
-                    if int(ver_parts[0]) < 6:
-                        add_check("Python 环境", "warn",
-                            f"{mod_info['label']} {ver} (需要 >=6.0)",
-                            f"运行: pip install {mod_info['pip']}")
-                        continue
-                except (ValueError, IndexError):
-                    pass
-
-            add_check("Python 环境", "pass",
-                f"{mod_info['label']} 已安装{ver_str}")
-        except ImportError:
+        mod_info_resolved = _query_resolved_module(interp, extra_args, mod_name)
+        if mod_info_resolved is None:
             add_check("Python 环境", "fail",
                 f"{mod_info['label']} 缺失",
-                f"运行: pip install {mod_info['pip']}")
+                f"运行: {interp} -m pip install {mod_info['pip']}")
+            continue
+
+        ver = mod_info_resolved.get("version")
+        ver_str = f" ({ver})" if ver else ""
+
+        # PyYAML specific: warn if version < 6.0
+        if mod_name == "yaml" and ver:
+            try:
+                ver_parts = str(ver).split(".")
+                if int(ver_parts[0]) < 6:
+                    add_check("Python 环境", "warn",
+                        f"{mod_info['label']} {ver} (需要 >=6.0)",
+                        f"运行: {interp} -m pip install {mod_info['pip']}")
+                    continue
+            except (ValueError, IndexError):
+                pass
+
+        add_check("Python 环境", "pass",
+            f"{mod_info['label']} 已安装{ver_str}")
 
     if (vault / "paperforge.json").exists():
         add_check("Vault 结构", "pass", "paperforge.json 存在")

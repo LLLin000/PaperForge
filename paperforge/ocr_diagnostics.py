@@ -14,6 +14,22 @@ from pathlib import Path
 import requests
 
 
+def _find_live_fixture_pdf() -> Path | None:
+    """Locate the live-doctor blank PDF fixture.
+
+    Prefer a fixture shipped alongside the source tree, but also fall back to the
+    current working tree when PaperForge is imported from site-packages during tests.
+    """
+    candidates = [
+        Path(__file__).resolve().parent.parent / "tests" / "fixtures" / "blank.pdf",
+        Path.cwd() / "tests" / "fixtures" / "blank.pdf",
+    ]
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    return None
+
+
 def ocr_doctor(config: dict[str, str] | None, live: bool = False) -> dict:
     """Run tiered OCR diagnostics.
 
@@ -130,8 +146,8 @@ def ocr_doctor(config: dict[str, str] | None, live: bool = False) -> dict:
 
     # L4 — Live PDF test (only if live=True)
     if live:
-        fixture_pdf = Path(__file__).parent.parent / "tests" / "fixtures" / "blank.pdf"
-        if not fixture_pdf.exists():
+        fixture_pdf = _find_live_fixture_pdf()
+        if fixture_pdf is None:
             return {
                 "level": 4,
                 "passed": False,
