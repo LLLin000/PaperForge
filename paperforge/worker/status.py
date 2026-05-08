@@ -4,6 +4,7 @@ import json
 import logging
 import os
 import re
+import subprocess
 import sys
 from json import JSONDecodeError
 from pathlib import Path
@@ -194,6 +195,167 @@ def check_wikilink_format(vault: Path, paths: dict, add_check) -> None:
         )
 
 
+# ---------------------------------------------------------------------------
+# Module-level manifest for dependency checks
+# ---------------------------------------------------------------------------
+
+_MODULE_MANIFEST = [
+    {"import": "requests", "pip": "requests", "label": "requests"},
+    {"import": "pymupdf", "pip": "pymupdf", "label": "pymupdf"},
+    {"import": "PIL", "pip": "Pillow", "label": "Pillow"},
+    {"import": "yaml", "pip": "pyyaml>=6.0", "label": "PyYAML"},
+]
+
+
+# ---------------------------------------------------------------------------
+# Plugin interpreter resolution helpers (Phase 53)
+# ---------------------------------------------------------------------------
+
+
+def _read_plugin_data(vault: Path) -> dict:
+    """Read Obsidian plugin's data.json to get the user's python_path override.
+    
+    Returns empty dict if file not found, invalid, or not a dict.
+    """
+    plugin_data_path = vault / ".obsidian" / "plugins" / "paperforge" / "data.json"
+    if not plugin_data_path.exists():
+        return {}
+    try:
+        data = json.loads(plugin_data_path.read_text(encoding="utf-8"))
+        if not isinstance(data, dict):
+            return {}
+        return data
+    except (json.JSONDecodeError, OSError, Exception):
+        return {}
+
+
+def _resolve_plugin_interpreter(vault: Path, plugin_data: dict) -> tuple[str, str, list[str]]:
+    """Replicate the plugin's resolvePythonExecutable() logic in pure Python.
+    
+    Detection order:
+    1. Manual override: plugin_data["python_path"] if set and on disk
+    2. Venv candidates: .paperforge-test-venv, .venv, venv (Scripts/ on Windows, bin/ on POSIX)
+    3. System candidates: py -3, python, python3 (tested via --version)
+    4. Fallback: python
+    
+    Returns (interpreter_path, source, extra_args).
+    """
+    # 1. Manual override
+    manual_path = (plugin_data.get("python_path") or "").strip()
+    if manual_path and os.path.exists(manual_path):
+        return (manual_path, "manual", [])
+
+    # 2. Venv candidates
+    if os.name == "nt":
+        venv_candidates = [
+            vault / ".paperforge-test-venv" / "Scripts" / "python.exe",
+            vault / ".venv" / "Scripts" / "python.exe",
+            vault / "venv" / "Scripts" / "python.exe",
+        ]
+    else:
+        venv_candidates = [
+            vault / ".paperforge-test-venv" / "bin" / "python",
+            vault / ".venv" / "bin" / "python",
+            vault / "venv" / "bin" / "python",
+        ]
+
+    for candidate in venv_candidates:
+        try:
+            if candidate.exists():
+                return (str(candidate), "auto-detected", [])
+        except (PermissionError, OSError):
+            continue
+
+    # 3. System candidates — find first that runs --version successfully
+    system_candidates = [
+        ("py", ["-3"]),
+        ("python", []),
+        ("python3", []),
+    ]
+
+    for path, extra in system_candidates:
+        try:
+            cmd = [path] + extra + ["--version"]
+            result = subprocess.run(cmd, capture_output=True, timeout=5, text=True)
+            if result.returncode == 0 and "Python" in (result.stdout or ""):
+                return (path, "auto-detected", extra)
+        except (subprocess.TimeoutExpired, FileNotFoundError, PermissionError, OSError):
+            continue
+
+    # 4. Fallback
+    return ("python", "auto-detected", [])
+
+
+def _query_resolved_version(
+    interp: str, extra_args: list[str]
+) -> tuple[str | None, tuple[int, int, int] | None]:
+    """Run interpreter --version, parse and return version info.
+    
+    Returns (version_string, (major, minor, micro)) or (None, None) on failure.
+    """
+    try:
+        cmd = [interp] + extra_args + ["--version"]
+        result = subprocess.run(cmd, capture_output=True, timeout=10, text=True)
+        if result.returncode != 0:
+            return (None, None)
+        output = (result.stdout or "").strip() or (result.stderr or "").strip()
+        match = re.search(r"Python (\d+)\.(\d+)(?:\.(\d+))?", output)
+        if match:
+            major = int(match.group(1))
+            minor = int(match.group(2))
+            micro = int(match.group(3) or "0")
+            return (output, (major, minor, micro))
+        return (output, None)
+    except (subprocess.TimeoutExpired, FileNotFoundError, PermissionError, OSError):
+        return (None, None)
+
+
+def _query_resolved_package(
+    interp: str, extra_args: list[str], package_name: str
+) -> dict | None:
+    """Run pip show for a package under the resolved interpreter.
+    
+    Returns dict with keys Name, Version, Location, etc., or None if not found.
+    """
+    try:
+        cmd = [interp] + extra_args + ["-m", "pip", "show", package_name]
+        result = subprocess.run(cmd, capture_output=True, timeout=15, text=True)
+        if result.returncode != 0:
+            return None
+        output = (result.stdout or "").strip()
+        if not output:
+            return None
+        info: dict[str, str] = {}
+        for line in output.splitlines():
+            if ":" in line:
+                key, value = line.split(":", 1)
+                info[key.strip()] = value.strip()
+        return info if info else None
+    except (subprocess.TimeoutExpired, FileNotFoundError, PermissionError, OSError):
+        return None
+
+
+def _query_resolved_module(interp: str, extra_args: list[str], module_name: str) -> dict | None:
+    """Import a module under the resolved interpreter and return version/file info."""
+    script = (
+        "import importlib, json; "
+        f"m=importlib.import_module({module_name!r}); "
+        "print(json.dumps({"
+        "'version': getattr(m, '__version__', None), "
+        "'file': getattr(m, '__file__', None)"
+        "}))"
+    )
+    try:
+        cmd = [interp] + extra_args + ["-c", script]
+        result = subprocess.run(cmd, capture_output=True, timeout=15, text=True)
+        if result.returncode != 0:
+            return None
+        output = (result.stdout or "").strip()
+        return json.loads(output) if output else None
+    except (subprocess.TimeoutExpired, FileNotFoundError, PermissionError, OSError, json.JSONDecodeError):
+        return None
+
+
 def run_doctor(vault: Path, verbose: bool = False) -> int:
     """Validate PaperForge setup and report by category.
 
@@ -207,33 +369,96 @@ def run_doctor(vault: Path, verbose: bool = False) -> int:
     def add_check(category: str, status: str, message: str, fix: str = "") -> None:
         checks.append((category, status, message, fix))
 
-    sys_version = sys.version_info
-    if sys_version.major >= 3 and sys_version.minor >= 10:
-        add_check("Python 环境", "pass", f"Python {sys_version.major}.{sys_version.minor}.{sys_version.micro}")
-    else:
-        add_check(
-            "Python 环境",
-            "fail",
-            f"Python {sys_version.major}.{sys_version.minor} (需要 3.10+)",
-            "升级 Python 到 3.10 或更高版本",
-        )
+    # --- Plugin-resolved interpreter (Phase 53: DOCTOR-01, DOCTOR-02) ---
+    plugin_data = _read_plugin_data(vault)
+    interp, source, extra_args = _resolve_plugin_interpreter(vault, plugin_data)
+    version_str, version_tuple = _query_resolved_version(interp, extra_args)
+    pf_pkg_info = _query_resolved_package(interp, extra_args, "paperforge")
 
-    required_modules = ["requests", "pymupdf", "PIL", "yaml"]
-    missing_modules = []
-    for mod in required_modules:
-        try:
-            __import__(mod)
-        except ImportError:
-            missing_modules.append(mod)
-    if missing_modules:
-        add_check(
-            "Python 环境",
-            "fail",
-            f"缺少模块: {', '.join(missing_modules)}",
-            f"运行: pip install {' '.join(missing_modules)}",
-        )
-    elif sys_version.major >= 3 and sys_version.minor >= 10:
-        pass
+    sys_version = sys.version_info
+    current_process_status = "pass" if sys_version.major >= 3 and sys_version.minor >= 10 else "warn"
+    current_process_fix = ""
+    if current_process_status == "warn":
+        current_process_fix = "建议使用插件已解析的解释器运行 doctor，或升级当前 shell Python 到 3.10+"
+    add_check(
+        "Python 环境",
+        current_process_status,
+        f"当前诊断进程 Python {sys_version.major}.{sys_version.minor}.{sys_version.micro}",
+        current_process_fix,
+    )
+
+    # --- Plugin-resolved interpreter checks ---
+    add_check("Python 环境 (插件)", "pass",
+        f"已解析解释器: {interp} (来源: {source})")
+
+    if version_tuple is not None and version_tuple >= (3, 10, 0):
+        add_check("Python 环境 (插件)", "pass",
+            f"Python {version_str}")
+    elif version_tuple is not None:
+        add_check("Python 环境 (插件)", "fail",
+            f"Python {version_str} (需要 3.10+)",
+            f"升级解释器 {interp} 到 Python 3.10 或更高版本")
+    else:
+        add_check("Python 环境 (插件)", "fail",
+            f"无法获取 {interp} 的 Python 版本",
+            f"验证 {interp} 是一个有效的 Python 解释器")
+
+    resolved_pf_module = _query_resolved_module(interp, extra_args, "paperforge")
+
+    if pf_pkg_info is not None:
+        pkg_version = pf_pkg_info.get("Version", "?")
+        pkg_location = pf_pkg_info.get("Location", "?")
+        expected_version = __import__("paperforge").__version__
+        if pkg_version == expected_version:
+            add_check("PaperForge 包", "pass",
+                f"v{pkg_version} 已安装 -> {pkg_location}")
+        else:
+            add_check("PaperForge 包", "warn",
+                f"v{pkg_version} 已安装 (插件版本 v{expected_version}) - 版本不匹配",
+                f"运行: {interp} -m pip install --upgrade git+https://github.com/LLLin000/PaperForge.git@{expected_version}")
+    else:
+        expected_version = __import__("paperforge").__version__
+        add_check("PaperForge 包", "fail",
+            f"PaperForge 未安装在 {interp} 中",
+            f"运行: {interp} -m pip install --upgrade git+https://github.com/LLLin000/PaperForge.git@{expected_version}")
+
+    # Wrong-environment detection
+    current_package_file = os.path.normcase(os.path.abspath(__import__("paperforge").__file__))
+    resolved_package_file = None
+    if resolved_pf_module and resolved_pf_module.get("file"):
+        resolved_package_file = os.path.normcase(os.path.abspath(str(resolved_pf_module["file"])))
+    if resolved_package_file and resolved_package_file != current_package_file:
+            add_check("PaperForge 包", "warn",
+                f"包路径不一致: 已解析解释器 -> {resolved_package_file} | 当前诊断进程 -> {current_package_file}",
+                "建议: 使用已解析解释器运行 doctor，或统一 Python 环境")
+
+    # --- Per-module dependency checks (Phase 53: DOCTOR-03) ---
+    for mod_info in _MODULE_MANIFEST:
+        mod_name = mod_info["import"]
+        mod_info_resolved = _query_resolved_module(interp, extra_args, mod_name)
+        if mod_info_resolved is None:
+            add_check("Python 环境", "fail",
+                f"{mod_info['label']} 缺失",
+                f"运行: {interp} -m pip install {mod_info['pip']}")
+            continue
+
+        ver = mod_info_resolved.get("version")
+        ver_str = f" ({ver})" if ver else ""
+
+        # PyYAML specific: warn if version < 6.0
+        if mod_name == "yaml" and ver:
+            try:
+                ver_parts = str(ver).split(".")
+                if int(ver_parts[0]) < 6:
+                    add_check("Python 环境", "warn",
+                        f"{mod_info['label']} {ver} (需要 >=6.0)",
+                        f"运行: {interp} -m pip install {mod_info['pip']}")
+                    continue
+            except (ValueError, IndexError):
+                pass
+
+        add_check("Python 环境", "pass",
+            f"{mod_info['label']} 已安装{ver_str}")
 
     if (vault / "paperforge.json").exists():
         add_check("Vault 结构", "pass", "paperforge.json 存在")
@@ -550,15 +775,71 @@ def run_doctor(vault: Path, verbose: bool = False) -> int:
             fix_map.setdefault(category, [])
             fix_map[category].append(fix)
 
+    # --- Verdict (Phase 53: DOCTOR-04) ---
+    has_fail = any(status == "fail" for _, status, _, _ in checks)
+    has_warn = any(status == "warn" for _, status, _, _ in checks)
+
+    if has_fail:
+        verdict = "FAIL"
+    elif has_warn:
+        verdict = "WARN"
+    else:
+        verdict = "OK"
+
+    # Disable color when output is piped
+    if sys.stdout.isatty():
+        GREEN = "\033[92m"
+        YELLOW = "\033[93m"
+        RED = "\033[91m"
+        RESET = "\033[0m"
+    else:
+        GREEN = YELLOW = RED = RESET = ""
+
+    # Determine recommended next action
+    fail_categories = set()
+    for cat, status, _, fix in checks:
+        if status == "fail" and fix:
+            fail_categories.add(cat)
+
+    if "PaperForge 包" in fail_categories and not bool(fail_categories - {"PaperForge 包"}):
+        next_action = "Recommended: run pip install via the resolved interpreter"
+    elif "Python 环境" in fail_categories or "Python 环境 (插件)" in fail_categories:
+        next_action = "Recommended: install/upgrade Python to 3.10+"
+    elif "Vault 结构" in fail_categories or "Config Migration" in fail_categories:
+        next_action = "Recommended: run `paperforge sync`"
+    elif "OCR 配置" in fail_categories:
+        next_action = "Recommended: configure PADDLEOCR_API_TOKEN in .env"
+    elif "BBT 导出" in fail_categories:
+        next_action = "Recommended: configure Better BibTeX auto-export"
+    elif "Zotero 链接" in fail_categories or "Path Resolution" in fail_categories:
+        next_action = "Recommended: create Zotero junction"
+    elif has_warn:
+        next_action = "Recommended: `paperforge doctor` indicates warnings - review above"
+    else:
+        next_action = "Recommended: `paperforge sync` to ensure index is current"
+
+    separator = "=" * 40
+    print(f"\n{separator}")
+
+    if verdict == "OK":
+        tag = f"{GREEN}[OK]{RESET}"
+    elif verdict == "WARN":
+        tag = f"{YELLOW}[WARN]{RESET}"
+    else:
+        tag = f"{RED}[FAIL]{RESET}"
+
+    print(f"{tag} 诊断结论")
+    print(f"{next_action}")
+    print(f"{separator}\n")
+
     if fix_map:
-        print("\n修复步骤:")
+        print("修复步骤:")
         for cat, fixes in fix_map.items():
             for f in fixes:
                 print(f"  - {cat}: {f}")
         print()
-        return 1
-    print()
-    return 0
+
+    return 1 if has_fail else 0
 
 
 def _is_junction(path: Path) -> bool:

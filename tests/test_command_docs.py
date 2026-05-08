@@ -75,8 +75,6 @@ def command_docs() -> dict[str, Path]:
 def user_facing_docs() -> dict[str, Path]:
     return {
         "README": REPO_ROOT / "README.md",
-        "INSTALLATION": REPO_ROOT / "docs" / "INSTALLATION.md",
-        "setup-guide": REPO_ROOT / "docs" / "setup-guide.md",
         "AGENTS": REPO_ROOT / "AGENTS.md",
     }
 
@@ -184,35 +182,14 @@ class TestUnresolvedTokensAbsentFromUserRunExamples:
             match is None
         ), f"[README] Found legacy unresolved token path in code blocks: {match.group(0)!r}\nCode lines:\n{code_lines}"
 
-    def test_installation_no_legacy_python_literature_pipeline_in_examples(
-        self,
-        user_facing_docs: dict[str, Path],
-    ) -> None:
-        """docs/INSTALLATION.md must not show legacy python <system_dir>/... in user-run examples."""
-        content = read_fileutf8(user_facing_docs["INSTALLATION"])
-        code_lines = code_block_lines(content)
-        combined = "\n".join(code_lines)
-        match = self.LEGACY_PYTHON_LITERATURE_PIPELINE.search(combined)
-        assert match is None, (
-            f"[INSTALLATION] Found legacy unresolved token path in code blocks: {match.group(0)!r}\n"
-            f"Code lines:\n{code_lines}"
-        )
-
-
-# ---------------------------------------------------------------------------
-# Task 1 tests — paperforge paths/status examples in user-facing docs
-# ---------------------------------------------------------------------------
-
-
 class TestPaperforgeCommandExamplesInUserDocs:
-    """README, INSTALLATION, setup-guide must show stable paperforge command examples."""
+    """README and AGENTS must show stable paperforge command examples."""
 
     @pytest.mark.parametrize(
         "doc_key,pattern",
         [
             ("README", r"paperforge (status|paths)"),
-            ("INSTALLATION", r"paperforge (status|paths)"),
-            ("setup-guide", r"paperforge (status|paths)"),
+            ("AGENTS", r"paperforge (status|paths)"),
         ],
     )
     def test_user_doc_contains_paperforge_stable_example(

@@ -172,8 +172,6 @@ pip install --upgrade git+https://github.com/LLLin000/PaperForge.git
 
 | 文档 | 内容 |
 |------|------|
-| [安装指南](docs/setup-guide.md) | 从零开始的完整教程 |
-| [快速安装](docs/INSTALLATION.md) | 简洁版安装步骤 |
 | [安装后指南](AGENTS.md) | 首次使用与工作流说明 |
 | [变更日志](CHANGELOG.md) | 版本历史 |
 | [贡献指南](CONTRIBUTING.md) | 开发环境与协作约定 |

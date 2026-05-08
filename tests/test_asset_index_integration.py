@@ -385,13 +385,12 @@ class TestWorkspacePaths:
             "---\ntitle: Paper A\nzotero_key: AAA\n---\n\n## 🔍 精读\n\nDone.\n",
             encoding="utf-8",
         )
-        (workspace_dir / "deep-reading.md").write_text("## 🔍 精读\n\nDone.\n", encoding="utf-8")
-
         _write_index(vault, [{"zotero_key": "AAA", "title": "Paper A"}])
         refresh_index_entry(vault, "AAA")
 
         entry = read_index(vault)["items"][0]
-        assert entry["deep_reading_path"].endswith("deep-reading.md")
+        assert entry["deep_reading_path"] == ""
+        assert entry["main_note_path"].endswith("AAA - Paper A.md")
         assert entry["fulltext_path"] == ""
         assert entry["lifecycle"] == "pdf_ready"
         assert entry["ocr_status"] == "done_incomplete"
