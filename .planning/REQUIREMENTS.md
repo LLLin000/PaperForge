@@ -1,108 +1,83 @@
-# Requirements: PaperForge v1.11 Merge Gate
+# Requirements: PaperForge v1.12 Install & Runtime Closure
 
-**Defined:** 2026-05-07
+**Defined:** 2026-05-08
 **Core Value:** Researchers always know what papers they have, what state those papers are in, and whether each paper is reliably usable by AI with traceable fulltext, figures, notes, and source links.
 
 ## v1 Requirements
 
-### PATH — Index Path Resolution (6 requirements)
+### Runtime & Install
 
-**Root cause:** `asset_index.py:334-338` hardcodes `"Literature/"` in 5 workspace-path index fields. 11 downstream consumers (plugin, context, discussion, etc.) depend on these paths.
+- [ ] **RUNTIME-01**: Plugin shows the exact Python interpreter path it will use, and whether that path came from manual override or auto-detection
+- [ ] **RUNTIME-02**: User can manually set the Python interpreter in plugin settings, and the plugin validates that interpreter before using it
+- [ ] **RUNTIME-03**: When no manual override is set, plugin selects a Python interpreter through a defined detection order and uses that same interpreter consistently for install, update, version checks, and commands
+- [ ] **RUNTIME-04**: Plugin can detect whether the selected interpreter's installed `paperforge` package matches the plugin version, and can surface or trigger a safe runtime sync path when it does not
+- [ ] **RUNTIME-05**: Install and runtime sync failures are classified into actionable categories such as missing Python, invalid interpreter, missing pip, package install failure, dependency failure, or network/source failure
+- [ ] **RUNTIME-06**: `zotero_data_dir` is required in setup flow and validated before install completes
 
-- [ ] **PATH-01**: Five workspace-path fields in `asset_index.py:334-338` (`paper_root`, `main_note_path`, `fulltext_path`, `deep_reading_path`, `ai_path`) use config-resolved `literature_dir` instead of hardcoded `"Literature/"`. Verified: all 11 consumers resolve correct paths.
-- [ ] **PATH-02**: `config.py:331` `library_records` path key returns `<control>/library-records` (matches docstring) or the key is removed with all consumers updated.
-- [ ] **PATH-03**: `config.py:65` env var name `paperforgeRATURE_DIR` fixed to `PAPERFORGE_LITERATURE_DIR` (missing `LI` from concatenation). Test at `test_config.py:175` updated.
-- [ ] **PATH-04**: `config.py:358-364` migration includes `skill_dir` and `command_dir` in `CONFIG_PATH_KEYS` so legacy top-level settings move into `vault_config`.
-- [ ] **PATH-05**: `base_views.py:154` `${LIBRARY_RECORDS}` placeholder substitution key removed. No shipping `.base` template references it.
-- [ ] **PATH-06**: `discussion.py:266` unnecessary Windows `replace("/","\\")` removed (pathlib handles forward slashes natively).
+### Doctor
 
-### LEGACY — Library-Records Deprecation Cleanup (7 requirements)
+- [x] **DOCTOR-01**: `paperforge doctor` reports the actual Python interpreter path and Python version being checked
+- [x] **DOCTOR-02**: `paperforge doctor` reports whether `paperforge` is installed in that interpreter, what version/path it resolves to, and whether runtime/package drift or wrong-environment conditions exist
+- [x] **DOCTOR-03**: `paperforge doctor` checks critical dependencies including YAML support and gives direct repair guidance for missing packages
+- [x] **DOCTOR-04**: `paperforge doctor` ends with a clear top-level verdict and next action, rather than only listing low-level checks
 
-**Root cause:** v1.9 eliminated library-records creation but 15 residual traces remain across production code and documentation.
+### Dashboard
 
-- [x] **LEGACY-01**: `status.py:525-533` stale-record detection scans `<control>/library-records/` explicitly (not `<control>/` which is the current `library_records` key value). `status.py:728` output label changed from `library_records` to `formal_notes`.
-- [x] **LEGACY-02**: `sync.py:722-723` dead `record_path` construction and `parse_existing_library_record()` call removed. Function at `sync.py:652-669` removed if no other callers.
-- [x] **LEGACY-03**: `ld_deep.py:39` unused `records` key removed from `_paperforge_paths()` return dict. Docstring at line 32 updated.
-- [x] **LEGACY-04**: `repair.py:33` docstring reads "Scan formal literature notes" (not "library-records").
-- [x] **LEGACY-05**: `setup_wizard.py:1306-1307` post-install instruction text describes single `paperforge sync` workflow (not old `--selection`/`--index` two-phase flow).
-- [x] **LEGACY-06**: Five command files (`pf-sync.md`, `pf-ocr.md`, `pf-status.md`, `pf-paper.md`, `pf-deep.md`) — all library-records references replaced with formal notes workflow. Verified: zero remaining library-records mentions.
-- [x] **LEGACY-07**: All hardcoded `"Literature/"` strings in docstrings and print labels in `sync.py` (lines 1557-1562, 1759) and `discussion.py` (line 94) use variable references or generic labels.
+- [ ] **DASH-01**: User can add or remove a paper from the OCR queue from the Dashboard without manually editing `do_ocr`
+- [ ] **DASH-02**: Dashboard provides a complete `/pf-deep` handoff by surfacing `zotero_key`, copying the full command, and telling the user which Agent context to run it in
+- [ ] **DASH-03**: OCR actions surface a clear privacy warning before uploading PDFs to PaddleOCR API
 
-### DEPR — Deprecate Textual TUI Setup Wizard (3 requirements)
+### Cleanup & Packaging
 
-**Root cause:** The Textual TUI setup wizard (`paperforge setup` without `--headless`) is broken (NameError crash), unreachable from either real install workflow (plugin settings tab uses `--headless`, AI agents use `--headless`), and adds ~1200 lines of Textual-dependent code to maintain.
+- [ ] **CLEAN-01**: Obsolete `docs/` guidance and competing old user-entry paths are removed or demoted so plugin-first onboarding is the primary documented path
+- [ ] **CLEAN-02**: Root `manifest.json` is generated from a single canonical manifest source so plugin version metadata cannot drift
+- [ ] **CLEAN-03**: `minAppVersion` is raised to a tested Obsidian baseline that supports Bases for the intended workflow
+- [ ] **CLEAN-04**: Packaging and runtime metadata are aligned with actual runtime expectations, including fixing `PyYAML` dependency drift
 
-- [x] **DEPR-01**: `paperforge setup` (bare, no `--headless`) prints a help message redirecting to `--headless` or the plugin settings tab. Textual TUI classes removed from `setup_wizard.py`: `WelcomeStep`, `DirOverviewStep`, `VaultStep`, `PlatformStep`, `DeployStep`, `DoneStep`, `SetupWizardApp`, `ContentSwitcher`, `StepScreen`, and all TUI-only import paths. `headless_setup()` and shared utilities (`EnvChecker`, `AGENT_CONFIGS`, `_copy_file_incremental`, `_merge_env_incremental`) preserved.
-- [x] **DEPR-02**: Three documentation files updated: `docs/setup-guide.md`, `docs/INSTALLATION.md`, `README.md` — all bare `paperforge setup` references changed to `paperforge setup --headless`.
-- [x] **DEPR-03**: Post-install instruction text in `setup_wizard.py:1306-1307` and `headless_setup` completion message updated to reflect headless-only workflow. `--non-interactive` removed from CLI options. `textual` removed from project optional dependencies.
+## v2 Requirements
 
-### HARDEN — Module Hardening (7 requirements)
+### Onboarding Follow-Ups
 
-**Root cause:** New modules (`discussion.py`, `asset_state.py`) and the Obsidian plugin were built quickly during v1.6-v1.8 and lack safety hardening.
-
-- [x] **HARDEN-01**: `discussion.py:281-314` file-level locking around JSON and MD read-modify-write cycles. Concurrent `/pf-paper` and `/pf-deep` calls for the same paper do not silently drop sessions.
-- [x] **HARDEN-02**: `discussion.py:170-171` Markdown special characters (`*`, `#`, `[`, `_`, `` ` ``) escaped in QA question/answer fields. Individual QA dict keys validated before building session.
-- [x] **HARDEN-03**: `discussion.py:40` hardcoded CST (UTC+8) replaced with UTC. All timestamps use `datetime.now(timezone.utc)`.
-- [x] **HARDEN-04**: `main.js:2116` PaddleOCR API key passed via environment variable, not command-line argument. `spawn()` with `env: { PADDLEOCR_API_TOKEN: ... }`.
-- [x] **HARDEN-05**: `main.js:1815` `innerHTML` assignment replaced with `createEl()` DOM API for directory tree rendering. No XSS vector from user-configured directory names.
-- [x] **HARDEN-06**: `asset_state.py:225-226` workspace integrity checks performed before returning `"/pf-deep"`. Checks currently at lines 233-240 moved before line 226.
-- [x] **HARDEN-07**: `status.py:687-690` `lifecycle_level_counts`, `health_aggregate`, `maturity_distribution` return empty dicts `{}` when no canonical index exists (not `null`/`None`). Downstream JSON parsers do not crash on field access.
-
-### REPAIR — Repair Blind Spots (4 requirements)
-
-**Root cause:** `repair.py` three-way divergence detection and `--fix` mode have logic gaps where detected problems are silently skipped.
-
-- [x] **REPAIR-01**: `repair.py:252,258` condition 4 detects `note_ocr_status == "pending"` vs `meta done/failed` divergence. Previously required `note_ocr_status != "pending"` to trigger, missing this case entirely.
-- [x] **REPAIR-02**: `repair.py:278-363` `--fix` covers all 6 detected divergence types (not just the 2 currently handled). Unhandled types produce a warning line in console output so the user is not silently misled.
-- [x] **REPAIR-03**: `repair.py:226,306-307,347-348,355-356` bare `except Exception: pass` blocks replaced with `logger.warning()` calls. Index write failures during fix are logged rather than silently ignored.
-- [x] **REPAIR-04**: `repair.py:196` dead `load_domain_config` call and unused dict comprehension removed.
+- **ONBOARD-01**: Plugin verifies Better BibTeX export JSON presence and validity directly from the UI
+- **ONBOARD-02**: Plugin offers one-click copy or validation flow for the exports directory path
 
 ## Out of Scope
 
 | Feature | Reason |
 |---------|--------|
-| Publish to Obsidian Community Plugins | Deferred until post-merge stabilization |
-| v1.8 deep-reading dashboard features | Paused, not cancelled; resumes after v1.11 merge |
-| Full OCR provider abstraction | PaddleOCR remains the only provider |
-| Plugin auto-update | Blocked until Community Plugin listing |
+| Obsidian Community Plugin publishing | Release/distribution work is out of scope for this milestone; focus stays on install/runtime closure inside the existing repo |
+| Release automation beyond manifest source alignment | This milestone fixes version-source drift, not the full release pipeline |
+| New OCR capabilities | Scope is closure and usability of the existing OCR flow, not new OCR product features |
+| New deep-reading capabilities | Scope is handoff and workflow closure for `/pf-deep`, not expanding analysis behavior |
+| New research or knowledge-extraction features | This milestone hardens product entry points and runtime behavior rather than adding new end-user capabilities |
 
 ## Traceability
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PATH-01 | Phase 46 | Pending |
-| PATH-02 | Phase 46 | Pending |
-| PATH-03 | Phase 46 | Pending |
-| PATH-04 | Phase 46 | Pending |
-| PATH-05 | Phase 46 | Pending |
-| PATH-06 | Phase 46 | Pending |
-| LEGACY-01 | Phase 47 | Complete |
-| LEGACY-02 | Phase 47 | Complete |
-| LEGACY-03 | Phase 47 | Complete |
-| LEGACY-04 | Phase 47 | Complete |
-| LEGACY-05 | Phase 47 | Complete |
-| LEGACY-06 | Phase 47 | Complete |
-| LEGACY-07 | Phase 47 | Complete |
-| DEPR-01 | Phase 48 | Complete |
-| DEPR-02 | Phase 48 | Complete |
-| DEPR-03 | Phase 48 | Complete |
-| HARDEN-01 | Phase 49 | Complete |
-| HARDEN-02 | Phase 49 | Complete |
-| HARDEN-03 | Phase 49 | Complete |
-| HARDEN-04 | Phase 49 | Complete |
-| HARDEN-05 | Phase 49 | Complete |
-| HARDEN-06 | Phase 49 | Complete |
-| HARDEN-07 | Phase 49 | Complete |
-| REPAIR-01 | Phase 50 | Complete |
-| REPAIR-02 | Phase 50 | Complete |
-| REPAIR-03 | Phase 50 | Complete |
-| REPAIR-04 | Phase 50 | Complete |
+| RUNTIME-01 | Phase 51 | Pending |
+| RUNTIME-02 | Phase 51 | Pending |
+| RUNTIME-03 | Phase 51 | Pending |
+| RUNTIME-04 | Phase 52 | Pending |
+| RUNTIME-05 | Phase 52 | Pending |
+| RUNTIME-06 | Phase 51 | Pending |
+| DOCTOR-01 | Phase 53 | Complete |
+| DOCTOR-02 | Phase 53 | Complete |
+| DOCTOR-03 | Phase 53 | Complete |
+| DOCTOR-04 | Phase 53 | Complete |
+| DASH-01 | Phase 54 | Pending |
+| DASH-02 | Phase 54 | Pending |
+| DASH-03 | Phase 54 | Pending |
+| CLEAN-01 | Phase 54 | Pending |
+| CLEAN-02 | Phase 52 | Pending |
+| CLEAN-03 | Phase 52 | Pending |
+| CLEAN-04 | Phase 52 | Pending |
 
 **Coverage:**
-- v1 requirements: 27 total
-- Mapped to phases: 27
-- Unmapped: 0
+- v1 requirements: 17 total
+- Mapped to phases: 17
+- Unmapped: 0 ✓
 
 ---
-*Requirements defined: 2026-05-07*
-*Last updated: 2026-05-07 after initial definition*
+*Requirements defined: 2026-05-08*
+*Last updated: 2026-05-08 after roadmap traceability mapping*
