@@ -19,6 +19,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 
+# Both root_manifest and plugin_manifest are updated from the canonical __init__.py version —
+# never edit version directly in manifest.json. The source of truth is __version__ in __init__.py.
 FILES_TO_UPDATE = {
     "__init__": ROOT / "paperforge" / "__init__.py",
     "plugin_manifest": ROOT / "paperforge" / "plugin" / "manifest.json",
