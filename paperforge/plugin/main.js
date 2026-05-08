@@ -173,12 +173,10 @@ const ACTIONS = [
     {
         id: 'paperforge-doctor',
         title: 'Run Doctor',
-        desc: 'Verify PaperForge setup \u2014 check configs, Zotero, paths, and index health',
+        desc: 'Verify PaperForge setup — check configs, Zotero, paths, and index health',
         icon: '\u2695',  // ⚕
         cmd: 'doctor',
         okMsg: 'Doctor complete',
-        disabled: true,
-        disabledMsg: 'Run Doctor will be available in a future update.',
     },
     {
         id: 'paperforge-repair',
