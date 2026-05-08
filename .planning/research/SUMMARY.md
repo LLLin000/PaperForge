@@ -1,353 +1,292 @@
 # Project Research Summary
 
-**Project:** PaperForge v1.8 — AI Discussion Recording & Deep-Reading Dashboard
-**Domain:** Brownfield Obsidian plugin — extending mode-based dashboard with AI discussion capture
-**Researched:** 2026-05-06
+**Project:** PaperForge v2.0 — Testing Infrastructure (6-Layer Quality Gates)
+**Domain:** Brownfield hybrid Python + Obsidian plugin project — multi-layer quality gate testing
+**Researched:** 2026-05-08
 **Confidence:** HIGH
 
 ## Executive Summary
 
-PaperForge v1.8 adds two tightly-coupled capabilities to the existing PaperForge Obsidian plugin: **(1) AI discussion recording** that captures `/pf-paper` and `/pf-deep` conversations into structured `ai/discussion.json` and human-readable `ai/discussion.md` files within each paper's workspace directory; and **(2) a 4th dashboard mode** (`deep-reading`) activated automatically when the user opens a `deep-reading.md` file, showing Pass 1/2/3 completion status, Pass 1 summary, and recent AI Q&A history.
+PaperForge is a **brownfield hybrid Python + Obsidian plugin** project that manages literature assets (Zotero exports, PDFs, OCR fulltext, figures, notes, and AI outputs) as a local-first research library. The current milestone (v2.0) adds a **6-layer quality gate testing infrastructure** — version consistency, Python unit tests, CLI contract tests, plugin-backend integration, temp vault E2E workflows, user journey contracts, and destructive scenarios — with CI matrix, golden datasets, and snapshot testing. The product has 473+ existing tests that need restructuring into a test pyramid, and the testing infrastructure itself is the deliverable.
 
-The recommended approach is **thin-shell extension** — zero new dependencies, zero new CLI commands. The Obsidian plugin (CommonJS, single `main.js` file) gains one new mode renderer and one mode detection branch. A new Python module (`paperforge/worker/discussion.py`) handles writing discussion files at the end of Agent sessions. The canonical index (`formal-library.json`) serves as the bridge — JS reads pre-computed lifecycle/health/maturity from it, while `discussion.json` (vault-internal) should use `vault.adapter.read()` for cache consistency, **not** `fs.readFileSync()` as the older index pattern does.
+The recommended approach is a **modified testing diamond** with strict layer dependency ordering (L0 -> L1 -> L2/L3 in parallel -> L4 -> L5), a **plasma CI matrix** (full 3x3 only for unit tests, narrow configs for higher layers), **hierarchical pytest fixtures** (5 levels from empty_vault to full_test_vault), and **shape-specific snapshot assertions** (not whole-file JSON). The build order is: fixtures first, then Python layers (L0-L2), then JS layers (L3), then expensive integration layers (L4-L6).
 
-The three key risks are: (1) mode detection ordering — `deep-reading.md` carries the same `zotero_key` frontmatter as the formal note and will incorrectly trigger per-paper mode unless the `deep-reading.md` filename check comes *first*; (2) encoding corruption on Windows with CJK locales — Chinese Q&A content written by Python must use explicit `encoding='utf-8'` and Node.js must read with matching encoding to avoid mojibake; and (3) `discussion.json` must include `schema_version` from day one to prevent silent data loss on format changes. All three are preventable with the right discipline in Phase 1 and Phase 2.
+**Key risks and mitigations:**
+1. **Mock drift** — mocks that silently diverge from real APIs. Mitigation: capture real PaddleOCR responses before mocking; use `autospec=True` on all patches; limit patch nesting to 3 levels.
+2. **CI combinatorial explosion** — trying to run everything on every platform. Mitigation: plasma CI matrix with path-filtered jobs; L1 on 3x3; L2-L5 on 1-2 configs; slow tests on nightly only.
+3. **Snapshot brittleness** — whole-file snapshot assertions that break on every refactor. Mitigation: assert specific shapes with normalized dynamic fields; use `dirty-equals` for timestamps/UUIDs.
+4. **Windows path hell** — junctions, symlinks, temp dir differences. Mitigation: at least one Windows CI node; platform-specific tests with `@pytest.mark.skipif`; path normalization utilities.
+5. **Fixture bloat** — 100MB+ fixture directories in git. Mitigation: generate fixtures from code; track with manifest; keep large fixtures outside git repo.
 
 ## Key Findings
 
 ### Recommended Stack
 
-v1.8 is purely additive to the existing v1.6–v1.7 stack. **No new npm packages, no new Python packages.** The plugin remains a single CommonJS file (`main.js`, currently ~2067 lines) with CSS in `styles.css` (~1325 lines). Python gains one new module (`discussion.py`) using only stdlib (`json`, `pathlib`, `datetime`, `tempfile`, `os`).
+The testing stack splits cleanly into Python test infrastructure and JavaScript plugin test infrastructure, plus CI orchestration.
 
-**Core technologies (unchanged):**
-- **Obsidian CommonJS plugin** (`main.js`, no bundler): Dashboard/settings/commands UI — pure Obsidian API, no build step
-- **Python 3.10+** (existing CLI): Single owner of business logic, templates, schema; extends naturally to discussion recording
-- **Filesystem JSON** (`formal-library.json`, `discussion.json`): Contract between Python and JS; vault-native, git-trackable, backup-friendly
-- **Filesystem Markdown** (`discussion.md`): Human-readable companion, Obsidian-editable, wikilink-compatible
+**Core test framework (Python):**
 
-**New file formats for v1.8:**
-- `ai/discussion.json` — structured AI Q&A record with `schema_version`, `paper_key`, `sessions[]` array containing `session_id`, `agent`, `started`, and `qa_pairs[]`
-- `ai/discussion.md` — human-readable Q&A log with session-grouped `##` headings, `**问题:**`/`**解答:**` markers, timestamp metadata
+| Technology | Version | Purpose | Rationale |
+|------------|---------|---------|-----------|
+| pytest | >=8.0 | Python test framework | Already in use; industry standard |
+| pytest-snapshot | >=0.9.0 | Snapshot/approval testing | CLI JSON output stability contracts |
+| pytest-timeout | >=2.2.0 | Test timeout guards | Prevent runaway E2E/chaos tests |
+| pytest-mock | >=3.12.0 | Enhanced mocking | Better than raw monkeypatch |
+| responses | >=0.25.0 | HTTP mock library | Intercept `requests` at HTTP layer for mock OCR |
+| coverage | >=7.4.0 | Coverage measurement | Standard Python tool; CI reports |
+| ruff | >=0.4.0 | Linting | Already in use via pre-commit hooks |
 
-**Key "what NOT to add" decisions (all researchers agree):**
-- No npm packages (React, Vue, chart libs) — breaks single-file deployment
-- No database (SQLite, IndexedDB) — discussions belong to the paper workspace, must be vault-native
-- No Python schema libraries (Pydantic, jsonschema) — overkill for flat Q&A list
-- No second plugin file — import resolution is fragile in Obsidian
-- No new CLI command (`paperforge discuss`) — recording happens inside Agent sessions
+**Plugin test framework (JavaScript):**
+
+| Technology | Version | Purpose | Rationale |
+|------------|---------|---------|-----------|
+| Vitest | >=2.0 | JS test runner | Native ESM; 2x faster than Jest; better `obsidian-test-mocks` integration |
+| obsidian-test-mocks | >=0.12 | Obsidian API mocks | Community-maintained; 100% code coverage |
+| jsdom | >=24.0 | DOM environment | Required by plugin tests (document/window access) |
+| Node.js | >=20.0 | JS runtime | Required by Vitest and obsidian-test-mocks |
+
+**CI Infrastructure:**
+
+| Technology | Version | Purpose |
+|------------|---------|---------|
+| actions/setup-python | v5 | Python version management with cache |
+| actions/setup-node | v4 | Node.js version management |
+| actions/checkout | v4 | Source checkout |
+| re-actors/alls-green | v1 | CI gate aggregation (all-jobs-passed check) |
+
+**Alternatives considered and rejected:**
+- **Jest** rejected over Vitest (ESM compatibility, speed)
+- **tox** rejected for CI (superfluous complexity; raw pip install is more transparent)
+- **syrupy** rejected over pytest-snapshot (extra features not needed for JSON-only snapshots)
+- **Real Obsidian E2E** rejected as too expensive (3+ min per test, flaky) — deferred to v2.1
 
 ### Expected Features
 
-**Must have (table stakes — v1.8 launch):**
-- AI Discussion Recorder: Writes `discussion.md` + `discussion.json` when `/pf-paper` or `/pf-deep` completes — researchers expect past AI conversations next to the paper, not scattered in browser tabs
-- Deep-Reading Dashboard Mode: Plugin detects `deep-reading.md` as active file, switches to dedicated mode showing Pass 1/2/3 status + AI Q&A history — users want at-a-glance reading progress without scrolling
-- Jump-to-Deep-Reading Button: Contextual button on per-paper dashboard card that opens deep-reading.md — bridges paper lifecycle view to reading content
-- Version Number Display Fix: Restore the `_versionBadge` — users need to confirm version for issue reporting
-- "ai" UI Row Removal: Remove the meaningless row — erodes trust in dashboard accuracy
+**Must have (table stakes):**
+- **L0: Version consistency gate** — prevents deployment with mismatched versions across 6+ files. Low complexity. Single Python script.
+- **L1: Python unit tests** — existing 470+ tests relocated to `tests/unit/`. Low complexity. Fast isolation.
+- **L2: CLI contract tests** — subprocess invoker + snapshot assertions on `--json` output. Medium complexity. Protects plugin<->Python boundary.
+- **L3: Plugin unit tests** — Vitest + obsidian-test-mocks. Medium complexity. Catches JS logic errors before manual QA.
+- **L4: Temp vault E2E tests** — full pipeline (sync -> OCR -> status -> repair) in disposable vault. High complexity. 3 mock systems.
+- **Golden datasets** — centralized `fixtures/` with zotero/, pdf/, ocr/, snapshots/. Medium complexity. Prerequisite for all higher layers.
+- **Mock OCR backend** — intercepts PaddleOCR at HTTP layer with `responses`. Medium complexity. Enables deterministic testing.
+- **Mock Zotero data source** — static JSON fixtures in 3 BBT path formats. Low complexity.
+- **Mock vault filesystem** — `tmp_path` + factory function with configurable completeness. Medium complexity.
+- **CI integration** — GitHub Actions with matrix strategies. Medium complexity.
 
-**Should have (v1.8.x follow-up, deferrable):**
-- Discussion session merging (append, not overwrite, on repeated `/pf-paper` for same paper)
-- Session metadata in discussion.json (model, duration, agent type)
-- Pass completion percentage calculation
+**Should have (differentiators):**
+- **Snapshot testing for CLI output** — catches unintended changes immediately. Single assertion per contract test.
+- **Plasma CI matrix** — optimizes CI cost while maintaining coverage. Full matrix for fast tests, narrow for slow tests.
+- **User journey tests (L5)** — validates complete workflows against documented UX contracts. Catches cross-component gaps.
+- **Chaos/destructive tests (L6)** — corrupted inputs, network failures, disk issues. Ensures graceful degradation.
+- **Hierarchical conftest fixtures** — root conftest provides shared fixtures; each layer extends/overrides.
+- **VaultBuilder factory** — single entry point for 3 completeness levels: "minimal", "standard", "full".
+- **CHAOS_MATRIX.md** — documentation of all destructive scenarios, triggers, expected behavior.
 
-**Future consideration (v2+):**
-- Cross-library discussion search (rely on Obsidian built-in search)
-- Discussion export to AI context packs
-- Deep-reading maturity integration into maturity gauge
-
-**Anti-features explicitly rejected:**
-- Auto-recording all agent conversations (creates noise, violates worker/agent boundary)
-- Full chat transcription in markdown (unstructured, duplicates agent's internal logs)
-- Deep-reading dashboard as replacement for deep-reading.md (dashboard is index/summary view only)
-- Real-time dashboard updates during deep-reading (agent executes outside plugin; refresh on active-leaf-change is sufficient)
-- Discussion search across all papers (Obsidian's built-in search already handles this)
+**Anti-features (explicitly NOT building):**
+- Real Obsidian E2E in CI (3+ min per test, flaky)
+- Load/performance testing (local single-user tool)
+- Cross-browser testing (plugin runs in Chromium-only Electron)
+- Full parallel matrix (54 CI jobs per PR for minimal confidence)
+- Automated visual regression (fragile; component-level tests suffice)
 
 ### Architecture Approach
 
-The architecture extends PaperForge's existing **thin-shell plugin pattern**: Python owns all business logic and writes structured data to the filesystem; the Obsidian JS plugin reads that data and renders Pure CSS/DOM components. No business logic is duplicated in JS.
+The testing architecture follows a **modified testing diamond** (unit tests at base, integration/contract in the middle, E2E at top) with an extra **L0 version-check layer** as the fast pre-flight gate. All layers share a centralized `fixtures/` golden dataset with 4 subdirectories (zotero/, pdf/, snapshots/, ocr/). Mock systems are layered: HTTP-level (`responses` for OCR), static fixtures (for Zotero), and `tmp_path` (for vault filesystem).
 
-The key architectural addition is a **4th mode dispatch** in the existing `_detectAndSwitch()` → `_switchMode()` → `case 'mode': renderX()` pattern. The mode detection hierarchy (in strict order) becomes:
+**Major components:**
+1. **L0: `scripts/check_version_sync.py`** — validates all 6+ version declarations (Python **init**, manifest.json, versions.json, CHANGELOG) before any tests run. Sub-100ms. Single CI job on ubuntu.
+2. **L1: `tests/unit/`** — relocated existing 470+ tests. No external dependencies. Mock everything outside module under test. <30s full suite. Coverage >85% for core, >75% for workers.
+3. **L2: `tests/cli/`** — subprocess invoker asserts exit codes, stdout JSON schemas, stderr patterns. Uses `pytest-snapshot` with shape-specific assertions (not whole-file).
+4. **L3: `tests/plugin/`** — Vitest + obsidian-test-mocks + jsdom. Tests plugin lifecycle, settings, dashboard, i18n. Extracts `paperforge-backend.js` for Node.js-testable backend module.
+5. **L4: `tests/e2e/`** — creates full temp vault; calls Python worker functions directly (not subprocess). Session-scoped golden vault + per-test fast clone for performance.
+6. **L5: `tests/journey/`** — UX contract-driven complete workflows. Single concrete scenario per test. Step abstraction layer. Nightly-only.
+7. **L6: `tests/chaos/scenarios/`** — 8 destructive scenarios documented in CHAOS_MATRIX.md. Docker-only isolation. Safety contracts on every test.
+8. **`fixtures/`** (golden dataset) — centralized at repo root. zotero/ (8 JSON fixtures), pdf/ (4 minimal PDFs), snapshots/ (4 subdirectories), ocr/ (5 fixture files). Generated from code where possible.
+9. **CI workflows** — 3 workflow files: `ci-pr-checks.yml` (L0+L1 per push, <2min), `ci.yml` (L0-L5 on merge to main), `ci-chaos.yml` (L6 weekly + manual).
 
-```
-1. no active file        → 'global'      (existing)
-2. .base file            → 'collection'   (existing)
-3. deep-reading.md       → 'deep-reading' (NEW — MUST precede zotero_key check)
-4. .md with zotero_key   → 'paper'       (existing)
-5. fallback              → 'global'      (existing)
-```
-
-**Major components affected:**
-1. **`_detectAndSwitch()` + `_switchMode()`** — Mode detection extended with deep-reading.md filename check; must be checked *before* zotero_key frontmatter to prevent hijacking by per-paper mode
-2. **`_renderDeepReadingMode()` (NEW)** — Dedicated render method consuming data from formal-library.json (lifecycle/health/maturity), deep-reading.md (Pass 1 summary), and ai/discussion.json (AI Q&A history)
-3. **`_renderPaperMode()` extension** — Adds "Jump to Deep Reading" contextual button when `deep_reading_path` exists
-4. **`discussion.py` (NEW Python module)** — `record_discussion()` writes both discussion.md and discussion.json; `load_discussion_json()` reads existing record; `append_discussion()` appends new Q&A pairs atomically
-5. **`asset_index.py` build_envelope()** — Adds `paperforge_version` field for the version badge fix
-
-**Key data flow:**
-```
-User runs /pf-deep → ld_deep.py generates scaffold → Agent completes session
-    → discussion_recorder.py writes ai/discussion.{md,json}
-User opens deep-reading.md → _detectAndSwitch() detects it → _renderDeepReadingMode()
-    → reads formal-library.json (status badges) + deep-reading.md (Pass 1 summary) + ai/discussion.json (Q&A history)
-```
+**Key patterns:**
+- **Plasma CI matrix:** L1 on full 3 OS x 3 Python (9 jobs); L2 on 2 Python x 1 OS (2 jobs); L3-L5 on single config (1 job each)
+- **Fixture hierarchy (5 levels):** `empty_vault` (config only) -> `config_vault` (+ dirs) -> `vault_with_export` (+ BBT JSON) -> `vault_with_ocr` (+ OCR data) -> `full_test_vault` (+ Zotero storage, formal notes)
+- **Mock OCR with `responses`:** intercepts at HTTP layer, not module level. Fixtures from real API captures. Prevents mock drift.
+- **Snapshot update protocol:** `pytest --snapshot-update` -> review diff -> commit deliberately. Never "regenerate all snapshots."
+- **Truth hierarchy:** L4 is authoritative for "does it work?"; L2 validates CLI translation; L1 validates edge cases. L1 mocks must be validated against L4 output.
 
 ### Critical Pitfalls
 
-All researchers independently flagged these — they represent consensus on highest-risk items:
+**Top 7 pitfalls from research (ordered by severity):**
 
-1. **Mode detection ordering regression** — `deep-reading.md` carries the same `zotero_key` frontmatter as the formal note. If the filename check isn't placed FIRST in the `.md` handler (before the `zotero_key` check), the dashboard enters per-paper mode instead of deep-reading mode. **Fix:** Insert `if (activeFile.basename === 'deep-reading')` as the first branch inside the `.md` handler.
+1. **Mocking External Services Too Early and Too Rigidly** — The existing test suite already demonstrates 12+ levels of nested `with patch(...):` blocks. Mocks created from memory (not real API captures) silently drift from real PaddleOCR behavior. Tests pass but production breaks. *Prevention: capture real API responses first; use `autospec=True` on all patches; limit nesting to 3 levels via fixture extraction; add VCR.py layer for OCR polling.*
 
-2. **Encoding corruption on Windows CJK systems** — Python may write GBK-encoded files while Node.js reads as UTF-8, producing mojibake for Chinese Q&A content. This is a well-documented Obsidian + Windows + Chinese locale problem. **Fix:** Python must use `open(path, 'w', encoding='utf-8')` explicitly; JS reads must match. Use `PYTHONIOENCODING=utf-8` and `PYTHONUTF8=1` environment variables for child processes.
+2. **CI Matrix Combinatorial Explosion Killing Feedback Loops** — A naive full matrix (3 OS x 3 Python x 2 Node = 18 jobs at 15 min each = 4.5 hours wall-clock). Developers wait all day or skip CI. *Prevention: plasma matrix with path-filtered jobs; L1 on 3x3; L2-L5 on narrower configs; `pytest -m "not slow"` for push; hard CI budget of 20 concurrent runners.*
 
-3. **`discussion.json` schema version missing** — Shipping without `schema_version` repeats the `formal-library.json` v1→v2 migration pain from v1.6/v1.7. Every format change becomes a breaking change. **Fix:** Include `"schema_version": "1"` in the envelope from day one. Always use object envelope, never top-level array.
+3. **Snapshot Tests Breaking on Every Refactor** — Whole-file JSON snapshots cause 500-line diffs for 5-line code changes. "Regenerated all snapshots" becomes the default review response — regressions slip through. *Prevention: assert specific shapes, not whole files; normalize dynamic fields (timestamps, UUIDs) before snapshotting; use `inline-snapshot` or `dirty-equals` for version-agnostic comparisons.*
 
-4. **`btoa()` crash on Chinese filenames** — `window.btoa()` only supports Latin1 characters. If any path construction for `ai/` directory uses `btoa()` with Chinese paper titles, it throws `InvalidCharacterError`. **Fix:** Ban `btoa()` and `atob()` from the plugin. Use `Buffer.from(str, 'utf-8').toString('base64')` instead.
+4. **Temp Vault Tests Being Slow, Non-Deterministic, or Platform-Specific** — E2E tests with subprocess calls take 30-60 seconds each. Cross-platform path issues (Windows junctions, macOS `/var` -> `/private/var` symlinks). `shutil.rmtree` fails on Windows with `PermissionError`. *Prevention: session-scoped golden vault + per-test fast clone; separate "fast" (Python API) from "full" (subprocess) E2E; safe teardown with retry on Windows; normalize paths in all assertions.*
 
-5. **`active-leaf-change` double-firing mode oscillation** — Obsidian fires this event twice during tab switches (old leaf blur + new leaf focus). The 300ms debounce can catch either, causing a visible flash of global mode between per-paper and deep-reading modes. **Fix:** Extract `_resolveModeForFile()` as a pure function; guard with identity check (same mode AND same file path = no-op); increase debounce to 500ms during transitions.
+5. **User Journey Tests Being Too Vague to Automate** — Prose UX contracts like "User opens Obsidian, configures Zotero, runs OCR" are ambiguous and un-automatable. Tests either hardcode assumptions or check nothing meaningful. *Prevention: write journey tests as pseudo-code BEFORE implementation; create a "step" abstraction layer (not raw Playwright); define EXACTLY ONE concrete scenario per test; create journey fixture packs for pre-configured states.*
 
-## Researcher Conflicts Resolved
+6. **Destructive Tests That Damage Developer Machines or CI Shared State** — Chaos tests that delete files or modify config can accidentally run on real vaults if `--vault` is omitted or fixture paths resolve incorrectly. *Prevention: ALL destructive tests MUST use `tmp_path` with isolation assertion (`assert "tmp" in str(vault)`); run in Docker only; add safety contract comment to every destructive test function; keep in separate module ignored by default test runner.*
 
-The four researchers produced high-quality, mostly aligned outputs. However, two substantive conflicts emerged:
+7. **Golden Dataset and Fixture Bloat** — Fixtures grow from 10KB to 100MB+ in git over 6 months. Nobody knows which are still used. Binary fixtures (PDFs, OCR JSON) permanently bloat git history. *Prevention: generate fixtures from code (not hand-written); keep large fixtures outside git via `download_fixtures.py` script; track with MANIFEST.json and validate coverage in CI; version fixture schemas explicitly.*
 
-### Conflict 1: `discussion.json` schema shape
-
-| Researcher | Schema Proposal |
-|------------|----------------|
-| **STACK.md** | Flat `history[]` array with `index`, `timestamp`, `question`, `answer`, `tags`, `agent_model`. Summary at top level with `total_qa`, `last_updated`, `top_tags`. |
-| **FEATURES.md** | Nested `sessions[]` with `session_id`, `agent`, `started`, and `qa_pairs[]` array. Each QA pair has `question`, `answer`, `source`, `timestamp`. |
-| **ARCHITECTURE.md** | Similar to FEATURES: `sessions[]` with `session_id`, `timestamp`, `model`, `command`, `summary`, `message_count`, `messages[]` with `role`/`content`. Separate `format_version` (not `schema_version`). |
-| **PITFALLS.md** | Warns against bare array format, recommends `schema_version` envelope. |
-
-**Resolution: Adopt the FEATURES.md sessions-based schema with these adjustments:**
-- Use `schema_version: "1"` (from PITFALLS) — not `format_version`
-- Keep session grouping (`sessions[]` → `qa_pairs[]`) — this is the right semantic model; a flat history loses the session boundary that `/pf-paper` vs `/pf-deep` invocations represent
-- Use `timestamp` per QA pair (from FEATURES/STACK) — individual message timing matters for chronology
-- Include `source` field as optional (from FEATURES) — traces answers back to specific Pass/section
-- Add `model` at session level (from STACK/ARCHITECTURE) — the model is per-session, not per-QA
-- Drop `message_count` (ARCHITECTURE proposes it but it's derivable from `qa_pairs.length`)
-
-**Rationale:** Sessions are the natural grouping unit — each `/pf-paper` or `/pf-deep` invocation creates a new session. A flat history array loses this structure. The FEATURES.md schema best captures this while staying minimal.
-
-### Conflict 2: How the plugin reads `discussion.json`
-
-| Researcher | Recommendation |
-|------------|----------------|
-| **STACK.md** | `fs.readFileSync()` — same pattern as `formal-library.json` reading |
-| **ARCHITECTURE.md** | `fs.readFileSync()` — "same pattern for discussion.json... from ai/ directory" |
-| **PITFALLS.md** | **DO NOT use `fs.readFileSync()`** — use `vault.adapter.read()` because discussion.json is vault-internal (paper workspace), not system-directory. `fs.readFileSync` bypasses vault cache, misses modify events, risks encoding issues. |
-| **FEATURES.md** | Doesn't specify read method, only says "reads discussion.json" |
-
-**Resolution: PITFALLS.md is correct. Use `app.vault.adapter.read()` for discussion.json.**
-
-**Rationale:** `fs.readFileSync()` is the correct pattern for `formal-library.json` because it lives in `<system_dir>/PaperForge/indexes/` — outside the Obsidian vault, invisible to vault cache. But `discussion.json` lives in `Literature/<domain>/<key> - <Title>/ai/` — inside the vault, visible in Obsidian's file explorer. Using `fs.readFileSync()` on vault-internal files:
-- Bypasses Obsidian's metadata cache
-- Prevents `modify` events from triggering dashboard refresh when Python writes new discussions
-- Risks encoding mismatch on Windows CJK systems (vault adapter normalizes encoding)
-
-The STACK.md and ARCHITECTURE.md researchers made a natural but incorrect assumption that the existing pattern extends unmodified. The PITFALLS researcher caught the distinction: system-directory files use `fs`, vault-internal files use `vault.adapter`.
+**See `.planning/research/PITFALLS.md` for all 13 pitfalls, including:** fixture inheritance conflicts (P13), Windows path hell (P12), test layering conflicts (P11), plugin tests testing subprocess mechanics instead of behavior (P10), CLI --json tests checking shape but not semantics (P9), and version sync checking the wrong things (P8).
 
 ## Implications for Roadmap
 
-Based on dependency analysis across all four research files, the research converges on a **7-phase build order**. Phases 31a and 31b are quick-win bug fixes; Phase 32 establishes the mode detection infrastructure; Phase 33 builds the dashboard renderer; Phase 34 adds navigation; Phases 35-36 build the data pipeline end-to-end.
+Based on combined research, the testing infrastructure should be built in **5 phases** with strict dependency ordering. Each phase delivers value independently and is testable before the next begins.
 
-### Phase 31a: Fix Version Number Display
+### Phase 1: Foundation — Fixture Hierarchy + L0 + L1 Relocation
 
-**Rationale:** Lowest risk, no dependencies. Single change in Python (`build_envelope()` adds `paperforge_version`) + single change in JS (`_fetchStats()` reads it). Quick win that improves perceived quality before new features ship.
+**Rationale:** All higher layers depend on healthy fixtures and a working test runner. The existing 473+ tests must be relocated into the new hierarchy before any new tests are written. L0 (version check) and L1 (unit tests) can be extracted early because they require minimal new infrastructure.
 
-**Delivers:** Version badge shows actual PaperForge version (e.g., `v1.8.0`) instead of `v—` placeholder.
+**Delivers:**
+- Refactored `tests/conftest.py` with 5-level fixture hierarchy (`empty_vault` -> `config_vault` -> `vault_with_export` -> `vault_with_ocr` -> `full_test_vault`)
+- All existing tests relocated from flat `tests/` to `tests/unit/` (pure directory moves, no behavior changes)
+- `scripts/check_version_sync.py` (L0: validates 6+ version declarations, semver structure, installed `--version` against source)
+- `ci-pr-checks.yml` (L0 on ubuntu + L1 on full 3x3 matrix, <2 min)
+- `pyproject.toml` updated with markers, testpaths, new dependencies
+- `tests/sandbox/` retained in place for backward compat
 
-**Addresses:** Bug Fix: Version Number (FEATURES.md)
-**Avoids:** Pitfall 8 — version badge race condition (reads from plugin manifest as floor, Python index as ceiling)
+**Addresses:** FEATURES.md table stakes (L0, L1)
+**Avoids:** PITFALLS.md P13 (fixture inheritance) — implement hierarchy before any new tests; P8 (version sync wrong checks) — validate installed version not file strings
+**Stack:** pytest >=8.0, pytest-timeout >=2.2.0, pytest-mock >=3.12.0, coverage >=7.4.0, ruff >=0.4.0
+**Research flag:** Well-documented patterns — pytest fixtures and test organization are standard. No deep research needed.
 
-**Stack elements used:** Python `__version__` from `paperforge/__init__.py`; JS `_cachedStats.version` read path.
+### Phase 2: Golden Datasets + CLI Contract Tests (L2)
 
-### Phase 31b: Fix "ai" Row Bug
+**Rationale:** The `fixtures/` golden dataset is the shared foundation for L2-L6. L2 (CLI contracts) is the most valuable integration layer — it protects the Python<->plugin boundary with minimal setup (subprocess invoker + snapshot assertions). Building fixtures and L2 together ensures fixture design matches real usage.
 
-**Rationale:** Independent bug fix, but must be applied AFTER Phase 31a because understanding which UI element is "ai" requires reading current dashboard render paths. Grep all render paths before removal.
+**Delivers:**
+- `fixtures/` directory structure: zotero/ (8 fixtures), pdf/ (4 minimal PDFs), snapshots/ (4 subdirectories), ocr/ (5 files)
+- `fixtures/MANIFEST.json` — tracks `used_by`, `generated`, `desc` for each fixture
+- `tests/cli/` with subprocess invoker fixture and contract tests for all 7 CLI commands
+- `pytest-snapshot` integrated with shape-specific assertions (not whole-file)
+- Mock OCR backend with `responses` library, using fixture responses captured from real API
+- `ci.yml` extended with L2 on 2 Python versions x 1 OS
+- All L2 tests excluded from `ci-pr-checks.yml` (they depend on L1 being green)
 
-**Delivers:** Dashboard no longer shows a meaningless "ai" row.
+**Addresses:** FEATURES.md table stakes (golden datasets, mock OCR, L2), differentiators (snapshot testing)
+**Avoids:** PITFALLS.md P1 (mock drift) — capture real API first; P3 (snapshot brittleness) — shape assertions; P7 (fixture bloat) — MANIFEST + CI validation; P9 (CLI shallow tests) — schema validation + cross-command consistency
+**Research flag:** **Needs research** — Snapshot testing strategy decisions: inline vs external snapshots, normalization helpers for dynamic fields. Low risk, but needs concrete examples before implementation.
 
-**Addresses:** Bug Fix: Remove meaningless "ai" row (FEATURES.md)
-**Avoids:** Pitfall 9 — "ai" row removal without checking all render paths
+### Phase 3: Plugin Tests + Temp Vault E2E (L3 + L4)
 
-**Stack elements used:** `grep -rn 'ai' paperforge/plugin/main.js paperforge/plugin/styles.css` to identify source; surgical removal scoped to the specific render path.
+**Rationale:** L3 and L4 can be built in parallel (they target different runtimes: JS vs Python). L3 (plugin) is independent of Python layers; L4 (E2E) depends on L2 being stable (contracts define what E2E tests should verify). Building them together optimizes the critical path.
 
-### Phase 32: Add Deep-Reading Mode Detection
+**Delivers:**
+- `tests/plugin/` with Vitest + obsidian-test-mocks + jsdom
+- Extracted `paperforge-backend.js` module for Node.js-testable backend interface
+- Plugin lifecycle, settings, dashboard, i18n, subprocess dispatch tests
+- `tests/e2e/conftest.py` with session-scoped golden vault + per-test fast clone
+- Temp vault E2E tests: full sync-OCR-status pipeline, repair workflow, headless setup, migration, doctor, multi-domain
+- Safe teardown with Windows file-lock retry
+- Mock OCR used in L2/L3/L4 with layer-specific fixture configurations
+- CI extended with L3 (1 Node) + L4 (1 Python, 1 OS)
 
-**Rationale:** This is the architectural foundation for everything in v1.8. Must be built before any deep-reading rendering can happen. Dependencies: nothing (pure JS change in `_detectAndSwitch()`).
+**Addresses:** FEATURES.md must-haves (L3, L4), differentiators (VaultBuilder factory)
+**Avoids:** PITFALLS.md P4 (temp vault slow) — session-scoped + per-test clone; P10 (plugin subprocess mechanics) — extract backend module; P12 (Windows path hell) — platform-specific marks + normalization
+**Research flag:** **Needs research** — `obsidian-test-mocks` API surface: does it support the specific `App`, `Workspace`, `Plugin` APIs used by PaperForge? Verify by loading the npm package and comparing against actual usage in `paperforge/plugin/main.js`.
 
-**Delivers:** When user opens `Literature/<domain>/<key> - <Title>/deep-reading.md`, the plugin detects it and dispatches to `deep-reading` mode (even though the stub renderer is a placeholder until Phase 33).
+### Phase 4: User Journey + Chaos Tests (L5 + L6)
 
-**Implements:** Architecture component — `_detectAndSwitch()` extension, `_switchMode()` `case 'deep-reading'` branch.
+**Rationale:** These are the most expensive and least stable tests. They should be built LAST, after the foundation (L0-L4) is solid. L5 depends on L4 for vault infrastructure; L6 is independent but shares mock systems with L2.
 
-**Avoids:** Pitfall 1 (mode detection ordering — check `basename === 'deep-reading'` BEFORE `zotero_key` frontmatter); Pitfall 5 (active-leaf-change double-fire — extract `_resolveModeForFile()` as pure function with identity guard); Pitfall 3 (filename-based heuristic — verify parent directory matches `{8-char key} - {slug}` pattern, not just basename).
+**Delivers:**
+- `tests/journey/UX_CONTRACT.md` — concrete step sequences for each user journey
+- 4 journey tests: new user onboarding, daily workflow, upgrade migration, error recovery
+- Journey fixture packs: "half-setup", "ready-for-deep-reading" pre-configured environments
+- `tests/chaos/scenarios/CHAOS_MATRIX.md` — 8 destructive scenarios documented
+- 8 chaos test files with Docker-only isolation and safety contracts
+- `ci-chaos.yml` — weekly schedule + manual trigger, scenarios parallelized by matrix
+- Journey tests NOT in PR gate (nightly only); chaos tests NOT in regular CI
 
-**Key implementation constraint:**
-```javascript
-// Inside .md handler, BEFORE zotero_key check:
-if (activeFile.basename === 'deep-reading') {
-    const parentDir = activeFile.parent?.name || '';
-    const match = parentDir.match(/^([A-Z0-9]{8})\s+-\s+(.+)$/);
-    if (match) {
-        this._currentPaperKey = match[1];
-        this._currentPaperEntry = this._findEntry(match[1]);
-        this._switchMode('deep-reading');
-        return;
-    }
-}
-// THEN: existing zotero_key check for per-paper mode
-```
+**Addresses:** FEATURES.md differentiators (L5, L6, chaos matrix doc)
+**Avoids:** PITFALLS.md P5 (vague journeys) — concrete scenarios + step abstraction; P6 (destructive safety) — isolation assertions + Docker
+**Research flag:** **Needs research** — Chaos scenario design: what are the real-world failure modes for PaddleOCR API, Zotero junctions, concurrent sync calls? Needs domain knowledge from the existing codebase's error-handling paths.
 
-### Phase 33: Build `_renderDeepReadingMode()` Component
+### Phase 5: CI Matrix Optimization + Consistency Audit
 
-**Rationale:** Depends on Phase 32 (mode detection must route to this renderer). This is the largest single JS change. Must implement the sub-components (status bar, paper info header, Pass 1 summary, AI Q&A history placeholder, navigation) with empty-state handling for all data sources.
+**Rationale:** The final phase optimizes and hardens the CI pipeline based on real data from earlier phases. Path filters, performance baselines, and cross-layer consistency audits should be informed by actual CI run times and failure patterns.
 
-**Delivers:** Deep-reading dashboard that shows:
-- Status bar with lifecycle/OCR/deep-reading/maturity badges
-- Paper info header (title, authors, year, domain)
-- Pass 1 summary extracted from deep-reading.md
-- AI Q&A history section (placeholder until Phase 36; shows empty state)
-- Navigation link back to the per-paper dashboard
+**Delivers:**
+- Path-filtered CI triggers (e.g., changes to `ocr.py` trigger L1+L2+L4; changes to `main.js` trigger L3)
+- `pytest -m "slow"` markers for tests >30s (moved to nightly or merge-only)
+- Consistency audit test: validates L1 mock expectations against L4 real output
+- `re-actors/alls-green` gate aggregation for branch protection
+- `scripts/validate_fixtures.py` — CI check that every fixture is referenced by at least one test
+- CI budget enforcement: max 20 concurrent runners; single-config L2-L5
 
-**Implements:** Architecture component — `_renderDeepReadingMode()` with all sub-renderers.
-
-**Avoids:** Pitfall 6 (empty discussion.json states — implement `_loadDiscussionData()` helper returning discriminated union for all 4 empty states: `no_ai_dir`, `not_found`, `empty`, `no_discussions`, `ok`); Pitfall 13 (CSS namespace collision — use `paperforge-deepreading-*` prefix, scope under `.paperforge-mode-deepreading` wrapper class); Pitfall 3 (anti-pattern: deep-reading dashboard replacing deep-reading.md — dashboard is index/summary only, never authoritative).
-
-**CSS additions** (all scoped under `.paperforge-mode-deepreading`):
-- `.paperforge-deep-reading-view` — root container (flex column, gap: 20px)
-- `.paperforge-dr-status-bar` — Pass 1/2/3 completion indicator row
-- `.paperforge-dr-pass-summary` — Pass 1 summary card
-- `.paperforge-dr-discussion-card` — individual Q&A card
-- `.paperforge-dr-discussion-list` — scrollable card container
-- `.paperforge-dr-tag-chip` — tag pills (font-size: 10px, border-radius: 8px)
-- `.paperforge-dr-empty` — empty state styling
-- `.paperforge-dr-section-title` — section headers
-
-### Phase 34: Add "Jump to Deep Reading" Button
-
-**Rationale:** Depends on Phase 32 (deep-reading path resolution) and Phase 33 (deep-reading dashboard must exist for navigation to matter). Simple modification to `_renderPaperMode()`.
-
-**Delivers:** On per-paper dashboard card, a "Jump to Deep Reading" button appears when `entry.deep_reading_path` is non-empty and `entry.deep_reading_status === 'done'`. Click navigates to `deep-reading.md`, which triggers Phase 32 mode detection.
-
-**Implements:** Architecture component — integration point on per-paper dashboard contextual actions row.
-
-**Avoids:** Pitfall 7 (Jump button assumes file exists — verify `getAbstractFileByPath()` before `openLinkText()`, show clear `Notice` on missing file); Anti-feature (dashboard replacing deep-reading.md — button opens the actual file, dashboard is a view layer).
-
-**Condition to show button:** `entry.deep_reading_path && entry.deep_reading_status === 'done'` — don't show for papers that haven't had deep reading performed.
-
-### Phase 35: AI Discussion Recorder (Python)
-
-**Rationale:** Depends on nothing (standalone Python module). Can be built in parallel with Phases 32-34. Writes the data that Phase 36 will read. Must implement atomic writes to prevent corruption during concurrent access.
-
-**Delivers:** `paperforge/worker/discussion.py` with:
-- `record_discussion(key, vault, agent, qa_pairs)` — writes both `discussion.md` and `discussion.json`
-- `load_discussion_json(key, vault)` — reads existing record
-- `append_discussion(key, vault, qa_pair)` — appends to existing (read-modify-write atomic via tempfile + os.replace)
-
-**Implements:** Architecture component — Python discussion recording module, integration with `/pf-paper` and `/pf-deep` Agent commands.
-
-**Uses:** Existing stdlib only (`json`, `pathlib`, `datetime`, `tempfile`, `os`); same atomic write pattern as `asset_index.py`.
-
-**Avoids:** Pitfall 3 (schema version missing — ship with `schema_version: "1"` in envelope); Pitfall 2 (encoding corruption — use `encoding='utf-8'` explicitly, set `PYTHONIOENCODING=utf-8` env var); Pitfall 4 (btoa on Chinese — path resolution uses zotero_key only, never writes slugified title paths); Pitfall 10 (.md vs .json inconsistency — define .json as canonical, .md as derived view); Pitfall 11 (tabs/newlines breaking Obsidian callouts — use `newline='\n'` consistently, avoid tabs); Pitfall 15 (heading collisions — use unique heading prefix `## AI Discussions` for discussion.md).
-
-**File operations must be atomic:** Use the proven `tempfile.NamedTemporaryFile` + `os.replace()` pattern to prevent partial writes during concurrent access. Do NOT write directly to the target file.
-
-### Phase 36: Wire AI Q&A History into Deep-Reading Dashboard
-
-**Rationale:** Depends on Phase 33 (renderer exists) and Phase 35 (data exists). This is the integration step that connects the data pipeline end-to-end.
-
-**Delivers:** When deep-reading dashboard shows, the AI Q&A History section renders actual discussion data from `ai/discussion.json` (last 3 Q&A pairs across all sessions, most recent first). Empty state shown when no discussions exist.
-
-**Implements:** Architecture component — `_renderDiscussionHistory()` in deep-reading mode renderer.
-
-**Avoids:** Pitfall 2 (fs.readFileSync bypasses vault API — use `app.vault.adapter.read()` for vault-internal discussion.json, NOT `fs.readFileSync`); Pitfall 12 (debounce timer leak — add 2-second cooldown after refresh, use mtime comparison to avoid redundant re-renders).
-
-**Key integration detail:** The modify event filter must include `discussion.json` paths to trigger dashboard refresh when Python appends new Q&A:
-```javascript
-const modifyHandler = this.app.vault.on('modify', (file) => {
-    if (file?.path?.endsWith('formal-library.json') || file?.path?.endsWith('discussion.json')) {
-        this._invalidateIndex();
-        this._refreshCurrentMode();
-    }
-});
-```
-
-### Phase 37: Integration Testing & Polish
-
-**Rationale:** After all components are built, verify end-to-end flow and fix edge cases. Must test: empty states, Chinese filenames/content, split-pane mode switching, rapid Q&A recording.
-
-**Delivers:** Verified end-to-end flow: `/pf-deep` → discussion files written → deep-reading dashboard shows Q&A history → Jump button navigates correctly → mode doesn't oscillate in split panes.
-
-**Avoids:** All pitfalls together — uses the "Looks Done But Isn't" checklist from PITFALLS.md (13 verification items).
+**Addresses:** FEATURES.md differentiators (plasma CI matrix), anti-features avoidance (full matrix)
+**Avoids:** PITFALLS.md P2 (CI too slow) — plasma matrix; P11 (test layering conflicts) — truth hierarchy + mock validation
+**Research flag:** **Standard patterns** — GitHub Actions path filters and matrix strategies are well-documented. No deep research needed.
 
 ### Phase Ordering Rationale
 
-- **Fixes first (31a, 31b):** Low risk, no dependencies, quick wins that improve perceived quality before new features ship. Version fix also establishes the Python→JS version bridge that Phase 33 needs.
-- **Detection before rendering (32 → 33):** Mode detection is the routing infrastructure; the renderer can't work without it. Building detection first allows incremental testing.
-- **Renderer before data integration (33 → 36):** Build the UI with proper empty states first, then wire real data in. This ensures graceful degradation when no discussions exist.
-- **Python recorder parallel to JS dashboard (35 parallel to 32-34):** No runtime dependency — the recorder writes files, the dashboard reads them. Can be developed in parallel.
-- **Integration last (36 → 37):** Wire the full data pipeline only after both ends exist. Test end-to-end only after wiring.
+1. **Fixtures before tests** (Phase 1 before Phase 2): Golden datasets and fixture hierarchy are prerequisites for ALL test layers. Building them first prevents the "kitchen sink" fixture anti-pattern and fixture bloat.
+2. **Python before JS** (Phase 2 before Phase 3): L2 CLI contracts define the interface between Python and plugin JS. Building L2 first means L3 can validate against known contracts. However, L3 and L4 can be parallelized since they target different runtimes.
+3. **Cheap before expensive** (L0-L2 before L4-L6): The most valuable-per-effort tests (version sync, unit, CLI contracts) cost <2 min CI time. They catch 80% of regressions. E2E, journey, and chaos tests add 10-30 min each and should be built only when the fast layers are solid.
+4. **Optimize last** (Phase 5 after all others): CI matrix optimization metrics (path filter accuracy, test durations, flake rates) can only be measured once all phases are running in CI. Optimizing earlier would be premature.
 
 ### Research Flags
 
-**Phases likely needing deeper research during planning:**
-- **Phase 32 (Mode Detection):** The `active-leaf-change` double-fire behavior varies by Obsidian version and platform. May need platform-specific debounce tuning during implementation. Consider `/gsd-research-phase` if Obsidian API behavior is uncertain.
-- **Phase 35 (AI Discussion Recorder):** The exact integration point with `/pf-paper` and `/pf-deep` scripts needs implementation-level detail. How does the Agent session signal completion? What's the handoff protocol? May need `/gsd-research-phase` if the Agent integration surface is unclear.
+Phases likely needing deeper research during planning:
+- **Phase 2 (Golden datasets + L2):** Snapshot testing strategy — inline vs external, normalization helpers. Low risk, but need concrete decisions before implementation.
+- **Phase 3 (L3 plugin tests):** `obsidian-test-mocks` API surface coverage — does it fully support PaperForge's Obsidian API usage patterns? Verify by loading the npm package.
+- **Phase 4 (L5 + L6):** Chaos scenario design — what are the real-world failure modes for PaddleOCR, Zotero junctions, concurrent sync? Needs codebase analysis of error-handling paths.
 
-**Phases with standard patterns (skip research-phase):**
-- **Phase 31a (Version Fix):** Well-understood pattern — add field to envelope, read in fetch. Standard PaperForge index pattern.
-- **Phase 33 (Dashboard Rendering):** Pattern established across 3 existing modes (global, paper, collection). Deep-reading mode follows the same `_renderXMode()` template.
-- **Phase 34 (Jump Button):** Established contextual button pattern (`paperforge-contextual-btn` class) with `openLinkText()` navigation. Used elsewhere in `_renderPaperMode()`.
-- **Phase 36 (Data Wiring):** Reading a JSON file and rendering DOM. Standard pattern used by `_fetchStats()` and all existing renderers.
+Phases with standard patterns (skip research-phase):
+- **Phase 1 (Foundation):** pytest fixture hierarchy, test relocation, version checking — well-documented established patterns
+- **Phase 5 (CI optimization):** GitHub Actions path filters, matrix strategies — official docs are comprehensive
 
 ## Confidence Assessment
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | **HIGH** | No new dependencies. All additions are new modules/files in existing well-understood architecture. Verified against actual source code at `paperforge/plugin/main.js` (2067 lines), `paperforge/plugin/styles.css` (1325 lines), `paperforge/worker/asset_index.py` (577 lines), `paperforge/worker/sync.py` (1829 lines). Actual test fixtures confirm `ai_path` field already exists. |
-| Features | **HIGH** | Feature landscape verified against Obsidian plugin ecosystem (Smart Chat, Copilot, Gemini Scribe, Claude Sessions — 5 plugins analyzed). MVP definition maps directly to v1.8 milestone requirements from PROJECT.md. Anti-features identified by consensus (3 researchers independently flagged auto-recording as a problem). |
-| Architecture | **HIGH** | All integration points verified against existing source code. Mode detection hierarchy, file ownership boundaries (Python vs JS), and data flow confirmed by code inspection at specific line ranges. Canonical index schema (`formal-library.json` v2) already carries `ai_path` field. Build order derived from dependency graph analysis. |
-| Pitfalls | **HIGH** | 15 pitfalls identified across 3 severity tiers. Top 5 critical pitfalls each have verified root causes from Obsidian Forum (#31841, #91927), opencode-obsidian Issue #28, nodejs/undici Issue #5002, and paperclipai Issue #3940. Recovery strategies estimated for each pitfall. "Looks Done But Isn't" checklist provides 13 concrete verification items. |
+| Stack | HIGH | pytest, Vitest, obsidian-test-mocks, responses are well-documented and verified against official sources. Alternatives analysis is thorough. |
+| Features | HIGH | Feature landscape derived from existing codebase analysis (473+ tests) + official docs. Table stakes, differentiators, and anti-features are clearly scoped. |
+| Architecture | HIGH | Detailed directory structure, mock system architecture, CI matrix design, fixture hierarchy, and 6 ADRs. All decisions have clear rationale and alternatives considered. |
+| Pitfalls | HIGH | 13 pitfalls identified with prevention strategies, recovery plans, and phase mapping. Based on existing codebase analysis (12-level mock nesting, single fixture patterns) + external sources (pytest best practices, snapshot testing analysis). |
 
-**Overall confidence: HIGH**
-
-All four researchers worked from the same source code (verified at specific line ranges), the same project context (PROJECT.md, STATE.md, AGENTS.md), and came to convergent conclusions. The two conflicts (schema shape, file read strategy) are well-characterized and resolved above. No areas of fundamental disagreement or missing information remain.
+**Overall confidence:** HIGH
 
 ### Gaps to Address
 
-- **Agent integration surface for discussion recording:** The exact API/callback for `discussion_recorder.record_session()` when an Agent session completes needs to be confirmed during Phase 35 implementation. Does `/pf-paper` emit a completion event? Where does the Q&A pair extraction happen? This is an implementation detail, not a research gap — it can be resolved during planning.
-- **Deep-reading.md content parsing robustness:** The Pass 1 summary extraction relies on parsing `**一句话总览**` markers from deep-reading.md. If the agent generates different formatting in edge cases (non-standard headings, multiline bold), parsing could fail. Phase 33 should include a regex fallback that handles variations.
-- **Performance at scale:** Current linear scan of index items for `_findEntry()` is O(n) and acceptable for ~100 papers. If the library grows past ~1000 papers, the dashboard may lag on mode switch. This is a known gap documented in ARCHITECTURE.md — address in a future performance phase, not v1.8.
-- **Cross-platform UTF-8 path handling:** The research covers Windows CJK encoding issues thoroughly, but Linux/macOS with non-UTF-8 filesystem encodings (rare edge case) is not covered. No known users on these systems — defer until reported.
+1. **`obsidian-test-mocks` API coverage validation** — The npm package claims 100% code coverage of `obsidian.d.ts`, but PaperForge uses specific APIs (settings tab, dashboard views, subprocess dispatch). Need to verify the mock covers all usage in `paperforge/plugin/main.js` before Phase 3 implementation.
+
+2. **Real PaddleOCR response format** — Mock OCR fixture design depends on capturing at least one real API response. If the API has changed or is inaccessible, fixture generation will need a different approach (e.g., API documentation or developer-provided example).
+
+3. **CI budget constraints** — The plasma matrix assumes GitHub-hosted runners are available. If this is a self-hosted runner or has credit limits, the matrix may need further reduction. Phase 5 should calibrate based on actual limits.
+
+4. **Windows junction behavior in CI** — Windows GitHub Actions runners may have different junction/symlink behavior than local Windows machines. The Windows E2E test may need adjustment after initial CI runs on Windows.
 
 ## Sources
 
 ### Primary (HIGH confidence)
-- **PaperForge source code** (`paperforge/plugin/main.js` lines 1-2067, `paperforge/plugin/styles.css` lines 1-1325, `paperforge/worker/asset_index.py` lines 1-577, `paperforge/worker/sync.py` lines 1677-1749, `paperforge/worker/asset_state.py` lines 1-243) — verified mode detection, switch, rendering, index building, workspace migration, lifecycle/health/maturity computation
-- **PaperForge project context** (`.planning/PROJECT.md`, `.planning/STATE.md`, `AGENTS.md`) — v1.8 milestone definition, thin-shell constraint, bug reports
-- **Obsidian Developer Docs** (Context7: `/obsidianmd/obsidian-developer-docs`) — Event system, `registerEvent()`, `active-leaf-change`, `debounce()` best practices
-- **Obsidian Forum #31841** — `active-leaf-change` double-fire behavior confirmed by multiple plugin developers
-- **Obsidian Forum #91927** — GB2312 to UTF-8 conversion corrupting Chinese files — encoding mismatch pattern
-- **opencode-obsidian Issue #28** — `btoa()` crash with Chinese characters — verified fix: `Buffer.from(str).toString('base64')`
+- **pytest documentation:** https://pytest.org/ — fixture scopes, tmp_path, markers, import modes
+- **GitHub Actions setup-python:** https://github.com/actions/setup-python — matrix patterns, version management
+- **GitHub Actions docs:** https://docs.github.com/en/actions/guides/building-and-testing-python — CI matrix optimization
+- **responses library docs:** https://pypi.org/project/responses/ — HTTP mock library
+- **Project codebase:** `tests/conftest.py`, `tests/test_ocr_state_machine.py`, `tests/test_e2e_cli.py`, `tests/test_e2e_pipeline.py`, `tests/test_plugin_install_bootstrap.py` — existing 473+ test behavioral analysis
+- **Project version schema:** `paperforge/__init__.py`, `manifest.json`, `pyproject.toml` — multiple version sources
 
 ### Secondary (MEDIUM confidence)
-- **Obsidian Smart Chat** — Chat thread linking, Dataview dashboards, chat-active/chat-done tracking
-- **Obsidian Copilot (DeepWiki)** — Chat persistence and history system with markdown files, YAML frontmatter, session grouping
-- **Claude Sessions plugin** — Session timeline rendering, summary dashboard, Obsidian Bases dashboards
-- **Gemini Scribe** — Per-note history file pattern, auto-appending
-- **nodejs/undici Issue #5002** — Multi-byte UTF-8 character corruption at chunk boundaries with CJK text
-- **paperclipai/paperclip Issue #3940** — GBK-UTF8 encoding mismatch on Windows with CJK child process output
-- **Excalidraw plugin commit 5c628e0** — Real-world debounce timer cleanup in Obsidian plugin `onunload`
-- **obsidian-current-view commit ad110f7** — Replacing requestAnimationFrame with setTimeout debounce
+- **pytest-snapshot:** https://pypi.org/project/pytest-snapshot/ — verified via PyPI search; community-maintained
+- **obsidian-test-mocks:** https://www.npmjs.com/package/obsidian-test-mocks — verified via Exa search; community-maintained
+- **Vitest:** https://vitest.dev/ — official docs
+- **pytest-with-eric.com** (2024-2026): Fixture management, temp directory strategies, flaky test stabilization — community expert patterns
+- **CircleCI documentation:** Test splitting, parallelism strategies — adapted for GitHub Actions
+- **snapshot testing analysis (2025-01):** "Why Snapshot Testing Sucks" — targeted behavior-driven assertions
 
 ### Tertiary (LOW confidence)
-- **PaulGP llms.txt proposal** — AI-readable paper annotations design philosophy (context only, not implementation reference)
-- **Effortless Academic discussion writing guide** — Q&A-style paper discussion structure (practitioner guide, not technical reference)
-- **Templater Issue #1629** — `app.vault.modify()` race condition with multiple handlers (relevant but unverified for PaperForge's specific use case)
+- **obsidian-e2e:** https://www.npmjs.com/package/obsidian-e2e — evaluated and rejected; experimental, needs real Obsidian process
+
+### Research Files (full details)
+- **STACK.md:** Complete technology stack with versions, rationale, alternatives, and installation config (.planning/research/STACK.md)
+- **FEATURES.md:** Full feature landscape with table stakes, differentiators, anti-features, dependencies, and MVP recommendation (.planning/research/FEATURES.md)
+- **ARCHITECTURE.md:** Complete architecture with directory structure, mock systems, CI matrix, snapshot strategy, 6 ADRs, and build order (.planning/research/ARCHITECTURE.md)
+- **PITFALLS.md:** 13 pitfalls with prevention strategies, recovery costs, "looks done but isn't" checklist, performance traps, and integration gotchas (.planning/research/PITFALLS.md)
 
 ---
-
-*Research completed: 2026-05-06*
+*Research completed: 2026-05-08*
 *Ready for roadmap: yes*
-*Conflicts resolved: 2 (schema shape → sessions-based; file read strategy → vault.adapter.read for vault-internal files)*
-*Gates cleared: Zero new dependencies, zero CLI command changes, thin-shell principle preserved*
