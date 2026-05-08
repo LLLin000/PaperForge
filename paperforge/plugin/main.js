@@ -86,6 +86,24 @@ Object.assign(LANG.en, {
     field_python_interp: 'Python Interpreter',
     field_python_custom: 'Custom Path',
     btn_validate: 'Validate',
+
+    /* ── Runtime Health (Task 2) ── */
+    runtime_health: 'Runtime Health',
+    runtime_health_desc: 'Check whether the installed paperforge Python package matches the plugin version',
+    runtime_health_plugin_ver: 'Plugin v{0}',
+    runtime_health_package_ver: 'Python package v{0}',
+    runtime_health_match: 'Match',
+    runtime_health_mismatch: 'Mismatch',
+    runtime_health_checking: 'Checking...',
+    runtime_health_sync: 'Sync Runtime',
+    runtime_health_syncing: 'Syncing...',
+    runtime_health_sync_done: 'Runtime synced to v{0}',
+    runtime_health_sync_fail: 'Sync failed: {0}',
+    dashboard_drift_warning: 'PaperForge CLI (v{0}) differs from plugin (v{1}). Open Settings → Runtime Health to sync.',
+
+    /* ── Copy Diagnostic (Task 3) ── */
+    error_copy_diagnostic: 'Copy diagnostic',
+    error_copied: 'Copied!',
 });
 
 Object.assign(LANG.zh, {
@@ -139,6 +157,24 @@ Object.assign(LANG.zh, {
     field_python_interp: 'Python 解释器',
     field_python_custom: '自定义路径',
     btn_validate: '验证',
+
+    /* ── Runtime Health (Task 2) ── */
+    runtime_health: '运行时状态',
+    runtime_health_desc: '检查已安装的 paperforge Python 包是否与插件版本一致',
+    runtime_health_plugin_ver: '插件 v{0}',
+    runtime_health_package_ver: 'Python 包 v{0}',
+    runtime_health_match: '一致',
+    runtime_health_mismatch: '不一致',
+    runtime_health_checking: '正在检查...',
+    runtime_health_sync: '同步运行时',
+    runtime_health_syncing: '正在同步...',
+    runtime_health_sync_done: '运行时已同步至 v{0}',
+    runtime_health_sync_fail: '同步失败: {0}',
+    dashboard_drift_warning: 'PaperForge CLI (v{0}) 与插件 (v{1}) 版本不一致，请打开设置 → 运行时状态进行同步。',
+
+    /* ── Copy Diagnostic (Task 3) ── */
+    error_copy_diagnostic: '复制诊断信息',
+    error_copied: '已复制',
 });
 
 function langFromApp(app) {
@@ -380,6 +416,17 @@ class PaperForgeStatusView extends ItemView {
                 const v = stdout.trim();
                 this._paperforgeVersion = v.startsWith('v') ? v : 'v' + v;
                 if (this._versionBadge) this._versionBadge.setText(this._paperforgeVersion);
+
+                // Check drift for dashboard banner
+                const pluginVer = this.app.plugins.plugins['paperforge']?.manifest?.version;
+                if (this._driftBannerEl && pluginVer && this._paperforgeVersion !== 'v' + pluginVer.replace(/^v/, '')) {
+                    this._driftBannerEl.style.display = 'block';
+                    this._driftBannerEl.setText(t('dashboard_drift_warning')
+                        .replace('{0}', this._paperforgeVersion)
+                        .replace('{1}', 'v' + pluginVer.replace(/^v/, '')));
+                } else if (this._driftBannerEl) {
+                    this._driftBannerEl.style.display = 'none';
+                }
             }
         });
     }
@@ -881,6 +928,10 @@ class PaperForgeStatusView extends ItemView {
 
     /* ── Global Mode Render (existing dashboard, extracted from _fetchStats + _renderOcr) ── */
     _renderGlobalMode() {
+        // Drift warning banner (hidden by default, shown on version mismatch)
+        this._driftBannerEl = this._contentEl.createEl('div', { cls: 'paperforge-drift-banner' });
+        this._driftBannerEl.style.display = 'none';
+
         // Metric cards
         this._metricsEl = this._contentEl.createEl('div', { cls: 'paperforge-metrics' });
 
@@ -1670,6 +1721,52 @@ class PaperForgeSettingTab extends PluginSettingTab {
                 .onClick(() => this._validatePythonOverride());
         });
 
+        /* ── Runtime Health Section ── */
+        containerEl.createEl('h3', { text: t('runtime_health') });
+        containerEl.createEl('p', { text: t('runtime_health_desc'), cls: 'paperforge-settings-desc' });
+
+        const versionRow = new Setting(containerEl)
+            .setName('PaperForge')
+            .setDesc(t('runtime_health_checking'));
+
+        const badgeEl = versionRow.descEl.createEl('span', { cls: 'paperforge-runtime-badge' });
+        let syncBtn = null;
+
+        versionRow.addButton(btn => {
+            syncBtn = btn;
+            btn.setButtonText(t('runtime_health_sync'))
+                .setDisabled(true)
+                .onClick(() => this._syncRuntime(btn));
+        });
+
+        // Fetch version asynchronously
+        {
+            const vp = this.app.vault.adapter.basePath;
+            const { path: pythonExe, extraArgs = [] } = resolvePythonExecutable(vp, this.plugin.settings);
+            const pluginVer = this.plugin.manifest.version || '?';
+
+            execFile(pythonExe, [...extraArgs, '-c', 'import paperforge; print(paperforge.__version__)'], { cwd: vp, timeout: 10000 }, (err, stdout) => {
+                const pyVer = (!err && stdout) ? stdout.trim() : null;
+                const descText = pyVer
+                    ? `${t('runtime_health_plugin_ver').replace('{0}', pluginVer)} → ${t('runtime_health_package_ver').replace('{0}', pyVer)}`
+                    : `Plugin v${pluginVer} → Python package not installed`;
+                versionRow.setDesc(descText);
+                if (pyVer === pluginVer) {
+                    badgeEl.setText(t('runtime_health_match'));
+                    badgeEl.className = 'paperforge-runtime-badge match';
+                    if (syncBtn) syncBtn.setDisabled(true);
+                } else if (pyVer) {
+                    badgeEl.setText(t('runtime_health_mismatch'));
+                    badgeEl.className = 'paperforge-runtime-badge mismatch';
+                    if (syncBtn) syncBtn.setDisabled(false);
+                } else {
+                    badgeEl.setText('Not installed');
+                    badgeEl.className = 'paperforge-runtime-badge missing';
+                    if (syncBtn) syncBtn.setDisabled(false);
+                }
+            });
+        }
+
         /* ── Preparation Guide ── */
         containerEl.createEl('h3', { text: t('section_prep') });
         containerEl.createEl('p', { text: t('section_prep_desc'), cls: 'paperforge-settings-desc' });
@@ -1839,6 +1936,34 @@ class PaperForgeSettingTab extends PluginSettingTab {
                     new Notice(okMsg, 4000);
                 }
             });
+        });
+    }
+
+    _syncRuntime(btn) {
+        const vp = this.app.vault.adapter.basePath;
+        const { path: pythonExe, extraArgs = [] } = resolvePythonExecutable(vp, this.plugin.settings);
+        const ver = this.plugin.manifest.version || '1.4.17rc2';
+        const url = `git+https://github.com/LLLin000/PaperForge.git@${ver}`;
+        const spawn = require('node:child_process').spawn;
+
+        btn.setDisabled(true);
+        btn.setButtonText(t('runtime_health_syncing'));
+
+        const child = spawn(pythonExe, [...extraArgs, '-m', 'pip', 'install', '--upgrade', url], { cwd: vp, timeout: 120000 });
+        child.on('close', (code) => {
+            if (code === 0) {
+                new Notice(t('runtime_health_sync_done').replace('{0}', ver), 5000);
+                this.display();
+            } else {
+                btn.setDisabled(false);
+                btn.setButtonText(t('runtime_health_sync'));
+                new Notice(t('runtime_health_sync_fail').replace('{0}', 'pip exit code ' + code), 8000);
+            }
+        });
+        child.on('error', (e) => {
+            btn.setDisabled(false);
+            btn.setButtonText(t('runtime_health_sync'));
+            new Notice(t('runtime_health_sync_fail').replace('{0}', e.message), 8000);
         });
     }
 
@@ -2385,7 +2510,40 @@ class PaperForgeSetupModal extends Modal {
             setTimeout(() => { this._step = 5; this._render(); }, 800);
         } catch (err) {
             console.error('PaperForge setup failed:', err.message);
-            this._log(t('install_failed') + this._formatSetupError(err.message));
+            const errorMsg = this._formatSetupError(err.message);
+            this._log(t('install_failed') + errorMsg);
+
+            // Add "Copy diagnostic" button
+            const diagBtn = this._installLog.parentElement?.createEl('button', {
+                cls: 'paperforge-copy-diag-btn',
+                text: t('error_copy_diagnostic') || 'Copy diagnostic',
+            });
+            if (diagBtn) {
+                const rawError = err.message;
+                const pyInfo = this.plugin?.settings?.python_path || 'auto';
+                const pluginVer = this.plugin?.manifest?.version || '?';
+                const osInfo = process.platform + ' ' + process.arch;
+                const diagnostic = [
+                    '[PaperForge Diagnostic]',
+                    'Category: ' + errorMsg,
+                    'Plugin version: ' + pluginVer,
+                    'Python: ' + pyInfo,
+                    'OS: ' + osInfo,
+                    '--- Raw error ---',
+                    rawError.slice(0, 2000),
+                ].join('\n');
+                diagBtn.addEventListener('click', () => {
+                    navigator.clipboard.writeText(diagnostic).then(() => {
+                        diagBtn.setText(t('error_copied') || 'Copied!');
+                        setTimeout(() => {
+                            diagBtn.setText(t('error_copy_diagnostic') || 'Copy diagnostic');
+                        }, 3000);
+                    }).catch(() => {
+                        new Notice('[!!] Clipboard write failed', 6000);
+                    });
+                });
+            }
+
             btn.disabled = false;
             btn.textContent = t('install_btn_retry');
         }
@@ -2422,10 +2580,23 @@ class PaperForgeSetupModal extends Modal {
 
     _formatSetupError(raw) {
         const patterns = [
+            // New: pip not found (before generic command not found)
+            { match: /pip.*not found|No module named.*pip|command not found.*pip/i, msg: 'pip not found' },
+            // Existing: Python not found (keep broad)
             { match: /command not found|No such file|not recognized/i, msg: 'Python not found' },
+            // New: Network error (DNS resolution, connection refused, etc.)
+            { match: /resolve host|getaddrinfo.*nodename|connect ETIMEDOUT|connect ECONNREFUSED|fetch failed|Network error|ENOTFOUND|ECONNREFUSED|ECONNRESET/i, msg: 'Network error' },
+            // New: SSL certificate
+            { match: /certificate verify failed|SSL.*certificate|self.signed.cert|CERTIFICATE_VERIFY_FAILED/i, msg: 'SSL certificate error' },
+            // New: Disk full
+            { match: /No space left on device|disk full|ENOSPC/i, msg: 'Disk full' },
+            // Existing: PaperForge not installed
             { match: /paperforge.*not found|cannot import|ModuleNotFoundError|No module named/i, msg: 'PaperForge not installed' },
-            { match: /permission denied|EACCES/i, msg: 'Permission denied' },
+            // Existing + New: Permission denied (expand pattern)
+            { match: /permission denied|EACCES|EPERM/i, msg: 'Permission denied' },
+            // Existing: Path not found
             { match: /ENOENT/i, msg: 'Path not found' },
+            // Existing: Timeout
             { match: /timeout|timed out/i, msg: 'Timeout' },
         ];
         for (const p of patterns) { if (p.match.test(raw)) return p.msg; }
