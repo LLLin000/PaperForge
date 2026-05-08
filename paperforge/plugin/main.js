@@ -104,6 +104,25 @@ Object.assign(LANG.en, {
     /* ── Copy Diagnostic (Task 3) ── */
     error_copy_diagnostic: 'Copy diagnostic',
     error_copied: 'Copied!',
+
+    /* ── DASH-01: OCR Queue (Plan 54-001) ── */
+    ocr_queue_add: 'Add to OCR Queue',
+    ocr_queue_remove: 'Remove from OCR Queue',
+    ocr_queue_added: 'Added to OCR queue',
+    ocr_queue_removed: 'Removed from OCR queue',
+    run_pending_ocr: 'Run All Pending OCR',
+    run_pending_ocr_desc: 'Run OCR on all papers waiting in the queue',
+    no_pending_ocr: 'All OCR tasks done',
+
+    /* ── DASH-02: /pf-deep Handoff (Plan 54-001) ── */
+    copy_pf_deep_cmd: 'Copy /pf-deep Command',
+    copied: 'Copied!',
+    run_in_agent: 'Run in {0}',
+
+    /* ── DASH-03: Privacy Warning (Plan 54-003) ── */
+    ocr_privacy_title: 'OCR Privacy Notice',
+    ocr_privacy_warning: 'OCR will upload PDFs to the PaddleOCR API for processing. Do not upload sensitive or confidential documents.',
+    ocr_understand: 'I Understand',
 });
 
 Object.assign(LANG.zh, {
@@ -175,6 +194,25 @@ Object.assign(LANG.zh, {
     /* ── Copy Diagnostic (Task 3) ── */
     error_copy_diagnostic: '复制诊断信息',
     error_copied: '已复制',
+
+    /* ── DASH-01: OCR Queue (Plan 54-001) ── */
+    ocr_queue_add: '加入 OCR 队列',
+    ocr_queue_remove: '移出 OCR 队列',
+    ocr_queue_added: '已加入 OCR 队列',
+    ocr_queue_removed: '已移出 OCR 队列',
+    run_pending_ocr: '运行所有待处理 OCR',
+    run_pending_ocr_desc: '对队列中所有等待处理的文献运行 OCR',
+    no_pending_ocr: '所有 OCR 任务已完成',
+
+    /* ── DASH-02: /pf-deep Handoff (Plan 54-001) ── */
+    copy_pf_deep_cmd: '复制 /pf-deep 命令',
+    copied: '已复制！',
+    run_in_agent: '在 {0} 中运行',
+
+    /* ── DASH-03: Privacy Warning (Plan 54-003) ── */
+    ocr_privacy_title: 'OCR 隐私提示',
+    ocr_privacy_warning: 'OCR 将把 PDF 上传到 PaddleOCR API 进行处理。请不要上传包含敏感信息或无法外传的文献。',
+    ocr_understand: '我知道了',
 });
 
 function langFromApp(app) {
@@ -320,6 +358,7 @@ class PaperForgeStatusView extends ItemView {
         this._cachedItems = null;       // lazy-loaded index items (Plan 28-01)
         this._modeSubscribers = [];     // event handler refs for cleanup
         this._leafChangeTimer = null;   // debounce timer for active-leaf-change
+        this._ocrPrivacyShown = false;  // DASH-03: once-per-session privacy flag
     }
 
     getViewType() { return VIEW_TYPE_PAPERFORGE; }
@@ -681,6 +720,9 @@ class PaperForgeStatusView extends ItemView {
             cnt.createEl('div', { cls: 'paperforge-ocr-count-value', text: l.value.toString() });
             cnt.createEl('div', { cls: 'paperforge-ocr-count-label', text: l.label });
         }
+
+        // ── Dynamic: "Run All Pending OCR" when items are in queue (DASH-01) ──
+        this._renderPendingOcrAction(pending);
     }
 
     /* ── Lifecycle Stepper (D-07 through D-11) ── */
@@ -834,6 +876,25 @@ class PaperForgeStatusView extends ItemView {
             card.createEl('div', { cls: 'paperforge-action-card-desc', text: a.desc });
             card.createEl('div', { cls: 'paperforge-action-card-hint', text: a.disabled ? 'Coming soon' : 'Click to run' });
             card.addEventListener('click', () => this._runAction(a, card));
+        }
+    }
+
+    /* ── Dynamic "Run All Pending OCR" action (DASH-01) ── */
+    _renderPendingOcrAction(pending) {
+        // Remove stale pending action card if any
+        const existing = this._actionsGrid.querySelector('.paperforge-pending-ocr-action');
+        if (existing) existing.remove();
+
+        if (pending > 0) {
+            const card = this._actionsGrid.createEl('div', { cls: 'paperforge-action-card paperforge-pending-ocr-action' });
+            card.createEl('div', { cls: 'paperforge-action-card-icon', text: '\u229E' });
+            card.createEl('div', { cls: 'paperforge-action-card-title', text: t('run_pending_ocr') });
+            card.createEl('div', { cls: 'paperforge-action-card-desc', text: pending + ' ' + t('run_pending_ocr_desc') });
+            card.createEl('div', { cls: 'paperforge-action-card-hint', text: 'Click to run' });
+            card.addEventListener('click', () => {
+                const action = ACTIONS.find(a => a.id === 'paperforge-ocr');
+                if (action) this._runAction(action, card);
+            });
         }
     }
 
@@ -1017,6 +1078,32 @@ class PaperForgeStatusView extends ItemView {
         const maturity = entry.maturity || {};
         this._renderMaturityGauge(view, maturity.level, maturity.blocking);
 
+        // ============ OCR Queue Control (DASH-01) ============
+        const ocrRow = view.createEl('div', { cls: 'paperforge-paper-actions' });
+        const inQueue = entry.do_ocr === true;
+        const ocrBtn = ocrRow.createEl('button', { cls: 'paperforge-contextual-btn' });
+        ocrBtn.createEl('span', { cls: 'paperforge-contextual-btn-icon', text: inQueue ? '\u23F1' : '\u23F0' });
+        ocrBtn.createEl('span', { text: inQueue ? t('ocr_queue_remove') : t('ocr_queue_add') });
+        ocrBtn.addEventListener('click', async () => {
+            const noteFile = entry.note_path ? this.app.vault.getAbstractFileByPath(entry.note_path) : null;
+            if (!noteFile) {
+                new Notice('[!!] Note file not found: ' + (entry.note_path || 'unknown'), 6000);
+                return;
+            }
+            const newValue = !inQueue;
+            await this.app.fileManager.processFrontMatter(noteFile, (fm) => {
+                fm.do_ocr = newValue;
+            });
+            new Notice(newValue ? t('ocr_queue_added') : t('ocr_queue_removed'));
+            this._refreshCurrentMode();
+        });
+        if (inQueue) {
+            ocrRow.createEl('span', {
+                cls: 'paperforge-ocr-queue-hint',
+                text: 'OCR ' + (entry.ocr_status === 'done' ? 'already done' : 'pending'),
+            });
+        }
+
         // ============ Next-Step Recommendation Card (D-08, D-09) ============
         this._renderNextStepCard(view, entry, key);
     }
@@ -1031,7 +1118,7 @@ class PaperForgeStatusView extends ItemView {
             'ocr':          { label: 'OCR Needed',     text: 'Fulltext is missing but PDF is present. Click to run OCR.',                  cmd: 'ocr',      icon: '\u229E' },
             'repair':       { label: 'Repair Needed',  text: 'State divergence or path errors detected. Click to repair.',                 cmd: 'repair',   icon: '\u21BA' },
             'rebuild index':{ label: 'Rebuild Needed', text: 'Index may be stale. Click to run sync to rebuild.',                          cmd: 'sync',     icon: '\u21BB' },
-            '/pf-deep':     { label: 'Ready for Deep Reading', text: 'Fulltext is ready. Copy key to use /pf-deep in OpenCode.',          cmd: null,       icon: '\uD83D\uDD0D' },
+            '/pf-deep':     { label: 'Ready for Deep Reading', text: 'Fulltext is ready. Copy /pf-deep command and run in your agent.',   cmd: null,       icon: '\uD83D\uDD0D' },
             'ready':        { label: 'All Set',        text: 'This paper is fully processed and ready for use.',                           cmd: 'ready',    icon: '\u2713' },
         };
 
@@ -1053,17 +1140,23 @@ class PaperForgeStatusView extends ItemView {
                 if (action) this._runAction(action, trigger);
             });
         } else if (nextStep === '/pf-deep') {
-            // Copy zotero_key to clipboard for /pf-deep (D-09)
+            // Copy full command /pf-deep <key> to clipboard (DASH-02)
             const trigger = card.createEl('button', { cls: 'paperforge-next-step-trigger' });
-            trigger.createEl('span', { text: '\uD83D\uDCCB  Copy Key for /pf-deep' });
+            trigger.createEl('span', { text: '\uD83D\uDCCB  ' + t('copy_pf_deep_cmd') });
             trigger.addEventListener('click', () => {
-                navigator.clipboard.writeText(key).then(() => {
-                    trigger.setText('\u2713  Copied!');
-                    new Notice('Zotero key copied: ' + key);
+                const fullCmd = '/pf-deep ' + key;
+                navigator.clipboard.writeText(fullCmd).then(() => {
+                    trigger.setText('\u2713  ' + t('copied'));
+                    new Notice(fullCmd + ' copied');
                 }).catch(() => {
                     new Notice('[!!] Clipboard write failed', 6000);
                 });
             });
+
+            // Show "Run in [agent_platform]" label below the button (DASH-02)
+            const platform = this.plugin.settings?.agent_platform || 'opencode';
+            const labelEl = card.createEl('div', { cls: 'paperforge-agent-platform-label' });
+            labelEl.setText(t('run_in_agent').replace('{0}', platform));
         } else if (nextStep === 'ready') {
             if (entry.deep_reading_path && entry.deep_reading_status === 'done') {
                 // D-01, D-03: Jump-to-deep-reading button replaces Copy Context when deep reading exists
@@ -1391,6 +1484,15 @@ class PaperForgeStatusView extends ItemView {
 
     /* ── Run Action ── */
     _runAction(a, card) {
+        // DASH-03: OCR privacy warning — once per session
+        if (a.id === 'paperforge-ocr' && !this._ocrPrivacyShown) {
+            const modal = new PaperForgeOcrPrivacyModal(this.app, () => {
+                this._ocrPrivacyShown = true;
+                this._runAction(a, card);  // Re-trigger after acknowledgment
+            });
+            modal.open();
+            return;
+        }
         // Guard: disabled actions show coming-soon notice
         if (a.disabled) {
             new Notice(`[i] ${a.disabledMsg || 'This action is not yet available.'}`, 6000);
@@ -2051,6 +2153,42 @@ class PaperForgeSettingTab extends PluginSettingTab {
 
             onPass();
         });
+    }
+}
+
+/* ── OCR Privacy Warning Modal (DASH-03) ── */
+class PaperForgeOcrPrivacyModal extends Modal {
+    constructor(app, onConfirm) {
+        super(app);
+        this._onConfirm = onConfirm;
+    }
+
+    onOpen() {
+        const { contentEl } = this;
+        contentEl.addClass('paperforge-modal');
+        contentEl.addClass('paperforge-ocr-privacy-modal');
+
+        // Title
+        contentEl.createEl('h2', { text: t('ocr_privacy_title') });
+
+        // Warning text
+        const warningEl = contentEl.createEl('div', { cls: 'paperforge-ocr-privacy-warning' });
+        warningEl.createEl('p', { text: t('ocr_privacy_warning') });
+
+        // "I Understand" button
+        const btnRow = contentEl.createEl('div', { cls: 'paperforge-ocr-privacy-actions' });
+        const confirmBtn = btnRow.createEl('button', {
+            cls: 'paperforge-step-btn mod-cta',
+            text: t('ocr_understand'),
+        });
+        confirmBtn.addEventListener('click', () => {
+            this.close();
+            if (this._onConfirm) this._onConfirm();
+        });
+    }
+
+    onClose() {
+        this.contentEl.empty();
     }
 }
 
