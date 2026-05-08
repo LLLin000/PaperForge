@@ -111,17 +111,50 @@ Object.assign(LANG.en, {
     ocr_queue_added: 'Added to OCR queue',
     ocr_queue_removed: 'Removed from OCR queue',
 
-    no_pending_ocr: '所有 OCR 任务已完成',
-
     /* ── DASH-02: /pf-deep Handoff (Plan 54-001) ── */
+    copy_pf_deep_cmd: 'Copy /pf-deep Command',
+    copied: 'Copied!',
+    run_in_agent: 'Run in {0}',
+
+    /* ── DASH-03: Privacy Warning (Plan 54-003) ── */
+    ocr_privacy_title: 'OCR Privacy Notice',
+    ocr_privacy_warning: 'OCR will upload PDFs to the PaddleOCR API. Do not upload sensitive or confidential documents.',
+    ocr_understand: 'I understand, continue',
+});
+
+/* ── LANG.zh: v1.12 runtime health, OCR queue, pf-deep, dashboard translations ── */
+Object.assign(LANG.zh, {
+    field_python_interp: '当前 Python 解释器',
+    field_python_custom: '自定义 Python 路径',
+    btn_validate: '验证',
+    runtime_health: '运行时状态',
+    runtime_health_desc: '检查插件与 Python 运行时版本的匹配情况',
+    runtime_health_plugin_ver: '插件 v{0}',
+    runtime_health_package_ver: 'Python 包 v{0}',
+    runtime_health_match: '匹配',
+    runtime_health_mismatch: '不匹配',
+    runtime_health_checking: '正在检测…',
+    runtime_health_sync: '同步运行时',
+    runtime_health_syncing: '正在同步…',
+    runtime_health_sync_done: '运行时已同步至 v{0}',
+    runtime_health_sync_fail: '运行时同步失败：{0}',
+    dashboard_drift_warning: '插件版本与 Python 运行时版本不匹配。请在设置中点击"同步运行时"。',
+    error_copy_diagnostic: '复制诊断信息',
+    error_copied: '已复制！',
+    ocr_queue_add: '加入 OCR 队列',
+    ocr_queue_remove: '移出 OCR 队列',
+    ocr_queue_added: '已加入 OCR 队列',
+    ocr_queue_removed: '已移出 OCR 队列',
+    no_pending_ocr: '所有 OCR 任务已完成',
     copy_pf_deep_cmd: '复制 /pf-deep 命令',
     copied: '已复制！',
     run_in_agent: '在 {0} 中运行',
-
-    /* ── DASH-03: Privacy Warning (Plan 54-003) ── */
     ocr_privacy_title: 'OCR 隐私提示',
-    ocr_privacy_warning: 'OCR 将把 PDF 上传到 PaddleOCR API 进行处理。请不要上传包含敏感信息或无法外传的文献。',
-    ocr_understand: '我知道了',
+    ocr_privacy_warning: 'OCR 会将 PDF 上传到 PaddleOCR API 进行处理。请不要上传包含敏感信息或无法外传的文献。',
+    ocr_understand: '我了解，继续',
+    install_validating: '正在校验安装环境…',
+    install_bootstrapping: '未检测到 PaperForge Python 包，正在自动安装…',
+    wizard_safety: '安全说明：如果你选择的目录里已经有文件，安装向导会保留已有内容，只补充缺失的 PaperForge 文件和目录。',
 });
 
 function langFromApp(app) {
@@ -137,7 +170,7 @@ function langFromApp(app) {
             if (l && String(l).startsWith('zh')) return 'zh';
         }
     } catch {}
-    return 'zh';  // default Chinese
+    return 'en';  // default English
 }
 
 function t(key) { return (T && T[key]) || (LANG.en[key]) || key; }
