@@ -1,0 +1,16 @@
+{
+  "name": "paperforge-plugin",
+  "version": "1.0.0",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "vitest": "^2.1.0",
+    "obsidian-test-mocks": "^2.0.0",
+    "jsdom": "^25.0.0",
+    "obsidian": "^1.12.0"
+  }
+}

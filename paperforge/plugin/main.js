@@ -3,6 +3,11 @@ const { exec, execFile } = require('node:child_process');
 const fs = require('fs');
 const path = require('path');
 
+// Extracted modules for testability (Plan 53-001)
+const { resolvePythonExecutable, getPluginVersion, checkRuntimeVersion } = require('./src/runtime');
+const { classifyError, buildRuntimeInstallCommand, parseRuntimeStatus } = require('./src/errors');
+const { ACTIONS, buildCommandArgs, runSubprocess } = require('./src/commands');
+
 const VIEW_TYPE_PAPERFORGE = 'paperforge-status';
 const PF_ICON_ID = 'paperforge';
 const PF_RIBBON_SVG = `
@@ -186,106 +191,7 @@ const DEFAULT_SETTINGS = {
     python_path: '',
 };
 
-const ACTIONS = [
-    {
-        id: 'paperforge-sync',
-        title: 'Sync Library',
-        desc: 'Pull new references from Zotero and generate literature notes',
-        icon: '\u21BB',  // ↻
-        cmd: 'sync',
-        okMsg: 'Sync complete',
-    },
-    {
-        id: 'paperforge-ocr',
-        title: 'Run OCR',
-        desc: 'Extract full text and figures from PDFs via PaddleOCR',
-        icon: '\u229E',  // ⊞
-        cmd: 'ocr',
-        okMsg: 'OCR started',
-    },
-    {
-        id: 'paperforge-doctor',
-        title: 'Run Doctor',
-        desc: 'Verify PaperForge setup — check configs, Zotero, paths, and index health',
-        icon: '\u2695',  // ⚕
-        cmd: 'doctor',
-        okMsg: 'Doctor complete',
-    },
-    {
-        id: 'paperforge-repair',
-        title: 'Repair Issues',
-        desc: 'Fix three-way state divergence, path errors, and rebuild index',
-        icon: '\u21BA',  // ↺
-        cmd: 'repair',
-        args: ['--fix', '--fix-paths'],
-        okMsg: 'Repair complete',
-        disabled: true,
-        disabledMsg: 'Repair Issues will be available in a future update.',
-    },
-    {
-        id: 'paperforge-copy-context',
-        title: 'Copy Context',
-        desc: 'Copy this paper\u2019s canonical index entry JSON to clipboard for AI use',
-        icon: '\u2139',  // ℹ
-        cmd: 'context',
-        needsKey: true,
-        okMsg: 'Context copied',
-    },
-    {
-        id: 'paperforge-copy-collection-context',
-        title: 'Copy Collection Context',
-        desc: 'Copy canonical index entries for all visible papers to clipboard',
-        icon: '\u2261',  // ≡
-        cmd: 'context',
-        needsFilter: true,
-        okMsg: 'Collection context copied',
-    },
-];
-
-function resolvePythonExecutable(vaultPath, settings) {
-    // 1. Manual override — absolute source of truth
-    if (settings && settings.python_path && settings.python_path.trim()) {
-        const manualPath = settings.python_path.trim();
-        if (fs.existsSync(manualPath)) {
-            return { path: manualPath, source: 'manual', extraArgs: [] };
-        }
-    }
-
-    // 2. Venv candidates
-    const venvCandidates = [
-        path.join(vaultPath, '.paperforge-test-venv', 'Scripts', 'python.exe'),
-        path.join(vaultPath, '.venv', 'Scripts', 'python.exe'),
-        path.join(vaultPath, 'venv', 'Scripts', 'python.exe'),
-    ];
-    for (const candidate of venvCandidates) {
-        try {
-            if (fs.existsSync(candidate)) return { path: candidate, source: 'auto-detected', extraArgs: [] };
-        } catch {}
-    }
-
-    // 3. System candidates — test each with --version, pick first that succeeds
-    const { execFileSync } = require('node:child_process');
-    const systemCandidates = [
-        { path: 'py', extraArgs: ['-3'] },
-        { path: 'python', extraArgs: [] },
-        { path: 'python3', extraArgs: [] },
-    ];
-    for (const candidate of systemCandidates) {
-        try {
-            const verOut = execFileSync(candidate.path, [...candidate.extraArgs, '--version'], {
-                encoding: 'utf-8',
-                timeout: 5000,
-                windowsHide: true,
-            });
-            if (verOut && verOut.toLowerCase().includes('python')) {
-                return { path: candidate.path, source: 'auto-detected', extraArgs: candidate.extraArgs };
-            }
-        } catch {}
-    }
-
-    // 4. Last-resort fallback
-    return { path: 'python', source: 'auto-detected', extraArgs: [] };
-}
+// ACTIONS, resolvePythonExecutable extracted to src/ modules (Plan 53-001)
 
 function overlayEntryWorkflowState(app, entry) {
     if (!entry || !entry.note_path) return entry;
@@ -407,23 +313,24 @@ class PaperForgeStatusView extends ItemView {
     _fetchVersion() {
         const vp = this.app.vault.adapter.basePath;
         const plugin = this.app.plugins.plugins['paperforge'];
+        const pluginVer = plugin?.manifest?.version || '?';
         const { path: pythonExe, extraArgs = [] } = resolvePythonExecutable(vp, plugin?.settings);
-        execFile(pythonExe, [...extraArgs, '-c', 'import paperforge; print(paperforge.__version__)'], { cwd: vp, timeout: 10000 }, (err, stdout) => {
-            if (!err && stdout) {
-                const v = stdout.trim();
-                this._paperforgeVersion = v.startsWith('v') ? v : 'v' + v;
-                if (this._versionBadge) this._versionBadge.setText(this._paperforgeVersion);
+        checkRuntimeVersion(pythonExe, pluginVer, vp, 10000).then((result) => {
+            if (result.status === 'not-installed') {
+                return;
+            }
+            const v = result.pyVersion || '';
+            this._paperforgeVersion = v.startsWith('v') ? v : 'v' + v;
+            if (this._versionBadge) this._versionBadge.setText(this._paperforgeVersion);
 
-                // Check drift for dashboard banner
-                const pluginVer = this.app.plugins.plugins['paperforge']?.manifest?.version;
-                if (this._driftBannerEl && pluginVer && this._paperforgeVersion !== 'v' + pluginVer.replace(/^v/, '')) {
-                    this._driftBannerEl.style.display = 'block';
-                    this._driftBannerEl.setText(t('dashboard_drift_warning')
-                        .replace('{0}', this._paperforgeVersion)
-                        .replace('{1}', 'v' + pluginVer.replace(/^v/, '')));
-                } else if (this._driftBannerEl) {
-                    this._driftBannerEl.style.display = 'none';
-                }
+            // Check drift for dashboard banner
+            if (this._driftBannerEl && pluginVer && this._paperforgeVersion !== 'v' + pluginVer.replace(/^v/, '')) {
+                this._driftBannerEl.style.display = 'block';
+                this._driftBannerEl.setText(t('dashboard_drift_warning')
+                    .replace('{0}', this._paperforgeVersion)
+                    .replace('{1}', 'v' + pluginVer.replace(/^v/, '')));
+            } else if (this._driftBannerEl) {
+                this._driftBannerEl.style.display = 'none';
             }
         });
     }
@@ -1931,27 +1838,20 @@ class PaperForgeSettingTab extends PluginSettingTab {
         const vp = this.app.vault.adapter.basePath;
         const { path: pythonExe, extraArgs = [] } = resolvePythonExecutable(vp, this.plugin.settings);
         const ver = this.plugin.manifest.version || '1.4.17rc2';
-        const url = `git+https://github.com/LLLin000/PaperForge.git@${ver}`;
-        const spawn = require('node:child_process').spawn;
+        const installCmd = buildRuntimeInstallCommand(pythonExe, ver, extraArgs);
 
         btn.setDisabled(true);
         btn.setButtonText(t('runtime_health_syncing'));
 
-        const child = spawn(pythonExe, [...extraArgs, '-m', 'pip', 'install', '--upgrade', url], { cwd: vp, timeout: 120000 });
-        child.on('close', (code) => {
-            if (code === 0) {
+        runSubprocess(installCmd.cmd, installCmd.args, vp, installCmd.timeout).then((result) => {
+            if (result.exitCode === 0) {
                 new Notice(t('runtime_health_sync_done').replace('{0}', ver), 5000);
                 this.display();
             } else {
                 btn.setDisabled(false);
                 btn.setButtonText(t('runtime_health_sync'));
-                new Notice(t('runtime_health_sync_fail').replace('{0}', 'pip exit code ' + code), 8000);
+                new Notice(t('runtime_health_sync_fail').replace('{0}', 'pip exit code ' + result.exitCode), 8000);
             }
-        });
-        child.on('error', (e) => {
-            btn.setDisabled(false);
-            btn.setButtonText(t('runtime_health_sync'));
-            new Notice(t('runtime_health_sync_fail').replace('{0}', e.message), 8000);
         });
     }
 
