@@ -1,0 +1,52 @@
+{
+  "items": [
+    {
+      "key": "FIXT0003",
+      "itemKey": "FIXT0003",
+      "itemType": "journalArticle",
+      "title": "The Effect of Platelet-Rich Plasma on Tendon Healing: A Systematic Review",
+      "creators": [
+        {
+          "creatorType": "author",
+          "firstName": "Carol",
+          "lastName": "Davis"
+        },
+        {
+          "creatorType": "author",
+          "firstName": "David",
+          "lastName": "Martinez"
+        }
+      ],
+      "publicationTitle": "Orthopaedic Journal of Sports Medicine",
+      "date": "2024-09-15",
+      "DOI": "10.1177/ojsm.2024.09.002",
+      "PMID": "34567890",
+      "abstractNote": "Systematic review evaluating PRP efficacy in tendon healing with multiple supplementary materials.",
+      "attachments": [
+        {
+          "title": "PDF",
+          "path": "storage:FIXT0003/main.pdf",
+          "contentType": "application/pdf"
+        },
+        {
+          "title": "Supplementary Table S1",
+          "path": "storage:FIXT0003/supp1.pdf",
+          "contentType": "application/pdf"
+        },
+        {
+          "title": "Supplementary Table S2",
+          "path": "storage:FIXT0003/supp2.pdf",
+          "contentType": "application/pdf"
+        }
+      ],
+      "collections": ["orthopedic"]
+    }
+  ],
+  "collections": {
+    "orthopedic": {
+      "name": "orthopedic",
+      "parent": "",
+      "items": ["FIXT0003"]
+    }
+  }
+}

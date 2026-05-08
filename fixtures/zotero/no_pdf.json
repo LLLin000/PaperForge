@@ -1,0 +1,31 @@
+{
+  "items": [
+    {
+      "key": "FIXT0004",
+      "itemKey": "FIXT0004",
+      "itemType": "journalArticle",
+      "title": "Conservative Management of Osteoarthritis: A Clinical Review",
+      "creators": [
+        {
+          "creatorType": "author",
+          "firstName": "Emily",
+          "lastName": "Brown"
+        }
+      ],
+      "publicationTitle": "Journal of Orthopaedic Research",
+      "date": "2024-04-10",
+      "DOI": "10.1002/jor.2024.04.003",
+      "PMID": "45678901",
+      "abstractNote": "Clinical review of non-surgical management strategies for osteoarthritis.",
+      "attachments": [],
+      "collections": ["orthopedic"]
+    }
+  ],
+  "collections": {
+    "orthopedic": {
+      "name": "orthopedic",
+      "parent": "",
+      "items": ["FIXT0004"]
+    }
+  }
+}

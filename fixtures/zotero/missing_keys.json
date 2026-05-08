@@ -1,0 +1,31 @@
+{
+  "items": [
+    {
+      "citationKey": "FIXT0008",
+      "itemKey": "FIXT0008",
+      "itemType": "journalArticle",
+      "creators": [
+        {
+          "creatorType": "author",
+          "firstName": "Maria",
+          "lastName": "Sanchez"
+        }
+      ],
+      "publicationTitle": "Journal of Orthopedic Research",
+      "attachments": [
+        {
+          "path": "storage:FIXT0008/FIXT0008.pdf",
+          "contentType": "application/pdf"
+        }
+      ],
+      "collections": ["orthopedic"]
+    }
+  ],
+  "collections": {
+    "orthopedic": {
+      "name": "orthopedic",
+      "parent": "",
+      "items": ["FIXT0008"]
+    }
+  }
+}

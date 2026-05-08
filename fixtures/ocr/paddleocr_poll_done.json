@@ -1,0 +1,6 @@
+{
+  "job_id": "mock-job-001",
+  "status": "completed",
+  "result_url": "https://api.mock/results/mock-job-001",
+  "progress": 1.0
+}
