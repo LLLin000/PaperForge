@@ -534,44 +534,32 @@ def _deploy_skill_directory(
     src_charts = repo_root / "paperforge" / "skills" / "literature-qa" / "chart-reading"
     src_prompt = repo_root / "paperforge" / "skills" / "literature-qa" / "prompt_deep_subagent.md"
 
-    # --- pf-deep: full deep reading skill with supporting files ---
+    # --- Deploy all pf-*.md scripts as independent skill directories ---
+    # Each .md file in scripts/ becomes a skill dir with SKILL.md.
+    # Special bundles (pf-deep with scripts/charts, pf-paper) handle extras below.
+    for skill_file in sorted(src_scripts.glob("pf-*.md")):
+        skill_name = skill_file.stem  # e.g. "pf-end"
+        skill_dst = vault / skill_dir / skill_name
+        skill_dst.mkdir(parents=True, exist_ok=True)
+        text = skill_file.read_text(encoding="utf-8")
+        text = _substitute_vars(text, system_dir, resources_dir, literature_dir, control_dir, base_dir, skill_dir, prefix)
+        _write_text_incremental(skill_dst / "SKILL.md", text)
+        imported.append(skill_name)
+
+    # pf-deep extras: scripts, chart-reading, subagent prompt
     pf_deep_dst = vault / skill_dir / "pf-deep"
     pf_deep_dst.mkdir(parents=True, exist_ok=True)
-
-    deep_src = src_scripts / "pf-deep.md"
-    if deep_src.exists():
-        text = deep_src.read_text(encoding="utf-8")
-        text = _substitute_vars(text, system_dir, resources_dir, literature_dir, control_dir, base_dir, skill_dir, prefix)
-        _write_text_incremental(pf_deep_dst / "SKILL.md", text)
-        imported.append("pf-deep")
-
-    # ld_deep.py
     ld_src = src_scripts / "ld_deep.py"
     ld_dst = pf_deep_dst / "scripts" / "ld_deep.py"
     if ld_src.exists():
         _copy_file_incremental(ld_src, ld_dst)
-
-    # subagent prompt
     if src_prompt.exists():
         _copy_file_incremental(src_prompt, pf_deep_dst / "prompt_deep_subagent.md")
-
-    # chart-reading guides
     if src_charts.exists() and src_charts.is_dir():
         chart_dst = pf_deep_dst / "chart-reading"
         chart_dst.mkdir(parents=True, exist_ok=True)
         for f in src_charts.glob("*.md"):
             _copy_file_incremental(f, chart_dst / f.name)
-
-    # --- pf-paper: lightweight paper Q&A skill ---
-    pf_paper_dst = vault / skill_dir / "pf-paper"
-    pf_paper_dst.mkdir(parents=True, exist_ok=True)
-
-    paper_src = src_scripts / "pf-paper.md"
-    if paper_src.exists():
-        text = paper_src.read_text(encoding="utf-8")
-        text = _substitute_vars(text, system_dir, resources_dir, literature_dir, control_dir, base_dir, skill_dir, prefix)
-        _write_text_incremental(pf_paper_dst / "SKILL.md", text)
-        imported.append("pf-paper")
 
     return imported
 
