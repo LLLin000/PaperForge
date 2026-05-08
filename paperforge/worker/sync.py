@@ -1593,8 +1593,7 @@ def migrate_to_workspace(vault: Path, paths: dict) -> int:
 
     Copies each flat note at <literature_dir>/<domain>/<key> - <Title>.md into:
       <literature_dir>/<domain>/<key> - <Title>/<key> - <Title>.md
-    Extracts ## 🔍 精读 into:
-      <literature_dir>/<domain>/<key> - <Title>/deep-reading.md
+    Preserves any existing ## 🔍 精读 section inside the main note (single source of truth).
     Creates:
       <literature_dir>/<domain>/<key> - <Title>/ai/  (empty directory)
 

@@ -182,22 +182,13 @@ class TestMigrateToWorkspace:
         paths = pipeline_paths(vault)
         workspace_dir = paths["literature"] / "骨科" / "KEY002 - Paper With Deep Reading"
 
-        # Check deep-reading.md exists
-        dr_path = workspace_dir / "deep-reading.md"
-        assert dr_path.exists(), "deep-reading.md should exist in workspace"
-
-        # deep-reading.md content should start with ## 🔍 精读
-        dr_content = dr_path.read_text(encoding="utf-8")
-        assert dr_content.startswith("## \U0001f50d \u7cbe\u8bfb"), (
-            "deep-reading.md should start with ## 🔍 精读 header"
-        )
-        assert "Pass 1: Overview" in dr_content, "deep-reading content preserved"
-        assert "Pass 2: Details" in dr_content, "deep-reading content preserved"
-
-        # Main note also contains the deep-reading section (complete copy)
+        # Main note preserves the deep-reading section (single source of truth)
         main_note = workspace_dir / "KEY002 - Paper With Deep Reading.md"
         main_content = main_note.read_text(encoding="utf-8")
         assert "## \U0001f50d \u7cbe\u8bfb" in main_content, "Main note preserves deep-reading section"
+        assert "Pass 1: Overview" in main_content, "deep-reading content preserved"
+        assert "Pass 2: Details" in main_content, "deep-reading content preserved"
+        assert not (workspace_dir / "deep-reading.md").exists(), "No separate deep-reading.md should be created"
 
     def test_migrate_creates_ai_dir(self, tmp_path: Path) -> None:
         """ai/ directory is created inside workspace."""
@@ -298,7 +289,9 @@ class TestMigrateToWorkspace:
         workspace_dir = paths["literature"] / "骨科" / "LEG001 - Legacy Flat Note"
         assert workspace_dir.is_dir()
         assert (workspace_dir / "LEG001 - Legacy Flat Note.md").exists()
-        assert (workspace_dir / "deep-reading.md").exists()
+        assert not (workspace_dir / "deep-reading.md").exists()
+        main_content = (workspace_dir / "LEG001 - Legacy Flat Note.md").read_text(encoding="utf-8")
+        assert "## 🔍 精读" in main_content
 
     def test_migrate_promotes_legacy_library_record_flags(self, tmp_path: Path) -> None:
         """Legacy library-record control flags are copied into the workspace note."""
