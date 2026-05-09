@@ -386,11 +386,6 @@ class PaperForgeStatusView extends ItemView {
     }
 
     _fallbackFetchStats(quiet, vp, plugin) {
-        if (!this._fallbackWarned) {
-            console.warn('[PaperForge] formal-library.json fallback is deprecated. ' +
-                'Ensure `paperforge status --json` is available for accurate dashboard data.');
-            this._fallbackWarned = true;
-        }
         const systemDir = plugin?.settings?.system_dir || 'System';
         const indexPath = path.join(vp, systemDir, 'PaperForge', 'indexes', 'formal-library.json');
 
@@ -499,11 +494,6 @@ class PaperForgeStatusView extends ItemView {
 
     /* ── Index Loading (D-11, D-17, D-19) ── */
     _loadIndex() {
-        if (!this._fallbackWarned) {
-            console.warn('[PaperForge] formal-library.json fallback is deprecated. ' +
-                'Ensure `paperforge status --json` is available for accurate dashboard data.');
-            this._fallbackWarned = true;
-        }
         const vp = this.app.vault.adapter.basePath;
         const plugin = this.app.plugins.plugins['paperforge'];
         const systemDir = plugin?.settings?.system_dir || 'System';
