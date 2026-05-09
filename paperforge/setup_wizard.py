@@ -915,14 +915,7 @@ def headless_setup(
             except OSError:
                 pass
 
-    # Docs
-    docs_src = repo_root / "docs"
-    docs_dst = vault / "docs"
-    if docs_src.exists() and docs_src.is_dir():
-        created, skipped = _copy_tree_incremental(docs_src, docs_dst)
-        print(f"    [OK] docs (created {created}, preserved {skipped})")
-    else:
-        print(f"    [WARN] docs source not found: {docs_src}")
+    # Docs are developer-facing and not installed to user vaults
 
     # Obsidian plugin
     plugin_src = repo_root / "paperforge/plugin"
