@@ -343,7 +343,6 @@ def test_headless_setup_claude_skill_directory(tmp_path: Path, monkeypatch: pyte
         system_dir="99_System",
         resources_dir="03_Resources",
         literature_dir="Literature",
-        control_dir="LiteratureControl",
         base_dir="05_Bases",
         skip_checks=True,
     )
@@ -380,7 +379,6 @@ def test_headless_setup_opencode_flat_command(tmp_path: Path, monkeypatch: pytes
         system_dir="99_System",
         resources_dir="03_Resources",
         literature_dir="Literature",
-        control_dir="LiteratureControl",
         base_dir="05_Bases",
         skip_checks=True,
     )
@@ -413,7 +411,6 @@ def test_headless_setup_codex_skill_directory(tmp_path: Path, monkeypatch: pytes
         system_dir="99_System",
         resources_dir="03_Resources",
         literature_dir="Literature",
-        control_dir="LiteratureControl",
         base_dir="05_Bases",
         skip_checks=True,
     )
@@ -445,7 +442,6 @@ def test_headless_setup_cline_rules_file(tmp_path: Path, monkeypatch: pytest.Mon
         system_dir="99_System",
         resources_dir="03_Resources",
         literature_dir="Literature",
-        control_dir="LiteratureControl",
         base_dir="05_Bases",
         skip_checks=True,
     )
@@ -497,7 +493,6 @@ def test_headless_setup_preserves_existing_files(tmp_path: Path, monkeypatch: py
         system_dir="99_System",
         resources_dir="03_Resources",
         literature_dir="Literature",
-        control_dir="LiteratureControl",
         base_dir="05_Bases",
         skip_checks=True,
     )
