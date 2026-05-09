@@ -33,6 +33,8 @@ def _read_dotenv(vault: Path, key: str) -> str:
         except (OSError, UnicodeDecodeError):
             continue
     return ""
+
+
 from paperforge.worker.asset_index import refresh_index_entry
 from paperforge.worker._retry import retry_with_meta
 from paperforge.worker._utils import (
@@ -282,11 +284,7 @@ def normalize_obsidian_markdown(text: str) -> str:
     )
     normalized = re.sub(
         r"(?<!\$)\bp\s*<\s*[\d]+(?:\.[\d]+)?",
-        lambda m: (
-            f"${m.group(0).strip()}$"
-            if normalized[: m.start()].count("$") % 2 == 0
-            else m.group(0)
-        ),
+        lambda m: f"${m.group(0).strip()}$" if normalized[: m.start()].count("$") % 2 == 0 else m.group(0),
         normalized,
     )
     normalized = re.sub("([A-Za-z])(\\$[^$\\n]+\\$)", "\\1 \\2", normalized)
@@ -1677,7 +1675,9 @@ def run_ocr(vault: Path, verbose: bool = False, no_progress: bool = False) -> in
                     for line in lines:
                         page_payload = json.loads(line)["result"]
                         all_results.append(page_payload)
-                    page_num, markdown_path, json_path, fulltext_md_path = postprocess_ocr_result(vault, key, all_results)
+                    page_num, markdown_path, json_path, fulltext_md_path = postprocess_ocr_result(
+                        vault, key, all_results
+                    )
                 except Exception as e:
                     meta["ocr_status"] = "pending"
                     meta["error"] = str(e)
@@ -1725,21 +1725,23 @@ def run_ocr(vault: Path, verbose: bool = False, no_progress: bool = False) -> in
                 active_submitted = max(0, active_submitted - 1)
             write_json(paths["ocr"] / key / "meta.json", meta)
             changed += 1
+
     # Upload pending items in batches until none remain (processes all do_ocr items, not just max_items)
     def _do_upload(token_val: str, pdf_path: Path) -> requests.Response:
-            with open(pdf_path, "rb") as file_handle:
-                resp = requests.post(
-                    job_url,
-                    headers={"Authorization": f"bearer {token_val}"},
-                    data={"model": model, "optionalPayload": json.dumps(optional_payload)},
-                    files={"file": file_handle},
-                    timeout=120,
-                )
-            resp.raise_for_status()
-            return resp
+        with open(pdf_path, "rb") as file_handle:
+            resp = requests.post(
+                job_url,
+                headers={"Authorization": f"bearer {token_val}"},
+                data={"model": model, "optionalPayload": json.dumps(optional_payload)},
+                files={"file": file_handle},
+                timeout=120,
+            )
+        resp.raise_for_status()
+        return resp
 
     # Combined upload + poll loop: process all items in batches up to max_items concurrency
     import time as _time
+
     poll_interval = int(os.environ.get("PAPERFORGE_POLL_INTERVAL", "15"))
     max_poll_cycles = int(os.environ.get("PAPERFORGE_POLL_MAX_CYCLES", "60"))
     for _cycle in range(max_poll_cycles):
@@ -1748,11 +1750,9 @@ def run_ocr(vault: Path, verbose: bool = False, no_progress: bool = False) -> in
             break
         available_slots = max(0, max_items - active_submitted)
         if available_slots > 0:
-            upload_items = [
-                r
-                for r in remaining
-                if r.get("queue_status", "") not in ("queued", "running")
-            ][:available_slots]
+            upload_items = [r for r in remaining if r.get("queue_status", "") not in ("queued", "running")][
+                :available_slots
+            ]
             for queue_row in upload_items:
                 key = queue_row["zotero_key"]
                 meta = ensure_ocr_meta(vault, queue_row)
@@ -1782,6 +1782,7 @@ def run_ocr(vault: Path, verbose: bool = False, no_progress: bool = False) -> in
                 if meta.get("needs_sanitize"):
                     try:
                         import tempfile
+
                         doc = fitz.open(str(resolved_pdf))
                         _sanitized_temp = Path(tempfile.mktemp(suffix=".pdf"))
                         doc.save(str(_sanitized_temp), garbage=4, deflate=True, clean=True)
@@ -1804,8 +1805,9 @@ def run_ocr(vault: Path, verbose: bool = False, no_progress: bool = False) -> in
                     if _sanitized_temp is not None and _sanitized_temp.exists():
                         _sanitized_temp.unlink(missing_ok=True)
                     import requests as _requests
+
                     if isinstance(e, _requests.exceptions.HTTPError):
-                        _status = getattr(getattr(e, 'response', None), 'status_code', 0)
+                        _status = getattr(getattr(e, "response", None), "status_code", 0)
                         if _status == 401:
                             meta["ocr_status"] = "blocked"
                             meta["error"] = "PaddleOCR token invalid"
@@ -1896,9 +1898,7 @@ def run_ocr(vault: Path, verbose: bool = False, no_progress: bool = False) -> in
             _time.sleep(poll_interval)
     # Collect completed OCR keys for incremental index refresh (before filtering)
     _done_ocr_keys = (
-        [r.get("zotero_key", "") for r in ocr_queue if r.get("queue_status") == "done"]
-        if queue_changed
-        else []
+        [r.get("zotero_key", "") for r in ocr_queue if r.get("queue_status") == "done"] if queue_changed else []
     )
     if queue_changed:
         ocr_queue = [row for row in ocr_queue if str(row.get("queue_status", "")).lower() != "done"]

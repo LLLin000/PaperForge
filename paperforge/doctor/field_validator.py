@@ -29,32 +29,38 @@ def validate_entry_fields(
     # Check 1: Required fields present
     for field_name, meta in owner_fields.items():
         if meta.get("required", False) and field_name not in entry:
-            issues.append({
-                "severity": "error",
-                "code": "MISSING_REQUIRED",
-                "field": field_name,
-                "message": f"Missing required field '{field_name}' in {owner} entry{(' (' + entry_label + ')') if entry_label else ''}",
-                "suggestion": f"Add '{field_name}' to the entry with appropriate value ({meta.get('type', 'str')})",
-            })
+            issues.append(
+                {
+                    "severity": "error",
+                    "code": "MISSING_REQUIRED",
+                    "field": field_name,
+                    "message": f"Missing required field '{field_name}' in {owner} entry{(' (' + entry_label + ')') if entry_label else ''}",
+                    "suggestion": f"Add '{field_name}' to the entry with appropriate value ({meta.get('type', 'str')})",
+                }
+            )
         elif not meta.get("required", True) and field_name not in entry:
-            issues.append({
-                "severity": "info",
-                "code": "MISSING_OPTIONAL",
-                "field": field_name,
-                "message": f"Missing optional field '{field_name}' in {owner} entry{(' (' + entry_label + ')') if entry_label else ''}",
-            })
+            issues.append(
+                {
+                    "severity": "info",
+                    "code": "MISSING_OPTIONAL",
+                    "field": field_name,
+                    "message": f"Missing optional field '{field_name}' in {owner} entry{(' (' + entry_label + ')') if entry_label else ''}",
+                }
+            )
 
     # Check 2: Unknown fields (drift detection)
     known_fields = set(owner_fields.keys())
     for key in entry:
         if key not in known_fields:
-            issues.append({
-                "severity": "warning",
-                "code": "DRIFT",
-                "field": key,
-                "message": f"Unknown field '{key}' in {owner} entry{(' (' + entry_label + ')') if entry_label else ''} — not in field registry",
-                "suggestion": f"Either remove '{key}' or add it to field_registry.yaml under '{owner}'",
-            })
+            issues.append(
+                {
+                    "severity": "warning",
+                    "code": "DRIFT",
+                    "field": key,
+                    "message": f"Unknown field '{key}' in {owner} entry{(' (' + entry_label + ')') if entry_label else ''} — not in field registry",
+                    "suggestion": f"Either remove '{key}' or add it to field_registry.yaml under '{owner}'",
+                }
+            )
 
     return issues
 
@@ -143,9 +149,17 @@ def validate_frontmatter_from_file(
 
     # Parse frontmatter
     import re
+
     fm_match = re.match(r"^---\s*\n(.*?)\n---", text, re.DOTALL)
     if not fm_match:
-        return [{"severity": "warning", "code": "NO_FRONTMATTER", "field": "", "message": f"No frontmatter found in {file_path.name}"}]
+        return [
+            {
+                "severity": "warning",
+                "code": "NO_FRONTMATTER",
+                "field": "",
+                "message": f"No frontmatter found in {file_path.name}",
+            }
+        ]
 
     frontmatter = {}
     for line in fm_match.group(1).splitlines():

@@ -104,17 +104,46 @@ def build_base_views(domain: str) -> list[dict]:
         },
         {
             "name": "待深度阅读",
-            "order": ["year", "first_author", "title", "has_pdf", "do_ocr", "analyze", "ocr_status", "deep_reading_status", "pdf_path"],
+            "order": [
+                "year",
+                "first_author",
+                "title",
+                "has_pdf",
+                "do_ocr",
+                "analyze",
+                "ocr_status",
+                "deep_reading_status",
+                "pdf_path",
+            ],
             "filter": "analyze = true AND ocr_status = 'done' AND deep_reading_status = 'pending'",
         },
         {
             "name": "深度阅读完成",
-            "order": ["year", "first_author", "title", "has_pdf", "do_ocr", "analyze", "ocr_status", "deep_reading_status", "pdf_path"],
+            "order": [
+                "year",
+                "first_author",
+                "title",
+                "has_pdf",
+                "do_ocr",
+                "analyze",
+                "ocr_status",
+                "deep_reading_status",
+                "pdf_path",
+            ],
             "filter": "deep_reading_status = 'done'",
         },
         {
             "name": "正式卡片",
-            "order": ["title", "year", "first_author", "journal", "impact_factor", "has_pdf", "deep_reading_status", "pdf_path"],
+            "order": [
+                "title",
+                "year",
+                "first_author",
+                "journal",
+                "impact_factor",
+                "has_pdf",
+                "deep_reading_status",
+                "pdf_path",
+            ],
             "filter": "deep_reading_status = 'done'",
         },
         {
@@ -334,6 +363,7 @@ views:
 def _update_folder_filter(content: str, new_filter: str) -> str:
     """Update the folder filter in a .base file if it changed."""
     import re
+
     old_match = re.search(r'file\.inFolder\("([^"]+)"\)', content)
     if not old_match or old_match.group(1) == new_filter:
         return content

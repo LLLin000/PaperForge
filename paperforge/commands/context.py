@@ -153,12 +153,7 @@ def run(args: argparse.Namespace) -> int:
     elif collection:
         # Collection filter: prefix match on any element in "collections" list
         filtered = [
-            e
-            for e in items
-            if any(
-                isinstance(c, str) and c.startswith(collection)
-                for c in e.get("collections", [])
-            )
+            e for e in items if any(isinstance(c, str) and c.startswith(collection) for c in e.get("collections", []))
         ]
 
     elif all_mode:
