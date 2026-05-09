@@ -40,25 +40,31 @@ class TestPathsJson:
 
 
 class TestStatusJson:
-    """Contract: 'paperforge status --json' returns JSON with correct value semantics."""
+    """Contract: 'paperforge status --json' returns PFResult with correct value semantics."""
 
-    REQUIRED_KEYS = {"total_papers", "version", "vault", "system_dir", "resources_dir"}
+    ENVELOPE_KEYS = {"ok", "command", "version", "data", "error"}
+    REQUIRED_KEYS = {"total_papers", "vault", "system_dir", "resources_dir"}
     OPTIONAL_KEYS = {
+        "version",  # duplicated from envelope (old format preserved in data)
         "formal_notes", "exports", "domains", "bases", "path_errors",
         "env_configured", "ocr",
         "lifecycle_level_counts", "health_aggregate", "maturity_distribution",
     }
 
     def test_status_json_value_semantics(self, cli_invoker):
-        """status --json returns valid JSON with all contract keys and correct value types."""
+        """status --json returns valid PFResult with all contract keys and correct value types."""
         result = cli_invoker(["status", "--json"])
         assert result.returncode == 0, f"Exit {result.returncode}: {result.stderr}"
-        data = assert_valid_json(result.stdout)
+        envelope = assert_valid_json(result.stdout)
+        assert_json_shape(envelope, self.ENVELOPE_KEYS)
+        assert envelope["ok"] is True
+        assert envelope["command"] == "status"
+        assert isinstance(envelope["version"], str) and len(envelope["version"]) > 0
+
+        data = envelope["data"]
         assert_json_shape(data, self.REQUIRED_KEYS, self.OPTIONAL_KEYS)
         total = data.get("total_papers", -1)
         assert isinstance(total, int) and total >= 0, f"total_papers should be non-negative int, got {total}"
-        ver = data.get("version", "")
-        assert isinstance(ver, str) and len(ver) > 0, f"version should be non-empty string, got {ver}"
         assert data.get("system_dir", "") == "System", f"system_dir should be 'System', got {data.get('system_dir')}"
         assert data.get("resources_dir", "") == "Resources", f"resources_dir should be 'Resources', got {data.get('resources_dir')}"
         if "ocr" in data:
@@ -71,12 +77,12 @@ class TestStatusJson:
         result = cli_invoker(["status", "--json"])
         assert result.returncode == 0
         try:
-            data = json.loads(result.stdout)
+            envelope = json.loads(result.stdout)
         except json.JSONDecodeError:
             pytest.skip("status --json did not produce valid JSON")
-        vault = data.get("vault", "")
+        vault = envelope.get("data", {}).get("vault", "")
         normalized = normalize_snapshot(
-            json.dumps(data, indent=2, ensure_ascii=False), vault
+            json.dumps(envelope, indent=2, ensure_ascii=False), vault
         )
         snapshot.assert_match(normalized, "status_json/empty_vault.json")
 
