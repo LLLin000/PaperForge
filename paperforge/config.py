@@ -333,6 +333,9 @@ def paperforge_paths(
         "worker_script": worker_script,
         "skill_dir": skill_path,
         "ld_deep_script": ld_deep_script,
+        # ── v2.2: canonical locations below paperforge/ ──
+        "config": paperforge / "config" / "domain-collections.json",
+        "index": paperforge / "indexes" / "formal-library.json",
     }
 
 
@@ -404,10 +407,7 @@ def migrate_paperforge_json(vault: Path) -> bool:
     # --- Build the cleaned output ---
 
     # 1. Non-path top-level keys to preserve (everything except path keys and vault_config)
-    non_path_keys = {
-        k: v for k, v in data.items()
-        if k not in CONFIG_PATH_KEYS and k != "vault_config"
-    }
+    non_path_keys = {k: v for k, v in data.items() if k not in CONFIG_PATH_KEYS and k != "vault_config"}
 
     # 2. Build vault_config: start with existing vault_config, fill gaps from top-level
     vault_config = dict(data.get("vault_config", {}) or {})

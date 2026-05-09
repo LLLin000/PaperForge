@@ -4,6 +4,10 @@ import argparse
 import logging
 from pathlib import Path
 
+from paperforge import __version__
+from paperforge.core.errors import ErrorCode
+from paperforge.core.result import PFError, PFResult
+
 logger = logging.getLogger(__name__)
 
 
@@ -28,7 +32,7 @@ def _get_run_repair():
 
 
 def run(args: argparse.Namespace) -> int:
-    """Run repair command."""
+    """Run repair command. Supports --json for PFResult output."""
     vault = getattr(args, "vault_path", None)
     paths = getattr(args, "paths", None)
     if vault is None:
@@ -43,6 +47,7 @@ def run(args: argparse.Namespace) -> int:
         paths = pipeline_paths(vault)
 
     run_repair = _get_run_repair()
+    json_output = getattr(args, "json", False)
     result = run_repair(
         vault,
         paths,
@@ -50,11 +55,43 @@ def run(args: argparse.Namespace) -> int:
         fix=getattr(args, "fix", False),
         fix_paths=getattr(args, "fix_paths", False),
     )
-    # Report path_error summary from repair scan
+
+    # ── Build PFResult ──
+    divergent = result.get("divergent", 0)
+    path_errors = result.get("path_errors", {})
+    path_error_total = path_errors.get("total", 0)
+    has_issues = bool(divergent) or path_error_total > 0
+
+    pf_error = None
+    if has_issues:
+        pf_error = PFError(
+            code=ErrorCode.VALIDATION_ERROR,
+            message=f"Repair found {divergent} divergences and {path_error_total} path errors",
+            details=result,
+        )
+
+    pf = PFResult(
+        ok=not has_issues,
+        command="repair",
+        version=__version__,
+        data={
+            "scanned": result.get("scanned", 0),
+            "divergent": divergent,
+            "fixed": result.get("fixed", 0),
+            "errors": result.get("errors", []),
+            "rebuilt": result.get("rebuilt", 0),
+            "path_errors": result.get("path_errors", {}),
+        },
+        error=pf_error,
+    )
+
+    if json_output:
+        print(pf.to_json())
+        return 0 if pf.ok else 1
+
+    # Human-readable output
     path_errors = result.get("path_errors", {})
     if path_errors.get("total", 0) > 0:
         error_summary = ", ".join(f"{count} {err}" for err, count in sorted(path_errors.get("by_type", {}).items()))
         print(f"repair: Found {path_errors['total']} items with path_error: {error_summary}")
-    # Return non-zero if any divergences or path_errors remain
-    has_issues = bool(result.get("divergent")) or path_errors.get("total", 0) > 0
     return 1 if has_issues else 0

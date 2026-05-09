@@ -52,6 +52,7 @@ def protected_paths(vault: Path) -> set[str]:
 def _remote_version() -> str | None:
     """Read version from __init__.py on GitHub (single source of truth)."""
     import re
+
     try:
         api = f"https://api.github.com/repos/{GITHUB_REPO}/contents/paperforge/__init__.py"
         req = urllib.request.Request(
@@ -176,12 +177,21 @@ def _update_via_git(vault: Path) -> bool:
     if not (vault / ".git").is_dir():
         logger.error("不是 git 仓库")
         return False
-    r = subprocess.run(["git", "status", "--short"], cwd=vault, capture_output=True, text=True, encoding="utf-8", errors="replace")
+    r = subprocess.run(
+        ["git", "status", "--short"], cwd=vault, capture_output=True, text=True, encoding="utf-8", errors="replace"
+    )
     if r.stdout.strip():
         logger.warning("有未提交的更改，请先提交或储藏")
         return False
     logger.info("执行 git pull...")
-    r = subprocess.run(["git", "pull", "origin", "master"], cwd=vault, capture_output=True, text=True, encoding="utf-8", errors="replace")
+    r = subprocess.run(
+        ["git", "pull", "origin", "master"],
+        cwd=vault,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
     if r.returncode != 0:
         logger.error("git pull 失败: %s", r.stderr)
         return False
@@ -231,6 +241,7 @@ def run_update(vault: Path) -> int:
     """运行更新检查与安装"""
     try:
         import paperforge
+
         local = paperforge.__version__
     except Exception:
         local = "unknown"

@@ -69,9 +69,7 @@ def _gather_dashboard_data(vault: Path) -> dict:
     if paths["literature"].exists():
         for domain_dir in sorted(paths["literature"].iterdir()):
             if domain_dir.is_dir():
-                count = sum(
-                    1 for p in domain_dir.rglob("*.md") if p.name not in _skip_names
-                )
+                count = sum(1 for p in domain_dir.rglob("*.md") if p.name not in _skip_names)
                 if count > 0:
                     domain_counts[domain_dir.name] = count
 
@@ -85,8 +83,8 @@ def _gather_dashboard_data(vault: Path) -> dict:
 
     _path_error_pat = re.compile(r'^path_error:\s*"(.+?)"\s*$', re.MULTILINE)
     _pdf_path_pat = re.compile(r'^pdf_path:\s*".*?"\s*$', re.MULTILINE)
-    _ocr_status_pat = re.compile(r'^ocr_status:\s*(\S+)', re.MULTILINE)
-    _do_ocr_pat = re.compile(r'^do_ocr:\s*true\s*$', re.MULTILINE)
+    _ocr_status_pat = re.compile(r"^ocr_status:\s*(\S+)", re.MULTILINE)
+    _do_ocr_pat = re.compile(r"^do_ocr:\s*true\s*$", re.MULTILINE)
 
     if paths["literature"].exists():
         for note_path in paths["literature"].rglob("*.md"):
@@ -126,9 +124,7 @@ def _gather_dashboard_data(vault: Path) -> dict:
     can_sync = len(export_files) > 0
 
     paddle_token = (
-        os.environ.get("PADDLEOCR_API_TOKEN")
-        or os.environ.get("PADDLEOCR_API_KEY")
-        or os.environ.get("OCR_TOKEN")
+        os.environ.get("PADDLEOCR_API_TOKEN") or os.environ.get("PADDLEOCR_API_KEY") or os.environ.get("OCR_TOKEN")
     )
     can_ocr = bool(paddle_token)
 

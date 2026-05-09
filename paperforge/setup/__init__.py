@@ -9,6 +9,7 @@ from typing import Any
 @dataclass
 class SetupStepResult:
     """Result of a single setup step."""
+
     step: str
     ok: bool = True
     message: str = ""

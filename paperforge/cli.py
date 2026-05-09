@@ -152,7 +152,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     # status
     status_p = sub.add_parser("status", help="Run the literature pipeline status check")
-    status_p.add_argument("--json", action="store_true", dest="json_output", help="Output JSON")
+    status_p.add_argument("--json", action="store_true", help="Output JSON")
 
     # sync (new unified command)
     p_sync = sub.add_parser("sync", help="Sync Zotero selection and refresh literature index")
@@ -194,12 +194,14 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_parser("index-refresh", help="Refresh formal literature notes from library records")
 
     # deep-reading
-    sub.add_parser("deep-reading", help="Check deep-reading queue status")
+    p_dr = sub.add_parser("deep-reading", help="Check deep-reading queue status")
+    p_dr.add_argument("--json", action="store_true", help="Output as PFResult JSON")
 
     # repair
     p_repair = sub.add_parser("repair", help="Repair divergent literature notes")
     p_repair.add_argument("--fix", action="store_true", help="Actually apply repairs instead of dry-run")
     p_repair.add_argument("--fix-paths", action="store_true", help="Re-resolve PDF paths for items with path_error")
+    p_repair.add_argument("--json", action="store_true", help="Output result as JSON (PFResult envelope)")
 
     # ocr (unified)
     p_ocr = sub.add_parser("ocr", help="OCR operations")
@@ -262,7 +264,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     # doctor
     doctor_p = sub.add_parser("doctor", help="Validate PaperForge setup and configuration")
-    doctor_p.add_argument("--json", action="store_true", dest="json_output", help="Output JSON")
+    doctor_p.add_argument("--json", action="store_true", help="Output JSON")
 
     # update
     sub.add_parser("update", help="Update PaperForge to the latest version")
@@ -478,7 +480,7 @@ def main(argv: list[str] | None = None) -> int:
         kw = {}
         if getattr(args, "verbose", False):
             kw["verbose"] = True
-        if getattr(args, "json_output", False):
+        if getattr(args, "json", False):
             kw["json_output"] = True
         return run_doctor(vault, **kw)
 
@@ -511,11 +513,10 @@ def main(argv: list[str] | None = None) -> int:
                 vault=vault,
                 agent_key=args.agent,
                 paddleocr_key=getattr(args, "paddleocr_key", None),
-                paddleocr_url=getattr(args, "paddleocr_url",
-                    "https://paddleocr.aistudio-app.com/api/v2/ocr/jobs"),
-            system_dir=getattr(args, "system_dir", None) or "System",
-            resources_dir=getattr(args, "resources_dir", None) or "Resources",
-            base_dir=getattr(args, "base_dir", None) or "Bases",
+                paddleocr_url=getattr(args, "paddleocr_url", "https://paddleocr.aistudio-app.com/api/v2/ocr/jobs"),
+                system_dir=getattr(args, "system_dir", None) or "System",
+                resources_dir=getattr(args, "resources_dir", None) or "Resources",
+                base_dir=getattr(args, "base_dir", None) or "Bases",
                 zotero_data=getattr(args, "zotero_data", None),
                 skip_checks=getattr(args, "skip_checks", False),
             )

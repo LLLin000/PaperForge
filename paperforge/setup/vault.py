@@ -55,9 +55,7 @@ class VaultInitializer:
 
     def create_zotero_junction(self, zotero_path: str | None = None) -> SetupStepResult:
         """Create Zotero junction/symlink to vault."""
-        system_dir = self.vault / self.config.get(
-            "system_dir", self.DEFAULT_DIRS["system_dir"]
-        )
+        system_dir = self.vault / self.config.get("system_dir", self.DEFAULT_DIRS["system_dir"])
         zotero_link = system_dir / "Zotero"
 
         if zotero_link.exists() or zotero_link.is_symlink():
