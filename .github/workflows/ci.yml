@@ -147,7 +147,7 @@ jobs:
       - name: Install package with test deps
         run: pip install -e ".[test]"
       - name: Run CLI contract tests
-        run: python -m pytest tests/cli/ -m cli -v --tb=short --timeout=60 -x
+        run: python -m pytest tests/cli/ -v --tb=short --timeout=60 -x
 
   # ---------------------------------------------------------------------------
   # L3 — Plugin tests (Node 20, single config)

@@ -37,3 +37,4 @@ Thumbs.db
 .worktrees/
 
 .vite/
+paperforge/plugin/node_modules/
