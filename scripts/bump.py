@@ -25,14 +25,12 @@ FILES_TO_UPDATE = {
     "__init__": ROOT / "paperforge" / "__init__.py",
     "plugin_manifest": ROOT / "paperforge" / "plugin" / "manifest.json",
     "root_manifest": ROOT / "manifest.json",
-    "versions": ROOT / "paperforge" / "plugin" / "versions.json",
 }
 
 PLUGIN_FILES = [
     ROOT / "paperforge" / "plugin" / "main.js",
     ROOT / "paperforge" / "plugin" / "styles.css",
     ROOT / "paperforge" / "plugin" / "manifest.json",
-    ROOT / "paperforge" / "plugin" / "versions.json",
 ]
 
 
@@ -63,10 +61,6 @@ def update_file(path: Path, old_ver: str, new_ver: str, dry: bool) -> bool:
         print(f"  WOULD update {path.name}: {old_ver} → {new_ver}")
         return True
     new_content = content.replace(old_ver, new_ver)
-    if path.name == "versions.json" and f'"{new_ver}"' not in new_content:
-        data = json.loads(new_content)
-        data[new_ver] = "1.0.0"
-        new_content = json.dumps(data, indent=2, ensure_ascii=False) + "\n"
     path.write_text(new_content, encoding="utf-8")
     print(f"  {path.name}: {old_ver} → {new_ver}")
     return True
