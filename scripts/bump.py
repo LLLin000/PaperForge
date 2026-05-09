@@ -31,6 +31,9 @@ PLUGIN_FILES = [
     ROOT / "paperforge" / "plugin" / "main.js",
     ROOT / "paperforge" / "plugin" / "styles.css",
     ROOT / "paperforge" / "plugin" / "manifest.json",
+    ROOT / "paperforge" / "plugin" / "src" / "runtime.js",
+    ROOT / "paperforge" / "plugin" / "src" / "errors.js",
+    ROOT / "paperforge" / "plugin" / "src" / "commands.js",
 ]
 
 
