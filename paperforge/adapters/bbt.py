@@ -42,7 +42,8 @@ def _normalize_attachment_path(path: str, zotero_dir: Path | None = None) -> tup
 
     # Format 1: Absolute Windows path pointing to Zotero storage
     candidate = Path(raw)
-    if candidate.is_absolute():
+    _looks_absolute = candidate.is_absolute() or (len(raw) >= 2 and raw[0].isalpha() and raw[1] == ':')
+    if _looks_absolute:
         norm_path = raw.replace("\\", "/")
         # Detect Zotero storage pattern: .../storage/8CHARKEY/...
         if "/storage/" in norm_path:
