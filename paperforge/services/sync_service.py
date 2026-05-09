@@ -208,7 +208,9 @@ class SyncService:
                 logger.error("Failed to build candidate: %s", e)
         return candidates
 
-    def run(self, verbose: bool = False, json_output: bool = False) -> PFResult:
+    def run(
+        self, verbose: bool = False, json_output: bool = False, selection_only: bool = False, index_only: bool = False
+    ) -> PFResult:
         """Full sync orchestration. Returns PFResult contract.
 
         v2.2: Service now orchestrates the full sync lifecycle:
@@ -217,10 +219,12 @@ class SyncService:
         3. Build canonical index (asset_index)
         4. Clean orphaned records + flat notes
         5. Return PFResult
-        """
-        # ── Phase 1: Select ──
-        from paperforge.worker.sync import run_selection_sync
 
+        Args:
+            selection_only: Skip index build + cleanup phases.
+            index_only: Skip selection sync phase.
+        """
+        # ── Pre-check: BBT exports ──
         _export_code = "ok"
         try:
             rows = self.load_exports()
@@ -229,54 +233,65 @@ class SyncService:
         except Exception:
             _export_code = "BBT_EXPORT_INVALID"
 
-        try:
-            selection_result = run_selection_sync(self.vault, verbose=verbose, json_output=json_output)
-        except Exception as exc:
-            return PFResult(
-                ok=False,
-                command="sync",
-                version=__version__,
-                error=PFError(
-                    code=ErrorCode.SYNC_FAILED,
-                    message=str(exc),
-                    details={"phase": "selection", "exception_type": type(exc).__name__},
-                ),
-            )
+        selection_result: dict = {"new": 0, "updated": 0, "skipped": 0, "failed": 0, "errors": []}
+
+        # ── Phase 1: Select ──
+        if not index_only:
+            from paperforge.worker.sync import run_selection_sync
+
+            try:
+                selection_result = run_selection_sync(self.vault, verbose=verbose, json_output=json_output)
+            except Exception as exc:
+                return PFResult(
+                    ok=False,
+                    command="sync",
+                    version=__version__,
+                    error=PFError(
+                        code=ErrorCode.SYNC_FAILED,
+                        message=str(exc),
+                        details={"phase": "selection", "exception_type": type(exc).__name__},
+                    ),
+                )
 
         # ── Phase 2: Index ──
-        from paperforge.worker._domain import load_domain_config
-        from paperforge.worker.base_views import ensure_base_views
+        index_count = 0
+        orphaned = 0
+        flat_cleaned = 0
 
-        paths = self.resolve_paths()
-        config = load_domain_config(paths)
-        ensure_base_views(self.vault, paths, config)
-        domain_lookup = {entry["export_file"]: entry["domain"] for entry in config["domains"]}
+        if not selection_only:
+            from paperforge.worker._domain import load_domain_config
+            from paperforge.worker.base_views import ensure_base_views
 
-        from paperforge.config import load_vault_config
+            paths = self.resolve_paths()
+            config = load_domain_config(paths)
+            ensure_base_views(self.vault, paths, config)
+            domain_lookup = {entry["export_file"]: entry["domain"] for entry in config["domains"]}
 
-        cfg = load_vault_config(self.vault)
-        exports: dict[str, dict[str, dict]] = {}
-        for export_path in sorted(paths["exports"].glob("*.json")):
-            domain = domain_lookup.get(export_path.name, export_path.stem)
-            export_rows = load_export_rows(export_path)
-            exports[domain] = {row["key"]: row for row in export_rows}
+            from paperforge.config import load_vault_config
 
-        from paperforge.worker.sync import migrate_to_workspace
+            cfg = load_vault_config(self.vault)
+            exports: dict[str, dict[str, dict]] = {}
+            for export_path in sorted(paths["exports"].glob("*.json")):
+                domain = domain_lookup.get(export_path.name, export_path.stem)
+                export_rows = load_export_rows(export_path)
+                exports[domain] = {row["key"]: row for row in export_rows}
 
-        migrate_to_workspace(self.vault, paths)
+            from paperforge.worker.sync import migrate_to_workspace
 
-        import paperforge.worker.asset_index as asset_index
+            migrate_to_workspace(self.vault, paths)
 
-        index_count = asset_index.build_index(self.vault, verbose)
+            import paperforge.worker.asset_index as asset_index
 
-        # ── Phase 3: Clean ──
-        orphaned = self.clean_orphaned_records(exports, paths, json_output=json_output)
-        flat_cleaned = self.clean_flat_notes(paths, json_output=json_output)
+            index_count = asset_index.build_index(self.vault, verbose)
 
-        if not json_output:
-            print(f"index-refresh: {index_count} entries in index")
-            total = sum(1 for _ in paths["literature"].rglob("*.md")) if paths["literature"].exists() else 0
-            print(f"index-refresh: {total} formal note(s) in literature")
+            # ── Phase 3: Clean ──
+            orphaned = self.clean_orphaned_records(exports, paths, json_output=json_output)
+            flat_cleaned = self.clean_flat_notes(paths, json_output=json_output)
+
+            if not json_output:
+                print(f"index-refresh: {index_count} entries in index")
+                total = sum(1 for _ in paths["literature"].rglob("*.md")) if paths["literature"].exists() else 0
+                print(f"index-refresh: {total} formal note(s) in literature")
 
         all_errors = list(selection_result.get("errors", []))
         is_ok = selection_result.get("failed", 0) == 0 and len(all_errors) == 0
