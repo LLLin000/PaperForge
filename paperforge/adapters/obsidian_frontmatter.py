@@ -40,11 +40,33 @@ def _read_frontmatter_bool_from_text(text: str, key: str, default: bool = False)
     return match.group(1).lower() == "true"
 
 
+def read_frontmatter_bool(note_path: Path, key: str, default: bool = False) -> bool:
+    """Read a boolean field from a formal note's YAML frontmatter (Path-based)."""
+    if not note_path or not note_path.exists():
+        return default
+    try:
+        text = note_path.read_text(encoding="utf-8")
+        return _read_frontmatter_bool_from_text(text, key, default)
+    except Exception:
+        return default
+
+
 def _read_frontmatter_optional_bool_from_text(text: str, key: str) -> Optional[bool]:
     match = re.search(rf"^{re.escape(key)}:\s*(?:[\"'])?(true|false)(?:[\"'])?\s*$", text, re.MULTILINE | re.IGNORECASE)
     if not match:
         return None
     return match.group(1).lower() == "true"
+
+
+def read_frontmatter_optional_bool(note_path: Path, key: str) -> Optional[bool]:
+    """Read an optional boolean field from a formal note's YAML frontmatter (Path-based)."""
+    if not note_path or not note_path.exists():
+        return None
+    try:
+        text = note_path.read_text(encoding="utf-8")
+        return _read_frontmatter_optional_bool_from_text(text, key)
+    except Exception:
+        return None
 
 
 def _legacy_control_flags(paths: dict[str, Path], zotero_key: str) -> dict[str, Optional[bool]]:
@@ -220,30 +242,28 @@ def has_deep_reading_content(text: str) -> bool:
     if not body:
         return False
 
-    clarity_ok = bool(re.search(
-        r'-\s*\*\*Clarity\*\*（清晰度）：(.+)', body
-    )) and not re.search(
-        r'-\s*\*\*Clarity\*\*（清晰度）：\s*$', body, re.MULTILINE
+    clarity_ok = bool(re.search(r"-\s*\*\*Clarity\*\*（清晰度）：(.+)", body)) and not re.search(
+        r"-\s*\*\*Clarity\*\*（清晰度）：\s*$", body, re.MULTILINE
     )
 
-    figure_sec = _extract_section(body, r'\*\*Figure 导读\*\*')
+    figure_sec = _extract_section(body, r"\*\*Figure 导读\*\*")
     figure_ok = False
     if figure_sec:
         for line in figure_sec.splitlines():
             s = line.strip()
-            if s.startswith('- ') and '：' in s:
-                _, after = s.split('：', 1)
-                if after.strip() and after.strip() != '（待补充）':
+            if s.startswith("- ") and "：" in s:
+                _, after = s.split("：", 1)
+                if after.strip() and after.strip() != "（待补充）":
                     figure_ok = True
                     break
 
-    issue_sec = _extract_section(body, r'\*\*遗留问题\*\*')
+    issue_sec = _extract_section(body, r"\*\*遗留问题\*\*")
     if not issue_sec:
-        issue_sec = _extract_section(body, r'####\s*遗留问题')
+        issue_sec = _extract_section(body, r"####\s*遗留问题")
     issue_ok = False
     if issue_sec:
         dirty = [l.strip() for l in issue_sec.splitlines() if l.strip()]
-        substantive = [l for l in dirty if l not in ('-', '（待补充）', '', '**遗留问题**')]
+        substantive = [l for l in dirty if l not in ("-", "（待补充）", "", "**遗留问题**")]
         issue_ok = bool(substantive)
 
     return clarity_ok and figure_ok and issue_ok
@@ -251,8 +271,9 @@ def has_deep_reading_content(text: str) -> bool:
 
 def _extract_section(body: str, section_header: str) -> str | None:
     m = re.search(
-        section_header + r'\n*(.*?)(?=\n(?:#{1,3})\s|\Z)',
-        body, re.DOTALL,
+        section_header + r"\n*(.*?)(?=\n(?:#{1,3})\s|\Z)",
+        body,
+        re.DOTALL,
     )
     if m:
         return m.group(1).strip()
@@ -298,7 +319,7 @@ def read_frontmatter_dict(text: str) -> dict:
     import re
     import yaml
 
-    fm_match = re.match(r'^---\s*\n(.*?)\n---', text, re.DOTALL)
+    fm_match = re.match(r"^---\s*\n(.*?)\n---", text, re.DOTALL)
     if not fm_match:
         return {}
 
@@ -312,7 +333,7 @@ def read_frontmatter_dict(text: str) -> dict:
     result = {}
     for line in fm_match.group(1).splitlines():
         line = line.strip()
-        if ':' in line:
-            key, _, val = line.partition(':')
+        if ":" in line:
+            key, _, val = line.partition(":")
             result[key.strip()] = val.strip()
     return result
