@@ -3,6 +3,8 @@ from __future__ import annotations
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest
+
 from paperforge.adapters.zotero_paths import (
     absolutize_vault_path,
     obsidian_wikilink_for_path,
@@ -79,6 +81,10 @@ class TestAbsolutizeVaultPath:
         assert result == expected
 
     def test_relative_with_backslashes(self, tmp_path: Path) -> None:
+        """Backslash path separators are normalised. Only applies on Windows."""
+        import sys
+        if sys.platform != "win32":
+            pytest.skip("Backslash-as-separator is Windows-only behaviour")
         vault = tmp_path / "vault"
         vault.mkdir()
         result = absolutize_vault_path(vault, "subdir\\file.pdf")
