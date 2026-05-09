@@ -121,7 +121,6 @@ The wizard asks what to name several directories. These are for organizing files
 | `system_dir` | `99_System` | Root for PaperForge internal data. Contains `exports/` (Zotero JSON exports), `ocr/` (OCR results), `config/`. You rarely need to open this manually. |
 | `resources_dir` | `03_Resources` | Resources root. Your formal literature notes live under this directory, inside `literature_dir`. |
 | `literature_dir` | `Literature` | Where formal literature notes (`.md` files with frontmatter) are saved by `paperforge sync`. This is where you read and edit your notes. |
-| `control_dir` | `LiteratureControl` | Internal control data directory. Stores index cards and library records. No manual access needed. |
 | `base_dir` | `05_Bases` | Obsidian Base view definitions. Dashboard filters ("Pending OCR", "Ready to Read", etc.) are stored here. |
 
 ### 4.4 PaddleOCR API Token
