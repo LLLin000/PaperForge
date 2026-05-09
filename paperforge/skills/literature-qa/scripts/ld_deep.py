@@ -10,6 +10,7 @@ import re
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import TypeVar
 
 from paperforge.worker._utils import get_analyze_queue
 
@@ -239,7 +240,9 @@ def build_figure_plan(
     return planned
 
 
-def select_entries_by_numbers[T](entries: Iterable[T], numbers: set[str], attr: str = "number") -> list[T]:
+T = TypeVar("T")
+
+def select_entries_by_numbers(entries: Iterable[T], numbers: set[str], attr: str = "number") -> list[T]:
     """Select entries by their number field while preserving order."""
     if not numbers:
         return []

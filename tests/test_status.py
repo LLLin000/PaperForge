@@ -147,7 +147,8 @@ class TestStatusJsonIndexSource:
         code = run_status(vault, json_output=True)
         captured = capsys.readouterr().out
         assert code == 0
-        data = json.loads(captured)
+        envelope = json.loads(captured)
+        data = envelope["data"]
         assert data["lifecycle_level_counts"] == {}
         assert data["health_aggregate"] == {}
         assert data["maturity_distribution"] == {}

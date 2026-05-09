@@ -902,10 +902,15 @@ def headless_setup(
     # Obsidian plugin
     plugin_src = repo_root / "paperforge/plugin"
     plugin_dst = vault / ".obsidian" / "plugins" / "paperforge"
+    PLUGIN_FILES = {"main.js", "styles.css", "manifest.json", "versions.json", "i18n.js"}
     if plugin_src.exists() and plugin_src.is_dir():
         created = 0
         skipped = 0
-        for f in plugin_src.glob("*"):
+        for name in PLUGIN_FILES:
+            f = plugin_src / name
+            if not f.exists():
+                skipped += 1
+                continue
             if _copy_file_incremental(f, plugin_dst / f.name):
                 created += 1
             else:
