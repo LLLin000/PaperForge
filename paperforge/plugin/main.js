@@ -165,8 +165,6 @@ const ACTIONS = [
         cmd: "repair",
         args: ["--fix", "--fix-paths"],
         okMsg: "Repair complete",
-        disabled: true,
-        disabledMsg: "Repair Issues will be available in a future update.",
     },
     {
         id: "paperforge-copy-context",

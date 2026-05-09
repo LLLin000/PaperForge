@@ -423,7 +423,6 @@ def _substitute_vars(
     system_dir: str,
     resources_dir: str,
     literature_dir: str,
-    control_dir: str,
     base_dir: str,
     skill_dir: str,
     prefix: str = "/",
@@ -433,7 +432,6 @@ def _substitute_vars(
         ("<system_dir>", system_dir),
         ("<resources_dir>", resources_dir),
         ("<literature_dir>", literature_dir),
-        ("<control_dir>", control_dir),
         ("<base_dir>", base_dir),
         ("<skill_dir>", skill_dir),
         ("<prefix>", prefix),
@@ -519,7 +517,6 @@ def _deploy_skill_directory(
     system_dir: str,
     resources_dir: str,
     literature_dir: str,
-    control_dir: str,
     base_dir: str,
     prefix: str = "/",
 ) -> list[str]:
@@ -543,7 +540,7 @@ def _deploy_skill_directory(
         skill_dst.mkdir(parents=True, exist_ok=True)
         text = skill_file.read_text(encoding="utf-8")
         text = _substitute_vars(
-            text, system_dir, resources_dir, literature_dir, control_dir, base_dir, skill_dir, prefix
+            text, system_dir, resources_dir, literature_dir, base_dir, skill_dir, prefix
         )
         _write_text_incremental(skill_dst / "SKILL.md", text)
         imported.append(skill_name)
@@ -573,7 +570,6 @@ def _deploy_flat_command(
     system_dir: str,
     resources_dir: str,
     literature_dir: str,
-    control_dir: str,
     base_dir: str,
     skill_dir: str,
 ) -> list[str]:
@@ -589,7 +585,7 @@ def _deploy_flat_command(
     command_dst.mkdir(parents=True, exist_ok=True)
     for f in command_src.glob("pf-*.md"):
         text = f.read_text(encoding="utf-8")
-        text = _substitute_vars(text, system_dir, resources_dir, literature_dir, control_dir, base_dir, skill_dir)
+        text = _substitute_vars(text, system_dir, resources_dir, literature_dir, base_dir, skill_dir)
         _write_text_incremental(command_dst / f.name, text)
         imported.append(f.stem)
 
@@ -603,7 +599,6 @@ def _deploy_rules_file(
     system_dir: str,
     resources_dir: str,
     literature_dir: str,
-    control_dir: str,
     base_dir: str,
     skill_dir_path: str,
 ) -> list[str]:
@@ -638,7 +633,6 @@ def headless_setup(
     system_dir: str = "System",
     resources_dir: str = "Resources",
     literature_dir: str = "Literature",
-    control_dir: str = "LiteratureControl",
     base_dir: str = "Bases",
     zotero_data: str | None = None,
     skip_checks: bool = False,
@@ -657,7 +651,6 @@ def headless_setup(
         system_dir: System directory name.
         resources_dir: Resources directory name.
         literature_dir: Literature subdirectory name.
-        control_dir: Control subdirectory name.
         base_dir: Base directory name.
         zotero_data: Zotero data directory (auto-detect if None).
         skip_checks: Skip environment validation.
@@ -770,7 +763,6 @@ def headless_setup(
         "system_dir": system_dir,
         "resources_dir": resources_dir,
         "literature_dir": literature_dir,
-        "control_dir": control_dir,
         "base_dir": base_dir,
     }
 
@@ -867,7 +859,6 @@ def headless_setup(
             system_dir,
             resources_dir,
             literature_dir,
-            control_dir,
             base_dir,
             skill_dir,
         )
@@ -879,7 +870,6 @@ def headless_setup(
             system_dir,
             resources_dir,
             literature_dir,
-            control_dir,
             base_dir,
             prefix,
         )
@@ -891,7 +881,6 @@ def headless_setup(
             system_dir,
             resources_dir,
             literature_dir,
-            control_dir,
             base_dir,
             skill_dir,
         )
@@ -904,7 +893,6 @@ def headless_setup(
             system_dir,
             resources_dir,
             literature_dir,
-            control_dir,
             base_dir,
             prefix,
         )
@@ -965,7 +953,6 @@ def headless_setup(
             ("<system_dir>", system_dir),
             ("<resources_dir>", resources_dir),
             ("<literature_dir>", literature_dir),
-            ("<control_dir>", control_dir),
             ("<base_dir>", base_dir),
             ("<skill_dir>", skill_dir),
         ]:

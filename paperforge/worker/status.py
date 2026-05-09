@@ -354,6 +354,21 @@ def _query_resolved_module(interp: str, extra_args: list[str], module_name: str)
         return None
 
 
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+    except AttributeError:
+        import codecs
+
+        sys.stdout = codecs.getwriter("utf-8")(sys.stdout.buffer)
+    try:
+        import ctypes
+
+        ctypes.windll.kernel32.SetConsoleOutputCP(65001)
+    except Exception:
+        pass
+
+
 def run_doctor(vault: Path, verbose: bool = False, json_output: bool = False) -> int:
     """Validate PaperForge setup and report by category.
 
@@ -491,16 +506,7 @@ def run_doctor(vault: Path, verbose: bool = False, json_output: bool = False) ->
             "Vault 结构", "fail", f"resources_dir 不存在: {cfg['resources_dir']}", f"运行: mkdir {cfg['resources_dir']}"
         )
 
-    control_dir = resources_dir / cfg.get("control_dir", "LiteratureControl")
-    if control_dir.exists():
-        add_check("Vault 结构", "pass", f"control_dir 存在: {cfg.get('control_dir', 'LiteratureControl')}")
-    else:
-        add_check(
-            "Vault 结构",
-            "fail",
-            f"control_dir 不存在: {cfg.get('control_dir', 'LiteratureControl')}",
-            f"运行: mkdir {cfg['resources_dir']}/{cfg.get('control_dir', 'LiteratureControl')}",
-        )
+    # control_dir 已完全淘汰 (v2.1+ workspace 架构不再需要 LiteratureControl)
 
     zotero_link = system_dir / "Zotero"
     if zotero_link.exists():
@@ -798,17 +804,6 @@ def run_doctor(vault: Path, verbose: bool = False, json_output: bool = False) ->
         except Exception:
             pass
 
-        # LRD-05: Stale record detection in control directory
-        _lr_dir = paths.get("control")
-        if _lr_dir and _lr_dir.exists():
-            _stale_count = sum(1 for _ in _lr_dir.rglob("*.md"))
-            if _stale_count > 0:
-                add_check(
-                    "Index Health",
-                    "warn",
-                    f"{_stale_count} stale record(s) found in control directory",
-                    "Review and remove stale files from the control directory",
-                )
     else:
         add_check("Index Health", "info", "No canonical index -- run `paperforge sync` to generate")
 
@@ -1114,7 +1109,6 @@ def run_status(vault: Path, verbose: bool = False, json_output: bool = False) ->
     print(f"- system_dir: {cfg['system_dir']}")
     print(f"- resources_dir: {cfg['resources_dir']}")
     print(f"- literature_dir: {cfg['literature_dir']}")
-    print(f"- control_dir: {cfg['control_dir']}")
     print(f"- exports: {len(export_files)} JSON file(s)")
     print(f"- domains: {len(config.get('domains', []))}")
     print(f"- formal_notes: {record_count}")

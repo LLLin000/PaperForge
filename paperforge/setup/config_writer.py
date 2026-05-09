@@ -13,7 +13,7 @@ from paperforge.setup import SetupStepResult
 class ConfigWriter:
     """Write paperforge.json atomically using tempfile + os.replace."""
 
-    REQUIRED_KEYS = ["system_dir", "resources_dir", "literature_dir", "control_dir"]
+    REQUIRED_KEYS = ["system_dir", "resources_dir", "literature_dir"]
 
     def __init__(self, vault: Path):
         self.vault = vault

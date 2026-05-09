@@ -52,6 +52,7 @@ def cli_invoker(vault_builder):
             cmd,
             capture_output=True,
             text=True,
+            encoding="utf-8",
             timeout=60,
             input=input_text,
             env=base_env,
