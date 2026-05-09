@@ -43,6 +43,42 @@ PaperForge connects the full path from source literature to structured insight.
 
 See [INSTALLATION.md](INSTALLATION.md) for the complete installation guide.
 
+## Architecture
+
+```
+paperforge/
+├── core/          Contract layer — PFResult/PFError, ErrorCode enum, state machine
+│   ├── result.py      PFResult/PFError serialization (JSON round-trip)
+│   ├── errors.py      ErrorCode enum (centralized error codes)
+│   └── state.py       OcrStatus/PdfStatus/Lifecycle + ALLOWED_TRANSITIONS
+├── adapters/      Adapter layer — independently testable modules
+│   ├── bbt.py         Better BibTeX JSON parsing
+│   ├── zotero_paths.py   Zotero attachment path normalization
+│   └── obsidian_frontmatter.py  Frontmatter read/write (YAML parser)
+├── services/      Service layer — orchestrates adapters
+│   └── sync_service.py  SyncService class
+├── setup/         Setup layer — 6 focused classes
+│   ├── plan.py         SetupPlan (orchestration)
+│   ├── checker.py      SetupChecker (precondition validation)
+│   ├── config_writer.py    ConfigWriter (atomic write)
+│   ├── vault.py        VaultInitializer (directories/junction)
+│   ├── runtime.py      RuntimeInstaller (pip install)
+│   └── agent.py        AgentInstaller (skill deployment)
+├── schema/        Field registry
+│   └── field_registry.yaml  44 field definitions
+├── doctor/        Diagnostic validation
+│   └── field_validator.py   Field completeness + drift detection
+├── worker/        Worker layer — mechanical tasks
+│   ├── sync.py         Dispatch shell (thinned by 57 lines)
+│   ├── status.py       Status + doctor checks
+│   ├── ocr.py          OCR pipeline
+│   └── ...
+├── commands/      CLI dispatch layer
+└── plugin/        Obsidian plugin
+```
+
+All CLI commands output unified PFResult JSON: `{ok, command, version, data, error}` via `--json` flag. `paperforge doctor` validates field schema consistency and detects data drift.
+
 ## Usage
 
 | Action | How |
