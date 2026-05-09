@@ -231,6 +231,7 @@ Dashboard → Run OCR
 
 - Zotero Better BibTeX 是否配置了自动导出？JSON 是否在 `exports/` 目录？
 - 运行 `paperforge doctor` 看具体哪一步失败
+- 运行 `paperforge status` 查看系统状态总览
 
 ### /pf-deep 命令没反应
 
