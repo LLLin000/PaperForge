@@ -1,5 +1,0 @@
-{
-  "vault": "<VAULT>",
-  "worker_script": "D:\\L\\Med\\Research\\99_System\\LiteraturePipeline\\github-release\\paperforge\\worker\\__init__.py",
-  "ld_deep_script": "D:\\L\\Med\\Research\\99_System\\LiteraturePipeline\\github-release\\paperforge\\skills\\literature-qa\\scripts\\ld_deep.py"
-}

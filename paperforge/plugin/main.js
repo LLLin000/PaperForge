@@ -336,7 +336,6 @@ class PaperForgeStatusView extends ItemView {
     }
 
     _fetchStats(quiet) {
-        // Phase 25: Read canonical index JSON directly (D-05)
         if (!quiet && !this._cachedStats) {
             this._metricsEl.empty();
             this._metricsEl.createEl('div', { cls: 'paperforge-status-loading', text: 'Loading...' });
@@ -346,6 +345,47 @@ class PaperForgeStatusView extends ItemView {
 
         const vp = this.app.vault.adapter.basePath;
         const plugin = this.app.plugins.plugins['paperforge'];
+        const { path: pythonExe, extraArgs = [] } = resolvePythonExecutable(vp, plugin?.settings);
+
+        // Plan 57-04: Try paperforge dashboard --json first, fallback to file
+        execFile(pythonExe, [...extraArgs, '-m', 'paperforge', 'dashboard', '--json'], { cwd: vp, timeout: 30000 }, (err, stdout) => {
+            if (!err) {
+                try {
+                    const body = JSON.parse(stdout);
+                    if (body.ok && body.data) {
+                        const d = this._normalizeDashboardData(body.data);
+                        this._cachedStats = d;
+                        this._metricsEl.empty();
+                        this._renderStats(d);
+                        this._renderOcr(d);
+                        this._dashboardPermissions = body.data.permissions || {};
+                        return;
+                    }
+                } catch (_) {
+                    // Fall through to file fallback
+                }
+            }
+            // Fallback: read formal-library.json directly
+            this._fallbackFetchStats(quiet, vp, plugin);
+        });
+    }
+
+    _normalizeDashboardData(data) {
+        const stats = data.stats || {};
+        const ocrHealth = stats.ocr_health || {};
+        const pdfHealth = stats.pdf_health || {};
+        const ocrTotal = (ocrHealth.done || 0) + (ocrHealth.pending || 0) + (ocrHealth.failed || 0);
+        return {
+            total_papers: stats.papers || 0,
+            formal_notes: stats.papers || 0,
+            exports: 0,
+            bases: 0,
+            ocr: { total: ocrTotal, pending: ocrHealth.pending || 0, processing: 0, done: ocrHealth.done || 0, failed: ocrHealth.failed || 0 },
+            path_errors: (pdfHealth.broken || 0) + (pdfHealth.missing || 0),
+        };
+    }
+
+    _fallbackFetchStats(quiet, vp, plugin) {
         const systemDir = plugin?.settings?.system_dir || 'System';
         const indexPath = path.join(vp, systemDir, 'PaperForge', 'indexes', 'formal-library.json');
 
@@ -402,11 +442,10 @@ class PaperForgeStatusView extends ItemView {
             this._renderStats(this._cachedStats);
             this._renderOcr(this._cachedStats);
         } catch (err) {
-            // D-07: Fallback — spawn CLI if file is missing or corrupt
+            // D-07: Second fallback — spawn CLI if file is missing or corrupt
             if (!quiet && !this._cachedStats) {
                 this._metricsEl.createEl('div', { cls: 'paperforge-status-loading', text: 'No index \u2014 trying CLI...' });
             }
-            const plugin = this.app.plugins.plugins['paperforge'];
             const { path: pythonExe, extraArgs = [] } = resolvePythonExecutable(vp, plugin?.settings);
             execFile(pythonExe, [...extraArgs, '-m', 'paperforge', 'status', '--json'], { cwd: vp, timeout: 30000 }, (err2, stdout) => {
                 if (err2) {
@@ -1837,7 +1876,7 @@ class PaperForgeSettingTab extends PluginSettingTab {
     _syncRuntime(btn) {
         const vp = this.app.vault.adapter.basePath;
         const { path: pythonExe, extraArgs = [] } = resolvePythonExecutable(vp, this.plugin.settings);
-        const ver = this.plugin.manifest.version || '1.4.17rc2';
+        const ver = this.plugin.manifest.version;
         const installCmd = buildRuntimeInstallCommand(pythonExe, ver, extraArgs);
 
         btn.setDisabled(true);
@@ -2417,7 +2456,7 @@ class PaperForgeSetupModal extends Modal {
 
             if (!hasPaperforge) {
                 this._log(t('install_bootstrapping'));
-                const ver = this.plugin.manifest.version || '1.4.17rc2';
+                const ver = this.plugin.manifest.version;
                 await runPython([
                     '-m', 'pip', 'install', '--upgrade',
                     `git+https://github.com/LLLin000/PaperForge.git@${ver}`,
@@ -2668,7 +2707,7 @@ module.exports = class PaperForgePlugin extends Plugin {
     _autoUpdate() {
         const vp = this.app.vault.adapter.basePath;
         const { path: pythonExe, extraArgs = [] } = resolvePythonExecutable(vp, this.settings);
-        const ver = this.manifest.version || '1.4.17rc2';
+        const ver = this.manifest.version;
         const url = `git+https://github.com/LLLin000/PaperForge.git@${ver}`;
 
         // Check if installed package version matches plugin version

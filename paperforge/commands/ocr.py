@@ -4,16 +4,86 @@ import argparse
 import logging
 from pathlib import Path
 
+from paperforge import __version__
+from paperforge.core.errors import ErrorCode
+from paperforge.core.result import PFError, PFResult
+
 logger = logging.getLogger(__name__)
 
 
-def _diagnose(vault: Path, live: bool = False) -> int:
+def _collect_ocr_queue_data(vault: Path) -> dict:
+    """Scan OCR meta files and build queue status data dict.
+
+    Returns dict shaped as:
+      {queue: {pending: [...], processing: [...], done: [...], failed: [...]},
+       total: N, done: N, failed: N, pending: N, processing: N}
+    """
+    from paperforge.worker._utils import pipeline_paths, read_json
+
+    paths = pipeline_paths(vault)
+    queue_lists = {"pending": [], "processing": [], "done": [], "failed": []}
+    ocr_root = paths.get("ocr")
+    if ocr_root and ocr_root.exists():
+        for meta_path in sorted(ocr_root.glob("*/meta.json")):
+            try:
+                meta = read_json(meta_path)
+            except Exception:
+                continue
+            key = str(meta.get("zotero_key", "") or "").strip()
+            status = str(meta.get("ocr_status", "") or "").strip().lower()
+            if not key:
+                continue
+            if status == "done":
+                queue_lists["done"].append(key)
+            elif status in ("queued", "running", "processing"):
+                queue_lists["processing"].append(key)
+            elif status == "pending":
+                queue_lists["pending"].append(key)
+            else:
+                queue_lists["failed"].append(key)
+    return {
+        "queue": queue_lists,
+        "total": sum(len(v) for v in queue_lists.values()),
+        "done": len(queue_lists["done"]),
+        "failed": len(queue_lists["failed"]),
+        "pending": len(queue_lists["pending"]),
+        "processing": len(queue_lists["processing"]),
+    }
+
+
+def _diagnose(vault: Path, live: bool = False, json_output: bool = False) -> int:
     """Run OCR diagnostics and print results."""
     from paperforge.ocr_diagnostics import ocr_doctor
 
     result = ocr_doctor(config=None, live=live)
     level = result.get("level", 0)
     passed = result.get("passed", False)
+
+    if json_output:
+        queue_data = _collect_ocr_queue_data(vault)
+        pf_error = None
+        if not passed:
+            pf_error = PFError(
+                code=ErrorCode.OCR_TOKEN_MISSING if level == 1 else ErrorCode.INTERNAL_ERROR,
+                message=result.get("error", "OCR diagnosis failed"),
+                details={"level": level, "fix": result.get("fix", "")},
+            )
+        pf_result = PFResult(
+            ok=passed,
+            command="ocr-diagnose",
+            version=__version__,
+            data={
+                "diagnosis": {
+                    "level": level,
+                    "passed": passed,
+                    "message": result.get("message", result.get("error", "")),
+                },
+                **queue_data,
+            },
+            error=pf_error,
+        )
+        print(pf_result.to_json())
+        return 0 if passed else 1
 
     print(f"OCR Doctor — Level {level} diagnostic")
     print("-" * 40)
@@ -64,11 +134,12 @@ def run(args: argparse.Namespace) -> int:
     diagnose_only = getattr(args, "diagnose", False)
     key = getattr(args, "key", None)
     live = getattr(args, "live", False)
+    json_output = getattr(args, "json", False)
 
     # Backward compat: if subcommand was "doctor", diagnose
     ocr_action = getattr(args, "ocr_action", None)
     if ocr_action == "doctor" or diagnose_only:
-        return _diagnose(vault, live=live)
+        return _diagnose(vault, live=live, json_output=json_output)
 
     if key:
         logger.info("Processing specific key: %s", key)

@@ -70,13 +70,14 @@ paperforge = [
 
 [tool.pytest.ini_options]
 addopts = "--ignore=tests/sandbox/00_TestVault/ --strict-markers"
-testpaths = ["tests/unit", "tests/cli", "tests/e2e", "tests/journey", "tests/chaos"]
+testpaths = ["tests/unit", "tests/cli", "tests/e2e", "tests/journey", "tests/chaos", "tests/audit"]
 markers = [
     "unit: Unit tests (Level 1) — fast, isolated",
     "cli: CLI contract tests (Level 2) — subprocess boundary",
     "e2e: End-to-end tests (Level 4) — temp vault",
     "journey: User journey tests (Level 5) — full workflows",
     "chaos: Destructive tests (Level 6) — abnormal scenarios",
+    "audit: Consistency audit tests — validate L1 mocks against L4 real pipeline output",
     "slow: Tests that take >30s (skip during development)",
     "snapshot: Tests that use snapshot comparison",
 ]
