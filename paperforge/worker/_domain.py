@@ -14,39 +14,13 @@ import logging
 from pathlib import Path
 
 from paperforge.worker._utils import read_json, write_json
+from paperforge.adapters.collections import build_collection_lookup
 
 logger = logging.getLogger(__name__)
 
 
 # ── Collection tree utilities ────────────────────────────────────────────────
-
-
-def build_collection_lookup(collections: dict) -> dict:
-    """Build parent-resolved path cache from a Zotero collection tree.
-
-    Returns a dict with:
-      path_by_key: {collection_key: "Parent/Sub/Name", ...}
-      paths_by_item_id: {item_id: [collection_path, ...], ...}
-    """
-    path_cache = {}
-    item_paths = {}
-
-    def path_for(key: str) -> str:
-        if key in path_cache:
-            return path_cache[key]
-        node = collections.get(key, {})
-        parent = node.get("parent") or ""
-        name = node.get("name", "")
-        parent_path = path_for(parent) if parent else ""
-        full_path = f"{parent_path}/{name}" if parent_path else name
-        path_cache[key] = full_path
-        return full_path
-
-    for key, node in collections.items():
-        full_path = path_for(key)
-        for item_id in node.get("items", []):
-            item_paths.setdefault(item_id, []).append(full_path)
-    return {"path_by_key": path_cache, "paths_by_item_id": item_paths}
+# build_collection_lookup re-exported from paperforge.adapters.collections
 
 
 def export_collection_paths(export_path: Path) -> list[str]:
@@ -122,4 +96,8 @@ def load_domain_collections(paths: dict[str, Path]) -> dict[str, list[str]]:
     Used by candidate collection resolution in sync.py.
     """
     config = load_domain_config(paths)
-    return {entry["domain"]: entry.get("allowed_collections", []) for entry in config.get("domains", []) if entry.get("domain")}
+    return {
+        entry["domain"]: entry.get("allowed_collections", [])
+        for entry in config.get("domains", [])
+        if entry.get("domain")
+    }

@@ -12,6 +12,7 @@ class PFError:
     code: ErrorCode
     message: str
     details: dict = field(default_factory=dict)
+    suggestions: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -21,6 +22,8 @@ class PFResult:
     version: str
     data: Any = None
     error: PFError | None = None
+    warnings: list[str] = field(default_factory=list)
+    next_actions: list[dict] = field(default_factory=list)
 
     def __bool__(self) -> bool:
         return self.ok
@@ -41,8 +44,14 @@ class PFResult:
                 "message": self.error.message,
                 "details": self.error.details,
             }
+            if self.error.suggestions:
+                raw["error"]["suggestions"] = self.error.suggestions
         else:
             raw["error"] = None
+        if self.warnings:
+            raw["warnings"] = self.warnings
+        if self.next_actions:
+            raw["next_actions"] = self.next_actions
         return raw
 
     def to_json(self) -> str:
@@ -57,6 +66,7 @@ class PFResult:
                 code=ErrorCode(err_data["code"]),
                 message=err_data["message"],
                 details=err_data.get("details", {}),
+                suggestions=err_data.get("suggestions", []),
             )
         return cls(
             ok=data["ok"],
@@ -64,4 +74,6 @@ class PFResult:
             version=data["version"],
             data=data.get("data"),
             error=error,
+            warnings=data.get("warnings", []),
+            next_actions=data.get("next_actions", []),
         )
