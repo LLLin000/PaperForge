@@ -35,6 +35,11 @@ from pathlib import Path
 import filelock
 
 from paperforge import __version__ as _paperforge_version
+from paperforge.adapters.obsidian_frontmatter import (
+    _legacy_control_flags,
+    read_frontmatter_bool,
+    read_frontmatter_optional_bool,
+)
 from paperforge.config import paperforge_paths
 
 logger = logging.getLogger(__name__)
@@ -207,49 +212,8 @@ def migrate_legacy_index(vault: Path) -> bool:
 
 
 # ---------------------------------------------------------------------------
-# Single-entry builder  (shared by full rebuild and incremental refresh)
-# ---------------------------------------------------------------------------
-
-
-def _read_frontmatter_bool(note_path: Path, key: str, default: bool = False) -> bool:
-    """Read a boolean field from a formal note's YAML frontmatter."""
-    if not note_path or not note_path.exists():
-        return default
-    try:
-        text = note_path.read_text(encoding="utf-8")
-        m = re.search(rf"^{key}:\s*(?:[\"'])?(true|false)(?:[\"'])?\s*$", text, re.MULTILINE | re.IGNORECASE)
-        if m:
-            return m.group(1).lower() == "true"
-    except Exception:
-        pass
-    return default
-
-
-def _read_frontmatter_optional_bool(note_path: Path, key: str) -> bool | None:
-    if not note_path or not note_path.exists():
-        return None
-    try:
-        text = note_path.read_text(encoding="utf-8")
-        m = re.search(rf"^{re.escape(key)}:\s*(?:[\"'])?(true|false)(?:[\"'])?\s*$", text, re.MULTILINE | re.IGNORECASE)
-        if m:
-            return m.group(1).lower() == "true"
-    except Exception:
-        pass
-    return None
-
-
-def _read_legacy_control_bool(records_root: Path, zotero_key: str, key: str) -> bool | None:
-    if not records_root or not records_root.exists() or not zotero_key:
-        return None
-    for record_path in records_root.rglob(f"{zotero_key}.md"):
-        try:
-            text = record_path.read_text(encoding="utf-8")
-        except Exception:
-            continue
-        match = re.search(rf"^{re.escape(key)}:\s*(?:[\"'])?(true|false)(?:[\"'])?\s*$", text, re.MULTILINE | re.IGNORECASE)
-        if match:
-            return match.group(1).lower() == "true"
-    return None
+# ── Single-entry builder (shared by full rebuild and incremental refresh) ──
+# read_frontmatter_bool / read_frontmatter_optional_bool imported from adapters
 
 
 def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: Path) -> dict:
@@ -287,9 +251,7 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
 
     key = item["key"]
     collection_meta = collection_fields(item.get("collections", []))
-    pdf_attachments = [
-        a for a in item.get("attachments", []) if a.get("contentType") == "application/pdf"
-    ]
+    pdf_attachments = [a for a in item.get("attachments", []) if a.get("contentType") == "application/pdf"]
     meta_path = paths["ocr"] / key / "meta.json"
     meta = read_json(meta_path) if meta_path.exists() else {}
     if meta:
@@ -326,15 +288,15 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
     first_author = authors[0] if authors else ""
     extra = item.get("extra", "")
     impact_factor = lookup_impact_factor(item.get("journal", ""), extra, vault)
-    legacy_records_root = paths.get("library_records")
-    legacy_do_ocr = _read_legacy_control_bool(legacy_records_root, key, "do_ocr")
-    legacy_analyze = _read_legacy_control_bool(legacy_records_root, key, "analyze")
-    note_do_ocr = _read_frontmatter_optional_bool(main_note_path, "do_ocr")
+    legacy_flags = _legacy_control_flags(paths, key)
+    legacy_do_ocr = legacy_flags.get("do_ocr")
+    legacy_analyze = legacy_flags.get("analyze")
+    note_do_ocr = read_frontmatter_optional_bool(main_note_path, "do_ocr")
     if note_do_ocr is None:
-        note_do_ocr = _read_frontmatter_optional_bool(note_path, "do_ocr")
-    note_analyze = _read_frontmatter_optional_bool(main_note_path, "analyze")
+        note_do_ocr = read_frontmatter_optional_bool(note_path, "do_ocr")
+    note_analyze = read_frontmatter_optional_bool(main_note_path, "analyze")
     if note_analyze is None:
-        note_analyze = _read_frontmatter_optional_bool(note_path, "analyze")
+        note_analyze = read_frontmatter_optional_bool(note_path, "analyze")
 
     do_ocr_value = note_do_ocr if note_do_ocr is not None else legacy_do_ocr
     if do_ocr_value is None:
@@ -364,9 +326,7 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
         "do_ocr": do_ocr_value,
         "analyze": analyze_value,
         "pdf_path": (
-            obsidian_wikilink_for_pdf(pdf_attachments[0]["path"], vault, zotero_dir)
-            if pdf_attachments
-            else ""
+            obsidian_wikilink_for_pdf(pdf_attachments[0]["path"], vault, zotero_dir) if pdf_attachments else ""
         ),
         "ocr_status": meta.get("ocr_status", "pending"),
         "ocr_job_id": meta.get("ocr_job_id", ""),
@@ -379,7 +339,9 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
             if note_path.exists() and has_deep_reading_content(note_path.read_text(encoding="utf-8"))
             else "pending"
         ),
-        "note_path": str((main_note_path if main_note_path.exists() else note_path).relative_to(vault)).replace("\\", "/"),
+        "note_path": str((main_note_path if main_note_path.exists() else note_path).relative_to(vault)).replace(
+            "\\", "/"
+        ),
         "deep_reading_md_path": (
             str(main_note_path.relative_to(vault)).replace("\\", "/")
             if main_note_path.exists() and has_deep_reading_content(main_note_path.read_text(encoding="utf-8"))
@@ -621,9 +583,7 @@ def summarize_index(vault: Path) -> dict | None:
         "ai_context_ready": 0,
     }
     health_keys = ["pdf_health", "ocr_health", "note_health", "asset_health"]
-    health_agg: dict[str, dict[str, int]] = {
-        k: {"healthy": 0, "unhealthy": 0} for k in health_keys
-    }
+    health_agg: dict[str, dict[str, int]] = {k: {"healthy": 0, "unhealthy": 0} for k in health_keys}
     maturity_dist: dict[str, int] = {str(i): 0 for i in range(1, 7)}
 
     for entry in items:

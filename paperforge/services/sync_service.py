@@ -98,13 +98,12 @@ class SyncService:
                     continue
                 try:
                     content = record_file.read_text(encoding="utf-8")
-                    key_match = re.search(r"^zotero_key:\s*(.+)$", content, re.MULTILINE)
-                    if not key_match:
+                    fm = read_frontmatter_dict(content)
+                    key = str(fm.get("zotero_key", "")).strip()
+                    if not key:
                         continue
-                    key = key_match.group(1).strip()
-                    title_match = re.search(r"^title:\s*[\"']?(.+)[\"']?\s*$", content, re.MULTILINE)
-                    title = title_match.group(1) if title_match else ""
-                    has_pdf = "has_pdf: true" in content
+                    title = str(fm.get("title", ""))
+                    has_pdf = fm.get("has_pdf", False) is True
                     normalized = re.sub(r"[^a-z0-9]", "", title.lower())[:20]
                     records_info[key] = {
                         "file": record_file,
@@ -182,8 +181,8 @@ class SyncService:
             for flat_note in list(domain_dir.glob("*.md")):
                 try:
                     text = flat_note.read_text(encoding="utf-8")
-                    m = re.search(r"^zotero_key:\s*\"?(\S+?)\"?\s*$", text, re.MULTILINE)
-                    key = m.group(1) if m else ""
+                    fm = read_frontmatter_dict(text)
+                    key = str(fm.get("zotero_key", "")).strip()
                 except Exception:
                     continue
                 if key and key in ws_keys:
@@ -245,11 +244,10 @@ class SyncService:
             )
 
         # ── Phase 2: Index ──
-        from paperforge.worker._utils import pipeline_paths
         from paperforge.worker._domain import load_domain_config
         from paperforge.worker.base_views import ensure_base_views
 
-        paths = pipeline_paths(self.vault)
+        paths = self.resolve_paths()
         config = load_domain_config(paths)
         ensure_base_views(self.vault, paths, config)
         domain_lookup = {entry["export_file"]: entry["domain"] for entry in config["domains"]}
