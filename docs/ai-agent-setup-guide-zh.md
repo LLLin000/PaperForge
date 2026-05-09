@@ -91,7 +91,6 @@ python -c "from pathlib import Path; d = Path.home() / 'Zotero'; print(str(d) if
 | 系统目录 | `99_System` | 存放 PaperForge 自身文件（插件、OCR 结果、导出 JSON） |
 | 资源目录 | `03_Resources` | 存放文献笔记和状态跟踪文件 |
 | 文献目录 | `Literature` | 存放正式文献卡片（你的笔记） |
-| 控制目录 | `LiteratureControl` | 存放文献状态跟踪（每篇文献的 OCR/精读状态） |
 | Base 目录 | `05_Bases` | 存放 Obsidian Base 视图文件（表格化浏览文献队列） |
 
 Vault 最终结构：
@@ -100,8 +99,7 @@ Vault 最终结构：
 ├── <系统目录>/
 │   └── PaperForge/       ← OCR 结果、导出 JSON、worker 脚本
 ├── <资源目录>/
-│   ├── <文献目录>/         ← 正式文献笔记
-│   └── <控制目录>/         ← 文献状态跟踪
+│   └── <文献目录>/         ← 正式文献笔记
 └── <Base目录>/            ← Obsidian Base 视图
 ```
 
@@ -109,8 +107,7 @@ Vault 最终结构：
 > 1. 系统目录，默认 `99_System`，你用这个还是改？
 > 2. 资源目录，默认 `03_Resources`？
 > 3. 文献目录，默认 `Literature`？
-> 4. 控制目录，默认 `LiteratureControl`？
-> 5. Base 目录，默认 `05_Bases`？
+> 4. Base 目录，默认 `05_Bases`？
 
 用户改了的记下来，没改的用默认值。
 
@@ -191,7 +188,6 @@ paperforge setup --headless \
   --system-dir "<system_dir>" \
   --resources-dir "<resources_dir>" \
   --literature-dir "<literature_dir>" \
-  --control-dir "<control_dir>" \
   --base-dir "<base_dir>" \
   --paddleocr-key "<api_key>" \
   --skip-checks
@@ -204,7 +200,7 @@ paperforge setup --headless \
 
 **示例（Windows，全部默认值）：**
 ```bash
-paperforge setup --headless --vault "D:\Documents\MyVault" --agent opencode --zotero-data "C:\Users\name\Zotero" --system-dir "99_System" --resources-dir "03_Resources" --literature-dir "Literature" --control-dir "LiteratureControl" --base-dir "05_Bases" --paddleocr-key "sk-xxx" --skip-checks
+paperforge setup --headless --vault "D:\Documents\MyVault" --agent opencode --zotero-data "C:\Users\name\Zotero" --system-dir "99_System" --resources-dir "03_Resources" --literature-dir "Literature" --base-dir "05_Bases" --paddleocr-key "sk-xxx" --skip-checks
 ```
 
 **期望输出：**

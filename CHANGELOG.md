@@ -8,6 +8,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [1.4.17] — 2026-05-10
+
+### Removed
+
+- **control_dir 完全淘汰**: doctor 不再检查 `LiteratureControl` 目录是否存在；setup 不再创建该目录或将其写入 `paperforge.json`；`--control-dir` CLI 参数移除；所有安装向导文档同步更新
+
+### Changed
+
+- **doctor UTF-8 编码修复**: Windows 控制台输出中文不再乱码（`sys.stdout.reconfigure` + `SetConsoleOutputCP`）
+- **repair 按钮启用**: Plugin dashboard 的 Repair Issues 按钮解除 disabled 状态
+
+### Fixed
+
+- **repair 消息规范化**: `commands/repair.py` 中 divergent 计数使用 `len()` 替代直接打印 list
+
 ## [1.4.17rc1] — 2026-05-07
 
 ### Added

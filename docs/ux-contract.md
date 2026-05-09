@@ -11,7 +11,7 @@
 | Step ID | Trigger | Action | Measurable Outcome | Error Contract |
 |---------|---------|--------|-------------------|----------------|
 | W1-S1 | Run `paperforge setup --headless --vault /tmp/pf-test` | Vault selection / directory creation | `{vault}/paperforge.json` exists with valid JSON containing `system_dir`, `resources_dir`, `literature_dir` | Exit code != 0; stderr: "Failed to create vault directory" |
-| W1-S2 | Setup writes config file | Config file generated | `{vault}/paperforge.json` keys: `version` (string), `system_dir` (string), `resources_dir` (string), `literature_dir` (string), `base_dir` (string), `control_dir` (string) | Exit code != 0; stderr: "Failed to write paperforge.json" |
+| W1-S2 | Setup writes config file | Config file generated | `{vault}/paperforge.json` keys: `version` (string), `system_dir` (string), `resources_dir` (string), `literature_dir` (string), `base_dir` (string) | Exit code != 0; stderr: "Failed to write paperforge.json" |
 | W1-S3 | Setup writes .env with API token | Environment file created | `{vault}\System\PaperForge\.env` exists and contains line `PADDLEOCR_API_TOKEN=<non-empty>` | Exit code != 0; stderr: "Failed to create .env" |
 | W1-S4 | Setup creates directory structure | Directory tree generated | Directories exist: `System/PaperForge/exports/`, `System/PaperForge/ocr/`, `System/PaperForge/indexes/`, `Resources/Literature/`, `Bases/`, `.opencode/skills/` | Exit code != 0; stderr: "Failed to create directory: {path}" |
 | W1-S5 | User runs `paperforge sync` | First sync from BBT JSON | `paperforge sync` exits code 0; stdout contains "Created" or "Found" to indicate new items | Exit code != 0; stderr: "Error reading exports directory" |

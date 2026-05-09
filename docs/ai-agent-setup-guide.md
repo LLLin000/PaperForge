@@ -91,7 +91,6 @@ Explain each directory and ask user to confirm or change, one by one:
 | System dir | `99_System` | PaperForge internal files (plugin, OCR results, export JSON) |
 | Resources dir | `03_Resources` | Literature notes and state tracking |
 | Literature dir | `Literature` | Formal literature note cards |
-| Control dir | `LiteratureControl` | Per-paper state tracking (OCR/deep-reading status) |
 | Base dir | `05_Bases` | Obsidian Base view files (tabular queue browser) |
 
 Final vault structure:
@@ -100,8 +99,7 @@ Final vault structure:
 ├── <system-dir>/
 │   └── PaperForge/       ← OCR, exports, workers
 ├── <resources-dir>/
-│   ├── <literature-dir>/  ← formal notes
-│   └── <control-dir>/     ← state tracking
+│   └── <literature-dir>/  ← formal notes
 └── <base-dir>/            ← Obsidian Base views
 ```
 
@@ -109,8 +107,7 @@ Ask:
 > 1. System directory, default `99_System`. Keep or change?
 > 2. Resources directory, default `03_Resources`?
 > 3. Literature directory, default `Literature`?
-> 4. Control directory, default `LiteratureControl`?
-> 5. Base directory, default `05_Bases`?
+> 4. Base directory, default `05_Bases`?
 
 Use defaults for any the user doesn't change.
 
@@ -191,7 +188,6 @@ paperforge setup --headless \
   --system-dir "<system_dir>" \
   --resources-dir "<resources_dir>" \
   --literature-dir "<literature_dir>" \
-  --control-dir "<control_dir>" \
   --base-dir "<base_dir>" \
   --paddleocr-key "<api_key>" \
   --skip-checks
@@ -204,7 +200,7 @@ paperforge setup --headless \
 
 **Example (Windows, all defaults):**
 ```bash
-paperforge setup --headless --vault "D:\Documents\MyVault" --agent opencode --zotero-data "C:\Users\name\Zotero" --system-dir "99_System" --resources-dir "03_Resources" --literature-dir "Literature" --control-dir "LiteratureControl" --base-dir "05_Bases" --paddleocr-key "sk-xxx" --skip-checks
+paperforge setup --headless --vault "D:\Documents\MyVault" --agent opencode --zotero-data "C:\Users\name\Zotero" --system-dir "99_System" --resources-dir "03_Resources" --literature-dir "Literature" --base-dir "05_Bases" --paddleocr-key "sk-xxx" --skip-checks
 ```
 
 **Expected output:**
