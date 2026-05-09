@@ -36,7 +36,7 @@ describe('resolvePythonExecutable', () => {
     });
 
     it('returns venv path when .venv/Scripts/python.exe exists', () => {
-        const d = mockDeps((p) => p.includes('.venv\\Scripts\\python.exe'));
+        const d = mockDeps((p) => p.includes('.venv') && p.includes('python.exe'));
         const r = resolvePythonExecutable('/vault', {}, d.fs, d.execFileSync);
         expect(r.path).toContain('.venv');
         expect(r.source).toBe('auto-detected');

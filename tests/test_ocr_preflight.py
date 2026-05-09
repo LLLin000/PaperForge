@@ -66,7 +66,7 @@ class TestOcrPreflight:
             ),
             patch(
                 "paperforge.worker.ocr.ensure_ocr_meta",
-                return_value={},
+                return_value={"needs_sanitize": True},
             ),
             patch("paperforge.worker.ocr.write_json") as mock_write,
             patch("paperforge.worker.sync.run_selection_sync"),
@@ -124,7 +124,7 @@ class TestOcrPreflight:
             ),
             patch(
                 "paperforge.worker.ocr.ensure_ocr_meta",
-                return_value={},
+                return_value={"needs_sanitize": True},
             ),
             patch("paperforge.worker.ocr.write_json") as mock_write,
             patch("paperforge.worker.sync.run_selection_sync"),
@@ -184,10 +184,10 @@ class TestOcrPreflight:
             ),
             patch(
                 "paperforge.worker.ocr.ensure_ocr_meta",
-                return_value={},
+                return_value={"needs_sanitize": True},
             ),
             patch("paperforge.worker.ocr.write_json"),
-            patch("builtins.open") as mock_open,
+            patch("paperforge.worker.ocr.fitz.open") as mock_open,
             patch("paperforge.worker.ocr.requests.post") as mock_post,
             patch("paperforge.worker.ocr.requests.get") as mock_get,
         ):
@@ -257,10 +257,10 @@ class TestOcrPreflight:
             ),
             patch(
                 "paperforge.worker.ocr.ensure_ocr_meta",
-                return_value={},
+                return_value={"needs_sanitize": True},
             ),
             patch("paperforge.worker.ocr.write_json"),
-            patch("builtins.open") as mock_open,
+            patch("paperforge.worker.ocr.fitz.open") as mock_open,
             patch("paperforge.worker.ocr.requests.post") as mock_post,
             patch("paperforge.worker.ocr.requests.get") as mock_get,
         ):
