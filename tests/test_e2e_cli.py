@@ -98,7 +98,10 @@ class TestCliDoctor:
     def test_doctor_outputs_verdict(self, test_vault: Path) -> None:
         """Doctor output contains [OK], [WARN], or [FAIL] verdict."""
         result = _run(["doctor"], test_vault)
-        assert any(tag in result.stdout for tag in ["[OK]", "[WARN]", "[FAIL]"])
+        stdout = result.stdout or ""
+        assert any(tag in stdout for tag in ["[OK]", "[WARN]", "[FAIL]"]), (
+            f"No verdict in doctor output. stdout={stdout[:200]} stderr={(result.stderr or '')[:200]}"
+        )
 
 
 class TestCliDeepReading:
