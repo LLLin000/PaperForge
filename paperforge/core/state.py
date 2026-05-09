@@ -7,26 +7,45 @@ from typing import ClassVar
 
 
 class OcrStatus(str, Enum):
-    """OCR processing state for a paper."""
+    """OCR processing state for a paper.
+
+    States are granular so that plugin UI can display targeted next actions:
+      none             – OCR not yet initiated
+      pending          – do_ocr=true, not yet queued
+      queued           – in queue, waiting for worker
+      processing       – currently being OCR'd by PaddleOCR
+      done             – full OCR completed successfully
+      done_incomplete  – OCR completed but some pages/images missing
+      failed           – API returned error or task failed
+      blocked          – can't proceed (missing PDF, invalid key, etc.)
+      nopdf            – no PDF file available to OCR
+    """
+
+    NONE = "none"
     PENDING = "pending"
+    QUEUED = "queued"
     PROCESSING = "processing"
     DONE = "done"
+    DONE_INCOMPLETE = "done_incomplete"
     FAILED = "failed"
+    BLOCKED = "blocked"
+    NO_PDF = "nopdf"
 
     @classmethod
     def from_legacy(cls, value: str) -> OcrStatus:
-        """Map legacy OCR state strings to canonical enum."""
+        """Map legacy OCR state strings to canonical enum (1:1, no compression)."""
         mapping = {
+            "none": cls.NONE,
             "pending": cls.PENDING,
-            "processing": cls.PROCESSING,
-            "queued": cls.PENDING,
+            "queued": cls.QUEUED,
             "running": cls.PROCESSING,
+            "processing": cls.PROCESSING,
             "done": cls.DONE,
+            "done_incomplete": cls.DONE_INCOMPLETE,
             "failed": cls.FAILED,
             "error": cls.FAILED,
-            "blocked": cls.FAILED,
-            "nopdf": cls.FAILED,
-            "done_incomplete": cls.DONE,
+            "blocked": cls.BLOCKED,
+            "nopdf": cls.NO_PDF,
         }
         return mapping.get(value.strip().lower(), cls.PENDING)
 
@@ -36,6 +55,7 @@ class OcrStatus(str, Enum):
 
 class PdfStatus(str, Enum):
     """PDF attachment health state."""
+
     HEALTHY = "healthy"
     BROKEN = "broken"
     MISSING = "missing"
@@ -46,6 +66,7 @@ class PdfStatus(str, Enum):
 
 class Lifecycle(str, Enum):
     """Derived lifecycle stage summarizing the paper's overall progress."""
+
     PDF_READY = "pdf_ready"
     OCR_READY = "ocr_ready"
     ANALYZE_READY = "analyze_ready"
@@ -63,10 +84,15 @@ class ALLOWED_TRANSITIONS:
     """
 
     OCR_STATUS: ClassVar[dict[OcrStatus, list[OcrStatus]]] = {
-        OcrStatus.PENDING: [OcrStatus.PROCESSING, OcrStatus.FAILED],
-        OcrStatus.PROCESSING: [OcrStatus.DONE, OcrStatus.FAILED],
+        OcrStatus.NONE: [OcrStatus.PENDING, OcrStatus.QUEUED, OcrStatus.NO_PDF],
+        OcrStatus.PENDING: [OcrStatus.QUEUED, OcrStatus.PROCESSING, OcrStatus.NO_PDF, OcrStatus.BLOCKED],
+        OcrStatus.QUEUED: [OcrStatus.PROCESSING, OcrStatus.FAILED],
+        OcrStatus.PROCESSING: [OcrStatus.DONE, OcrStatus.DONE_INCOMPLETE, OcrStatus.FAILED],
         OcrStatus.DONE: [OcrStatus.PENDING],  # re-run
+        OcrStatus.DONE_INCOMPLETE: [OcrStatus.PENDING],  # re-run full or retry partial
         OcrStatus.FAILED: [OcrStatus.PENDING],  # retry
+        OcrStatus.BLOCKED: [OcrStatus.PENDING],  # fix preconditions then retry
+        OcrStatus.NO_PDF: [OcrStatus.PENDING],  # add PDF then retry
     }
 
     DEEP_READING_STATUS: ClassVar[dict[str, list[str]]] = {

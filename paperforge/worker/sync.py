@@ -1,5 +1,12 @@
 from __future__ import annotations
 
+# =============================================================================
+# FREEZE LINE (v2.1-contract-hardened)
+#   No new business logic allowed in this file.
+#   New logic → services/ / adapters/ / core/.
+#   This file: deletion, migration, legacy wrappers only.
+# =============================================================================
+
 import html
 import logging
 import os
@@ -58,8 +65,8 @@ from paperforge.adapters.bbt import (
 
 
 import paperforge.worker.asset_index as asset_index
-logger = logging.getLogger(__name__)
 
+logger = logging.getLogger(__name__)
 
 
 def load_export_inventory(paths: dict[str, Path]) -> dict[str, dict]:
@@ -179,7 +186,6 @@ def apply_existing_library_match(row: dict, inventory: dict[str, dict]) -> dict:
     return resolved
 
 
-
 def load_control_actions(paths: dict[str, Path]) -> dict[str, dict]:
     actions = {}
     lit_root = paths.get("literature")
@@ -201,14 +207,16 @@ def load_control_actions(paths: dict[str, Path]) -> dict[str, dict]:
         if do_ocr_match:
             do_ocr = do_ocr_match.group(1).lower() == "true"
         analyze = False
-        analyze_match = re.search(r"^analyze:\s*(?:[\"'])?(true|false)(?:[\"'])?\s*$", text, re.MULTILINE | re.IGNORECASE)
+        analyze_match = re.search(
+            r"^analyze:\s*(?:[\"'])?(true|false)(?:[\"'])?\s*$", text, re.MULTILINE | re.IGNORECASE
+        )
         if analyze_match:
             analyze = analyze_match.group(1).lower() == "true"
         actions[zotero_key] = {"analyze": analyze, "do_ocr": do_ocr}
     return actions
 
 
-def run_selection_sync(vault: Path, verbose: bool = False, json_output: bool = False) -> int | dict:
+def run_selection_sync(vault: Path, verbose: bool = False, json_output: bool = False) -> dict:
     from paperforge.worker.base_views import ensure_base_views
     from paperforge.worker.ocr import validate_ocr_meta
 
@@ -267,10 +275,10 @@ def run_selection_sync(vault: Path, verbose: bool = False, json_output: bool = F
             # Formal notes now carry workflow flags (do_ocr, analyze) directly.
             # Existing library-records are migrated via Phase 40 logic.
             updated += 1
-    if json_output:
-        return {"new": written, "updated": updated, "skipped": 0, "failed": 0, "errors": []}
-    print(f"selection-sync: wrote {written} records, updated {updated} records")
-    return 0
+    result = {"new": written, "updated": updated, "skipped": 0, "failed": 0, "errors": []}
+    if not json_output:
+        print(f"selection-sync: wrote {written} records, updated {updated} records")
+    return result
 
 
 def load_candidates_by_id(paths: dict[str, Path]) -> dict[str, dict]:
@@ -1118,7 +1126,9 @@ def migrate_to_workspace(vault: Path, paths: dict) -> int:
         entry = indexed_entries.get(key, {})
         title = str(entry.get("title", "") or "").strip()
         if not title:
-            title_match = re.search(r'^title:\s*["\']?(.+?)["\']?\s*$', flat_note_path.read_text(encoding="utf-8"), re.MULTILINE)
+            title_match = re.search(
+                r'^title:\s*["\']?(.+?)["\']?\s*$', flat_note_path.read_text(encoding="utf-8"), re.MULTILINE
+            )
             title = title_match.group(1).strip() if title_match else ""
         stem = flat_note_path.stem
         if title:
@@ -1182,6 +1192,7 @@ def migrate_to_workspace(vault: Path, paths: dict) -> int:
                     target_fulltext = workspace_dir / "fulltext.md"
                     if source_fulltext.exists() and not target_fulltext.exists():
                         import shutil
+
                         shutil.copy2(str(source_fulltext), str(target_fulltext))
             except Exception:
                 pass
@@ -1194,7 +1205,9 @@ def migrate_to_workspace(vault: Path, paths: dict) -> int:
     return migrated
 
 
-def run_index_refresh(vault: Path, verbose: bool = False, rebuild_index: bool = False, json_output: bool = False) -> int:
+def run_index_refresh(
+    vault: Path, verbose: bool = False, rebuild_index: bool = False, json_output: bool = False
+) -> dict:
     """Refresh the canonical asset index.
 
     Default behavior: full rebuild. This is the safe default because
@@ -1227,90 +1240,9 @@ def run_index_refresh(vault: Path, verbose: bool = False, rebuild_index: bool = 
     migrate_to_workspace(vault, paths)
     # Delegate to asset_index.build_index() for the core build loop
     count = asset_index.build_index(vault, verbose)
-    control_records_dir = paths["literature"]
-    if control_records_dir.exists():
-        for domain_dir in control_records_dir.iterdir():
-            if not domain_dir.is_dir():
-                continue
-            domain = domain_dir.name
-            domain_export_keys = set(exports.get(domain, {}).keys())
-            records_by_title = {}
-            records_info = {}
-            for record_file in domain_dir.rglob("*.md"):
-                if record_file.name in ("fulltext.md", "deep-reading.md", "discussion.md"):
-                    continue
-                try:
-                    content = record_file.read_text(encoding="utf-8")
-                    key_match = re.search(r"^zotero_key:\s*(.+)$", content, re.MULTILINE)
-                    if not key_match:
-                        continue
-                    key = key_match.group(1).strip()
-                    title_match = re.search("^title:\\s*[\"\\']?(.+)[\"\\']?\\s*$", content, re.MULTILINE)
-                    title = title_match.group(1) if title_match else ""
-                    has_pdf = "has_pdf: true" in content
-                    normalized = re.sub("[^a-z0-9]", "", title.lower())[:20]
-                    records_info[key] = {
-                        "file": record_file,
-                        "title": title,
-                        "has_pdf": has_pdf,
-                        "normalized": normalized,
-                    }
-                    if normalized not in records_by_title:
-                        records_by_title[normalized] = []
-                    records_by_title[normalized].append(key)
-                except Exception:
-                    continue
-            to_delete = []
-            for normalized, keys in records_by_title.items():
-                keys_in_export = [k for k in keys if k in domain_export_keys]
-                keys_not_in_export = [k for k in keys if k not in domain_export_keys]
-                if keys_in_export and keys_not_in_export:
-                    for k in keys_not_in_export:
-                        if not records_info[k]["has_pdf"]:
-                            to_delete.append(k)
-            deleted_count = 0
-            for key in to_delete:
-                try:
-                    records_info[key]["file"].unlink()
-                    deleted_count += 1
-                except Exception:
-                    pass
-            if deleted_count > 0 and not json_output:
-                print(f"index-refresh: cleaned {deleted_count} orphaned records in {domain}")
 
-    # Clean up flat notes: delete only if confirmed by canonical index + workspace
-    index_data = asset_index.read_index(vault)
-    ws_keys = set()
-    if isinstance(index_data, dict):
-        for item in index_data.get("items", []):
-            ws_dir = paths["literature"] / item.get("domain", "") / (item.get("zotero_key", "") + " - " + slugify_filename(item.get("title", "")))
-            if ws_dir.is_dir():
-                ws_keys.add(item.get("zotero_key"))
-
-    lit_dir = paths["literature"]
-    cleaned_flat = 0
-    if lit_dir.exists() and ws_keys:
-        for domain_dir in sorted(lit_dir.iterdir()):
-            if not domain_dir.is_dir():
-                continue
-            for flat_note in list(domain_dir.glob("*.md")):
-                try:
-                    text = flat_note.read_text(encoding="utf-8")
-                    m = re.search(r"^zotero_key:\s*\"?(\S+?)\"?\s*$", text, re.MULTILINE)
-                    key = m.group(1) if m else ""
-                except Exception:
-                    continue
-                if key and key in ws_keys:
-                    try:
-                        flat_note.unlink()
-                        cleaned_flat += 1
-                    except Exception:
-                        pass
-    if cleaned_flat > 0 and not json_output:
-        print(f"index-refresh: cleaned {cleaned_flat} flat note(s) (migrated to workspace)")
-
-    if control_records_dir.exists() and not json_output:
-        total = sum(1 for _ in control_records_dir.rglob("*.md"))
+    if paths["literature"].exists() and not json_output:
+        total = sum(1 for _ in paths["literature"].rglob("*.md"))
         print(f"index-refresh: {total} formal note(s) in literature")
 
-    return 0
+    return {"updated": count, "failed": 0, "errors": []}
