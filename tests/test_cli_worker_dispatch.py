@@ -18,14 +18,16 @@ def stub_run_status(vault: Path, verbose: bool = False, json_output: bool = Fals
     return 0
 
 
-def stub_run_selection_sync(vault: Path, verbose: bool = False, json_output: bool = False) -> int:
+def stub_run_selection_sync(vault: Path, verbose: bool = False, json_output: bool = False) -> dict:
     CAPTURED_CALLS.append(("run_selection_sync", vault))
-    return 0
+    return {"new": 0, "updated": 0, "skipped": 0, "failed": 0, "errors": []}
 
 
-def stub_run_index_refresh(vault: Path, verbose: bool = False, rebuild_index: bool = False, json_output: bool = False) -> int:
+def stub_run_index_refresh(
+    vault: Path, verbose: bool = False, rebuild_index: bool = False, json_output: bool = False
+) -> dict:
     CAPTURED_CALLS.append(("run_index_refresh", vault))
-    return 0
+    return {"updated": 0, "failed": 0, "errors": []}
 
 
 def stub_run_deep_reading(vault: Path, verbose: bool = False) -> int:
@@ -82,33 +84,50 @@ def test_status_dispatch(clean_captured, mock_vault):
 
 
 def test_selection_sync_dispatch(clean_captured, mock_vault):
-    """main(['--vault', vault, 'selection-sync']) calls run_selection_sync."""
+    """main(['--vault', vault, 'selection-sync']) runs SyncService (v2.1 contract)."""
     import importlib
 
-    import paperforge.cli as cli
+    import paperforge.worker.sync as wsync
 
-    importlib.reload(cli)
+    importlib.reload(wsync)
 
-    with patch.object(cli, "run_selection_sync", stub_run_selection_sync):
+    with patch.object(wsync, "run_selection_sync", stub_run_selection_sync):
         argv = ["--vault", str(mock_vault), "selection-sync"]
+        import paperforge.cli as cli
+
+        importlib.reload(cli)
         cli.main(argv)
 
     assert ("run_selection_sync", mock_vault) in CAPTURED_CALLS
 
 
 def test_index_refresh_dispatch(clean_captured, mock_vault):
-    """main(['--vault', vault, 'index-refresh']) calls run_index_refresh."""
+    """main(['--vault', vault, 'index-refresh']) runs index-only SyncService lookup."""
+    # v2.1: index-refresh routes through SyncService, not directly to worker.
+    # Mock the worker import that SyncService uses for the selection phase skip.
     import importlib
 
-    import paperforge.cli as cli
+    import paperforge.services.sync_service as svc_mod
 
-    importlib.reload(cli)
+    importlib.reload(svc_mod)
 
-    with patch.object(cli, "run_index_refresh", stub_run_index_refresh):
+    captured_vault = []
+
+    def mock_run(self, verbose=False, json_output=False, selection_only=False, index_only=False):
+        captured_vault.append(self.vault)
+        from paperforge.core.result import PFResult
+
+        return PFResult(ok=True, command="sync", version="1.0.0", data={})
+
+    with patch.object(svc_mod.SyncService, "run", mock_run):
         argv = ["--vault", str(mock_vault), "index-refresh"]
+        import paperforge.cli as cli
+
+        importlib.reload(cli)
         cli.main(argv)
 
-    assert ("run_index_refresh", mock_vault) in CAPTURED_CALLS
+    assert len(captured_vault) == 1
+    assert captured_vault[0] == mock_vault
 
 
 def test_deep_reading_dispatch(clean_captured, mock_vault):

@@ -59,7 +59,7 @@ def run(args: argparse.Namespace) -> int:
     from paperforge.services.sync_service import SyncService
 
     svc = SyncService(vault)
-    result = svc.run(verbose=verbose, json_output=json_output)
+    result = svc.run(verbose=verbose, json_output=json_output, selection_only=selection_only, index_only=index_only)
 
     if json_output:
         print(result.to_json())
