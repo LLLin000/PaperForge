@@ -58,7 +58,13 @@ Plans:
   3. `paperforge/adapters/obsidian_frontmatter.py` contains frontmatter read/write/update operations using YAML parser (replacing regex-based parsing where possible) — importable and testable in isolation
   4. `paperforge/services/sync_service.py` exists as a `SyncService` class that wraps the decomposed adapter modules; `worker/sync.py` becomes a thin dispatch layer with no business logic beyond orchestration
   5. All extracted modules have passing unit tests covering BBT JSON variants, path formats (storage:/, absolute Windows, CJK filenames, spaces), and frontmatter edge cases — existing sync behavior preserved (no regressions)
-**Plans**: TBD
+**Plans**: 4 plans (3 waves)
+
+Plans:
+- [ ] 058-01-PLAN.md — adapters/zotero_paths.py + unit tests (SYNC-02, SYNC-05) [Wave 1]
+- [ ] 058-02-PLAN.md — adapters/bbt.py + unit tests (SYNC-01, SYNC-05) [Wave 2]
+- [ ] 058-03-PLAN.md — adapters/obsidian_frontmatter.py + unit tests (SYNC-03, SYNC-05) [Wave 2]
+- [ ] 058-04-PLAN.md — services/sync_service.py + thin sync.py + full regression (SYNC-04, SYNC-05) [Wave 3]
 
 ### Phase 59: State Machine & Field Registry
 **Goal**: Formalized state machine with explicit enums and allowed transitions, plus a field registry that `paperforge doctor` can validate against — making state changes predictable and field drift detectable.
@@ -70,7 +76,12 @@ Plans:
   3. `paperforge/schema/field_registry.yaml` defines every field in the system (formal note frontmatter, index entries, paper-meta.json) with public/required/type/owner/description metadata — complete coverage of all field-carrying structures
   4. `paperforge doctor` checks field completeness against the registry — missing required fields produce actionable warnings with migration suggestions; unknown/invalid fields produce warnings to flag drift
   5. Edge case: fields present in data but absent from registry trigger a "drift detected" diagnostic; fields in registry but absent from data trigger "missing required field" with severity levels
-**Plans**: TBD
+**Plans**: 3 plans (2 waves)
+
+Plans:
+- [ ] 059-01-PLAN.md — State machine enums + transitions + lifecycle update (STAT-01, STAT-02) [Wave 1]
+- [ ] 059-02-PLAN.md — Field registry YAML + loader (STAT-03) [Wave 1]
+- [ ] 059-03-PLAN.md — Doctor field completeness checks + drift detection (STAT-04, STAT-05) [Wave 2]
 
 ### Phase 60: Setup Modularization
 **Goal**: Monolithic setup_wizard.py decomposed into six focused classes with explicit dependencies — enabling `paperforge setup --headless --json` to return per-step status that the Obsidian plugin can render as progress.
@@ -82,7 +93,13 @@ Plans:
   3. `ConfigWriter` writes `paperforge.json` atomically using tempfile + os.replace — no partial or corrupted config files possible on crash or interrupt
   4. `RuntimeInstaller` handles `pip install` with explicit version pinning (from plugin manifest), progress output via callback, and classified errors using the ErrorCode enum from Phase 57
   5. `SetupChecker` validates all preconditions (Python executable, pip availability, dependency health) before any installation step begins — failures produce classified, user-readable diagnostics
-**Plans**: TBD
+**Plans**: 4 plans (2 waves)
+
+Plans:
+- [ ] 060-01-PLAN.md — SetupStepResult type + SetupChecker + ConfigWriter (SETP-02, SETP-06) [Wave 1]
+- [ ] 060-02-PLAN.md — VaultInitializer + RuntimeInstaller (SETP-03, SETP-04) [Wave 1]
+- [ ] 060-03-PLAN.md — AgentInstaller (SETP-05) [Wave 1]
+- [ ] 060-04-PLAN.md — SetupPlan orchestrator + CLI integration + backward-compat shim (SETP-01, SETP-07) [Wave 2]
 **UI hint**: yes
 
 ## Progress
@@ -93,6 +110,6 @@ Plans:
 |-------|----------------|--------|-----------|
 | 56. Stop the Bleeding | 0/2 | Ready to execute | — |
 | 57. Contract Layer | 0/TBD | Not started | — |
-| 58. Service Extraction | 0/TBD | Not started | — |
-| 59. State Machine & Field Registry | 0/TBD | Not started | — |
-| 60. Setup Modularization | 0/TBD | Not started | — |
+| 58. Service Extraction | 0/4 | Planned | — |
+| 59. State Machine & Field Registry | 0/3 | Planned | — |
+| 60. Setup Modularization | 0/4 | Planned | — |
