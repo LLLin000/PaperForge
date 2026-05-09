@@ -1,0 +1,215 @@
+frontmatter:
+  zotero_key:
+    type: str
+    required: true
+    public: true
+    description: "Zotero citation key"
+  domain:
+    type: str
+    required: true
+    public: true
+    description: "Classification domain"
+  title:
+    type: str
+    required: true
+    public: true
+    description: "Paper title"
+  year:
+    type: str
+    required: false
+    public: true
+    description: "Publication year"
+  doi:
+    type: str
+    required: false
+    public: true
+    description: "Digital Object Identifier"
+  collection_path:
+    type: str
+    required: false
+    public: true
+    description: "Zotero collection path"
+  has_pdf:
+    type: bool
+    required: true
+    public: true
+    description: "Has PDF attachment"
+  pdf_path:
+    type: str
+    required: false
+    public: true
+    description: "Wikilink to main PDF"
+  supplementary:
+    type: list
+    required: false
+    public: true
+    description: "Wikilinks to supplementary PDFs"
+  fulltext_md_path:
+    type: str
+    required: false
+    public: true
+    description: "Wikilink to OCR fulltext"
+  recommend_analyze:
+    type: bool
+    required: false
+    public: true
+    description: "System recommends analysis"
+  analyze:
+    type: bool
+    required: false
+    public: true
+    description: "User requests deep reading"
+  do_ocr:
+    type: bool
+    required: false
+    public: true
+    description: "User requests OCR"
+  ocr_status:
+    type: str
+    required: false
+    public: true
+    description: "OCR processing status"
+  deep_reading_status:
+    type: str
+    required: false
+    public: true
+    description: "Deep reading status"
+  path_error:
+    type: str
+    required: false
+    public: true
+    description: "Path resolution error"
+
+index_entry:
+  file:
+    type: str
+    required: true
+    public: true
+    description: "Path to formal note"
+  zotero_key:
+    type: str
+    required: true
+    public: true
+    description: "Zotero citation key"
+  domain:
+    type: str
+    required: true
+    public: true
+    description: "Classification domain"
+  title:
+    type: str
+    required: true
+    public: true
+    description: "Paper title"
+  year:
+    type: str
+    required: false
+    public: true
+    description: "Publication year"
+  doi:
+    type: str
+    required: false
+    public: true
+    description: "DOI"
+  collection_path:
+    type: str
+    required: false
+    public: true
+    description: "Zotero collection path"
+  has_pdf:
+    type: bool
+    required: true
+    public: true
+    description: "Has PDF"
+  pdf_path:
+    type: str
+    required: false
+    public: true
+    description: "PDF path"
+  supplementary:
+    type: list
+    required: false
+    public: true
+    description: "Supplementary PDFs"
+  fulltext_md_path:
+    type: str
+    required: false
+    public: true
+    description: "Fulltext path"
+  recommend_analyze:
+    type: bool
+    required: false
+    public: true
+    description: "Recommend analysis"
+  analyze:
+    type: bool
+    required: false
+    public: true
+    description: "Analysis flag"
+  do_ocr:
+    type: bool
+    required: false
+    public: true
+    description: "OCR flag"
+  ocr_status:
+    type: str
+    required: false
+    public: true
+    description: "OCR status"
+  deep_reading_status:
+    type: str
+    required: false
+    public: true
+    description: "Deep reading status"
+  path_error:
+    type: str
+    required: false
+    public: true
+    description: "Path error"
+  lifecycle:
+    type: str
+    required: false
+    public: true
+    description: "Derived lifecycle stage"
+  health:
+    type: str
+    required: false
+    public: true
+    description: "Derived health dimension scores"
+  maturity:
+    type: str
+    required: false
+    public: true
+    description: "Derived maturity score"
+  next_step:
+    type: str
+    required: false
+    public: true
+    description: "Recommended next action"
+
+ocr_meta:
+  ocr_status:
+    type: str
+    required: true
+    public: true
+    description: "OCR processing status"
+  error:
+    type: str
+    required: false
+    public: true
+    description: "Error message if failed"
+  start_time:
+    type: str
+    required: false
+    public: false
+    description: "OCR start timestamp"
+  completion_time:
+    type: str
+    required: false
+    public: false
+    description: "OCR completion timestamp"
+  page_count:
+    type: int
+    required: false
+    public: false
+    description: "Number of pages processed"

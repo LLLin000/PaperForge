@@ -41,32 +41,7 @@ PaperForge connects the full path from source literature to structured insight.
 
 ## Install
 
-### Obsidian Plugin (Recommended)
-
-1. Download the plugin files from the [latest release](https://github.com/LLLin000/PaperForge/releases/latest).
-2. Copy them into `vault/.obsidian/plugins/paperforge/`.
-3. Enable `PaperForge` in Obsidian community plugins.
-4. Open the settings page and click `打开安装向导`.
-5. Follow the 5-step wizard: Overview → Directory Config → Agent & Keys → Install → Done.
-
-> The wizard auto-detects Python, Zotero, and Better BibTeX before installation starts.
-
-### Prerequisites
-
-| Software | Purpose | Get it |
-|----------|---------|--------|
-| Python 3.10+ | Run PaperForge CLI and backend tasks | https://python.org |
-| Zotero | Literature management | https://zotero.org |
-| Better BibTeX | Auto-export metadata as JSON | https://retorque.re/zotero-better-bibtex/ |
-| PaddleOCR Key | OCR text and layout extraction | https://aistudio.baidu.com/paddleocr |
-
-### CLI (Advanced)
-
-```bash
-cd /path/to/your/vault
-pip install git+https://github.com/LLLin000/PaperForge.git
-python -m paperforge setup --headless --agent opencode --paddleocr-key <key>
-```
+See [INSTALLATION.md](INSTALLATION.md) for the complete installation guide.
 
 ## Usage
 
@@ -131,7 +106,7 @@ python -m paperforge setup --headless --agent opencode --paddleocr-key <key>
 | Document | Content |
 |----------|---------|
 | [Setup Guide](docs/setup-guide.md) | Full setup walkthrough |
-| [Quick Install](docs/INSTALLATION.md) | Short install path |
+| [Installation Guide](INSTALLATION.md) | Full install reference |
 | [Post-Install Guide](AGENTS.md) | First-use workflow guide |
 | [Changelog](CHANGELOG.md) | Version history |
 | [Contributing](CONTRIBUTING.md) | Dev setup and conventions |

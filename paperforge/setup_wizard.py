@@ -23,6 +23,10 @@ from pathlib import Path
 
 from paperforge import __version__
 
+# Backward-compat imports (v2.1 modular setup)
+from paperforge.setup.checker import SetupChecker
+from paperforge.setup.config_writer import ConfigWriter
+
 if sys.platform == "win32":
     import winreg
 else:

@@ -25,16 +25,12 @@ def normalize_snapshot(output: str, vault_path: str | None = None) -> str:
     """
     result = output
 
-    # Normalize vault paths (absolute paths containing /tmp/ or \\tmp\\)
+    # Normalize vault paths — use literal replace (not regex) to handle JSON-escaped paths
     if vault_path:
-        escaped = re.escape(str(vault_path))
-        result = re.sub(escaped, "<VAULT>", result)
-
-    # Fallback: any path containing /tmp/pf_vault_ (Unix) or pf_vault_ (Windows)
+        result = result.replace(str(vault_path), "<VAULT>")
+    # Fallback: any path matching common temp vault patterns
+    result = re.sub(r'[A-Za-z]:[\\/][^\s"\']*pf_vault_[a-z0-9_]+', "<VAULT>", result)
     result = re.sub(r'/tmp/pf_vault_[^/\s"\']+', "<VAULT>", result)
-    result = re.sub(r'\\\\temp\\\\pf_vault_[^\\\\\s"\']+', "<VAULT>", result)
-    # Broader: any string ending in pf_vault_XXXXX as a path component
-    result = re.sub(r'[A-Za-z]:[\\/][^\s"\']*pf_vault_[a-z0-9]+', "<VAULT>", result)
 
     # Normalize ISO timestamps: 2026-05-08T12:34:56.789012+00:00
     result = re.sub(

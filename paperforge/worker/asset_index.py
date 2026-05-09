@@ -396,7 +396,7 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
     }
 
     # ---- derived state (Phase 24: lifecycle, health, maturity, next-step) ----
-    entry["lifecycle"] = compute_lifecycle(entry)
+    entry["lifecycle"] = str(compute_lifecycle(entry))
     entry["health"] = compute_health(entry)
     entry["maturity"] = compute_maturity(entry)
     entry["next_step"] = compute_next_step(entry)

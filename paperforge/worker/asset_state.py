@@ -13,6 +13,8 @@ Exports:
 
 from __future__ import annotations
 
+from paperforge.core.state import Lifecycle
+
 
 def compute_lifecycle(entry: dict) -> str:
     """Derive the current lifecycle state from an index entry.
@@ -22,6 +24,10 @@ def compute_lifecycle(entry: dict) -> str:
     - **pdf_ready**: has_pdf=True, ocr NOT validated done
     - **fulltext_ready**: ocr_status == "done" (validated), deep_reading NOT done
     - **deep_read_done**: OCR done AND deep-reading done
+
+    Returns ``Lifecycle`` enum members where an equivalent exists, or plain
+    strings for states not yet represented in the enum (``"indexed"``,
+    ``"fulltext_ready"``).
 
     Uses .get() with safe defaults for all field accesses.
     """
@@ -36,11 +42,11 @@ def compute_lifecycle(entry: dict) -> str:
     # OCR validated done opens the door to fulltext_ready and beyond
     if ocr_status == "done":
         if deep_reading_status == "done":
-            return "deep_read_done"
+            return Lifecycle.DEEP_READ_DONE
         return "fulltext_ready"
 
     # pdf_ready: has PDF attachment but OCR not validated done
-    return "pdf_ready"
+    return Lifecycle.PDF_READY
 
 
 def compute_health(entry: dict) -> dict[str, str]:

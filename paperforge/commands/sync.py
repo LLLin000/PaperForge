@@ -1,10 +1,14 @@
 """Sync command — unifies selection-sync and index-refresh."""
 
 import argparse
+import json as _json
 import logging
 from pathlib import Path
 
+from paperforge import __version__
 from paperforge.config import migrate_paperforge_json
+from paperforge.core.errors import ErrorCode
+from paperforge.core.result import PFError, PFResult
 
 logger = logging.getLogger(__name__)
 
@@ -74,8 +78,18 @@ def run(args: argparse.Namespace) -> int:
     index_only = getattr(args, "index", False)
     rebuild_index = getattr(args, "rebuild_index", False)
     domain = getattr(args, "domain", None)
+    json_output = getattr(args, "json", False)
 
     if dry_run:
+        if json_output:
+            result = PFResult(
+                ok=True,
+                command="sync",
+                version=__version__,
+                data={"dry_run": True, "selection": not index_only, "index": not selection_only},
+            )
+            print(result.to_json())
+            return 0
         print("[DRY-RUN] Would run sync operations")
         if not selection_only and not index_only:
             print("  - selection-sync")
@@ -90,17 +104,39 @@ def run(args: argparse.Namespace) -> int:
         return 0
 
     exit_code = 0
+    sync_counts = {"new": 0, "updated": 0, "skipped": 0, "failed": 0, "errors": []}
 
     if not index_only:
         run_selection_sync = _get_run_selection_sync()
-        code = run_selection_sync(vault, verbose=getattr(args, "verbose", False))
-        if code != 0:
-            exit_code = code
+        result = run_selection_sync(vault, verbose=getattr(args, "verbose", False), json_output=json_output)
+        if json_output:
+            sync_counts = result
+        elif result != 0:
+            exit_code = result
 
     if not selection_only:
         run_index_refresh = _get_run_index_refresh()
-        code = run_index_refresh(vault, verbose=getattr(args, "verbose", False), rebuild_index=rebuild_index)
+        code = run_index_refresh(vault, verbose=getattr(args, "verbose", False), rebuild_index=rebuild_index, json_output=json_output)
         if code != 0 and exit_code == 0:
             exit_code = code
+
+    if json_output:
+        errors = sync_counts.get("errors", [])
+        pf_error = None
+        if errors or exit_code != 0:
+            pf_error = PFError(
+                code=ErrorCode.SYNC_FAILED,
+                message=f"Sync completed with {len(errors)} error(s)",
+                details={"errors": errors, "exit_code": exit_code},
+            )
+        result = PFResult(
+            ok=exit_code == 0 and not errors,
+            command="sync",
+            version=__version__,
+            data=sync_counts,
+            error=pf_error,
+        )
+        print(result.to_json())
+        return 0
 
     return exit_code

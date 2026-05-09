@@ -1,6 +1,8 @@
 # PaperForge Headless Setup — For LLM Agents (English)
 
 > **IMPORTANT**: Read this file directly. Do NOT use WebFetch or summarization — you will lose critical CLI flags and decision logic.
+> 
+> For the full installation reference, see [INSTALLATION.md](../INSTALLATION.md).
 
 ---
 

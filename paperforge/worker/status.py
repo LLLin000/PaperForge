@@ -24,6 +24,8 @@ from paperforge.worker._utils import (
 )
 from paperforge.worker.base_views import ensure_base_views
 
+from paperforge.core.result import PFResult
+
 logger = logging.getLogger(__name__)
 
 
@@ -356,7 +358,7 @@ def _query_resolved_module(interp: str, extra_args: list[str], module_name: str)
         return None
 
 
-def run_doctor(vault: Path, verbose: bool = False) -> int:
+def run_doctor(vault: Path, verbose: bool = False, json_output: bool = False) -> int:
     """Validate PaperForge setup and report by category.
 
     Returns:
@@ -445,12 +447,12 @@ def run_doctor(vault: Path, verbose: bool = False) -> int:
         ver = mod_info_resolved.get("version")
         ver_str = f" ({ver})" if ver else ""
 
-        # PyYAML specific: warn if version < 6.0
+        # PyYAML specific: fail if version < 6.0 (hard dependency in pyproject.toml)
         if mod_name == "yaml" and ver:
             try:
                 ver_parts = str(ver).split(".")
                 if int(ver_parts[0]) < 6:
-                    add_check("Python 环境", "warn",
+                    add_check("Python 环境", "fail",
                         f"{mod_info['label']} {ver} (需要 >=6.0)",
                         f"运行: {interp} -m pip install {mod_info['pip']}")
                     continue
@@ -588,6 +590,34 @@ def run_doctor(vault: Path, verbose: bool = False) -> int:
     check_zotero_location(vault, cfg, add_check)
     check_pdf_paths(vault, paths, add_check)
     check_wikilink_format(vault, paths, add_check)
+
+    # --- Field registry validation (Phase 59) ---
+    try:
+        from paperforge.schema import load_field_registry
+        from paperforge.doctor.field_validator import validate_frontmatter_from_file
+
+        registry = load_field_registry()
+    except Exception:
+        registry = {}
+    if registry:
+        literature_dir = paths.get("literature")
+        if literature_dir and literature_dir.exists():
+            note_files = sorted(literature_dir.rglob("*.md"))
+            total_issues = 0
+            for note_file in note_files:
+                if note_file.name in ("fulltext.md", "deep-reading.md", "discussion.md"):
+                    continue
+                issues = validate_frontmatter_from_file(note_file, registry)
+                for issue in issues:
+                    total_issues += 1
+                    add_check(
+                        "字段注册表",
+                        "fail" if issue["severity"] == "error" else "warn" if issue["severity"] == "warning" else "pass",
+                        issue["message"],
+                        issue.get("suggestion", ""),
+                    )
+            if total_issues == 0:
+                add_check("字段注册表", "pass", "所有 formal note frontmatter 与字段注册表一致")
 
     ld_deep_script = paths.get("ld_deep_script")
     skill_dir = None
@@ -759,6 +789,58 @@ def run_doctor(vault: Path, verbose: bool = False) -> int:
                 )
     else:
         add_check("Index Health", "info", "No canonical index -- run `paperforge sync` to generate")
+
+    if json_output:
+        checklist_data = [
+            {"category": cat, "status": st, "message": msg, "fix": fx}
+            for cat, st, msg, fx in checks
+        ]
+        status_counts: dict[str, int] = {}
+        for _, st, _, _ in checks:
+            status_counts[st] = status_counts.get(st, 0) + 1
+        _has_fail = any(status == "fail" for _, status, _, _ in checks)
+        _has_warn = any(status == "warn" for _, status, _, _ in checks)
+        _verdict = "FAIL" if _has_fail else ("WARN" if _has_warn else "OK")
+        _fail_categories = set()
+        for cat, status, _, fx in checks:
+            if status == "fail" and fx:
+                _fail_categories.add(cat)
+        if "PaperForge 包" in _fail_categories and not bool(_fail_categories - {"PaperForge 包"}):
+            _next_action = "Recommended: run pip install via the resolved interpreter"
+        elif "Python 环境" in _fail_categories or "Python 环境 (插件)" in _fail_categories:
+            _next_action = "Recommended: install/upgrade Python to 3.10+"
+        elif "Vault 结构" in _fail_categories or "Config Migration" in _fail_categories:
+            _next_action = "Recommended: run `paperforge sync`"
+        elif "OCR 配置" in _fail_categories:
+            _next_action = "Recommended: configure PADDLEOCR_API_TOKEN in .env"
+        elif "BBT 导出" in _fail_categories:
+            _next_action = "Recommended: configure Better BibTeX auto-export"
+        elif "Zotero 链接" in _fail_categories or "Path Resolution" in _fail_categories:
+            _next_action = "Recommended: create Zotero junction"
+        elif _has_warn:
+            _next_action = "Recommended: `paperforge doctor` indicates warnings - review above"
+        else:
+            _next_action = "Recommended: `paperforge sync` to ensure index is current"
+        payload = {
+            "checks": checklist_data,
+            "summary": {
+                "total": len(checks),
+                "pass": status_counts.get("pass", 0),
+                "warn": status_counts.get("warn", 0),
+                "fail": status_counts.get("fail", 0),
+                "info": status_counts.get("info", 0),
+            },
+            "verdict": _verdict,
+            "next_action": _next_action,
+        }
+        result = PFResult(
+            ok=not _has_fail,
+            command="doctor",
+            version=__import__("paperforge").__version__,
+            data=payload,
+        )
+        print(result.to_json())
+        return 0 if not _has_fail else 1
 
     print("PaperForge Doctor")
     print("=" * 40)
@@ -971,7 +1053,7 @@ def run_status(vault: Path, verbose: bool = False, json_output: bool = False) ->
         maturity_distribution = summary["maturity_distribution"]
 
     if json_output:
-        data = {
+        payload = {
             "version": __import__("paperforge").__version__,
             "vault": str(vault),
             "system_dir": cfg["system_dir"],
@@ -995,7 +1077,13 @@ def run_status(vault: Path, verbose: bool = False, json_output: bool = False) ->
             "health_aggregate": health_aggregate,
             "maturity_distribution": maturity_distribution,
         }
-        print(_json.dumps(data, indent=2, ensure_ascii=False))
+        result = PFResult(
+            ok=True,
+            command="status",
+            version=__import__("paperforge").__version__,
+            data=payload,
+        )
+        print(result.to_json())
         return 0
 
     print("PaperForge status")

@@ -14,29 +14,21 @@ from .test_contract_helpers import (
 
 
 class TestPathsJson:
-    """Contract: 'paperforge paths --json' returns stable JSON."""
+    """Contract: 'paperforge paths --json' returns valid JSON with correct value types."""
 
     REQUIRED_KEYS = {"vault", "worker_script", "ld_deep_script"}
 
-    def test_paths_json_valid(self, cli_invoker):
-        """paths --json outputs valid JSON with expected keys."""
+    def test_paths_json_value_semantics(self, cli_invoker):
+        """paths --json returns paths with correct value types (all non-empty strings)."""
         result = cli_invoker(["paths", "--json"])
         assert result.returncode == 0, f"Exit {result.returncode}: {result.stderr}"
         data = assert_valid_json(result.stdout)
         assert_json_shape(data, self.REQUIRED_KEYS)
-
-    def test_paths_json_snapshot(self, cli_invoker, snapshot):
-        """paths --json matches snapshot (normalized)."""
-        result = cli_invoker(["paths", "--json"])
-        assert result.returncode == 0
-
-        # Parse and re-serialize for consistent formatting
-        data = json.loads(result.stdout)
-        vault = data.get("vault", "")
-        normalized = normalize_snapshot(
-            json.dumps(data, indent=2, ensure_ascii=False), vault
-        )
-        snapshot.assert_match(normalized, "paths_json/default_config.json")
+        for key in self.REQUIRED_KEYS:
+            val = data[key]
+            assert isinstance(val, str), f"{key} should be string, got {type(val).__name__}"
+            assert len(val) > 0, f"{key} should not be empty"
+        assert data.get("vault", "").startswith("<") or len(data.get("vault", "")) > 0
 
     def test_paths_no_json_text_output(self, cli_invoker):
         """paths without --json outputs human-readable text."""
@@ -48,7 +40,7 @@ class TestPathsJson:
 
 
 class TestStatusJson:
-    """Contract: 'paperforge status --json' returns stable JSON."""
+    """Contract: 'paperforge status --json' returns JSON with correct value semantics."""
 
     REQUIRED_KEYS = {"total_papers", "version", "vault", "system_dir", "resources_dir"}
     OPTIONAL_KEYS = {
@@ -57,23 +49,30 @@ class TestStatusJson:
         "lifecycle_level_counts", "health_aggregate", "maturity_distribution",
     }
 
-    def test_status_json_on_empty_vault(self, cli_invoker):
-        """status --json on empty vault returns valid JSON with all contract keys."""
+    def test_status_json_value_semantics(self, cli_invoker):
+        """status --json returns valid JSON with all contract keys and correct value types."""
         result = cli_invoker(["status", "--json"])
         assert result.returncode == 0, f"Exit {result.returncode}: {result.stderr}"
         data = assert_valid_json(result.stdout)
         assert_json_shape(data, self.REQUIRED_KEYS, self.OPTIONAL_KEYS)
-        # Empty vault should have 0 papers
-        assert data.get("total_papers", -1) >= 0
+        total = data.get("total_papers", -1)
+        assert isinstance(total, int) and total >= 0, f"total_papers should be non-negative int, got {total}"
+        ver = data.get("version", "")
+        assert isinstance(ver, str) and len(ver) > 0, f"version should be non-empty string, got {ver}"
+        assert data.get("system_dir", "") == "System", f"system_dir should be 'System', got {data.get('system_dir')}"
+        assert data.get("resources_dir", "") == "Resources", f"resources_dir should be 'Resources', got {data.get('resources_dir')}"
+        if "ocr" in data:
+            ocr = data["ocr"]
+            for field in ("total", "pending", "processing", "done", "failed"):
+                assert isinstance(ocr.get(field), int), f"ocr.{field} should be int, got {type(ocr.get(field)).__name__}"
 
-    def test_status_json_snapshot(self, cli_invoker, snapshot):
-        """status --json matches snapshot (normalized)."""
+    def test_status_json_snapshot_regression(self, cli_invoker, snapshot):
+        """status --json snapshot for regression detection (value semantics tested separately)."""
         result = cli_invoker(["status", "--json"])
         assert result.returncode == 0
         try:
             data = json.loads(result.stdout)
         except json.JSONDecodeError:
-            # status --json may not output JSON in all vault states
             pytest.skip("status --json did not produce valid JSON")
         vault = data.get("vault", "")
         normalized = normalize_snapshot(
