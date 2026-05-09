@@ -308,11 +308,15 @@ Plans:
 **Depends on**: Phase 54 (all test layers L0-L6 exist in CI; optimization decisions informed by actual run data)
 **Requirements**: CI-02, CI-03
 **Success Criteria** (what must be TRUE):
-  1. `ci.yml` full gate runs L0 through L4 on merge to main — `re-actors/alls-green` provides single-status check for branch protection
-  2. Plasma CI matrix: L1 on 3 OS x 3 Python (fast); L2 on 2 Python x 1 OS; L3-L5 on single config — total CI budget under configured concurrent runner limit
-  3. Path-filtered CI triggers prevent unnecessary jobs: changes to `paperforge/ocr.py` trigger L1+L2+L4; changes to `paperforge/plugin/main.js` trigger L3 only; version files trigger L0 only
-  4. Consistency audit test validates L1 mock expectations against L4 real pipeline output — `pytest tests/audit/` detects mock drift before it reaches production
-**Plans**: TBD
+   1. `ci.yml` full gate runs L0 through L4 on merge to main — `re-actors/alls-green` provides single-status check for branch protection
+   2. Plasma CI matrix: L1 on 3 OS x 3 Python (fast); L2 on 2 Python x 1 OS; L3-L5 on single config — total CI budget under configured concurrent runner limit
+   3. Path-filtered CI triggers prevent unnecessary jobs: changes to `paperforge/ocr.py` trigger L1+L2+L4; changes to `paperforge/plugin/main.js` trigger L3 only; version files trigger L0 only
+   4. Consistency audit test validates L1 mock expectations against L4 real pipeline output — `pytest tests/audit/` detects mock drift before it reaches production
+**Plans**: 2 plans
+
+Plans:
+- [ ] 55-001-PLAN.md — Consistency Audit Tests: cross-layer consistency validation detecting L1 mock drift against L4 golden dataset ground truth
+- [ ] 55-002-PLAN.md — Plasma Matrix CI Pipeline: ci.yml rewrite with L0-L5 merge gate, plasma matrix, path-filtered triggers, alls-green aggregator
 
 ---
 
@@ -344,7 +348,7 @@ Plans:
 | 52. Golden Datasets & CLI Contracts | v2.0 | 2/2 | Planning | 2026-05-08 |
 | 53. Plugin Tests & Temp Vault E2E | v2.0 | 0/2 | Planning | - |
 | 54. User Journey & Chaos Tests | v2.0 | 3/3 | Complete   | 2026-05-08 |
-| 55. CI Optimization & Consistency Audit | v2.0 | 0/0 | Not started | - |
+| 55. CI Optimization & Consistency Audit | v2.0 | 0/2 | Planning | - |
 
 ---
 *Roadmap updated: 2026-05-08 — v2.0 milestone phases created*
