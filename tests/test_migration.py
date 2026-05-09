@@ -589,4 +589,5 @@ class TestRunIndexRefreshIntegration:
 
         # Assert migrate_to_workspace was called at least once
         assert len(migrate_calls) >= 1, "migrate_to_workspace should be called by run_index_refresh"
-        assert result == 0
+        assert isinstance(result, dict)
+        assert "updated" in result

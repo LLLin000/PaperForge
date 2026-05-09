@@ -1374,9 +1374,9 @@ def prepare_deep_reading(vault: Path, zotero_key: str, force: bool = False) -> d
                     if key_match:
                         domain_match = re.search(r"^domain:\s*(.+)$", text, re.MULTILINE)
                         domain = domain_match.group(1).strip() if domain_match else candidate.parent.name
-                        from paperforge.worker.asset_index import _read_frontmatter_bool
+                        from paperforge.adapters.obsidian_frontmatter import read_frontmatter_bool
 
-                        if not _read_frontmatter_bool(candidate, "analyze"):
+                        if not read_frontmatter_bool(candidate, "analyze"):
                             result["message"] = (
                                 f"[ERROR] analyze=False for {zotero_key} in {candidate}. "
                                 "Set analyze: true first."

@@ -63,8 +63,16 @@ def _diagnose(vault: Path, live: bool = False, json_output: bool = False) -> int
         queue_data = _collect_ocr_queue_data(vault)
         pf_error = None
         if not passed:
+            if level == 1:
+                ec = ErrorCode.OCR_TOKEN_MISSING
+            elif level == 2:
+                ec = ErrorCode.OCR_UPLOAD_FAILED
+            elif level == 3:
+                ec = ErrorCode.OCR_RESULT_INVALID
+            else:
+                ec = ErrorCode.INTERNAL_ERROR
             pf_error = PFError(
-                code=ErrorCode.OCR_TOKEN_MISSING if level == 1 else ErrorCode.INTERNAL_ERROR,
+                code=ec,
                 message=result.get("error", "OCR diagnosis failed"),
                 details={"level": level, "fix": result.get("fix", "")},
             )
@@ -124,6 +132,7 @@ def run(args: argparse.Namespace) -> int:
     Default behavior: run OCR queue.
     --diagnose: diagnose only (no upload).
     --key KEY: process specific item (passed through if supported).
+    Supports --json for PFResult output in both diagnose and normal modes.
     """
     vault = getattr(args, "vault_path", None)
     if vault is None:
@@ -146,6 +155,17 @@ def run(args: argparse.Namespace) -> int:
 
     run_ocr = _get_run_ocr()
     exit_code = run_ocr(vault, verbose=getattr(args, "verbose", False), no_progress=getattr(args, "no_progress", False))
+
+    if json_output:
+        queue_data = _collect_ocr_queue_data(vault)
+        pf = PFResult(
+            ok=exit_code == 0,
+            command="ocr",
+            version=__version__,
+            data=queue_data,
+        )
+        print(pf.to_json())
+        return 0 if pf.ok else 1
 
     # Auto-diagnose after successful run (new unified behavior)
     if exit_code == 0 and ocr_action is None and not diagnose_only and not key:

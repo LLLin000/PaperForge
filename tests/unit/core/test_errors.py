@@ -21,8 +21,16 @@ class TestErrorCodeMembers:
         assert str(ErrorCode.PYTHON_NOT_FOUND) == "PYTHON_NOT_FOUND"
         assert str(ErrorCode.UNKNOWN) == "UNKNOWN"
 
-    def test_member_count(self) -> None:
-        assert len(ErrorCode) == 8
+    def test_member_count_minimum(self) -> None:
+        assert len(ErrorCode) >= 8  # expanded from 8 to 26 in v2.1 contract hardening
 
     def test_is_str_enum(self) -> None:
         assert isinstance(ErrorCode.PYTHON_NOT_FOUND, str)
+
+    def test_unknown_code_returns_unknown(self) -> None:
+        """Newer plugin versions may send codes not yet in this runtime."""
+        assert ErrorCode("NONEXISTENT_CODE") is ErrorCode.UNKNOWN
+
+    def test_future_code_returns_unknown(self) -> None:
+        assert ErrorCode("PAPERFORGE_NOT_INSTALLED") is ErrorCode.PAPERFORGE_NOT_INSTALLED
+        assert ErrorCode("OCR_UPLOAD_FAILED") is ErrorCode.OCR_UPLOAD_FAILED

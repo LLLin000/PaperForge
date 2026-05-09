@@ -499,11 +499,7 @@ def _merge_env_incremental(env_path: Path, values: dict[str, str]) -> str:
         for line in existing_text.splitlines()
         if line.strip() and not line.lstrip().startswith("#") and "=" in line
     }
-    missing_lines = [
-        f"{key}={value}"
-        for key, value in values.items()
-        if key not in existing_keys
-    ]
+    missing_lines = [f"{key}={value}" for key, value in values.items() if key not in existing_keys]
     if not missing_lines:
         return "preserved"
 
@@ -546,7 +542,9 @@ def _deploy_skill_directory(
         skill_dst = vault / skill_dir / skill_name
         skill_dst.mkdir(parents=True, exist_ok=True)
         text = skill_file.read_text(encoding="utf-8")
-        text = _substitute_vars(text, system_dir, resources_dir, literature_dir, control_dir, base_dir, skill_dir, prefix)
+        text = _substitute_vars(
+            text, system_dir, resources_dir, literature_dir, control_dir, base_dir, skill_dir, prefix
+        )
         _write_text_incremental(skill_dst / "SKILL.md", text)
         imported.append(skill_name)
 
@@ -673,7 +671,7 @@ def headless_setup(
     # Determine repo_root (where paperforge package sources live)
     if repo_root is None:
         wizard_dir = Path(__file__).parent.resolve()
-        if (wizard_dir / "paperforge" if wizard_dir.name != "paperforge" else False):
+        if wizard_dir / "paperforge" if wizard_dir.name != "paperforge" else False:
             _repo = wizard_dir
         elif (wizard_dir.parent / "paperforge").exists():
             _repo = wizard_dir.parent
@@ -749,7 +747,9 @@ def headless_setup(
                 if sys.platform == "win32":
                     result = subprocess.run(
                         ["cmd", "/c", "mklink", "/J", str(zotero_link_path), str(zotero_data)],
-                        capture_output=True, text=True, timeout=30,
+                        capture_output=True,
+                        text=True,
+                        timeout=30,
                     )
                     if result.returncode != 0:
                         print(f"    [WARN] Zotero junction failed: {result.stderr.strip()}")
@@ -837,9 +837,18 @@ def headless_setup(
         return 4
 
     _copy_file_incremental(worker_src, worker_dst)
-    for mod in ["ocr.py", "repair.py", "status.py", "deep_reading.py",
-                "update.py", "base_views.py", "__init__.py",
-                "_utils.py", "_progress.py", "_retry.py"]:
+    for mod in [
+        "ocr.py",
+        "repair.py",
+        "status.py",
+        "deep_reading.py",
+        "update.py",
+        "base_views.py",
+        "__init__.py",
+        "_utils.py",
+        "_progress.py",
+        "_retry.py",
+    ]:
         mod_src = repo_root / "paperforge/worker" / mod
         if mod_src.exists():
             _copy_file_incremental(mod_src, pf_path / "worker/scripts" / mod)
@@ -852,24 +861,52 @@ def headless_setup(
 
     if fmt == "flat_command":
         imported_skills = _deploy_flat_command(
-            vault, agent_config["command_dir"], repo_root,
-            system_dir, resources_dir, literature_dir, control_dir, base_dir, skill_dir,
+            vault,
+            agent_config["command_dir"],
+            repo_root,
+            system_dir,
+            resources_dir,
+            literature_dir,
+            control_dir,
+            base_dir,
+            skill_dir,
         )
         # OpenCode also needs the skill directory (ld_deep.py, prompt, chart-reading)
         imported_skills += _deploy_skill_directory(
-            vault, skill_dir, repo_root,
-            system_dir, resources_dir, literature_dir, control_dir, base_dir, prefix,
+            vault,
+            skill_dir,
+            repo_root,
+            system_dir,
+            resources_dir,
+            literature_dir,
+            control_dir,
+            base_dir,
+            prefix,
         )
     elif fmt == "rules_file":
         imported_skills = _deploy_rules_file(
-            vault, agent_config["skill_dir"], repo_root,
-            system_dir, resources_dir, literature_dir, control_dir, base_dir, skill_dir,
+            vault,
+            agent_config["skill_dir"],
+            repo_root,
+            system_dir,
+            resources_dir,
+            literature_dir,
+            control_dir,
+            base_dir,
+            skill_dir,
         )
     else:
         # skill_directory (default)
         imported_skills = _deploy_skill_directory(
-            vault, skill_dir, repo_root,
-            system_dir, resources_dir, literature_dir, control_dir, base_dir, prefix,
+            vault,
+            skill_dir,
+            repo_root,
+            system_dir,
+            resources_dir,
+            literature_dir,
+            control_dir,
+            base_dir,
+            prefix,
         )
 
     if imported_skills:
@@ -997,26 +1034,32 @@ def headless_setup(
     try:
         try:
             import paperforge as _pf
-            current_ver = getattr(_pf, '__version__', '?')
+
+            current_ver = getattr(_pf, "__version__", "?")
         except ImportError:
-            current_ver = 'not installed'
+            current_ver = "not installed"
         # If repo_root is the source repository (has pyproject.toml), install from it.
         # Otherwise (site-packages copy) install from GitHub tagged release.
         if (repo_root / "pyproject.toml").exists():
             install_target = [str(repo_root)]
         else:
             from paperforge import __version__ as _pv
+
             install_target = [f"git+https://github.com/LLLin000/PaperForge.git@{_pv}"]
         result = subprocess.run(
             [sys.executable, "-m", "pip", "install", "--upgrade"] + install_target,
-            capture_output=True, text=True, timeout=120,
+            capture_output=True,
+            text=True,
+            timeout=120,
         )
         if result.returncode == 0:
             _new = subprocess.run(
                 [sys.executable, "-c", "import paperforge; print(getattr(paperforge, '__version__', '?'))"],
-                capture_output=True, text=True, timeout=15,
+                capture_output=True,
+                text=True,
+                timeout=15,
             )
-            new_ver = _new.stdout.strip() or '?'
+            new_ver = _new.stdout.strip() or "?"
             print(f"    [OK] paperforge {current_ver} -> {new_ver}")
         else:
             stderr_short = result.stderr[:200] if result.stderr else ""
@@ -1057,7 +1100,9 @@ def headless_setup(
     print("  Existing files in the target vault were preserved; setup only created missing files and folders.")
     print()
     print("Next steps:")
-    print(f"  1. In Zotero, export the library or a collection as Better BibTeX JSON into: {vault / system_dir / 'PaperForge' / 'exports'}")
+    print(
+        f"  1. In Zotero, export the library or a collection as Better BibTeX JSON into: {vault / system_dir / 'PaperForge' / 'exports'}"
+    )
     print("     Enable 'Keep updated' so Zotero keeps the JSON in sync.")
     print("  2. Open Obsidian → Settings → Community Plugins → Enable 'PaperForge'")
     print("  3. Press Ctrl+P and type 'PaperForge' to open the dashboard")

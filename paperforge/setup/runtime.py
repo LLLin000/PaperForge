@@ -31,9 +31,7 @@ class RuntimeInstaller:
         if self.progress_callback:
             self.progress_callback(message)
 
-    def _pip_install(
-        self, package_spec: str
-    ) -> tuple[bool, str, str]:
+    def _pip_install(self, package_spec: str) -> tuple[bool, str, str]:
         """Run pip install and return (ok, stdout, stderr)."""
         try:
             result = subprocess.run(
@@ -53,9 +51,7 @@ class RuntimeInstaller:
         self._log("Installing PaperForge...")
 
         if self.version:
-            package_spec = (
-                f"git+https://github.com/LLLin000/PaperForge.git@{self.version}"
-            )
+            package_spec = f"git+https://github.com/LLLin000/PaperForge.git@{self.version}"
         else:
             package_spec = "git+https://github.com/LLLin000/PaperForge.git"
 
@@ -65,9 +61,7 @@ class RuntimeInstaller:
             return SetupStepResult(
                 step="runtime_installer",
                 ok=True,
-                message=(
-                    f"PaperForge installed successfully{(' (' + self.version + ')') if self.version else ''}"
-                ),
+                message=(f"PaperForge installed successfully{(' (' + self.version + ')') if self.version else ''}"),
                 details={"version": self.version or "latest", "stdout": stdout[:500]},
             )
         else:

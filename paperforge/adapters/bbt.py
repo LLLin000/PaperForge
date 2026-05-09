@@ -3,10 +3,14 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
+from paperforge.adapters.collections import build_collection_lookup
+from paperforge.core.date_utils import extract_year
+from paperforge.core.io import read_json
+
 logger = logging.getLogger(__name__)
 
 
-def _normalize_attachment_path(path: str, zotero_dir: Path | None = None) -> tuple[str, str, str]:
+def normalize_attachment_path(path: str, zotero_dir: Path | None = None) -> tuple[str, str, str]:
     """Normalize a BBT attachment path to a consistent storage: format.
 
     Handles three real-world BBT export formats:
@@ -42,7 +46,7 @@ def _normalize_attachment_path(path: str, zotero_dir: Path | None = None) -> tup
 
     # Format 1: Absolute Windows path pointing to Zotero storage
     candidate = Path(raw)
-    _looks_absolute = candidate.is_absolute() or (len(raw) >= 2 and raw[0].isalpha() and raw[1] == ':')
+    _looks_absolute = candidate.is_absolute() or (len(raw) >= 2 and raw[0].isalpha() and raw[1] == ":")
     if _looks_absolute:
         norm_path = raw.replace("\\", "/")
         # Detect Zotero storage pattern: .../storage/8CHARKEY/...
@@ -63,7 +67,7 @@ def _normalize_attachment_path(path: str, zotero_dir: Path | None = None) -> tup
     return (f"storage:{norm}", bbt_path_raw, zotero_storage_key)
 
 
-def _identify_main_pdf(attachments: list[dict]) -> tuple[dict | None, list[dict]]:
+def identify_main_pdf(attachments: list[dict]) -> tuple[dict | None, list[dict]]:
     """Identify the main PDF and supplementary materials from attachments.
 
     Uses a hybrid three-priority strategy (Decision D-02):
@@ -151,9 +155,6 @@ def resolve_item_collection_paths(item: dict, collection_lookup: dict) -> list[s
 
 
 def load_export_rows(path: Path) -> list[dict]:
-    from paperforge.worker._domain import build_collection_lookup
-    from paperforge.worker._utils import _extract_year, read_json
-
     data = read_json(path)
     if isinstance(data, list):
         return data
@@ -168,7 +169,7 @@ def load_export_rows(path: Path) -> list[dict]:
                 if not isinstance(attachment, dict):
                     continue
                 raw_path = attachment.get("path", "")
-                normalized_path, bbt_path_raw, zotero_storage_key = _normalize_attachment_path(raw_path)
+                normalized_path, bbt_path_raw, zotero_storage_key = normalize_attachment_path(raw_path)
                 # Preserve contentType from BBT if present; fallback to file extension
                 content_type = attachment.get("contentType", "")
                 if not content_type and str(normalized_path).lower().endswith(".pdf"):
@@ -183,7 +184,7 @@ def load_export_rows(path: Path) -> list[dict]:
                         "size": attachment.get("size", 0) or 0,
                     }
                 )
-            main_pdf, supplementary_pdfs = _identify_main_pdf(attachments)
+            main_pdf, supplementary_pdfs = identify_main_pdf(attachments)
             pdf_path = main_pdf["path"] if main_pdf else ""
             bbt_path_raw = main_pdf["bbt_path_raw"] if main_pdf else ""
             zotero_storage_key = main_pdf["zotero_storage_key"] if main_pdf else ""
@@ -199,7 +200,7 @@ def load_export_rows(path: Path) -> list[dict]:
                     "abstract": item.get("abstractNote", ""),
                     "journal": item.get("publicationTitle", ""),
                     "extra": item.get("extra", ""),
-                    "year": _extract_year(item.get("date", "")),
+                    "year": extract_year(item.get("date", "")),
                     "date": item.get("date", ""),
                     "doi": item.get("DOI", ""),
                     "pmid": item.get("PMID", ""),
@@ -215,3 +216,9 @@ def load_export_rows(path: Path) -> list[dict]:
             )
         return rows
     raise ValueError(f"Unsupported export format: {path}")
+
+
+# ── Backward-compat aliases (v2.1 → 2.2 migration) ──
+_normalize_attachment_path = normalize_attachment_path
+_identify_main_pdf = identify_main_pdf
+_extract_year = extract_year

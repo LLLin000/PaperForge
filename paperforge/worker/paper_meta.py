@@ -69,9 +69,7 @@ def write_paper_meta(
     elif "migrated_from" in existing:
         meta["migrated_from"] = existing["migrated_from"]
 
-    meta_path.write_text(
-        json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8"
-    )
+    meta_path.write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
     return meta_path
 
 

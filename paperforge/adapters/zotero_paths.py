@@ -25,6 +25,7 @@ def obsidian_wikilink_for_pdf(pdf_path: str, vault_dir: Path, zotero_dir: Path |
         if zotero_dir is not None and zotero_dir.exists():
             try:
                 from paperforge.pdf_resolver import resolve_junction
+
                 real_zotero = resolve_junction(zotero_dir)
                 if real_zotero != zotero_dir:
                     rel_to_zotero = absolute_path.relative_to(real_zotero)
