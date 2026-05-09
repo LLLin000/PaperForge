@@ -319,6 +319,9 @@ def test_paperforge_paths_returns_exact_keys(tmp_path: Path):
         "worker_script",
         "skill_dir",
         "ld_deep_script",
+        # ── v2.2: canonical locations below paperforge/ ──
+        "config",
+        "index",
     }
 
     actual_keys = set(paths.keys())
