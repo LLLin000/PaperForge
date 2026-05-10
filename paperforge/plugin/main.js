@@ -1406,97 +1406,136 @@ class PaperForgeStatusView extends ItemView {
 
 
 
-    /* ── Collection Mode Render (Phase 30) ── */
+    /* ── Collection Mode Render: Batch Workflow Workspace ── */
     _renderCollectionMode() {
         const domain = this._currentDomain || 'Unknown';
         const domainItems = this._filterByDomain(domain);
 
         const view = this._contentEl.createEl('div', { cls: 'paperforge-collection-view' });
 
-        // --- Empty state ---
         if (domainItems.length === 0) {
             this._renderEmptyState(view, 'No papers found in domain "' + domain + '". Sync some papers first.');
             return;
         }
 
-        // --- Single-pass aggregation ---
-        const healthAgg = {
-            pdf_health: { healthy: 0, unhealthy: 0 },
-            ocr_health: { healthy: 0, unhealthy: 0 },
-            note_health: { healthy: 0, unhealthy: 0 },
-            asset_health: { healthy: 0, unhealthy: 0 },
-        };
-        let hasPdf = 0;
-        let fulltextReady = 0;
-        let deepRead = 0;
+        // ── Single-pass aggregation ──
+        const totalPapers = domainItems.length;
+        let hasPdf = 0, ocrDone = 0, analyzeReady = 0, deepRead = 0;
+        let ocrPending = 0, ocrProcessing = 0, ocrFailed = 0;
+        let pdfIssues = 0, ocrIssues = 0, noteIssues = 0, assetIssues = 0;
 
         for (const item of domainItems) {
             if (item.has_pdf) hasPdf++;
-            if (item.ocr_status === 'done') fulltextReady++;
+            if (item.ocr_status === 'done') ocrDone++;
+            if (item.ocr_status === 'done' && item.analyze === true) analyzeReady++;
             if (item.deep_reading_status === 'done') deepRead++;
 
+            const ocs = item.ocr_status || '';
+            if (ocs === 'pending' || ocs === 'queued') ocrPending++;
+            else if (ocs === 'processing') ocrProcessing++;
+            else if (ocs === 'failed' || ocs === 'blocked' || ocs === 'done_incomplete' || ocs === 'nopdf') ocrFailed++;
+
             const health = item.health || {};
-            for (const dim of ['pdf_health', 'ocr_health', 'note_health', 'asset_health']) {
-                const val = health[dim] || 'healthy';
-                if (val === 'healthy') healthAgg[dim].healthy++;
-                else healthAgg[dim].unhealthy++;
-            }
+            if (health.pdf_health && health.pdf_health !== 'healthy') pdfIssues++;
+            if (health.ocr_health && health.ocr_health !== 'healthy') ocrIssues++;
+            if (health.note_health && health.note_health !== 'healthy') noteIssues++;
+            if (health.asset_health && health.asset_health !== 'healthy') assetIssues++;
         }
 
-        // --- Metric cards row (D-03) ---
-        const metrics = view.createEl('div', { cls: 'paperforge-collection-metrics' });
-        const totalPapers = domainItems.length;
+        // ── Header ──
+        const header = view.createEl('div', { cls: 'paperforge-collection-header' });
+        header.createEl('div', { cls: 'paperforge-collection-title', text: domain });
+        header.createEl('div', { cls: 'paperforge-collection-count', text: totalPapers + ' papers' });
 
-        const metricCards = [
-            { value: totalPapers, label: 'Papers', color: 'var(--color-cyan)', barMax: 0 },
-            { value: fulltextReady, label: 'Fulltext Ready', color: 'var(--color-green)', barMax: totalPapers },
-            { value: deepRead, label: 'Deep Read', color: 'var(--color-yellow)', barMax: totalPapers },
+        // ── Workflow Overview (funnel) ──
+        const wfSection = view.createEl('div', { cls: 'paperforge-workflow-overview' });
+        wfSection.createEl('div', { cls: 'paperforge-section-label', text: 'Workflow Overview' });
+        const funnel = wfSection.createEl('div', { cls: 'paperforge-workflow-funnel' });
+        const stages = [
+            { value: totalPapers, label: 'Total' },
+            { value: hasPdf, label: 'PDF Ready' },
+            { value: ocrDone, label: 'OCR Done' },
+            { value: deepRead, label: 'Deep Read' },
         ];
-        for (const m of metricCards) {
-            const card = metrics.createEl('div', { cls: 'paperforge-metric-card' });
-            card.style.setProperty('--metric-color', m.color);
-            card.createEl('div', { cls: 'paperforge-metric-value', text: (m.value)?.toString() || '\u2014' });
-            card.createEl('div', { cls: 'paperforge-metric-label', text: m.label });
-            if (m.barMax > 0) {
-                this._buildMetricBar(card, m.value, m.barMax);
+        for (let i = 0; i < stages.length; i++) {
+            const stage = funnel.createEl('div', { cls: 'paperforge-workflow-stage' });
+            stage.createEl('div', { cls: 'paperforge-workflow-stage-value', text: String(stages[i].value) });
+            stage.createEl('div', { cls: 'paperforge-workflow-stage-label', text: stages[i].label });
+            if (i < stages.length - 1) {
+                funnel.createEl('div', { cls: 'paperforge-workflow-arrow', text: '\u2192' });
             }
         }
 
-        // --- Lifecycle distribution bar chart (cumulative, D-04) ---
-        this._renderBarChart(view, {
-            indexed: totalPapers - hasPdf,
-            pdf_ready: hasPdf,
-            fulltext_ready: fulltextReady,
-            deep_read_done: deepRead,
+        // ── OCR Pipeline (scoped to this base) ──
+        if (ocrPending + ocrProcessing + ocrDone + ocrFailed > 0) {
+            const ocrSection = view.createEl('div', { cls: 'paperforge-ocr-section' });
+            const ocrHeader = ocrSection.createEl('div', { cls: 'paperforge-collection-ocr-header' });
+            ocrHeader.createEl('h4', { cls: 'paperforge-ocr-title', text: 'OCR Pipeline' });
+            const ocrBadge = ocrHeader.createEl('span', { cls: 'paperforge-ocr-badge idle' });
+            if (ocrProcessing > 0) { ocrBadge.addClass('active'); ocrBadge.setText('Processing'); }
+            else if (ocrPending > 0) ocrBadge.setText('Pending');
+            else { ocrBadge.addClass('idle'); ocrBadge.setText('Idle'); }
+
+            const ocrTrack = ocrSection.createEl('div', { cls: 'paperforge-progress-track' });
+            if (ocrProcessing > 0) ocrTrack.addClass('paperforge-processing');
+            const totalOcr = ocrPending + ocrProcessing + ocrDone + ocrFailed;
+            const ocrSegs = [
+                { cls: 'pending', count: ocrPending },
+                { cls: 'active', count: ocrProcessing },
+                { cls: 'done', count: ocrDone },
+                { cls: 'failed', count: ocrFailed },
+            ];
+            for (const s of ocrSegs) {
+                if (s.count > 0) {
+                    const pct = (s.count / totalOcr * 100).toFixed(1);
+                    ocrTrack.createEl('div', { cls: `paperforge-progress-seg ${s.cls}`, attr: { style: `width:${pct}%` } });
+                }
+            }
+
+            const ocrCounts = ocrSection.createEl('div', { cls: 'paperforge-ocr-counts' });
+            const ocrLabels = [
+                { cls: 'pending', value: ocrPending, label: 'Pending' },
+                { cls: 'active', value: ocrProcessing, label: 'Processing' },
+                { cls: 'done', value: ocrDone, label: 'Done' },
+                { cls: 'failed', value: ocrFailed, label: 'Needs Attention' },
+            ];
+            for (const l of ocrLabels) {
+                const cnt = ocrCounts.createEl('div', { cls: 'paperforge-ocr-count' });
+                cnt.createEl('div', { cls: 'paperforge-ocr-count-value', text: l.value.toString() });
+                cnt.createEl('div', { cls: 'paperforge-ocr-count-label', text: l.label });
+            }
+        }
+
+        // ── Issue Summary (compact, only when issues exist) ──
+        const totalIssues = pdfIssues + ocrIssues + noteIssues + assetIssues;
+        if (totalIssues > 0) {
+            const issueSection = view.createEl('div', { cls: 'paperforge-issue-summary' });
+            issueSection.createEl('div', { cls: 'paperforge-section-label', text: 'Issues' });
+            const parts = [];
+            if (pdfIssues > 0) parts.push(pdfIssues + ' PDF');
+            if (ocrIssues > 0) parts.push(ocrIssues + ' OCR');
+            if (noteIssues > 0) parts.push(noteIssues + ' Note');
+            if (assetIssues > 0) parts.push(assetIssues + ' Asset');
+            issueSection.createEl('div', { cls: 'paperforge-issue-text', text: parts.join(' · ') + ' issues' });
+        }
+
+        // ── Contextual Actions ──
+        const actionsRow = view.createEl('div', { cls: 'paperforge-collection-actions' });
+        const syncBtn = actionsRow.createEl('button', { cls: 'paperforge-contextual-btn' });
+        syncBtn.createEl('span', { cls: 'paperforge-contextual-btn-icon', text: '\u21BB' });
+        syncBtn.createEl('span', { text: 'Sync Library' });
+        syncBtn.addEventListener('click', () => {
+            const action = ACTIONS.find(a => a.id === 'paperforge-sync');
+            if (action) this._runAction(action, syncBtn);
         });
 
-        // --- Health overview (D-05) ---
-        this._renderCollectionHealth(view, healthAgg);
-    }
-
-    /* ── Collection Health Overview (Phase 30, D-05) ── */
-    _renderCollectionHealth(container, healthAgg) {
-        if (!healthAgg) return;
-
-        const dimensions = [
-            { key: 'pdf_health', label: 'PDF Health', okLabel: 'Healthy', failLabel: 'Broken' },
-            { key: 'ocr_health', label: 'OCR Health', okLabel: 'Done', failLabel: 'Pending/Failed' },
-            { key: 'note_health', label: 'Note Health', okLabel: 'Present', failLabel: 'Missing' },
-            { key: 'asset_health', label: 'Asset Health', okLabel: 'Valid', failLabel: 'Drifted' },
-        ];
-
-        const grid = container.createEl('div', { cls: 'paperforge-collection-health' });
-
-        for (const dim of dimensions) {
-            const data = healthAgg[dim.key] || { healthy: 0, unhealthy: 0 };
-            const cell = grid.createEl('div', { cls: 'paperforge-collection-health-cell' });
-            cell.createEl('div', { cls: 'paperforge-collection-health-cell-label', text: dim.label });
-
-            const counts = cell.createEl('div', { cls: 'paperforge-collection-health-counts' });
-            const okSpan = counts.createEl('span', { cls: 'ok', text: String(data.healthy) + ' ' + dim.okLabel });
-            counts.createEl('span', { text: ' \u00B7 ' });
-            const failSpan = counts.createEl('span', { cls: 'fail', text: String(data.unhealthy) + ' ' + dim.failLabel });
-        }
+        const ocrActionBtn = actionsRow.createEl('button', { cls: 'paperforge-contextual-btn' });
+        ocrActionBtn.createEl('span', { cls: 'paperforge-contextual-btn-icon', text: '\u229E' });
+        ocrActionBtn.createEl('span', { text: 'Run OCR' });
+        ocrActionBtn.addEventListener('click', () => {
+            const action = ACTIONS.find(a => a.id === 'paperforge-ocr');
+            if (action) this._runAction(action, ocrActionBtn);
+        });
     }
 
     /* ── Refresh current mode (called on index change, D-09, REFR-01) ── */
