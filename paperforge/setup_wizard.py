@@ -1012,7 +1012,7 @@ def headless_setup(
         "OCR dir": (pf_path / "ocr").exists(),
         "paperforge.json": pf_json.exists(),
         "Obsidian plugin": (vault / ".obsidian" / "plugins" / "paperforge" / "main.js").exists(),
-        "AGENTS.md": True if not agents_src.exists() else agents_dst.exists(),
+        "AGENTS.md": (vault / "AGENTS.md").exists(),
     }
     failed = [k for k, v in checks.items() if not v]
     if failed:
