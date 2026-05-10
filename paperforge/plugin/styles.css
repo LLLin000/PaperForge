@@ -2085,7 +2085,8 @@
 
 /* Collection mode */
 .paperforge-collection-header {
-    padding: 14px 0 0 0;
+    padding: 10px 0 0 0;
+    margin-bottom: -12px;
 }
 
 .paperforge-collection-title {
@@ -2112,25 +2113,24 @@
 }
 
 .paperforge-workflow-overview {
-    margin: 10px 0;
-    padding: 18px;
-    background: color-mix(in srgb, var(--background-primary) 94%, var(--background-primary-alt) 6%);
+    padding: 20px;
+    background: color-mix(in srgb, var(--background-primary) 92%, var(--background-secondary) 8%);
     border: 1px solid color-mix(in srgb, var(--pf-warm-line) 20%, var(--pf-border));
     border-radius: calc(var(--pf-radius) + 2px);
-    box-shadow: inset 3px 0 0 color-mix(in srgb, var(--pf-collection-accent) 12%, transparent);
+    box-shadow: 0 1px 2px rgba(20, 18, 14, 0.04), 0 10px 24px rgba(20, 18, 14, 0.04);
     transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .paperforge-workflow-overview:hover {
     border-color: color-mix(in srgb, var(--pf-warm-line) 42%, var(--pf-border));
-    box-shadow: inset 3px 0 0 color-mix(in srgb, var(--pf-collection-accent) 17%, transparent), 0 2px 10px rgba(20, 18, 14, 0.08);
+    box-shadow: 0 2px 10px rgba(20, 18, 14, 0.08), 0 14px 28px rgba(20, 18, 14, 0.06);
 }
 
 .paperforge-workflow-funnel {
     display: grid;
     grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr;
-    gap: 8px 6px;
-    align-items: center;
+    gap: 10px 6px;
+    align-items: stretch;
 }
 
 @container pfpanel (max-width: 380px) {
@@ -2163,8 +2163,9 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 12px 6px;
-    background: color-mix(in srgb, var(--background-primary-alt) 88%, var(--background-primary) 12%);
+    justify-content: center;
+    padding: 14px 16px;
+    background: color-mix(in srgb, var(--background-primary-alt) 86%, var(--background-primary) 14%);
     border: 1px solid color-mix(in srgb, var(--pf-collection-accent) 22%, var(--pf-border));
     border-radius: 8px;
     min-width: 0;
@@ -2182,7 +2183,7 @@
 }
 
 .paperforge-workflow-stage-label {
-    font-size: 12px;
+    font-size: 11px;
     color: var(--text-muted);
     text-transform: uppercase;
     letter-spacing: 0.3px;
@@ -2195,6 +2196,7 @@
     color: var(--text-faint);
     font-size: 11px;
     flex-shrink: 0;
+    align-self: center;
 }
 
 .paperforge-collection-ocr-header {
