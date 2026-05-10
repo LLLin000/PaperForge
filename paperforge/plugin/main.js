@@ -2,6 +2,7 @@ const { Plugin, Notice, ItemView, Modal, Setting, PluginSettingTab, addIcon } = 
 const { exec, execFile, spawn } = require('node:child_process');
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 
 // ── Runtime helpers (inlined from src/runtime.js) ──
 
@@ -128,6 +129,152 @@ function parseRuntimeStatus(err, stdout, stderr) {
     }
     return { status: "error", version: null, type: "unknown",
         message: err ? err.message : String(stderr), recoverable: false };
+}
+
+// ── Cross-platform Python and BBT detection (macOS/Linux) ──
+
+function paperforgeEnrichedEnv() {
+    const env = { ...process.env };
+    const plat = process.platform;
+    const home = os.homedir();
+    const extras = [];
+    if (plat === 'darwin') {
+        extras.push('/opt/homebrew/bin', '/usr/local/bin', '/usr/bin', `${home}/.local/bin`);
+    } else if (plat === 'linux') {
+        extras.push('/usr/local/bin', '/usr/bin', `${home}/.local/bin`);
+    }
+    const cur = env.PATH || '';
+    env.PATH = [...extras, cur].filter(Boolean).join(path.delimiter);
+    return env;
+}
+
+function shellQuoteForExec(cmd) {
+    if (!cmd) return "''";
+    if (/[\s'"\\]/.test(cmd)) return `'${cmd.replace(/'/g, "'\\''")}'`;
+    return cmd;
+}
+
+function isLikelyAppleStubPython(resolvedAbsPath) {
+    const n = String(resolvedAbsPath).toLowerCase().replace(/\\/g, '/');
+    return n.includes('commandlinetools') || n.includes('/library/developer/commandlinetools');
+}
+
+function collectDarwinPythonCandidates(home) {
+    return [
+        '/opt/homebrew/bin/python3',
+        '/usr/local/bin/python3',
+        path.join(home, '.local', 'bin', 'python3'),
+        path.join(home, '.pyenv', 'shims', 'python3'),
+        '/usr/bin/python3',
+    ];
+}
+
+function getPaperforgePythonCmd() {
+    const plat = process.platform;
+    const home = os.homedir();
+    if (plat === 'darwin') {
+        let stubFallback = null;
+        for (const p of collectDarwinPythonCandidates(home)) {
+            try {
+                if (!p || !fs.existsSync(p)) continue;
+                let resolved = p;
+                try { resolved = fs.realpathSync(p); } catch (_) {}
+                if (isLikelyAppleStubPython(resolved)) {
+                    if (!stubFallback) stubFallback = p;
+                    continue;
+                }
+                return p;
+            } catch (_) {}
+        }
+        if (stubFallback) return stubFallback;
+        return 'python3';
+    }
+    const candidates = [];
+    if (plat === 'linux') {
+        candidates.push('/usr/bin/python3', '/usr/local/bin/python3', path.join(home, '.local', 'bin', 'python3'), path.join(home, '.pyenv', 'shims', 'python3'));
+    }
+    for (const p of candidates) {
+        try { if (p && fs.existsSync(p)) return p; } catch (_) {}
+    }
+    if (plat === 'win32') return 'python';
+    return 'python3';
+}
+
+function paperforgePythonExecArgs(scriptTail) {
+    const py = shellQuoteForExec(getPaperforgePythonCmd());
+    return `${py} ${scriptTail}`;
+}
+
+function tryExecPythonVersion(callback) {
+    const plat = process.platform;
+    const home = os.homedir();
+    const tried = new Set();
+    const list = [];
+    if (plat === 'darwin') {
+        const nonStub = [], stub = [];
+        for (const p of collectDarwinPythonCandidates(home)) {
+            try {
+                if (!fs.existsSync(p)) continue;
+                let resolved = p;
+                try { resolved = fs.realpathSync(p); } catch (_) {}
+                if (isLikelyAppleStubPython(resolved)) stub.push(p);
+                else nonStub.push(p);
+            } catch (_) {}
+        }
+        list.push(...nonStub, ...stub);
+    } else if (plat === 'linux') {
+        list.push('/usr/bin/python3', '/usr/local/bin/python3', path.join(home, '.local', 'bin', 'python3'), path.join(home, '.pyenv', 'shims', 'python3'));
+    }
+    list.push(plat === 'win32' ? 'python' : 'python3', 'python');
+    const candidates = list.filter((c) => { if (!c || tried.has(c)) return false; tried.add(c); return true; });
+    let i = 0;
+    const next = () => {
+        if (i >= candidates.length) { callback(new Error('Python not found'), '', null); return; }
+        const py = candidates[i++];
+        if (py.includes(path.sep) || py.startsWith('/')) {
+            try { if (!fs.existsSync(py)) { next(); return; } } catch (_) { next(); return; }
+        }
+        exec(`${shellQuoteForExec(py)} --version`, { timeout: 8000, env: paperforgeEnrichedEnv() }, (err, stdout) => {
+            if (!err && stdout) callback(null, stdout.trim(), py);
+            else next();
+        });
+    };
+    next();
+}
+
+function dirLooksLikeBetterBibtexFolder(entryName) {
+    const compact = String(entryName).toLowerCase().replace(/[^a-z0-9]/g, '');
+    return compact.includes('betterbibtex');
+}
+
+function scanBbtDirectChildren(dir) {
+    if (!dir) return false;
+    try {
+        if (!fs.existsSync(dir)) return false;
+        for (const entry of fs.readdirSync(dir)) {
+            const full = path.join(dir, entry);
+            try { if (fs.statSync(full).isDirectory() && dirLooksLikeBetterBibtexFolder(entry)) return true; } catch (_) {}
+        }
+    } catch (_) {}
+    return false;
+}
+
+function scanBbtUnderProfiles(profilesDir) {
+    if (!profilesDir) return false;
+    try {
+        if (!fs.existsSync(profilesDir)) return false;
+        for (const prof of fs.readdirSync(profilesDir)) {
+            const extDir = path.join(profilesDir, prof, 'extensions');
+            try {
+                if (!fs.existsSync(extDir)) continue;
+                for (const entry of fs.readdirSync(extDir)) {
+                    const full = path.join(extDir, entry);
+                    try { if (fs.statSync(full).isDirectory() && dirLooksLikeBetterBibtexFolder(entry)) return true; } catch (_) {}
+                }
+            } catch (_) {}
+        }
+    } catch (_) {}
+    return false;
 }
 
 // ── Action definitions and subprocess dispatch (inlined from src/commands.js) ──
@@ -2123,18 +2270,32 @@ class PaperForgeSettingTab extends PluginSettingTab {
 
             /* 2 — Zotero (check install + data dir) */
             let zotOk = false;
-            // Try common install locations
-            const progFiles = process.env.ProgramFiles || '';
-            const localAppData = process.env.LOCALAPPDATA || '';
-            const home = process.env.USERPROFILE || process.env.HOME || '';
-            const zotInstallDirs = [
-                path.join(progFiles, 'Zotero'),
-                path.join(progFiles, '(x86)', 'Zotero'),
-                path.join(localAppData, 'Programs', 'Zotero'),
-                path.join(localAppData, 'Zotero'),
-                path.join(home, 'AppData', 'Local', 'Programs', 'Zotero'),
-            ].filter(Boolean);
-            zotOk = zotInstallDirs.some(d => { try { return fs.existsSync(d); } catch { return false; } });
+            const home = process.env.HOME || process.env.USERPROFILE || os.homedir() || '';
+            if (process.platform === 'darwin') {
+                const macZot = [
+                    '/Applications/Zotero.app',
+                    path.join(home, 'Applications', 'Zotero.app'),
+                ];
+                zotOk = macZot.some(d => { try { return fs.existsSync(d); } catch { return false; } });
+            } else if (process.platform === 'win32') {
+                const progFiles = process.env.ProgramFiles || '';
+                const localAppData = process.env.LOCALAPPDATA || '';
+                const zotInstallDirs = [
+                    path.join(progFiles, 'Zotero'),
+                    path.join(progFiles, '(x86)', 'Zotero'),
+                    path.join(localAppData, 'Programs', 'Zotero'),
+                    path.join(localAppData, 'Zotero'),
+                    path.join(home, 'AppData', 'Local', 'Programs', 'Zotero'),
+                ].filter(Boolean);
+                zotOk = zotInstallDirs.some(d => { try { return fs.existsSync(d); } catch { return false; } });
+            } else {
+                const linuxPaths = [
+                    path.join(home, '.local', 'share', 'zotero', 'zotero'),
+                    '/usr/bin/zotero',
+                    '/usr/local/bin/zotero',
+                ];
+                zotOk = linuxPaths.some(d => { try { return fs.existsSync(d); } catch { return false; } });
+            }
             // Fallback: check if data dir is configured
             const zotDataDir = this.plugin.settings.zotero_data_dir;
             if (!zotOk && zotDataDir) {
@@ -2142,35 +2303,23 @@ class PaperForgeSettingTab extends PluginSettingTab {
             }
             results.push({ label: 'Zotero', ok: zotOk, detail: zotOk ? t('check_zotero_ok') : t('check_zotero_fail') });
 
-            /* 3 — Better BibTeX (recursive search) */
-            function scanBbt(dir) {
-                if (!dir) return false;
-                try {
-                    if (!fs.existsSync(dir)) return false;
-                    for (const entry of fs.readdirSync(dir)) {
-                        const full = path.join(dir, entry);
-                        try {
-                            if (fs.statSync(full).isDirectory()) {
-                                if (entry.startsWith('better-bibtex')) return true;
-                                // Recurse one level into common Zotero subdirs
-                                if (entry === 'extensions' || entry === 'Profiles') {
-                                    if (scanBbt(full)) return true;
-                                }
-                            }
-                        } catch {}
-                    }
-                } catch {}
-                return false;
-            }
+            /* 3 — Better BibTeX (Profiles-aware scan) */
             let bbtOk = false;
             const appData = process.env.APPDATA || '';
-            // 1) Standard: %APPDATA%\Zotero\Zotero\
-            if (!bbtOk && appData) {
-                bbtOk = scanBbt(path.join(appData, 'Zotero', 'Zotero'));
+            if (process.platform === 'win32' && appData) {
+                bbtOk = scanBbtUnderProfiles(path.join(appData, 'Zotero', 'Zotero', 'Profiles'));
             }
-            // 2) Fallback: user-configured zotero_data_dir
-            if (!bbtOk && zotDataDir) {
-                bbtOk = scanBbt(zotDataDir);
+            if (!bbtOk && process.platform === 'darwin' && home) {
+                bbtOk = scanBbtUnderProfiles(path.join(home, 'Library', 'Application Support', 'Zotero', 'Profiles'));
+            }
+            if (!bbtOk && process.platform !== 'win32' && process.platform !== 'darwin' && home) {
+                bbtOk = scanBbtUnderProfiles(path.join(home, '.zotero', 'zotero', 'Profiles'));
+            }
+            if (!bbtOk && zotDataDir && String(zotDataDir).trim()) {
+                bbtOk = scanBbtDirectChildren(zotDataDir.trim());
+            }
+            if (!bbtOk && home) {
+                bbtOk = scanBbtDirectChildren(path.join(home, 'Zotero'));
             }
             results.push({ label: 'Better BibTeX', ok: bbtOk, detail: bbtOk ? t('check_bbt_ok') : t('check_bbt_fail') });
 
@@ -2621,7 +2770,7 @@ class PaperForgeSetupModal extends Modal {
             const { path: pyExe, extraArgs: pyExtra = [] } = resolvePythonExecutable(s.vault_path.trim(), this.plugin.settings);
             const child = spawn(pyExe, [...pyExtra, ...args], {
                 cwd: s.vault_path.trim(),
-                env: process.env,
+                env: paperforgeEnrichedEnv(),
                 timeout: 120000,
                 ...options,
             });
@@ -2655,6 +2804,7 @@ class PaperForgeSetupModal extends Modal {
             '--agent', s.agent_platform || 'opencode',
         ];
         setupArgs.push('--zotero-data', s.zotero_data_dir.trim());
+        setupArgs.push('--paddleocr-key', s.paddleocr_api_key.trim());
 
         try {
             let hasPaperforge = true;
@@ -2667,15 +2817,15 @@ class PaperForgeSetupModal extends Modal {
             if (!hasPaperforge) {
                 this._log(t('install_bootstrapping'));
                 const ver = this.plugin.manifest.version;
-                await runPython([
-                    '-m', 'pip', 'install', '--upgrade',
-                    `git+https://github.com/LLLin000/PaperForge.git@${ver}`,
-                ]);
+                const pipArgs = ['-m', 'pip', 'install', '--upgrade'];
+                if (process.platform !== 'win32') pipArgs.push('--user');
+                pipArgs.push(`git+https://github.com/LLLin000/PaperForge.git@${ver}`);
+                await runPython(pipArgs);
             }
 
             await runPython(setupArgs, {
                 logStdout: true,
-                env: { ...process.env, PADDLEOCR_API_TOKEN: s.paddleocr_api_key.trim() },
+                env: paperforgeEnrichedEnv(),
             });
             this._log(t('install_complete'));
             s.setup_complete = true;
@@ -2752,6 +2902,9 @@ class PaperForgeSetupModal extends Modal {
     }
 
     _formatSetupError(raw) {
+        if (process.platform === 'darwin' && /No module named ['"]?paperforge/i.test(raw)) {
+            return 'PaperForge not installed — install Python from Homebrew or python.org (Apple CLT /Library/Developer/CommandLineTools python often fails); then: python3 -m pip install --user git+https://github.com/LLLin000/PaperForge.git';
+        }
         const patterns = [
             // New: pip not found (before generic command not found)
             { match: /pip.*not found|No module named.*pip|command not found.*pip/i, msg: 'pip not found' },
