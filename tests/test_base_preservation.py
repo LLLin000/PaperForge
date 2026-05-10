@@ -104,8 +104,13 @@ class TestIncrementalMerge:
         assert refreshed.count("type: table") == 8
         assert refreshed.count(PAPERFORGE_VIEW_PREFIX) == 8
 
-    def test_user_modified_filter_on_standard_view_is_overwritten(self):
-        """User changes filter on a standard PaperForge view — on refresh it reverts to template."""
+    def test_user_modified_filter_on_standard_view_is_preserved(self):
+        """User changes filter on a standard PF view — on refresh it is PRESERVED.
+        
+        v1.4.17+: Base views are no longer regenerated on every sync.
+        Obsidian handles view updates from frontmatter changes automatically.
+        User modifications to PF-managed views are left untouched.
+        """
         domain_base = self.bases / f"{slugify_filename('骨科')}.base"
         ensure_base_views(self.vault, self.paths, self.config, force=False)
         content1 = domain_base.read_text(encoding="utf-8")
@@ -119,8 +124,12 @@ class TestIncrementalMerge:
         ensure_base_views(self.vault, self.paths, self.config, force=False)
         refreshed = domain_base.read_text(encoding="utf-8")
 
-        assert ocr_done_filter_old in refreshed
-        assert ocr_done_filter_modified not in refreshed
+        assert ocr_done_filter_modified in refreshed, "User filter modification should be preserved"
+        # force=True should still regenerate
+        ensure_base_views(self.vault, self.paths, self.config, force=True)
+        force_refreshed = domain_base.read_text(encoding="utf-8")
+        assert ocr_done_filter_old in force_refreshed
+        assert ocr_done_filter_modified not in force_refreshed
 
     def test_new_domain_base_is_created_on_first_run(self):
         """First run creates domain base if none exists."""
@@ -257,3 +266,61 @@ views:
 
         # Only known placeholders should be substituted
         assert "${LIBRARY_RECORDS}" not in result or "03_Resources" in result
+
+    def test_merge_base_views_preserves_column_widths(self):
+        """User-adjusted column widths in PF views survive merge."""
+        existing = """
+filters:
+  and:
+    - file.inFolder("骨科")
+views:
+# PAPERFORGE_VIEW: 控制面板
+  - type: table
+    name: "控制面板"
+    widths:
+      file.name: 180
+      title: 400
+      year: 60
+    order:
+      - file.name
+      - title
+      - year
+# PAPERFORGE_VIEW: OCR 完成
+  - type: table
+    name: "OCR 完成"
+    widths:
+      year: 55
+      title: 380
+    order:
+      - year
+      - title
+    filter: "ocr_status = 'done'"
+"""
+        views = build_base_views("骨科")
+        result = merge_base_views(existing, views)
+
+        assert "widths:" in result
+        assert "file.name: 180" in result
+        assert "title: 400" in result
+        assert "year: 60" in result
+        assert "year: 55" in result
+        assert "title: 380" in result
+
+    def test_merge_base_views_widths_not_injected_when_none_exist(self):
+        """Fresh PF views without old widths should not have widths injected."""
+        existing = """
+filters:
+  and:
+    - file.inFolder("骨科")
+views:
+# PAPERFORGE_VIEW: 控制面板
+  - type: table
+    name: "控制面板"
+    order:
+      - file.name
+      - title
+"""
+        views = build_base_views("骨科")
+        result = merge_base_views(existing, views)
+
+        assert "widths:" not in result

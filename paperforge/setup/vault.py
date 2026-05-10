@@ -16,7 +16,7 @@ class VaultInitializer:
         "system_dir": "99_System",
         "resources_dir": "03_Resources",
         "literature_dir": "Literature",
-        "control_dir": "99_System/PaperForge",
+        # control_dir 已淘汰 (v2.1+ workspace 架构)
     }
 
     def __init__(self, vault: Path, config: dict):
@@ -29,7 +29,7 @@ class VaultInitializer:
             self.vault / "paperforge.json",
         ]
 
-        for key in ("system_dir", "resources_dir", "literature_dir", "control_dir"):
+        for key in ("system_dir", "resources_dir", "literature_dir"):
             rel = self.config.get(key, self.DEFAULT_DIRS.get(key, ""))
             if rel:
                 dirs_to_create.append(self.vault / rel)

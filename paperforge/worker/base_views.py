@@ -214,6 +214,58 @@ def _render_views_section(views: list[dict]) -> str:
     return "\n".join(lines)
 
 
+def _extract_widths_from_block(text: str) -> dict[str, int] | None:
+    """Extract column widths from an existing view block text.
+
+    Args:
+        text: Raw text of a single view block (PF prefix line through its last indented line).
+
+    Returns:
+        dict of column_name -> width_pixels, or None if no widths found.
+    """
+    in_widths = False
+    widths = {}
+    for line in text.split("\n"):
+        stripped = line.strip()
+        if stripped == "widths:" and not in_widths:
+            in_widths = True
+            continue
+        if in_widths:
+            if not stripped:
+                break
+            if ":" not in stripped:
+                break
+            key, _, val = stripped.partition(":")
+            try:
+                widths[key.strip()] = int(val.strip())
+            except ValueError:
+                pass
+    return widths if widths else None
+
+
+def _inject_widths_into_block(text: str, widths: dict[str, int]) -> str:
+    """Inject widths: section into a fresh PF view block after the name: line.
+
+    Args:
+        text: Fresh PF view block text (with PF prefix marker).
+        widths: Column width mapping to inject.
+
+    Returns:
+        Block text with widths section inserted between name: and order:.
+    """
+    lines = text.split("\n")
+    result = []
+    injected = False
+    for line in lines:
+        result.append(line)
+        if not injected and line.strip().startswith("name:"):
+            result.append("    widths:")
+            for col, w in sorted(widths.items()):
+                result.append(f"      {col}: {w}")
+            injected = True
+    return "\n".join(result)
+
+
 def merge_base_views(existing_content: str | None, new_views: list[dict]) -> str:
     """Incrementally merge standard PaperForge views into an existing .base file.
 
@@ -223,6 +275,7 @@ def merge_base_views(existing_content: str | None, new_views: list[dict]) -> str
     - Each PaperForge view is preceded by a PAPERFORGE_VIEW_PREFIX comment marker.
     - On refresh: replace ALL PaperForge views (identified by prefix) with fresh ones.
     - User views (no prefix) are left completely untouched.
+    - User-adjusted column widths are preserved across refreshes.
 
     Args:
         existing_content: Raw text of existing .base file (or None/empty for fresh generation).
@@ -312,24 +365,37 @@ views:
     rebuilt_views_lines = []
     pf_names_seen = set()
     i = views_start_idx + 1
-    pending_pf_view_name = None
     while i < len(lines):
         line = lines[i]
 
         if line.startswith(PAPERFORGE_VIEW_PREFIX):
-            pending_pf_view_name = line[len(PAPERFORGE_VIEW_PREFIX) :].strip()
-            pf_names_seen.add(pending_pf_view_name)
+            view_name = line[len(PAPERFORGE_VIEW_PREFIX) :].strip()
+            pf_names_seen.add(view_name)
+            # Collect the full existing PF view block (PF prefix + all its indented lines)
+            old_block_lines = [line]
             i += 1
-            continue
-        elif pending_pf_view_name is not None and line.strip().startswith("- type: table"):
-            pf_block = next((b for n, b in new_pf_blocks if n == pending_pf_view_name), None)
+            type_table_count = 0
+            while i < len(lines):
+                next_line = lines[i]
+                if next_line.strip().startswith(PAPERFORGE_VIEW_PREFIX):
+                    break
+                if next_line.strip().startswith("- type: table"):
+                    if type_table_count >= 1:
+                        break
+                    type_table_count += 1
+                old_block_lines.append(next_line)
+                i += 1
+            # Get fresh block and inject preserved column widths
+            pf_block = next((b for n, b in new_pf_blocks if n == view_name), None)
             if pf_block:
+                old_text = "\n".join(old_block_lines)
+                widths = _extract_widths_from_block(old_text)
+                if widths:
+                    pf_block = _inject_widths_into_block(pf_block, widths)
                 rebuilt_views_lines.append(pf_block)
-            pending_pf_view_name = None
-            i += 1
             continue
+
         elif line.strip().startswith("- type: table"):
-            pending_pf_view_name = None
             view_block_lines = [line]
             i += 1
             while i < len(lines):
@@ -343,13 +409,10 @@ views:
                 view_block_lines.append(next_line)
                 i += 1
             block_text = "\n".join(view_block_lines)
-            # If no PF markers seen yet, this is a legacy pre-prefix view → skip
-            if not pf_names_seen:
-                continue
             rebuilt_views_lines.append(block_text)
             continue
+
         else:
-            pending_pf_view_name = None
             i += 1
 
     for view_name, pf_block in new_pf_blocks:
@@ -426,26 +489,28 @@ views:
 
 
 def ensure_base_views(vault: Path, paths: dict[str, Path], config: dict, force: bool = False) -> None:
-    """Generate/refresh Domain Base files with incremental merge (preserves user views).
+    """Generate Domain Base files on first run; subsequent calls only update folder filter.
 
-    Each PaperForge standard view is marked with PAPERFORGE_VIEW_PREFIX. On refresh,
-    only PaperForge views are replaced; user-defined views are preserved.
+    Base views are static — Obsidian automatically reflects frontmatter changes.
+    PaperForge should not regenerate views on every sync; it only ensures:
+    1. Base files exist (create on first setup).
+    2. Folder filter stays in sync with configured directory paths.
+    3. force=True allows full regeneration when explicitly requested.
     """
     paths["bases"].mkdir(parents=True, exist_ok=True)
 
     def refresh_base(base_path: Path, folder_filter: str, views: list[dict]) -> None:
-        """Refresh a single .base file: merge PaperForge views, preserve user views."""
         resolved_filter = substitute_config_placeholders(folder_filter, paths)
         if base_path.exists() and not force:
+            # File exists: only update folder filter if paths changed
             existing = base_path.read_text(encoding="utf-8")
-            # Update folder filter if paths changed (e.g. library-records removed)
-            existing = _update_folder_filter(existing, resolved_filter)
-            merged = merge_base_views(existing, views)
-        else:
-            merged = _build_base_yaml(resolved_filter, views)
+            updated = _update_folder_filter(existing, resolved_filter)
+            if updated != existing:
+                base_path.write_text(updated, encoding="utf-8")
+            return
+        # File does not exist (or force=True): generate fresh
+        merged = _build_base_yaml(resolved_filter, views)
         merged = substitute_config_placeholders(merged, paths)
-        if base_path.exists() and base_path.read_text(encoding="utf-8").replace("\r\n", "\n") == merged:
-            return  # no change, skip write
         base_path.write_text(merged, encoding="utf-8")
 
     seen_domains = set()

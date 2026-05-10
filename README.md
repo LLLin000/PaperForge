@@ -10,168 +10,240 @@
 
 **简体中文** · [English](README.en.md)
 
-> **铸知识为器，启洞见之明。**
+> **铸知识为器，启洞见之明。 — Forge Knowledge, Empower Insight.**
+
+PaperForge 让你在 Obsidian 里管理 Zotero 文献。同步、OCR 全文提取、图表解析、AI 精读，全在一个 Vault 里完成。
+
+---
+
+## 0. 先理解它是什么
+
+PaperForge **不是一个纯 Obsidian 插件**。它有两部分：
+
+| 部分 | 是什么 | 干什么 | 装在哪 |
+|------|--------|--------|--------|
+| Obsidian 插件 | `main.js` + `manifest.json` + `styles.css` | Dashboard、按钮、设置界面 | Vault 的 `.obsidian/plugins/paperforge/` |
+| Python 包 | `paperforge` | 同步、OCR、Doctor、修复 | 系统 Python 环境 (`pip install`) |
+
+插件是**壳**，Python 包是**引擎**。插件里的按钮点了之后，实际是调用 Python 命令行去干活。
+
+**所以装完插件之后，必须在设置里确认 Python 包也已安装，并且版本一致。**
+
+---
+
+## 1. 安装 Obsidian 插件
+
+### 方式一：BRAT（推荐）
+
+1. 在 Obsidian 社区插件市场搜索安装 **BRAT**（Beta Reviewer's Auto-update Tester）
+2. 打开 BRAT 设置 → `Add Beta Plugin`
+3. 填入仓库地址：`https://github.com/LLLin000/PaperForge`
+4. BRAT 会自动下载最新 Release 的 `main.js`、`manifest.json`、`styles.css` 并安装
+5. 在 Obsidian 设置 → 社区插件 → 启用 PaperForge
+
+> BRAT 能自动检测 GitHub Release 更新，不需要手动下载。
+
+### 方式二：手动下载
+
+1. 打开 [Releases](https://github.com/LLLin000/PaperForge/releases) 页面
+2. 下载最新版本的三个文件：`main.js`、`manifest.json`、`styles.css`
+3. 在 Vault 里创建文件夹 `.obsidian/plugins/paperforge/`
+4. 把三个文件放进去
+5. 重启 Obsidian → 设置 → 社区插件 → 启用 PaperForge
+
+> 手动安装不会自动更新，每次新版本需要重新下载替换。
+
+---
+
+## 2. 安装 Python 包
+
+插件装好后，打开 PaperForge 设置页面。你会看到 **运行时状态** 区域：
+
+```
+插件 v1.4.17 → Python 包 v1.4.17 ✓ 匹配
+```
+
+- 如果显示"未安装" → 点击 **同步运行时** 按钮，或者自己在终端执行：
+  ```bash
+  pip install --upgrade git+https://github.com/LLLin000/PaperForge.git@1.4.17
+  ```
+- 如果显示"版本不匹配" → 说明插件版本和 Python 包版本不一致。点"同步运行时"会自动拉取与插件版本匹配的 Python 包。
+
+---
+
+## 3. Python 解释器识别逻辑
+
+PaperForge 需要找到你系统里的 Python。它按以下顺序查找，找到就用：
+
+| 优先级 | 来源 | 说明 |
+|--------|------|------|
+| 1 | **你手动指定** | 设置 → `自定义 Python 路径`，填入完整路径（如 `C:\Users\你的用户名\AppData\Local\Programs\Python\Python311\python.exe`）。**这是最可靠的方式。** |
+| 2 | **venv 自动检测** | 自动扫描 Vault 根目录下的 `.paperforge-test-venv`、`.venv`、`venv` 里的 Python |
+| 3 | **系统自动检测** | 依次尝试 `py -3`、`python`、`python3`，用 `--version` 验证，挑第一个能用的 |
+| 4 | **兜底** | 以上都找不到，回退到 `python` |
+
+> 如果你系统里有多个 Python（比如系统自带的 3.9 + 自己装的 3.11），**强烈建议在设置里手动指定路径**，避免跑错环境。
 >
-> **Forge Knowledge, Empower Insight.**
+> 设置里的 **验证** 按钮会立即测试当前选中的解释器，显示它能不能用、是什么版本。
 
-PaperForge 是一个面向研究者的 Obsidian 文献工作台。
-它针对 Zotero，把零散材料整理为可检索、可追问、可精读的结构化知识资产。
+---
 
-从同步文献，到抽取全文与图表，再到 AI 深读与批判性梳理，整条链路尽量留在同一个知识环境里完成。
+## 4. 安装向导参数说明
 
-```text
-下载插件 → 在 Obsidian 启用 → 打开安装向导 → 填写配置 → 点击安装 → 开始使用
-```
+`Ctrl+P` → `PaperForge: Run Setup Wizard` 会引导你配置以下内容。每一步都解释在这里，免得你填的时候不知道是什么意思。
 
-## 从文献到洞见
+### 4.1 Vault 路径
+你当前打开的 Obsidian Vault 根目录。安装向导自动检测，一般不用改。
 
-PaperForge 不是单纯的 OCR 工具，也不只是 Zotero 到 Obsidian 的搬运脚本。
-它更像一座知识炉：把原始论文、附件和图表炼成真正能被研究流程使用的材料。
+### 4.2 AI Agent 平台
 
-| 层级 | 产出 | 用途 |
-|------|------|------|
-| **索引卡片** | 带结构化 frontmatter 的记录（标题、作者、期刊、DOI、标签、摘要） | 搜索、浏览、Base 视图筛选 |
-| **全文语料** | OCR 提取的 `fulltext.md` | 提供给 LLM、RAG、检索问答 |
-| **图表数据库** | 图表图片、caption 与 figure-map | 多模态分析、图表定位、证据追踪 |
-| **精读笔记** | AI 三阶段分析、图表解读、批判评估 | 文献综述、研究设计、写作准备 |
+PaperForge 的精读功能通过 AI Agent 执行（如 `/pf-deep` 命令）。你需要选择你使用的 Agent 平台，安装向导会把对应的命令文件部署到正确位置。
 
-## 为什么值得试试
+| Agent | 命令文件放在 | 前缀 | 如何触发精读 |
+|-------|-------------|------|------------|
+| **OpenCode** | `.opencode/command/` + `.opencode/skills/` | `/` | 打开 OpenCode，输入 `/pf-deep <key>` |
+| **Claude Code** | `.claude/skills/` | `/` | 打开 Claude Code，输入 `/pf-deep <key>` |
+| **Cursor** | `.cursor/skills/` | `/` | 打开 Cursor 的 AI Chat，输入 `/pf-deep <key>` |
+| **GitHub Copilot** | `.github/skills/` | `/` | 打开 Copilot Chat，输入 `/pf-deep <key>` |
+| **Windsurf** | `.windsurf/skills/` | `/` | 打开 Windsurf，输入 `/pf-deep <key>` |
+| **Codex** | `.codex/skills/` | `$` | 打开 Codex，输入 `$pf-deep <key>` |
+| **Cline** | `.clinerules/` | `/` | 打开 Cline，输入 `/pf-deep <key>` |
 
-- **安装路径短**：插件安装 + 向导配置，不要求用户长期在终端里维护流水线。
-- **工作流完整**：同步、OCR、图表、精读、Agent 命令都围绕同一个 Vault 组织。
-- **对 AI 友好**：输出不是一堆散文件，而是适合检索、提问、精读和后续写作的结构化资产。
-- **保留研究现场**：PaperForge 不取代 Zotero 与 Obsidian，而是把它们接成一条可持续使用的研究链。
+> 注意：`/pf-deep` 和 `/pf-paper` **不是在终端里执行的命令**。你需要先启动对应的 Agent 应用（比如打开 OpenCode），然后在这个 Agent 的对话输入框里输入命令，Agent 才会调用 PaperForge 的精读脚本去分析你的论文。
 
-## 安装
+### 4.3 目录命名
 
-完整安装指南请参见 [INSTALLATION.md](INSTALLATION.md)。
+安装向导会问你几个目录叫什么名字。这些都是给你自己看的，用来组织 Vault 里的文件结构。**大部分情况用默认值就行。**
 
-## 架构
-
-```
-paperforge/
-├── core/          契约层 —— PFResult/PFError 数据契约、ErrorCode 枚举、状态机
-│   ├── result.py      PFResult/PFError 序列化
-│   ├── errors.py      ErrorCode 枚举（集中错误码）
-│   └── state.py       OcrStatus/PdfStatus/Lifecycle 状态机 + 合法迁移规则
-├── adapters/      适配器层 —— 独立可测的模块化组件
-│   ├── bbt.py         Better BibTeX JSON 解析
-│   ├── zotero_paths.py   Zotero 附件路径规范化
-│   └── obsidian_frontmatter.py  Frontmatter 读写（YAML 解析器）
-├── services/      服务层 —— 编排适配器
-│   └── sync_service.py  SyncService 类
-├── setup/         安装层 —— 6 个独立类
-│   ├── plan.py         SetupPlan（编排）
-│   ├── checker.py      SetupChecker（前置检查）
-│   ├── config_writer.py    ConfigWriter（原子写入）
-│   ├── vault.py        VaultInitializer（目录/链接）
-│   ├── runtime.py      RuntimeInstaller（pip 安装）
-│   └── agent.py        AgentInstaller（技能部署）
-├── schema/        字段注册表
-│   └── field_registry.yaml  44 字段定义
-├── doctor/        诊断校验
-│   └── field_validator.py   字段完整性 + 漂移检测
-├── worker/        工人层 —— 机械劳动
-│   ├── sync.py         调度壳（-57 行）
-│   ├── status.py       状态 + doctor 检查
-│   ├── ocr.py          OCR 流水线
-│   └── ...
-├── commands/      CLI 分发层
-└── plugin/        Obsidian 插件
-```
-
-所有 CLI 命令通过 PFResult 契约输出统一 JSON 格式：`{ok, command, version, data, error}`。`doctor` 可以校验字段注册表一致性，检测数据漂移。
-
-## 使用方式
-
-全部核心流程都可以从 Obsidian 内启动。
-
-| 操作 | 方式 |
-|------|------|
-| **打开 Dashboard** | `Ctrl+P` → `PaperForge: Open Dashboard`，或点击左侧图标 |
-| **同步文献** | Dashboard → `Sync Library`，从 Zotero 拉取数据并生成笔记 |
-| **运行 OCR** | Dashboard → `Run OCR`，提取 PDF 全文与图表 |
-| **AI 精读** | `/pf-deep <zotero_key>`，执行三阶段深度分析 |
-| **快速问答** | `/pf-paper <zotero_key>`，对单篇论文快速提问 |
-
-### Dashboard
-
-<p align="center">
-  <img src="docs/images/paperforge-dashboard.png" alt="PaperForge dashboard" width="78%" />
-</p>
-
-## 命令参考
-
-### Obsidian 命令面板
-
-| 命令 | 说明 |
-|------|------|
-| `PaperForge: Open Dashboard` | 打开状态面板与快捷操作 |
-| `PaperForge: Sync Library` | 同步 Zotero 并生成笔记 |
-| `PaperForge: Run OCR` | 提取全文和图表 |
-
-### Agent 命令
-
-| 命令 | 说明 | 前置条件 |
-|------|------|---------|
-| `/pf-deep <key>` | 完整三阶段精读 | OCR 完成 |
-| `/pf-paper <key>` | 快速文献问答 | 已有正式笔记 |
-| `/pf-sync` | 同步 Zotero | 已安装 |
-| `/pf-ocr` | 运行 OCR | 已安装 |
-| `/pf-status` | 查看系统状态 | 已安装 |
-
-### CLI 命令
-
-| 命令 | 说明 |
-|------|------|
-| `paperforge sync` | 同步 Zotero 并生成笔记 |
-| `paperforge ocr` | 运行 OCR |
-| `paperforge status` | 查看系统概览 |
-| `paperforge doctor` | 诊断配置问题 |
-| `paperforge update` | 更新 PaperForge |
-
-## 支持的 Agent 平台
-
-| 平台 | Agent 命令 | 部署位置 |
-|------|-----------|---------|
-| **OpenCode** | 完整支持全部 `/pf-*` 命令 | `.opencode/command/` + `.opencode/skills/` |
-| **Claude Code** | `/pf-deep`, `/pf-paper` | `.claude/skills/` |
-| **Cursor** | `/pf-deep`, `/pf-paper` | `.cursor/skills/` |
-| **GitHub Copilot** | `/pf-deep`, `/pf-paper` | `.github/skills/` |
-| **Windsurf** | `/pf-deep`, `/pf-paper` | `.windsurf/skills/` |
-| **Codex** | `$pf-deep`, `$pf-paper` | `.codex/skills/` |
-| **Cline** | `/pf-deep`, `/pf-paper` | `.clinerules/` |
-
-在安装向导中选择你的平台，相关文件会自动部署。
-
-## 配置
-
-安装向导会处理绝大多数配置。默认生成的结构如下：
-
-```text
-vault/
-├── paperforge.json          ← 目录配置 + Agent 平台
-├── System/
-│   └── PaperForge/
-│       ├── .env             ← PaddleOCR API Key
-│       ├── exports/         ← Better BibTeX JSON 导出目录
-│       └── config/          ← domain-collections.json
-├── Resources/
-│   ├── Notes/               ← 正文笔记（元数据 + 精读笔记）
-│   └── Index_Cards/         ← 索引卡片（按领域组织）
-└── Base/                    ← Obsidian Base 视图
-```
-
-可选环境变量：
-
-| 变量 | 默认值 | 说明 |
+| 参数 | 默认值 | 作用 |
 |------|--------|------|
-| `PADDLEOCR_API_TOKEN` | — | PaddleOCR API Key |
-| `PAPERFORGE_LOG_LEVEL` | `INFO` | 日志级别 |
+| `system_dir` | `99_System` | PaperForge 内部数据的总目录。下面会有 `exports/`（Zotero 导出的 JSON）、`ocr/`（OCR 结果）、`config/` 等子目录。你一般不需要手动进去看。 |
+| `resources_dir` | `03_Resources` | 资源根目录。你的正式文献笔记就放在这里下面的 `literature_dir` 里。 |
+| `literature_dir` | `Literature` | 正式文献笔记的目录。`paperforge sync` 生成的带 frontmatter 的 `.md` 笔记在这里。你日常阅读、编辑笔记都在这个目录。 |
+| `base_dir` | `05_Bases` | Obsidian Base 视图文件目录。Dashboard 里的筛选视图（"待 OCR"、"待精读"等）存在这里。 |
 
-## 更新
+### 4.4 PaddleOCR API Token
 
-默认可在 Obsidian 重启时自动更新，也可以手动执行：
+OCR 功能需要 PaddleOCR 的 API。在 `.env` 文件里配置：
+
+```
+PADDLEOCR_API_TOKEN=你的API密钥
+```
+
+安装向导会引导你填写，也可以之后手动在 Vault 根目录的 `.env` 文件里加。OCR URL 一般不需要改。
+
+### 4.5 Zotero 数据目录
+
+PaperForge 会创建一个 junction（Windows）或 symlink（macOS/Linux），把 Zotero 的数据目录连接到 Vault 里。这样 Obsidian 的 wikilink 才能找到 PDF 文件。
+
+安装向导会自动检测 Zotero 的安装位置。如果检测失败，你需要手动指定 Zotero 数据目录的路径——也就是包含 `storage` 子目录的那个文件夹（不是 Zotero 程序本身）。
+
+### 4.6 安装过程
+
+确认配置后，安装向导会自动：
+- 创建所有需要的目录结构
+- 把 Agent 命令文件部署到对应位置
+- 把 Obsidian 插件文件安装到位
+- 创建 Zotero junction/symlink
+- 写入 `paperforge.json` 和 `.env`
+
+整个过程是**增量的** — 如果你选的目录里已经有文件，安装向导只会补充缺失的，不会删除已有内容。
+
+---
+
+## 5. 首次使用
+
+1. **确认版本一致**：设置 → 运行时状态 → 确保插件和 Python 包版本一致
+2. **确认 Python 正确**：设置 → 验证按钮，确认连接的是你想要的 Python
+3. **运行安装向导**：`Ctrl+P` → `PaperForge: Run Setup Wizard`
+4. **配置 PaddleOCR**：在 `.env` 里填入 API Token（安装向导会引导你做这一步）
+5. **在 Zotero 里导出文献**：右键要同步的文献库 → `导出...` → 格式选 `Better BibTeX JSON` → 勾选 `Keep updated` → 保存到 `<system_dir>/PaperForge/exports/`
+6. **运行 Doctor**：Dashboard → `Run Doctor`，确认所有检查通过
+
+---
+
+## 6. 日常使用
+
+所有机械操作都可以从 Obsidian Dashboard 完成：
+
+| 你要做什么 | 操作 |
+|-----------|------|
+| 打开控制面板 | `Ctrl+P` → `PaperForge: Open Dashboard` |
+| 同步 Zotero 文献 | Dashboard → `Sync Library` |
+| 运行 OCR | Dashboard → `Run OCR` |
+| 检查系统状态 | Dashboard → `Run Doctor` |
+
+### AI 精读（需 Agent）
+
+| 命令 | 作用 | 前置条件 |
+|------|------|---------|
+| `/pf-deep <zotero_key>` | 完整三阶段精读 | OCR 完成、analyze 设为 true |
+| `/pf-paper <zotero_key>` | 快速文献摘要 | 已有正式笔记 |
+| `/pf-sync` | Agent 帮你同步 Zotero | 已安装 |
+| `/pf-ocr` | Agent 帮你运行 OCR | 已安装 |
+| `/pf-status` | Agent 帮你查看状态 | 已安装 |
+
+> **使用方式**：打开你选择的 Agent 应用（OpenCode / Claude Code / Cursor / …），在对话输入框里输入这些命令。不同的 Agent 前缀可能不同（大部分是 `/`，Codex 是 `$`）。
+
+---
+
+## 7. 完整工作流
+
+```
+Zotero 添加论文
+  ↓ Better BibTeX 自动导出 JSON 到 exports/ 目录
+Dashboard → Sync Library
+  ↓ 生成正式笔记（Literature/ 目录下，带 frontmatter 元数据）
+在笔记 frontmatter 里把 do_ocr 设为 true
+  ↓
+Dashboard → Run OCR
+  ↓ PaddleOCR 提取全文 + 图表 → ocr/ 目录
+在笔记 frontmatter 里把 analyze 设为 true
+  ↓
+打开 Agent → 输入 /pf-deep <zotero_key>
+  ↓ Agent 执行三阶段精读
+笔记里出现 ## 🔍 精读 区域
+```
+
+---
+
+## 8. 常见问题
+
+### 插件加载失败（Cannot find module）
+
+- 确认 `.obsidian/plugins/paperforge/` 下有 `main.js`、`manifest.json`、`styles.css` 三个文件
+- 如果 BRAT 从旧版升级后出问题：删除整个 `paperforge` 插件文件夹，让 BRAT 重新下载
+- 打开 Developer Console（`Ctrl+Shift+I`）看红色报错
+
+### "同步运行时" 点了还是旧版本
+
+- 插件调用的 Python 可能和你终端用的是不同环境。检查设置 → Python 解释器路径
+- pip 缓存问题，用 `--no-cache-dir` 重装
+- 确认 `https://github.com/LLLin000/PaperForge` 网络能通
+
+### OCR 一直 pending
+
+- 确认 `.env` 里有 `PADDLEOCR_API_TOKEN`
+- 终端运行 `paperforge ocr --diagnose` 检查 API 连通性
+- PDF 路径可能不对：运行 `paperforge repair --fix-paths`
+
+### 同步后没有生成笔记
+
+- Zotero Better BibTeX 是否配置了自动导出？JSON 是否在 `exports/` 目录？
+- 运行 `paperforge doctor` 看具体哪一步失败
+- 运行 `paperforge status` 查看系统状态总览
+
+### /pf-deep 命令没反应
+
+- 确认你在 Agent 软件里执行，不是在终端
+- 确认 OCR 已完成（ocr_status: done）
+- 确认 analyze 已设为 true
+
+---
+
+## 9. 更新
+
+BRAT 会自动检测插件更新。Python 包更新：
 
 ```bash
 paperforge update
@@ -179,32 +251,28 @@ paperforge update
 pip install --upgrade git+https://github.com/LLLin000/PaperForge.git
 ```
 
-## 文档
+---
 
-| 文档 | 内容 |
-|------|------|
-| [安装后指南](AGENTS.md) | 首次使用与工作流说明 |
-| [变更日志](CHANGELOG.md) | 版本历史 |
-| [贡献指南](CONTRIBUTING.md) | 开发环境与协作约定 |
+## 10. 架构
+
+```
+paperforge/
+├── core/          契约层 — PFResult/ErrorCode/状态机
+├── adapters/      适配器层 — BBT 解析、路径、frontmatter
+├── services/      服务层 — SyncService 编排
+├── worker/        工人层 — OCR、状态、修复
+├── commands/      CLI 分发
+├── setup/         安装向导（目录创建、Agent 部署、Zotero 链接）
+├── plugin/        Obsidian 插件（Dashboard、设置面板）
+└── schema/        字段注册表
+```
+
+---
 
 ## 协议
 
-[CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/)。
-仅限非商业使用，详见 [LICENSE](LICENSE)。
+[CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/)。仅限非商业使用。
 
 ## 致谢
 
-PaperForge 站在这些优秀项目的肩膀上：
-
-| 项目 | 作用 |
-|------|------|
-| [PaddleOCR / PaddleOCR-VL](https://github.com/PaddlePaddle/PaddleOCR) | PDF OCR 引擎，负责文字提取、版面检测与图表分割 |
-| [Obsidian](https://obsidian.md) | 知识工作台与插件宿主 |
-| [Better BibTeX for Zotero](https://retorque.re/zotero-better-bibtex/) | 文献元数据自动导出 |
-| [PyMuPDF (fitz)](https://github.com/pymupdf/PyMuPDF) | 本地 PDF 验证与净化 |
-| [requests](https://github.com/psf/requests) | OCR API HTTP 客户端 |
-| [tenacity](https://github.com/jd/tenacity) | 指数退避重试机制 |
-| [Pillow](https://python-pillow.org) | 图表图片处理 |
-| [tqdm](https://github.com/tqdm/tqdm) | 进度条 |
-
-> 把论文、PDF、图表与注释从零散材料炼成真正可用的知识器物，这就是 PaperForge 想做的事。
+基于 [PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR)、[Obsidian](https://obsidian.md)、[Better BibTeX for Zotero](https://retorque.re/zotero-better-bibtex/) 等开源项目构建。
