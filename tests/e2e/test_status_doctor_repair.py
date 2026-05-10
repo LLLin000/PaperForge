@@ -35,7 +35,7 @@ def test_doctor_runs(e2e_cli_invoker: tuple) -> None:
         f"stdout:{result.stdout}\nstderr:{result.stderr}"
     )
     # Output should mention setup-related checks
-    output = (result.stdout + result.stderr).lower()
+    output = ((result.stdout or "") + (result.stderr or "")).lower()
     assert "python" in output or "paperforge" in output or "config" in output or "status" in output or "ok" in output or "fail" in output or result.returncode == 0, (
         "Doctor output should contain setup-related content"
     )

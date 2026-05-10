@@ -7,7 +7,7 @@ const {
     classifyError,
     buildRuntimeInstallCommand,
     parseRuntimeStatus,
-} = await import('../src/errors.js');
+} = await import('../src/testable.js');
 
 describe('classifyError', () => {
     it('classifies ENOENT as python_missing', () => {

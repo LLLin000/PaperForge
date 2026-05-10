@@ -310,11 +310,6 @@ def build_parser() -> argparse.ArgumentParser:
         help="Literature directory name (default: Literature)",
     )
     p_setup.add_argument(
-        "--control-dir",
-        metavar="NAME",
-        help="Control directory name (default: LiteratureControl)",
-    )
-    p_setup.add_argument(
         "--base-dir",
         metavar="NAME",
         help="Base directory name (default: Bases)",
@@ -497,7 +492,6 @@ def main(argv: list[str] | None = None) -> int:
                 "system_dir": getattr(args, "system_dir", None) or "System",
                 "resources_dir": getattr(args, "resources_dir", None) or "Resources",
                 "literature_dir": getattr(args, "literature_dir", None) or "Literature",
-                "control_dir": getattr(args, "control_dir", None) or "LiteratureControl",
                 "base_dir": getattr(args, "base_dir", None) or "Bases",
             }
             plan = SetupPlan(

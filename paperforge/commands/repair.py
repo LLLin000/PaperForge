@@ -57,16 +57,17 @@ def run(args: argparse.Namespace) -> int:
     )
 
     # ── Build PFResult ──
-    divergent = result.get("divergent", 0)
-    path_errors = result.get("path_errors", {})
+    divergent: list = result.get("divergent", [])
+    path_errors: dict = result.get("path_errors", {})
+    divergent_count = len(divergent)
     path_error_total = path_errors.get("total", 0)
-    has_issues = bool(divergent) or path_error_total > 0
+    has_issues = divergent_count > 0 or path_error_total > 0
 
     pf_error = None
     if has_issues:
         pf_error = PFError(
             code=ErrorCode.VALIDATION_ERROR,
-            message=f"Repair found {divergent} divergences and {path_error_total} path errors",
+            message=f"Repair found {divergent_count} divergences and {path_error_total} path errors",
             details=result,
         )
 

@@ -25,14 +25,12 @@ FILES_TO_UPDATE = {
     "__init__": ROOT / "paperforge" / "__init__.py",
     "plugin_manifest": ROOT / "paperforge" / "plugin" / "manifest.json",
     "root_manifest": ROOT / "manifest.json",
-    "versions": ROOT / "paperforge" / "plugin" / "versions.json",
 }
 
 PLUGIN_FILES = [
     ROOT / "paperforge" / "plugin" / "main.js",
     ROOT / "paperforge" / "plugin" / "styles.css",
     ROOT / "paperforge" / "plugin" / "manifest.json",
-    ROOT / "paperforge" / "plugin" / "versions.json",
 ]
 
 
@@ -63,10 +61,6 @@ def update_file(path: Path, old_ver: str, new_ver: str, dry: bool) -> bool:
         print(f"  WOULD update {path.name}: {old_ver} → {new_ver}")
         return True
     new_content = content.replace(old_ver, new_ver)
-    if path.name == "versions.json" and f'"{new_ver}"' not in new_content:
-        data = json.loads(new_content)
-        data[new_ver] = "1.0.0"
-        new_content = json.dumps(data, indent=2, ensure_ascii=False) + "\n"
     path.write_text(new_content, encoding="utf-8")
     print(f"  {path.name}: {old_ver} → {new_ver}")
     return True
@@ -101,18 +95,38 @@ def main():
         print("\nSkipping git — files updated on disk only.")
         return
 
-    # Git commit + tag
-    run(["git", "tag", new_ver])
+    # Git add + commit + tag
+    staged = [str(FILES_TO_UPDATE[k]) for k in FILES_TO_UPDATE]
+    run(["git", "add"] + staged)
+    run(["git", "commit", "-m", f"bump: {old_ver} -> {new_ver}"])
+
+    # Verify the commit actually has the new version
+    try:
+        result = subprocess.run(
+            ["git", "show", f"HEAD:paperforge/__init__.py"],
+            cwd=ROOT, capture_output=True, text=True, check=True,
+        )
+        if new_ver not in result.stdout:
+            sys.exit(f"VERIFY FAILED: __init__.py in HEAD does not contain version {new_ver}")
+    except subprocess.CalledProcessError:
+        sys.exit("VERIFY FAILED: cannot read __init__.py from HEAD")
+
+    run(["git", "tag", "-f", new_ver])
     print(f"Committed and tagged {new_ver}")
 
     if not args.release:
         print("Run: git push && git push --tags")
         return
 
-    # Push
-    run(["git", "push"])
-    run(["git", "push", "--tags"])
-    print("Pushed to remote")
+    # Push (may fail on protected branches — push to a release branch instead)
+    try:
+        run(["git", "push"])
+    except subprocess.CalledProcessError:
+        print("WARNING: git push failed (branch may be protected). Push manually or use a release branch.")
+    try:
+        run(["git", "push", "--tags"])
+    except subprocess.CalledProcessError:
+        print("WARNING: git push --tags failed")
 
     # Create GitHub release
     notes = args.message or f"v{new_ver}"
