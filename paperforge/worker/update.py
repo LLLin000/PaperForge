@@ -34,31 +34,6 @@ def _sync_obsidian_plugin(vault: Path) -> None:
     _pf_utils.install_obsidian_plugin(vault)
 
 
-def _deploy_skills(vault: Path) -> None:
-    """Copy the literature-qa skill from the package to the vault's agent dir."""
-    import paperforge
-
-    src = Path(paperforge.__file__).parent / "skills" / "literature-qa"
-    if not src.exists():
-        logger.debug("Skills source not found: %s", src)
-        return
-
-    raw = read_paperforge_json(vault)
-    agent = raw.get("agent_platform", "opencode")
-    agent_dirs = {
-        "opencode": ".opencode/skills/literature-qa",
-        "claude": ".claude/skills/literature-qa",
-        "cursor": ".cursor/skills/literature-qa",
-        "copilot": ".github/skills/literature-qa",
-        "windsurf": ".windsurf/skills/literature-qa",
-        "codex": ".codex/skills/literature-qa",
-    }
-    target_rel = agent_dirs.get(agent, agent_dirs["opencode"])
-    dst = vault / target_rel
-    shutil.copytree(src, dst, dirs_exist_ok=True)
-    logger.info("Skills deployed: %s -> %s", src, dst)
-
-
 def protected_paths(vault: Path) -> set[str]:
     cfg = load_vault_config(vault)
     pf = f"{cfg['system_dir']}/PaperForge"
@@ -269,20 +244,10 @@ def _deploy_all_skills(vault: Path) -> None:
         from paperforge.config import load_vault_config
 
         config = load_vault_config(vault)
-        # Agent platform is a user preference, not a system default.
-        # Fall back to opencode if not configured.
         agent_key = config.get("agent_platform") or "opencode"
-        result = deploy_skills(
-            vault=vault,
-            agent_key=agent_key,
-            system_dir=config.get("system_dir", "System"),
-            resources_dir=config.get("resources_dir", "Resources"),
-            literature_dir=config.get("literature_dir", "Literature"),
-            base_dir=config.get("base_dir", "Bases"),
-            overwrite=True,
-        )
-        if result["skills"]:
-            logger.info("已部署 %d 个 skill: %s", len(result["skills"]), ", ".join(result["skills"]))
+        result = deploy_skills(vault=vault, agent_key=agent_key, overwrite=True)
+        if result["skill_deployed"]:
+            logger.info("已部署 literature-qa skill")
         if result["agents_md"]:
             logger.info("已更新 AGENTS.md")
         for err in result.get("errors", []):

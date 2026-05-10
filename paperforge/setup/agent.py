@@ -1,15 +1,16 @@
-"""AgentInstaller — deploys skill files and agent configs."""
+"""AgentInstaller — deploys literature-qa skill to vault-local agent config."""
 
 from __future__ import annotations
 
 import shutil
 from pathlib import Path
 
+from paperforge.services.skill_deploy import AGENT_SKILL_DIRS
 from paperforge.setup import SetupStepResult
 
 
 class AgentInstaller:
-    """Deploy agent skill files, command files, and rules."""
+    """Deploy literature-qa skill directory to vault-local agent skills path."""
 
     def __init__(self, vault: Path, agent_type: str = "opencode"):
         self.vault = vault
@@ -17,19 +18,12 @@ class AgentInstaller:
         self._script_dir = Path(__file__).resolve().parent.parent
 
     def _get_skills_dir(self) -> Path:
-        """Get the target skills directory based on agent type."""
-        if self.agent_type == "opencode":
-            base = Path.home() / ".config" / "opencode"
-        elif self.agent_type == "claude":
-            base = Path.home() / ".claude"
-        elif self.agent_type == "codex":
-            base = Path.home() / ".codex"
-        else:
-            base = self.vault / ".agents"
-        return base / "skills"
+        """Get the vault-local target skills directory."""
+        skill_dir_name = AGENT_SKILL_DIRS.get(self.agent_type, ".agents/skills")
+        return self.vault / skill_dir_name
 
     def deploy_skills(self) -> SetupStepResult:
-        """Deploy literature-qa skill directory to agent config."""
+        """Deploy literature-qa skill as a single directory."""
         source_skills = self._script_dir / "skills" / "literature-qa"
         if not source_skills.exists():
             return SetupStepResult(
@@ -43,11 +37,7 @@ class AgentInstaller:
         target_dir.mkdir(parents=True, exist_ok=True)
 
         try:
-            if source_skills.is_dir():
-                shutil.copytree(source_skills, target_dir, dirs_exist_ok=True)
-            else:
-                shutil.copy2(source_skills, target_dir)
-
+            shutil.copytree(source_skills, target_dir, dirs_exist_ok=True)
             return SetupStepResult(
                 step="agent_installer",
                 ok=True,
@@ -62,42 +52,8 @@ class AgentInstaller:
                 error=str(e),
             )
 
-    def deploy_commands(self) -> SetupStepResult:
-        """Deploy command files to vault agent config dir."""
-        source_commands = self._script_dir / "command_files"
-        if not source_commands.exists():
-            return SetupStepResult(
-                step="agent_installer",
-                ok=True,
-                message="No command files to deploy",
-                details={"skipped": True},
-            )
-
-        agent_dir = self.vault / ".agents"
-        target_dir = agent_dir / "command_files"
-        target_dir.mkdir(parents=True, exist_ok=True)
-
-        try:
-            for f in source_commands.iterdir():
-                if f.is_file():
-                    shutil.copy2(f, target_dir / f.name)
-
-            return SetupStepResult(
-                step="agent_installer",
-                ok=True,
-                message=f"Deployed command files to {target_dir}",
-                details={"source": str(source_commands), "target": str(target_dir)},
-            )
-        except Exception as e:
-            return SetupStepResult(
-                step="agent_installer",
-                ok=False,
-                message="Failed to deploy command files",
-                error=str(e),
-            )
-
     def deploy_agent_config(self) -> SetupStepResult:
-        """Deploy AGENTS.md and other agent config files."""
+        """Deploy AGENTS.md to vault root."""
         source_agents = self._script_dir.parent / "AGENTS.md"
         if not source_agents.exists():
             return SetupStepResult(
@@ -126,8 +82,4 @@ class AgentInstaller:
 
     def run_all(self) -> list[SetupStepResult]:
         """Run all deployment steps."""
-        results = []
-        results.append(self.deploy_skills())
-        results.append(self.deploy_commands())
-        results.append(self.deploy_agent_config())
-        return results
+        return [self.deploy_skills(), self.deploy_agent_config()]
