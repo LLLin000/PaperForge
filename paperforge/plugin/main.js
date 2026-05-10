@@ -1532,7 +1532,12 @@ class PaperForgeStatusView extends ItemView {
         const wsDir = lastSlash !== -1 ? entry.note_path.substring(0, lastSlash) : '.';
         const discPath = wsDir + '/ai/discussion.json';
 
-        this.app.vault.adapter.read(discPath).then((raw) => {
+        const vp = this.app.vault.adapter.basePath;
+        const absPath = path.join(vp, discPath);
+
+        try {
+            if (!fs.existsSync(absPath)) return;
+            const raw = fs.readFileSync(absPath, 'utf-8');
             const data = JSON.parse(raw);
             if (!data.sessions || data.sessions.length === 0) return;
 
@@ -1577,9 +1582,9 @@ class PaperForgeStatusView extends ItemView {
                     new Notice('讨论文件尚未生成');
                 }
             });
-        }).catch(() => {
+        } catch (e) {
             // No discussion.json — card stays hidden
-        });
+        }
     }
 
     /* ── Paper Files Row ── */
