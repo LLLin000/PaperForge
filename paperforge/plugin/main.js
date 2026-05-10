@@ -139,8 +139,7 @@ function scanBbtDirectChildren(dir) {
     try {
         if (!fs.existsSync(dir)) return false;
         for (const entry of fs.readdirSync(dir)) {
-            const full = path.join(dir, entry);
-            try { if (fs.statSync(full).isDirectory() && dirLooksLikeBetterBibtexFolder(entry)) return true; } catch (_) {}
+            if (dirLooksLikeBetterBibtexFolder(entry)) return true;
         }
     } catch (_) {}
     return false;
@@ -155,8 +154,7 @@ function scanBbtUnderProfiles(profilesDir) {
             try {
                 if (!fs.existsSync(extDir)) continue;
                 for (const entry of fs.readdirSync(extDir)) {
-                    const full = path.join(extDir, entry);
-                    try { if (fs.statSync(full).isDirectory() && dirLooksLikeBetterBibtexFolder(entry)) return true; } catch (_) {}
+                    if (dirLooksLikeBetterBibtexFolder(entry)) return true;
                 }
             } catch (_) {}
         }
