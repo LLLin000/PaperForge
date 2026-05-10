@@ -197,6 +197,11 @@ def build_parser() -> argparse.ArgumentParser:
     p_dr = sub.add_parser("deep-reading", help="Check deep-reading queue status")
     p_dr.add_argument("--json", action="store_true", help="Output as PFResult JSON")
 
+    # deep-finalize
+    p_df = sub.add_parser("deep-finalize", help="Mark deep reading done and notify dashboard")
+    p_df.add_argument("zotero_key", help="Zotero citation key")
+    p_df.add_argument("--json", action="store_true", help="Output as PFResult JSON")
+
     # repair
     p_repair = sub.add_parser("repair", help="Repair divergent literature notes")
     p_repair.add_argument("--fix", action="store_true", help="Actually apply repairs instead of dry-run")
@@ -444,6 +449,11 @@ def main(argv: list[str] | None = None) -> int:
         from paperforge.commands import deep
 
         return deep.run(args)
+
+    if args.command == "deep-finalize":
+        from paperforge.commands import finalize
+
+        return finalize.run(args)
 
     if args.command == "context":
         from paperforge.commands import context
