@@ -10,7 +10,7 @@ const {
     resolvePythonExecutable,
     getPluginVersion,
     checkRuntimeVersion,
-} = await import('../src/runtime.js');
+} = await import('../main.js');
 
 describe('resolvePythonExecutable', () => {
     /** Create injected fs + execFileSync mocks */

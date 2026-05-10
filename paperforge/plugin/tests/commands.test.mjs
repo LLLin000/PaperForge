@@ -6,7 +6,7 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-const { ACTIONS, buildCommandArgs, runSubprocess } = await import('../src/commands.js');
+const { ACTIONS, buildCommandArgs, runSubprocess } = await import('../main.js');
 
 describe('ACTIONS', () => {
     it('has exactly 6 entries', () => {
@@ -23,8 +23,8 @@ describe('ACTIONS', () => {
     it('sync action has cmd: sync', () => {
         expect(ACTIONS.find(a => a.id === 'paperforge-sync')?.cmd).toBe('sync');
     });
-    it('repair action has disabled: true', () => {
-        expect(ACTIONS.find(a => a.id === 'paperforge-repair')?.disabled).toBe(true);
+    it('repair action is enabled (no disabled flag)', () => {
+        expect(ACTIONS.find(a => a.id === 'paperforge-repair')?.disabled).toBeUndefined();
     });
     it('copy-context action has needsKey', () => {
         expect(ACTIONS.find(a => a.id === 'paperforge-copy-context')?.needsKey).toBe(true);

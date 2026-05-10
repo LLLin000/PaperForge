@@ -3236,3 +3236,14 @@ module.exports = class PaperForgePlugin extends Plugin {
         await this.saveData(dataToSave);
     }
 };
+
+// ── Named exports for Vitest (functions inlined from src/ after refactor) ──
+module.exports.resolvePythonExecutable = resolvePythonExecutable;
+module.exports.getPluginVersion = getPluginVersion;
+module.exports.checkRuntimeVersion = checkRuntimeVersion;
+module.exports.classifyError = classifyError;
+module.exports.buildRuntimeInstallCommand = buildRuntimeInstallCommand;
+module.exports.parseRuntimeStatus = parseRuntimeStatus;
+module.exports.ACTIONS = ACTIONS;
+module.exports.buildCommandArgs = buildCommandArgs;
+module.exports.runSubprocess = runSubprocess;
