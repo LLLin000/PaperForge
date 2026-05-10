@@ -20,8 +20,7 @@ STANDARD_VIEW_NAMES = frozenset(
 # --- Journal Database ---
 
 
-def read_json(path: Path):
-    return json.loads(path.read_text(encoding="utf-8"))
+from paperforge.core.io import read_json, write_json
 
 
 _JOURNAL_DB: dict[str, dict] | None = None
@@ -64,11 +63,7 @@ def lookup_impact_factor(journal_name: str, extra: str, vault: Path) -> str:
 
 
 # --- JSON I/O ---
-
-
-def write_json(path: Path, data) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+# write_json re-exported from paperforge.core.io
 
 
 def read_jsonl(path: Path):
@@ -128,9 +123,7 @@ def slugify_filename(text: str) -> str:
     return cleaned or "untitled"
 
 
-def _extract_year(value: str) -> str:
-    match = re.search("(19|20)\\d{2}", value or "")
-    return match.group(0) if match else ""
+from paperforge.core.date_utils import extract_year as _extract_year
 
 
 # --- Deep-Reading Queue ---
@@ -191,7 +184,9 @@ def get_analyze_queue(vault: Path) -> list[dict]:
             continue
 
         # Quick exit: check analyze before extracting other fields
-        analyze_match = re.search(r"^analyze:\s*(?:[\"'])?(true|false)(?:[\"'])?\s*$", text, re.MULTILINE | re.IGNORECASE)
+        analyze_match = re.search(
+            r"^analyze:\s*(?:[\"'])?(true|false)(?:[\"'])?\s*$", text, re.MULTILINE | re.IGNORECASE
+        )
         if not analyze_match or analyze_match.group(1).lower() != "true":
             continue
 
@@ -225,16 +220,18 @@ def get_analyze_queue(vault: Path) -> list[dict]:
         if dr_match:
             dr_status = dr_match.group(1).strip()
 
-        results.append({
-            "zotero_key": zotero_key,
-            "domain": domain,
-            "title": title,
-            "analyze": True,
-            "do_ocr": do_ocr,
-            "ocr_status": ocr_status,
-            "deep_reading_status": dr_status,
-            "note_path": note_file,
-        })
+        results.append(
+            {
+                "zotero_key": zotero_key,
+                "domain": domain,
+                "title": title,
+                "analyze": True,
+                "do_ocr": do_ocr,
+                "ocr_status": ocr_status,
+                "deep_reading_status": dr_status,
+                "note_path": note_file,
+            }
+        )
 
     results.sort(key=lambda r: (r["domain"], r["zotero_key"]))
     return results
@@ -278,6 +275,7 @@ def install_obsidian_plugin(vault: Path) -> bool:
         plugin_src = vault / "paperforge" / "plugin"
         if not plugin_src.is_dir():
             import paperforge
+
             plugin_src = Path(paperforge.__file__).parent.resolve() / "plugin"
         if not plugin_src.is_dir():
             logger.warning("Plugin source not found: %s", plugin_src)

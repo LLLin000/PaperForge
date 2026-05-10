@@ -1,0 +1,22 @@
+{
+  "format_version": "<VERSION>",
+  "generated_at": "<TIMESTAMP>",
+  "paperforge_version": "<VERSION>",
+  "items": [
+    {
+      "zotero_key": "FIXT0001",
+      "domain": "orthopedic",
+      "title": "Biomechanical Comparison of Suture Anchor Fixations in Rotator Cuff Repair",
+      "year": "2024",
+      "doi": "10.1016/j.jse.2024.01.001",
+      "has_pdf": true,
+      "pdf_path": "<VAULT>/System/Zotero/storage/FIXT0001/FIXT0001.pdf",
+      "ocr_status": "pending",
+      "paper_root": "<VAULT>/Resources/Literature/orthopedic/FIXT0001 - Biomechanical Comparison of Suture Anchor Fixations in Rotator Cuff Repair",
+      "main_note_path": "<VAULT>/Resources/Literature/orthopedic/FIXT0001 - Biomechanical Comparison of Suture Anchor Fixations in Rotator Cuff Repair.md",
+      "lifecycle": "indexed",
+      "health": {},
+      "next_step": "review_ocr"
+    }
+  ]
+}

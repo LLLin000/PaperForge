@@ -55,3 +55,10 @@ def test_setup_wizard_uses_manual_zotero_path_for_checks() -> None:
     assert "manual_zotero_path = Path(zotero_data).expanduser() if zotero_data else None" in source
     assert "checker.check_zotero(manual_zotero_path)" in source
     assert "checker.check_bbt(manual_zotero_path)" in source
+
+
+def test_plugin_deep_reading_flow_does_not_depend_on_separate_file() -> None:
+    """Deep-reading now lives in the main note, not a dedicated deep-reading.md file."""
+    source = PLUGIN_MAIN.read_text(encoding="utf-8")
+    assert "entry.deep_reading_path" not in source
+    assert "file.name === 'deep-reading.md'" not in source

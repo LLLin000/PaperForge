@@ -152,7 +152,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     # status
     status_p = sub.add_parser("status", help="Run the literature pipeline status check")
-    status_p.add_argument("--json", action="store_true", dest="json_output", help="Output JSON")
+    status_p.add_argument("--json", action="store_true", help="Output JSON")
 
     # sync (new unified command)
     p_sync = sub.add_parser("sync", help="Sync Zotero selection and refresh literature index")
@@ -181,6 +181,11 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Force full rebuild of the canonical asset index",
     )
+    p_sync.add_argument(
+        "--json",
+        action="store_true",
+        help="Output result as JSON (PFResult envelope)",
+    )
 
     # selection-sync (backward compat)
     sub.add_parser("selection-sync", help="Sync Zotero selection to library records")
@@ -189,12 +194,14 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_parser("index-refresh", help="Refresh formal literature notes from library records")
 
     # deep-reading
-    sub.add_parser("deep-reading", help="Check deep-reading queue status")
+    p_dr = sub.add_parser("deep-reading", help="Check deep-reading queue status")
+    p_dr.add_argument("--json", action="store_true", help="Output as PFResult JSON")
 
     # repair
     p_repair = sub.add_parser("repair", help="Repair divergent literature notes")
     p_repair.add_argument("--fix", action="store_true", help="Actually apply repairs instead of dry-run")
     p_repair.add_argument("--fix-paths", action="store_true", help="Re-resolve PDF paths for items with path_error")
+    p_repair.add_argument("--json", action="store_true", help="Output result as JSON (PFResult envelope)")
 
     # ocr (unified)
     p_ocr = sub.add_parser("ocr", help="OCR operations")
@@ -202,6 +209,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--diagnose",
         action="store_true",
         help="Diagnose OCR configuration without running",
+    )
+    p_ocr.add_argument(
+        "--json",
+        action="store_true",
+        help="Output result as JSON (PFResult envelope)",
     )
     p_ocr.add_argument(
         "--key",
@@ -237,6 +249,10 @@ def build_parser() -> argparse.ArgumentParser:
         help="Output all entries in the canonical index (JSON array)",
     )
 
+    # dashboard
+    p_dash = sub.add_parser("dashboard", help="Aggregated stats and permissions for the plugin dashboard")
+    p_dash.add_argument("--json", action="store_true", help="Output as PFResult JSON")
+
     # base-refresh
     p_base = sub.add_parser("base-refresh", help="Refresh Obsidian Base view files")
     p_base.add_argument(
@@ -247,7 +263,8 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     # doctor
-    sub.add_parser("doctor", help="Validate PaperForge setup and configuration")
+    doctor_p = sub.add_parser("doctor", help="Validate PaperForge setup and configuration")
+    doctor_p.add_argument("--json", action="store_true", help="Output JSON")
 
     # update
     sub.add_parser("update", help="Update PaperForge to the latest version")
@@ -311,6 +328,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--skip-checks",
         action="store_true",
         help="Skip environment checks (for testing/CI)",
+    )
+    p_setup.add_argument(
+        "--modular",
+        action="store_true",
+        help="Use modular setup components (v2.1+)",
     )
 
     return parser
@@ -438,6 +460,11 @@ def main(argv: list[str] | None = None) -> int:
 
         return repair.run(args)
 
+    if args.command == "dashboard":
+        from paperforge.commands import dashboard
+
+        return dashboard.run(args)
+
     if args.command == "base-refresh":
         force = getattr(args, "force", False)
         paths = args.paths
@@ -450,7 +477,12 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "doctor":
         from paperforge.worker.status import run_doctor
 
-        return run_doctor(vault)
+        kw = {}
+        if getattr(args, "verbose", False):
+            kw["verbose"] = True
+        if getattr(args, "json", False):
+            kw["json_output"] = True
+        return run_doctor(vault, **kw)
 
     if args.command == "update":
         from paperforge.worker.update import run_update
@@ -458,18 +490,33 @@ def main(argv: list[str] | None = None) -> int:
         return run_update(vault)
 
     if args.command == "setup":
-        if getattr(args, "headless", False):
+        if getattr(args, "modular", False):
+            from paperforge.setup.plan import SetupPlan
+
+            config = {
+                "system_dir": getattr(args, "system_dir", None) or "System",
+                "resources_dir": getattr(args, "resources_dir", None) or "Resources",
+                "literature_dir": getattr(args, "literature_dir", None) or "Literature",
+                "control_dir": getattr(args, "control_dir", None) or "LiteratureControl",
+                "base_dir": getattr(args, "base_dir", None) or "Bases",
+            }
+            plan = SetupPlan(
+                vault=vault,
+                config=config,
+                agent_type=getattr(args, "agent", "opencode"),
+            )
+            return plan.execute(json_output=getattr(args, "json_output", False))
+        elif getattr(args, "headless", False):
             from paperforge.setup_wizard import headless_setup
 
             return headless_setup(
                 vault=vault,
                 agent_key=args.agent,
                 paddleocr_key=getattr(args, "paddleocr_key", None),
-                paddleocr_url=getattr(args, "paddleocr_url",
-                    "https://paddleocr.aistudio-app.com/api/v2/ocr/jobs"),
-            system_dir=getattr(args, "system_dir", None) or "System",
-            resources_dir=getattr(args, "resources_dir", None) or "Resources",
-            base_dir=getattr(args, "base_dir", None) or "Bases",
+                paddleocr_url=getattr(args, "paddleocr_url", "https://paddleocr.aistudio-app.com/api/v2/ocr/jobs"),
+                system_dir=getattr(args, "system_dir", None) or "System",
+                resources_dir=getattr(args, "resources_dir", None) or "Resources",
+                base_dir=getattr(args, "base_dir", None) or "Bases",
                 zotero_data=getattr(args, "zotero_data", None),
                 skip_checks=getattr(args, "skip_checks", False),
             )

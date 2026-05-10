@@ -1461,3 +1461,109 @@
     font-size: var(--font-ui-small);
     line-height: 1.5;
 }
+
+/* ==========================================================================
+   SECTION 34 — Runtime Health
+   ========================================================================== */
+.paperforge-runtime-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.85em;
+    font-weight: 600;
+    margin-left: 8px;
+}
+.paperforge-runtime-badge.match {
+    background: var(--color-green, #4caf50);
+    color: #fff;
+}
+.paperforge-runtime-badge.mismatch {
+    background: var(--color-red, #f44336);
+    color: #fff;
+}
+.paperforge-runtime-badge.missing {
+    background: var(--color-orange, #ff9800);
+    color: #fff;
+}
+
+/* ==========================================================================
+   SECTION 35 — Dashboard Drift Banner
+   ========================================================================== */
+.paperforge-drift-banner {
+    background: var(--color-yellow, #ffc107);
+    color: var(--background-primary, #000);
+    padding: 8px 14px;
+    border-radius: 6px;
+    font-size: 0.9em;
+    margin-bottom: 16px;
+    cursor: pointer;
+}
+.paperforge-drift-banner:hover {
+    opacity: 0.9;
+}
+
+/* ==========================================================================
+   SECTION 36 — Copy Diagnostic Button
+   ========================================================================== */
+.paperforge-copy-diag-btn {
+    margin-top: 8px;
+    padding: 4px 12px;
+    font-size: 0.85em;
+    background: var(--interactive-normal, #e0e0e0);
+    color: var(--text-normal, #000);
+    border: 1px solid var(--background-modifier-border, #ccc);
+    border-radius: 4px;
+    cursor: pointer;
+}
+.paperforge-copy-diag-btn:hover {
+    background: var(--interactive-hover, #d0d0d0);
+}
+
+/* ==========================================================================
+   SECTION 37 — DASH-01: OCR Queue Hint (per-paper)
+   ========================================================================== */
+.paperforge-ocr-queue-hint {
+    font-size: var(--font-ui-smaller);
+    color: var(--text-muted);
+    font-style: italic;
+    margin-left: 8px;
+}
+
+/* ── DASH-02: Agent Platform Label ── */
+.paperforge-agent-platform-label {
+    font-size: var(--font-ui-smaller);
+    color: var(--text-muted);
+    margin-top: -4px;
+    font-style: italic;
+}
+
+/* ==========================================================================
+   SECTION 38 — DASH-03: OCR Privacy Warning Modal
+   ========================================================================== */
+.paperforge-ocr-privacy-modal h2 {
+    margin-top: 8px;
+    margin-bottom: 16px;
+    font-size: var(--font-ui-large);
+    font-weight: var(--font-semibold);
+}
+
+.paperforge-ocr-privacy-warning {
+    background: var(--background-secondary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: var(--radius-m);
+    padding: 16px;
+    margin-bottom: 20px;
+    line-height: 1.6;
+}
+
+.paperforge-ocr-privacy-warning p {
+    margin: 0;
+    color: var(--text-normal);
+    font-size: var(--font-ui-small);
+}
+
+.paperforge-ocr-privacy-actions {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: 8px;
+}

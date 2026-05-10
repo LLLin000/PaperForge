@@ -1,6 +1,6 @@
 # PaperForge - Agent Guide
 
-> 本文档面向 **安装完成后的新用户** 和 **AI Agent**。安装步骤见 [setup-guide.md](docs/setup-guide.md) 或快速版 [INSTALLATION.md](docs/INSTALLATION.md)。Docs 版本与 v1.4.13 对应。
+> 本文档面向 **安装完成后的新用户** 和 **AI Agent**。如果还没有安装 PaperForge，请通过 Obsidian 插件市场安装，或查看 [README.md](README.md) 中的安装说明。Docs 版本与 v1.4.17rc4 对应。
 
 ---
 
@@ -31,19 +31,36 @@
 
 ---
 
-## 1. 核心架构（Lite 版）
+## 1. 核心架构（v2.1 契约驱动）
 
-PaperForge 采用 **两层设计**：
+PaperForge 在 v2.1（1.4.17rc4）重构为 **契约驱动架构**，分 5 层：
+
+```
+CLI/Plugin 调用
+    ↓ PFResult 契约 {ok, command, version, data, error}
+┌─────────────────────────────────────────────┐
+│  commands/    CLI 分发层                      │
+├─────────────────────────────────────────────┤
+│  adapter/bbt, zotero_paths, frontmatter    │  ← 独立可测
+│  services/sync_service       ← 编排适配器   │
+├─────────────────────────────────────────────┤
+│  core/result, errors, state   ← 共享数据契约 │
+├─────────────────────────────────────────────┤
+│  worker/sync, ocr, status     ← 机械劳动     │
+│  setup/6个类                  ← 安装流程     │
+├─────────────────────────────────────────────┤
+│  schema/field_registry.yaml   ← 字段注册表   │
+│  doctor/field_validator.py    ← 字段校验     │
+└─────────────────────────────────────────────┘
+```
 
 | 层级 | 组件 | 触发方式 | 作用 |
 |------|------|----------|------|
-| **Worker 层** | `paperforge/worker/`（7 个 worker 模块） | Python CLI | 后台自动化 |
-| **Agent 层** | `/pf-deep`, `/pf-paper` 命令 | 用户手动触发 | 交互式精读 |
-
-**关键区别**：
-- **Worker 只做机械劳动**（检测新文献、生成笔记、OCR）
-- **Agent 只做深度思考**（精读、分析、写作）
-- Worker 不会自动触发 Agent，Agent 不会自动触发 Worker
+| **契约层** | `core/`（PFResult, ErrorCode, 状态机） | 被所有模块引用 | 定义 CLI/Plugin/Worker 之间的数据交换格式 |
+| **适配器层** | `adapters/`（bbt, zotero_paths, frontmatter） | 被服务层调用 | 封装外部数据格式与 I/O 操作 |
+| **服务层** | `services/sync_service` | 被 worker 调度 | 编排适配器，实现业务逻辑 |
+| **Worker 层** | `worker/`（sync, ocr, status, repair 等） | Python CLI | 后台自动化（机械劳动） |
+| **Agent 层** | `/pf-deep`, `/pf-paper` | 用户手动触发 | 交互式精读（深度思考） |
 
 **操作速查**：
 | 你要做什么 | 在终端输入 | 在 OpenCode 输入 |
@@ -522,6 +539,21 @@ cp -r 新下载的代码/* <vault_path>/
 
 ## 13. 开发者指南（AI Agent 必读）
 
+### v2.1 新增模块
+
+v2.1（1.4.17rc4）引入了以下新增模块，开发时请注意：
+
+| 路径 | 内容 | 注意事项 |
+|------|------|---------|
+| `paperforge/core/` | 契约层 — PFResult, ErrorCode, 状态机 | 所有模块都可引用，不循环依赖 |
+| `paperforge/adapters/` | 适配器 — bbt, zotero_paths, frontmatter | 独立可测，从 `sync.py` 提取 |
+| `paperforge/services/` | 服务层 — SyncService | 编排适配器，`sync.py` 变调度壳 |
+| `paperforge/setup/` | 安装层 — 6 个类 | 从 `setup_wizard.py` 拆出 |
+| `paperforge/schema/` | 字段注册表 — `field_registry.yaml` | 44 字段定义 |
+| `paperforge/doctor/` | 校验 — `field_validator.py` | `doctor` 命令使用 |
+
+所有 `--json` 输出统一为 PFResult 格式 `{ok, command, version, data, error}`。修改输出结构时需同时更新 `core/result.py` 和下游 consumer（plugin）。
+
 ### 版本号管理
 
 PaperForge 版本只在 `paperforge/__init__.py` 一处定义。升版本时不要手动改多个文件，使用自动化脚本：
@@ -543,11 +575,12 @@ python scripts/bump.py patch --dry-run
 python scripts/bump.py patch --no-git
 ```
 
-脚本会自动更新：
+ 脚本会自动更新：
 | 文件 | 字段 |
 |------|------|
 | `paperforge/__init__.py` | `__version__` |
 | `paperforge/plugin/manifest.json` | `version` |
+| `manifest.json` | `version` |
 | `paperforge/plugin/versions.json` | 追加 `"version": "minAppVersion"` |
 
 ### 发布 Release 流程
@@ -585,8 +618,8 @@ gh release create v1.4.12 \
 # 提交前运行 ruff lint + format + 一致性审计
 ruff check --fix paperforge/ && ruff format paperforge/
 
-# 运行测试（462 tests）
-pytest tests/ -q --tb=short
+# 运行测试（173 tests）
+python -m pytest tests/unit/ -q --tb=short
 ```
 
 ---

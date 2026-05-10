@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 _SCHEMA_VERSION = "1"
 _ISO_FORMAT = "%Y-%m-%dT%H:%M:%S%z"
 _MD_SEPARATOR = "---"
-_MD_SPECIAL_CHARS = re.compile(r'([*#\[\]_`])')
+_MD_SPECIAL_CHARS = re.compile(r"([*#\[\]_`])")
 """Regex for markdown special characters that must be escaped in QA text fields."""
 
 LOCK_TIMEOUT = 10
@@ -63,7 +63,7 @@ def _escape_md(text: str) -> str:
     when user questions or AI answers contain these characters.
     Does not double-escape already-escaped characters.
     """
-    return _MD_SPECIAL_CHARS.sub(r'\\\1', text)
+    return _MD_SPECIAL_CHARS.sub(r"\\\1", text)
 
 
 def _today_str(iso_stamp: str) -> str:
@@ -333,12 +333,10 @@ def record_session(
             _atomic_write_md(md_path, content)
     except filelock.Timeout:
         logger.warning("Could not acquire lock for discussion files: %s", lock_path)
-        return {"status": "error",
-                "message": "Concurrent access conflict. Please try again."}
+        return {"status": "error", "message": "Concurrent access conflict. Please try again."}
     except Exception as exc:
         logger.warning("Failed to write discussion files: %s", exc)
-        return {"status": "error",
-                "message": f"Failed to write discussion files: {exc}"}
+        return {"status": "error", "message": f"Failed to write discussion files: {exc}"}
 
     return {
         "status": "ok",
@@ -368,7 +366,7 @@ def _build_cli_parser() -> argparse.ArgumentParser:
     record_p.add_argument(
         "--qa-pairs",
         default="[]",
-        help='JSON array of Q&A pairs',
+        help="JSON array of Q&A pairs",
     )
     return parser
 

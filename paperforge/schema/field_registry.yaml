@@ -1,0 +1,355 @@
+frontmatter:
+  zotero_key:
+    type: str
+    required: true
+    public: true
+    description: "Zotero citation key"
+    owner: sync
+    introduced_in: "1.0"
+  domain:
+    type: str
+    required: true
+    public: true
+    description: "Classification domain"
+    owner: sync
+    introduced_in: "1.0"
+  title:
+    type: str
+    required: true
+    public: true
+    description: "Paper title"
+    owner: sync
+    introduced_in: "1.0"
+  year:
+    type: str
+    required: false
+    public: true
+    description: "Publication year"
+    owner: sync
+    introduced_in: "1.0"
+  doi:
+    type: str
+    required: false
+    public: true
+    description: "Digital Object Identifier"
+    owner: sync
+    introduced_in: "1.0"
+  collection_path:
+    type: str
+    required: false
+    public: true
+    description: "Zotero collection path"
+    owner: sync
+    introduced_in: "1.0"
+  has_pdf:
+    type: bool
+    required: true
+    public: true
+    description: "Has PDF attachment (DEPRECATED)"
+    owner: sync
+    deprecated: true
+    replacement: lifecycle
+    introduced_in: "1.0"
+  pdf_path:
+    type: str
+    required: false
+    public: true
+    description: "Wikilink to main PDF"
+    owner: sync
+    introduced_in: "1.0"
+  supplementary:
+    type: list
+    required: false
+    public: true
+    description: "Wikilinks to supplementary PDFs"
+    owner: sync
+    introduced_in: "1.0"
+  fulltext_md_path:
+    type: str
+    required: false
+    public: true
+    description: "Wikilink to OCR fulltext"
+    owner: ocr
+    introduced_in: "1.0"
+  recommend_analyze:
+    type: bool
+    required: false
+    public: true
+    description: "System recommends analysis (DEPRECATED)"
+    owner: sync
+    deprecated: true
+    replacement: lifecycle
+    introduced_in: "1.0"
+  analyze:
+    type: bool
+    required: false
+    public: true
+    description: "User requests deep reading"
+    owner: user
+    introduced_in: "1.0"
+  do_ocr:
+    type: bool
+    required: false
+    public: true
+    description: "User requests OCR (DEPRECATED)"
+    owner: user
+    deprecated: true
+    replacement: ocr_status
+    introduced_in: "1.0"
+  ocr_status:
+    type: enum
+    values:
+      - none
+      - pending
+      - queued
+      - processing
+      - done
+      - done_incomplete
+      - failed
+      - blocked
+      - nopdf
+    required: false
+    public: true
+    description: "OCR processing status"
+    owner: ocr
+    default: "none"
+    introduced_in: "2.1"
+  deep_reading_status:
+    type: enum
+    values:
+      - pending
+      - done
+    required: false
+    public: true
+    description: "Deep reading status"
+    owner: deep_reading
+    default: "pending"
+    introduced_in: "1.0"
+  path_error:
+    type: str
+    required: false
+    public: true
+    description: "Path resolution error"
+    owner: sync
+    introduced_in: "1.0"
+
+index_entry:
+  file:
+    type: str
+    required: true
+    public: true
+    description: "Path to formal note"
+    owner: index
+    introduced_in: "2.1"
+  zotero_key:
+    type: str
+    required: true
+    public: true
+    description: "Zotero citation key"
+    owner: index
+    introduced_in: "2.1"
+  domain:
+    type: str
+    required: true
+    public: true
+    description: "Classification domain"
+    owner: index
+    introduced_in: "2.1"
+  title:
+    type: str
+    required: true
+    public: true
+    description: "Paper title"
+    owner: index
+    introduced_in: "2.1"
+  year:
+    type: str
+    required: false
+    public: true
+    description: "Publication year"
+    owner: index
+    introduced_in: "2.1"
+  doi:
+    type: str
+    required: false
+    public: true
+    description: "DOI"
+    owner: index
+    introduced_in: "2.1"
+  collection_path:
+    type: str
+    required: false
+    public: true
+    description: "Zotero collection path"
+    owner: index
+    introduced_in: "2.1"
+  has_pdf:
+    type: bool
+    required: true
+    public: true
+    description: "Has PDF (DEPRECATED)"
+    owner: index
+    deprecated: true
+    replacement: lifecycle
+    introduced_in: "2.1"
+  pdf_path:
+    type: str
+    required: false
+    public: true
+    description: "PDF path"
+    owner: index
+    introduced_in: "2.1"
+  supplementary:
+    type: list
+    required: false
+    public: true
+    description: "Supplementary PDFs"
+    owner: index
+    introduced_in: "2.1"
+  fulltext_md_path:
+    type: str
+    required: false
+    public: true
+    description: "Fulltext path"
+    owner: index
+    introduced_in: "2.1"
+  recommend_analyze:
+    type: bool
+    required: false
+    public: true
+    description: "Recommend analysis (DEPRECATED)"
+    owner: index
+    deprecated: true
+    replacement: lifecycle
+    introduced_in: "2.1"
+  analyze:
+    type: bool
+    required: false
+    public: true
+    description: "Analysis flag"
+    owner: index
+    introduced_in: "2.1"
+  do_ocr:
+    type: bool
+    required: false
+    public: true
+    description: "OCR flag (DEPRECATED)"
+    owner: index
+    deprecated: true
+    replacement: ocr_status
+    introduced_in: "2.1"
+  ocr_status:
+    type: enum
+    values:
+      - none
+      - pending
+      - queued
+      - processing
+      - done
+      - done_incomplete
+      - failed
+      - blocked
+      - nopdf
+    required: false
+    public: true
+    description: "OCR status"
+    owner: index
+    introduced_in: "2.1"
+  deep_reading_status:
+    type: enum
+    values:
+      - pending
+      - done
+    required: false
+    public: true
+    description: "Deep reading status"
+    owner: index
+    introduced_in: "2.1"
+  path_error:
+    type: str
+    required: false
+    public: true
+    description: "Path error"
+    owner: index
+    introduced_in: "2.1"
+  lifecycle:
+    type: enum
+    values:
+      - pdf_ready
+      - ocr_ready
+      - analyze_ready
+      - deep_read_done
+      - error_state
+    required: false
+    public: true
+    description: "Derived lifecycle stage"
+    owner: index
+    introduced_in: "2.1"
+  health:
+    type: dict
+    required: false
+    public: true
+    description: "Derived health dimension scores (dict: pdf_health, ocr_health, note_health, asset_health)"
+    owner: index
+    introduced_in: "2.1"
+  maturity:
+    type: str
+    required: false
+    public: true
+    description: "Derived maturity score"
+    owner: index
+    introduced_in: "2.1"
+  next_step:
+    type: str
+    required: false
+    public: true
+    description: "Recommended next action"
+    owner: index
+    introduced_in: "2.1"
+
+ocr_meta:
+  ocr_status:
+    type: enum
+    values:
+      - none
+      - pending
+      - queued
+      - processing
+      - done
+      - done_incomplete
+      - failed
+      - blocked
+      - nopdf
+    required: true
+    public: true
+    description: "OCR processing status"
+    owner: ocr
+    introduced_in: "2.1"
+  error:
+    type: str
+    required: false
+    public: true
+    description: "Error message if failed"
+    owner: ocr
+    introduced_in: "1.0"
+  start_time:
+    type: str
+    required: false
+    public: false
+    description: "OCR start timestamp"
+    owner: ocr
+    introduced_in: "1.0"
+  completion_time:
+    type: str
+    required: false
+    public: false
+    description: "OCR completion timestamp"
+    owner: ocr
+    introduced_in: "1.0"
+  page_count:
+    type: int
+    required: false
+    public: false
+    description: "Number of pages processed"
+    owner: ocr
+    introduced_in: "1.0"

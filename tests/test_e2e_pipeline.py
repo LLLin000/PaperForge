@@ -52,9 +52,12 @@ class TestSelectionSyncCompletesCleanly:
     """E2E: selection-sync runs cleanly (Phase 37: library-records deprecated)."""
 
     def test_selection_sync_runs_without_error(self, test_vault: Path) -> None:
-        """Verify selection-sync completes without exceptions."""
-        count = run_selection_sync(test_vault)
-        assert isinstance(count, int)
+        """Verify selection-sync completes without exceptions (v2.1: returns dict)."""
+        result = run_selection_sync(test_vault)
+        assert isinstance(result, dict)
+        assert "new" in result
+        assert "updated" in result
+        assert "failed" in result
 
     def test_index_refresh_produces_workflow_frontmatter(self, test_vault: Path) -> None:
         """Verify formal notes have required workflow frontmatter after sync pipeline."""
@@ -112,9 +115,10 @@ class TestIndexRefreshProducesFormalNotes:
     """E2E: index-refresh produces correct formal notes."""
 
     def test_index_refresh_runs_without_error(self, test_vault: Path) -> None:
-        """Verify index-refresh completes without exceptions."""
-        count = run_index_refresh(test_vault)
-        assert isinstance(count, int)
+        """Verify index-refresh completes without exceptions (v2.1: returns dict)."""
+        result = run_index_refresh(test_vault)
+        assert isinstance(result, dict)
+        assert "updated" in result
 
     def test_formal_note_has_required_frontmatter(self, test_vault: Path) -> None:
         """Verify formal notes have required frontmatter fields per actual implementation."""

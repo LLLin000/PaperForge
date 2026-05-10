@@ -1,0 +1,18 @@
+{
+  "pages": [
+    {
+      "page_num": 1,
+      "markdown": "# Test Article\n\nThis is the OCR-extracted text for testing purposes.\n\n## Introduction\n\nMock OCR content for deterministic testing.\n\n<!-- page 1 -->"
+    },
+    {
+      "page_num": 2,
+      "markdown": "## Methods\n\nWe used a mock testing methodology.\n\n## Results\n\nThe mock OCR produced deterministic output.\n\nTable 1: Mock results summary.\n<!-- page 2 -->"
+    }
+  ],
+  "figures": [
+    {"page": 1, "filename": "page_001_fig_01.png", "caption": "Mock figure 1: Testing flowchart."}
+  ],
+  "tables": [
+    {"page": 2, "filename": "page_002_table_01.png", "caption": "Mock table 1: Results summary."}
+  ]
+}

@@ -35,3 +35,6 @@ tests/sandbox/00_TestVault/
 .DS_Store
 Thumbs.db
 .worktrees/
+
+.vite/
+paperforge/plugin/node_modules/

@@ -191,7 +191,11 @@ def run_repair(vault: Path, paths: dict, verbose: bool = False, fix: bool = Fals
         dict with scanned, divergent, fixed, errors counts
     """
     result = {"scanned": 0, "divergent": [], "fixed": 0, "errors": [], "rebuilt": 0}
-    record_paths = [p for p in paths["literature"].rglob("*.md") if p.name not in ("fulltext.md", "deep-reading.md", "discussion.md")]
+    record_paths = [
+        p
+        for p in paths["literature"].rglob("*.md")
+        if p.name not in ("fulltext.md", "deep-reading.md", "discussion.md")
+    ]
     for record_path in record_paths:
         try:
             record_text = record_path.read_text(encoding="utf-8")
@@ -256,10 +260,7 @@ def run_repair(vault: Path, paths: dict, verbose: bool = False, fix: bool = Fals
             meta_ocr_status is not None
             and meta_validated_status is not None
             and note_ocr_status != meta_validated_status
-            and not (
-                note_ocr_status == "pending"
-                and meta_validated_status == "pending"
-            )
+            and not (note_ocr_status == "pending" and meta_validated_status == "pending")
         ):
             is_divergent = True
             div_reason = f"formal_note={note_ocr_status} vs meta post-validation={meta_validated_status}"

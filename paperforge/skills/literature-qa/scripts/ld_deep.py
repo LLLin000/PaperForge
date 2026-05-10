@@ -10,6 +10,7 @@ import re
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import TypeVar
 
 from paperforge.worker._utils import get_analyze_queue
 
@@ -239,7 +240,9 @@ def build_figure_plan(
     return planned
 
 
-def select_entries_by_numbers[T](entries: Iterable[T], numbers: set[str], attr: str = "number") -> list[T]:
+T = TypeVar("T")
+
+def select_entries_by_numbers(entries: Iterable[T], numbers: set[str], attr: str = "number") -> list[T]:
     """Select entries by their number field while preserving order."""
     if not numbers:
         return []
@@ -1371,9 +1374,9 @@ def prepare_deep_reading(vault: Path, zotero_key: str, force: bool = False) -> d
                     if key_match:
                         domain_match = re.search(r"^domain:\s*(.+)$", text, re.MULTILINE)
                         domain = domain_match.group(1).strip() if domain_match else candidate.parent.name
-                        from paperforge.worker.asset_index import _read_frontmatter_bool
+                        from paperforge.adapters.obsidian_frontmatter import read_frontmatter_bool
 
-                        if not _read_frontmatter_bool(candidate, "analyze"):
+                        if not read_frontmatter_bool(candidate, "analyze"):
                             result["message"] = (
                                 f"[ERROR] analyze=False for {zotero_key} in {candidate}. "
                                 "Set analyze: true first."

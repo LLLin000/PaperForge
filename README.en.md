@@ -41,32 +41,43 @@ PaperForge connects the full path from source literature to structured insight.
 
 ## Install
 
-### Obsidian Plugin (Recommended)
+See [INSTALLATION.md](INSTALLATION.md) for the complete installation guide.
 
-1. Download the plugin files from the [latest release](https://github.com/LLLin000/PaperForge/releases/latest).
-2. Copy them into `vault/.obsidian/plugins/paperforge/`.
-3. Enable `PaperForge` in Obsidian community plugins.
-4. Open the settings page and click `打开安装向导`.
-5. Follow the 5-step wizard: Overview → Directory Config → Agent & Keys → Install → Done.
+## Architecture
 
-> The wizard auto-detects Python, Zotero, and Better BibTeX before installation starts.
-
-### Prerequisites
-
-| Software | Purpose | Get it |
-|----------|---------|--------|
-| Python 3.10+ | Run PaperForge CLI and backend tasks | https://python.org |
-| Zotero | Literature management | https://zotero.org |
-| Better BibTeX | Auto-export metadata as JSON | https://retorque.re/zotero-better-bibtex/ |
-| PaddleOCR Key | OCR text and layout extraction | https://aistudio.baidu.com/paddleocr |
-
-### CLI (Advanced)
-
-```bash
-cd /path/to/your/vault
-pip install git+https://github.com/LLLin000/PaperForge.git
-python -m paperforge setup --headless --agent opencode --paddleocr-key <key>
 ```
+paperforge/
+├── core/          Contract layer — PFResult/PFError, ErrorCode enum, state machine
+│   ├── result.py      PFResult/PFError serialization (JSON round-trip)
+│   ├── errors.py      ErrorCode enum (centralized error codes)
+│   └── state.py       OcrStatus/PdfStatus/Lifecycle + ALLOWED_TRANSITIONS
+├── adapters/      Adapter layer — independently testable modules
+│   ├── bbt.py         Better BibTeX JSON parsing
+│   ├── zotero_paths.py   Zotero attachment path normalization
+│   └── obsidian_frontmatter.py  Frontmatter read/write (YAML parser)
+├── services/      Service layer — orchestrates adapters
+│   └── sync_service.py  SyncService class
+├── setup/         Setup layer — 6 focused classes
+│   ├── plan.py         SetupPlan (orchestration)
+│   ├── checker.py      SetupChecker (precondition validation)
+│   ├── config_writer.py    ConfigWriter (atomic write)
+│   ├── vault.py        VaultInitializer (directories/junction)
+│   ├── runtime.py      RuntimeInstaller (pip install)
+│   └── agent.py        AgentInstaller (skill deployment)
+├── schema/        Field registry
+│   └── field_registry.yaml  44 field definitions
+├── doctor/        Diagnostic validation
+│   └── field_validator.py   Field completeness + drift detection
+├── worker/        Worker layer — mechanical tasks
+│   ├── sync.py         Dispatch shell (thinned by 57 lines)
+│   ├── status.py       Status + doctor checks
+│   ├── ocr.py          OCR pipeline
+│   └── ...
+├── commands/      CLI dispatch layer
+└── plugin/        Obsidian plugin
+```
+
+All CLI commands output unified PFResult JSON: `{ok, command, version, data, error}` via `--json` flag. `paperforge doctor` validates field schema consistency and detects data drift.
 
 ## Usage
 
@@ -131,7 +142,7 @@ python -m paperforge setup --headless --agent opencode --paddleocr-key <key>
 | Document | Content |
 |----------|---------|
 | [Setup Guide](docs/setup-guide.md) | Full setup walkthrough |
-| [Quick Install](docs/INSTALLATION.md) | Short install path |
+| [Installation Guide](INSTALLATION.md) | Full install reference |
 | [Post-Install Guide](AGENTS.md) | First-use workflow guide |
 | [Changelog](CHANGELOG.md) | Version history |
 | [Contributing](CONTRIBUTING.md) | Dev setup and conventions |

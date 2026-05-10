@@ -1,0 +1,46 @@
+{
+  "items": [
+    {
+      "key": "FIXT0007",
+      "itemKey": "FIXT0007",
+      "itemType": "journalArticle",
+      "title": "Cartilage Regeneration Techniques: Current Evidence and Future Directions",
+      "creators": [
+        {
+          "creatorType": "author",
+          "firstName": "Jack",
+          "lastName": "Wilson"
+        },
+        {
+          "creatorType": "author",
+          "firstName": "Karen",
+          "lastName": "Park"
+        },
+        {
+          "creatorType": "author",
+          "firstName": "Leo",
+          "lastName": "Nguyen"
+        }
+      ],
+      "publicationTitle": "Cartilage",
+      "date": "2024-11-01",
+      "DOI": "10.1177/cart.2024.11.006",
+      "PMID": "78901234",
+      "abstractNote": "Comprehensive review of current cartilage regeneration techniques and future directions.",
+      "attachments": [
+        {
+          "path": "FIXT0007/FIXT0007.pdf",
+          "contentType": "application/pdf"
+        }
+      ],
+      "collections": ["orthopedic"]
+    }
+  ],
+  "collections": {
+    "orthopedic": {
+      "name": "orthopedic",
+      "parent": "",
+      "items": ["FIXT0007"]
+    }
+  }
+}

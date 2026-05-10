@@ -1,5 +1,12 @@
 from __future__ import annotations
 
+# =============================================================================
+# FREEZE LINE (v2.1-contract-hardened)
+#   No new business logic allowed in this file.
+#   New logic → services/ / adapters/ / core/.
+#   This file: deletion, migration, legacy wrappers only.
+# =============================================================================
+
 import html
 import logging
 import os
@@ -14,6 +21,25 @@ import requests
 
 from paperforge.config import load_vault_config, paperforge_paths
 from paperforge.worker._domain import build_collection_lookup, load_domain_config, load_domain_collections
+from paperforge.adapters.zotero_paths import (
+    absolutize_vault_path,
+    obsidian_wikilink_for_path,
+    obsidian_wikilink_for_pdf,
+)
+from paperforge.adapters.obsidian_frontmatter import (
+    _add_missing_frontmatter_fields,
+    _extract_section,
+    _legacy_control_flags,
+    _read_frontmatter_bool_from_text,
+    _read_frontmatter_optional_bool_from_text,
+    canonicalize_decision,
+    candidate_markdown,
+    compute_final_collection,
+    extract_preserved_deep_reading,
+    generate_review,
+    has_deep_reading_content,
+    update_frontmatter_field,
+)
 from paperforge.worker._utils import (
     _extract_year,
     lookup_impact_factor,
@@ -28,39 +54,19 @@ from paperforge.worker._utils import (
     yaml_quote,
 )
 
+from paperforge.adapters.bbt import (
+    _identify_main_pdf,
+    _normalize_attachment_path,
+    collection_fields,
+    extract_authors,
+    load_export_rows,
+    resolve_item_collection_paths,
+)
+
+
 import paperforge.worker.asset_index as asset_index
 
 logger = logging.getLogger(__name__)
-
-
-def _read_frontmatter_bool_from_text(text: str, key: str, default: bool = False) -> bool:
-    match = re.search(rf"^{re.escape(key)}:\s*(?:[\"'])?(true|false)(?:[\"'])?\s*$", text, re.MULTILINE | re.IGNORECASE)
-    if not match:
-        return default
-    return match.group(1).lower() == "true"
-
-
-def _read_frontmatter_optional_bool_from_text(text: str, key: str) -> Optional[bool]:
-    match = re.search(rf"^{re.escape(key)}:\s*(?:[\"'])?(true|false)(?:[\"'])?\s*$", text, re.MULTILINE | re.IGNORECASE)
-    if not match:
-        return None
-    return match.group(1).lower() == "true"
-
-
-def _legacy_control_flags(paths: dict[str, Path], zotero_key: str) -> dict[str, Optional[bool]]:
-    records_root = paths.get("library_records")
-    if not records_root or not records_root.exists():
-        return {"do_ocr": None, "analyze": None}
-    for record_path in records_root.rglob(f"{zotero_key}.md"):
-        try:
-            text = record_path.read_text(encoding="utf-8")
-        except Exception:
-            continue
-        return {
-            "do_ocr": _read_frontmatter_optional_bool_from_text(text, "do_ocr"),
-            "analyze": _read_frontmatter_optional_bool_from_text(text, "analyze"),
-        }
-    return {"do_ocr": None, "analyze": None}
 
 
 def load_export_inventory(paths: dict[str, Path]) -> dict[str, dict]:
@@ -180,534 +186,6 @@ def apply_existing_library_match(row: dict, inventory: dict[str, dict]) -> dict:
     return resolved
 
 
-def resolve_item_collection_paths(item: dict, collection_lookup: dict) -> list[str]:
-    paths = []
-    collection_keys = item.get("collections") or []
-    if collection_keys:
-        for key in collection_keys:
-            paths.append(collection_lookup.get("path_by_key", {}).get(key, key))
-    item_id = item.get("itemID")
-    if item_id is not None:
-        paths.extend(collection_lookup.get("paths_by_item_id", {}).get(item_id, []))
-    return sorted({path for path in paths if path}, key=lambda value: (-value.count("/"), value))
-
-
-def obsidian_wikilink_for_pdf(pdf_path: str, vault_dir: Path, zotero_dir: Path | None = None) -> str:
-    text = str(pdf_path or "").strip()
-    if not text:
-        return ""
-    # Handle storage: prefix paths by resolving through zotero_dir
-    if text.startswith("storage:") and zotero_dir is not None:
-        storage_rel = text[len("storage:") :].lstrip("/").lstrip("\\")
-        absolute_pdf_path = zotero_dir / "storage" / storage_rel.replace("/", os.sep)
-        absolute_str = str(absolute_pdf_path)
-    else:
-        absolute_str = absolutize_vault_path(vault_dir, text, resolve_junction=True)
-    if not absolute_str:
-        return ""
-    absolute_path = Path(absolute_str)
-    try:
-        relative = absolute_path.relative_to(vault_dir)
-    except ValueError:
-        # Path outside vault — try to route through Zotero junction inside vault
-        if zotero_dir is not None and zotero_dir.exists():
-            try:
-                from paperforge.pdf_resolver import resolve_junction
-                real_zotero = resolve_junction(zotero_dir)
-                if real_zotero != zotero_dir:
-                    rel_to_zotero = absolute_path.relative_to(real_zotero)
-                    via_junction = zotero_dir / rel_to_zotero
-                    relative = via_junction.relative_to(vault_dir)
-                    return f"[[{relative.as_posix()}]]"
-            except (ValueError, OSError):
-                pass
-        return f"[[{absolute_path.as_posix()}]]"
-    return f"[[{relative.as_posix()}]]"
-
-
-def absolutize_vault_path(vault: Path, path: str, resolve_junction: bool = False) -> str:
-    text = str(path or "").strip()
-    if not text:
-        return ""
-    candidate = Path(text)
-    result = str(candidate) if candidate.is_absolute() else str((vault / text.replace("/", os.sep)).resolve())
-    if resolve_junction:
-        from paperforge.pdf_resolver import resolve_junction
-
-        result = str(resolve_junction(Path(result)))
-    return result
-
-
-def obsidian_wikilink_for_path(vault: Path, path: str) -> str:
-    absolute = absolutize_vault_path(vault, path, resolve_junction=True)
-    if not absolute:
-        return ""
-    absolute_path = Path(absolute)
-    try:
-        relative = absolute_path.relative_to(vault)
-    except ValueError:
-        return f"[[{absolute_path.as_posix()}]]"
-    return f"[[{relative.as_posix()}]]"
-
-
-def collection_fields(collection_paths: list[str]) -> dict[str, str | list[str]]:
-    paths = [path for path in collection_paths if path]
-    primary = paths[0] if paths else ""
-    if paths:
-        primary = sorted(paths, key=lambda value: (value.count("/"), len(value), value), reverse=True)[0]
-    tags = []
-    seen = set()
-    for path in paths:
-        for part in [segment.strip() for segment in path.split("/") if segment.strip()]:
-            if part not in seen:
-                seen.add(part)
-                tags.append(part)
-    group = primary
-    return {"collections": paths, "collection_tags": tags, "collection_group": [group] if group else []}
-
-
-def extract_authors(item: dict) -> list[str]:
-    authors = []
-    for creator in item.get("creators", []):
-        if creator.get("creatorType") != "author":
-            continue
-        full_name = " ".join(
-            part for part in [creator.get("firstName", ""), creator.get("lastName", "")] if part
-        ).strip()
-        if full_name:
-            authors.append(full_name)
-        elif creator.get("name"):
-            authors.append(creator["name"])
-    return authors
-
-
-def _normalize_attachment_path(path: str, zotero_dir: Path | None = None) -> tuple[str, str, str]:
-    """Normalize a BBT attachment path to a consistent storage: format.
-
-    Handles three real-world BBT export formats:
-    1. Absolute Windows paths: D:\\...\\Zotero\\storage\\8CHARKEY\\filename.pdf
-       -> storage:8CHARKEY/filename.pdf
-    2. storage: prefix: storage:KEY/filename.pdf -> pass through
-    3. Bare relative: KEY/filename.pdf -> storage:KEY/filename.pdf
-
-    Args:
-        path: Raw path from BBT JSON attachment.
-        zotero_dir: Optional absolute path to Zotero data directory for
-            validating absolute paths.
-
-    Returns:
-        Tuple of (normalized_path, bbt_path_raw, zotero_storage_key).
-        normalized_path uses forward slashes and storage: prefix for
-        Zotero storage paths. bbt_path_raw preserves the original input
-        for debugging. zotero_storage_key is the 8-character Zotero key.
-    """
-    raw = str(path or "").strip()
-    if not raw:
-        return ("", "", "")
-
-    bbt_path_raw = raw
-
-    # Format 2: Already has storage: prefix — pass through with slash normalization
-    if raw.startswith("storage:"):
-        storage_rel = raw[len("storage:") :].lstrip("/").lstrip("\\")
-        storage_rel = storage_rel.replace("\\", "/")
-        parts = storage_rel.split("/")
-        zotero_storage_key = parts[0] if parts else ""
-        return (f"storage:{storage_rel}", bbt_path_raw, zotero_storage_key)
-
-    # Format 1: Absolute Windows path pointing to Zotero storage
-    candidate = Path(raw)
-    if candidate.is_absolute():
-        norm_path = raw.replace("\\", "/")
-        # Detect Zotero storage pattern: .../storage/8CHARKEY/...
-        if "/storage/" in norm_path:
-            parts_after_storage = norm_path.split("/storage/", 1)[1]
-            parts = parts_after_storage.split("/")
-            if len(parts) >= 2 and len(parts[0]) == 8 and parts[0].isalnum():
-                zotero_storage_key = parts[0]
-                filename = "/".join(parts[1:])
-                return (f"storage:{zotero_storage_key}/{filename}", bbt_path_raw, zotero_storage_key)
-        # Absolute path but not in Zotero storage — mark as absolute
-        return (f"absolute:{raw}", bbt_path_raw, "")
-
-    # Format 3: Bare relative path — prepend storage: prefix
-    norm = raw.replace("\\", "/")
-    parts = norm.split("/")
-    zotero_storage_key = parts[0] if parts else ""
-    return (f"storage:{norm}", bbt_path_raw, zotero_storage_key)
-
-
-def _identify_main_pdf(attachments: list[dict]) -> tuple[dict | None, list[dict]]:
-    """Identify the main PDF and supplementary materials from attachments.
-
-    Uses a hybrid three-priority strategy (Decision D-02):
-    1. Primary: attachment.title == "PDF" AND contentType == "application/pdf"
-    2. Fallback heuristic: largest file by size (if available), else shortest title
-    3. Final fallback: first PDF attachment in the list
-
-    Args:
-        attachments: List of attachment dicts from load_export_rows().
-
-    Returns:
-        Tuple of (main_pdf_attachment, supplementary_attachments).
-        main_pdf_attachment may be None if no PDFs found.
-        supplementary_attachments is a list of all other PDF attachments.
-    """
-    pdf_attachments = [a for a in attachments if isinstance(a, dict) and a.get("contentType") == "application/pdf"]
-
-    if not pdf_attachments:
-        return (None, [])
-
-    # Priority 1: Title exactly equals "PDF"
-    for att in pdf_attachments:
-        if att.get("title") == "PDF":
-            main = att
-            supplementary = [a for a in pdf_attachments if a is not main]
-            return (main, supplementary)
-
-    # Priority 2: Largest file by size (if size field is available and differentiated)
-    sized = [(a, a.get("size", 0) or 0) for a in pdf_attachments]
-    sized.sort(key=lambda x: x[1], reverse=True)
-    if sized and sized[0][1] > 0 and (len(sized) == 1 or sized[0][1] > sized[1][1]):
-        main = sized[0][0]
-        supplementary = [a for a in pdf_attachments if a is not main]
-        return (main, supplementary)
-
-    # Priority 2b (sizes equal or unavailable): shortest title
-    titled = [(a, len(str(a.get("title", "")))) for a in pdf_attachments]
-    titled.sort(key=lambda x: x[1])
-    main = titled[0][0]
-    supplementary = [a for a in pdf_attachments if a is not main]
-    return (main, supplementary)
-
-
-def load_export_rows(path: Path) -> list[dict]:
-    data = read_json(path)
-    if isinstance(data, list):
-        return data
-    if isinstance(data, dict) and isinstance(data.get("items"), list):
-        collection_lookup = build_collection_lookup(data.get("collections", {}))
-        rows = []
-        for item in data["items"]:
-            if item.get("itemType") in {"attachment", "note", "annotation"}:
-                continue
-            attachments = []
-            for attachment in item.get("attachments", []):
-                if not isinstance(attachment, dict):
-                    continue
-                raw_path = attachment.get("path", "")
-                normalized_path, bbt_path_raw, zotero_storage_key = _normalize_attachment_path(raw_path)
-                # Preserve contentType from BBT if present; fallback to file extension
-                content_type = attachment.get("contentType", "")
-                if not content_type and str(normalized_path).lower().endswith(".pdf"):
-                    content_type = "application/pdf"
-                attachments.append(
-                    {
-                        "path": normalized_path,
-                        "contentType": content_type,
-                        "title": attachment.get("title", ""),
-                        "bbt_path_raw": bbt_path_raw,
-                        "zotero_storage_key": zotero_storage_key,
-                        "size": attachment.get("size", 0) or 0,
-                    }
-                )
-            main_pdf, supplementary_pdfs = _identify_main_pdf(attachments)
-            pdf_path = main_pdf["path"] if main_pdf else ""
-            bbt_path_raw = main_pdf["bbt_path_raw"] if main_pdf else ""
-            zotero_storage_key = main_pdf["zotero_storage_key"] if main_pdf else ""
-            path_error = "not_found" if not main_pdf else ""
-            supplementary = [a["path"] for a in supplementary_pdfs] if supplementary_pdfs else []
-            attachment_count = len(attachments)
-            rows.append(
-                {
-                    "key": item.get("key") or item.get("itemKey", ""),
-                    "title": item.get("title", ""),
-                    "authors": extract_authors(item),
-                    "creators": item.get("creators", []),
-                    "abstract": item.get("abstractNote", ""),
-                    "journal": item.get("publicationTitle", ""),
-                    "extra": item.get("extra", ""),
-                    "year": _extract_year(item.get("date", "")),
-                    "date": item.get("date", ""),
-                    "doi": item.get("DOI", ""),
-                    "pmid": item.get("PMID", ""),
-                    "collections": resolve_item_collection_paths(item, collection_lookup),
-                    "attachments": attachments,
-                    "pdf_path": pdf_path,
-                    "supplementary": supplementary,
-                    "attachment_count": attachment_count,
-                    "bbt_path_raw": bbt_path_raw,
-                    "zotero_storage_key": zotero_storage_key,
-                    "path_error": path_error,
-                }
-            )
-        return rows
-    raise ValueError(f"Unsupported export format: {path}")
-
-
-def compute_final_collection(row: dict) -> str:
-    user_raw = str(row.get("user_collection", "") or "").strip()
-    user_resolved = str(row.get("user_collection_resolved", "") or "").strip()
-    recommended = str(row.get("recommended_collection", "") or "").strip()
-    if user_raw:
-        return user_resolved
-    return recommended
-
-
-def canonicalize_decision(value: str) -> str:
-    text = str(value or "").strip()
-    if text in {"", "待查"}:
-        return "待定"
-    if text in {"排除", "不纳入"}:
-        return "不纳入"
-    if text == "纳入":
-        return "纳入"
-    return "待定"
-
-
-def candidate_markdown(row: dict) -> str:
-    row = dict(row)
-    row["final_collection"] = compute_final_collection(row)
-    row["decision"] = canonicalize_decision(row.get("decision", ""))
-    lines = ["---"]
-    ordered_keys = [
-        "candidate_id",
-        "domain",
-        "title",
-        "authors",
-        "year",
-        "journal",
-        "doi",
-        "pmid",
-        "source",
-        "requester_skill",
-        "request_context",
-        "abstract_short",
-        "decision",
-        "recommended_collection",
-        "recommend_confidence",
-        "recommend_reason",
-        "user_collection",
-        "user_collection_resolved",
-        "final_collection",
-        "collection_resolution",
-        "duplicate_hint",
-        "existing_zotero_key",
-        "existing_collections",
-        "import_status",
-        "note",
-        "candidate_source_type",
-        "source_zotero_key",
-        "cited_ref_number",
-        "trigger_sentence",
-        "source_context",
-        "task_relevance_reason",
-        "harvest_priority",
-        "raw_reference",
-        "status",
-    ]
-    row.setdefault("status", "candidate")
-    for key in ordered_keys:
-        value = row.get(key, "")
-        if isinstance(value, list):
-            lines.append(f"{key}:")
-            for item in value:
-                lines.append(f"  - {yaml_quote(item)}")
-        elif value == "":
-            lines.append(f"{key}:")
-        elif "\n" in str(value):
-            lines.extend(
-                yaml_block(str(value)).copy()
-                if key == "abstract"
-                else [f"{key}: |-"] + [f"  {line}" for line in str(value).splitlines()]
-            )
-        else:
-            lines.append(f"{key}: {yaml_quote(value)}")
-    lines.extend(
-        [
-            "---",
-            "",
-            f"# {row['candidate_id']}",
-            "",
-            "候选文献轻量记录，仅用于 Base 决策和 write-back 触发，不是正式文献卡片。",
-            "",
-        ]
-    )
-    return "\n".join(lines)
-
-
-def generate_review(candidates: list[dict]) -> str:
-    normalized = []
-    for row in candidates:
-        copy = dict(row)
-        copy["decision"] = canonicalize_decision(copy.get("decision", ""))
-        normalized.append(copy)
-    include = [c for c in normalized if c.get("decision") == "纳入"]
-    exclude = [c for c in normalized if c.get("decision") == "不纳入"]
-    lines = [
-        "# 本轮候选总览",
-        "",
-        "## 检索背景",
-        "",
-        f"- 候选数量：{len(normalized)}",
-        f"- 建议纳入：{len(include)}",
-        f"- 不纳入：{len(exclude)}",
-        "",
-        "## 总体判断",
-        "",
-        "- 当前候选池已经按决策状态分层，可直接进入 Base 处理。",
-        "",
-        "## 推荐优先纳入",
-        "",
-    ]
-    if include:
-        for row in include:
-            lines.extend(
-                [
-                    f"### {row['candidate_id']}",
-                    "",
-                    f"- 标题：{row['title']}",
-                    f"- 推荐分类：`{compute_final_collection(row)}`",
-                    f"- 理由：{row.get('recommend_reason', '')}",
-                    "",
-                ]
-            )
-    else:
-        lines.extend(["- 暂无", ""])
-    lines.extend(["## 不纳入", ""])
-    if exclude:
-        for row in exclude:
-            lines.extend(
-                [
-                    f"### {row['candidate_id']}",
-                    "",
-                    f"- 标题：{row['title']}",
-                    f"- 理由：{row.get('recommend_reason', '')}",
-                    "",
-                ]
-            )
-    else:
-        lines.extend(["- 暂无", ""])
-    lines.extend(["## 下一步", "", "1. 在 Base 中确认决策。", "2. 对纳入项执行 write-back。", "3. 刷新正式索引。", ""])
-    return "\n".join(lines)
-
-
-DEEP_READING_HEADER = "## 🔍 精读"
-
-
-def extract_preserved_deep_reading(text: str) -> str:
-    """Extract the `## 🔍 精读` section by matching it as a real markdown header.
-
-    Uses regex to ensure we match `## 🔍 精读` at the start of a line,
-    avoiding false positives from prose text that merely mentions the string.
-    """
-    if not text:
-        return ""
-    match = re.search("^## 🔍 精读\\s*$", text, re.MULTILINE)
-    if not match:
-        return ""
-    start = match.start()
-    preserved = text[start:].strip()
-    return preserved
-
-
-def has_deep_reading_content(text: str) -> bool:
-    """Return True only if the deep-reading section passes a three-anchor check.
-
-    For deep_reading_status to be "done", ALL three of these must have
-    substantive content (not just template scaffolding):
-
-    1. **Clarity**（清晰度）： — text after the colon
-    2. **Figure 导读** — at least one list item with content
-    3. **遗留问题** — at least one non-empty entry
-    """
-    preserved = extract_preserved_deep_reading(text)
-    if not preserved:
-        return False
-    body = preserved.replace(DEEP_READING_HEADER, "").strip()
-    if not body:
-        return False
-
-    # Anchor 1: Clarity
-    clarity_ok = bool(re.search(
-        r'-\s*\*\*Clarity\*\*（清晰度）：(.+)', body
-    )) and not re.search(
-        r'-\s*\*\*Clarity\*\*（清晰度）：\s*$', body, re.MULTILINE
-    )
-
-    # Anchor 2: Figure 导读 — at least one list item with content after colon
-    figure_sec = _extract_section(body, r'\*\*Figure 导读\*\*')
-    figure_ok = False
-    if figure_sec:
-        for line in figure_sec.splitlines():
-            s = line.strip()
-            if s.startswith('- ') and '：' in s:
-                _, after = s.split('：', 1)
-                if after.strip() and after.strip() != '（待补充）':
-                    figure_ok = True
-                    break
-
-    # Anchor 3: 遗留问题 — at least one non-empty line beneath marker
-    issue_sec = _extract_section(body, r'\*\*遗留问题\*\*')
-    if not issue_sec:
-        issue_sec = _extract_section(body, r'####\s*遗留问题')
-    issue_ok = False
-    if issue_sec:
-        dirty = [l.strip() for l in issue_sec.splitlines() if l.strip()]
-        substantive = [l for l in dirty if l not in ('-', '（待补充）', '', '**遗留问题**')]
-        issue_ok = bool(substantive)
-
-    return clarity_ok and figure_ok and issue_ok
-
-
-def _extract_section(body: str, section_header: str) -> str | None:
-    """Return block of text from *section_header* to the next section break.
-
-    Section break is either a ``##`` / ``###`` header or end of string.
-    """
-    m = re.search(
-        section_header + r'\n*(.*?)(?=\n(?:#{1,3})\s|\Z)',
-        body, re.DOTALL,
-    )
-    if m:
-        return m.group(1).strip()
-    return None
-
-
-
-
-def _add_missing_frontmatter_fields(existing_content: str, new_fields: dict[str, str]) -> str:
-    """Surgically append missing fields to existing frontmatter without overwriting anything."""
-    if not existing_content.startswith("---"):
-        return existing_content
-    parts = existing_content.split("---", 2)
-    if len(parts) < 3:
-        return existing_content
-    frontmatter = parts[1]
-    body = parts[2]
-    lines_to_add = []
-    for key, value in new_fields.items():
-        pattern = "^" + re.escape(key) + "\\s*:"
-        if not re.search(pattern, frontmatter, re.MULTILINE):
-            lines_to_add.append(f"{key}: {yaml_quote(value)}")
-    if not lines_to_add:
-        return existing_content
-    new_frontmatter = frontmatter.rstrip("\n") + "\n" + "\n".join(lines_to_add) + "\n"
-    return f"---{new_frontmatter}---{body}"
-
-
-def update_frontmatter_field(content: str, key: str, value: str) -> str:
-    """Update an existing frontmatter field value, or add if missing."""
-    if not content.startswith("---"):
-        return content
-    pattern = "^" + re.escape(key) + "\\s*:.*$"
-    replacement = f"{key}: {yaml_quote(value)}"
-    new_content, count = re.subn(pattern, replacement, content, flags=re.MULTILINE, count=1)
-    if count == 0:
-        new_content = _add_missing_frontmatter_fields(content, {key: value})
-    return new_content
-
-
 def load_control_actions(paths: dict[str, Path]) -> dict[str, dict]:
     actions = {}
     lit_root = paths.get("literature")
@@ -729,14 +207,16 @@ def load_control_actions(paths: dict[str, Path]) -> dict[str, dict]:
         if do_ocr_match:
             do_ocr = do_ocr_match.group(1).lower() == "true"
         analyze = False
-        analyze_match = re.search(r"^analyze:\s*(?:[\"'])?(true|false)(?:[\"'])?\s*$", text, re.MULTILINE | re.IGNORECASE)
+        analyze_match = re.search(
+            r"^analyze:\s*(?:[\"'])?(true|false)(?:[\"'])?\s*$", text, re.MULTILINE | re.IGNORECASE
+        )
         if analyze_match:
             analyze = analyze_match.group(1).lower() == "true"
         actions[zotero_key] = {"analyze": analyze, "do_ocr": do_ocr}
     return actions
 
 
-def run_selection_sync(vault: Path, verbose: bool = False) -> int:
+def run_selection_sync(vault: Path, verbose: bool = False, json_output: bool = False) -> dict:
     from paperforge.worker.base_views import ensure_base_views
     from paperforge.worker.ocr import validate_ocr_meta
 
@@ -795,8 +275,10 @@ def run_selection_sync(vault: Path, verbose: bool = False) -> int:
             # Formal notes now carry workflow flags (do_ocr, analyze) directly.
             # Existing library-records are migrated via Phase 40 logic.
             updated += 1
-    print(f"selection-sync: wrote {written} records, updated {updated} records")
-    return 0
+    result = {"new": written, "updated": updated, "skipped": 0, "failed": 0, "errors": []}
+    if not json_output:
+        print(f"selection-sync: wrote {written} records, updated {updated} records")
+    return result
 
 
 def load_candidates_by_id(paths: dict[str, Path]) -> dict[str, dict]:
@@ -1593,8 +1075,7 @@ def migrate_to_workspace(vault: Path, paths: dict) -> int:
 
     Copies each flat note at <literature_dir>/<domain>/<key> - <Title>.md into:
       <literature_dir>/<domain>/<key> - <Title>/<key> - <Title>.md
-    Extracts ## 🔍 精读 into:
-      <literature_dir>/<domain>/<key> - <Title>/deep-reading.md
+    Preserves any existing ## 🔍 精读 section inside the main note (single source of truth).
     Creates:
       <literature_dir>/<domain>/<key> - <Title>/ai/  (empty directory)
 
@@ -1645,7 +1126,9 @@ def migrate_to_workspace(vault: Path, paths: dict) -> int:
         entry = indexed_entries.get(key, {})
         title = str(entry.get("title", "") or "").strip()
         if not title:
-            title_match = re.search(r'^title:\s*["\']?(.+?)["\']?\s*$', flat_note_path.read_text(encoding="utf-8"), re.MULTILINE)
+            title_match = re.search(
+                r'^title:\s*["\']?(.+?)["\']?\s*$', flat_note_path.read_text(encoding="utf-8"), re.MULTILINE
+            )
             title = title_match.group(1).strip() if title_match else ""
         stem = flat_note_path.stem
         if title:
@@ -1709,6 +1192,7 @@ def migrate_to_workspace(vault: Path, paths: dict) -> int:
                     target_fulltext = workspace_dir / "fulltext.md"
                     if source_fulltext.exists() and not target_fulltext.exists():
                         import shutil
+
                         shutil.copy2(str(source_fulltext), str(target_fulltext))
             except Exception:
                 pass
@@ -1721,7 +1205,9 @@ def migrate_to_workspace(vault: Path, paths: dict) -> int:
     return migrated
 
 
-def run_index_refresh(vault: Path, verbose: bool = False, rebuild_index: bool = False) -> int:
+def run_index_refresh(
+    vault: Path, verbose: bool = False, rebuild_index: bool = False, json_output: bool = False
+) -> dict:
     """Refresh the canonical asset index.
 
     Default behavior: full rebuild. This is the safe default because
@@ -1733,6 +1219,7 @@ def run_index_refresh(vault: Path, verbose: bool = False, rebuild_index: bool = 
         vault: Path to the vault root.
         verbose: If True, print detailed progress.
         rebuild_index: If True, force full rebuild (default: True for sync).
+        json_output: If True, suppress human-readable print output.
     """
     from paperforge.worker.base_views import ensure_base_views
     from paperforge.worker.ocr import validate_ocr_meta
@@ -1753,90 +1240,9 @@ def run_index_refresh(vault: Path, verbose: bool = False, rebuild_index: bool = 
     migrate_to_workspace(vault, paths)
     # Delegate to asset_index.build_index() for the core build loop
     count = asset_index.build_index(vault, verbose)
-    control_records_dir = paths["literature"]
-    if control_records_dir.exists():
-        for domain_dir in control_records_dir.iterdir():
-            if not domain_dir.is_dir():
-                continue
-            domain = domain_dir.name
-            domain_export_keys = set(exports.get(domain, {}).keys())
-            records_by_title = {}
-            records_info = {}
-            for record_file in domain_dir.rglob("*.md"):
-                if record_file.name in ("fulltext.md", "deep-reading.md", "discussion.md"):
-                    continue
-                try:
-                    content = record_file.read_text(encoding="utf-8")
-                    key_match = re.search(r"^zotero_key:\s*(.+)$", content, re.MULTILINE)
-                    if not key_match:
-                        continue
-                    key = key_match.group(1).strip()
-                    title_match = re.search("^title:\\s*[\"\\']?(.+)[\"\\']?\\s*$", content, re.MULTILINE)
-                    title = title_match.group(1) if title_match else ""
-                    has_pdf = "has_pdf: true" in content
-                    normalized = re.sub("[^a-z0-9]", "", title.lower())[:20]
-                    records_info[key] = {
-                        "file": record_file,
-                        "title": title,
-                        "has_pdf": has_pdf,
-                        "normalized": normalized,
-                    }
-                    if normalized not in records_by_title:
-                        records_by_title[normalized] = []
-                    records_by_title[normalized].append(key)
-                except Exception:
-                    continue
-            to_delete = []
-            for normalized, keys in records_by_title.items():
-                keys_in_export = [k for k in keys if k in domain_export_keys]
-                keys_not_in_export = [k for k in keys if k not in domain_export_keys]
-                if keys_in_export and keys_not_in_export:
-                    for k in keys_not_in_export:
-                        if not records_info[k]["has_pdf"]:
-                            to_delete.append(k)
-            deleted_count = 0
-            for key in to_delete:
-                try:
-                    records_info[key]["file"].unlink()
-                    deleted_count += 1
-                except Exception:
-                    pass
-            if deleted_count > 0:
-                print(f"index-refresh: cleaned {deleted_count} orphaned records in {domain}")
 
-    # Clean up flat notes: delete only if confirmed by canonical index + workspace
-    index_data = asset_index.read_index(vault)
-    ws_keys = set()
-    if isinstance(index_data, dict):
-        for item in index_data.get("items", []):
-            ws_dir = paths["literature"] / item.get("domain", "") / (item.get("zotero_key", "") + " - " + slugify_filename(item.get("title", "")))
-            if ws_dir.is_dir():
-                ws_keys.add(item.get("zotero_key"))
-
-    lit_dir = paths["literature"]
-    cleaned_flat = 0
-    if lit_dir.exists() and ws_keys:
-        for domain_dir in sorted(lit_dir.iterdir()):
-            if not domain_dir.is_dir():
-                continue
-            for flat_note in list(domain_dir.glob("*.md")):
-                try:
-                    text = flat_note.read_text(encoding="utf-8")
-                    m = re.search(r"^zotero_key:\s*\"?(\S+?)\"?\s*$", text, re.MULTILINE)
-                    key = m.group(1) if m else ""
-                except Exception:
-                    continue
-                if key and key in ws_keys:
-                    try:
-                        flat_note.unlink()
-                        cleaned_flat += 1
-                    except Exception:
-                        pass
-    if cleaned_flat > 0:
-        print(f"index-refresh: cleaned {cleaned_flat} flat note(s) (migrated to workspace)")
-
-    if control_records_dir.exists():
-        total = sum(1 for _ in control_records_dir.rglob("*.md"))
+    if paths["literature"].exists() and not json_output:
+        total = sum(1 for _ in paths["literature"].rglob("*.md"))
         print(f"index-refresh: {total} formal note(s) in literature")
 
-    return 0
+    return {"updated": count, "failed": 0, "errors": []}
