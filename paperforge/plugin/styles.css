@@ -1955,12 +1955,13 @@
     margin: 12px 0;
     padding: 12px 14px;
     background: var(--background-secondary);
-    border: 1px solid var(--text-error);
+    border: 1px solid var(--background-modifier-border);
+    border-left: 3px solid var(--color-orange);
     border-radius: var(--radius-m);
 }
 
 .paperforge-issue-summary .paperforge-section-label {
-    color: var(--text-error);
+    color: var(--color-orange);
 }
 
 .paperforge-issue-text {
@@ -1975,21 +1976,8 @@
 
 .paperforge-issue-item {
     font-size: var(--font-ui-smaller);
-    color: var(--text-error);
+    color: var(--text-muted);
     padding: 2px 0;
-    padding-left: 12px;
-    position: relative;
-}
-
-.paperforge-issue-item::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 8px;
-    width: 5px;
-    height: 5px;
-    border-radius: 50%;
-    background: var(--text-error);
 }
 
 .paperforge-issue-actions {
