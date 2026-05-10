@@ -90,7 +90,7 @@ PaperForge needs to find a working Python on your system. It searches in this or
 
 ## 4. Setup Wizard — What Each Step Means
 
-`Ctrl+P` → `PaperForge: Run Setup Wizard` walks you through configuration. Here's what every step does.
+Open the plugin settings panel (`Settings` → `Community plugins` → `PaperForge`) and click the **Open Wizard** button. The wizard walks you through configuration. Here's what every step does.
 
 ### 4.1 Vault Path
 
@@ -118,10 +118,10 @@ The wizard asks what to name several directories. These are for organizing files
 
 | Parameter | Default | Purpose |
 |-----------|---------|---------|
-| `system_dir` | `99_System` | Root for PaperForge internal data. Contains `exports/` (Zotero JSON exports), `ocr/` (OCR results), `config/`. You rarely need to open this manually. |
-| `resources_dir` | `03_Resources` | Resources root. Your formal literature notes live under this directory, inside `literature_dir`. |
-| `literature_dir` | `Literature` | Where formal literature notes (`.md` files with frontmatter) are saved by `paperforge sync`. This is where you read and edit your notes. |
-| `base_dir` | `05_Bases` | Obsidian Base view definitions. Dashboard filters ("Pending OCR", "Ready to Read", etc.) are stored here. |
+| `system_dir` | `System` | Root for PaperForge internal data. Contains `exports/` (Zotero JSON exports), `ocr/` (OCR results), `config/`. You rarely need to open this manually. |
+| `resources_dir` | `Resources` | Resources root. Your formal literature notes live under this directory, inside `literature_dir`. |
+| `literature_dir` | `Literature` | Formal literature notes directory. `paperforge sync` generates frontmatter `.md` notes here. |
+| `base_dir` | `Bases` | Obsidian Base view definitions. Dashboard filters ("Pending OCR", "Ready to Read", etc.) are stored here. |
 
 ### 4.4 PaddleOCR API Token
 
@@ -156,7 +156,7 @@ The process is **incremental** — if files already exist in the chosen director
 
 1. **Version match**: Settings → Runtime Status → confirm plugin and Python package match
 2. **Python path**: Settings → Validate button → confirm it's the Python you want
-3. **Setup wizard**: `Ctrl+P` → `PaperForge: Run Setup Wizard`
+3. **Setup wizard**: Settings → PaperForge → Open Wizard
 4. **PaddleOCR key**: Enter your API token in `.env` (wizard guides this)
 5. **Export from Zotero**: Right-click your library → `Export...` → format `Better BibTeX JSON` → check `Keep updated` → save to `<system_dir>/PaperForge/exports/`
 6. **Run Doctor**: Dashboard → `Run Doctor` → all checks should pass
