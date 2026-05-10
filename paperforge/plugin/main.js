@@ -1366,7 +1366,7 @@ class PaperForgeStatusView extends ItemView {
 
         const view = this._contentEl.createEl('div', { cls: 'paperforge-paper-view' });
 
-        // ── Header: title, authors, year ──
+        // ── Header ──
         const header = view.createEl('div', { cls: 'paperforge-paper-header' });
         header.createEl('div', { cls: 'paperforge-paper-title', text: entry.title || 'Untitled' });
         const meta = header.createEl('div', { cls: 'paperforge-paper-meta' });
@@ -1377,51 +1377,11 @@ class PaperForgeStatusView extends ItemView {
             meta.createEl('span', { cls: 'paperforge-paper-year', text: String(entry.year) });
         }
 
-        // ── Status Strip: PDF · OCR · DeepRead ──
-        this._renderPaperStatusStrip(view, entry);
+        // ── Status Strip + File Buttons (merged row) ──
+        const strip = view.createEl('div', { cls: 'paperforge-status-strip' });
+        const stripLeft = strip.createEl('div', { cls: 'paperforge-status-strip-left' });
+        const stripRight = strip.createEl('div', { cls: 'paperforge-status-strip-right' });
 
-        // ── Paper Overview: Pass 1 summary from note body ──
-        this._renderPaperOverviewCard(view, entry);
-
-        // ── Recent Discussion ──
-        this._renderRecentDiscussionCard(view, entry);
-
-        // ── Workflow Toggles (checkboxes, same as Base view) ──
-        const togglesRow = view.createEl('div', { cls: 'paperforge-workflow-toggles' });
-        const toggleFields = [
-            { key: 'do_ocr', label: 'OCR', hint: '加入 OCR 队列' },
-            { key: 'analyze', label: 'Analyze', hint: '标记待精读' },
-        ];
-        for (const tf of toggleFields) {
-            const label = togglesRow.createEl('label', { cls: 'paperforge-workflow-toggle' });
-            const cb = label.createEl('input', { type: 'checkbox', cls: 'paperforge-workflow-checkbox' });
-            cb.checked = entry[tf.key] === true;
-            label.createEl('span', { cls: 'paperforge-workflow-toggle-label', text: tf.label });
-            label.createEl('span', { cls: 'paperforge-workflow-toggle-hint', text: tf.hint });
-            cb.addEventListener('change', async () => {
-                const noteFile = entry.note_path ? this.app.vault.getAbstractFileByPath(entry.note_path) : null;
-                if (!noteFile) { new Notice('[!!] Note file not found: ' + (entry.note_path || 'unknown'), 6000); return; }
-                const newVal = cb.checked;
-                await this.app.fileManager.processFrontMatter(noteFile, (fm) => { fm[tf.key] = newVal; });
-                this._patchCachedEntry(key, { [tf.key]: newVal });
-                this._currentPaperEntry = patchEntryWorkflowState(this._currentPaperEntry, { [tf.key]: newVal });
-                // modify event handler auto-refreshes — no explicit _refreshCurrentMode needed
-            });
-        }
-
-        // ── Next Step ──
-        this._renderNextStepCard(view, entry, key);
-
-        // ── Files Row ──
-        this._renderPaperFilesRow(view, entry);
-
-        // ── Technical Details (collapsed) ──
-        this._renderPaperTechnicalDetails(view, entry);
-    }
-
-    /* ── Paper Status Strip: compact pills ── */
-    _renderPaperStatusStrip(container, entry) {
-        const strip = container.createEl('div', { cls: 'paperforge-status-strip' });
         const items = [
             { key: 'pdf', label: 'PDF', ok: entry.has_pdf === true },
             { key: 'ocr', label: 'OCR',
@@ -1431,7 +1391,7 @@ class PaperForgeStatusView extends ItemView {
             { key: 'deep', label: '精读', ok: entry.deep_reading_status === 'done' },
         ];
         for (const item of items) {
-            const pill = strip.createEl('span', { cls: 'paperforge-status-pill' });
+            const pill = stripLeft.createEl('span', { cls: 'paperforge-status-pill' });
             let statusCls = 'pending';
             if (item.ok) statusCls = 'ok';
             else if (item.fail) statusCls = 'fail';
@@ -1441,6 +1401,44 @@ class PaperForgeStatusView extends ItemView {
             pill.createEl('span', { cls: 'paperforge-status-pill-icon', text: icon });
             pill.createEl('span', { text: ' ' + item.label });
         }
+
+        // File buttons in status strip row
+        if (entry.pdf_path) {
+            const pdfBtn = stripRight.createEl('button', { cls: 'paperforge-contextual-btn' });
+            pdfBtn.createEl('span', { cls: 'paperforge-contextual-btn-icon', text: '\uD83D\uDCC4' });
+            pdfBtn.createEl('span', { text: '打开 PDF' });
+            pdfBtn.addEventListener('click', () => {
+                const pathMatch = entry.pdf_path.match(/\[\[([^\]]+)\]\]/);
+                const targetPath = pathMatch ? pathMatch[1] : entry.pdf_path;
+                const file = this.app.vault.getAbstractFileByPath(targetPath);
+                if (file) { this.app.workspace.openLinkText(targetPath, ''); }
+                else { new Notice('[!!] PDF not found: ' + targetPath, 6000); }
+            });
+        }
+        if (entry.fulltext_path) {
+            const ftBtn = stripRight.createEl('button', { cls: 'paperforge-contextual-btn' });
+            ftBtn.createEl('span', { cls: 'paperforge-contextual-btn-icon', text: '\uD83D\uDCDD' });
+            ftBtn.createEl('span', { text: '打开全文' });
+            ftBtn.addEventListener('click', () => this._openFulltext(entry.fulltext_path));
+        }
+
+        // ── Paper Overview ──
+        this._renderPaperOverviewCard(view, entry);
+
+        // ── Complete state or Next Step ──
+        if (entry.next_step === 'ready' && entry.deep_reading_status === 'done') {
+            const complete = view.createEl('div', { cls: 'paperforge-complete-row' });
+            complete.createEl('span', { text: '\u2713' });
+            complete.createEl('span', { text: '已完成，可直接使用' });
+        } else {
+            this._renderNextStepCard(view, entry, key);
+        }
+
+        // ── Recent Discussion ──
+        this._renderRecentDiscussionCard(view, entry);
+
+        // ── Technical Details (disclosure) ──
+        this._renderPaperTechnicalDetails(view, entry);
     }
 
     /* ── Paper Overview Card: read from formal note body ── */
@@ -1587,47 +1585,50 @@ class PaperForgeStatusView extends ItemView {
         }
     }
 
-    /* ── Paper Files Row ── */
-    _renderPaperFilesRow(container, entry) {
-        const row = container.createEl('div', { cls: 'paperforge-paper-files' });
-        // Open PDF
-        if (entry.pdf_path) {
-            const pdfBtn = row.createEl('button', { cls: 'paperforge-contextual-btn' });
-            pdfBtn.createEl('span', { cls: 'paperforge-contextual-btn-icon', text: '\uD83D\uDCC4' });
-            pdfBtn.createEl('span', { text: 'Open PDF' });
-            pdfBtn.addEventListener('click', () => {
-                // pdf_path is a wikilink like [[System/Zotero/storage/KEY/file.pdf]]
-                const pathMatch = entry.pdf_path.match(/\[\[([^\]]+)\]\]/);
-                const targetPath = pathMatch ? pathMatch[1] : entry.pdf_path;
-                const file = this.app.vault.getAbstractFileByPath(targetPath);
-                if (file) {
-                    this.app.workspace.openLinkText(targetPath, '');
-                } else {
-                    new Notice('[!!] PDF not found: ' + targetPath, 6000);
-                }
-            });
-        }
-        // Open Fulltext
-        if (entry.fulltext_path) {
-            const ftBtn = row.createEl('button', { cls: 'paperforge-contextual-btn' });
-            ftBtn.createEl('span', { cls: 'paperforge-contextual-btn-icon', text: '\uD83D\uDCDD' });
-            ftBtn.createEl('span', { text: 'Open Fulltext' });
-            ftBtn.addEventListener('click', () => this._openFulltext(entry.fulltext_path));
-        }
-    }
-
-    /* ── Paper Technical Details (collapsed by default) ── */
+    /* ── Paper Technical Details (disclosure with workflow toggles) ── */
     _renderPaperTechnicalDetails(container, entry) {
+        const key = this._currentPaperKey;
         const section = container.createEl('div', { cls: 'paperforge-technical-details' });
-        const toggle = section.createEl('button', { cls: 'paperforge-technical-details-toggle', text: '技术详情 ▸' });
-        const body = section.createEl('div', { cls: 'paperforge-technical-details-body collapsed' });
+        const toggle = section.createEl('button', { cls: 'paperforge-technical-details-toggle' });
+        const body = section.createEl('div', { cls: 'paperforge-technical-details-body' });
         body.style.display = 'none';
+
+        // Restore expanded state from previous render (prevents flash on refresh)
+        if (this._techDetailsExpanded) {
+            body.style.display = 'block';
+            toggle.setText('技术详情 ▾');
+        } else {
+            toggle.setText('技术详情 ▸');
+        }
 
         toggle.addEventListener('click', () => {
             const visible = body.style.display !== 'none';
             body.style.display = visible ? 'none' : 'block';
             toggle.setText(visible ? '技术详情 ▸' : '技术详情 ▾');
+            this._techDetailsExpanded = !visible;
         });
+
+        // Workflow toggles inside disclosure
+        const togglesRow = body.createEl('div', { cls: 'paperforge-workflow-toggles' });
+        const toggleFields = [
+            { key: 'do_ocr', label: 'OCR', hint: '加入 OCR' },
+            { key: 'analyze', label: '精读', hint: '标记精读' },
+        ];
+        for (const tf of toggleFields) {
+            const label = togglesRow.createEl('label', { cls: 'paperforge-workflow-toggle' });
+            const cb = label.createEl('input', { type: 'checkbox', cls: 'paperforge-workflow-checkbox' });
+            cb.checked = entry[tf.key] === true;
+            label.createEl('span', { cls: 'paperforge-workflow-toggle-label', text: tf.label });
+            label.createEl('span', { cls: 'paperforge-workflow-toggle-hint', text: tf.hint });
+            cb.addEventListener('change', async () => {
+                const noteFile = entry.note_path ? this.app.vault.getAbstractFileByPath(entry.note_path) : null;
+                if (!noteFile) { new Notice('[!!] Note file not found', 6000); return; }
+                const newVal = cb.checked;
+                await this.app.fileManager.processFrontMatter(noteFile, (fm) => { fm[tf.key] = newVal; });
+                this._patchCachedEntry(key, { [tf.key]: newVal });
+                this._currentPaperEntry = patchEntryWorkflowState(this._currentPaperEntry, { [tf.key]: newVal });
+            });
+        }
 
         const health = entry.health || {};
         const rows = [
@@ -1637,10 +1638,10 @@ class PaperForgeStatusView extends ItemView {
             ['Note Path', entry.note_path || '\u2014'],
             ['Fulltext Path', entry.fulltext_path || '\u2014'],
         ];
-        for (const [label, value] of rows) {
+        for (const [l, v] of rows) {
             const row = body.createEl('div', { cls: 'paperforge-technical-row' });
-            row.createEl('span', { cls: 'paperforge-technical-label', text: label });
-            row.createEl('span', { cls: 'paperforge-technical-value', text: String(value) });
+            row.createEl('span', { cls: 'paperforge-technical-label', text: l });
+            row.createEl('span', { cls: 'paperforge-technical-value', text: String(v) });
         }
     }
 
