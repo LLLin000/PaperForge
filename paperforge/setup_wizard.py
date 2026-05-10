@@ -789,7 +789,7 @@ def headless_setup(
     print("[*] Phase 7: Verifying installation...")
     checks = {
         "Worker scripts": worker_dst.exists(),
-        "Skill files": len(imported_skills) > 0,
+        "Skill files": bool(skill_result.get("skill_deployed")),
         "Base dir": (vault / base_dir).exists(),
         "Exports dir": (pf_path / "exports").exists(),
         "OCR dir": (pf_path / "ocr").exists(),
