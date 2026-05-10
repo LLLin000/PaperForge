@@ -935,6 +935,15 @@ class PaperForgeStatusView extends ItemView {
         this._cachedItems = null;
     }
 
+    /* ── Extract zotero_key from workspace directory name ── */
+    _extractZoteroKeyFromPath(filePath) {
+        if (!filePath) return null;
+        const dirname = path.dirname(filePath);
+        const basename = path.basename(dirname);
+        const match = basename.match(/^([A-Z0-9]{8})(?:\s*-\s*)/);
+        return match ? match[1] : null;
+    }
+
     /* ── Pure Mode Resolution (D-07, Phase 32) ── */
     _resolveModeForFile(file) {
         if (!file) return { mode: 'global', filePath: null, key: null, domain: null };
@@ -947,13 +956,17 @@ class PaperForgeStatusView extends ItemView {
         }
 
         if (ext === 'md') {
-            // Standard .md — check for zotero_key in frontmatter.
             const cache = this.app.metadataCache.getFileCache(file);
-            const key = cache && cache.frontmatter && cache.frontmatter.zotero_key;
-            if (key) {
-                return { mode: 'paper', filePath, key, domain: null };
+            const fmKey = cache && cache.frontmatter && cache.frontmatter.zotero_key;
+            if (fmKey) {
+                return { mode: 'paper', filePath, key: fmKey, domain: null };
             }
-            return { mode: 'global', filePath, key: null, domain: null };
+        }
+
+        // Workspace path detection: any file inside a paper workspace directory
+        const wsKey = this._extractZoteroKeyFromPath(filePath);
+        if (wsKey && this._findEntry(wsKey)) {
+            return { mode: 'paper', filePath, key: wsKey, domain: null };
         }
 
         return { mode: 'global', filePath, key: null, domain: null };
