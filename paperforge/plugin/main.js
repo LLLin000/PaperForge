@@ -1475,6 +1475,43 @@ class PaperForgeStatusView extends ItemView {
             modal.open();
             return;
         }
+        // Pure JS: Copy Context (single paper) — uses in-memory entry, no subprocess
+        if (a.id === 'paperforge-copy-context') {
+            let entry = this._currentPaperEntry;
+            if (!entry) {
+                const file = this.app.workspace.getActiveFile();
+                if (file) {
+                    const cache = this.app.metadataCache.getFileCache(file);
+                    const key = cache?.frontmatter?.zotero_key;
+                    if (key) entry = this._findEntry(key);
+                }
+            }
+            if (entry) {
+                navigator.clipboard.writeText(JSON.stringify(entry, null, 2)).then(() => {
+                    this._showMessage('[OK] ' + (entry.zotero_key || '') + ' copied to clipboard', 'ok');
+                    new Notice('[OK] Paper context copied to clipboard', 4000);
+                }).catch(e => {
+                    this._showMessage('[!!] Clipboard failed: ' + e.message, 'error');
+                });
+            } else {
+                this._showMessage('[!!] No paper entry found', 'error');
+                new Notice('[!!] Open a paper note or select one in the dashboard first', 5000);
+            }
+            return;
+        }
+
+        // Pure JS: Copy Collection Context — uses cached index, no subprocess
+        if (a.id === 'paperforge-copy-collection-context') {
+            const items = this._cachedItems || [];
+            navigator.clipboard.writeText(JSON.stringify(items, null, 2)).then(() => {
+                this._showMessage('[OK] ' + items.length + ' entries copied to clipboard', 'ok');
+                new Notice('[OK] ' + items.length + ' papers copied to clipboard', 4000);
+            }).catch(e => {
+                this._showMessage('[!!] Clipboard failed: ' + e.message, 'error');
+            });
+            return;
+        }
+
         // Guard: disabled actions show coming-soon notice
         if (a.disabled) {
             new Notice(`[i] ${a.disabledMsg || 'This action is not yet available.'}`, 6000);

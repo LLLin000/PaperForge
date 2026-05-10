@@ -846,59 +846,30 @@ def headless_setup(
             _copy_file_incremental(mod_src, pf_path / "worker/scripts" / mod)
     print(f"    [OK] worker scripts")
 
-    # Deploy skills based on agent format
-    fmt = agent_config.get("format", "skill_directory")
-    prefix = agent_config.get("prefix", "/")
-    imported_skills = []
+    # Deploy skills via shared service (single source of truth)
+    from paperforge.services.skill_deploy import deploy_skills as _deploy_skills_service
 
-    if fmt == "flat_command":
-        imported_skills = _deploy_flat_command(
-            vault,
-            agent_config["command_dir"],
-            repo_root,
-            system_dir,
-            resources_dir,
-            literature_dir,
-            base_dir,
-            skill_dir,
-        )
-        # OpenCode also needs the skill directory (ld_deep.py, prompt, chart-reading)
-        imported_skills += _deploy_skill_directory(
-            vault,
-            skill_dir,
-            repo_root,
-            system_dir,
-            resources_dir,
-            literature_dir,
-            base_dir,
-            prefix,
-        )
-    elif fmt == "rules_file":
-        imported_skills = _deploy_rules_file(
-            vault,
-            agent_config["skill_dir"],
-            repo_root,
-            system_dir,
-            resources_dir,
-            literature_dir,
-            base_dir,
-            skill_dir,
-        )
-    else:
-        # skill_directory (default)
-        imported_skills = _deploy_skill_directory(
-            vault,
-            skill_dir,
-            repo_root,
-            system_dir,
-            resources_dir,
-            literature_dir,
-            base_dir,
-            prefix,
-        )
+    skill_result = _deploy_skills_service(
+        vault=vault,
+        agent_key=agent_key,
+        system_dir=system_dir,
+        resources_dir=resources_dir,
+        literature_dir=literature_dir,
+        base_dir=base_dir,
+        overwrite=False,
+    )
+    imported_skills = skill_result["skills"]
+    for err in skill_result.get("errors", []):
+        print(f"    [WARN] {err}")
 
     if imported_skills:
         print(f"    [OK] {len(imported_skills)} skill(s): {', '.join(imported_skills)}")
+
+    # AGENTS.md
+    if skill_result["agents_md"]:
+        print(f"    [OK] AGENTS.md")
+    else:
+        print(f"    [WARN] AGENTS.md source not found; skipping")
 
     # Create agent config file if defined (e.g., Claude skills.json)
     config_file = agent_config.get("config_file")
@@ -936,24 +907,6 @@ def headless_setup(
         print(f"    [OK] Obsidian plugin (created {created}, preserved {skipped})")
     else:
         print(f"    [WARN] Plugin source not found: {plugin_src}")
-
-    # AGENTS.md
-    agents_src = repo_root / "AGENTS.md"
-    agents_dst = vault / "AGENTS.md"
-    if agents_src.exists():
-        text = agents_src.read_text(encoding="utf-8")
-        for old, new in [
-            ("<system_dir>", system_dir),
-            ("<resources_dir>", resources_dir),
-            ("<literature_dir>", literature_dir),
-            ("<base_dir>", base_dir),
-            ("<skill_dir>", skill_dir),
-        ]:
-            text = text.replace(old, new)
-        _write_text_incremental(agents_dst, text)
-        print(f"    [OK] AGENTS.md")
-    else:
-        print(f"    [WARN] AGENTS.md source not found; skipping")
 
     # =========================================================================
     # Phase 5: Create config files
