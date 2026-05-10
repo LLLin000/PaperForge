@@ -1530,9 +1530,11 @@ class PaperForgeStatusView extends ItemView {
         const lastSlash = entry.note_path.lastIndexOf('/');
         const wsDir = lastSlash !== -1 ? entry.note_path.substring(0, lastSlash) : '.';
         const discPath = wsDir + '/ai/discussion.json';
+        console.log('PaperForge: looking for discussion at', discPath);
 
         // Use Obsidian adapter for path correctness (handles unicode reliably)
         this.app.vault.adapter.exists(discPath).then((exists) => {
+            console.log('PaperForge: discussion exists?', exists);
             if (!exists) return;
             return this.app.vault.adapter.read(discPath);
         }).then((raw) => {
