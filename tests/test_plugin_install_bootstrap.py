@@ -46,7 +46,8 @@ def test_setup_wizard_flat_command_falls_back_to_packaged_command_files() -> Non
 def test_setup_wizard_does_not_fail_if_agents_md_missing() -> None:
     """AGENTS.md is optional for pip-installed package deployments."""
     source = (REPO_ROOT / "paperforge" / "setup_wizard.py").read_text(encoding="utf-8")
-    assert 'True if not agents_src.exists() else agents_dst.exists()' in source
+    assert 'True if not agents_src.exists() else agents_dst.exists()' not in source
+    assert '(vault / "AGENTS.md").exists()' in source
 
 
 def test_setup_wizard_uses_manual_zotero_path_for_checks() -> None:
