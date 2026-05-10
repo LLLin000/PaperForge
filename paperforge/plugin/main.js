@@ -1145,6 +1145,17 @@ class PaperForgeStatusView extends ItemView {
             }
         }
 
+        // PDF files: match to paper via pdf_path in canonical index
+        if (ext === 'pdf') {
+            const items = this._getCachedIndex();
+            for (const item of items) {
+                const pdfPath = (item.pdf_path || '').replace(/^\[\[|\]\]$/g, '').trim();
+                if (pdfPath === filePath) {
+                    return { mode: 'paper', filePath, key: item.zotero_key, domain: null };
+                }
+            }
+        }
+
         // Workspace path detection: any file inside a paper workspace directory
         const wsKey = this._extractZoteroKeyFromPath(filePath);
         if (wsKey) {
