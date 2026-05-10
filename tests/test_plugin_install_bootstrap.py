@@ -38,9 +38,11 @@ def test_setup_args_global_vault_before_subcommand() -> None:
 
 
 def test_setup_wizard_flat_command_falls_back_to_packaged_command_files() -> None:
-    """pip-installed setup must deploy OpenCode commands from packaged command_files."""
+    """pip-installed setup must deploy OpenCode commands via skill_deploy service."""
     source = (REPO_ROOT / "paperforge" / "setup_wizard.py").read_text(encoding="utf-8")
-    assert 'repo_root / "paperforge" / "command_files"' in source
+    assert "skill_deploy" in source
+    deploy_svc = (REPO_ROOT / "paperforge" / "services" / "skill_deploy.py").read_text(encoding="utf-8")
+    assert '"skills"' in deploy_svc
 
 
 def test_setup_wizard_does_not_fail_if_agents_md_missing() -> None:
