@@ -9,6 +9,7 @@ _COMMAND_REGISTRY: dict[str, str] = {
     "status": "paperforge.commands.status",
     "context": "paperforge.commands.context",
     "dashboard": "paperforge.commands.dashboard",
+    "finalize": "paperforge.commands.finalize",
 }
 
 

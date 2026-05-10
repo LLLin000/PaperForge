@@ -1316,7 +1316,7 @@ class PaperForgeStatusView extends ItemView {
         const actionsRow = view.createEl('div', { cls: 'paperforge-global-actions' });
         actionsRow.createEl('div', { cls: 'paperforge-section-label', text: 'Start Working' });
         const btnsRow = actionsRow.createEl('div', { cls: 'paperforge-global-actions-row' });
-        const hubBtn = btnsRow.createEl('button', { cls: 'paperforge-contextual-btn' });
+        const hubBtn = btnsRow.createEl('button', { cls: 'paperforge-contextual-btn primary' });
         hubBtn.createEl('span', { cls: 'paperforge-contextual-btn-icon', text: '\uD83D\uDCC1' });
         hubBtn.createEl('span', { text: 'Open Literature Hub' });
         hubBtn.addEventListener('click', () => {
@@ -1782,7 +1782,6 @@ class PaperForgeStatusView extends ItemView {
         // ── Header ──
         const header = view.createEl('div', { cls: 'paperforge-collection-header' });
         header.createEl('div', { cls: 'paperforge-collection-title', text: domain });
-        header.createEl('div', { cls: 'paperforge-collection-count', text: totalPapers + ' papers' });
 
         // ── Workflow Overview (funnel) ──
         const wfSection = view.createEl('div', { cls: 'paperforge-workflow-overview' });
@@ -1845,20 +1844,20 @@ class PaperForgeStatusView extends ItemView {
 
         // ── Contextual Actions ──
         const actionsRow = view.createEl('div', { cls: 'paperforge-collection-actions' });
+        const ocrActionBtn = actionsRow.createEl('button', { cls: 'paperforge-contextual-btn primary' });
+        ocrActionBtn.createEl('span', { cls: 'paperforge-contextual-btn-icon', text: '\u229E' });
+        ocrActionBtn.createEl('span', { text: 'Run OCR' });
+        ocrActionBtn.addEventListener('click', () => {
+            const action = ACTIONS.find(a => a.id === 'paperforge-ocr');
+            if (action) this._runAction(action, ocrActionBtn);
+        });
+
         const syncBtn = actionsRow.createEl('button', { cls: 'paperforge-contextual-btn' });
         syncBtn.createEl('span', { cls: 'paperforge-contextual-btn-icon', text: '\u21BB' });
         syncBtn.createEl('span', { text: 'Sync Library' });
         syncBtn.addEventListener('click', () => {
             const action = ACTIONS.find(a => a.id === 'paperforge-sync');
             if (action) this._runAction(action, syncBtn);
-        });
-
-        const ocrActionBtn = actionsRow.createEl('button', { cls: 'paperforge-contextual-btn' });
-        ocrActionBtn.createEl('span', { cls: 'paperforge-contextual-btn-icon', text: '\u229E' });
-        ocrActionBtn.createEl('span', { text: 'Run OCR' });
-        ocrActionBtn.addEventListener('click', () => {
-            const action = ACTIONS.find(a => a.id === 'paperforge-ocr');
-            if (action) this._runAction(action, ocrActionBtn);
         });
     }
 
@@ -2095,20 +2094,26 @@ class PaperForgeStatusView extends ItemView {
         const leafHandler = this.app.workspace.on('active-leaf-change', () => {
             clearTimeout(this._leafChangeTimer);
             this._leafChangeTimer = setTimeout(() => {
+                const resolved = this._resolveModeForFile(this.app.workspace.getActiveFile());
+                const nextMode = resolved.mode;
+                const nextFilePath = resolved.filePath;
+
+                // Clicking inside the dashboard can activate its leaf without changing
+                // the underlying paper/base context. Avoid rebuilding the whole mode
+                // tree in that case, or transient UI state like discussion expansion resets.
+                if (this._currentMode === nextMode && this._currentFilePath === nextFilePath) {
+                    return;
+                }
+
                 this._detectAndSwitch();
             }, 300);
         });
         this._modeSubscribers.push({ event: 'active-leaf-change', ref: leafHandler });
 
-        // D-09: File modification -- filter to formal-library.json only
+        // D-09: File modification -- formal-library.json only (deep-finalize signals completion)
         const modifyHandler = this.app.vault.on('modify', (file) => {
             if (file && file.path && file.path.endsWith('formal-library.json')) {
                 this._invalidateIndex();  // D-14: invalidate cache
-                this._refreshCurrentMode();
-                return;
-            }
-            if (file && this._currentPaperEntry && file.path === this._currentPaperEntry.note_path) {
-                this._currentPaperEntry = this._findEntry(this._currentPaperKey);
                 this._refreshCurrentMode();
             }
         });
