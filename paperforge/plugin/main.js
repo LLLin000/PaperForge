@@ -1267,7 +1267,7 @@ class PaperForgeStatusView extends ItemView {
         } catch (_) {}
         this._renderSystemStatusRow(statusGrid, 'Zotero Export', exportOk ? 'healthy' : 'missing', exportDetail);
 
-        // OCR token (check plugin settings + .env fallback)
+        // OCR token (check: plugin settings → .env file → OS environment)
         let tokenOk = !!(plugin?.settings?.paddleocr_api_key);
         if (!tokenOk) {
             try {
@@ -1279,6 +1279,9 @@ class PaperForgeStatusView extends ItemView {
                     tokenOk = !!(tokenMatch && tokenMatch[1] && tokenMatch[1].trim());
                 }
             } catch (_) {}
+        }
+        if (!tokenOk) {
+            tokenOk = !!(process.env.PADDLEOCR_API_TOKEN || process.env.PADDLEOCR_API_KEY || process.env.OCR_TOKEN);
         }
         this._renderSystemStatusRow(statusGrid, 'OCR Token', tokenOk ? 'configured' : 'missing',
             tokenOk ? 'Configured' : 'Not set');
