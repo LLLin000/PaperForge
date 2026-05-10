@@ -310,20 +310,16 @@ def test_headless_setup_claude_skill_directory(tmp_path: Path, monkeypatch: pyte
     )
 
     assert rv == 0, f"claude install failed with code {rv}"
-    pf_deep = tmp_path / ".claude" / "skills" / "pf-deep"
-    assert pf_deep.exists(), f"pf-deep skill dir not created: {pf_deep}"
-    assert (pf_deep / "SKILL.md").exists(), "SKILL.md not created"
-    assert (pf_deep / "scripts" / "ld_deep.py").exists(), "ld_deep.py not created"
-    assert (pf_deep / "prompt_deep_subagent.md").exists(), "prompt not created"
-    assert (pf_deep / "chart-reading" / "INDEX.md").exists(), "chart INDEX.md not created"
-
-    pf_paper = tmp_path / ".claude" / "skills" / "pf-paper"
-    assert pf_paper.exists(), f"pf-paper skill dir not created: {pf_paper}"
-    assert (pf_paper / "SKILL.md").exists(), "pf-paper SKILL.md not created"
+    skill_dir = tmp_path / ".claude" / "skills" / "literature-qa"
+    assert skill_dir.exists(), f"literature-qa skill dir not created: {skill_dir}"
+    assert (skill_dir / "SKILL.md").exists(), "SKILL.md not created"
+    assert (skill_dir / "references" / "chart-reading" / "INDEX.md").exists(), "chart INDEX.md not created"
+    assert (skill_dir / "references" / "deep-subagent.md").exists(), "deep-subagent.md not created"
+    assert (skill_dir / "references" / "paper-qa.md").exists(), "paper-qa.md not created"
 
 
 def test_headless_setup_opencode_flat_command(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """OpenCode uses flat_command format - creates .opencode/command/pf-deep.md."""
+    """OpenCode deploys literature-qa skill to skills dir; flat commands are bundled in SKILL.md."""
     from paperforge.setup_wizard import headless_setup
     import paperforge.setup_wizard as sw
 
@@ -346,16 +342,13 @@ def test_headless_setup_opencode_flat_command(tmp_path: Path, monkeypatch: pytes
     )
 
     assert rv == 0, f"opencode install failed with code {rv}"
-    cmd_dir = tmp_path / ".opencode" / "command"
-    assert cmd_dir.exists(), f"command dir not created: {cmd_dir}"
-    pf_deep = cmd_dir / "pf-deep.md"
-    assert pf_deep.exists(), f"pf-deep.md not created: {pf_deep}"
-    pf_paper = cmd_dir / "pf-paper.md"
-    assert pf_paper.exists(), f"pf-paper.md not created: {pf_paper}"
+    skill_dir = tmp_path / ".opencode" / "skills" / "literature-qa"
+    assert skill_dir.exists(), f"literature-qa skill dir not created: {skill_dir}"
+    assert (skill_dir / "SKILL.md").exists(), "SKILL.md not created"
 
 
 def test_headless_setup_codex_skill_directory(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Codex uses skill_directory format with $ prefix."""
+    """Codex deploys literature-qa skill under .codex/skills."""
     from paperforge.setup_wizard import headless_setup
     import paperforge.setup_wizard as sw
 
@@ -378,15 +371,13 @@ def test_headless_setup_codex_skill_directory(tmp_path: Path, monkeypatch: pytes
     )
 
     assert rv == 0, f"codex install failed with code {rv}"
-    pf_deep = tmp_path / ".codex" / "skills" / "pf-deep"
-    assert pf_deep.exists(), f"pf-deep skill dir not created: {pf_deep}"
-    assert (pf_deep / "SKILL.md").exists(), "SKILL.md not created"
-    assert (pf_deep / "scripts" / "ld_deep.py").exists(), "ld_deep.py not created"
-    assert (pf_deep / "prompt_deep_subagent.md").exists(), "prompt not created"
+    skill_dir = tmp_path / ".codex" / "skills" / "literature-qa"
+    assert skill_dir.exists(), f"literature-qa skill dir not created: {skill_dir}"
+    assert (skill_dir / "SKILL.md").exists(), "SKILL.md not created"
 
 
 def test_headless_setup_cline_rules_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Cline uses rules_file format - creates .clinerules directory with skill content."""
+    """Cline deploys literature-qa skill under .clinerules."""
     from paperforge.setup_wizard import headless_setup
     import paperforge.setup_wizard as sw
 
@@ -411,9 +402,9 @@ def test_headless_setup_cline_rules_file(tmp_path: Path, monkeypatch: pytest.Mon
     assert rv == 0, f"cline install failed with code {rv}"
     clinerules = tmp_path / ".clinerules"
     assert clinerules.exists(), f".clinerules dir not created: {clinerules}"
-    pf_deep = clinerules / "pf-deep"
-    assert pf_deep.exists(), f"pf-deep subdir not created under .clinerules"
-    assert (pf_deep / "scripts" / "ld_deep.py").exists(), "ld_deep.py not created under .clinerules"
+    skill_dir = clinerules / "literature-qa"
+    assert skill_dir.exists(), f"literature-qa subdir not created under .clinerules"
+    assert (skill_dir / "references" / "deep-subagent.md").exists(), "deep-subagent.md not created"
 
 
 def test_headless_setup_preserves_existing_files(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
