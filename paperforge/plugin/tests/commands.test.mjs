@@ -6,7 +6,7 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-const { ACTIONS, buildCommandArgs, runSubprocess } = await import('../main.js');
+const { ACTIONS, buildCommandArgs, runSubprocess } = await import('../src/testable.js');
 
 describe('ACTIONS', () => {
     it('has exactly 6 entries', () => {
