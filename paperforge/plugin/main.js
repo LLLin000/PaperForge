@@ -1782,7 +1782,6 @@ class PaperForgeStatusView extends ItemView {
         // ── Header ──
         const header = view.createEl('div', { cls: 'paperforge-collection-header' });
         header.createEl('div', { cls: 'paperforge-collection-title', text: domain });
-        header.createEl('div', { cls: 'paperforge-collection-count', text: totalPapers + ' papers' });
 
         // ── Workflow Overview (funnel) ──
         const wfSection = view.createEl('div', { cls: 'paperforge-workflow-overview' });
