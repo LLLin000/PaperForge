@@ -2338,7 +2338,6 @@ class PaperForgeSettingTab extends PluginSettingTab {
                 { label: t('dir_vault'), val: vaultPath },
                 { label: t('dir_resources'), val: `${vaultPath}/${pf.resources_dir}` },
                 { label: '  ' + t('dir_notes'), val: `${vaultPath}/${pf.resources_dir}/${pf.literature_dir}` },
-                { label: '  ' + t('dir_index'), val: `${vaultPath}/${pf.resources_dir}/${pf.control_dir}` },
                 { label: t('dir_base'), val: `${vaultPath}/${pf.base_dir}` },
                 { label: t('dir_system'), val: `${vaultPath}/${pf.system_dir}` },
                 { label: 'API Key', val: s.paddleocr_api_key ? t('api_key_set') : t('api_key_missing') },
@@ -2769,7 +2768,6 @@ class PaperForgeSetupModal extends Modal {
         const previewItems = [
             { label: t('dir_resources'), val: `${vault}/${s.resources_dir || ''}` },
             { label: t('dir_notes'), val: `${vault}/${s.resources_dir || ''}/${s.literature_dir || ''}` },
-            { label: t('dir_index'), val: `${vault}/${s.resources_dir || ''}/${s.control_dir || ''}` },
             { label: t('dir_system'), val: `${vault}/${s.system_dir || ''}` },
             { label: t('dir_base'), val: `${vault}/${s.base_dir || ''}` },
         ];
@@ -3017,7 +3015,6 @@ class PaperForgeSetupModal extends Modal {
             '--system-dir', s.system_dir.trim(),
             '--resources-dir', s.resources_dir.trim(),
             '--literature-dir', s.literature_dir.trim(),
-            '--control-dir', s.control_dir.trim(),
             '--base-dir', s.base_dir.trim(),
             '--agent', s.agent_platform || 'opencode',
         ];
@@ -3102,7 +3099,6 @@ class PaperForgeSetupModal extends Modal {
         if (!s.vault_path || !s.vault_path.trim()) errors.push(t('validate_vault'));
         if (!s.resources_dir || !s.resources_dir.trim()) errors.push(t('validate_resources'));
         if (!s.literature_dir || !s.literature_dir.trim()) errors.push(t('validate_notes'));
-        if (!s.control_dir || !s.control_dir.trim()) errors.push(t('validate_index'));
         if (!s.base_dir || !s.base_dir.trim()) errors.push(t('validate_base'));
         if (!s.paddleocr_api_key || !s.paddleocr_api_key.trim()) errors.push(t('validate_key'));
         if (!s.zotero_data_dir || !s.zotero_data_dir.trim()) errors.push(t('validate_zotero'));
@@ -3159,7 +3155,6 @@ class PaperForgeSetupModal extends Modal {
             { label: t('dir_vault'), val: vault },
             { label: t('dir_resources'), val: `${vault}/${s.resources_dir}` },
             { label: t('dir_notes'), val: `${vault}/${s.resources_dir}/${s.literature_dir}` },
-            { label: t('dir_index'), val: `${vault}/${s.resources_dir}/${s.control_dir}` },
             { label: t('dir_base'), val: `${vault}/${s.base_dir}` },
             { label: t('dir_system'), val: `${vault}/${s.system_dir}` },
             { label: 'API Key', val: s.paddleocr_api_key ? t('api_key_set') : t('api_key_missing') },
@@ -3285,7 +3280,7 @@ module.exports = class PaperForgePlugin extends Plugin {
     /**
      * Read path configuration from the canonical paperforge.json file.
      * Falls back to Python-level DEFAULT_CONFIG values if file does not exist.
-     * Returns {system_dir, resources_dir, literature_dir, control_dir, base_dir}.
+     * Returns {system_dir, resources_dir, literature_dir, base_dir}.
      */
     readPaperforgeJson() {
         const fs = require('fs');
@@ -3298,7 +3293,6 @@ module.exports = class PaperForgePlugin extends Plugin {
             system_dir: 'System',
             resources_dir: 'Resources',
             literature_dir: 'Literature',
-            control_dir: 'LiteratureControl',
             base_dir: 'Bases',
         };
 
@@ -3315,7 +3309,6 @@ module.exports = class PaperForgePlugin extends Plugin {
                 system_dir: vc.system_dir || data.system_dir || DEFAULTS.system_dir,
                 resources_dir: vc.resources_dir || data.resources_dir || DEFAULTS.resources_dir,
                 literature_dir: vc.literature_dir || data.literature_dir || DEFAULTS.literature_dir,
-                control_dir: vc.control_dir || data.control_dir || DEFAULTS.control_dir,
                 base_dir: vc.base_dir || data.base_dir || DEFAULTS.base_dir,
             };
         } catch (e) {
@@ -3350,7 +3343,7 @@ module.exports = class PaperForgePlugin extends Plugin {
         }
 
         // Update vault_config with new path values
-        const validPathKeys = ['system_dir', 'resources_dir', 'literature_dir', 'control_dir', 'base_dir'];
+        const validPathKeys = ['system_dir', 'resources_dir', 'literature_dir', 'base_dir'];
         for (const key of validPathKeys) {
             if (pathConfig[key] !== undefined) {
                 data.vault_config[key] = pathConfig[key];
@@ -3375,7 +3368,6 @@ module.exports = class PaperForgePlugin extends Plugin {
                 this.settings.system_dir = pfConfig.system_dir;
                 this.settings.resources_dir = pfConfig.resources_dir;
                 this.settings.literature_dir = pfConfig.literature_dir;
-                this.settings.control_dir = pfConfig.control_dir;
                 this.settings.base_dir = pfConfig.base_dir;
             }
         } catch (e) {
@@ -3395,7 +3387,6 @@ module.exports = class PaperForgePlugin extends Plugin {
         this.settings.system_dir = pfConfig.system_dir;
         this.settings.resources_dir = pfConfig.resources_dir;
         this.settings.literature_dir = pfConfig.literature_dir;
-        this.settings.control_dir = pfConfig.control_dir;
         this.settings.base_dir = pfConfig.base_dir;
 
         // Re-validate saved python_path override
