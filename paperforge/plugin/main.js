@@ -1267,8 +1267,19 @@ class PaperForgeStatusView extends ItemView {
         } catch (_) {}
         this._renderSystemStatusRow(statusGrid, 'Zotero Export', exportOk ? 'healthy' : 'missing', exportDetail);
 
-        // OCR token
-        const tokenOk = !!(plugin?.settings?.paddleocr_api_key);
+        // OCR token (check plugin settings + .env fallback)
+        let tokenOk = !!(plugin?.settings?.paddleocr_api_key);
+        if (!tokenOk) {
+            try {
+                const sysDir = plugin?.settings?.system_dir || 'System';
+                const envPath = path.join(vp, sysDir, 'PaperForge', '.env');
+                if (fs.existsSync(envPath)) {
+                    const envContent = fs.readFileSync(envPath, 'utf-8');
+                    const tokenMatch = envContent.match(/^PADDLEOCR_API_TOKEN\s*=\s*(.+)$/m);
+                    tokenOk = !!(tokenMatch && tokenMatch[1] && tokenMatch[1].trim());
+                }
+            } catch (_) {}
+        }
         this._renderSystemStatusRow(statusGrid, 'OCR Token', tokenOk ? 'configured' : 'missing',
             tokenOk ? 'Configured' : 'Not set');
 
@@ -1517,7 +1528,8 @@ class PaperForgeStatusView extends ItemView {
         card.style.display = 'none'; // hidden by default
 
         if (!entry.note_path) return;
-        const wsDir = path.dirname(entry.note_path);
+        const lastSlash = entry.note_path.lastIndexOf('/');
+        const wsDir = lastSlash !== -1 ? entry.note_path.substring(0, lastSlash) : '.';
         const discPath = wsDir + '/ai/discussion.json';
 
         this.app.vault.adapter.read(discPath).then((raw) => {
