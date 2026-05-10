@@ -1,16 +1,11 @@
 ---
 name: literature-qa
 description: >
-  学术文献精读与问答。MUST trigger when user types /pf-deep /pf-paper /pf-end
-  or says 精读 深度阅读 读一下这篇 读文献 带我读 组会讲这篇 帮我精读 讲讲这篇论文
-  查一下这篇论文 帮我看看这篇文章 这篇文章讲了什么 这篇讲了什么 论文问答 做这篇的问答
-  保存讨论 结束讨论 保存记录 完成讨论 精读队列 有哪些该读了
-  or uses natural language like 那篇关于XX的文章 去年那篇XX 找一下XX的文献
-  or any phrase about reading analyzing deep-reading papers in their Zotero library.
-  支持 Zotero key DOI 标题 作者 年份 自然语言描述定位论文.
-  Routes intent internally via routing table—no separate sub-skills needed.
+  学术文献精读与问答。Triggered by: /pf-deep /pf-paper /pf-end,
+  "精读 <key/title>", "文献问答 <key/title>", "结束讨论", "保存记录",
+  "精读队列". Uses Zotero key, DOI, or title to locate papers.
 license: Apache-2.0
-compatibility: opencode
+compatibility: all
 ---
 
 # Literature QA — 学术文献精读与问答
