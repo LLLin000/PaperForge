@@ -1405,7 +1405,7 @@ class PaperForgeStatusView extends ItemView {
                 await this.app.fileManager.processFrontMatter(noteFile, (fm) => { fm[tf.key] = newVal; });
                 this._patchCachedEntry(key, { [tf.key]: newVal });
                 this._currentPaperEntry = patchEntryWorkflowState(this._currentPaperEntry, { [tf.key]: newVal });
-                this._refreshCurrentMode();  // sync UI; workers pick up frontmatter change from file
+                // modify event handler auto-refreshes — no explicit _refreshCurrentMode needed
             });
         }
 
@@ -1583,7 +1583,7 @@ class PaperForgeStatusView extends ItemView {
                 }
             });
         } catch (e) {
-            // No discussion.json — card stays hidden
+            console.error('PaperForge: discussion.json read error', discPath, e.message);
         }
     }
 
