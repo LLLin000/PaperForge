@@ -697,6 +697,8 @@ class PaperForgeStatusView extends ItemView {
             return;
         }
 
+        if (!this._metricsEl) return;  // guard: global mode no longer creates metrics container
+
         this._metricsEl.removeClass('paperforge-loading');
 
         const totalPapers = d.total_papers || 0;
@@ -720,6 +722,7 @@ class PaperForgeStatusView extends ItemView {
 
     /* ── OCR Pipeline ── */
     _renderOcr(d) {
+        if (!this._ocrSection) return;  // guard: global mode no longer creates OCR container
         const ocr = d.ocr || {};
         const total = ocr.total || 0;
 
@@ -1015,27 +1018,140 @@ class PaperForgeStatusView extends ItemView {
         }
     }
 
-    /* ── Global Mode Render (existing dashboard, extracted from _fetchStats + _renderOcr) ── */
+    /* ── Global Mode Render: System Homepage ── */
     _renderGlobalMode() {
+        const view = this._contentEl.createEl('div', { cls: 'paperforge-global-view' });
+
         // Drift warning banner (hidden by default, shown on version mismatch)
-        this._driftBannerEl = this._contentEl.createEl('div', { cls: 'paperforge-drift-banner' });
+        this._driftBannerEl = view.createEl('div', { cls: 'paperforge-drift-banner' });
         this._driftBannerEl.style.display = 'none';
 
-        // Metric cards
-        this._metricsEl = this._contentEl.createEl('div', { cls: 'paperforge-metrics' });
+        // ── Library Snapshot ──
+        const items = this._getCachedIndex();
+        const totalPapers = items.length;
+        let pdfReady = 0, ocrDone = 0, deepReadDone = 0, pdfIssues = 0;
+        for (const item of items) {
+            if (item.has_pdf) pdfReady++;
+            if (item.ocr_status === 'done') ocrDone++;
+            if (item.deep_reading_status === 'done') deepReadDone++;
+            const h = item.health || {};
+            if (h.pdf_health && h.pdf_health !== 'healthy') pdfIssues++;
+        }
 
-        // OCR pipeline section (_renderOcr expects these instance vars)
-        this._ocrSection = this._contentEl.createEl('div', { cls: 'paperforge-ocr-section' });
-        this._ocrSection.style.display = 'none';
-        const ocrHeader = this._ocrSection.createEl('div', { cls: 'paperforge-ocr-header' });
-        ocrHeader.createEl('h4', { cls: 'paperforge-ocr-title', text: 'OCR Pipeline' });
-        this._ocrBadge = ocrHeader.createEl('span', { cls: 'paperforge-ocr-badge idle', text: 'Idle' });
-        this._ocrTrack = this._ocrSection.createEl('div', { cls: 'paperforge-progress-track' });
-        this._ocrCounts = this._ocrSection.createEl('div', { cls: 'paperforge-ocr-counts' });
-        this._ocrEmpty = this._ocrSection.createEl('div', { cls: 'paperforge-ocr-empty', text: 'No OCR tasks yet. Mark papers with do_ocr: true to start.' });
+        const snapshot = view.createEl('div', { cls: 'paperforge-library-snapshot' });
+        snapshot.createEl('div', { cls: 'paperforge-section-label', text: 'Library Snapshot' });
+        const pills = snapshot.createEl('div', { cls: 'paperforge-snapshot-pills' });
+        const snapData = [
+            { value: totalPapers, label: 'papers' },
+            { value: pdfReady, label: 'PDFs ready' },
+            { value: ocrDone, label: 'OCR done' },
+            { value: deepReadDone, label: 'deep-read done' },
+        ];
+        for (const s of snapData) {
+            const pill = pills.createEl('div', { cls: 'paperforge-snapshot-pill' });
+            pill.createEl('span', { cls: 'paperforge-snapshot-value', text: String(s.value) });
+            pill.createEl('span', { cls: 'paperforge-snapshot-label', text: ' ' + s.label });
+        }
 
-        this._cachedStats = null; // force fresh load
-        this._fetchStats();
+        // ── System Status ──
+        const statusSection = view.createEl('div', { cls: 'paperforge-system-status' });
+        statusSection.createEl('div', { cls: 'paperforge-section-label', text: 'System Status' });
+        const statusGrid = statusSection.createEl('div', { cls: 'paperforge-status-grid' });
+
+        // Runtime
+        const plugin = this.app.plugins.plugins['paperforge'];
+        const pluginVer = plugin?.manifest?.version || '?';
+        const pyVer = this._paperforgeVersion || '\u2014';
+        const runtimeOk = pyVer === 'v' + pluginVer;
+        this._renderSystemStatusRow(statusGrid, 'Runtime', runtimeOk ? 'healthy' : 'mismatch',
+            runtimeOk ? ('v' + pluginVer) : ('plugin v' + pluginVer + ' \u2260 CLI ' + pyVer));
+
+        // Index
+        const index = this._loadIndex();
+        const indexOk = index && index.items && index.items.length > 0;
+        this._renderSystemStatusRow(statusGrid, 'Index', indexOk ? 'healthy' : 'missing',
+            indexOk ? (index.items.length + ' entries') : 'formal-library.json not found');
+
+        // Zotero export (check if any JSON export exists)
+        const systemDir = plugin?.settings?.system_dir || 'System';
+        const vp = this.app.vault.adapter.basePath;
+        let exportOk = false, exportDetail = 'No exports found';
+        try {
+            const exportsDir = path.join(vp, systemDir, 'PaperForge', 'exports');
+            if (fs.existsSync(exportsDir)) {
+                const files = fs.readdirSync(exportsDir).filter(f => f.endsWith('.json'));
+                exportOk = files.length > 0;
+                exportDetail = exportOk ? (files.length + ' export(s)') : 'No JSON exports';
+            }
+        } catch (_) {}
+        this._renderSystemStatusRow(statusGrid, 'Zotero Export', exportOk ? 'healthy' : 'missing', exportDetail);
+
+        // OCR token
+        const tokenOk = !!(plugin?.settings?.paddleocr_api_key);
+        this._renderSystemStatusRow(statusGrid, 'OCR Token', tokenOk ? 'configured' : 'missing',
+            tokenOk ? 'Configured' : 'Not set');
+
+        // ── Issues Panel (only when issues exist) ──
+        const hasVersionMismatch = !runtimeOk && pyVer !== '\u2014';
+        const hasIssues = pdfIssues > 0 || hasVersionMismatch || !indexOk || !exportOk || !tokenOk;
+        if (hasIssues) {
+            const issueSection = view.createEl('div', { cls: 'paperforge-issue-summary' });
+            issueSection.createEl('div', { cls: 'paperforge-section-label', text: 'Issues' });
+            const issueList = issueSection.createEl('div', { cls: 'paperforge-issue-list' });
+            if (pdfIssues > 0) issueList.createEl('div', { cls: 'paperforge-issue-item', text: pdfIssues + ' PDF path errors' });
+            if (hasVersionMismatch) issueList.createEl('div', { cls: 'paperforge-issue-item', text: 'Runtime version mismatch' });
+            if (!indexOk) issueList.createEl('div', { cls: 'paperforge-issue-item', text: 'Index missing or corrupted' });
+            if (!exportOk) issueList.createEl('div', { cls: 'paperforge-issue-item', text: 'No Zotero export found' });
+            if (!tokenOk) issueList.createEl('div', { cls: 'paperforge-issue-item', text: 'PaddleOCR API key not configured' });
+
+            const issueActions = issueSection.createEl('div', { cls: 'paperforge-issue-actions' });
+            const doctorBtn = issueActions.createEl('button', { cls: 'paperforge-contextual-btn' });
+            doctorBtn.createEl('span', { text: 'Run Doctor' });
+            doctorBtn.addEventListener('click', () => {
+                const action = ACTIONS.find(a => a.id === 'paperforge-doctor');
+                if (action) this._runAction(action, doctorBtn);
+            });
+            const repairBtn = issueActions.createEl('button', { cls: 'paperforge-contextual-btn' });
+            repairBtn.createEl('span', { text: 'Repair Issues' });
+            repairBtn.addEventListener('click', () => {
+                const action = ACTIONS.find(a => a.id === 'paperforge-repair');
+                if (action) this._runAction(action, repairBtn);
+            });
+        }
+
+        // ── Contextual Actions ──
+        const actionsRow = view.createEl('div', { cls: 'paperforge-global-actions' });
+        actionsRow.createEl('div', { cls: 'paperforge-section-label', text: 'Start Working' });
+        const btnsRow = actionsRow.createEl('div', { cls: 'paperforge-global-actions-row' });
+        const hubBtn = btnsRow.createEl('button', { cls: 'paperforge-contextual-btn' });
+        hubBtn.createEl('span', { cls: 'paperforge-contextual-btn-icon', text: '\uD83D\uDCC1' });
+        hubBtn.createEl('span', { text: 'Open Literature Hub' });
+        hubBtn.addEventListener('click', () => {
+            const baseDir = plugin?.settings?.base_dir || 'Bases';
+            const baseFile = this.app.vault.getAbstractFileByPath(baseDir);
+            if (baseFile) {
+                this.app.workspace.revealLeaf().setViewState({ type: 'file-explorer', active: true });
+            } else {
+                new Notice('[!!] Base directory not found: ' + baseDir, 6000);
+            }
+        });
+
+        const globalSyncBtn = btnsRow.createEl('button', { cls: 'paperforge-contextual-btn' });
+        globalSyncBtn.createEl('span', { cls: 'paperforge-contextual-btn-icon', text: '\u21BB' });
+        globalSyncBtn.createEl('span', { text: 'Sync Library' });
+        globalSyncBtn.addEventListener('click', () => {
+            const action = ACTIONS.find(a => a.id === 'paperforge-sync');
+            if (action) this._runAction(action, globalSyncBtn);
+        });
+    }
+
+    /* ── System Status Row helper ── */
+    _renderSystemStatusRow(container, label, status, detail) {
+        const row = container.createEl('div', { cls: 'paperforge-status-row' });
+        const dot = row.createEl('span', { cls: 'paperforge-status-dot' });
+        dot.addClass(status === 'healthy' || status === 'configured' ? 'ok' : 'fail');
+        row.createEl('span', { cls: 'paperforge-status-label', text: label });
+        row.createEl('span', { cls: 'paperforge-status-detail', text: detail || '' });
     }
 
     /* ── Per-Paper Mode Render: Reading Companion ── */
