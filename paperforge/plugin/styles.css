@@ -2132,3 +2132,50 @@
     display: flex;
     gap: 8px;
 }
+
+/* ==========================================================================
+   SECTION 43 — Dashboard Redesign: Workflow Toggle Checkboxes (per-paper)
+   ========================================================================== */
+
+.paperforge-workflow-toggles {
+    display: flex;
+    gap: 16px;
+    padding: 10px 14px;
+    background: var(--background-secondary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: var(--radius-m);
+    margin: 12px 0;
+    transition: border-color 0.15s;
+}
+
+.paperforge-workflow-toggles:hover {
+    border-color: var(--interactive-accent);
+}
+
+.paperforge-workflow-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    font-size: var(--font-ui-smaller);
+    color: var(--text-muted);
+    user-select: none;
+}
+
+.paperforge-workflow-checkbox {
+    width: 15px;
+    height: 15px;
+    margin: 0;
+    cursor: pointer;
+    accent-color: var(--interactive-accent);
+}
+
+.paperforge-workflow-toggle-label {
+    font-weight: var(--font-semibold);
+    color: var(--text-normal);
+}
+
+.paperforge-workflow-toggle-hint {
+    color: var(--text-faint);
+    font-size: 11px;
+}

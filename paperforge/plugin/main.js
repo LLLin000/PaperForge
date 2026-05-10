@@ -1194,27 +1194,27 @@ class PaperForgeStatusView extends ItemView {
         // ── Recent Discussion ──
         this._renderRecentDiscussionCard(view, entry);
 
-        // ── OCR Queue Toggle ──
-        const ocrRow = view.createEl('div', { cls: 'paperforge-paper-actions' });
-        const inQueue = entry.do_ocr === true;
-        const ocrBtn = ocrRow.createEl('button', { cls: 'paperforge-contextual-btn' });
-        ocrBtn.createEl('span', { cls: 'paperforge-contextual-btn-icon', text: inQueue ? '\u23F1' : '\u23F0' });
-        ocrBtn.createEl('span', { text: inQueue ? t('ocr_queue_remove') : t('ocr_queue_add') });
-        ocrBtn.addEventListener('click', async () => {
-            const noteFile = entry.note_path ? this.app.vault.getAbstractFileByPath(entry.note_path) : null;
-            if (!noteFile) {
-                new Notice('[!!] Note file not found: ' + (entry.note_path || 'unknown'), 6000);
-                return;
-            }
-            const newValue = !inQueue;
-            await this.app.fileManager.processFrontMatter(noteFile, (fm) => { fm.do_ocr = newValue; });
-            this._patchCachedEntry(key, { do_ocr: newValue });
-            this._currentPaperEntry = patchEntryWorkflowState(this._currentPaperEntry, { do_ocr: newValue });
-            new Notice(newValue ? t('ocr_queue_added') : t('ocr_queue_removed'));
-            this._refreshCurrentMode();
-        });
-        if (inQueue) {
-            ocrRow.createEl('span', { cls: 'paperforge-ocr-queue-hint', text: 'OCR ' + (entry.ocr_status === 'done' ? 'already done' : 'pending') });
+        // ── Workflow Toggles (checkboxes, same as Base view) ──
+        const togglesRow = view.createEl('div', { cls: 'paperforge-workflow-toggles' });
+        const toggleFields = [
+            { key: 'do_ocr', label: 'OCR', hint: '加入 OCR 队列' },
+            { key: 'analyze', label: 'Analyze', hint: '标记待精读' },
+        ];
+        for (const tf of toggleFields) {
+            const label = togglesRow.createEl('label', { cls: 'paperforge-workflow-toggle' });
+            const cb = label.createEl('input', { type: 'checkbox', cls: 'paperforge-workflow-checkbox' });
+            cb.checked = entry[tf.key] === true;
+            label.createEl('span', { cls: 'paperforge-workflow-toggle-label', text: tf.label });
+            label.createEl('span', { cls: 'paperforge-workflow-toggle-hint', text: tf.hint });
+            cb.addEventListener('change', async () => {
+                const noteFile = entry.note_path ? this.app.vault.getAbstractFileByPath(entry.note_path) : null;
+                if (!noteFile) { new Notice('[!!] Note file not found: ' + (entry.note_path || 'unknown'), 6000); return; }
+                const newVal = cb.checked;
+                await this.app.fileManager.processFrontMatter(noteFile, (fm) => { fm[tf.key] = newVal; });
+                this._patchCachedEntry(key, { [tf.key]: newVal });
+                this._currentPaperEntry = patchEntryWorkflowState(this._currentPaperEntry, { [tf.key]: newVal });
+                this._refreshCurrentMode();  // sync UI; workers pick up frontmatter change from file
+            });
         }
 
         // ── Next Step ──
