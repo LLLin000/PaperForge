@@ -55,7 +55,6 @@ DEFAULT_CONFIG: dict[str, str] = {
     "base_dir": "Bases",
     "skill_dir": ".opencode/skills",
     "command_dir": ".opencode/command",
-    "agent_platform": "opencode",
 }
 
 # Environment variable name map — maps config key to PAPERFORGE_* env var

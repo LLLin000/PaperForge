@@ -269,9 +269,12 @@ def _deploy_all_skills(vault: Path) -> None:
         from paperforge.config import load_vault_config
 
         config = load_vault_config(vault)
+        # Agent platform is a user preference, not a system default.
+        # Fall back to opencode if not configured.
+        agent_key = config.get("agent_platform") or "opencode"
         result = deploy_skills(
             vault=vault,
-            agent_key=config.get("agent_platform", "opencode"),
+            agent_key=agent_key,
             system_dir=config.get("system_dir", "System"),
             resources_dir=config.get("resources_dir", "Resources"),
             literature_dir=config.get("literature_dir", "Literature"),
