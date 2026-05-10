@@ -1524,19 +1524,19 @@ class PaperForgeStatusView extends ItemView {
     /* ── Recent Discussion Card: read ai/discussion.json ── */
     _renderRecentDiscussionCard(container, entry) {
         const card = container.createEl('div', { cls: 'paperforge-discussion-card' });
-        card.style.display = 'none'; // hidden by default
+        card.style.display = 'none';
 
         if (!entry.note_path) return;
         const lastSlash = entry.note_path.lastIndexOf('/');
         const wsDir = lastSlash !== -1 ? entry.note_path.substring(0, lastSlash) : '.';
         const discPath = wsDir + '/ai/discussion.json';
 
-        const vp = this.app.vault.adapter.basePath;
-        const absPath = path.join(vp, discPath);
-
-        try {
-            if (!fs.existsSync(absPath)) return;
-            const raw = fs.readFileSync(absPath, 'utf-8');
+        // Use Obsidian adapter for path correctness (handles unicode reliably)
+        this.app.vault.adapter.exists(discPath).then((exists) => {
+            if (!exists) return;
+            return this.app.vault.adapter.read(discPath);
+        }).then((raw) => {
+            if (!raw) return;
             const data = JSON.parse(raw);
             if (!data.sessions || data.sessions.length === 0) return;
 
@@ -1581,9 +1581,9 @@ class PaperForgeStatusView extends ItemView {
                     new Notice('讨论文件尚未生成');
                 }
             });
-        } catch (e) {
+        }).catch((e) => {
             console.error('PaperForge: discussion.json read error', discPath, e.message);
-        }
+        });
     }
 
     /* ── Paper Technical Details (disclosure with workflow toggles) ── */
