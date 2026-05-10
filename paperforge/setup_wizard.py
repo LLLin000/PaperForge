@@ -38,7 +38,7 @@ else:
 # Agent Platform Configurations
 # =============================================================================
 
-from paperforge.services.skill_deploy import AGENT_SKILL_DIRS
+from paperforge.services.skill_deploy import AGENT_CONFIGS
 
 AGENT_NAMES = {
     "opencode":       "OpenCode",
@@ -464,7 +464,7 @@ def headless_setup(
         return 1
 
     # Agent config
-    skill_dir = AGENT_SKILL_DIRS.get(agent_key)
+    skill_dir = AGENT_CONFIGS.get(agent_key, {}).get("skill_dir")
     if not skill_dir:
         print(f"Error: unknown agent platform '{agent_key}'", file=sys.stderr)
         return 1
