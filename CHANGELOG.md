@@ -8,6 +8,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [1.4.18] — 2026-05-10
+
+### Added
+
+- **macOS 跨平台支持** (by @Chartreuse310): GUI Obsidian 环境下自动扩展 PATH（Homebrew/pyenv 优先）；跳过 Apple Command Line Tools 的 stub Python；Zotero Profiles/extensions/ 结构检测 Better BibTeX；macOS `/Applications/Zotero.app` 安装检测
+- `src/testable.js`: 测试函数独立模块，无 obsidian 依赖，解决 vitest 导入 main.js 失败的问题
+
+### Fixed
+
+- **L3 Plugin Tests (vitest)**: 修复 inline refactor 后测试 import 路径失效的问题
+- **BBT 检测**: 支持非标准 Zotero 数据目录和 `~/Zotero` 自定义路径
+
+### Changed
+
+- **pip install**: 非 Windows 平台自动加 `--user` 标志
+- **PaddleOCR Key**: 安装向导改为 CLI 参数传入（不再通过环境变量）
+
 ## [1.4.17] — 2026-05-10
 
 ### Removed
