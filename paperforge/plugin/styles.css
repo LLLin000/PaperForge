@@ -1139,20 +1139,23 @@
 }
 
 .paperforge-paper-header {
-    padding-bottom: 8px;
+    padding-bottom: 10px;
     border-bottom: 1px solid var(--background-modifier-border);
 }
 
 .paperforge-paper-title {
-    font-size: var(--font-ui-large);
-    font-weight: var(--font-semibold);
+    font-size: 16px;
+    font-weight: 600;
     color: var(--text-normal);
     line-height: 1.4;
-    margin: 0 0 6px 0;
+    margin: 0 0 4px 0;
 }
 
 .paperforge-paper-meta {
-    font-size: var(--font-ui-small);
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+    font-size: 13px;
     color: var(--text-muted);
     line-height: 1.5;
 }
@@ -1163,10 +1166,13 @@
 
 .paperforge-paper-year {
     display: inline;
+    font-size: 12px;
+    color: var(--text-faint);
 }
 
 .paperforge-paper-year::before {
-    content: " · ";
+    content: " \u00B7  ";
+    color: var(--text-faint);
 }
 
 .paperforge-paper-actions {
@@ -1572,28 +1578,31 @@
    SECTION 39 — Dashboard Redesign: Shared Components
    ========================================================================== */
 
-/* ── Section Label (used across global / collection / paper) ── */
+/* ── Section Label ── */
 .paperforge-section-label {
-    font-size: var(--font-ui-small);
-    font-weight: var(--font-semibold);
-    color: var(--text-normal);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
     margin: 0 0 10px 0;
+    padding-left: 10px;
+    border-left: 3px solid var(--interactive-accent);
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.06em;
+    line-height: 1.3;
 }
 
-/* ── Contextual Button (card-action style, used across all views) ── */
+/* ── Contextual Button ── */
 .paperforge-contextual-btn {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 6px 14px;
+    gap: 5px;
+    padding: 5px 12px;
     background: var(--background-secondary);
     border: 1px solid var(--background-modifier-border);
     border-radius: var(--radius-s);
     color: var(--text-muted);
-    font-size: var(--font-ui-smaller);
-    font-weight: var(--font-medium);
+    font-size: 12px;
+    font-weight: 500;
     cursor: pointer;
     transition: background 0.15s, border-color 0.15s, color 0.15s;
     white-space: nowrap;
@@ -1616,64 +1625,82 @@
 }
 
 /* ==========================================================================
-   SECTION 40 — Dashboard Redesign: Per-Paper View (Reading Companion)
+   SECTION 40 — Per-Paper View (Reading Companion)
    ========================================================================== */
 
 /* ── Status Strip ── */
 .paperforge-status-strip {
     display: flex;
-    gap: 8px;
+    gap: 6px;
     padding: 8px 0;
-    border-top: 1px solid var(--background-modifier-border);
-    border-bottom: 1px solid var(--background-modifier-border);
-    margin: 10px 0;
+    margin: 6px 0;
 }
 
 .paperforge-status-pill {
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    padding: 3px 12px;
-    border-radius: 10px;
-    font-size: 11px;
-    font-weight: var(--font-semibold);
-    background: var(--background-modifier-hover);
+    padding: 2px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.5;
+    background: var(--background-primary-alt);
     color: var(--text-muted);
-    line-height: 1.4;
 }
 
 .paperforge-status-pill.ok {
-    background: var(--color-green);
-    color: var(--text-on-accent);
+    background: rgba(var(--background-modifier-success-rgb, 0, 200, 100), 0.12);
+    color: var(--text-success, var(--color-green));
 }
 
 .paperforge-status-pill.fail {
-    background: var(--text-error);
-    color: var(--text-on-accent);
+    background: rgba(var(--background-modifier-error-rgb, 255, 80, 80), 0.12);
+    color: var(--text-error);
 }
 
 .paperforge-status-pill.pending {
-    background: var(--background-modifier-hover);
+    background: var(--background-primary-alt);
     color: var(--text-muted);
 }
 
 .paperforge-status-pill-icon {
-    font-size: 10px;
+    font-size: 11px;
     line-height: 1;
+}
+
+/* Theme dark: softer pill backgrounds */
+.theme-dark .paperforge-status-pill.ok {
+    background: rgba(100, 200, 120, 0.15);
+}
+.theme-dark .paperforge-status-pill.fail {
+    background: rgba(255, 100, 100, 0.15);
 }
 
 /* ── Paper Overview Card ── */
 .paperforge-paper-overview {
-    margin: 12px 0;
-    padding: 14px;
-    background: var(--background-secondary);
+    margin: 10px 0;
+    padding: 16px;
+    background: var(--background-primary);
     border: 1px solid var(--background-modifier-border);
     border-radius: var(--radius-m);
-    transition: border-color 0.15s;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    position: relative;
 }
 
-.paperforge-paper-overview:hover {
-    border-color: var(--interactive-accent);
+.paperforge-paper-overview::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    opacity: 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    transition: opacity 0.2s;
+    pointer-events: none;
+}
+
+.paperforge-paper-overview:hover::before {
+    opacity: 1;
 }
 
 .paperforge-paper-overview-header {
@@ -1681,17 +1708,17 @@
 }
 
 .paperforge-paper-overview-title {
-    font-size: var(--font-ui-small);
-    font-weight: var(--font-semibold);
+    font-size: 11px;
+    font-weight: 700;
     color: var(--text-accent);
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.06em;
 }
 
 .paperforge-paper-overview-body {
-    font-size: var(--font-ui-smaller);
+    font-size: 13.5px;
     color: var(--text-muted);
-    line-height: 1.6;
+    line-height: 1.65;
 }
 
 .paperforge-paper-overview-excerpt {
@@ -1702,71 +1729,84 @@
 .paperforge-paper-overview-expand {
     display: inline-block;
     margin-top: 6px;
-    padding: 2px 0;
+    padding: 3px 0;
     background: none;
     border: none;
+    border-bottom: 1px dashed var(--text-accent);
     color: var(--text-accent);
-    font-size: var(--font-ui-smaller);
-    font-weight: var(--font-medium);
+    font-size: 12px;
+    font-weight: 500;
     cursor: pointer;
-    transition: color 0.15s;
+    transition: color 0.15s, border-color 0.15s;
 }
 
 .paperforge-paper-overview-expand:hover {
     color: var(--interactive-accent-hover);
-    text-decoration: underline;
+    border-color: var(--interactive-accent-hover);
 }
 
 /* ── Discussion Card ── */
 .paperforge-discussion-card {
-    margin: 12px 0;
-    padding: 14px;
-    background: var(--background-secondary);
+    margin: 10px 0;
+    padding: 16px;
+    background: var(--background-primary);
     border: 1px solid var(--background-modifier-border);
     border-radius: var(--radius-m);
-    transition: border-color 0.15s;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    position: relative;
 }
 
-.paperforge-discussion-card:hover {
-    border-color: var(--interactive-accent);
+.paperforge-discussion-card::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    opacity: 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    transition: opacity 0.2s;
+    pointer-events: none;
+}
+
+.paperforge-discussion-card:hover::before {
+    opacity: 1;
 }
 
 .paperforge-discussion-header {
-    margin-bottom: 8px;
+    margin-bottom: 10px;
 }
 
 .paperforge-discussion-title {
-    font-size: var(--font-ui-small);
-    font-weight: var(--font-semibold);
+    font-size: 11px;
+    font-weight: 700;
     color: var(--text-accent);
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.06em;
 }
 
 .paperforge-discussion-item {
-    margin-bottom: 8px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid var(--background-modifier-border-hover);
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--background-modifier-border);
 }
 
 .paperforge-discussion-item:last-child {
     border-bottom: none;
-    margin-bottom: 4px;
+    margin-bottom: 0;
     padding-bottom: 0;
 }
 
 .paperforge-discussion-q {
-    font-size: var(--font-ui-smaller);
-    font-weight: var(--font-semibold);
+    font-size: 13.5px;
+    font-weight: 600;
     color: var(--text-normal);
     margin-bottom: 4px;
     line-height: 1.5;
 }
 
 .paperforge-discussion-a {
-    font-size: var(--font-ui-smaller);
+    font-size: 13.5px;
     color: var(--text-muted);
-    line-height: 1.5;
+    line-height: 1.6;
 }
 
 .paperforge-discussion-expand {
@@ -1775,24 +1815,24 @@
     margin-left: 4px;
     background: none;
     border: none;
+    border-bottom: 1px dashed var(--text-accent);
     color: var(--text-accent);
-    font-size: var(--font-ui-smaller);
-    font-weight: var(--font-medium);
+    font-size: 12px;
+    font-weight: 500;
     cursor: pointer;
     transition: color 0.15s;
 }
 
 .paperforge-discussion-expand:hover {
     color: var(--interactive-accent-hover);
-    text-decoration: underline;
 }
 
 .paperforge-discussion-viewall {
     display: block;
     text-align: right;
     margin-top: 6px;
-    font-size: var(--font-ui-smaller);
-    font-weight: var(--font-medium);
+    font-size: 12px;
+    font-weight: 500;
     color: var(--text-accent);
     cursor: pointer;
     text-decoration: none;
@@ -1801,53 +1841,54 @@
 
 .paperforge-discussion-viewall:hover {
     color: var(--interactive-accent-hover);
+    text-decoration: underline;
 }
 
 /* ── Paper Files Row ── */
 .paperforge-paper-files {
     display: flex;
     gap: 8px;
-    margin: 12px 0;
+    margin: 10px 0;
 }
 
 /* ── Technical Details ── */
 .paperforge-technical-details {
-    margin: 8px 0;
+    margin: 6px 0;
 }
 
 .paperforge-technical-details-toggle {
     width: 100%;
-    padding: 8px 12px;
-    background: var(--background-secondary);
+    padding: 6px 12px;
+    background: var(--background-primary);
     border: 1px solid var(--background-modifier-border);
     border-radius: var(--radius-s);
-    color: var(--text-muted);
-    font-size: var(--font-ui-smaller);
-    font-weight: var(--font-medium);
+    color: var(--text-faint);
+    font-size: 11px;
+    font-weight: 500;
     cursor: pointer;
     text-align: left;
-    transition: background 0.15s, border-color 0.15s;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
 
 .paperforge-technical-details-toggle:hover {
     background: var(--background-modifier-hover);
-    border-color: var(--interactive-accent);
-    color: var(--text-normal);
+    border-color: var(--background-modifier-border-hover);
+    color: var(--text-muted);
 }
 
 .paperforge-technical-details-body {
-    margin-top: 6px;
-    padding: 10px 14px;
+    margin-top: 4px;
+    padding: 8px 12px;
     background: var(--background-primary-alt);
     border: 1px solid var(--background-modifier-border);
     border-radius: var(--radius-s);
-    font-size: var(--font-ui-smaller);
+    font-size: 11px;
 }
 
 .paperforge-technical-row {
     display: flex;
     justify-content: space-between;
-    padding: 3px 0;
+    padding: 2px 0;
 }
 
 .paperforge-technical-label {
@@ -1866,45 +1907,57 @@
 }
 
 /* ==========================================================================
-   SECTION 41 — Dashboard Redesign: Collection / Base View (Batch Workspace)
+   SECTION 41 — Collection / Base View (Batch Workspace)
    ========================================================================== */
 
 /* ── Collection Header ── */
 .paperforge-collection-header {
-    margin-bottom: 12px;
+    margin-bottom: 10px;
 }
 
 .paperforge-collection-title {
-    font-size: var(--font-ui-medium);
-    font-weight: var(--font-bold);
+    font-size: 16px;
+    font-weight: 600;
     color: var(--text-normal);
     line-height: 1.3;
 }
 
 .paperforge-collection-count {
-    font-size: var(--font-ui-smaller);
+    font-size: 12px;
     color: var(--text-muted);
     margin-top: 2px;
 }
 
-/* ── Workflow Overview (funnel) ── */
+/* ── Workflow Overview ── */
 .paperforge-workflow-overview {
-    margin: 12px 0;
+    margin: 10px 0;
     padding: 16px;
-    background: var(--background-secondary);
+    background: var(--background-primary);
     border: 1px solid var(--background-modifier-border);
     border-radius: var(--radius-m);
-    transition: border-color 0.15s;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    position: relative;
 }
 
-.paperforge-workflow-overview:hover {
-    border-color: var(--interactive-accent);
+.paperforge-workflow-overview::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    opacity: 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    transition: opacity 0.2s;
+    pointer-events: none;
+}
+
+.paperforge-workflow-overview:hover::before {
+    opacity: 1;
 }
 
 .paperforge-workflow-funnel {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 3px;
     flex-wrap: wrap;
     justify-content: center;
 }
@@ -1913,15 +1966,15 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 8px 14px;
+    padding: 8px 12px;
     background: var(--background-primary-alt);
-    border-radius: var(--radius-s);
-    min-width: 60px;
+    border-radius: 6px;
+    min-width: 56px;
 }
 
 .paperforge-workflow-stage-value {
-    font-size: clamp(16px, 3vw, 22px);
-    font-weight: var(--font-bold);
+    font-size: 20px;
+    font-weight: 700;
     color: var(--text-accent);
     line-height: 1.2;
     letter-spacing: -0.3px;
@@ -1938,7 +1991,7 @@
 
 .paperforge-workflow-arrow {
     color: var(--text-faint);
-    font-size: var(--font-ui-smaller);
+    font-size: 11px;
     flex-shrink: 0;
 }
 
@@ -1950,11 +2003,11 @@
     margin-bottom: 14px;
 }
 
-/* ── Issue Summary ── */
+/* ── Issue Summary (serious blockers only) ── */
 .paperforge-issue-summary {
-    margin: 12px 0;
+    margin: 10px 0;
     padding: 12px 14px;
-    background: var(--background-secondary);
+    background: var(--background-primary);
     border: 1px solid var(--background-modifier-border);
     border-left: 3px solid var(--color-orange);
     border-radius: var(--radius-m);
@@ -1964,18 +2017,12 @@
     color: var(--color-orange);
 }
 
-.paperforge-issue-text {
-    font-size: var(--font-ui-smaller);
-    color: var(--text-muted);
-    line-height: 1.5;
-}
-
 .paperforge-issue-list {
-    margin: 6px 0 8px 0;
+    margin: 4px 0 6px 0;
 }
 
 .paperforge-issue-item {
-    font-size: var(--font-ui-smaller);
+    font-size: 13px;
     color: var(--text-muted);
     padding: 2px 0;
 }
@@ -1983,33 +2030,45 @@
 .paperforge-issue-actions {
     display: flex;
     gap: 8px;
-    margin-top: 10px;
+    margin-top: 8px;
 }
 
 /* ── Collection Actions ── */
 .paperforge-collection-actions {
     display: flex;
     gap: 8px;
-    margin-top: 12px;
-    padding-top: 12px;
+    margin-top: 10px;
+    padding-top: 10px;
     border-top: 1px solid var(--background-modifier-border);
 }
 
 /* ==========================================================================
-   SECTION 42 — Dashboard Redesign: Global / Home View (System Homepage)
+   SECTION 42 — Global / Home View (System Homepage)
    ========================================================================== */
 
 /* ── Library Snapshot ── */
 .paperforge-library-snapshot {
     padding: 16px;
-    background: var(--background-secondary);
+    background: var(--background-primary);
     border: 1px solid var(--background-modifier-border);
     border-radius: var(--radius-m);
-    transition: border-color 0.15s;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    position: relative;
 }
 
-.paperforge-library-snapshot:hover {
-    border-color: var(--interactive-accent);
+.paperforge-library-snapshot::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    opacity: 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    transition: opacity 0.2s;
+    pointer-events: none;
+}
+
+.paperforge-library-snapshot:hover::before {
+    opacity: 1;
 }
 
 .paperforge-snapshot-pills {
@@ -2022,16 +2081,16 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 10px 16px;
+    padding: 10px 14px;
     background: var(--background-primary-alt);
-    border-radius: var(--radius-s);
-    min-width: 64px;
+    border-radius: 6px;
+    min-width: 60px;
     flex: 1;
 }
 
 .paperforge-snapshot-value {
-    font-size: clamp(16px, 3vw, 22px);
-    font-weight: var(--font-bold);
+    font-size: 20px;
+    font-weight: 700;
     color: var(--text-accent);
     line-height: 1.2;
     letter-spacing: -0.3px;
@@ -2049,32 +2108,44 @@
 /* ── System Status ── */
 .paperforge-system-status {
     padding: 16px;
-    background: var(--background-secondary);
+    background: var(--background-primary);
     border: 1px solid var(--background-modifier-border);
     border-radius: var(--radius-m);
-    transition: border-color 0.15s;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    position: relative;
 }
 
-.paperforge-system-status:hover {
-    border-color: var(--interactive-accent);
+.paperforge-system-status::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    opacity: 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    transition: opacity 0.2s;
+    pointer-events: none;
+}
+
+.paperforge-system-status:hover::before {
+    opacity: 1;
 }
 
 .paperforge-status-grid {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 1px;
 }
 
 .paperforge-status-row {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 5px 0;
+    gap: 8px;
+    padding: 4px 0;
 }
 
 .paperforge-status-dot {
-    width: 8px;
-    height: 8px;
+    width: 7px;
+    height: 7px;
     border-radius: 50%;
     flex-shrink: 0;
     background: var(--background-modifier-border);
@@ -2090,13 +2161,13 @@
 }
 
 .paperforge-status-label {
-    font-size: var(--font-ui-smaller);
+    font-size: 13px;
     color: var(--text-muted);
-    min-width: 80px;
+    min-width: 85px;
 }
 
 .paperforge-status-detail {
-    font-size: var(--font-ui-smaller);
+    font-size: 12px;
     color: var(--text-faint);
     overflow: hidden;
     text-overflow: ellipsis;
@@ -2106,14 +2177,26 @@
 /* ── Global Actions ── */
 .paperforge-global-actions {
     padding: 16px;
-    background: var(--background-secondary);
+    background: var(--background-primary);
     border: 1px solid var(--background-modifier-border);
     border-radius: var(--radius-m);
-    transition: border-color 0.15s;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    position: relative;
 }
 
-.paperforge-global-actions:hover {
-    border-color: var(--interactive-accent);
+.paperforge-global-actions::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    opacity: 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    transition: opacity 0.2s;
+    pointer-events: none;
+}
+
+.paperforge-global-actions:hover::before {
+    opacity: 1;
 }
 
 .paperforge-global-actions-row {
@@ -2122,22 +2205,34 @@
 }
 
 /* ==========================================================================
-   SECTION 43 — Dashboard Redesign: Workflow Toggle Checkboxes (per-paper)
+   SECTION 43 — Workflow Toggle Checkboxes (per-paper)
    ========================================================================== */
 
 .paperforge-workflow-toggles {
     display: flex;
-    gap: 16px;
-    padding: 10px 14px;
-    background: var(--background-secondary);
+    gap: 14px;
+    padding: 12px 16px;
+    background: var(--background-primary);
     border: 1px solid var(--background-modifier-border);
     border-radius: var(--radius-m);
-    margin: 12px 0;
-    transition: border-color 0.15s;
+    margin: 10px 0;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    position: relative;
 }
 
-.paperforge-workflow-toggles:hover {
-    border-color: var(--interactive-accent);
+.paperforge-workflow-toggles::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    opacity: 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    transition: opacity 0.2s;
+    pointer-events: none;
+}
+
+.paperforge-workflow-toggles:hover::before {
+    opacity: 1;
 }
 
 .paperforge-workflow-toggle {
@@ -2145,7 +2240,7 @@
     align-items: center;
     gap: 6px;
     cursor: pointer;
-    font-size: var(--font-ui-smaller);
+    font-size: 13px;
     color: var(--text-muted);
     user-select: none;
 }
@@ -2159,11 +2254,36 @@
 }
 
 .paperforge-workflow-toggle-label {
-    font-weight: var(--font-semibold);
+    font-weight: 600;
     color: var(--text-normal);
 }
 
 .paperforge-workflow-toggle-hint {
     color: var(--text-faint);
     font-size: 11px;
+}
+
+/* ==========================================================================
+   SECTION 44 — Dark Theme Specific Overrides
+   ========================================================================== */
+
+.theme-dark .paperforge-paper-overview,
+.theme-dark .paperforge-discussion-card,
+.theme-dark .paperforge-workflow-overview,
+.theme-dark .paperforge-library-snapshot,
+.theme-dark .paperforge-system-status,
+.theme-dark .paperforge-global-actions,
+.theme-dark .paperforge-workflow-toggles {
+    background: var(--background-primary);
+    border-color: var(--background-modifier-border);
+}
+
+.theme-dark .paperforge-paper-overview::before,
+.theme-dark .paperforge-discussion-card::before,
+.theme-dark .paperforge-workflow-overview::before,
+.theme-dark .paperforge-library-snapshot::before,
+.theme-dark .paperforge-system-status::before,
+.theme-dark .paperforge-global-actions::before,
+.theme-dark .paperforge-workflow-toggles::before {
+    box-shadow: 0 2px 12px rgba(0,0,0,0.3);
 }
