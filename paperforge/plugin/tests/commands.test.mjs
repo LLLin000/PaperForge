@@ -26,11 +26,11 @@ describe('ACTIONS', () => {
     it('repair action is enabled (no disabled flag)', () => {
         expect(ACTIONS.find(a => a.id === 'paperforge-repair')?.disabled).toBeUndefined();
     });
-    it('copy-context action has needsKey', () => {
-        expect(ACTIONS.find(a => a.id === 'paperforge-copy-context')?.needsKey).toBe(true);
+    it('copy-context action has no needsKey (pure JS)', () => {
+        expect(ACTIONS.find(a => a.id === 'paperforge-copy-context')?.needsKey).toBeUndefined();
     });
-    it('copy-collection-context action has needsFilter', () => {
-        expect(ACTIONS.find(a => a.id === 'paperforge-copy-collection-context')?.needsFilter).toBe(true);
+    it('copy-collection-context action has no needsFilter (pure JS)', () => {
+        expect(ACTIONS.find(a => a.id === 'paperforge-copy-collection-context')?.needsFilter).toBeUndefined();
     });
 });
 
