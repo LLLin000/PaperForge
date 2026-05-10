@@ -1177,6 +1177,7 @@ class PaperForgeStatusView extends ItemView {
 
         this._currentMode = mode;
         this._currentFilePath = filePath;
+        this._techDetailsExpanded = false;  // reset disclosure state on mode switch
 
         // Clear existing content (D-06)
         this._contentEl.empty();
