@@ -8,6 +8,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+
+- **deep_reading_status 取值**: 优先读 frontmatter，`finalize.py` 设置后无需 sync 即可生效；body 检测兜底
+- **per-paper 模式识别**: 向上遍历目录树匹配 Zotero key，`ai/discussion.md` 等深层文件自动切换
+- **正文模板**: 新文献不再写入 PDF/OCR/精读 状态字段到正文（frontmatter 是唯一真相源）
+- **Collection Dashboard**: Workflow Overview 外框与内卡片样式对齐 Global Library Snapshot
+
 ## [1.4.18] — 2026-05-10
 
 ### Added
