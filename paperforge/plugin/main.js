@@ -1460,11 +1460,20 @@ class PaperForgeStatusView extends ItemView {
                         const truncated = extracted.length > 200 ? extracted.slice(0, 200) + '...' : extracted;
                         excerptEl.setText(truncated);
                         if (extracted.length > 200) {
-                            const expandBtn = body.createEl('button', { cls: 'paperforge-paper-overview-expand', text: '展开' });
+                            const expandContainer = body.createEl('div', { cls: 'paperforge-expand-container' });
+                            const expandBtn = expandContainer.createEl('button', { cls: 'paperforge-expand-icon', title: '展开/收起' });
+                            
+                            // Insert arrow SVG
+                            expandBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>';
+                            
                             let expanded = false;
-                            expandBtn.addEventListener('click', () => {
+                            
+                            // Make the whole container clickable
+                            expandContainer.addEventListener('click', () => {
                                 excerptEl.setText(expanded ? truncated : extracted);
-                                expandBtn.setText(expanded ? '展开' : '收起');
+                                expandBtn.innerHTML = expanded 
+                                    ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>'
+                                    : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>';
                                 expanded = !expanded;
                             });
                         }
@@ -1556,14 +1565,23 @@ class PaperForgeStatusView extends ItemView {
                     : (qa.answer || '');
                 aEl.createEl('span', { cls: 'paperforge-discussion-a-text', text: '解答：' + shortAnswer });
                 if (qa.answer && qa.answer.length > 150) {
-                    const expandLink = aEl.createEl('button', { cls: 'paperforge-discussion-expand', text: '展开' });
+                    const expandContainer = aEl.createEl('div', { cls: 'paperforge-expand-container' });
+                    const expandBtn = expandContainer.createEl('button', { cls: 'paperforge-expand-icon', title: '展开/收起' });
+                    
+                    // Insert arrow SVG
+                    expandBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>';
+                    
                     let expanded = false;
-                    expandLink.addEventListener('click', () => {
+                    
+                    // Make the whole container clickable
+                    expandContainer.addEventListener('click', () => {
                         const textSpan = aEl.querySelector('.paperforge-discussion-a-text');
                         if (textSpan) {
                             textSpan.setText(expanded ? ('解答：' + shortAnswer) : ('解答：' + qa.answer));
                         }
-                        expandLink.setText(expanded ? '展开' : '收起');
+                        expandBtn.innerHTML = expanded 
+                            ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>'
+                            : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>';
                         expanded = !expanded;
                     });
                 }
@@ -1692,9 +1710,19 @@ class PaperForgeStatusView extends ItemView {
             });
 
             // Show "Run in [agent_platform]" label below the button (DASH-02)
-            const platform = this.app.plugins.plugins['paperforge']?.settings?.agent_platform || 'opencode';
+            const platformKey = this.app.plugins.plugins['paperforge']?.settings?.agent_platform || 'opencode';
+            const AGENTS = {
+                'opencode': 'OpenCode',
+                'claude': 'Claude Code',
+                'cursor': 'Cursor',
+                'github_copilot': 'GitHub Copilot',
+                'windsurf': 'Windsurf',
+                'codex': 'Codex',
+                'cline': 'Cline'
+            };
+            const platformName = AGENTS[platformKey] || platformKey;
             const labelEl = card.createEl('div', { cls: 'paperforge-agent-platform-label' });
-            labelEl.setText(t('run_in_agent').replace('{0}', platform));
+            labelEl.setText(t('run_in_agent').replace('{0}', platformName));
         } else if (nextStep === 'ready') {
             const trigger = card.createEl('button', { cls: 'paperforge-next-step-trigger' });
             trigger.createEl('span', { text: '✓  ' + info.label });
@@ -1806,7 +1834,7 @@ class PaperForgeStatusView extends ItemView {
                 { cls: 'pending', value: ocrPending, label: 'Pending' },
                 { cls: 'active', value: ocrProcessing, label: 'Processing' },
                 { cls: 'done', value: ocrDone, label: 'Done' },
-                { cls: 'failed', value: ocrFailed, label: 'Needs Attention' },
+                { cls: 'failed', value: ocrFailed, label: 'Attention' },
             ];
             for (const l of ocrLabels) {
                 const cnt = ocrCounts.createEl('div', { cls: 'paperforge-ocr-count' });
