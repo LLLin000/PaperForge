@@ -83,6 +83,21 @@ Agent 在正式笔记中创建或更新 `## 精读` 区域，包含：
 - **Pass 2: 精读还原** — Figure-by-Figure 解析、Table-by-Table 解析、关键方法补课、主要发现与新意
 - **Pass 3: 深度理解** — 假设挑战与隐藏缺陷、结论扎实性评估、Discussion 解读、个人启发、遗留问题
 
+## Post-Processing (必须执行)
+
+精读内容全部写完后，Agent **必须**调用以下命令完成收尾：
+
+```bash
+paperforge deep-finalize <zotero_key>
+```
+
+该命令会：
+1. 将正式笔记 frontmatter 中的 `deep_reading_status` 设为 `done`
+2. 刷新 canonical index（写入 `formal-library.json`）
+3. Dashboard 检测到 index 变更后自动刷新 `文章概览` 卡片
+
+> `deep_reading_status` 只在精读全部完成（内容填写 + 验证通过）后才标记为 `done`。不要在准备阶段或中途设置此状态。
+
 ## Error Handling
 
 ### OCR 未完成
@@ -148,6 +163,7 @@ Task(
 2. 用 Bash tool 预跑 `python {{SCRIPT}} figure-index {{FULLTEXT_MD}}` 确认 OCR 存在
 3. 四个 Task 并行启动，每篇独立
 4. 等待所有 Task 完成，收集各篇的写入行数和验证结果
+5. 对每篇已完成精读的论文，调用 `paperforge deep-finalize <zotero_key>` 标记完成并触发 Dashboard 刷新
 
 **预检（必须）**：
 

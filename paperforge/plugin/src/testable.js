@@ -169,22 +169,6 @@ const ACTIONS = [
         args: ["--fix", "--fix-paths"],
         okMsg: "Repair complete",
     },
-    {
-        id: "paperforge-copy-context",
-        title: "Copy Context",
-        desc: "Copy this paper\u2019s canonical index entry JSON to clipboard for AI use",
-        icon: "\u2139",
-        cmd: "context",
-        okMsg: "Context copied",
-    },
-    {
-        id: "paperforge-copy-collection-context",
-        title: "Copy Collection Context",
-        desc: "Copy canonical index entries for all visible papers to clipboard",
-        icon: "\u2261",
-        cmd: "context",
-        okMsg: "Collection context copied",
-    },
 ];
 
 function buildCommandArgs(action, key, filter) {
