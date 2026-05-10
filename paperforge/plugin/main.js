@@ -1149,8 +1149,9 @@ class PaperForgeStatusView extends ItemView {
         if (ext === 'pdf') {
             const items = this._getCachedIndex();
             for (const item of items) {
-                const pdfPath = (item.pdf_path || '').replace(/^\[\[|\]\]$/g, '').trim();
-                if (pdfPath === filePath) {
+                const pathMatch = (item.pdf_path || '').match(/\[\[([^\]]+)\]\]/);
+                const targetPath = pathMatch ? pathMatch[1] : item.pdf_path;
+                if (targetPath === filePath) {
                     return { mode: 'paper', filePath, key: item.zotero_key, domain: null };
                 }
             }
