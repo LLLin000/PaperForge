@@ -1210,13 +1210,11 @@ class PaperForgeStatusView extends ItemView {
         // ── Library Snapshot ──
         const items = this._getCachedIndex();
         const totalPapers = items.length;
-        let pdfReady = 0, ocrDone = 0, deepReadDone = 0, pdfIssues = 0;
+        let pdfReady = 0, ocrDone = 0, deepReadDone = 0;
         for (const item of items) {
             if (item.has_pdf) pdfReady++;
             if (item.ocr_status === 'done') ocrDone++;
             if (item.deep_reading_status === 'done') deepReadDone++;
-            const h = item.health || {};
-            if (h.pdf_health && h.pdf_health !== 'healthy') pdfIssues++;
         }
 
         const snapshot = view.createEl('div', { cls: 'paperforge-library-snapshot' });
@@ -1286,14 +1284,13 @@ class PaperForgeStatusView extends ItemView {
         this._renderSystemStatusRow(statusGrid, 'OCR Token', tokenOk ? 'configured' : 'missing',
             tokenOk ? 'Configured' : 'Not set');
 
-        // ── Issues Panel (only when issues exist) ──
+        // ── Issues Panel (only for serious blockers) ──
         const hasVersionMismatch = !runtimeOk && pyVer !== '\u2014';
-        const hasIssues = pdfIssues > 0 || hasVersionMismatch || !indexOk || !exportOk || !tokenOk;
+        const hasIssues = hasVersionMismatch || !indexOk || !exportOk || !tokenOk;
         if (hasIssues) {
             const issueSection = view.createEl('div', { cls: 'paperforge-issue-summary' });
-            issueSection.createEl('div', { cls: 'paperforge-section-label', text: 'Issues' });
+            issueSection.createEl('div', { cls: 'paperforge-section-label', text: '需要处理' });
             const issueList = issueSection.createEl('div', { cls: 'paperforge-issue-list' });
-            if (pdfIssues > 0) issueList.createEl('div', { cls: 'paperforge-issue-item', text: pdfIssues + ' PDF path errors' });
             if (hasVersionMismatch) issueList.createEl('div', { cls: 'paperforge-issue-item', text: 'Runtime version mismatch' });
             if (!indexOk) issueList.createEl('div', { cls: 'paperforge-issue-item', text: 'Index missing or corrupted' });
             if (!exportOk) issueList.createEl('div', { cls: 'paperforge-issue-item', text: 'No Zotero export found' });
@@ -1734,7 +1731,6 @@ class PaperForgeStatusView extends ItemView {
         const totalPapers = domainItems.length;
         let hasPdf = 0, ocrDone = 0, analyzeReady = 0, deepRead = 0;
         let ocrPending = 0, ocrProcessing = 0, ocrFailed = 0;
-        let pdfIssues = 0, ocrIssues = 0, noteIssues = 0, assetIssues = 0;
 
         for (const item of domainItems) {
             if (item.has_pdf) hasPdf++;
@@ -1746,12 +1742,6 @@ class PaperForgeStatusView extends ItemView {
             if (ocs === 'pending' || ocs === 'queued') ocrPending++;
             else if (ocs === 'processing') ocrProcessing++;
             else if (ocs === 'failed' || ocs === 'blocked' || ocs === 'done_incomplete' || ocs === 'nopdf') ocrFailed++;
-
-            const health = item.health || {};
-            if (health.pdf_health && health.pdf_health !== 'healthy') pdfIssues++;
-            if (health.ocr_health && health.ocr_health !== 'healthy') ocrIssues++;
-            if (health.note_health && health.note_health !== 'healthy') noteIssues++;
-            if (health.asset_health && health.asset_health !== 'healthy') assetIssues++;
         }
 
         // ── Header ──
@@ -1816,19 +1806,6 @@ class PaperForgeStatusView extends ItemView {
                 cnt.createEl('div', { cls: 'paperforge-ocr-count-value', text: l.value.toString() });
                 cnt.createEl('div', { cls: 'paperforge-ocr-count-label', text: l.label });
             }
-        }
-
-        // ── Issue Summary (compact, only when issues exist) ──
-        const totalIssues = pdfIssues + ocrIssues + noteIssues + assetIssues;
-        if (totalIssues > 0) {
-            const issueSection = view.createEl('div', { cls: 'paperforge-issue-summary' });
-            issueSection.createEl('div', { cls: 'paperforge-section-label', text: 'Issues' });
-            const parts = [];
-            if (pdfIssues > 0) parts.push(pdfIssues + ' PDF');
-            if (ocrIssues > 0) parts.push(ocrIssues + ' OCR');
-            if (noteIssues > 0) parts.push(noteIssues + ' Note');
-            if (assetIssues > 0) parts.push(assetIssues + ' Asset');
-            issueSection.createEl('div', { cls: 'paperforge-issue-text', text: parts.join(' · ') + ' issues' });
         }
 
         // ── Contextual Actions ──
