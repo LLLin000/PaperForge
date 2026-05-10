@@ -1,6 +1,6 @@
 # PaperForge - Agent Guide
 
-> 本文档面向 **安装完成后的新用户** 和 **AI Agent**。如果还没有安装 PaperForge，请通过 Obsidian 插件市场安装，或查看 [README.md](README.md) 中的安装说明。Docs 版本与 v1.4.17rc4 对应。
+> 本文档面向 **安装完成后的新用户** 和 **AI Agent**。如果还没有安装 PaperForge，请通过 Obsidian 插件市场安装，或查看 [README.md](README.md) 中的安装说明。Docs 版本与 v1.4.18 对应。
 
 ---
 

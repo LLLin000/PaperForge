@@ -19,6 +19,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - **L3 Plugin Tests (vitest)**: 修复 inline refactor 后测试 import 路径失效的问题
 - **BBT 检测**: 支持非标准 Zotero 数据目录和 `~/Zotero` 自定义路径
+- **setup_wizard Phase 7 崩溃**: 修复 `NameError: name 'agents_src' is not defined` — 验证步骤引用未定义变量导致 headless setup 失败
+- **test_plugin_install_bootstrap**: 更新测试断言以匹配已修复的 `agents_src` 代码
 
 ### Changed
 
