@@ -1122,7 +1122,7 @@ class PaperForgeStatusView extends ItemView {
         if (!filePath) return null;
         const dirname = path.dirname(filePath);
         const basename = path.basename(dirname);
-        const match = basename.match(/^([A-Z0-9]{8})(?:\s*-\s*)/);
+        const match = basename.match(/^([A-Z0-9]{8})(?:\s*-\s*)/i);
         return match ? match[1] : null;
     }
 
@@ -1147,7 +1147,7 @@ class PaperForgeStatusView extends ItemView {
 
         // Workspace path detection: any file inside a paper workspace directory
         const wsKey = this._extractZoteroKeyFromPath(filePath);
-        if (wsKey && this._findEntry(wsKey)) {
+        if (wsKey) {
             return { mode: 'paper', filePath, key: wsKey, domain: null };
         }
 
