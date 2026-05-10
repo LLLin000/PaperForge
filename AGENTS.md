@@ -198,7 +198,7 @@ PaperForge 的命令分为两类：
 | 类型 | 命令 | 用途 | 说明 |
 |------|------|------|------|
 | **深度思考** | `/pf-deep <key>` | 完整 Keshav 三阶段精读 | **必须 Agent 执行** — 需要理解论文、分析图表、生成 callout |
-| **深度思考** | `/pf-paper <key>` | 快速摘要 | **必须 Agent 执行** — 需要理解内容并写作 |
+| **深度思考** | `/pf-paper <key>` | 文献问答 | **必须 Agent 执行** — 需要理解内容并写作 |
 | **机械操作** | `/pf-sync` | 同步 Zotero 并生成笔记 | Agent 可帮你检查状态并执行 |
 | **机械操作** | `/pf-ocr` | 运行 PDF OCR | Agent 可帮你检查队列并执行 |
 | **机械操作** | `/pf-status` | 查看系统状态 | Agent 可帮你解读诊断结果 |
@@ -221,9 +221,9 @@ PaperForge 的命令分为两类：
 2. **精读阶段**（Agent 执行）：Pass 1 概览 → Pass 2 精读还原 → Pass 3 深度理解
 3. **验证阶段**（自动）：检查 callout 间距、section 完整性
 
-#### `/pf-paper <zotero_key>` — 快速摘要
+#### `/pf-paper <zotero_key>` — 文献问答
 
-**用途**：快速摘要（无 OCR 要求）
+**用途**：文献问答（无 OCR 要求）
 **前置条件**：有正式笔记即可
 
 ---
@@ -417,7 +417,7 @@ paperforge doctor
 ### Agent 命令
 ```
 /pf-deep <zotero_key>    # 完整三阶段精读（必须 Agent 执行）
-/pf-paper <zotero_key>   # 快速摘要（必须 Agent 执行）
+/pf-paper <zotero_key>   # 文献问答（必须 Agent 执行）
 /pf-sync                 # 同步 Zotero（Agent 包装 CLI）
 /pf-ocr                  # 运行 OCR（Agent 包装 CLI）
 /pf-status               # 查看状态（Agent 包装 CLI）
