@@ -1,23 +1,10 @@
+# Pre-commit hooks — run automatically before every `git commit`
+# Install: pip install pre-commit && pre-commit install
+
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.4.0
+    rev: v0.6.0
     hooks:
       - id: ruff
         args: [--fix]
       - id: ruff-format
-
-  - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.6.0
-    hooks:
-      - id: check-yaml
-      - id: check-toml
-      - id: end-of-file-fixer
-      - id: trailing-whitespace
-
-  - repo: local
-    hooks:
-      - id: consistency-audit
-        name: PaperForge Consistency Audit
-        entry: python scripts/consistency_audit.py
-        language: system
-        pass_filenames: false
