@@ -1038,20 +1038,17 @@ class PaperForgeStatusView extends ItemView {
         this._fetchStats();
     }
 
-    /* ── Per-Paper Mode Render (D-01 through D-09, Phase 29) ── */
+    /* ── Per-Paper Mode Render: Reading Companion ── */
     _renderPaperMode() {
         const entry = this._currentPaperEntry;
         const key = this._currentPaperKey;
 
-        // --- Handle loading / empty / not-found states (D-03) ---
         if (!key) {
-            // No key at all (defensive fallback)
             this._renderEmptyState(this._contentEl, 'No paper data available.');
             return;
         }
 
         if (!entry) {
-            // Key exists but entry not found in index (D-18)
             this._contentEl.createEl('div', {
                 cls: 'paperforge-content-placeholder',
                 text: 'Paper "' + key + '" not found in canonical index. Sync first.',
@@ -1059,44 +1056,29 @@ class PaperForgeStatusView extends ItemView {
             return;
         }
 
-        // --- Create per-paper view container (D-04 through D-09) ---
         const view = this._contentEl.createEl('div', { cls: 'paperforge-paper-view' });
 
-        // ============ Contextual Action Buttons Row (D-10, D-11, D-12, D-13) ============
-        const actionsRow = view.createEl('div', { cls: 'paperforge-paper-actions' });
-        // "Open Fulltext" button (D-12) — open fulltext.md in Obsidian
-        if (entry.fulltext_path) {
-            const ftBtn = actionsRow.createEl('button', { cls: 'paperforge-contextual-btn' });
-            ftBtn.createEl('span', { cls: 'paperforge-contextual-btn-icon', text: '\uD83D\uDCC4' });
-            ftBtn.createEl('span', { text: 'Open Fulltext' });
-            ftBtn.addEventListener('click', () => this._openFulltext(entry.fulltext_path));
-        }
-
-        // ============ Paper Metadata Header (D-04) ============
+        // ── Header: title, authors, year ──
         const header = view.createEl('div', { cls: 'paperforge-paper-header' });
-        const titleText = entry.title || 'Untitled';
-        header.createEl('div', { cls: 'paperforge-paper-title', text: titleText });
-
+        header.createEl('div', { cls: 'paperforge-paper-title', text: entry.title || 'Untitled' });
         const meta = header.createEl('div', { cls: 'paperforge-paper-meta' });
         if (entry.authors && entry.authors.length > 0) {
-            const authorsStr = entry.authors.join(', ');
-            meta.createEl('span', { cls: 'paperforge-paper-authors', text: authorsStr });
+            meta.createEl('span', { cls: 'paperforge-paper-authors', text: entry.authors.join(', ') });
         }
         if (entry.year) {
             meta.createEl('span', { cls: 'paperforge-paper-year', text: String(entry.year) });
         }
 
-        // ============ Lifecycle Stepper (D-05) ============
-        this._renderLifecycleStepper(view, entry, entry.lifecycle);
+        // ── Status Strip: PDF · OCR · DeepRead ──
+        this._renderPaperStatusStrip(view, entry);
 
-        // ============ Health Matrix (D-06) ============
-        this._renderHealthMatrix(view, entry.health);
+        // ── Paper Overview: Pass 1 summary from note body ──
+        this._renderPaperOverviewCard(view, entry);
 
-        // ============ Maturity Gauge (D-07) ============
-        const maturity = entry.maturity || {};
-        this._renderMaturityGauge(view, maturity.level, maturity.blocking);
+        // ── Recent Discussion ──
+        this._renderRecentDiscussionCard(view, entry);
 
-        // ============ OCR Queue Control (DASH-01) ============
+        // ── OCR Queue Toggle ──
         const ocrRow = view.createEl('div', { cls: 'paperforge-paper-actions' });
         const inQueue = entry.do_ocr === true;
         const ocrBtn = ocrRow.createEl('button', { cls: 'paperforge-contextual-btn' });
@@ -1109,23 +1091,243 @@ class PaperForgeStatusView extends ItemView {
                 return;
             }
             const newValue = !inQueue;
-            await this.app.fileManager.processFrontMatter(noteFile, (fm) => {
-                fm.do_ocr = newValue;
-            });
+            await this.app.fileManager.processFrontMatter(noteFile, (fm) => { fm.do_ocr = newValue; });
             this._patchCachedEntry(key, { do_ocr: newValue });
             this._currentPaperEntry = patchEntryWorkflowState(this._currentPaperEntry, { do_ocr: newValue });
             new Notice(newValue ? t('ocr_queue_added') : t('ocr_queue_removed'));
             this._refreshCurrentMode();
         });
         if (inQueue) {
-            ocrRow.createEl('span', {
-                cls: 'paperforge-ocr-queue-hint',
-                text: 'OCR ' + (entry.ocr_status === 'done' ? 'already done' : 'pending'),
-            });
+            ocrRow.createEl('span', { cls: 'paperforge-ocr-queue-hint', text: 'OCR ' + (entry.ocr_status === 'done' ? 'already done' : 'pending') });
         }
 
-        // ============ Next-Step Recommendation Card (D-08, D-09) ============
+        // ── Next Step ──
         this._renderNextStepCard(view, entry, key);
+
+        // ── Files Row ──
+        this._renderPaperFilesRow(view, entry);
+
+        // ── Technical Details (collapsed) ──
+        this._renderPaperTechnicalDetails(view, entry);
+    }
+
+    /* ── Paper Status Strip: compact pills ── */
+    _renderPaperStatusStrip(container, entry) {
+        const strip = container.createEl('div', { cls: 'paperforge-status-strip' });
+        const items = [
+            { key: 'pdf', label: 'PDF', ok: entry.has_pdf === true },
+            { key: 'ocr', label: 'OCR',
+              ok: entry.ocr_status === 'done',
+              pending: ['pending','queued','processing'].includes(entry.ocr_status || ''),
+              fail: ['failed','blocked','done_incomplete','nopdf'].includes(entry.ocr_status || '') },
+            { key: 'deep', label: '精读', ok: entry.deep_reading_status === 'done' },
+        ];
+        for (const item of items) {
+            const pill = strip.createEl('span', { cls: 'paperforge-status-pill' });
+            let statusCls = 'pending';
+            if (item.ok) statusCls = 'ok';
+            else if (item.fail) statusCls = 'fail';
+            else if (item.pending) statusCls = 'pending';
+            pill.addClass(statusCls);
+            const icon = item.ok ? '\u2713' : (item.fail ? '\u2717' : '\u25CB');
+            pill.createEl('span', { cls: 'paperforge-status-pill-icon', text: icon });
+            pill.createEl('span', { text: ' ' + item.label });
+        }
+    }
+
+    /* ── Paper Overview Card: read from formal note body ── */
+    _renderPaperOverviewCard(container, entry) {
+        const card = container.createEl('div', { cls: 'paperforge-paper-overview' });
+        const header = card.createEl('div', { cls: 'paperforge-paper-overview-header' });
+        header.createEl('span', { cls: 'paperforge-paper-overview-title', text: '文章概览' });
+        const body = card.createEl('div', { cls: 'paperforge-paper-overview-body' });
+        const excerptEl = body.createEl('div', { cls: 'paperforge-paper-overview-excerpt', text: '加载中...' });
+
+        // Async read formal note body
+        if (entry.note_path) {
+            const noteFile = this.app.vault.getAbstractFileByPath(entry.note_path);
+            if (noteFile) {
+                this.app.vault.read(noteFile).then((content) => {
+                    const extracted = this._extractOverviewFromNote(content);
+                    if (extracted) {
+                        const truncated = extracted.length > 200 ? extracted.slice(0, 200) + '...' : extracted;
+                        excerptEl.setText(truncated);
+                        if (extracted.length > 200) {
+                            const expandBtn = body.createEl('button', { cls: 'paperforge-paper-overview-expand', text: '展开' });
+                            let expanded = false;
+                            expandBtn.addEventListener('click', () => {
+                                excerptEl.setText(expanded ? truncated : extracted);
+                                expandBtn.setText(expanded ? '展开' : '收起');
+                                expanded = !expanded;
+                            });
+                        }
+                    } else {
+                        excerptEl.setText('尚未生成文章概览。运行 /pf-deep 开始精读。');
+                    }
+                }).catch(() => {
+                    excerptEl.setText('无法读取笔记内容');
+                });
+            } else {
+                excerptEl.setText('笔记文件不存在');
+            }
+        } else {
+            excerptEl.setText('尚未生成文章概览');
+        }
+    }
+
+    /* ── Extract overview from formal note body ── */
+    _extractOverviewFromNote(content) {
+        if (!content) return null;
+        // Find "## 🔍 精读" section
+        const deepIdx = content.indexOf('## 🔍 精读');
+        if (deepIdx === -1) return null;
+        const section = content.slice(deepIdx);
+        // Extract "**一句话总览**" or "**文章摘要**" or "**一句话总览:**"
+        const markers = ['**一句话总览:**', '**一句话总览**', '**文章摘要:**', '**文章摘要**'];
+        for (const marker of markers) {
+            const idx = section.indexOf(marker);
+            if (idx !== -1) {
+                const after = section.slice(idx + marker.length);
+                // Cut at next marker or double newline
+                const cutMarkers = ['**5 Cs', '**Figure', '**证据', '### Pass 2', '## '];
+                let nextCut = after.length;
+                for (const cm of cutMarkers) {
+                    const ci = after.indexOf(cm);
+                    if (ci !== -1 && ci < nextCut) nextCut = ci;
+                }
+                // Also stop at double newline
+                const nnIdx = after.indexOf('\n\n');
+                if (nnIdx !== -1 && nnIdx < nextCut) nextCut = nnIdx;
+                let text = after.slice(0, nextCut).trim();
+                // Clean up leading ** if marker didn't include trailing **
+                if (text.startsWith('**')) text = text.slice(2);
+                if (text.endsWith('**')) text = text.slice(0, -2);
+                return text || null;
+            }
+        }
+        // Fallback: return first paragraph of the deep reading section
+        const firstNewline = section.indexOf('\n');
+        if (firstNewline === -1) return null;
+        const para = section.slice(firstNewline + 1).split('\n\n')[0].trim();
+        // Skip empty or header-only lines
+        if (!para || para.startsWith('###') || para.startsWith('##')) return null;
+        return para.length > 300 ? para.slice(0, 300) + '...' : para;
+    }
+
+    /* ── Recent Discussion Card: read ai/discussion.json ── */
+    _renderRecentDiscussionCard(container, entry) {
+        const card = container.createEl('div', { cls: 'paperforge-discussion-card' });
+        card.style.display = 'none'; // hidden by default
+
+        if (!entry.note_path) return;
+        const wsDir = path.dirname(entry.note_path);
+        const discPath = wsDir + '/ai/discussion.json';
+
+        this.app.vault.adapter.read(discPath).then((raw) => {
+            const data = JSON.parse(raw);
+            if (!data.sessions || data.sessions.length === 0) return;
+
+            card.style.display = 'block';
+            const header = card.createEl('div', { cls: 'paperforge-discussion-header' });
+            header.createEl('span', { cls: 'paperforge-discussion-title', text: '最近讨论' });
+
+            const latestSession = data.sessions[data.sessions.length - 1];
+            const pairs = (latestSession.qa_pairs || []).slice(-3);
+
+            for (const qa of pairs) {
+                const item = card.createEl('div', { cls: 'paperforge-discussion-item' });
+                const qEl = item.createEl('div', { cls: 'paperforge-discussion-q', text: '提问：' + qa.question });
+                const aEl = item.createEl('div', { cls: 'paperforge-discussion-a' });
+                const shortAnswer = qa.answer && qa.answer.length > 150
+                    ? qa.answer.slice(0, 150) + '...'
+                    : (qa.answer || '');
+                aEl.createEl('span', { cls: 'paperforge-discussion-a-text', text: '解答：' + shortAnswer });
+                if (qa.answer && qa.answer.length > 150) {
+                    const expandLink = aEl.createEl('button', { cls: 'paperforge-discussion-expand', text: '展开' });
+                    let expanded = false;
+                    expandLink.addEventListener('click', () => {
+                        const textSpan = aEl.querySelector('.paperforge-discussion-a-text');
+                        if (textSpan) {
+                            textSpan.setText(expanded ? ('解答：' + shortAnswer) : ('解答：' + qa.answer));
+                        }
+                        expandLink.setText(expanded ? '展开' : '收起');
+                        expanded = !expanded;
+                    });
+                }
+            }
+
+            // "查看全部" link
+            const viewAll = card.createEl('a', { cls: 'paperforge-discussion-viewall', text: '查看全部讨论 →' });
+            viewAll.addEventListener('click', (e) => {
+                e.preventDefault();
+                const discMdPath = wsDir + '/ai/discussion.md';
+                const discFile = this.app.vault.getAbstractFileByPath(discMdPath);
+                if (discFile) {
+                    this.app.workspace.openLinkText(discMdPath, '');
+                } else {
+                    new Notice('讨论文件尚未生成');
+                }
+            });
+        }).catch(() => {
+            // No discussion.json — card stays hidden
+        });
+    }
+
+    /* ── Paper Files Row ── */
+    _renderPaperFilesRow(container, entry) {
+        const row = container.createEl('div', { cls: 'paperforge-paper-files' });
+        // Open PDF
+        if (entry.pdf_path) {
+            const pdfBtn = row.createEl('button', { cls: 'paperforge-contextual-btn' });
+            pdfBtn.createEl('span', { cls: 'paperforge-contextual-btn-icon', text: '\uD83D\uDCC4' });
+            pdfBtn.createEl('span', { text: 'Open PDF' });
+            pdfBtn.addEventListener('click', () => {
+                // pdf_path is a wikilink like [[System/Zotero/storage/KEY/file.pdf]]
+                const pathMatch = entry.pdf_path.match(/\[\[([^\]]+)\]\]/);
+                const targetPath = pathMatch ? pathMatch[1] : entry.pdf_path;
+                const file = this.app.vault.getAbstractFileByPath(targetPath);
+                if (file) {
+                    this.app.workspace.openLinkText(targetPath, '');
+                } else {
+                    new Notice('[!!] PDF not found: ' + targetPath, 6000);
+                }
+            });
+        }
+        // Open Fulltext
+        if (entry.fulltext_path) {
+            const ftBtn = row.createEl('button', { cls: 'paperforge-contextual-btn' });
+            ftBtn.createEl('span', { cls: 'paperforge-contextual-btn-icon', text: '\uD83D\uDCDD' });
+            ftBtn.createEl('span', { text: 'Open Fulltext' });
+            ftBtn.addEventListener('click', () => this._openFulltext(entry.fulltext_path));
+        }
+    }
+
+    /* ── Paper Technical Details (collapsed by default) ── */
+    _renderPaperTechnicalDetails(container, entry) {
+        const section = container.createEl('div', { cls: 'paperforge-technical-details' });
+        const toggle = section.createEl('button', { cls: 'paperforge-technical-details-toggle', text: '技术详情 ▸' });
+        const body = section.createEl('div', { cls: 'paperforge-technical-details-body collapsed' });
+        body.style.display = 'none';
+
+        toggle.addEventListener('click', () => {
+            const visible = body.style.display !== 'none';
+            body.style.display = visible ? 'none' : 'block';
+            toggle.setText(visible ? '技术详情 ▸' : '技术详情 ▾');
+        });
+
+        const health = entry.health || {};
+        const rows = [
+            ['PDF Health', health.pdf_health || '\u2014'],
+            ['OCR Status', entry.ocr_status || '\u2014'],
+            ['Asset Health', health.asset_health || '\u2014'],
+            ['Note Path', entry.note_path || '\u2014'],
+            ['Fulltext Path', entry.fulltext_path || '\u2014'],
+        ];
+        for (const [label, value] of rows) {
+            const row = body.createEl('div', { cls: 'paperforge-technical-row' });
+            row.createEl('span', { cls: 'paperforge-technical-label', text: label });
+            row.createEl('span', { cls: 'paperforge-technical-value', text: String(value) });
+        }
     }
 
     /* ── Next-Step Recommendation Card (D-08, D-09) ── */
