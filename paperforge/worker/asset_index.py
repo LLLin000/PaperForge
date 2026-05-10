@@ -262,13 +262,22 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
             write_json(meta_path, meta)
     title_slug = slugify_filename(item["title"])
     note_path = paths["literature"] / domain / f"{key} - {title_slug}.md"
+
+    # --- Freeze slug: reuse existing workspace if it exists under a different slug ---
+    workspace_dir = paths["literature"] / domain / f"{key} - {title_slug}"
+    if not workspace_dir.exists():
+        for candidate in (paths["literature"] / domain).glob(f"{key} - *"):
+            if candidate.is_dir():
+                workspace_dir = candidate
+                title_slug = workspace_dir.name.split(" - ", 1)[1] if " - " in workspace_dir.name else title_slug
+                break
+
     if note_path.parent.exists():
         for stale_note in note_path.parent.glob(f"{key} - *.md"):
             if stale_note != note_path:
                 stale_note.unlink()
 
     # Workspace paths (Phase 26: flat-to-workspace migration)
-    workspace_dir = paths["literature"] / domain / f"{key} - {title_slug}"
     main_note_path = workspace_dir / f"{key} - {title_slug}.md"
     deep_reading_file = workspace_dir / "deep-reading.md"
     target_fulltext = workspace_dir / "fulltext.md"
@@ -363,10 +372,24 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
     entry["maturity"] = compute_maturity(entry)
     entry["next_step"] = compute_next_step(entry)
 
-    # --- Workspace: always create and write to workspace path (Phase 38: no flat fallback) ---
-    existing_text = main_note_path.read_text(encoding="utf-8") if main_note_path.exists() else ""
-
-    main_note_path.write_text(frontmatter_note(entry, existing_text), encoding="utf-8")
+    # Slug already frozen above — for existing notes, update frontmatter only (preserve body)
+    if main_note_path.exists():
+        text = main_note_path.read_text(encoding="utf-8")
+        fm_close = text.find("---\n", 4)  # closing --- after opening ---
+        if fm_close != -1:
+            body = text[fm_close + 4:]  # everything after frontmatter
+            new_full = frontmatter_note(entry, "")
+            new_fm_close = new_full.find("---\n", 4)
+            if new_fm_close != -1:
+                new_fm = new_full[: new_fm_close + 4]  # new frontmatter block with closing ---\n
+                main_note_path.write_text(new_fm + body, encoding="utf-8")
+            else:
+                main_note_path.write_text(new_full, encoding="utf-8")
+        else:
+            main_note_path.write_text(frontmatter_note(entry, text), encoding="utf-8")
+    else:
+        existing_text = note_path.read_text(encoding="utf-8") if note_path.exists() else ""
+        main_note_path.write_text(frontmatter_note(entry, existing_text), encoding="utf-8")
 
     # Write per-workspace paper-meta.json (Phase 37: internal state outside frontmatter)
     write_paper_meta(workspace_dir, entry, paperforge_version=PAPERFORGE_VERSION)
