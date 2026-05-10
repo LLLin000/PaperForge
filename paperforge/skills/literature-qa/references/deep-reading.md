@@ -22,19 +22,14 @@ Keshav 三阶段组会式精读。触发后执行以下工作流。
 ### Step 1: Prepare（机械操作，跑脚本）
 
 ```bash
-python scripts/ld_deep.py prepare --vault . --key <ZOTERO_KEY>
+python scripts/ld_deep.py prepare --key <ZOTERO_KEY>
 ```
 
 返回 JSON 解析：
-- `status: "ok"` → 继续
+- `status: "ok"` → 记下 `figure_map`、`chart_type_map`、`formal_note`、`fulltext_md`、`figures`、`tables` 路径和数量 → 继续
 - `status: "error"` → 报告 `message` 给用户，停止
 
-Prepare 做的事情（Agent 不需要关心细节）：
-- 检查 analyze 和 ocr_status
-- 生成 figure-map.json 和 chart-type-map.json
-- 在 formal note 中插入 `## 🔍 精读` 骨架
-
-读 formal note 确认骨架已插入。
+读 formal note 确认 `## 🔍 精读` 骨架已插入。
 
 ---
 
@@ -67,19 +62,16 @@ Prepare 做的事情（Agent 不需要关心细节）：
 
 #### 图表类型定位（两步）
 
-**Step A: Python 给建议（快速初筛）**
-```bash
-python scripts/ld_deep.py chart-type-scan --vault . --key <ZOTERO_KEY>
-```
-输出每个 figure 的关键词命中结果。这只是建议，Agent 不要盲信。
+**Step A: 读 prepare 生成的 chart-type-map**
+Step 1 的 `prepare` 输出中已包含 `chart_type_map` 路径。读该文件，获取每个 figure 的关键词命中结果。这只是建议。
 
 **Step B: Agent 读 caption 做最终判断**
 
 对每个 figure：
-1. 读该 figure 的 caption（来自 fulltext.md 或 figure-map.json）
+1. 读该 figure 的 caption（来自 prepare 返回的 `fulltext_md` 或 `figure_map`）
 2. 根据 caption 内容，对照 [chart-reading/INDEX.md](chart-reading/INDEX.md) 判断图表类型
-3. 如果 Python 建议和 Agent 判断不一致 → 以 Agent 判断为准
-4. 如果无法确定类型 → 跳过 chart guide，按通用 figure 结构分析
+3. chart-type-map 建议和 Agent 判断不一致 → 以 Agent 判断为准
+4. 无法确定类型 → 跳过 chart guide，按通用 figure 结构分析
 5. 确定类型后，读对应的 chart-reading 指南（如 `chart-reading/条形图与误差棒.md`），按指南中的检查清单分析
 
 #### 每张 Figure 的子标题（固定，不可少）
