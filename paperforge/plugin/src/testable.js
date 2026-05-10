@@ -175,7 +175,6 @@ const ACTIONS = [
         desc: "Copy this paper\u2019s canonical index entry JSON to clipboard for AI use",
         icon: "\u2139",
         cmd: "context",
-        needsKey: true,
         okMsg: "Context copied",
     },
     {
@@ -184,7 +183,6 @@ const ACTIONS = [
         desc: "Copy canonical index entries for all visible papers to clipboard",
         icon: "\u2261",
         cmd: "context",
-        needsFilter: true,
         okMsg: "Collection context copied",
     },
 ];
