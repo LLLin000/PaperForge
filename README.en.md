@@ -179,7 +179,7 @@ All mechanical operations from the Dashboard:
 | Command | Does | Prerequisites |
 |---------|------|--------------|
 | `/pf-deep <zotero_key>` | Full three-pass deep reading | OCR done, analyze set to true |
-| `/pf-paper <zotero_key>` | Quick paper summary | Formal note exists |
+| `/pf-paper <zotero_key>` | Literature Q&A | Formal note exists |
 | `/pf-sync` | Agent syncs Zotero for you | Installed |
 | `/pf-ocr` | Agent runs OCR for you | Installed |
 | `/pf-status` | Agent checks system status | Installed |
