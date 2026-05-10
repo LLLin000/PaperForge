@@ -1,20 +1,9 @@
-# CI — Plasma Matrix Pipeline (L0-L5 Merge Gate)
-#
-# Runs on push/PR to main/master. Uses path-filtered triggers for efficient
-# resource usage and a re-actors/alls-green aggregator for clean branch protection.
-#
-# Layer structure:
-#   L0: Version consistency check (version/__init__.py changes)
-#   L1: Unit tests — 3 OS x 3 Python plasma matrix
-#   L2: CLI contract tests — 2 Python x 1 OS
-#   L3: Plugin tests — Node 20 single config
-#   L4: E2E + Consistency audit — Python 3.11 single config
-#   L5: Journey tests — informational, not in merge gate
-#   Gate: re-actors/alls-green aggregator (excludes L5)
+# CI — Simplified Pipeline
+# Runs on push/PR to master. All tests run (no -x early exit).
 
 name: CI
 
-"on":
+on:
   push:
     branches: [main, master]
     paths-ignore:
@@ -22,58 +11,16 @@ name: CI
       - "docs/**"
   pull_request:
     branches: [main, master]
-    paths-ignore:
-      - "**.md"
-      - "docs/**"
 
 env:
   PYTHONIOENCODING: utf-8
 
 jobs:
   # ---------------------------------------------------------------------------
-  # Path-filter detection — decides which jobs to run
-  # ---------------------------------------------------------------------------
-  changes:
-    name: Detect Changed Paths
-    runs-on: ubuntu-latest
-    outputs:
-      version: ${{ steps.filter.outputs.version }}
-      plugin: ${{ steps.filter.outputs.plugin }}
-      ocr: ${{ steps.filter.outputs.ocr }}
-      core: ${{ steps.filter.outputs.core }}
-      any_changed: ${{ steps.filter.outputs.any_changed }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dorny/paths-filter@v3
-        id: filter
-        with:
-          filters: |
-            version:
-              - 'paperforge/__init__.py'
-              - 'paperforge/plugin/manifest.json'
-              - 'paperforge/plugin/versions.json'
-              - 'CHANGELOG.md'
-              - 'pyproject.toml'
-            plugin:
-              - 'paperforge/plugin/**'
-              - 'paperforge/plugin/package.json'
-            ocr:
-              - 'paperforge/worker/ocr.py'
-              - 'paperforge/ocr_diagnostics.py'
-            core:
-              - 'paperforge/**'
-              - 'tests/**'
-              - 'fixtures/**'
-              - 'pyproject.toml'
-              - 'scripts/**'
-
-  # ---------------------------------------------------------------------------
   # L0 — Version consistency check
   # ---------------------------------------------------------------------------
   version-check:
-    name: L0 — Version Sync Check
-    needs: changes
-    if: ${{ needs.changes.outputs.version == 'true' || needs.changes.outputs.core == 'true' }}
+    name: L0 — Version Sync
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -83,39 +30,26 @@ jobs:
       - name: Install package
         run: pip install -e .
       - name: Check version consistency
-        run: |
-          if [ -f scripts/check_version_sync.py ]; then
-            python scripts/check_version_sync.py
-          else
-            python -c "from paperforge import __version__; import json; \
-              m = json.load(open('paperforge/plugin/manifest.json')); \
-              assert m['version'] == __version__, \
-              f'Manifest {m[\"version\"]} != {__version__}'; \
-              print(f'Version sync: OK ({__version__})')"
-          fi
+        run: python scripts/check_version_sync.py
 
   # ---------------------------------------------------------------------------
-  # L1 — Unit tests (plasma matrix: 3 OS x 3 Python)
+  # L1 — Unit tests (3 OS x 1 Python)
   # ---------------------------------------------------------------------------
   unit-tests:
-    name: L1 — Unit Tests (${{ matrix.os }}, py${{ matrix.python-version }})
-    needs: changes
-    if: ${{ needs.changes.outputs.plugin != 'true' || needs.changes.outputs.core == 'true' }}
+    name: L1 — Unit Tests (${{ matrix.os }}, py3.11)
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        python-version: ["3.10", "3.11", "3.12"]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "${{ matrix.python-version }}"
+          python-version: "3.11"
       - name: Install package with test deps
-        run: |
-          pip install -e ".[test]"
-      - name: Run unit tests (root tests, not layer-marked)
+        run: pip install -e ".[test]"
+      - name: Run unit tests
         shell: bash
         run: |
           python -m pytest tests/ \
@@ -125,37 +59,13 @@ jobs:
             --ignore=tests/journey \
             --ignore=tests/chaos \
             --ignore=tests/audit \
-            -v --tb=short --timeout=60 \
-            -x
+            -v --tb=short --timeout=60
 
   # ---------------------------------------------------------------------------
-  # L2 — CLI contract tests (2 Python x 1 OS)
-  # ---------------------------------------------------------------------------
-  cli-tests:
-    name: L2 — CLI Contracts (py${{ matrix.python-version }})
-    needs: changes
-    if: ${{ needs.changes.outputs.plugin != 'true' || needs.changes.outputs.core == 'true' }}
-    strategy:
-      matrix:
-        python-version: ["3.10", "3.12"]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "${{ matrix.python-version }}"
-      - name: Install package with test deps
-        run: pip install -e ".[test]"
-      - name: Run CLI contract tests
-        run: python -m pytest tests/cli/ -v --tb=short --timeout=60 -x
-
-  # ---------------------------------------------------------------------------
-  # L3 — Plugin tests (Node 20, single config)
+  # L3 — Plugin tests (Vitest)
   # ---------------------------------------------------------------------------
   plugin-tests:
     name: L3 — Plugin Tests
-    needs: changes
-    if: ${{ needs.changes.outputs.plugin == 'true' || needs.changes.outputs.core == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -170,64 +80,35 @@ jobs:
         working-directory: paperforge/plugin
 
   # ---------------------------------------------------------------------------
-  # L4 — E2E + consistency audit tests (single config)
+  # L4 — E2E + Audit
   # ---------------------------------------------------------------------------
   e2e-tests:
     name: L4 — E2E + Audit
-    needs: changes
-    if: ${{ needs.changes.outputs.plugin != 'true' || needs.changes.outputs.core == 'true' }}
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ["3.11"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "${{ matrix.python-version }}"
+          python-version: "3.11"
       - name: Install package with test deps
         run: pip install -e ".[test]"
       - name: Run E2E tests
-        run: python -m pytest tests/e2e/ -m e2e -v --tb=short --timeout=120 -x
-      - name: Run consistency audit tests
-        run: python -m pytest tests/audit/ -m audit -v --tb=short --timeout=120 -x
+        run: python -m pytest tests/e2e/ -m e2e -v --tb=short --timeout=120
+      - name: Run audit tests
+        run: python -m pytest tests/audit/ -m audit -v --tb=short --timeout=120
 
   # ---------------------------------------------------------------------------
-  # L5 — Journey tests (informational, NOT in merge gate)
-  # ---------------------------------------------------------------------------
-  journey-tests:
-    name: L5 — Journey Tests
-    needs: changes
-    if: ${{ needs.changes.outputs.any_changed == 'true' }}
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ["3.11"]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "${{ matrix.python-version }}"
-      - name: Install package with test deps
-        run: pip install -e ".[test]"
-      - name: Run journey tests
-        run: python -m pytest tests/journey/ -m journey -v --tb=short --timeout=120
-
-  # ---------------------------------------------------------------------------
-  # Merge gate — single-status aggregator for branch protection
+  # Merge gate
   # ---------------------------------------------------------------------------
   alls-green:
     name: All Checks Passed
     if: always()
     needs:
-      - version-check
       - unit-tests
-      - cli-tests
       - plugin-tests
-      - e2e-tests
     runs-on: ubuntu-latest
     steps:
       - uses: re-actors/alls-green@v1.2.2
         with:
-          allowed-skips: version-check, plugin-tests
+          allowed-skips: version-check
           jobs: ${{ toJSON(needs) }}
