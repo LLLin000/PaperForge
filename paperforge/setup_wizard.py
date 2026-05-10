@@ -38,71 +38,18 @@ else:
 # Agent Platform Configurations
 # =============================================================================
 
-AGENT_CONFIGS = {
-    "opencode": {
-        "name": "OpenCode",
-        "skill_dir": ".opencode/skills",
-        "command_dir": ".opencode/command",
-        "format": "flat_command",
-        "prefix": "/",
-        "config_file": None,
-    },
-    "claude": {
-        "name": "Claude Code",
-        "skill_dir": ".claude/skills",
-        "format": "skill_directory",
-        "prefix": "/",
-        "config_file": ".claude/skills.json",
-    },
-    "codex": {
-        "name": "Codex",
-        "skill_dir": ".codex/skills",
-        "format": "skill_directory",
-        "prefix": "$",
-        "config_file": None,
-    },
-    "cursor": {
-        "name": "Cursor",
-        "skill_dir": ".cursor/skills",
-        "format": "skill_directory",
-        "prefix": "/",
-        "config_file": ".cursor/settings.json",
-    },
-    "windsurf": {
-        "name": "Windsurf",
-        "skill_dir": ".windsurf/skills",
-        "format": "skill_directory",
-        "prefix": "/",
-        "config_file": None,
-    },
-    "github_copilot": {
-        "name": "GitHub Copilot",
-        "skill_dir": ".github/skills",
-        "format": "skill_directory",
-        "prefix": "/",
-        "config_file": ".github/copilot-instructions.md",
-    },
-    "cline": {
-        "name": "Cline",
-        "skill_dir": ".clinerules",
-        "format": "rules_file",
-        "prefix": "/",
-        "config_file": ".clinerules",
-    },
-    "augment": {
-        "name": "Augment",
-        "skill_dir": ".augment/skills",
-        "format": "skill_directory",
-        "prefix": "/",
-        "config_file": None,
-    },
-    "trae": {
-        "name": "Trae",
-        "skill_dir": ".trae/skills",
-        "format": "skill_directory",
-        "prefix": "/",
-        "config_file": None,
-    },
+from paperforge.services.skill_deploy import AGENT_SKILL_DIRS
+
+AGENT_NAMES = {
+    "opencode":       "OpenCode",
+    "claude":         "Claude Code",
+    "codex":          "Codex",
+    "cursor":         "Cursor",
+    "windsurf":       "Windsurf",
+    "github_copilot": "GitHub Copilot",
+    "cline":          "Cline",
+    "augment":        "Augment",
+    "trae":           "Trae",
 }
 
 
@@ -285,89 +232,73 @@ class EnvChecker:
             r.action_required = True
         return r
 
+    def _looks_like_bbt(self, name: str) -> bool:
+        """Match Better BibTeX by normalizing extension name.
+
+        Works for both Zotero 7 (.xpi files) and Zotero 6 (unpacked directories).
+        """
+        normalized = "".join(c for c in name.lower() if c.isalnum())
+        return "betterbibtex" in normalized
+
+    def _scan_extensions_dir(self, ext_dir: Path) -> tuple[bool, str | None]:
+        """Scan an extensions/ directory (or profile root) for Better BibTeX."""
+        if not ext_dir.is_dir():
+            return False, None
+        try:
+            for entry in ext_dir.iterdir():
+                if self._looks_like_bbt(entry.name):
+                    return True, entry.name
+        except OSError:
+            pass
+        return False, None
+
     def check_bbt(self, manual_path: Path | None = None) -> CheckResult:
         r = self.results["bbt"]
         system = platform.system()
-        bbt_found = False
-        bbt_path = None
 
-        if manual_path and manual_path.exists():
-            direct_candidates = [
-                manual_path / "better-bibtex",
-                manual_path / "extensions",
-                manual_path / "Profiles",
-            ]
-            for candidate in direct_candidates:
-                if not candidate.exists():
-                    continue
-                if candidate.name == "better-bibtex":
-                    bbt_found = True
-                    bbt_path = candidate
-                    break
-                if candidate.name == "extensions":
-                    for entry in candidate.iterdir():
-                        if entry.name.startswith("better-bibtex"):
-                            bbt_found = True
-                            bbt_path = entry
-                            break
-                if candidate.name == "Profiles":
-                    for profile in candidate.iterdir():
-                        ext_dir = profile / "extensions"
-                        if ext_dir.exists():
-                            for entry in ext_dir.iterdir():
-                                if entry.name.startswith("better-bibtex"):
-                                    bbt_found = True
-                                    bbt_path = entry
-                                    break
-                        if bbt_found:
-                            break
-                if bbt_found:
-                    break
-
-        if system == "Windows" and not bbt_found:
+        # 1) Platform-specific profiles paths (most reliable — scan first)
+        profile_roots: list[Path] = []
+        if system == "Windows":
             appdata = os.environ.get("APPDATA", "")
             if appdata:
-                profiles = Path(appdata) / "Zotero" / "Zotero" / "Profiles"
-                if profiles.exists():
-                    for profile in profiles.iterdir():
-                        if profile.is_dir():
-                            ext_dir = profile / "extensions"
-                            if ext_dir.exists():
-                                for ext in ext_dir.iterdir():
-                                    if "better-bibtex" in ext.name.lower() or "betterbibtex" in ext.name.lower():
-                                        bbt_found = True
-                                        bbt_path = ext
-                                        break
+                profile_roots.append(Path(appdata) / "Zotero" / "Zotero" / "Profiles")
         elif system == "Darwin":
-            profiles = Path.home() / "Library" / "Application Support" / "Zotero" / "Profiles"
-            if profiles.exists():
-                for profile in profiles.iterdir():
-                    ext_dir = profile / "extensions"
-                    if ext_dir.exists():
-                        for ext in ext_dir.iterdir():
-                            if "better-bibtex" in ext.name.lower():
-                                bbt_found = True
-                                bbt_path = ext
-                                break
-        else:
-            profiles = Path.home() / ".zotero" / "zotero" / "Profiles"
-            if profiles.exists():
-                for profile in profiles.iterdir():
-                    ext_dir = profile / "extensions"
-                    if ext_dir.exists():
-                        for ext in ext_dir.iterdir():
-                            if "better-bibtex" in ext.name.lower():
-                                bbt_found = True
-                                bbt_path = ext
-                                break
+            profile_roots.append(Path.home() / "Library" / "Application Support" / "Zotero" / "Profiles")
+        else:  # Linux
+            profile_roots.append(Path.home() / ".zotero" / "zotero")
 
-        if bbt_found:
-            r.passed = True
-            r.detail = bbt_path.name if bbt_path else "Better BibTeX"
-        else:
-            r.passed = False
-            r.detail = "未找到 Better BibTeX 插件"
-            r.action_required = True
+        # 2) User-configured zotero_data_dir (may also have a Profiles/ subtree)
+        if manual_path and manual_path.exists():
+            manual_profiles = manual_path / "Profiles"
+            if manual_profiles.is_dir():
+                profile_roots.append(manual_profiles)
+
+        for profiles in profile_roots:
+            if not profiles.is_dir():
+                continue
+            try:
+                for profile in profiles.iterdir():
+                    if not profile.is_dir():
+                        continue
+                    # Zotero 7 / standard: extensions/ folder with .xpi files
+                    ext_dir = profile / "extensions"
+                    found, name = self._scan_extensions_dir(ext_dir)
+                    if found:
+                        r.passed = True
+                        r.detail = name
+                        return r
+                    # Zotero 6 fallback: extensions unpacked directly in profile
+                    found, name = self._scan_extensions_dir(profile)
+                    if found:
+                        r.passed = True
+                        r.detail = name
+                        return r
+            except OSError:
+                continue
+
+        r.passed = False
+        r.detail = "未找到 Better BibTeX 插件"
+        r.action_required = True
         return r
 
     def check_json(self) -> CheckResult:
@@ -418,43 +349,12 @@ def _find_vault() -> Path | None:
     return None
 
 
-def _substitute_vars(
-    text: str,
-    system_dir: str,
-    resources_dir: str,
-    literature_dir: str,
-    base_dir: str,
-    skill_dir: str,
-    prefix: str = "/",
-) -> str:
-    """Substitute path variables and command prefix in skill content."""
-    for old, new in [
-        ("<system_dir>", system_dir),
-        ("<resources_dir>", resources_dir),
-        ("<literature_dir>", literature_dir),
-        ("<base_dir>", base_dir),
-        ("<skill_dir>", skill_dir),
-        ("<prefix>", prefix),
-    ]:
-        text = text.replace(old, new)
-    return text
-
-
 def _copy_file_incremental(src: Path, dst: Path) -> bool:
     """Copy a file only when the destination is missing."""
     dst.parent.mkdir(parents=True, exist_ok=True)
     if dst.exists():
         return False
     shutil.copy2(src, dst)
-    return True
-
-
-def _write_text_incremental(dst: Path, text: str) -> bool:
-    """Write a text file only when the destination is missing."""
-    dst.parent.mkdir(parents=True, exist_ok=True)
-    if dst.exists():
-        return False
-    dst.write_text(text, encoding="utf-8")
     return True
 
 
@@ -508,121 +408,6 @@ def _merge_env_incremental(env_path: Path, values: dict[str, str]) -> str:
         existing_text += "\n"
     env_path.write_text(existing_text + suffix, encoding="utf-8")
     return "extended"
-
-
-def _deploy_skill_directory(
-    vault: Path,
-    skill_dir: str,
-    repo_root: Path,
-    system_dir: str,
-    resources_dir: str,
-    literature_dir: str,
-    base_dir: str,
-    prefix: str = "/",
-) -> list[str]:
-    """Deploy AI-deep skills as independent SKILL.md directories (Claude Code, Codex, etc.).
-
-    pf-deep and pf-paper are two separate skills (not one skill with two modules).
-    pf-deep bundles scripts, chart-reading, and subagent prompt.
-    pf-paper is a lightweight SKILL.md only.
-    """
-    imported = []
-    src_scripts = repo_root / "paperforge" / "skills" / "literature-qa" / "scripts"
-    src_charts = repo_root / "paperforge" / "skills" / "literature-qa" / "chart-reading"
-    src_prompt = repo_root / "paperforge" / "skills" / "literature-qa" / "prompt_deep_subagent.md"
-
-    # --- Deploy all pf-*.md scripts as independent skill directories ---
-    # Each .md file in scripts/ becomes a skill dir with SKILL.md.
-    # Special bundles (pf-deep with scripts/charts, pf-paper) handle extras below.
-    for skill_file in sorted(src_scripts.glob("pf-*.md")):
-        skill_name = skill_file.stem  # e.g. "pf-end"
-        skill_dst = vault / skill_dir / skill_name
-        skill_dst.mkdir(parents=True, exist_ok=True)
-        text = skill_file.read_text(encoding="utf-8")
-        text = _substitute_vars(
-            text, system_dir, resources_dir, literature_dir, base_dir, skill_dir, prefix
-        )
-        _write_text_incremental(skill_dst / "SKILL.md", text)
-        imported.append(skill_name)
-
-    # pf-deep extras: scripts, chart-reading, subagent prompt
-    pf_deep_dst = vault / skill_dir / "pf-deep"
-    pf_deep_dst.mkdir(parents=True, exist_ok=True)
-    ld_src = src_scripts / "ld_deep.py"
-    ld_dst = pf_deep_dst / "scripts" / "ld_deep.py"
-    if ld_src.exists():
-        _copy_file_incremental(ld_src, ld_dst)
-    if src_prompt.exists():
-        _copy_file_incremental(src_prompt, pf_deep_dst / "prompt_deep_subagent.md")
-    if src_charts.exists() and src_charts.is_dir():
-        chart_dst = pf_deep_dst / "chart-reading"
-        chart_dst.mkdir(parents=True, exist_ok=True)
-        for f in src_charts.glob("*.md"):
-            _copy_file_incremental(f, chart_dst / f.name)
-
-    return imported
-
-
-def _deploy_flat_command(
-    vault: Path,
-    command_dir: str,
-    repo_root: Path,
-    system_dir: str,
-    resources_dir: str,
-    literature_dir: str,
-    base_dir: str,
-    skill_dir: str,
-) -> list[str]:
-    """Deploy skills in flat .md command format (OpenCode)."""
-    imported = []
-    command_src = repo_root / "command"
-    if not (command_src.exists() and command_src.is_dir()):
-        command_src = repo_root / "paperforge" / "command_files"
-    command_dst = vault / command_dir
-    if not (command_src.exists() and command_src.is_dir()):
-        return imported
-
-    command_dst.mkdir(parents=True, exist_ok=True)
-    for f in command_src.glob("pf-*.md"):
-        text = f.read_text(encoding="utf-8")
-        text = _substitute_vars(text, system_dir, resources_dir, literature_dir, base_dir, skill_dir)
-        _write_text_incremental(command_dst / f.name, text)
-        imported.append(f.stem)
-
-    return imported
-
-
-def _deploy_rules_file(
-    vault: Path,
-    skill_dir: str,
-    repo_root: Path,
-    system_dir: str,
-    resources_dir: str,
-    literature_dir: str,
-    base_dir: str,
-    skill_dir_path: str,
-) -> list[str]:
-    """Deploy skills as .clinerules directory with pf-deep/pf-paper subdirectories (Cline)."""
-    imported = []
-    src_scripts = repo_root / "paperforge" / "skills" / "literature-qa" / "scripts"
-    src_charts = repo_root / "paperforge" / "skills" / "literature-qa" / "chart-reading"
-    src_prompt = repo_root / "paperforge" / "skills" / "literature-qa" / "prompt_deep_subagent.md"
-
-    # pf-deep
-    pf_deep_dst = vault / skill_dir / "pf-deep"
-    pf_deep_dst.mkdir(parents=True, exist_ok=True)
-    ld_src = src_scripts / "ld_deep.py"
-    if ld_src.exists():
-        _copy_file_incremental(ld_src, pf_deep_dst / "scripts" / "ld_deep.py")
-    if src_prompt.exists():
-        _copy_file_incremental(src_prompt, pf_deep_dst / "prompt_deep_subagent.md")
-    if src_charts.exists() and src_charts.is_dir():
-        (pf_deep_dst / "chart-reading").mkdir(parents=True, exist_ok=True)
-        for f in src_charts.glob("*.md"):
-            _copy_file_incremental(f, pf_deep_dst / "chart-reading" / f.name)
-
-    imported.append("clinerules")
-    return imported
 
 
 def headless_setup(
@@ -679,15 +464,15 @@ def headless_setup(
         return 1
 
     # Agent config
-    agent_config = AGENT_CONFIGS.get(agent_key)
-    if not agent_config:
+    skill_dir = AGENT_SKILL_DIRS.get(agent_key)
+    if not skill_dir:
         print(f"Error: unknown agent platform '{agent_key}'", file=sys.stderr)
         return 1
-    skill_dir = agent_config.get("skill_dir", ".opencode/skills")
+    agent_name = AGENT_NAMES.get(agent_key, agent_key)
 
     print(f"[*] PaperForge headless setup")
     print(f"    Vault:    {vault}")
-    print(f"    Agent:    {agent_config['name']}")
+    print(f"    Agent:    {agent_name}")
     print(f"    System:   {system_dir}")
     print(f"    Resources: {resources_dir}")
 
@@ -852,18 +637,12 @@ def headless_setup(
     skill_result = _deploy_skills_service(
         vault=vault,
         agent_key=agent_key,
-        system_dir=system_dir,
-        resources_dir=resources_dir,
-        literature_dir=literature_dir,
-        base_dir=base_dir,
         overwrite=False,
     )
-    imported_skills = skill_result["skills"]
+    if skill_result["skill_deployed"]:
+        print(f"    [OK] literature-qa skill deployed")
     for err in skill_result.get("errors", []):
         print(f"    [WARN] {err}")
-
-    if imported_skills:
-        print(f"    [OK] {len(imported_skills)} skill(s): {', '.join(imported_skills)}")
 
     # AGENTS.md
     if skill_result["agents_md"]:
@@ -872,7 +651,12 @@ def headless_setup(
         print(f"    [WARN] AGENTS.md source not found; skipping")
 
     # Create agent config file if defined (e.g., Claude skills.json)
-    config_file = agent_config.get("config_file")
+    # Only a few platforms need stub configs; most auto-discover skills via directory
+    AGENT_CONFIG_FILES = {
+        "claude": ".claude/skills.json",
+        "cursor": ".cursor/settings.json",
+    }
+    config_file = AGENT_CONFIG_FILES.get(agent_key)
     if config_file:
         config_dst = vault / config_file
         if not config_dst.exists():
@@ -950,10 +734,9 @@ def headless_setup(
     config = {
         "version": existing_config.get("version", __version__),
         "schema_version": "2",
-        "agent_platform": agent_config.get("name", "OpenCode"),
+        "agent_platform": agent_name,
         "agent_key": agent_key,
         "skill_dir": skill_dir,
-        "command_dir": agent_config.get("command_dir") or "",
         "paperforge_path": f"{system_dir}/PaperForge",
         "zotero_data_dir": zotero_data or "",
         "zotero_link": f"{system_dir}/Zotero",
