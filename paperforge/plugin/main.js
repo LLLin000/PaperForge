@@ -1120,10 +1120,17 @@ class PaperForgeStatusView extends ItemView {
     /* ── Extract zotero_key from workspace directory name ── */
     _extractZoteroKeyFromPath(filePath) {
         if (!filePath) return null;
-        const dirname = path.dirname(filePath);
-        const basename = path.basename(dirname);
-        const match = basename.match(/^([A-Z0-9]{8})(?:\s*-\s*)/i);
-        return match ? match[1] : null;
+        let dir = path.dirname(filePath);
+        while (true) {
+            const basename = path.basename(dir);
+            if (!basename || basename === '.') break;
+            const match = basename.match(/^([A-Z0-9]{8})(?:\s*-\s*)/i);
+            if (match) return match[1];
+            const parent = path.dirname(dir);
+            if (parent === dir) break;
+            dir = parent;
+        }
+        return null;
     }
 
     /* ── Pure Mode Resolution (D-07, Phase 32) ── */
