@@ -24,79 +24,41 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 # Import standalone functions and classes (not Textual-dependent)
-from paperforge.setup_wizard import AGENT_CONFIGS, CheckResult, EnvChecker, _find_vault
+from paperforge.setup_wizard import CheckResult, EnvChecker, _find_vault
+from paperforge.services.skill_deploy import AGENT_SKILL_DIRS
 
 
 # ===================================================================
-# AGENT_CONFIGS
+# AGENT_SKILL_DIRS (imported from skill_deploy, flat dict)
 # ===================================================================
 
 
-class TestAgentConfigs:
-    """Agent platform configuration completeness."""
+class TestAgentSkillDirs:
+    """Agent platform skill directory completeness."""
 
     def test_has_all_expected_agents(self) -> None:
-        """Verify all 9 agent platforms are configured."""
         expected_agents = {
             "opencode", "claude", "codex", "cursor", "windsurf",
             "github_copilot", "cline", "augment", "trae",
         }
-        assert set(AGENT_CONFIGS.keys()) == expected_agents
+        assert set(AGENT_SKILL_DIRS.keys()) == expected_agents
 
-    def test_each_agent_has_name_and_skill_dir(self) -> None:
-        """Every agent config must have name and skill_dir."""
-        for key, cfg in AGENT_CONFIGS.items():
-            assert "name" in cfg, f"{key} missing name"
-            assert "skill_dir" in cfg, f"{key} missing skill_dir"
-            assert isinstance(cfg["name"], str) and cfg["name"], f"{key} has empty name"
-            assert isinstance(cfg["skill_dir"], str) and cfg["skill_dir"], f"{key} has empty skill_dir"
+    def test_each_agent_has_non_empty_skill_dir(self) -> None:
+        for key, skill_dir in AGENT_SKILL_DIRS.items():
+            assert isinstance(skill_dir, str) and skill_dir, f"{key} has empty skill_dir"
+            # Must be a relative path (no leading /)
+            assert not skill_dir.startswith("/"), f"{key} path starts with /: {skill_dir}"
 
-    def test_opencode_skill_dir_is_dot_opencode(self) -> None:
-        """OpenCode skill dir must be .opencode/skills."""
-        assert AGENT_CONFIGS["opencode"]["skill_dir"] == ".opencode/skills"
+    def test_core_agent_skill_dirs(self) -> None:
+        assert AGENT_SKILL_DIRS["opencode"] == ".opencode/skills"
+        assert AGENT_SKILL_DIRS["cursor"] == ".cursor/skills"
+        assert AGENT_SKILL_DIRS["claude"] == ".claude/skills"
+        assert AGENT_SKILL_DIRS["codex"] == ".codex/skills"
+        assert AGENT_SKILL_DIRS["cline"] == ".clinerules"
 
-    def test_cursor_skill_dir_is_dot_cursor(self) -> None:
-        assert AGENT_CONFIGS["cursor"]["skill_dir"] == ".cursor/skills"
-
-    def test_claude_skill_dir_is_dot_claude(self) -> None:
-        assert AGENT_CONFIGS["claude"]["skill_dir"] == ".claude/skills"
-
-    def test_opencode_has_command_dir(self) -> None:
-        """OpenCode is the only agent with command_dir."""
-        assert AGENT_CONFIGS["opencode"].get("command_dir") == ".opencode/command"
-
-    def test_agent_config_format_field(self):
-        """All agents must have a format field."""
-        for key, cfg in AGENT_CONFIGS.items():
-            assert "format" in cfg, f"{key} missing format field"
-            assert cfg["format"] in {"skill_directory", "flat_command", "rules_file"}, f"{key} invalid format"
-
-    def test_agent_config_prefix_field(self):
-        """All agents must have a prefix field."""
-        for key, cfg in AGENT_CONFIGS.items():
-            assert "prefix" in cfg, f"{key} missing prefix field"
-            assert cfg["prefix"] in {"/", "$"}, f"{key} invalid prefix"
-
-    def test_codex_is_codex(self):
-        """Codex entry must have correct configuration."""
-        assert "codex" in AGENT_CONFIGS
-        cfg = AGENT_CONFIGS["codex"]
-        assert cfg["name"] == "Codex"
-        assert cfg["format"] == "skill_directory"
-        assert cfg["prefix"] == "$"
-        assert cfg["skill_dir"] == ".codex/skills"
-
-    def test_cline_format_is_rules_file(self):
-        """Cline must use rules_file format."""
-        cfg = AGENT_CONFIGS["cline"]
-        assert cfg["format"] == "rules_file"
-        assert cfg["skill_dir"] == ".clinerules"
-
-    def test_opencode_format_is_flat_command(self):
-        """OpenCode must use flat_command format."""
-        cfg = AGENT_CONFIGS["opencode"]
-        assert cfg["format"] == "flat_command"
-        assert cfg["command_dir"] == ".opencode/command"
+    def test_all_paths_start_with_dot(self) -> None:
+        for key, skill_dir in AGENT_SKILL_DIRS.items():
+            assert skill_dir.startswith("."), f"{key} dir does not start with dot: {skill_dir}"
 
 
 # ===================================================================
