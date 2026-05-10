@@ -1589,11 +1589,11 @@ def main() -> int:
     full_validate_parser.add_argument("--tables", help="Comma-separated selected table numbers to validate")
 
     queue_parser = subparsers.add_parser("queue", help="List papers awaiting deep reading from canonical index")
-    queue_parser.add_argument("--vault", type=Path, required=True, help="Path to the vault root")
+    queue_parser.add_argument("--vault", type=Path, default=None, help="Path to the vault root (auto-detected if omitted)")
     queue_parser.add_argument("--format", choices=["json", "table"], default="json", help="Output format")
 
     prepare_parser = subparsers.add_parser("prepare", help="Auto-detect and prepare a paper for deep reading")
-    prepare_parser.add_argument("--vault", type=Path, required=True, help="Path to the vault root")
+    prepare_parser.add_argument("--vault", type=Path, default=None, help="Path to the vault root (auto-detected if omitted)")
     prepare_parser.add_argument("--key", required=True, help="Zotero key")
     prepare_parser.add_argument("--force", action="store_true", help="Re-run even if deep_reading_status=done")
     prepare_parser.add_argument("--format", choices=["json", "table"], default="json", help="Output format")
@@ -1617,6 +1617,11 @@ def main() -> int:
     pp_parser.add_argument("--format", choices=["json", "text"], default="text", help="Output format")
 
     args = parser.parse_args()
+
+    if args.command in ("prepare", "queue"):
+        if args.vault is None:
+            from paperforge.config import resolve_vault as _resolve_vault
+            args.vault = _resolve_vault(Path.cwd())
 
     if args.command == "prepare":
         result = prepare_deep_reading(args.vault, args.key, force=args.force)

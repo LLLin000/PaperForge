@@ -226,19 +226,35 @@ def generate_review(candidates: list[dict]) -> str:
 def extract_preserved_deep_reading(text: str) -> str:
     if not text:
         return ""
-    match = re.search("^## 🔍 精读\\s*$", text, re.MULTILINE)
+    # Match "## 🔍 精读" or "## 精读" (emoji is optional)
+    match = re.search(r"^##\s*🔍?\s*精读\s*$", text, re.MULTILINE)
     if not match:
         return ""
     start = match.start()
     preserved = text[start:].strip()
+    # Skip if section body is empty or only contains placeholder text
+    body = re.sub(r"^##\s*🔍?\s*精读\s*$", "", preserved, flags=re.MULTILINE).strip()
+    if not body or _is_placeholder_only(body):
+        return ""
     return preserved
+
+
+_PLACEHOLDER_PATTERN = re.compile(r"（待补充）|\(待补充\)|\(TODO\)|\(TBD\)")
+
+
+def _is_placeholder_only(body: str) -> bool:
+    """Check if the deep reading body is only placeholder text (no real content)."""
+    cleaned = _PLACEHOLDER_PATTERN.sub("", body).strip()
+    cleaned = re.sub(r"^[-*]\s*$", "", cleaned, flags=re.MULTILINE).strip()
+    return not cleaned
 
 
 def has_deep_reading_content(text: str) -> bool:
     preserved = extract_preserved_deep_reading(text)
     if not preserved:
         return False
-    body = preserved.replace(DEEP_READING_HEADER, "").strip()
+    # Strip both "## 🔍 精读" and "## 精读" header variants
+    body = re.sub(r"^##\s*🔍?\s*精读\s*$", "", preserved, flags=re.MULTILINE).strip()
     if not body:
         return False
 

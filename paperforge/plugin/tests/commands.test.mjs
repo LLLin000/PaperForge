@@ -9,8 +9,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const { ACTIONS, buildCommandArgs, runSubprocess } = await import('../src/testable.js');
 
 describe('ACTIONS', () => {
-    it('has exactly 6 entries', () => {
-        expect(ACTIONS).toHaveLength(6);
+    it('has exactly 4 entries', () => {
+        expect(ACTIONS).toHaveLength(4);
     });
     it('every entry has id, title, cmd, okMsg', () => {
         for (const a of ACTIONS) {
@@ -25,12 +25,6 @@ describe('ACTIONS', () => {
     });
     it('repair action is enabled (no disabled flag)', () => {
         expect(ACTIONS.find(a => a.id === 'paperforge-repair')?.disabled).toBeUndefined();
-    });
-    it('copy-context action has no needsKey (pure JS)', () => {
-        expect(ACTIONS.find(a => a.id === 'paperforge-copy-context')?.needsKey).toBeUndefined();
-    });
-    it('copy-collection-context action has no needsFilter (pure JS)', () => {
-        expect(ACTIONS.find(a => a.id === 'paperforge-copy-collection-context')?.needsFilter).toBeUndefined();
     });
 });
 
