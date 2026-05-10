@@ -372,7 +372,7 @@ function patchEntryWorkflowState(entry, patch) {
 class PaperForgeStatusView extends ItemView {
     constructor(leaf) {
         super(leaf);
-        this._currentMode = null;       // 'global' | 'paper' | 'collection' | 'deep-reading' (D-05)
+        this._currentMode = null;       // 'global' | 'paper' | 'collection'
         this._currentDomain = null;     // domain name when in collection mode (D-15)
         this._currentPaperKey = null;   // zotero_key when in per-paper mode (D-03)
         this._currentPaperEntry = null; // full entry when in per-paper mode
@@ -458,11 +458,6 @@ class PaperForgeStatusView extends ItemView {
         /* ── Mode-Switched Content Area (per D-06) ── */
         this._contentEl = root.createEl('div', { cls: 'paperforge-content-area' });
 
-        /* ── Quick Actions (visible in all modes per D-07 / "Specific Ideas") ── */
-        const actions = root.createEl('div', { cls: 'paperforge-actions-section' });
-        actions.createEl('h4', { cls: 'paperforge-actions-title', text: 'Quick Actions' });
-        this._actionsGrid = actions.createEl('div', { cls: 'paperforge-actions-grid' });
-        this._renderActions();  // extracted so actions can be re-rendered per mode
     }
 
     /* ---------------------------------------------------------------------- */
@@ -934,19 +929,6 @@ class PaperForgeStatusView extends ItemView {
         }
     }
 
-    /* ── Render Quick Actions (extracted from _buildPanel for mode-aware reuse) ── */
-    _renderActions() {
-        this._actionsGrid.empty();
-        for (const a of ACTIONS) {
-            const card = this._actionsGrid.createEl('div', { cls: 'paperforge-action-card' });
-            if (a.disabled) card.addClass('disabled');
-            card.createEl('div', { cls: 'paperforge-action-card-icon', text: a.icon });
-            card.createEl('div', { cls: 'paperforge-action-card-title', text: a.title });
-            card.createEl('div', { cls: 'paperforge-action-card-desc', text: a.desc });
-            card.createEl('div', { cls: 'paperforge-action-card-hint', text: a.disabled ? 'Coming soon' : 'Click to run' });
-            card.addEventListener('click', () => this._runAction(a, card));
-        }
-    }
 
     /* ── Invalidate cached index (D-14) ── */
     _invalidateIndex() {
@@ -1069,16 +1051,6 @@ class PaperForgeStatusView extends ItemView {
 
         // ============ Contextual Action Buttons Row (D-10, D-11, D-12, D-13) ============
         const actionsRow = view.createEl('div', { cls: 'paperforge-paper-actions' });
-
-        // "Copy Context" button (D-11) — reuse existing paperforge-copy-context action
-        const ctxBtn = actionsRow.createEl('button', { cls: 'paperforge-contextual-btn' });
-        ctxBtn.createEl('span', { cls: 'paperforge-contextual-btn-icon', text: '\u2139' });
-        ctxBtn.createEl('span', { text: 'Copy Context' });
-        ctxBtn.addEventListener('click', () => {
-            const action = ACTIONS.find(a => a.id === 'paperforge-copy-context');
-            if (action) this._runAction(action, ctxBtn);
-        });
-
         // "Open Fulltext" button (D-12) — open fulltext.md in Obsidian
         if (entry.fulltext_path) {
             const ftBtn = actionsRow.createEl('button', { cls: 'paperforge-contextual-btn' });
@@ -1193,13 +1165,8 @@ class PaperForgeStatusView extends ItemView {
             const labelEl = card.createEl('div', { cls: 'paperforge-agent-platform-label' });
             labelEl.setText(t('run_in_agent').replace('{0}', platform));
         } else if (nextStep === 'ready') {
-            // Fall back to existing Copy Context button.
             const trigger = card.createEl('button', { cls: 'paperforge-next-step-trigger' });
-            trigger.createEl('span', { text: '\u2139  Copy Context' });
-            trigger.addEventListener('click', () => {
-                const action = ACTIONS.find(a => a.id === 'paperforge-copy-context');
-                if (action) this._runAction(action, trigger);
-            });
+            trigger.createEl('span', { text: '✓  ' + info.label });
         }
     }
 
@@ -1219,127 +1186,10 @@ class PaperForgeStatusView extends ItemView {
         }
     }
 
-    /* ── Deep-Reading Status Card ── */
-    _renderDeepStatusCard(container, entry) {
-        const card = container.createEl('div', { cls: 'paperforge-deepreading-card' });
-        card.createEl('div', { cls: 'paperforge-deepreading-card-title', text: '\uD83D\uDCCA \u72B6\u6001\u6982\u89C8' });
 
-        if (!entry) {
-            card.createEl('div', { cls: 'paperforge-deepreading-empty', text: '\u6682\u65E0\u6570\u636E' });
-            return;
-        }
 
-        const statusItems = [
-            { label: 'Figure-Map', value: entry.figure_map ? '\u2705 \u5DF2\u751F\u6210' : '\u23F3 \u5F85\u751F\u6210' },
-            { label: 'OCR \u72B6\u6001', value: entry.ocr_status === 'done' ? '\u2705 \u5DF2\u5B8C\u6210' : '\u23F3 ' + (entry.ocr_status || '\u5F85\u5904\u7406') },
-            { label: 'Pass \u5B8C\u6210', value: this._getPassCompletion(entry) },
-            { label: '\u5065\u5EB7\u72B6\u51B5', value: entry.health && entry.health.pdf_health === 'healthy' ? '\u2705 \u6B63\u5E38' : '\u26A0\uFE0F \u9700\u5173\u6CE8' },
-        ];
 
-        const list = card.createEl('div', { cls: 'paperforge-deepreading-status-list' });
-        for (const item of statusItems) {
-            const row = list.createEl('div', { cls: 'paperforge-deepreading-status-row' });
-            row.createEl('span', { cls: 'paperforge-deepreading-status-label', text: item.label });
-            row.createEl('span', { cls: 'paperforge-deepreading-status-value', text: item.value });
-        }
-    }
 
-    _getPassCompletion(entry) {
-        const status = entry.deep_reading_status || 'pending';
-        if (status === 'done') return '\u2705 3/3 (\u5DF2\u5B8C\u6210)';
-        return '\u23F3 \u5F85\u5B8C\u6210';
-    }
-
-    /* ── Deep-Reading Pass 1 Summary Card ── */
-    _renderDeepPass1Card(container, text) {
-        const card = container.createEl('div', { cls: 'paperforge-deepreading-card' });
-        card.createEl('div', { cls: 'paperforge-deepreading-card-title', text: '\uD83D\uDCDD Pass 1 \u603B\u7ED3' });
-
-        if (!text || text.trim() === '') {
-            card.createEl('div', { cls: 'paperforge-deepreading-empty', text: '\u6682\u65E0 Pass 1 \u603B\u7ED3' });
-            return;
-        }
-
-        const extracted = this._extractPass1Content(text);
-        if (!extracted) {
-            card.createEl('div', { cls: 'paperforge-deepreading-empty', text: '\u6682\u65E0 Pass 1 \u603B\u7ED3' });
-            return;
-        }
-
-        const content = card.createEl('div', { cls: 'paperforge-deepreading-pass1-content' });
-        const lines = extracted.split('\n').filter(l => l.trim());
-        for (const line of lines) {
-            if (line.startsWith('### ')) {
-                content.createEl('h4', { cls: 'paperforge-deepreading-pass1-subheading', text: line.replace('### ', '') });
-            } else if (line.startsWith('**') && line.endsWith('**')) {
-                content.createEl('p', { cls: 'paperforge-deepreading-pass1-marker', text: line });
-            } else if (line.trim()) {
-                content.createEl('p', { cls: 'paperforge-deepreading-pass1-text', text: line });
-            }
-        }
-    }
-
-    _extractPass1Content(text) {
-        const markers = ['**\u4E00\u53E5\u8BDD\u603B\u89C8**', '## Pass 1', '**\u6587\u7AE0\u6458\u8981**'];
-        for (const marker of markers) {
-            const idx = text.indexOf(marker);
-            if (idx !== -1) {
-                const after = idx + marker.length;
-                // Cut at next major section marker
-                const cutMarkers = ['**\u8BC1\u636E\u8FB9\u754C**', '**Figure \u5BFC\u8BFB**', '**\u4E3B\u8981\u53D1\u73B0**'];
-                let nextCut = text.length;
-                for (const cm of cutMarkers) {
-                    const ci = text.indexOf(cm, after);
-                    if (ci !== -1 && ci < nextCut) nextCut = ci;
-                }
-                return text.substring(after, nextCut).trim();
-            }
-        }
-        return null;
-    }
-
-    /* ── Deep-Reading AI Q&A History Card ── */
-    _renderDeepQACard(container, data) {
-        const card = container.createEl('div', { cls: 'paperforge-deepreading-card' });
-
-        // D-10: Collapsible header
-        const header = card.createEl('div', { cls: 'paperforge-deepreading-card-header collapsible' });
-        header.createEl('div', { cls: 'paperforge-deepreading-card-title', text: '\uD83D\uDCAC AI \u95EE\u7B54\u8BB0\u5F55' });
-
-        const body = card.createEl('div', { cls: 'paperforge-deepreading-card-body collapsed' });
-
-        // Toggle collapse
-        header.addEventListener('click', () => {
-            body.classList.toggle('collapsed');
-        });
-
-        // D-12: Empty states
-        if (!data || !data.sessions || data.sessions.length === 0) {
-            body.createEl('div', { cls: 'paperforge-deepreading-empty', text: !data ? '\u6682\u65E0\u8BA8\u8BBA\u8BB0\u5F55' : '\u6682\u65E0\u95EE\u7B54\u5185\u5BB9' });
-            return;
-        }
-
-        // D-08: Sessions-based grouping
-        for (const session of data.sessions) {
-            const sessionEl = body.createEl('div', { cls: 'paperforge-deepreading-session' });
-            const sessionHeader = sessionEl.createEl('div', { cls: 'paperforge-deepreading-session-header' });
-            sessionHeader.createEl('span', { text: session.model || 'AI' });
-            sessionHeader.createEl('span', { cls: 'paperforge-deepreading-session-date', text: session.started || '' });
-
-            // D-09: Dialog bubbles
-            if (session.qa_pairs) {
-                for (const qa of session.qa_pairs) {
-                    const qBubble = sessionEl.createEl('div', { cls: 'paperforge-deepreading-bubble question' });
-                    qBubble.createEl('div', { cls: 'bubble-label', text: '\u95EE\u9898' });
-                    qBubble.createEl('div', { cls: 'bubble-text', text: qa.question });
-
-                    const aBubble = sessionEl.createEl('div', { cls: 'paperforge-deepreading-bubble answer' });
-                    aBubble.createEl('div', { cls: 'bubble-label', text: '\u89E3\u7B54' });
-                    aBubble.createEl('div', { cls: 'bubble-text', text: qa.answer });
-                }
-            }
-        }
-    }
 
     /* ── Collection Mode Render (Phase 30) ── */
     _renderCollectionMode() {
@@ -1473,42 +1323,6 @@ class PaperForgeStatusView extends ItemView {
                 this._runAction(a, card);  // Re-trigger after acknowledgment
             });
             modal.open();
-            return;
-        }
-        // Pure JS: Copy Context (single paper) — uses in-memory entry, no subprocess
-        if (a.id === 'paperforge-copy-context') {
-            let entry = this._currentPaperEntry;
-            if (!entry) {
-                const file = this.app.workspace.getActiveFile();
-                if (file) {
-                    const cache = this.app.metadataCache.getFileCache(file);
-                    const key = cache?.frontmatter?.zotero_key;
-                    if (key) entry = this._findEntry(key);
-                }
-            }
-            if (entry) {
-                navigator.clipboard.writeText(JSON.stringify(entry, null, 2)).then(() => {
-                    this._showMessage('[OK] ' + (entry.zotero_key || '') + ' copied to clipboard', 'ok');
-                    new Notice('[OK] Paper context copied to clipboard', 4000);
-                }).catch(e => {
-                    this._showMessage('[!!] Clipboard failed: ' + e.message, 'error');
-                });
-            } else {
-                this._showMessage('[!!] No paper entry found', 'error');
-                new Notice('[!!] Open a paper note or select one in the dashboard first', 5000);
-            }
-            return;
-        }
-
-        // Pure JS: Copy Collection Context — uses cached index, no subprocess
-        if (a.id === 'paperforge-copy-collection-context') {
-            const items = this._cachedItems || [];
-            navigator.clipboard.writeText(JSON.stringify(items, null, 2)).then(() => {
-                this._showMessage('[OK] ' + items.length + ' entries copied to clipboard', 'ok');
-                new Notice('[OK] ' + items.length + ' papers copied to clipboard', 4000);
-            }).catch(e => {
-                this._showMessage('[!!] Clipboard failed: ' + e.message, 'error');
-            });
             return;
         }
 
@@ -1687,18 +1501,6 @@ class PaperForgeStatusView extends ItemView {
                 modeName = this._currentDomain || 'Unknown Domain';
                 break;
 
-            case 'deep-reading':
-                badge.addClass('deep-reading');
-                badge.setText('Deep');
-                this._headerTitle.setText('Deep Reading');
-                if (this._currentPaperEntry && this._currentPaperEntry.title) {
-                    modeName = this._currentPaperEntry.title;
-                } else if (this._currentPaperKey) {
-                    modeName = this._currentPaperKey;
-                } else {
-                    modeName = 'Unknown paper';
-                }
-                break;
         }
 
         if (modeName) {
@@ -2865,39 +2667,6 @@ module.exports = class PaperForgePlugin extends Plugin {
             });
         }
 
-        /* ── Command palette: context actions (use view\u2019s _runAction for key resolution) ── */
-        this.addCommand({
-            id: 'paperforge-copy-context',
-            name: 'Copy Context: Copy active paper\u2019s index entry JSON to clipboard',
-            callback: () => {
-                const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_PAPERFORGE);
-                if (leaves.length > 0 && leaves[0].view instanceof PaperForgeStatusView) {
-                    const action = ACTIONS.find(a => a.id === 'paperforge-copy-context');
-                    if (action) {
-                        const tempCard = document.createElement('div');
-                        leaves[0].view._runAction(action, tempCard);
-                    }
-                } else {
-                    new Notice('[!!] Open PaperForge Dashboard first (click sidebar icon)', 5000);
-                }
-            },
-        });
-        this.addCommand({
-            id: 'paperforge-copy-collection-context',
-            name: 'Copy Collection Context: Copy all canonical index entries to clipboard',
-            callback: () => {
-                const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_PAPERFORGE);
-                if (leaves.length > 0 && leaves[0].view instanceof PaperForgeStatusView) {
-                    const action = ACTIONS.find(a => a.id === 'paperforge-copy-collection-context');
-                    if (action) {
-                        const tempCard = document.createElement('div');
-                        leaves[0].view._runAction(action, tempCard);
-                    }
-                } else {
-                    new Notice('[!!] Open PaperForge Dashboard first (click sidebar icon)', 5000);
-                }
-            },
-        });
 
         /* ── Auto-update PaperForge (deferred — don't slow startup) ── */
         if (this.settings.auto_update !== false) {
