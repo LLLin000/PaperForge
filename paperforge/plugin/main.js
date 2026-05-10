@@ -2110,15 +2110,10 @@ class PaperForgeStatusView extends ItemView {
         });
         this._modeSubscribers.push({ event: 'active-leaf-change', ref: leafHandler });
 
-        // D-09: File modification -- filter to formal-library.json only
+        // D-09: File modification -- formal-library.json only (deep-finalize signals completion)
         const modifyHandler = this.app.vault.on('modify', (file) => {
             if (file && file.path && file.path.endsWith('formal-library.json')) {
                 this._invalidateIndex();  // D-14: invalidate cache
-                this._refreshCurrentMode();
-                return;
-            }
-            if (file && this._currentPaperEntry && file.path === this._currentPaperEntry.note_path) {
-                this._currentPaperEntry = this._findEntry(this._currentPaperKey);
                 this._refreshCurrentMode();
             }
         });
