@@ -69,15 +69,13 @@ def deploy_skills(
     else:
         errors.append("Skills source not found in package")
 
-    # ── Deploy AGENTS.md ──
+    # ── Deploy AGENTS.md (only if it does not exist — users customise it) ──
     agents_ok = False
     agents_src = source_root.parent / "AGENTS.md"
     if agents_src.exists():
         try:
             agents_dst = vault / "AGENTS.md"
-            if overwrite and agents_dst.exists():
-                agents_dst.unlink()
-            if overwrite or not agents_dst.exists():
+            if not agents_dst.exists():
                 shutil.copy2(agents_src, agents_dst)
             agents_ok = True
         except Exception as e:
