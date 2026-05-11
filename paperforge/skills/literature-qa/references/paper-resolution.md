@@ -6,7 +6,7 @@
 
 1. **Python 做确定性查找。** key、DOI、标题片段、作者+年份。
 2. **Agent 做理解和兜底。** 自然语言、Python 无结果时的 fallback 搜索。
-3. **路径从 `paths` 获取，不硬编码。**
+3. **路径从 `paths` 获取，不硬编码。** 禁止根据 vault-knowledge.md 的示例结构拼接路径。`ocr_dir`、`literature_dir`、`index_path` 只能从 `paper_resolver paths` 或 `paper_resolver resolve-key` 的返回 JSON 中读取。任何情况下都不要把目录名（如 `System`、`Resources`）写死在路径里。
 
 ---
 

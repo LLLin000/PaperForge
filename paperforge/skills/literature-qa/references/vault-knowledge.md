@@ -9,9 +9,9 @@
 1. **确认 vault 路径** — 找到 `paperforge.json` 的目录
 2. **跑 paths 获取实际目录** — `python -m paperforge.worker.paper_resolver paths --vault "$VAULT"`
 3. **确认 paths 命令成功** — 拿到 `literature_dir`、`index_path`、`ocr_dir`
-4. **记住这些路径** — 后面所有文件读写都用这些路径，不硬编码
+4. **记住这些路径** — 后面所有文件读写都用 `paths` 返回的实际值。**禁止将示例路径（如 `D:\...\System\PaperForge`）与 paperforge.json 里的目录名（如 `system_dir: "99_System"`）拼接。** 一切路径完全来自 `paper_resolver paths` 或 `paper_resolver resolve-key` 返回的 JSON。
 
-如果 `paper_resolver` 报错，先解决报错再继续。**不要在没有 paths 数据的情况下自己猜路径。**
+如果 `paper_resolver` 报错，先解决报错再继续。**绝对不要在没有 paths JSON 的情况下自己通过拼接目录名来猜测路径。**
 
 ---
 
