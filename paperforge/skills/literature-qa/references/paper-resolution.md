@@ -2,8 +2,6 @@
 
 本文件定义如何将用户输入解析为论文 workspace。所有子流程公用。
 
-**所有 Python 命令用 `$PYTHON`（来自 pf_bootstrap），vault 路径用 `$VAULT`。**
-
 ## 核心原则
 
 1. **Python 做确定性查找。** key、DOI、标题片段、作者+年份。

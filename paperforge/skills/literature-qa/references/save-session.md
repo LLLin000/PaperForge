@@ -2,8 +2,6 @@
 
 将 paper-qa 会话中的 Q&A 记录持久化到论文工作区。
 
-**所有 Python 命令用 `$PYTHON`（来自 pf_bootstrap 的 `python_candidate`），vault 路径用 `$VAULT`。**
-
 ---
 
 ## 触发条件
