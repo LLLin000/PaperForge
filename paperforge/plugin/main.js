@@ -2505,17 +2505,22 @@ class PaperForgeSettingTab extends PluginSettingTab {
         btn.setDisabled(true);
         btn.setButtonText(t('runtime_health_syncing'));
 
-        const tryInstall = (args) => runSubprocess(installCmd.cmd, args, vp, installCmd.timeout, undefined, paperforgeEnrichedEnv());
+        const tryInstall = (args, label) => {
+            console.log(`[PaperForge] Sync Runtime: trying ${label}`);
+            return runSubprocess(installCmd.cmd, args, vp, installCmd.timeout, undefined, paperforgeEnrichedEnv());
+        };
 
-        tryInstall(installCmd.pypiArgs).then((result) => {
+        tryInstall(installCmd.pypiArgs, 'PyPI').then((result) => {
             if (result.exitCode === 0) {
+                console.log('[PaperForge] Sync Runtime: installed via PyPI');
                 new Notice(t('runtime_health_sync_done').replace('{0}', ver), 5000);
                 this.display();
                 return;
             }
-            console.warn('[PaperForge] PyPI install failed, falling back to git...');
-            tryInstall(installCmd.gitArgs).then((r2) => {
+            console.warn('[PaperForge] Sync Runtime: PyPI failed, falling back to git...');
+            tryInstall(installCmd.gitArgs, 'git').then((r2) => {
                 if (r2.exitCode === 0) {
+                    console.log('[PaperForge] Sync Runtime: installed via git');
                     new Notice(t('runtime_health_sync_done').replace('{0}', ver), 5000);
                     this.display();
                 } else {
@@ -3092,13 +3097,15 @@ class PaperForgeSetupModal extends Modal {
             if (!hasPaperforge) {
                 this._log(t('install_bootstrapping'));
                 const ver = this.plugin.manifest.version;
+                this._log(`[install] Trying PyPI: pip install paperforge==${ver}`);
                 const pypiArgs = ['-m', 'pip', 'install', '--upgrade'];
                 if (process.platform !== 'win32') pypiArgs.push('--user');
                 pypiArgs.push(`paperforge==${ver}`);
                 try {
                     await runPython(pypiArgs, { logStdout: true });
                 } catch (pypiErr) {
-                    this._log('PyPI install failed, falling back to git...');
+                    this._log(`[install] PyPI failed, falling back to git: git+https://...@v${ver}`);
+                    console.warn('[PaperForge] PyPI install failed, falling back to git:', pypiErr.message?.slice(0, 200));
                     const gitArgs = ['-m', 'pip', 'install', '--upgrade'];
                     if (process.platform !== 'win32') gitArgs.push('--user');
                     gitArgs.push(`git+https://github.com/LLLin000/PaperForge.git@v${ver}`);
@@ -3343,10 +3350,12 @@ module.exports = class PaperForgePlugin extends Plugin {
         const { execFile } = require('node:child_process');
         execFile(pythonExe, [...extraArgs, '-c', 'import paperforge; print(paperforge.__version__)'], { cwd: vp, timeout: 10000 }, (err, stdout) => {
             const install = (label) => {
+                console.log(`[PaperForge] Auto-update: trying PyPI (paperforge==${ver})`);
                 doInstall(pypiPkg, (ok) => {
-                    if (ok) { new Notice(`[OK] PaperForge CLI ${label}`, 5000); return; }
+                    if (ok) { console.log('[PaperForge] Auto-update: installed via PyPI'); new Notice(`[OK] PaperForge CLI ${label}`, 5000); return; }
+                    console.warn('[PaperForge] Auto-update: PyPI failed, falling back to git...');
                     doInstall(gitUrl, (ok2) => {
-                        if (ok2) new Notice(`[OK] PaperForge CLI ${label} (via git)`, 5000);
+                        if (ok2) { console.log('[PaperForge] Auto-update: installed via git'); new Notice(`[OK] PaperForge CLI ${label} (via git)`, 5000); }
                     });
                 });
             };
