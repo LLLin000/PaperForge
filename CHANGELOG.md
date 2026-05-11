@@ -8,6 +8,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [1.5.2] — 2026-05-11
+
+### Added
+
+- **PyPI 发布**: 包发布到 PyPI (`pip install paperforge==1.5.2`)，安装不再需要 git
+- **安装双通道**: 所有安装路径 PyPI 优先，失败自动切 git fallback
+- **CI 自动发布**: `.github/workflows/publish.yml` — tag push 时自动构建并发布到 PyPI
+- **安装源日志**: 控制台输出当前使用的是 PyPI 还是 git
+
+### Fixed
+
+- **Sync Runtime**: 补充 `paperforgeEnrichedEnv()` 到所有 pip install spawn 点
+- **Git tag 前缀**: 所有 `git+https://...@version` 修正为 `@v{version}` 匹配 release tag
+
 ## [1.5.1] — 2026-05-11
 
 ### Fixed
