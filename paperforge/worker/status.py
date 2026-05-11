@@ -278,8 +278,7 @@ def _resolve_plugin_interpreter(vault: Path, plugin_data: dict) -> tuple[str, st
     for path, extra in system_candidates:
         try:
             cmd = [path] + extra + ["--version"]
-            result = subprocess.run(cmd, capture_output=True, timeout=5, text=True)
-            if result.returncode == 0 and "Python" in (result.stdout or ""):
+            result = subprocess.run(cmd, capture_output=True, timeout=5, text=True, encoding="utf-8", errors="replace")
                 return (path, "auto-detected", extra)
         except (subprocess.TimeoutExpired, FileNotFoundError, PermissionError, OSError):
             continue
@@ -295,7 +294,7 @@ def _query_resolved_version(interp: str, extra_args: list[str]) -> tuple[str | N
     """
     try:
         cmd = [interp] + extra_args + ["--version"]
-        result = subprocess.run(cmd, capture_output=True, timeout=10, text=True)
+        result = subprocess.run(cmd, capture_output=True, timeout=10, text=True, encoding="utf-8", errors="replace")
         if result.returncode != 0:
             return (None, None)
         output = (result.stdout or "").strip() or (result.stderr or "").strip()
@@ -317,7 +316,7 @@ def _query_resolved_package(interp: str, extra_args: list[str], package_name: st
     """
     try:
         cmd = [interp] + extra_args + ["-m", "pip", "show", package_name]
-        result = subprocess.run(cmd, capture_output=True, timeout=15, text=True)
+        result = subprocess.run(cmd, capture_output=True, timeout=15, text=True, encoding="utf-8", errors="replace")
         if result.returncode != 0:
             return None
         output = (result.stdout or "").strip()
@@ -345,7 +344,7 @@ def _query_resolved_module(interp: str, extra_args: list[str], module_name: str)
     )
     try:
         cmd = [interp] + extra_args + ["-c", script]
-        result = subprocess.run(cmd, capture_output=True, timeout=15, text=True)
+        result = subprocess.run(cmd, capture_output=True, timeout=15, text=True, encoding="utf-8", errors="replace")
         if result.returncode != 0:
             return None
         output = (result.stdout or "").strip()

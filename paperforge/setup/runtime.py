@@ -38,6 +38,8 @@ class RuntimeInstaller:
                 [sys.executable, "-m", "pip", "install", package_spec],
                 capture_output=True,
                 text=True,
+                encoding="utf-8",
+                errors="replace",
                 timeout=120,
             )
             return (result.returncode == 0, result.stdout, result.stderr)
@@ -96,6 +98,8 @@ class RuntimeInstaller:
                 ],
                 capture_output=True,
                 text=True,
+                encoding="utf-8",
+                errors="replace",
                 timeout=10,
             )
             return result.returncode == 0 and bool(result.stdout.strip())
