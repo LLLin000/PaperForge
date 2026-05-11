@@ -321,7 +321,7 @@ def merge_base_views(existing_content: str | None, new_views: list[dict]) -> str
   and:
     - file.inFolder("{new_views[0]["name"]}")
     - file.ext == "md"
-    - zotero_key != ""
+    - !zotero_key.isEmpty()
 {PROPERTIES_YAML}
 views:
 {fresh_views_yaml}"""
@@ -458,7 +458,7 @@ def _build_base_yaml(folder_filter: str, views: list[dict]) -> str:
   and:
     - file.inFolder("{folder_filter}")
     - file.ext == "md"
-    - zotero_key != ""
+    - !zotero_key.isEmpty()
 properties:
   zotero_key:
     displayName: "Zotero Key"
