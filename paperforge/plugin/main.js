@@ -99,7 +99,7 @@ function classifyError(errorCode) {
 
 function buildRuntimeInstallCommand(pythonExe, version, extraArgs) {
     if (extraArgs === undefined) extraArgs = [];
-    const url = `git+https://github.com/LLLin000/PaperForge.git@${version}`;
+    const url = `git+https://github.com/LLLin000/PaperForge.git@v${version}`;
     const args = [...extraArgs, "-m", "pip", "install", "--upgrade", url];
     return { cmd: pythonExe, args, url, timeout: 120000 };
 }
@@ -3082,7 +3082,7 @@ class PaperForgeSetupModal extends Modal {
                 const ver = this.plugin.manifest.version;
                 const pipArgs = ['-m', 'pip', 'install', '--upgrade'];
                 if (process.platform !== 'win32') pipArgs.push('--user');
-                pipArgs.push(`git+https://github.com/LLLin000/PaperForge.git@${ver}`);
+                pipArgs.push(`git+https://github.com/LLLin000/PaperForge.git@v${ver}`);
                 await runPython(pipArgs);
             }
 
@@ -3299,7 +3299,7 @@ module.exports = class PaperForgePlugin extends Plugin {
         const vp = this.app.vault.adapter.basePath;
         const { path: pythonExe, extraArgs = [] } = resolvePythonExecutable(vp, this.settings);
         const ver = this.manifest.version;
-        const url = `git+https://github.com/LLLin000/PaperForge.git@${ver}`;
+        const url = `git+https://github.com/LLLin000/PaperForge.git@v${ver}`;
 
         // Check if installed package version matches plugin version
         const { execFile } = require('node:child_process');

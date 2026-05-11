@@ -51,7 +51,8 @@ class RuntimeInstaller:
         self._log("Installing PaperForge...")
 
         if self.version:
-            package_spec = f"git+https://github.com/LLLin000/PaperForge.git@{self.version}"
+            tag = self.version if self.version.startswith("v") else f"v{self.version}"
+            package_spec = f"git+https://github.com/LLLin000/PaperForge.git@{tag}"
         else:
             package_spec = "git+https://github.com/LLLin000/PaperForge.git"
 
