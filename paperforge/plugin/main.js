@@ -2510,6 +2510,7 @@ class PaperForgeSettingTab extends PluginSettingTab {
             } else {
                 btn.setDisabled(false);
                 btn.setButtonText(t('runtime_health_sync'));
+                console.error('[PaperForge] pip stderr:', result.stderr);
                 new Notice(t('runtime_health_sync_fail').replace('{0}', 'pip exit code ' + result.exitCode), 8000);
             }
         });
