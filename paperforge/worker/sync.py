@@ -246,7 +246,7 @@ def run_selection_sync(vault: Path, verbose: bool = False, json_output: bool = F
                 if validated_error:
                     meta["error"] = validated_error
                     write_json(meta_path, meta)
-            note_path = paths["literature"] / domain / f"{item['key']} - {slugify_filename(item['title'])}.md"
+            note_path = paths["literature"] / domain / f"{item['key']}.md"
             note_text = note_path.read_text(encoding="utf-8") if note_path.exists() else ""
             fulltext_md_path = obsidian_wikilink_for_path(
                 vault, meta.get("fulltext_md_path", "") or meta.get("markdown_path", "")
@@ -1019,6 +1019,7 @@ def frontmatter_note(entry: dict, existing_text: str = "") -> str:
     lines = [
         "---",
         f"title: {yaml_quote(entry.get('title', ''))}",
+        f"aliases: [{yaml_quote(entry.get('title', ''))}]",
         f"year: {entry.get('year', '')}",
         f"journal: {yaml_quote(entry.get('journal', ''))}",
         f"first_author: {yaml_quote(first_author)}",
@@ -1107,9 +1108,10 @@ def migrate_to_workspace(vault: Path, paths: dict) -> int:
             zotero_key = key_match.group(1) if key_match else ""
             if not zotero_key:
                 stem = note_path.stem
-                if " - " not in stem:
-                    continue
-                zotero_key = stem.split(" - ", 1)[0].strip()
+                if " - " in stem:
+                    zotero_key = stem.split(" - ", 1)[0].strip()
+                else:
+                    zotero_key = stem
             if not zotero_key:
                 continue
             flat_notes.append((note_path, domain, zotero_key))
@@ -1135,7 +1137,13 @@ def migrate_to_workspace(vault: Path, paths: dict) -> int:
         else:
             title_slug = stem.strip()
         workspace_dir = paths["literature"] / domain / f"{key} - {title_slug}"
-        main_note_path = workspace_dir / f"{key} - {title_slug}.md"
+        main_note_path = workspace_dir / f"{key}.md"
+
+        # Self-healing: old workspaces have {key} - {title}.md inside, rename to {key}.md
+        if not main_note_path.exists():
+            for old_candidate in workspace_dir.glob(f"{key} - *.md"):
+                old_candidate.rename(main_note_path)
+                break
         legacy_flags = _legacy_control_flags(paths, key)
 
         if workspace_dir.exists():
