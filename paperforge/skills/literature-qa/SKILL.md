@@ -17,13 +17,14 @@ description: >
 跑这个脚本：
 
 ```
-python <skill_dir>/scripts/pf_bootstrap.py
+python $SKILL_DIR/scripts/pf_bootstrap.py
 ```
 
 返回 JSON。记住以下变量：
 
 | 变量        | 来自 JSON 的         | 用于                                    |
 | ----------- | -------------------- | --------------------------------------- |
+| `$SKILL_DIR`  | skill 安装路径（平台注入） | 运行 `scripts/ld_deep.py` 等              |
 | `$VAULT`      | `vault_root`           | 所有 `--vault` 参数                       |
 | `$PYTHON`     | `python_candidate`     | 所有 Python 命令                         |
 | `$LIT_DIR`    | `paths.literature_dir` | 文献笔记根目录                          |

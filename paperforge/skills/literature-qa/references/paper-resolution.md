@@ -34,7 +34,7 @@ $PYTHON -m paperforge.worker.paper_resolver resolve-key <KEY> --vault "$VAULT"
 ### 类型 2: DOI（以 `10.` 开头，可能带 URL 前缀）
 
 ```
-python -m paperforge.worker.paper_resolver resolve-doi "<DOI>" --vault .
+$PYTHON -m paperforge.worker.paper_resolver resolve-doi "<DOI>" --vault "$VAULT"
 ```
 
 返回格式同类型 1。
@@ -42,7 +42,7 @@ python -m paperforge.worker.paper_resolver resolve-doi "<DOI>" --vault .
 ### 类型 3: 标题片段
 
 ```
-python -m paperforge.worker.paper_resolver search --title "..." --vault .
+$PYTHON -m paperforge.worker.paper_resolver search --title "..." --vault "$VAULT"
 ```
 
 返回 `{"matches": [...], "count": N}`。
@@ -50,13 +50,13 @@ python -m paperforge.worker.paper_resolver search --title "..." --vault .
 ### 类型 4: 作者 + 年份
 
 ```
-python -m paperforge.worker.paper_resolver search --author "Smith" --year 2024 --vault .
+$PYTHON -m paperforge.worker.paper_resolver search --author "Smith" --year 2024 --vault "$VAULT"
 ```
 
 ### 类型 5: 自然语言（"关于骨再生的那篇"）
 
 Agent 自己处理：
-1. 跑 `paths` 获取 `index_path`
+1. 读 `$IDX_PATH`（已由 pf_bootstrap 提供）
 2. 读 `index_path` 指向的 `formal-library.json`
 3. 在 `title`、`domain`、`journal`、`abstract` 中搜匹配
 4. 搜不到就 grep formal notes 目录（`paths` 里的 `literature_dir`）下的 frontmatter
