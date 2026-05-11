@@ -34,9 +34,12 @@ def _find_workspace_note(test_vault: Path, key: str = "TSTONE001") -> Path | Non
         for ws_dir in sorted(domain_dir.iterdir()):
             if not ws_dir.is_dir() or not ws_dir.name.startswith(f"{key} - "):
                 continue
-            notes = list(ws_dir.glob(f"{key} - *.md"))
+            notes = list(ws_dir.glob("*.md"))
             if notes:
-                return notes[0]
+                # Filter out non-note files like fulltext.md, deep-reading.md
+                real_notes = [n for n in notes if n.stem == key or n.stem.startswith(f"{key} - ")]
+                if real_notes:
+                    return real_notes[0]
     return None
 
 
@@ -161,8 +164,8 @@ class TestIndexRefreshProducesFormalNotes:
         run_index_refresh(test_vault)
         note_path = _find_workspace_note(test_vault)
         assert note_path is not None
-        # Filename should start with key + " - " + slug
-        assert note_path.name.startswith("TSTONE001 - ")
+        # Filename should be just {key}.md
+        assert note_path.stem == "TSTONE001"
 
 
 class TestOcrQueueStates:

@@ -51,7 +51,7 @@ class TestCliSync:
         _run(["sync"], test_vault)
 
         lit_dir = test_vault / "03_Resources" / "Literature"
-        ws_notes = list(lit_dir.rglob("TSTONE001 - *.md"))
+        ws_notes = list(lit_dir.rglob("TSTONE001.md"))
         assert len(ws_notes) > 0, "no workspace note found after sync"
 
         text = ws_notes[0].read_text(encoding="utf-8")
@@ -138,7 +138,7 @@ class TestCliFullPipeline:
 
         # Verify frontmatter file is readable
         lit_dir = test_vault / "03_Resources" / "Literature"
-        ws_notes = list(lit_dir.rglob("TSTONE001 - *.md"))
+        ws_notes = list(lit_dir.rglob("TSTONE001.md"))
         assert len(ws_notes) > 0
         text = ws_notes[0].read_text(encoding="utf-8")
         assert "has_pdf: true" in text
