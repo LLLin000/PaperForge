@@ -2,6 +2,8 @@
 
 本文件定义如何将用户输入解析为论文 workspace。所有子流程公用。
 
+**所有 Python 命令用 `$PYTHON`（来自 pf_bootstrap），vault 路径用 `$VAULT`。**
+
 ## 核心原则
 
 1. **Python 做确定性查找。** key、DOI、标题片段、作者+年份。
@@ -14,10 +16,10 @@
 
 | 操作 | 命令 |
 |------|------|
-| 获取 vault 路径 | `python -m paperforge.worker.paper_resolver paths --vault .` |
-| 按 key 查 | `python -m paperforge.worker.paper_resolver resolve-key <KEY> --vault .` |
-| 按 DOI 查 | `python -m paperforge.worker.paper_resolver resolve-doi "<DOI>" --vault .` |
-| 按字段搜 | `python -m paperforge.worker.paper_resolver search --title "..." --author "..." --year ... --domain "..." --vault .` |
+| 获取 vault 路径 | 已由 pf_bootstrap 完成 |
+| 按 key 查 | `$PYTHON -m paperforge.worker.paper_resolver resolve-key <KEY> --vault "$VAULT"` |
+| 按 DOI 查 | `$PYTHON -m paperforge.worker.paper_resolver resolve-doi "<DOI>" --vault "$VAULT"` |
+| 按字段搜 | `$PYTHON -m paperforge.worker.paper_resolver search --title "..." --author "..." --year ... --domain "..." --vault "$VAULT"` |
 
 ---
 
@@ -26,7 +28,7 @@
 ### 类型 1: Zotero Key（8位字母数字组合）
 
 ```
-python -m paperforge.worker.paper_resolver resolve-key <KEY> --vault .
+$PYTHON -m paperforge.worker.paper_resolver resolve-key <KEY> --vault "$VAULT"
 ```
 
 返回 JSON 含 `key`, `title`, `domain`, `formal_note_path`, `ocr_path`, `fulltext_path`, `ocr_status` 等。所有路径由 `paperforge.json` 配置决定。

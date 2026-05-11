@@ -2,6 +2,8 @@
 
 交互式论文 Q&A 工作台。不强制要求 OCR，但 OCR 完成后回答更准确。
 
+**所有 Python 命令用 `$PYTHON`（来自 pf_bootstrap 的 `python_candidate`），vault 路径用 `$VAULT`。**
+
 ---
 
 ## 前置条件
