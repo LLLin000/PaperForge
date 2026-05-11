@@ -145,7 +145,7 @@ const ACTIONS = [
         desc: "Extract full text and figures from PDFs via PaddleOCR",
         icon: "\u229E",
         cmd: "ocr",
-        okMsg: "OCR started",
+        okMsg: "OCR complete",
     },
     {
         id: "paperforge-doctor",
@@ -2008,15 +2008,15 @@ class PaperForgeStatusView extends ItemView {
             const lines = data.toString('utf-8').split('\n').filter(Boolean);
             for (const l of lines) {
                 const clean = l.trim();
-                if (clean) { log.push(clean); this._showMessage(log.slice(-8).join('\n'), 'running'); }
+                if (clean) { log.push(clean); this._showMessage(log.slice(-8).join('\n'), 'running'); new Notice(clean, 5000); }
             }
         });
         child.stderr.on('data', (data) => {
             const lines = data.toString('utf-8').split('\n').filter(Boolean);
             for (const l of lines) {
-                if (l.includes('\r') || l.includes('%') || l.includes('█')) continue;
+                if (l.includes('\r') || l.includes('%') || l.includes('\u2588')) continue;
                 const trim = l.trim();
-                if (trim && !trim.match(/^\d+%|^\|/)) { log.push(trim); this._showMessage(log.slice(-8).join('\n'), 'running'); }
+                if (trim && !trim.match(/^\d+%|^\|/)) { log.push(trim); this._showMessage(log.slice(-8).join('\n'), 'running'); new Notice(trim, 5000); }
             }
         });
         child.on('close', (code) => {
@@ -2025,9 +2025,9 @@ class PaperForgeStatusView extends ItemView {
             const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
             if (code !== 0) {
                 const last = log.slice(-3).join(' | ') || 'exit code ' + code;
-                if (a.cmd === 'repair' && code === 1) {
+                if ((a.cmd === 'repair' || a.cmd === 'ocr') && code === 1) {
                     this._showMessage('[WARN] ' + last, 'running');
-                    new Notice('[WARN] Repair completed with remaining issues: ' + last, 8000);
+                    new Notice('[WARN] ' + a.cmd + ' partial: ' + last, 8000);
                     this._fetchStats(true);
                 } else {
                     this._showMessage('[!!] ' + last, 'error');

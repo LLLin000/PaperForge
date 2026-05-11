@@ -1746,6 +1746,9 @@ def run_ocr(vault: Path, verbose: bool = False, no_progress: bool = False) -> in
 
     poll_interval = int(os.environ.get("PAPERFORGE_POLL_INTERVAL", "15"))
     max_poll_cycles = int(os.environ.get("PAPERFORGE_POLL_MAX_CYCLES", "60"))
+    _completed_count = 0
+    _failed_count = 0
+    _token_warned = False
     for _cycle in range(max_poll_cycles):
         remaining = [r for r in ocr_queue if r.get("queue_status", "") not in ("done", "nopdf", "blocked")]
         if not remaining:
@@ -1773,12 +1776,16 @@ def run_ocr(vault: Path, verbose: bool = False, no_progress: bool = False) -> in
                     queue_row["queue_status"] = "nopdf"
                     write_json(paths["ocr"] / key / "meta.json", meta)
                     changed += 1
+                    print(f"OCR: {key} skipped (PDF not found)", flush=True)
                     continue
                 if not token:
                     meta["ocr_status"] = "blocked"
                     queue_row["queue_status"] = "blocked"
                     write_json(paths["ocr"] / key / "meta.json", meta)
                     changed += 1
+                    if not _token_warned:
+                        print("OCR: no API token configured — set PADDLEOCR_API_TOKEN in .env", flush=True)
+                        _token_warned = True
                     continue
                 upload_pdf = resolved_pdf
                 if meta.get("needs_sanitize"):
@@ -1800,6 +1807,7 @@ def run_ocr(vault: Path, verbose: bool = False, no_progress: bool = False) -> in
                     write_json(paths["ocr"] / key / "meta.json", meta)
                     changed += 1
                     continue
+                print(f"OCR: {key} uploading to PaddleOCR...", flush=True)
                 try:
                     response = retry_with_meta(_do_upload, paths["ocr"] / key / "meta.json", token, upload_pdf)
                     meta["ocr_job_id"] = response.json()["data"]["jobId"]
@@ -1817,6 +1825,7 @@ def run_ocr(vault: Path, verbose: bool = False, no_progress: bool = False) -> in
                             queue_row["queue_status"] = "blocked"
                             write_json(paths["ocr"] / key / "meta.json", meta)
                             changed += 1
+                            print(f"OCR: {key} blocked (invalid API token)", flush=True)
                             continue
                     if isinstance(e, FileNotFoundError):
                         meta["ocr_status"] = "nopdf"
@@ -1833,6 +1842,7 @@ def run_ocr(vault: Path, verbose: bool = False, no_progress: bool = False) -> in
                     queue_row["queue_status"] = "pending"
                     write_json(paths["ocr"] / key / "meta.json", meta)
                     changed += 1
+                    print(f"OCR: {key} upload failed (retry {retry_count}/3): {e}", flush=True)
                     continue
                 meta["ocr_status"] = "queued"
                 meta["ocr_started_at"] = datetime.now(timezone.utc).isoformat()
@@ -1841,6 +1851,7 @@ def run_ocr(vault: Path, verbose: bool = False, no_progress: bool = False) -> in
                 write_json(paths["ocr"] / key / "meta.json", meta)
                 changed += 1
                 active_submitted += 1
+                print(f"OCR: {key} queued (job {meta['ocr_job_id']})", flush=True)
             if _sanitized_temp is not None and _sanitized_temp.exists():
                 _sanitized_temp.unlink(missing_ok=True)
         poll_items = [r for r in remaining if r.get("queue_status") in ("queued", "running")]
@@ -1870,6 +1881,7 @@ def run_ocr(vault: Path, verbose: bool = False, no_progress: bool = False) -> in
                         write_json(paths["ocr"] / key / "meta.json", meta)
                         changed += 1
                         active_submitted = max(0, active_submitted - 1)
+                        print(f"OCR: {key} result expired, will retry", flush=True)
                         continue
                     result_response.raise_for_status()
                     lines = [l.strip() for l in result_response.text.splitlines() if l.strip()]
@@ -1887,10 +1899,14 @@ def run_ocr(vault: Path, verbose: bool = False, no_progress: bool = False) -> in
                 queue_row["queue_status"] = "done"
                 queue_changed = True
                 active_submitted = max(0, active_submitted - 1)
+                _completed_count += 1
+                print(f"OCR: {key} completed ({page_num} pages)", flush=True)
             elif state in ("error", "failed"):
                 meta["error"] = payload.get("errorMsg", "Unknown OCR failure")
                 meta["ocr_status"] = "queued"
                 queue_row["queue_status"] = "queued"
+                _failed_count += 1
+                print(f"OCR: {key} failed: {meta['error']}", flush=True)
             else:
                 meta["ocr_status"] = state
                 queue_row["queue_status"] = state
@@ -1905,22 +1921,38 @@ def run_ocr(vault: Path, verbose: bool = False, no_progress: bool = False) -> in
     if queue_changed:
         ocr_queue = [row for row in ocr_queue if str(row.get("queue_status", "")).lower() != "done"]
     write_ocr_queue(paths, ocr_queue)
+    # Determine exit code: 0 = all settled, 1 = some items still pending
+    final_remaining = [r for r in ocr_queue if r.get("queue_status", "") not in ("done", "nopdf", "blocked", "error")]
+    pending_keys = [r["zotero_key"] for r in final_remaining]
+    final_statuses = {r["zotero_key"]: r.get("queue_status", "?") for r in ocr_queue}
+    done_count = sum(1 for s in final_statuses.values() if s == "done")
+    failed_count = sum(1 for s in final_statuses.values() if s in ("error", "blocked"))
+    pending_count = len(final_remaining)
+
+    summary_parts = []
+    if done_count:
+        summary_parts.append(f"done={done_count}")
+    if failed_count:
+        summary_parts.append(f"failed={failed_count}")
+    if pending_count:
+        summary_parts.append(f"pending={pending_count} ({', '.join(pending_keys)})")
+    print(f"OCR: {' '.join(summary_parts) if summary_parts else 'no items processed'}", flush=True)
+    if pending_keys:
+        print("OCR: re-run to continue polling incomplete items", flush=True)
+
     try:
         _sync.run_selection_sync(vault)
         if _done_ocr_keys:
-            # Incremental refresh per completed OCR key
             done_keys = [k for k in _done_ocr_keys if k]
             for ocr_key in done_keys:
                 refresh_index_entry(vault, ocr_key)
             if verbose:
                 print(f"ocr: refreshed {len(done_keys)} index entries incrementally")
         else:
-            # No OCR completed this run — full rebuild for safety (sync may have changed records)
             _sync.run_index_refresh(vault)
     except ImportError:
-        # Fallback: if asset_index module not available (pre-migration), use full rebuild
         _sync.run_index_refresh(vault)
     except Exception as e:
         logger.error("Post-OCR index refresh failed: %s", e)
     print(f"ocr: updated {changed} records")
-    return 0
+    return 1 if pending_keys else 0
