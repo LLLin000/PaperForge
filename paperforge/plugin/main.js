@@ -171,12 +171,14 @@ function buildCommandArgs(action, key, filter) {
     return args;
 }
 
-function runSubprocess(pythonExe, args, cwd, timeout, _spawn) {
+function runSubprocess(pythonExe, args, cwd, timeout, _spawn, env) {
     const sp = _spawn || spawn;
 
     return new Promise((resolve) => {
         const startTime = Date.now();
-        const child = sp(pythonExe, args, { cwd, timeout, windowsHide: true });
+        const opts = { cwd, timeout, windowsHide: true };
+        if (env) opts.env = env;
+        const child = sp(pythonExe, args, opts);
         const stdoutChunks = [];
         const stderrChunks = [];
 
@@ -2501,7 +2503,7 @@ class PaperForgeSettingTab extends PluginSettingTab {
         btn.setDisabled(true);
         btn.setButtonText(t('runtime_health_syncing'));
 
-        runSubprocess(installCmd.cmd, installCmd.args, vp, installCmd.timeout).then((result) => {
+        runSubprocess(installCmd.cmd, installCmd.args, vp, installCmd.timeout, undefined, paperforgeEnrichedEnv()).then((result) => {
             if (result.exitCode === 0) {
                 new Notice(t('runtime_health_sync_done').replace('{0}', ver), 5000);
                 this.display();

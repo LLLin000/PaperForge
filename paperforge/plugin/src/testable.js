@@ -177,12 +177,14 @@ function buildCommandArgs(action, key, filter) {
     return args;
 }
 
-function runSubprocess(pythonExe, args, cwd, timeout, _spawn) {
+function runSubprocess(pythonExe, args, cwd, timeout, _spawn, env) {
     const sp = _spawn || spawn;
 
     return new Promise((resolve) => {
         const startTime = Date.now();
-        const child = sp(pythonExe, args, { cwd, timeout, windowsHide: true });
+        const opts = { cwd, timeout, windowsHide: true };
+        if (env) opts.env = env;
+        const child = sp(pythonExe, args, opts);
         const stdoutChunks = [];
         const stderrChunks = [];
 
