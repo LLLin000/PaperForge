@@ -2,6 +2,8 @@
 
 轻量流程：用户想**在库里找文献**（不涉及精读或问答）。
 
+**所有 Python 命令用 `$PYTHON`（来自 pf_bootstrap 的 `python_candidate`），vault 路径用 `$VAULT`。**
+
 ---
 
 ## Stage 状态机
@@ -35,11 +37,7 @@
 
 ### Step 1: 获取路径
 
-```
-python -m paperforge.worker.paper_resolver paths --vault .
-```
-
-得到 `index_path` 和 `literature_dir`。
+已经由 pf_bootstrap 完成。直接用 `paths` JSON 里的 `index_path` 和 `literature_dir`。
 
 ### Step 2: 解析用户意图
 
@@ -53,7 +51,7 @@ python -m paperforge.worker.paper_resolver paths --vault .
 **优先：Python paper_resolver**（确定性匹配）
 
 ```
-python -m paperforge.worker.paper_resolver search --title "关键词" --author "Smith" --year 2024 --domain "骨科" --vault .
+$PYTHON -m paperforge.worker.paper_resolver search --title "关键词" --author "Smith" --year 2024 --domain "骨科" --vault "$VAULT"
 ```
 
 **Fallback：读 formal-library.json**

@@ -2,6 +2,8 @@
 
 将 paper-qa 会话中的 Q&A 记录持久化到论文工作区。
 
+**所有 Python 命令用 `$PYTHON`（来自 pf_bootstrap 的 `python_candidate`），vault 路径用 `$VAULT`。**
+
 ---
 
 ## 触发条件
@@ -34,8 +36,8 @@
 ### Step 2: 调用 discussion 模块
 
 ```bash
-python -m paperforge.worker.discussion record <ZOTERO_KEY> \
-    --vault . \
+$PYTHON -m paperforge.worker.discussion record <ZOTERO_KEY> \
+    --vault "$VAULT" \
     --agent pf-paper \
     --model "<CURRENT_MODEL>" \
     --qa-pairs '<JSON_ARRAY>'
