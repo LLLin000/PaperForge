@@ -118,7 +118,7 @@ def create_test_vault() -> Path:
     note_path = (
         literature_dir
         / "骨科"
-        / "TSTONE001 - Biomechanical Comparison of Suture Anchor Fixations in Rotator Cuff Repair.md"
+        / "TSTONE001.md"
     )
     note_path.parent.mkdir(parents=True, exist_ok=True)
     note_path.write_text(

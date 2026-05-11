@@ -61,7 +61,7 @@ class TestPrepareRollback:
             / "03_Resources"
             / "Literature"
             / "骨科"
-            / "TSTONE001 - Biomechanical Comparison of Suture Anchor Fixations in Rotator Cuff Repair.md"
+            / "TSTONE001.md"
         )
 
         # Remove pre-existing fixture files to test clean rollback
@@ -95,7 +95,7 @@ class TestPrepareRollback:
             / "03_Resources"
             / "Literature"
             / "骨科"
-            / "TSTONE001 - Biomechanical Comparison of Suture Anchor Fixations in Rotator Cuff Repair.md"
+            / "TSTONE001.md"
         )
 
         # Remove pre-existing fixture files to test clean rollback
@@ -129,7 +129,7 @@ class TestPrepareRollback:
             / "03_Resources"
             / "Literature"
             / "骨科"
-            / "TSTONE001 - Biomechanical Comparison of Suture Anchor Fixations in Rotator Cuff Repair.md"
+            / "TSTONE001.md"
         )
 
         original_note_text = formal_note.read_text(encoding="utf-8")
