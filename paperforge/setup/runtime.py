@@ -52,11 +52,16 @@ class RuntimeInstaller:
 
         if self.version:
             tag = self.version if self.version.startswith("v") else f"v{self.version}"
-            package_spec = f"git+https://github.com/LLLin000/PaperForge.git@{tag}"
+            pypi_spec = f"paperforge=={self.version}"
+            git_spec = f"git+https://github.com/LLLin000/PaperForge.git@{tag}"
         else:
-            package_spec = "git+https://github.com/LLLin000/PaperForge.git"
+            pypi_spec = "paperforge"
+            git_spec = "git+https://github.com/LLLin000/PaperForge.git"
 
-        ok, stdout, stderr = self._pip_install(package_spec)
+        ok, stdout, stderr = self._pip_install(pypi_spec)
+        if not ok:
+            self._log(f"PyPI install failed, falling back to git... ({stderr[:200]})")
+            ok, stdout, stderr = self._pip_install(git_spec)
 
         if ok:
             return SetupStepResult(
