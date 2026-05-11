@@ -200,12 +200,33 @@ function runSubprocess(pythonExe, args, cwd, timeout, _spawn) {
 
 // ── Cross-platform Python and BBT detection (macOS/Linux) ──
 
+let _gitDir = null;
+let _gitDirResolved = false;
+
+function resolveGitDir() {
+    if (_gitDirResolved) return _gitDir;
+    _gitDirResolved = true;
+    if (process.platform !== 'win32') return _gitDir;
+    try {
+        const cmdExe = process.env.ComSpec || 'C:\\Windows\\System32\\cmd.exe';
+        const out = require('node:child_process').execFileSync(cmdExe, ['/c', 'where', 'git'], { timeout: 5000, windowsHide: true, encoding: 'utf-8' });
+        if (out) {
+            const line = out.split('\n')[0].trim();
+            if (line) _gitDir = path.dirname(line);
+        }
+    } catch (_) {}
+    return _gitDir;
+}
+
 function paperforgeEnrichedEnv() {
     const env = { ...process.env };
     const plat = process.platform;
     const home = os.homedir();
     const extras = [];
-    if (plat === 'darwin') {
+    if (plat === 'win32') {
+        const gitDir = resolveGitDir();
+        if (gitDir) extras.push(gitDir);
+    } else if (plat === 'darwin') {
         extras.push('/opt/homebrew/bin', '/usr/local/bin', '/usr/bin', `${home}/.local/bin`);
     } else if (plat === 'linux') {
         extras.push('/usr/local/bin', '/usr/bin', `${home}/.local/bin`);
@@ -3280,7 +3301,7 @@ module.exports = class PaperForgePlugin extends Plugin {
             if (err) {
                 // Not installed — install now
                 const spawn = require('node:child_process').spawn;
-                const child = spawn(pythonExe, [...extraArgs, '-m', 'pip', 'install', '--upgrade', url], { cwd: vp, timeout: 120000 });
+                const child = spawn(pythonExe, [...extraArgs, '-m', 'pip', 'install', '--upgrade', url], { cwd: vp, timeout: 120000, env: paperforgeEnrichedEnv() });
                 child.on('close', (code) => {
                     if (code === 0) new Notice('[OK] PaperForge CLI installed', 5000);
                 });
@@ -3290,7 +3311,7 @@ module.exports = class PaperForgePlugin extends Plugin {
             if (pyVer !== ver) {
                 // Mismatch — upgrade
                 const spawn = require('node:child_process').spawn;
-                const child = spawn(pythonExe, [...extraArgs, '-m', 'pip', 'install', '--upgrade', url], { cwd: vp, timeout: 120000 });
+                const child = spawn(pythonExe, [...extraArgs, '-m', 'pip', 'install', '--upgrade', url], { cwd: vp, timeout: 120000, env: paperforgeEnrichedEnv() });
                 child.on('close', (code) => {
                     if (code === 0) new Notice(`[OK] PaperForge ${pyVer} -> ${ver}`, 5000);
                 });
