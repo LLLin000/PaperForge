@@ -14,6 +14,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - **Plugin py launcher ENOENT**: 移除 Windows 下 `py` launcher 的自动检测（`execSync` 能找到但 `spawn` 找不到），改用 `python`
 - **Base filter 语法**: `base_views.py` 中 `file.ext = "md"` 修正为 `file.ext == "md"`
+- **Base 视图污染**: fulltext.md、discussion.md 等非正式笔记不再进入 Base，改为 `zotero_key != ""` 过滤
+- **安装向导 git 找不到**: Electron PATH 截断导致 pip 内部 `git clone` 失败 — 启动前通过 `ComSpec /c where git`（Win）/ `which git`（Mac/Linux）找到 git 目录注入 PATH
+- **同步运行时 git tag 错误**: 所有 `git+https://...@version` 修正为 `@v{version}`，匹配 GitHub release tag 格式
+- **更新失败无 fallback**: `paperforge update` 在 pip/git 安装失败时自动切换 zip 下载兜底
+- **CI 工作流暂移除**: 三个 workflow 删除，等后续重写
 
 ## [1.5.0] — 2026-05-11
 
