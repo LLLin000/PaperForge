@@ -60,14 +60,11 @@ The plugin is the **interface**. The Python package is the **engine**. Every but
 After enabling the plugin, open the PaperForge settings tab. You'll see a **Runtime Status** section:
 
 ```
-Plugin v1.4.17 → Python Package v1.4.17 ✓ Matched
+Plugin v1.5.0 → Python Package v1.5.0 ✓ Matched
 ```
 
-- If it says "Not installed" → click **Sync Runtime**, or run manually:
-  ```bash
-  pip install --upgrade git+https://github.com/LLLin000/PaperForge.git@1.4.17
-  ```
-- If it says "Mismatch" → the versions are out of sync. Click "Sync Runtime" to pull the matching package version.
+- If it says "Not installed" → click **Open Wizard** to re-run the setup process
+- If it says "Mismatch" → the Python package auto-updates when the plugin updates. If it didn't succeed, click **Update Runtime** to manually trigger
 
 ---
 
@@ -165,26 +162,37 @@ The process is **incremental** — if files already exist in the chosen director
 
 ## 6. Daily Use
 
-All mechanical operations from the Dashboard:
+### Dashboard (Three-Mode Views)
 
-| What you want | How |
-|---------------|-----|
-| Open dashboard | `Ctrl+P` → `PaperForge: Open Dashboard` |
-| Sync library | Dashboard → `Sync Library` |
-| Run OCR | Dashboard → `Run OCR` |
-| Check health | Dashboard → `Run Doctor` |
+`Ctrl+P` → `PaperForge: Open Dashboard` opens the control panel with three views:
 
-### AI Deep Reading (Requires Agent)
+| View | Purpose |
+|------|---------|
+| **Global** | System homepage: run Sync, OCR, Doctor, and other mechanical operations |
+| **Collection** | Batch workspace: browse paper queues by domain, batch tagging |
+| **Per-paper** | Reading companion: `do_ocr` / `analyze` toggle checkboxes, discussion record cards |
 
-| Command | Does | Prerequisites |
-|---------|------|--------------|
-| `/pf-deep <zotero_key>` | Full three-pass deep reading | OCR done, analyze set to true |
-| `/pf-paper <zotero_key>` | Literature Q&A | Formal note exists |
-| `/pf-sync` | Agent syncs Zotero for you | Installed |
-| `/pf-ocr` | Agent runs OCR for you | Installed |
-| `/pf-status` | Agent checks system status | Installed |
+> PDF files in the Dashboard automatically switch to Per-paper mode — no manual switching needed.
 
-> **How to use**: Launch your chosen Agent app (OpenCode / Claude Code / Cursor / ...), then type these commands into its chat input. Prefixes vary by platform (mostly `/`, Codex uses `$`).
+### AI Deep Reading & Q&A (Requires Agent)
+
+Launch your Agent app and type commands into its chat input. **The more specific you are about the paper (Zotero Key, title, DOI), the faster the Agent locates it.**
+
+| Route | Command | Does | Trigger examples | Prerequisites |
+|-------|---------|------|-----------------|--------------|
+| Deep Read | `/pf-deep <key>` | Keshav three-pass deep reading, writes to formal note | `deep read XX`, `walk me through`, `journal club` | OCR done, analyze: true |
+| Q&A | `/pf-paper <key>` | Interactive paper Q&A, OCR not required | `take a look at XX`, `what does this paper say` | Formal note exists |
+| Archive | `/pf-end` | Save current `/pf-paper` Q&A session | `save`, `end discussion` | During `/pf-paper` session |
+
+### `/pf-end` Details
+
+- `/pf-end` only applies to `/pf-paper` Q&A sessions. Deep reading (`/pf-deep`) writes directly to the formal note and does not need `/pf-end`.
+- When executed, two files are created in the paper's workspace:
+  - `discussion.md` — human-readable Q&A discussion record
+  - `discussion.json` — structured Q&A data (with timestamps, source tags)
+- Dashboard **Per-paper** view automatically displays these as discussion record cards
+
+> Command prefixes vary by platform (mostly `/`, Codex uses `$`).
 
 ---
 
@@ -204,6 +212,12 @@ Set analyze: true in the note's frontmatter
 Open Agent → type /pf-deep <zotero_key>
   ↓ Agent performs three-pass deep reading
 ## 🔍 Deep Reading section appears in the note
+  ↓ (for additional Q&A)
+Open Agent → type /pf-paper <zotero_key>
+  ↓ Interactive Q&A
+Type /pf-end to save the discussion record
+  ↓
+Dashboard Per-paper view shows discussion cards
 ```
 
 ---
