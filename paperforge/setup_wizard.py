@@ -11,21 +11,17 @@ Usage:
 
 from __future__ import annotations
 
-import argparse
 import json
 import os
 import platform
 import shutil
 import subprocess
 import sys
-import webbrowser
 from pathlib import Path
 
 from paperforge import __version__
 
 # Backward-compat imports (v2.1 modular setup)
-from paperforge.setup.checker import SetupChecker
-from paperforge.setup.config_writer import ConfigWriter
 
 if sys.platform == "win32":
     import winreg
@@ -470,9 +466,10 @@ def headless_setup(
         wizard_dir = Path(__file__).parent.resolve()
         if wizard_dir / "paperforge" if wizard_dir.name != "paperforge" else False:
             _repo = wizard_dir
-        elif (wizard_dir.parent / "paperforge").exists():
-            _repo = wizard_dir.parent
-        elif wizard_dir.name == "paperforge" and (wizard_dir / "__init__.py").exists():
+        elif (
+            (wizard_dir.parent / "paperforge").exists()
+            or (wizard_dir.name == "paperforge" and (wizard_dir / "__init__.py").exists())
+        ):
             _repo = wizard_dir.parent
         else:
             _repo = wizard_dir.parent
@@ -489,7 +486,7 @@ def headless_setup(
         return 1
     agent_name = AGENT_NAMES.get(agent_key, agent_key)
 
-    print(f"[*] PaperForge headless setup")
+    print("[*] PaperForge headless setup")
     print(f"    Vault:    {vault}")
     print(f"    Agent:    {agent_name}")
     print(f"    System:   {system_dir}")
@@ -513,7 +510,7 @@ def headless_setup(
         deps = checker.check_dependencies()
         if not deps.passed:
             print(f"[FAIL] {deps.detail}", file=sys.stderr)
-            print(f"[FIX] pip install requests pymupdf pillow", file=sys.stderr)
+            print("[FIX] pip install requests pymupdf pillow", file=sys.stderr)
             return 3
         print(f"    [OK] {deps.detail}")
 
@@ -554,11 +551,11 @@ def headless_setup(
                         print(f"    [WARN] Zotero junction failed: {result.stderr.strip()}")
                         print(f"    手动创建: mklink /J {zotero_link_path} {zotero_data}")
                     else:
-                        print(f"    [OK] Zotero junction created")
+                        print("    [OK] Zotero junction created")
                         print(f"        {zotero_data} -> {zotero_link_path}")
                 else:
                     zotero_link_path.symlink_to(zotero_data, target_is_directory=True)
-                    print(f"    [OK] Zotero symlink created")
+                    print("    [OK] Zotero symlink created")
             except Exception as e:
                 print(f"    [WARN] Zotero junction failed: {e}")
 
@@ -581,15 +578,15 @@ def headless_setup(
         if zot.passed:
             print(f"    [OK] Zotero: {zot.detail}")
         else:
-            print(f"    [WARN] Zotero not found — install from https://zotero.org")
+            print("    [WARN] Zotero not found — install from https://zotero.org")
             print(f"    {zot.detail}")
 
         bbt = checker.check_bbt(manual_zotero_path)
         if bbt.passed:
             print(f"    [OK] Better BibTeX: {bbt.detail}")
         else:
-            print(f"    [WARN] Better BibTeX not found")
-            print(f"    Install from: https://retorque.re/zotero-better-bibtex/")
+            print("    [WARN] Better BibTeX not found")
+            print("    Install from: https://retorque.re/zotero-better-bibtex/")
 
         # JSON export check — only after exports/ dir exists
         json_check = checker.check_json()
@@ -597,24 +594,20 @@ def headless_setup(
             print(f"    [OK] JSON exports: {json_check.detail}")
         else:
             print(f"    [WARN] {json_check.detail}")
-            zotero_data_hint = zotero_data or "<你的Zotero数据目录>"
             if sys.platform == "win32":
-                print(f"    首次安装需要配置 BBT 自动导出：")
-                print(f"    1. 在 Zotero 中右键要同步的文献库或分类 → 导出")
-                print(f"    2. 格式选择 Better BibTeX JSON")
+                print("    首次安装需要配置 BBT 自动导出：")
+                print("    1. 在 Zotero 中右键要同步的文献库或分类 → 导出")
+                print("    2. 格式选择 Better BibTeX JSON")
                 print(f"    3. 保存到 vault 的 {system_dir}/PaperForge/exports/")
-                print(f'    4. 勾选 "保持更新"')
+                print('    4. 勾选 "保持更新"')
             else:
                 print(f"    Configure BBT auto-export to: {system_dir}/PaperForge/exports/")
-            print(f"    完成后运行: paperforge sync")
+            print("    完成后运行: paperforge sync")
 
     # Zotero data directory detection
     if zotero_data is None and not skip_checks:
         detected = checker._find_zotero()
         if detected:
-            # _find_zotero returns the .exe path; we need the data directory
-            zotero_home = detected.parent.parent if detected.parent.name == "Zotero" else detected.parent
-            data_candidate = Path(str(zotero_home)).parent if "Zotero" in str(zotero_home) else zotero_home
             # Common Zotero data dir: ~/Zotero on all platforms
             home_zotero = Path.home() / "Zotero"
             if home_zotero.exists() and (home_zotero / "zotero.sqlite").exists():
@@ -625,7 +618,6 @@ def headless_setup(
     # Phase 4: Deploy files
     # =========================================================================
     print("[*] Phase 4: Deploying files...")
-    import shutil
 
     # Worker scripts
     worker_src = repo_root / "paperforge/worker/sync.py"
@@ -650,7 +642,7 @@ def headless_setup(
         mod_src = repo_root / "paperforge/worker" / mod
         if mod_src.exists():
             _copy_file_incremental(mod_src, pf_path / "worker/scripts" / mod)
-    print(f"    [OK] worker scripts")
+    print("    [OK] worker scripts")
 
     # Deploy skills via shared service (single source of truth)
     from paperforge.services.skill_deploy import deploy_skills as _deploy_skills_service
@@ -661,15 +653,15 @@ def headless_setup(
         overwrite=False,
     )
     if skill_result["skill_deployed"]:
-        print(f"    [OK] literature-qa skill deployed")
+        print("    [OK] literature-qa skill deployed")
     for err in skill_result.get("errors", []):
         print(f"    [WARN] {err}")
 
     # AGENTS.md
     if skill_result["agents_md"]:
-        print(f"    [OK] AGENTS.md")
+        print("    [OK] AGENTS.md")
     else:
-        print(f"    [WARN] AGENTS.md source not found; skipping")
+        print("    [WARN] AGENTS.md source not found; skipping")
 
     # Create agent config file if defined (e.g., Claude skills.json)
     # Only a few platforms need stub configs; most auto-discover skills via directory
@@ -742,7 +734,7 @@ def headless_setup(
             json.dumps({"domains": export_domains}, indent=2, ensure_ascii=False),
             encoding="utf-8",
         )
-    print(f"    [OK] domain-collections.json")
+    print("    [OK] domain-collections.json")
 
     # paperforge.json -- canonical format: path keys only in vault_config block
     pf_json = vault / "paperforge.json"
@@ -764,7 +756,7 @@ def headless_setup(
         "vault_config": built_vault_config,
     }
     pf_json.write_text(json.dumps(config, indent=2, ensure_ascii=False), encoding="utf-8")
-    print(f"    [OK] paperforge.json")
+    print("    [OK] paperforge.json")
 
     # Phase 6: pip install — always upgrade
     print("[*] Phase 6: Installing/upgrading paperforge CLI...")
