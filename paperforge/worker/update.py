@@ -298,6 +298,9 @@ def run_update(vault: Path) -> int:
     if method == "pip":
         logger.info("通过 pip 更新...")
         success = _update_via_pip(editable=False)
+        if not success:
+            logger.warning("pip 更新失败（可能需要 git），尝试 zip 下载...")
+            success = _update_via_zip(vault)
     elif method == "pip-editable":
         logger.info("通过 pip editable 模式更新...")
         # For editable install, need to git pull first then reinstall
@@ -307,11 +310,20 @@ def run_update(vault: Path) -> int:
                 logger.info("重新安装 editable 模式...")
                 os.chdir(path)
                 success = _update_via_pip(editable=True)
+            if not success:
+                logger.warning("editable 更新失败，尝试 zip 下载...")
+                success = _update_via_zip(vault)
         else:
             logger.warning("无法找到 git 仓库，尝试 pip 更新...")
             success = _update_via_pip(editable=False)
+            if not success:
+                logger.warning("pip 更新失败，尝试 zip 下载...")
+                success = _update_via_zip(vault)
     elif method == "git":
         success = _update_via_git(vault)
+        if not success:
+            logger.warning("git 更新失败，尝试 zip 下载...")
+            success = _update_via_zip(vault)
     else:
         logger.warning("未检测到标准安装方式，尝试 zip 下载...")
         success = _update_via_zip(vault)
