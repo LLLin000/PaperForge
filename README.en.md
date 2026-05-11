@@ -262,7 +262,7 @@ BRAT auto-detects plugin updates. For the Python package:
 ```bash
 paperforge update
 # or
-pip install --upgrade git+https://github.com/LLLin000/PaperForge.git
+pip install --upgrade paperforge
 ```
 
 ---

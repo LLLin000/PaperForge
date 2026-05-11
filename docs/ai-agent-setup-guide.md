@@ -131,11 +131,11 @@ python --version
 ### Step 2: Install paperforge package
 
 ```bash
-pip install git+https://github.com/LLLin000/PaperForge.git
+pip install paperforge
 ```
 
 - Success → "paperforge installed." Proceed to Step 3.
-- Permission error → retry: `pip install --user git+https://github.com/LLLin000/PaperForge.git`
+- Permission error → retry: `pip install --user paperforge`
 - Other errors → show the error to user, **STOP**.
 
 ---
@@ -216,7 +216,7 @@ paperforge setup --headless --vault "D:\Documents\MyVault" --agent opencode --zo
 
 | Exit code | Meaning | Action |
 |-----------|---------|--------|
-| 1 | Package root not found | Reinstall: `pip install --force-reinstall git+https://github.com/LLLin000/PaperForge.git` |
+| 1 | Package root not found | Reinstall: `pip install --force-reinstall paperforge` |
 | 4 | Worker scripts missing | Same as above |
 | 5 | Skill files missing | Same as above |
 | 6 | File integrity check failed | Check disk space and write permissions on vault path |
@@ -275,7 +275,7 @@ Wrap in quotes: `--vault "D:\My Documents\MyVault"`
 
 Add `--user`:
 ```bash
-pip install --user git+https://github.com/LLLin000/PaperForge.git
+pip install --user paperforge
 ```
 
 ### User already has PaperForge (upgrade scenario)

@@ -9,7 +9,7 @@
 ```
 [ ] Zotero 已安装 + Better BibTeX 插件已启用
 [ ] Obsidian 已打开当前 Vault
-[ ] PaperForge 已安装 (pip install git+https://github.com/LLLin000/PaperForge.git)
+[ ] PaperForge 已安装 (pip install paperforge)
 [ ] PaddleOCR API Key 已配置（在 .env 中）
 [ ] 目录结构已创建（安装向导会自动完成）
 [ ] Zotero 数据目录已链接到 <system_dir>/Zotero
@@ -498,7 +498,7 @@ paperforge update
 
 **pip 安装用户：**
 ```bash
-pip install --upgrade git+https://github.com/LLLin000/PaperForge.git
+pip install --upgrade paperforge
 ```
 
 **pip editable / git clone 用户：**

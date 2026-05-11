@@ -131,11 +131,11 @@ python --version
 ### Step 2: 安装 paperforge 包
 
 ```bash
-pip install git+https://github.com/LLLin000/PaperForge.git
+pip install paperforge
 ```
 
 - 成功 → "paperforge 已安装"，继续 Step 3
-- 权限错误 → 重试：`pip install --user git+https://github.com/LLLin000/PaperForge.git`
+- 权限错误 → 重试：`pip install --user paperforge`
 - 其他错误 → 把错误信息展示给用户，**停止**
 
 ---
@@ -275,7 +275,7 @@ python -m paperforge status
 
 加 `--user`：
 ```bash
-pip install --user git+https://github.com/LLLin000/PaperForge.git
+pip install --user paperforge
 ```
 
 ### 用户已经装过 PaperForge（升级场景）
