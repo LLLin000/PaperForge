@@ -1286,7 +1286,17 @@ class PaperForgeStatusView extends ItemView {
         // Runtime
         const plugin = this.app.plugins.plugins['paperforge'];
         const pluginVer = plugin?.manifest?.version || '?';
-        const pyVer = this._paperforgeVersion || '\u2014';
+        let pyVer = this._paperforgeVersion;
+        if (!pyVer) {
+            // Async _fetchVersion() may not have resolved yet — try synchronous fallback
+            try {
+                const vp = this.app.vault.adapter.basePath;
+                const { path: pyExe, extraArgs = [] } = resolvePythonExecutable(vp, plugin?.settings);
+                const raw = execFileSync(pyExe, [...extraArgs, '-c', 'import paperforge; print(paperforge.__version__)'], { cwd: vp, timeout: 5000, encoding: 'utf-8', windowsHide: true }).trim();
+                if (raw) { pyVer = raw.startsWith('v') ? raw : 'v' + raw; this._paperforgeVersion = pyVer; }
+            } catch {}
+        }
+        pyVer = pyVer || '\u2014';
         const runtimeOk = pyVer === 'v' + pluginVer;
         this._renderSystemStatusRow(statusGrid, 'Runtime', runtimeOk ? 'healthy' : 'mismatch',
             runtimeOk ? ('v' + pluginVer) : ('plugin v' + pluginVer + ' \u2260 CLI ' + pyVer));
@@ -2513,9 +2523,32 @@ class PaperForgeSettingTab extends PluginSettingTab {
             return runSubprocess(installCmd.cmd, args, vp, installCmd.timeout, undefined, paperforgeEnrichedEnv());
         };
 
+        const deploySkills = () => {
+            let agentKey = 'opencode';
+            try {
+                const cfgRaw = fs.readFileSync(path.join(vp, 'paperforge.json'), 'utf-8');
+                const cfg = JSON.parse(cfgRaw);
+                if (cfg.agent_key) agentKey = cfg.agent_key;
+            } catch {}
+            const { spawn } = require('node:child_process');
+            const deployArgs = [...extraArgs, '-c',
+                'from paperforge.services.skill_deploy import deploy_skills; ' +
+                'from pathlib import Path; ' +
+                'r=deploy_skills(vault=Path(r"' + vp.replace(/\\/g, '\\\\') + '"), agent_key="' + agentKey + '", overwrite=True); ' +
+                'print("skills deployed" if r["skill_deployed"] else "skills skipped", flush=True)'
+            ];
+            const child = spawn(pythonExe, deployArgs, { cwd: vp, timeout: 30000, windowsHide: true });
+            let out = '';
+            child.stdout.on('data', (d) => { out += d.toString('utf-8'); });
+            child.on('close', (code) => {
+                console.log(`[PaperForge] Skill deploy: ${out.trim()} (exit ${code})`);
+            });
+        };
+
         tryInstall(installCmd.pypiArgs, 'PyPI').then((result) => {
             if (result.exitCode === 0) {
                 console.log('[PaperForge] Sync Runtime: installed via PyPI');
+                deploySkills();
                 new Notice(t('runtime_health_sync_done').replace('{0}', ver), 5000);
                 this.display();
                 return;
@@ -2524,6 +2557,7 @@ class PaperForgeSettingTab extends PluginSettingTab {
             tryInstall(installCmd.gitArgs, 'git').then((r2) => {
                 if (r2.exitCode === 0) {
                     console.log('[PaperForge] Sync Runtime: installed via git');
+                    deploySkills();
                     new Notice(t('runtime_health_sync_done').replace('{0}', ver), 5000);
                     this.display();
                 } else {

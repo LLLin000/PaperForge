@@ -1027,9 +1027,12 @@ def frontmatter_note(entry: dict, existing_text: str = "") -> str:
         f"domain: {yaml_quote(entry.get('domain', ''))}",
         f"doi: {yaml_quote(entry.get('doi', ''))}",
         f"pmid: {yaml_quote(entry.get('pmid', ''))}",
-        f"collection_path: {yaml_quote(entry.get('collection_path', ''))}",
-        f"impact_factor: {yaml_quote(entry.get('impact_factor', ''))}",
     ]
+    lines.extend(yaml_list("collection_path", entry.get("collections", [])))
+    lines.extend(yaml_list("collection_tags", entry.get("collection_tags", [])))
+    lines.extend([
+        f"impact_factor: {yaml_quote(entry.get('impact_factor', ''))}",
+    ])
     lines.extend(yaml_block(entry.get("abstract", "")))
     lines.extend(
         [
@@ -1050,7 +1053,7 @@ def frontmatter_note(entry: dict, existing_text: str = "") -> str:
             "## 📄 文献基本信息",
             "",
             f"- Zotero Key: `{entry.get('zotero_key', '')}`",
-            f"- Collection: `{entry.get('collection_path', '')}`",
+            f"- Collection: {', '.join(entry.get('collections', [entry.get('collection_path', '')]))}",
             f"- 作者：{', '.join(entry.get('authors', []))}",
             "",
             "## 摘要",

@@ -35,12 +35,19 @@ frontmatter:
     owner: sync
     introduced_in: "1.0"
   collection_path:
-    type: str
+    type: list
     required: false
     public: true
-    description: "Zotero collection path"
+    description: "Zotero collection paths (YAML list of full paths)"
     owner: sync
-    introduced_in: "1.0"
+    introduced_in: "1.5.5"
+  collection_tags:
+    type: list
+    required: false
+    public: true
+    description: "Zotero collection tag segments (split by /, no duplicates)"
+    owner: sync
+    introduced_in: "1.5.5"
   has_pdf:
     type: bool
     required: true
@@ -177,12 +184,19 @@ index_entry:
     owner: index
     introduced_in: "2.1"
   collection_path:
-    type: str
+    type: list
     required: false
     public: true
-    description: "Zotero collection path"
+    description: "Zotero collection paths (YAML list of full paths)"
     owner: index
-    introduced_in: "2.1"
+    introduced_in: "1.5.5"
+  collection_tags:
+    type: list
+    required: false
+    public: true
+    description: "Zotero collection tag segments (split by /, no duplicates)"
+    owner: index
+    introduced_in: "1.5.5"
   has_pdf:
     type: bool
     required: true
