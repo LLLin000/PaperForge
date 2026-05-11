@@ -1396,7 +1396,7 @@ def prepare_deep_reading(vault: Path, zotero_key: str, force: bool = False) -> d
         domain_dir = literature_root / domain
         if domain_dir.exists():
             for candidate in domain_dir.glob("*.md"):
-                if candidate.name.startswith(f"{zotero_key} ") or candidate.name.startswith(f"{zotero_key} -"):
+                if candidate.name == f"{zotero_key}.md" or candidate.name.startswith(f"{zotero_key} -"):
                     formal_note = candidate
                     break
             if formal_note is None:
