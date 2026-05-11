@@ -95,19 +95,21 @@ Your Obsidian vault root. Auto-detected, usually no need to change.
 
 ### 4.2 AI Agent Platform
 
-PaperForge's deep reading features run through an AI Agent. Choose your platform, and the wizard deploys the command files to the right location.
+PaperForge's deep reading features run through an AI Agent. The core mechanism is **trigger phrases**, not registered plugins: you type `/pf-deep <key>` directly into the Agent chat, and the Agent recognizes the trigger and loads the `literature-qa` Skill automatically.
 
-| Agent | Files deployed to | Prefix | How to trigger deep reading |
-|-------|------------------|--------|---------------------------|
-| **OpenCode** | `.opencode/command/` + `.opencode/skills/` | `/` | Open OpenCode, type `/pf-deep <key>` |
-| **Claude Code** | `.claude/skills/` | `/` | Open Claude Code, type `/pf-deep <key>` |
-| **Cursor** | `.cursor/skills/` | `/` | Open Cursor AI Chat, type `/pf-deep <key>` |
-| **GitHub Copilot** | `.github/skills/` | `/` | Open Copilot Chat, type `/pf-deep <key>` |
-| **Windsurf** | `.windsurf/skills/` | `/` | Open Windsurf, type `/pf-deep <key>` |
-| **Codex** | `.codex/skills/` | `$` | Open Codex, type `$pf-deep <key>` |
-| **Cline** | `.clinerules/` | `/` | Open Cline, type `/pf-deep <key>` |
+The setup wizard deploys Skill files to the correct location:
 
-> Important: `/pf-deep` and `/pf-paper` are **NOT terminal commands**. You must first launch the Agent application, then type the command into that Agent's chat input. The Agent will invoke PaperForge's deep reading scripts to analyze your paper.
+| Agent | Skill location | Trigger example |
+|-------|---------------|-----------------|
+| **OpenCode** | `.opencode/skills/` + `.opencode/command/` | `/pf-deep <key>` |
+| **Claude Code** | `.claude/skills/` | `/pf-deep <key>` |
+| **Cursor** | `.cursor/skills/` | `/pf-deep <key>` |
+| **GitHub Copilot** | `.github/skills/` | `/pf-deep <key>` |
+| **Windsurf** | `.windsurf/skills/` | `/pf-deep <key>` |
+| **Codex** | `.codex/skills/` | `$pf-deep <key>` |
+| **Cline** | `.clinerules/` | `/pf-deep <key>` |
+
+> **Key concept**: `/pf-deep` is NOT a plugin you install on the Agent platform — it's a Skill file deployed inside your Vault. Once the setup wizard copies the files into place, the Agent auto-discovers the triggers on startup. You type the trigger phrase just like any other chat input.
 
 ### 4.3 Directory Names
 

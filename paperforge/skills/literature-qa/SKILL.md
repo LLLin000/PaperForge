@@ -1,9 +1,11 @@
 ---
 name: literature-qa
 description: >
-  学术文献精读、问答与检索。Triggered by: /pf-deep /pf-paper /pf-end,
-  "精读 <key/title>", "文献问答 <key/title>", "结束讨论", "保存记录",
-  "找一下...文献", "查一下...", "库里有没有", "精读队列".
+  学术文献库操作：精读、问答、检索、浏览。Triggered by:
+  /pf-deep /pf-paper /pf-end,
+  "精读", "文献问答", "结束讨论", "保存记录",
+  "找文献", "搜文献", "文献库", "文献检索", "精读队列", "库里有什么",
+  "搜一下库里", "看一下文献库", "浏览文献库".
   Uses Zotero key, DOI, title, or domain keywords to locate papers.
 license: Apache-2.0
 compatibility: all
@@ -47,16 +49,16 @@ python -m paperforge.worker.paper_resolver paths --vault "$VAULT"
 
 ## 路由表
 
-Agent 根据用户意图路由到对应的 reference 文件：
+加载本 Skill 后，根据用户的 **具体意图** 选择一条路由，加载对应的 reference 文件：
 
-| 用户意图 | 典型输入 | 加载文件 |
-|---------|---------|---------|
-| 查看 Vault 概况 | "看一下库里内容", "看一下文献库", "库里有什么", "浏览文献" | [references/vault-knowledge.md](references/vault-knowledge.md) |
-| 文献检索 | "找一下骨科...文献", "查一下 TGF-beta", "库里有没有支架材料的", "搜一下 Smith 的文章", "collection 里有没有" | [references/paper-search.md](references/paper-search.md) |
-| 三阶段精读（指定论文） | `/pf-deep <query>`, `pf-deep <query>`, "精读 XXX", "深度阅读 XXX", "带我读", "组会讲这篇", "读一下这篇" | [references/deep-reading.md](references/deep-reading.md) |
-| 三阶段精读（查看队列） | `/pf-deep`（无参数）, "精读队列", "有哪些该读了" | [references/deep-reading.md](references/deep-reading.md) |
-| 论文问答 | `/pf-paper <query>`, `pf-paper <query>`, "做这篇的问答", "帮我看看 XXX", "这篇文章讲了什么", "查一下" | [references/paper-qa.md](references/paper-qa.md) |
-| 保存讨论记录 | `/pf-end`, `pf-end`, "保存", "结束讨论", "完成讨论", "保存记录" | [references/save-session.md](references/save-session.md) |
+| 用户意图 | 典型输入 | 加载文件 | 说明 |
+|---------|---------|---------|------|
+| 了解库概况 | "看一下库里有什么", "库里内容" | [vault-knowledge.md](references/vault-knowledge.md) | 展示 domain 分布和统计 |
+| 文献检索 | "找文献", "搜文献", "库里有没有XX", "文献检索", "搜一下库里" | [paper-search.md](references/paper-search.md) | 在库里搜索论文 |
+| 精读 | `/pf-deep <key>`, "精读 <key>" | [deep-reading.md](references/deep-reading.md) | Keshav 三阶段精读 |
+| 精读队列 | `/pf-deep` 无参数, "精读队列" | [deep-reading.md](references/deep-reading.md) | 查看待精读列表 |
+| 论文问答 | `/pf-paper <key>`, "文献问答 <key>" | [paper-qa.md](references/paper-qa.md) | 交互式 Q&A |
+| 保存记录 | `/pf-end`, "结束讨论", "保存记录" | [save-session.md](references/save-session.md) | 存档问答记录 |
 
 > **重要：** 加载 reference 文件后，**严格按照该文件的流程执行，不要跳过任何步骤。** 如果你不知道下一步干什么，回顾 reference 文件的流程，不要自己发明步骤。
 
