@@ -3109,12 +3109,23 @@ class PaperForgeSetupModal extends Modal {
                 const pyInfo = this.plugin?.settings?.python_path || 'auto';
                 const pluginVer = this.plugin?.manifest?.version || '?';
                 const osInfo = process.platform + ' ' + process.arch;
+                let gitDir, resolvedPy;
+                try { gitDir = resolveGitDir() || '(not found)'; } catch (_) { gitDir = '(error)'; }
+                try { resolvedPy = resolvePythonExecutable(s.vault_path.trim(), this.plugin.settings); } catch (_) { resolvedPy = null; }
+                const pathLen = (process.env.PATH || '').length;
+                const pathHasGit = (process.env.PATH || '').toLowerCase().includes('git');
                 const diagnostic = [
                     '[PaperForge Diagnostic]',
                     'Category: ' + errorMsg,
                     'Plugin version: ' + pluginVer,
                     'Python: ' + pyInfo,
+                    'Resolved Python: ' + (resolvedPy?.path || '?'),
                     'OS: ' + osInfo,
+                    'Vault path: ' + (s.vault_path || '?'),
+                    '--- Git ---',
+                    'Git dir (resolved): ' + gitDir,
+                    'PATH length: ' + pathLen + ' chars',
+                    'PATH contains git: ' + pathHasGit,
                     '--- Raw error ---',
                     rawError.slice(0, 2000),
                 ].join('\n');
