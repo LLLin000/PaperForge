@@ -695,6 +695,7 @@ class PaperForgeStatusView extends ItemView {
     }
 
     _fetchStats(quiet) {
+        if (!this._metricsEl) return;
         if (!quiet && !this._cachedStats) {
             this._metricsEl.empty();
             this._metricsEl.createEl('div', { cls: 'paperforge-status-loading', text: 'Loading...' });
