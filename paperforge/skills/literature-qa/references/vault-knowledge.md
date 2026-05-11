@@ -2,6 +2,22 @@
 
 本文件是 Agent 理解 PaperForge Vault 的共享参考。精读、问答、检索等所有工作流都先从这里获取基础概念。
 
+## 浏览场景
+
+用户说"看一下库里内容"、"看一下文献库"、"库里有什么"、"浏览文献"时，Agent 展示 Vault 概况：
+
+1. 跑 `paths` 获取 `literature_dir` 和 `index_path`
+2. 列出 `literature_dir` 下所有 domain（领域文件夹名）
+3. 读 formal-library.json，统计每个 domain：论文总数、OCR 完成数、无 PDF 数
+4. 输出概览：
+
+```
+Vault: D:\...\Vault
+Domains: 骨科 (550 papers, 520 OCR done), 运动医学 (263 papers, 129 OCR done)
+```
+
+如果用户继续问具体内容，Agent 加载 [paper-search.md](paper-search.md) 搜索。
+
 ---
 
 ## 1. 获取路径

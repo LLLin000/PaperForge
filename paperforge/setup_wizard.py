@@ -118,7 +118,7 @@ class EnvChecker:
     def install_dependencies(self) -> bool:
         deps = ["requests", "pymupdf", "pillow"]
         try:
-            subprocess.run([sys.executable, "-m", "pip", "install"] + deps, check=True, capture_output=True)
+            subprocess.run([sys.executable, "-m", "pip", "install"] + deps, check=True, capture_output=True, encoding="utf-8", errors="replace")
             return True
         except subprocess.CalledProcessError:
             return False
@@ -178,7 +178,7 @@ class EnvChecker:
                     return p
             # 4. 通过 where 命令检测
             try:
-                result = subprocess.run(["where", "zotero"], capture_output=True, text=True, timeout=5)
+                result = subprocess.run(["where", "zotero"], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=5)
                 if result.returncode == 0:
                     for line in result.stdout.strip().split("\n"):
                         p = Path(line.strip())
@@ -196,7 +196,7 @@ class EnvChecker:
                     return p
             # 通过 which 检测
             try:
-                result = subprocess.run(["which", "zotero"], capture_output=True, text=True, timeout=5)
+                result = subprocess.run(["which", "zotero"], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=5)
                 if result.returncode == 0:
                     return Path(result.stdout.strip())
             except Exception:
@@ -213,7 +213,7 @@ class EnvChecker:
                 if p.exists():
                     return p
             try:
-                result = subprocess.run(["which", "zotero"], capture_output=True, text=True, timeout=5)
+                result = subprocess.run(["which", "zotero"], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=5)
                 if result.returncode == 0:
                     return Path(result.stdout.strip())
             except Exception:
@@ -527,6 +527,8 @@ def headless_setup(
                         ["cmd", "/c", "mklink", "/J", str(zotero_link_path), str(zotero_data)],
                         capture_output=True,
                         text=True,
+                        encoding="utf-8",
+                        errors="replace",
                         timeout=30,
                     )
                     if result.returncode != 0:
@@ -767,6 +769,8 @@ def headless_setup(
                 [sys.executable, "-m", "pip", "install", "--upgrade"] + install_target,
                 capture_output=True,
                 text=True,
+                encoding="utf-8",
+                errors="replace",
                 timeout=120,
             )
             if result.returncode != 0:
@@ -775,6 +779,8 @@ def headless_setup(
                     [sys.executable, "-m", "pip", "install", "--upgrade"] + git_target,
                     capture_output=True,
                     text=True,
+                    encoding="utf-8",
+                    errors="replace",
                     timeout=120,
                 )
         if result.returncode == 0:
@@ -782,6 +788,8 @@ def headless_setup(
                 [sys.executable, "-c", "import paperforge; print(getattr(paperforge, '__version__', '?'))"],
                 capture_output=True,
                 text=True,
+                encoding="utf-8",
+                errors="replace",
                 timeout=15,
             )
             new_ver = _new.stdout.strip() or "?"
