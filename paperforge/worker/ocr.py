@@ -1694,7 +1694,9 @@ def run_ocr(vault: Path, verbose: bool = False, no_progress: bool = False) -> in
                     try:
                         pf_cfg = read_json(cfg_path)
                         if pf_cfg.get("auto_analyze_after_ocr", False):
-                            note_glob = list(paths["literature"].rglob(f"{key} - *.md"))
+                            note_glob = list(paths["literature"].rglob(f"{key}.md"))
+                            if not note_glob:
+                                note_glob = list(paths["literature"].rglob(f"{key} - *.md"))
                             if note_glob:
                                 note_path = max(note_glob, key=lambda p: len(p.parents))
                                 text = note_path.read_text(encoding="utf-8")
