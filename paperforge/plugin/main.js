@@ -3329,7 +3329,7 @@ module.exports = class PaperForgePlugin extends Plugin {
 
 
         /* ── Auto-update PaperForge (deferred — don't slow startup) ── */
-        if (this.settings.auto_update !== false) {
+        if (this.settings.auto_update !== false && this.settings.setup_complete) {
             setTimeout(() => this._autoUpdate(), 3000);
         }
     }
