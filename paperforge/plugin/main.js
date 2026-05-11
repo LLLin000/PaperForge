@@ -2305,10 +2305,12 @@ class PaperForgeSettingTab extends PluginSettingTab {
             const pluginVer = this.plugin.manifest.version || '?';
 
             execFile(pythonExe, [...extraArgs, '-c', 'import paperforge; print(paperforge.__version__)'], { cwd: vp, timeout: 10000 }, (err, stdout) => {
+                const setupDone = this.plugin.settings.setup_complete;
                 const pyVer = (!err && stdout) ? stdout.trim() : null;
                 const descText = pyVer
                     ? `${t('runtime_health_plugin_ver').replace('{0}', pluginVer)} → ${t('runtime_health_package_ver').replace('{0}', pyVer)}`
-                    : `Plugin v${pluginVer} → Python package not installed`;
+                    : (setupDone ? `Plugin v${pluginVer} → Python package not installed. Click "Sync Runtime" to install.`
+                       : `Plugin v${pluginVer} → Not configured. Please open the setup wizard first.`);
                 versionRow.setDesc(descText);
                 if (pyVer === pluginVer) {
                     badgeEl.setText(t('runtime_health_match'));
@@ -2319,7 +2321,7 @@ class PaperForgeSettingTab extends PluginSettingTab {
                     badgeEl.className = 'paperforge-runtime-badge mismatch';
                     if (syncBtn) syncBtn.setDisabled(false);
                 } else {
-                    badgeEl.setText('Not installed');
+                    badgeEl.setText(setupDone ? 'Not installed' : 'Setup needed');
                     badgeEl.className = 'paperforge-runtime-badge missing';
                     if (syncBtn) syncBtn.setDisabled(false);
                 }
