@@ -103,9 +103,11 @@ function classifyError(errorCode) {
 
 function buildRuntimeInstallCommand(pythonExe, version, extraArgs) {
     if (extraArgs === undefined) extraArgs = [];
-    const url = `git+https://github.com/LLLin000/PaperForge.git@v${version}`;
-    const args = [...extraArgs, "-m", "pip", "install", "--upgrade", url];
-    return { cmd: pythonExe, args, url, timeout: 120000 };
+    const pypiPkg = `paperforge==${version}`;
+    const gitUrl = `git+https://github.com/LLLin000/PaperForge.git@v${version}`;
+    const pypiArgs = [...extraArgs, "-m", "pip", "install", "--upgrade", pypiPkg];
+    const gitArgs = [...extraArgs, "-m", "pip", "install", "--upgrade", gitUrl];
+    return { cmd: pythonExe, pypiArgs, gitArgs, timeout: 120000 };
 }
 
 function parseRuntimeStatus(err, stdout, stderr) {

@@ -159,13 +159,18 @@ def _update_via_pip(editable: bool = False) -> bool:
         cmd.extend(["-e", "."])
     else:
         cmd.append("--upgrade")
-        cmd.append(GITHUB_PIP_SOURCE)
+        cmd.append("paperforge")
 
     logger.info("执行: %s", " ".join(cmd))
     r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
     if r.returncode != 0:
-        logger.error("pip 更新失败: %s", r.stderr)
-        return False
+        logger.warning("PyPI 更新失败，尝试 git: %s", r.stderr[:200])
+        cmd[-1] = GITHUB_PIP_SOURCE
+        logger.info("执行: %s", " ".join(cmd))
+        r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
+        if r.returncode != 0:
+            logger.error("pip 更新失败: %s", r.stderr)
+            return False
     logger.info("pip 更新成功")
     if r.stdout.strip():
         print(r.stdout)

@@ -761,13 +761,22 @@ def headless_setup(
         else:
             from paperforge import __version__ as _pv
 
-            install_target = [f"git+https://github.com/LLLin000/PaperForge.git@v{_pv}"]
-        result = subprocess.run(
-            [sys.executable, "-m", "pip", "install", "--upgrade"] + install_target,
-            capture_output=True,
-            text=True,
-            timeout=120,
-        )
+            install_target = [f"paperforge=={_pv}"]
+            git_target = [f"git+https://github.com/LLLin000/PaperForge.git@v{_pv}"]
+            result = subprocess.run(
+                [sys.executable, "-m", "pip", "install", "--upgrade"] + install_target,
+                capture_output=True,
+                text=True,
+                timeout=120,
+            )
+            if result.returncode != 0:
+                logger.warning("PyPI install failed, falling back to git: %s", result.stderr[:200])
+                result = subprocess.run(
+                    [sys.executable, "-m", "pip", "install", "--upgrade"] + git_target,
+                    capture_output=True,
+                    text=True,
+                    timeout=120,
+                )
         if result.returncode == 0:
             _new = subprocess.run(
                 [sys.executable, "-c", "import paperforge; print(getattr(paperforge, '__version__', '?'))"],

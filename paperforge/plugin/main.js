@@ -99,9 +99,11 @@ function classifyError(errorCode) {
 
 function buildRuntimeInstallCommand(pythonExe, version, extraArgs) {
     if (extraArgs === undefined) extraArgs = [];
-    const url = `git+https://github.com/LLLin000/PaperForge.git@v${version}`;
-    const args = [...extraArgs, "-m", "pip", "install", "--upgrade", url];
-    return { cmd: pythonExe, args, url, timeout: 120000 };
+    const pypiPkg = `paperforge==${version}`;
+    const gitUrl = `git+https://github.com/LLLin000/PaperForge.git@v${version}`;
+    const pypiArgs = [...extraArgs, "-m", "pip", "install", "--upgrade", pypiPkg];
+    const gitArgs = [...extraArgs, "-m", "pip", "install", "--upgrade", gitUrl];
+    return { cmd: pythonExe, pypiArgs, gitArgs, timeout: 120000 };
 }
 
 function parseRuntimeStatus(err, stdout, stderr) {
@@ -2503,16 +2505,26 @@ class PaperForgeSettingTab extends PluginSettingTab {
         btn.setDisabled(true);
         btn.setButtonText(t('runtime_health_syncing'));
 
-        runSubprocess(installCmd.cmd, installCmd.args, vp, installCmd.timeout, undefined, paperforgeEnrichedEnv()).then((result) => {
+        const tryInstall = (args) => runSubprocess(installCmd.cmd, args, vp, installCmd.timeout, undefined, paperforgeEnrichedEnv());
+
+        tryInstall(installCmd.pypiArgs).then((result) => {
             if (result.exitCode === 0) {
                 new Notice(t('runtime_health_sync_done').replace('{0}', ver), 5000);
                 this.display();
-            } else {
-                btn.setDisabled(false);
-                btn.setButtonText(t('runtime_health_sync'));
-                console.error('[PaperForge] pip stderr:', result.stderr);
-                new Notice(t('runtime_health_sync_fail').replace('{0}', 'pip exit code ' + result.exitCode), 8000);
+                return;
             }
+            console.warn('[PaperForge] PyPI install failed, falling back to git...');
+            tryInstall(installCmd.gitArgs).then((r2) => {
+                if (r2.exitCode === 0) {
+                    new Notice(t('runtime_health_sync_done').replace('{0}', ver), 5000);
+                    this.display();
+                } else {
+                    btn.setDisabled(false);
+                    btn.setButtonText(t('runtime_health_sync'));
+                    console.error('[PaperForge] git fallback stderr:', r2.stderr);
+                    new Notice(t('runtime_health_sync_fail').replace('{0}', 'pip exit code ' + r2.exitCode), 8000);
+                }
+            });
         });
     }
 
@@ -3080,10 +3092,18 @@ class PaperForgeSetupModal extends Modal {
             if (!hasPaperforge) {
                 this._log(t('install_bootstrapping'));
                 const ver = this.plugin.manifest.version;
-                const pipArgs = ['-m', 'pip', 'install', '--upgrade'];
-                if (process.platform !== 'win32') pipArgs.push('--user');
-                pipArgs.push(`git+https://github.com/LLLin000/PaperForge.git@v${ver}`);
-                await runPython(pipArgs);
+                const pypiArgs = ['-m', 'pip', 'install', '--upgrade'];
+                if (process.platform !== 'win32') pypiArgs.push('--user');
+                pypiArgs.push(`paperforge==${ver}`);
+                try {
+                    await runPython(pypiArgs, { logStdout: true });
+                } catch (pypiErr) {
+                    this._log('PyPI install failed, falling back to git...');
+                    const gitArgs = ['-m', 'pip', 'install', '--upgrade'];
+                    if (process.platform !== 'win32') gitArgs.push('--user');
+                    gitArgs.push(`git+https://github.com/LLLin000/PaperForge.git@v${ver}`);
+                    await runPython(gitArgs, { logStdout: true });
+                }
             }
 
             await runPython(setupArgs, {
@@ -3310,28 +3330,33 @@ module.exports = class PaperForgePlugin extends Plugin {
         const vp = this.app.vault.adapter.basePath;
         const { path: pythonExe, extraArgs = [] } = resolvePythonExecutable(vp, this.settings);
         const ver = this.manifest.version;
-        const url = `git+https://github.com/LLLin000/PaperForge.git@v${ver}`;
+        const pypiPkg = `paperforge==${ver}`;
+        const gitUrl = `git+https://github.com/LLLin000/PaperForge.git@v${ver}`;
+
+        const doInstall = (pkg, onDone) => {
+            const { spawn } = require('node:child_process');
+            const child = spawn(pythonExe, [...extraArgs, '-m', 'pip', 'install', '--upgrade', pkg], { cwd: vp, timeout: 120000, env: paperforgeEnrichedEnv() });
+            child.on('close', (code) => onDone(code === 0));
+        };
 
         // Check if installed package version matches plugin version
         const { execFile } = require('node:child_process');
         execFile(pythonExe, [...extraArgs, '-c', 'import paperforge; print(paperforge.__version__)'], { cwd: vp, timeout: 10000 }, (err, stdout) => {
-            if (err) {
-                // Not installed — install now
-                const spawn = require('node:child_process').spawn;
-                const child = spawn(pythonExe, [...extraArgs, '-m', 'pip', 'install', '--upgrade', url], { cwd: vp, timeout: 120000, env: paperforgeEnrichedEnv() });
-                child.on('close', (code) => {
-                    if (code === 0) new Notice('[OK] PaperForge CLI installed', 5000);
+            const install = (label) => {
+                doInstall(pypiPkg, (ok) => {
+                    if (ok) { new Notice(`[OK] PaperForge CLI ${label}`, 5000); return; }
+                    doInstall(gitUrl, (ok2) => {
+                        if (ok2) new Notice(`[OK] PaperForge CLI ${label} (via git)`, 5000);
+                    });
                 });
+            };
+            if (err) {
+                install('installed');
                 return;
             }
             const pyVer = stdout.trim();
             if (pyVer !== ver) {
-                // Mismatch — upgrade
-                const spawn = require('node:child_process').spawn;
-                const child = spawn(pythonExe, [...extraArgs, '-m', 'pip', 'install', '--upgrade', url], { cwd: vp, timeout: 120000, env: paperforgeEnrichedEnv() });
-                child.on('close', (code) => {
-                    if (code === 0) new Notice(`[OK] PaperForge ${pyVer} -> ${ver}`, 5000);
-                });
+                install(`${pyVer} -> ${ver}`);
             }
         });
     }
