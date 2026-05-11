@@ -31,13 +31,25 @@ Test-Path paperforge.json
 
 记下 vault 根目录为 `$VAULT`，后续所有 `--vault` 参数都用这个路径。
 
-### Step B: 获取路径
+### Step B: 找到正确的 Python 并获取路径
+
+PaperForge 的 Python 环境不一定是当前终端的 `python`。按以下顺序尝试：
 
 ```
-python -m paperforge.worker.paper_resolver paths --vault "$VAULT"
+1. 读 $VAULT/paperforge.json → 找 "python_path" 字段 → 用这个路径
+2. $VAULT/.venv/Scripts/python.exe
+3. $VAULT/.paperforge-test-venv/Scripts/python.exe
+4. 当前终端的 python
 ```
 
-如果报 `No module named paperforge`，说明当前 Python 环境没装 paperforge。不要硬闯文件的目录树——**问用户**："你用的是哪个 Python？Vault 里的 `.venv` 路径是什么？"
+找到可用的 Python 后，用它跑：
+```
+$PYTHON -m paperforge.worker.paper_resolver paths --vault "$VAULT"
+```
+
+如果所有 Python 都报 `No module named paperforge`：
+- **不要继续。** 不要硬闯文件的目录树。
+- **问用户**："你的 Vault 里哪个 Python 装了 paperforge？在终端试试 `python -m paperforge --version` 看哪个能跑。"
 
 ### Step C: 加载共享知识
 
@@ -66,14 +78,14 @@ python -m paperforge.worker.paper_resolver paths --vault "$VAULT"
 
 所有路由共享的论文定位协议：见 [references/paper-resolution.md](references/paper-resolution.md)。
 
-**核心原则：路径从 `paths` 获取，不硬编码。**
+**核心原则：路径从 `paths` 获取，不硬编码。Python 从 Step B 找到的 `$PYTHON` 用，不用系统的 `python`。**
 
-| 你要做什么     | 跑这个 Python 命令                                                               |
-| -------------- | -------------------------------------------------------------------------------- |
-| 获取 vault 路径 | `python -m paperforge.worker.paper_resolver paths --vault .`                      |
-| 定位论文（按 key） | `python -m paperforge.worker.paper_resolver resolve-key <KEY> --vault .`          |
-| 定位论文（按 DOI） | `python -m paperforge.worker.paper_resolver resolve-doi "<DOI>" --vault .`        |
-| 搜索论文       | `python -m paperforge.worker.paper_resolver search --title "..." --domain "..." --vault .` |
+| 你要做什么     | 跑这个命令                                                                         |
+| -------------- | ---------------------------------------------------------------------------------- |
+| 获取 vault 路径 | `$PYTHON -m paperforge.worker.paper_resolver paths --vault "$VAULT"`                 |
+| 定位论文（按 key） | `$PYTHON -m paperforge.worker.paper_resolver resolve-key <KEY> --vault "$VAULT"`      |
+| 定位论文（按 DOI） | `$PYTHON -m paperforge.worker.paper_resolver resolve-doi "<DOI>" --vault "$VAULT"`    |
+| 搜索论文       | `$PYTHON -m paperforge.worker.paper_resolver search --title "..." --domain "..." --vault "$VAULT"` |
 
 ## 文件结构
 
