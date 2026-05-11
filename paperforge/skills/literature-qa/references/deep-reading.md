@@ -2,8 +2,6 @@
 
 Keshav 三阶段组会式精读。触发后执行以下工作流。
 
-**所有 Python 命令用 `$PYTHON`（来自 pf_bootstrap 的 `python_candidate`），vault 路径用 `$VAULT`（来自 pf_bootstrap 的 `vault_root`）。**
-
 ---
 
 ## 前置条件检查

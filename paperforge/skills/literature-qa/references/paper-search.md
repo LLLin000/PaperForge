@@ -2,8 +2,6 @@
 
 轻量流程：用户想**在库里找文献**（不涉及精读或问答）。
 
-**所有 Python 命令用 `$PYTHON`（来自 pf_bootstrap 的 `python_candidate`），vault 路径用 `$VAULT`。**
-
 ---
 
 ## Stage 状态机
