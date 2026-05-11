@@ -279,6 +279,7 @@ def _resolve_plugin_interpreter(vault: Path, plugin_data: dict) -> tuple[str, st
         try:
             cmd = [path] + extra + ["--version"]
             result = subprocess.run(cmd, capture_output=True, timeout=5, text=True, encoding="utf-8", errors="replace")
+            if result.returncode == 0 and "Python" in (result.stdout or ""):
                 return (path, "auto-detected", extra)
         except (subprocess.TimeoutExpired, FileNotFoundError, PermissionError, OSError):
             continue

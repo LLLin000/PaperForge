@@ -118,7 +118,11 @@ class EnvChecker:
     def install_dependencies(self) -> bool:
         deps = ["requests", "pymupdf", "pillow"]
         try:
-            subprocess.run([sys.executable, "-m", "pip", "install"] + deps, check=True, capture_output=True, encoding="utf-8", errors="replace")
+            subprocess.run(
+                [sys.executable, "-m", "pip", "install"] + deps,
+                check=True, capture_output=True,
+                encoding="utf-8", errors="replace",
+            )
             return True
         except subprocess.CalledProcessError:
             return False
@@ -178,7 +182,12 @@ class EnvChecker:
                     return p
             # 4. 通过 where 命令检测
             try:
-                result = subprocess.run(["where", "zotero"], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=5)
+                result = subprocess.run(
+                    ["where", "zotero"],
+                    capture_output=True, text=True,
+                    encoding="utf-8", errors="replace",
+                    timeout=5,
+                )
                 if result.returncode == 0:
                     for line in result.stdout.strip().split("\n"):
                         p = Path(line.strip())
@@ -196,7 +205,12 @@ class EnvChecker:
                     return p
             # 通过 which 检测
             try:
-                result = subprocess.run(["which", "zotero"], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=5)
+                result = subprocess.run(
+                    ["which", "zotero"],
+                    capture_output=True, text=True,
+                    encoding="utf-8", errors="replace",
+                    timeout=5,
+                )
                 if result.returncode == 0:
                     return Path(result.stdout.strip())
             except Exception:
@@ -213,7 +227,12 @@ class EnvChecker:
                 if p.exists():
                     return p
             try:
-                result = subprocess.run(["which", "zotero"], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=5)
+                result = subprocess.run(
+                    ["which", "zotero"],
+                    capture_output=True, text=True,
+                    encoding="utf-8", errors="replace",
+                    timeout=5,
+                )
                 if result.returncode == 0:
                     return Path(result.stdout.strip())
             except Exception:
@@ -774,7 +793,10 @@ def headless_setup(
                 timeout=120,
             )
             if result.returncode != 0:
-                logger.warning("PyPI install failed, falling back to git: %s", result.stderr[:200])
+                print(
+                    f"    [WARN] PyPI install failed, falling back to git: {result.stderr[:200]}",
+                    file=sys.stderr,
+                )
                 result = subprocess.run(
                     [sys.executable, "-m", "pip", "install", "--upgrade"] + git_target,
                     capture_output=True,
@@ -812,7 +834,6 @@ def headless_setup(
         "OCR dir": (pf_path / "ocr").exists(),
         "paperforge.json": pf_json.exists(),
         "Obsidian plugin": (vault / ".obsidian" / "plugins" / "paperforge" / "main.js").exists(),
-        "AGENTS.md": (vault / "AGENTS.md").exists(),
     }
     failed = [k for k, v in checks.items() if not v]
     if failed:
@@ -870,4 +891,7 @@ def main(argv: list[str] | None = None) -> int:
 
 
 if __name__ == "__main__":
+    if sys.platform == "win32":
+        sys.stdout.reconfigure(encoding="utf-8")
+        sys.stderr.reconfigure(encoding="utf-8")
     raise SystemExit(main())
