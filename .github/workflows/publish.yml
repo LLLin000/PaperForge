@@ -24,3 +24,16 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           password: ${{ secrets.PYPI_TOKEN }}
+          skip-existing: true
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ github.ref_name }}" \
+            --title "${{ github.ref_name }}" \
+            --generate-notes \
+            paperforge/plugin/main.js \
+            paperforge/plugin/styles.css \
+            paperforge/plugin/manifest.json \
+            paperforge/plugin/versions.json
