@@ -1,17 +1,14 @@
 #!/usr/bin/env python
-"""Bump version across all PaperForge files and optionally create a release.
+"""Bump version across all PaperForge files.
 
 Usage:
     python scripts/bump.py 1.4.12              # specific version, commit + tag only
     python scripts/bump.py patch               # bump patch, commit + tag
-    python scripts/bump.py patch --release     # bump, commit, tag, push, create GitHub release
-    python scripts/bump.py minor --release -m "New feature X"   # release with custom notes
+    python scripts/bump.py minor               # bump minor, commit + tag
     python scripts/bump.py 2.0.0 --dry-run     # preview only
     python scripts/bump.py patch --no-git      # skip git entirely
 """
 import argparse
-import json
-import os
 import re
 import subprocess
 import sys
@@ -26,12 +23,6 @@ FILES_TO_UPDATE = {
     "plugin_manifest": ROOT / "paperforge" / "plugin" / "manifest.json",
     "root_manifest": ROOT / "manifest.json",
 }
-
-PLUGIN_FILES = [
-    ROOT / "paperforge" / "plugin" / "main.js",
-    ROOT / "paperforge" / "plugin" / "styles.css",
-    ROOT / "paperforge" / "plugin" / "manifest.json",
-]
 
 
 def read_current_version() -> str:
@@ -75,8 +66,6 @@ def main():
     parser.add_argument("version", help="New version or bump part (major/minor/patch)")
     parser.add_argument("--dry-run", action="store_true", help="Preview only")
     parser.add_argument("--no-git", action="store_true", help="Skip git commit/tag")
-    parser.add_argument("--release", action="store_true", help="Push and create GitHub release")
-    parser.add_argument("-m", "--message", default="", help="Release notes (one-line summary)")
     args = parser.parse_args()
 
     old_ver = read_current_version()
@@ -105,6 +94,7 @@ def main():
         result = subprocess.run(
             ["git", "show", f"HEAD:paperforge/__init__.py"],
             cwd=ROOT, capture_output=True, text=True, check=True,
+            encoding="utf-8", errors="replace",
         )
         if new_ver not in result.stdout:
             sys.exit(f"VERIFY FAILED: __init__.py in HEAD does not contain version {new_ver}")
@@ -113,32 +103,7 @@ def main():
 
     run(["git", "tag", "-f", new_ver])
     print(f"Committed and tagged {new_ver}")
-
-    if not args.release:
-        print("Run: git push && git push --tags")
-        return
-
-    # Push (may fail on protected branches — push to a release branch instead)
-    try:
-        run(["git", "push"])
-    except subprocess.CalledProcessError:
-        print("WARNING: git push failed (branch may be protected). Push manually or use a release branch.")
-    try:
-        run(["git", "push", "--tags"])
-    except subprocess.CalledProcessError:
-        print("WARNING: git push --tags failed")
-
-    # Create GitHub release
-    notes = args.message or f"v{new_ver}"
-    release_args = [
-        "gh", "release", "create", new_ver,
-        "--title", new_ver,
-        "--notes", notes,
-    ]
-    for pf in PLUGIN_FILES:
-        release_args.append(str(pf))
-    run(release_args)
-    print(f"GitHub release v{new_ver} created with plugin assets")
+    print("Run: git push && git push --tags")
 
 
 if __name__ == "__main__":
