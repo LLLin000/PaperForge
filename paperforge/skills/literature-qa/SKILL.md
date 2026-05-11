@@ -21,7 +21,7 @@ Agent 读到本文件后，首先根据用户意图路由到对应的 reference 
 
 | 用户意图 | 典型输入 | 加载文件 |
 |---------|---------|---------|
-| 文献检索 | "找一下骨科...文献", "查一下 TGF-beta", "库里有没有支架材料的", "搜一下 Smith 的文章", "collection 里有没有" | [references/paper-search.md](references/paper-search.md) |
+| 文献检索 | "找一下骨科...文献", "查一下 TGF-beta", "库里有没有支架材料的", "搜一下 Smith 的文章", "collection 里有没有", "看一下库里内容", "看一下文献库", "库里有什么", "浏览文献" | [references/paper-search.md](references/paper-search.md) |
 | 三阶段精读（指定论文） | `/pf-deep <query>`, `pf-deep <query>`, "精读 XXX", "深度阅读 XXX", "带我读", "组会讲这篇", "读一下这篇" | [references/deep-reading.md](references/deep-reading.md) |
 | 三阶段精读（查看队列） | `/pf-deep`（无参数）, "精读队列", "有哪些该读了" | [references/deep-reading.md](references/deep-reading.md) |
 | 论文问答 | `/pf-paper <query>`, `pf-paper <query>`, "做这篇的问答", "帮我看看 XXX", "这篇文章讲了什么", "查一下" | [references/paper-qa.md](references/paper-qa.md) |
