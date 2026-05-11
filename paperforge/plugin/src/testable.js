@@ -33,7 +33,6 @@ function resolvePythonExecutable(vaultPath, settings, _fs, _execFileSync) {
     }
 
     const systemCandidates = [
-        { path: "py", extraArgs: ["-3"] },
         { path: "python", extraArgs: [] },
         { path: "python3", extraArgs: [] },
     ];
