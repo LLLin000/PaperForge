@@ -7,9 +7,10 @@ Keshav 三阶段组会式精读。触发后执行以下工作流。
 ## 前置条件检查
 
 执行前确认：
-- [ ] 已完成论文定位（参考 [paper-resolution.md](paper-resolution.md)），拿到 zotero_key 和 workspace
-- [ ] `analyze: true` — 用 `$PYTHON -m paperforge.worker.paper_resolver resolve-key <KEY> --vault "$VAULT"` 返回的 `frontmatter` 里确认
-- [ ] `ocr_status: done` — 同上
+- [ ] 已完成论文定位（参考 [paper-resolution.md](paper-resolution.md)），拿到 zotero_key
+- [ ] 用 `glob("$LIT_DIR/**/<KEY>.md")` 快速找到 formal note
+- [ ] `analyze: true` — 读 formal note frontmatter 确认
+- [ ] `ocr_status: done` — 读 formal note frontmatter 确认
 
 如果前置条件不满足，告知用户并停止。
 
