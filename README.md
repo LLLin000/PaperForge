@@ -262,7 +262,7 @@ BRAT 会自动检测插件更新。Python 包更新：
 ```bash
 paperforge update
 # 或
-pip install --upgrade git+https://github.com/LLLin000/PaperForge.git
+pip install --upgrade paperforge
 ```
 
 ---

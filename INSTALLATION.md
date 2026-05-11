@@ -19,7 +19,7 @@
 ## Method 2: CLI via pip (Developers)
 
 ```bash
-pip install git+https://github.com/LLLin000/PaperForge.git
+pip install paperforge
 ```
 
 Then run the headless setup:
@@ -31,7 +31,7 @@ python -m paperforge setup --headless --agent opencode --paddleocr-key <key>
 For the latest stable release, replace `master` with a version tag:
 
 ```bash
-pip install git+https://github.com/LLLin000/PaperForge.git@v1.4.17rc3
+pip install paperforge==1.5.2
 ```
 
 ---
