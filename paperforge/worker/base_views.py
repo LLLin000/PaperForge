@@ -320,7 +320,7 @@ def merge_base_views(existing_content: str | None, new_views: list[dict]) -> str
         return f"""filters:
   and:
     - file.inFolder("{new_views[0]["name"]}")
-    - file.ext = "md"
+    - file.ext == "md"
 {PROPERTIES_YAML}
 views:
 {fresh_views_yaml}"""
@@ -456,7 +456,7 @@ def _build_base_yaml(folder_filter: str, views: list[dict]) -> str:
     return f"""filters:
   and:
     - file.inFolder("{folder_filter}")
-    - file.ext = "md"
+    - file.ext == "md"
 properties:
   zotero_key:
     displayName: "Zotero Key"
