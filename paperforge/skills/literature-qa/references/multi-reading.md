@@ -38,10 +38,10 @@
 
 对每篇选定文献：
 
-1. `$PYTHON -m paperforge.worker.paper_resolver resolve-key <KEY> --vault "$VAULT"` → 获取 workspace 路径
+1. 用 glob 找到 formal note：`glob("$LIT_DIR/**/<KEY>.md")`（最快，不需要 $PYTHON）
 2. 读 formal note frontmatter → 元数据
-3. 如果有 `fulltext.md` → 读 Abstract、Results、Discussion
-4. 如果有 `ocr_status == "done"` 但 fulltext 内容太长 → 先读 caption + figure 描述定位关键段落
+3. 同目录下找 `fulltext.md` → 读 Abstract、Results、Discussion
+4. 如果有 OCR 但 fulltext 太长 → 先读 caption + figure 描述定位关键段落
 5. 如果没有 fulltext → 如实告知用户，仅基于已知信息
 
 ### Step 3: 写 Reading Log（JSON → MD）

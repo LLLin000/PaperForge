@@ -98,11 +98,12 @@ Vault: $VAULT
 
 ### 确定性命令 — 优先使用
 
-| 场景                   | 命令                                                                                       |
-| ---------------------- | ------------------------------------------------------------------------------------------ |
-| 按 key 定位论文        | `$PYTHON -m paperforge.worker.paper_resolver resolve-key <KEY> --vault "$VAULT"`             |
-| 按 DOI 定位论文        | `$PYTHON -m paperforge.worker.paper_resolver resolve-doi "<DOI>" --vault "$VAULT"`           |
-| 按字段搜索论文         | `$PYTHON -m paperforge.worker.paper_resolver search --title "..." --author "..." --year ... --domain "..." --vault "$VAULT"` |
+| 场景                   | 命令                                                                                       | 原因 |
+| ---------------------- | ------------------------------------------------------------------------------------------ | ---- |
+| 按 key 快速找文件       | `glob("$LIT_DIR/**/<KEY>.md")` 或用 `Get-ChildItem "$LIT_DIR" -Recurse -Filter "<KEY>.md"` | 不需要 $PYTHON，最快 |
+| 按 key 查完整信息       | `$PYTHON -m paperforge.worker.paper_resolver resolve-key <KEY> --vault "$VAULT"`             | 返回 frontmatter 字段 (analyze, ocr_status 等) |
+| 按 DOI 定位论文        | `$PYTHON -m paperforge.worker.paper_resolver resolve-doi "<DOI>" --vault "$VAULT"`           | DOI 无法用文件系统快速匹配 |
+| 按字段搜索论文         | `$PYTHON -m paperforge.worker.paper_resolver search --title "..." --author "..." --year ... --domain "..." --vault "$VAULT"` | 结构化搜索，含相关性打分 |
 | 精读 prepare           | `$PYTHON "$SKILL_DIR/scripts/ld_deep.py" prepare --key <KEY> --vault "$VAULT"`               |
 | 精读 postprocess       | `$PYTHON "$SKILL_DIR/scripts/ld_deep.py" postprocess-pass2 <FORMAL_NOTE_PATH> --figures <N> --vault "$VAULT"` |
 | 精读 validate          | `$PYTHON "$SKILL_DIR/scripts/ld_deep.py" validate-note <FORMAL_NOTE_PATH> --fulltext <FULLTEXT_PATH>` |
@@ -114,9 +115,9 @@ Vault: $VAULT
 | ------------------------ | ----------------------------------------------------------- |
 | 按关键词模糊搜索全部文献 | 读 `$IDX_PATH` 的 JSON，筛 `title` / `abstract` / `journal`   |
 | 按 collection 筛选       | 读 `$IDX_PATH`，筛 `collection_path` 字段                     |
-| 读论文全文               | 已通过 resolve-key 拿到 `fulltext_path` → 直接 read           |
-| 读精读笔记               | 已拿到 `formal_note_path` → read 的 `## 🔍 精读` 区域          |
-| 遍历笔记做批量统计       | `rg <pattern> $LIT_DIR/ --include '*.md'`                   |
+| 读论文全文               | 已找到 `fulltext.md` 路径（glob 或 resolve-key） → 直接 read                               |
+| 读精读笔记               | 已找到 formal note 路径 → read 的 `## 🔍 精读` 区域                                          |
+| 遍历笔记做批量统计       | `Get-ChildItem "$LIT_DIR" -Recurse -Filter "*.md"` + 读 frontmatter 或 `find "$LIT_DIR" -name "*.md"` |
 | **禁止的操作**           | **根据 vault-knowledge 示例拼接路径、把目录名写死在文件路径里** |
 
 ---
