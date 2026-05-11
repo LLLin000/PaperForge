@@ -230,7 +230,7 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
     Lazy imports inside avoid circular dependencies with ``sync.py``.
     """
     # Lazy imports to avoid circular deps with sync.py
-    from paperforge.worker._utils import read_json, slugify_filename, write_json
+    from paperforge.worker._utils import read_json, slugify_filename, write_json, yaml_quote
     from paperforge.worker.asset_state import (
         compute_health,
         compute_lifecycle,
@@ -262,7 +262,7 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
             meta["error"] = validated_error
             write_json(meta_path, meta)
     title_slug = slugify_filename(item["title"])
-    note_path = paths["literature"] / domain / f"{key} - {title_slug}.md"
+    note_path = paths["literature"] / domain / f"{key}.md"
 
     # --- Freeze slug: reuse existing workspace if it exists under a different slug ---
     workspace_dir = paths["literature"] / domain / f"{key} - {title_slug}"
@@ -274,12 +274,33 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
                 break
 
     if note_path.parent.exists():
-        for stale_note in note_path.parent.glob(f"{key} - *.md"):
+        for stale_note in note_path.parent.glob(f"{key}*.md"):
             if stale_note != note_path:
                 stale_note.unlink()
 
     # Workspace paths (Phase 26: flat-to-workspace migration)
-    main_note_path = workspace_dir / f"{key} - {title_slug}.md"
+    main_note_path = workspace_dir / f"{key}.md"
+
+    # Self-healing migration: rename old-format {key} - {title}.md -> {key}.md
+    if not main_note_path.exists():
+        for old_candidate in workspace_dir.glob(f"{key} - *.md"):
+            old_candidate.rename(main_note_path)
+            # Inject alias into frontmatter
+            try:
+                text = main_note_path.read_text(encoding="utf-8")
+            except Exception:
+                text = frontmatter_note(entry, "")
+            if "aliases:" not in text[: text.find("\n---", 4)]:
+                alias_line = f"aliases: [{yaml_quote(entry.get('title', ''))}]\n"
+                text = re.sub(
+                    r'(^title:.*\n)',
+                    r'\1' + alias_line,
+                    text,
+                    count=1,
+                    flags=re.MULTILINE,
+                )
+                main_note_path.write_text(text, encoding="utf-8")
+            break
     deep_reading_file = workspace_dir / "deep-reading.md"
     target_fulltext = workspace_dir / "fulltext.md"
     source_fulltext = paths["ocr"] / key / "fulltext.md"
