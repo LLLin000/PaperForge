@@ -650,7 +650,7 @@ def headless_setup(
     skill_result = _deploy_skills_service(
         vault=vault,
         agent_key=agent_key,
-        overwrite=False,
+        overwrite=True,
     )
     if skill_result["skill_deployed"]:
         print("    [OK] literature-qa skill deployed")
