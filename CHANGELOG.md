@@ -8,6 +8,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [1.5.1] — 2026-05-11
+
+### Fixed
+
+- **Plugin py launcher ENOENT**: 移除 Windows 下 `py` launcher 的自动检测（`execSync` 能找到但 `spawn` 找不到），改用 `python`
+- **Base filter 语法**: `base_views.py` 中 `file.ext = "md"` 修正为 `file.ext == "md"`
+
+## [1.5.0] — 2026-05-11
+
+### Changed
+
+- Dashboard 三模式视图（Global / Collection / Per-paper）
+- `/pf-end` 命令支持（`/pf-paper` 会话存档）
+- Agent 自动定位优化：支持 Zotero Key、标题、DOI 模糊匹配
+
 ### Fixed
 
 - **deep_reading_status 取值**: 优先读 frontmatter，`finalize.py` 设置后无需 sync 即可生效；body 检测兜底
