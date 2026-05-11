@@ -288,19 +288,19 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
             # Inject alias into frontmatter
             try:
                 text = main_note_path.read_text(encoding="utf-8")
+                if "aliases:" not in text[: text.find("\n---", 4)]:
+                    alias_line = f"aliases: [{yaml_quote(item.get('title', ''))}]\n"
+                    text = re.sub(
+                        r'(^title:.*\n)',
+                        r'\1' + alias_line,
+                        text,
+                        count=1,
+                        flags=re.MULTILINE,
+                    )
+                    main_note_path.write_text(text, encoding="utf-8")
             except Exception:
-                text = frontmatter_note(entry, "")
-            if "aliases:" not in text[: text.find("\n---", 4)]:
-                alias_line = f"aliases: [{yaml_quote(entry.get('title', ''))}]\n"
-                text = re.sub(
-                    r'(^title:.*\n)',
-                    r'\1' + alias_line,
-                    text,
-                    count=1,
-                    flags=re.MULTILINE,
-                )
-                main_note_path.write_text(text, encoding="utf-8")
-            break
+                pass  # alias will be injected on next full frontmatter_note pass
+            break  # only one old file per key
     deep_reading_file = workspace_dir / "deep-reading.md"
     target_fulltext = workspace_dir / "fulltext.md"
     source_fulltext = paths["ocr"] / key / "fulltext.md"
