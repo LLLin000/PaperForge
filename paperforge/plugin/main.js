@@ -206,10 +206,14 @@ let _gitDirResolved = false;
 function resolveGitDir() {
     if (_gitDirResolved) return _gitDir;
     _gitDirResolved = true;
-    if (process.platform !== 'win32') return _gitDir;
     try {
-        const cmdExe = process.env.ComSpec || 'C:\\Windows\\System32\\cmd.exe';
-        const out = require('node:child_process').execFileSync(cmdExe, ['/c', 'where', 'git'], { timeout: 5000, windowsHide: true, encoding: 'utf-8' });
+        let out;
+        if (process.platform === 'win32') {
+            const cmdExe = process.env.ComSpec || 'C:\\Windows\\System32\\cmd.exe';
+            out = require('node:child_process').execFileSync(cmdExe, ['/c', 'where', 'git'], { timeout: 5000, windowsHide: true, encoding: 'utf-8' });
+        } else {
+            out = require('node:child_process').execFileSync('which', ['git'], { timeout: 5000, encoding: 'utf-8' });
+        }
         if (out) {
             const line = out.split('\n')[0].trim();
             if (line) _gitDir = path.dirname(line);
@@ -223,10 +227,9 @@ function paperforgeEnrichedEnv() {
     const plat = process.platform;
     const home = os.homedir();
     const extras = [];
-    if (plat === 'win32') {
-        const gitDir = resolveGitDir();
-        if (gitDir) extras.push(gitDir);
-    } else if (plat === 'darwin') {
+    const gitDir = resolveGitDir();
+    if (gitDir) extras.push(gitDir);
+    if (plat === 'darwin') {
         extras.push('/opt/homebrew/bin', '/usr/local/bin', '/usr/bin', `${home}/.local/bin`);
     } else if (plat === 'linux') {
         extras.push('/usr/local/bin', '/usr/bin', `${home}/.local/bin`);
