@@ -1,0 +1,42 @@
+# Auto-release Obsidian plugin on tag push
+# Triggered by tags like v1.4.18. Runs plugin tests, then creates a GitHub Release
+# with the 4 required Obsidian plugin files.
+
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  release:
+    name: Release Plugin
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+          cache-dependency-path: paperforge/plugin/package-lock.json
+
+      - name: Run plugin tests
+        working-directory: paperforge/plugin
+        run: |
+          npm ci
+          npx vitest run --reporter=verbose
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ github.ref_name }}
+          generate_release_notes: true
+          files: |
+            paperforge/plugin/main.js
+            paperforge/plugin/styles.css
+            paperforge/plugin/manifest.json
+            paperforge/plugin/versions.json
