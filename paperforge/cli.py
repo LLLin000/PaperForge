@@ -270,6 +270,18 @@ def build_parser() -> argparse.ArgumentParser:
     p_paper_status.add_argument("query", help="Paper identifier (zotero_key, DOI, title, alias)")
     p_paper_status.add_argument("--json", action="store_true", help="Output as JSON")
 
+    p_search = sub.add_parser("search", help="Full-text search across the library")
+    p_search.add_argument("query", help="Search query (supports FTS5 syntax)")
+    p_search.add_argument("--json", action="store_true", help="Output as JSON")
+    p_search.add_argument("--limit", type=int, default=20, help="Max results")
+    p_search.add_argument("--domain", help="Filter by domain")
+    p_search.add_argument("--year-from", type=int, help="Filter by year (inclusive)")
+    p_search.add_argument("--year-to", type=int, help="Filter by year (inclusive)")
+    p_search.add_argument("--ocr", choices=["done","pending","failed","processing"], help="Filter by OCR status")
+    p_search.add_argument("--deep", choices=["done","pending"], help="Filter by deep reading status")
+    p_search.add_argument("--lifecycle", choices=["indexed","pdf_ready","fulltext_ready","deep_read_done"], help="Filter by lifecycle")
+    p_search.add_argument("--next-step", choices=["sync","ocr","/pf-deep","ready"], help="Filter by next step")
+
     # base-refresh
     p_base = sub.add_parser("base-refresh", help="Refresh Obsidian Base view files")
     p_base.add_argument(
@@ -489,6 +501,11 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "paper-status":
         from paperforge.commands.paper_status import run
+
+        return run(args)
+
+    if args.command == "search":
+        from paperforge.commands.search import run
 
         return run(args)
 
