@@ -289,7 +289,7 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
             try:
                 text = main_note_path.read_text(encoding="utf-8")
                 if "aliases:" not in text[: text.find("\n---", 4)]:
-                    alias_line = f"aliases: [{yaml_quote(item.get('title', ''))}]\n"
+                    alias_line = f"aliases: [{yaml_quote(item.get('title', ''))}, {yaml_quote(item.get('citation_key') or item.get('key', ''))}]\n"
                     text = re.sub(
                         r'(^title:.*\n)',
                         r'\1' + alias_line,
@@ -352,6 +352,7 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
 
     entry = {
         "zotero_key": key,
+        "citation_key": item.get("citation_key", ""),
         "domain": domain,
         "title": item["title"],
         "authors": authors,

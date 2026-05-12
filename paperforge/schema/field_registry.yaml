@@ -6,6 +6,13 @@ frontmatter:
     description: "Zotero citation key"
     owner: sync
     introduced_in: "1.0"
+  citation_key:
+    type: str
+    required: false
+    public: true
+    description: "Better BibTeX citation key (e.g. aaronStimulationGrowthFactor2004)"
+    owner: sync
+    introduced_in: "1.5"
   domain:
     type: str
     required: true
