@@ -258,6 +258,21 @@ def build_parser() -> argparse.ArgumentParser:
     p_dash = sub.add_parser("dashboard", help="Aggregated stats and permissions for the plugin dashboard")
     p_dash.add_argument("--json", action="store_true", help="Output as PFResult JSON")
 
+    # Vector DB
+    p_embed = sub.add_parser("embed", help="Vector embedding operations")
+    p_embed_sp = p_embed.add_subparsers(dest="embed_subcommand", required=True)
+    p_embed_build = p_embed_sp.add_parser("build", help="Build vector index from OCR fulltext")
+    p_embed_build.add_argument("--json", action="store_true")
+    p_embed_build.add_argument("--force", action="store_true")
+    p_embed_status = p_embed_sp.add_parser("status", help="Check vector DB status")
+    p_embed_status.add_argument("--json", action="store_true")
+
+    p_retrieve = sub.add_parser("retrieve", help="Semantic search across OCR fulltext")
+    p_retrieve.add_argument("query", help="Search query")
+    p_retrieve.add_argument("--json", action="store_true")
+    p_retrieve.add_argument("--limit", type=int, default=5)
+    p_retrieve.add_argument("--expand", action="store_true", default=True)
+
     # Memory Layer commands
     p_memory = sub.add_parser("memory", help="Manage the Memory Layer")
     p_memory_sp = p_memory.add_subparsers(dest="memory_subcommand", required=True)
@@ -511,6 +526,16 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "memory":
         from paperforge.commands.memory import run
+
+        return run(args)
+
+    if args.command == "embed":
+        from paperforge.commands.embed import run
+
+        return run(args)
+
+    if args.command == "retrieve":
+        from paperforge.commands.retrieve import run
 
         return run(args)
 
