@@ -282,6 +282,10 @@ def build_parser() -> argparse.ArgumentParser:
     p_search.add_argument("--lifecycle", choices=["indexed","pdf_ready","fulltext_ready","deep_read_done"], help="Filter by lifecycle")
     p_search.add_argument("--next-step", choices=["sync","ocr","/pf-deep","ready"], help="Filter by next step")
 
+    # agent-context
+    p_ac = sub.add_parser("agent-context", help="Generate agent bootstrap context")
+    p_ac.add_argument("--json", action="store_true", help="Output as JSON")
+
     # base-refresh
     p_base = sub.add_parser("base-refresh", help="Refresh Obsidian Base view files")
     p_base.add_argument(
@@ -506,6 +510,11 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "search":
         from paperforge.commands.search import run
+
+        return run(args)
+
+    if args.command == "agent-context":
+        from paperforge.commands.agent_context import run
 
         return run(args)
 
