@@ -1,15 +1,17 @@
 ---
-name: literature-logging
+name: logging
 description: >
-  Literature reading and working log management. Triggered by:
-  /pf-log-reading /pf-log-session,
-  "记录阅读", "记录一下", "写日志", "读完了",
-  "总结会话", "写工作总结", "写working log",
-  "记一下工作过程", "记录决策".
+  Work and reading log management. Triggered by:
+  "logging work", "logging read",
+  "做工作记录", "做阅读记录", "做working-log", "做reading-log",
+  "写工作日志", "写阅读日志", "记录工作", "记录阅读",
+  "写日志", "记一下", "总结一下这个会话",
+  "记录决策", "记一下工作过程", "写工作总结",
+  "这节的结论是什么", "这段有什么值得记录的".
 source: paperforge
 ---
 
-# Literature Logging
+# Logging
 
 ---
 
