@@ -258,6 +258,18 @@ def build_parser() -> argparse.ArgumentParser:
     p_dash = sub.add_parser("dashboard", help="Aggregated stats and permissions for the plugin dashboard")
     p_dash.add_argument("--json", action="store_true", help="Output as PFResult JSON")
 
+    # Memory Layer commands
+    p_memory = sub.add_parser("memory", help="Manage the Memory Layer")
+    p_memory_sp = p_memory.add_subparsers(dest="memory_subcommand", required=True)
+    p_memory_build = p_memory_sp.add_parser("build", help="Build the memory database from canonical index")
+    p_memory_build.add_argument("--json", action="store_true", help="Output as JSON")
+    p_memory_status = p_memory_sp.add_parser("status", help="Check memory database status")
+    p_memory_status.add_argument("--json", action="store_true", help="Output as JSON")
+
+    p_paper_status = sub.add_parser("paper-status", help="Look up a paper's status")
+    p_paper_status.add_argument("query", help="Paper identifier (zotero_key, DOI, title, alias)")
+    p_paper_status.add_argument("--json", action="store_true", help="Output as JSON")
+
     # base-refresh
     p_base = sub.add_parser("base-refresh", help="Refresh Obsidian Base view files")
     p_base.add_argument(
@@ -469,6 +481,16 @@ def main(argv: list[str] | None = None) -> int:
         from paperforge.commands import dashboard
 
         return dashboard.run(args)
+
+    if args.command == "memory":
+        from paperforge.commands.memory import run
+
+        return run(args)
+
+    if args.command == "paper-status":
+        from paperforge.commands.paper_status import run
+
+        return run(args)
 
     if args.command == "base-refresh":
         force = getattr(args, "force", False)
