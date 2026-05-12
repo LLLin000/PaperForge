@@ -51,75 +51,59 @@ def run(args) -> int:
         return 1
 
 
-def _gather_dashboard_data(vault: Path) -> dict:
-    """Gather stats and permissions for dashboard display."""
+def _dashboard_from_db(vault: Path) -> dict | None:
+    """Build dashboard stats from paperforge.db. Returns None if DB missing."""
+    from paperforge.memory.db import get_connection, get_memory_db_path
+
+    db_path = get_memory_db_path(vault)
+    if not db_path.exists():
+        return None
+    conn = get_connection(db_path, read_only=True)
+    try:
+        total = conn.execute("SELECT COUNT(*) FROM papers").fetchone()[0]
+
+        pdf_healthy = conn.execute(
+            "SELECT COUNT(*) FROM papers WHERE lifecycle != 'indexed'"
+        ).fetchone()[0]
+        pdf_missing = conn.execute(
+            "SELECT COUNT(*) FROM papers WHERE lifecycle = 'indexed'"
+        ).fetchone()[0]
+
+        ocr_done = conn.execute(
+            "SELECT COUNT(*) FROM papers WHERE ocr_status='done'"
+        ).fetchone()[0]
+        ocr_failed = conn.execute(
+            "SELECT COUNT(*) FROM papers WHERE ocr_status='failed'"
+        ).fetchone()[0]
+        ocr_pending = total - ocr_done - ocr_failed
+
+        domain_counts = {
+            r["domain"]: r["cnt"]
+            for r in conn.execute(
+                "SELECT domain, COUNT(*) as cnt FROM papers GROUP BY domain"
+            ).fetchall()
+        }
+
+        return {
+            "stats": {
+                "papers": total,
+                "pdf_health": {"healthy": pdf_healthy, "missing": pdf_missing, "broken": 0},
+                "ocr_health": {"pending": ocr_pending, "done": ocr_done, "failed": ocr_failed},
+                "domain_counts": domain_counts,
+                "_source": "paperforge.db",
+            },
+        }
+    except Exception:
+        return None
+    finally:
+        conn.close()
+
+
+def _check_permissions(vault: Path) -> dict:
+    """Check sync/OCR/context permissions (lightweight filesystem check)."""
     cfg = load_vault_config(vault)
     paths = paperforge_paths(vault, cfg)
 
-    # ── Papers / formal note count ──
-    _skip_names = {"fulltext.md", "deep-reading.md", "discussion.md"}
-    record_count = 0
-    if paths["literature"].exists():
-        for p in paths["literature"].rglob("*.md"):
-            if p.name not in _skip_names:
-                record_count += 1
-
-    # ── Domain counts (first-level subdirs under literature) ──
-    domain_counts: dict[str, int] = {}
-    if paths["literature"].exists():
-        for domain_dir in sorted(paths["literature"].iterdir()):
-            if domain_dir.is_dir():
-                count = sum(1 for p in domain_dir.rglob("*.md") if p.name not in _skip_names)
-                if count > 0:
-                    domain_counts[domain_dir.name] = count
-
-    # ── PDF health & OCR health from frontmatter ──
-    pdf_healthy = 0
-    pdf_broken = 0
-    pdf_missing = 0
-    ocr_pending = 0
-    ocr_done = 0
-    ocr_failed = 0
-
-    _path_error_pat = re.compile(r'^path_error:\s*"(.+?)"\s*$', re.MULTILINE)
-    _pdf_path_pat = re.compile(r'^pdf_path:\s*".*?"\s*$', re.MULTILINE)
-    _ocr_status_pat = re.compile(r"^ocr_status:\s*(\S+)", re.MULTILINE)
-    _do_ocr_pat = re.compile(r"^do_ocr:\s*true\s*$", re.MULTILINE)
-
-    if paths["literature"].exists():
-        for note_path in paths["literature"].rglob("*.md"):
-            if note_path.name in _skip_names:
-                continue
-            try:
-                text = note_path.read_text(encoding="utf-8")
-            except Exception:
-                continue
-
-            # PDF health
-            path_error_m = _path_error_pat.search(text)
-            if path_error_m:
-                error_type = path_error_m.group(1)
-                if error_type == "not_found":
-                    pdf_missing += 1
-                else:
-                    pdf_broken += 1
-            elif _pdf_path_pat.search(text):
-                pdf_healthy += 1
-
-            # OCR health
-            ocr_status_m = _ocr_status_pat.search(text)
-            if ocr_status_m:
-                status = ocr_status_m.group(1).strip().lower().strip('"')
-                if status == "done":
-                    ocr_done += 1
-                elif status in ("pending", "queued", "processing", "running", ""):
-                    ocr_pending += 1
-                else:
-                    ocr_failed += 1
-            elif _do_ocr_pat.search(text):
-                ocr_pending += 1
-
-    # ── Permissions ──
     export_files = sorted(paths["exports"].glob("*.json")) if paths["exports"].exists() else []
     can_sync = len(export_files) > 0
 
@@ -141,6 +125,76 @@ def _gather_dashboard_data(vault: Path) -> dict:
             pass
 
     return {
+        "can_sync": can_sync,
+        "can_ocr": can_ocr,
+        "can_copy_context": can_copy_context,
+    }
+
+
+def _dashboard_from_files(vault: Path) -> dict:
+    """Gather stats and permissions by scanning literature files."""
+    cfg = load_vault_config(vault)
+    paths = paperforge_paths(vault, cfg)
+
+    _skip_names = {"fulltext.md", "deep-reading.md", "discussion.md"}
+    record_count = 0
+    if paths["literature"].exists():
+        for p in paths["literature"].rglob("*.md"):
+            if p.name not in _skip_names:
+                record_count += 1
+
+    domain_counts: dict[str, int] = {}
+    if paths["literature"].exists():
+        for domain_dir in sorted(paths["literature"].iterdir()):
+            if domain_dir.is_dir():
+                count = sum(1 for p in domain_dir.rglob("*.md") if p.name not in _skip_names)
+                if count > 0:
+                    domain_counts[domain_dir.name] = count
+
+    pdf_healthy = 0
+    pdf_broken = 0
+    pdf_missing = 0
+    ocr_pending = 0
+    ocr_done = 0
+    ocr_failed = 0
+
+    _path_error_pat = re.compile(r'^path_error:\s*"(.+?)"\s*$', re.MULTILINE)
+    _pdf_path_pat = re.compile(r'^pdf_path:\s*".*?"\s*$', re.MULTILINE)
+    _ocr_status_pat = re.compile(r"^ocr_status:\s*(\S+)", re.MULTILINE)
+    _do_ocr_pat = re.compile(r"^do_ocr:\s*true\s*$", re.MULTILINE)
+
+    if paths["literature"].exists():
+        for note_path in paths["literature"].rglob("*.md"):
+            if note_path.name in _skip_names:
+                continue
+            try:
+                text = note_path.read_text(encoding="utf-8")
+            except Exception:
+                continue
+
+            path_error_m = _path_error_pat.search(text)
+            if path_error_m:
+                error_type = path_error_m.group(1)
+                if error_type == "not_found":
+                    pdf_missing += 1
+                else:
+                    pdf_broken += 1
+            elif _pdf_path_pat.search(text):
+                pdf_healthy += 1
+
+            ocr_status_m = _ocr_status_pat.search(text)
+            if ocr_status_m:
+                status = ocr_status_m.group(1).strip().lower().strip('"')
+                if status == "done":
+                    ocr_done += 1
+                elif status in ("pending", "queued", "processing", "running", ""):
+                    ocr_pending += 1
+                else:
+                    ocr_failed += 1
+            elif _do_ocr_pat.search(text):
+                ocr_pending += 1
+
+    return {
         "stats": {
             "papers": record_count,
             "pdf_health": {
@@ -155,9 +209,13 @@ def _gather_dashboard_data(vault: Path) -> dict:
             },
             "domain_counts": domain_counts,
         },
-        "permissions": {
-            "can_sync": can_sync,
-            "can_ocr": can_ocr,
-            "can_copy_context": can_copy_context,
-        },
+        "permissions": _check_permissions(vault),
     }
+
+
+def _gather_dashboard_data(vault: Path) -> dict:
+    db_result = _dashboard_from_db(vault)
+    if db_result is not None:
+        db_result["permissions"] = _check_permissions(vault)
+        return db_result
+    return _dashboard_from_files(vault)
