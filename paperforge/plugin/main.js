@@ -2665,10 +2665,12 @@ class PaperForgeSettingTab extends PluginSettingTab {
             const pyResult = resolvePythonExecutable(vp, this.plugin.settings);
             const pythonPath = pyResult.path;
             if (pythonPath) {
+                try {
+                    const { execSync } = require('child_process');
                     const result = execSync(`"${pythonPath}" -c "import chromadb; import sentence_transformers; print('ok')"`, { encoding: 'utf-8', timeout: 15000 });
                     depsOk = result.trim() === 'ok';
-                }
-            } catch(e) { depsOk = false; }
+                } catch(e) { depsOk = false; }
+            }
 
     if (!depsOk) {
         const depWarning = containerEl.createEl('div', { cls: 'paperforge-vector-warning' });
@@ -2723,10 +2725,12 @@ class PaperForgeSettingTab extends PluginSettingTab {
                 const pyResult = resolvePythonExecutable(vp, this.plugin.settings);
                 const pythonPath = pyResult.path;
                 if (pythonPath) {
+                    try {
+                        const { execSync } = require('child_process');
                         const result = execSync(`"${pythonPath}" -m paperforge --vault "${vp}" embed status --json`, { encoding: 'utf-8', timeout: 10000 });
                         embedStatus = JSON.parse(result);
-                    }
-                } catch(e) {}
+                    } catch(e) {}
+                }
 
                 if (embedStatus && embedStatus.ok) {
                     const statusEl = containerEl.createEl('div', { cls: 'paperforge-vector-status' });
