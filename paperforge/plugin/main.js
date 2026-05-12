@@ -2627,7 +2627,6 @@ class PaperForgeSettingTab extends PluginSettingTab {
                         setting.setDesc((skill.desc || 'No description') + (skill.disabled ? ' (disabled)' : ' (enabled)'));
                     });
             });
-            });
         };
 
         // System skills
