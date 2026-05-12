@@ -2214,6 +2214,9 @@ class PaperForgeSettingTab extends PluginSettingTab {
         this.plugin = plugin;
         this._saveTimeout = null;
         this._pfConfig = null;  // cached paperforge.json config
+        this._memoryStatusText = null;   // null = not checked yet, string = cached result
+        this._vectorDepsOk = null;       // null = not checked, bool = cached
+        this._embedStatusText = null;
         this.activeTab = 'setup';
     }
 
@@ -2481,20 +2484,20 @@ class PaperForgeSettingTab extends PluginSettingTab {
         }
     }
 
-    _execMemoryStatus(pythonPath, vp, statusEl) {
+    _execMemoryStatus(pythonPath, vp, callback) {
         const { exec } = require('child_process');
         exec(`"${pythonPath}" -m paperforge --vault "${vp}" memory status --json`, { encoding: 'utf-8', timeout: 15000 }, (err, stdout) => {
-            if (err) { statusEl.setText('Status unavailable'); return; }
+            if (err) { callback('Status unavailable'); return; }
             try {
                 const data = JSON.parse(stdout);
                 if (data.ok) {
                     const s = data.data;
                     const freshness = s.fresh ? 'fresh' : 'stale';
-                    statusEl.setText(`Papers: ${s.paper_count_db} | ${freshness}${s.needs_rebuild ? ' - needs rebuild' : ''}`);
+                    callback(`Papers: ${s.paper_count_db} | ${freshness}${s.needs_rebuild ? ' - needs rebuild' : ''}`);
                 } else {
-                    statusEl.setText('DB not found. Run paperforge memory build.');
+                    callback('DB not found. Run paperforge memory build.');
                 }
-            } catch(e) { statusEl.setText('Could not parse status.'); }
+            } catch(e) { callback('Could not parse status.'); }
         });
     }
 
@@ -2505,17 +2508,33 @@ class PaperForgeSettingTab extends PluginSettingTab {
         });
     }
 
-    _execEmbedStatus(pythonPath, vp, statusEl) {
+    _execEmbedStatus(pythonPath, vp, callback) {
         const { exec } = require('child_process');
         exec(`"${pythonPath}" -m paperforge --vault "${vp}" embed status --json`, { encoding: 'utf-8', timeout: 15000 }, (err, stdout) => {
-            if (err) { statusEl.setText('Status unavailable'); return; }
+            if (err) { callback('Status unavailable'); return; }
             try {
                 const data = JSON.parse(stdout);
                 if (data.ok) {
-                    statusEl.setText(`Chunks: ${data.data.chunk_count} | ${data.data.model} | ${data.data.mode}`);
+                    callback(`Chunks: ${data.data.chunk_count} | ${data.data.model} | ${data.data.mode}`);
+                } else {
+                    callback('Could not parse status.');
                 }
-            } catch(e) { statusEl.setText('Could not parse status.'); }
+            } catch(e) { callback('Could not parse status.'); }
         });
+    }
+
+    _renderMemoryStatusText(el, text) {
+        const spans = el.querySelectorAll('span');
+        spans.forEach(s => s.remove());
+        const textEl = el.createEl('span', { text: text });
+        if (!el.querySelector('.paperforge-refresh-btn')) {
+            const refreshBtn = el.createEl('button', { cls: 'paperforge-refresh-btn', text: '\u21BB' });
+            refreshBtn.style.cssText = 'margin-left:auto; border:none; background:none; cursor:pointer; font-size:16px; padding:0 4px;';
+            refreshBtn.onclick = () => {
+                this._memoryStatusText = null;
+                this.display();
+            };
+        }
     }
 
     _resolvePythonAsync(callback) {
@@ -2582,20 +2601,25 @@ class PaperForgeSettingTab extends PluginSettingTab {
                     });
             });
 
-        // Show memory status when enabled — async to not block
+        // Show memory status when enabled — render from cache if available
         if (this.plugin.settings.features.memory_layer) {
-            const statusEl = containerEl.createEl('div', { cls: 'paperforge-memory-status' });
-            statusEl.style.cssText = 'padding:8px 12px; margin:8px 0; background:var(--background-secondary); border-radius:4px;';
-            statusEl.setText('Checking...');
+            const statusRow = containerEl.createEl('div', { cls: 'paperforge-memory-status' });
+            statusRow.style.cssText = 'display:flex; align-items:center; padding:8px 12px; margin:8px 0; background:var(--background-secondary); border-radius:4px;';
+
             const vp = this.app.vault.adapter.basePath;
-            this._resolvePythonAsync(pyResult => {
-                const pythonPath = pyResult.path;
-                if (pythonPath) {
-                    this._execMemoryStatus(pythonPath, vp, statusEl);
-                } else {
-                    statusEl.setText('No Python found. Check Installation tab.');
-                }
-            });
+            const pyResult = resolvePythonExecutable(vp, this.plugin.settings);
+
+            if (this._memoryStatusText !== null) {
+                this._renderMemoryStatusText(statusRow, this._memoryStatusText);
+            } else if (pyResult.path) {
+                this._renderMemoryStatusText(statusRow, 'Checking...');
+                this._execMemoryStatus(pyResult.path, vp, (text) => {
+                    this._memoryStatusText = text;
+                    this._renderMemoryStatusText(statusRow, text);
+                });
+            } else {
+                this._renderMemoryStatusText(statusRow, 'No Python found.');
+            }
         }
 
         // --- Section: Skills ---
@@ -2731,34 +2755,46 @@ class PaperForgeSettingTab extends PluginSettingTab {
                     .onChange(value => {
                         this.plugin.settings.features.vector_db = value;
                         this.plugin.saveSettings();
+                        this._vectorDepsOk = null;
+                        this._embedStatusText = null;
                         this.display();
                     });
             });
 
         if (this.plugin.settings.features.vector_db) {
-            // Check if dependencies installed — async
-            const depsEl = containerEl.createEl('div');
-            depsEl.style.cssText = 'padding:8px 12px; margin:8px 0; background:var(--background-secondary); border-radius:4px;';
-            depsEl.setText('Checking dependencies...');
             const vp = this.app.vault.adapter.basePath;
-            this._resolvePythonAsync(pyResult => {
-                const pythonPath = pyResult.path;
-                if (pythonPath) {
-                    this._execVectorDeps(pythonPath, (ok) => {
-                        if (ok) {
-                            depsEl.remove();
-                            this._renderVectorConfig(containerEl);
-                        } else {
-                            depsEl.style.cssText = 'padding:8px 12px; margin:8px 0; background:#4a1515; border-radius:4px; color:#ff6b6b;';
-                            depsEl.setText('Dependencies not installed. Required: chromadb, sentence-transformers.');
-                            this._renderVectorInstall(containerEl);
-                        }
-                    });
-                } else {
-                    depsEl.style.cssText = 'padding:8px 12px; margin:8px 0; background:#4a1515; border-radius:4px; color:#ff6b6b;';
-                    depsEl.setText('No Python found. Check Installation tab.');
-                }
-            });
+
+            if (this._vectorDepsOk === true) {
+                this._renderVectorConfig(containerEl);
+            } else if (this._vectorDepsOk === false) {
+                const depsEl = containerEl.createEl('div');
+                depsEl.style.cssText = 'padding:8px 12px; margin:8px 0; background:#4a1515; border-radius:4px; color:#ff6b6b;';
+                depsEl.setText('Dependencies not installed. Required: chromadb, sentence-transformers.');
+                this._renderVectorInstall(containerEl);
+            } else {
+                const depsEl = containerEl.createEl('div');
+                depsEl.style.cssText = 'padding:8px 12px; margin:8px 0; background:var(--background-secondary); border-radius:4px;';
+                depsEl.setText('Checking dependencies...');
+                this._resolvePythonAsync(pyResult => {
+                    const pythonPath = pyResult.path;
+                    if (pythonPath) {
+                        this._execVectorDeps(pythonPath, (ok) => {
+                            this._vectorDepsOk = ok;
+                            if (ok) {
+                                depsEl.remove();
+                                this._renderVectorConfig(containerEl);
+                            } else {
+                                depsEl.style.cssText = 'padding:8px 12px; margin:8px 0; background:#4a1515; border-radius:4px; color:#ff6b6b;';
+                                depsEl.setText('Dependencies not installed. Required: chromadb, sentence-transformers.');
+                                this._renderVectorInstall(containerEl);
+                            }
+                        });
+                    } else {
+                        depsEl.style.cssText = 'padding:8px 12px; margin:8px 0; background:#4a1515; border-radius:4px; color:#ff6b6b;';
+                        depsEl.setText('No Python found. Check Installation tab.');
+                    }
+                });
+            }
         }
     }
 
@@ -2807,12 +2843,20 @@ class PaperForgeSettingTab extends PluginSettingTab {
     _renderVectorConfig(containerEl) {
         const statusEl = containerEl.createEl('div');
         statusEl.style.cssText = 'padding:8px 12px; margin:8px 0; background:var(--background-secondary); border-radius:4px;';
-        statusEl.setText('Loading...');
         const vp = this.app.vault.adapter.basePath;
         const pyResult = resolvePythonExecutable(vp, this.plugin.settings);
         const pythonPath = pyResult.path;
-        if (pythonPath) {
-            this._execEmbedStatus(pythonPath, vp, statusEl);
+
+        if (this._embedStatusText !== null) {
+            statusEl.setText(this._embedStatusText);
+        } else if (pythonPath) {
+            statusEl.setText('Loading...');
+            this._execEmbedStatus(pythonPath, vp, (text) => {
+                this._embedStatusText = text;
+                statusEl.setText(text);
+            });
+        } else {
+            statusEl.setText('No Python found.');
         }
 
         new Setting(containerEl)
