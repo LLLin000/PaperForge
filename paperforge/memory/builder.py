@@ -148,7 +148,7 @@ def build_from_index(vault: Path) -> dict:
 
             try:
                 conn.execute(
-                    """INSERT INTO paper_fts(rowid, zotero_key, citation_key, title, first_author, authors, abstract, journal, domain, collection_path, collection_tags)
+                    """INSERT INTO paper_fts(rowid, zotero_key, citation_key, title, first_author, authors_json, abstract, journal, domain, collection_path, collections_json)
                        VALUES ((SELECT rowid FROM papers WHERE zotero_key = ?), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                     (zotero_key, zotero_key, entry.get("citation_key", ""), entry.get("title", ""),
                      entry.get("first_author", ""), paper_values.get("authors_json", ""),
