@@ -2512,17 +2512,17 @@ class PaperForgeSettingTab extends PluginSettingTab {
                     if (data.ok) {
                         const s = data.data;
                         const freshness = s.fresh ? 'fresh' : 'stale';
-                        statusEl.createEl('span', { text: `Papers: ${s.paper_count_db} | Schema: ${s.schema_ok ? 'OK' : 'MISMATCH'} | Status: ${freshness}` });
+                        statusEl.setText(`Papers: ${s.paper_count_db} | Schema: ${s.schema_ok ? 'OK' : 'MISMATCH'} | Status: ${freshness}`);
                         if (s.needs_rebuild) {
                             statusEl.createEl('br');
                             statusEl.createEl('span', { text: 'Needs rebuild: run paperforge memory build', cls: 'paperforge-status-warn' });
                         }
                     } else {
-                        statusEl.createEl('span', { text: 'DB not found. Run paperforge memory build.', cls: 'paperforge-status-warn' });
+                        statusEl.setText('DB not found. Run paperforge memory build.');
                     }
                 }
             } catch(e) {
-                statusEl.createEl('span', { text: 'Could not check memory status. Ensure Python is configured.', cls: 'paperforge-status-warn' });
+                statusEl.setText('Could not check memory status. Ensure Python is configured.');
             }
         }
 
@@ -2675,12 +2675,10 @@ class PaperForgeSettingTab extends PluginSettingTab {
                 }
             } catch(e) { depsOk = false; }
 
-            if (!depsOk) {
-                const depWarning = containerEl.createEl('div', {
-                    cls: 'paperforge-vector-warning',
-                    text: 'Dependencies not installed. Required: chromadb, sentence-transformers.'
-                });
-                depWarning.style.cssText = 'padding:8px 12px; margin:8px 0; background:var(--background-modifier-error); border-radius:4px; color:var(--text-error);';
+    if (!depsOk) {
+        const depWarning = containerEl.createEl('div', { cls: 'paperforge-vector-warning' });
+        depWarning.setText('Dependencies not installed. Required: chromadb, sentence-transformers.');
+        depWarning.style.cssText = 'padding:8px 12px; margin:8px 0; background:#4a1515; border-radius:4px; color:#ff6b6b;';
 
                 new Setting(containerEl)
                     .setName('Install Dependencies')
