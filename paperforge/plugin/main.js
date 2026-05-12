@@ -2586,42 +2586,6 @@ class PaperForgeSettingTab extends PluginSettingTab {
     }
 
     _renderFeaturesTab(containerEl) {
-        // --- Section: Memory Layer ---
-        containerEl.createEl('h3', { text: 'Memory Layer' });
-
-        new Setting(containerEl)
-            .setName('Enable Memory Layer')
-            .setDesc('SQLite index for fast paper lookup, search, and agent context.')
-            .addToggle(toggle => {
-                toggle.setValue(this.plugin.settings.features.memory_layer)
-                    .onChange(value => {
-                        this.plugin.settings.features.memory_layer = value;
-                        this.plugin.saveSettings();
-                        this.display();
-                    });
-            });
-
-        // Show memory status when enabled — render from cache if available
-        if (this.plugin.settings.features.memory_layer) {
-            const statusRow = containerEl.createEl('div', { cls: 'paperforge-memory-status' });
-            statusRow.style.cssText = 'display:flex; align-items:center; padding:8px 12px; margin:8px 0; background:var(--background-secondary); border-radius:4px;';
-
-            const vp = this.app.vault.adapter.basePath;
-            const pyResult = resolvePythonExecutable(vp, this.plugin.settings);
-
-            if (this._memoryStatusText !== null) {
-                this._renderMemoryStatusText(statusRow, this._memoryStatusText);
-            } else if (pyResult.path) {
-                this._renderMemoryStatusText(statusRow, 'Checking...');
-                this._execMemoryStatus(pyResult.path, vp, (text) => {
-                    this._memoryStatusText = text;
-                    this._renderMemoryStatusText(statusRow, text);
-                });
-            } else {
-                this._renderMemoryStatusText(statusRow, 'No Python found.');
-            }
-        }
-
         // --- Section: Skills ---
         containerEl.createEl('h3', { text: 'Skills' });
 
@@ -2658,7 +2622,6 @@ class PaperForgeSettingTab extends PluginSettingTab {
                     .onChange(value => {
                         this.plugin.settings.selected_skill_platform = value;
                         this.plugin.saveSettings();
-                        // Re-render to show correct platform's skills
                         this.display();
                     });
             });
@@ -2719,7 +2682,7 @@ class PaperForgeSettingTab extends PluginSettingTab {
                             : skill.content.replace(/^(---\r?\n)/, `$1disable-model-invocation: ${newDisabled}\n`);
                         fs.writeFileSync(skill.path, newContent, 'utf-8');
                         skill.disabled = newDisabled;
-                        skill.content = newContent;  // keep in-memory copy in sync
+                        skill.content = newContent;
                         setting.setDesc((skill.desc || 'No description') + (skill.disabled ? ' (disabled)' : ' (enabled)'));
                     });
             });
@@ -2744,8 +2707,44 @@ class PaperForgeSettingTab extends PluginSettingTab {
             });
         }
 
-        // --- Section: Vector Database ---
-        containerEl.createEl('h3', { text: 'Vector Database' });
+        // --- Section: Memory Layer ---
+        containerEl.createEl('h3', { text: 'Memory Layer' });
+
+        new Setting(containerEl)
+            .setName('Enable Memory Layer')
+            .setDesc('SQLite index for fast paper lookup, search, and agent context.')
+            .addToggle(toggle => {
+                toggle.setValue(this.plugin.settings.features.memory_layer)
+                    .onChange(value => {
+                        this.plugin.settings.features.memory_layer = value;
+                        this.plugin.saveSettings();
+                        this.display();
+                    });
+            });
+
+        // Show memory status when enabled — render from cache if available
+        if (this.plugin.settings.features.memory_layer) {
+            const statusRow = containerEl.createEl('div', { cls: 'paperforge-memory-status' });
+            statusRow.style.cssText = 'display:flex; align-items:center; padding:8px 12px; margin:8px 0; background:var(--background-secondary); border-radius:4px;';
+
+            const vp = this.app.vault.adapter.basePath;
+            const pyResult = resolvePythonExecutable(vp, this.plugin.settings);
+
+            if (this._memoryStatusText !== null) {
+                this._renderMemoryStatusText(statusRow, this._memoryStatusText);
+            } else if (pyResult.path) {
+                this._renderMemoryStatusText(statusRow, 'Checking...');
+                this._execMemoryStatus(pyResult.path, vp, (text) => {
+                    this._memoryStatusText = text;
+                    this._renderMemoryStatusText(statusRow, text);
+                });
+            } else {
+                this._renderMemoryStatusText(statusRow, 'No Python found.');
+            }
+        }
+
+        // --- Vector Database (within Memory Layer) ---
+        containerEl.createEl('h4', { text: 'Vector Database' });
 
         new Setting(containerEl)
             .setName('Enable Vector Retrieval')
