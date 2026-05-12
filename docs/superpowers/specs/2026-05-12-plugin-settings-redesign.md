@@ -124,6 +124,8 @@ source: user                # → toggle only, no update
 # (or no source field)      # → treated as user
 ```
 
+**Implementation note:** Both existing SKILL.md files (`literature-qa`, `literature-logging`) must add `source: paperforge` to their frontmatter.
+
 ## Section 2: Feature Toggles
 
 Memory Layer features as simple Obsidian toggles in plugin `data.json`:
@@ -136,6 +138,8 @@ Memory Layer features as simple Obsidian toggles in plugin `data.json`:
 | `features.vector_db` | `false` | 是否启用向量检索模块 |
 
 When a feature is disabled, the corresponding CLI command returns a clear error message.
+
+**Implementation note:** CLI commands read `data.json` to check feature toggles. If `data.json` is missing (user runs CLI outside Obsidian), features default to `true` (opt-out, not opt-in).
 
 ## Section 3: Vector Database
 
@@ -166,7 +170,7 @@ Implementation notes:
 
 ## Data Storage
 
-All toggles in plugin `data.json`:
+Plugin `data.json`:
 ```json
 {
   "features": {
@@ -178,10 +182,11 @@ All toggles in plugin `data.json`:
   "vector_db_mode": "local",
   "vector_db_model": "all-MiniLM-L6-v2",
   "vector_db_api_key": "",
-  "frozen_skills": {
-    "literature-qa": false
-  }
+  "frozen_skills": {}
 }
+```
+
+**Critical:** All new keys MUST be added to `DEFAULT_SETTINGS` in `main.js` (currently a whitelist of 8 keys in `saveSettings()`). Without this, toggles appear to work but vanish on vault reopen.
 ```
 
 Skill disable state in `SKILL.md` frontmatter (standard Agent Skills spec):
