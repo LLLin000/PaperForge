@@ -2711,8 +2711,8 @@ class PaperForgeSettingTab extends PluginSettingTab {
         containerEl.createEl('h3', { text: 'Memory Layer' });
 
         new Setting(containerEl)
-            .setName('Enable Memory Layer')
-            .setDesc('SQLite index for fast paper lookup, search, and agent context.')
+            .setName('Easy Memory Layer')
+            .setDesc('轻量 SQLite 文献信息检索（笔记元数据+搜索+状态），不含全文向量库。')
             .addToggle(toggle => {
                 toggle.setValue(this.plugin.settings.features.memory_layer)
                     .onChange(value => {
