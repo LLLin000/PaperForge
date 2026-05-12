@@ -1,0 +1,115 @@
+from __future__ import annotations
+
+import sqlite3
+
+CURRENT_SCHEMA_VERSION = 1
+
+CREATE_META = """
+CREATE TABLE IF NOT EXISTS meta (
+    key   TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+);
+"""
+
+CREATE_PAPERS = """
+CREATE TABLE IF NOT EXISTS papers (
+    zotero_key           TEXT PRIMARY KEY,
+    citation_key         TEXT NOT NULL DEFAULT '',
+    title                TEXT NOT NULL,
+    year                 TEXT,
+    doi                  TEXT,
+    pmid                 TEXT,
+    journal              TEXT,
+    first_author         TEXT,
+    authors_json         TEXT,
+    abstract             TEXT,
+    domain               TEXT,
+    collection_path      TEXT,
+    collections_json     TEXT,
+    has_pdf              INTEGER NOT NULL DEFAULT 0,
+    do_ocr               INTEGER,
+    analyze              INTEGER,
+    ocr_status           TEXT,
+    deep_reading_status  TEXT,
+    ocr_job_id           TEXT,
+    impact_factor        REAL,
+    lifecycle            TEXT,
+    maturity_level       INTEGER,
+    maturity_name        TEXT,
+    next_step            TEXT,
+    pdf_path             TEXT,
+    note_path            TEXT,
+    main_note_path       TEXT,
+    paper_root           TEXT,
+    fulltext_path        TEXT,
+    ocr_md_path          TEXT,
+    ocr_json_path        TEXT,
+    ai_path              TEXT,
+    deep_reading_md_path TEXT,
+    updated_at           TEXT
+);
+"""
+
+CREATE_ASSETS = """
+CREATE TABLE IF NOT EXISTS paper_assets (
+    paper_id       TEXT NOT NULL,
+    asset_type     TEXT NOT NULL,
+    path           TEXT NOT NULL,
+    exists_on_disk INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (paper_id, asset_type),
+    FOREIGN KEY (paper_id) REFERENCES papers(zotero_key)
+);
+"""
+
+CREATE_ALIASES = """
+CREATE TABLE IF NOT EXISTS paper_aliases (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    paper_id   TEXT NOT NULL,
+    alias      TEXT NOT NULL,
+    alias_norm TEXT NOT NULL,
+    alias_type TEXT NOT NULL,
+    FOREIGN KEY (paper_id) REFERENCES papers(zotero_key)
+);
+"""
+
+INDEX_SQL = [
+    "CREATE INDEX IF NOT EXISTS idx_papers_doi ON papers(doi);",
+    "CREATE INDEX IF NOT EXISTS idx_papers_citation_key ON papers(citation_key);",
+    "CREATE INDEX IF NOT EXISTS idx_papers_domain ON papers(domain);",
+    "CREATE INDEX IF NOT EXISTS idx_papers_year ON papers(year);",
+    "CREATE INDEX IF NOT EXISTS idx_papers_ocr_status ON papers(ocr_status);",
+    "CREATE INDEX IF NOT EXISTS idx_papers_deep_status ON papers(deep_reading_status);",
+    "CREATE INDEX IF NOT EXISTS idx_papers_lifecycle ON papers(lifecycle);",
+    "CREATE INDEX IF NOT EXISTS idx_papers_next_step ON papers(next_step);",
+]
+
+ALL_TABLES = ["papers", "paper_assets", "paper_aliases", "meta"]
+
+
+def ensure_schema(conn: sqlite3.Connection) -> None:
+    """Create tables and indexes if they don't exist."""
+    conn.execute(CREATE_META)
+    conn.execute(CREATE_PAPERS)
+    conn.execute(CREATE_ASSETS)
+    conn.execute(CREATE_ALIASES)
+    for idx_sql in INDEX_SQL:
+        conn.execute(idx_sql)
+    conn.commit()
+
+
+def drop_all_tables(conn: sqlite3.Connection) -> None:
+    """Drop all Memory Layer tables (for rebuild)."""
+    for table in ALL_TABLES:
+        conn.execute(f"DROP TABLE IF EXISTS {table};")
+    conn.commit()
+
+
+def get_schema_version(conn: sqlite3.Connection) -> int:
+    """Read the stored schema version from meta table, or 0 if not found."""
+    try:
+        row = conn.execute(
+            "SELECT value FROM meta WHERE key = 'schema_version'"
+        ).fetchone()
+        return int(row["value"]) if row else 0
+    except sqlite3.OperationalError:
+        return 0
