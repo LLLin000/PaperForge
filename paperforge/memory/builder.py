@@ -10,8 +10,8 @@ from paperforge import __version__ as PF_VERSION
 from paperforge.memory.db import get_connection, get_memory_db_path
 from paperforge.memory.schema import (
     CURRENT_SCHEMA_VERSION,
-    ensure_schema,
     drop_all_tables,
+    ensure_schema,
     get_schema_version,
 )
 from paperforge.worker.asset_index import read_index
@@ -78,10 +78,7 @@ def build_from_index(vault: Path) -> dict:
     else:
         items = envelope.get("items", [])
         generated_at = envelope.get("generated_at", "")
-    if isinstance(items, list) and items and isinstance(items[0], dict):
-        canonical_hash = compute_hash(items)
-    else:
-        canonical_hash = ""
+    canonical_hash = compute_hash(items) if isinstance(items, list) and items and isinstance(items[0], dict) else ""
 
     db_path = get_memory_db_path(vault)
     conn = get_connection(db_path, read_only=False)
@@ -153,13 +150,12 @@ def build_from_index(vault: Path) -> dict:
                 abs_path = _resolve_vault_path(vault, rel_path)
                 exists = 1 if abs_path.exists() else 0
 
-                if asset_type == "deep_reading":
-                    if abs_path.exists():
-                        try:
-                            content = abs_path.read_text(encoding="utf-8")
-                            exists = 1 if "## 🔍 精读" in content else 0
-                        except Exception:
-                            exists = 0
+                if asset_type == "deep_reading" and abs_path.exists():
+                    try:
+                        content = abs_path.read_text(encoding="utf-8")
+                        exists = 1 if "## 🔍 精读" in content else 0
+                    except Exception:
+                        exists = 0
 
                 conn.execute(
                     """INSERT OR REPLACE INTO paper_assets
