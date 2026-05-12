@@ -97,14 +97,26 @@ Vault: $VAULT
 
 本 Skill 提供两类工具：**确定性命令** 和 **Agent 自查**。必须根据场景选择正确的方式。
 
+### 搜索入口 — 统一搜索 Harness
+
+任何搜索需求都用 pf_search.py（自动路由 vector -> FTS5 -> grep）：
+
+```
+python $SKILL_DIR/scripts/pf_search.py --vault $VAULT --query "关键词"
+```
+
+返回 JSON 结构：
+- `engines_used`: 实际使用的引擎列表 (`vector` / `fts5` / `grep`)
+- `results`: 论文列表，每篇含 `zotero_key`, `title`, `year`, `source` 等
+- `count`: 结果数
+
 ### 确定性命令 — 优先使用
 
-| 场景                   | 命令                                                                                       | 原因 |
-| ---------------------- | ------------------------------------------------------------------------------------------ | ---- |
-| 按 key 快速找文件       | `glob("$LIT_DIR/**/<KEY>.md")` 或用 `Get-ChildItem "$LIT_DIR" -Recurse -Filter "<KEY>.md"` | 不需要 $PYTHON，最快 |
-| 按 key 查完整信息       | `$PYTHON -m paperforge.worker.paper_resolver resolve-key <KEY> --vault "$VAULT"`             | 返回 frontmatter 字段 (analyze, ocr_status 等) |
-| 按 DOI 定位论文        | `$PYTHON -m paperforge.worker.paper_resolver resolve-doi "<DOI>" --vault "$VAULT"`           | DOI 无法用文件系统快速匹配 |
-| 按字段搜索论文         | `$PYTHON -m paperforge.worker.paper_resolver search --title "..." --author "..." --year ... --domain "..." --vault "$VAULT"` | 结构化搜索，含相关性打分 |
+| 场景                   | 命令                                                                                       |
+| ---------------------- | ------------------------------------------------------------------------------------------ |
+| 按 key 快速找文件       | `glob("$LIT_DIR/**/<KEY>.md")` 或用 `Get-ChildItem "$LIT_DIR" -Recurse -Filter "<KEY>.md"` |
+| 按 key 查完整信息       | `$PYTHON -m paperforge.worker.paper_resolver resolve-key <KEY> --vault "$VAULT"`             |
+| 按 DOI 定位论文        | `$PYTHON -m paperforge.worker.paper_resolver resolve-doi "<DOI>" --vault "$VAULT"`           |
 | 精读 prepare           | `$PYTHON "$SKILL_DIR/scripts/ld_deep.py" prepare --key <KEY> --vault "$VAULT"`               |
 | 精读 postprocess       | `$PYTHON "$SKILL_DIR/scripts/ld_deep.py" postprocess-pass2 <FORMAL_NOTE_PATH> --figures <N> --vault "$VAULT"` |
 | 精读 validate          | `$PYTHON "$SKILL_DIR/scripts/ld_deep.py" validate-note <FORMAL_NOTE_PATH> --fulltext <FULLTEXT_PATH>` |
@@ -116,8 +128,8 @@ Vault: $VAULT
 | ------------------------ | ----------------------------------------------------------- |
 | 按关键词模糊搜索全部文献 | 读 `$IDX_PATH` 的 JSON，筛 `title` / `abstract` / `journal`   |
 | 按 collection 筛选       | 读 `$IDX_PATH`，筛 `collection_path` 字段                     |
-| 读论文全文               | 已找到 `fulltext.md` 路径（glob 或 resolve-key） → 直接 read                               |
-| 读精读笔记               | 已找到 formal note 路径 → read 的 `## 🔍 精读` 区域                                          |
+| 读论文全文               | 已找到 `fulltext.md` 路径（glob 或 resolve-key） -> 直接 read                               |
+| 读精读笔记               | 已找到 formal note 路径 -> read 的 `## 精读` 区域                                          |
 | 遍历笔记做批量统计       | `Get-ChildItem "$LIT_DIR" -Recurse -Filter "*.md"` + 读 frontmatter 或 `find "$LIT_DIR" -name "*.md"` |
 | **禁止的操作**           | **根据 vault-knowledge 示例拼接路径、把目录名写死在文件路径里** |
 
@@ -154,5 +166,6 @@ literature-qa/
 │   └── chart-reading/
 └── scripts/
     ├── pf_bootstrap.py              ← Bootstrap 入口
+    ├── pf_search.py                 ← 统一搜索 Harness
     └── ld_deep.py                   ← 精读引擎
 ```

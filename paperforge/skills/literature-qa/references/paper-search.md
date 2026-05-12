@@ -44,9 +44,17 @@
 - **关键词**：标题、作者、年份、期刊、主题词
 - **collection 路径**：Zotero 子分类，如 `电刺激软骨修复综述`
 
-### Step 3: 搜索
+### Step 3: 搜索 — 统一 Harness
 
-**优先：Python paper_resolver**（确定性匹配）
+任何搜索都用 pf_search.py，自动路由 vector -> FTS5 -> grep：
+
+```
+python $SKILL_DIR/scripts/pf_search.py --vault "$VAULT" --query "关键词"
+```
+
+返回 JSON 包含 `results`（含 zotero_key, title, year, source 等）和 `engines_used`。
+
+如需结构化高级搜索（特定 domain/author），使用 paper_resolver：
 
 ```
 $PYTHON -m paperforge.worker.paper_resolver search --title "关键词" --author "Smith" --year 2024 --domain "骨科" --vault "$VAULT"
@@ -55,7 +63,7 @@ $PYTHON -m paperforge.worker.paper_resolver search --title "关键词" --author 
 **Fallback：读 formal-library.json**
 
 Agent 直接读 `index_path`，在 JSON 中筛选：
--`domain` 匹配
+- `domain` 匹配
 - `title`/`first_author`/`journal` 包含关键词
 
 ### Step 4: 返回结果

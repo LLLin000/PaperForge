@@ -156,6 +156,30 @@ def main():
     # --- 6. Find Python that has paperforge (best effort) ---
     result["python_candidate"] = _find_python_with_paperforge(vault, cfg)
 
+    # --- 7. Memory layer state ---
+    memory_layer = {"available": False, "paper_count": 0, "fts_search": False, "vector_search": False}
+    idx_path = Path(paths["index_path"])
+    dc_json = vault / ".obsidian" / "plugins" / "paperforge" / "data.json"
+    if idx_path.exists():
+        try:
+            with open(idx_path, encoding="utf-8") as f:
+                data = json.load(f)
+            items = data.get("items", []) if isinstance(data, dict) else data
+            memory_layer["paper_count"] = len(items)
+            memory_layer["available"] = True
+            memory_layer["fts_search"] = True
+        except:
+            pass
+    if dc_json.exists():
+        try:
+            with open(dc_json, encoding="utf-8") as f:
+                plugin_data = json.load(f)
+            vector_enabled = plugin_data.get("features", {}).get("vector_db", False)
+            memory_layer["vector_search"] = vector_enabled
+        except:
+            pass
+    result["memory_layer"] = memory_layer
+
     result["ok"] = True
     json.dump(result, sys.stdout, ensure_ascii=False, indent=2)
 
