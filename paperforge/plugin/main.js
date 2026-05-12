@@ -2685,19 +2685,28 @@ class PaperForgeSettingTab extends PluginSettingTab {
                             .onClick(async () => {
                                 button.setButtonText('Installing...');
                                 button.setDisabled(true);
+                                const notice = new Notice('Installing chromadb + sentence-transformers...', 0);
                                 try {
-                                    const { execSync } = require('child_process');
+                                    const { exec } = require('child_process');
                                     const pythonPath = this.plugin.settings.python_path;
-                                    execSync(`"${pythonPath}" -m pip install chromadb sentence-transformers`, {
-                                        encoding: 'utf-8',
-                                        timeout: 300000,
-                                        stdio: 'pipe'
+                                    const env = Object.assign({}, process.env, { PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1' });
+                                    await new Promise((resolve, reject) => {
+                                        exec(`"${pythonPath}" -m pip install chromadb sentence-transformers`, {
+                                            encoding: 'utf-8',
+                                            timeout: 300000,
+                                            env: env,
+                                        }, (error, stdout, stderr) => {
+                                            if (error) reject(error);
+                                            else resolve(stdout);
+                                        });
                                     });
-                                    new Notice('Dependencies installed. You can now run paperforge embed build.');
+                                    notice.hide();
+                                    new Notice('Dependencies installed. Run paperforge embed build to index.');
                                     this.display();
                                 } catch(e) {
-                                    new Notice('Install failed: ' + e.message);
-                                    button.setButtonText('Install');
+                                    notice.hide();
+                                    new Notice('Install failed: ' + (e.stderr || e.message || e));
+                                    button.setButtonText('Retry');
                                     button.setDisabled(false);
                                 }
                             });
