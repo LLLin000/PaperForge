@@ -37,14 +37,15 @@ def search_papers(conn: sqlite3.Connection, query: str, limit: int = 20,
         params.append(next_step)
 
     where = " AND ".join(conditions)
+    # Content-sync FTS: query the FTS table directly, columns come from papers
     sql = f"""
         SELECT p.zotero_key, p.citation_key, p.title, p.year, p.doi,
                p.first_author, p.journal, p.domain, p.lifecycle,
                p.ocr_status, p.deep_reading_status, p.next_step,
-               p.abstract,
+               substr(p.abstract, 1, 300) as abstract,
                rank
         FROM paper_fts f
-        JOIN papers p ON p.zotero_key = f.zotero_key
+        JOIN papers p ON p.rowid = f.rowid
         WHERE {where}
         ORDER BY rank
         LIMIT ?

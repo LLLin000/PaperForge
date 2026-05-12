@@ -89,12 +89,12 @@ CREATE VIRTUAL TABLE IF NOT EXISTS paper_fts USING fts5(
     citation_key,
     title,
     first_author,
-    authors,
+    authors_json,
     abstract,
     journal,
     domain,
     collection_path,
-    collection_tags,
+    collections_json,
     content='papers',
     content_rowid='rowid'
 );
@@ -102,17 +102,17 @@ CREATE VIRTUAL TABLE IF NOT EXISTS paper_fts USING fts5(
 
 FTS_TRIGGERS = [
     """CREATE TRIGGER IF NOT EXISTS papers_ai AFTER INSERT ON papers BEGIN
-        INSERT INTO paper_fts(rowid, zotero_key, citation_key, title, first_author, authors, abstract, journal, domain, collection_path, collection_tags)
+        INSERT INTO paper_fts(rowid, zotero_key, citation_key, title, first_author, authors_json, abstract, journal, domain, collection_path, collections_json)
         VALUES (new.rowid, new.zotero_key, new.citation_key, new.title, new.first_author, new.authors_json, new.abstract, new.journal, new.domain, new.collection_path, new.collections_json);
     END;""",
     """CREATE TRIGGER IF NOT EXISTS papers_ad AFTER DELETE ON papers BEGIN
-        INSERT INTO paper_fts(paper_fts, rowid, zotero_key, citation_key, title, first_author, authors, abstract, journal, domain, collection_path, collection_tags)
+        INSERT INTO paper_fts(paper_fts, rowid, zotero_key, citation_key, title, first_author, authors_json, abstract, journal, domain, collection_path, collections_json)
         VALUES ('delete', old.rowid, old.zotero_key, old.citation_key, old.title, old.first_author, old.authors_json, old.abstract, old.journal, old.domain, old.collection_path, old.collections_json);
     END;""",
     """CREATE TRIGGER IF NOT EXISTS papers_au AFTER UPDATE ON papers BEGIN
-        INSERT INTO paper_fts(paper_fts, rowid, zotero_key, citation_key, title, first_author, authors, abstract, journal, domain, collection_path, collection_tags)
+        INSERT INTO paper_fts(paper_fts, rowid, zotero_key, citation_key, title, first_author, authors_json, abstract, journal, domain, collection_path, collections_json)
         VALUES ('delete', old.rowid, old.zotero_key, old.citation_key, old.title, old.first_author, old.authors_json, old.abstract, old.journal, old.domain, old.collection_path, old.collections_json);
-        INSERT INTO paper_fts(rowid, zotero_key, citation_key, title, first_author, authors, abstract, journal, domain, collection_path, collection_tags)
+        INSERT INTO paper_fts(rowid, zotero_key, citation_key, title, first_author, authors_json, abstract, journal, domain, collection_path, collections_json)
         VALUES (new.rowid, new.zotero_key, new.citation_key, new.title, new.first_author, new.authors_json, new.abstract, new.journal, new.domain, new.collection_path, new.collections_json);
     END;""",
 ]
