@@ -489,6 +489,10 @@ Object.assign(LANG.en, {
     ocr_privacy_title: 'OCR Privacy Notice',
     ocr_privacy_warning: 'OCR will upload PDFs to the PaddleOCR API. Do not upload sensitive or confidential documents.',
     ocr_understand: 'I understand, continue',
+
+    /* ── Tabbed Settings ── */
+    tab_setup: 'Installation',
+    tab_features: 'Features',
 });
 
 /* ── LANG.zh: v1.12 runtime health, OCR queue, pf-deep, dashboard translations ── */
@@ -524,6 +528,10 @@ Object.assign(LANG.zh, {
     install_validating: '正在校验安装环境…',
     install_bootstrapping: '未检测到 PaperForge Python 包，正在自动安装…',
     wizard_safety: '安全说明：如果你选择的目录里已经有文件，安装向导会保留已有内容，只补充缺失的 PaperForge 文件和目录。',
+
+    /* ── Tabbed Settings ── */
+    tab_setup: '安装',
+    tab_features: '功能',
 });
 
 function langFromApp(app) {
@@ -553,6 +561,17 @@ const DEFAULT_SETTINGS = {
     paddleocr_api_key: '',
     zotero_data_dir: '',
     python_path: '',
+    // Feature toggles
+    features: {
+        fts_search: true,
+        agent_context: true,
+        reading_log: true,
+        vector_db: false,
+    },
+    vector_db_mode: 'local',
+    vector_db_model: 'BAAI/bge-small-en-v1.5',
+    vector_db_api_key: '',
+    frozen_skills: {},
 };
 
 // ACTIONS, resolvePythonExecutable extracted to src/ modules (Plan 53-001)
@@ -2196,6 +2215,7 @@ class PaperForgeSettingTab extends PluginSettingTab {
         this.plugin = plugin;
         this._saveTimeout = null;
         this._pfConfig = null;  // cached paperforge.json config
+        this.activeTab = 'setup';
     }
 
     /** Reload path config from paperforge.json */
@@ -2208,6 +2228,55 @@ class PaperForgeSettingTab extends PluginSettingTab {
         containerEl.empty();
         this._refreshPfConfig();
 
+        // Inject tab CSS once
+        if (!document.getElementById('paperforge-tab-styles')) {
+            const style = document.createElement('style');
+            style.id = 'paperforge-tab-styles';
+            style.textContent = `
+                .paperforge-settings-tabs { display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 1px solid var(--background-modifier-border); }
+                .paperforge-settings-tab { padding: 6px 16px; border: none; background: none; cursor: pointer; border-bottom: 2px solid transparent; font-size: 14px; color: var(--text-muted); }
+                .paperforge-settings-tab--active { color: var(--text-accent); border-bottom-color: var(--text-accent); }
+                .paperforge-tab-content { display: none; }
+                .paperforge-tab-content--active { display: block; }
+            `;
+            document.head.appendChild(style);
+        }
+
+        // --- Tab bar ---
+        const tabBar = containerEl.createDiv({ cls: 'paperforge-settings-tabs' });
+        const tabs = [
+            { id: 'setup', label: t('tab_setup') || 'Installation' },
+            { id: 'features', label: t('tab_features') || 'Features' },
+        ];
+        const tabContents = {};
+
+        tabs.forEach(tab => {
+            const btn = tabBar.createEl('button', {
+                cls: 'paperforge-settings-tab' + (tab.id === this.activeTab ? ' paperforge-settings-tab--active' : ''),
+                text: tab.label,
+            });
+            btn.addEventListener('click', () => {
+                this.activeTab = tab.id;
+                this.display(); // re-render with new active tab
+            });
+        });
+
+        // --- Tab content containers ---
+        tabs.forEach(tab => {
+            tabContents[tab.id] = containerEl.createDiv({
+                cls: 'paperforge-tab-content' + (tab.id === this.activeTab ? ' paperforge-tab-content--active' : ''),
+            });
+        });
+
+        // --- Render active tab ---
+        if (this.activeTab === 'setup') {
+            this._renderSetupTab(tabContents.setup);
+        } else {
+            this._renderFeaturesTab(tabContents.features);
+        }
+    }
+
+    _renderSetupTab(containerEl) {
         const vaultPath = this.app.vault.adapter.basePath;
         if (!this.plugin.settings.vault_path) {
             this.plugin.settings.vault_path = vaultPath;
@@ -2409,6 +2478,146 @@ class PaperForgeSettingTab extends PluginSettingTab {
                 const row = summary.createEl('div', { cls: 'paperforge-summary-row' });
                 row.createEl('span', { cls: 'paperforge-summary-label', text: item.label });
                 row.createEl('span', { cls: 'paperforge-summary-value', text: item.val });
+            }
+        }
+    }
+
+    _renderFeaturesTab(containerEl) {
+        // --- Section: Skills ---
+        containerEl.createEl('h3', { text: 'Skills' });
+        containerEl.createEl('p', { text: 'Agent skills extend PaperForge with specialized capabilities.', cls: 'setting-item-description' });
+
+        // Scan vault-local agent skill dirs
+        const agentDirs = [
+            '.opencode/skills', '.claude/skills', '.codex/skills',
+            '.cursor/skills', '.windsurf/skills', '.github/skills',
+        ];
+        const vaultPath = this.app.vault.adapter.basePath;
+        const fs = require('fs');
+        const path = require('path');
+        let foundSkills = false;
+
+        agentDirs.forEach(dir => {
+            const skillDir = path.join(vaultPath, dir);
+            if (!fs.existsSync(skillDir)) return;
+            fs.readdirSync(skillDir, { withFileTypes: true }).forEach(entry => {
+                if (!entry.isDirectory()) return;
+                const skillFile = path.join(skillDir, entry.name, 'SKILL.md');
+                if (!fs.existsSync(skillFile)) return;
+                const content = fs.readFileSync(skillFile, 'utf-8');
+                const nameMatch = content.match(/^name:\s*(.+)$/m);
+                const descMatch = content.match(/^description:\s*(.+)$/m);
+                const sourceMatch = content.match(/^source:\s*(.+)$/m);
+                const disableMatch = content.match(/^disable-model-invocation:\s*(.+)$/m);
+                const versionMatch = content.match(/^version:\s*(.+)$/m);
+
+                const name = nameMatch ? nameMatch[1].trim() : entry.name;
+                const desc = descMatch ? descMatch[1].trim() : '';
+                const source = sourceMatch ? sourceMatch[1].trim() : 'user';
+                const disabled = disableMatch && disableMatch[1].trim() === 'true';
+                const version = versionMatch ? versionMatch[1].trim() : '';
+                const isSystem = source === 'paperforge';
+                foundSkills = true;
+
+                const setting = new Setting(containerEl)
+                    .setName(name + (isSystem ? ' (system)' : ' (user)') + (version ? ' v' + version : ''))
+                    .setDesc(desc || 'No description');
+
+                setting.addToggle(toggle => {
+                    toggle.setValue(!disabled)
+                        .onChange(async (value) => {
+                            const newContent = disableMatch
+                                ? content.replace(/^disable-model-invocation:\s*.+$/m, `disable-model-invocation: ${!value}`)
+                                : content.replace(/^(---\r?\n)/, `$1disable-model-invocation: ${!value}\n`);
+                            fs.writeFileSync(skillFile, newContent, 'utf-8');
+                        });
+                });
+            });
+        });
+
+        if (!foundSkills) {
+            containerEl.createEl('p', { text: 'No skills found. Run setup to deploy skills.', cls: 'setting-item-description' });
+        }
+
+        // --- Section: Memory Layer Features ---
+        containerEl.createEl('h3', { text: 'Memory Layer' });
+        const featureSettings = [
+            { key: 'fts_search', name: 'Full-text Search', desc: 'Enables paperforge search command (FTS5)' },
+            { key: 'agent_context', name: 'Agent Context', desc: 'Enables paperforge agent-context command' },
+            { key: 'reading_log', name: 'Reading Log', desc: 'Enables paper_events table for reading notes' },
+        ];
+        featureSettings.forEach(fs => {
+            new Setting(containerEl)
+                .setName(fs.name)
+                .setDesc(fs.desc)
+                .addToggle(toggle => {
+                    toggle.setValue(this.plugin.settings.features[fs.key])
+                        .onChange(value => {
+                            this.plugin.settings.features[fs.key] = value;
+                            this.plugin.saveSettings();
+                        });
+                });
+        });
+
+        // --- Section: Vector Database ---
+        containerEl.createEl('h3', { text: 'Vector Database' });
+        new Setting(containerEl)
+            .setName('Enable Vector Retrieval')
+            .setDesc('Semantic search across OCR fulltext using embeddings. Requires pip install chromadb sentence-transformers.')
+            .addToggle(toggle => {
+                toggle.setValue(this.plugin.settings.features.vector_db)
+                    .onChange(value => {
+                        this.plugin.settings.features.vector_db = value;
+                        this.plugin.saveSettings();
+                    });
+            });
+
+        if (this.plugin.settings.features.vector_db) {
+            // Mode selection
+            new Setting(containerEl)
+                .setName('Embedding Mode')
+                .setDesc('Local: free, offline, CPU-based. API: higher quality, requires API key.')
+                .addDropdown(dropdown => {
+                    dropdown.addOption('local', 'Local (bge-small-en-v1.5)');
+                    dropdown.addOption('api', 'API (text-embedding-3-small)');
+                    dropdown.setValue(this.plugin.settings.vector_db_mode)
+                        .onChange(value => {
+                            this.plugin.settings.vector_db_mode = value;
+                            this.plugin.saveSettings();
+                        });
+                });
+
+            // Model selection (local mode only)
+            if (this.plugin.settings.vector_db_mode === 'local') {
+                new Setting(containerEl)
+                    .setName('Local Model')
+                    .setDesc('Embedding model for vector search. First use downloads ~130MB.')
+                    .addDropdown(dropdown => {
+                        dropdown.addOption('BAAI/bge-small-en-v1.5', 'bge-small-en-v1.5 (384d, 130MB, fast)');
+                        dropdown.addOption('sentence-transformers/all-MiniLM-L6-v2', 'all-MiniLM-L6-v2 (384d, 80MB, fastest)');
+                        dropdown.addOption('BAAI/bge-base-en-v1.5', 'bge-base-en-v1.5 (768d, 440MB)');
+                        dropdown.addOption('sentence-transformers/all-mpnet-base-v2', 'all-mpnet-base-v2 (768d, 420MB)');
+                        dropdown.setValue(this.plugin.settings.vector_db_model)
+                            .onChange(value => {
+                                this.plugin.settings.vector_db_model = value;
+                                this.plugin.saveSettings();
+                            });
+                    });
+            }
+
+            // API key (API mode only)
+            if (this.plugin.settings.vector_db_mode === 'api') {
+                new Setting(containerEl)
+                    .setName('API Key')
+                    .setDesc('OpenAI API key for text-embedding-3-small')
+                    .addText(text => {
+                        text.setPlaceholder('sk-...')
+                            .setValue(this.plugin.settings.vector_db_api_key)
+                            .onChange(value => {
+                                this.plugin.settings.vector_db_api_key = value;
+                                this.plugin.saveSettings();
+                            });
+                    });
             }
         }
     }
@@ -3512,6 +3721,11 @@ module.exports = class PaperForgePlugin extends Plugin {
 
     async loadSettings() {
         this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+        // Deep-merge nested objects (features, frozen_skills) to avoid overwrite
+        if (this.settings.features && DEFAULT_SETTINGS.features) {
+            this.settings.features = Object.assign({}, DEFAULT_SETTINGS.features, this.settings.features || {});
+        }
+        if (!this.settings.frozen_skills) { this.settings.frozen_skills = {}; }
         // Path fields come from paperforge.json, not from DEFAULT_SETTINGS or plugin data.json
         const pfConfig = this.readPaperforgeJson();
         this.settings.system_dir = pfConfig.system_dir;
