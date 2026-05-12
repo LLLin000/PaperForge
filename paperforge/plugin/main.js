@@ -2492,12 +2492,7 @@ class PaperForgeSettingTab extends PluginSettingTab {
                 toggle.setValue(this.plugin.settings.features.memory_layer)
                     .onChange(value => {
                         this.plugin.settings.features.memory_layer = value;
-                        // Also toggle sub-features together
-                        this.plugin.settings.features.fts_search = value;
-                        this.plugin.settings.features.agent_context = value;
-                        this.plugin.settings.features.reading_log = value;
                         this.plugin.saveSettings();
-                        // Refresh display to show status
                         this.display();
                     });
             });
@@ -2618,20 +2613,20 @@ class PaperForgeSettingTab extends PluginSettingTab {
                 .setName(nameText + sourceLabel)
                 .setDesc((skill.desc || 'No description') + statusText);
 
-            const disableMatch = skill.content.match(/^disable-model-invocation:\s*(.+)$/m);
-
             setting.addToggle(toggle => {
                 toggle.setValue(!skill.disabled)
                     .onChange(value => {
                         const newDisabled = !value;
+                        const disableMatch = skill.content.match(/^disable-model-invocation:\s*(.+)$/m);
                         const newContent = disableMatch
                             ? skill.content.replace(/^disable-model-invocation:\s*.+$/m, `disable-model-invocation: ${newDisabled}`)
                             : skill.content.replace(/^(---\r?\n)/, `$1disable-model-invocation: ${newDisabled}\n`);
                         fs.writeFileSync(skill.path, newContent, 'utf-8');
                         skill.disabled = newDisabled;
-                        // Update status text in desc
+                        skill.content = newContent;  // keep in-memory copy in sync
                         setting.setDesc((skill.desc || 'No description') + (skill.disabled ? ' (disabled)' : ' (enabled)'));
                     });
+            });
             });
         };
 
