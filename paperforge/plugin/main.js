@@ -563,11 +563,10 @@ const DEFAULT_SETTINGS = {
     python_path: '',
     // Feature toggles
     features: {
-        fts_search: true,
-        agent_context: true,
-        reading_log: true,
+        memory_layer: true,
         vector_db: false,
     },
+    selected_skill_platform: 'opencode',
     vector_db_mode: 'local',
     vector_db_model: 'BAAI/bge-small-en-v1.5',
     vector_db_api_key: '',
@@ -2483,23 +2482,102 @@ class PaperForgeSettingTab extends PluginSettingTab {
     }
 
     _renderFeaturesTab(containerEl) {
+        // --- Section: Memory Layer ---
+        containerEl.createEl('h3', { text: 'Memory Layer' });
+
+        new Setting(containerEl)
+            .setName('Enable Memory Layer')
+            .setDesc('SQLite index for fast paper lookup, search, and agent context.')
+            .addToggle(toggle => {
+                toggle.setValue(this.plugin.settings.features.memory_layer)
+                    .onChange(value => {
+                        this.plugin.settings.features.memory_layer = value;
+                        // Also toggle sub-features together
+                        this.plugin.settings.features.fts_search = value;
+                        this.plugin.settings.features.agent_context = value;
+                        this.plugin.settings.features.reading_log = value;
+                        this.plugin.saveSettings();
+                        // Refresh display to show status
+                        this.display();
+                    });
+            });
+
+        // Show memory status when enabled
+        if (this.plugin.settings.features.memory_layer) {
+            const statusEl = containerEl.createEl('div', { cls: 'paperforge-memory-status' });
+            statusEl.style.cssText = 'padding:8px 12px; margin:8px 0; background:var(--background-secondary); border-radius:4px;';
+            try {
+                const { execSync } = require('child_process');
+                const vp = this.app.vault.adapter.basePath;
+                const fs = require('fs');
+                const pythonPath = this.plugin.settings.python_path;
+                if (pythonPath && fs.existsSync(pythonPath)) {
+                    const result = execSync(`"${pythonPath}" -m paperforge --vault "${vp}" memory status --json`, { encoding: 'utf-8', timeout: 10000 });
+                    const data = JSON.parse(result);
+                    if (data.ok) {
+                        const s = data.data;
+                        const freshness = s.fresh ? 'fresh' : 'stale';
+                        statusEl.createEl('span', { text: `Papers: ${s.paper_count_db} | Schema: ${s.schema_ok ? 'OK' : 'MISMATCH'} | Status: ${freshness}` });
+                        if (s.needs_rebuild) {
+                            statusEl.createEl('br');
+                            statusEl.createEl('span', { text: 'Needs rebuild: run paperforge memory build', cls: 'paperforge-status-warn' });
+                        }
+                    } else {
+                        statusEl.createEl('span', { text: 'DB not found. Run paperforge memory build.', cls: 'paperforge-status-warn' });
+                    }
+                }
+            } catch(e) {
+                statusEl.createEl('span', { text: 'Could not check memory status. Ensure Python is configured.', cls: 'paperforge-status-warn' });
+            }
+        }
+
         // --- Section: Skills ---
         containerEl.createEl('h3', { text: 'Skills' });
-        containerEl.createEl('p', { text: 'Agent skills extend PaperForge with specialized capabilities.', cls: 'setting-item-description' });
 
-        // Scan vault-local agent skill dirs
-        const agentDirs = [
-            '.opencode/skills', '.claude/skills', '.codex/skills',
-            '.cursor/skills', '.windsurf/skills', '.github/skills',
-        ];
+        // Agent platform selector
+        const agentPlatforms = {
+            'opencode': 'OpenCode',
+            'claude': 'Claude Code',
+            'codex': 'Codex',
+            'cursor': 'Cursor',
+            'windsurf': 'Windsurf',
+            'github_copilot': 'GitHub Copilot',
+        };
+        const agentDirs = {
+            'opencode': '.opencode/skills',
+            'claude': '.claude/skills',
+            'codex': '.codex/skills',
+            'cursor': '.cursor/skills',
+            'windsurf': '.windsurf/skills',
+            'github_copilot': '.github/skills',
+        };
+
         const vaultPath = this.app.vault.adapter.basePath;
         const fs = require('fs');
         const path = require('path');
-        let foundSkills = false;
 
-        agentDirs.forEach(dir => {
-            const skillDir = path.join(vaultPath, dir);
-            if (!fs.existsSync(skillDir)) return;
+        let selectedPlatform = this.plugin.settings.selected_skill_platform || 'opencode';
+
+        new Setting(containerEl)
+            .setName('Agent Platform')
+            .setDesc('Select which agent platform to manage skills for.')
+            .addDropdown(dropdown => {
+                Object.entries(agentPlatforms).forEach(([key, label]) => dropdown.addOption(key, label));
+                dropdown.setValue(selectedPlatform)
+                    .onChange(value => {
+                        this.plugin.settings.selected_skill_platform = value;
+                        this.plugin.saveSettings();
+                        // Re-render to show correct platform's skills
+                        this.display();
+                    });
+            });
+
+        // Show skills for selected platform
+        const skillDir = path.join(vaultPath, agentDirs[selectedPlatform]);
+        let systemSkills = [];
+        let userSkills = [];
+
+        if (fs.existsSync(skillDir)) {
             fs.readdirSync(skillDir, { withFileTypes: true }).forEach(entry => {
                 if (!entry.isDirectory()) return;
                 const skillFile = path.join(skillDir, entry.name, 'SKILL.md');
@@ -2511,113 +2589,195 @@ class PaperForgeSettingTab extends PluginSettingTab {
                 const disableMatch = content.match(/^disable-model-invocation:\s*(.+)$/m);
                 const versionMatch = content.match(/^version:\s*(.+)$/m);
 
-                const name = nameMatch ? nameMatch[1].trim() : entry.name;
-                const desc = descMatch ? descMatch[1].trim() : '';
-                const source = sourceMatch ? sourceMatch[1].trim() : 'user';
-                const disabled = disableMatch && disableMatch[1].trim() === 'true';
-                const version = versionMatch ? versionMatch[1].trim() : '';
-                const isSystem = source === 'paperforge';
-                foundSkills = true;
+                const skill = {
+                    name: nameMatch ? nameMatch[1].trim() : entry.name,
+                    desc: descMatch ? descMatch[1].trim() : '',
+                    source: sourceMatch ? sourceMatch[1].trim() : 'user',
+                    disabled: disableMatch && disableMatch[1].trim() === 'true',
+                    version: versionMatch ? versionMatch[1].trim() : '',
+                    path: skillFile,
+                    content: content,
+                    dirName: entry.name,
+                };
 
-                const setting = new Setting(containerEl)
-                    .setName(name + (isSystem ? ' (system)' : ' (user)') + (version ? ' v' + version : ''))
-                    .setDesc(desc || 'No description');
-
-                setting.addToggle(toggle => {
-                    toggle.setValue(!disabled)
-                        .onChange(async (value) => {
-                            const newContent = disableMatch
-                                ? content.replace(/^disable-model-invocation:\s*.+$/m, `disable-model-invocation: ${!value}`)
-                                : content.replace(/^(---\r?\n)/, `$1disable-model-invocation: ${!value}\n`);
-                            fs.writeFileSync(skillFile, newContent, 'utf-8');
-                        });
-                });
+                if (skill.source === 'paperforge') {
+                    systemSkills.push(skill);
+                } else {
+                    userSkills.push(skill);
+                }
             });
-        });
-
-        if (!foundSkills) {
-            containerEl.createEl('p', { text: 'No skills found. Run setup to deploy skills.', cls: 'setting-item-description' });
         }
 
-        // --- Section: Memory Layer Features ---
-        containerEl.createEl('h3', { text: 'Memory Layer' });
-        const featureSettings = [
-            { key: 'fts_search', name: 'Full-text Search', desc: 'Enables paperforge search command (FTS5)' },
-            { key: 'agent_context', name: 'Agent Context', desc: 'Enables paperforge agent-context command' },
-            { key: 'reading_log', name: 'Reading Log', desc: 'Enables paper_events table for reading notes' },
-        ];
-        featureSettings.forEach(fs => {
-            new Setting(containerEl)
-                .setName(fs.name)
-                .setDesc(fs.desc)
-                .addToggle(toggle => {
-                    toggle.setValue(this.plugin.settings.features[fs.key])
-                        .onChange(value => {
-                            this.plugin.settings.features[fs.key] = value;
-                            this.plugin.saveSettings();
-                        });
-                });
-        });
+        // Helper to render a skill row
+        const renderSkillRow = (skill, isSystem) => {
+            const nameText = skill.name + (skill.version ? ' v' + skill.version : '');
+            const sourceLabel = isSystem ? ' [system]' : ' [user]';
+            const statusText = skill.disabled ? ' (disabled)' : ' (enabled)';
+
+            const setting = new Setting(containerEl)
+                .setName(nameText + sourceLabel)
+                .setDesc((skill.desc || 'No description') + statusText);
+
+            const disableMatch = skill.content.match(/^disable-model-invocation:\s*(.+)$/m);
+
+            setting.addToggle(toggle => {
+                toggle.setValue(!skill.disabled)
+                    .onChange(value => {
+                        const newDisabled = !value;
+                        const newContent = disableMatch
+                            ? skill.content.replace(/^disable-model-invocation:\s*.+$/m, `disable-model-invocation: ${newDisabled}`)
+                            : skill.content.replace(/^(---\r?\n)/, `$1disable-model-invocation: ${newDisabled}\n`);
+                        fs.writeFileSync(skill.path, newContent, 'utf-8');
+                        skill.disabled = newDisabled;
+                        // Update status text in desc
+                        setting.setDesc((skill.desc || 'No description') + (skill.disabled ? ' (disabled)' : ' (enabled)'));
+                    });
+            });
+        };
+
+        // System skills
+        if (systemSkills.length > 0) {
+            containerEl.createEl('h4', { text: 'System Skills', cls: 'paperforge-skills-subheader' });
+            systemSkills.forEach(s => renderSkillRow(s, true));
+        }
+
+        // User skills
+        if (userSkills.length > 0) {
+            containerEl.createEl('h4', { text: 'User Skills', cls: 'paperforge-skills-subheader' });
+            userSkills.forEach(s => renderSkillRow(s, false));
+        }
+
+        if (systemSkills.length === 0 && userSkills.length === 0) {
+            containerEl.createEl('p', {
+                text: `No skills found in ${agentDirs[selectedPlatform]}. Run setup to deploy skills.`,
+                cls: 'setting-item-description'
+            });
+        }
 
         // --- Section: Vector Database ---
         containerEl.createEl('h3', { text: 'Vector Database' });
+
         new Setting(containerEl)
             .setName('Enable Vector Retrieval')
-            .setDesc('Semantic search across OCR fulltext using embeddings. Requires pip install chromadb sentence-transformers.')
+            .setDesc('Semantic search across OCR fulltext. Requires: pip install chromadb sentence-transformers (~500MB).')
             .addToggle(toggle => {
                 toggle.setValue(this.plugin.settings.features.vector_db)
                     .onChange(value => {
                         this.plugin.settings.features.vector_db = value;
                         this.plugin.saveSettings();
+                        this.display();
                     });
             });
 
         if (this.plugin.settings.features.vector_db) {
-            // Mode selection
-            new Setting(containerEl)
-                .setName('Embedding Mode')
-                .setDesc('Local: free, offline, CPU-based. API: higher quality, requires API key.')
-                .addDropdown(dropdown => {
-                    dropdown.addOption('local', 'Local (bge-small-en-v1.5)');
-                    dropdown.addOption('api', 'API (text-embedding-3-small)');
-                    dropdown.setValue(this.plugin.settings.vector_db_mode)
-                        .onChange(value => {
-                            this.plugin.settings.vector_db_mode = value;
-                            this.plugin.saveSettings();
-                        });
+            // Check if dependencies installed
+            let depsOk = false;
+            try {
+                const { execSync } = require('child_process');
+                const pythonPath = this.plugin.settings.python_path;
+                if (pythonPath && fs.existsSync(pythonPath)) {
+                    const result = execSync(`"${pythonPath}" -c "import chromadb; import sentence_transformers; print('ok')"`, { encoding: 'utf-8', timeout: 15000 });
+                    depsOk = result.trim() === 'ok';
+                }
+            } catch(e) { depsOk = false; }
+
+            if (!depsOk) {
+                const depWarning = containerEl.createEl('div', {
+                    cls: 'paperforge-vector-warning',
+                    text: 'Dependencies not installed. Required: chromadb, sentence-transformers.'
                 });
+                depWarning.style.cssText = 'padding:8px 12px; margin:8px 0; background:var(--background-modifier-error); border-radius:4px; color:var(--text-error);';
 
-            // Model selection (local mode only)
-            if (this.plugin.settings.vector_db_mode === 'local') {
                 new Setting(containerEl)
-                    .setName('Local Model')
-                    .setDesc('Embedding model for vector search. First use downloads ~130MB.')
+                    .setName('Install Dependencies')
+                    .setDesc('Installs chromadb and sentence-transformers (~500MB disk)')
+                    .addButton(button => {
+                        button.setButtonText('Install')
+                            .setCta()
+                            .onClick(async () => {
+                                button.setButtonText('Installing...');
+                                button.setDisabled(true);
+                                try {
+                                    const { execSync } = require('child_process');
+                                    const pythonPath = this.plugin.settings.python_path;
+                                    execSync(`"${pythonPath}" -m pip install chromadb sentence-transformers`, {
+                                        encoding: 'utf-8',
+                                        timeout: 300000,
+                                        stdio: 'pipe'
+                                    });
+                                    new Notice('Dependencies installed. You can now run paperforge embed build.');
+                                    this.display();
+                                } catch(e) {
+                                    new Notice('Install failed: ' + e.message);
+                                    button.setButtonText('Install');
+                                    button.setDisabled(false);
+                                }
+                            });
+                    });
+            } else {
+                // Show status
+                let embedStatus = null;
+                try {
+                    const { execSync } = require('child_process');
+                    const vp = vaultPath;
+                    const pythonPath = this.plugin.settings.python_path;
+                    if (pythonPath && fs.existsSync(pythonPath)) {
+                        const result = execSync(`"${pythonPath}" -m paperforge --vault "${vp}" embed status --json`, { encoding: 'utf-8', timeout: 10000 });
+                        embedStatus = JSON.parse(result);
+                    }
+                } catch(e) {}
+
+                if (embedStatus && embedStatus.ok) {
+                    const statusEl = containerEl.createEl('div', { cls: 'paperforge-vector-status' });
+                    statusEl.style.cssText = 'padding:8px 12px; margin:8px 0; background:var(--background-secondary); border-radius:4px;';
+                    statusEl.createEl('span', {
+                        text: `Chunks: ${embedStatus.data.chunk_count} | Model: ${embedStatus.data.model} | Mode: ${embedStatus.data.mode}`
+                    });
+                }
+
+                // Mode selection
+                new Setting(containerEl)
+                    .setName('Embedding Mode')
                     .addDropdown(dropdown => {
-                        dropdown.addOption('BAAI/bge-small-en-v1.5', 'bge-small-en-v1.5 (384d, 130MB, fast)');
-                        dropdown.addOption('sentence-transformers/all-MiniLM-L6-v2', 'all-MiniLM-L6-v2 (384d, 80MB, fastest)');
-                        dropdown.addOption('BAAI/bge-base-en-v1.5', 'bge-base-en-v1.5 (768d, 440MB)');
-                        dropdown.addOption('sentence-transformers/all-mpnet-base-v2', 'all-mpnet-base-v2 (768d, 420MB)');
-                        dropdown.setValue(this.plugin.settings.vector_db_model)
+                        dropdown.addOption('local', 'Local (free, CPU)');
+                        dropdown.addOption('api', 'API (OpenAI, paid)');
+                        dropdown.setValue(this.plugin.settings.vector_db_mode)
                             .onChange(value => {
-                                this.plugin.settings.vector_db_model = value;
+                                this.plugin.settings.vector_db_mode = value;
                                 this.plugin.saveSettings();
+                                this.display();
                             });
                     });
-            }
 
-            // API key (API mode only)
-            if (this.plugin.settings.vector_db_mode === 'api') {
-                new Setting(containerEl)
-                    .setName('API Key')
-                    .setDesc('OpenAI API key for text-embedding-3-small')
-                    .addText(text => {
-                        text.setPlaceholder('sk-...')
-                            .setValue(this.plugin.settings.vector_db_api_key)
-                            .onChange(value => {
-                                this.plugin.settings.vector_db_api_key = value;
-                                this.plugin.saveSettings();
-                            });
-                    });
+                // Model selection
+                if (this.plugin.settings.vector_db_mode === 'local') {
+                    new Setting(containerEl)
+                        .setName('Model')
+                        .addDropdown(dropdown => {
+                            dropdown.addOption('BAAI/bge-small-en-v1.5', 'bge-small (384d, 130MB)');
+                            dropdown.addOption('sentence-transformers/all-MiniLM-L6-v2', 'MiniLM (384d, 80MB)');
+                            dropdown.addOption('BAAI/bge-base-en-v1.5', 'bge-base (768d, 440MB)');
+                            dropdown.setValue(this.plugin.settings.vector_db_model)
+                                .onChange(value => {
+                                    this.plugin.settings.vector_db_model = value;
+                                    this.plugin.saveSettings();
+                                });
+                        });
+                }
+
+                // API key
+                if (this.plugin.settings.vector_db_mode === 'api') {
+                    new Setting(containerEl)
+                        .setName('OpenAI API Key')
+                        .addText(text => {
+                            text.setPlaceholder('sk-...')
+                                .setValue(this.plugin.settings.vector_db_api_key)
+                                .onChange(value => {
+                                    this.plugin.settings.vector_db_api_key = value;
+                                    this.plugin.saveSettings();
+                                });
+                        });
+                }
             }
         }
     }
