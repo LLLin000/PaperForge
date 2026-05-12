@@ -2518,7 +2518,10 @@ class PaperForgeSettingTab extends PluginSettingTab {
                     }
                 }
             } catch(e) {
-                // Python not configured — no status shown
+                // Python not configured — show hint
+                const statusEl = containerEl.createEl('div', { cls: 'paperforge-memory-status' });
+                statusEl.style.cssText = 'padding:8px 12px; margin:8px 0; background:var(--background-secondary); border-radius:4px;';
+                statusEl.setText('Configure Python in Installation tab to enable status check.');
             }
         }
 
@@ -2683,6 +2686,11 @@ class PaperForgeSettingTab extends PluginSettingTab {
                         button.setButtonText('Install')
                             .setCta()
                             .onClick(async () => {
+                                const pythonPath = this.plugin.settings.python_path;
+                                if (!pythonPath) {
+                                    new Notice('Configure Python path in Installation tab first.');
+                                    return;
+                                }
                                 button.setButtonText('Installing...');
                                 button.setDisabled(true);
                                 const notice = new Notice('Installing chromadb + sentence-transformers...', 0);
