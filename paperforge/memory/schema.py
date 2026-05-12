@@ -83,7 +83,41 @@ INDEX_SQL = [
     "CREATE INDEX IF NOT EXISTS idx_papers_next_step ON papers(next_step);",
 ]
 
-ALL_TABLES = ["papers", "paper_assets", "paper_aliases", "meta"]
+CREATE_PAPER_FTS = """
+CREATE VIRTUAL TABLE IF NOT EXISTS paper_fts USING fts5(
+    zotero_key,
+    citation_key,
+    title,
+    first_author,
+    authors,
+    abstract,
+    journal,
+    domain,
+    collection_path,
+    collection_tags,
+    content='papers',
+    content_rowid='rowid'
+);
+"""
+
+FTS_TRIGGERS = [
+    """CREATE TRIGGER IF NOT EXISTS papers_ai AFTER INSERT ON papers BEGIN
+        INSERT INTO paper_fts(rowid, zotero_key, citation_key, title, first_author, authors, abstract, journal, domain, collection_path, collection_tags)
+        VALUES (new.rowid, new.zotero_key, new.citation_key, new.title, new.first_author, new.authors_json, new.abstract, new.journal, new.domain, new.collection_path, new.collections_json);
+    END;""",
+    """CREATE TRIGGER IF NOT EXISTS papers_ad AFTER DELETE ON papers BEGIN
+        INSERT INTO paper_fts(paper_fts, rowid, zotero_key, citation_key, title, first_author, authors, abstract, journal, domain, collection_path, collection_tags)
+        VALUES ('delete', old.rowid, old.zotero_key, old.citation_key, old.title, old.first_author, old.authors_json, old.abstract, old.journal, old.domain, old.collection_path, old.collections_json);
+    END;""",
+    """CREATE TRIGGER IF NOT EXISTS papers_au AFTER UPDATE ON papers BEGIN
+        INSERT INTO paper_fts(paper_fts, rowid, zotero_key, citation_key, title, first_author, authors, abstract, journal, domain, collection_path, collection_tags)
+        VALUES ('delete', old.rowid, old.zotero_key, old.citation_key, old.title, old.first_author, old.authors_json, old.abstract, old.journal, old.domain, old.collection_path, old.collections_json);
+        INSERT INTO paper_fts(rowid, zotero_key, citation_key, title, first_author, authors, abstract, journal, domain, collection_path, collection_tags)
+        VALUES (new.rowid, new.zotero_key, new.citation_key, new.title, new.first_author, new.authors_json, new.abstract, new.journal, new.domain, new.collection_path, new.collections_json);
+    END;""",
+]
+
+ALL_TABLES = ["paper_fts", "papers", "paper_assets", "paper_aliases", "meta"]
 
 
 def ensure_schema(conn: sqlite3.Connection) -> None:
@@ -92,8 +126,11 @@ def ensure_schema(conn: sqlite3.Connection) -> None:
     conn.execute(CREATE_PAPERS)
     conn.execute(CREATE_ASSETS)
     conn.execute(CREATE_ALIASES)
+    conn.execute(CREATE_PAPER_FTS)
     for idx_sql in INDEX_SQL:
         conn.execute(idx_sql)
+    for trigger_sql in FTS_TRIGGERS:
+        conn.execute(trigger_sql)
     conn.commit()
 
 
@@ -101,6 +138,12 @@ def drop_all_tables(conn: sqlite3.Connection) -> None:
     """Drop all Memory Layer tables (for rebuild)."""
     for table in ALL_TABLES:
         conn.execute(f"DROP TABLE IF EXISTS {table};")
+    conn.commit()
+
+
+def clear_fts(conn: sqlite3.Connection) -> None:
+    """Delete all FTS index entries (before rebuild)."""
+    conn.execute("DELETE FROM paper_fts;")
     conn.commit()
 
 

@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -10,6 +11,7 @@ from paperforge import __version__ as PF_VERSION
 from paperforge.memory.db import get_connection, get_memory_db_path
 from paperforge.memory.schema import (
     CURRENT_SCHEMA_VERSION,
+    clear_fts,
     drop_all_tables,
     ensure_schema,
     get_schema_version,
@@ -92,6 +94,8 @@ def build_from_index(vault: Path) -> dict:
         conn.execute("DELETE FROM paper_assets;")
         conn.execute("DELETE FROM papers;")
 
+        clear_fts(conn)
+
         now_utc = datetime.now(timezone.utc).isoformat()
         papers_count = 0
         assets_count = 0
@@ -141,6 +145,18 @@ def build_from_index(vault: Path) -> dict:
                 paper_values,
             )
             papers_count += 1
+
+            try:
+                conn.execute(
+                    """INSERT INTO paper_fts(rowid, zotero_key, citation_key, title, first_author, authors, abstract, journal, domain, collection_path, collection_tags)
+                       VALUES ((SELECT rowid FROM papers WHERE zotero_key = ?), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    (zotero_key, zotero_key, entry.get("citation_key", ""), entry.get("title", ""),
+                     entry.get("first_author", ""), paper_values.get("authors_json", ""),
+                     entry.get("abstract", ""), entry.get("journal", ""), entry.get("domain", ""),
+                     entry.get("collection_path", ""), paper_values.get("collections_json", "")),
+                )
+            except sqlite3.IntegrityError:
+                pass  # duplicate rowid if FTS trigger already fired
 
             for asset_type, entry_field in ASSET_FIELDS:
                 path_val = entry.get(entry_field, "")
