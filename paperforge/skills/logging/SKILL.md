@@ -34,87 +34,72 @@ python $SKILL_DIR/scripts/pf_bootstrap.py
 
 ---
 
-## 2. State Check — 检查当前日志状态
+## 2. Routing — 判断用户要什么
 
-```
-$PYTHON -m paperforge --vault $VAULT reading-log --json
-```
+根据用户说的内容确定走哪个分支：
 
-展示：已有多少条 reading notes。如果 0 条，告知用户："还没有阅读记录，读完文献后使用 /pf-log-reading 记录。"
+| 用户说                                      | 走分支   |
+| ------------------------------------------- | -------- |
+| "记录阅读" "reading log" "做阅读记录" "这段有什么值得记的" "读完了记一下" "刚读了一段记一下" | **reading** |
+| "工作记录" "working log" "总结会话" "记一下工作过程" "写工作总结" "记录决策" "logging work" | **working** |
+| "写日志" "记录一下" "记一下" 不清楚哪个      | **先问用户** |
 
----
+## 3. reading 分支 — 记录单条阅读笔记
 
-## 3. Routing
+调用条件：用户读完一个段落/章节后要记录。
 
-### /pf-log-reading — 记录单条阅读笔记
-
-**调用条件**: 用户在阅读文献过程中，或读完一个段落/章节后
-
-**Agent 行为**:
-1. 确认 zotero_key（从上下文或 formal note 中获取）
-2. 提取以下信息:
-   - **section**: 文献中的位置 (e.g. "Discussion P12", "Results Fig.3")
+动作：
+1. 确认 `$VAULT` 和 `$PYTHON`
+2. 确定 zotero_key（从上下文或 formal note 中获取）
+3. 提取：
+   - **section**: 文献中的位置 (Discussion P12, Results Fig.3)
    - **excerpt**: 逐字引用的原文关键句
    - **usage**: 这个信息支持当前写作的哪个论点
-   - **note**: 任何交叉验证/矛盾/注意事项 (optional)
-3. 询问用户确认，然后执行:
-```bash
-$PYTHON -m paperforge --vault $VAULT reading-log --write KEY \
-    --section "SECTION" --excerpt "EXCERPT" \
-    --usage "USAGE" --note "NOTE"
-```
-4. 确认写入成功
+   - **note**: 交叉验证/矛盾/注意事项 (optional)
+4. 给用户展示确认后再执行：
+   ```
+   $PYTHON -m paperforge --vault $VAULT reading-log --write KEY \
+       --section "..." --excerpt "..." --usage "..." --note "..."
+   ```
+5. 确认写入成功
 
-### /pf-log-session — 会话总结写入 working-log
+## 4. working 分支 — 会话总结写入 working-log
 
-**调用条件**: 写作/研究会话结束前，用户说 "写日志" 或 "/pf-log-session"
+调用条件：会话结束前/用户要求记录工作过程。
 
-**Agent 行为**:
+动作：
 1. 回顾本次会话中所有关键节点:
    - 用户纠正了什么
    - 方案怎么变的
    - 有什么弯路和教训
    - 可复用的方法论
-2. 按以下格式生成 markdown:
+2. 按以下格式生成 markdown，给用户确认：
 
-```
-## <YYYY-MM-DD> — <小节名>
+   ```
+   ## YYYY-MM-DD — 小节名
 
-### 核心决策
-- 做了什么、为什么
+   ### 核心决策
+   - 做了什么、为什么
 
-### 弯路与修正
-- 错误方向 → 用户纠正 → 最终方案
+   ### 弯路与修正
+   - 错误方向 → 用户纠正 → 最终方案
 
-### 可复用方法论
-- 本段的 pattern
+   ### 可复用方法论
+   - 本段的 pattern
 
-### 待办
-- [ ] ...
-```
+   ### 待办
+   - [ ] ...
+   ```
 
-3. 展示给用户确认
-4. 询问目标 project 目录中的 working-log.md 路径
-5. 如果文件不存在：新建并写入
-6. 如果文件存在：先读旧内容，在文件末尾追加 `\n---\n` 分隔线，再追加新内容
-7. 确认写入成功
-
-### Auto — 静默记录
-
-用户没有显式说 "记录" 但 agent 读了一篇论文的某段时，agent 可以**主动问**:
-
-```
-我读了 LQZ2FWIW Discussion P12 关于 magnetoelectric 分类的内容。
-要记录到 reading-log 吗？(/pf-log-reading)
-```
-
-不要擅自记录——必须征得用户同意。
+3. 用户确认后，询问目标 project 目录路径
+4. 追加到 `Project/<project>/working-log.md`（文件不存在则新建）
+5. 确认写入成功
 
 ---
 
-## 4. Export — 导出 reading-log
+## 5. Export — 导出 reading-log
 
-用户说 "导出阅读日志" 或 "/pf-log-export"：
+用户说 "导出阅读日志"：
 
 ```bash
 $PYTHON -m paperforge --vault $VAULT reading-log --output <path> [--since DATE]
