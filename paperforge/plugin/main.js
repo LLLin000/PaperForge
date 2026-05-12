@@ -2497,31 +2497,27 @@ class PaperForgeSettingTab extends PluginSettingTab {
                     });
             });
 
-        // Show memory status when enabled
         if (this.plugin.settings.features.memory_layer) {
-            try {
-                const { execSync } = require('child_process');
-                const vp = this.app.vault.adapter.basePath;
-                const fs = require('fs');
-                const pythonPath = this.plugin.settings.python_path;
-                if (pythonPath && fs.existsSync(pythonPath)) {
+            const vp = this.app.vault.adapter.basePath;
+            const pyResult = resolvePythonExecutable(vp, this.plugin.settings);
+            const pythonPath = pyResult.path;
+            if (pythonPath) {
+                try {
+                    const { execSync } = require('child_process');
                     const result = execSync(`"${pythonPath}" -m paperforge --vault "${vp}" memory status --json`, { encoding: 'utf-8', timeout: 10000 });
                     const data = JSON.parse(result);
                     const statusEl = containerEl.createEl('div', { cls: 'paperforge-memory-status' });
                     statusEl.style.cssText = 'padding:8px 12px; margin:8px 0; background:var(--background-secondary); border-radius:4px;';
                     if (data.ok) {
                         const s = data.data;
-                        const freshness = s.fresh ? 'fresh' : '';
-                        statusEl.setText(`Papers: ${s.paper_count_db} | ${freshness}${s.needs_rebuild ? ' — Needs rebuild: run paperforge memory build' : ''}`);
+                        const freshness = s.fresh ? 'fresh' : 'stale';
+                        statusEl.setText(`Papers: ${s.paper_count_db} | ${freshness}${s.needs_rebuild ? ' — needs rebuild' : ''}`);
                     } else {
                         statusEl.setText('DB not found. Run paperforge memory build.');
                     }
+                } catch(e) {
+                    // silent — execSync failed
                 }
-            } catch(e) {
-                // Python not configured — show hint
-                const statusEl = containerEl.createEl('div', { cls: 'paperforge-memory-status' });
-                statusEl.style.cssText = 'padding:8px 12px; margin:8px 0; background:var(--background-secondary); border-radius:4px;';
-                statusEl.setText('Configure Python in Installation tab to enable status check.');
             }
         }
 
@@ -2665,10 +2661,10 @@ class PaperForgeSettingTab extends PluginSettingTab {
         if (this.plugin.settings.features.vector_db) {
             // Check if dependencies installed
             let depsOk = false;
-            try {
-                const { execSync } = require('child_process');
-                const pythonPath = this.plugin.settings.python_path;
-                if (pythonPath && fs.existsSync(pythonPath)) {
+            const vp = this.app.vault.adapter.basePath;
+            const pyResult = resolvePythonExecutable(vp, this.plugin.settings);
+            const pythonPath = pyResult.path;
+            if (pythonPath) {
                     const result = execSync(`"${pythonPath}" -c "import chromadb; import sentence_transformers; print('ok')"`, { encoding: 'utf-8', timeout: 15000 });
                     depsOk = result.trim() === 'ok';
                 }
@@ -2686,9 +2682,11 @@ class PaperForgeSettingTab extends PluginSettingTab {
                         button.setButtonText('Install')
                             .setCta()
                             .onClick(async () => {
-                                const pythonPath = this.plugin.settings.python_path;
+                                const vp = this.app.vault.adapter.basePath;
+                                const pyResult = resolvePythonExecutable(vp, this.plugin.settings);
+                                const pythonPath = pyResult.path;
                                 if (!pythonPath) {
-                                    new Notice('Configure Python path in Installation tab first.');
+                                    new Notice('No Python found. Configure in Installation tab or install Python first.');
                                     return;
                                 }
                                 button.setButtonText('Installing...');
@@ -2696,7 +2694,6 @@ class PaperForgeSettingTab extends PluginSettingTab {
                                 const notice = new Notice('Installing chromadb + sentence-transformers...', 0);
                                 try {
                                     const { exec } = require('child_process');
-                                    const pythonPath = this.plugin.settings.python_path;
                                     const env = Object.assign({}, process.env, { PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1' });
                                     await new Promise((resolve, reject) => {
                                         exec(`"${pythonPath}" -m pip install chromadb sentence-transformers`, {
@@ -2722,11 +2719,10 @@ class PaperForgeSettingTab extends PluginSettingTab {
             } else {
                 // Show status
                 let embedStatus = null;
-                try {
-                    const { execSync } = require('child_process');
-                    const vp = vaultPath;
-                    const pythonPath = this.plugin.settings.python_path;
-                    if (pythonPath && fs.existsSync(pythonPath)) {
+                const vp = this.app.vault.adapter.basePath;
+                const pyResult = resolvePythonExecutable(vp, this.plugin.settings);
+                const pythonPath = pyResult.path;
+                if (pythonPath) {
                         const result = execSync(`"${pythonPath}" -m paperforge --vault "${vp}" embed status --json`, { encoding: 'utf-8', timeout: 10000 });
                         embedStatus = JSON.parse(result);
                     }
