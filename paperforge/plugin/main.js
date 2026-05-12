@@ -2524,17 +2524,14 @@ class PaperForgeSettingTab extends PluginSettingTab {
     }
 
     _renderMemoryStatusText(el, text) {
-        const spans = el.querySelectorAll('span');
-        spans.forEach(s => s.remove());
-        const textEl = el.createEl('span', { text: text });
-        if (!el.querySelector('.paperforge-refresh-btn')) {
-            const refreshBtn = el.createEl('button', { cls: 'paperforge-refresh-btn', text: '\u21BB' });
-            refreshBtn.style.cssText = 'margin-left:auto; border:none; background:none; cursor:pointer; font-size:16px; padding:0 4px;';
-            refreshBtn.onclick = () => {
-                this._memoryStatusText = null;
-                this.display();
-            };
-        }
+        el.innerHTML = '';
+        el.createEl('span', { text: text, cls: 'paperforge-memory-text' }).style.cssText = 'flex:1;';
+        const refreshBtn = el.createEl('button', { cls: 'paperforge-refresh-btn', text: '\u21BB' });
+        refreshBtn.style.cssText = 'margin-left:auto; border:none; background:none; cursor:pointer; font-size:16px; padding:0 4px;';
+        refreshBtn.onclick = () => {
+            this._memoryStatusText = null;
+            this.display();
+        };
     }
 
     _resolvePythonAsync(callback) {
@@ -2624,6 +2621,20 @@ class PaperForgeSettingTab extends PluginSettingTab {
                         this.plugin.saveSettings();
                         this.display();
                     });
+            })
+            .addExtraButton(btn => {
+                btn.setIcon('folder')
+                    .setTooltip('Open skills folder')
+                    .onClick(() => {
+                        const dir = agentDirs[selectedPlatform] || '.opencode/skills';
+                        const fullPath = path.join(vaultPath, dir);
+                        if (fs.existsSync(fullPath)) {
+                            const { exec } = require('child_process');
+                            exec(`start "" "${fullPath}"`);
+                        } else {
+                            new Notice(`Skills folder not found: ${dir}`);
+                        }
+                    });
             });
 
         // Show skills for selected platform
@@ -2638,14 +2649,29 @@ class PaperForgeSettingTab extends PluginSettingTab {
                 if (!fs.existsSync(skillFile)) return;
                 const content = fs.readFileSync(skillFile, 'utf-8');
                 const nameMatch = content.match(/^name:\s*(.+)$/m);
-                const descMatch = content.match(/^description:\s*(.+)$/m);
+                const lines = content.split('\n');
+                const descIdx = lines.findIndex(l => /^description:/.test(l));
+                let desc = '';
+                if (descIdx >= 0) {
+                    const first = lines[descIdx].match(/^description:\s*(.+)$/);
+                    if (first && first[1] && first[1] !== '>' && first[1] !== '|-' && first[1] !== '|') {
+                        desc = first[1].trim();
+                    } else {
+                        for (let i = descIdx + 1; i < lines.length; i++) {
+                            if (/^\s{2,}/.test(lines[i]) || lines[i].trim() === '') {
+                                desc += lines[i].trim() + ' ';
+                            } else break;
+                        }
+                        desc = desc.trim();
+                    }
+                }
                 const sourceMatch = content.match(/^source:\s*(.+)$/m);
                 const disableMatch = content.match(/^disable-model-invocation:\s*(.+)$/m);
                 const versionMatch = content.match(/^version:\s*(.+)$/m);
 
                 const skill = {
                     name: nameMatch ? nameMatch[1].trim() : entry.name,
-                    desc: descMatch ? descMatch[1].trim() : '',
+                    desc: desc,
                     source: sourceMatch ? sourceMatch[1].trim() : 'user',
                     disabled: disableMatch && disableMatch[1].trim() === 'true',
                     version: versionMatch ? versionMatch[1].trim() : '',
@@ -2666,11 +2692,12 @@ class PaperForgeSettingTab extends PluginSettingTab {
         const renderSkillRow = (skill, isSystem) => {
             const nameText = skill.name + (skill.version ? ' v' + skill.version : '');
             const sourceLabel = isSystem ? ' [system]' : ' [user]';
-            const statusText = skill.disabled ? ' (disabled)' : ' (enabled)';
+            const descText = skill.desc || '';
 
-            const setting = new Setting(containerEl)
+            const setting = new Setting(skillsBox)
                 .setName(nameText + sourceLabel)
-                .setDesc((skill.desc || 'No description') + statusText);
+                .setDesc(descText);
+            setting.settingEl.style.opacity = skill.disabled ? '0.4' : '1';
 
             setting.addToggle(toggle => {
                 toggle.setValue(!skill.disabled)
@@ -2683,25 +2710,27 @@ class PaperForgeSettingTab extends PluginSettingTab {
                         fs.writeFileSync(skill.path, newContent, 'utf-8');
                         skill.disabled = newDisabled;
                         skill.content = newContent;
-                        setting.setDesc((skill.desc || 'No description') + (skill.disabled ? ' (disabled)' : ' (enabled)'));
+                        setting.settingEl.style.opacity = skill.disabled ? '0.4' : '1';
                     });
             });
         };
 
         // System skills
+        const skillsBox = containerEl.createEl('div');
+        skillsBox.style.cssText = 'background:var(--background-primary-alt); border-radius:8px; padding:4px 12px 12px; margin:8px 0 16px;';
         if (systemSkills.length > 0) {
-            containerEl.createEl('h4', { text: 'System Skills', cls: 'paperforge-skills-subheader' });
+            skillsBox.createEl('h4', { text: 'System Skills', cls: 'paperforge-skills-subheader' });
             systemSkills.forEach(s => renderSkillRow(s, true));
         }
 
         // User skills
         if (userSkills.length > 0) {
-            containerEl.createEl('h4', { text: 'User Skills', cls: 'paperforge-skills-subheader' });
+            skillsBox.createEl('h4', { text: 'User Skills', cls: 'paperforge-skills-subheader' });
             userSkills.forEach(s => renderSkillRow(s, false));
         }
 
         if (systemSkills.length === 0 && userSkills.length === 0) {
-            containerEl.createEl('p', {
+            skillsBox.createEl('p', {
                 text: `No skills found in ${agentDirs[selectedPlatform]}. Run setup to deploy skills.`,
                 cls: 'setting-item-description'
             });
