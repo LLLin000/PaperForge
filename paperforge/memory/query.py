@@ -79,7 +79,7 @@ def get_memory_status(vault: Path) -> dict:
 
 def _entry_from_row(row) -> dict:
     """Reconstruct an entry dict from a papers row (sqlite3.Row)."""
-    entry = {k: row[k] for k in row.keys()}
+    entry = {k: row[k] for k in row}
     for key in ("has_pdf", "do_ocr", "analyze"):
         if key in entry and entry[key] is not None:
             entry[key] = bool(entry[key])
