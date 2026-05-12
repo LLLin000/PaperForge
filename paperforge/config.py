@@ -336,6 +336,7 @@ def paperforge_paths(
         # ── v2.2: canonical locations below paperforge/ ──
         "config": paperforge / "config" / "domain-collections.json",
         "index": paperforge / "indexes" / "formal-library.json",
+        "memory_db": paperforge / "indexes" / "paperforge.db",
     }
 
 
