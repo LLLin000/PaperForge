@@ -270,6 +270,17 @@ def build_parser() -> argparse.ArgumentParser:
     p_paper_status.add_argument("query", help="Paper identifier (zotero_key, DOI, title, alias)")
     p_paper_status.add_argument("--json", action="store_true", help="Output as JSON")
 
+    p_rl = sub.add_parser("reading-log", help="Record or export reading notes")
+    p_rl.add_argument("--write", dest="paper_id", help="Write note for this zotero_key")
+    p_rl.add_argument("--section", help="Section (e.g. Discussion P12)")
+    p_rl.add_argument("--excerpt", help="Quoted excerpt")
+    p_rl.add_argument("--usage", help="How this supports the current writing")
+    p_rl.add_argument("--note", help="Optional cross-validation note")
+    p_rl.add_argument("--since", help="Export notes since date (YYYY-MM-DD)")
+    p_rl.add_argument("--limit", type=int, default=50, help="Max notes to export")
+    p_rl.add_argument("--output", help="Write markdown to file")
+    p_rl.add_argument("--json", action="store_true", help="Output as JSON")
+
     p_search = sub.add_parser("search", help="Full-text search across the library")
     p_search.add_argument("query", help="Search query (supports FTS5 syntax)")
     p_search.add_argument("--json", action="store_true", help="Output as JSON")
@@ -505,6 +516,11 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "paper-status":
         from paperforge.commands.paper_status import run
+
+        return run(args)
+
+    if args.command == "reading-log":
+        from paperforge.commands.reading_log import run
 
         return run(args)
 

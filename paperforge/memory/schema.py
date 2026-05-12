@@ -117,7 +117,24 @@ FTS_TRIGGERS = [
     END;""",
 ]
 
-ALL_TABLES = ["paper_fts", "papers", "paper_assets", "paper_aliases", "meta"]
+CREATE_EVENTS = """
+CREATE TABLE IF NOT EXISTS paper_events (
+    event_id     INTEGER PRIMARY KEY AUTOINCREMENT,
+    paper_id     TEXT NOT NULL,
+    event_type   TEXT NOT NULL,
+    created_at   TEXT NOT NULL DEFAULT (datetime('now')),
+    payload_json TEXT,
+    FOREIGN KEY (paper_id) REFERENCES papers(zotero_key)
+);
+"""
+
+EVENT_INDEX_SQL = [
+    "CREATE INDEX IF NOT EXISTS idx_events_paper ON paper_events(paper_id);",
+    "CREATE INDEX IF NOT EXISTS idx_events_type ON paper_events(event_type);",
+    "CREATE INDEX IF NOT EXISTS idx_events_time ON paper_events(created_at);",
+]
+
+ALL_TABLES = ["paper_fts", "papers", "paper_assets", "paper_aliases", "meta", "paper_events"]
 
 
 def ensure_schema(conn: sqlite3.Connection) -> None:
@@ -127,7 +144,10 @@ def ensure_schema(conn: sqlite3.Connection) -> None:
     conn.execute(CREATE_ASSETS)
     conn.execute(CREATE_ALIASES)
     conn.execute(CREATE_PAPER_FTS)
+    conn.execute(CREATE_EVENTS)
     for idx_sql in INDEX_SQL:
+        conn.execute(idx_sql)
+    for idx_sql in EVENT_INDEX_SQL:
         conn.execute(idx_sql)
     for trigger_sql in FTS_TRIGGERS:
         conn.execute(trigger_sql)
