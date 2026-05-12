@@ -2499,8 +2499,6 @@ class PaperForgeSettingTab extends PluginSettingTab {
 
         // Show memory status when enabled
         if (this.plugin.settings.features.memory_layer) {
-            const statusEl = containerEl.createEl('div', { cls: 'paperforge-memory-status' });
-            statusEl.style.cssText = 'padding:8px 12px; margin:8px 0; background:var(--background-secondary); border-radius:4px;';
             try {
                 const { execSync } = require('child_process');
                 const vp = this.app.vault.adapter.basePath;
@@ -2509,20 +2507,18 @@ class PaperForgeSettingTab extends PluginSettingTab {
                 if (pythonPath && fs.existsSync(pythonPath)) {
                     const result = execSync(`"${pythonPath}" -m paperforge --vault "${vp}" memory status --json`, { encoding: 'utf-8', timeout: 10000 });
                     const data = JSON.parse(result);
+                    const statusEl = containerEl.createEl('div', { cls: 'paperforge-memory-status' });
+                    statusEl.style.cssText = 'padding:8px 12px; margin:8px 0; background:var(--background-secondary); border-radius:4px;';
                     if (data.ok) {
                         const s = data.data;
-                        const freshness = s.fresh ? 'fresh' : 'stale';
-                        statusEl.setText(`Papers: ${s.paper_count_db} | Schema: ${s.schema_ok ? 'OK' : 'MISMATCH'} | Status: ${freshness}`);
-                        if (s.needs_rebuild) {
-                            statusEl.createEl('br');
-                            statusEl.createEl('span', { text: 'Needs rebuild: run paperforge memory build', cls: 'paperforge-status-warn' });
-                        }
+                        const freshness = s.fresh ? 'fresh' : '';
+                        statusEl.setText(`Papers: ${s.paper_count_db} | ${freshness}${s.needs_rebuild ? ' — Needs rebuild: run paperforge memory build' : ''}`);
                     } else {
                         statusEl.setText('DB not found. Run paperforge memory build.');
                     }
                 }
             } catch(e) {
-                statusEl.setText('Could not check memory status. Ensure Python is configured.');
+                // Python not configured — no status shown
             }
         }
 
