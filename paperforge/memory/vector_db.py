@@ -1,0 +1,221 @@
+from __future__ import annotations
+
+import json
+import logging
+from pathlib import Path
+
+logger = logging.getLogger(__name__)
+
+# Lazy imports to avoid requiring chromadb unless actually used
+_chroma = None
+_ST = None
+
+def _get_chroma():
+    global _chroma
+    if _chroma is None:
+        import chromadb
+        _chroma = chromadb
+    return _chroma
+
+def _get_st():
+    global _ST
+    if _ST is None:
+        from sentence_transformers import SentenceTransformer
+        _ST = SentenceTransformer
+    return _ST
+
+
+def _read_plugin_settings(vault: Path) -> dict:
+    """Read plugin data.json for vector_db settings."""
+    data_path = vault / ".obsidian" / "plugins" / "paperforge" / "data.json"
+    if data_path.exists():
+        return json.loads(data_path.read_text(encoding="utf-8"))
+    return {}
+
+
+def get_vector_db_path(vault: Path) -> Path:
+    """Return the ChromaDB persistence directory."""
+    from paperforge.config import paperforge_paths
+    paths = paperforge_paths(vault)
+    return (paths.get("memory_db", paths.get("index", vault / "System" / "PaperForge"))).parent / "vectors"
+
+
+def get_collection(vault: Path):
+    """Get or create the ChromaDB collection for paperforge."""
+    chroma = _get_chroma()
+    db_path = get_vector_db_path(vault)
+    db_path.mkdir(parents=True, exist_ok=True)
+    client = chroma.PersistentClient(path=str(db_path))
+    # Delete and recreate if schema changed
+    try:
+        return client.get_or_create_collection(
+            name="paperforge_fulltext",
+            metadata={"hnsw:space": "cosine"},
+        )
+    except Exception:
+        client.delete_collection("paperforge_fulltext")
+        return client.create_collection(
+            name="paperforge_fulltext",
+            metadata={"hnsw:space": "cosine"},
+        )
+
+
+def get_embedding_model(vault: Path):
+    """Load the embedding model based on plugin settings or default."""
+    settings = _read_plugin_settings(vault)
+    mode = settings.get("vector_db_mode", "local")
+
+    if mode == "api":
+        return None  # API mode — embedding done externally
+
+    model_name = settings.get("vector_db_model", "BAAI/bge-small-en-v1.5")
+    ST = _get_st()
+    logger.info("Loading embedding model: %s", model_name)
+    return ST(model_name)
+
+
+def embed_paper(vault: Path, zotero_key: str, chunks: list[dict]) -> int:
+    """Embed chunks for one paper and insert into ChromaDB. Returns count."""
+    collection = get_collection(vault)
+    model = get_embedding_model(vault)
+
+    if model is None:
+        # API mode
+        return _embed_paper_api(vault, zotero_key, chunks, collection)
+
+    # Local mode
+    texts = [c["text"] for c in chunks]
+    ids = [f"{zotero_key}_{c['chunk_index']}" for c in chunks]
+    metadatas = [
+        {
+            "paper_id": zotero_key,
+            "section": c["section"],
+            "page_number": c["page_number"],
+            "chunk_index": c["chunk_index"],
+            "token_estimate": c["token_estimate"],
+        }
+        for c in chunks
+    ]
+
+    embeddings = model.encode(texts, show_progress_bar=False).tolist()
+
+    collection.add(
+        ids=ids,
+        embeddings=embeddings,
+        documents=texts,
+        metadatas=metadatas,
+    )
+    return len(chunks)
+
+
+def _embed_paper_api(vault, zotero_key, chunks, collection) -> int:
+    """Embed using OpenAI API."""
+    settings = _read_plugin_settings(vault)
+    api_key = settings.get("vector_db_api_key", "")
+    if not api_key:
+        env_file = vault / ".env"
+        if env_file.exists():
+            for line in env_file.read_text(encoding="utf-8").splitlines():
+                if line.startswith("OPENAI_API_KEY="):
+                    api_key = line.split("=", 1)[1].strip().strip('"').strip("'")
+    if not api_key:
+        raise ValueError("No API key configured for vector DB")
+
+    from openai import OpenAI
+    client = OpenAI(api_key=api_key)
+
+    texts = [c["text"] for c in chunks]
+    ids = [f"{zotero_key}_{c['chunk_index']}" for c in chunks]
+    metadatas = [
+        {"paper_id": zotero_key, "section": c["section"],
+         "page_number": c["page_number"], "chunk_index": c["chunk_index"],
+         "token_estimate": c["token_estimate"]}
+        for c in chunks
+    ]
+
+    response = client.embeddings.create(model="text-embedding-3-small", input=texts)
+    embeddings = [e.embedding for e in response.data]
+
+    collection.add(ids=ids, embeddings=embeddings, documents=texts, metadatas=metadatas)
+    return len(chunks)
+
+
+def delete_paper_vectors(vault: Path, zotero_key: str) -> int:
+    """Delete all chunks for a paper from ChromaDB."""
+    collection = get_collection(vault)
+    try:
+        results = collection.get(where={"paper_id": zotero_key})
+        ids = results.get("ids", [])
+        if ids:
+            collection.delete(ids=ids)
+        return len(ids)
+    except Exception:
+        return 0
+
+
+def retrieve_chunks(vault: Path, query: str, limit: int = 5, expand: bool = True) -> list[dict]:
+    """Search for chunks matching the query. Returns list with adjacent context."""
+    collection = get_collection(vault)
+    model = get_embedding_model(vault)
+
+    if model is None:
+        # API mode
+        settings = _read_plugin_settings(vault)
+        api_key = settings.get("vector_db_api_key", "")
+        env_file = vault / ".env"
+        if not api_key and env_file.exists():
+            for line in env_file.read_text(encoding="utf-8").splitlines():
+                if line.startswith("OPENAI_API_KEY="):
+                    api_key = line.split("=", 1)[1].strip().strip('"').strip("'")
+        if not api_key:
+            raise ValueError("No API key configured for vector DB")
+        from openai import OpenAI
+        client = OpenAI(api_key=api_key)
+        response = client.embeddings.create(model="text-embedding-3-small", input=query)
+        query_embedding = response.data[0].embedding
+    else:
+        query_embedding = model.encode(query).tolist()
+
+    results = collection.query(
+        query_embeddings=[query_embedding],
+        n_results=limit * 3 if expand else limit,
+        include=["documents", "metadatas", "distances"],
+    )
+
+    chunks = []
+    for i, (doc, meta, dist) in enumerate(zip(
+        results["documents"][0],
+        results["metadatas"][0],
+        results["distances"][0],
+    )):
+        chunks.append({
+            "paper_id": meta["paper_id"],
+            "section": meta.get("section", "Text"),
+            "page_number": meta.get("page_number", 1),
+            "chunk_index": meta.get("chunk_index", 0),
+            "chunk_text": doc,
+            "score": round(1.0 - dist, 4),  # cosine distance → similarity
+        })
+
+    return chunks
+
+
+def get_embed_status(vault: Path) -> dict:
+    """Get vector DB status."""
+    db_path = get_vector_db_path(vault)
+    exists = db_path.exists()
+    chunk_count = 0
+    if exists:
+        try:
+            collection = get_collection(vault)
+            chunk_count = collection.count()
+        except Exception:
+            pass
+
+    settings = _read_plugin_settings(vault)
+    return {
+        "db_exists": exists,
+        "chunk_count": chunk_count,
+        "model": settings.get("vector_db_model", "BAAI/bge-small-en-v1.5"),
+        "mode": settings.get("vector_db_mode", "local"),
+    }
