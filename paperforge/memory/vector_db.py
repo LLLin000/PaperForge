@@ -207,8 +207,10 @@ def _embed_paper_api(vault, zotero_key, chunks, collection) -> int:
     ]
 
     from openai import OpenAI
-    api_model = settings.get("vector_db_api_model", "text-embedding-3-small")
-    client = OpenAI(api_key=api_key, base_url=settings.get("vector_db_api_base", None) or None)
+    api_model = os.environ.get("VECTOR_DB_API_MODEL", "") or settings.get("vector_db_api_model", "text-embedding-3-small")
+    api_base = os.environ.get("VECTOR_DB_API_BASE", "") or settings.get("vector_db_api_base", None) or None
+    api_key = os.environ.get("VECTOR_DB_API_KEY", "") or api_key
+    client = OpenAI(api_key=api_key, base_url=api_base)
     response = client.embeddings.create(model=api_model, input=texts)
     embeddings = [e.embedding for e in response.data]
 
@@ -246,8 +248,10 @@ def retrieve_chunks(vault: Path, query: str, limit: int = 5, expand: bool = True
         if not api_key:
             raise ValueError("No API key configured for vector DB")
         from openai import OpenAI
-        client = OpenAI(api_key=api_key, base_url=settings.get("vector_db_api_base", None) or None)
-        api_model = settings.get("vector_db_api_model", "text-embedding-3-small")
+        api_base = os.environ.get("VECTOR_DB_API_BASE", "") or settings.get("vector_db_api_base", None) or None
+        api_key = os.environ.get("VECTOR_DB_API_KEY", "") or api_key
+        client = OpenAI(api_key=api_key, base_url=api_base)
+        api_model = os.environ.get("VECTOR_DB_API_MODEL", "") or settings.get("vector_db_api_model", "text-embedding-3-small")
         response = client.embeddings.create(model=api_model, input=query)
         query_embedding = response.data[0].embedding
     else:
