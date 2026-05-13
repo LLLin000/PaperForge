@@ -2258,7 +2258,7 @@ class PaperForgeSettingTab extends PluginSettingTab {
         this._memoryStatusText = null;   // null = not checked yet, string = cached result
         this._vectorDepsOk = null;       // null = not checked, bool = cached
         this._embedStatusText = null;
-        this._skillsCollapsed = {};      // preserve collapse state across re-renders
+        this._skillsCollapsed = { user: true };  // User skills collapsed by default
         this.activeTab = 'setup';
     }
 
