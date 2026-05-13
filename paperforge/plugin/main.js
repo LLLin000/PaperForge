@@ -2923,9 +2923,6 @@ class PaperForgeSettingTab extends PluginSettingTab {
             vecArrow.style.transform = vecConfigCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)';
         });
 
-        // HF Mirror — always visible, needed before deps install
-        this._renderHfMirror(vecConfigContent);
-
         // === Resolve state ===
         if (this._vectorDepsOk === true && this._embedStatusText !== null) {
             this._renderVectorReady(vecConfigContent, vp);
@@ -3134,6 +3131,8 @@ class PaperForgeSettingTab extends PluginSettingTab {
 
         // Model selector (local mode)
         if (this.plugin.settings.vector_db_mode === 'local') {
+            // HF settings only relevant for local model downloads
+            this._renderHfMirror(containerEl);
             const modelDesc = {
                 'BAAI/bge-small-en-v1.5': t('feat_model_bge_small'),
                 'sentence-transformers/all-MiniLM-L6-v2': t('feat_model_minilm'),
@@ -3203,6 +3202,9 @@ class PaperForgeSettingTab extends PluginSettingTab {
                     });
                 });
         }
+
+        // API config (api mode)
+        this._renderApiConfig(containerEl);
 
         // Rebuild button with live terminal output
         const terminalEl = containerEl.createEl('pre');
