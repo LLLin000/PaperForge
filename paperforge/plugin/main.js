@@ -537,6 +537,9 @@ Object.assign(LANG.en, {
     feat_rebuild_vectors_changed: 'Model changed — rebuild to update all vectors.',
     feat_install_deps: 'Install Dependencies',
     feat_install_deps_desc: 'pip install chromadb sentence-transformers openai (~500MB).',
+    feat_model_bge_small: 'Best balance — fast, accurate, recommended for most users (384d, 130MB)',
+    feat_model_minilm: 'Lightest & fastest — lower accuracy, minimal disk (384d, 80MB)',
+    feat_model_bge_base: 'Highest accuracy — slower, large disk footprint (768d, 440MB)',
 });
 
 /* ── LANG.zh: v1.12 runtime health, OCR queue, pf-deep, dashboard translations ── */
@@ -606,6 +609,9 @@ Object.assign(LANG.zh, {
     feat_rebuild_vectors_changed: '模型已更换 — 需要重建向量。',
     feat_install_deps: '安装依赖',
     feat_install_deps_desc: 'pip install chromadb sentence-transformers openai (~500MB)。',
+    feat_model_bge_small: '最佳平衡 — 快速、准确，推荐大多数用户使用 (384d, 130MB)',
+    feat_model_minilm: '最轻最快 — 精度略低，磁盘占用最小 (384d, 80MB)',
+    feat_model_bge_base: '最高精度 — 较慢，磁盘占用大 (768d, 440MB)',
 });
 
 function langFromApp(app) {
@@ -3129,9 +3135,9 @@ class PaperForgeSettingTab extends PluginSettingTab {
         // Model selector (local mode)
         if (this.plugin.settings.vector_db_mode === 'local') {
             const modelDesc = {
-                'BAAI/bge-small-en-v1.5': 'Best balance — fast, accurate, recommended for most users (384d, 130MB)',
-                'sentence-transformers/all-MiniLM-L6-v2': 'Lightest & fastest — lower accuracy, minimal disk (384d, 80MB)',
-                'BAAI/bge-base-en-v1.5': 'Highest accuracy — slower, large disk footprint (768d, 440MB)',
+                'BAAI/bge-small-en-v1.5': t('feat_model_bge_small'),
+                'sentence-transformers/all-MiniLM-L6-v2': t('feat_model_minilm'),
+                'BAAI/bge-base-en-v1.5': t('feat_model_bge_base'),
             };
             new Setting(containerEl)
                 .setName(t('feat_model'))
