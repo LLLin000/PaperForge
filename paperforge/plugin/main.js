@@ -570,6 +570,7 @@ const DEFAULT_SETTINGS = {
     vector_db_mode: 'local',
     vector_db_model: 'BAAI/bge-small-en-v1.5',
     vector_db_api_key: '',
+    vector_db_last_model: '',
     frozen_skills: {},
 };
 
@@ -2767,6 +2768,10 @@ class PaperForgeSettingTab extends PluginSettingTab {
             this._renderMemoryStatusText(statusRow, 'No Python found.', this._lastSyncTime);
         }
 
+        this._renderVectorSection(containerEl);
+    }
+
+    _renderVectorSection(containerEl) {
         // --- Vector Database (within Memory Layer) ---
         containerEl.createEl('h4', { text: 'Vector Database' });
 
@@ -2784,58 +2789,65 @@ class PaperForgeSettingTab extends PluginSettingTab {
                     });
             });
 
-        if (this.plugin.settings.features.vector_db) {
-            const vp = this.app.vault.adapter.basePath;
+        if (!this.plugin.settings.features.vector_db) return;
 
-            if (this._vectorDepsOk === true) {
-                this._renderVectorConfig(containerEl);
-            } else if (this._vectorDepsOk === false) {
-                const depsEl = containerEl.createEl('div');
-                depsEl.style.cssText = 'padding:8px 12px; margin:8px 0; background:#4a1515; border-radius:4px; color:#ff6b6b;';
-                depsEl.setText('Dependencies not installed. Required: chromadb, sentence-transformers.');
-                this._renderVectorInstall(containerEl);
-            } else {
-                const depsEl = containerEl.createEl('div');
-                depsEl.style.cssText = 'padding:8px 12px; margin:8px 0; background:var(--background-secondary); border-radius:4px;';
-                depsEl.setText('Checking dependencies...');
-                const pyResult = resolvePythonExecutable(vp, this.plugin.settings);
-                if (pyResult.path) {
-                    const { exec } = require('child_process');
-                    exec(`"${pyResult.path}" -c "import chromadb; import sentence_transformers; print('ok')"`, { encoding: 'utf-8', timeout: 10000 }, (err, stdout, stderr) => {
-                        const ok = !err && (stdout || '').trim() === 'ok';
-                        this._vectorDepsOk = ok;
-                        if (ok) {
-                            depsEl.remove();
-                            this._renderVectorConfig(containerEl);
-                        } else {
-                            depsEl.style.cssText = 'padding:8px 12px; margin:8px 0; background:#4a1515; border-radius:4px; color:#ff6b6b;';
-                            depsEl.setText('Dependencies not installed. Required: chromadb, sentence-transformers.');
-                            this._renderVectorInstall(containerEl);
-                        }
+        const vp = this.app.vault.adapter.basePath;
+
+        // === Resolve state ===
+        if (this._vectorDepsOk === true && this._embedStatusText !== null) {
+            this._renderVectorReady(containerEl, vp);
+            return;
+        }
+        if (this._vectorDepsOk === false) {
+            this._renderVectorNoDeps(containerEl);
+            return;
+        }
+        // First check — deps unknown, run async
+        if (this._vectorDepsOk === null) {
+            const statusBox = containerEl.createEl('div');
+            statusBox.style.cssText = 'padding:8px 12px; margin:8px 0; background:var(--background-secondary); border-radius:4px;';
+            statusBox.setText('Checking dependencies...');
+
+            const pyResult = resolvePythonExecutable(vp, this.plugin.settings);
+            if (!pyResult.path) {
+                statusBox.setText('No Python found. Check Installation tab.');
+                this._vectorDepsOk = false;
+                return;
+            }
+            const { exec } = require('child_process');
+            exec(`"${pyResult.path}" -c "import chromadb; import sentence_transformers; print('ok')"`, {
+                encoding: 'utf-8', timeout: 15000
+            }, (err, stdout) => {
+                const ok = !err && (stdout || '').trim() === 'ok';
+                this._vectorDepsOk = ok;
+                if (ok) {
+                    // Deps OK — now check embed status
+                    this._execEmbedStatus(pyResult.path, vp, (statusText) => {
+                        this._embedStatusText = statusText;
+                        this.display();
                     });
                 } else {
-                    depsEl.style.cssText = 'padding:8px 12px; margin:8px 0; background:#4a1515; border-radius:4px; color:#ff6b6b;';
-                    depsEl.setText('No Python found. Check Installation tab.');
+                    this.display();
                 }
-            }
+            });
         }
     }
 
-    _renderVectorInstall(containerEl) {
+    _renderVectorNoDeps(containerEl) {
+        const box = containerEl.createEl('div');
+        box.style.cssText = 'padding:8px 12px; margin:8px 0; background:var(--background-secondary); border-radius:4px;';
+        box.setText('Dependencies not installed. Required: chromadb, sentence-transformers.');
+
         new Setting(containerEl)
             .setName('Install Dependencies')
-            .setDesc('Installs chromadb and sentence-transformers (~500MB disk)')
+            .setDesc('pip install chromadb sentence-transformers (~500MB)')
             .addButton(button => {
                 button.setButtonText('Install')
                     .setCta()
                     .onClick(async () => {
                         const vp = this.app.vault.adapter.basePath;
                         const pyResult = resolvePythonExecutable(vp, this.plugin.settings);
-                        const pythonPath = pyResult.path;
-                        if (!pythonPath) {
-                            new Notice('No Python found. Install tab.');
-                            return;
-                        }
+                        if (!pyResult.path) { new Notice('No Python found.'); return; }
                         button.setButtonText('Installing...');
                         button.setDisabled(true);
                         const notice = new Notice('Installing chromadb + sentence-transformers...', 0);
@@ -2843,17 +2855,19 @@ class PaperForgeSettingTab extends PluginSettingTab {
                             const { exec } = require('child_process');
                             const env = Object.assign({}, process.env, { PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1' });
                             await new Promise((resolve, reject) => {
-                                exec(`"${pythonPath}" -m pip install chromadb sentence-transformers`, {
+                                exec(`"${pyResult.path}" -m pip install chromadb sentence-transformers`, {
                                     encoding: 'utf-8', timeout: 300000, env: env,
-                                }, (error, stdout, stderr) => {
-                                    if (error) reject(error);
-                                    else resolve(stdout);
-                                });
+                                }, (error) => { error ? reject(error) : resolve(); });
                             });
                             notice.hide();
-                            new Notice('Done. Run paperforge embed build.');
+                            new Notice('Dependencies installed. Building vectors...');
+                            // Auto-build after install
+                            this._vectorDepsOk = true;
+                            this._execEmbedStatus(pyResult.path, vp, (text) => {
+                                this._embedStatusText = text;
+                            });
                             this.display();
-                        } catch(e) {
+                        } catch (e) {
                             notice.hide();
                             new Notice('Install failed: ' + (e.stderr || e.message || e));
                             button.setButtonText('Retry');
@@ -2863,25 +2877,25 @@ class PaperForgeSettingTab extends PluginSettingTab {
             });
     }
 
-    _renderVectorConfig(containerEl) {
+    _renderVectorReady(containerEl, vp) {
+        // Status line
         const statusEl = containerEl.createEl('div');
         statusEl.style.cssText = 'padding:8px 12px; margin:8px 0; background:var(--background-secondary); border-radius:4px;';
-        const vp = this.app.vault.adapter.basePath;
-        const pyResult = resolvePythonExecutable(vp, this.plugin.settings);
-        const pythonPath = pyResult.path;
+        statusEl.setText(this._embedStatusText || 'Loading...');
 
-        if (this._embedStatusText !== null) {
-            statusEl.setText(this._embedStatusText);
-        } else if (pythonPath) {
-            statusEl.setText('Loading...');
-            this._execEmbedStatus(pythonPath, vp, (text) => {
-                this._embedStatusText = text;
-                statusEl.setText(text);
-            });
-        } else {
-            statusEl.setText('No Python found.');
+        // Detect model mismatch
+        const embedInfo = this._embedStatusText ? this._parseEmbedStatus(this._embedStatusText) : null;
+        const currentModel = this._getCurrentModelKey();
+        const lastModel = this.plugin.settings.vector_db_last_model || '';
+        const modelChanged = embedInfo && embedInfo.db_exists && lastModel && lastModel !== currentModel;
+
+        if (modelChanged) {
+            const warnEl = containerEl.createEl('div');
+            warnEl.style.cssText = 'padding:8px 12px; margin:8px 0; background:var(--background-modifier-warning); border-radius:4px;';
+            warnEl.setText(`Model changed (${lastModel} -> ${currentModel}). Existing vectors are incompatible — rebuild required.`);
         }
 
+        // Mode selector
         new Setting(containerEl)
             .setName('Embedding Mode')
             .addDropdown(dropdown => {
@@ -2895,6 +2909,7 @@ class PaperForgeSettingTab extends PluginSettingTab {
                     });
             });
 
+        // Model selector (local mode)
         if (this.plugin.settings.vector_db_mode === 'local') {
             new Setting(containerEl)
                 .setName('Model')
@@ -2906,13 +2921,16 @@ class PaperForgeSettingTab extends PluginSettingTab {
                         .onChange(value => {
                             this.plugin.settings.vector_db_model = value;
                             this.plugin.saveSettings();
+                            this.display();
                         });
                 });
         }
 
+        // API key (api mode)
         if (this.plugin.settings.vector_db_mode === 'api') {
             new Setting(containerEl)
                 .setName('OpenAI API Key')
+                .setDesc('Used for text-embedding-3-small (1536d)')
                 .addText(text => {
                     text.setPlaceholder('sk-...')
                         .setValue(this.plugin.settings.vector_db_api_key || '')
@@ -2920,8 +2938,95 @@ class PaperForgeSettingTab extends PluginSettingTab {
                             this.plugin.settings.vector_db_api_key = value;
                             this.plugin.saveSettings();
                         });
+                })
+                .addButton(button => {
+                    button.setButtonText('Verify')
+                        .onClick(async () => {
+                            const key = this.plugin.settings.vector_db_api_key;
+                            if (!key || !key.startsWith('sk-')) {
+                                new Notice('Enter a valid OpenAI API key.');
+                                return;
+                            }
+                            button.setButtonText('Checking...');
+                            button.setDisabled(true);
+                            try {
+                                const resp = await (0, eval)('import')('node:https').then(https => new Promise((resolve, reject) => {
+                                    const req = https.request('https://api.openai.com/v1/models', {
+                                        method: 'GET', headers: { Authorization: 'Bearer ' + key }, timeout: 10000
+                                    }, (res) => { let d=''; res.on('data',c=>d+=c); res.on('end',()=>resolve({ok:res.statusCode===200,data:d})); });
+                                    req.on('error', reject); req.end();
+                                }));
+                                if (resp.ok) { new Notice('API key valid.'); }
+                                else { new Notice('API key rejected.'); }
+                            } catch (e) {
+                                new Notice('Network error: ' + e.message);
+                            }
+                            button.setButtonText('Verify');
+                            button.setDisabled(false);
+                        });
                 });
         }
+
+        // Rebuild button
+        new Setting(containerEl)
+            .setName('Rebuild Vectors')
+            .setDesc(modelChanged ? 'Model changed — rebuild to update all vectors.' : 'Rebuild all OCR fulltext vectors. Required after model or mode change.')
+            .addButton(button => {
+                const label = embedInfo && embedInfo.db_exists ? 'Rebuild' : 'Build';
+                button.setButtonText(label)
+                    .setCta()
+                    .onClick(async () => {
+                        const pyResult = resolvePythonExecutable(vp, this.plugin.settings);
+                        if (!pyResult.path) { new Notice('No Python found.'); return; }
+                        button.setButtonText('Building...');
+                        button.setDisabled(true);
+                        const notice = new Notice('Building vector index...', 0);
+                        try {
+                            const { exec } = require('child_process');
+                            const env = Object.assign({}, process.env, { PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1' });
+                            await new Promise((resolve, reject) => {
+                                const cmd = `"${pyResult.path}" -m paperforge --vault "${vp}" embed build --force`;
+                                exec(cmd, { encoding: 'utf-8', timeout: 600000, env: env }, (error, stdout) => {
+                                    if (error) reject(error);
+                                    else resolve(stdout);
+                                });
+                            });
+                            // Remember model used for this build
+                            this.plugin.settings.vector_db_last_model = currentModel;
+                            this.plugin.saveSettings();
+                            // Refresh status
+                            this._embedStatusText = null;
+                            this._execEmbedStatus(pyResult.path, vp, (text) => { this._embedStatusText = text; });
+                            notice.hide();
+                            new Notice('Vector build complete.');
+                            this.display();
+                        } catch (e) {
+                            notice.hide();
+                            new Notice('Build failed: ' + (e.stderr || e.message || e));
+                            button.setButtonText(label);
+                            button.setDisabled(false);
+                        }
+                    });
+            });
+    }
+
+    _getCurrentModelKey() {
+        if (this.plugin.settings.vector_db_mode === 'api') return 'openai/text-embedding-3-small';
+        return this.plugin.settings.vector_db_model || 'BAAI/bge-small-en-v1.5';
+    }
+
+    _parseEmbedStatus(text) {
+        // Parse "  key: value" lines from paperforge embed status output
+        const info = {};
+        if (!text) return info;
+        text.split('\n').forEach(line => {
+            const m = line.match(/^\s*([^:]+):\s*(.*)/);
+            if (m) info[m[1].trim()] = m[2].trim();
+        });
+        // Normalize bools
+        if (info.db_exists !== undefined) info.db_exists = info.db_exists === 'True';
+        if (info.chunk_count !== undefined) info.chunk_count = parseInt(info.chunk_count, 10) || 0;
+        return info;
     }
 
     _getPythonDesc(pyPath, source) {
