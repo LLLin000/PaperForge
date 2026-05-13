@@ -2241,6 +2241,10 @@ class PaperForgeSettingTab extends PluginSettingTab {
                 .paperforge-settings-tab--active { color: var(--text-accent); border-bottom-color: var(--text-accent); }
                 .paperforge-tab-content { display: none; }
                 .paperforge-tab-content--active { display: block; }
+                .paperforge-skills-collapse-header { display: flex !important; align-items: center; cursor: pointer; padding: 4px 0 !important; margin: 0 !important; }
+                .paperforge-skills-collapse-header h4 { margin: 0 !important; }
+                .paperforge-skills-collapse-content { margin: 0 !important; padding: 0 !important; }
+                .vertical-tab-content-container { overflow-y: scroll !important; }
             `;
             document.head.appendChild(style);
         }
@@ -2685,11 +2689,9 @@ class PaperForgeSettingTab extends PluginSettingTab {
 
             // Content wrapper
             const content = skillsBox.createEl('div', { cls: 'paperforge-skills-collapse-content' });
-            header.style.cssText = 'display:flex; align-items:center; cursor:pointer; padding:4px 0; margin-bottom:4px;';
             const arrow = header.createEl('span', { text: '\u25BC', cls: 'paperforge-skills-arrow' });
             arrow.style.cssText = 'font-size:10px; margin-right:6px; transition:transform 0.2s;';
             header.createEl('h4', { text: `${label} (${skills.length})`, cls: 'paperforge-skills-subheader' });
-            header.querySelector('h4').style.marginBottom = '0';
 
             skills.forEach(s => {
                 const nameText = s.name + (s.version ? ' v' + s.version : '');
