@@ -3138,7 +3138,7 @@ class PaperForgeSettingTab extends PluginSettingTab {
                         terminalEl.setText('');
 
                         const { spawn } = require('child_process');
-                        const env = Object.assign({}, process.env, { PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1', HF_ENDPOINT: this.plugin.settings.vector_db_hf_endpoint || 'https://hf-mirror.com', HF_TOKEN: this.plugin.settings.vector_db_hf_token || '' });
+                        const env = Object.assign({}, process.env, { PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1', HF_ENDPOINT: this.plugin.settings.vector_db_hf_endpoint || 'https://hf-mirror.com', HF_TOKEN: this.plugin.settings.vector_db_hf_token || '', VECTOR_DB_API_KEY: this.plugin.settings.vector_db_api_key || '', VECTOR_DB_API_BASE: this.plugin.settings.vector_db_api_base || '', VECTOR_DB_API_MODEL: this.plugin.settings.vector_db_api_model || '' });
                         const child = spawn(pyResult.path, ['-m', 'paperforge', '--vault', vp, 'embed', 'build', '--force'], {
                             env: env, stdio: ['ignore', 'pipe', 'pipe']
                         });
