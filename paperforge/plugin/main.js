@@ -1326,7 +1326,7 @@ class PaperForgeStatusView extends ItemView {
         const filePath = file.path;
 
         if (ext === 'base') {
-            return { mode: 'collection', filePath, key: null, domain: file.basename };
+            return { mode: 'collection', filePath, key: null, domain: file.basename.trim() };
         }
 
         if (ext === 'md') {
@@ -1533,11 +1533,18 @@ class PaperForgeStatusView extends ItemView {
         hubBtn.createEl('span', { text: 'Open Literature Hub' });
         hubBtn.addEventListener('click', () => {
             const baseDir = plugin?.settings?.base_dir || 'Bases';
-            const baseFile = this.app.vault.getAbstractFileByPath(baseDir);
-            if (baseFile) {
-                const leaves = this.app.workspace.getLeavesOfType('file-explorer');
-                if (leaves.length > 0) {
-                    this.app.workspace.revealLeaf(leaves[0]);
+            const baseFolder = this.app.vault.getAbstractFileByPath(baseDir);
+            if (baseFolder) {
+                // Find first .base file in the base directory
+                let baseFile = null;
+                if (baseFolder.children) {
+                    baseFile = baseFolder.children.find(f => f.extension === 'base');
+                }
+                if (baseFile) {
+                    const leaf = this.app.workspace.getLeaf(false);
+                    if (leaf) leaf.openFile(baseFile);
+                } else {
+                    new Notice('[!!] No .base file found in ' + baseDir, 6000);
                 }
             } else {
                 new Notice('[!!] Base directory not found: ' + baseDir, 6000);
