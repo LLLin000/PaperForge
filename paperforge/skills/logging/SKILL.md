@@ -62,6 +62,32 @@ python $SKILL_DIR/scripts/pf_bootstrap.py
    ```
 5. 确认写入成功
 
+### Reading Log Format (MANDATORY)
+
+When writing reading-log.md, use EXACTLY this format:
+
+```
+## ABCDEFGH — Author Last Name et al. Year
+**Title:** Full Paper Title
+
+### Section Name — Page NN
+**Info:** "verbatim excerpt from paper"
+**Use:** how this supports current writing
+**Note:** optional cross-reference (optional field)
+```
+
+Rules:
+- Paper key: 8 uppercase letters/digits after ## (must match ^[A-Z0-9]{8})
+- **Title:** line required after every ## header
+- **Info:** and **Use:** required after every ### section header
+- **Note:** optional
+- Do NOT deviate from this format — parsing is strict
+
+After writing the log file, suggest user run:
+```
+paperforge reading-log --validate path/to/file.md
+```
+
 ## 4. working 分支 — 会话总结写入 working-log
 
 调用条件：会话结束前/用户要求记录工作过程。
