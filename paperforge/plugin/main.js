@@ -78,44 +78,6 @@ function checkRuntimeVersion(pythonExe, pluginVersion, cwd, timeout, _execFile) 
                 }
                     });
                 });
-
-            // HF Mirror (for users behind firewalls)
-            new Setting(containerEl)
-                .setName('HF Mirror / Endpoint')
-                .setDesc('Model download source. Try official if mirror fails. Custom: type any URL.')
-                .addDropdown(dropdown => {
-                    dropdown.addOption('https://hf-mirror.com', 'hf-mirror.com (recommended)');
-                    dropdown.addOption('https://huggingface.co', 'huggingface.co (official)');
-                    dropdown.addOption('__custom__', 'Custom...');
-                    const current = this.plugin.settings.vector_db_hf_endpoint || 'https://hf-mirror.com';
-                    const isPreset = ['https://hf-mirror.com', 'https://huggingface.co'].includes(current);
-                    dropdown.setValue(isPreset ? current : '__custom__')
-                        .onChange(value => {
-                            if (value !== '__custom__') {
-                                this.plugin.settings.vector_db_hf_endpoint = value;
-                                this.plugin.saveSettings();
-                                if (customInput) { customInput.settingEl.style.display = 'none'; customInput.setValue(''); }
-                            } else {
-                                customInput.settingEl.style.display = '';
-                            }
-                        });
-                });
-            const customInput = new Setting(containerEl)
-                .setName('Custom Endpoint')
-                .setDesc('Enter a custom HuggingFace mirror URL')
-                .addText(text => {
-                    const current = this.plugin.settings.vector_db_hf_endpoint || '';
-                    const isPreset = ['https://hf-mirror.com', 'https://huggingface.co'].includes(current);
-                    text.setPlaceholder('https://your-mirror.com')
-                        .setValue(isPreset ? '' : current)
-                        .onChange(value => {
-                            this.plugin.settings.vector_db_hf_endpoint = value;
-                            this.plugin.saveSettings();
-                        });
-                });
-            const current = this.plugin.settings.vector_db_hf_endpoint || 'https://hf-mirror.com';
-            const isPreset = ['https://hf-mirror.com', 'https://huggingface.co'].includes(current);
-            if (isPreset) customInput.settingEl.style.display = 'none';
         }
 
 function classifyError(errorCode) {
@@ -2850,6 +2812,9 @@ class PaperForgeSettingTab extends PluginSettingTab {
 
         const vp = this.app.vault.adapter.basePath;
 
+        // HF Mirror — always visible, needed before deps install
+        this._renderHfMirror(containerEl);
+
         // === Resolve state ===
         if (this._vectorDepsOk === true && this._embedStatusText !== null) {
             this._renderVectorReady(containerEl, vp);
@@ -2888,6 +2853,45 @@ class PaperForgeSettingTab extends PluginSettingTab {
                 }
             });
         }
+    }
+
+    _renderHfMirror(containerEl) {
+        const setting = new Setting(containerEl)
+            .setName('HF Mirror / Endpoint')
+            .setDesc('Model download source. Try official if mirror fails. Custom: type any URL.')
+            .addDropdown(dropdown => {
+                dropdown.addOption('https://hf-mirror.com', 'hf-mirror.com (recommended)');
+                dropdown.addOption('https://huggingface.co', 'huggingface.co (official)');
+                dropdown.addOption('__custom__', 'Custom...');
+                const current = this.plugin.settings.vector_db_hf_endpoint || 'https://hf-mirror.com';
+                const isPreset = ['https://hf-mirror.com', 'https://huggingface.co'].includes(current);
+                dropdown.setValue(isPreset ? current : '__custom__')
+                    .onChange(value => {
+                        if (value !== '__custom__') {
+                            this.plugin.settings.vector_db_hf_endpoint = value;
+                            this.plugin.saveSettings();
+                            if (this._hfCustomInput) { this._hfCustomInput.settingEl.style.display = 'none'; this._hfCustomInput.setValue(''); }
+                        } else {
+                            if (this._hfCustomInput) this._hfCustomInput.settingEl.style.display = '';
+                        }
+                    });
+            });
+        this._hfCustomInput = new Setting(containerEl)
+            .setName('Custom Endpoint')
+            .setDesc('Enter a custom HuggingFace mirror URL')
+            .addText(text => {
+                const current = this.plugin.settings.vector_db_hf_endpoint || '';
+                const isPreset = ['https://hf-mirror.com', 'https://huggingface.co'].includes(current);
+                text.setPlaceholder('https://your-mirror.com')
+                    .setValue(isPreset ? '' : current)
+                    .onChange(value => {
+                        this.plugin.settings.vector_db_hf_endpoint = value;
+                        this.plugin.saveSettings();
+                    });
+            });
+        const current = this.plugin.settings.vector_db_hf_endpoint || 'https://hf-mirror.com';
+        const isPreset = ['https://hf-mirror.com', 'https://huggingface.co'].includes(current);
+        if (isPreset) this._hfCustomInput.settingEl.style.display = 'none';
     }
 
     _renderVectorNoDeps(containerEl) {
