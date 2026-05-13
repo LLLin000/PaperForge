@@ -37,7 +37,6 @@ import filelock
 from paperforge import __version__ as _paperforge_version
 from paperforge.adapters.obsidian_frontmatter import (
     _legacy_control_flags,
-    read_frontmatter_bool,
     read_frontmatter_dict,
     read_frontmatter_optional_bool,
 )
@@ -230,7 +229,10 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
     Lazy imports inside avoid circular dependencies with ``sync.py``.
     """
     # Lazy imports to avoid circular deps with sync.py
-    from paperforge.worker._utils import read_json, slugify_filename, write_json, yaml_quote
+    import shutil
+
+    from paperforge import __version__ as PAPERFORGE_VERSION
+    from paperforge.worker._utils import lookup_impact_factor, read_json, slugify_filename, write_json, yaml_quote
     from paperforge.worker.asset_state import (
         compute_health,
         compute_lifecycle,
@@ -246,9 +248,6 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
         obsidian_wikilink_for_path,
         obsidian_wikilink_for_pdf,
     )
-    from paperforge.worker._utils import lookup_impact_factor
-    from paperforge import __version__ as PAPERFORGE_VERSION
-    import shutil
 
     key = item["key"]
     collection_meta = collection_fields(item.get("collections", []))
@@ -291,8 +290,8 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
                 if "aliases:" not in text[: text.find("\n---", 4)]:
                     alias_line = f"aliases: [{yaml_quote(item.get('title', ''))}, {yaml_quote(item.get('citation_key') or item.get('key', ''))}]\n"
                     text = re.sub(
-                        r'(^title:.*\n)',
-                        r'\1' + alias_line,
+                        r"(^title:.*\n)",
+                        r"\1" + alias_line,
                         text,
                         count=1,
                         flags=re.MULTILINE,
@@ -338,6 +337,7 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
             return str(fm.get(key, "")).strip()
         except Exception:
             return ""
+
     note_dr = _read_fm_str(main_note_path, "deep_reading_status")
     if not note_dr:
         note_dr = _read_fm_str(note_path, "deep_reading_status")
@@ -415,7 +415,7 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
         text = main_note_path.read_text(encoding="utf-8")
         fm_close = text.find("---\n", 4)  # closing --- after opening ---
         if fm_close != -1:
-            body = text[fm_close + 4:]  # everything after frontmatter
+            body = text[fm_close + 4 :]  # everything after frontmatter
             new_full = frontmatter_note(entry, "")
             new_fm_close = new_full.find("---\n", 4)
             if new_fm_close != -1:
@@ -492,6 +492,12 @@ def build_index(vault: Path, verbose: bool = False) -> int:
         for item in export_rows:
             entry = _build_entry(item, vault, paths, domain, zotero_dir)
             index_rows.append(entry)
+            try:
+                from paperforge.memory.refresh import refresh_paper
+
+                refresh_paper(vault, entry)
+            except Exception:
+                pass  # memory DB refresh is best-effort
 
     # Atomically write the envelope-wrapped index
     index_path = paths["index"]
@@ -571,6 +577,13 @@ def refresh_index_entry(vault: Path, key: str) -> bool:
 
     # Build single entry and update the items list
     new_entry = _build_entry(found_item, vault, paths, found_domain, zotero_dir)
+
+    try:
+        from paperforge.memory.refresh import refresh_paper
+
+        refresh_paper(vault, new_entry)
+    except Exception:
+        pass  # memory DB refresh is best-effort
 
     replaced = False
     for i, existing_entry in enumerate(items):
