@@ -507,6 +507,13 @@ Object.assign(LANG.en, {
     /* ── Tabbed Settings ── */
     tab_setup: 'Installation',
     tab_features: 'Features',
+    /* ── Features tab descriptions ── */
+    feat_skills_desc: 'Manage and enable/disable agent skills installed in your vault. Each row corresponds to a SKILL.md file — toggle off to prevent the agent from auto-invoking that skill.',
+    feat_skills_system: 'System Skills ship with PaperForge and are updated alongside PaperForge.',
+    feat_skills_user: 'User Skills are custom skills you install from community or create yourself.',
+    feat_memory_desc: 'The Memory Layer is the core data engine of PaperForge, powered by SQLite. It integrates all literature metadata (papers, assets, aliases, reading events), provides FTS5 full-text search across titles/abstracts/authors/collections, and enables the agent-context and paper-status commands. Always active — no toggle needed.',
+    feat_vector_desc: 'Vector Database enables semantic search across OCR-extracted fulltext using embedding models. Documents are split into chunks, embedded into vector space, and stored in ChromaDB. Supports local models (free, CPU) or OpenAI API (paid, faster).',
+    feat_vector_config_label: 'Advanced Configuration',
 });
 
 /* ── LANG.zh: v1.12 runtime health, OCR queue, pf-deep, dashboard translations ── */
@@ -546,6 +553,13 @@ Object.assign(LANG.zh, {
     /* ── Tabbed Settings ── */
     tab_setup: '安装',
     tab_features: '功能',
+    /* ── 功能介绍的描述文本 ── */
+    feat_skills_desc: '管理 Vault 中已安装的 Agent 技能。每行对应一个 SKILL.md 文件，关闭开关可阻止 Agent 自动调用该技能。',
+    feat_skills_system: '系统技能随 PaperForge 一同发布，会跟随 PaperForge 版本更新。',
+    feat_skills_user: '用户技能是你自行安装或创建的自定义技能。',
+    feat_memory_desc: '记忆层是 PaperForge 的核心数据引擎，基于 SQLite 构建。它整合了所有文献元数据（论文、资源文件、别名、阅读事件），支持 FTS5 全文检索（可搜索标题、摘要、作者、分类），并为 agent-context 和 paper-status 命令提供数据支撑。始终运行，无需手动开启。',
+    feat_vector_desc: '向量数据库通过嵌入模型实现 OCR 全文的语义搜索。文档被切分为文本块（chunk），编码为向量存入 ChromaDB。支持本地模型（免费，CPU 运行）或 OpenAI API（付费，更快速）。',
+    feat_vector_config_label: '高级配置',
 });
 
 function langFromApp(app) {
@@ -2597,6 +2611,11 @@ class PaperForgeSettingTab extends PluginSettingTab {
     _renderFeaturesTab(containerEl) {
         // --- Section: Skills ---
         containerEl.createEl('h3', { text: 'Skills' });
+        const skillsDescEl = containerEl.createEl('div', { cls: 'paperforge-desc-box' });
+        skillsDescEl.style.cssText = 'padding:8px 12px; margin:0 0 12px; background:var(--background-secondary); border-radius:4px; font-size:12px; color:var(--text-muted); line-height:1.5;';
+        skillsDescEl.setText(t('feat_skills_desc'));
+        skillsDescEl.createEl('br');
+        skillsDescEl.createEl('span', { text: t('feat_skills_system'), cls: '' }).style.opacity = '0.7';
 
         // Agent platform selector
         const agentPlatforms = {
@@ -2781,6 +2800,10 @@ class PaperForgeSettingTab extends PluginSettingTab {
         // --- Section: Memory Layer ---
         containerEl.createEl('h3', { text: 'Memory Layer' });
 
+        const memoryDescEl = containerEl.createEl('div', { cls: 'paperforge-desc-box' });
+        memoryDescEl.style.cssText = 'padding:8px 12px; margin:0 0 12px; background:var(--background-secondary); border-radius:4px; font-size:12px; color:var(--text-muted); line-height:1.5;';
+        memoryDescEl.setText(t('feat_memory_desc'));
+
         // Always-on SQLite status display
         const statusRow = containerEl.createEl('div', { cls: 'paperforge-memory-status' });
         statusRow.style.cssText = 'display:flex; align-items:center; padding:8px 12px; margin:8px 0; background:var(--background-secondary); border-radius:4px;';
@@ -2811,6 +2834,10 @@ class PaperForgeSettingTab extends PluginSettingTab {
         // --- Vector Database (within Memory Layer) ---
         containerEl.createEl('h4', { text: 'Vector Database' });
 
+        const vecDescEl = containerEl.createEl('div', { cls: 'paperforge-desc-box' });
+        vecDescEl.style.cssText = 'padding:8px 12px; margin:0 0 8px; background:var(--background-secondary); border-radius:4px; font-size:12px; color:var(--text-muted); line-height:1.5;';
+        vecDescEl.setText(t('feat_vector_desc'));
+
         new Setting(containerEl)
             .setName('Enable Vector Retrieval')
             .setDesc('Semantic search across OCR fulltext. Requires: pip install chromadb sentence-transformers openai (~500MB).')
@@ -2829,24 +2856,36 @@ class PaperForgeSettingTab extends PluginSettingTab {
 
         const vp = this.app.vault.adapter.basePath;
 
-        // HF Mirror — always visible, needed before deps install
-        this._renderHfMirror(containerEl);
+        // Collapsible config section
+        const vecConfigHeader = containerEl.createEl('div', { cls: 'paperforge-skills-collapse-header' });
+        vecConfigHeader.style.cssText = 'display:flex; align-items:center; cursor:pointer; padding:6px 0 2px; margin:0;';
+        const vecArrow = vecConfigHeader.createEl('span', { text: '\u25BC' });
+        vecArrow.style.cssText = 'display:inline-block; font-size:10px; margin-right:6px; transition:transform 0.2s;';
+        vecConfigHeader.createEl('span', { text: t('feat_vector_config_label'), cls: '' }).style.cssText = 'font-size:12px; color:var(--text-muted);';
+        const vecConfigContent = containerEl.createEl('div', { cls: 'paperforge-vector-config' });
 
-        // API config — always visible when API mode is selected (no deps needed)
-        this._renderApiConfig(containerEl);
+        let vecConfigCollapsed = false;
+        vecConfigHeader.addEventListener('click', () => {
+            vecConfigCollapsed = !vecConfigCollapsed;
+            vecConfigContent.style.display = vecConfigCollapsed ? 'none' : '';
+            vecArrow.style.transform = vecConfigCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)';
+        });
+
+        // HF Mirror — always visible, needed before deps install
+        this._renderHfMirror(vecConfigContent);
 
         // === Resolve state ===
         if (this._vectorDepsOk === true && this._embedStatusText !== null) {
-            this._renderVectorReady(containerEl, vp);
+            this._renderVectorReady(vecConfigContent, vp);
             return;
         }
         if (this._vectorDepsOk === false) {
-            this._renderVectorNoDeps(containerEl);
+            this._renderVectorNoDeps(vecConfigContent);
             return;
         }
         // First check — deps unknown, run async
         if (this._vectorDepsOk === null) {
-            const statusBox = containerEl.createEl('div');
+            const statusBox = vecConfigContent.createEl('div');
             statusBox.style.cssText = 'padding:8px 12px; margin:8px 0; background:var(--background-secondary); border-radius:4px;';
             statusBox.setText('Checking dependencies...');
 
