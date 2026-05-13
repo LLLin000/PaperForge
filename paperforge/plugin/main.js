@@ -2501,13 +2501,6 @@ class PaperForgeSettingTab extends PluginSettingTab {
         });
     }
 
-    _execVectorDeps(pythonPath, callback) {
-        const { exec } = require('child_process');
-        exec(`"${pythonPath}" -c "import chromadb; import sentence_transformers; print('ok')"`, { encoding: 'utf-8', timeout: 15000 }, (err, stdout) => {
-            callback(err ? false : (stdout.trim() === 'ok'));
-        });
-    }
-
     _execEmbedStatus(pythonPath, vp, callback) {
         const { exec } = require('child_process');
         exec(`"${pythonPath}" -m paperforge --vault "${vp}" embed status --json`, { encoding: 'utf-8', timeout: 15000 }, (err, stdout) => {
@@ -2526,54 +2519,6 @@ class PaperForgeSettingTab extends PluginSettingTab {
     _renderMemoryStatusText(el, text) {
         el.innerHTML = '';
         el.createEl('span', { text: text, cls: 'paperforge-memory-text' }).style.cssText = 'flex:1;';
-    }
-
-    _resolvePythonAsync(callback) {
-        const { exec } = require('child_process');
-        const vp = this.app.vault.adapter.basePath;
-        const settings = this.plugin.settings;
-
-        // Fast path: manual or venv candidates (sync fs check only, no exec)
-        if (settings && settings.python_path && settings.python_path.trim()) {
-            const manualPath = settings.python_path.trim();
-            if (fs.existsSync(manualPath)) {
-                callback({ path: manualPath, source: 'manual', extraArgs: [] });
-                return;
-            }
-        }
-        const venvCandidates = [
-            path.join(vp, '.paperforge-test-venv', 'Scripts', 'python.exe'),
-            path.join(vp, '.venv', 'Scripts', 'python.exe'),
-            path.join(vp, 'venv', 'Scripts', 'python.exe'),
-        ];
-        for (const candidate of venvCandidates) {
-            try {
-                if (fs.existsSync(candidate)) {
-                    callback({ path: candidate, source: 'auto-detected', extraArgs: [] });
-                    return;
-                }
-            } catch {}
-        }
-        // Slow path: test system candidates with async exec
-        const systemCandidates = [
-            { path: 'python', extraArgs: [] },
-            { path: 'python3', extraArgs: [] },
-        ];
-        const tryNext = (idx) => {
-            if (idx >= systemCandidates.length) {
-                callback({ path: 'python', source: 'auto-detected', extraArgs: [] });
-                return;
-            }
-            const c = systemCandidates[idx];
-            exec(`"${c.path}" --version`, { encoding: 'utf-8', timeout: 5000 }, (err, stdout) => {
-                if (!err && stdout && stdout.toLowerCase().includes('python')) {
-                    callback({ path: c.path, source: 'auto-detected', extraArgs: c.extraArgs });
-                } else {
-                    tryNext(idx + 1);
-                }
-            });
-        };
-        tryNext(0);
     }
 
     _renderFeaturesTab(containerEl) {
@@ -2783,25 +2728,32 @@ class PaperForgeSettingTab extends PluginSettingTab {
                 const depsEl = containerEl.createEl('div');
                 depsEl.style.cssText = 'padding:8px 12px; margin:8px 0; background:var(--background-secondary); border-radius:4px;';
                 depsEl.setText('Checking dependencies...');
-                this._resolvePythonAsync(pyResult => {
-                    const pythonPath = pyResult.path;
-                    if (pythonPath) {
-                        this._execVectorDeps(pythonPath, (ok) => {
-                            this._vectorDepsOk = ok;
-                            if (ok) {
-                                depsEl.remove();
-                                this._renderVectorConfig(containerEl);
-                            } else {
-                                depsEl.style.cssText = 'padding:8px 12px; margin:8px 0; background:#4a1515; border-radius:4px; color:#ff6b6b;';
-                                depsEl.setText('Dependencies not installed. Required: chromadb, sentence-transformers.');
-                                this._renderVectorInstall(containerEl);
-                            }
-                        });
-                    } else {
+                // Fast sync check: resolvePythonExecutable is sync, execSync for import check (fast, ~1s)
+                const pyResult = resolvePythonExecutable(vp, this.plugin.settings);
+                const pythonPath = pyResult.path;
+                if (pythonPath) {
+                    try {
+                        const { execSync } = require('child_process');
+                        const result = execSync(`"${pythonPath}" -c "import chromadb; import sentence_transformers; print('ok')"`, { encoding: 'utf-8', timeout: 5000 });
+                        const ok = result.trim() === 'ok';
+                        this._vectorDepsOk = ok;
+                        if (ok) {
+                            depsEl.remove();
+                            this._renderVectorConfig(containerEl);
+                        } else {
+                            depsEl.style.cssText = 'padding:8px 12px; margin:8px 0; background:#4a1515; border-radius:4px; color:#ff6b6b;';
+                            depsEl.setText('Dependencies not installed. Required: chromadb, sentence-transformers.');
+                            this._renderVectorInstall(containerEl);
+                        }
+                    } catch(e) {
                         depsEl.style.cssText = 'padding:8px 12px; margin:8px 0; background:#4a1515; border-radius:4px; color:#ff6b6b;';
-                        depsEl.setText('No Python found. Check Installation tab.');
+                        depsEl.setText('Dependencies not installed. Required: chromadb, sentence-transformers.');
+                        this._renderVectorInstall(containerEl);
                     }
-                });
+                } else {
+                    depsEl.style.cssText = 'padding:8px 12px; margin:8px 0; background:#4a1515; border-radius:4px; color:#ff6b6b;';
+                    depsEl.setText('No Python found. Check Installation tab.');
+                }
             }
         }
     }
