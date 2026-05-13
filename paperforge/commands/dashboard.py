@@ -52,51 +52,39 @@ def run(args) -> int:
 
 
 def _dashboard_from_db(vault: Path) -> dict | None:
-    """Build dashboard stats from paperforge.db. Returns None if DB missing."""
-    from paperforge.memory.db import get_connection, get_memory_db_path
-
-    db_path = get_memory_db_path(vault)
+    """Build dashboard stats from paperforge.db. Returns None if DB unavailable."""
+    from pathlib import Path as _P
+    db_path = vault / "System" / "PaperForge" / "indexes" / "paperforge.db"
     if not db_path.exists():
         return None
-    conn = get_connection(db_path, read_only=True)
     try:
-        total = conn.execute("SELECT COUNT(*) FROM papers").fetchone()[0]
-
-        pdf_healthy = conn.execute(
-            "SELECT COUNT(*) FROM papers WHERE lifecycle != 'indexed'"
-        ).fetchone()[0]
-        pdf_missing = conn.execute(
-            "SELECT COUNT(*) FROM papers WHERE lifecycle = 'indexed'"
-        ).fetchone()[0]
-
-        ocr_done = conn.execute(
-            "SELECT COUNT(*) FROM papers WHERE ocr_status='done'"
-        ).fetchone()[0]
-        ocr_failed = conn.execute(
-            "SELECT COUNT(*) FROM papers WHERE ocr_status='failed'"
-        ).fetchone()[0]
+        import sqlite3
+        conn = sqlite3.connect(str(db_path))
+        conn.row_factory = sqlite3.Row
+        # Paper count
+        total = conn.execute("SELECT COUNT(*) as cnt FROM papers").fetchone()["cnt"]
+        # PDF health
+        pdf_healthy = conn.execute("SELECT COUNT(*) as cnt FROM papers WHERE has_pdf = 1 AND (ocr_status != 'failed' OR ocr_status IS NULL)").fetchone()["cnt"]
+        pdf_missing = conn.execute("SELECT COUNT(*) as cnt FROM papers WHERE has_pdf = 0").fetchone()["cnt"]
+        pdf_broken = total - pdf_healthy - pdf_missing
+        # OCR health
+        ocr_done = conn.execute("SELECT COUNT(*) as cnt FROM papers WHERE ocr_status = 'done'").fetchone()["cnt"]
+        ocr_failed = conn.execute("SELECT COUNT(*) as cnt FROM papers WHERE ocr_status IN ('failed','blocked')").fetchone()["cnt"]
         ocr_pending = total - ocr_done - ocr_failed
-
-        domain_counts = {
-            r["domain"]: r["cnt"]
-            for r in conn.execute(
-                "SELECT domain, COUNT(*) as cnt FROM papers GROUP BY domain"
-            ).fetchall()
-        }
-
+        # Domain counts
+        rows = conn.execute("SELECT domain, COUNT(*) as cnt FROM papers GROUP BY domain").fetchall()
+        domain_counts = {r["domain"]: r["cnt"] for r in rows}
+        conn.close()
         return {
             "stats": {
                 "papers": total,
-                "pdf_health": {"healthy": pdf_healthy, "missing": pdf_missing, "broken": 0},
+                "pdf_health": {"healthy": pdf_healthy, "missing": pdf_missing, "broken": pdf_broken},
                 "ocr_health": {"pending": ocr_pending, "done": ocr_done, "failed": ocr_failed},
                 "domain_counts": domain_counts,
-                "_source": "paperforge.db",
             },
         }
     except Exception:
         return None
-    finally:
-        conn.close()
 
 
 def _check_permissions(vault: Path) -> dict:
@@ -214,8 +202,12 @@ def _dashboard_from_files(vault: Path) -> dict:
 
 
 def _gather_dashboard_data(vault: Path) -> dict:
-    db_result = _dashboard_from_db(vault)
-    if db_result is not None:
-        db_result["permissions"] = _check_permissions(vault)
-        return db_result
-    return _dashboard_from_files(vault)
+    # Try DB first
+    data = _dashboard_from_db(vault)
+    if data is not None:
+        data["permissions"] = _check_permissions(vault)
+        return data
+    # Fallback to file scanning
+    data = _dashboard_from_files(vault)
+    data["permissions"] = _check_permissions(vault)
+    return data
