@@ -1535,7 +1535,10 @@ class PaperForgeStatusView extends ItemView {
             const baseDir = plugin?.settings?.base_dir || 'Bases';
             const baseFile = this.app.vault.getAbstractFileByPath(baseDir);
             if (baseFile) {
-                this.app.internalPlugins.getPluginById('file-explorer')?.enable?.(true);
+                const leaves = this.app.workspace.getLeavesOfType('file-explorer');
+                if (leaves.length > 0) {
+                    this.app.workspace.revealLeaf(leaves[0]);
+                }
             } else {
                 new Notice('[!!] Base directory not found: ' + baseDir, 6000);
             }
