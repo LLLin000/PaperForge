@@ -2856,7 +2856,8 @@ class PaperForgeSettingTab extends PluginSettingTab {
     }
 
     _renderHfMirror(containerEl) {
-        const setting = new Setting(containerEl)
+        let customText = null;
+        new Setting(containerEl)
             .setName('HF Mirror / Endpoint')
             .setDesc('Model download source. Try official if mirror fails. Custom: type any URL.')
             .addDropdown(dropdown => {
@@ -2870,16 +2871,17 @@ class PaperForgeSettingTab extends PluginSettingTab {
                         if (value !== '__custom__') {
                             this.plugin.settings.vector_db_hf_endpoint = value;
                             this.plugin.saveSettings();
-                            if (this._hfCustomInput) { this._hfCustomInput.settingEl.style.display = 'none'; this._hfCustomInput.setValue(''); }
+                            if (customInput) { customInput.settingEl.style.display = 'none'; if (customText) customText.setValue(''); }
                         } else {
-                            if (this._hfCustomInput) this._hfCustomInput.settingEl.style.display = '';
+                            if (customInput) customInput.settingEl.style.display = '';
                         }
                     });
             });
-        this._hfCustomInput = new Setting(containerEl)
+        const customInput = new Setting(containerEl)
             .setName('Custom Endpoint')
             .setDesc('Enter a custom HuggingFace mirror URL')
             .addText(text => {
+                customText = text;
                 const current = this.plugin.settings.vector_db_hf_endpoint || '';
                 const isPreset = ['https://hf-mirror.com', 'https://huggingface.co'].includes(current);
                 text.setPlaceholder('https://your-mirror.com')
@@ -2891,7 +2893,7 @@ class PaperForgeSettingTab extends PluginSettingTab {
             });
         const current = this.plugin.settings.vector_db_hf_endpoint || 'https://hf-mirror.com';
         const isPreset = ['https://hf-mirror.com', 'https://huggingface.co'].includes(current);
-        if (isPreset) this._hfCustomInput.settingEl.style.display = 'none';
+        if (isPreset) customInput.settingEl.style.display = 'none';
     }
 
     _renderVectorNoDeps(containerEl) {
