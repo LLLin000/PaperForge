@@ -2680,11 +2680,11 @@ class PaperForgeSettingTab extends PluginSettingTab {
         const renderCollapsibleSkills = (label, skills, isSystem) => {
             if (skills.length === 0) return;
 
-            // Content wrapper (created first, collapsed by default)
-            const content = skillsBox.createEl('div', { cls: 'paperforge-skills-collapse-content' });
-
-            // Header row with toggle arrow
+            // Header row with toggle arrow (created first so it appears above content)
             const header = skillsBox.createEl('div', { cls: 'paperforge-skills-collapse-header' });
+
+            // Content wrapper
+            const content = skillsBox.createEl('div', { cls: 'paperforge-skills-collapse-content' });
             header.style.cssText = 'display:flex; align-items:center; cursor:pointer; padding:4px 0; margin-bottom:4px;';
             const arrow = header.createEl('span', { text: '\u25BC', cls: 'paperforge-skills-arrow' });
             arrow.style.cssText = 'font-size:10px; margin-right:6px; transition:transform 0.2s;';
