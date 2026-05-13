@@ -2214,6 +2214,7 @@ class PaperForgeSettingTab extends PluginSettingTab {
         this.plugin = plugin;
         this._saveTimeout = null;
         this._pfConfig = null;  // cached paperforge.json config
+        this._lastSyncTime = null;
         this._memoryStatusText = null;   // null = not checked yet, string = cached result
         this._vectorDepsOk = null;       // null = not checked, bool = cached
         this._embedStatusText = null;
@@ -2516,9 +2517,55 @@ class PaperForgeSettingTab extends PluginSettingTab {
         });
     }
 
-    _renderMemoryStatusText(el, text) {
+    _renderMemoryStatusText(el, text, extraInfo) {
         el.innerHTML = '';
         el.createEl('span', { text: text, cls: 'paperforge-memory-text' }).style.cssText = 'flex:1;';
+
+        if (extraInfo === 'syncing') {
+            const syncEl = el.createEl('span', { text: 'Syncing...', cls: 'paperforge-sync-status' });
+            syncEl.style.cssText = 'opacity:0.7; margin-right:8px;';
+        } else if (extraInfo) {
+            const timeEl = el.createEl('span', { text: extraInfo, cls: 'paperforge-sync-status' });
+            timeEl.style.cssText = 'opacity:0.7; margin-right:8px;';
+        }
+
+        const refreshBtn = el.createEl('button', { cls: 'paperforge-refresh-btn', text: '\u21BB' });
+        refreshBtn.style.cssText = 'margin-left:auto; border:none; background:none; cursor:pointer; font-size:16px; padding:0 4px;';
+        refreshBtn.title = 'Sync now';
+        refreshBtn.onclick = () => {
+            this._memoryStatusText = null;
+            this._runManualSync();
+        };
+    }
+
+    _getBuildCommand(settings) {
+        const vp = this.app.vault.adapter.basePath;
+        const pyResult = resolvePythonExecutable(vp, settings);
+        if (!pyResult.path) return null;
+        return `"${pyResult.path}" -m paperforge --vault "${vp}" sync`;
+    }
+
+    _runManualSync() {
+        const vp = this.app.vault.adapter.basePath;
+        const pyResult = resolvePythonExecutable(vp, this.plugin.settings);
+        if (!pyResult.path) return;
+
+        const statusRow = document.querySelector('.paperforge-memory-status');
+        if (statusRow) {
+            this._renderMemoryStatusText(statusRow, 'Checking...', 'syncing');
+        }
+
+        this.plugin._autoSyncRunning = true;
+        const { exec } = require('child_process');
+        exec(`"${pyResult.path}" -m paperforge --vault "${vp}" sync`, { timeout: 120000, encoding: 'utf-8' }, (err) => {
+            this.plugin._autoSyncRunning = false;
+            this._memoryStatusText = null;
+            if (!err) {
+                this._lastSyncTime = new Date().toLocaleTimeString();
+                this.plugin._lastSyncTime = this._lastSyncTime;
+            }
+            this.display(); // re-render
+        });
     }
 
     _renderFeaturesTab(containerEl) {
@@ -2685,16 +2732,20 @@ class PaperForgeSettingTab extends PluginSettingTab {
         const vp = this.app.vault.adapter.basePath;
         const pyResult = resolvePythonExecutable(vp, this.plugin.settings);
 
+        if (this.plugin._lastSyncTime && !this._lastSyncTime) {
+            this._lastSyncTime = this.plugin._lastSyncTime;
+        }
+
         if (this._memoryStatusText !== null) {
-            this._renderMemoryStatusText(statusRow, this._memoryStatusText);
+            this._renderMemoryStatusText(statusRow, this._memoryStatusText, this._lastSyncTime);
         } else if (pyResult.path) {
-            this._renderMemoryStatusText(statusRow, 'Checking...');
+            this._renderMemoryStatusText(statusRow, 'Checking...', this._lastSyncTime);
             this._execMemoryStatus(pyResult.path, vp, (text) => {
                 this._memoryStatusText = text;
-                this._renderMemoryStatusText(statusRow, text);
+                this._renderMemoryStatusText(statusRow, text, this._lastSyncTime);
             });
         } else {
-            this._renderMemoryStatusText(statusRow, 'No Python found.');
+            this._renderMemoryStatusText(statusRow, 'No Python found.', this._lastSyncTime);
         }
 
         // --- Vector Database (within Memory Layer) ---
@@ -3769,6 +3820,7 @@ module.exports = class PaperForgePlugin extends Plugin {
         this._lastExportMtime = 0;
         this._lastOcrMtimes = {};
         this._autoSyncRunning = false;
+        this._lastSyncTime = null;
         this._pollTimer = null;
         // Clean stale path fields from plugin data.json (migrated to paperforge.json)
         this.saveSettings();
@@ -3899,6 +3951,9 @@ module.exports = class PaperForgePlugin extends Plugin {
         exec(cmd, { timeout: 120000, encoding: 'utf-8' }, (err, stdout, stderr) => {
             this._autoSyncRunning = false;
             this._memoryStatusText = null; // force re-check next time
+            if (!err) {
+                this._lastSyncTime = new Date().toLocaleTimeString();
+            }
             // Update last export mtime to avoid re-trigger during build
             try {
                 const fs = require('fs');
