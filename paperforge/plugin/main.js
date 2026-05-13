@@ -2717,7 +2717,7 @@ class PaperForgeSettingTab extends PluginSettingTab {
 
         // System skills
         const skillsBox = containerEl.createEl('div');
-        skillsBox.style.cssText = 'background:var(--background-primary-alt); border-radius:8px; padding:4px 12px 12px; margin:8px 0 16px;';
+        skillsBox.style.cssText = 'background:var(--background-secondary); border-radius:8px; padding:12px 12px 4px; margin:8px 0 16px;';
         if (systemSkills.length > 0) {
             skillsBox.createEl('h4', { text: 'System Skills', cls: 'paperforge-skills-subheader' });
             systemSkills.forEach(s => renderSkillRow(s, true));
@@ -2739,37 +2739,23 @@ class PaperForgeSettingTab extends PluginSettingTab {
         // --- Section: Memory Layer ---
         containerEl.createEl('h3', { text: 'Memory Layer' });
 
-        new Setting(containerEl)
-            .setName('Easy Memory Layer')
-            .setDesc('轻量 SQLite 文献信息检索（笔记元数据+搜索+状态），不含全文向量库。')
-            .addToggle(toggle => {
-                toggle.setValue(this.plugin.settings.features.memory_layer)
-                    .onChange(value => {
-                        this.plugin.settings.features.memory_layer = value;
-                        this.plugin.saveSettings();
-                        this.display();
-                    });
+        // Always-on SQLite status display
+        const statusRow = containerEl.createEl('div', { cls: 'paperforge-memory-status' });
+        statusRow.style.cssText = 'display:flex; align-items:center; padding:8px 12px; margin:8px 0; background:var(--background-secondary); border-radius:4px;';
+
+        const vp = this.app.vault.adapter.basePath;
+        const pyResult = resolvePythonExecutable(vp, this.plugin.settings);
+
+        if (this._memoryStatusText !== null) {
+            this._renderMemoryStatusText(statusRow, this._memoryStatusText);
+        } else if (pyResult.path) {
+            this._renderMemoryStatusText(statusRow, 'Checking...');
+            this._execMemoryStatus(pyResult.path, vp, (text) => {
+                this._memoryStatusText = text;
+                this._renderMemoryStatusText(statusRow, text);
             });
-
-        // Show memory status when enabled — render from cache if available
-        if (this.plugin.settings.features.memory_layer) {
-            const statusRow = containerEl.createEl('div', { cls: 'paperforge-memory-status' });
-            statusRow.style.cssText = 'display:flex; align-items:center; padding:8px 12px; margin:8px 0; background:var(--background-secondary); border-radius:4px;';
-
-            const vp = this.app.vault.adapter.basePath;
-            const pyResult = resolvePythonExecutable(vp, this.plugin.settings);
-
-            if (this._memoryStatusText !== null) {
-                this._renderMemoryStatusText(statusRow, this._memoryStatusText);
-            } else if (pyResult.path) {
-                this._renderMemoryStatusText(statusRow, 'Checking...');
-                this._execMemoryStatus(pyResult.path, vp, (text) => {
-                    this._memoryStatusText = text;
-                    this._renderMemoryStatusText(statusRow, text);
-                });
-            } else {
-                this._renderMemoryStatusText(statusRow, 'No Python found.');
-            }
+        } else {
+            this._renderMemoryStatusText(statusRow, 'No Python found.');
         }
 
         // --- Vector Database (within Memory Layer) ---
