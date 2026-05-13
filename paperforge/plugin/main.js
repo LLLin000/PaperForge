@@ -570,6 +570,7 @@ const DEFAULT_SETTINGS = {
     vector_db_mode: 'local',
     vector_db_model: 'BAAI/bge-small-en-v1.5',
     vector_db_api_key: '',
+    vector_db_api_base: '',
     vector_db_hf_endpoint: 'https://hf-mirror.com',
     vector_db_last_model: '',
     frozen_skills: {},
@@ -3081,6 +3082,17 @@ class PaperForgeSettingTab extends PluginSettingTab {
                             }
                             button.setButtonText('Verify');
                             button.setDisabled(false);
+                        });
+                });
+            new Setting(containerEl)
+                .setName('API Base URL')
+                .setDesc('Custom OpenAI-compatible API endpoint (e.g., https://api.openai.com/v1). Leave empty for default.')
+                .addText(text => {
+                    text.setPlaceholder('https://api.openai.com/v1')
+                        .setValue(this.plugin.settings.vector_db_api_base || '')
+                        .onChange(value => {
+                            this.plugin.settings.vector_db_api_base = value;
+                            this.plugin.saveSettings();
                         });
                 });
         }

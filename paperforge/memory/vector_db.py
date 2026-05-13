@@ -76,7 +76,14 @@ def get_embedding_model(vault: Path):
 
     model_name = settings.get("vector_db_model", "BAAI/bge-small-en-v1.5")
 
-    # HF_ENDPOINT is set by the JS plugin via environment variable — don't override
+    # Apply HF mirror endpoint via huggingface_hub API (works alongside env var)
+    hf_endpoint = settings.get("vector_db_hf_endpoint", "") or os.environ.get("HF_ENDPOINT", "")
+    if hf_endpoint:
+        try:
+            from huggingface_hub import set_endpoint
+            set_endpoint(hf_endpoint)
+        except Exception:
+            pass
 
     if _cached_model is not None and _cached_model_name == model_name:
         return _cached_model
@@ -136,7 +143,7 @@ def _embed_paper_api(vault, zotero_key, chunks, collection) -> int:
         raise ValueError("No API key configured for vector DB")
 
     from openai import OpenAI
-    client = OpenAI(api_key=api_key)
+    client = OpenAI(api_key=api_key, base_url=settings.get("vector_db_api_base", None) or None)
 
     texts = [c["text"] for c in chunks]
     ids = [f"{zotero_key}_{c['chunk_index']}" for c in chunks]
@@ -184,7 +191,7 @@ def retrieve_chunks(vault: Path, query: str, limit: int = 5, expand: bool = True
         if not api_key:
             raise ValueError("No API key configured for vector DB")
         from openai import OpenAI
-        client = OpenAI(api_key=api_key)
+        client = OpenAI(api_key=api_key, base_url=settings.get("vector_db_api_base", None) or None)
         response = client.embeddings.create(model="text-embedding-3-small", input=query)
         query_embedding = response.data[0].embedding
     else:
