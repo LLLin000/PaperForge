@@ -294,6 +294,9 @@ def build_parser() -> argparse.ArgumentParser:
     p_rl.add_argument("--since", help="Export notes since date (YYYY-MM-DD)")
     p_rl.add_argument("--limit", type=int, default=50, help="Max notes to export")
     p_rl.add_argument("--output", help="Write markdown to file")
+    p_rl.add_argument("--validate", help="Validate a reading-log.md file")
+    p_rl.add_argument("--import", dest="import_file", help="Import reading-log.md into paper_events")
+    p_rl.add_argument("--lookup", help="Look up all reading notes for a paper key")
     p_rl.add_argument("--json", action="store_true", help="Output as JSON")
 
     p_search = sub.add_parser("search", help="Full-text search across the library")
