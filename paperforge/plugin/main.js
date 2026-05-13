@@ -76,9 +76,22 @@ function checkRuntimeVersion(pythonExe, pluginVersion, cwd, timeout, _execFile) 
                 } else {
                     resolve({ status: "mismatch", pyVersion: pyVer, pluginVersion, error: null });
                 }
-            });
-    });
-}
+                    });
+                });
+
+            // HF Mirror (for users behind firewalls)
+            new Setting(containerEl)
+                .setName('HF Mirror / Endpoint')
+                .setDesc('HuggingFace mirror for model downloads. Default: hf-mirror.com (works in China). Set empty to use official.')
+                .addText(text => {
+                    text.setPlaceholder('https://hf-mirror.com')
+                        .setValue(this.plugin.settings.vector_db_hf_endpoint || '')
+                        .onChange(value => {
+                            this.plugin.settings.vector_db_hf_endpoint = value;
+                            this.plugin.saveSettings();
+                        });
+                });
+        }
 
 function classifyError(errorCode) {
     const code = String(errorCode);
@@ -570,6 +583,7 @@ const DEFAULT_SETTINGS = {
     vector_db_mode: 'local',
     vector_db_model: 'BAAI/bge-small-en-v1.5',
     vector_db_api_key: '',
+    vector_db_hf_endpoint: 'https://hf-mirror.com',
     vector_db_last_model: '',
     frozen_skills: {},
 };
@@ -2871,7 +2885,7 @@ class PaperForgeSettingTab extends PluginSettingTab {
                         const notice = new Notice('Installing chromadb + sentence-transformers...', 0);
                         try {
                             const { exec } = require('child_process');
-                            const env = Object.assign({}, process.env, { PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1' });
+                            const env = Object.assign({}, process.env, { PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1', HF_ENDPOINT: this.plugin.settings.vector_db_hf_endpoint || 'https://hf-mirror.com' });
                             await new Promise((resolve, reject) => {
                                 exec(`"${pyResult.path}" -m pip install chromadb sentence-transformers`, {
                                     encoding: 'utf-8', timeout: 300000, env: env,
@@ -3045,7 +3059,7 @@ class PaperForgeSettingTab extends PluginSettingTab {
                         terminalEl.setText('');
 
                         const { spawn } = require('child_process');
-                        const env = Object.assign({}, process.env, { PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1' });
+                        const env = Object.assign({}, process.env, { PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1', HF_ENDPOINT: this.plugin.settings.vector_db_hf_endpoint || 'https://hf-mirror.com' });
                         const child = spawn(pyResult.path, ['-m', 'paperforge', '--vault', vp, 'embed', 'build', '--force'], {
                             env: env, stdio: ['ignore', 'pipe', 'pipe']
                         });
