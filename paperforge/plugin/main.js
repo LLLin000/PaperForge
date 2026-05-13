@@ -514,6 +514,29 @@ Object.assign(LANG.en, {
     feat_memory_desc: 'The Memory Layer is the core data engine of PaperForge, powered by SQLite. It integrates all literature metadata (papers, assets, aliases, reading events), provides FTS5 full-text search across titles/abstracts/authors/collections, and enables the agent-context and paper-status commands. Always active — no toggle needed.',
     feat_vector_desc: 'Vector Database enables semantic search across OCR-extracted fulltext using embedding models. Documents are split into chunks, embedded into vector space, and stored in ChromaDB. Supports local models (free, CPU) or OpenAI API (paid, faster).',
     feat_vector_config_label: 'Advanced Configuration',
+    feat_agent_platform: 'Agent Platform',
+    feat_agent_platform_desc: 'Select which agent platform to manage skills for.',
+    feat_vector_enable: 'Enable Vector Retrieval',
+    feat_vector_enable_desc: 'Semantic search across OCR fulltext. Requires: pip install chromadb sentence-transformers openai (~500MB).',
+    feat_hf_mirror: 'HF Mirror / Endpoint',
+    feat_hf_mirror_desc: 'Model download source. Try official if mirror fails. Custom: type any URL.',
+    feat_custom_endpoint: 'Custom Endpoint',
+    feat_custom_endpoint_desc: 'Enter a custom HuggingFace mirror URL.',
+    feat_hf_token: 'HF Token',
+    feat_hf_token_desc: 'HuggingFace access token (optional, helps with rate limits and gated models).',
+    feat_model: 'Model',
+    feat_embed_mode: 'Embedding Mode',
+    feat_embed_mode_local: 'Local (free, CPU)',
+    feat_embed_mode_api: 'API (OpenAI, paid)',
+    feat_openai_key: 'OpenAI API Key',
+    feat_openai_key_desc: 'Used for text-embedding-3-small (1536d).',
+    feat_verify: 'Verify',
+    feat_checking: 'Checking...',
+    feat_rebuild_vectors: 'Rebuild Vectors',
+    feat_rebuild_vectors_desc: 'Rebuild all OCR fulltext vectors. Required after model or mode change.',
+    feat_rebuild_vectors_changed: 'Model changed — rebuild to update all vectors.',
+    feat_install_deps: 'Install Dependencies',
+    feat_install_deps_desc: 'pip install chromadb sentence-transformers openai (~500MB).',
 });
 
 /* ── LANG.zh: v1.12 runtime health, OCR queue, pf-deep, dashboard translations ── */
@@ -560,6 +583,29 @@ Object.assign(LANG.zh, {
     feat_memory_desc: '记忆层是 PaperForge 的核心数据引擎，基于 SQLite 构建。它整合了所有文献元数据（论文、资源文件、别名、阅读事件），支持 FTS5 全文检索（可搜索标题、摘要、作者、分类），并为 agent-context 和 paper-status 命令提供数据支撑。始终运行，无需手动开启。',
     feat_vector_desc: '向量数据库通过嵌入模型实现 OCR 全文的语义搜索。文档被切分为文本块（chunk），编码为向量存入 ChromaDB。支持本地模型（免费，CPU 运行）或 OpenAI API（付费，更快速）。',
     feat_vector_config_label: '高级配置',
+    feat_agent_platform: 'Agent 平台',
+    feat_agent_platform_desc: '选择要管理的 Agent 平台。',
+    feat_vector_enable: '启用向量检索',
+    feat_vector_enable_desc: '对 OCR 全文进行语义搜索。需安装: pip install chromadb sentence-transformers openai (~500MB)。',
+    feat_hf_mirror: 'HF 镜像站 / 端点',
+    feat_hf_mirror_desc: '模型下载源。镜像不可用时尝试官方源。自定义：输入任意 URL。',
+    feat_custom_endpoint: '自定义端点',
+    feat_custom_endpoint_desc: '输入自定义 HuggingFace 镜像 URL。',
+    feat_hf_token: 'HF Token',
+    feat_hf_token_desc: 'HuggingFace 访问令牌（可选，有助于解除限速和下载受限模型）。',
+    feat_model: '模型',
+    feat_embed_mode: '嵌入模式',
+    feat_embed_mode_local: '本地（免费，CPU）',
+    feat_embed_mode_api: 'API（OpenAI，付费）',
+    feat_openai_key: 'OpenAI API Key',
+    feat_openai_key_desc: '用于 text-embedding-3-small（1536 维）。',
+    feat_verify: '验证',
+    feat_checking: '检测中…',
+    feat_rebuild_vectors: '重建向量',
+    feat_rebuild_vectors_desc: '重建所有 OCR 全文向量。更换模型或模式后需要重建。',
+    feat_rebuild_vectors_changed: '模型已更换 — 需要重建向量。',
+    feat_install_deps: '安装依赖',
+    feat_install_deps_desc: 'pip install chromadb sentence-transformers openai (~500MB)。',
 });
 
 function langFromApp(app) {
@@ -2642,8 +2688,8 @@ class PaperForgeSettingTab extends PluginSettingTab {
         let selectedPlatform = this.plugin.settings.selected_skill_platform || 'opencode';
 
         new Setting(containerEl)
-            .setName('Agent Platform')
-            .setDesc('Select which agent platform to manage skills for.')
+            .setName(t('feat_agent_platform'))
+            .setDesc(t('feat_agent_platform_desc'))
             .addDropdown(dropdown => {
                 Object.entries(agentPlatforms).forEach(([key, label]) => dropdown.addOption(key, label));
                 dropdown.setValue(selectedPlatform)
@@ -2839,8 +2885,8 @@ class PaperForgeSettingTab extends PluginSettingTab {
         vecDescEl.setText(t('feat_vector_desc'));
 
         new Setting(containerEl)
-            .setName('Enable Vector Retrieval')
-            .setDesc('Semantic search across OCR fulltext. Requires: pip install chromadb sentence-transformers openai (~500MB).')
+            .setName(t('feat_vector_enable'))
+            .setDesc(t('feat_vector_enable_desc'))
             .addToggle(toggle => {
                 toggle.setValue(this.plugin.settings.features.vector_db)
                     .onChange(value => {
@@ -2915,10 +2961,9 @@ class PaperForgeSettingTab extends PluginSettingTab {
     }
 
     _renderHfMirror(containerEl) {
-        let customText = null;
-        new Setting(containerEl)
-            .setName('HF Mirror / Endpoint')
-            .setDesc('Model download source. Try official if mirror fails. Custom: type any URL.')
+        const setting = new Setting(containerEl)
+            .setName(t('feat_hf_mirror'))
+            .setDesc(t('feat_hf_mirror_desc'))
             .addDropdown(dropdown => {
                 dropdown.addOption('https://hf-mirror.com', 'hf-mirror.com (recommended)');
                 dropdown.addOption('https://huggingface.co', 'huggingface.co (official)');
@@ -2937,8 +2982,8 @@ class PaperForgeSettingTab extends PluginSettingTab {
                     });
             });
         const customInput = new Setting(containerEl)
-            .setName('Custom Endpoint')
-            .setDesc('Enter a custom HuggingFace mirror URL')
+            .setName(t('feat_custom_endpoint'))
+            .setDesc(t('feat_custom_endpoint_desc'))
             .addText(text => {
                 customText = text;
                 const current = this.plugin.settings.vector_db_hf_endpoint || '';
@@ -2955,8 +3000,8 @@ class PaperForgeSettingTab extends PluginSettingTab {
         if (isPreset) customInput.settingEl.style.display = 'none';
 
         new Setting(containerEl)
-            .setName('HF Token')
-            .setDesc('HuggingFace access token (optional, helps with rate limits and gated models)')
+            .setName(t('feat_hf_token'))
+            .setDesc(t('feat_hf_token_desc'))
             .addText(text => {
                 text.setPlaceholder('hf_...')
                     .setValue(this.plugin.settings.vector_db_hf_token || '')
@@ -2971,8 +3016,8 @@ class PaperForgeSettingTab extends PluginSettingTab {
         if (this.plugin.settings.vector_db_mode !== 'api') return;
 
         new Setting(containerEl)
-            .setName('OpenAI API Key')
-            .setDesc('Used for embedding model API calls')
+            .setName(t('feat_openai_key'))
+            .setDesc(t('feat_openai_key_desc'))
             .addText(text => {
                 text.setPlaceholder('sk-...')
                     .setValue(this.plugin.settings.vector_db_api_key || '')
@@ -3011,8 +3056,8 @@ class PaperForgeSettingTab extends PluginSettingTab {
         box.setText('Dependencies not installed. Required: chromadb, sentence-transformers.');
 
         new Setting(containerEl)
-            .setName('Install Dependencies')
-            .setDesc('pip install chromadb sentence-transformers openai(~500MB)')
+            .setName(t('feat_install_deps'))
+            .setDesc(t('feat_install_deps_desc'))
             .addButton(button => {
                 button.setButtonText('Install')
                     .setCta()
@@ -3069,10 +3114,10 @@ class PaperForgeSettingTab extends PluginSettingTab {
 
         // Mode selector
         new Setting(containerEl)
-            .setName('Embedding Mode')
+            .setName(t('feat_embed_mode'))
             .addDropdown(dropdown => {
-                dropdown.addOption('local', 'Local (free, CPU)');
-                dropdown.addOption('api', 'API (OpenAI, paid)');
+                dropdown.addOption('local', t('feat_embed_mode_local'));
+                dropdown.addOption('api', t('feat_embed_mode_api'));
                 dropdown.setValue(this.plugin.settings.vector_db_mode)
                     .onChange(value => {
                         this.plugin.settings.vector_db_mode = value;
@@ -3089,7 +3134,7 @@ class PaperForgeSettingTab extends PluginSettingTab {
                 'BAAI/bge-base-en-v1.5': 'Highest accuracy — slower, large disk footprint (768d, 440MB)',
             };
             new Setting(containerEl)
-                .setName('Model')
+                .setName(t('feat_model'))
                 .setDesc(modelDesc[this.plugin.settings.vector_db_model] || '')
                 .addDropdown(dropdown => {
                     dropdown.addOption('BAAI/bge-small-en-v1.5', 'bge-small (384d, 130MB)');
@@ -3162,8 +3207,8 @@ class PaperForgeSettingTab extends PluginSettingTab {
         };
 
         new Setting(containerEl)
-            .setName('Rebuild Vectors')
-            .setDesc(modelChanged ? 'Model changed — rebuild to update all vectors.' : 'Rebuild all OCR fulltext vectors. Required after model or mode change.')
+            .setName(t('feat_rebuild_vectors'))
+            .setDesc(modelChanged ? t('feat_rebuild_vectors_changed') : t('feat_rebuild_vectors_desc'))
             .addButton(button => {
                 const label = embedInfo && embedInfo.db_exists ? 'Rebuild' : 'Build';
                 button.setButtonText(label)

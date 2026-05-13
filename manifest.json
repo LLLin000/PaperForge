@@ -3,7 +3,7 @@
   "name": "PaperForge",
   "version": "1.5.6rc1",
   "minAppVersion": "1.9.0",
-  "description": "PaperForge — Zotero literature pipeline. Sync PDFs, run OCR, and read with AI-assisted deep reading.",
+  "description": "Zotero literature pipeline for Obsidian. Sync PDFs, run OCR, and read with AI-assisted deep reading.",
   "author": "Lin Zhaoxuan",
   "authorUrl": "https://github.com/LLLin000",
   "isDesktopOnly": true
