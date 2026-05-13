@@ -295,9 +295,11 @@ def get_embed_status(vault: Path) -> dict:
             pass
 
     settings = _read_plugin_settings(vault)
+    mode = settings.get("vector_db_mode", "local")
+    model = settings.get("vector_db_api_model", "text-embedding-3-small") if mode == "api" else settings.get("vector_db_model", "BAAI/bge-small-en-v1.5")
     return {
         "db_exists": exists,
         "chunk_count": chunk_count,
-        "model": settings.get("vector_db_model", "BAAI/bge-small-en-v1.5"),
-        "mode": settings.get("vector_db_mode", "local"),
+        "model": model,
+        "mode": mode,
     }
