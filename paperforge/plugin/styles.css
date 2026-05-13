@@ -1584,15 +1584,15 @@
 }
 .paperforge-runtime-badge.match {
     background: var(--color-green, #4caf50);
-    color: #fff;
+    color: #ffffff;
 }
 .paperforge-runtime-badge.mismatch {
     background: var(--color-red, #f44336);
-    color: #fff;
+    color: #ffffff;
 }
 .paperforge-runtime-badge.missing {
     background: var(--color-orange, #ff9800);
-    color: #fff;
+    color: #ffffff;
 }
 
 /* ==========================================================================
@@ -1600,7 +1600,7 @@
    ========================================================================== */
 .paperforge-drift-banner {
     background: var(--color-yellow, #ffc107);
-    color: var(--background-primary, #000);
+    color: var(--background-primary, #000000);
     padding: 8px 14px;
     border-radius: 6px;
     font-size: 0.9em;
@@ -1619,8 +1619,8 @@
     padding: 4px 12px;
     font-size: 0.85em;
     background: var(--interactive-normal, #e0e0e0);
-    color: var(--text-normal, #000);
-    border: 1px solid var(--background-modifier-border, #ccc);
+    color: var(--text-normal, #000000);
+    border: 1px solid var(--background-modifier-border, #cccccc);
     border-radius: 4px;
     cursor: pointer;
 }
