@@ -2975,7 +2975,7 @@ class PaperForgeSettingTab extends PluginSettingTab {
                         if (value !== '__custom__') {
                             this.plugin.settings.vector_db_hf_endpoint = value;
                             this.plugin.saveSettings();
-                            if (customInput) { customInput.settingEl.style.display = 'none'; if (customText) customText.setValue(''); }
+                            if (customInput) { customInput.settingEl.style.display = 'none'; if (this._hfCustomText) this._hfCustomText.setValue(''); }
                         } else {
                             if (customInput) customInput.settingEl.style.display = '';
                         }
@@ -2985,7 +2985,7 @@ class PaperForgeSettingTab extends PluginSettingTab {
             .setName(t('feat_custom_endpoint'))
             .setDesc(t('feat_custom_endpoint_desc'))
             .addText(text => {
-                customText = text;
+                this._hfCustomText = text;
                 const current = this.plugin.settings.vector_db_hf_endpoint || '';
                 const isPreset = ['https://hf-mirror.com', 'https://huggingface.co'].includes(current);
                 text.setPlaceholder('https://your-mirror.com')
