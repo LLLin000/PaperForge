@@ -11,6 +11,7 @@ from paperforge import __version__ as PF_VERSION
 from paperforge.memory.db import get_connection, get_memory_db_path
 from paperforge.memory.schema import (
     CURRENT_SCHEMA_VERSION,
+    PAPERS_AI_TRIGGER,
     clear_fts,
     drop_all_tables,
     ensure_schema,
@@ -96,6 +97,8 @@ def build_from_index(vault: Path) -> dict:
 
         clear_fts(conn)
 
+        conn.execute("DROP TRIGGER IF EXISTS papers_ai")
+
         now_utc = datetime.now(timezone.utc).isoformat()
         papers_count = 0
         assets_count = 0
@@ -146,18 +149,6 @@ def build_from_index(vault: Path) -> dict:
             )
             papers_count += 1
 
-            try:
-                conn.execute(
-                    """INSERT INTO paper_fts(rowid, zotero_key, citation_key, title, first_author, authors_json, abstract, journal, domain, collection_path, collections_json)
-                       VALUES ((SELECT rowid FROM papers WHERE zotero_key = ?), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                    (zotero_key, zotero_key, entry.get("citation_key", ""), entry.get("title", ""),
-                     entry.get("first_author", ""), paper_values.get("authors_json", ""),
-                     entry.get("abstract", ""), entry.get("journal", ""), entry.get("domain", ""),
-                     entry.get("collection_path", ""), paper_values.get("collections_json", "")),
-                )
-            except sqlite3.IntegrityError:
-                pass  # duplicate rowid if FTS trigger already fired
-
             for asset_type, entry_field in ASSET_FIELDS:
                 path_val = entry.get(entry_field, "")
                 if not path_val:
@@ -198,6 +189,11 @@ def build_from_index(vault: Path) -> dict:
                     ),
                 )
                 aliases_count += 1
+
+        conn.execute("""INSERT INTO paper_fts(rowid, zotero_key, citation_key, title, first_author, authors_json, abstract, journal, domain, collection_path, collections_json)
+                         SELECT rowid, zotero_key, citation_key, title, first_author, authors_json, abstract, journal, domain, collection_path, collections_json
+                         FROM papers""")
+        conn.execute(PAPERS_AI_TRIGGER)
 
         meta_upserts = [
             ("schema_version", str(CURRENT_SCHEMA_VERSION)),
