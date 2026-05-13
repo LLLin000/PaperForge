@@ -3027,7 +3027,7 @@ class PaperForgeSettingTab extends PluginSettingTab {
 
         // Rebuild button with live terminal output
         const terminalEl = containerEl.createEl('pre');
-        terminalEl.style.cssText = 'display:none; background:#1e1e1e; color:#d4d4d4; padding:10px; border-radius:4px; max-height:300px; overflow-y:auto; font-size:11px; font-family:var(--font-monospace); margin:8px 0; white-space:pre-wrap; word-break:break-all;';
+        terminalEl.style.cssText = 'display:none; background:var(--background-primary); padding:10px; border-radius:4px; border:1px solid var(--background-modifier-border); max-height:250px; overflow-y:auto; font-size:11px; font-family:var(--font-monospace); margin:8px 0; white-space:pre-wrap; word-break:break-all; opacity:0.8;';
 
         new Setting(containerEl)
             .setName('Rebuild Vectors')

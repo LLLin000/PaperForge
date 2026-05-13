@@ -60,8 +60,13 @@ def get_collection(vault: Path):
         )
 
 
+_cached_model = None
+_cached_model_name = None
+
+
 def get_embedding_model(vault: Path):
-    """Load the embedding model based on plugin settings or default."""
+    """Load the embedding model based on plugin settings or default. Cached after first load."""
+    global _cached_model, _cached_model_name
     settings = _read_plugin_settings(vault)
     mode = settings.get("vector_db_mode", "local")
 
@@ -69,9 +74,14 @@ def get_embedding_model(vault: Path):
         return None  # API mode — embedding done externally
 
     model_name = settings.get("vector_db_model", "BAAI/bge-small-en-v1.5")
+    if _cached_model is not None and _cached_model_name == model_name:
+        return _cached_model
+
     ST = _get_st()
     logger.info("Loading embedding model: %s", model_name)
-    return ST(model_name)
+    _cached_model = ST(model_name)
+    _cached_model_name = model_name
+    return _cached_model
 
 
 def embed_paper(vault: Path, zotero_key: str, chunks: list[dict]) -> int:
