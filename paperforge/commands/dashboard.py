@@ -61,15 +61,21 @@ def _dashboard_from_db(vault: Path) -> dict | None:
         import sqlite3
         conn = sqlite3.connect(str(db_path))
         conn.row_factory = sqlite3.Row
-        # Paper count
-        total = conn.execute("SELECT COUNT(*) as cnt FROM papers").fetchone()["cnt"]
-        # PDF health
-        pdf_healthy = conn.execute("SELECT COUNT(*) as cnt FROM papers WHERE has_pdf = 1 AND (ocr_status != 'failed' OR ocr_status IS NULL)").fetchone()["cnt"]
-        pdf_missing = conn.execute("SELECT COUNT(*) as cnt FROM papers WHERE has_pdf = 0").fetchone()["cnt"]
+        # Aggregate stats via single GROUP BY
+        rows = conn.execute("""
+            SELECT has_pdf,
+                   CASE WHEN ocr_status='done' THEN 'done'
+                        WHEN ocr_status IN ('failed','blocked') THEN 'failed'
+                        ELSE 'pending' END as ocr,
+                   COUNT(*) as cnt
+            FROM papers GROUP BY has_pdf, ocr
+        """).fetchall()
+        total = sum(r["cnt"] for r in rows)
+        pdf_healthy = sum(r["cnt"] for r in rows if r["has_pdf"] == 1 and r["ocr"] != "failed")
+        pdf_missing = sum(r["cnt"] for r in rows if r["has_pdf"] == 0)
         pdf_broken = total - pdf_healthy - pdf_missing
-        # OCR health
-        ocr_done = conn.execute("SELECT COUNT(*) as cnt FROM papers WHERE ocr_status = 'done'").fetchone()["cnt"]
-        ocr_failed = conn.execute("SELECT COUNT(*) as cnt FROM papers WHERE ocr_status IN ('failed','blocked')").fetchone()["cnt"]
+        ocr_done = sum(r["cnt"] for r in rows if r["ocr"] == "done")
+        ocr_failed = sum(r["cnt"] for r in rows if r["ocr"] == "failed")
         ocr_pending = total - ocr_done - ocr_failed
         # Domain counts
         rows = conn.execute("SELECT domain, COUNT(*) as cnt FROM papers GROUP BY domain").fetchall()
