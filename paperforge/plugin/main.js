@@ -2219,6 +2219,7 @@ class PaperForgeSettingTab extends PluginSettingTab {
         this._memoryStatusText = null;   // null = not checked yet, string = cached result
         this._vectorDepsOk = null;       // null = not checked, bool = cached
         this._embedStatusText = null;
+        this._skillsCollapsed = {};      // preserve collapse state across re-renders
         this.activeTab = 'setup';
     }
 
@@ -2720,12 +2721,24 @@ class PaperForgeSettingTab extends PluginSettingTab {
                 });
             });
 
-            // Toggle
-            let collapsed = false;
+            // Toggle with state preservation
+            const stateKey = isSystem ? 'system' : 'user';
+            const collapsed = this._skillsCollapsed[stateKey] || false;
+            if (collapsed) {
+                content.style.display = 'none';
+                arrow.style.transform = 'rotate(-90deg)';
+            }
+
             header.addEventListener('click', () => {
-                collapsed = !collapsed;
-                content.style.display = collapsed ? 'none' : '';
-                arrow.style.transform = collapsed ? 'rotate(-90deg)' : 'rotate(0deg)';
+                const nowCollapsed = content.style.display !== 'none';
+                if (nowCollapsed) {
+                    content.style.display = 'none';
+                    arrow.style.transform = 'rotate(-90deg)';
+                } else {
+                    content.style.display = '';
+                    arrow.style.transform = 'rotate(0deg)';
+                }
+                this._skillsCollapsed[stateKey] = content.style.display === 'none';
             });
         };
 
