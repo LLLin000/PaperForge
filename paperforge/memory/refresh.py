@@ -11,7 +11,7 @@ from paperforge.memory.builder import (
     _resolve_vault_path,
 )
 from paperforge.memory.db import get_connection, get_memory_db_path
-from paperforge.memory.schema import ensure_schema
+from paperforge.memory.schema import PAPERS_AI_TRIGGER, ensure_schema
 from paperforge.worker.asset_state import (
     compute_lifecycle,
     compute_maturity,
@@ -34,6 +34,8 @@ def refresh_paper(vault: Path, entry: dict) -> bool:
     conn = get_connection(db_path, read_only=False)
     try:
         ensure_schema(conn)
+
+        conn.execute("DROP TRIGGER IF EXISTS papers_ai")
 
         lifecycle = str(compute_lifecycle(entry))
         maturity = compute_maturity(entry)
@@ -100,28 +102,24 @@ def refresh_paper(vault: Path, entry: dict) -> bool:
                 (zotero_key, raw_str, raw_str.lower().strip(), alias_type),
             )
 
-        # Re-index FTS
-        try:
-            conn.execute("DELETE FROM paper_fts WHERE zotero_key = ?", (zotero_key,))
-            conn.execute(
-                "INSERT INTO paper_fts(rowid, zotero_key, citation_key, title, first_author, authors_json, abstract, journal, domain, collection_path, collections_json) "
-                "VALUES ((SELECT rowid FROM papers WHERE zotero_key = ?), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                (
-                    zotero_key,
-                    zotero_key,
-                    entry.get("citation_key", ""),
-                    entry.get("title", ""),
-                    entry.get("first_author", ""),
-                    paper_values["authors_json"],
-                    entry.get("abstract", ""),
-                    entry.get("journal", ""),
-                    entry.get("domain", ""),
-                    entry.get("collection_path", ""),
-                    paper_values["collections_json"],
-                ),
-            )
-        except Exception:
-            pass  # FTS may not be available
+        conn.execute(
+            "INSERT INTO paper_fts(rowid, zotero_key, citation_key, title, first_author, authors_json, abstract, journal, domain, collection_path, collections_json) "
+            "VALUES ((SELECT rowid FROM papers WHERE zotero_key = ?), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                zotero_key,
+                zotero_key,
+                entry.get("citation_key", ""),
+                entry.get("title", ""),
+                entry.get("first_author", ""),
+                paper_values["authors_json"],
+                entry.get("abstract", ""),
+                entry.get("journal", ""),
+                entry.get("domain", ""),
+                entry.get("collection_path", ""),
+                paper_values["collections_json"],
+            ),
+        )
+        conn.execute(PAPERS_AI_TRIGGER)
 
         conn.commit()
         return True

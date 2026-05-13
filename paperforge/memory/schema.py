@@ -100,11 +100,13 @@ CREATE VIRTUAL TABLE IF NOT EXISTS paper_fts USING fts5(
 );
 """
 
+PAPERS_AI_TRIGGER = """CREATE TRIGGER IF NOT EXISTS papers_ai AFTER INSERT ON papers BEGIN
+    INSERT INTO paper_fts(rowid, zotero_key, citation_key, title, first_author, authors_json, abstract, journal, domain, collection_path, collections_json)
+    VALUES (new.rowid, new.zotero_key, new.citation_key, new.title, new.first_author, new.authors_json, new.abstract, new.journal, new.domain, new.collection_path, new.collections_json);
+END;"""
+
 FTS_TRIGGERS = [
-    """CREATE TRIGGER IF NOT EXISTS papers_ai AFTER INSERT ON papers BEGIN
-        INSERT INTO paper_fts(rowid, zotero_key, citation_key, title, first_author, authors_json, abstract, journal, domain, collection_path, collections_json)
-        VALUES (new.rowid, new.zotero_key, new.citation_key, new.title, new.first_author, new.authors_json, new.abstract, new.journal, new.domain, new.collection_path, new.collections_json);
-    END;""",
+    PAPERS_AI_TRIGGER,
     """CREATE TRIGGER IF NOT EXISTS papers_ad AFTER DELETE ON papers BEGIN
         INSERT INTO paper_fts(paper_fts, rowid, zotero_key, citation_key, title, first_author, authors_json, abstract, journal, domain, collection_path, collections_json)
         VALUES ('delete', old.rowid, old.zotero_key, old.citation_key, old.title, old.first_author, old.authors_json, old.abstract, old.journal, old.domain, old.collection_path, old.collections_json);
