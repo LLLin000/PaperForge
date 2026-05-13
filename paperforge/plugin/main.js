@@ -2690,7 +2690,7 @@ class PaperForgeSettingTab extends PluginSettingTab {
             // Content wrapper
             const content = skillsBox.createEl('div', { cls: 'paperforge-skills-collapse-content' });
             const arrow = header.createEl('span', { text: '\u25BC', cls: 'paperforge-skills-arrow' });
-            arrow.style.cssText = 'font-size:10px; margin-right:6px; transition:transform 0.2s;';
+            arrow.style.cssText = 'display:inline-block; font-size:10px; margin-right:6px; transition:transform 0.2s; transform:rotate(0deg);';
             header.createEl('h4', { text: `${label} (${skills.length})`, cls: 'paperforge-skills-subheader' });
 
             skills.forEach(s => {
@@ -2724,7 +2724,7 @@ class PaperForgeSettingTab extends PluginSettingTab {
             header.addEventListener('click', () => {
                 collapsed = !collapsed;
                 content.style.display = collapsed ? 'none' : '';
-                arrow.textContent = collapsed ? '\u25B6' : '\u25BC';
+                arrow.style.transform = collapsed ? 'rotate(-90deg)' : 'rotate(0deg)';
             });
         };
 
