@@ -2813,7 +2813,7 @@ class PaperForgeSettingTab extends PluginSettingTab {
 
         new Setting(containerEl)
             .setName('Enable Vector Retrieval')
-            .setDesc('Semantic search across OCR fulltext. Requires: pip install chromadb sentence-transformers (~500MB).')
+            .setDesc('Semantic search across OCR fulltext. Requires: pip install chromadb sentence-transformers openai (~500MB).')
             .addToggle(toggle => {
                 toggle.setValue(this.plugin.settings.features.vector_db)
                     .onChange(value => {
@@ -2857,7 +2857,7 @@ class PaperForgeSettingTab extends PluginSettingTab {
                 return;
             }
             const { exec } = require('child_process');
-            exec(`"${pyResult.path}" -c "import chromadb; import sentence_transformers; print('ok')"`, {
+            exec(`"${pyResult.path}" -c "import chromadb; import sentence_transformers; import openai; print('ok')"`, {
                 encoding: 'utf-8', timeout: 15000
             }, (err, stdout) => {
                 const ok = !err && (stdout || '').trim() === 'ok';
@@ -2973,7 +2973,7 @@ class PaperForgeSettingTab extends PluginSettingTab {
 
         new Setting(containerEl)
             .setName('Install Dependencies')
-            .setDesc('pip install chromadb sentence-transformers (~500MB)')
+            .setDesc('pip install chromadb sentence-transformers openai(~500MB)')
             .addButton(button => {
                 button.setButtonText('Install')
                     .setCta()
@@ -2988,7 +2988,7 @@ class PaperForgeSettingTab extends PluginSettingTab {
                             const { exec } = require('child_process');
         const env = Object.assign({}, process.env, { PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1', HF_ENDPOINT: this.plugin.settings.vector_db_hf_endpoint || 'https://hf-mirror.com', HF_TOKEN: this.plugin.settings.vector_db_hf_token || '' });
                             await new Promise((resolve, reject) => {
-                                exec(`"${pyResult.path}" -m pip install chromadb sentence-transformers`, {
+                                exec(`"${pyResult.path}" -m pip install chromadb sentence-transformers openai`, {
                                     encoding: 'utf-8', timeout: 300000, env: env,
                                 }, (error) => { error ? reject(error) : resolve(); });
                             });
