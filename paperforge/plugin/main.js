@@ -2526,12 +2526,6 @@ class PaperForgeSettingTab extends PluginSettingTab {
     _renderMemoryStatusText(el, text) {
         el.innerHTML = '';
         el.createEl('span', { text: text, cls: 'paperforge-memory-text' }).style.cssText = 'flex:1;';
-        const refreshBtn = el.createEl('button', { cls: 'paperforge-refresh-btn', text: '\u21BB' });
-        refreshBtn.style.cssText = 'margin-left:auto; border:none; background:none; cursor:pointer; font-size:16px; padding:0 4px;';
-        refreshBtn.onclick = () => {
-            this._memoryStatusText = null;
-            this.display();
-        };
     }
 
     _resolvePythonAsync(callback) {
@@ -3826,6 +3820,11 @@ class PaperForgeSetupModal extends Modal {
 module.exports = class PaperForgePlugin extends Plugin {
     async onload() {
         await this.loadSettings();
+        // ── Automatic file polling state ──
+        this._lastExportMtime = 0;
+        this._lastOcrMtimes = {};
+        this._autoSyncRunning = false;
+        this._pollTimer = null;
         // Clean stale path fields from plugin data.json (migrated to paperforge.json)
         this.saveSettings();
         T = (langFromApp(this.app) === 'zh') ? LANG.zh : LANG.en;
@@ -3870,6 +3869,7 @@ module.exports = class PaperForgePlugin extends Plugin {
         if (this.settings.auto_update !== false && this.settings.setup_complete) {
             setTimeout(() => this._autoUpdate(), 3000);
         }
+        this._startFilePolling();
     }
 
     _autoUpdate() {
@@ -3907,6 +3907,96 @@ module.exports = class PaperForgePlugin extends Plugin {
                 install(`${pyVer} -> ${ver}`);
             }
         });
+    }
+
+    /* ── Automatic file polling for seamless memory layer ── */
+
+    _startFilePolling() {
+        const vaultPath = this.app.vault.adapter.basePath;
+        const fs = require('fs');
+        const path = require('path');
+        const { exec } = require('child_process');
+
+        this._pollTimer = setInterval(() => {
+            this._checkExports(vaultPath, fs, path, exec);
+            this._checkOcr(vaultPath, fs, path, exec);
+        }, 30000); // every 30 seconds
+    }
+
+    _checkExports(vaultPath, fs, path, exec) {
+        if (this._autoSyncRunning) return;
+        const exportsDir = path.join(vaultPath, 'System', 'PaperForge', 'exports');
+        if (!fs.existsSync(exportsDir)) return;
+
+        let newestMtime = 0;
+        try {
+            fs.readdirSync(exportsDir).forEach(f => {
+                if (!f.endsWith('.json')) return;
+                const stat = fs.statSync(path.join(exportsDir, f));
+                if (stat.mtimeMs > newestMtime) newestMtime = stat.mtimeMs;
+            });
+        } catch(e) { return; }
+
+        if (newestMtime > this._lastExportMtime) {
+            this._lastExportMtime = newestMtime;
+            this._autoRebuild(vaultPath, exec);
+        }
+    }
+
+    _autoRebuild(vaultPath, exec) {
+        if (this._autoSyncRunning) return;
+        this._autoSyncRunning = true;
+
+        const pyResult = resolvePythonExecutable(vaultPath, this.settings);
+        if (!pyResult.path) { this._autoSyncRunning = false; return; }
+
+        const cmd = `"${pyResult.path}" -m paperforge --vault "${vaultPath}" memory build`;
+        exec(cmd, { timeout: 60000, encoding: 'utf-8' }, (err, stdout, stderr) => {
+            this._autoSyncRunning = false;
+            this._memoryStatusText = null; // force re-check next time
+            // Update last export mtime to avoid re-trigger during build
+            try {
+                const fs = require('fs');
+                const path = require('path');
+                const exportsDir = path.join(vaultPath, 'System', 'PaperForge', 'exports');
+                let newest = 0;
+                fs.readdirSync(exportsDir).forEach(f => {
+                    if (!f.endsWith('.json')) return;
+                    newest = Math.max(newest, fs.statSync(path.join(exportsDir, f)).mtimeMs);
+                });
+                this._lastExportMtime = newest;
+            } catch(e) {}
+        });
+    }
+
+    _checkOcr(vaultPath, fs, path, exec) {
+        if (this._autoSyncRunning) return;
+        const ocrDir = path.join(vaultPath, 'System', 'PaperForge', 'ocr');
+        if (!fs.existsSync(ocrDir)) return;
+
+        try {
+            fs.readdirSync(ocrDir, { withFileTypes: true }).forEach(entry => {
+                if (!entry.isDirectory()) return;
+                const metaPath = path.join(ocrDir, entry.name, 'meta.json');
+                if (!fs.existsSync(metaPath)) return;
+                const stat = fs.statSync(metaPath);
+                const prevMtime = this._lastOcrMtimes[entry.name] || 0;
+                if (stat.mtimeMs <= prevMtime) return;
+
+                this._lastOcrMtimes[entry.name] = stat.mtimeMs;
+                if (this._autoSyncRunning) return;
+                this._autoSyncRunning = true;
+
+                const pyResult = resolvePythonExecutable(vaultPath, this.settings);
+                if (!pyResult.path) { this._autoSyncRunning = false; return; }
+
+                const cmd = `"${pyResult.path}" -m paperforge --vault "${vaultPath}" sync --key "${entry.name}"`;
+                exec(cmd, { timeout: 30000, encoding: 'utf-8' }, () => {
+                    this._autoSyncRunning = false;
+                    this._memoryStatusText = null;
+                });
+            });
+        } catch(e) {}
     }
 
     /**
@@ -4009,6 +4099,7 @@ module.exports = class PaperForgePlugin extends Plugin {
     }
 
     onunload() {
+        if (this._pollTimer) clearInterval(this._pollTimer);
         this.app.workspace.detachLeavesOfType(VIEW_TYPE_PAPERFORGE);
     }
 
