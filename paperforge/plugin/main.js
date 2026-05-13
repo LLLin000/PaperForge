@@ -2728,14 +2728,11 @@ class PaperForgeSettingTab extends PluginSettingTab {
                 const depsEl = containerEl.createEl('div');
                 depsEl.style.cssText = 'padding:8px 12px; margin:8px 0; background:var(--background-secondary); border-radius:4px;';
                 depsEl.setText('Checking dependencies...');
-                // Fast sync check: resolvePythonExecutable is sync, execSync for import check (fast, ~1s)
                 const pyResult = resolvePythonExecutable(vp, this.plugin.settings);
-                const pythonPath = pyResult.path;
-                if (pythonPath) {
-                    try {
-                        const { execSync } = require('child_process');
-                        const result = execSync(`"${pythonPath}" -c "import chromadb; import sentence_transformers; print('ok')"`, { encoding: 'utf-8', timeout: 5000 });
-                        const ok = result.trim() === 'ok';
+                if (pyResult.path) {
+                    const { exec } = require('child_process');
+                    exec(`"${pyResult.path}" -c "import chromadb; import sentence_transformers; print('ok')"`, { encoding: 'utf-8', timeout: 10000 }, (err, stdout, stderr) => {
+                        const ok = !err && (stdout || '').trim() === 'ok';
                         this._vectorDepsOk = ok;
                         if (ok) {
                             depsEl.remove();
@@ -2745,11 +2742,7 @@ class PaperForgeSettingTab extends PluginSettingTab {
                             depsEl.setText('Dependencies not installed. Required: chromadb, sentence-transformers.');
                             this._renderVectorInstall(containerEl);
                         }
-                    } catch(e) {
-                        depsEl.style.cssText = 'padding:8px 12px; margin:8px 0; background:#4a1515; border-radius:4px; color:#ff6b6b;';
-                        depsEl.setText('Dependencies not installed. Required: chromadb, sentence-transformers.');
-                        this._renderVectorInstall(containerEl);
-                    }
+                    });
                 } else {
                     depsEl.style.cssText = 'padding:8px 12px; margin:8px 0; background:#4a1515; border-radius:4px; color:#ff6b6b;';
                     depsEl.setText('No Python found. Check Installation tab.');
