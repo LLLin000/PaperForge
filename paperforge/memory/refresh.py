@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-import json
 from datetime import datetime, timezone
 from pathlib import Path
 
+from paperforge.memory._columns import PAPER_COLUMNS, build_paper_row
 from paperforge.memory.builder import (
     ALIAS_TYPES,
     ASSET_FIELDS,
-    PAPER_COLUMNS,
     _resolve_vault_path,
 )
 from paperforge.memory.db import get_connection, get_memory_db_path
@@ -37,33 +36,10 @@ def refresh_paper(vault: Path, entry: dict) -> bool:
 
         conn.execute("DROP TRIGGER IF EXISTS papers_ai")
 
-        lifecycle = str(compute_lifecycle(entry))
-        maturity = compute_maturity(entry)
-        next_step = str(compute_next_step(entry))
-
-        paper_values = {}
-        for col in PAPER_COLUMNS:
-            if col == "authors_json":
-                paper_values[col] = json.dumps(entry.get("authors", []), ensure_ascii=False)
-            elif col == "collections_json":
-                paper_values[col] = json.dumps(entry.get("collections", []), ensure_ascii=False)
-            elif col == "lifecycle":
-                paper_values[col] = lifecycle
-            elif col == "maturity_level":
-                paper_values[col] = maturity.get("level", 1)
-            elif col == "maturity_name":
-                paper_values[col] = maturity.get("level_name", "")
-            elif col == "next_step":
-                paper_values[col] = next_step
-            elif col == "updated_at":
-                paper_values[col] = generated_at
-            elif col in ("do_ocr", "analyze"):
-                val = entry.get(col)
-                paper_values[col] = 1 if val else 0
-            elif col == "has_pdf":
-                paper_values[col] = 1 if entry.get("has_pdf") else 0
-            else:
-                paper_values[col] = entry.get(col, "")
+        entry["lifecycle"] = str(compute_lifecycle(entry))
+        entry["maturity"] = compute_maturity(entry)
+        entry["next_step"] = str(compute_next_step(entry))
+        paper_values = build_paper_row(entry, generated_at)
 
         placeholders = ", ".join([f":{c}" for c in PAPER_COLUMNS])
         cols = ", ".join(PAPER_COLUMNS)
