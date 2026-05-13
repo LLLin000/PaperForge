@@ -197,8 +197,22 @@ function runSubprocess(pythonExe, args, cwd, timeout, _spawn, env) {
                 stderr: stderrChunks.join("") + "\n" + err.message,
                 exitCode: -1, elapsed: Date.now() - startTime });
         });
-    });
-}
+                });
+            new Setting(containerEl)
+                .setName('API Model')
+                .setDesc('Which OpenAI-compatible embedding model to use.')
+            new Setting(containerEl)
+                .setName('API Model')
+                .setDesc('Embedding model name (e.g., text-embedding-3-small, qwen-3-embedding)')
+                .addText(text => {
+                    text.setPlaceholder('text-embedding-3-small')
+                        .setValue(this.plugin.settings.vector_db_api_model || 'text-embedding-3-small')
+                        .onChange(value => {
+                            this.plugin.settings.vector_db_api_model = value;
+                            this.plugin.saveSettings();
+                        });
+                });
+        }
 
 
 
@@ -571,6 +585,7 @@ const DEFAULT_SETTINGS = {
     vector_db_model: 'BAAI/bge-small-en-v1.5',
     vector_db_api_key: '',
     vector_db_api_base: '',
+    vector_db_api_model: 'text-embedding-3-small',
     vector_db_hf_endpoint: 'https://hf-mirror.com',
     vector_db_hf_token: '',
     vector_db_last_model: '',
