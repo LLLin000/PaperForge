@@ -80,15 +80,10 @@ Two UX improvements to the per-paper dashboard view:
     border-bottom-color: var(--text-accent);
 }
 
-.paperforge-copy-icon {
-    opacity: 0;
-    margin-left: 4px;
-    font-size: 11px;
-    cursor: pointer;
-    transition: opacity 0.15s;
-}
-.paperforge-click-copy:hover .paperforge-copy-icon {
-    opacity: 0.6;
+/* Feedback flash on copy */
+.paperforge-copied {
+    color: var(--text-accent) !important;
+    border-bottom-color: var(--text-success) !important;
 }
 ```
 
@@ -111,10 +106,7 @@ Two UX improvements to the per-paper dashboard view:
 
 ### Copy Feedback
 
-On click → `navigator.clipboard.writeText(value)` then show a brief feedback:
-- Change field text to "Copied!" for 1 second, then restore
-- OR show a floating tooltip
-- Recommended: inline text change (simpler, no new element needed)
+On click → `navigator.clipboard.writeText(value)`. Brief inline feedback: text briefly turns accent color (1s), then restores. No icon, no tooltip.
 
 ---
 
@@ -143,11 +135,7 @@ On click → `navigator.clipboard.writeText(value)` then show a brief feedback:
 - Make Note Path and Fulltext Path clickable
 - Use same `_makeClickCopy` helper
 
-### Task 5: Add copy icon to title
-- Append a small 📋 span to the title element
-- Show on hover via CSS opacity transition
-
-### Task 6: Verify text selection behavior
+### Task 5: Verify text selection behavior
 - Confirm article overview, recent discussion, and tech details body text are NOT `user-select: none`
 - Remove any existing `user-select: none` from content areas (but keep on buttons/toggles)
 
@@ -166,11 +154,11 @@ On click → `navigator.clipboard.writeText(value)` then show a brief feedback:
 
 - [ ] Meta-line appears below authors/year in per-paper view: Journal · DOI · Zotero · Collection
 - [ ] DOI and Zotero Key are monospace, dashed-underline on hover, click to copy
-- [ ] Title shows copy icon on hover, click to copy full title
+- [ ] Title dashed-underline on hover, click to copy
 - [ ] Authors click to copy
 - [ ] Collection path click to copy
 - [ ] Note Path / Fulltext Path in Technical Details click to copy
 - [ ] Article overview and Recent Discussion text remains freely selectable
-- [ ] "Copied!" feedback displays briefly on click
+- [ ] Brief color-flash feedback on copy (no icon, no tooltip)
 - [ ] No regressions in global or collection modes
 - [ ] Works in both light and dark Obsidian themes
