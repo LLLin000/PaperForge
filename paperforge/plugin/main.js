@@ -2701,19 +2701,38 @@ class PaperForgeSettingTab extends PluginSettingTab {
             });
         };
 
-        // System skills
         const skillsBox = containerEl.createEl('div');
         skillsBox.style.cssText = 'background:var(--background-secondary); border-radius:8px; padding:12px 12px 4px; margin:8px 0 16px;';
-        if (systemSkills.length > 0) {
-            skillsBox.createEl('h4', { text: 'System Skills', cls: 'paperforge-skills-subheader' });
-            systemSkills.forEach(s => renderSkillRow(s, true));
-        }
+
+        const renderCollapsibleSkills = (label, skills, isSystem) => {
+            if (skills.length === 0) return;
+
+            // Header row with toggle arrow
+            const header = skillsBox.createEl('div', { cls: 'paperforge-skills-collapse-header' });
+            header.style.cssText = 'display:flex; align-items:center; cursor:pointer; padding:4px 0; margin-bottom:4px;';
+            const arrow = header.createEl('span', { text: '\u25B2', cls: 'paperforge-skills-arrow' });
+            arrow.style.cssText = 'font-size:10px; margin-right:6px; transition:transform 0.2s;';
+            header.createEl('h4', { text: `${label} (${skills.length})`, cls: 'paperforge-skills-subheader' });
+            header.querySelector('h4').style.marginBottom = '0';
+
+            // Content wrapper
+            const content = skillsBox.createEl('div', { cls: 'paperforge-skills-collapse-content' });
+            skills.forEach(s => renderSkillRow(s, isSystem));
+
+            // Toggle
+            let collapsed = false;
+            header.addEventListener('click', () => {
+                collapsed = !collapsed;
+                content.style.display = collapsed ? 'none' : '';
+                arrow.textContent = collapsed ? '\u25B6' : '\u25B2';
+            });
+        };
+
+        // System skills
+        renderCollapsibleSkills('System Skills', systemSkills, true);
 
         // User skills
-        if (userSkills.length > 0) {
-            skillsBox.createEl('h4', { text: 'User Skills', cls: 'paperforge-skills-subheader' });
-            userSkills.forEach(s => renderSkillRow(s, false));
-        }
+        renderCollapsibleSkills('User Skills', userSkills, false);
 
         if (systemSkills.length === 0 && userSkills.length === 0) {
             skillsBox.createEl('p', {
