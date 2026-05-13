@@ -2243,9 +2243,11 @@ class PaperForgeSettingTab extends PluginSettingTab {
                 .paperforge-settings-tab--active { color: var(--text-accent); border-bottom-color: var(--text-accent); }
                 .paperforge-tab-content { display: none; }
                 .paperforge-tab-content--active { display: block; }
-                .paperforge-skills-collapse-header { display: flex !important; align-items: center; cursor: pointer; padding: 4px 0 !important; margin: 0 !important; }
+                .paperforge-skills-collapse-header { display: flex !important; align-items: center; cursor: pointer; padding: 6px 0 !important; margin: 0 !important; }
                 .paperforge-skills-collapse-header h4 { margin: 0 !important; }
                 .paperforge-skills-collapse-content { margin: 0 !important; padding: 0 !important; }
+                .paperforge-skills-group { margin-bottom: 10px; }
+                .paperforge-skills-group:last-child { margin-bottom: 0; }
                 .vertical-tab-content-container { overflow-y: scroll !important; }
             `;
             document.head.appendChild(style);
@@ -2681,16 +2683,19 @@ class PaperForgeSettingTab extends PluginSettingTab {
         }
 
         const skillsBox = containerEl.createEl('div');
-        skillsBox.style.cssText = 'background:var(--background-secondary); border-radius:8px; padding:12px 12px 4px; margin:8px 0 16px;';
+        skillsBox.style.cssText = 'background:var(--background-secondary); border-radius:8px; padding:12px 12px 10px; margin:8px 0 16px;';
 
         const renderCollapsibleSkills = (label, skills, isSystem) => {
             if (skills.length === 0) return;
 
+            // Group wrapper for spacing between groups
+            const group = skillsBox.createEl('div', { cls: 'paperforge-skills-group' });
+
             // Header row with toggle arrow (created first so it appears above content)
-            const header = skillsBox.createEl('div', { cls: 'paperforge-skills-collapse-header' });
+            const header = group.createEl('div', { cls: 'paperforge-skills-collapse-header' });
 
             // Content wrapper
-            const content = skillsBox.createEl('div', { cls: 'paperforge-skills-collapse-content' });
+            const content = group.createEl('div', { cls: 'paperforge-skills-collapse-content' });
             const arrow = header.createEl('span', { text: '\u25BC', cls: 'paperforge-skills-arrow' });
             arrow.style.cssText = 'display:inline-block; font-size:10px; margin-right:6px; transition:transform 0.2s; transform:rotate(0deg);';
             header.createEl('h4', { text: `${label} (${skills.length})`, cls: 'paperforge-skills-subheader' });
