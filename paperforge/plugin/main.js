@@ -2832,6 +2832,9 @@ class PaperForgeSettingTab extends PluginSettingTab {
         // HF Mirror — always visible, needed before deps install
         this._renderHfMirror(containerEl);
 
+        // API config — always visible when API mode is selected (no deps needed)
+        this._renderApiConfig(containerEl);
+
         // === Resolve state ===
         if (this._vectorDepsOk === true && this._embedStatusText !== null) {
             this._renderVectorReady(containerEl, vp);
@@ -2920,6 +2923,44 @@ class PaperForgeSettingTab extends PluginSettingTab {
                     .setValue(this.plugin.settings.vector_db_hf_token || '')
                     .onChange(value => {
                         this.plugin.settings.vector_db_hf_token = value;
+                        this.plugin.saveSettings();
+                    });
+            });
+    }
+
+    _renderApiConfig(containerEl) {
+        if (this.plugin.settings.vector_db_mode !== 'api') return;
+
+        new Setting(containerEl)
+            .setName('OpenAI API Key')
+            .setDesc('Used for embedding model API calls')
+            .addText(text => {
+                text.setPlaceholder('sk-...')
+                    .setValue(this.plugin.settings.vector_db_api_key || '')
+                    .onChange(value => {
+                        this.plugin.settings.vector_db_api_key = value;
+                        this.plugin.saveSettings();
+                    });
+            });
+        new Setting(containerEl)
+            .setName('API Base URL')
+            .setDesc('Custom OpenAI-compatible API endpoint. Leave empty for default.')
+            .addText(text => {
+                text.setPlaceholder('https://api.openai.com/v1')
+                    .setValue(this.plugin.settings.vector_db_api_base || '')
+                    .onChange(value => {
+                        this.plugin.settings.vector_db_api_base = value;
+                        this.plugin.saveSettings();
+                    });
+            });
+        new Setting(containerEl)
+            .setName('API Model')
+            .setDesc('Embedding model name for this endpoint')
+            .addText(text => {
+                text.setPlaceholder('text-embedding-3-small')
+                    .setValue(this.plugin.settings.vector_db_api_model || 'text-embedding-3-small')
+                    .onChange(value => {
+                        this.plugin.settings.vector_db_api_model = value;
                         this.plugin.saveSettings();
                     });
             });
@@ -3070,58 +3111,6 @@ class PaperForgeSettingTab extends PluginSettingTab {
                         }
                         this.display();
                     });
-                });
-        }
-
-        // API key (api mode)
-        if (this.plugin.settings.vector_db_mode === 'api') {
-            new Setting(containerEl)
-                .setName('OpenAI API Key')
-                .setDesc('Used for text-embedding-3-small (1536d)')
-                .addText(text => {
-                    text.setPlaceholder('sk-...')
-                        .setValue(this.plugin.settings.vector_db_api_key || '')
-                        .onChange(value => {
-                            this.plugin.settings.vector_db_api_key = value;
-                            this.plugin.saveSettings();
-                        });
-                })
-                .addButton(button => {
-                    button.setButtonText('Verify')
-                        .onClick(async () => {
-                            const key = this.plugin.settings.vector_db_api_key;
-                            if (!key || !key.startsWith('sk-')) {
-                                new Notice('Enter a valid OpenAI API key.');
-                                return;
-                            }
-                            button.setButtonText('Checking...');
-                            button.setDisabled(true);
-                            try {
-                                const resp = await (0, eval)('import')('node:https').then(https => new Promise((resolve, reject) => {
-                                    const req = https.request('https://api.openai.com/v1/models', {
-                                        method: 'GET', headers: { Authorization: 'Bearer ' + key }, timeout: 10000
-                                    }, (res) => { let d=''; res.on('data',c=>d+=c); res.on('end',()=>resolve({ok:res.statusCode===200,data:d})); });
-                                    req.on('error', reject); req.end();
-                                }));
-                                if (resp.ok) { new Notice('API key valid.'); }
-                                else { new Notice('API key rejected.'); }
-                            } catch (e) {
-                                new Notice('Network error: ' + e.message);
-                            }
-                            button.setButtonText('Verify');
-                            button.setDisabled(false);
-                        });
-                });
-            new Setting(containerEl)
-                .setName('API Base URL')
-                .setDesc('Custom OpenAI-compatible API endpoint (e.g., https://api.openai.com/v1). Leave empty for default.')
-                .addText(text => {
-                    text.setPlaceholder('https://api.openai.com/v1')
-                        .setValue(this.plugin.settings.vector_db_api_base || '')
-                        .onChange(value => {
-                            this.plugin.settings.vector_db_api_base = value;
-                            this.plugin.saveSettings();
-                        });
                 });
         }
 
