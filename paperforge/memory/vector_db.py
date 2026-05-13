@@ -76,10 +76,7 @@ def get_embedding_model(vault: Path):
 
     model_name = settings.get("vector_db_model", "BAAI/bge-small-en-v1.5")
 
-    # Apply HF mirror endpoint if configured
-    hf_endpoint = settings.get("vector_db_hf_endpoint", "")
-    if hf_endpoint:
-        os.environ["HF_ENDPOINT"] = hf_endpoint
+    # HF_ENDPOINT is set by the JS plugin via environment variable — don't override
 
     if _cached_model is not None and _cached_model_name == model_name:
         return _cached_model
