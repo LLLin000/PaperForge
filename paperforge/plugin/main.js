@@ -3173,7 +3173,7 @@ class PaperForgeSettingTab extends PluginSettingTab {
     }
 
     _getCurrentModelKey() {
-        if (this.plugin.settings.vector_db_mode === 'api') return 'openai/text-embedding-3-small';
+        if (this.plugin.settings.vector_db_mode === 'api') return this.plugin.settings.vector_db_api_model || 'openai/text-embedding-3-small';
         return this.plugin.settings.vector_db_model || 'BAAI/bge-small-en-v1.5';
     }
 
