@@ -38,7 +38,6 @@ from paperforge import __version__ as _paperforge_version
 from paperforge.adapters.obsidian_frontmatter import (
     _legacy_control_flags,
     read_frontmatter_dict,
-    read_frontmatter_optional_bool,
 )
 from paperforge.config import paperforge_paths
 
@@ -321,26 +320,21 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
     legacy_flags = _legacy_control_flags(paths, key)
     legacy_do_ocr = legacy_flags.get("do_ocr")
     legacy_analyze = legacy_flags.get("analyze")
-    note_do_ocr = read_frontmatter_optional_bool(main_note_path, "do_ocr")
-    if note_do_ocr is None:
-        note_do_ocr = read_frontmatter_optional_bool(note_path, "do_ocr")
-    note_analyze = read_frontmatter_optional_bool(main_note_path, "analyze")
-    if note_analyze is None:
-        note_analyze = read_frontmatter_optional_bool(note_path, "analyze")
+    # Single frontmatter read for all control fields
+    fm = {}
+    for fp in (main_note_path, note_path):
+        if fp and fp.exists():
+            try:
+                fm = read_frontmatter_dict(fp.read_text(encoding="utf-8"))
+                break
+            except Exception:
+                continue
 
-    # deep_reading_status: frontmatter first (finalize.py sets it), body detection fallback (sync ensures it)
-    def _read_fm_str(fp: Path, key: str) -> str:
-        if not fp or not fp.exists():
-            return ""
-        try:
-            fm = read_frontmatter_dict(fp.read_text(encoding="utf-8"))
-            return str(fm.get(key, "")).strip()
-        except Exception:
-            return ""
-
-    note_dr = _read_fm_str(main_note_path, "deep_reading_status")
-    if not note_dr:
-        note_dr = _read_fm_str(note_path, "deep_reading_status")
+    _v = fm.get("do_ocr")
+    note_do_ocr = _v if isinstance(_v, bool) else None
+    _v = fm.get("analyze")
+    note_analyze = _v if isinstance(_v, bool) else None
+    note_dr = str(fm.get("deep_reading_status", "")).strip()
 
     do_ocr_value = note_do_ocr if note_do_ocr is not None else legacy_do_ocr
     if do_ocr_value is None:
