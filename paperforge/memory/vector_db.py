@@ -72,26 +72,81 @@ def get_embedding_model(vault: Path):
     mode = settings.get("vector_db_mode", "local")
 
     if mode == "api":
-        return None  # API mode — embedding done externally
+        return None
 
     model_name = settings.get("vector_db_model", "BAAI/bge-small-en-v1.5")
-
-    # Apply HF mirror endpoint via huggingface_hub API (works alongside env var)
-    hf_endpoint = settings.get("vector_db_hf_endpoint", "") or os.environ.get("HF_ENDPOINT", "")
-    if hf_endpoint:
-        try:
-            from huggingface_hub import set_endpoint
-            set_endpoint(hf_endpoint)
-        except Exception:
-            pass
 
     if _cached_model is not None and _cached_model_name == model_name:
         return _cached_model
 
     ST = _get_st()
     logger.info("Loading embedding model: %s", model_name)
+
+    hf_endpoint = settings.get("vector_db_hf_endpoint", "") or os.environ.get("HF_ENDPOINT", "")
+
+    if hf_endpoint:
+        local_path = _download_model_via_mirror(model_name, hf_endpoint)
+        if local_path and (local_path / "modules.json").exists():
+            logger.info("Loading from local mirror copy: %s", local_path)
+            _cached_model = ST(str(local_path))
+            _cached_model_name = model_name
+            return _cached_model
+
     _cached_model = ST(model_name)
     _cached_model_name = model_name
+    return _cached_model
+
+
+def _download_model_via_mirror(model_name: str, mirror: str) -> Path | None:
+    """Download model files from a mirror URL to a local cache directory.
+    Bypasses huggingface_hub entirely by using urllib directly."""
+    try:
+        import urllib.request
+    except Exception:
+        return None
+
+    mirror = mirror.rstrip("/")
+    base_url = f"{mirror}/{model_name}/resolve/main"
+    local_dir = Path.home() / ".cache" / "paperforge" / "models" / model_name.replace("/", "--")
+
+    files = [
+        "config.json", "modules.json", "config_sentence_transformers.json",
+        "sentence_bert_config.json", "special_tokens_map.json",
+        "tokenizer.json", "tokenizer_config.json", "vocab.txt",
+        "model.safetensors", "pytorch_model.bin",
+        "1_Pooling/config.json",
+    ]
+
+    local_dir.mkdir(parents=True, exist_ok=True)
+
+    # Build headers from HF_TOKEN
+    hf_token = os.environ.get("HF_TOKEN", "")
+    headers = {}
+    if hf_token:
+        headers["Authorization"] = f"Bearer {hf_token}"
+
+    for f in files:
+        dest = local_dir / f
+        if dest.exists() and dest.stat().st_size > 0:
+            continue
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        url = f"{base_url}/{f}"
+        try:
+            req = urllib.request.Request(url, headers=headers)
+            with urllib.request.urlopen(req, timeout=600) as resp:
+                with open(dest, "wb") as out:
+                    while True:
+                        chunk = resp.read(8192)
+                        if not chunk:
+                            break
+                        out.write(chunk)
+        except Exception:
+            pass
+
+    # Return path only if core files exist
+    has_weights = (local_dir / "model.safetensors").exists() or (local_dir / "pytorch_model.bin").exists()
+    has_config = (local_dir / "modules.json").exists() and (local_dir / "config.json").exists()
+    return local_dir if has_weights and has_config else None
     return _cached_model
 
 
