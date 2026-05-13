@@ -436,8 +436,42 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
     # Write per-workspace paper-meta.json (Phase 37: internal state outside frontmatter)
     write_paper_meta(workspace_dir, entry, paperforge_version=PAPERFORGE_VERSION)
 
+    # Auto-embed vectors if this paper just completed OCR
+    _vec_auto_embed_if_new(vault, entry)
+
     return entry
 
+
+def _vec_auto_embed_if_new(vault: Path, entry: dict) -> None:
+    """Auto-embed a paper into vector DB if OCR is done and vectors missing."""
+    if entry.get("ocr_status") != "done":
+        return
+    fulltext_rel = entry.get("fulltext_path", "")
+    if not fulltext_rel:
+        return
+    fulltext_path = vault / fulltext_rel
+    if not fulltext_path.exists():
+        return
+    # Check if vector DB is enabled and set up
+    try:
+        from paperforge.memory.vector_db import (
+            _read_plugin_settings,
+            chunk_fulltext,
+            embed_paper,
+            get_vector_db_path,
+        )
+        settings = _read_plugin_settings(vault)
+        if not settings.get("features", {}).get("vector_db", False):
+            return
+        db_path = get_vector_db_path(vault)
+        if not db_path.exists():
+            return
+        chunks = chunk_fulltext(fulltext_path)
+        if not chunks:
+            return
+        embed_paper(vault, entry["zotero_key"], chunks)
+    except Exception:
+        pass  # ChromaDB / model not installed — silently skip
 
 # ---------------------------------------------------------------------------
 # Full index build

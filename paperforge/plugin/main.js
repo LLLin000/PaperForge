@@ -2931,29 +2931,38 @@ class PaperForgeSettingTab extends PluginSettingTab {
                         });
                 })
                 .addButton(button => {
-                    button.setButtonText('Uninstall')
-                        .setWarning()
-                        .onClick(async () => {
-                            const model = this.plugin.settings.vector_db_model;
-                            const cacheName = 'models--' + model.replace('/', '--');
-                            button.setButtonText('Removing...');
-                            button.setDisabled(true);
-                            try {
-                                const pyResult = resolvePythonExecutable(vp, this.plugin.settings);
-                                const { exec } = require('child_process');
-                                const env = Object.assign({}, process.env, { PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1' });
-                                await new Promise((resolve, reject) => {
-                                    exec(`"${pyResult.path}" -c "import shutil, os,sys; p=os.path.join(os.path.expanduser('~/.cache/huggingface/hub'), '${cacheName}'); shutil.rmtree(p,ignore_errors=True); print('Removed' if os.path.exists(p) else 'Not cached')"`, {
-                                        encoding: 'utf-8', timeout: 30000, env: env
-                                    }, (error, stdout) => error ? reject(error) : resolve(stdout));
-                                });
-                                new Notice('Model cache removed.');
-                            } catch (e) {
-                                new Notice('Failed: ' + (e.stderr || e.message || e));
-                            }
-                            button.setButtonText('Uninstall');
-                            button.setDisabled(false);
-                        });
+                    const model = this.plugin.settings.vector_db_model;
+                    const cacheName = 'models--' + model.replace('/', '--');
+                    const fs = require('fs');
+                    const os = require('os');
+                    const cachePath = os.homedir() + '/.cache/huggingface/hub/' + cacheName;
+                    const isCached = fs.existsSync(cachePath);
+
+                    if (isCached) {
+                        button.setButtonText('Uninstall').setWarning();
+                    } else {
+                        button.setButtonText('Not cached');
+                        button.setDisabled(true);
+                    }
+                    button.onClick(async () => {
+                        if (!isCached) return;
+                        button.setButtonText('Removing...');
+                        button.setDisabled(true);
+                        try {
+                            const pyResult = resolvePythonExecutable(vp, this.plugin.settings);
+                            const { exec } = require('child_process');
+                            const env = Object.assign({}, process.env, { PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1' });
+                            await new Promise((resolve, reject) => {
+                                exec(`"${pyResult.path}" -c "import shutil, os; p=os.path.join(os.path.expanduser('~/.cache/huggingface/hub'), '${cacheName}'); shutil.rmtree(p,ignore_errors=True); print('done')"`, {
+                                    encoding: 'utf-8', timeout: 30000, env: env
+                                }, (error) => error ? reject(error) : resolve());
+                            });
+                            new Notice('Model cache removed.');
+                        } catch (e) {
+                            new Notice('Failed: ' + (e.stderr || e.message || e));
+                        }
+                        this.display();
+                    });
                 });
         }
 
