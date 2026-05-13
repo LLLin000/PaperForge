@@ -540,6 +540,33 @@ Object.assign(LANG.en, {
     feat_model_bge_small: 'Best balance — fast, accurate, recommended for most users (384d, 130MB)',
     feat_model_minilm: 'Lightest & fastest — lower accuracy, minimal disk (384d, 80MB)',
     feat_model_bge_base: 'Highest accuracy — slower, large disk footprint (768d, 440MB)',
+    feat_api_base_url: 'API Base URL',
+    feat_api_base_url_desc: 'Custom OpenAI-compatible API endpoint. Leave empty for default.',
+    feat_api_model: 'API Model',
+    feat_api_model_desc: 'Embedding model name for this endpoint.',
+    feat_deps_missing: 'Dependencies not installed. Required: chromadb, sentence-transformers, openai.',
+    feat_deps_checking: 'Checking dependencies...',
+    feat_no_python: 'No Python found. Check Installation tab.',
+    feat_rebuild_btn: 'Rebuild',
+    feat_build_btn: 'Build',
+    feat_building: 'Building...',
+    feat_installing: 'Installing...',
+    feat_install_btn: 'Install',
+    feat_retry_btn: 'Retry',
+    feat_removing: 'Removing...',
+    feat_not_cached: 'Not cached',
+    feat_uninstall_btn: 'Uninstall',
+    feat_verify_btn: 'Verify',
+    feat_checking_btn: 'Checking...',
+    feat_valid_key: 'API key valid.',
+    feat_key_rejected: 'API key rejected.',
+    feat_enter_key: 'Enter a valid OpenAI API key.',
+    feat_network_error: 'Network error: ',
+    feat_build_complete: 'Vector build complete.',
+    feat_build_failed: 'Build failed. See terminal output.',
+    feat_output_copied: 'Output copied to clipboard.',
+    feat_install_done: 'Dependencies installed. Building vectors...',
+    feat_install_failed: 'Install failed: ',
 });
 
 /* ── LANG.zh: v1.12 runtime health, OCR queue, pf-deep, dashboard translations ── */
@@ -612,6 +639,33 @@ Object.assign(LANG.zh, {
     feat_model_bge_small: '最佳平衡 — 快速、准确，推荐大多数用户使用 (384d, 130MB)',
     feat_model_minilm: '最轻最快 — 精度略低，磁盘占用最小 (384d, 80MB)',
     feat_model_bge_base: '最高精度 — 较慢，磁盘占用大 (768d, 440MB)',
+    feat_api_base_url: 'API 地址',
+    feat_api_base_url_desc: '自定义 OpenAI 兼容 API 端点。留空使用默认地址。',
+    feat_api_model: 'API 模型',
+    feat_api_model_desc: '该端点使用的嵌入模型名称。',
+    feat_deps_missing: '依赖未安装。需要：chromadb, sentence-transformers, openai。',
+    feat_deps_checking: '正在检测依赖…',
+    feat_no_python: '未找到 Python。请查看安装标签页。',
+    feat_rebuild_btn: '重建',
+    feat_build_btn: '构建',
+    feat_building: '构建中…',
+    feat_installing: '安装中…',
+    feat_install_btn: '安装',
+    feat_retry_btn: '重试',
+    feat_removing: '删除中…',
+    feat_not_cached: '未缓存',
+    feat_uninstall_btn: '卸载',
+    feat_verify_btn: '验证',
+    feat_checking_btn: '检测中…',
+    feat_valid_key: 'API Key 有效。',
+    feat_key_rejected: 'API Key 被拒绝。',
+    feat_enter_key: '请输入有效的 OpenAI API Key。',
+    feat_network_error: '网络错误：',
+    feat_build_complete: '向量构建完成。',
+    feat_build_failed: '构建失败。请查看终端输出。',
+    feat_output_copied: '输出已复制到剪贴板。',
+    feat_install_done: '依赖已安装。正在构建向量…',
+    feat_install_failed: '安装失败：',
 });
 
 function langFromApp(app) {
@@ -2936,11 +2990,11 @@ class PaperForgeSettingTab extends PluginSettingTab {
         if (this._vectorDepsOk === null) {
             const statusBox = vecConfigContent.createEl('div');
             statusBox.style.cssText = 'padding:8px 12px; margin:8px 0; background:var(--background-secondary); border-radius:4px;';
-            statusBox.setText('Checking dependencies...');
+            statusBox.setText(t('feat_deps_checking'));
 
             const pyResult = resolvePythonExecutable(vp, this.plugin.settings);
             if (!pyResult.path) {
-                statusBox.setText('No Python found. Check Installation tab.');
+                statusBox.setText(t('feat_no_python'));
                 this._vectorDepsOk = false;
                 return;
             }
@@ -3030,8 +3084,8 @@ class PaperForgeSettingTab extends PluginSettingTab {
                     });
             });
         new Setting(containerEl)
-            .setName('API Base URL')
-            .setDesc('Custom OpenAI-compatible API endpoint. Leave empty for default.')
+            .setName(t('feat_api_base_url'))
+            .setDesc(t('feat_api_base_url_desc'))
             .addText(text => {
                 text.setPlaceholder('https://api.openai.com/v1')
                     .setValue(this.plugin.settings.vector_db_api_base || '')
@@ -3041,8 +3095,8 @@ class PaperForgeSettingTab extends PluginSettingTab {
                     });
             });
         new Setting(containerEl)
-            .setName('API Model')
-            .setDesc('Embedding model name for this endpoint')
+            .setName(t('feat_api_model'))
+            .setDesc(t('feat_api_model_desc'))
             .addText(text => {
                 text.setPlaceholder('text-embedding-3-small')
                     .setValue(this.plugin.settings.vector_db_api_model || 'text-embedding-3-small')
@@ -3056,21 +3110,21 @@ class PaperForgeSettingTab extends PluginSettingTab {
     _renderVectorNoDeps(containerEl) {
         const box = containerEl.createEl('div');
         box.style.cssText = 'padding:8px 12px; margin:8px 0; background:var(--background-secondary); border-radius:4px;';
-        box.setText('Dependencies not installed. Required: chromadb, sentence-transformers.');
+        box.setText(t('feat_deps_missing'));
 
         new Setting(containerEl)
             .setName(t('feat_install_deps'))
             .setDesc(t('feat_install_deps_desc'))
             .addButton(button => {
-                button.setButtonText('Install')
+                button.setButtonText(t('feat_install_btn'))
                     .setCta()
                     .onClick(async () => {
                         const vp = this.app.vault.adapter.basePath;
                         const pyResult = resolvePythonExecutable(vp, this.plugin.settings);
                         if (!pyResult.path) { new Notice('No Python found.'); return; }
-                        button.setButtonText('Installing...');
-                        button.setDisabled(true);
-                        const notice = new Notice('Installing chromadb + sentence-transformers...', 0);
+                        button.setButtonText(t('feat_installing'));
+                            button.setDisabled(true);
+                            const notice = new Notice('Installing chromadb + sentence-transformers + openai...', 0);
                         try {
                             const { exec } = require('child_process');
         const env = Object.assign({}, process.env, { PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1', HF_ENDPOINT: this.plugin.settings.vector_db_hf_endpoint || 'https://hf-mirror.com', HF_TOKEN: this.plugin.settings.vector_db_hf_token || '' });
@@ -3090,7 +3144,7 @@ class PaperForgeSettingTab extends PluginSettingTab {
                         } catch (e) {
                             notice.hide();
                             new Notice('Install failed: ' + (e.stderr || e.message || e));
-                            button.setButtonText('Retry');
+                            button.setButtonText(t('feat_retry_btn'));
                             button.setDisabled(false);
                         }
                     });
@@ -3176,14 +3230,14 @@ class PaperForgeSettingTab extends PluginSettingTab {
                     }
 
                     if (isCached) {
-                        button.setButtonText('Uninstall').setWarning();
+                        button.setButtonText(t('feat_uninstall_btn')).setWarning();
                     } else {
-                        button.setButtonText('Not cached');
+                        button.setButtonText(t('feat_not_cached'));
                         button.setDisabled(true);
                     }
                     button.onClick(async () => {
                         if (!isCached) return;
-                        button.setButtonText('Removing...');
+                        button.setButtonText(t('feat_removing'));
                         button.setDisabled(true);
                         try {
                             const pyResult = resolvePythonExecutable(vp, this.plugin.settings);
@@ -3218,13 +3272,13 @@ class PaperForgeSettingTab extends PluginSettingTab {
             .setName(t('feat_rebuild_vectors'))
             .setDesc(modelChanged ? t('feat_rebuild_vectors_changed') : t('feat_rebuild_vectors_desc'))
             .addButton(button => {
-                const label = embedInfo && embedInfo.db_exists ? 'Rebuild' : 'Build';
+                const label = embedInfo && embedInfo.db_exists ? t('feat_rebuild_btn') : t('feat_build_btn');
                 button.setButtonText(label)
                     .setCta()
                     .onClick(async () => {
                         const pyResult = resolvePythonExecutable(vp, this.plugin.settings);
-                        if (!pyResult.path) { new Notice('No Python found.'); return; }
-                        button.setButtonText('Building...');
+                        if (!pyResult.path) { new Notice(t('feat_no_python')); return; }
+                        button.setButtonText(t('feat_building'));
                         button.setDisabled(true);
                         terminalEl.style.display = 'block';
                         terminalEl.setText('');
@@ -3252,10 +3306,10 @@ class PaperForgeSettingTab extends PluginSettingTab {
                             this.plugin.saveSettings();
                             this._embedStatusText = null;
                             this._execEmbedStatus(pyResult.path, vp, (text) => { this._embedStatusText = text; this.display(); });
-                            new Notice('Vector build complete.');
+                            new Notice(t('feat_build_complete'));
                         } catch (e) {
                             append('\n--- BUILD FAILED ---\n' + (e.stderr || e.message || e));
-                            new Notice('Build failed. See terminal output.');
+                            new Notice(t('feat_build_failed'));
                             button.setButtonText(label);
                             button.setDisabled(false);
                         }
