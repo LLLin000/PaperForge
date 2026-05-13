@@ -64,7 +64,7 @@ python $SKILL_DIR/scripts/pf_bootstrap.py
 
 ### Reading Log Format (MANDATORY)
 
-When writing reading-log.md, use EXACTLY this format:
+When writing reading-log.md, use EXACTLY this format. Field labels (`**Info:**`, `**Use:**`, `**Note:**`) must be in English, but the content (title, section name, excerpt, usage, note) should be in the same language as the user's conversation.
 
 ```
 ## ABCDEFGH — Author Last Name et al. Year
