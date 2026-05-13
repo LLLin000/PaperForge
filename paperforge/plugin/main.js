@@ -1977,12 +1977,13 @@ class PaperForgeStatusView extends ItemView {
         const domain = this._currentDomain || 'Unknown';
         const domainItems = this._filterByDomain(domain);
 
-        const view = this._contentEl.createEl('div', { cls: 'paperforge-collection-view' });
-
         if (domainItems.length === 0) {
-            this._renderEmptyState(view, 'No papers found in domain "' + domain + '". Sync some papers first.');
+            // Fall back to global mode if no papers match this domain (e.g. "Literature Hub")
+            this._renderGlobalMode();
             return;
         }
+
+        const view = this._contentEl.createEl('div', { cls: 'paperforge-collection-view' });
 
         // ── Single-pass aggregation ──
         const totalPapers = domainItems.length;
