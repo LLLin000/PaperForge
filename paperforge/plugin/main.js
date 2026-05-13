@@ -3159,9 +3159,8 @@ class PaperForgeSettingTab extends PluginSettingTab {
                             this.plugin.settings.vector_db_last_model = currentModel;
                             this.plugin.saveSettings();
                             this._embedStatusText = null;
-                            this._execEmbedStatus(pyResult.path, vp, (text) => { this._embedStatusText = text; });
+                            this._execEmbedStatus(pyResult.path, vp, (text) => { this._embedStatusText = text; this.display(); });
                             new Notice('Vector build complete.');
-                            this.display();
                         } catch (e) {
                             append('\n--- BUILD FAILED ---\n' + (e.stderr || e.message || e));
                             new Notice('Build failed. See terminal output.');
