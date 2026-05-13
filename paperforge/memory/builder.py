@@ -3,7 +3,6 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
-import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -89,9 +88,13 @@ def build_from_index(vault: Path) -> dict:
         conn.execute("DROP TRIGGER IF EXISTS papers_ai")
 
         now_utc = datetime.now(timezone.utc).isoformat()
-        papers_count = 0
-        assets_count = 0
-        aliases_count = 0
+        paper_rows: list[dict] = []
+        asset_rows: list[tuple] = []
+        alias_rows: list[tuple] = []
+
+        placeholders = ", ".join([f":{c}" for c in PAPER_COLUMNS])
+        cols = ", ".join(PAPER_COLUMNS)
+        paper_sql = f"INSERT OR REPLACE INTO papers ({cols}) VALUES ({placeholders})"
 
         for entry in items:
             zotero_key = entry.get("zotero_key", "")
@@ -101,15 +104,7 @@ def build_from_index(vault: Path) -> dict:
             entry["lifecycle"] = str(compute_lifecycle(entry))
             entry["maturity"] = compute_maturity(entry)
             entry["next_step"] = str(compute_next_step(entry))
-            paper_values = build_paper_row(entry, generated_at)
-
-            placeholders = ", ".join([f":{c}" for c in PAPER_COLUMNS])
-            cols = ", ".join(PAPER_COLUMNS)
-            conn.execute(
-                f"INSERT OR REPLACE INTO papers ({cols}) VALUES ({placeholders})",
-                paper_values,
-            )
-            papers_count += 1
+            paper_rows.append(build_paper_row(entry, generated_at))
 
             for asset_type, entry_field in ASSET_FIELDS:
                 path_val = entry.get(entry_field, "")
@@ -126,31 +121,28 @@ def build_from_index(vault: Path) -> dict:
                     except Exception:
                         exists = 0
 
-                conn.execute(
-                    """INSERT OR REPLACE INTO paper_assets
-                       (paper_id, asset_type, path, exists_on_disk)
-                       VALUES (?, ?, ?, ?)""",
-                    (zotero_key, asset_type, rel_path, exists),
-                )
-                assets_count += 1
+                asset_rows.append((zotero_key, asset_type, rel_path, exists))
 
             for alias_type in ALIAS_TYPES:
                 raw_val = entry.get(alias_type, "")
                 if not raw_val:
                     continue
                 raw_str = str(raw_val)
-                conn.execute(
-                    """INSERT OR REPLACE INTO paper_aliases
-                       (paper_id, alias, alias_norm, alias_type)
-                       VALUES (?, ?, ?, ?)""",
-                    (
-                        zotero_key,
-                        raw_str,
-                        raw_str.lower().strip(),
-                        alias_type,
-                    ),
-                )
-                aliases_count += 1
+                alias_rows.append((zotero_key, raw_str, raw_str.lower().strip(), alias_type))
+
+        conn.executemany(paper_sql, paper_rows)
+        conn.executemany(
+            """INSERT OR REPLACE INTO paper_assets
+               (paper_id, asset_type, path, exists_on_disk)
+               VALUES (?, ?, ?, ?)""",
+            asset_rows,
+        )
+        conn.executemany(
+            """INSERT OR REPLACE INTO paper_aliases
+               (paper_id, alias, alias_norm, alias_type)
+               VALUES (?, ?, ?, ?)""",
+            alias_rows,
+        )
 
         conn.execute("""INSERT INTO paper_fts(rowid, zotero_key, citation_key, title, first_author, authors_json, abstract, journal, domain, collection_path, collections_json)
                          SELECT rowid, zotero_key, citation_key, title, first_author, authors_json, abstract, journal, domain, collection_path, collections_json
@@ -175,9 +167,9 @@ def build_from_index(vault: Path) -> dict:
 
         return {
             "db_path": str(db_path),
-            "papers_indexed": papers_count,
-            "assets_indexed": assets_count,
-            "aliases_indexed": aliases_count,
+            "papers_indexed": len(paper_rows),
+            "assets_indexed": len(asset_rows),
+            "aliases_indexed": len(alias_rows),
             "schema_version": str(CURRENT_SCHEMA_VERSION),
         }
     except Exception:

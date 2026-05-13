@@ -299,7 +299,6 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
             except Exception:
                 pass  # alias will be injected on next full frontmatter_note pass
             break  # only one old file per key
-    deep_reading_file = workspace_dir / "deep-reading.md"
     target_fulltext = workspace_dir / "fulltext.md"
     source_fulltext = paths["ocr"] / key / "fulltext.md"
 
@@ -310,7 +309,6 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
         logger.info("Bridged fulltext.md to workspace for %s", key)
 
     fulltext_exists = target_fulltext.exists()
-    deep_reading_exists = deep_reading_file.exists()
 
     # ---- entry dict -------------------------------------------------------
     authors = item.get("authors", [])
@@ -320,12 +318,17 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
     legacy_flags = _legacy_control_flags(paths, key)
     legacy_do_ocr = legacy_flags.get("do_ocr")
     legacy_analyze = legacy_flags.get("analyze")
-    # Single frontmatter read for all control fields
+    # Single frontmatter read for all control fields — cache text for reuse
     fm = {}
+    fm_cached_text = ""
+    fm_was_main = False
     for fp in (main_note_path, note_path):
         if fp and fp.exists():
             try:
-                fm = read_frontmatter_dict(fp.read_text(encoding="utf-8"))
+                note_text = fp.read_text(encoding="utf-8")
+                fm = read_frontmatter_dict(note_text)
+                fm_cached_text = note_text
+                fm_was_main = (fp == main_note_path)
                 break
             except Exception:
                 continue
@@ -343,6 +346,19 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
     analyze_value = note_analyze if note_analyze is not None else legacy_analyze
     if analyze_value is None:
         analyze_value = meta.get("analyze") is True or meta.get("deep_reading_status") == "done"
+
+    # Compute deep reading status once, reusing cached text when possible.
+    # main_note_path is canonical — don't fall back to note_path when it exists.
+    _dr_status = "pending"
+    if note_dr == "done":
+        _dr_status = "done"
+    elif fm_was_main:
+        _dr_status = "done" if has_deep_reading_content(fm_cached_text) else "pending"
+    elif main_note_path.exists():
+        try:
+            _dr_status = "done" if has_deep_reading_content(main_note_path.read_text(encoding="utf-8")) else "pending"
+        except Exception:
+            pass
 
     entry = {
         "zotero_key": key,
@@ -371,23 +387,15 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
         "ocr_job_id": meta.get("ocr_job_id", ""),
         "ocr_md_path": obsidian_wikilink_for_path(vault, meta.get("markdown_path", "")),
         "ocr_json_path": meta.get("json_path", ""),
-        "deep_reading_status": (
-            "done"
-            if note_dr == "done"
-            else "done"
-            if main_note_path.exists() and has_deep_reading_content(main_note_path.read_text(encoding="utf-8"))
-            else "done"
-            if note_path.exists() and has_deep_reading_content(note_path.read_text(encoding="utf-8"))
-            else "pending"
-        ),
+        "deep_reading_status": _dr_status,
         "note_path": str((main_note_path if main_note_path.exists() else note_path).relative_to(vault)).replace(
             "\\", "/"
         ),
         "deep_reading_md_path": (
             str(main_note_path.relative_to(vault)).replace("\\", "/")
-            if main_note_path.exists() and has_deep_reading_content(main_note_path.read_text(encoding="utf-8"))
+            if _dr_status == "done" and main_note_path.exists()
             else str(note_path.relative_to(vault)).replace("\\", "/")
-            if note_path.exists() and has_deep_reading_content(note_path.read_text(encoding="utf-8"))
+            if _dr_status == "done" and note_path.exists()
             else ""
         ),
         # Workspace path fields are only advertised when the backing files/dirs exist.
@@ -406,7 +414,7 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
 
     # Slug already frozen above — for existing notes, update frontmatter only (preserve body)
     if main_note_path.exists():
-        text = main_note_path.read_text(encoding="utf-8")
+        text = fm_cached_text if fm_was_main else main_note_path.read_text(encoding="utf-8")
         fm_close = text.find("---\n", 4)  # closing --- after opening ---
         if fm_close != -1:
             body = text[fm_close + 4 :]  # everything after frontmatter
@@ -420,7 +428,9 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
         else:
             main_note_path.write_text(frontmatter_note(entry, text), encoding="utf-8")
     else:
-        existing_text = note_path.read_text(encoding="utf-8") if note_path.exists() else ""
+        existing_text = fm_cached_text if not fm_was_main and fm_cached_text else (
+            note_path.read_text(encoding="utf-8") if note_path.exists() else ""
+        )
         main_note_path.write_text(frontmatter_note(entry, existing_text), encoding="utf-8")
 
     # Write per-workspace paper-meta.json (Phase 37: internal state outside frontmatter)
