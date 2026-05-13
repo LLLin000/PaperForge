@@ -3920,7 +3920,7 @@ module.exports = class PaperForgePlugin extends Plugin {
         this._pollTimer = setInterval(() => {
             this._checkExports(vaultPath, fs, path, exec);
             this._checkOcr(vaultPath, fs, path, exec);
-        }, 30000); // every 30 seconds
+        }, 120000); // every 120 seconds
     }
 
     _checkExports(vaultPath, fs, path, exec) {
@@ -3939,19 +3939,19 @@ module.exports = class PaperForgePlugin extends Plugin {
 
         if (newestMtime > this._lastExportMtime) {
             this._lastExportMtime = newestMtime;
-            this._autoRebuild(vaultPath, exec);
+            this._autoSync(vaultPath, exec);
         }
     }
 
-    _autoRebuild(vaultPath, exec) {
+    _autoSync(vaultPath, exec) {
         if (this._autoSyncRunning) return;
         this._autoSyncRunning = true;
 
         const pyResult = resolvePythonExecutable(vaultPath, this.settings);
         if (!pyResult.path) { this._autoSyncRunning = false; return; }
 
-        const cmd = `"${pyResult.path}" -m paperforge --vault "${vaultPath}" memory build`;
-        exec(cmd, { timeout: 60000, encoding: 'utf-8' }, (err, stdout, stderr) => {
+        const cmd = `"${pyResult.path}" -m paperforge --vault "${vaultPath}" sync`;
+        exec(cmd, { timeout: 120000, encoding: 'utf-8' }, (err, stdout, stderr) => {
             this._autoSyncRunning = false;
             this._memoryStatusText = null; // force re-check next time
             // Update last export mtime to avoid re-trigger during build
