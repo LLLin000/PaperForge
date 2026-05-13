@@ -1,18 +1,17 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime, timezone
 from pathlib import Path
 
 from paperforge.memory.builder import (
-    PAPER_COLUMNS,
-    ASSET_FIELDS,
     ALIAS_TYPES,
-    compute_hash,
+    ASSET_FIELDS,
+    PAPER_COLUMNS,
     _resolve_vault_path,
 )
 from paperforge.memory.db import get_connection, get_memory_db_path
 from paperforge.memory.schema import ensure_schema
-from paperforge.worker.asset_index import read_index
 from paperforge.worker.asset_state import (
     compute_lifecycle,
     compute_maturity,
@@ -20,22 +19,13 @@ from paperforge.worker.asset_state import (
 )
 
 
-def refresh_paper(vault: Path, zotero_key: str) -> bool:
-    """Incrementally refresh one paper in paperforge.db from formal-library.json."""
-    envelope = read_index(vault)
-    if not envelope:
-        return False
-    items = envelope if isinstance(envelope, list) else envelope.get("items", [])
-
-    entry = None
-    for e in items:
-        if e.get("zotero_key") == zotero_key:
-            entry = e
-            break
-    if not entry:
+def refresh_paper(vault: Path, entry: dict) -> bool:
+    """Upsert a single paper into memory DB. Entry is from _build_entry() output."""
+    zotero_key = entry.get("zotero_key", "")
+    if not zotero_key:
         return False
 
-    generated_at = envelope.get("generated_at", "") if not isinstance(envelope, list) else ""
+    generated_at = datetime.now(timezone.utc).isoformat()
 
     db_path = get_memory_db_path(vault)
     if not db_path.exists():
@@ -116,10 +106,19 @@ def refresh_paper(vault: Path, zotero_key: str) -> bool:
             conn.execute(
                 "INSERT INTO paper_fts(rowid, zotero_key, citation_key, title, first_author, authors_json, abstract, journal, domain, collection_path, collections_json) "
                 "VALUES ((SELECT rowid FROM papers WHERE zotero_key = ?), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                (zotero_key, zotero_key, entry.get("citation_key", ""), entry.get("title", ""),
-                 entry.get("first_author", ""), paper_values["authors_json"],
-                 entry.get("abstract", ""), entry.get("journal", ""), entry.get("domain", ""),
-                 entry.get("collection_path", ""), paper_values["collections_json"]),
+                (
+                    zotero_key,
+                    zotero_key,
+                    entry.get("citation_key", ""),
+                    entry.get("title", ""),
+                    entry.get("first_author", ""),
+                    paper_values["authors_json"],
+                    entry.get("abstract", ""),
+                    entry.get("journal", ""),
+                    entry.get("domain", ""),
+                    entry.get("collection_path", ""),
+                    paper_values["collections_json"],
+                ),
             )
         except Exception:
             pass  # FTS may not be available
