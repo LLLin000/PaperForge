@@ -2967,8 +2967,23 @@ class PaperForgeSettingTab extends PluginSettingTab {
                     const cacheName = 'models--' + model.replace('/', '--');
                     const fs = require('fs');
                     const os = require('os');
-                    const cachePath = os.homedir() + '/.cache/huggingface/hub/' + cacheName;
-                    const isCached = fs.existsSync(cachePath);
+                    const path = require('path');
+                    const cachePath = path.join(os.homedir(), '.cache', 'huggingface', 'hub', cacheName);
+
+                    // Check integrity: directory exists AND has snapshots with files
+                    let isCached = false;
+                    if (fs.existsSync(cachePath)) {
+                        const snapDir = path.join(cachePath, 'snapshots');
+                        if (fs.existsSync(snapDir)) {
+                            try {
+                                const entries = fs.readdirSync(snapDir);
+                                isCached = entries.some(e => {
+                                    const p = path.join(snapDir, e);
+                                    return fs.statSync(p).isDirectory() && fs.readdirSync(p).length > 0;
+                                });
+                            } catch (_) {}
+                        }
+                    }
 
                     if (isCached) {
                         button.setButtonText('Uninstall').setWarning();
