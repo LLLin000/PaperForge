@@ -2911,8 +2911,14 @@ class PaperForgeSettingTab extends PluginSettingTab {
 
         // Model selector (local mode)
         if (this.plugin.settings.vector_db_mode === 'local') {
+            const modelDesc = {
+                'BAAI/bge-small-en-v1.5': 'Best balance — fast, accurate, recommended for most users (384d, 130MB)',
+                'sentence-transformers/all-MiniLM-L6-v2': 'Lightest & fastest — lower accuracy, minimal disk (384d, 80MB)',
+                'BAAI/bge-base-en-v1.5': 'Highest accuracy — slower, large disk footprint (768d, 440MB)',
+            };
             new Setting(containerEl)
                 .setName('Model')
+                .setDesc(modelDesc[this.plugin.settings.vector_db_model] || '')
                 .addDropdown(dropdown => {
                     dropdown.addOption('BAAI/bge-small-en-v1.5', 'bge-small (384d, 130MB)');
                     dropdown.addOption('sentence-transformers/all-MiniLM-L6-v2', 'MiniLM (384d, 80MB)');
@@ -2922,6 +2928,31 @@ class PaperForgeSettingTab extends PluginSettingTab {
                             this.plugin.settings.vector_db_model = value;
                             this.plugin.saveSettings();
                             this.display();
+                        });
+                })
+                .addButton(button => {
+                    button.setButtonText('Uninstall')
+                        .setWarning()
+                        .onClick(async () => {
+                            const model = this.plugin.settings.vector_db_model;
+                            const cacheName = 'models--' + model.replace('/', '--');
+                            button.setButtonText('Removing...');
+                            button.setDisabled(true);
+                            try {
+                                const pyResult = resolvePythonExecutable(vp, this.plugin.settings);
+                                const { exec } = require('child_process');
+                                const env = Object.assign({}, process.env, { PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1' });
+                                await new Promise((resolve, reject) => {
+                                    exec(`"${pyResult.path}" -c "import shutil, os,sys; p=os.path.join(os.path.expanduser('~/.cache/huggingface/hub'), '${cacheName}'); shutil.rmtree(p,ignore_errors=True); print('Removed' if os.path.exists(p) else 'Not cached')"`, {
+                                        encoding: 'utf-8', timeout: 30000, env: env
+                                    }, (error, stdout) => error ? reject(error) : resolve(stdout));
+                                });
+                                new Notice('Model cache removed.');
+                            } catch (e) {
+                                new Notice('Failed: ' + (e.stderr || e.message || e));
+                            }
+                            button.setButtonText('Uninstall');
+                            button.setDisabled(false);
                         });
                 });
         }
@@ -2967,7 +2998,10 @@ class PaperForgeSettingTab extends PluginSettingTab {
                 });
         }
 
-        // Rebuild button
+        // Rebuild button with live terminal output
+        const terminalEl = containerEl.createEl('pre');
+        terminalEl.style.cssText = 'display:none; background:#1e1e1e; color:#d4d4d4; padding:10px; border-radius:4px; max-height:300px; overflow-y:auto; font-size:11px; font-family:var(--font-monospace); margin:8px 0; white-space:pre-wrap; word-break:break-all;';
+
         new Setting(containerEl)
             .setName('Rebuild Vectors')
             .setDesc(modelChanged ? 'Model changed — rebuild to update all vectors.' : 'Rebuild all OCR fulltext vectors. Required after model or mode change.')
@@ -2980,29 +3014,37 @@ class PaperForgeSettingTab extends PluginSettingTab {
                         if (!pyResult.path) { new Notice('No Python found.'); return; }
                         button.setButtonText('Building...');
                         button.setDisabled(true);
-                        const notice = new Notice('Building vector index...', 0);
+                        terminalEl.style.display = 'block';
+                        terminalEl.setText('');
+
+                        const { spawn } = require('child_process');
+                        const env = Object.assign({}, process.env, { PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1' });
+                        const child = spawn(pyResult.path, ['-m', 'paperforge', '--vault', vp, 'embed', 'build', '--force'], {
+                            env: env, stdio: ['ignore', 'pipe', 'pipe']
+                        });
+
+                        const append = (text) => {
+                            terminalEl.setText((terminalEl.getText() || '') + text);
+                            terminalEl.scrollTop = terminalEl.scrollHeight;
+                        };
+
+                        child.stdout.on('data', (data) => append(data.toString()));
+                        child.stderr.on('data', (data) => append(data.toString()));
+
                         try {
-                            const { exec } = require('child_process');
-                            const env = Object.assign({}, process.env, { PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1' });
                             await new Promise((resolve, reject) => {
-                                const cmd = `"${pyResult.path}" -m paperforge --vault "${vp}" embed build --force`;
-                                exec(cmd, { encoding: 'utf-8', timeout: 600000, env: env }, (error, stdout) => {
-                                    if (error) reject(error);
-                                    else resolve(stdout);
-                                });
+                                child.on('close', (code) => code === 0 ? resolve() : reject(new Error('Exit code ' + code)));
+                                child.on('error', reject);
                             });
-                            // Remember model used for this build
                             this.plugin.settings.vector_db_last_model = currentModel;
                             this.plugin.saveSettings();
-                            // Refresh status
                             this._embedStatusText = null;
                             this._execEmbedStatus(pyResult.path, vp, (text) => { this._embedStatusText = text; });
-                            notice.hide();
                             new Notice('Vector build complete.');
                             this.display();
                         } catch (e) {
-                            notice.hide();
-                            new Notice('Build failed: ' + (e.stderr || e.message || e));
+                            append('\n--- BUILD FAILED ---\n' + (e.stderr || e.message || e));
+                            new Notice('Build failed. See terminal output.');
                             button.setButtonText(label);
                             button.setDisabled(false);
                         }
