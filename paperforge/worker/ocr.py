@@ -190,6 +190,8 @@ def sync_ocr_queue(paths: dict[str, Path], target_rows: list[dict]) -> list[dict
         status = str(meta.get("ocr_status", "pending") or "pending").strip().lower()
         if status in {"done", "blocked"}:
             continue
+        if status == "nopdf":
+            status = "pending"
         synced = dict(row)
         synced["has_pdf"] = bool(target.get("has_pdf"))
         synced["pdf_path"] = target.get("pdf_path", "")
@@ -209,6 +211,9 @@ def sync_ocr_queue(paths: dict[str, Path], target_rows: list[dict]) -> list[dict
         meta = _read_meta_or_empty(meta_path)
         status = str(meta.get("ocr_status", "pending") or "pending").strip().lower()
         if status in {"done", "blocked"}:
+            continue
+        if status == "nopdf":
+            status = "pending"
             continue
         synced_queue.append(
             {
@@ -1571,11 +1576,17 @@ def run_ocr(vault: Path, verbose: bool = False, no_progress: bool = False) -> in
     for row in target_rows:
         key = row["zotero_key"]
         meta = ensure_ocr_meta(vault, row)
-        if str(meta.get("ocr_status", "") or "").strip().lower() == "error":
+        current = str(meta.get("ocr_status", "") or "").strip().lower()
+        if current == "error":
             meta["ocr_status"] = "pending"
             meta["ocr_job_id"] = ""
             meta["ocr_started_at"] = ""
             meta["ocr_finished_at"] = ""
+            meta["retry_count"] = 0
+            write_json(paths["ocr"] / key / "meta.json", meta)
+        elif current == "nopdf":
+            meta["ocr_status"] = "pending"
+            meta["error"] = ""
             meta["retry_count"] = 0
             write_json(paths["ocr"] / key / "meta.json", meta)
         status, _error = validate_ocr_meta(paths, meta)
