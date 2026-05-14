@@ -41,6 +41,20 @@ def refresh_paper(vault: Path, entry: dict) -> bool:
         entry["next_step"] = str(compute_next_step(entry))
         paper_values = build_paper_row(entry, generated_at)
 
+        # Step 1: Get old rowid before papers upsert (rowid may change on REPLACE)
+        old = conn.execute(
+            "SELECT rowid FROM papers WHERE zotero_key = ?",
+            (zotero_key,),
+        ).fetchone()
+
+        # Step 2: Delete old FTS row BEFORE papers changes
+        if old:
+            conn.execute(
+                "DELETE FROM paper_fts WHERE rowid = ?",
+                (old["rowid"],),
+            )
+
+        # Step 3: Upsert papers
         placeholders = ", ".join([f":{c}" for c in PAPER_COLUMNS])
         cols = ", ".join(PAPER_COLUMNS)
         conn.execute(
@@ -78,33 +92,31 @@ def refresh_paper(vault: Path, entry: dict) -> bool:
                 (zotero_key, raw_str, raw_str.lower().strip(), alias_type),
             )
 
-        row = conn.execute(
+        # Step 4: Get new rowid after upsert
+        new = conn.execute(
             "SELECT rowid FROM papers WHERE zotero_key = ?",
             (zotero_key,),
         ).fetchone()
-        if row:
-            conn.execute(
-                "INSERT INTO paper_fts(paper_fts, rowid) VALUES ('delete', ?)",
-                (row["rowid"],),
-            )
 
-        conn.execute(
-            "INSERT INTO paper_fts(rowid, zotero_key, citation_key, title, first_author, authors_json, abstract, journal, domain, collection_path, collections_json) "
-            "VALUES ((SELECT rowid FROM papers WHERE zotero_key = ?), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            (
-                zotero_key,
-                zotero_key,
-                entry.get("citation_key", ""),
-                entry.get("title", ""),
-                entry.get("first_author", ""),
-                paper_values["authors_json"],
-                entry.get("abstract", ""),
-                entry.get("journal", ""),
-                entry.get("domain", ""),
-                entry.get("collection_path", ""),
-                paper_values["collections_json"],
-            ),
-        )
+        # Step 5: Insert new FTS row
+        if new:
+            conn.execute(
+                "INSERT INTO paper_fts(rowid, zotero_key, citation_key, title, first_author, authors_json, abstract, journal, domain, collection_path, collections_json) "
+                "VALUES ((SELECT rowid FROM papers WHERE zotero_key = ?), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (
+                    zotero_key,
+                    zotero_key,
+                    entry.get("citation_key", ""),
+                    entry.get("title", ""),
+                    entry.get("first_author", ""),
+                    paper_values["authors_json"],
+                    entry.get("abstract", ""),
+                    entry.get("journal", ""),
+                    entry.get("domain", ""),
+                    entry.get("collection_path", ""),
+                    paper_values["collections_json"],
+                ),
+            )
         conn.execute(PAPERS_AI_TRIGGER)
 
         conn.commit()
