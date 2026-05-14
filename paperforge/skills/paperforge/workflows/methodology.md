@@ -24,7 +24,7 @@
 ### Step 2: 读取 project-log
 
 ```bash
-$PYTHON -m paperforge project-log --list "<project>" --json --vault "$VAULT"
+$PYTHON -m paperforge --vault "$VAULT" project-log --list --project "<project>" --json
 ```
 
 扫描其中以下信号：

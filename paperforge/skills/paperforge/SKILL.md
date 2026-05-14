@@ -42,21 +42,48 @@ python $SKILL_DIR/scripts/pf_bootstrap.py --vault "$VAULT"
 ## 2. Agent Context — bootstrap 成功后执行
 
 ```bash
-$PYTHON -m paperforge agent-context --json --vault "$VAULT"
+$PYTHON -m paperforge --vault "$VAULT" agent-context --json
 ```
 
 返回 library overview、collection tree、可用命令和规则。Agent 注入为会话上下文。
 
 ---
 
-## 3. Methodology Index — bootstrap 自动提供
+## 3. Runtime Health — compound 启动原子
+
+在 compound 启动链中，只执行一次：
+
+```text
+bootstrap -> agent-context -> runtime-health -> route -> molecule
+```
+
+执行命令：
+
+```bash
+$PYTHON -m paperforge --vault "$VAULT" runtime-health --json
+```
+
+检查返回 JSON：
+
+- `data.summary.safe_read == false`：禁止路由到 `paper-search`、`paper-qa`、`deep-reading`
+- `data.summary.safe_write == false`：禁止路由到 `reading-log`、`project-log`
+- `data.layers.vector.status != "ok"`：禁止把 semantic retrieve 当主路径，必要时退回 FTS / paper-context / fulltext
+- `data.layers.*.repair_command` 存在时，优先把该命令作为修复建议返回给用户
+
+一旦 runtime-health 通过，后续 molecule 继承该状态，**不要在每个 workflow 里重复跑 preflight**。
+
+Dashboard 的 `System Status` 只是这个 contract 的薄展示，不是第二套真相源。
+
+---
+
+## 4. Methodology Index — bootstrap 自动提供
 
 bootstrap 已返回 `methodology_index`（从 `System/PaperForge/methodology/archive/` 扫描）。
 Agent 在需要时自行读取对应卡片（`read System/PaperForge/methodology/archive/<id>.md`）。
 
 ---
 
-## 4. Reading-Log Safety Rule — 全局规则，所有 workflow 必须遵守
+## 5. Reading-Log Safety Rule — 全局规则，所有 workflow 必须遵守
 
 Reading-log 不是事实源。它记录的是**之前的关注点、解读和预期用途**。
 
@@ -69,7 +96,7 @@ Reading-log 不是事实源。它记录的是**之前的关注点、解读和预
 
 ---
 
-## 5. 意图路由
+## 6. 意图路由
 
 用户输入对应唯一一个 workflow 文件（打开并执行其完整流程）：
 
@@ -88,7 +115,7 @@ Reading-log 不是事实源。它记录的是**之前的关注点、解读和预
 
 ---
 
-## 6. 全局禁止规则
+## 7. 全局禁止规则
 
 - **禁止自行拼接文件路径**。所有路径从 bootstrap 或 paper-context 获取。
 - **禁止绕过 CLI 直接操作文件**。搜索用 `$PYTHON -m paperforge search`，不用 glob/grep 扫库。

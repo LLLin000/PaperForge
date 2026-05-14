@@ -81,8 +81,7 @@
 ### Step 4: 写入（Atom）
 
 ```bash
-$PYTHON -m paperforge reading-log --write <paper_id> \
-    --vault "$VAULT" \
+$PYTHON -m paperforge --vault "$VAULT" reading-log --write <paper_id> \
     --section "<section>" \
     --excerpt "<excerpt>" \
     --context "<context>" \
@@ -98,7 +97,7 @@ $PYTHON -m paperforge reading-log --write <paper_id> \
 ### Step 5: 确认渲染
 
 ```bash
-$PYTHON -m paperforge reading-log --render --project "<project>" --vault "$VAULT"
+$PYTHON -m paperforge --vault "$VAULT" reading-log --render --project "<project>"
 ```
 
 输出到 `Project/<project>/reading-log.md`。

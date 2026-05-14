@@ -22,7 +22,7 @@
 ### Step 2: 执行搜索
 
 ```bash
-$PYTHON -m paperforge search <query> --json --vault "$VAULT" --limit 15 \
+$PYTHON -m paperforge --vault "$VAULT" search <query> --json --limit 15 \
     [--domain "<domain>"] \
     [--year-from <N>] [--year-to <N>] \
     [--ocr <done|pending>] \
@@ -65,7 +65,7 @@ $PYTHON -m paperforge search <query> --json --vault "$VAULT" --limit 15 \
 对每个 match，调 `paper-context` 获取更详细的可读状态：
 
 ```bash
-$PYTHON -m paperforge paper-context <zotero_key> --json --vault "$VAULT"
+$PYTHON -m paperforge --vault "$VAULT" paper-context <zotero_key> --json
 ```
 
 目的：拿到 `ocr_status`、`prior_notes` 数量、`analyze` 状态，帮助用户判断哪些可以直接读。

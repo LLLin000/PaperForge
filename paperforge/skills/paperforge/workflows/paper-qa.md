@@ -24,7 +24,7 @@
 **优先用 paper-context（一次拿到全部信息）：**
 
 ```bash
-$PYTHON -m paperforge paper-context <query> --json --vault "$VAULT"
+$PYTHON -m paperforge --vault "$VAULT" paper-context <query> --json
 ```
 
 返回 JSON 包含 paper 元数据、OCR 状态、prior_notes 等。
@@ -32,7 +32,7 @@ $PYTHON -m paperforge paper-context <query> --json --vault "$VAULT"
 **paper-context 无结果时的备选：**
 
 ```bash
-$PYTHON -m paperforge search "<query>" --json --vault "$VAULT" --limit 5
+$PYTHON -m paperforge --vault "$VAULT" search "<query>" --json --limit 5
 ```
 
 如果多候选，列出让用户选（同 paper-search 的 Step 4-5 格式）。
