@@ -97,10 +97,9 @@ Agent 按 JSON schema 写入 project-log.jsonl。
 ### Step 4: 写入（Atom）
 
 ```bash
-$PYTHON -m paperforge project-log --write \
-    --vault "$VAULT" \
+$PYTHON -m paperforge --vault "$VAULT" project-log --write \
     --project "<project>" \
-    --json '<payload>'
+    --payload '<payload>'
 ```
 
 - 返回 `ok: true` → 确认写入成功。**自动渲染对应项目 markdown。**
@@ -109,7 +108,7 @@ $PYTHON -m paperforge project-log --write \
 ### Step 5: 确认渲染
 
 ```bash
-$PYTHON -m paperforge project-log --render --project "<project>" --vault "$VAULT"
+$PYTHON -m paperforge --vault "$VAULT" project-log --render --project "<project>"
 ```
 
 输出到 `Project/<project>/project-log.md`。
