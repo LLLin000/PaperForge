@@ -54,8 +54,8 @@ def _read_pf_config(pf_json: Path) -> dict:
         return json.load(f)
 
 
-def _find_python_with_paperforge(vault: Path, pf_cfg: dict) -> str | None:
-    """Find a Python executable that has paperforge installed."""
+def _find_python_with_paperforge(vault: Path, pf_cfg: dict) -> tuple[str | None, bool]:
+    """Find a Python executable. Returns (candidate, verified_has_paperforge)."""
     candidates = []
 
     # 1. Explicit python_path in config
@@ -79,11 +79,11 @@ def _find_python_with_paperforge(vault: Path, pf_cfg: dict) -> str | None:
                 encoding="utf-8", errors="replace",
             )
             if result.returncode == 0 and "paperforge" in result.stdout.lower():
-                return str(candidate)
+                return (str(candidate), True)
         except Exception:
             continue
 
-    # Fallback: try system python
+    # Fallback: check system python/python3 only (no paperforge verification)
     for fallback in ["python", "python3"]:
         try:
             result = subprocess.run(
@@ -92,11 +92,11 @@ def _find_python_with_paperforge(vault: Path, pf_cfg: dict) -> str | None:
                 encoding="utf-8", errors="replace",
             )
             if result.returncode == 0:
-                return fallback
+                return (fallback, False)
         except Exception:
             continue
 
-    return None
+    return (None, False)
 
 
 def _scan_methodology_archive(pf_root: Path) -> list[dict]:
@@ -225,10 +225,10 @@ def main():
     result["index_summary"] = index_summary
 
     # --- 6. Find Python that has paperforge (best effort) ---
-    py_candidate = _find_python_with_paperforge(vault, cfg)
+    py_candidate, py_verified = _find_python_with_paperforge(vault, cfg)
     if py_candidate:
         result["python_candidate"] = py_candidate
-        result["python_verified"] = True
+        result["python_verified"] = py_verified
     else:
         result["python_candidate"] = "python"
         result["python_verified"] = False
