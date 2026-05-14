@@ -285,6 +285,10 @@ def build_parser() -> argparse.ArgumentParser:
     p_paper_status.add_argument("query", help="Paper identifier (zotero_key, DOI, title, alias)")
     p_paper_status.add_argument("--json", action="store_true", help="Output as JSON")
 
+    p_pc = sub.add_parser("paper-context", help="Get full context for a paper (metadata + reading notes + corrections)")
+    p_pc.add_argument("key", help="Zotero key")
+    p_pc.add_argument("--json", action="store_true", help="Output as JSON")
+
     p_rl = sub.add_parser("reading-log", help="Record or export reading notes")
     p_rl.add_argument("--write", dest="paper_id", help="Write note for this zotero_key")
     p_rl.add_argument("--section", help="Section (e.g. Discussion P12)")
@@ -551,6 +555,11 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "paper-status":
         from paperforge.commands.paper_status import run
+
+        return run(args)
+
+    if args.command == "paper-context":
+        from paperforge.commands.paper_context import run
 
         return run(args)
 
