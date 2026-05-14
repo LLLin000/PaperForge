@@ -10,7 +10,11 @@ def write_reading_note(vault: Path, paper_id: str, section: str,
                        excerpt: str, usage: str = "", note: str = "",
                        context: str = "", project: str = "",
                        tags: list[str] | None = None) -> bool:
-    """Record a reading note in paper_events."""
+    """DEPRECATED: Use append_reading_note() in paperforge.memory.permanent instead.
+
+    Reading notes now live in reading-log.jsonl as the source of truth.
+    This function is kept for backward compatibility only (import_reading_log).
+    """
     db_path = get_memory_db_path(vault)
     if not db_path.exists():
         return False
