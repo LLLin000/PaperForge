@@ -11,9 +11,10 @@ from paperforge.config import paperforge_paths
 from paperforge.core.errors import ErrorCode
 from paperforge.core.result import PFError, PFResult
 from paperforge.memory.db import get_connection, get_memory_db_path
-from paperforge.memory.events import export_reading_log, write_correction_note, write_reading_note
+from paperforge.memory.events import write_correction_note, write_reading_note
 from paperforge.memory.permanent import (
     append_reading_note,
+    get_reading_notes_for_paper,
     read_all_reading_notes,
 )
 
@@ -179,41 +180,92 @@ def import_reading_log(vault: Path, filepath: Path) -> dict:
 
 
 def lookup_paper_events(vault: Path, key: str) -> dict:
-    """Query paper_events for all reading_note events for a paper, joined with papers table."""
+    """Look up all reading notes for a paper from JSONL."""
+    notes = get_reading_notes_for_paper(vault, key)
+    notes.sort(key=lambda n: n.get("created_at", ""), reverse=True)
+
+    title = ""
     db_path = get_memory_db_path(vault)
-    if not db_path.exists():
-        return {"ok": False, "zotero_key": key, "title": "", "entries": [], "count": 0}
+    if db_path.exists():
+        conn = get_connection(db_path, read_only=True)
+        try:
+            row = conn.execute(
+                "SELECT title FROM papers WHERE zotero_key = ?", (key,),
+            ).fetchone()
+            if row:
+                title = row["title"] or ""
+        finally:
+            conn.close()
 
-    conn = get_connection(db_path, read_only=True)
-    try:
-        rows = conn.execute(
-            """SELECT e.created_at, e.payload_json, p.title, p.citation_key, p.year
-               FROM paper_events e JOIN papers p ON p.zotero_key = e.paper_id
-               WHERE e.paper_id = ? AND e.event_type = 'reading_note'
-               ORDER BY e.created_at DESC""", (key,),
-        ).fetchall()
+    entries = []
+    for n in notes:
+        entries.append({
+            "created_at": n.get("created_at", ""),
+            "section": n.get("section", ""),
+            "excerpt": n.get("excerpt", ""),
+            "usage": n.get("usage", ""),
+            "note": n.get("note", ""),
+        })
 
-        title = rows[0]["title"] if rows else ""
-        entries = []
-        for row in rows:
-            payload = json.loads(row["payload_json"])
-            entries.append({
-                "created_at": row["created_at"],
-                "section": payload.get("section", ""),
-                "excerpt": payload.get("excerpt", ""),
-                "usage": payload.get("usage", ""),
-                "note": payload.get("note", ""),
-            })
+    return {
+        "ok": True,
+        "zotero_key": key,
+        "title": title,
+        "entries": entries,
+        "count": len(entries),
+    }
 
-        return {
-            "ok": True,
-            "zotero_key": key,
-            "title": title,
-            "entries": entries,
-            "count": len(entries),
-        }
-    finally:
-        conn.close()
+
+def _export_from_jsonl(vault: Path, since: str = "", limit: int = 50) -> list[dict]:
+    """Export reading notes from JSONL, enriched with paper metadata from DB."""
+    all_notes = read_all_reading_notes(vault)
+    all_notes.sort(key=lambda n: n.get("created_at", ""), reverse=True)
+
+    if since:
+        all_notes = [n for n in all_notes if n.get("created_at", "") >= since]
+    all_notes = all_notes[:limit]
+
+    db_path = get_memory_db_path(vault)
+    paper_meta: dict[str, dict] = {}
+    if db_path.exists():
+        paper_ids = list(set(n.get("paper_id", "") for n in all_notes if n.get("paper_id")))
+        if paper_ids:
+            conn = get_connection(db_path, read_only=True)
+            try:
+                placeholders = ",".join("?" * len(paper_ids))
+                rows = conn.execute(
+                    f"SELECT zotero_key, citation_key, title, year, first_author "
+                    f"FROM papers WHERE zotero_key IN ({placeholders})",
+                    paper_ids,
+                ).fetchall()
+                for row in rows:
+                    paper_meta[row["zotero_key"]] = {
+                        "citation_key": row["citation_key"],
+                        "title": row["title"],
+                        "year": row["year"],
+                        "first_author": row["first_author"],
+                    }
+            finally:
+                conn.close()
+
+    results = []
+    for n in all_notes:
+        pid = n.get("paper_id", "")
+        meta = paper_meta.get(pid, {})
+        results.append({
+            "created_at": n.get("created_at", ""),
+            "paper_id": pid,
+            "citation_key": meta.get("citation_key", pid),
+            "title": meta.get("title", ""),
+            "year": meta.get("year", ""),
+            "first_author": meta.get("first_author", ""),
+            "section": n.get("section", ""),
+            "excerpt": n.get("excerpt", ""),
+            "usage": n.get("usage", ""),
+            "note": n.get("note", ""),
+        })
+
+    return results
 
 
 def _render_reading_log_md(vault: Path, project: str = "") -> None:
@@ -395,12 +447,6 @@ def run(args: argparse.Namespace) -> int:
             args.note or "", args.project or "", tags_list,
         )
 
-        _db_ok = write_reading_note(
-            vault, args.paper_id, args.section or "",
-            args.excerpt, args.usage or "", args.note or "",
-            args.context or "", args.project or "", tags_list,
-        )
-
         ok = jsonl_result.get("ok", False)
         result = PFResult(
             ok=ok,
@@ -423,7 +469,7 @@ def run(args: argparse.Namespace) -> int:
 
         return 0 if ok else 1
 
-    notes = export_reading_log(vault, since=args.since or "", limit=args.limit or 50)
+    notes = _export_from_jsonl(vault, since=args.since or "", limit=args.limit or 50)
     result = PFResult(
         ok=True,
         command="reading-log",
