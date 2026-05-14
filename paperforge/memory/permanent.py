@@ -153,3 +153,65 @@ def read_all_project_entries(vault: Path) -> list[dict]:
 def get_project_entries(vault: Path, project: str) -> list[dict]:
     all_entries = read_all_project_entries(vault)
     return [e for e in all_entries if e.get("project") == project]
+
+
+# ── Correction Log ──────────────────────────────────────────────────────────
+
+
+def get_correction_log_path(vault: Path) -> Path:
+    return _logs_dir(vault) / "correction-log.jsonl"
+
+
+def append_correction(
+    vault: Path,
+    paper_id: str,
+    original_id: str,
+    correction: str,
+    reason: str = "",
+    agent: str = "",
+) -> dict:
+    """Append a correction record to correction-log.jsonl."""
+    if not paper_id:
+        return {"ok": False, "error": "paper_id is required"}
+    if not original_id:
+        return {"ok": False, "error": "original_id is required"}
+    if not correction:
+        return {"ok": False, "error": "correction is required"}
+
+    date_str = datetime.date.today().strftime("%Y%m%d")
+    entry_id = f"corr_{date_str}_{secrets.token_hex(4)}"
+    now = datetime.datetime.now(datetime.timezone.utc).isoformat()
+
+    entry: dict[str, object] = {
+        "id": entry_id,
+        "event_type": "correction",
+        "created_at": now,
+        "paper_id": paper_id,
+        "original_id": original_id,
+        "correction": correction,
+        "reason": reason,
+        "agent": agent,
+    }
+
+    log_dir = _ensure_logs_dir(vault)
+    filepath = log_dir / "correction-log.jsonl"
+
+    try:
+        with filepath.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+    except OSError as e:
+        return {"ok": False, "error": str(e)}
+
+    return {"ok": True, "id": entry_id, "path": str(filepath)}
+
+
+def read_all_corrections(vault: Path) -> list[dict]:
+    """Read all correction entries from correction-log.jsonl."""
+    filepath = get_correction_log_path(vault)
+    return _read_jsonl(filepath)
+
+
+def get_corrections_for_paper(vault: Path, paper_id: str) -> list[dict]:
+    """Get all corrections for a specific paper."""
+    all_corrections = read_all_corrections(vault)
+    return [c for c in all_corrections if c.get("paper_id") == paper_id]
