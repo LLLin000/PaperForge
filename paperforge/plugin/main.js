@@ -197,24 +197,9 @@ function runSubprocess(pythonExe, args, cwd, timeout, _spawn, env) {
                 stderr: stderrChunks.join("") + "\n" + err.message,
                 exitCode: -1, elapsed: Date.now() - startTime });
         });
-                });
-            new Setting(containerEl)
-                .setName('API Model')
-                .setDesc('Which OpenAI-compatible embedding model to use.')
-            new Setting(containerEl)
-                .setName('API Model')
-                .setDesc('Embedding model name (e.g., text-embedding-3-small, qwen-3-embedding)')
-                .addText(text => {
-                    text.setPlaceholder('text-embedding-3-small')
-                        .setValue(this.plugin.settings.vector_db_api_model || 'text-embedding-3-small')
-                        .onChange(value => {
-                            this.plugin.settings.vector_db_api_model = value;
-                            this.plugin.saveSettings();
-                        });
-                });
-        }
+    });
 
-
+}
 
 // ── Cross-platform Python and BBT detection (macOS/Linux) ──
 
