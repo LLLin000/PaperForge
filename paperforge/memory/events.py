@@ -7,7 +7,9 @@ from paperforge.memory.db import get_connection, get_memory_db_path
 
 
 def write_reading_note(vault: Path, paper_id: str, section: str,
-                       excerpt: str, usage: str = "", note: str = "") -> bool:
+                       excerpt: str, usage: str = "", note: str = "",
+                       context: str = "", project: str = "",
+                       tags: list[str] | None = None) -> bool:
     """Record a reading note in paper_events."""
     db_path = get_memory_db_path(vault)
     if not db_path.exists():
@@ -18,6 +20,9 @@ def write_reading_note(vault: Path, paper_id: str, section: str,
         "excerpt": excerpt,
         "usage": usage,
         "note": note,
+        "context": context,
+        "project": project,
+        "tags": tags or [],
     }
     conn = get_connection(db_path, read_only=False)
     try:
@@ -74,5 +79,33 @@ def export_reading_log(vault: Path, since: str = "", limit: int = 50) -> list[di
                 "note": payload.get("note", ""),
             })
         return results
+    finally:
+        conn.close()
+
+
+def write_correction_note(vault: Path, paper_id: str, original_id: str,
+                          correction: str, reason: str = "") -> bool:
+    """Record a correction note for a prior reading_note event."""
+    db_path = get_memory_db_path(vault)
+    if not db_path.exists():
+        return False
+
+    payload = {
+        "original_id": original_id,
+        "correction": correction,
+        "reason": reason,
+    }
+    conn = get_connection(db_path, read_only=False)
+    try:
+        conn.execute(
+            """INSERT INTO paper_events (paper_id, event_type, payload_json)
+               VALUES (?, 'correction_note', ?)""",
+            (paper_id, json.dumps(payload, ensure_ascii=False)),
+        )
+        conn.commit()
+        return True
+    except Exception:
+        conn.rollback()
+        return False
     finally:
         conn.close()
