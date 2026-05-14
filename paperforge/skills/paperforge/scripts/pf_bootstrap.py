@@ -18,7 +18,11 @@ Output (JSON to stdout):
         },
         "domains": ["domain1", "domain2"],
         "index_summary": {"domain1": 120, "domain2": 80},
-        "python_candidate": "D:\\...\\python.exe"   // Python that has paperforge, or null
+        "python_candidate": "D:\\...\\python.exe",
+        "methodology_index": [
+            {"id": "parameter-window-audit", "description": "比较多个研究的参数和剂量反应"},
+            ...
+        ]
     }
 
 If anything fails: ok=false, error explains why.
@@ -79,6 +83,39 @@ def _find_python_with_paperforge(vault: Path, pf_cfg: dict) -> str | None:
         except Exception:
             continue
     return None
+
+
+def _scan_methodology_archive(pf_root: Path) -> list[dict]:
+    """Scan methodology archive directory for available method cards."""
+    archive_dir = pf_root / "methodology" / "archive"
+    if not archive_dir.exists():
+        return []
+
+    methods = []
+    for f in sorted(archive_dir.glob("*.md")):
+        try:
+            text = f.read_text(encoding="utf-8")
+            # Extract first heading as title, first paragraph after "Use when" as description
+            title = ""
+            description = ""
+            in_use_when = False
+            for line in text.split("\n"):
+                stripped = line.strip()
+                if stripped.startswith("# ") and not title:
+                    title = stripped.lstrip("# ").strip()
+                elif stripped.startswith("## Use when"):
+                    in_use_when = True
+                elif in_use_when and stripped and not stripped.startswith("#"):
+                    description = stripped
+                    in_use_when = False
+            methods.append({
+                "id": f.stem,
+                "title": title or f.stem,
+                "description": description or "(no description)",
+            })
+        except Exception:
+            continue
+    return methods
 
 
 def main():
@@ -155,6 +192,33 @@ def main():
 
     # --- 6. Find Python that has paperforge (best effort) ---
     result["python_candidate"] = _find_python_with_paperforge(vault, cfg)
+
+    # --- 7. Memory layer state ---
+    memory_layer = {"available": False, "paper_count": 0, "fts_search": False, "vector_search": False}
+    idx_path = Path(paths["index_path"])
+    dc_json = vault / ".obsidian" / "plugins" / "paperforge" / "data.json"
+    if idx_path.exists():
+        try:
+            with open(idx_path, encoding="utf-8") as f:
+                data = json.load(f)
+            items = data.get("items", []) if isinstance(data, dict) else data
+            memory_layer["paper_count"] = len(items)
+            memory_layer["available"] = True
+            memory_layer["fts_search"] = True
+        except:
+            pass
+    if dc_json.exists():
+        try:
+            with open(dc_json, encoding="utf-8") as f:
+                plugin_data = json.load(f)
+            vector_enabled = plugin_data.get("features", {}).get("vector_db", False)
+            memory_layer["vector_search"] = vector_enabled
+        except:
+            pass
+    result["memory_layer"] = memory_layer
+
+    # --- 8. Scan methodology archive ---
+    result["methodology_index"] = _scan_methodology_archive(pf_root)
 
     result["ok"] = True
     json.dump(result, sys.stdout, ensure_ascii=False, indent=2)
