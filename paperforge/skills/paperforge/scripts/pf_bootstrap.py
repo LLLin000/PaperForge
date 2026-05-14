@@ -82,6 +82,20 @@ def _find_python_with_paperforge(vault: Path, pf_cfg: dict) -> str | None:
                 return str(candidate)
         except Exception:
             continue
+
+    # Fallback: try system python
+    for fallback in ["python", "python3"]:
+        try:
+            result = subprocess.run(
+                [fallback, "--version"],
+                capture_output=True, text=True, timeout=10,
+                encoding="utf-8", errors="replace",
+            )
+            if result.returncode == 0:
+                return fallback
+        except Exception:
+            continue
+
     return None
 
 
@@ -118,6 +132,25 @@ def _scan_methodology_archive(pf_root: Path) -> list[dict]:
     return methods
 
 
+DEFAULTS = {
+    "system_dir": "System",
+    "resources_dir": "Resources",
+    "literature_dir": "Literature",
+    "control_dir": "LiteratureControl",
+    "base_dir": "Bases",
+}
+
+
+def resolve_cfg(raw: dict) -> dict:
+    """Resolve config with vault_config nested support and legacy flat keys."""
+    cfg = DEFAULTS.copy()
+    nested = raw.get("vault_config", {})
+    if isinstance(nested, dict):
+        cfg.update({k: v for k, v in nested.items() if v})
+    cfg.update({k: raw[k] for k in DEFAULTS if raw.get(k)})
+    return cfg
+
+
 def main():
     import argparse
     p = argparse.ArgumentParser(description="PaperForge bootstrap")
@@ -152,6 +185,7 @@ def main():
         json.dump(result, sys.stdout, ensure_ascii=False)
         sys.exit(0)
 
+    cfg = resolve_cfg(cfg)
     system_dir = cfg.get("system_dir", "System")
     resources_dir = cfg.get("resources_dir", "Resources")
     literature_dir = cfg.get("literature_dir", "Literature")
@@ -191,7 +225,13 @@ def main():
     result["index_summary"] = index_summary
 
     # --- 6. Find Python that has paperforge (best effort) ---
-    result["python_candidate"] = _find_python_with_paperforge(vault, cfg)
+    py_candidate = _find_python_with_paperforge(vault, cfg)
+    if py_candidate:
+        result["python_candidate"] = py_candidate
+        result["python_verified"] = True
+    else:
+        result["python_candidate"] = "python"
+        result["python_verified"] = False
 
     # --- 7. Memory layer state ---
     memory_layer = {"available": False, "paper_count": 0, "fts_search": False, "vector_search": False}
