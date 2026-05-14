@@ -14,6 +14,7 @@ from paperforge.memory.vector_db import (
     get_vector_db_path,
 )
 from paperforge.worker.asset_index import read_index
+from paperforge.worker.vector_db import _preflight_check
 from paperforge import __version__ as PF_VERSION
 
 
@@ -32,6 +33,34 @@ def run(args: argparse.Namespace) -> int:
         return 0
 
     # Build
+
+    # Read plugin settings for preflight
+    settings: dict = {}
+    dc_json = vault / ".obsidian" / "plugins" / "paperforge" / "data.json"
+    if dc_json.exists():
+        try:
+            import json
+
+            settings = json.loads(dc_json.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+
+    preflight = _preflight_check(vault, settings)
+    if not preflight["ok"]:
+        result = PFResult(
+            ok=False,
+            command="embed-build",
+            version=PF_VERSION,
+            error=PFError(code=ErrorCode.VALIDATION_ERROR, message=preflight["error"]),
+            data={"fix": preflight.get("fix", "")},
+        )
+        if args.json:
+            print(result.to_json())
+        else:
+            print(f"Error: {preflight['error']}", file=sys.stderr)
+            print(f"Fix: {preflight['fix']}", file=sys.stderr)
+        return 1
+
     envelope = read_index(vault)
     if not envelope:
         result = PFResult(ok=False, command="embed build", version=PF_VERSION,
