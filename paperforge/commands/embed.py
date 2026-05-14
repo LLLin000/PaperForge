@@ -80,12 +80,24 @@ def run(args: argparse.Namespace) -> int:
 
     papers_embedded = 0
     chunks_embedded = 0
+    papers_skipped = 0
+    resume = getattr(args, "resume", False)
     for entry in done_papers:
         key = entry.get("zotero_key")
         fulltext_rel = entry.get("fulltext_path", "")
         if not fulltext_rel:
             continue
         fulltext_path = vault / fulltext_rel
+        # Skip if already embedded and --resume is set
+        if resume:
+            try:
+                collection = get_collection(vault)
+                existing = collection.get(where={"paper_id": key}, limit=1)
+                if existing and existing.get("ids") and len(existing["ids"]) > 0:
+                    papers_skipped += 1
+                    continue
+            except Exception:
+                pass
         chunks = chunk_fulltext(fulltext_path)
         if not chunks:
             continue
@@ -102,6 +114,7 @@ def run(args: argparse.Namespace) -> int:
 
     data = {
         "papers_embedded": papers_embedded,
+        "papers_skipped": papers_skipped,
         "chunks_embedded": chunks_embedded,
         "model": get_embed_status(vault)["model"],
         "mode": get_embed_status(vault)["mode"],
@@ -110,5 +123,6 @@ def run(args: argparse.Namespace) -> int:
     if args.json:
         print(result.to_json())
     else:
-        print(f"Embedded {papers_embedded} papers ({chunks_embedded} chunks)")
+        skipped = f" ({papers_skipped} skipped)" if papers_skipped else ""
+        print(f"Embedded {papers_embedded} papers ({chunks_embedded} chunks){skipped}")
     return 0
