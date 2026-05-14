@@ -164,13 +164,14 @@ def import_reading_log(vault: Path, filepath: Path) -> dict:
 
     papers_set: set[str] = set()
     entries_imported = 0
+    errors: list[dict] = []
 
     for paper in parsed["papers"]:
         for section in paper["sections"]:
             info = section.get("info", "")
             use = section.get("use", "")
             if info and use:
-                append_reading_note(
+                res = append_reading_note(
                     vault,
                     paper["paper_key"],
                     section["section_name"],
@@ -178,10 +179,22 @@ def import_reading_log(vault: Path, filepath: Path) -> dict:
                     usage=use,
                     note=section.get("note", "") or "",
                 )
-                entries_imported += 1
-                papers_set.add(paper["paper_key"])
+                if res.get("ok"):
+                    entries_imported += 1
+                    papers_set.add(paper["paper_key"])
+                else:
+                    errors.append({
+                        "paper_key": paper["paper_key"],
+                        "section": section["section_name"],
+                        "error": res.get("error", "unknown"),
+                    })
 
-    return {"ok": True, "papers_imported": len(papers_set), "entries_imported": entries_imported}
+    return {
+        "ok": len(errors) == 0,
+        "papers_imported": len(papers_set),
+        "entries_imported": entries_imported,
+        "errors": errors,
+    }
 
 
 def lookup_paper_events(vault: Path, key: str) -> dict:
