@@ -62,6 +62,7 @@ def append_reading_note(
         "project": project,
         "tags": tags or [],
         "agent": agent,
+        "verified": False,
     }
 
     log_dir = _ensure_logs_dir(vault)
@@ -120,9 +121,9 @@ def append_project_entry(vault: Path, entry: dict) -> dict:
         "id": entry_id,
         "created_at": now,
         "project": entry.get("project", ""),
-        "entry_type": entry.get("entry_type", ""),
-        "content": entry.get("content", ""),
-        "status": entry.get("status", ""),
+        "date": entry.get("date", ""),
+        "type": entry.get("type", ""),
+        "title": entry.get("title", ""),
         "decisions": entry.get("decisions", []),
         "detours": entry.get("detours", []),
         "reusable": entry.get("reusable", []),
