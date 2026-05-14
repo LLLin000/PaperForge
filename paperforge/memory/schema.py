@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import sqlite3
 
-CURRENT_SCHEMA_VERSION = 1
+CURRENT_SCHEMA_VERSION = 2  # Bump from 1 for reading_log + project_log tables
 
 CREATE_META = """
 CREATE TABLE IF NOT EXISTS meta (
@@ -136,7 +136,43 @@ EVENT_INDEX_SQL = [
     "CREATE INDEX IF NOT EXISTS idx_events_time ON paper_events(created_at);",
 ]
 
-ALL_TABLES = ["paper_fts", "papers", "paper_assets", "paper_aliases", "meta", "paper_events"]
+CREATE_READING_LOG = """
+CREATE TABLE IF NOT EXISTS reading_log (
+    id          TEXT PRIMARY KEY,
+    paper_id    TEXT NOT NULL,
+    project     TEXT DEFAULT '',
+    section     TEXT NOT NULL,
+    excerpt     TEXT NOT NULL,
+    context     TEXT DEFAULT '',
+    usage       TEXT NOT NULL,
+    note        TEXT DEFAULT '',
+    tags_json   TEXT DEFAULT '[]',
+    created_at  TEXT NOT NULL,
+    agent       TEXT DEFAULT '',
+    verified    INTEGER DEFAULT 0,
+    FOREIGN KEY (paper_id) REFERENCES papers(zotero_key)
+);
+"""
+
+CREATE_PROJECT_LOG = """
+CREATE TABLE IF NOT EXISTS project_log (
+    id                  TEXT PRIMARY KEY,
+    project             TEXT NOT NULL,
+    date                TEXT NOT NULL,
+    type                TEXT NOT NULL,
+    title               TEXT NOT NULL,
+    decisions_json      TEXT DEFAULT '[]',
+    detours_json        TEXT DEFAULT '[]',
+    reusable_json       TEXT DEFAULT '[]',
+    todos_json          TEXT DEFAULT '[]',
+    related_papers_json TEXT DEFAULT '[]',
+    tags_json           TEXT DEFAULT '[]',
+    created_at          TEXT NOT NULL,
+    agent               TEXT DEFAULT ''
+);
+"""
+
+ALL_TABLES = ["paper_fts", "papers", "paper_assets", "paper_aliases", "meta", "paper_events", "reading_log", "project_log"]
 
 
 def ensure_schema(conn: sqlite3.Connection) -> None:
@@ -147,6 +183,8 @@ def ensure_schema(conn: sqlite3.Connection) -> None:
     conn.execute(CREATE_ALIASES)
     conn.execute(CREATE_PAPER_FTS)
     conn.execute(CREATE_EVENTS)
+    conn.execute(CREATE_READING_LOG)
+    conn.execute(CREATE_PROJECT_LOG)
     for idx_sql in INDEX_SQL:
         conn.execute(idx_sql)
     for idx_sql in EVENT_INDEX_SQL:
