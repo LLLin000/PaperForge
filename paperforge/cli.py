@@ -291,6 +291,13 @@ def build_parser() -> argparse.ArgumentParser:
     p_rl.add_argument("--excerpt", help="Quoted excerpt")
     p_rl.add_argument("--usage", help="How this supports the current writing")
     p_rl.add_argument("--note", help="Optional cross-validation note")
+    p_rl.add_argument("--context", help="Full paragraph containing excerpt")
+    p_rl.add_argument("--tags", help="Comma-separated tags")
+    p_rl.add_argument("--project", help="Associated project name")
+    p_rl.add_argument("--render", action="store_true", help="Render reading-log.md for one or all projects")
+    p_rl.add_argument("--correct", dest="correct_id", help="ID of prior reading note to correct")
+    p_rl.add_argument("--correction", help="Correction text")
+    p_rl.add_argument("--reason", help="Reason for correction (e.g. 'Rechecked figure legend')")
     p_rl.add_argument("--since", help="Export notes since date (YYYY-MM-DD)")
     p_rl.add_argument("--limit", type=int, default=50, help="Max notes to export")
     p_rl.add_argument("--output", help="Write markdown to file")
@@ -636,11 +643,11 @@ def _cmd_paths(vault: Path, args: argparse.Namespace) -> int:
 
     if args.json:
         # Output only the keys required by D-Path Output contract
-        output_keys = {"vault", "worker_script", "ld_deep_script"}
+        output_keys = {"vault", "worker_script", "pf_deep_script"}
         filtered = {k: v for k, v in all_paths.items() if k in output_keys}
         filtered["vault"] = str(vault.resolve())
         filtered["worker_script"] = str(paths["worker_script"].resolve())
-        filtered["ld_deep_script"] = str(paths["ld_deep_script"].resolve())
+        filtered["pf_deep_script"] = str(paths["pf_deep_script"].resolve())
         print(json.dumps(filtered, ensure_ascii=False, indent=2))
     else:
         for key, path_str in sorted(all_paths.items()):

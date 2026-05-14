@@ -1,16 +1,21 @@
 from __future__ import annotations
 
 import argparse
+import datetime
 import json
 import re
 from pathlib import Path
 
 from paperforge import __version__ as PF_VERSION
+from paperforge.config import paperforge_paths
 from paperforge.core.errors import ErrorCode
 from paperforge.core.result import PFError, PFResult
 from paperforge.memory.db import get_connection, get_memory_db_path
-from paperforge.memory.events import export_reading_log, write_reading_note
-
+from paperforge.memory.events import export_reading_log, write_correction_note, write_reading_note
+from paperforge.memory.permanent import (
+    append_reading_note,
+    read_all_reading_notes,
+)
 
 _HEADER_RE = re.compile(r"^## ([A-Z0-9]{8}) \u2014 .+ \d{4}$")
 _TITLE_RE = re.compile(r"^\*\*Title:\*\* (.+)")
@@ -211,6 +216,72 @@ def lookup_paper_events(vault: Path, key: str) -> dict:
         conn.close()
 
 
+def _render_reading_log_md(vault: Path, project: str = "") -> None:
+    """Render reading-log.md from JSONL source of truth.
+
+    Groups notes by paper_id and writes a formatted markdown file.
+    If project is specified, writes to <resources>/Projects/<project>/reading-log.md.
+    Otherwise writes to <paperforge>/logs/rendered/reading-log.md.
+    """
+    paths = paperforge_paths(vault)
+    notes = read_all_reading_notes(vault)
+
+    if not notes:
+        print("No reading notes to render.")
+        return
+
+    if project:
+        notes = [n for n in notes if n.get("project") == project]
+
+    if not notes:
+        print(f"No reading notes found{' for project ' + project if project else ''}.")
+        return
+
+    grouped: dict[str, list[dict]] = {}
+    for n in notes:
+        pid = n.get("paper_id", "unknown")
+        grouped.setdefault(pid, []).append(n)
+
+    lines: list[str] = []
+    heading = f"Reading Log \u2014 {project}" if project else "Reading Log \u2014 All Projects"
+    lines.append(f"# {heading}\n")
+    lines.append(f"*Generated: {datetime.date.today().isoformat()} | Total entries: {len(notes)}*\n")
+
+    for pid, entries in sorted(grouped.items()):
+        lines.append(f"## {pid}\n")
+        for entry in sorted(entries, key=lambda e: (e.get("section", ""), e.get("created_at", ""))):
+            section = entry.get("section", "Untitled")
+            lines.append(f"### {section}")
+            lines.append(f"> {entry.get('excerpt', '')}")
+            if entry.get("context"):
+                lines.append(">")
+                lines.append(f"> {entry.get('context')}")
+            lines.append("")
+            if entry.get("usage"):
+                lines.append(f"- **Usage:** {entry.get('usage')}")
+            if entry.get("note"):
+                lines.append(f"- **Note:** {entry.get('note')}")
+            tag_list = entry.get("tags", [])
+            if tag_list:
+                lines.append(f"- **Tags:** {', '.join(tag_list)}")
+            verified = entry.get("verified", False)
+            lines.append(f"- **Verified:** {'Yes' if verified else 'No'}")
+            lines.append("")
+        lines.append("---\n")
+
+    if project:
+        output_dir = paths["resources"] / "Projects" / project
+        output_dir.mkdir(parents=True, exist_ok=True)
+        output_path = output_dir / "reading-log.md"
+    else:
+        output_dir = paths["paperforge"] / "logs" / "rendered"
+        output_dir.mkdir(parents=True, exist_ok=True)
+        output_path = output_dir / "reading-log.md"
+
+    output_path.write_text("\n".join(lines), encoding="utf-8")
+    print(f"Rendered {len(notes)} entries to {output_path}")
+
+
 def run(args: argparse.Namespace) -> int:
     vault = args.vault_path
 
@@ -265,22 +336,91 @@ def run(args: argparse.Namespace) -> int:
                 print(f"No entries found for key: {args.lookup}")
         return 0
 
-    if args.paper_id and args.excerpt:
-        ok = write_reading_note(
-            vault, args.paper_id, args.section or "",
-            args.excerpt, args.usage or "", args.note or "",
+    if args.render:
+        _render_reading_log_md(vault, args.project or "")
+        return 0
+
+    if args.correct_id:
+        if not args.correction:
+            result = PFResult(
+                ok=False, command="reading-log", version=PF_VERSION,
+                data={},
+                error=PFError(code=ErrorCode.INVALID_INPUT,
+                              message="--correction is required with --correct"),
+            )
+            if args.json:
+                print(result.to_json())
+            else:
+                print("Error: --correction is required with --correct")
+            return 1
+
+        all_notes = read_all_reading_notes(vault)
+        original = next((n for n in all_notes if n.get("id") == args.correct_id), None)
+        paper_id = original.get("paper_id", "") if original else ""
+        if not paper_id:
+            result = PFResult(
+                ok=False, command="reading-log", version=PF_VERSION,
+                data={},
+                error=PFError(code=ErrorCode.NOT_FOUND,
+                              message=f"Original entry {args.correct_id} not found in JSONL"),
+            )
+            if args.json:
+                print(result.to_json())
+            else:
+                print(f"Error: Original entry {args.correct_id} not found in reading-log.jsonl")
+            return 1
+
+        ok = write_correction_note(
+            vault, paper_id, args.correct_id,
+            args.correction, args.reason or "",
         )
         result = PFResult(
-            ok=ok,
-            command="reading-log",
-            version=PF_VERSION,
+            ok=ok, command="reading-log", version=PF_VERSION,
             data={"written": ok},
-            error=PFError(code=ErrorCode.INTERNAL_ERROR, message="Failed to write") if not ok else None,
+            error=PFError(code=ErrorCode.INTERNAL_ERROR,
+                          message="Failed to write correction") if not ok else None,
         )
         if args.json:
             print(result.to_json())
         else:
-            print("Written." if ok else "Failed.")
+            print(f"Correction written for {args.correct_id}." if ok else "Failed.")
+        return 0 if ok else 1
+
+    if args.paper_id and args.excerpt:
+        tags_list = [t.strip() for t in args.tags.split(",") if t.strip()] if args.tags else None
+
+        jsonl_result = append_reading_note(
+            vault, args.paper_id, args.section or "",
+            args.excerpt, args.usage or "", args.context or "",
+            args.note or "", args.project or "", tags_list,
+        )
+
+        _db_ok = write_reading_note(
+            vault, args.paper_id, args.section or "",
+            args.excerpt, args.usage or "", args.note or "",
+            args.context or "", args.project or "", tags_list,
+        )
+
+        ok = jsonl_result.get("ok", False)
+        result = PFResult(
+            ok=ok,
+            command="reading-log",
+            version=PF_VERSION,
+            data={"written": ok, "id": jsonl_result.get("id"), "path": jsonl_result.get("path")},
+            error=PFError(code=ErrorCode.INTERNAL_ERROR,
+                          message=jsonl_result.get("error", "Failed to write")) if not ok else None,
+        )
+        if args.json:
+            print(result.to_json())
+        else:
+            if ok:
+                print(f"Written. ID: {jsonl_result.get('id', 'unknown')}")
+            else:
+                print(f"Failed: {jsonl_result.get('error', 'unknown')}")
+
+        if ok and args.project:
+            _render_reading_log_md(vault, args.project)
+
         return 0 if ok else 1
 
     notes = export_reading_log(vault, since=args.since or "", limit=args.limit or 50)
