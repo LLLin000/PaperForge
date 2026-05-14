@@ -1019,11 +1019,12 @@ def frontmatter_note(entry: dict, existing_text: str = "") -> str:
     lines = [
         "---",
         f"title: {yaml_quote(entry.get('title', ''))}",
-        f"aliases: [{yaml_quote(entry.get('title', ''))}]",
+        f"aliases: [{yaml_quote(entry.get('title', ''))}, {yaml_quote(entry.get('citation_key', ''))}]",
         f"year: {entry.get('year', '')}",
         f"journal: {yaml_quote(entry.get('journal', ''))}",
         f"first_author: {yaml_quote(first_author)}",
         f"zotero_key: {yaml_quote(entry.get('zotero_key', ''))}",
+        f"citation_key: {yaml_quote(entry.get('citation_key', ''))}",
         f"domain: {yaml_quote(entry.get('domain', ''))}",
         f"doi: {yaml_quote(entry.get('doi', ''))}",
         f"pmid: {yaml_quote(entry.get('pmid', ''))}",

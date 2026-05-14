@@ -10,6 +10,12 @@ _COMMAND_REGISTRY: dict[str, str] = {
     "context": "paperforge.commands.context",
     "dashboard": "paperforge.commands.dashboard",
     "finalize": "paperforge.commands.finalize",
+    "memory": "paperforge.commands.memory",
+    "embed": "paperforge.commands.embed",
+    "retrieve": "paperforge.commands.retrieve",
+    "paper-status": "paperforge.commands.paper_status",
+    "agent-context": "paperforge.commands.agent_context",
+    "reading-log": "paperforge.commands.reading_log",
 }
 
 

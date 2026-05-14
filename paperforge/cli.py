@@ -258,6 +258,83 @@ def build_parser() -> argparse.ArgumentParser:
     p_dash = sub.add_parser("dashboard", help="Aggregated stats and permissions for the plugin dashboard")
     p_dash.add_argument("--json", action="store_true", help="Output as PFResult JSON")
 
+    # Vector DB
+    p_embed = sub.add_parser("embed", help="Vector embedding operations")
+    p_embed_sp = p_embed.add_subparsers(dest="embed_subcommand", required=True)
+    p_embed_build = p_embed_sp.add_parser("build", help="Build vector index from OCR fulltext")
+    p_embed_build.add_argument("--json", action="store_true")
+    p_embed_build.add_argument("--force", action="store_true")
+    p_embed_status = p_embed_sp.add_parser("status", help="Check vector DB status")
+    p_embed_status.add_argument("--json", action="store_true")
+
+    p_retrieve = sub.add_parser("retrieve", help="Semantic search across OCR fulltext")
+    p_retrieve.add_argument("query", help="Search query")
+    p_retrieve.add_argument("--json", action="store_true")
+    p_retrieve.add_argument("--limit", type=int, default=5)
+    p_retrieve.add_argument("--expand", action="store_true", default=True)
+
+    # Memory Layer commands
+    p_memory = sub.add_parser("memory", help="Manage the Memory Layer")
+    p_memory_sp = p_memory.add_subparsers(dest="memory_subcommand", required=True)
+    p_memory_build = p_memory_sp.add_parser("build", help="Build the memory database from canonical index")
+    p_memory_build.add_argument("--json", action="store_true", help="Output as JSON")
+    p_memory_status = p_memory_sp.add_parser("status", help="Check memory database status")
+    p_memory_status.add_argument("--json", action="store_true", help="Output as JSON")
+
+    p_paper_status = sub.add_parser("paper-status", help="Look up a paper's status")
+    p_paper_status.add_argument("query", help="Paper identifier (zotero_key, DOI, title, alias)")
+    p_paper_status.add_argument("--json", action="store_true", help="Output as JSON")
+
+    p_pc = sub.add_parser("paper-context", help="Get full context for a paper (metadata + reading notes + corrections)")
+    p_pc.add_argument("key", help="Zotero key")
+    p_pc.add_argument("--json", action="store_true", help="Output as JSON")
+
+    p_rl = sub.add_parser("reading-log", help="Record or export reading notes")
+    p_rl.add_argument("--write", dest="paper_id", help="Write note for this zotero_key")
+    p_rl.add_argument("--section", help="Section (e.g. Discussion P12)")
+    p_rl.add_argument("--excerpt", help="Quoted excerpt")
+    p_rl.add_argument("--usage", help="How this supports the current writing")
+    p_rl.add_argument("--note", help="Optional cross-validation note")
+    p_rl.add_argument("--context", help="Full paragraph containing excerpt")
+    p_rl.add_argument("--tags", help="Comma-separated tags")
+    p_rl.add_argument("--project", help="Associated project name")
+    p_rl.add_argument("--render", action="store_true", help="Render reading-log.md for one or all projects")
+    p_rl.add_argument("--correct", dest="correct_id", help="ID of prior reading note to correct")
+    p_rl.add_argument("--correction", help="Correction text")
+    p_rl.add_argument("--reason", help="Reason for correction (e.g. 'Rechecked figure legend')")
+    p_rl.add_argument("--since", help="Export notes since date (YYYY-MM-DD)")
+    p_rl.add_argument("--limit", type=int, default=50, help="Max notes to export")
+    p_rl.add_argument("--output", help="Write markdown to file")
+    p_rl.add_argument("--validate", help="Validate a reading-log.md file")
+    p_rl.add_argument("--import", dest="import_file", help="Import reading-log.md into paper_events")
+    p_rl.add_argument("--lookup", help="Look up all reading notes for a paper key")
+    p_rl.add_argument("--json", action="store_true", help="Output as JSON")
+
+    p_pl = sub.add_parser("project-log", help="Record or render project work logs")
+    p_pl.add_argument("--write", action="store_true", help="Write a new project log entry")
+    p_pl.add_argument("--payload", help="JSON payload for the entry")
+    p_pl.add_argument("--project", help="Project name (required for write/list/render)")
+    p_pl.add_argument("--list", action="store_true", help="List all entries for a project")
+    p_pl.add_argument("--render", action="store_true", help="Render project-log.md")
+    p_pl.add_argument("--limit", type=int, default=50, help="Max entries to list")
+    p_pl.add_argument("--json", action="store_true", help="Output as PFResult JSON")
+
+    p_search = sub.add_parser("search", help="Full-text search across the library")
+    p_search.add_argument("query", help="Search query (supports FTS5 syntax)")
+    p_search.add_argument("--json", action="store_true", help="Output as JSON")
+    p_search.add_argument("--limit", type=int, default=20, help="Max results")
+    p_search.add_argument("--domain", help="Filter by domain")
+    p_search.add_argument("--year-from", type=int, help="Filter by year (inclusive)")
+    p_search.add_argument("--year-to", type=int, help="Filter by year (inclusive)")
+    p_search.add_argument("--ocr", choices=["done","pending","failed","processing"], help="Filter by OCR status")
+    p_search.add_argument("--deep", choices=["done","pending"], help="Filter by deep reading status")
+    p_search.add_argument("--lifecycle", choices=["indexed","pdf_ready","fulltext_ready","deep_read_done"], help="Filter by lifecycle")
+    p_search.add_argument("--next-step", choices=["sync","ocr","/pf-deep","ready"], help="Filter by next step")
+
+    # agent-context
+    p_ac = sub.add_parser("agent-context", help="Generate agent bootstrap context")
+    p_ac.add_argument("--json", action="store_true", help="Output as JSON")
+
     # base-refresh
     p_base = sub.add_parser("base-refresh", help="Refresh Obsidian Base view files")
     p_base.add_argument(
@@ -470,6 +547,51 @@ def main(argv: list[str] | None = None) -> int:
 
         return dashboard.run(args)
 
+    if args.command == "memory":
+        from paperforge.commands.memory import run
+
+        return run(args)
+
+    if args.command == "embed":
+        from paperforge.commands.embed import run
+
+        return run(args)
+
+    if args.command == "retrieve":
+        from paperforge.commands.retrieve import run
+
+        return run(args)
+
+    if args.command == "paper-status":
+        from paperforge.commands.paper_status import run
+
+        return run(args)
+
+    if args.command == "paper-context":
+        from paperforge.commands.paper_context import run
+
+        return run(args)
+
+    if args.command == "reading-log":
+        from paperforge.commands.reading_log import run
+
+        return run(args)
+
+    if args.command == "project-log":
+        from paperforge.commands.project_log import run
+
+        return run(args)
+
+    if args.command == "search":
+        from paperforge.commands.search import run
+
+        return run(args)
+
+    if args.command == "agent-context":
+        from paperforge.commands.agent_context import run
+
+        return run(args)
+
     if args.command == "base-refresh":
         force = getattr(args, "force", False)
         paths = args.paths
@@ -544,11 +666,11 @@ def _cmd_paths(vault: Path, args: argparse.Namespace) -> int:
 
     if args.json:
         # Output only the keys required by D-Path Output contract
-        output_keys = {"vault", "worker_script", "ld_deep_script"}
+        output_keys = {"vault", "worker_script", "pf_deep_script"}
         filtered = {k: v for k, v in all_paths.items() if k in output_keys}
         filtered["vault"] = str(vault.resolve())
         filtered["worker_script"] = str(paths["worker_script"].resolve())
-        filtered["ld_deep_script"] = str(paths["ld_deep_script"].resolve())
+        filtered["pf_deep_script"] = str(paths["pf_deep_script"].resolve())
         print(json.dumps(filtered, ensure_ascii=False, indent=2))
     else:
         for key, path_str in sorted(all_paths.items()):

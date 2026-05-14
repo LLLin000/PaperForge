@@ -50,8 +50,8 @@ class TestFrontmatterFields:
         reg = load_field_registry(REGISTRY_PATH)
         fm = get_owner_fields(reg, "frontmatter")
         expected = {
-            "zotero_key", "domain", "title", "year", "doi",
-            "collection_path", "has_pdf", "pdf_path", "supplementary",
+            "zotero_key", "citation_key", "domain", "title", "year", "doi",
+            "collection_path", "collection_tags", "has_pdf", "pdf_path", "supplementary",
             "fulltext_md_path", "recommend_analyze", "analyze",
             "do_ocr", "ocr_status", "deep_reading_status", "path_error",
         }

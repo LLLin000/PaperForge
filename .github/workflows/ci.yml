@@ -1,0 +1,114 @@
+# CI — Simplified Pipeline
+# Runs on push/PR to master. All tests run (no -x early exit).
+
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+  pull_request:
+    branches: [main, master]
+
+env:
+  PYTHONIOENCODING: utf-8
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # L0 — Version consistency check
+  # ---------------------------------------------------------------------------
+  version-check:
+    name: L0 — Version Sync
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install package
+        run: pip install -e .
+      - name: Check version consistency
+        run: python scripts/check_version_sync.py
+
+  # ---------------------------------------------------------------------------
+  # L1 — Unit tests (3 OS x 1 Python)
+  # ---------------------------------------------------------------------------
+  unit-tests:
+    name: L1 — Unit Tests (${{ matrix.os }}, py3.11)
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install package with test deps
+        run: pip install -e ".[test]"
+      - name: Run unit tests
+        shell: bash
+        run: |
+          python -m pytest tests/ \
+            --ignore=tests/sandbox \
+            --ignore=tests/cli \
+            --ignore=tests/e2e \
+            --ignore=tests/journey \
+            --ignore=tests/chaos \
+            --ignore=tests/audit \
+            -v --tb=short --timeout=60
+
+  # ---------------------------------------------------------------------------
+  # L3 — Plugin tests (Vitest)
+  # ---------------------------------------------------------------------------
+  plugin-tests:
+    name: L3 — Plugin Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+          cache-dependency-path: paperforge/plugin/package-lock.json
+      - run: npm ci
+        working-directory: paperforge/plugin
+      - run: npx vitest run --reporter=verbose
+        working-directory: paperforge/plugin
+
+  # ---------------------------------------------------------------------------
+  # L4 — E2E + Audit
+  # ---------------------------------------------------------------------------
+  e2e-tests:
+    name: L4 — E2E + Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install package with test deps
+        run: pip install -e ".[test]"
+      - name: Run E2E tests
+        run: python -m pytest tests/e2e/ -m e2e -v --tb=short --timeout=120
+      - name: Run audit tests
+        run: python -m pytest tests/audit/ -m audit -v --tb=short --timeout=120
+
+  # ---------------------------------------------------------------------------
+  # Merge gate
+  # ---------------------------------------------------------------------------
+  alls-green:
+    name: All Checks Passed
+    if: always()
+    needs:
+      - unit-tests
+      - plugin-tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: re-actors/alls-green@v1.2.2
+        with:
+          allowed-skips: version-check
+          jobs: ${{ toJSON(needs) }}

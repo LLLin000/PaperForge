@@ -252,7 +252,7 @@ def _deploy_all_skills(vault: Path) -> None:
         agent_key = config.get("agent_platform") or "opencode"
         result = deploy_skills(vault=vault, agent_key=agent_key, overwrite=True)
         if result["skill_deployed"]:
-            logger.info("已部署 literature-qa skill")
+            logger.info("已部署 paperforge skill")
         if result["agents_md"]:
             logger.info("已更新 AGENTS.md")
         for err in result.get("errors", []):

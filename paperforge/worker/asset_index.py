@@ -37,9 +37,7 @@ import filelock
 from paperforge import __version__ as _paperforge_version
 from paperforge.adapters.obsidian_frontmatter import (
     _legacy_control_flags,
-    read_frontmatter_bool,
     read_frontmatter_dict,
-    read_frontmatter_optional_bool,
 )
 from paperforge.config import paperforge_paths
 
@@ -230,7 +228,10 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
     Lazy imports inside avoid circular dependencies with ``sync.py``.
     """
     # Lazy imports to avoid circular deps with sync.py
-    from paperforge.worker._utils import read_json, slugify_filename, write_json, yaml_quote
+    import shutil
+
+    from paperforge import __version__ as PAPERFORGE_VERSION
+    from paperforge.worker._utils import lookup_impact_factor, read_json, slugify_filename, write_json, yaml_quote
     from paperforge.worker.asset_state import (
         compute_health,
         compute_lifecycle,
@@ -246,9 +247,6 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
         obsidian_wikilink_for_path,
         obsidian_wikilink_for_pdf,
     )
-    from paperforge.worker._utils import lookup_impact_factor
-    from paperforge import __version__ as PAPERFORGE_VERSION
-    import shutil
 
     key = item["key"]
     collection_meta = collection_fields(item.get("collections", []))
@@ -289,10 +287,10 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
             try:
                 text = main_note_path.read_text(encoding="utf-8")
                 if "aliases:" not in text[: text.find("\n---", 4)]:
-                    alias_line = f"aliases: [{yaml_quote(item.get('title', ''))}]\n"
+                    alias_line = f"aliases: [{yaml_quote(item.get('title', ''))}, {yaml_quote(item.get('citation_key') or item.get('key', ''))}]\n"
                     text = re.sub(
-                        r'(^title:.*\n)',
-                        r'\1' + alias_line,
+                        r"(^title:.*\n)",
+                        r"\1" + alias_line,
                         text,
                         count=1,
                         flags=re.MULTILINE,
@@ -301,7 +299,6 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
             except Exception:
                 pass  # alias will be injected on next full frontmatter_note pass
             break  # only one old file per key
-    deep_reading_file = workspace_dir / "deep-reading.md"
     target_fulltext = workspace_dir / "fulltext.md"
     source_fulltext = paths["ocr"] / key / "fulltext.md"
 
@@ -312,7 +309,6 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
         logger.info("Bridged fulltext.md to workspace for %s", key)
 
     fulltext_exists = target_fulltext.exists()
-    deep_reading_exists = deep_reading_file.exists()
 
     # ---- entry dict -------------------------------------------------------
     authors = item.get("authors", [])
@@ -322,25 +318,26 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
     legacy_flags = _legacy_control_flags(paths, key)
     legacy_do_ocr = legacy_flags.get("do_ocr")
     legacy_analyze = legacy_flags.get("analyze")
-    note_do_ocr = read_frontmatter_optional_bool(main_note_path, "do_ocr")
-    if note_do_ocr is None:
-        note_do_ocr = read_frontmatter_optional_bool(note_path, "do_ocr")
-    note_analyze = read_frontmatter_optional_bool(main_note_path, "analyze")
-    if note_analyze is None:
-        note_analyze = read_frontmatter_optional_bool(note_path, "analyze")
+    # Single frontmatter read for all control fields — cache text for reuse
+    fm = {}
+    fm_cached_text = ""
+    fm_was_main = False
+    for fp in (main_note_path, note_path):
+        if fp and fp.exists():
+            try:
+                note_text = fp.read_text(encoding="utf-8")
+                fm = read_frontmatter_dict(note_text)
+                fm_cached_text = note_text
+                fm_was_main = (fp == main_note_path)
+                break
+            except Exception:
+                continue
 
-    # deep_reading_status: frontmatter first (finalize.py sets it), body detection fallback (sync ensures it)
-    def _read_fm_str(fp: Path, key: str) -> str:
-        if not fp or not fp.exists():
-            return ""
-        try:
-            fm = read_frontmatter_dict(fp.read_text(encoding="utf-8"))
-            return str(fm.get(key, "")).strip()
-        except Exception:
-            return ""
-    note_dr = _read_fm_str(main_note_path, "deep_reading_status")
-    if not note_dr:
-        note_dr = _read_fm_str(note_path, "deep_reading_status")
+    _v = fm.get("do_ocr")
+    note_do_ocr = _v if isinstance(_v, bool) else None
+    _v = fm.get("analyze")
+    note_analyze = _v if isinstance(_v, bool) else None
+    note_dr = str(fm.get("deep_reading_status", "")).strip()
 
     do_ocr_value = note_do_ocr if note_do_ocr is not None else legacy_do_ocr
     if do_ocr_value is None:
@@ -350,8 +347,22 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
     if analyze_value is None:
         analyze_value = meta.get("analyze") is True or meta.get("deep_reading_status") == "done"
 
+    # Compute deep reading status once, reusing cached text when possible.
+    # main_note_path is canonical — don't fall back to note_path when it exists.
+    _dr_status = "pending"
+    if note_dr == "done":
+        _dr_status = "done"
+    elif fm_was_main:
+        _dr_status = "done" if has_deep_reading_content(fm_cached_text) else "pending"
+    elif main_note_path.exists():
+        try:
+            _dr_status = "done" if has_deep_reading_content(main_note_path.read_text(encoding="utf-8")) else "pending"
+        except Exception:
+            pass
+
     entry = {
         "zotero_key": key,
+        "citation_key": item.get("citation_key", ""),
         "domain": domain,
         "title": item["title"],
         "authors": authors,
@@ -376,23 +387,15 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
         "ocr_job_id": meta.get("ocr_job_id", ""),
         "ocr_md_path": obsidian_wikilink_for_path(vault, meta.get("markdown_path", "")),
         "ocr_json_path": meta.get("json_path", ""),
-        "deep_reading_status": (
-            "done"
-            if note_dr == "done"
-            else "done"
-            if main_note_path.exists() and has_deep_reading_content(main_note_path.read_text(encoding="utf-8"))
-            else "done"
-            if note_path.exists() and has_deep_reading_content(note_path.read_text(encoding="utf-8"))
-            else "pending"
-        ),
+        "deep_reading_status": _dr_status,
         "note_path": str((main_note_path if main_note_path.exists() else note_path).relative_to(vault)).replace(
             "\\", "/"
         ),
         "deep_reading_md_path": (
             str(main_note_path.relative_to(vault)).replace("\\", "/")
-            if main_note_path.exists() and has_deep_reading_content(main_note_path.read_text(encoding="utf-8"))
+            if _dr_status == "done" and main_note_path.exists()
             else str(note_path.relative_to(vault)).replace("\\", "/")
-            if note_path.exists() and has_deep_reading_content(note_path.read_text(encoding="utf-8"))
+            if _dr_status == "done" and note_path.exists()
             else ""
         ),
         # Workspace path fields are only advertised when the backing files/dirs exist.
@@ -411,10 +414,10 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
 
     # Slug already frozen above — for existing notes, update frontmatter only (preserve body)
     if main_note_path.exists():
-        text = main_note_path.read_text(encoding="utf-8")
+        text = fm_cached_text if fm_was_main else main_note_path.read_text(encoding="utf-8")
         fm_close = text.find("---\n", 4)  # closing --- after opening ---
         if fm_close != -1:
-            body = text[fm_close + 4:]  # everything after frontmatter
+            body = text[fm_close + 4 :]  # everything after frontmatter
             new_full = frontmatter_note(entry, "")
             new_fm_close = new_full.find("---\n", 4)
             if new_fm_close != -1:
@@ -425,14 +428,50 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
         else:
             main_note_path.write_text(frontmatter_note(entry, text), encoding="utf-8")
     else:
-        existing_text = note_path.read_text(encoding="utf-8") if note_path.exists() else ""
+        existing_text = fm_cached_text if not fm_was_main and fm_cached_text else (
+            note_path.read_text(encoding="utf-8") if note_path.exists() else ""
+        )
         main_note_path.write_text(frontmatter_note(entry, existing_text), encoding="utf-8")
 
     # Write per-workspace paper-meta.json (Phase 37: internal state outside frontmatter)
     write_paper_meta(workspace_dir, entry, paperforge_version=PAPERFORGE_VERSION)
 
+    # Auto-embed vectors if this paper just completed OCR
+    _vec_auto_embed_if_new(vault, entry)
+
     return entry
 
+
+def _vec_auto_embed_if_new(vault: Path, entry: dict) -> None:
+    """Auto-embed a paper into vector DB if OCR is done and vectors missing."""
+    if entry.get("ocr_status") != "done":
+        return
+    fulltext_rel = entry.get("fulltext_path", "")
+    if not fulltext_rel:
+        return
+    fulltext_path = vault / fulltext_rel
+    if not fulltext_path.exists():
+        return
+    # Check if vector DB is enabled and set up
+    try:
+        from paperforge.memory.vector_db import (
+            _read_plugin_settings,
+            chunk_fulltext,
+            embed_paper,
+            get_vector_db_path,
+        )
+        settings = _read_plugin_settings(vault)
+        if not settings.get("features", {}).get("vector_db", False):
+            return
+        db_path = get_vector_db_path(vault)
+        if not db_path.exists():
+            return
+        chunks = chunk_fulltext(fulltext_path)
+        if not chunks:
+            return
+        embed_paper(vault, entry["zotero_key"], chunks)
+    except Exception:
+        pass  # ChromaDB / model not installed — silently skip
 
 # ---------------------------------------------------------------------------
 # Full index build
@@ -491,6 +530,12 @@ def build_index(vault: Path, verbose: bool = False) -> int:
         for item in export_rows:
             entry = _build_entry(item, vault, paths, domain, zotero_dir)
             index_rows.append(entry)
+            try:
+                from paperforge.memory.refresh import refresh_paper
+
+                refresh_paper(vault, entry)
+            except Exception:
+                pass  # memory DB refresh is best-effort
 
     # Atomically write the envelope-wrapped index
     index_path = paths["index"]
@@ -570,6 +615,13 @@ def refresh_index_entry(vault: Path, key: str) -> bool:
 
     # Build single entry and update the items list
     new_entry = _build_entry(found_item, vault, paths, found_domain, zotero_dir)
+
+    try:
+        from paperforge.memory.refresh import refresh_paper
+
+        refresh_paper(vault, new_entry)
+    except Exception:
+        pass  # memory DB refresh is best-effort
 
     replaced = False
     for i, existing_entry in enumerate(items):

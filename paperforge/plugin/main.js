@@ -76,9 +76,9 @@ function checkRuntimeVersion(pythonExe, pluginVersion, cwd, timeout, _execFile) 
                 } else {
                     resolve({ status: "mismatch", pyVersion: pyVer, pluginVersion, error: null });
                 }
-            });
-    });
-}
+                    });
+                });
+        }
 
 function classifyError(errorCode) {
     const code = String(errorCode);
@@ -198,9 +198,8 @@ function runSubprocess(pythonExe, args, cwd, timeout, _spawn, env) {
                 exitCode: -1, elapsed: Date.now() - startTime });
         });
     });
+
 }
-
-
 
 // ── Cross-platform Python and BBT detection (macOS/Linux) ──
 
@@ -489,6 +488,70 @@ Object.assign(LANG.en, {
     ocr_privacy_title: 'OCR Privacy Notice',
     ocr_privacy_warning: 'OCR will upload PDFs to the PaddleOCR API. Do not upload sensitive or confidential documents.',
     ocr_understand: 'I understand, continue',
+
+    /* ── Tabbed Settings ── */
+    tab_setup: 'Installation',
+    tab_features: 'Features',
+    /* ── Features tab descriptions ── */
+    feat_skills_desc: 'Manage and enable/disable agent skills installed in your vault. Each row corresponds to a SKILL.md file — toggle off to prevent the agent from auto-invoking that skill.',
+    feat_skills_system: 'System Skills ship with PaperForge and are updated alongside PaperForge.',
+    feat_skills_user: 'User Skills are custom skills you install from community or create yourself.',
+    feat_memory_desc: 'The Memory Layer is the core data engine of PaperForge, powered by SQLite. It integrates all literature metadata (papers, assets, aliases, reading events), provides FTS5 full-text search across titles/abstracts/authors/collections, and enables the agent-context and paper-status commands. Always active — no toggle needed.',
+    feat_vector_desc: 'Vector Database enables semantic search across OCR-extracted fulltext using embedding models. Documents are split into chunks, embedded into vector space, and stored in ChromaDB. Supports local models (free, CPU) or OpenAI API (paid, faster).',
+    feat_vector_config_label: 'Advanced Configuration',
+    feat_agent_platform: 'Agent Platform',
+    feat_agent_platform_desc: 'Select which agent platform to manage skills for.',
+    feat_vector_enable: 'Enable Vector Retrieval',
+    feat_vector_enable_desc: 'Semantic search across OCR fulltext. Requires: pip install chromadb sentence-transformers openai (~500MB).',
+    feat_hf_mirror: 'HF Mirror / Endpoint',
+    feat_hf_mirror_desc: 'Model download source. Try official if mirror fails. Custom: type any URL.',
+    feat_custom_endpoint: 'Custom Endpoint',
+    feat_custom_endpoint_desc: 'Enter a custom HuggingFace mirror URL.',
+    feat_hf_token: 'HF Token',
+    feat_hf_token_desc: 'HuggingFace access token (optional, helps with rate limits and gated models).',
+    feat_model: 'Model',
+    feat_embed_mode: 'Embedding Mode',
+    feat_embed_mode_local: 'Local (free, CPU)',
+    feat_embed_mode_api: 'API (OpenAI, paid)',
+    feat_openai_key: 'OpenAI API Key',
+    feat_openai_key_desc: 'Used for text-embedding-3-small (1536d).',
+    feat_verify: 'Verify',
+    feat_checking: 'Checking...',
+    feat_rebuild_vectors: 'Rebuild Vectors',
+    feat_rebuild_vectors_desc: 'Rebuild all OCR fulltext vectors. Required after model or mode change.',
+    feat_rebuild_vectors_changed: 'Model changed — rebuild to update all vectors.',
+    feat_install_deps: 'Install Dependencies',
+    feat_install_deps_desc: 'pip install chromadb sentence-transformers openai (~500MB).',
+    feat_model_bge_small: 'Best balance — fast, accurate, recommended for most users (384d, 130MB)',
+    feat_model_minilm: 'Lightest & fastest — lower accuracy, minimal disk (384d, 80MB)',
+    feat_model_bge_base: 'Highest accuracy — slower, large disk footprint (768d, 440MB)',
+    feat_api_base_url: 'API Base URL',
+    feat_api_base_url_desc: 'Custom OpenAI-compatible API endpoint. Leave empty for default.',
+    feat_api_model: 'API Model',
+    feat_api_model_desc: 'Embedding model name for this endpoint.',
+    feat_deps_missing: 'Dependencies not installed. Required: chromadb, sentence-transformers, openai.',
+    feat_deps_checking: 'Checking dependencies...',
+    feat_no_python: 'No Python found. Check Installation tab.',
+    feat_rebuild_btn: 'Rebuild',
+    feat_build_btn: 'Build',
+    feat_building: 'Building...',
+    feat_installing: 'Installing...',
+    feat_install_btn: 'Install',
+    feat_retry_btn: 'Retry',
+    feat_removing: 'Removing...',
+    feat_not_cached: 'Not cached',
+    feat_uninstall_btn: 'Uninstall',
+    feat_verify_btn: 'Verify',
+    feat_checking_btn: 'Checking...',
+    feat_valid_key: 'API key valid.',
+    feat_key_rejected: 'API key rejected.',
+    feat_enter_key: 'Enter a valid OpenAI API key.',
+    feat_network_error: 'Network error: ',
+    feat_build_complete: 'Vector build complete.',
+    feat_build_failed: 'Build failed. See terminal output.',
+    feat_output_copied: 'Output copied to clipboard.',
+    feat_install_done: 'Dependencies installed. Building vectors...',
+    feat_install_failed: 'Install failed: ',
 });
 
 /* ── LANG.zh: v1.12 runtime health, OCR queue, pf-deep, dashboard translations ── */
@@ -524,6 +587,70 @@ Object.assign(LANG.zh, {
     install_validating: '正在校验安装环境…',
     install_bootstrapping: '未检测到 PaperForge Python 包，正在自动安装…',
     wizard_safety: '安全说明：如果你选择的目录里已经有文件，安装向导会保留已有内容，只补充缺失的 PaperForge 文件和目录。',
+
+    /* ── Tabbed Settings ── */
+    tab_setup: '安装',
+    tab_features: '功能',
+    /* ── 功能介绍的描述文本 ── */
+    feat_skills_desc: '管理 Vault 中已安装的 Agent 技能。每行对应一个 SKILL.md 文件，关闭开关可阻止 Agent 自动调用该技能。',
+    feat_skills_system: '系统技能随 PaperForge 一同发布，会跟随 PaperForge 版本更新。',
+    feat_skills_user: '用户技能是你自行安装或创建的自定义技能。',
+    feat_memory_desc: '记忆层是 PaperForge 的核心数据引擎，基于 SQLite 构建。它整合了所有文献元数据（论文、资源文件、别名、阅读事件），支持 FTS5 全文检索（可搜索标题、摘要、作者、分类），并为 agent-context 和 paper-status 命令提供数据支撑。始终运行，无需手动开启。',
+    feat_vector_desc: '向量数据库通过嵌入模型实现 OCR 全文的语义搜索。文档被切分为文本块（chunk），编码为向量存入 ChromaDB。支持本地模型（免费，CPU 运行）或 OpenAI API（付费，更快速）。',
+    feat_vector_config_label: '高级配置',
+    feat_agent_platform: 'Agent 平台',
+    feat_agent_platform_desc: '选择要管理的 Agent 平台。',
+    feat_vector_enable: '启用向量检索',
+    feat_vector_enable_desc: '对 OCR 全文进行语义搜索。需安装: pip install chromadb sentence-transformers openai (~500MB)。',
+    feat_hf_mirror: 'HF 镜像站 / 端点',
+    feat_hf_mirror_desc: '模型下载源。镜像不可用时尝试官方源。自定义：输入任意 URL。',
+    feat_custom_endpoint: '自定义端点',
+    feat_custom_endpoint_desc: '输入自定义 HuggingFace 镜像 URL。',
+    feat_hf_token: 'HF Token',
+    feat_hf_token_desc: 'HuggingFace 访问令牌（可选，有助于解除限速和下载受限模型）。',
+    feat_model: '模型',
+    feat_embed_mode: '嵌入模式',
+    feat_embed_mode_local: '本地（免费，CPU）',
+    feat_embed_mode_api: 'API（OpenAI，付费）',
+    feat_openai_key: 'OpenAI API Key',
+    feat_openai_key_desc: '用于 text-embedding-3-small（1536 维）。',
+    feat_verify: '验证',
+    feat_checking: '检测中…',
+    feat_rebuild_vectors: '重建向量',
+    feat_rebuild_vectors_desc: '重建所有 OCR 全文向量。更换模型或模式后需要重建。',
+    feat_rebuild_vectors_changed: '模型已更换 — 需要重建向量。',
+    feat_install_deps: '安装依赖',
+    feat_install_deps_desc: 'pip install chromadb sentence-transformers openai (~500MB)。',
+    feat_model_bge_small: '最佳平衡 — 快速、准确，推荐大多数用户使用 (384d, 130MB)',
+    feat_model_minilm: '最轻最快 — 精度略低，磁盘占用最小 (384d, 80MB)',
+    feat_model_bge_base: '最高精度 — 较慢，磁盘占用大 (768d, 440MB)',
+    feat_api_base_url: 'API 地址',
+    feat_api_base_url_desc: '自定义 OpenAI 兼容 API 端点。留空使用默认地址。',
+    feat_api_model: 'API 模型',
+    feat_api_model_desc: '该端点使用的嵌入模型名称。',
+    feat_deps_missing: '依赖未安装。需要：chromadb, sentence-transformers, openai。',
+    feat_deps_checking: '正在检测依赖…',
+    feat_no_python: '未找到 Python。请查看安装标签页。',
+    feat_rebuild_btn: '重建',
+    feat_build_btn: '构建',
+    feat_building: '构建中…',
+    feat_installing: '安装中…',
+    feat_install_btn: '安装',
+    feat_retry_btn: '重试',
+    feat_removing: '删除中…',
+    feat_not_cached: '未缓存',
+    feat_uninstall_btn: '卸载',
+    feat_verify_btn: '验证',
+    feat_checking_btn: '检测中…',
+    feat_valid_key: 'API Key 有效。',
+    feat_key_rejected: 'API Key 被拒绝。',
+    feat_enter_key: '请输入有效的 OpenAI API Key。',
+    feat_network_error: '网络错误：',
+    feat_build_complete: '向量构建完成。',
+    feat_build_failed: '构建失败。请查看终端输出。',
+    feat_output_copied: '输出已复制到剪贴板。',
+    feat_install_done: '依赖已安装。正在构建向量…',
+    feat_install_failed: '安装失败：',
 });
 
 function langFromApp(app) {
@@ -553,6 +680,21 @@ const DEFAULT_SETTINGS = {
     paddleocr_api_key: '',
     zotero_data_dir: '',
     python_path: '',
+    // Feature toggles
+    features: {
+        memory_layer: true,
+        vector_db: false,
+    },
+    selected_skill_platform: 'opencode',
+    vector_db_mode: 'local',
+    vector_db_model: 'BAAI/bge-small-en-v1.5',
+    vector_db_api_key: '',
+    vector_db_api_base: '',
+    vector_db_api_model: 'text-embedding-3-small',
+    vector_db_hf_endpoint: 'https://hf-mirror.com',
+    vector_db_hf_token: '',
+    vector_db_last_model: '',
+    frozen_skills: {},
 };
 
 // ACTIONS, resolvePythonExecutable extracted to src/ modules (Plan 53-001)
@@ -1169,7 +1311,7 @@ class PaperForgeStatusView extends ItemView {
         const filePath = file.path;
 
         if (ext === 'base') {
-            return { mode: 'collection', filePath, key: null, domain: file.basename };
+            return { mode: 'collection', filePath, key: null, domain: file.basename.trim() };
         }
 
         if (ext === 'md') {
@@ -1376,9 +1518,19 @@ class PaperForgeStatusView extends ItemView {
         hubBtn.createEl('span', { text: 'Open Literature Hub' });
         hubBtn.addEventListener('click', () => {
             const baseDir = plugin?.settings?.base_dir || 'Bases';
-            const baseFile = this.app.vault.getAbstractFileByPath(baseDir);
-            if (baseFile) {
-                this.app.workspace.revealLeaf().setViewState({ type: 'file-explorer', active: true });
+            const baseFolder = this.app.vault.getAbstractFileByPath(baseDir);
+            if (baseFolder) {
+                // Find first .base file in the base directory
+                let baseFile = null;
+                if (baseFolder.children) {
+                    baseFile = baseFolder.children.find(f => f.extension === 'base');
+                }
+                if (baseFile) {
+                    const leaf = this.app.workspace.getLeaf(false);
+                    if (leaf) leaf.openFile(baseFile);
+                } else {
+                    new Notice('[!!] No .base file found in ' + baseDir, 6000);
+                }
             } else {
                 new Notice('[!!] Base directory not found: ' + baseDir, 6000);
             }
@@ -1810,12 +1962,13 @@ class PaperForgeStatusView extends ItemView {
         const domain = this._currentDomain || 'Unknown';
         const domainItems = this._filterByDomain(domain);
 
-        const view = this._contentEl.createEl('div', { cls: 'paperforge-collection-view' });
-
         if (domainItems.length === 0) {
-            this._renderEmptyState(view, 'No papers found in domain "' + domain + '". Sync some papers first.');
+            // Fall back to global mode if no papers match this domain (e.g. "Literature Hub")
+            this._renderGlobalMode();
             return;
         }
+
+        const view = this._contentEl.createEl('div', { cls: 'paperforge-collection-view' });
 
         // ── Single-pass aggregation ──
         const totalPapers = domainItems.length;
@@ -2196,6 +2349,12 @@ class PaperForgeSettingTab extends PluginSettingTab {
         this.plugin = plugin;
         this._saveTimeout = null;
         this._pfConfig = null;  // cached paperforge.json config
+        this._lastSyncTime = null;
+        this._memoryStatusText = null;   // null = not checked yet, string = cached result
+        this._vectorDepsOk = null;       // null = not checked, bool = cached
+        this._embedStatusText = null;
+        this._skillsCollapsed = { user: true };  // User skills collapsed by default
+        this.activeTab = 'setup';
     }
 
     /** Reload path config from paperforge.json */
@@ -2208,6 +2367,61 @@ class PaperForgeSettingTab extends PluginSettingTab {
         containerEl.empty();
         this._refreshPfConfig();
 
+        // Inject tab CSS once
+        if (!document.getElementById('paperforge-tab-styles')) {
+            const style = document.createElement('style');
+            style.id = 'paperforge-tab-styles';
+            style.textContent = `
+                .paperforge-settings-tabs { display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 1px solid var(--background-modifier-border); }
+                .paperforge-settings-tab { padding: 6px 16px; border: none; background: none; cursor: pointer; border-bottom: 2px solid transparent; font-size: 14px; color: var(--text-muted); }
+                .paperforge-settings-tab--active { color: var(--text-accent); border-bottom-color: var(--text-accent); }
+                .paperforge-tab-content { display: none; }
+                .paperforge-tab-content--active { display: block; }
+                .paperforge-skills-collapse-header { display: flex !important; align-items: center; cursor: pointer; padding: 6px 0 !important; margin: 0 !important; }
+                .paperforge-skills-collapse-header h4 { margin: 0 !important; }
+                .paperforge-skills-collapse-content { margin: 0 !important; padding: 0 !important; }
+                .paperforge-skills-group { margin-bottom: 10px; }
+                .paperforge-skills-group:last-child { margin-bottom: 0; }
+                .vertical-tab-content-container { overflow-y: scroll !important; }
+            `;
+            document.head.appendChild(style);
+        }
+
+        // --- Tab bar ---
+        const tabBar = containerEl.createDiv({ cls: 'paperforge-settings-tabs' });
+        const tabs = [
+            { id: 'setup', label: t('tab_setup') || 'Installation' },
+            { id: 'features', label: t('tab_features') || 'Features' },
+        ];
+        const tabContents = {};
+
+        tabs.forEach(tab => {
+            const btn = tabBar.createEl('button', {
+                cls: 'paperforge-settings-tab' + (tab.id === this.activeTab ? ' paperforge-settings-tab--active' : ''),
+                text: tab.label,
+            });
+            btn.addEventListener('click', () => {
+                this.activeTab = tab.id;
+                this.display(); // re-render with new active tab
+            });
+        });
+
+        // --- Tab content containers ---
+        tabs.forEach(tab => {
+            tabContents[tab.id] = containerEl.createDiv({
+                cls: 'paperforge-tab-content' + (tab.id === this.activeTab ? ' paperforge-tab-content--active' : ''),
+            });
+        });
+
+        // --- Render active tab ---
+        if (this.activeTab === 'setup') {
+            this._renderSetupTab(tabContents.setup);
+        } else {
+            this._renderFeaturesTab(tabContents.features);
+        }
+    }
+
+    _renderSetupTab(containerEl) {
         const vaultPath = this.app.vault.adapter.basePath;
         if (!this.plugin.settings.vault_path) {
             this.plugin.settings.vault_path = vaultPath;
@@ -2411,6 +2625,719 @@ class PaperForgeSettingTab extends PluginSettingTab {
                 row.createEl('span', { cls: 'paperforge-summary-value', text: item.val });
             }
         }
+    }
+
+    _execMemoryStatus(pythonPath, vp, callback) {
+        const { exec } = require('child_process');
+        exec(`"${pythonPath}" -m paperforge --vault "${vp}" memory status --json`, { encoding: 'utf-8', timeout: 15000 }, (err, stdout) => {
+            if (err) { callback('Status unavailable'); return; }
+            try {
+                const data = JSON.parse(stdout);
+                if (data.ok) {
+                    const s = data.data;
+                    const freshness = s.fresh ? 'fresh' : 'stale';
+                    callback(`Papers: ${s.paper_count_db} | ${freshness}${s.needs_rebuild ? ' - needs rebuild' : ''}`);
+                } else {
+                    callback('DB not found. Run paperforge memory build.');
+                }
+            } catch(e) { callback('Could not parse status.'); }
+        });
+    }
+
+    _execEmbedStatus(pythonPath, vp, callback) {
+        const { exec } = require('child_process');
+        exec(`"${pythonPath}" -m paperforge --vault "${vp}" embed status --json`, { encoding: 'utf-8', timeout: 15000 }, (err, stdout) => {
+            if (err) { callback('Status unavailable'); return; }
+            try {
+                const data = JSON.parse(stdout);
+                if (data.ok) {
+                    callback(`Chunks: ${data.data.chunk_count} | ${data.data.model} | ${data.data.mode}`);
+                } else {
+                    callback('Could not parse status.');
+                }
+            } catch(e) { callback('Could not parse status.'); }
+        });
+    }
+
+    _renderMemoryStatusText(el, text, extraInfo) {
+        el.innerHTML = '';
+        el.createEl('span', { text: text, cls: 'paperforge-memory-text' }).style.cssText = 'flex:1;';
+
+        if (extraInfo === 'syncing') {
+            const syncEl = el.createEl('span', { text: 'Syncing...', cls: 'paperforge-sync-status' });
+            syncEl.style.cssText = 'opacity:0.7; margin-right:8px;';
+        } else if (extraInfo) {
+            const timeEl = el.createEl('span', { text: extraInfo, cls: 'paperforge-sync-status' });
+            timeEl.style.cssText = 'opacity:0.7; margin-right:8px;';
+        }
+
+        const refreshBtn = el.createEl('button', { cls: 'paperforge-refresh-btn', text: '\u21BB' });
+        refreshBtn.style.cssText = 'margin-left:auto; border:none; background:none; cursor:pointer; font-size:16px; padding:0 4px;';
+        refreshBtn.title = 'Sync now';
+        refreshBtn.onclick = () => {
+            this._memoryStatusText = null;
+            this._runManualSync();
+        };
+    }
+
+    _getBuildCommand(settings) {
+        const vp = this.app.vault.adapter.basePath;
+        const pyResult = resolvePythonExecutable(vp, settings);
+        if (!pyResult.path) return null;
+        return `"${pyResult.path}" -m paperforge --vault "${vp}" sync`;
+    }
+
+    _runManualSync() {
+        const vp = this.app.vault.adapter.basePath;
+        const pyResult = resolvePythonExecutable(vp, this.plugin.settings);
+        if (!pyResult.path) return;
+
+        const statusRow = document.querySelector('.paperforge-memory-status');
+        if (statusRow) {
+            this._renderMemoryStatusText(statusRow, 'Checking...', 'syncing');
+        }
+
+        this.plugin._autoSyncRunning = true;
+        const { exec } = require('child_process');
+        exec(`"${pyResult.path}" -m paperforge --vault "${vp}" sync`, { timeout: 120000, encoding: 'utf-8' }, (err) => {
+            this.plugin._autoSyncRunning = false;
+            this._memoryStatusText = null;
+            if (!err) {
+                this._lastSyncTime = new Date().toLocaleTimeString();
+                this.plugin._lastSyncTime = this._lastSyncTime;
+            }
+            this.display(); // re-render
+        });
+    }
+
+    _renderFeaturesTab(containerEl) {
+        // --- Section: Skills ---
+        containerEl.createEl('h3', { text: 'Skills' });
+        const skillsDescEl = containerEl.createEl('div', { cls: 'paperforge-desc-box' });
+        skillsDescEl.style.cssText = 'padding:8px 12px; margin:0 0 12px; background:var(--background-secondary); border-radius:4px; font-size:12px; color:var(--text-muted); line-height:1.5;';
+        skillsDescEl.setText(t('feat_skills_desc'));
+        skillsDescEl.createEl('br');
+        skillsDescEl.createEl('span', { text: t('feat_skills_system'), cls: '' }).style.opacity = '0.7';
+
+        // Agent platform selector
+        const agentPlatforms = {
+            'opencode': 'OpenCode',
+            'claude': 'Claude Code',
+            'codex': 'Codex',
+            'cursor': 'Cursor',
+            'windsurf': 'Windsurf',
+            'github_copilot': 'GitHub Copilot',
+        };
+        const agentDirs = {
+            'opencode': '.opencode/skills',
+            'claude': '.claude/skills',
+            'codex': '.codex/skills',
+            'cursor': '.cursor/skills',
+            'windsurf': '.windsurf/skills',
+            'github_copilot': '.github/skills',
+        };
+
+        const vaultPath = this.app.vault.adapter.basePath;
+        const fs = require('fs');
+        const path = require('path');
+
+        let selectedPlatform = this.plugin.settings.selected_skill_platform || 'opencode';
+
+        new Setting(containerEl)
+            .setName(t('feat_agent_platform'))
+            .setDesc(t('feat_agent_platform_desc'))
+            .addDropdown(dropdown => {
+                Object.entries(agentPlatforms).forEach(([key, label]) => dropdown.addOption(key, label));
+                dropdown.setValue(selectedPlatform)
+                    .onChange(value => {
+                        this.plugin.settings.selected_skill_platform = value;
+                        this.plugin.saveSettings();
+                        this.display();
+                    });
+            })
+            .addExtraButton(btn => {
+                btn.setIcon('folder')
+                    .setTooltip('Open skills folder')
+                    .onClick(() => {
+                        const dir = agentDirs[selectedPlatform] || '.opencode/skills';
+                        const fullPath = path.join(vaultPath, dir);
+                        if (fs.existsSync(fullPath)) {
+                            const { exec } = require('child_process');
+                            exec(`start "" "${fullPath}"`);
+                        } else {
+                            new Notice(`Skills folder not found: ${dir}`);
+                        }
+                    });
+            });
+
+        // Show skills for selected platform
+        const skillDir = path.join(vaultPath, agentDirs[selectedPlatform]);
+        let systemSkills = [];
+        let userSkills = [];
+
+        if (fs.existsSync(skillDir)) {
+            fs.readdirSync(skillDir, { withFileTypes: true }).forEach(entry => {
+                if (!entry.isDirectory()) return;
+                const skillFile = path.join(skillDir, entry.name, 'SKILL.md');
+                if (!fs.existsSync(skillFile)) return;
+                const content = fs.readFileSync(skillFile, 'utf-8');
+                const nameMatch = content.match(/^name:\s*(.+)$/m);
+                const lines = content.split('\n');
+                const descIdx = lines.findIndex(l => /^description:/.test(l));
+                let desc = '';
+                if (descIdx >= 0) {
+                    const first = lines[descIdx].match(/^description:\s*(.+)$/);
+                    if (first && first[1] && first[1] !== '>' && first[1] !== '|-' && first[1] !== '|') {
+                        desc = first[1].trim();
+                    } else {
+                        for (let i = descIdx + 1; i < lines.length; i++) {
+                            if (/^\s{2,}/.test(lines[i]) || lines[i].trim() === '') {
+                                desc += lines[i].trim() + ' ';
+                            } else break;
+                        }
+                        desc = desc.trim();
+                    }
+                }
+                const sourceMatch = content.match(/^source:\s*(.+)$/m);
+                const disableMatch = content.match(/^disable-model-invocation:\s*(.+)$/m);
+                const versionMatch = content.match(/^version:\s*(.+)$/m);
+
+                const skill = {
+                    name: nameMatch ? nameMatch[1].trim() : entry.name,
+                    desc: desc,
+                    source: sourceMatch ? sourceMatch[1].trim() : 'user',
+                    disabled: disableMatch && disableMatch[1].trim() === 'true',
+                    version: versionMatch ? versionMatch[1].trim() : '',
+                    path: skillFile,
+                    content: content,
+                    dirName: entry.name,
+                };
+
+                if (skill.source === 'paperforge') {
+                    systemSkills.push(skill);
+                } else {
+                    userSkills.push(skill);
+                }
+            });
+        }
+
+        const skillsBox = containerEl.createEl('div');
+        skillsBox.style.cssText = 'background:var(--background-secondary); border-radius:8px; padding:12px 12px 10px; margin:8px 0 16px;';
+
+        const renderCollapsibleSkills = (label, skills, isSystem) => {
+            if (skills.length === 0) return;
+
+            // Group wrapper for spacing between groups
+            const group = skillsBox.createEl('div', { cls: 'paperforge-skills-group' });
+
+            // Header row with toggle arrow (created first so it appears above content)
+            const header = group.createEl('div', { cls: 'paperforge-skills-collapse-header' });
+
+            // Content wrapper
+            const content = group.createEl('div', { cls: 'paperforge-skills-collapse-content' });
+            const arrow = header.createEl('span', { text: '\u25BC', cls: 'paperforge-skills-arrow' });
+            arrow.style.cssText = 'display:inline-block; font-size:10px; margin-right:6px; transition:transform 0.2s; transform:rotate(0deg);';
+            header.createEl('h4', { text: `${label} (${skills.length})`, cls: 'paperforge-skills-subheader' });
+
+            skills.forEach(s => {
+                const nameText = s.name + (s.version ? ' v' + s.version : '');
+                const sourceLabel = isSystem ? ' [system]' : ' [user]';
+                const descText = s.desc || '';
+
+                const setting = new Setting(content)
+                    .setName(nameText + sourceLabel)
+                    .setDesc(descText);
+                setting.settingEl.style.opacity = s.disabled ? '0.4' : '1';
+
+                setting.addToggle(toggle => {
+                    toggle.setValue(!s.disabled)
+                        .onChange(value => {
+                            const newDisabled = !value;
+                            const disableMatch = s.content.match(/^disable-model-invocation:\s*(.+)$/m);
+                            const newContent = disableMatch
+                                ? s.content.replace(/^disable-model-invocation:\s*.+$/m, `disable-model-invocation: ${newDisabled}`)
+                                : s.content.replace(/^(---\r?\n)/, `$1disable-model-invocation: ${newDisabled}\n`);
+                            fs.writeFileSync(s.path, newContent, 'utf-8');
+                            s.disabled = newDisabled;
+                            s.content = newContent;
+                            setting.settingEl.style.opacity = s.disabled ? '0.4' : '1';
+                        });
+                });
+            });
+
+            // Toggle with state preservation
+            const stateKey = isSystem ? 'system' : 'user';
+            const collapsed = this._skillsCollapsed[stateKey] || false;
+            if (collapsed) {
+                content.style.display = 'none';
+                arrow.style.transform = 'rotate(-90deg)';
+            }
+
+            header.addEventListener('click', () => {
+                const nowCollapsed = content.style.display !== 'none';
+                if (nowCollapsed) {
+                    content.style.display = 'none';
+                    arrow.style.transform = 'rotate(-90deg)';
+                } else {
+                    content.style.display = '';
+                    arrow.style.transform = 'rotate(0deg)';
+                }
+                this._skillsCollapsed[stateKey] = content.style.display === 'none';
+            });
+        };
+
+        // System skills
+        renderCollapsibleSkills('System Skills', systemSkills, true);
+
+        // User skills
+        renderCollapsibleSkills('User Skills', userSkills, false);
+
+        if (systemSkills.length === 0 && userSkills.length === 0) {
+            skillsBox.createEl('p', {
+                text: `No skills found in ${agentDirs[selectedPlatform]}. Run setup to deploy skills.`,
+                cls: 'setting-item-description'
+            });
+        }
+
+        // --- Section: Memory Layer ---
+        containerEl.createEl('h3', { text: 'Memory Layer' });
+
+        const memoryDescEl = containerEl.createEl('div', { cls: 'paperforge-desc-box' });
+        memoryDescEl.style.cssText = 'padding:8px 12px; margin:0 0 12px; background:var(--background-secondary); border-radius:4px; font-size:12px; color:var(--text-muted); line-height:1.5;';
+        memoryDescEl.setText(t('feat_memory_desc'));
+
+        // Always-on SQLite status display
+        const statusRow = containerEl.createEl('div', { cls: 'paperforge-memory-status' });
+        statusRow.style.cssText = 'display:flex; align-items:center; padding:8px 12px; margin:8px 0; background:var(--background-secondary); border-radius:4px;';
+
+        const vp = this.app.vault.adapter.basePath;
+        const pyResult = resolvePythonExecutable(vp, this.plugin.settings);
+
+        if (this.plugin._lastSyncTime && !this._lastSyncTime) {
+            this._lastSyncTime = this.plugin._lastSyncTime;
+        }
+
+        if (this._memoryStatusText !== null) {
+            this._renderMemoryStatusText(statusRow, this._memoryStatusText, this._lastSyncTime);
+        } else if (pyResult.path) {
+            this._renderMemoryStatusText(statusRow, 'Checking...', this._lastSyncTime);
+            this._execMemoryStatus(pyResult.path, vp, (text) => {
+                this._memoryStatusText = text;
+                this._renderMemoryStatusText(statusRow, text, this._lastSyncTime);
+            });
+        } else {
+            this._renderMemoryStatusText(statusRow, 'No Python found.', this._lastSyncTime);
+        }
+
+        this._renderVectorSection(containerEl);
+    }
+
+    _renderVectorSection(containerEl) {
+        // --- Vector Database (within Memory Layer) ---
+        containerEl.createEl('h4', { text: 'Vector Database' });
+
+        const vecDescEl = containerEl.createEl('div', { cls: 'paperforge-desc-box' });
+        vecDescEl.style.cssText = 'padding:8px 12px; margin:0 0 8px; background:var(--background-secondary); border-radius:4px; font-size:12px; color:var(--text-muted); line-height:1.5;';
+        vecDescEl.setText(t('feat_vector_desc'));
+
+        new Setting(containerEl)
+            .setName(t('feat_vector_enable'))
+            .setDesc(t('feat_vector_enable_desc'))
+            .addToggle(toggle => {
+                toggle.setValue(this.plugin.settings.features.vector_db)
+                    .onChange(value => {
+                        this.plugin.settings.features.vector_db = value;
+                        this.plugin.saveSettings();
+                        this._vectorDepsOk = null;
+                        this._embedStatusText = null;
+                        this.display();
+                    });
+            });
+
+        if (!this.plugin.settings.features.vector_db) return;
+
+        const vp = this.app.vault.adapter.basePath;
+
+        // Collapsible config section
+        const vecConfigHeader = containerEl.createEl('div', { cls: 'paperforge-skills-collapse-header' });
+        vecConfigHeader.style.cssText = 'display:flex; align-items:center; cursor:pointer; padding:6px 0 2px; margin:0;';
+        const vecArrow = vecConfigHeader.createEl('span', { text: '\u25BC' });
+        vecArrow.style.cssText = 'display:inline-block; font-size:10px; margin-right:6px; transition:transform 0.2s;';
+        vecConfigHeader.createEl('span', { text: t('feat_vector_config_label'), cls: '' }).style.cssText = 'font-size:12px; color:var(--text-muted);';
+        const vecConfigContent = containerEl.createEl('div', { cls: 'paperforge-vector-config' });
+
+        let vecConfigCollapsed = false;
+        vecConfigHeader.addEventListener('click', () => {
+            vecConfigCollapsed = !vecConfigCollapsed;
+            vecConfigContent.style.display = vecConfigCollapsed ? 'none' : '';
+            vecArrow.style.transform = vecConfigCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)';
+        });
+
+        // === Resolve state ===
+        if (this._vectorDepsOk === true && this._embedStatusText !== null) {
+            this._renderVectorReady(vecConfigContent, vp);
+            return;
+        }
+        if (this._vectorDepsOk === false) {
+            this._renderVectorNoDeps(vecConfigContent);
+            return;
+        }
+        // First check — deps unknown, run async
+        if (this._vectorDepsOk === null) {
+            const statusBox = vecConfigContent.createEl('div');
+            statusBox.style.cssText = 'padding:8px 12px; margin:8px 0; background:var(--background-secondary); border-radius:4px;';
+            statusBox.setText(t('feat_deps_checking'));
+
+            const pyResult = resolvePythonExecutable(vp, this.plugin.settings);
+            if (!pyResult.path) {
+                statusBox.setText(t('feat_no_python'));
+                this._vectorDepsOk = false;
+                return;
+            }
+            const { exec } = require('child_process');
+            exec(`"${pyResult.path}" -c "import chromadb; import sentence_transformers; import openai; print('ok')"`, {
+                encoding: 'utf-8', timeout: 15000
+            }, (err, stdout) => {
+                const ok = !err && (stdout || '').trim() === 'ok';
+                this._vectorDepsOk = ok;
+                if (ok) {
+                    // Deps OK — now check embed status
+                    this._execEmbedStatus(pyResult.path, vp, (statusText) => {
+                        this._embedStatusText = statusText;
+                        this.display();
+                    });
+                } else {
+                    this.display();
+                }
+            });
+        }
+    }
+
+    _renderHfMirror(containerEl) {
+        const setting = new Setting(containerEl)
+            .setName(t('feat_hf_mirror'))
+            .setDesc(t('feat_hf_mirror_desc'))
+            .addDropdown(dropdown => {
+                dropdown.addOption('https://hf-mirror.com', 'hf-mirror.com (recommended)');
+                dropdown.addOption('https://huggingface.co', 'huggingface.co (official)');
+                dropdown.addOption('__custom__', 'Custom...');
+                const current = this.plugin.settings.vector_db_hf_endpoint || 'https://hf-mirror.com';
+                const isPreset = ['https://hf-mirror.com', 'https://huggingface.co'].includes(current);
+                dropdown.setValue(isPreset ? current : '__custom__')
+                    .onChange(value => {
+                        if (value !== '__custom__') {
+                            this.plugin.settings.vector_db_hf_endpoint = value;
+                            this.plugin.saveSettings();
+                            if (customInput) { customInput.settingEl.style.display = 'none'; if (this._hfCustomText) this._hfCustomText.setValue(''); }
+                        } else {
+                            if (customInput) customInput.settingEl.style.display = '';
+                        }
+                    });
+            });
+        const customInput = new Setting(containerEl)
+            .setName(t('feat_custom_endpoint'))
+            .setDesc(t('feat_custom_endpoint_desc'))
+            .addText(text => {
+                this._hfCustomText = text;
+                const current = this.plugin.settings.vector_db_hf_endpoint || '';
+                const isPreset = ['https://hf-mirror.com', 'https://huggingface.co'].includes(current);
+                text.setPlaceholder('https://your-mirror.com')
+                    .setValue(isPreset ? '' : current)
+                    .onChange(value => {
+                        this.plugin.settings.vector_db_hf_endpoint = value;
+                        this.plugin.saveSettings();
+                    });
+            });
+        const current = this.plugin.settings.vector_db_hf_endpoint || 'https://hf-mirror.com';
+        const isPreset = ['https://hf-mirror.com', 'https://huggingface.co'].includes(current);
+        if (isPreset) customInput.settingEl.style.display = 'none';
+
+        new Setting(containerEl)
+            .setName(t('feat_hf_token'))
+            .setDesc(t('feat_hf_token_desc'))
+            .addText(text => {
+                text.setPlaceholder('hf_...')
+                    .setValue(this.plugin.settings.vector_db_hf_token || '')
+                    .onChange(value => {
+                        this.plugin.settings.vector_db_hf_token = value;
+                        this.plugin.saveSettings();
+                    });
+            });
+    }
+
+    _renderApiConfig(containerEl) {
+        if (this.plugin.settings.vector_db_mode !== 'api') return;
+
+        new Setting(containerEl)
+            .setName(t('feat_openai_key'))
+            .setDesc(t('feat_openai_key_desc'))
+            .addText(text => {
+                text.setPlaceholder('sk-...')
+                    .setValue(this.plugin.settings.vector_db_api_key || '')
+                    .onChange(value => {
+                        this.plugin.settings.vector_db_api_key = value;
+                        this.plugin.saveSettings();
+                    });
+            });
+        new Setting(containerEl)
+            .setName(t('feat_api_base_url'))
+            .setDesc(t('feat_api_base_url_desc'))
+            .addText(text => {
+                text.setPlaceholder('https://api.openai.com/v1')
+                    .setValue(this.plugin.settings.vector_db_api_base || '')
+                    .onChange(value => {
+                        this.plugin.settings.vector_db_api_base = value;
+                        this.plugin.saveSettings();
+                    });
+            });
+        new Setting(containerEl)
+            .setName(t('feat_api_model'))
+            .setDesc(t('feat_api_model_desc'))
+            .addText(text => {
+                text.setPlaceholder('text-embedding-3-small')
+                    .setValue(this.plugin.settings.vector_db_api_model || 'text-embedding-3-small')
+                    .onChange(value => {
+                        this.plugin.settings.vector_db_api_model = value;
+                        this.plugin.saveSettings();
+                    });
+            });
+    }
+
+    _renderVectorNoDeps(containerEl) {
+        const box = containerEl.createEl('div');
+        box.style.cssText = 'padding:8px 12px; margin:8px 0; background:var(--background-secondary); border-radius:4px;';
+        box.setText(t('feat_deps_missing'));
+
+        new Setting(containerEl)
+            .setName(t('feat_install_deps'))
+            .setDesc(t('feat_install_deps_desc'))
+            .addButton(button => {
+                button.setButtonText(t('feat_install_btn'))
+                    .setCta()
+                    .onClick(async () => {
+                        const vp = this.app.vault.adapter.basePath;
+                        const pyResult = resolvePythonExecutable(vp, this.plugin.settings);
+                        if (!pyResult.path) { new Notice('No Python found.'); return; }
+                        button.setButtonText(t('feat_installing'));
+                            button.setDisabled(true);
+                            const notice = new Notice('Installing chromadb + sentence-transformers + openai...', 0);
+                        try {
+                            const { exec } = require('child_process');
+        const env = Object.assign({}, process.env, { PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1', HF_ENDPOINT: this.plugin.settings.vector_db_hf_endpoint || 'https://hf-mirror.com', HF_TOKEN: this.plugin.settings.vector_db_hf_token || '' });
+                            await new Promise((resolve, reject) => {
+                                exec(`"${pyResult.path}" -m pip install chromadb sentence-transformers openai`, {
+                                    encoding: 'utf-8', timeout: 300000, env: env,
+                                }, (error) => { error ? reject(error) : resolve(); });
+                            });
+                            notice.hide();
+                            new Notice('Dependencies installed. Building vectors...');
+                            // Auto-build after install
+                            this._vectorDepsOk = true;
+                            this._execEmbedStatus(pyResult.path, vp, (text) => {
+                                this._embedStatusText = text;
+                            });
+                            this.display();
+                        } catch (e) {
+                            notice.hide();
+                            new Notice('Install failed: ' + (e.stderr || e.message || e));
+                            button.setButtonText(t('feat_retry_btn'));
+                            button.setDisabled(false);
+                        }
+                    });
+            });
+    }
+
+    _renderVectorReady(containerEl, vp) {
+        // Status line
+        const statusEl = containerEl.createEl('div');
+        statusEl.style.cssText = 'padding:8px 12px; margin:8px 0; background:var(--background-secondary); border-radius:4px;';
+        statusEl.setText(this._embedStatusText || 'Loading...');
+
+        // Detect model mismatch
+        const embedInfo = this._embedStatusText ? this._parseEmbedStatus(this._embedStatusText) : null;
+        const currentModel = this._getCurrentModelKey();
+        const lastModel = this.plugin.settings.vector_db_last_model || '';
+        const modelChanged = embedInfo && embedInfo.db_exists && lastModel && lastModel !== currentModel;
+
+        if (modelChanged) {
+            const warnEl = containerEl.createEl('div');
+            warnEl.style.cssText = 'padding:8px 12px; margin:8px 0; background:var(--background-modifier-warning); border-radius:4px;';
+            warnEl.setText(`Model changed (${lastModel} -> ${currentModel}). Existing vectors are incompatible — rebuild required.`);
+        }
+
+        // Mode selector
+        new Setting(containerEl)
+            .setName(t('feat_embed_mode'))
+            .addDropdown(dropdown => {
+                dropdown.addOption('local', t('feat_embed_mode_local'));
+                dropdown.addOption('api', t('feat_embed_mode_api'));
+                dropdown.setValue(this.plugin.settings.vector_db_mode)
+                    .onChange(value => {
+                        this.plugin.settings.vector_db_mode = value;
+                        this.plugin.saveSettings();
+                        this.display();
+                    });
+            });
+
+        // Model selector (local mode)
+        if (this.plugin.settings.vector_db_mode === 'local') {
+            // HF settings only relevant for local model downloads
+            this._renderHfMirror(containerEl);
+            const modelDesc = {
+                'BAAI/bge-small-en-v1.5': t('feat_model_bge_small'),
+                'sentence-transformers/all-MiniLM-L6-v2': t('feat_model_minilm'),
+                'BAAI/bge-base-en-v1.5': t('feat_model_bge_base'),
+            };
+            new Setting(containerEl)
+                .setName(t('feat_model'))
+                .setDesc(modelDesc[this.plugin.settings.vector_db_model] || '')
+                .addDropdown(dropdown => {
+                    dropdown.addOption('BAAI/bge-small-en-v1.5', 'bge-small (384d, 130MB)');
+                    dropdown.addOption('sentence-transformers/all-MiniLM-L6-v2', 'MiniLM (384d, 80MB)');
+                    dropdown.addOption('BAAI/bge-base-en-v1.5', 'bge-base (768d, 440MB)');
+                    dropdown.setValue(this.plugin.settings.vector_db_model)
+                        .onChange(value => {
+                            this.plugin.settings.vector_db_model = value;
+                            this.plugin.saveSettings();
+                            this.display();
+                        });
+                })
+                .addButton(button => {
+                    const model = this.plugin.settings.vector_db_model;
+                    const cacheName = 'models--' + model.replace('/', '--');
+                    const fs = require('fs');
+                    const os = require('os');
+                    const path = require('path');
+                    const cachePath = path.join(os.homedir(), '.cache', 'huggingface', 'hub', cacheName);
+
+                    // Check integrity: directory exists AND has snapshots with files
+                    let isCached = false;
+                    if (fs.existsSync(cachePath)) {
+                        const snapDir = path.join(cachePath, 'snapshots');
+                        if (fs.existsSync(snapDir)) {
+                            try {
+                                const entries = fs.readdirSync(snapDir);
+                                isCached = entries.some(e => {
+                                    const p = path.join(snapDir, e);
+                                    return fs.statSync(p).isDirectory() && fs.readdirSync(p).length > 0;
+                                });
+                            } catch (_) {}
+                        }
+                    }
+
+                    if (isCached) {
+                        button.setButtonText(t('feat_uninstall_btn')).setWarning();
+                    } else {
+                        button.setButtonText(t('feat_not_cached'));
+                        button.setDisabled(true);
+                    }
+                    button.onClick(async () => {
+                        if (!isCached) return;
+                        button.setButtonText(t('feat_removing'));
+                        button.setDisabled(true);
+                        try {
+                            const pyResult = resolvePythonExecutable(vp, this.plugin.settings);
+                            const { exec } = require('child_process');
+                            const env = Object.assign({}, process.env, { PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1' });
+                            await new Promise((resolve, reject) => {
+                                exec(`"${pyResult.path}" -c "import shutil, os; p=os.path.join(os.path.expanduser('~/.cache/huggingface/hub'), '${cacheName}'); shutil.rmtree(p,ignore_errors=True); print('done')"`, {
+                                    encoding: 'utf-8', timeout: 30000, env: env
+                                }, (error) => error ? reject(error) : resolve());
+                            });
+                            new Notice('Model cache removed.');
+                        } catch (e) {
+                            new Notice('Failed: ' + (e.stderr || e.message || e));
+                        }
+                        this.display();
+                    });
+                });
+
+            // INFO: HF download notice for local mode
+            const infoDiv = containerEl.createDiv({ cls: 'setting-item-description' });
+            infoDiv.createEl('p', {
+                text: 'Local mode downloads models from Hugging Face on first use. '
+                    + 'If inaccessible, set an HF Endpoint above (e.g. https://hf-mirror.com) or switch to API mode.',
+                cls: 'paperforge-settings-desc',
+            });
+        }
+
+        // API config (api mode)
+        this._renderApiConfig(containerEl);
+
+        // Rebuild button with live terminal output
+        const terminalEl = containerEl.createEl('pre');
+        terminalEl.style.cssText = 'display:none; background:var(--background-primary); padding:10px; border-radius:4px; border:1px solid var(--background-modifier-border); max-height:250px; overflow-y:auto; font-size:11px; font-family:var(--font-monospace); margin:8px 0; white-space:pre-wrap; word-break:break-all; opacity:0.8;';
+        terminalEl.onclick = () => {
+            const text = terminalEl.textContent;
+            if (text) { navigator.clipboard.writeText(text); new Notice('Output copied to clipboard'); }
+        };
+
+        new Setting(containerEl)
+            .setName(t('feat_rebuild_vectors'))
+            .setDesc(modelChanged ? t('feat_rebuild_vectors_changed') : t('feat_rebuild_vectors_desc'))
+            .addButton(button => {
+                const label = embedInfo && embedInfo.db_exists ? t('feat_rebuild_btn') : t('feat_build_btn');
+                button.setButtonText(label)
+                    .setCta()
+                    .onClick(async () => {
+                        const pyResult = resolvePythonExecutable(vp, this.plugin.settings);
+                        if (!pyResult.path) { new Notice(t('feat_no_python')); return; }
+                        button.setButtonText(t('feat_building'));
+                        button.setDisabled(true);
+                        terminalEl.style.display = 'block';
+                        terminalEl.setText('');
+
+                        const { spawn } = require('child_process');
+                        const env = Object.assign({}, process.env, { PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1', HF_ENDPOINT: this.plugin.settings.vector_db_hf_endpoint || 'https://hf-mirror.com', HF_TOKEN: this.plugin.settings.vector_db_hf_token || '', VECTOR_DB_API_KEY: this.plugin.settings.vector_db_api_key || '', VECTOR_DB_API_BASE: this.plugin.settings.vector_db_api_base || '', VECTOR_DB_API_MODEL: this.plugin.settings.vector_db_api_model || '' });
+                        const child = spawn(pyResult.path, ['-m', 'paperforge', '--vault', vp, 'embed', 'build', '--force'], {
+                            env: env, stdio: ['ignore', 'pipe', 'pipe']
+                        });
+
+                        const append = (text) => {
+                            terminalEl.setText((terminalEl.getText() || '') + text);
+                            terminalEl.scrollTop = terminalEl.scrollHeight;
+                        };
+
+                        child.stdout.on('data', (data) => append(data.toString()));
+                        child.stderr.on('data', (data) => append(data.toString()));
+
+                        try {
+                            await new Promise((resolve, reject) => {
+                                child.on('close', (code) => code === 0 ? resolve() : reject(new Error('Exit code ' + code)));
+                                child.on('error', reject);
+                            });
+                            this.plugin.settings.vector_db_last_model = currentModel;
+                            this.plugin.saveSettings();
+                            this._embedStatusText = null;
+                            this._execEmbedStatus(pyResult.path, vp, (text) => { this._embedStatusText = text; this.display(); });
+                            new Notice(t('feat_build_complete'));
+                        } catch (e) {
+                            append('\n--- BUILD FAILED ---\n' + (e.stderr || e.message || e));
+                            new Notice(t('feat_build_failed'));
+                            button.setButtonText(label);
+                            button.setDisabled(false);
+                        }
+                    });
+            });
+    }
+
+    _getCurrentModelKey() {
+        if (this.plugin.settings.vector_db_mode === 'api') return this.plugin.settings.vector_db_api_model || 'openai/text-embedding-3-small';
+        return this.plugin.settings.vector_db_model || 'BAAI/bge-small-en-v1.5';
+    }
+
+    _parseEmbedStatus(text) {
+        // Parse "  key: value" lines from paperforge embed status output
+        const info = {};
+        if (!text) return info;
+        text.split('\n').forEach(line => {
+            const m = line.match(/^\s*([^:]+):\s*(.*)/);
+            if (m) info[m[1].trim()] = m[2].trim();
+        });
+        // Normalize bools
+        if (info.db_exists !== undefined) info.db_exists = info.db_exists === 'True';
+        if (info.chunk_count !== undefined) info.chunk_count = parseInt(info.chunk_count, 10) || 0;
+        return info;
     }
 
     _getPythonDesc(pyPath, source) {
@@ -3324,6 +4251,12 @@ class PaperForgeSetupModal extends Modal {
 module.exports = class PaperForgePlugin extends Plugin {
     async onload() {
         await this.loadSettings();
+        // ── Automatic file polling state ──
+        this._lastExportMtime = 0;
+        this._lastOcrMtimes = {};
+        this._autoSyncRunning = false;
+        this._lastSyncTime = null;
+        this._pollTimer = null;
         // Clean stale path fields from plugin data.json (migrated to paperforge.json)
         this.saveSettings();
         T = (langFromApp(this.app) === 'zh') ? LANG.zh : LANG.en;
@@ -3368,6 +4301,7 @@ module.exports = class PaperForgePlugin extends Plugin {
         if (this.settings.auto_update !== false && this.settings.setup_complete) {
             setTimeout(() => this._autoUpdate(), 3000);
         }
+        this._startFilePolling();
     }
 
     _autoUpdate() {
@@ -3405,6 +4339,99 @@ module.exports = class PaperForgePlugin extends Plugin {
                 install(`${pyVer} -> ${ver}`);
             }
         });
+    }
+
+    /* ── Automatic file polling for seamless memory layer ── */
+
+    _startFilePolling() {
+        const vaultPath = this.app.vault.adapter.basePath;
+        const fs = require('fs');
+        const path = require('path');
+        const { exec } = require('child_process');
+
+        this._pollTimer = setInterval(() => {
+            this._checkExports(vaultPath, fs, path, exec);
+            this._checkOcr(vaultPath, fs, path, exec);
+        }, 120000); // every 120 seconds
+    }
+
+    _checkExports(vaultPath, fs, path, exec) {
+        if (this._autoSyncRunning) return;
+        const exportsDir = path.join(vaultPath, 'System', 'PaperForge', 'exports');
+        if (!fs.existsSync(exportsDir)) return;
+
+        let newestMtime = 0;
+        try {
+            fs.readdirSync(exportsDir).forEach(f => {
+                if (!f.endsWith('.json')) return;
+                const stat = fs.statSync(path.join(exportsDir, f));
+                if (stat.mtimeMs > newestMtime) newestMtime = stat.mtimeMs;
+            });
+        } catch(e) { return; }
+
+        if (newestMtime > this._lastExportMtime) {
+            this._lastExportMtime = newestMtime;
+            this._autoSync(vaultPath, exec);
+        }
+    }
+
+    _autoSync(vaultPath, exec) {
+        if (this._autoSyncRunning) return;
+        this._autoSyncRunning = true;
+
+        const pyResult = resolvePythonExecutable(vaultPath, this.settings);
+        if (!pyResult.path) { this._autoSyncRunning = false; return; }
+
+        const cmd = `"${pyResult.path}" -m paperforge --vault "${vaultPath}" sync`;
+        exec(cmd, { timeout: 120000, encoding: 'utf-8' }, (err, stdout, stderr) => {
+            this._autoSyncRunning = false;
+            this._memoryStatusText = null; // force re-check next time
+            if (!err) {
+                this._lastSyncTime = new Date().toLocaleTimeString();
+            }
+            // Update last export mtime to avoid re-trigger during build
+            try {
+                const fs = require('fs');
+                const path = require('path');
+                const exportsDir = path.join(vaultPath, 'System', 'PaperForge', 'exports');
+                let newest = 0;
+                fs.readdirSync(exportsDir).forEach(f => {
+                    if (!f.endsWith('.json')) return;
+                    newest = Math.max(newest, fs.statSync(path.join(exportsDir, f)).mtimeMs);
+                });
+                this._lastExportMtime = newest;
+            } catch(e) {}
+        });
+    }
+
+    _checkOcr(vaultPath, fs, path, exec) {
+        if (this._autoSyncRunning) return;
+        const ocrDir = path.join(vaultPath, 'System', 'PaperForge', 'ocr');
+        if (!fs.existsSync(ocrDir)) return;
+
+        try {
+            fs.readdirSync(ocrDir, { withFileTypes: true }).forEach(entry => {
+                if (!entry.isDirectory()) return;
+                const metaPath = path.join(ocrDir, entry.name, 'meta.json');
+                if (!fs.existsSync(metaPath)) return;
+                const stat = fs.statSync(metaPath);
+                const prevMtime = this._lastOcrMtimes[entry.name] || 0;
+                if (stat.mtimeMs <= prevMtime) return;
+
+                this._lastOcrMtimes[entry.name] = stat.mtimeMs;
+                if (this._autoSyncRunning) return;
+                this._autoSyncRunning = true;
+
+                const pyResult = resolvePythonExecutable(vaultPath, this.settings);
+                if (!pyResult.path) { this._autoSyncRunning = false; return; }
+
+                const cmd = `"${pyResult.path}" -m paperforge --vault "${vaultPath}" sync --key "${entry.name}"`;
+                exec(cmd, { timeout: 30000, encoding: 'utf-8' }, () => {
+                    this._autoSyncRunning = false;
+                    this._memoryStatusText = null;
+                });
+            });
+        } catch(e) {}
     }
 
     /**
@@ -3507,11 +4534,17 @@ module.exports = class PaperForgePlugin extends Plugin {
     }
 
     onunload() {
+        if (this._pollTimer) clearInterval(this._pollTimer);
         this.app.workspace.detachLeavesOfType(VIEW_TYPE_PAPERFORGE);
     }
 
     async loadSettings() {
         this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+        // Deep-merge nested objects (features, frozen_skills) to avoid overwrite
+        if (this.settings.features && DEFAULT_SETTINGS.features) {
+            this.settings.features = Object.assign({}, DEFAULT_SETTINGS.features, this.settings.features || {});
+        }
+        if (!this.settings.frozen_skills) { this.settings.frozen_skills = {}; }
         // Path fields come from paperforge.json, not from DEFAULT_SETTINGS or plugin data.json
         const pfConfig = this.readPaperforgeJson();
         this.settings.system_dir = pfConfig.system_dir;

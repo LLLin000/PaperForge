@@ -639,36 +639,36 @@ def run_doctor(vault: Path, verbose: bool = False, json_output: bool = False) ->
             if total_issues == 0:
                 add_check("字段注册表", "pass", "所有 formal note frontmatter 与字段注册表一致")
 
-    ld_deep_script = paths.get("ld_deep_script")
+    pf_deep_script = paths.get("pf_deep_script")
     skill_dir = None
-    if ld_deep_script:
-        skill_dir = ld_deep_script.parent.parent
+    if pf_deep_script:
+        skill_dir = pf_deep_script.parent.parent
     if skill_dir and skill_dir.exists():
         # Try actual importability check
-        ld_deep_import_ok = False
+        pf_deep_import_ok = False
         import_error = ""
-        if ld_deep_script and ld_deep_script.exists():
+        if pf_deep_script and pf_deep_script.exists():
             try:
                 import importlib.util
 
-                spec = importlib.util.spec_from_file_location("ld_deep", ld_deep_script)
+                spec = importlib.util.spec_from_file_location("pf_deep", pf_deep_script)
                 if spec and spec.loader:
                     mod = importlib.util.module_from_spec(spec)
                     spec.loader.exec_module(mod)
-                    ld_deep_import_ok = True
+                    pf_deep_import_ok = True
             except Exception as e:
                 import_error = str(e)
-        if ld_deep_import_ok:
-            add_check("Agent 脚本", "pass", "paperforge and ld_deep importable")
+        if pf_deep_import_ok:
+            add_check("Agent 脚本", "pass", "paperforge and pf_deep importable")
         else:
             add_check(
                 "Agent 脚本",
                 "warn",
-                f"literature-qa skill 目录存在但 import 失败: {import_error}",
+                f"paperforge skill 目录存在但 import 失败: {import_error}",
                 "确认 agent_config_dir 配置正确并已运行 pip install -e .",
             )
     else:
-        add_check("Agent 脚本", "warn", "literature-qa skill 目录未找到", "确认 agent_config_dir 配置正确")
+        add_check("Agent 脚本", "warn", "paperforge skill 目录未找到", "确认 agent_config_dir 配置正确")
 
     # --- Index Health section (Phase 25: derived from canonical index) ---
     try:
