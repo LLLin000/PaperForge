@@ -2936,6 +2936,11 @@ class PaperForgeSettingTab extends PluginSettingTab {
         // --- Vector Database (within Memory Layer) ---
         containerEl.createEl('h4', { text: 'Vector Database' });
 
+        // Ensure features object exists for upgrades from older settings
+        if (!this.plugin.settings.features) {
+            this.plugin.settings.features = { memory_layer: true, vector_db: false };
+        }
+
         const vecDescEl = containerEl.createEl('div', { cls: 'paperforge-desc-box' });
         vecDescEl.style.cssText = 'padding:8px 12px; margin:0 0 8px; background:var(--background-secondary); border-radius:4px; font-size:12px; color:var(--text-muted); line-height:1.5;';
         vecDescEl.setText(t('feat_vector_desc'));
