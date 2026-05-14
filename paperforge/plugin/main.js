@@ -2354,6 +2354,8 @@ class PaperForgeSettingTab extends PluginSettingTab {
         this._vectorDepsOk = null;       // null = not checked, bool = cached
         this._embedStatusText = null;
         this._skillsCollapsed = { user: true };  // User skills collapsed by default
+        this._embedProcess = null;
+        this._embedProgress = { current: 0, total: 0, key: '' };
         this.activeTab = 'setup';
     }
 
@@ -3269,61 +3271,136 @@ class PaperForgeSettingTab extends PluginSettingTab {
         // API config (api mode)
         this._renderApiConfig(containerEl);
 
-        // Rebuild button with live terminal output
-        const terminalEl = containerEl.createEl('pre');
-        terminalEl.style.cssText = 'display:none; background:var(--background-primary); padding:10px; border-radius:4px; border:1px solid var(--background-modifier-border); max-height:250px; overflow-y:auto; font-size:11px; font-family:var(--font-monospace); margin:8px 0; white-space:pre-wrap; word-break:break-all; opacity:0.8;';
-        terminalEl.onclick = () => {
-            const text = terminalEl.textContent;
-            if (text) { navigator.clipboard.writeText(text); new Notice('Output copied to clipboard'); }
-        };
+        // Embed build section with progress bar
+        const embedSection = containerEl.createEl('div');
+        embedSection.style.cssText = 'padding:4px 0;';
 
-        new Setting(containerEl)
-            .setName(t('feat_rebuild_vectors'))
-            .setDesc(modelChanged ? t('feat_rebuild_vectors_changed') : t('feat_rebuild_vectors_desc'))
-            .addButton(button => {
-                const label = embedInfo && embedInfo.db_exists ? t('feat_rebuild_btn') : t('feat_build_btn');
-                button.setButtonText(label)
-                    .setCta()
-                    .onClick(async () => {
-                        const pyResult = resolvePythonExecutable(vp, this.plugin.settings);
-                        if (!pyResult.path) { new Notice(t('feat_no_python')); return; }
-                        button.setButtonText(t('feat_building'));
-                        button.setDisabled(true);
-                        terminalEl.style.display = 'block';
-                        terminalEl.setText('');
+        const embedHeader = embedSection.createEl('div');
+        embedHeader.style.cssText = 'display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;';
+        embedHeader.createEl('span', { text: t('feat_rebuild_vectors'), cls: 'setting-item-name' });
 
-                        const { spawn } = require('child_process');
-                        const env = Object.assign({}, process.env, { PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1', HF_ENDPOINT: this.plugin.settings.vector_db_hf_endpoint || 'https://hf-mirror.com', HF_TOKEN: this.plugin.settings.vector_db_hf_token || '', VECTOR_DB_API_KEY: this.plugin.settings.vector_db_api_key || '', VECTOR_DB_API_BASE: this.plugin.settings.vector_db_api_base || '', VECTOR_DB_API_MODEL: this.plugin.settings.vector_db_api_model || '' });
-                        const child = spawn(pyResult.path, ['-m', 'paperforge', '--vault', vp, 'embed', 'build', '--force'], {
-                            env: env, stdio: ['ignore', 'pipe', 'pipe']
-                        });
+        const embedControls = embedSection.createEl('div');
+        embedControls.style.cssText = 'display:flex; align-items:center; gap:8px;';
 
-                        const append = (text) => {
-                            terminalEl.setText((terminalEl.getText() || '') + text);
-                            terminalEl.scrollTop = terminalEl.scrollHeight;
-                        };
+        const embedStatusText = embedSection.createEl('div', { cls: 'paperforge-embed-status-text' });
 
-                        child.stdout.on('data', (data) => append(data.toString()));
-                        child.stderr.on('data', (data) => append(data.toString()));
+        const renderEmbedUI = () => {
+            embedControls.empty();
+            embedStatusText.empty();
+            const { current, total, key } = this._embedProgress;
+            const isRunning = !!this._embedProcess;
 
-                        try {
-                            await new Promise((resolve, reject) => {
-                                child.on('close', (code) => code === 0 ? resolve() : reject(new Error('Exit code ' + code)));
-                                child.on('error', reject);
-                            });
+            if (isRunning) {
+                // Progress bar
+                const track = embedControls.createEl('div', { cls: 'paperforge-progress-track' });
+                track.style.cssText = 'flex:1;';
+                const pct = total > 0 ? (current / total * 100).toFixed(1) : 0;
+                const doneSeg = track.createEl('div', { cls: 'paperforge-progress-seg done' });
+                doneSeg.style.cssText = `width:${pct}%; min-width:${current > 0 ? '2px' : '0'};`;
+                if (current < total) {
+                    const pendingSeg = track.createEl('div', { cls: 'paperforge-progress-seg pending' });
+                    pendingSeg.style.cssText = `width:${(100 - parseFloat(pct)).toFixed(1)}%;`;
+                }
+                embedStatusText.createEl('span', { cls: 'paperforge-embed-progress-text',
+                    text: `${current}/${total} papers` });
+                if (key) {
+                    embedStatusText.createEl('span', { cls: 'paperforge-embed-progress-key',
+                        text: ` (${key})` });
+                }
+
+                const stopBtn = embedControls.createEl('button');
+                stopBtn.setText('Stop');
+                stopBtn.className = 'mod-warning';
+                stopBtn.addEventListener('click', () => {
+                    if (this._embedProcess) {
+                        this._embedProcess.kill();
+                        this._embedProcess = null;
+                        this.display();
+                    }
+                });
+            } else {
+                const embedInfo = this._embedStatusText ? this._parseEmbedStatus(this._embedStatusText) : null;
+                const hasChunks = embedInfo && embedInfo.chunk_count > 0;
+
+                if (hasChunks) {
+                    embedControls.createEl('span', {
+                        text: `${embedInfo.chunk_count} chunks embedded`,
+                        cls: 'setting-item-description'
+                    });
+                }
+
+                const buildBtn = embedControls.createEl('button');
+                buildBtn.setText(hasChunks ? t('feat_rebuild_btn') : t('feat_build_btn'));
+                buildBtn.addClass('mod-cta');
+                buildBtn.addEventListener('click', () => {
+                    const pyResult = resolvePythonExecutable(vp, this.plugin.settings);
+                    if (!pyResult.path) { new Notice(t('feat_no_python')); return; }
+
+                    const env = Object.assign({}, process.env, {
+                        PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1',
+                        HF_ENDPOINT: this.plugin.settings.vector_db_hf_endpoint || 'https://hf-mirror.com',
+                        HF_TOKEN: this.plugin.settings.vector_db_hf_token || '',
+                        VECTOR_DB_API_KEY: this.plugin.settings.vector_db_api_key || '',
+                        VECTOR_DB_API_BASE: this.plugin.settings.vector_db_api_base || '',
+                        VECTOR_DB_API_MODEL: this.plugin.settings.vector_db_api_model || ''
+                    });
+                    const args = ['-m', 'paperforge', 'embed', 'build', '--resume'];
+                    const { spawn } = require('child_process');
+
+                    this._embedProcess = spawn(pyResult.path, args, { cwd: vp, env: env, windowsHide: true });
+                    this._embedProgress = { current: 0, total: 0, key: '' };
+
+                    this._embedProcess.stdout.on('data', (data) => {
+                        const lines = data.toString('utf-8').split('\n');
+                        for (const line of lines) {
+                            if (line.startsWith('EMBED_START:')) {
+                                this._embedProgress.total = parseInt(line.split(':')[1]) || 0;
+                            } else if (line.startsWith('EMBED_PROGRESS:')) {
+                                const parts = line.split(':');
+                                this._embedProgress.current = parseInt(parts[1]) || 0;
+                                this._embedProgress.key = parts[3] || '';
+                            } else if (line.startsWith('EMBED_DONE')) {
+                                this._embedProcess = null;
+                                this._embedProgress.current = this._embedProgress.total;
+                            }
+                        }
+                        this.display();
+                    });
+
+                    this._embedProcess.stderr.on('data', (data) => {
+                        // silently ignore stderr noise unless error
+                    });
+
+                    this._embedProcess.on('close', (code) => {
+                        this._embedProcess = null;
+                        if (code === 0) {
+                            this._embedProgress.current = this._embedProgress.total;
                             this.plugin.settings.vector_db_last_model = currentModel;
                             this.plugin.saveSettings();
                             this._embedStatusText = null;
-                            this._execEmbedStatus(pyResult.path, vp, (text) => { this._embedStatusText = text; this.display(); });
-                            new Notice(t('feat_build_complete'));
-                        } catch (e) {
-                            append('\n--- BUILD FAILED ---\n' + (e.stderr || e.message || e));
-                            new Notice(t('feat_build_failed'));
-                            button.setButtonText(label);
-                            button.setDisabled(false);
+                            const pyResult2 = resolvePythonExecutable(vp, this.plugin.settings);
+                            this._execEmbedStatus(pyResult2.path, vp, (text) => {
+                                this._embedStatusText = text;
+                                this.display();
+                            });
+                        } else {
+                            this._embedStatusText = null;
                         }
+                        this.display();
                     });
-            });
+
+                    this._embedProcess.on('error', (err) => {
+                        this._embedProcess = null;
+                        new Notice('Build failed: ' + (err.message || err));
+                        this.display();
+                    });
+
+                    this.display();
+                });
+            }
+        };
+
+        renderEmbedUI();
     }
 
     _getCurrentModelKey() {

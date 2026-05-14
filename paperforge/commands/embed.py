@@ -73,6 +73,9 @@ def run(args: argparse.Namespace) -> int:
     items = envelope if isinstance(envelope, list) else envelope.get("items", [])
     done_papers = [e for e in items if e.get("ocr_status") == "done"]
 
+    total = len(done_papers)
+    print(f"EMBED_START:{total}", flush=True)
+
     if args.force:
         db_path = get_vector_db_path(vault)
         if db_path.exists():
@@ -83,6 +86,7 @@ def run(args: argparse.Namespace) -> int:
     chunks_embedded = 0
     papers_skipped = 0
     resume = getattr(args, "resume", False)
+    i = 0
     for entry in done_papers:
         key = entry.get("zotero_key")
         fulltext_rel = entry.get("fulltext_path", "")
@@ -103,6 +107,8 @@ def run(args: argparse.Namespace) -> int:
         if not chunks:
             continue
         try:
+            i += 1
+            print(f"EMBED_PROGRESS:{i}:{total}:{key}", flush=True)
             delete_paper_vectors(vault, key)
             n = embed_paper(vault, key, chunks)
             chunks_embedded += n
@@ -112,6 +118,8 @@ def run(args: argparse.Namespace) -> int:
                              error=PFError(code=ErrorCode.INTERNAL_ERROR, message=str(e)))
             print(result.to_json() if args.json else result.error.message, file=sys.stderr if not args.json else sys.stdout)
             return 1
+
+    print("EMBED_DONE", flush=True)
 
     data = {
         "papers_embedded": papers_embedded,

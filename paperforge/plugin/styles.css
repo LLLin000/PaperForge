@@ -2416,3 +2416,16 @@
 .theme-dark .paperforge-discussion-card:hover {
     box-shadow: inset 3px 0 0 color-mix(in srgb, var(--pf-paper-accent) 16%, transparent), 0 2px 12px rgba(0, 0, 0, 0.3);
 }
+
+.paperforge-embed-progress-text {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 4px;
+    text-align: center;
+}
+
+.paperforge-embed-progress-key {
+    font-size: 10px;
+    color: var(--text-faint);
+    font-family: var(--font-monospace);
+}
