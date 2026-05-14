@@ -63,10 +63,7 @@ version = {attr = "paperforge.__version__"}
 [tool.setuptools.package-data]
 paperforge = [
     "py.typed",
-    "skills/literature-qa/prompt_deep_subagent.md",
-    "skills/literature-qa/scripts/*.md",
-    "skills/literature-qa/chart-reading/*.md",
-    "skills/literature-qa/chart-reading/*",
+    "skills/paperforge/**",
     "command_files/*.md",
     "plugin/*.css",
     "plugin/*.js",
