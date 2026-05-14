@@ -44,6 +44,11 @@ test = [
     "coverage>=7.4.0",
     "ruff>=0.4.0",
 ]
+vector = [
+    "chromadb>=0.5.0",
+    "sentence-transformers>=3.0.0",
+    "openai>=1.0.0",
+]
 
 [project.scripts]
 paperforge = "paperforge.cli:main"
@@ -58,10 +63,7 @@ version = {attr = "paperforge.__version__"}
 [tool.setuptools.package-data]
 paperforge = [
     "py.typed",
-    "skills/literature-qa/prompt_deep_subagent.md",
-    "skills/literature-qa/scripts/*.md",
-    "skills/literature-qa/chart-reading/*.md",
-    "skills/literature-qa/chart-reading/*",
+    "skills/paperforge/**",
     "command_files/*.md",
     "plugin/*.css",
     "plugin/*.js",
@@ -70,7 +72,7 @@ paperforge = [
 
 [tool.pytest.ini_options]
 addopts = "--ignore=tests/sandbox/00_TestVault/ --strict-markers"
-testpaths = ["tests/unit", "tests/cli", "tests/e2e", "tests/journey", "tests/chaos", "tests/audit"]
+testpaths = ["tests/unit", "tests/cli", "tests/e2e", "tests/journey", "tests/chaos", "tests/audit", "tests/integration"]
 markers = [
     "unit: Unit tests (Level 1) — fast, isolated",
     "cli: CLI contract tests (Level 2) — subprocess boundary",
@@ -78,6 +80,7 @@ markers = [
     "journey: User journey tests (Level 5) — full workflows",
     "chaos: Destructive tests (Level 6) — abnormal scenarios",
     "audit: Consistency audit tests — validate L1 mocks against L4 real pipeline output",
+    "integration: Integration tests — multi-component workflows",
     "slow: Tests that take >30s (skip during development)",
     "snapshot: Tests that use snapshot comparison",
 ]

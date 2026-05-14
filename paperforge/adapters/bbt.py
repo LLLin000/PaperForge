@@ -154,6 +154,25 @@ def resolve_item_collection_paths(item: dict, collection_lookup: dict) -> list[s
     return sorted({path for path in paths if path}, key=lambda value: (-value.count("/"), value))
 
 
+def extract_citation_key(item: dict) -> str:
+    """Extract the Better BibTeX citation key from a BBT JSON item.
+
+    BBT stores the generated citation key as a top-level ``citationKey`` field,
+    e.g. ``aaronStimulationGrowthFactor2004``. Falls back to the Extra field.
+    """
+    ck = item.get("citationKey", "")
+    if ck:
+        return ck
+    extra = item.get("extra", "")
+    if not extra:
+        return ""
+    for line in extra.splitlines():
+        stripped = line.strip()
+        if stripped.lower().startswith("citation key:"):
+            return stripped.split(":", 1)[1].strip()
+    return ""
+
+
 def load_export_rows(path: Path) -> list[dict]:
     data = read_json(path)
     if isinstance(data, list):
@@ -199,6 +218,7 @@ def load_export_rows(path: Path) -> list[dict]:
                     "creators": item.get("creators", []),
                     "abstract": item.get("abstractNote", ""),
                     "journal": item.get("publicationTitle", ""),
+                    "citation_key": extract_citation_key(item),
                     "extra": item.get("extra", ""),
                     "year": extract_year(item.get("date", "")),
                     "date": item.get("date", ""),

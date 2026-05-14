@@ -279,7 +279,7 @@ def paperforge_paths(
           - bases: <vault>/<base_dir>
           - worker_script: pipeline/worker/scripts/literature_pipeline.py
           - skill_dir: <vault>/<skill_dir>
-          - ld_deep_script: <skill_dir>/literature-qa/scripts/ld_deep.py
+           - pf_deep_script: <skill_dir>/paperforge/scripts/pf_deep.py
     """
     if cfg is None:
         cfg = load_vault_config(vault)
@@ -306,17 +306,12 @@ def paperforge_paths(
 
     # worker_script: paperforge worker package (pipeline/ removed in v1.3)
     worker_script = Path(__file__).parent / "worker" / "__init__.py"
-    # ld_deep_script: look relative to skill_dir first, then repo paperforge/skills for dev
-    ld_deep_script = skill_path / "literature-qa" / "scripts" / "ld_deep.py"
-    if not ld_deep_script.exists():
-        repo_skill = Path(__file__).parent / "skills" / "literature-qa" / "scripts" / "ld_deep.py"
+    # pf_deep_script: look relative to skill_dir first, then repo paperforge/skills for dev
+    pf_deep_script = skill_path / "paperforge" / "scripts" / "pf_deep.py"
+    if not pf_deep_script.exists():
+        repo_skill = Path(__file__).parent / "skills" / "paperforge" / "scripts" / "pf_deep.py"
         if repo_skill.exists():
-            ld_deep_script = repo_skill
-        else:
-            # Backward compat: old skills/ location during transition
-            old_repo_skill = Path(__file__).parent.parent / "skills" / "literature-qa" / "scripts" / "ld_deep.py"
-            if old_repo_skill.exists():
-                ld_deep_script = old_repo_skill
+            pf_deep_script = repo_skill
 
     return {
         "vault": vault,
@@ -332,10 +327,11 @@ def paperforge_paths(
         "bases": bases,
         "worker_script": worker_script,
         "skill_dir": skill_path,
-        "ld_deep_script": ld_deep_script,
+        "pf_deep_script": pf_deep_script,
         # ── v2.2: canonical locations below paperforge/ ──
         "config": paperforge / "config" / "domain-collections.json",
         "index": paperforge / "indexes" / "formal-library.json",
+        "memory_db": paperforge / "indexes" / "paperforge.db",
     }
 
 

@@ -523,6 +523,7 @@ def headless_setup(
         pf_path / "exports",
         pf_path / "ocr",
         pf_path / "config",
+        pf_path / "methodology",
         pf_path / "worker/scripts",
         vault / resources_dir / literature_dir,
         vault / base_dir,
@@ -653,7 +654,7 @@ def headless_setup(
         overwrite=True,
     )
     if skill_result["skill_deployed"]:
-        print("    [OK] literature-qa skill deployed")
+        print("    [OK] paperforge skill deployed")
     for err in skill_result.get("errors", []):
         print(f"    [WARN] {err}")
 

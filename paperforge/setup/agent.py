@@ -1,4 +1,4 @@
-"""AgentInstaller — deploys literature-qa skill to vault-local agent config."""
+"""AgentInstaller — deploys paperforge skill to vault-local agent config."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from paperforge.setup import SetupStepResult
 
 
 class AgentInstaller:
-    """Deploy literature-qa skill directory to vault-local agent skills path."""
+    """Deploy paperforge skill directory to vault-local agent skills path."""
 
     def __init__(self, vault: Path, agent_type: str = "opencode"):
         self.vault = vault
@@ -23,8 +23,8 @@ class AgentInstaller:
         return self.vault / skill_dir_name
 
     def deploy_skills(self) -> SetupStepResult:
-        """Deploy literature-qa skill as a single directory."""
-        source_skills = self._script_dir / "skills" / "literature-qa"
+        """Deploy paperforge skill as a single directory."""
+        source_skills = self._script_dir / "skills" / "paperforge"
         if not source_skills.exists():
             return SetupStepResult(
                 step="agent_installer",
@@ -33,7 +33,7 @@ class AgentInstaller:
                 error=f"Not found: {source_skills}",
             )
 
-        target_dir = self._get_skills_dir() / "literature-qa"
+        target_dir = self._get_skills_dir() / "paperforge"
         target_dir.mkdir(parents=True, exist_ok=True)
 
         try:
@@ -41,7 +41,7 @@ class AgentInstaller:
             return SetupStepResult(
                 step="agent_installer",
                 ok=True,
-                message=f"Deployed literature-qa skill to {target_dir}",
+                message=f"Deployed paperforge skill to {target_dir}",
                 details={"source": str(source_skills), "target": str(target_dir)},
             )
         except Exception as e:

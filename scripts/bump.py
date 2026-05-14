@@ -101,8 +101,8 @@ def main():
     except subprocess.CalledProcessError:
         sys.exit("VERIFY FAILED: cannot read __init__.py from HEAD")
 
-    run(["git", "tag", "-f", f"v{new_ver}"])
-    print(f"Committed and tagged v{new_ver}")
+    run(["git", "tag", "-f", new_ver])
+    print(f"Committed and tagged {new_ver}")
     print("Run: git push && git push --tags")
 
 
