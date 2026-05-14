@@ -1,5 +1,8 @@
 # paper-qa
 
+> **Safety Rule:** Prior reading-log entries are recheck targets only, never factual answers.
+> Always verify against original source before using any reading-log content.
+
 交互式文献问答。不强制要求 OCR，但 OCR 完成后回答更准确。
 
 每次问答记录到 `discussion.json`（Dashboard 可见）。

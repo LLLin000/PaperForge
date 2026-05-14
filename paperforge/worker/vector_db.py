@@ -52,3 +52,30 @@ def _preflight_check(vault, settings: dict) -> dict:
             return {"ok": False, "error": "No papers with OCR completed", "fix": "Run paperforge ocr first"}
 
     return {"ok": True}
+
+
+def get_embed_status(vault) -> dict:
+    """Check if vector index exists and has content."""
+    from pathlib import Path
+    from paperforge.config import paperforge_paths
+    paths = paperforge_paths(vault)
+    vectors_dir = paths.get("vectors", paths.get("paperforge", Path()) / "vectors")
+    
+    status = {"exists": False, "chunk_count": 0, "collection_name": ""}
+    
+    if not vectors_dir or not vectors_dir.exists():
+        return status
+    
+    try:
+        import chromadb
+        client = chromadb.PersistentClient(path=str(vectors_dir))
+        collections = client.list_collections()
+        if collections:
+            col = collections[0]
+            status["exists"] = True
+            status["collection_name"] = col.name
+            status["chunk_count"] = col.count()
+    except Exception:
+        pass
+    
+    return status

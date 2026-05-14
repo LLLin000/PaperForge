@@ -1,5 +1,8 @@
 # deep-reading
 
+> **Safety Rule:** Prior reading-log entries are recheck targets only, never factual answers.
+> Always verify against original source before using any reading-log content.
+
 Keshav 三阶段精读。在 formal note 中写入结构化的 `## 精读` 区域。
 
 ---

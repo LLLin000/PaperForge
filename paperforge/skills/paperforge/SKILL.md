@@ -34,6 +34,9 @@ python $SKILL_DIR/scripts/pf_bootstrap.py --vault "$VAULT"
 
 如果 `ok: false`，报告 `error` 给用户，**停止。禁止自己拼路径。**
 
+如果 `python_verified` 为 `false` 或 `python_candidate` 为 `null`：
+依次尝试 `python` 再 `python3`。全部失败则停止，提示用户在 `paperforge.json` 中设置 `python_path`。
+
 ---
 
 ## 2. Agent Context — bootstrap 成功后执行
@@ -78,6 +81,7 @@ Reading-log 不是事实源。它记录的是**之前的关注点、解读和预
 | "记一下" "记录阅读" "reading log" "读完这段记一下"       | `workflows/reading-log.md`       |
 | "总结会话" "工作记录" "项目记录" "project log" "记决策"   | `workflows/project-log.md`       |
 | "提取方法论" "总结规律" "存档写作规律"                    | `workflows/methodology.md`       |
+| "branch" "代码审查" "feature" "dashboard" "memory layer" "用户反馈" "报错" "安装失败" "Git" "Zotero" "BetterBibTeX" "OCR" "插件" | `workflows/project-engineering.md` |
 | 不确定 / 空输入                                          | 问用户：搜文献、精读、问答、记笔记、记工作、提方法论？ |
 
 路由后如用户切换意图，重新判断并打开对应 workflow。
@@ -103,7 +107,8 @@ paperforge/
 │   ├── paper-qa.md
 │   ├── reading-log.md
 │   ├── project-log.md
-│   └── methodology.md
+│   ├── methodology.md
+│   └── project-engineering.md
 ├── references/           ← 共享参考
 │   ├── chart-reading/    ← 19 种图表阅读指南
 │   └── method-card-template.md
