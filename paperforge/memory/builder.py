@@ -230,6 +230,7 @@ def build_from_index(vault: Path) -> dict:
         project_count = _import_project_log(conn, vault)
         logger.info("Imported %d project log entries from JSONL", project_count)
 
+        conn.execute("DELETE FROM paper_events WHERE event_type = 'correction_note';")
         correction_count = _import_correction_log(conn, vault)
         logger.info("Imported %d corrections from JSONL", correction_count)
 
