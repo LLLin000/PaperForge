@@ -206,6 +206,10 @@ function runSubprocess(pythonExe, args, cwd, timeout, _spawn, env) {
     });
 }
 
+function shouldRenderVectorReady(vectorDepsOk, embedStatusText) {
+    return vectorDepsOk === true;
+}
+
 module.exports = {
     resolvePythonExecutable,
     getPluginVersion,
@@ -216,4 +220,5 @@ module.exports = {
     ACTIONS,
     buildCommandArgs,
     runSubprocess,
+    shouldRenderVectorReady,
 };
