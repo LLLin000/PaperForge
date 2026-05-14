@@ -13,6 +13,8 @@ from paperforge.memory.vector_db import (
     get_collection,
     get_embed_status,
     get_vector_db_path,
+    mark_vector_build_state,
+    read_vector_build_state,
 )
 from paperforge.worker.asset_index import read_index
 from paperforge.worker.vector_db import _preflight_check
@@ -25,12 +27,34 @@ def run(args: argparse.Namespace) -> int:
 
     if sub == "status":
         status = get_embed_status(vault)
+        status["build_state"] = read_vector_build_state(vault)
         result = PFResult(ok=True, command="embed status", version=PF_VERSION, data=status)
         if args.json:
             print(result.to_json())
         else:
             for k, v in status.items():
-                print(f"  {k}: {v}")
+                if k == "build_state":
+                    print(f"  {k}: {v['status']} ({v['current']}/{v['total']})")
+                else:
+                    print(f"  {k}: {v}")
+        return 0
+
+    if sub == "stop":
+        state = read_vector_build_state(vault)
+        pid = state.get("pid", 0)
+        if pid and state["status"] == "running":
+            import signal
+            try:
+                os.kill(pid, signal.SIGTERM)
+            except Exception:
+                pass
+            mark_vector_build_state(vault, status="stopping", message="Stop requested")
+        result = PFResult(ok=True, command="embed stop", version=PF_VERSION,
+                         data={"state": "stopping" if pid else "idle"})
+        if args.json:
+            print(result.to_json())
+        else:
+            print("Stop requested." if pid else "No active build.")
         return 0
 
     # Build
@@ -76,6 +100,17 @@ def run(args: argparse.Namespace) -> int:
     total = len(done_papers)
     print(f"EMBED_START:{total}", flush=True)
 
+    import os as _os
+    _now = __import__('datetime').datetime.now(__import__('datetime').timezone.utc).isoformat
+    mark_vector_build_state(vault,
+        status="running",
+        current=0, total=total, paper_id="",
+        started_at=_now(), finished_at="",
+        message="", pid=_os.getpid(),
+        model=get_embed_status(vault)["model"],
+        mode=get_embed_status(vault)["mode"],
+    )
+
     if args.force:
         db_path = get_vector_db_path(vault)
         if db_path.exists():
@@ -113,11 +148,24 @@ def run(args: argparse.Namespace) -> int:
             n = embed_paper(vault, key, chunks)
             chunks_embedded += n
             papers_embedded += 1
+            mark_vector_build_state(vault,
+                current=i, paper_id=key,
+                last_update=_now(),
+            )
         except Exception as e:
+            mark_vector_build_state(vault,
+                status="failed", message=str(e), pid=0,
+            )
             result = PFResult(ok=False, command="embed build", version=PF_VERSION,
                              error=PFError(code=ErrorCode.INTERNAL_ERROR, message=str(e)))
             print(result.to_json() if args.json else result.error.message, file=sys.stderr if not args.json else sys.stdout)
             return 1
+
+    mark_vector_build_state(vault,
+        status="completed",
+        current=total, finished_at=_now(),
+        message="", pid=0,
+    )
 
     print("EMBED_DONE", flush=True)
 
