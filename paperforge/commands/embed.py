@@ -10,6 +10,7 @@ from paperforge.memory.chunker import chunk_fulltext
 from paperforge.memory.vector_db import (
     delete_paper_vectors,
     embed_paper,
+    get_collection,
     get_embed_status,
     get_vector_db_path,
 )
