@@ -33,17 +33,24 @@ The plugin is the **interface**. The Python package is the **engine**. Every but
 
 ## 1. Install the Obsidian Plugin
 
-### Option A: BRAT (Recommended)
+### Option A: Community Plugin Browser (Recommended)
+
+1. Open Obsidian → `Settings` → `Community plugins` → `Browse`
+2. Search for **PaperForge**
+3. Click `Install`, then `Enable`
+
+> Community plugins auto-update through Obsidian. No extra steps needed.
+
+### Option B: BRAT
+
+If you need beta versions or the plugin hasn't appeared in search yet:
 
 1. Install **BRAT** from the Obsidian community plugin browser
 2. Open BRAT settings → `Add Beta Plugin`
 3. Enter: `https://github.com/LLLin000/PaperForge`
-4. BRAT downloads the latest `main.js`, `manifest.json`, and `styles.css` and installs them
-5. Settings → Community Plugins → enable PaperForge
+4. Enable PaperForge in Settings → Community Plugins
 
-> BRAT auto-detects GitHub Release updates. No manual downloads needed.
-
-### Option B: Manual Download
+### Option C: Manual Download
 
 1. Go to [Releases](https://github.com/LLLin000/PaperForge/releases)
 2. Download the three files: `main.js`, `manifest.json`, `styles.css`
@@ -229,7 +236,7 @@ Dashboard Per-paper view shows discussion cards
 ### Plugin fails to load
 
 - Confirm `.obsidian/plugins/paperforge/` has `main.js`, `manifest.json`, `styles.css`
-- If upgrading via BRAT from an old version: delete the entire `paperforge` plugin folder and let BRAT re-download
+- If upgrading from an old version: delete the entire `paperforge` plugin folder and reinstall via the community plugin browser
 - Open Developer Console (`Ctrl+Shift+I`) and check the red errors
 
 ### "Sync Runtime" doesn't update the version
@@ -259,13 +266,15 @@ Dashboard Per-paper view shows discussion cards
 
 ## 9. Updating
 
-BRAT auto-detects plugin updates. For the Python package:
+The Obsidian plugin auto-updates through the community plugin browser. For the Python package:
 
 ```bash
 paperforge update
 # or
 pip install --upgrade paperforge
 ```
+
+If you installed via BRAT, it also auto-detects GitHub Release updates.
 
 ---
 

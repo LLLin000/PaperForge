@@ -1,4 +1,4 @@
-"""Skill deployment service — single copytree for all platforms.
+"""Skill deployment service — deploys the unified paperforge skill to the vault.
 
 Used by both setup wizard (install) and update worker (update).
 All deployments are vault-local only.
@@ -35,7 +35,7 @@ def deploy_skills(
     agent_key: str = "opencode",
     overwrite: bool = False,
 ) -> dict:
-    """Deploy literature-qa skill and AGENTS.md to the vault.
+    """Deploy paperforge skill and AGENTS.md to the vault.
 
     Args:
         vault: Obsidian vault root.
@@ -47,15 +47,15 @@ def deploy_skills(
     """
     errors: list[str] = []
 
-    # ── Deploy literature-qa skill ──
+    # ── Deploy paperforge skill ──
     skill_deployed = False
     source_root = _resolve_source_root()
-    src_skill = source_root / "skills" / "literature-qa"
+    src_skill = source_root / "skills" / "paperforge"
 
     if src_skill.exists():
         skill_dir_name = AGENT_SKILL_DIRS.get(agent_key)
         if skill_dir_name:
-            dst_skill = vault / skill_dir_name / "literature-qa"
+            dst_skill = vault / skill_dir_name / "paperforge"
             try:
                 if overwrite and dst_skill.exists():
                     shutil.rmtree(dst_skill, ignore_errors=True)
