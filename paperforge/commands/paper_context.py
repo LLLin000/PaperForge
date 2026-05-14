@@ -8,7 +8,7 @@ from paperforge import __version__ as PF_VERSION
 from paperforge.core.errors import ErrorCode
 from paperforge.core.result import PFError, PFResult
 from paperforge.memory.db import get_connection, get_memory_db_path
-from paperforge.memory.permanent import get_reading_notes_for_paper
+from paperforge.memory.permanent import get_corrections_for_paper, get_reading_notes_for_paper
 
 
 def _build_paper_context(vault, key: str) -> dict | None:
@@ -44,14 +44,32 @@ def _build_paper_context(vault, key: str) -> dict | None:
                ORDER BY created_at DESC""",
             (key,),
         ).fetchall()
+        seen_ids: set[str] = set()
         for cr in corr_rows:
             payload = json.loads(cr["payload_json"])
+            orig_id = payload.get("original_id", "")
             corrections.append({
                 "created_at": cr["created_at"],
-                "previous_note_id": payload.get("ref_id", ""),
+                "previous_note_id": orig_id,
                 "correction": payload.get("correction", ""),
                 "reason": payload.get("reason", ""),
             })
+            if orig_id:
+                seen_ids.add(orig_id)
+
+        jsonl_corrections = get_corrections_for_paper(vault, key)
+        for c in jsonl_corrections:
+            cid = c.get("original_id", "")
+            if cid and cid in seen_ids:
+                continue
+            corrections.append({
+                "created_at": c.get("created_at", ""),
+                "previous_note_id": cid,
+                "correction": c.get("correction", ""),
+                "reason": c.get("reason", ""),
+            })
+            if cid:
+                seen_ids.add(cid)
 
         recheck_targets = []
         for n in prior_notes:

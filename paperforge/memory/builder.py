@@ -107,6 +107,26 @@ def _import_project_log(conn, vault: Path) -> int:
     return count
 
 
+def _import_correction_log(conn, vault: Path) -> int:
+    """Import correction-log.jsonl into paper_events for FTS search. Returns count."""
+    from paperforge.memory.permanent import read_all_corrections
+
+    corrections = read_all_corrections(vault)
+    count = 0
+    for c in corrections:
+        payload = {
+            "original_id": c.get("original_id", ""),
+            "correction": c.get("correction", ""),
+            "reason": c.get("reason", ""),
+        }
+        conn.execute(
+            "INSERT INTO paper_events (paper_id, event_type, payload_json) VALUES (?, 'correction_note', ?)",
+            (c["paper_id"], json.dumps(payload, ensure_ascii=False)),
+        )
+        count += 1
+    return count
+
+
 def build_from_index(vault: Path) -> dict:
     """Read formal-library.json and build/rebuild paperforge.db.
     
@@ -210,6 +230,9 @@ def build_from_index(vault: Path) -> dict:
         project_count = _import_project_log(conn, vault)
         logger.info("Imported %d project log entries from JSONL", project_count)
 
+        correction_count = _import_correction_log(conn, vault)
+        logger.info("Imported %d corrections from JSONL", correction_count)
+
         conn.execute(
             "DELETE FROM paper_events WHERE event_type != 'correction_note';"
         )
@@ -237,6 +260,7 @@ def build_from_index(vault: Path) -> dict:
             "aliases_indexed": len(alias_rows),
             "reading_notes_imported": reading_count,
             "project_entries_imported": project_count,
+            "corrections_imported": correction_count,
             "schema_version": str(CURRENT_SCHEMA_VERSION),
         }
     except Exception:

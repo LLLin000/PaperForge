@@ -13,6 +13,7 @@ from paperforge.core.result import PFError, PFResult
 from paperforge.memory.db import get_connection, get_memory_db_path
 from paperforge.memory.events import write_correction_note, write_reading_note
 from paperforge.memory.permanent import (
+    append_correction,
     append_reading_note,
     get_reading_notes_for_paper,
     read_all_reading_notes,
@@ -426,16 +427,31 @@ def run(args: argparse.Namespace) -> int:
             vault, paper_id, args.correct_id,
             args.correction, args.reason or "",
         )
+
+        jsonl_result = append_correction(
+            vault, paper_id, args.correct_id,
+            args.correction, args.reason or "",
+        )
+
         result = PFResult(
             ok=ok, command="reading-log", version=PF_VERSION,
-            data={"written": ok},
+            data={"written": ok, "jsonl_id": jsonl_result.get("id"),
+                  "jsonl_path": jsonl_result.get("path")},
             error=PFError(code=ErrorCode.INTERNAL_ERROR,
                           message="Failed to write correction") if not ok else None,
         )
         if args.json:
             print(result.to_json())
         else:
-            print(f"Correction written for {args.correct_id}." if ok else "Failed.")
+            written_parts = []
+            if ok:
+                written_parts.append("paper_events")
+            if jsonl_result.get("ok"):
+                written_parts.append(f"correction-log.jsonl ({jsonl_result.get('id')})")
+            if written_parts:
+                print(f"Correction written for {args.correct_id}: {', '.join(written_parts)}.")
+            else:
+                print("Failed.")
         return 0 if ok else 1
 
     if args.paper_id and args.excerpt:
