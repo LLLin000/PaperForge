@@ -1482,6 +1482,24 @@ class PaperForgeStatusView extends ItemView {
         this._renderSystemStatusRow(statusGrid, 'OCR Token', tokenOk ? 'configured' : 'missing',
             tokenOk ? 'Configured' : 'Not set');
 
+        // Memory Layer health
+        let memOk = false, memDetail = '';
+        try {
+            const { execFileSync } = require('child_process');
+            const vp2 = this.app.vault.adapter.basePath;
+            const { path: pyExe2, extraArgs: ea2 } = resolvePythonExecutable(vp2, plugin?.settings);
+            if (pyExe2) {
+                const rh = execFileSync(pyExe2, [...ea2, '-m', 'paperforge', 'runtime-health', '--json', '--vault', vp2],
+                    { cwd: vp2, timeout: 8000, encoding: 'utf-8', windowsHide: true });
+                const data = JSON.parse(rh);
+                if (data.ok) {
+                    memOk = data.data.summary.status === 'ok';
+                    memDetail = data.data.summary.reason || data.data.summary.status;
+                }
+            }
+        } catch (_) { memDetail = 'Check failed'; }
+        this._renderSystemStatusRow(statusGrid, 'Memory Layer', memOk ? 'healthy' : 'fail', memDetail);
+
         // ── Issues Panel (only for serious blockers) ──
         const hasVersionMismatch = !runtimeOk && pyVer !== '\u2014';
         const hasIssues = hasVersionMismatch || !indexOk || !exportOk || !tokenOk;
@@ -2355,6 +2373,7 @@ class PaperForgeSettingTab extends PluginSettingTab {
         this._embedStatusText = null;
         this._skillsCollapsed = { user: true };  // User skills collapsed by default
         this._embedProcess = null;
+        this._embedRehydrated = false;
         this._embedProgress = { current: 0, total: 0, key: '' };
         this.activeTab = 'setup';
     }
@@ -2981,7 +3000,7 @@ class PaperForgeSettingTab extends PluginSettingTab {
         });
 
         // === Resolve state ===
-        if (this._vectorDepsOk === true && this._embedStatusText !== null) {
+        if (this._vectorDepsOk === true) {
             this._renderVectorReady(vecConfigContent, vp);
             return;
         }
@@ -3284,11 +3303,31 @@ class PaperForgeSettingTab extends PluginSettingTab {
 
         const embedStatusText = embedSection.createEl('div', { cls: 'paperforge-embed-status-text' });
 
+        // Rehydrate from persisted state on mount
+        if (!this._embedProcess) {
+            const pyResultRH = resolvePythonExecutable(vp, this.plugin.settings);
+            if (pyResultRH.path) {
+                const { exec } = require('child_process');
+                exec(`"${pyResultRH.path}" -m paperforge embed status --json --vault "${vp}"`, { encoding: 'utf-8', timeout: 8000 }, (err, stdout) => {
+                    if (err) return;
+                    try {
+                        const job = JSON.parse(stdout).data && JSON.parse(stdout).data.build_state;
+                        if (job && job.status === 'running') {
+                            this._embedRehydrated = true;
+                            this._embedProgress = { current: job.current || 0, total: job.total || 0, key: job.paper_id || '' };
+                            this.display();
+                        }
+                    } catch (_) {}
+                });
+            }
+        }
+
         const renderEmbedUI = () => {
             embedControls.empty();
             embedStatusText.empty();
+            this._embedProgress = this._embedProgress || { current: 0, total: 0, key: '' };
             const { current, total, key } = this._embedProgress;
-            const isRunning = !!this._embedProcess;
+            const isRunning = !!this._embedProcess || !!this._embedRehydrated;
 
             if (isRunning) {
                 // Progress bar
@@ -3312,11 +3351,17 @@ class PaperForgeSettingTab extends PluginSettingTab {
                 stopBtn.setText('Stop');
                 stopBtn.className = 'mod-warning';
                 stopBtn.addEventListener('click', () => {
+                    this._embedRehydrated = false;
+                    const pyResultS = resolvePythonExecutable(vp, this.plugin.settings);
+                    if (pyResultS.path) {
+                        const { exec } = require('child_process');
+                        exec(`"${pyResultS.path}" -m paperforge embed stop --json --vault "${vp}"`, { encoding: 'utf-8', timeout: 8000 });
+                    }
                     if (this._embedProcess) {
                         this._embedProcess.kill();
                         this._embedProcess = null;
-                        this.display();
                     }
+                    this.display();
                 });
             } else {
                 const embedInfo = this._embedStatusText ? this._parseEmbedStatus(this._embedStatusText) : null;
