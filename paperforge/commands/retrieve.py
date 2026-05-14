@@ -16,6 +16,26 @@ def run(args: argparse.Namespace) -> int:
     query = args.query
     limit = args.limit or 5
 
+    # Check if vector index exists
+    from paperforge.worker.vector_db import get_embed_status
+    status = get_embed_status(vault)
+    if status.get("chunk_count", 0) == 0:
+        result = PFResult(
+            ok=False,
+            command="retrieve",
+            version=PF_VERSION,
+            error=PFError(
+                code=ErrorCode.PATH_NOT_FOUND,
+                message="Vector index is empty. Run paperforge embed build first.",
+            ),
+            data={"next_action": "paperforge embed build"},
+        )
+        if args.json:
+            print(result.to_json())
+        else:
+            print(f"Error: {result.error.message}", file=sys.stderr)
+        return 1
+
     try:
         chunks = retrieve_chunks(vault, query, limit=limit, expand=args.expand)
     except Exception as e:

@@ -3251,6 +3251,14 @@ class PaperForgeSettingTab extends PluginSettingTab {
                         this.display();
                     });
                 });
+
+            // INFO: HF download notice for local mode
+            const infoDiv = containerEl.createDiv({ cls: 'setting-item-description' });
+            infoDiv.createEl('p', {
+                text: 'Local mode downloads models from Hugging Face on first use. '
+                    + 'If inaccessible, set an HF Endpoint above (e.g. https://hf-mirror.com) or switch to API mode.',
+                cls: 'paperforge-settings-desc',
+            });
         }
 
         // API config (api mode)

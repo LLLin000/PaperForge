@@ -1,5 +1,8 @@
 # project-log
 
+> **Scope:** Record what happened this session — decisions, detours, todos.
+> For reusable cross-project methods, use methodology workflow instead.
+
 记录研究项目的会话总结、决策、弯路修正和方法论提取。
 Agent 按 JSON schema 写入 project-log.jsonl。
 系统自动渲染对应项目的 project-log.md。

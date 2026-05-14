@@ -1,5 +1,8 @@
 # methodology
 
+> **Scope:** Only archive methods reusable across multiple projects/tasks.
+> Session-specific progress, decisions, and todos go to project-log.
+
 从 project-log 中提取可复用方法论，按 method-card 模板写入 methodology archive。
 不 append 到大文件，每张卡片独立保存。
 
