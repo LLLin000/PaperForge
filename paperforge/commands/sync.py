@@ -61,6 +61,15 @@ def run(args: argparse.Namespace) -> int:
     svc = SyncService(vault)
     result = svc.run(verbose=verbose, json_output=json_output, selection_only=selection_only, index_only=index_only)
 
+    # Auto-build memory DB after successful sync so search works immediately
+    if result.ok and not dry_run:
+        try:
+            from paperforge.memory.builder import build_from_index
+            counts = build_from_index(vault)
+            logger.info("Memory DB built: %s papers indexed", counts.get("papers_indexed", 0))
+        except Exception as e:
+            logger.warning("Memory DB build skipped: %s", e)
+
     if json_output:
         print(result.to_json())
         return 0
