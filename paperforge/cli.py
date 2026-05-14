@@ -338,6 +338,10 @@ def build_parser() -> argparse.ArgumentParser:
     p_ac = sub.add_parser("agent-context", help="Generate agent bootstrap context")
     p_ac.add_argument("--json", action="store_true", help="Output as JSON")
 
+    # runtime-health
+    p_rh = sub.add_parser("runtime-health", help="Check memory layer runtime health")
+    p_rh.add_argument("--json", action="store_true", help="Output as JSON")
+
     # base-refresh
     p_base = sub.add_parser("base-refresh", help="Refresh Obsidian Base view files")
     p_base.add_argument(
@@ -592,6 +596,11 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "agent-context":
         from paperforge.commands.agent_context import run
+
+        return run(args)
+
+    if args.command == "runtime-health":
+        from paperforge.commands.runtime_health import run
 
         return run(args)
 
