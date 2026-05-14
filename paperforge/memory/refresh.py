@@ -78,6 +78,16 @@ def refresh_paper(vault: Path, entry: dict) -> bool:
                 (zotero_key, raw_str, raw_str.lower().strip(), alias_type),
             )
 
+        row = conn.execute(
+            "SELECT rowid FROM papers WHERE zotero_key = ?",
+            (zotero_key,),
+        ).fetchone()
+        if row:
+            conn.execute(
+                "INSERT INTO paper_fts(paper_fts, rowid) VALUES ('delete', ?)",
+                (row["rowid"],),
+            )
+
         conn.execute(
             "INSERT INTO paper_fts(rowid, zotero_key, citation_key, title, first_author, authors_json, abstract, journal, domain, collection_path, collections_json) "
             "VALUES ((SELECT rowid FROM papers WHERE zotero_key = ?), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
