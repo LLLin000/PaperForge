@@ -1,3 +1,3 @@
 """paperforge — PaperForge package."""
 
-__version__ = "1.5.6rc1"
+__version__ = "1.5.6rc2"
