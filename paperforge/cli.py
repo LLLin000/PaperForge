@@ -264,6 +264,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_embed_build = p_embed_sp.add_parser("build", help="Build vector index from OCR fulltext")
     p_embed_build.add_argument("--json", action="store_true")
     p_embed_build.add_argument("--force", action="store_true")
+    p_embed_build.add_argument("--resume", action="store_true", help="Skip papers already in vector index")
     p_embed_status = p_embed_sp.add_parser("status", help="Check vector DB status")
     p_embed_status.add_argument("--json", action="store_true")
 
