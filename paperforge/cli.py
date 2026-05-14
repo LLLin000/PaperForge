@@ -310,6 +310,15 @@ def build_parser() -> argparse.ArgumentParser:
     p_rl.add_argument("--lookup", help="Look up all reading notes for a paper key")
     p_rl.add_argument("--json", action="store_true", help="Output as JSON")
 
+    p_pl = sub.add_parser("project-log", help="Record or render project work logs")
+    p_pl.add_argument("--write", action="store_true", help="Write a new project log entry")
+    p_pl.add_argument("--payload", help="JSON payload for the entry")
+    p_pl.add_argument("--project", help="Project name (required for write/list/render)")
+    p_pl.add_argument("--list", action="store_true", help="List all entries for a project")
+    p_pl.add_argument("--render", action="store_true", help="Render project-log.md")
+    p_pl.add_argument("--limit", type=int, default=50, help="Max entries to list")
+    p_pl.add_argument("--json", action="store_true", help="Output as PFResult JSON")
+
     p_search = sub.add_parser("search", help="Full-text search across the library")
     p_search.add_argument("query", help="Search query (supports FTS5 syntax)")
     p_search.add_argument("--json", action="store_true", help="Output as JSON")
@@ -565,6 +574,11 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "reading-log":
         from paperforge.commands.reading_log import run
+
+        return run(args)
+
+    if args.command == "project-log":
+        from paperforge.commands.project_log import run
 
         return run(args)
 
