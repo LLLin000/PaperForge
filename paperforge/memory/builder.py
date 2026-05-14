@@ -52,6 +52,61 @@ def _resolve_vault_path(vault: Path, rel_path: str) -> Path:
     return p.resolve() if p.exists() else p
 
 
+def _import_reading_log(conn, vault: Path) -> int:
+    """Import reading-log.jsonl into reading_log table. Returns count."""
+    from paperforge.memory.permanent import read_all_reading_notes
+
+    notes = read_all_reading_notes(vault)
+    conn.execute("DELETE FROM reading_log")
+    count = 0
+    for note in notes:
+        conn.execute(
+            """INSERT INTO reading_log (id, paper_id, project, section, excerpt, context, usage, note, tags_json, created_at, agent, verified)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (
+                note["id"], note["paper_id"],
+                note.get("project", ""),
+                note["section"], note["excerpt"],
+                note.get("context", ""), note["usage"],
+                note.get("note", ""),
+                json.dumps(note.get("tags", []), ensure_ascii=False),
+                note["created_at"],
+                note.get("agent", ""),
+                1 if note.get("verified") else 0,
+            ),
+        )
+        count += 1
+    return count
+
+
+def _import_project_log(conn, vault: Path) -> int:
+    """Import project-log.jsonl into project_log table. Returns count."""
+    from paperforge.memory.permanent import read_all_project_entries
+
+    entries = read_all_project_entries(vault)
+    conn.execute("DELETE FROM project_log")
+    count = 0
+    for entry in entries:
+        conn.execute(
+            """INSERT INTO project_log (id, project, date, type, title, decisions_json, detours_json, reusable_json, todos_json, related_papers_json, tags_json, created_at, agent)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (
+                entry["id"], entry["project"],
+                entry.get("date", ""), entry["type"], entry["title"],
+                json.dumps(entry.get("decisions", []), ensure_ascii=False),
+                json.dumps(entry.get("detours", []), ensure_ascii=False),
+                json.dumps(entry.get("reusable", []), ensure_ascii=False),
+                json.dumps(entry.get("todos", []), ensure_ascii=False),
+                json.dumps(entry.get("related_papers", []), ensure_ascii=False),
+                json.dumps(entry.get("tags", []), ensure_ascii=False),
+                entry.get("created_at", ""),
+                entry.get("agent", ""),
+            ),
+        )
+        count += 1
+    return count
+
+
 def build_from_index(vault: Path) -> dict:
     """Read formal-library.json and build/rebuild paperforge.db.
     
@@ -149,6 +204,16 @@ def build_from_index(vault: Path) -> dict:
                          FROM papers""")
         conn.execute(PAPERS_AI_TRIGGER)
 
+        reading_count = _import_reading_log(conn, vault)
+        logger.info("Imported %d reading notes from JSONL", reading_count)
+
+        project_count = _import_project_log(conn, vault)
+        logger.info("Imported %d project log entries from JSONL", project_count)
+
+        conn.execute(
+            "DELETE FROM paper_events WHERE event_type != 'correction_note';"
+        )
+
         meta_upserts = [
             ("schema_version", str(CURRENT_SCHEMA_VERSION)),
             ("paperforge_version", PF_VERSION),
@@ -170,6 +235,8 @@ def build_from_index(vault: Path) -> dict:
             "papers_indexed": len(paper_rows),
             "assets_indexed": len(asset_rows),
             "aliases_indexed": len(alias_rows),
+            "reading_notes_imported": reading_count,
+            "project_entries_imported": project_count,
             "schema_version": str(CURRENT_SCHEMA_VERSION),
         }
     except Exception:
