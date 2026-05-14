@@ -11,7 +11,7 @@ from paperforge.config import paperforge_paths
 from paperforge.core.errors import ErrorCode
 from paperforge.core.result import PFError, PFResult
 from paperforge.memory.db import get_connection, get_memory_db_path
-from paperforge.memory.events import write_correction_note, write_reading_note
+from paperforge.memory.events import write_correction_note
 from paperforge.memory.permanent import (
     append_correction,
     append_reading_note,
@@ -157,7 +157,7 @@ def validate_reading_log(filepath: Path) -> dict:
 
 
 def import_reading_log(vault: Path, filepath: Path) -> dict:
-    """Validate and import a reading-log.md into paper_events."""
+    """Validate and import a reading-log.md into reading-log.jsonl source of truth."""
     parsed = _parse_reading_log(filepath)
     if not parsed["ok"]:
         return {"ok": False, "errors": parsed["errors"], "papers_imported": 0, "entries_imported": 0}
@@ -170,9 +170,13 @@ def import_reading_log(vault: Path, filepath: Path) -> dict:
             info = section.get("info", "")
             use = section.get("use", "")
             if info and use:
-                write_reading_note(
-                    vault, paper["paper_key"], section["section_name"],
-                    info, use, section.get("note", "") or "",
+                append_reading_note(
+                    vault,
+                    paper["paper_key"],
+                    section["section_name"],
+                    excerpt=info,
+                    usage=use,
+                    note=section.get("note", "") or "",
                 )
                 entries_imported += 1
                 papers_set.add(paper["paper_key"])
@@ -423,33 +427,37 @@ def run(args: argparse.Namespace) -> int:
                 print(f"Error: Original entry {args.correct_id} not found in reading-log.jsonl")
             return 1
 
-        ok = write_correction_note(
-            vault, paper_id, args.correct_id,
-            args.correction, args.reason or "",
-        )
-
+        # Write to JSONL (source of truth)
         jsonl_result = append_correction(
             vault, paper_id, args.correct_id,
             args.correction, args.reason or "",
         )
 
+        # Also write to paper_events for FTS (best effort)
+        db_ok = write_correction_note(
+            vault, paper_id, args.correct_id,
+            args.correction, args.reason or "",
+        )
+
+        ok = bool(jsonl_result.get("ok"))
         result = PFResult(
-            ok=ok, command="reading-log", version=PF_VERSION,
-            data={"written": ok, "jsonl_id": jsonl_result.get("id"),
-                  "jsonl_path": jsonl_result.get("path")},
+            ok=ok,
+            command="reading-log",
+            version=PF_VERSION,
+            data={
+                "written": ok,
+                "jsonl_id": jsonl_result.get("id", ""),
+                "db_indexed": db_ok,
+            },
             error=PFError(code=ErrorCode.INTERNAL_ERROR,
-                          message="Failed to write correction") if not ok else None,
+                          message="Correction write failed") if not ok else None,
         )
         if args.json:
             print(result.to_json())
         else:
-            written_parts = []
             if ok:
-                written_parts.append("paper_events")
-            if jsonl_result.get("ok"):
-                written_parts.append(f"correction-log.jsonl ({jsonl_result.get('id')})")
-            if written_parts:
-                print(f"Correction written for {args.correct_id}: {', '.join(written_parts)}.")
+                print(f"Correction written ({jsonl_result.get('id', '')})."
+                      f"{' DB indexed.' if db_ok else ''}")
             else:
                 print("Failed.")
         return 0 if ok else 1

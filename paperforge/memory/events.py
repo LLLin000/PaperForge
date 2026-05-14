@@ -10,81 +10,62 @@ def write_reading_note(vault: Path, paper_id: str, section: str,
                        excerpt: str, usage: str = "", note: str = "",
                        context: str = "", project: str = "",
                        tags: list[str] | None = None) -> bool:
-    """DEPRECATED: Use append_reading_note() in paperforge.memory.permanent instead.
+    """DEPRECATED: Wraps append_reading_note(). Use permanent.py directly.
 
-    Reading notes now live in reading-log.jsonl as the source of truth.
-    This function is kept for backward compatibility only (import_reading_log).
+    Kept for backward compatibility. Does NOT write to paper_events anymore.
     """
-    db_path = get_memory_db_path(vault)
-    if not db_path.exists():
-        return False
-
-    payload = {
-        "section": section,
-        "excerpt": excerpt,
-        "usage": usage,
-        "note": note,
-        "context": context,
-        "project": project,
-        "tags": tags or [],
-    }
-    conn = get_connection(db_path, read_only=False)
-    try:
-        conn.execute(
-            """INSERT INTO paper_events (paper_id, event_type, payload_json)
-               VALUES (?, 'reading_note', ?)""",
-            (paper_id, json.dumps(payload, ensure_ascii=False)),
-        )
-        conn.commit()
-        return True
-    except Exception:
-        conn.rollback()
-        return False
-    finally:
-        conn.close()
+    from paperforge.memory.permanent import append_reading_note
+    result = append_reading_note(
+        vault, paper_id, section, excerpt,
+        usage=usage, context=context, note=note,
+        project=project, tags=tags,
+    )
+    return bool(result.get("ok"))
 
 
 def export_reading_log(vault: Path, since: str = "", limit: int = 50) -> list[dict]:
-    """Export reading notes as a list of dicts, ordered by created_at DESC."""
+    """Export reading notes from JSONL (source of truth)."""
+    from paperforge.memory.permanent import read_all_reading_notes
+    
+    notes = read_all_reading_notes(vault)
+    
+    # Optionally enrich with papers metadata from DB
     db_path = get_memory_db_path(vault)
-    if not db_path.exists():
-        return []
-
-    conn = get_connection(db_path, read_only=True)
-    try:
-        query = """
-            SELECT e.created_at, e.paper_id, e.payload_json,
-                   p.citation_key, p.title, p.year, p.first_author
-            FROM paper_events e
-            JOIN papers p ON p.zotero_key = e.paper_id
-            WHERE e.event_type = 'reading_note'
-        """
-        params = []
-        if since:
-            query += " AND e.created_at >= ?"
-            params.append(since)
-        query += " ORDER BY e.created_at DESC LIMIT ?"
-        params.append(limit)
-
-        rows = conn.execute(query, params).fetchall()
-        results = []
-        for row in rows:
-            payload = json.loads(row["payload_json"])
-            results.append({
-                "created_at": row["created_at"],
-                "paper_id": row["paper_id"],
-                "citation_key": row["citation_key"],
-                "title": row["title"],
-                "year": row["year"],
-                "first_author": row["first_author"],
-                "section": payload.get("section", ""),
-                "excerpt": payload.get("excerpt", ""),
-                "usage": payload.get("usage", ""),
-                "note": payload.get("note", ""),
-            })
-        return results
-    finally:
-        conn.close()
+    paper_cache = {}
+    if db_path.exists():
+        conn = get_connection(db_path, read_only=True)
+        try:
+            rows = conn.execute(
+                "SELECT zotero_key, citation_key, title, year, first_author FROM papers"
+            ).fetchall()
+            for r in rows:
+                paper_cache[r["zotero_key"]] = dict(r)
+        finally:
+            conn.close()
+    
+    results = []
+    for n in notes:
+        created = n.get("created_at", "")
+        if since and created < since:
+            continue
+        pid = n.get("paper_id", "")
+        meta = paper_cache.get(pid, {})
+        results.append({
+            "created_at": created,
+            "paper_id": pid,
+            "citation_key": meta.get("citation_key", ""),
+            "title": meta.get("title", ""),
+            "year": meta.get("year", ""),
+            "first_author": meta.get("first_author", ""),
+            "section": n.get("section", ""),
+            "excerpt": n.get("excerpt", ""),
+            "usage": n.get("usage", ""),
+            "note": n.get("note", ""),
+        })
+    
+    # Sort DESC by created_at, apply limit
+    results.sort(key=lambda x: x["created_at"], reverse=True)
+    return results[:limit]
 
 
 def write_correction_note(vault: Path, paper_id: str, original_id: str,
