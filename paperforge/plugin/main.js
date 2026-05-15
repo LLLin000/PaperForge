@@ -3,7 +3,7 @@ const { exec, execFile, spawn, execFileSync } = require('node:child_process');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
-const memoryState = require('./src/memory-state.js');
+const memoryState = require('./memory-state.js');
 
 // ── Inlined from src/testable.js ──
 
