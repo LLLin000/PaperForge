@@ -2381,6 +2381,7 @@ class PaperForgeSettingTab extends PluginSettingTab {
         this._embedStatusText = null;
         this._skillsCollapsed = { user: true };  // User skills collapsed by default
         this._embedProcess = null;
+        this._embedStderr = '';
         this._embedRehydrated = false;
         this._embedProgress = { current: 0, total: 0, key: '' };
         this.activeTab = 'setup';
@@ -3430,6 +3431,7 @@ class PaperForgeSettingTab extends PluginSettingTab {
                     const { spawn } = require('child_process');
 
                     this._embedProcess = spawn(pyResult.path, args, { cwd: vp, env: env, windowsHide: true });
+                    this._embedStderr = '';
                     this._embedProgress = { current: 0, total: 0, key: '' };
 
                     this._embedProcess.stdout.on('data', (data) => {
@@ -3450,7 +3452,8 @@ class PaperForgeSettingTab extends PluginSettingTab {
                     });
 
                     this._embedProcess.stderr.on('data', (data) => {
-                        // silently ignore stderr noise unless error
+                        if (!this._embedStderr) this._embedStderr = '';
+                        this._embedStderr += data.toString('utf-8');
                     });
 
                     this._embedProcess.on('close', (code) => {
@@ -3467,7 +3470,11 @@ class PaperForgeSettingTab extends PluginSettingTab {
                             });
                         } else {
                             this._embedStatusText = null;
+                            const errMsg = (this._embedStderr || '').slice(0, 200);
+                            new Notice(t('feat_build_failed') + (errMsg ? ': ' + errMsg : ''), 8000);
                         }
+                        this._embedStderr = '';
+                        this.display();
                         this.display();
                     });
 
