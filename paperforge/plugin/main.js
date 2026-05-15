@@ -2700,8 +2700,37 @@ class PaperForgeSettingTab extends PluginSettingTab {
             timeEl.style.cssText = 'opacity:0.7; margin-right:8px;';
         }
 
+        const rebuildBtn = el.createEl('button', { cls: 'paperforge-rebuild-btn', text: t('feat_memory_rebuild_btn') });
+        rebuildBtn.style.cssText = 'margin-left:auto; border:1px solid var(--background-modifier-border); background:var(--background-secondary); cursor:pointer; font-size:11px; padding:2px 6px; border-radius:3px; margin-right:4px;';
+        rebuildBtn.title = 'Rebuild memory database';
+        rebuildBtn.onclick = () => {
+            const vp = this.app.vault.adapter.basePath;
+            const pyResult = resolvePythonExecutable(vp, this.plugin.settings);
+            if (!pyResult.path) { new Notice(t('feat_no_python')); return; }
+            const cmd = `"${pyResult.path}" -m paperforge --vault "${vp}" memory build`;
+            console.log('[PaperForge] Rebuilding memory:', cmd);
+            rebuildBtn.setText(t('feat_memory_rebuilding'));
+            rebuildBtn.setAttr('disabled', '');
+            const { exec } = require('child_process');
+            exec(cmd, { encoding: 'utf-8', timeout: 60000 }, (err, stdout, stderr) => {
+                console.log('[PaperForge] memory build exit:', err ? 'FAIL:'+(err.message||'') : 'OK', (stdout||'').slice(0, 200), (stderr||'').slice(0, 200));
+                rebuildBtn.setText(t('feat_memory_rebuild_btn'));
+                rebuildBtn.removeAttribute('disabled');
+                if (!err) {
+                    new Notice(t('feat_memory_rebuild_done'));
+                } else {
+                    new Notice(t('feat_memory_rebuild_failed') + (stderr ? ' ' + stderr.slice(0, 80) : ''));
+                }
+                // Refresh status regardless
+                this._memoryStatusText = null;
+                this._execMemoryStatus(pyResult.path, vp, (text) => {
+                    this._memoryStatusText = text;
+                });
+            });
+        };
+
         const refreshBtn = el.createEl('button', { cls: 'paperforge-refresh-btn', text: '\u21BB' });
-        refreshBtn.style.cssText = 'margin-left:auto; border:none; background:none; cursor:pointer; font-size:16px; padding:0 4px;';
+        refreshBtn.style.cssText = 'border:none; background:none; cursor:pointer; font-size:16px; padding:0 4px;';
         refreshBtn.title = 'Sync now';
         refreshBtn.onclick = () => {
             this._memoryStatusText = null;
@@ -2959,34 +2988,6 @@ class PaperForgeSettingTab extends PluginSettingTab {
         }
 
         this._renderVectorSection(containerEl);
-
-        // ── Memory Rebuild Button ──
-        const memActions = containerEl.createEl('div');
-        memActions.style.cssText = 'margin:8px 0; display:flex; align-items:center; gap:8px;';
-
-        const memRebuildBtn = memActions.createEl('button');
-        memRebuildBtn.setText(t('feat_memory_rebuild_btn'));
-        memRebuildBtn.style.cssText = 'font-size:12px; padding:4px 10px;';
-        memRebuildBtn.addEventListener('click', () => {
-            const pyResult2 = resolvePythonExecutable(vp, this.plugin.settings);
-            if (!pyResult2.path) { new Notice(t('feat_no_python')); return; }
-            memRebuildBtn.setText(t('feat_memory_rebuilding'));
-            memRebuildBtn.setAttr('disabled', '');
-            const { exec } = require('child_process');
-            exec(`"${pyResult2.path}" -m paperforge --vault "${vp}" memory build`, { encoding: 'utf-8', timeout: 60000 }, (err, stdout) => {
-                memRebuildBtn.setText(t('feat_memory_rebuild_btn'));
-                memRebuildBtn.removeAttribute('disabled');
-                if (!err) {
-                    new Notice(t('feat_memory_rebuild_done'));
-                    this._memoryStatusText = null;
-                    this._execMemoryStatus(pyResult2.path, vp, (text) => {
-                        this._memoryStatusText = text;
-                    });
-                } else {
-                    new Notice(t('feat_memory_rebuild_failed'));
-                }
-            });
-        });
     }
 
     _renderVectorSection(containerEl) {

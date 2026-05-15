@@ -150,13 +150,21 @@ def build_from_index(vault: Path) -> dict:
     conn = get_connection(db_path, read_only=False)
     try:
         stored_version = get_schema_version(conn)
+        logger.info("Schema version: stored=%s, current=%s", stored_version, CURRENT_SCHEMA_VERSION)
         if stored_version != CURRENT_SCHEMA_VERSION:
+            logger.warning("Schema version mismatch, dropping all tables")
             drop_all_tables(conn)
         ensure_schema(conn)
 
+        logger.info("Clearing tables before rebuild")
+        conn.execute("PRAGMA foreign_keys=OFF;")
+        conn.execute("DELETE FROM paper_events;")
+        conn.execute("DELETE FROM reading_log;")
+        conn.execute("DELETE FROM project_log;")
         conn.execute("DELETE FROM paper_aliases;")
         conn.execute("DELETE FROM paper_assets;")
         conn.execute("DELETE FROM papers;")
+        conn.execute("PRAGMA foreign_keys=ON;")
 
         clear_fts(conn)
 

@@ -2,6 +2,10 @@ from __future__ import annotations
 
 import sqlite3
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 CURRENT_SCHEMA_VERSION = 2  # Bump from 1 for reading_log + project_log tables
 
 CREATE_META = """
@@ -172,7 +176,7 @@ CREATE TABLE IF NOT EXISTS project_log (
 );
 """
 
-ALL_TABLES = ["paper_fts", "papers", "paper_assets", "paper_aliases", "meta", "paper_events", "reading_log", "project_log"]
+ALL_TABLES = ["paper_fts", "reading_log", "project_log", "paper_events", "paper_assets", "paper_aliases", "papers", "meta"]
 
 
 def ensure_schema(conn: sqlite3.Connection) -> None:
@@ -197,6 +201,7 @@ def ensure_schema(conn: sqlite3.Connection) -> None:
 def drop_all_tables(conn: sqlite3.Connection) -> None:
     """Drop all Memory Layer tables (for rebuild)."""
     for table in ALL_TABLES:
+        logger.info("Dropping table: %s", table)
         conn.execute(f"DROP TABLE IF EXISTS {table};")
     conn.commit()
 
