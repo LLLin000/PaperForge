@@ -3,6 +3,7 @@ const { exec, execFile, spawn, execFileSync } = require('node:child_process');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const memoryState = require('./src/memory-state.js');
 
 // ── Inlined from src/testable.js ──
 
@@ -1492,20 +1493,10 @@ class PaperForgeStatusView extends ItemView {
 
         // Memory Layer health
         let memOk = false, memDetail = '';
-        try {
-            const { execFileSync } = require('child_process');
-            const vp2 = this.app.vault.adapter.basePath;
-            const { path: pyExe2, extraArgs: ea2 } = resolvePythonExecutable(vp2, plugin?.settings);
-            if (pyExe2) {
-                const rh = execFileSync(pyExe2, [...ea2, '-m', 'paperforge', '--vault', vp2, 'runtime-health', '--json'],
-                    { cwd: vp2, timeout: 8000, encoding: 'utf-8', windowsHide: true });
-                const data = JSON.parse(rh);
-                if (data.ok) {
-                    memOk = data.data.summary.status === 'ok';
-                    memDetail = data.data.summary.reason || data.data.summary.status;
-                }
-            }
-        } catch (_) { memDetail = 'Check failed'; }
+        const vp2 = this.app.vault.adapter.basePath;
+        const rh = memoryState.getRuntimeHealth(vp2);
+        memOk = memoryState.isHealthOk(vp2);
+        memDetail = rh?.summary?.reason || rh?.summary?.status || 'Unknown';
         this._renderSystemStatusRow(statusGrid, 'Memory Layer', memOk ? 'healthy' : 'fail', memDetail);
 
         // ── Issues Panel (only for serious blockers) ──
@@ -2689,6 +2680,25 @@ class PaperForgeSettingTab extends PluginSettingTab {
         });
     }
 
+    _callPython(command, opts) {
+        const vp = this.app.vault.adapter.basePath;
+        const py = memoryState.getCachedPython(vp, this.plugin.settings);
+        const args = [...py.extraArgs, '-m', 'paperforge', '--vault', vp, ...command];
+        if (opts && opts.stream) {
+            const { spawn } = require('node:child_process');
+            const child = spawn(py.path, args, { cwd: vp, env: opts.env || process.env, windowsHide: true });
+            if (opts.onData) child.stdout.on('data', opts.onData);
+            if (opts.onStderr) child.stderr.on('data', opts.onStderr);
+            if (opts.onError) child.on('error', opts.onError);
+            child.on('close', opts.onClose);
+            return child;
+        }
+        const { execFile } = require('node:child_process');
+        execFile(py.path, args, { cwd: vp, timeout: opts && opts.timeout || 60000 },
+            (err, stdout, stderr) => { if (opts && opts.onClose) opts.onClose(err ? 1 : 0, stdout, stderr); });
+        return null;
+    }
+
     _renderMemoryStatusText(el, text, extraInfo) {
         el.innerHTML = '';
         el.createEl('span', { text: text, cls: 'paperforge-memory-text' }).style.cssText = 'flex:1;';
@@ -2706,27 +2716,25 @@ class PaperForgeSettingTab extends PluginSettingTab {
         rebuildBtn.title = 'Rebuild memory database';
         rebuildBtn.onclick = () => {
             const vp = this.app.vault.adapter.basePath;
-            const pyResult = resolvePythonExecutable(vp, this.plugin.settings);
-            if (!pyResult.path) { new Notice(t('feat_no_python')); return; }
-            const cmd = `"${pyResult.path}" -m paperforge --vault "${vp}" memory build`;
-            console.log('[PaperForge] Rebuilding memory:', cmd);
+            const py = memoryState.getCachedPython(vp, this.plugin.settings);
+            if (!py.path) { new Notice(t('feat_no_python')); return; }
+            console.log('[PaperForge] Rebuilding memory:', py.path);
             rebuildBtn.setText(t('feat_memory_rebuilding'));
             rebuildBtn.setAttr('disabled', '');
-            const { exec } = require('child_process');
-            exec(cmd, { encoding: 'utf-8', timeout: 60000 }, (err, stdout, stderr) => {
-                console.log('[PaperForge] memory build exit:', err ? 'FAIL:'+(err.message||'') : 'OK', (stdout||'').slice(0, 200), (stderr||'').slice(0, 200));
-                rebuildBtn.setText(t('feat_memory_rebuild_btn'));
-                rebuildBtn.removeAttribute('disabled');
-                if (!err) {
-                    new Notice(t('feat_memory_rebuild_done'));
-                } else {
-                    new Notice(t('feat_memory_rebuild_failed') + (stderr ? ' ' + stderr.slice(0, 80) : ''));
+            this._callPython(['memory', 'build'], {
+                timeout: 60000,
+                onClose: (code, stdout, stderr) => {
+                    console.log('[PaperForge] memory build exit:', code ? 'FAIL:'+code : 'OK', (stdout||'').slice(0, 200), (stderr||'').slice(0, 200));
+                    rebuildBtn.setText(t('feat_memory_rebuild_btn'));
+                    rebuildBtn.removeAttribute('disabled');
+                    if (code === 0) {
+                        new Notice(t('feat_memory_rebuild_done'));
+                    } else {
+                        new Notice(t('feat_memory_rebuild_failed') + (stderr ? ' ' + stderr.slice(0, 80) : ''));
+                    }
+                    // Refresh status regardless
+                    this._memoryStatusText = memoryState.getMemoryStatusText(vp);
                 }
-                // Refresh status regardless
-                this._memoryStatusText = null;
-                this._execMemoryStatus(pyResult.path, vp, (text) => {
-                    this._memoryStatusText = text;
-                });
             });
         };
 
@@ -2748,8 +2756,8 @@ class PaperForgeSettingTab extends PluginSettingTab {
 
     _runManualSync() {
         const vp = this.app.vault.adapter.basePath;
-        const pyResult = resolvePythonExecutable(vp, this.plugin.settings);
-        if (!pyResult.path) return;
+        const py = memoryState.getCachedPython(vp, this.plugin.settings);
+        if (!py.path) return;
 
         const statusRow = document.querySelector('.paperforge-memory-status');
         if (statusRow) {
@@ -2757,15 +2765,17 @@ class PaperForgeSettingTab extends PluginSettingTab {
         }
 
         this.plugin._autoSyncRunning = true;
-        const { exec } = require('child_process');
-        exec(`"${pyResult.path}" -m paperforge --vault "${vp}" sync`, { timeout: 120000, encoding: 'utf-8' }, (err) => {
-            this.plugin._autoSyncRunning = false;
-            this._memoryStatusText = null;
-            if (!err) {
-                this._lastSyncTime = new Date().toLocaleTimeString();
-                this.plugin._lastSyncTime = this._lastSyncTime;
+        this._callPython(['sync'], {
+            timeout: 120000,
+            onClose: (code) => {
+                this.plugin._autoSyncRunning = false;
+                this._memoryStatusText = null;
+                if (code === 0) {
+                    this._lastSyncTime = new Date().toLocaleTimeString();
+                    this.plugin._lastSyncTime = this._lastSyncTime;
+                }
+                this.display(); // re-render
             }
-            this.display(); // re-render
         });
     }
 
@@ -2970,23 +2980,15 @@ class PaperForgeSettingTab extends PluginSettingTab {
         statusRow.style.cssText = 'display:flex; align-items:center; padding:8px 12px; margin:8px 0; background:var(--background-secondary); border-radius:4px;';
 
         const vp = this.app.vault.adapter.basePath;
-        const pyResult = resolvePythonExecutable(vp, this.plugin.settings);
 
         if (this.plugin._lastSyncTime && !this._lastSyncTime) {
             this._lastSyncTime = this.plugin._lastSyncTime;
         }
 
-        if (this._memoryStatusText !== null) {
-            this._renderMemoryStatusText(statusRow, this._memoryStatusText, this._lastSyncTime);
-        } else if (pyResult.path) {
-            this._renderMemoryStatusText(statusRow, 'Checking...', this._lastSyncTime);
-            this._execMemoryStatus(pyResult.path, vp, (text) => {
-                this._memoryStatusText = text;
-                this._renderMemoryStatusText(statusRow, text, this._lastSyncTime);
-            });
-        } else {
-            this._renderMemoryStatusText(statusRow, 'No Python found.', this._lastSyncTime);
+        if (this._memoryStatusText === null) {
+            this._memoryStatusText = memoryState.getMemoryStatusText(vp);
         }
+        this._renderMemoryStatusText(statusRow, this._memoryStatusText, this._lastSyncTime);
 
         this._renderVectorSection(containerEl);
     }
@@ -3046,34 +3048,14 @@ class PaperForgeSettingTab extends PluginSettingTab {
             this._renderVectorNoDeps(vecConfigContent);
             return;
         }
-        // First check — deps unknown, run async
+        // First check — deps unknown, resolve from snapshot
         if (this._vectorDepsOk === null) {
-            const statusBox = vecConfigContent.createEl('div');
-            statusBox.style.cssText = 'padding:8px 12px; margin:8px 0; background:var(--background-secondary); border-radius:4px;';
-            statusBox.setText(t('feat_deps_checking'));
-
-            const pyResult = resolvePythonExecutable(vp, this.plugin.settings);
-            if (!pyResult.path) {
-                statusBox.setText(t('feat_no_python'));
-                this._vectorDepsOk = false;
-                return;
+            const vr = memoryState.getVectorRuntime(vp);
+            this._vectorDepsOk = vr ? vr.deps_installed : false;
+            if (this._vectorDepsOk) {
+                this._embedStatusText = memoryState.getVectorStatusText(vp);
             }
-            const { exec } = require('child_process');
-            exec(`"${pyResult.path}" -c "import chromadb, sentence_transformers; print('ok')"`, {
-                encoding: 'utf-8', timeout: 15000
-            }, (err, stdout) => {
-                const ok = !err && (stdout || '').trim() === 'ok';
-                this._vectorDepsOk = ok;
-                if (ok) {
-                    // Deps OK — now check embed status
-                    this._execEmbedStatus(pyResult.path, vp, (statusText) => {
-                        this._embedStatusText = statusText;
-                        this.display();
-                    });
-                } else {
-                    this.display();
-                }
-            });
+            this.display();
         }
     }
 
@@ -3197,9 +3179,7 @@ class PaperForgeSettingTab extends PluginSettingTab {
                             new Notice('Dependencies installed. Building vectors...');
                             // Auto-build after install
                             this._vectorDepsOk = true;
-                            this._execEmbedStatus(pyResult.path, vp, (text) => {
-                                this._embedStatusText = text;
-                            });
+                            this._embedStatusText = memoryState.getVectorStatusText(vp);
                             this.display();
                         } catch (e) {
                             notice.hide();
@@ -3215,10 +3195,10 @@ class PaperForgeSettingTab extends PluginSettingTab {
         // Status line
         const statusEl = containerEl.createEl('div');
         statusEl.style.cssText = 'padding:8px 12px; margin:8px 0; background:var(--background-secondary); border-radius:4px;';
-        statusEl.setText(this._embedStatusText || 'Loading...');
+        statusEl.setText(memoryState.getVectorStatusText(vp));
 
         // Detect model mismatch
-        const embedInfo = this._embedStatusText ? this._parseEmbedStatus(this._embedStatusText) : null;
+        const embedInfo = memoryState.getVectorRuntime(vp);
         const currentModel = this._getCurrentModelKey();
         const lastModel = this.plugin.settings.vector_db_last_model || '';
         const modelChanged = embedInfo && embedInfo.db_exists && lastModel && lastModel !== currentModel;
@@ -3343,20 +3323,14 @@ class PaperForgeSettingTab extends PluginSettingTab {
 
         // Rehydrate from persisted state on mount
         if (!this._embedProcess) {
-            const pyResultRH = resolvePythonExecutable(vp, this.plugin.settings);
-            if (pyResultRH.path) {
-                const { exec } = require('child_process');
-                exec(`"${pyResultRH.path}" -m paperforge embed status --json --vault "${vp}"`, { encoding: 'utf-8', timeout: 8000 }, (err, stdout) => {
-                    if (err) return;
-                    try {
-                        const job = JSON.parse(stdout).data && JSON.parse(stdout).data.build_state;
-                        if (job && job.status === 'running') {
-                            this._embedRehydrated = true;
-                            this._embedProgress = { current: job.current || 0, total: job.total || 0, key: job.paper_id || '' };
-                            this.display();
-                        }
-                    } catch (_) {}
-                });
+            const vr = memoryState.getVectorRuntime(vp);
+            if (vr && vr.build_state && vr.build_state.status === 'running') {
+                this._embedRehydrated = true;
+                this._embedProgress = {
+                    current: vr.build_state.current || 0,
+                    total: vr.build_state.total || 0,
+                    key: vr.build_state.paper_id || ''
+                };
             }
         }
 
@@ -3390,11 +3364,7 @@ class PaperForgeSettingTab extends PluginSettingTab {
                 stopBtn.className = 'mod-warning';
                 stopBtn.addEventListener('click', () => {
                     this._embedRehydrated = false;
-                    const pyResultS = resolvePythonExecutable(vp, this.plugin.settings);
-                    if (pyResultS.path) {
-                        const { exec } = require('child_process');
-                        exec(`"${pyResultS.path}" -m paperforge embed stop --json --vault "${vp}"`, { encoding: 'utf-8', timeout: 8000 });
-                    }
+                    this._callPython(['embed', 'stop', '--json'], { timeout: 8000 });
                     if (this._embedProcess) {
                         this._embedProcess.kill();
                         this._embedProcess = null;
@@ -3402,7 +3372,7 @@ class PaperForgeSettingTab extends PluginSettingTab {
                     this.display();
                 });
             } else {
-                const embedInfo = this._embedStatusText ? this._parseEmbedStatus(this._embedStatusText) : null;
+                const embedInfo = memoryState.getVectorRuntime(vp);
                 const hasChunks = embedInfo && embedInfo.chunk_count > 0;
 
                 if (hasChunks) {
@@ -3416,8 +3386,8 @@ class PaperForgeSettingTab extends PluginSettingTab {
                 buildBtn.setText(hasChunks ? t('feat_rebuild_btn') : t('feat_build_btn'));
                 buildBtn.addClass('mod-cta');
                 buildBtn.addEventListener('click', () => {
-                    const pyResult = resolvePythonExecutable(vp, this.plugin.settings);
-                    if (!pyResult.path) { new Notice(t('feat_no_python')); return; }
+                    const py = memoryState.getCachedPython(vp, this.plugin.settings);
+                    if (!py.path) { new Notice(t('feat_no_python')); return; }
 
                     const env = Object.assign({}, process.env, {
                         PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1',
@@ -3427,61 +3397,53 @@ class PaperForgeSettingTab extends PluginSettingTab {
                         VECTOR_DB_API_BASE: this.plugin.settings.vector_db_api_base || '',
                         VECTOR_DB_API_MODEL: this.plugin.settings.vector_db_api_model || ''
                     });
-                    const args = ['-m', 'paperforge', 'embed', 'build', '--resume'];
-                    const { spawn } = require('child_process');
-
-                    this._embedProcess = spawn(pyResult.path, args, { cwd: vp, env: env, windowsHide: true });
                     this._embedStderr = '';
                     this._embedProgress = { current: 0, total: 0, key: '' };
 
-                    this._embedProcess.stdout.on('data', (data) => {
-                        const lines = data.toString('utf-8').split('\n');
-                        for (const line of lines) {
-                            if (line.startsWith('EMBED_START:')) {
-                                this._embedProgress.total = parseInt(line.split(':')[1]) || 0;
-                            } else if (line.startsWith('EMBED_PROGRESS:')) {
-                                const parts = line.split(':');
-                                this._embedProgress.current = parseInt(parts[1]) || 0;
-                                this._embedProgress.key = parts[3] || '';
-                            } else if (line.startsWith('EMBED_DONE')) {
-                                this._embedProcess = null;
-                                this._embedProgress.current = this._embedProgress.total;
+                    this._embedProcess = this._callPython(['embed', 'build', '--resume'], {
+                        stream: true,
+                        env: env,
+                        onData: (data) => {
+                            const lines = data.toString('utf-8').split('\n');
+                            for (const line of lines) {
+                                if (line.startsWith('EMBED_START:')) {
+                                    this._embedProgress.total = parseInt(line.split(':')[1]) || 0;
+                                } else if (line.startsWith('EMBED_PROGRESS:')) {
+                                    const parts = line.split(':');
+                                    this._embedProgress.current = parseInt(parts[1]) || 0;
+                                    this._embedProgress.key = parts[3] || '';
+                                } else if (line.startsWith('EMBED_DONE')) {
+                                    this._embedProcess = null;
+                                    this._embedProgress.current = this._embedProgress.total;
+                                }
                             }
+                            this.display();
+                        },
+                        onStderr: (data) => {
+                            if (!this._embedStderr) this._embedStderr = '';
+                            this._embedStderr += data.toString('utf-8');
+                        },
+                        onError: (err) => {
+                            this._embedProcess = null;
+                            new Notice('Build failed: ' + (err.message || err));
+                            this.display();
+                        },
+                        onClose: (code) => {
+                            this._embedProcess = null;
+                            if (code === 0) {
+                                this._embedProgress.current = this._embedProgress.total;
+                                this.plugin.settings.vector_db_last_model = currentModel;
+                                this.plugin.saveSettings();
+                                this._embedStatusText = memoryState.getVectorStatusText(vp);
+                                new Notice(t('feat_build_complete'));
+                            } else {
+                                this._embedStatusText = null;
+                                const errMsg = (this._embedStderr || '').slice(0, 200);
+                                new Notice(t('feat_build_failed') + (errMsg ? ': ' + errMsg : ''), 8000);
+                            }
+                            this._embedStderr = '';
+                            this.display();
                         }
-                        this.display();
-                    });
-
-                    this._embedProcess.stderr.on('data', (data) => {
-                        if (!this._embedStderr) this._embedStderr = '';
-                        this._embedStderr += data.toString('utf-8');
-                    });
-
-                    this._embedProcess.on('close', (code) => {
-                        this._embedProcess = null;
-                        if (code === 0) {
-                            this._embedProgress.current = this._embedProgress.total;
-                            this.plugin.settings.vector_db_last_model = currentModel;
-                            this.plugin.saveSettings();
-                            this._embedStatusText = null;
-                            const pyResult2 = resolvePythonExecutable(vp, this.plugin.settings);
-                            this._execEmbedStatus(pyResult2.path, vp, (text) => {
-                                this._embedStatusText = text;
-                                this.display();
-                            });
-                            new Notice(t('feat_build_complete'));
-                        } else {
-                            this._embedStatusText = null;
-                            const errMsg = (this._embedStderr || '').slice(0, 200);
-                            new Notice(t('feat_build_failed') + (errMsg ? ': ' + errMsg : ''), 8000);
-                        }
-                        this._embedStderr = '';
-                        this.display();
-                    });
-
-                    this._embedProcess.on('error', (err) => {
-                        this._embedProcess = null;
-                        new Notice('Build failed: ' + (err.message || err));
-                        this.display();
                     });
 
                     this.display();
