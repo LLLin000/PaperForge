@@ -3,100 +3,71 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-# Section detection keywords (case-insensitive, must appear as short standalone line)
-SECTION_PATTERNS = [
-    re.compile(r'^\s*(introduction|methods|materials|results|discussion|conclusion|abstract|background|references|supplementary|acknowledgments?)\s*$', re.IGNORECASE),
-    re.compile(r'^\s*(figure\s*\d+|fig\.?\s*\d+|table\s*\d+)\s*$', re.IGNORECASE),
-]
-
-def _detect_section(line: str) -> str:
-    """Try to identify a section title from a line."""
-    stripped = line.strip()
-    if len(stripped) > 80:
-        return ""
-    for pat in SECTION_PATTERNS:
-        m = pat.match(stripped)
-        if m:
-            return m.group(0)
-    # Heuristic: ALL CAPS short line, no period
-    if stripped.isupper() and len(stripped) > 2 and '.' not in stripped:
-        return stripped
-    # Short line, no period, surrounded by blank lines (checked by caller)
-    if len(stripped) < 80 and '.' not in stripped[-5:]:
-        return stripped
-    return ""
-
-
-def _clean_text(text: str) -> str:
-    """Remove image links and clean text for embedding."""
-    # Remove standalone image links: ![[path]]
-    text = re.sub(r'^!\[\[.*\]\]\s*$', '', text, flags=re.MULTILINE)
-    # Replace inline images with placeholder
-    text = re.sub(r'!\[\[.*?\]\]', '[Figure]', text)
-    # Collapse multiple blank lines
-    text = re.sub(r'\n{3,}', '\n\n', text)
-    return text.strip()
+_IMG_LINK_RE = re.compile(r"!\[[^\]]*\]\([^)]+\)")
+_IMG_MD_RE = re.compile(r"!\[\[.*?\]\]")
+_SECTION_RE = re.compile(
+    r"^\s*(Introduction|Methods|Materials|Results|Discussion|Conclusion"
+    r"|Abstract|Background|References|Supplementary"
+    r"|Figure\s+\d+|Fig\.?\s*\d+|Table\s+\d+)",
+    re.IGNORECASE,
+)
 
 
 def chunk_fulltext(fulltext_path: Path) -> list[dict]:
-    """Chunk a fulltext.md into embeddable segments.
+    """Split OCR fulltext.md into overlapping chunks for embedding.
 
-    Returns list of dicts with: text, section, page_number, chunk_index, token_estimate.
+    Returns list of dicts with keys: text, section, page_number, chunk_index, token_estimate.
     """
     if not fulltext_path.exists():
         return []
 
-    text = _clean_text(fulltext_path.read_text(encoding="utf-8"))
+    raw = fulltext_path.read_text(encoding="utf-8")
+    raw = _IMG_LINK_RE.sub("[Figure]", raw)
+    raw = _IMG_MD_RE.sub("[Figure]", raw)
 
-    # Split by page markers
-    pages = re.split(r'<!--\s*page\s*(\d+)\s*-->', text)
-    # pages[0] = before first marker, pages[1] = page num, pages[2] = content, pages[3] = page num, ...
+    pages = re.split(r"<!-- page \d+ -->", raw)
+    chunks: list[dict] = []
+    chunk_idx = 0
 
-    current_section = "Text"
-    parts = []
+    for page_num, page in enumerate(pages, start=1):
+        if not page.strip():
+            continue
 
-    if len(pages) > 1 and not pages[1].strip().isdigit():
-        # No page marker found, treat whole text as one page
-        parts = [(1, text)]
-    else:
-        for j in range(1, len(pages), 2):
-            if j + 1 < len(pages):
-                try:
-                    page_num = int(pages[j].strip())
-                    page_content = pages[j + 1]
-                    parts.append((page_num, page_content))
-                except ValueError:
-                    continue
+        paragraphs = [p.strip() for p in page.split("\n\n") if p.strip()]
+        section_name = "Text"
 
-    if not parts and text.strip():
-        parts = [(1, text)]
-
-    chunks = []
-    chunk_index = 0
-    for page_num, page_text in parts:
-        # Split page into paragraphs by double newlines
-        paragraphs = [p.strip() for p in re.split(r'\n\s*\n', page_text) if p.strip()]
-
-        # Detect section headers
-        for para in paragraphs:
-            section = _detect_section(para)
-            if section:
-                current_section = section
-
-        # Group 2-3 paragraphs per chunk with 1-paragraph overlap
         i = 0
         while i < len(paragraphs):
-            chunk_paras = paragraphs[i:i+3]
-            chunk_text = "\n\n".join(chunk_paras)
-            token_estimate = len(chunk_text.split())  # rough: 1 token ≈ 1 word
+            para = paragraphs[i]
+            sect_match = _SECTION_RE.match(para)
+            if sect_match and len(para) < 80:
+                section_name = sect_match.group(1)
+                i += 1
+                continue
+
+            group = [para]
+            j = i + 1
+            while j < len(paragraphs) and j < i + 3:
+                next_p = paragraphs[j]
+                if _SECTION_RE.match(next_p) and len(next_p) < 80:
+                    break
+                group.append(next_p)
+                j += 1
+
+            text = "\n\n".join(group)
+            chunk_idx += 1
+            token_estimate = len(text) // 4
+
             chunks.append({
-                "text": chunk_text,
-                "section": current_section,
+                "text": text,
+                "section": section_name,
                 "page_number": page_num,
-                "chunk_index": chunk_index,
+                "chunk_index": chunk_idx,
                 "token_estimate": token_estimate,
             })
-            chunk_index += 1
-            i += max(1, len(chunk_paras) - 1)  # advance but leave 1 overlap
+
+            i = j - 1 if j > i + 1 else j
+            if i == j:
+                i += 1
 
     return chunks

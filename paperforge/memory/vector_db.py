@@ -5,6 +5,8 @@ import logging
 import os
 from pathlib import Path
 
+from paperforge.memory.chunker import chunk_fulltext  # noqa: F401
+
 logger = logging.getLogger(__name__)
 
 # Lazy imports to avoid requiring chromadb unless actually used
