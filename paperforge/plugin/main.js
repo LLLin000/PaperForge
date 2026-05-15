@@ -2734,6 +2734,7 @@ class PaperForgeSettingTab extends PluginSettingTab {
                     }
                     // Refresh status regardless
                     this._memoryStatusText = memoryState.getMemoryStatusText(vp);
+                    this._refreshSnapshots(vp);
                 }
             });
         };
@@ -2774,9 +2775,27 @@ class PaperForgeSettingTab extends PluginSettingTab {
                     this._lastSyncTime = new Date().toLocaleTimeString();
                     this.plugin._lastSyncTime = this._lastSyncTime;
                 }
-                this.display(); // re-render
+                this.display();
+                this._refreshSnapshots(vp);
             }
         });
+    }
+
+    _refreshSnapshots(vp) {
+        const py = memoryState.getCachedPython(vp, this.plugin.settings);
+        const { execFile } = require('node:child_process');
+        const args = [...py.extraArgs, '-m', 'paperforge', '--vault', vp, 'runtime-health', '--json'];
+
+        this._refreshPending = true;
+
+        execFile(py.path, args, { cwd: vp, timeout: 30000, windowsHide: true },
+            (err, stdout, stderr) => {
+                this._refreshPending = false;
+                this._memoryStatusText = memoryState.getMemoryStatusText(vp);
+                this._embedStatusText = memoryState.getVectorStatusText(vp);
+                this.display();
+            }
+        );
     }
 
     _renderFeaturesTab(containerEl) {
@@ -3443,6 +3462,7 @@ class PaperForgeSettingTab extends PluginSettingTab {
                             }
                             this._embedStderr = '';
                             this.display();
+                            this._refreshSnapshots(vp);
                         }
                     });
 
