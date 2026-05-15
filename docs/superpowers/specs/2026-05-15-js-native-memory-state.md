@@ -63,32 +63,35 @@ Replace Python subprocess calls for memory layer **state reads** with JavaScript
 ## Contract: Runtime Snapshots
 
 ### `memory-runtime-state.json`
-Written by: `paperforge memory status --json` (mode `write-snapshot` or always)
+Written by: `paperforge memory status --json` (always writes snapshot)
 Location: `<system_dir>/PaperForge/indexes/memory-runtime-state.json`
+**Role:** Facts only. No judgment.
 
 ```json
 {
   "schema_version": 1,
   "updated_at": "2026-05-15T12:00:00Z",
+  "source_command": "paperforge memory status --json",
   "paper_count_db": 150,
   "paper_count_index": 150,
   "fresh": true,
   "needs_rebuild": false,
   "last_full_build_at": "2026-05-15T11:30:00Z",
   "schema_version_db": 2,
-  "fts_ready": true,
-  "issues": []
+  "fts_ready": true
 }
 ```
 
 ### `vector-runtime-state.json`
-Written by: `paperforge embed status --json` (mode `write-snapshot` or always)
+Written by: `paperforge embed status --json` (always writes snapshot)
 Location: `<system_dir>/PaperForge/indexes/vector-runtime-state.json`
+**Role:** Facts only. No judgment.
 
 ```json
 {
   "schema_version": 1,
   "updated_at": "2026-05-15T12:00:00Z",
+  "source_command": "paperforge embed status --json",
   "enabled": true,
   "mode": "api",
   "model": "text-embedding-3-small",
@@ -107,19 +110,20 @@ Location: `<system_dir>/PaperForge/indexes/vector-runtime-state.json`
     "resume_supported": true,
     "pid": 0,
     "message": ""
-  },
-  "issues": []
+  }
 }
 ```
 
 ### `runtime-health.json`
-Written by: `paperforge runtime-health --json` (always writes snapshot alongside stdout)
+Written by: `paperforge runtime-health --json` (always writes snapshot)
 Location: `<system_dir>/PaperForge/indexes/runtime-health.json`
+**Role:** Judgment + repair suggestions. This is the ONLY file that contains opinion.
 
 ```json
 {
   "schema_version": 1,
   "updated_at": "2026-05-15T12:00:00Z",
+  "source_command": "paperforge runtime-health --json",
   "summary": {
     "status": "ok",
     "reason": "All systems operational",
@@ -186,6 +190,50 @@ const memoryState = {
 - Extracts and formats display strings from canonical state
 - Caches Python executable path for spawn operations
 - All functions are pure and independently testable
+
+## Snapshot Mandate: Every State-Changing Command Writes Its Snapshot
+
+**Rule:** Any Python command that changes memory or vector state MUST write the relevant snapshot file as a side effect. JS never refreshes snapshots by spawning Python explicitly — it only reads what Python already wrote.
+
+| Command                             | Snapshot Written                                 | On                   |
+| ----------------------------------- | ------------------------------------------------ | -------------------- |
+| `memory build`                        | `memory-runtime-state.json`                        | Completion           |
+| `memory status --json`               | `memory-runtime-state.json`                        | Every invocation     |
+| `embed status --json`                | `vector-runtime-state.json`                        | Every invocation     |
+| `embed build --resume`               | `vector-runtime-state.json` + `vector-build-state.json` | Completion + progress |
+| `embed stop`                         | `vector-runtime-state.json`                        | After signal sent    |
+| `runtime-health --json`              | `runtime-health.json`                              | Every invocation     |
+| `paperforge sync`                    | `memory-runtime-state.json`                        | Completion           |
+
+**Rationale:** If a user runs `paperforge memory build` in a terminal (outside Obsidian), the snapshots are already fresh the next time the plugin reads them. No explicit refresh needed.
+
+## Snapshot Absence and Degradation Policy (JS Side)
+
+JS reads snapshots. When a snapshot is missing, corrupt, or stale, the UI must degrade gracefully—not crash, not loop, not show stale data.
+
+| Condition                                                          | Memory Status Row                                               | Vector Section                                                                 | Dashboard Status                      |
+| ------------------------------------------------------------------ | --------------------------------------------------------------- | ------------------------------------------------------------------------------ | ------------------------------------- |
+| Snapshot file missing (first launch)                               | "Run paperforge memory build"                                   | "Dependencies unavailable" (Button hidden)                                       | "Memory Layer: unavailable"           |
+| Snapshot exists, `paper_count_db == 0`                               | "DB not found. Run paperforge memory build."                     | Vector section rendered normally if own snapshot ok                              | "degraded"                            |
+| Snapshot exists, `needs_rebuild == true`                             | "Papers: N | stale - needs rebuild"                                  | Same                                                                            | "degraded"                            |
+| Snapshot JSON parse fails                                          | Treated as missing (above)                                     | Treated as missing (above)                                                     | Treated as missing (above)            |
+| Snapshot `updated_at` older than 24h                                 | Normal text + "(last updated ...)"                             | Same                                                                            | Same                                  |
+| Only memory snapshot present, vector missing                        | Rendered from snapshot                                         | "Vector status unavailable. Run embed status."                                  | "degraded"                            |
+| `runtime-health` older than both memory and vector snapshots         | (dash)                                                         | (dash)                                                                          | Health icon + "Health check out of date" |
+
+**Implementation:** The `buildSnapshot()` function in `memory-state.js` handles all degradation cases. No branching in main.js.
+
+### First-Launch Migration
+
+When the plugin loads and no snapshot files exist (fresh install or upgrade from pre-snapshot version):
+
+1. Plugin `onload()` checks if at least one snapshot exists
+2. If none: spawn `paperforge runtime-health --json` **once** asynchronously
+3. This writes all three snapshots
+4. On settings open, JS reads whatever snapshots exist
+5. No "Checking..." — if still generating, show the degradation state above
+
+This migration only happens once per vault, not on every settings open.
 
 ## Python Changes (minimal)
 
