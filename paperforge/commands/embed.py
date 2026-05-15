@@ -7,6 +7,7 @@ from pathlib import Path
 from paperforge.core.errors import ErrorCode
 from paperforge.core.result import PFError, PFResult
 from paperforge.memory.chunker import chunk_fulltext
+from paperforge.memory.state_snapshot import write_vector_runtime
 from paperforge.memory.vector_db import (
     delete_paper_vectors,
     embed_paper,
@@ -28,6 +29,34 @@ def run(args: argparse.Namespace) -> int:
     if sub == "status":
         status = get_embed_status(vault)
         status["build_state"] = read_vector_build_state(vault)
+
+        # Write vector-runtime-state.json snapshot (JS-First Memory State)
+        _dep_missing = []
+        try:
+            import chromadb  # noqa: F401
+        except ImportError:
+            _dep_missing.append("chromadb")
+        try:
+            import sentence_transformers  # noqa: F401
+        except ImportError:
+            _dep_missing.append("sentence_transformers")
+        try:
+            import openai  # noqa: F401
+        except ImportError:
+            _dep_missing.append("openai")
+        write_vector_runtime(
+            vault,
+            enabled=bool(status.get("mode", "")),
+            mode=status.get("mode", ""),
+            model=status.get("model", ""),
+            deps_installed=len(_dep_missing) == 0,
+            deps_missing=_dep_missing if _dep_missing else None,
+            py_version=sys.version.split()[0],
+            db_exists=status.get("db_exists", False),
+            chunk_count=status.get("chunk_count", 0),
+            build_state=status.get("build_state"),
+        )
+
         result = PFResult(ok=True, command="embed status", version=PF_VERSION, data=status)
         if args.json:
             print(result.to_json())
@@ -156,6 +185,18 @@ def run(args: argparse.Namespace) -> int:
             mark_vector_build_state(vault,
                 status="failed", message=str(e), pid=0,
             )
+            write_vector_runtime(
+                vault,
+                enabled=bool(get_embed_status(vault).get("mode", "")),
+                mode=get_embed_status(vault)["mode"],
+                model=get_embed_status(vault)["model"],
+                deps_installed=True,
+                deps_missing=None,
+                py_version=sys.version.split()[0],
+                db_exists=get_vector_db_path(vault).exists(),
+                chunk_count=chunks_embedded,
+                build_state=read_vector_build_state(vault),
+            )
             result = PFResult(ok=False, command="embed build", version=PF_VERSION,
                              error=PFError(code=ErrorCode.INTERNAL_ERROR, message=str(e)))
             print(result.to_json() if args.json else result.error.message, file=sys.stderr if not args.json else sys.stdout)
@@ -165,6 +206,19 @@ def run(args: argparse.Namespace) -> int:
         status="completed",
         current=total, finished_at=_now(),
         message="", pid=0,
+    )
+
+    write_vector_runtime(
+        vault,
+        enabled=bool(get_embed_status(vault).get("mode", "")),
+        mode=get_embed_status(vault)["mode"],
+        model=get_embed_status(vault)["model"],
+        deps_installed=True,
+        deps_missing=None,
+        py_version=sys.version.split()[0],
+        db_exists=True,
+        chunk_count=chunks_embedded,
+        build_state=read_vector_build_state(vault),
     )
 
     print("EMBED_DONE", flush=True)

@@ -23,6 +23,7 @@ from paperforge.worker._utils import (
     write_json,
 )
 from paperforge.worker.base_views import ensure_base_views
+from paperforge.memory.state_snapshot import write_memory_runtime
 
 from paperforge.core.result import PFResult
 
@@ -1069,6 +1070,45 @@ def run_status(vault: Path, verbose: bool = False, json_output: bool = False) ->
         lifecycle_level_counts = summary["lifecycle_level_counts"]
         health_aggregate = summary["health_aggregate"]
         maturity_distribution = summary["maturity_distribution"]
+
+    # Write memory-runtime-state.json snapshot (JS-First Memory State)
+    try:
+        from paperforge.memory.query import get_memory_status
+        from paperforge.memory.db import get_memory_db_path, get_connection
+        from paperforge.memory.schema import get_schema_version
+        ms = get_memory_status(vault)
+        _last_full_build = ""
+        _schema_ver_db = 0
+        _fts_ok = False
+        _db_p = get_memory_db_path(vault)
+        if _db_p.exists():
+            try:
+                conn = get_connection(_db_p, read_only=True)
+                _row = conn.execute(
+                    "SELECT value FROM meta WHERE key = 'last_full_build_at'"
+                ).fetchone()
+                if _row:
+                    _last_full_build = _row["value"]
+                _schema_ver_db = get_schema_version(conn)
+                _fts_row = conn.execute(
+                    "SELECT name FROM sqlite_master WHERE type='table' AND name='paper_fts'"
+                ).fetchone()
+                _fts_ok = _fts_row is not None
+                conn.close()
+            except Exception:
+                pass
+        write_memory_runtime(
+            vault,
+            paper_count_db=ms["paper_count_db"],
+            paper_count_index=ms["paper_count_index"],
+            fresh=ms["fresh"],
+            needs_rebuild=ms["needs_rebuild"],
+            last_full_build_at=_last_full_build,
+            schema_version_db=_schema_ver_db,
+            fts_ready=_fts_ok,
+        )
+    except Exception:
+        pass
 
     if json_output:
         payload = {

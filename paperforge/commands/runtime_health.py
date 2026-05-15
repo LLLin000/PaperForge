@@ -6,6 +6,7 @@ import sys
 from paperforge import __version__ as PF_VERSION
 from paperforge.core.result import PFResult
 from paperforge.memory.runtime_health import get_runtime_health
+from paperforge.memory.state_snapshot import write_runtime_health
 
 
 def run(args: argparse.Namespace) -> int:
@@ -31,5 +32,7 @@ def run(args: argparse.Namespace) -> int:
             if layer["next_action"]:
                 print(f"           next: {layer['next_action']}")
         print(f"Vector job: {health['layers']['vector'].get('job', {}).get('status', 'n/a')}")
+
+    write_runtime_health(vault, result.data if result.ok else {"summary": {"status": "error"}})
 
     return 0
