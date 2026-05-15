@@ -1,16 +1,18 @@
-# JS-Native Memory State — Implementation Plan
+# JS-First Memory State — Revised Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Replace all Python subprocess calls for memory layer state reads with direct JS file/SQLite reads. Python retained only for heavy operations (embed build, OCR, sync, repair).
+**Goal:** Replace all Python subprocess calls for memory layer state reads with JS-native file reads. Python writes canonical runtime snapshot files; JS reads them. Python retained only for heavy operations.
 
-**Architecture:** New `memory-state.js` module provides all status/health/deps reads via JS-native file I/O + SQLite. main.js consumes this module instead of spawning Python for status checks. Single `_callPython()` wrapper handles remaining heavy operations.
+**Architecture:** New `memory-state.js` module reads JSON snapshot files on disk. Python CLI writes those snapshots after every status check / build / rebuild. main.js consumes `memoryState` instead of spawning Python for status. Single `_callPython()` wrapper handles remaining heavy operations.
 
-**Tech Stack:** Node.js `fs`, `better-sqlite3` (or `sql.js` pure-JS fallback), Vitest, Obsidian Plugin API.
+**Tech Stack:** Node.js `fs` (sync reads of JSON files), Obsidian Plugin API, Python CLI (unchanged).
 
-**Spec:** `docs/superpowers/specs/2026-05-15-js-native-memory-state.md`
+**Spec:** `docs/superpowers/specs/2026-05-15-js-native-memory-state.md` (Revised v2)
 
 **Audit:** `docs/superpowers/specs/2026-05-15-memory-layer-ux-audit.md`
+
+**Key revision:** No `sql.js`. No JS-side SQLite reads. No JS-side dep inference. No duplicated health logic. Python IS the judgment layer; JS IS the display layer.
 
 ---
 
@@ -18,112 +20,209 @@
 
 ```text
 Create:
-  paperforge/plugin/src/memory-state.js          — all JS-native state reads
-  paperforge/plugin/tests/memory-state.test.mjs  — Vitest tests
+  paperforge/plugin/src/memory-state.js          — file-based state reader
 
 Modify:
-  paperforge/plugin/main.js                      — remove exec() calls, use memory-state
-  paperforge/plugin/src/testable.js              — extract pure helpers for testing
-  paperforge/plugin/package.json                 — add SQLite dependency
+  paperforge/plugin/main.js                      — remove exec() for state reads, use memory-state
+  paperforge/worker/status.py                    — write memory-runtime-state.json
+  paperforge/commands/embed.py                   — write vector-runtime-state.json
+  paperforge/commands/runtime_health.py          — write runtime-health.json
 ```
 
 ---
 
-### Task 1: Add SQLite dependency + verify it works in Obsidian Electron
+### Task 1: Make Python write canonical runtime snapshots
 
 **Files:**
-- Modify: `paperforge/plugin/package.json`
+- Modify: `paperforge/worker/status.py`
+- Modify: `paperforge/commands/embed.py`
+- Modify: `paperforge/commands/runtime_health.py`
+- Create: `paperforge/memory/state_snapshot.py` (helper)
 
-- [ ] **Step 1: Install dependency**
+Write canonical JSON snapshot files so JS never needs to spawn Python for status reads.
+
+- [ ] **Step 1: Create snapshot helper**
+
+Create `paperforge/memory/state_snapshot.py`:
+
+```python
+from __future__ import annotations
+
+import json
+from datetime import datetime, timezone
+from pathlib import Path
+
+from paperforge.config import paperforge_paths
+
+
+def _snapshot_dir(vault: Path) -> Path:
+    paths = paperforge_paths(vault)
+    d = paths["paperforge"] / "indexes"
+    d.mkdir(parents=True, exist_ok=True)
+    return d
+
+
+def write_memory_runtime(vault: Path, *, paper_count_db: int,
+                         paper_count_index: int, fresh: bool,
+                         needs_rebuild: bool, last_full_build_at: str,
+                         schema_version_db: int, fts_ready: bool,
+                         issues: list[str] | None = None) -> None:
+    snap = {
+        "schema_version": 1,
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "paper_count_db": paper_count_db,
+        "paper_count_index": paper_count_index,
+        "fresh": fresh,
+        "needs_rebuild": needs_rebuild,
+        "last_full_build_at": last_full_build_at,
+        "schema_version_db": schema_version_db,
+        "fts_ready": fts_ready,
+        "issues": issues or [],
+    }
+    path = _snapshot_dir(vault) / "memory-runtime-state.json"
+    path.write_text(json.dumps(snap, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def write_vector_runtime(vault: Path, *, enabled: bool, mode: str, model: str,
+                         deps_installed: bool, deps_missing: list[str] | None,
+                         py_version: str, db_exists: bool, chunk_count: int,
+                         build_state: dict | None, issues: list[str] | None = None) -> None:
+    snap = {
+        "schema_version": 1,
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "enabled": enabled,
+        "mode": mode,
+        "model": model,
+        "deps_installed": deps_installed,
+        "deps_missing": deps_missing or [],
+        "py_version": py_version,
+        "db_exists": db_exists,
+        "chunk_count": chunk_count,
+        "build_state": build_state or {},
+        "issues": issues or [],
+    }
+    path = _snapshot_dir(vault) / "vector-runtime-state.json"
+    path.write_text(json.dumps(snap, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def write_runtime_health(vault: Path, health_data: dict) -> None:
+    path = _snapshot_dir(vault) / "runtime-health.json"
+    path.write_text(json.dumps(health_data, ensure_ascii=False, indent=2), encoding="utf-8")
+```
+
+- [ ] **Step 2: Wire memory status to write snapshot**
+
+In `paperforge/worker/status.py`, after computing memory status data, call:
+
+```python
+from paperforge.memory.state_snapshot import write_memory_runtime
+
+# After building the status dict inside run_memory_status():
+write_memory_runtime(
+    vault,
+    paper_count_db=s.get("paper_count_db", 0),
+    paper_count_index=s.get("paper_count_index", 0),
+    fresh=s.get("fresh", False),
+    needs_rebuild=s.get("needs_rebuild", False),
+    last_full_build_at=s.get("last_full_build_at", ""),
+    schema_version_db=s.get("schema_version_db", 0),
+    fts_ready=s.get("fts_ready", False),
+)
+```
+
+- [ ] **Step 3: Wire embed status to write snapshot**
+
+In `paperforge/commands/embed.py`, after the `case "status"` block or inside `_cmd_status()`, call:
+
+```python
+from paperforge.memory.state_snapshot import write_vector_runtime
+
+# Inside embed status handler, after computing status:
+write_vector_runtime(
+    vault,
+    enabled=...,
+    mode=...,
+    model=...,
+    deps_installed=...,
+    deps_missing=...,
+    py_version=...,
+    db_exists=...,
+    chunk_count=...,
+    build_state=...,
+)
+```
+
+Also call after `embed build` completes (success or fail).
+
+- [ ] **Step 4: Wire runtime-health to write snapshot**
+
+In `paperforge/commands/runtime_health.py`, after building the health dict, call:
+
+```python
+from paperforge.memory.state_snapshot import write_runtime_health
+
+write_runtime_health(vault, health_data)
+```
+
+- [ ] **Step 5: Verify snapshots are written**
+
+Run in test1 vault:
+```bash
+python -m paperforge --vault "D:\L\Med\test1" memory status --json
+```
+Expected: `System/PaperForge/indexes/memory-runtime-state.json` created.
 
 ```bash
-npm install --save sql.js
+python -m paperforge --vault "D:\L\Med\test1" embed status --json
 ```
-
-Choose `sql.js` (pure JS WASM) over `better-sqlite3` (needs native rebuild for Electron).
-`sql.js` is fully portable, no platform-specific compilation needed.
-
-- [ ] **Step 2: Verify import works in Node**
-
-Create a quick test script:
-
-```javascript
-// quick-test.mjs
-import initSqlJs from 'sql.js';
-const SQL = await initSqlJs();
-const db = new SQL.Database();
-db.run("CREATE TABLE test (id INTEGER PRIMARY KEY, name TEXT)");
-db.run("INSERT INTO test VALUES (1, 'hello')");
-const result = db.exec("SELECT * FROM test");
-console.log(result[0].values[0]); // [1, 'hello']
-db.close();
-```
-
-Run:
-```bash
-node quick-test.mjs
-```
-Expected: `[1, 'hello']`
-
-- [ ] **Step 3: Verify sql.js works in Obsidian plugin context**
-
-Add to `main.js` onload a one-liner test: `require('sql.js')`. Then `node --check main.js`.
-
-Add `sql.js` to `package.json` `"dependencies"` (NOT `devDependencies`):
-```json
-{
-  "dependencies": {
-    "sql.js": "^1.11.0"
-  }
-}
-```
-
-- [ ] **Step 4: Commit**
+Expected: `System/PaperForge/indexes/vector-runtime-state.json` created.
 
 ```bash
-git add paperforge/plugin/package.json paperforge/plugin/package-lock.json
-git commit -m "deps: add sql.js for JS-native SQLite reads"
+python -m paperforge --vault "D:\L\Med\test1" runtime-health --json
+```
+Expected: `System/PaperForge/indexes/runtime-health.json` created.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add paperforge/memory/state_snapshot.py paperforge/worker/status.py paperforge/commands/embed.py paperforge/commands/runtime_health.py
+git commit -m "feat: Python writes canonical runtime snapshot files for JS reads"
 ```
 
 ---
 
-### Task 2: Create `memory-state.js` — JS-native state reader module
+### Task 2: Create `memory-state.js` — JS-native file-based state reader
 
 **Files:**
 - Create: `paperforge/plugin/src/memory-state.js`
 - Test: `paperforge/plugin/tests/memory-state.test.mjs`
 
-This module replaces ALL Python exec calls for state reads. No subprocess. Pure JS.
+This module reads canonical snapshot files. NO SQL. NO subprocess. Pure JS file I/O.
 
 - [ ] **Step 1: Write the failing tests**
 
 ```javascript
 // paperforge/plugin/tests/memory-state.test.mjs
-import { describe, expect, it, beforeAll } from 'vitest';
-import fs from 'fs';
+import { describe, expect, it, beforeEach } from 'vitest';
 import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // We test pure functions that don't need Obsidian API
 import {
-  resolvePythonPath,
   resolveVaultPaths,
   readJSONFile,
-  readJSONLLines,
-  checkVectorDeps,
-  formatMemoryStatus,
-  deriveRuntimeHealth,
+  getMemoryRuntime,
+  getVectorRuntime,
+  getRuntimeHealth,
+  isMemoryReady,
+  isVectorReady,
+  isHealthOk,
+  getMemoryStatusText,
+  getVectorStatusText,
+  buildSnapshot,
 } from '../src/memory-state.js';
-
-describe('resolvePythonPath', () => {
-  it('detects .paperforge-test-venv when present', () => {
-    // Use a temp dir with a mock venv
-    // ...
-  });
-
-  it('falls back to system python when no venv found', () => {
-    // ...
-  });
-});
 
 describe('resolveVaultPaths', () => {
   it('resolves paperforge directories from vault root', () => {
@@ -134,62 +233,64 @@ describe('resolveVaultPaths', () => {
 });
 
 describe('readJSONFile', () => {
-  it('returns parsed JSON for valid file', () => {
-    // ...
-  });
-
   it('returns null for non-existent file', () => {
     expect(readJSONFile('/nonexistent/file.json')).toBeNull();
   });
 });
 
-describe('checkVectorDeps', () => {
-  it('reports installed when packages found in venv site-packages', () => {
-    // Mock fs.existsSync
-    // ...
+describe('buildSnapshot', () => {
+  it('returns partial snapshot when files are missing', () => {
+    // Use custom readFn that always returns null
+    const readFn = () => null;
+    const snap = buildSnapshot('/vault', readFn, (p) => {});
+    expect(snap.memory).toBeNull();
+    expect(snap.vector).toBeNull();
+    expect(snap.health).toBeNull();
+    expect(snap.summary.status).toBe('unknown');
+  });
+
+  it('returns ok when all files present and healthy', () => {
+    const files = {
+      'memory-runtime-state.json': { paper_count_db: 150, fresh: true, needs_rebuild: false },
+      'vector-runtime-state.json': { enabled: true, deps_installed: true, db_exists: true, chunk_count: 747 },
+      'runtime-health.json': { summary: { status: 'ok' } },
+    };
+    const readFn = (filePath) => {
+      for (const [name, data] of Object.entries(files)) {
+        if (filePath.endsWith(name)) return data;
+      }
+      return null;
+    };
+    const snap = buildSnapshot('/vault', readFn, (p) => {});
+    expect(snap.memory).not.toBeNull();
+    expect(snap.vector).not.toBeNull();
+    expect(snap.health).not.toBeNull();
+    expect(snap.summary.status).toBe('ready');
   });
 });
 
-describe('formatMemoryStatus', () => {
-  it('formats fresh status with paper count', () => {
-    expect(formatMemoryStatus(150, true)).toBe('Papers: 150 | fresh');
+describe('formatting helpers', () => {
+  it('getMemoryStatusText formats fresh status', () => {
+    expect(getMemoryStatusText(150, true)).toBe('Papers: 150 | fresh');
   });
 
-  it('formats stale status', () => {
-    expect(formatMemoryStatus(50, false)).toBe('Papers: 50 | stale');
-  });
-});
-
-describe('deriveRuntimeHealth', () => {
-  it('returns ok when all layers healthy', () => {
-    const health = deriveRuntimeHealth({
-      memory: { paperCount: 150, freshness: 'fresh' },
-      embed: { dbExists: true, chunkCount: 747 },
-      vectorEnabled: true,
-      depsInstalled: true,
-      buildState: { status: 'idle' },
-    });
-    expect(health.summary.status).toBe('ok');
-    expect(health.summary.safeRead).toBe(true);
+  it('getMemoryStatusText returns prompt when no data', () => {
+    expect(getMemoryStatusText(0, false)).toBe('DB not found. Run paperforge memory build.');
   });
 
-  it('returns degraded when memory DB missing', () => {
-    const health = deriveRuntimeHealth({
-      memory: { paperCount: 0, freshness: 'stale' },
-      embed: { dbExists: false, chunkCount: 0 },
-      vectorEnabled: true,
-      depsInstalled: true,
-      buildState: { status: 'idle' },
-    });
-    expect(health.summary.status).toBe('degraded');
-    expect(health.summary.safeRead).toBe(false);
+  it('getVectorStatusText formats api mode', () => {
+    expect(getVectorStatusText(747, 'text-embedding-3-small', 'api')).toBe('Chunks: 747 | text-embedding-3-small | api');
+  });
+
+  it('isVectorReady returns false when deps not installed', () => {
+    const snap = { vector: { deps_installed: false } };
+    expect(isVectorReady(snap)).toBe(false);
   });
 });
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run:
 ```bash
 cd paperforge/plugin && npm test -- tests/memory-state.test.mjs
 ```
@@ -197,15 +298,15 @@ Expected: FAIL (module not found)
 
 - [ ] **Step 3: Write minimal implementation**
 
-Create `paperforge/plugin/src/memory-state.js` with these exports:
+Create `paperforge/plugin/src/memory-state.js`:
 
 ```javascript
 const fs = require('fs');
 const path = require('path');
-const os = require('os');
-const { execFileSync } = require('node:child_process');
 
-// ── Path Resolution ──
+// ═══════════════════════════════════════════════════════════════
+// Path Resolution
+// ═══════════════════════════════════════════════════════════════
 
 function resolveVaultPaths(vaultPath) {
   const systemDir = path.join(vaultPath, 'System', 'PaperForge');
@@ -215,36 +316,93 @@ function resolveVaultPaths(vaultPath) {
     indexesDir: path.join(systemDir, 'indexes'),
     logsDir: path.join(systemDir, 'logs'),
     dbPath: path.join(systemDir, 'indexes', 'paperforge.db'),
-    vectorStatePath: path.join(systemDir, 'indexes', 'vector-build-state.json'),
-    formalLibraryPath: path.join(systemDir, 'indexes', 'formal-library.json'),
+    memoryStatePath: path.join(systemDir, 'indexes', 'memory-runtime-state.json'),
+    vectorStatePath: path.join(systemDir, 'indexes', 'vector-runtime-state.json'),
+    healthStatePath: path.join(systemDir, 'indexes', 'runtime-health.json'),
+    buildStatePath: path.join(systemDir, 'indexes', 'vector-build-state.json'),
     pluginDataPath: path.join(vaultPath, '.obsidian', 'plugins', 'paperforge', 'data.json'),
     pfJsonPath: path.join(vaultPath, 'paperforge.json'),
   };
 }
 
-// ── File Readers ──
+// ═══════════════════════════════════════════════════════════════
+// Pure File Readers
+// ═══════════════════════════════════════════════════════════════
 
 function readJSONFile(filePath) {
   try {
     if (!fs.existsSync(filePath)) return null;
     return JSON.parse(fs.readFileSync(filePath, 'utf-8'));
-  } catch { return null; }
+  } catch (_) { return null; }
 }
 
-function readJSONLLines(filePath, maxLines = 0) {
-  try {
-    if (!fs.existsSync(filePath)) return [];
-    const content = fs.readFileSync(filePath, 'utf-8');
-    const lines = content.split('\n').filter(l => l.trim());
-    if (maxLines > 0) return lines.slice(-maxLines);
-    return lines;
-  } catch { return []; }
+// ═══════════════════════════════════════════════════════════════
+// Snapshot Readers (read Python-written canonical state)
+// ═══════════════════════════════════════════════════════════════
+
+function getMemoryRuntime(vaultPath) {
+  const paths = resolveVaultPaths(vaultPath);
+  return readJSONFile(paths.memoryStatePath);
 }
 
-// ── Python Path Resolution ──
+function getVectorRuntime(vaultPath) {
+  const paths = resolveVaultPaths(vaultPath);
+  return readJSONFile(paths.vectorStatePath);
+}
 
-function resolvePythonPath(vaultPath, settings = {}) {
-  if (settings.python_path && settings.python_path.trim()) {
+function getRuntimeHealth(vaultPath) {
+  const paths = resolveVaultPaths(vaultPath);
+  return readJSONFile(paths.healthStatePath);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Quick Checks (turn snapshot into bool)
+// ═══════════════════════════════════════════════════════════════
+
+function isMemoryReady(vaultPath) {
+  const s = getMemoryRuntime(vaultPath);
+  return !!(s && s.paper_count_db > 0 && !s.needs_rebuild);
+}
+
+function isVectorReady(vaultPath) {
+  const s = getVectorRuntime(vaultPath);
+  if (!s) return false;
+  if (!s.enabled) return false;
+  if (!s.deps_installed) return false;
+  if (!s.db_exists) return false;
+  if (s.chunk_count === 0) return false;
+  return true;
+}
+
+function isHealthOk(vaultPath) {
+  const s = getRuntimeHealth(vaultPath);
+  return !!(s && s.summary && s.summary.status === 'ok');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Formatting (turn snapshot into display string)
+// ═══════════════════════════════════════════════════════════════
+
+function getMemoryStatusText(vaultPath) {
+  const s = getMemoryRuntime(vaultPath);
+  if (!s || s.paper_count_db === 0) return 'DB not found. Run paperforge memory build.';
+  return `Papers: ${s.paper_count_db} | ${s.fresh ? 'fresh' : 'stale'}`;
+}
+
+function getVectorStatusText(vaultPath) {
+  const s = getVectorRuntime(vaultPath);
+  if (!s) return 'Status unavailable';
+  return `Chunks: ${s.chunk_count} | ${s.model} | ${s.mode}`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Python Path (for spawn only — NOT used for state reads)
+// ═══════════════════════════════════════════════════════════════
+
+const { execFileSync } = require('node:child_process');
+
+function resolvePythonPath(vaultPath, settings) {
+  if (settings && settings.python_path && settings.python_path.trim()) {
     const p = settings.python_path.trim();
     if (fs.existsSync(p)) return { path: p, source: 'manual', extraArgs: [] };
   }
@@ -256,14 +414,10 @@ function resolvePythonPath(vaultPath, settings = {}) {
   for (const c of venvCandidates) {
     if (fs.existsSync(c)) return { path: c, source: 'auto-detected', extraArgs: [] };
   }
-  for (const c of [{ path: 'python', extraArgs: [] }, { path: 'python3', extraArgs: [] }]) {
+  for (const c of [{path:'python',extraArgs:[]},{path:'python3',extraArgs:[]}]) {
     try {
-      const out = execFileSync(c.path, [...c.extraArgs, '--version'], {
-        encoding: 'utf-8', timeout: 5000, windowsHide: true,
-      });
-      if (out && out.toLowerCase().includes('python')) {
-        return { path: c.path, source: 'auto-detected', extraArgs: c.extraArgs };
-      }
+      const out = execFileSync(c.path, [...c.extraArgs, '--version'], {encoding:'utf-8',timeout:5000,windowsHide:true});
+      if (out && out.toLowerCase().includes('python')) return { path:c.path, source:'auto-detected', extraArgs:c.extraArgs };
     } catch {}
   }
   return { path: 'python', source: 'auto-detected', extraArgs: [] };
@@ -271,338 +425,145 @@ function resolvePythonPath(vaultPath, settings = {}) {
 
 let _cachedPython = null;
 function getCachedPython(vaultPath, settings) {
-  if (!_cachedPython) {
-    _cachedPython = resolvePythonPath(vaultPath, settings);
-  }
+  if (!_cachedPython) _cachedPython = resolvePythonPath(vaultPath, settings);
   return _cachedPython;
 }
 
-// ── Memory Status (SQLite via sql.js) ──
+// ═══════════════════════════════════════════════════════════════
+// Build Snapshot (testable composition of all layers)
+// ═══════════════════════════════════════════════════════════════
 
-let _SQL = null;
-async function _getSQL() {
-  if (!_SQL) {
-    const initSqlJs = require('sql.js');
-    _SQL = await initSqlJs();
-  }
-  return _SQL;
-}
+function buildSnapshot(vaultPath, _readFn, _resolvePaths) {
+  const readFn = _readFn || readJSONFile;
+  const resolvePaths = _resolvePaths || resolveVaultPaths;
+  const paths = resolvePaths(vaultPath);
 
-function _readSQLiteDB(dbPath) {
-  try {
-    if (!fs.existsSync(dbPath)) return null;
-    const buffer = fs.readFileSync(dbPath);
-    return new Uint8Array(buffer);
-  } catch { return null; }
-}
+  const memory = readFn(paths.memoryStatePath);
+  const vector = readFn(paths.vectorStatePath);
+  const health = readFn(paths.healthStatePath);
 
-function getMemoryStatusSync(vaultPath) {
-  const paths = resolveVaultPaths(vaultPath);
-  const dbBuffer = _readSQLiteDB(paths.dbPath);
-  if (!dbBuffer) {
-    return { paperCount: 0, freshness: 'unavailable', lastBuild: '', needsRebuild: true };
-  }
-  // For sync reads, use a simpler approach: read formal-library.json
-  const formalLib = readJSONFile(paths.formalLibraryPath);
-  if (formalLib) {
-    const items = formalLib.items || formalLib;
-    const count = Array.isArray(items) ? items.length : Object.keys(items).length;
-    const generatedAt = formalLib.generated_at || '';
-    return { paperCount: count, freshness: generatedAt ? 'fresh' : 'stale', lastBuild: generatedAt, needsRebuild: false };
-  }
-  return { paperCount: 0, freshness: 'unavailable', lastBuild: '', needsRebuild: true };
-}
-
-async function getMemoryStatus(vaultPath) {
-  // Async version that reads SQLite for more detail
-  const paths = resolveVaultPaths(vaultPath);
-  const dbBuffer = _readSQLiteDB(paths.dbPath);
-  if (!dbBuffer) {
-    return getMemoryStatusSync(vaultPath);
-  }
-  try {
-    const SQL = await _getSQL();
-    const db = new SQL.Database(dbBuffer);
-    const paperResult = db.exec("SELECT COUNT(*) as count FROM papers");
-    const metaResult = db.exec("SELECT value FROM meta WHERE key='last_full_build_at'");
-    const schemaResult = db.exec("SELECT value FROM meta WHERE key='schema_version'");
-    db.close();
-    const count = paperResult[0]?.values[0]?.[0] || 0;
-    const lastBuild = metaResult[0]?.values[0]?.[0] || '';
-    const schemaVer = schemaResult[0]?.values[0]?.[0] || '0';
-    return {
-      paperCount: count,
-      freshness: lastBuild ? 'fresh' : 'stale',
-      lastBuild,
-      schemaVersion: parseInt(schemaVer, 10) || 0,
-      needsRebuild: count === 0,
-    };
-  } catch {
-    return getMemoryStatusSync(vaultPath);
-  }
-}
-
-// ── Embed Status ──
-
-function getEmbedStatus(vaultPath) {
-  const paths = resolveVaultPaths(vaultPath);
-  const buildState = readJSONFile(paths.vectorStatePath) || {
-    status: 'idle', current: 0, total: 0, paper_id: '',
-    last_update: '', started_at: '', finished_at: '',
-    resume_supported: true, mode: 'local', model: 'BAAI/bge-small-en-v1.5',
-    message: '', pid: 0,
-  };
-  const pluginData = readJSONFile(paths.pluginDataPath) || {};
-  const features = pluginData.features || {};
-  const vectorEnabled = !!features.vector_db;
-  if (!vectorEnabled) {
-    return { dbExists: false, chunkCount: 0, model: 'BAAI/bge-small-en-v1.5', mode: 'local', buildState };
-  }
-  const mode = pluginData.vector_db_mode || 'local';
-  const model = mode === 'api'
-    ? (pluginData.vector_db_api_model || 'text-embedding-3-small')
-    : (pluginData.vector_db_model || 'BAAI/bge-small-en-v1.5');
-  const chromaDBPath = path.join(paths.indexesDir, 'vectors', 'chroma.sqlite3');
-  const dbExists = fs.existsSync(chromaDBPath);
-  let chunkCount = 0;
-  if (dbExists) {
-    try {
-      const buffer = fs.readFileSync(chromaDBPath);
-      const chromaBuffer = new Uint8Array(buffer);
-      // sql.js can read ChromaDB's internal sqlite3
-      // For now, approximate: check file size > 0
-      chunkCount = chromaBuffer.length > 1024 ? 1 : 0;
-    } catch { chunkCount = 0; }
-  }
-  return { dbExists, chunkCount, model, mode, buildState };
-}
-
-// ── Dependency Check ──
-
-function _findSitePackages(pythonPath) {
-  const dir = path.dirname(pythonPath);
-  const candidates = [
-    path.join(dir, 'Lib', 'site-packages'),
-    path.join(dir, '..', 'Lib', 'site-packages'),
-  ];
-  for (const c of candidates) {
-    if (fs.existsSync(c)) return c;
-  }
-  return null;
-}
-
-function checkVectorDeps(vaultPath, settings) {
-  const py = getCachedPython(vaultPath, settings);
-  const sp = _findSitePackages(py.path);
-  const missing = [];
-  if (sp) {
-    if (!fs.existsSync(path.join(sp, 'chromadb'))) missing.push('chromadb');
-    if (!fs.existsSync(path.join(sp, 'sentence_transformers'))) missing.push('sentence-transformers');
-  } else {
-    missing.push('chromadb', 'sentence-transformers');
-  }
-  return { installed: missing.length === 0, missing };
-}
-
-// ── Formatting ──
-
-function formatMemoryStatus(paperCount, freshness) {
-  if (paperCount === 0) return 'DB not found. Run paperforge memory build.';
-  const freshLabel = freshness === 'fresh' ? 'fresh' : 'stale';
-  return `Papers: ${paperCount} | ${freshLabel}`;
-}
-
-function formatEmbedStatus(chunkCount, model, mode) {
-  return `Chunks: ${chunkCount} | ${model} | ${mode}`;
-}
-
-// ── Runtime Health ──
-
-function deriveRuntimeHealth({ memory, embed, vectorEnabled, depsInstalled, buildState }) {
-  const layers = {
-    bootstrap: { status: 'ok', evidence: [], nextAction: '', repairCommand: '' },
-    read: { status: 'ok', evidence: [], nextAction: '', repairCommand: '' },
-    write: { status: 'ok', evidence: [], nextAction: '', repairCommand: '' },
-    index: { status: 'ok', evidence: [], nextAction: '', repairCommand: '' },
-    vector: { status: 'ok', evidence: [], nextAction: '', repairCommand: '' },
-  };
-
-  // Read layer
-  if (memory.paperCount === 0) {
-    layers.read = { status: 'blocked', evidence: ['No papers in memory DB'],
-      nextAction: 'Run paperforge memory build', repairCommand: 'paperforge memory build' };
-  }
-
-  // Index layer
-  if (memory.paperCount === 0 || memory.freshness === 'unavailable') {
-    layers.index = { status: 'blocked', evidence: ['Memory DB unavailable'],
-      nextAction: 'Run paperforge memory build', repairCommand: 'paperforge memory build' };
-  }
-  if (memory.freshness === 'stale') {
-    layers.index = { status: 'degraded', evidence: ['Memory DB may be stale'],
-      nextAction: 'Run paperforge memory build', repairCommand: 'paperforge memory build' };
-  }
-
-  // Vector layer
-  if (vectorEnabled) {
-    if (!depsInstalled) {
-      layers.vector = { status: 'blocked', evidence: ['Vector deps not installed'],
-        nextAction: 'Install: pip install paperforge[vector]', repairCommand: 'pip install paperforge[vector]' };
-    } else if (!embed.dbExists) {
-      layers.vector = { status: 'degraded', evidence: ['Vector DB not built'],
-        nextAction: 'Run embed build', repairCommand: 'paperforge embed build --resume' };
-    } else if (buildState.status === 'running') {
-      layers.vector = { status: 'degraded', evidence: ['Vector build in progress'],
-        nextAction: 'Wait for build', repairCommand: 'paperforge embed status --json' };
-    } else if (buildState.status === 'failed') {
-      layers.vector = { status: 'blocked', evidence: ['Last build failed'],
-        nextAction: 'Rebuild vectors', repairCommand: 'paperforge embed build --resume' };
-    }
-  } else {
-    layers.vector = { status: 'ok', evidence: ['Vector DB disabled by user'] };
-  }
-
-  // Summary
-  const blocked = Object.values(layers).some(l => l.status === 'blocked');
-  const degraded = Object.values(layers).some(l => l.status === 'degraded');
-  const status = blocked ? 'blocked' : degraded ? 'degraded' : 'ok';
+  const memoryOk = !!(memory && memory.paper_count_db > 0 && !memory.needs_rebuild);
+  const vectorOk = !!(vector && vector.enabled && vector.deps_installed && vector.db_exists && vector.chunk_count > 0);
 
   return {
+    memory,
+    vector,
+    health,
+    updatedAt: memory?.updated_at || vector?.updated_at || '',
     summary: {
-      status,
-      reason: status === 'ok' ? 'All systems operational' : `${status} — some layers need attention`,
-      safeRead: layers.read.status === 'ok',
-      safeWrite: layers.write.status === 'ok',
-      safeBuild: layers.index.status === 'ok',
-      safeVector: layers.vector.status === 'ok',
-    },
-    layers,
-    capabilities: {
-      paperContext: layers.read.status === 'ok',
-      readingLogWrite: layers.write.status === 'ok',
-      projectLogWrite: layers.write.status === 'ok',
-      ftsSearch: layers.read.status === 'ok',
-      vectorRetrieve: layers.vector.status === 'ok',
+      status: memoryOk && vectorOk ? 'ready' : 'degraded',
+      memoryReady: memoryOk,
+      vectorReady: vectorOk,
+      healthOk: !!(health?.summary?.status === 'ok'),
     },
   };
 }
+
+// ═══════════════════════════════════════════════════════════════
 
 module.exports = {
   resolveVaultPaths,
   readJSONFile,
-  readJSONLLines,
+  getMemoryRuntime,
+  getVectorRuntime,
+  getRuntimeHealth,
+  isMemoryReady,
+  isVectorReady,
+  isHealthOk,
+  getMemoryStatusText,
+  getVectorStatusText,
   resolvePythonPath,
   getCachedPython,
-  getMemoryStatus,
-  getMemoryStatusSync,
-  getEmbedStatus,
-  checkVectorDeps,
-  formatMemoryStatus,
-  formatEmbedStatus,
-  deriveRuntimeHealth,
+  buildSnapshot,
 };
 ```
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run:
 ```bash
 cd paperforge/plugin && npm test -- tests/memory-state.test.mjs
 ```
-Expected: PASS (at least pure-function tests pass)
+Expected: PASS
 
 - [ ] **Step 5: Commit**
 
 ```bash
 git add paperforge/plugin/src/memory-state.js paperforge/plugin/tests/memory-state.test.mjs
-git commit -m "feat: add JS-native memory state reader module"
+git commit -m "feat: add JS-native file-based memory state reader module"
 ```
 
 ---
 
-### Task 3: Wire main.js to use memory-state.js (remove Python exec calls)
+### Task 3: Wire main.js to use memory-state snapshots
 
 **Files:**
 - Modify: `paperforge/plugin/main.js`
 
-Replace these methods and call sites:
+Replace 5 Python exec sites with snapshot reads. Keep spawn for heavy ops.
 
-- [ ] **Step 1: Replace `_execMemoryStatus()` with `getMemoryStatusSync()`**
+- [ ] **Step 1: Add import**
 
-In `_renderMemoryStatus` (line ~2958), replace:
+At top of main.js:
 ```javascript
-if (this._memoryStatusText !== null) {
-    this._renderMemoryStatusText(statusRow, this._memoryStatusText, this._lastSyncTime);
-} else if (pyResult.path) {
-    this._renderMemoryStatusText(statusRow, 'Checking...', this._lastSyncTime);
-    this._execMemoryStatus(pyResult.path, vp, (text) => {
-        this._memoryStatusText = text;
-        this._renderMemoryStatusText(statusRow, text, this._lastSyncTime);
-    });
+const memoryState = require('./src/memory-state.js');
+```
+
+- [ ] **Step 2: Replace `_execMemoryStatus()` with `getMemoryStatusText()`**
+
+In `_renderMemoryStatus`, replace async exec pattern:
+```javascript
+// BEFORE:
+if (this._memoryStatusText !== null) { ... cached ... }
+else { ... async exec + callback ... }
+
+// AFTER:
+const statusText = memoryState.getMemoryStatusText(vp);
+this._renderMemoryStatusText(statusRow, statusText, this._lastSyncTime || '');
+```
+
+Memory status is now synchronous — no "Checking...", no callback.
+
+- [ ] **Step 3: Replace dep check with `getVectorRuntime().deps_installed`**
+
+In `_renderVectorSection`:
+```javascript
+// BEFORE:
+if (this._vectorDepsOk === null) {
+    exec(`"${py}" -c "import chromadb,sentence_transformers;..."`);
 }
+
+// AFTER:
+const vr = memoryState.getVectorRuntime(vp);
+this._vectorDepsOk = vr ? vr.deps_installed : null;
 ```
 
-With:
-```javascript
-if (this._memoryStatusText !== null) {
-    this._renderMemoryStatusText(statusRow, this._memoryStatusText, this._lastSyncTime);
-} else {
-    const mem = memoryState.getMemoryStatusSync(vp);
-    this._memoryStatusText = memoryState.formatMemoryStatus(mem.paperCount, mem.freshness);
-    this._lastSyncTime = mem.lastBuild || 'Never';
-    this._renderMemoryStatusText(statusRow, this._memoryStatusText, this._lastSyncTime);
-}
-```
-
-- [ ] **Step 2: Replace `_execEmbedStatus()` with `memoryState.getEmbedStatus()`**
-
-In `_renderVectorReady`, replace the async status fetch with sync:
+- [ ] **Step 4: Replace `_execEmbedStatus()` and rehydrate with `getVectorRuntime()`**
 
 ```javascript
-const embedStatus = memoryState.getEmbedStatus(vp);
-this._embedStatusText = memoryState.formatEmbedStatus(embedStatus.chunkCount, embedStatus.model, embedStatus.mode);
+// BEFORE:
+this._execEmbedStatus(pyResult.path, vp, (text) => { ... });
+// AND separate rehydrate exec
+
+// AFTER:
+const vr = memoryState.getVectorRuntime(vp);
+this._embedStatusText = memoryState.getVectorStatusText(vp);
+// buildState from vr.build_state
 ```
 
-- [ ] **Step 3: Replace dep check exec with `memoryState.checkVectorDeps()`**
+- [ ] **Step 5: Replace Dashboard runtime-health exec**
 
-In `_renderVectorSection` line ~3061, replace:
+At line ~1493:
 ```javascript
-exec(`"${pyResult.path}" -c "import chromadb, sentence_transformers; print('ok')"`, ...)
+// BEFORE:
+const rh = execFileSync(pyExe, [...args, '...runtime-health --json']);
+
+// AFTER:
+const rh = memoryState.getRuntimeHealth(vp2);
+memOk = memoryState.isHealthOk(vp2);
+memDetail = rh?.summary?.reason || 'Unknown';
 ```
 
-With:
-```javascript
-const deps = memoryState.checkVectorDeps(vp, this.plugin.settings);
-this._vectorDepsOk = deps.installed;
-if (deps.installed) {
-    // proceed to embed status
-} else {
-    this.display();
-}
-```
-
-- [ ] **Step 4: Replace rehydrate exec with `memoryState.getEmbedStatus()`**
-
-Remove the rehydrate `exec()` call block, read `buildState` from `memoryState.getEmbedStatus(vp).buildState` instead.
-
-- [ ] **Step 5: Replace Dashboard runtime-health `execFileSync` with `memoryState.deriveRuntimeHealth()`**
-
-At line ~1493, replace the `execFileSync` call with:
-```javascript
-const rh = memoryState.deriveRuntimeHealth({
-    memory: memoryState.getMemoryStatusSync(vp2),
-    embed: memoryState.getEmbedStatus(vp2),
-    vectorEnabled: plugin?.settings?.features?.vector_db || false,
-    depsInstalled: memoryState.checkVectorDeps(vp2, plugin?.settings).installed,
-    buildState: memoryState.getEmbedStatus(vp2).buildState,
-});
-memOk = rh.summary.status === 'ok';
-memDetail = rh.summary.reason;
-```
-
-- [ ] **Step 6: Keep `_callPython(cmd, opts)` for heavy operations**
-
-Consolidate spawn/exec for build, stop, sync into a single wrapper:
+- [ ] **Step 6: Add `_callPython()` wrapper for remaining heavy ops**
 
 ```javascript
 _callPython(command, { stream, env, onData, onClose }) {
@@ -610,25 +571,26 @@ _callPython(command, { stream, env, onData, onClose }) {
         this.app.vault.adapter.basePath,
         this.plugin.settings
     );
-    const args = [...py.extraArgs, '-m', 'paperforge', '--vault', this.app.vault.adapter.basePath, ...command];
+    const vp = this.app.vault.adapter.basePath;
+    const args = [...py.extraArgs, '-m', 'paperforge', '--vault', vp, ...command];
     if (stream) {
-        const child = spawn(py.path, args, { cwd: this.app.vault.adapter.basePath, env, windowsHide: true });
+        const { spawn } = require('node:child_process');
+        const child = spawn(py.path, args, { cwd: vp, env, windowsHide: true });
         if (onData) child.stdout.on('data', onData);
         child.on('close', onClose);
         return child;
     }
-    // async exec
-    execFile(py.path, args, { cwd: this.app.vault.adapter.basePath, timeout: 30000 },
-        (err, stdout, stderr) => {
-            onClose(err ? 1 : 0, stdout, stderr);
-        });
+    const { execFile } = require('node:child_process');
+    execFile(py.path, args, { cwd: vp, timeout: 60000 },
+        (err, stdout, stderr) => { onClose(err ? 1 : 0, stdout, stderr); });
     return null;
 }
 ```
 
+Replace all remaining `spawn()/execFile()` calls in build/sync/stop handlers with `this._callPython(...)`.
+
 - [ ] **Step 7: Verify**
 
-Run:
 ```bash
 node --check paperforge/plugin/main.js
 ```
@@ -638,58 +600,52 @@ Expected: no errors
 
 ```bash
 git add paperforge/plugin/main.js
-git commit -m "refactor: replace Python exec calls with JS-native memory-state reads"
+git commit -m "refactor: replace Python exec with memory-state snapshot reads"
 ```
 
 ---
 
-### Task 4: Extract remaining pure helpers to testable.js
+### Task 4: Add `_refreshSnapshots()` — refresh snapshots after heavy ops
 
 **Files:**
-- Modify: `paperforge/plugin/src/testable.js`
+- Modify: `paperforge/plugin/main.js`
 
-- [ ] **Step 1: Add pure helper wrappers**
+After each heavy operation completes (build, rebuild, sync), call a snapshot refresher.
 
-Add factory wrappers for testability:
+- [ ] **Step 1: Add snapshot refresh function**
 
 ```javascript
-function createMemoryState(mockFS) {
-    const fs = mockFS || require('fs');
-    // Re-implement memory-state functions using the provided fs mock
-    // This allows Vitest to test logic without real filesystem
+_refreshSnapshots(vp) {
+    const py = memoryState.getCachedPython(vp, this.plugin.settings);
+    const { execFileSync } = require('node:child_process');
+    const args = [...py.extraArgs, '-m', 'paperforge', '--vault', vp, 'runtime-health', '--json'];
+    try {
+        execFileSync(py.path, args, { cwd: vp, timeout: 30000, windowsHide: true, encoding: 'utf-8' });
+        // runtime-health already writes all three snapshots as side effect
+    } catch { /* best effort */ }
+    // Now re-read fresh snapshots
+    this._memoryStatusText = memoryState.getMemoryStatusText(vp);
+    this._embedStatusText = memoryState.getVectorStatusText(vp);
 }
 ```
 
-- [ ] **Step 2: Add test for the factory**
+- [ ] **Step 2: Call after build complete**
 
-```javascript
-// tests/memory-state.test.mjs
-describe('createMemoryState with mock FS', () => {
-    it('returns degraded when formal-library.json missing', () => {
-        const mockFS = {
-            existsSync: (p) => false,
-            readFileSync: (p) => { throw new Error('ENOENT'); },
-        };
-        const state = createMemoryState(mockFS);
-        const rh = state.deriveRuntimeHealth(...);
-        expect(rh.summary.status).toBe('degraded');
-    });
-});
-```
+In `this._embedProcess.on('close', ...)` handler, call `this._refreshSnapshots(vp)`.
 
-- [ ] **Step 3: Run tests**
+- [ ] **Step 3: Call after memory rebuild**
 
-Run:
-```bash
-cd paperforge/plugin && npm test -- tests/memory-state.test.mjs
-```
-Expected: PASS
+In the rebuild button handler, call `this._refreshSnapshots(vp)` after `execFile` completes.
 
-- [ ] **Step 4: Commit**
+- [ ] **Step 4: Call after sync**
+
+In the sync button handler, call `this._refreshSnapshots(vp)` after sync completes.
+
+- [ ] **Step 5: Commit**
 
 ```bash
-git add paperforge/plugin/src/testable.js paperforge/plugin/tests/memory-state.test.mjs
-git commit -m "test: add memory-state factory for Vitest mocking"
+git add paperforge/plugin/main.js
+git commit -m "feat: refresh runtime snapshots after heavy operations complete"
 ```
 
 ---
@@ -699,55 +655,69 @@ git commit -m "test: add memory-state factory for Vitest mocking"
 **Files:**
 - No production files
 
-- [ ] **Step 1: Deploy latest plugin to test1**
+- [ ] **Step 1: Deploy latest plugin + Python code**
 
 ```bash
 cp paperforge/plugin/main.js "D:\L\Med\test1\.obsidian\plugins\paperforge\main.js"
 cp paperforge/plugin/src/memory-state.js "D:\L\Med\test1\.obsidian\plugins\paperforge\src\memory-state.js"
+pip install -e .
 ```
 
-- [ ] **Step 2: Verify Settings → Features opens without Python subprocess**
+- [ ] **Step 2: Generate initial snapshots**
 
-Open Obsidian DevTools (Ctrl+Shift+I), check Network/Console tabs.
-No `exec` or `spawn` calls should appear for status checks.
+```bash
+python -m paperforge --vault "D:\L\Med\test1" runtime-health --json
+```
+Expected: three snapshot files created in `System/PaperForge/indexes/`.
 
-- [ ] **Step 3: Verify Memory Layer shows status instantly**
+- [ ] **Step 3: Verify Settings → Features opens without Python subprocess**
 
-Expected: "Papers: 150 | fresh" without "Checking..." flash.
+Open Obsidian DevTools (Ctrl+Shift+I), check Console.
+No `exec`, `spawn`, or `execFileSync` calls should appear for status checks.
+Memory status should show instantly.
+Vector deps check should show correct result.
 
-- [ ] **Step 4: Verify Vector DB section shows correctly**
-
-Expected: deps check passes, embed status shows chunk count, no "Dependencies not installed".
-
-- [ ] **Step 5: Verify Build button still works**
+- [ ] **Step 4: Verify Build button still works**
 
 Click Build → progress bar shows → completes with Notice.
+After completion, snapshots should be refreshed.
 
-- [ ] **Step 6: Verify Dashboard System Status**
+- [ ] **Step 5: Verify Dashboard System Status**
 
-Expected: Memory Layer row shows correct status.
+Dashboard should show correct memory layer status from snapshot.
+
+- [ ] **Step 6: Verify refresh after operations**
+
+Rebuild → snapshots update → status row reflects new state.
+Sync → same.
 
 - [ ] **Step 7: Commit any final fixes**
 
 ```bash
 git add paperforge/plugin/main.js
-git commit -m "fix: deploy JS-native state changes from smoke test"
+git commit -m "fix: deploy JS-first state changes from smoke test"
 ```
 
 ---
 
 ## Summary
 
-| Task | Files                         | Description                                          |
-| ---- | ----------------------------- | ---------------------------------------------------- |
-| 1    | `package.json`                  | Add sql.js dependency                                |
-| 2    | `src/memory-state.js` (new)     | JS-native state reads for memory/embed/deps/health   |
-| 3    | `main.js`                       | Replace all Python exec for state reads              |
-| 4    | `src/testable.js`               | Extract pure helpers for mocking                     |
-| 5    | test1 vault                   | End-to-end smoke test                                |
+| Task | Files | Description |
+| ---- | ----- | ----------- |
+| 1 | `state_snapshot.py` (new), `status.py`, `embed.py`, `runtime_health.py` | Python writes canonical snapshot files |
+| 2 | `src/memory-state.js` (new), `tests/memory-state.test.mjs` | JS reads snapshots only; no SQL, no inference |
+| 3 | `main.js` | Replace exec calls with snapshot reads + `_callPython()` wrapper |
+| 4 | `main.js` | Refresh snapshots after heavy ops complete |
+| 5 | test1 vault | End-to-end smoke test |
 
 ### Dependency order
 
 Task 1 → Task 2 → Task 3 → Task 4 → Task 5
 
-Tasks 1-2 can be done together. Task 3 is the main integration. Task 4-5 verify.
+### Key architectural guarantees
+
+1. Python is the ONLY source of truth for all judgment (deps, health, counts)
+2. JS does zero inference from raw files
+3. No SQLite reads in JS (no dependency on native Node modules)
+4. `buildSnapshot()` is injectable — tests can mock the file reader
+5. `_callPython()` is the single spawn path — eliminates 20+ duplicate Python resolutions
