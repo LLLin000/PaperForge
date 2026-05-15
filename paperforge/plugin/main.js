@@ -552,6 +552,10 @@ Object.assign(LANG.en, {
     feat_output_copied: 'Output copied to clipboard.',
     feat_install_done: 'Dependencies installed. Building vectors...',
     feat_install_failed: 'Install failed: ',
+    feat_memory_rebuild_btn: 'Rebuild',
+    feat_memory_rebuilding: 'Rebuilding...',
+    feat_memory_rebuild_done: 'Memory DB rebuilt.',
+    feat_memory_rebuild_failed: 'Rebuild failed.',
 });
 
 /* ── LANG.zh: v1.12 runtime health, OCR queue, pf-deep, dashboard translations ── */
@@ -651,6 +655,10 @@ Object.assign(LANG.zh, {
     feat_output_copied: '输出已复制到剪贴板。',
     feat_install_done: '依赖已安装。正在构建向量…',
     feat_install_failed: '安装失败：',
+    feat_memory_rebuild_btn: '重建数据库',
+    feat_memory_rebuilding: '重建中…',
+    feat_memory_rebuild_done: '记忆数据库重建完成。',
+    feat_memory_rebuild_failed: '重建失败。',
 });
 
 function langFromApp(app) {
@@ -2951,6 +2959,34 @@ class PaperForgeSettingTab extends PluginSettingTab {
         }
 
         this._renderVectorSection(containerEl);
+
+        // ── Memory Rebuild Button ──
+        const memActions = containerEl.createEl('div');
+        memActions.style.cssText = 'margin:8px 0; display:flex; align-items:center; gap:8px;';
+
+        const memRebuildBtn = memActions.createEl('button');
+        memRebuildBtn.setText(t('feat_memory_rebuild_btn'));
+        memRebuildBtn.style.cssText = 'font-size:12px; padding:4px 10px;';
+        memRebuildBtn.addEventListener('click', () => {
+            const pyResult2 = resolvePythonExecutable(vp, this.plugin.settings);
+            if (!pyResult2.path) { new Notice(t('feat_no_python')); return; }
+            memRebuildBtn.setText(t('feat_memory_rebuilding'));
+            memRebuildBtn.setAttr('disabled', '');
+            const { exec } = require('child_process');
+            exec(`"${pyResult2.path}" -m paperforge --vault "${vp}" memory build`, { encoding: 'utf-8', timeout: 60000 }, (err, stdout) => {
+                memRebuildBtn.setText(t('feat_memory_rebuild_btn'));
+                memRebuildBtn.removeAttribute('disabled');
+                if (!err) {
+                    new Notice(t('feat_memory_rebuild_done'));
+                    this._memoryStatusText = null;
+                    this._execMemoryStatus(pyResult2.path, vp, (text) => {
+                        this._memoryStatusText = text;
+                    });
+                } else {
+                    new Notice(t('feat_memory_rebuild_failed'));
+                }
+            });
+        });
     }
 
     _renderVectorSection(containerEl) {
