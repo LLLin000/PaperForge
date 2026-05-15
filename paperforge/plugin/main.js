@@ -3468,13 +3468,13 @@ class PaperForgeSettingTab extends PluginSettingTab {
                                 this._embedStatusText = text;
                                 this.display();
                             });
+                            new Notice(t('feat_build_complete'));
                         } else {
                             this._embedStatusText = null;
                             const errMsg = (this._embedStderr || '').slice(0, 200);
                             new Notice(t('feat_build_failed') + (errMsg ? ': ' + errMsg : ''), 8000);
                         }
                         this._embedStderr = '';
-                        this.display();
                         this.display();
                     });
 
