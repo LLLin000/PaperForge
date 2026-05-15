@@ -3378,7 +3378,15 @@ class PaperForgeSettingTab extends PluginSettingTab {
                     .onChange(value => {
                         this.plugin.settings.vector_db_mode = value;
                         this.plugin.saveSettings();
-                        this.display();
+                        // Regenerate vector-runtime-state.json for new mode
+                        const vp = this.app.vault.adapter.basePath;
+                        const py = memoryState.getCachedPython(vp, this.plugin.settings);
+                        const args = [...py.extraArgs, '-m', 'paperforge', '--vault', vp, 'embed', 'status', '--json'];
+                        execFile(py.path, args, { cwd: vp, timeout: 15000, windowsHide: true }, () => {
+                            this._vectorDepsOk = null;
+                            this._embedStatusText = null;
+                            this.display();
+                        });
                     });
             });
 
