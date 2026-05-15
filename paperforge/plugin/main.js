@@ -3323,16 +3323,18 @@ class PaperForgeSettingTab extends PluginSettingTab {
                         if (!pyResult.path) { new Notice('No Python found.'); return; }
                         button.setButtonText(t('feat_installing'));
                             button.setDisabled(true);
-                            const notice = new Notice('Installing chromadb + sentence-transformers + openai...', 0);
+                            const mode = this.plugin.settings.vector_db_mode || 'local';
+                            const pkgs = mode === 'api' ? 'openai' : 'chromadb sentence-transformers openai';
+                            const notice = new Notice('Installing ' + pkgs + '...', 0);
                         try {
                             const { exec } = require('child_process');
         const env = Object.assign({}, process.env, { PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1', HF_ENDPOINT: this.plugin.settings.vector_db_hf_endpoint || 'https://hf-mirror.com', HF_TOKEN: this.plugin.settings.vector_db_hf_token || '' });
                             await new Promise((resolve, reject) => {
-                                exec(`"${pyResult.path}" -m pip install chromadb sentence-transformers openai`, {
-                                    encoding: 'utf-8', timeout: 300000, env: env,
-                                }, (error) => { error ? reject(error) : resolve(); });
-                            });
-                            notice.hide();
+                                 exec('"' + pyResult.path + '" -m pip install ' + pkgs, {
+                                     encoding: 'utf-8', timeout: 300000, env: env,
+                                 }, (error) => { error ? reject(error) : resolve(); });
+                             });
+                             notice.hide();
                             new Notice('Dependencies installed. Building vectors...');
                             // Auto-build after install
                             this._vectorDepsOk = true;

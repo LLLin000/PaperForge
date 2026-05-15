@@ -32,18 +32,21 @@ def run(args: argparse.Namespace) -> int:
 
         # Write vector-runtime-state.json snapshot (JS-First Memory State)
         _dep_missing = []
-        try:
-            import chromadb  # noqa: F401
-        except ImportError:
-            _dep_missing.append("chromadb")
-        try:
-            import sentence_transformers  # noqa: F401
-        except ImportError:
-            _dep_missing.append("sentence_transformers")
-        try:
-            import openai  # noqa: F401
-        except ImportError:
-            _dep_missing.append("openai")
+        _current_mode = status.get("mode", "local") or "local"
+        if _current_mode == "api":
+            try:
+                import openai  # noqa: F401
+            except ImportError:
+                _dep_missing.append("openai")
+        else:
+            try:
+                import chromadb  # noqa: F401
+            except ImportError:
+                _dep_missing.append("chromadb")
+            try:
+                import sentence_transformers  # noqa: F401
+            except ImportError:
+                _dep_missing.append("sentence_transformers")
         write_vector_runtime(
             vault,
             enabled=bool(status.get("mode", "")),
