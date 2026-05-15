@@ -841,7 +841,7 @@ const DEFAULT_SETTINGS = {
         vector_db: false,
     },
     selected_skill_platform: 'opencode',
-    vector_db_mode: 'local',
+    vector_db_mode: 'api',
     vector_db_model: 'BAAI/bge-small-en-v1.5',
     vector_db_api_key: '',
     vector_db_api_base: '',
@@ -3328,7 +3328,7 @@ class PaperForgeSettingTab extends PluginSettingTab {
                         if (!pyResult.path) { new Notice('No Python found.'); return; }
                         button.setButtonText(t('feat_installing'));
                             button.setDisabled(true);
-                            const mode = this.plugin.settings.vector_db_mode || 'local';
+                            const mode = this.plugin.settings.vector_db_mode || 'api';
                             const pkgs = mode === 'api' ? 'openai' : 'chromadb sentence-transformers openai';
                             const notice = new Notice('Installing ' + pkgs + '...', 0);
                         try {
@@ -3377,8 +3377,8 @@ class PaperForgeSettingTab extends PluginSettingTab {
         new Setting(containerEl)
             .setName(t('feat_embed_mode'))
             .addDropdown(dropdown => {
-                dropdown.addOption('local', t('feat_embed_mode_local'));
                 dropdown.addOption('api', t('feat_embed_mode_api'));
+                dropdown.addOption('local', t('feat_embed_mode_local'));
                 dropdown.setValue(this.plugin.settings.vector_db_mode)
                     .onChange(value => {
                         this.plugin.settings.vector_db_mode = value;
