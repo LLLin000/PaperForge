@@ -3058,7 +3058,7 @@ class PaperForgeSettingTab extends PluginSettingTab {
                 return;
             }
             const { exec } = require('child_process');
-            exec(`"${pyResult.path}" -c "import chromadb; import sentence_transformers; import openai; print('ok')"`, {
+            exec(`"${pyResult.path}" -c "import chromadb, sentence_transformers; print('ok')"`, {
                 encoding: 'utf-8', timeout: 15000
             }, (err, stdout) => {
                 const ok = !err && (stdout || '').trim() === 'ok';
