@@ -699,6 +699,10 @@ Object.assign(LANG.en, {
     feat_memory_rebuilding: 'Rebuilding...',
     feat_memory_rebuild_done: 'Memory DB rebuilt.',
     feat_memory_rebuild_failed: 'Rebuild failed.',
+    feat_installing_pkgs: 'Installing {pkgs}...',
+    feat_model_changed_warn: 'Model changed ({0} -> {1}). Existing vectors are incompatible — rebuild required.',
+    feat_cache_removed: 'Model cache removed.',
+    feat_cache_remove_failed: 'Failed: {0}',
 });
 
 /* ── LANG.zh: v1.12 runtime health, OCR queue, pf-deep, dashboard translations ── */
@@ -806,6 +810,10 @@ Object.assign(LANG.zh, {
     feat_memory_rebuilding: '重建中…',
     feat_memory_rebuild_done: '记忆数据库重建完成。',
     feat_memory_rebuild_failed: '重建失败。',
+    feat_installing_pkgs: '正在安装 {pkgs}...',
+    feat_model_changed_warn: '模型已更换（{0} -> {1}）。已有向量不兼容——需要重建。',
+    feat_cache_removed: '模型缓存已清除。',
+    feat_cache_remove_failed: '失败：{0}',
 });
 
 function langFromApp(app) {
@@ -3324,30 +3332,31 @@ class PaperForgeSettingTab extends PluginSettingTab {
                     .setCta()
                     .onClick(async () => {
                         const vp = this.app.vault.adapter.basePath;
-                        const pyResult = resolvePythonExecutable(vp, this.plugin.settings);
-                        if (!pyResult.path) { new Notice('No Python found.'); return; }
+                        const pyResult = memoryState.getCachedPython(vp, this.plugin.settings);
+                        if (!pyResult.path) { new Notice(t('feat_no_python')); return; }
                         button.setButtonText(t('feat_installing'));
                             button.setDisabled(true);
                             const mode = this.plugin.settings.vector_db_mode || 'api';
                             const pkgs = mode === 'api' ? 'openai' : 'chromadb sentence-transformers openai';
-                            const notice = new Notice('Installing ' + pkgs + '...', 0);
+                            const notice = new Notice(t('feat_installing_pkgs').replace('{pkgs}', pkgs), 0);
                         try {
-                            const { exec } = require('child_process');
-        const env = Object.assign({}, process.env, { PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1', HF_ENDPOINT: this.plugin.settings.vector_db_hf_endpoint || 'https://hf-mirror.com', HF_TOKEN: this.plugin.settings.vector_db_hf_token || '' });
+                            const { execFile: execFileInstall } = require('node:child_process');
+                            const env = Object.assign({}, process.env, { PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1', HF_ENDPOINT: this.plugin.settings.vector_db_hf_endpoint || 'https://hf-mirror.com', HF_TOKEN: this.plugin.settings.vector_db_hf_token || '' });
+                            const pkgsArg = pkgs.split(' ');
                             await new Promise((resolve, reject) => {
-                                 exec('"' + pyResult.path + '" -m pip install ' + pkgs, {
-                                     encoding: 'utf-8', timeout: 300000, env: env,
-                                 }, (error) => { error ? reject(error) : resolve(); });
+                                 execFileInstall(pyResult.path, [...pyResult.extraArgs, '-m', 'pip', 'install', ...pkgsArg], {
+                                     cwd: vp, timeout: 300000, env: env, windowsHide: true,
+                                 }, (error, stdout, stderr) => { error ? reject(error) : resolve(); });
                              });
                              notice.hide();
-                            new Notice('Dependencies installed. Building vectors...');
+                            new Notice(t('feat_install_done'));
                             // Auto-build after install
                             this._vectorDepsOk = true;
                             this._embedStatusText = memoryState.getVectorStatusText(vp);
                             this.display();
                         } catch (e) {
                             notice.hide();
-                            new Notice('Install failed: ' + (e.stderr || e.message || e));
+                            new Notice(t('feat_install_failed') + (e.stderr || e.message || e));
                             button.setButtonText(t('feat_retry_btn'));
                             button.setDisabled(false);
                         }
@@ -3370,7 +3379,7 @@ class PaperForgeSettingTab extends PluginSettingTab {
         if (modelChanged) {
             const warnEl = containerEl.createEl('div');
             warnEl.style.cssText = 'padding:8px 12px; margin:8px 0; background:var(--background-modifier-warning); border-radius:4px;';
-            warnEl.setText(`Model changed (${lastModel} -> ${currentModel}). Existing vectors are incompatible — rebuild required.`);
+            warnEl.setText(t('feat_model_changed_warn').replace('{0}', lastModel).replace('{1}', currentModel));
         }
 
         // Mode selector
@@ -3456,17 +3465,17 @@ class PaperForgeSettingTab extends PluginSettingTab {
                         button.setButtonText(t('feat_removing'));
                         button.setDisabled(true);
                         try {
-                            const pyResult = resolvePythonExecutable(vp, this.plugin.settings);
-                            const { exec } = require('child_process');
+                            const pyResult = memoryState.getCachedPython(vp, this.plugin.settings);
+                            const { execFile: execFileRm } = require('node:child_process');
                             const env = Object.assign({}, process.env, { PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1' });
                             await new Promise((resolve, reject) => {
-                                exec(`"${pyResult.path}" -c "import shutil, os; p=os.path.join(os.path.expanduser('~/.cache/huggingface/hub'), '${cacheName}'); shutil.rmtree(p,ignore_errors=True); print('done')"`, {
-                                    encoding: 'utf-8', timeout: 30000, env: env
+                                execFileRm(pyResult.path, [...pyResult.extraArgs, '-c', 'import shutil, os; p=os.path.join(os.path.expanduser("~/.cache/huggingface/hub"), "' + cacheName + '"); shutil.rmtree(p,ignore_errors=True); print("done")'], {
+                                    cwd: vp, timeout: 30000, env: env, windowsHide: true,
                                 }, (error) => error ? reject(error) : resolve());
                             });
-                            new Notice('Model cache removed.');
+                            new Notice(t('feat_cache_removed'));
                         } catch (e) {
-                            new Notice('Failed: ' + (e.stderr || e.message || e));
+                            new Notice(t('feat_cache_remove_failed').replace('{0}', e.stderr || e.message || String(e)));
                         }
                         this.display();
                     });
@@ -3598,7 +3607,7 @@ class PaperForgeSettingTab extends PluginSettingTab {
                         },
                         onError: (err) => {
                             this.plugin._embedProcess = null;
-                            new Notice('Build failed: ' + (err.message || err));
+                            new Notice(t('feat_build_failed') + ': ' + (err.message || err));
                             this.display();
                         },
                         onClose: (code) => {
