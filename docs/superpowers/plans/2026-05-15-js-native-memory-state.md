@@ -12,7 +12,9 @@
 
 **Audit:** `docs/superpowers/specs/2026-05-15-memory-layer-ux-audit.md`
 
-**Key revision:** No `sql.js`. No JS-side SQLite reads. No JS-side dep inference. No duplicated health logic. Python IS the judgment layer; JS IS the display layer.
+**Key revision:** No `sql.js`. No JS-side SQLite reads. No JS-side dep inference. No duplicated health logic. Python IS the judgment layer; JS IS the display layer. All state-changing Python commands write snapshots as side effects. JS never spawns Python just to refresh snapshots.
+
+**Related:** `docs/superpowers/specs/2026-05-15-js-native-memory-state.md` — contains snapshot JSON schemas, degradation policy, and command mandate table.
 
 ---
 
@@ -605,27 +607,32 @@ git commit -m "refactor: replace Python exec with memory-state snapshot reads"
 
 ---
 
-### Task 4: Add `_refreshSnapshots()` — refresh snapshots after heavy ops
+### Task 4: Add async snapshot refresh after heavy ops
 
 **Files:**
 - Modify: `paperforge/plugin/main.js`
 
-After each heavy operation completes (build, rebuild, sync), call a snapshot refresher.
+After each heavy operation completes (build, rebuild, sync), refresh snapshots asynchronously—never block the UI thread.
 
-- [ ] **Step 1: Add snapshot refresh function**
+- [ ] **Step 1: Add async snapshot refresh function**
 
 ```javascript
 _refreshSnapshots(vp) {
     const py = memoryState.getCachedPython(vp, this.plugin.settings);
-    const { execFileSync } = require('node:child_process');
+    const { execFile } = require('node:child_process');
     const args = [...py.extraArgs, '-m', 'paperforge', '--vault', vp, 'runtime-health', '--json'];
-    try {
-        execFileSync(py.path, args, { cwd: vp, timeout: 30000, windowsHide: true, encoding: 'utf-8' });
-        // runtime-health already writes all three snapshots as side effect
-    } catch { /* best effort */ }
-    // Now re-read fresh snapshots
-    this._memoryStatusText = memoryState.getMemoryStatusText(vp);
-    this._embedStatusText = memoryState.getVectorStatusText(vp);
+
+    this._refreshPending = true;
+
+    execFile(py.path, args, { cwd: vp, timeout: 30000, windowsHide: true },
+        (err, stdout, stderr) => {
+            this._refreshPending = false;
+            // Re-read fresh snapshots from disk
+            this._memoryStatusText = memoryState.getMemoryStatusText(vp);
+            this._embedStatusText = memoryState.getVectorStatusText(vp);
+            this.display();
+        }
+    );
 }
 ```
 
@@ -645,12 +652,50 @@ In the sync button handler, call `this._refreshSnapshots(vp)` after sync complet
 
 ```bash
 git add paperforge/plugin/main.js
-git commit -m "feat: refresh runtime snapshots after heavy operations complete"
+git commit -m "feat: async snapshot refresh after heavy operations complete"
 ```
 
 ---
 
-### Task 5: End-to-end smoke test in test1 vault
+### Task 5: First-launch migration — generate initial snapshots
+
+**Files:**
+- Modify: `paperforge/plugin/main.js`
+
+When the plugin loads and no snapshot files exist (fresh install or upgrade), generate them once.
+
+- [ ] **Step 1: Add migration check in onload()**
+
+In the plugin's `onload()`, after base directory is set:
+
+```javascript
+const vp = this.app.vault.adapter.basePath;
+const memSnap = path.join(vp, 'System', 'PaperForge', 'indexes', 'memory-runtime-state.json');
+if (!memoryState.readJSONFile(memSnap)) {
+    // No snapshots exist — first launch or upgrade. Generate once.
+    const py = memoryState.getCachedPython(vp, this.settings);
+    const args = [...py.extraArgs, '-m', 'paperforge', '--vault', vp, 'runtime-health', '--json'];
+    const { execFile } = require('node:child_process');
+    execFile(py.path, args, { cwd: vp, timeout: 60000, windowsHide: true }, () => {});
+    // Fire-and-forget — snapshots will be ready by the time user opens Features
+}
+```
+
+- [ ] **Step 2: Verify**
+
+This runs exactly once per vault lifetime (when snapshot files don't exist).
+Subsequent launches skip the check (snapshot files exist).
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add paperforge/plugin/main.js
+git commit -m "feat: first-launch snapshot migration (runtime-health once on missing snapshots)"
+```
+
+---
+
+### Task 6: End-to-end smoke test in test1 vault
 
 **Files:**
 - No production files
@@ -707,12 +752,13 @@ git commit -m "fix: deploy JS-first state changes from smoke test"
 | 1 | `state_snapshot.py` (new), `status.py`, `embed.py`, `runtime_health.py` | Python writes canonical snapshot files |
 | 2 | `src/memory-state.js` (new), `tests/memory-state.test.mjs` | JS reads snapshots only; no SQL, no inference |
 | 3 | `main.js` | Replace exec calls with snapshot reads + `_callPython()` wrapper |
-| 4 | `main.js` | Refresh snapshots after heavy ops complete |
-| 5 | test1 vault | End-to-end smoke test |
+| 4 | `main.js` | Async snapshot refresh after heavy ops complete |
+| 5 | `main.js` | First-launch migration — generate snapshots once |
+| 6 | test1 vault | End-to-end smoke test |
 
 ### Dependency order
 
-Task 1 → Task 2 → Task 3 → Task 4 → Task 5
+Task 1 → Task 2 → Task 3 → Task 4 → Task 5 → Task 6
 
 ### Key architectural guarantees
 
@@ -721,3 +767,6 @@ Task 1 → Task 2 → Task 3 → Task 4 → Task 5
 3. No SQLite reads in JS (no dependency on native Node modules)
 4. `buildSnapshot()` is injectable — tests can mock the file reader
 5. `_callPython()` is the single spawn path — eliminates 20+ duplicate Python resolutions
+6. Every state-changing Python command writes snapshots as side effects — JS never explicitly refreshes
+7. `_refreshSnapshots()` is async (`execFile`) — never blocks UI thread
+8. First-launch migration runs once per vault lifetime — subsequent launches skip it
