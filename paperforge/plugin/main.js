@@ -1497,7 +1497,7 @@ class PaperForgeStatusView extends ItemView {
             const vp2 = this.app.vault.adapter.basePath;
             const { path: pyExe2, extraArgs: ea2 } = resolvePythonExecutable(vp2, plugin?.settings);
             if (pyExe2) {
-                const rh = execFileSync(pyExe2, [...ea2, '-m', 'paperforge', 'runtime-health', '--json', '--vault', vp2],
+                const rh = execFileSync(pyExe2, [...ea2, '-m', 'paperforge', '--vault', vp2, 'runtime-health', '--json'],
                     { cwd: vp2, timeout: 8000, encoding: 'utf-8', windowsHide: true });
                 const data = JSON.parse(rh);
                 if (data.ok) {
