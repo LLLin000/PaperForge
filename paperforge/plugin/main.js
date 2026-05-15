@@ -661,6 +661,8 @@ Object.assign(LANG.en, {
     feat_rebuild_vectors_changed: 'Model changed — rebuild to update all vectors.',
     feat_install_deps: 'Install Dependencies',
     feat_install_deps_desc: 'pip install chromadb sentence-transformers openai (~500MB).',
+    feat_install_deps_desc_api: 'pip install openai (~5MB).',
+    feat_install_deps_desc_local: 'pip install chromadb sentence-transformers openai (~500MB).',
     feat_model_bge_small: 'Best balance — fast, accurate, recommended for most users (384d, 130MB)',
     feat_model_minilm: 'Lightest & fastest — lower accuracy, minimal disk (384d, 80MB)',
     feat_model_bge_base: 'Highest accuracy — slower, large disk footprint (768d, 440MB)',
@@ -669,6 +671,8 @@ Object.assign(LANG.en, {
     feat_api_model: 'API Model',
     feat_api_model_desc: 'Embedding model name for this endpoint.',
     feat_deps_missing: 'Dependencies not installed. Required: chromadb, sentence-transformers, openai.',
+    feat_deps_missing_api: 'Dependencies not installed. Required: openai.',
+    feat_deps_missing_local: 'Dependencies not installed. Required: chromadb, sentence-transformers, openai.',
     feat_deps_checking: 'Checking dependencies...',
     feat_no_python: 'No Python found. Check Installation tab.',
     feat_rebuild_btn: 'Rebuild',
@@ -764,6 +768,8 @@ Object.assign(LANG.zh, {
     feat_rebuild_vectors_changed: '模型已更换 — 需要重建向量。',
     feat_install_deps: '安装依赖',
     feat_install_deps_desc: 'pip install chromadb sentence-transformers openai (~500MB)。',
+    feat_install_deps_desc_api: 'pip install openai (~5MB)。',
+    feat_install_deps_desc_local: 'pip install chromadb sentence-transformers openai (~500MB)。',
     feat_model_bge_small: '最佳平衡 — 快速、准确，推荐大多数用户使用 (384d, 130MB)',
     feat_model_minilm: '最轻最快 — 精度略低，磁盘占用最小 (384d, 80MB)',
     feat_model_bge_base: '最高精度 — 较慢，磁盘占用大 (768d, 440MB)',
@@ -772,6 +778,8 @@ Object.assign(LANG.zh, {
     feat_api_model: 'API 模型',
     feat_api_model_desc: '该端点使用的嵌入模型名称。',
     feat_deps_missing: '依赖未安装。需要：chromadb, sentence-transformers, openai。',
+    feat_deps_missing_api: '依赖未安装。需要：openai。',
+    feat_deps_missing_local: '依赖未安装。需要：chromadb, sentence-transformers, openai。',
     feat_deps_checking: '正在检测依赖…',
     feat_no_python: '未找到 Python。请查看安装标签页。',
     feat_rebuild_btn: '重建',
@@ -3305,11 +3313,12 @@ class PaperForgeSettingTab extends PluginSettingTab {
     _renderVectorNoDeps(containerEl) {
         const box = containerEl.createEl('div');
         box.style.cssText = 'padding:8px 12px; margin:8px 0; background:var(--background-secondary); border-radius:4px;';
-        box.setText(t('feat_deps_missing'));
+        const modeKey = (this.plugin.settings.vector_db_mode === 'api') ? 'api' : 'local';
+        box.setText(t('feat_deps_missing_' + modeKey));
 
         new Setting(containerEl)
             .setName(t('feat_install_deps'))
-            .setDesc(t('feat_install_deps_desc'))
+            .setDesc(t('feat_install_deps_desc_' + modeKey))
             .addButton(button => {
                 button.setButtonText(t('feat_install_btn'))
                     .setCta()
