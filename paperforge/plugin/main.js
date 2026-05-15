@@ -4455,6 +4455,21 @@ module.exports = class PaperForgePlugin extends Plugin {
             setTimeout(() => this._autoUpdate(), 3000);
         }
         this._startFilePolling();
+
+        // First-launch snapshot migration — generate runtime snapshots once if missing
+        (() => {
+            const vp = this.app.vault.adapter.basePath;
+            if (!vp) return;
+            const memSnap = require('path').join(vp, 'System', 'PaperForge', 'indexes', 'memory-runtime-state.json');
+            const fs = require('fs');
+            if (!fs.existsSync(memSnap)) {
+                // No snapshots — first launch or upgrade. Fire and forget.
+                const py = resolvePythonExecutable(vp, this.settings);
+                const { execFile } = require('node:child_process');
+                const args = [...py.extraArgs, '-m', 'paperforge', '--vault', vp, 'runtime-health', '--json'];
+                execFile(py.path, args, { cwd: vp, timeout: 60000, windowsHide: true }, () => {});
+            }
+        })();
     }
 
     _autoUpdate() {
