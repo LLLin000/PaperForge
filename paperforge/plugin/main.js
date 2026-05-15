@@ -2509,10 +2509,6 @@ class PaperForgeSettingTab extends PluginSettingTab {
         this._vectorDepsOk = null;       // null = not checked, bool = cached
         this._embedStatusText = null;
         this._skillsCollapsed = { user: true };  // User skills collapsed by default
-        this._embedProcess = null;
-        this._embedStderr = '';
-        this._embedRehydrated = false;
-        this._embedProgress = { current: 0, total: 0, key: '' };
         this.activeTab = 'setup';
     }
 
@@ -3488,25 +3484,23 @@ class PaperForgeSettingTab extends PluginSettingTab {
 
         const embedStatusText = embedSection.createEl('div', { cls: 'paperforge-embed-status-text' });
 
-        // Rehydrate from persisted state on mount
-        if (!this._embedProcess) {
-            const vr = memoryState.getVectorRuntime(vp);
-            if (vr && vr.build_state && vr.build_state.status === 'running') {
-                this._embedRehydrated = true;
-                this._embedProgress = {
-                    current: vr.build_state.current || 0,
-                    total: vr.build_state.total || 0,
-                    key: vr.build_state.paper_id || ''
-                };
-            }
-        }
-
         const renderEmbedUI = () => {
             embedControls.empty();
             embedStatusText.empty();
-            this._embedProgress = this._embedProgress || { current: 0, total: 0, key: '' };
-            const { current, total, key } = this._embedProgress;
-            const isRunning = !!this._embedProcess || !!this._embedRehydrated;
+            const buildState = memoryState.getVectorRuntime(vp)?.build_state || {};
+            this.plugin._embedProgress = this.plugin._embedProgress || { current: 0, total: 0, key: '' };
+
+            // Detached mode: process running on plugin (survived tab close), poll file for progress
+            if (!this.plugin._embedProcess && buildState.status === 'running') {
+                this.plugin._embedProgress = {
+                    current: buildState.current || 0,
+                    total: buildState.total || 1,
+                    key: buildState.paper_id || ''
+                };
+            }
+
+            const { current, total, key } = this.plugin._embedProgress;
+            const isRunning = !!(this.plugin._embedProcess) || buildState.status === 'running';
 
             if (isRunning) {
                 // Progress bar
@@ -3530,11 +3524,10 @@ class PaperForgeSettingTab extends PluginSettingTab {
                 stopBtn.setText('Stop');
                 stopBtn.className = 'mod-warning';
                 stopBtn.addEventListener('click', () => {
-                    this._embedRehydrated = false;
                     this._callPython(['embed', 'stop', '--json'], { timeout: 8000 });
-                    if (this._embedProcess) {
-                        this._embedProcess.kill();
-                        this._embedProcess = null;
+                    if (this.plugin._embedProcess) {
+                        this.plugin._embedProcess.kill();
+                        this.plugin._embedProcess = null;
                     }
                     this.display();
                 });
@@ -3564,51 +3557,51 @@ class PaperForgeSettingTab extends PluginSettingTab {
                         VECTOR_DB_API_BASE: this.plugin.settings.vector_db_api_base || '',
                         VECTOR_DB_API_MODEL: this.plugin.settings.vector_db_api_model || ''
                     });
-                    this._embedStderr = '';
-                    this._embedProgress = { current: 0, total: 0, key: '' };
+                    this.plugin._embedStderr = '';
+                    this.plugin._embedProgress = { current: 0, total: 0, key: '' };
 
-                    this._embedProcess = this._callPython(['embed', 'build', '--resume'], {
+                    this.plugin._embedProcess = this._callPython(['embed', 'build', '--resume'], {
                         stream: true,
                         env: env,
                         onData: (data) => {
                             const lines = data.toString('utf-8').split('\n');
                             for (const line of lines) {
                                 if (line.startsWith('EMBED_START:')) {
-                                    this._embedProgress.total = parseInt(line.split(':')[1]) || 0;
+                                    this.plugin._embedProgress.total = parseInt(line.split(':')[1]) || 0;
                                 } else if (line.startsWith('EMBED_PROGRESS:')) {
                                     const parts = line.split(':');
-                                    this._embedProgress.current = parseInt(parts[1]) || 0;
-                                    this._embedProgress.key = parts[3] || '';
+                                    this.plugin._embedProgress.current = parseInt(parts[1]) || 0;
+                                    this.plugin._embedProgress.key = parts[3] || '';
                                 } else if (line.startsWith('EMBED_DONE')) {
-                                    this._embedProcess = null;
-                                    this._embedProgress.current = this._embedProgress.total;
+                                    this.plugin._embedProcess = null;
+                                    this.plugin._embedProgress.current = this.plugin._embedProgress.total;
                                 }
                             }
                             this.display();
                         },
                         onStderr: (data) => {
-                            if (!this._embedStderr) this._embedStderr = '';
-                            this._embedStderr += data.toString('utf-8');
+                            if (!this.plugin._embedStderr) this.plugin._embedStderr = '';
+                            this.plugin._embedStderr += data.toString('utf-8');
                         },
                         onError: (err) => {
-                            this._embedProcess = null;
+                            this.plugin._embedProcess = null;
                             new Notice('Build failed: ' + (err.message || err));
                             this.display();
                         },
                         onClose: (code) => {
-                            this._embedProcess = null;
+                            this.plugin._embedProcess = null;
                             if (code === 0) {
-                                this._embedProgress.current = this._embedProgress.total;
+                                this.plugin._embedProgress.current = this.plugin._embedProgress.total;
                                 this.plugin.settings.vector_db_last_model = currentModel;
                                 this.plugin.saveSettings();
                                 this._embedStatusText = memoryState.getVectorStatusText(vp);
                                 new Notice(t('feat_build_complete'));
                             } else {
                                 this._embedStatusText = null;
-                                const errMsg = (this._embedStderr || '').slice(0, 200);
+                                const errMsg = (this.plugin._embedStderr || '').slice(0, 200);
                                 new Notice(t('feat_build_failed') + (errMsg ? ': ' + errMsg : ''), 8000);
                             }
-                            this._embedStderr = '';
+                            this.plugin._embedStderr = '';
                             this.display();
                             this._refreshSnapshots(vp);
                         }
@@ -4558,6 +4551,10 @@ module.exports = class PaperForgePlugin extends Plugin {
         this._autoSyncRunning = false;
         this._lastSyncTime = null;
         this._pollTimer = null;
+        // Embed build process tracking (survives settings tab close)
+        this._embedProcess = null;
+        this._embedProgress = { current: 0, total: 0, key: '' };
+        this._embedStderr = '';
         // Clean stale path fields from plugin data.json (migrated to paperforge.json)
         this.saveSettings();
         T = (langFromApp(this.app) === 'zh') ? LANG.zh : LANG.en;
