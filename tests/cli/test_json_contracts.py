@@ -16,7 +16,7 @@ from .test_contract_helpers import (
 class TestPathsJson:
     """Contract: 'paperforge paths --json' returns valid JSON with correct value types."""
 
-    REQUIRED_KEYS = {"vault", "worker_script", "ld_deep_script"}
+    REQUIRED_KEYS = {"vault", "worker_script", "pf_deep_script"}
 
     def test_paths_json_value_semantics(self, cli_invoker):
         """paths --json returns paths with correct value types (all non-empty strings)."""

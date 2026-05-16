@@ -120,7 +120,7 @@ $PYTHON "$SKILL_DIR/scripts/pf_deep.py" prepare --key <zotero_key> --vault "$VAU
 ### Step 4: Postprocess（跑校验，修正问题）
 
 ```bash
-$PYTHON "$SKILL_DIR/scripts/pf_deep.py" postprocess-pass2 "<formal_note_path>" --figures <N> --vault "$VAULT"
+$PYTHON "$SKILL_DIR/scripts/pf_deep.py" postprocess-pass2 "<formal_note_path>" --figures <N>
 ```
 
 - 输出 `OK` → 继续 Step 5

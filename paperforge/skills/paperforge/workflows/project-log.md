@@ -79,7 +79,7 @@ Agent 按 JSON schema 写入 project-log.jsonl。
 展示给用户确认后再写入：
 
 ```
-即将记录到 Project/综述写作/project-log.md:
+即将记录到 Resources/Projects/综述写作/project-log.md:
   日期: 2026-05-14
   类型: session_summary
   标题: DC 段参数窗审计完成
@@ -111,7 +111,7 @@ $PYTHON -m paperforge --vault "$VAULT" project-log --write \
 $PYTHON -m paperforge --vault "$VAULT" project-log --render --project "<project>"
 ```
 
-输出到 `Project/<project>/project-log.md`。
+输出到 `Resources/Projects/<project>/project-log.md`。
 
 ---
 

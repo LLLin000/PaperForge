@@ -28,3 +28,36 @@ def test_embed_status_includes_build_state(tmp_path):
             mock_read.return_value = {"status": "running", "current": 3, "total": 10}
             result_code = run(args)
             assert result_code == 0
+
+
+def test_embed_stop_requests_signal_for_running_job(tmp_path):
+    from argparse import Namespace
+
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    args = Namespace(vault_path=vault, embed_subcommand="stop", json=True)
+
+    with patch("paperforge.commands.embed.read_vector_build_state") as mock_read:
+        mock_read.return_value = {"status": "running", "pid": 12345}
+        with patch("paperforge.commands.embed.os.kill") as mock_kill:
+            with patch("paperforge.commands.embed.mark_vector_build_state") as mock_mark:
+                result_code = run(args)
+
+    assert result_code == 0
+    mock_kill.assert_called_once()
+    mock_mark.assert_called_once()
+
+
+def test_embed_stop_returns_error_when_signal_fails(tmp_path):
+    from argparse import Namespace
+
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    args = Namespace(vault_path=vault, embed_subcommand="stop", json=True)
+
+    with patch("paperforge.commands.embed.read_vector_build_state") as mock_read:
+        mock_read.return_value = {"status": "running", "pid": 12345}
+        with patch("paperforge.commands.embed.os.kill", side_effect=OSError("denied")):
+            result_code = run(args)
+
+    assert result_code == 1

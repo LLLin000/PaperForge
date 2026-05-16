@@ -16,8 +16,8 @@
 
 提取以下信息（缺什么就问用户）：
 - **搜索词**：关键词、作者名、年份
-- **范围**：domain（如"骨科"）、collection（如"DC"）、不指定=全库
-- **过滤条件**：OCR 状态（done/pending）、年份范围（--year-from/--year-to）、lifecycle
+- **范围**：domain（如"骨科"）、不指定=全库；如果用户说 collection，只把它当结果展示时的二级筛选条件
+- **过滤条件**：OCR 状态（done/pending/failed/processing）、年份范围（--year-from/--year-to）、lifecycle
 
 ### Step 2: 执行搜索
 
@@ -25,8 +25,8 @@
 $PYTHON -m paperforge --vault "$VAULT" search <query> --json --limit 15 \
     [--domain "<domain>"] \
     [--year-from <N>] [--year-to <N>] \
-    [--ocr <done|pending>] \
-    [--lifecycle <active|archived>]
+    [--ocr <done|pending|failed|processing>] \
+    [--lifecycle <indexed|pdf_ready|fulltext_ready|deep_read_done>]
 ```
 
 返回 JSON 结构：
@@ -46,7 +46,7 @@ $PYTHON -m paperforge --vault "$VAULT" search <query> --json --limit 15 \
         "collection_path": "...",
         "ocr_status": "done",
         "deep_reading_status": "pending",
-        "lifecycle": "active",
+        "lifecycle": "pdf_ready",
         "has_pdf": true,
         "rank": "..."
       }
@@ -69,6 +69,7 @@ $PYTHON -m paperforge --vault "$VAULT" paper-context <zotero_key> --json
 ```
 
 目的：拿到 `ocr_status`、`prior_notes` 数量、`analyze` 状态，帮助用户判断哪些可以直接读。
+如果用户一开始明确要求 collection 范围，在这一步根据 `collection_path` 做结果后筛选，而不是给 `search` 传不存在的 `--collection` 参数。
 
 ### Step 4: 展示候选清单
 

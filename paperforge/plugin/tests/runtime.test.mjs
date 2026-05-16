@@ -7,10 +7,57 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const {
+    readPathConfig,
+    resolveRuntimePaths,
     resolvePythonExecutable,
     getPluginVersion,
     checkRuntimeVersion,
 } = await import('../src/testable.js');
+
+describe('readPathConfig', () => {
+    it('uses vault_config system_dir when present', () => {
+        const mockFs = {
+            existsSync: vi.fn(() => true),
+            readFileSync: vi.fn(() => JSON.stringify({ vault_config: { system_dir: '99_System' } })),
+        };
+        const cfg = readPathConfig('/vault', mockFs);
+        expect(cfg.system_dir).toBe('99_System');
+        expect(cfg._warning).toBeNull();
+    });
+
+    it('falls back to defaults with warning when config is missing', () => {
+        const mockFs = {
+            existsSync: vi.fn(() => false),
+            readFileSync: vi.fn(),
+        };
+        const cfg = readPathConfig('/vault', mockFs);
+        expect(cfg.system_dir).toBe('System');
+        expect(cfg._warning).toContain('using defaults');
+    });
+
+    it('falls back to defaults with warning when config is invalid', () => {
+        const mockFs = {
+            existsSync: vi.fn(() => true),
+            readFileSync: vi.fn(() => '{bad json'),
+        };
+        const cfg = readPathConfig('/vault', mockFs);
+        expect(cfg.system_dir).toBe('System');
+        expect(cfg._warning).toContain('invalid');
+    });
+});
+
+describe('resolveRuntimePaths', () => {
+    it('uses configured system_dir for runtime file paths', () => {
+        const mockFs = {
+            existsSync: vi.fn(() => true),
+            readFileSync: vi.fn(() => JSON.stringify({ vault_config: { system_dir: '99_System' } })),
+        };
+        const paths = resolveRuntimePaths('/vault', mockFs);
+        expect(paths.memoryStatePath).toContain('99_System');
+        expect(paths.exportsDir).toContain('99_System');
+        expect(paths.ocrDir).toContain('99_System');
+    });
+});
 
 describe('resolvePythonExecutable', () => {
     /** Create injected fs + execFileSync mocks */

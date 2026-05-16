@@ -288,6 +288,18 @@ class SyncService:
             orphaned = self.clean_orphaned_records(exports, paths, json_output=json_output)
             flat_cleaned = self.clean_flat_notes(paths, json_output=json_output)
 
+            if orphaned > 0 or flat_cleaned > 0:
+                index_count = asset_index.build_index(self.vault, verbose)
+
+            try:
+                from paperforge.memory.builder import build_from_index
+                from paperforge.memory.db import get_memory_db_path
+
+                if get_memory_db_path(self.vault).exists():
+                    build_from_index(self.vault)
+            except Exception:
+                pass
+
             if not json_output:
                 print(f"index-refresh: {index_count} entries in index")
                 total = sum(1 for _ in paths["literature"].rglob("*.md")) if paths["literature"].exists() else 0

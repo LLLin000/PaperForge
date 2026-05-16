@@ -318,7 +318,7 @@ def test_paperforge_paths_returns_exact_keys(tmp_path: Path):
         "bases",
         "worker_script",
         "skill_dir",
-        "ld_deep_script",
+        "pf_deep_script",
         # ── v2.2: canonical locations below paperforge/ ──
         "config",
         "index",
@@ -370,8 +370,8 @@ def test_paperforge_paths_includes_worker_script(tmp_path: Path):
     assert paths["worker_script"].name == "__init__.py"
 
 
-def test_paperforge_paths_includes_ld_deep_script(tmp_path: Path):
-    """ld_deep_script key must point to ld_deep.py."""
+def test_paperforge_paths_includes_pf_deep_script(tmp_path: Path):
+    """pf_deep_script key must point to pf_deep.py."""
     from paperforge.config import paperforge_paths
 
     vault = tmp_path / "vault_ld"
@@ -385,8 +385,8 @@ def test_paperforge_paths_includes_ld_deep_script(tmp_path: Path):
     (vault / ".opencode" / "command").mkdir(parents=True)
 
     paths = paperforge_paths(vault)
-    assert "ld_deep_script" in paths
-    assert paths["ld_deep_script"].name == "ld_deep.py"
+    assert "pf_deep_script" in paths
+    assert paths["pf_deep_script"].name == "pf_deep.py"
 
 
 # ---------------------------------------------------------------------------
@@ -413,7 +413,7 @@ def test_paths_as_strings_returns_string_values():
         "bases": Path("/some/vault/05_Bases"),
         "worker_script": Path("/some/vault/99_System/PaperForge/worker/scripts/literature_pipeline.py"),
         "skill_dir": Path("/some/vault/.opencode/skills"),
-        "ld_deep_script": Path("/some/vault/.opencode/skills/literature-qa/scripts/ld_deep.py"),
+        "pf_deep_script": Path("/some/vault/.opencode/skills/paperforge/scripts/pf_deep.py"),
     }
 
     result = paths_as_strings(paths)
