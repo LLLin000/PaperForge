@@ -110,11 +110,11 @@ def _check_index(vault: Path) -> dict:
         if version:
             return _layer("ok", [f"Schema version: {version['value']}"])
         return _layer("degraded", ["Schema version unknown"],
-                      "Rebuild memory DB", "paperforge memory build --force")
+                      "Rebuild memory DB", "paperforge memory build")
     except Exception as e:
         return _layer("blocked", [f"DB query failed: {e}"],
                       "Rebuild memory DB",
-                      "paperforge memory build --force")
+                      "paperforge memory build")
 
 
 def _check_vector(vault: Path) -> dict:

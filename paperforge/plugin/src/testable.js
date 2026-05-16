@@ -6,6 +6,56 @@ const fs = require('fs');
 const path = require('path');
 const { execFile, spawn } = require('node:child_process');
 
+function readPathConfig(vaultPath, _fs) {
+    const f = _fs || fs;
+    const pfPath = path.join(vaultPath, 'paperforge.json');
+    const defaults = {
+        system_dir: 'System',
+        resources_dir: 'Resources',
+        literature_dir: 'Literature',
+        base_dir: 'Bases',
+    };
+
+    try {
+        if (!f.existsSync(pfPath)) {
+            return { ...defaults, _warning: 'paperforge.json not found; using defaults' };
+        }
+        const raw = f.readFileSync(pfPath, 'utf-8');
+        const data = JSON.parse(raw);
+        const vc = data.vault_config || {};
+        return {
+            system_dir: vc.system_dir || data.system_dir || defaults.system_dir,
+            resources_dir: vc.resources_dir || data.resources_dir || defaults.resources_dir,
+            literature_dir: vc.literature_dir || data.literature_dir || defaults.literature_dir,
+            base_dir: vc.base_dir || data.base_dir || defaults.base_dir,
+            _warning: null,
+        };
+    } catch {
+        return { ...defaults, _warning: 'paperforge.json invalid; using defaults' };
+    }
+}
+
+function resolveRuntimePaths(vaultPath, _fs) {
+    const cfg = readPathConfig(vaultPath, _fs);
+    const systemRoot = path.join(vaultPath, cfg.system_dir, 'PaperForge');
+    return {
+        vault: vaultPath,
+        systemDir: systemRoot,
+        indexesDir: path.join(systemRoot, 'indexes'),
+        logsDir: path.join(systemRoot, 'logs'),
+        dbPath: path.join(systemRoot, 'indexes', 'paperforge.db'),
+        memoryStatePath: path.join(systemRoot, 'indexes', 'memory-runtime-state.json'),
+        vectorStatePath: path.join(systemRoot, 'indexes', 'vector-runtime-state.json'),
+        healthStatePath: path.join(systemRoot, 'indexes', 'runtime-health.json'),
+        buildStatePath: path.join(systemRoot, 'indexes', 'vector-build-state.json'),
+        exportsDir: path.join(systemRoot, 'exports'),
+        ocrDir: path.join(systemRoot, 'ocr'),
+        pluginDataPath: path.join(vaultPath, '.obsidian', 'plugins', 'paperforge', 'data.json'),
+        pfJsonPath: path.join(vaultPath, 'paperforge.json'),
+        configWarning: cfg._warning,
+    };
+}
+
 // ── Runtime helpers ──
 
 function resolvePythonExecutable(vaultPath, settings, _fs, _execFileSync) {
@@ -33,6 +83,7 @@ function resolvePythonExecutable(vaultPath, settings, _fs, _execFileSync) {
     }
 
     const systemCandidates = [
+        { path: "py", extraArgs: ["-3"] },
         { path: "python", extraArgs: [] },
         { path: "python3", extraArgs: [] },
     ];
@@ -107,7 +158,7 @@ function buildRuntimeInstallCommand(pythonExe, version, extraArgs) {
     const gitUrl = `git+https://github.com/LLLin000/PaperForge.git@v${version}`;
     const pypiArgs = [...extraArgs, "-m", "pip", "install", "--upgrade", pypiPkg];
     const gitArgs = [...extraArgs, "-m", "pip", "install", "--upgrade", gitUrl];
-    return { cmd: pythonExe, pypiArgs, gitArgs, timeout: 120000 };
+    return { cmd: pythonExe, url: gitUrl.replace('@v', '@'), args: gitArgs, pypiArgs, gitArgs, timeout: 120000 };
 }
 
 function parseRuntimeStatus(err, stdout, stderr) {
@@ -211,6 +262,8 @@ function shouldRenderVectorReady(vectorDepsOk, embedStatusText) {
 }
 
 module.exports = {
+    readPathConfig,
+    resolveRuntimePaths,
     resolvePythonExecutable,
     getPluginVersion,
     checkRuntimeVersion,

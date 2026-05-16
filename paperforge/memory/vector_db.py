@@ -40,7 +40,8 @@ def get_vector_db_path(vault: Path) -> Path:
     """Return the ChromaDB persistence directory."""
     from paperforge.config import paperforge_paths
     paths = paperforge_paths(vault)
-    return (paths.get("memory_db", paths.get("index", vault / "System" / "PaperForge"))).parent / "vectors"
+    index_path = paths.get("index", vault / "System" / "PaperForge" / "indexes" / "formal-library.json")
+    return index_path.parent / "vectors"
 
 
 def get_collection(vault: Path):
@@ -291,7 +292,7 @@ def get_vector_build_state_path(vault: Path) -> Path:
     """Return path to vector-build-state.json."""
     from paperforge.config import paperforge_paths
     paths = paperforge_paths(vault)
-    index_dir = (paths.get("memory_db", paths.get("index", vault / "System" / "PaperForge"))).parent
+    index_dir = paths.get("index", vault / "System" / "PaperForge" / "indexes" / "formal-library.json").parent
     return index_dir / "vector-build-state.json"
 
 

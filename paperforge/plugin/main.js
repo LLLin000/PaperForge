@@ -10,8 +10,38 @@ const memoryState = (() => {
   const path = require('path');
   const { execFileSync } = require('node:child_process');
 
+  function readPathConfig(vaultPath) {
+    const pfPath = path.join(vaultPath, 'paperforge.json');
+    const defaults = {
+      system_dir: 'System',
+      resources_dir: 'Resources',
+      literature_dir: 'Literature',
+      base_dir: 'Bases',
+    };
+
+    try {
+      if (!fs.existsSync(pfPath)) {
+        return { ...defaults, _warning: 'paperforge.json not found; using defaults' };
+      }
+      const raw = fs.readFileSync(pfPath, 'utf-8');
+      const data = JSON.parse(raw);
+      const vc = data.vault_config || {};
+      return {
+        system_dir: vc.system_dir || data.system_dir || defaults.system_dir,
+        resources_dir: vc.resources_dir || data.resources_dir || defaults.resources_dir,
+        literature_dir: vc.literature_dir || data.literature_dir || defaults.literature_dir,
+        base_dir: vc.base_dir || data.base_dir || defaults.base_dir,
+        _warning: null,
+      };
+    } catch (e) {
+      console.warn('PaperForge: Failed to read paperforge.json, using defaults', e);
+      return { ...defaults, _warning: 'paperforge.json invalid; using defaults' };
+    }
+  }
+
   function resolveVaultPaths(vaultPath) {
-    const systemDir = path.join(vaultPath, 'System', 'PaperForge');
+    const cfg = readPathConfig(vaultPath);
+    const systemDir = path.join(vaultPath, cfg.system_dir, 'PaperForge');
     return {
       vault: vaultPath,
       systemDir,
@@ -22,8 +52,11 @@ const memoryState = (() => {
       vectorStatePath: path.join(systemDir, 'indexes', 'vector-runtime-state.json'),
       healthStatePath: path.join(systemDir, 'indexes', 'runtime-health.json'),
       buildStatePath: path.join(systemDir, 'indexes', 'vector-build-state.json'),
+      exportsDir: path.join(systemDir, 'exports'),
+      ocrDir: path.join(systemDir, 'ocr'),
       pluginDataPath: path.join(vaultPath, '.obsidian', 'plugins', 'paperforge', 'data.json'),
       pfJsonPath: path.join(vaultPath, 'paperforge.json'),
+      configWarning: cfg._warning,
     };
   }
 
@@ -99,7 +132,7 @@ const memoryState = (() => {
         return _cachedPython;
       }
     }
-    var sysCandidates = [{path:'python',extraArgs:[]},{path:'python3',extraArgs:[]}];
+    var sysCandidates = [{path:'py',extraArgs:['-3']},{path:'python',extraArgs:[]},{path:'python3',extraArgs:[]}];
     for (var j = 0; j < sysCandidates.length; j++) {
       try {
         var c = sysCandidates[j];
@@ -170,6 +203,7 @@ function resolvePythonExecutable(vaultPath, settings, _fs, _execFileSync) {
     }
 
     const systemCandidates = [
+        { path: "py", extraArgs: ["-3"] },
         { path: "python", extraArgs: [] },
         { path: "python3", extraArgs: [] },
     ];
@@ -242,7 +276,7 @@ function buildRuntimeInstallCommand(pythonExe, version, extraArgs) {
     const gitUrl = `git+https://github.com/LLLin000/PaperForge.git@v${version}`;
     const pypiArgs = [...extraArgs, "-m", "pip", "install", "--upgrade", pypiPkg];
     const gitArgs = [...extraArgs, "-m", "pip", "install", "--upgrade", gitUrl];
-    return { cmd: pythonExe, pypiArgs, gitArgs, timeout: 120000 };
+    return { cmd: pythonExe, url: gitUrl.replace('@v', '@'), args: gitArgs, pypiArgs, gitArgs, timeout: 120000 };
 }
 
 function parseRuntimeStatus(err, stdout, stderr) {
@@ -4618,7 +4652,7 @@ module.exports = class PaperForgePlugin extends Plugin {
 
 
         /* ── Auto-update PaperForge (deferred — don't slow startup) ── */
-        if (this.settings.auto_update !== false && this.settings.setup_complete) {
+        if (this.settings.auto_update_on_startup === true && this.settings.setup_complete) {
             setTimeout(() => this._autoUpdate(), 3000);
         }
         this._startFilePolling();
@@ -4627,14 +4661,22 @@ module.exports = class PaperForgePlugin extends Plugin {
         (() => {
             const vp = this.app.vault.adapter.basePath;
             if (!vp) return;
-            const memSnap = require('path').join(vp, 'System', 'PaperForge', 'indexes', 'memory-runtime-state.json');
+            const runtimePaths = memoryState.resolveVaultPaths(vp);
+            const memSnap = runtimePaths.memoryStatePath;
             const fs = require('fs');
             if (!fs.existsSync(memSnap)) {
                 // No snapshots — first launch or upgrade. Fire and forget.
                 const py = resolvePythonExecutable(vp, this.settings);
                 const { execFile } = require('node:child_process');
-                const args = [...py.extraArgs, '-m', 'paperforge', '--vault', vp, 'runtime-health', '--json'];
-                execFile(py.path, args, { cwd: vp, timeout: 60000, windowsHide: true }, () => {});
+                const commands = [
+                    ['runtime-health', '--json'],
+                    ['memory', 'status', '--json'],
+                    ['embed', 'status', '--json'],
+                ];
+                commands.forEach((cmdArgs) => {
+                    const args = [...py.extraArgs, '-m', 'paperforge', '--vault', vp, ...cmdArgs];
+                    execFile(py.path, args, { cwd: vp, timeout: 60000, windowsHide: true }, () => {});
+                });
             }
         })();
     }
@@ -4692,7 +4734,7 @@ module.exports = class PaperForgePlugin extends Plugin {
 
     _checkExports(vaultPath, fs, path, exec) {
         if (this._autoSyncRunning) return;
-        const exportsDir = path.join(vaultPath, 'System', 'PaperForge', 'exports');
+        const exportsDir = memoryState.resolveVaultPaths(vaultPath).exportsDir;
         if (!fs.existsSync(exportsDir)) return;
 
         let newestMtime = 0;
@@ -4728,7 +4770,7 @@ module.exports = class PaperForgePlugin extends Plugin {
             try {
                 const fs = require('fs');
                 const path = require('path');
-                const exportsDir = path.join(vaultPath, 'System', 'PaperForge', 'exports');
+                const exportsDir = memoryState.resolveVaultPaths(vaultPath).exportsDir;
                 let newest = 0;
                 fs.readdirSync(exportsDir).forEach(f => {
                     if (!f.endsWith('.json')) return;
@@ -4741,7 +4783,7 @@ module.exports = class PaperForgePlugin extends Plugin {
 
     _checkOcr(vaultPath, fs, path, exec) {
         if (this._autoSyncRunning) return;
-        const ocrDir = path.join(vaultPath, 'System', 'PaperForge', 'ocr');
+        const ocrDir = memoryState.resolveVaultPaths(vaultPath).ocrDir;
         if (!fs.existsSync(ocrDir)) return;
 
         try {

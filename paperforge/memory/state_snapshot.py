@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from paperforge.config import paperforge_paths
+from paperforge.core.io import write_json_atomic
 
 
 def _snapshot_dir(vault: Path) -> Path:
@@ -31,7 +32,7 @@ def write_memory_runtime(vault: Path, *, paper_count_db: int,
         "fts_ready": fts_ready,
     }
     path = _snapshot_dir(vault) / "memory-runtime-state.json"
-    path.write_text(json.dumps(snap, ensure_ascii=False, indent=2), encoding="utf-8")
+    write_json_atomic(path, snap)
 
 
 def write_vector_runtime(vault: Path, *, enabled: bool, mode: str, model: str,
@@ -53,9 +54,9 @@ def write_vector_runtime(vault: Path, *, enabled: bool, mode: str, model: str,
         "build_state": build_state or {},
     }
     path = _snapshot_dir(vault) / "vector-runtime-state.json"
-    path.write_text(json.dumps(snap, ensure_ascii=False, indent=2), encoding="utf-8")
+    write_json_atomic(path, snap)
 
 
 def write_runtime_health(vault: Path, health_data: dict) -> None:
     path = _snapshot_dir(vault) / "runtime-health.json"
-    path.write_text(json.dumps(health_data, ensure_ascii=False, indent=2), encoding="utf-8")
+    write_json_atomic(path, health_data)
