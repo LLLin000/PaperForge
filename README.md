@@ -75,222 +75,34 @@ Plugin v1.5.0 → Python Package v1.5.0 ✓ Matched
 
 ---
 
-## 3. How Python Interpreter Resolution Works
-
-PaperForge needs to find a working Python on your system. It searches in this order:
-
-| Priority | Source | Description |
-|----------|--------|-------------|
-| 1 | **Manual override** | Settings → `Custom Python Path`, enter the full path (e.g., `C:\Users\you\...\python.exe`). **This is the most reliable method.** |
-| 2 | **venv auto-detect** | Scans `.paperforge-test-venv`, `.venv`, `venv` under your vault root |
-| 3 | **System auto-detect** | Tries `py -3`, `python`, `python3` in order, verifies with `--version` |
-| 4 | **Fallback** | Defaults to `python` if nothing else works |
-
-> If you have multiple Python installations (e.g., system 3.9 + self-installed 3.11), **strongly recommend setting a manual path** in settings to avoid hitting the wrong one.
->
-> The **Validate** button in settings immediately tests the resolved interpreter and shows its version.
-
----
-
-## 4. Setup Wizard — What Each Step Means
-
-Open the plugin settings panel (`Settings` → `Community plugins` → `PaperForge`) and click the **Open Wizard** button. The wizard walks you through configuration. Here's what every step does.
-
-### 4.1 Vault Path
-
-Your Obsidian vault root. Auto-detected, usually no need to change.
-
-### 4.2 AI Agent Platform
-
-PaperForge's deep reading features run through an AI Agent. The core mechanism is **trigger phrases**, not registered plugins: you type `/pf-deep <key>` directly into the Agent chat, and the Agent recognizes the trigger and loads the `literature-qa` Skill automatically.
-
-The setup wizard deploys Skill files to the correct location:
-
-| Agent | Skill location | Trigger example |
-|-------|---------------|-----------------|
-| **OpenCode** | `.opencode/skills/` + `.opencode/command/` | `/pf-deep <key>` |
-| **Claude Code** | `.claude/skills/` | `/pf-deep <key>` |
-| **Cursor** | `.cursor/skills/` | `/pf-deep <key>` |
-| **GitHub Copilot** | `.github/skills/` | `/pf-deep <key>` |
-| **Windsurf** | `.windsurf/skills/` | `/pf-deep <key>` |
-| **Codex** | `.codex/skills/` | `$pf-deep <key>` |
-| **Cline** | `.clinerules/` | `/pf-deep <key>` |
-
-> **Key concept**: `/pf-deep` is NOT a plugin you install on the Agent platform — it's a Skill file deployed inside your Vault. Once the setup wizard copies the files into place, the Agent auto-discovers the triggers on startup. You type the trigger phrase just like any other chat input.
-
-### 4.3 Directory Names
-
-The wizard asks what to name several directories. These are for organizing files inside your vault. **Defaults work for most users.**
-
-| Parameter | Default | Purpose |
-|-----------|---------|---------|
-| `system_dir` | `System` | Root for PaperForge internal data. Contains `exports/` (Zotero JSON exports), `ocr/` (OCR results), `config/`. You rarely need to open this manually. |
-| `resources_dir` | `Resources` | Resources root. Your formal literature notes live under this directory, inside `literature_dir`. |
-| `literature_dir` | `Literature` | Formal literature notes directory. `paperforge sync` generates frontmatter `.md` notes here. |
-| `base_dir` | `Bases` | Obsidian Base view definitions. Dashboard filters ("Pending OCR", "Ready to Read", etc.) are stored here. |
-
-### 4.4 PaddleOCR API Token
-
-OCR requires a PaddleOCR API key. Configured in `.env`:
-
-```
-PADDLEOCR_API_TOKEN=your-api-key
-```
-
-The wizard guides you through setting this. You can also edit `.env` later. The OCR URL usually stays at the default.
-
-### 4.5 Zotero Data Directory
-
-PaperForge creates a junction (Windows) or symlink (macOS/Linux) linking your Zotero data directory into the vault. This is how Obsidian wikilinks resolve to PDF files.
-
-The wizard auto-detects your Zotero installation. If detection fails, manually enter the path to your Zotero data directory — the folder that contains the `storage/` subdirectory (not the Zotero executable).
-
-### 4.6 What Happens During Setup
-
-After confirming your choices, the wizard automatically:
-- Creates all needed directory structures
-- Deploys Agent command files to the correct locations
-- Installs Obsidian plugin files
-- Creates the Zotero junction/symlink
-- Writes `paperforge.json` and `.env`
-
-The process is **incremental** — if files already exist in the chosen directories, the wizard only adds what's missing and never deletes existing content.
-
----
-
-## 5. First-Time Setup Checklist
-
-1. **Version match**: Settings → Runtime Status → confirm plugin and Python package match
-2. **Python path**: Settings → Validate button → confirm it's the Python you want
-3. **Setup wizard**: Settings → PaperForge → Open Wizard
-4. **PaddleOCR key**: Enter your API token in `.env` (wizard guides this)
-5. **Export from Zotero**: Right-click your library → `Export...` → format `Better BibTeX JSON` → check `Keep updated` → save to `<system_dir>/PaperForge/exports/`
-6. **Run Doctor**: Dashboard → `Run Doctor` → all checks should pass
-
----
-
-## 6. Daily Use
-
-### Dashboard (Three-Mode Views)
-
-`Ctrl+P` → `PaperForge: Open Dashboard` opens the control panel with three views:
-
-| View | Purpose |
-|------|---------|
-| **Global** | System homepage: run Sync, OCR, Doctor, and other mechanical operations |
-| **Collection** | Batch workspace: browse paper queues by domain, batch tagging |
-| **Per-paper** | Reading companion: `do_ocr` / `analyze` toggle checkboxes, discussion record cards |
-
-> PDF files in the Dashboard automatically switch to Per-paper mode — no manual switching needed.
-
-### AI Deep Reading & Q&A (Requires Agent)
-
-Launch your Agent app and type commands into its chat input. **The more specific you are about the paper (Zotero Key, title, DOI), the faster the Agent locates it.**
-
-| Route | Command | Does | Trigger examples | Prerequisites |
-|-------|---------|------|-----------------|--------------|
-| Deep Read | `/pf-deep <key>` | Keshav three-pass deep reading, writes to formal note | `deep read XX`, `walk me through`, `journal club` | OCR done, analyze: true |
-| Q&A | `/pf-paper <key>` | Interactive paper Q&A, OCR not required | `take a look at XX`, `what does this paper say` | Formal note exists |
-| Archive | `/pf-end` | Save current `/pf-paper` Q&A session | `save`, `end discussion` | During `/pf-paper` session |
-
-### `/pf-end` Details
-
-- `/pf-end` only applies to `/pf-paper` Q&A sessions. Deep reading (`/pf-deep`) writes directly to the formal note and does not need `/pf-end`.
-- When executed, two files are created in the paper's workspace:
-  - `discussion.md` — human-readable Q&A discussion record
-  - `discussion.json` — structured Q&A data (with timestamps, source tags)
-- Dashboard **Per-paper** view automatically displays these as discussion record cards
-
-> Command prefixes vary by platform (mostly `/`, Codex uses `$`).
-
----
-
-## 7. Full Workflow
-
-```
-Add paper to Zotero
-  ↓ Better BibTeX auto-exports JSON to exports/
-Dashboard → Sync Library
-  ↓ Generates formal note (in Literature/, with frontmatter metadata)
-Set do_ocr: true in the note's frontmatter
-  ↓
-Dashboard → Run OCR
-  ↓ PaddleOCR extracts full text + figures → ocr/ directory
-Set analyze: true in the note's frontmatter
-  ↓
-Open Agent → type /pf-deep <zotero_key>
-  ↓ Agent performs three-pass deep reading
-## 🔍 Deep Reading section appears in the note
-  ↓ (for additional Q&A)
-Open Agent → type /pf-paper <zotero_key>
-  ↓ Interactive Q&A
-Type /pf-end to save the discussion record
-  ↓
-Dashboard Per-paper view shows discussion cards
-```
-
----
-
-## 8. Troubleshooting
-
-### Plugin fails to load
-
-- Confirm `.obsidian/plugins/paperforge/` has `main.js`, `manifest.json`, `styles.css`
-- If upgrading from an old version: delete the entire `paperforge` plugin folder and reinstall via the community plugin browser
-- Open Developer Console (`Ctrl+Shift+I`) and check the red errors
-
-### "Sync Runtime" doesn't update the version
-
-- The plugin may be calling a different Python than your terminal. Check Settings → Python path
-- Try with `--no-cache-dir` to bypass pip cache
-- Confirm `https://github.com/LLLin000/PaperForge` is reachable
-
-### OCR stays pending
-
-- Confirm `.env` has `PADDLEOCR_API_TOKEN`
-- Run `paperforge ocr --diagnose` to check API connectivity
-- PDF paths may be broken: run `paperforge repair --fix-paths`
-
-### No notes generated after sync
-
-- Is Better BibTeX auto-export configured in Zotero? Are JSON files in `exports/`?
-- Run `paperforge doctor` to find which step failed
-
-### /pf-deep command does nothing
-
-- Make sure you're running it in your Agent app, not a terminal
-- Confirm OCR is done (`ocr_status: done`)
-- Confirm `analyze` is set to `true`
-
----
-
-## 9. Updating
-
-The Obsidian plugin auto-updates through the community plugin browser. For the Python package:
+## 3. Quickstart
 
 ```bash
-paperforge update
-# or
-pip install --upgrade paperforge
-```
+# 1. Export from Zotero (Better BibTeX JSON, Keep updated) to exports/
+# 2. Sync
+paperforge sync
 
-If you installed via BRAT, it also auto-detects GitHub Release updates.
+# 3. Mark a paper for OCR in its frontmatter: do_ocr: true
+# 4. Run OCR
+paperforge ocr
+
+# 5. Mark for deep reading: analyze: true
+# 6. In your Agent chat:
+/pf-deep <zotero_key>
+```
 
 ---
 
-## 10. Architecture
+## 文档导航
 
-```
-paperforge/
-├── core/          Contract layer — PFResult/ErrorCode/state machine
-├── adapters/      Adapter layer — BBT parsing, paths, frontmatter I/O
-├── services/      Service layer — SyncService orchestration
-├── worker/        Worker layer — OCR, status, repair
-├── commands/      CLI dispatch
-├── setup/         Setup wizard (directories, agent deployment, Zotero linking)
-├── plugin/        Obsidian plugin (Dashboard, settings panel)
-└── schema/        Field registry
-```
+| 你想做什么                                 | 去看                           |
+| ------------------------------------------ | ------------------------------ |
+| 完整教程，从安装到精读                     | [使用教程](docs/getting-started.md)    |
+| 遇到问题了                                 | [故障排除](docs/troubleshooting.md)    |
+| 查某个命令                                 | [命令参考](docs/COMMANDS.md)           |
+| 如何升级                                   | [更新指南](docs/update-upgrade.md)     |
+| 架构 / 维护 / 发布                         | [架构文档](docs/ARCHITECTURE.md)       |
+| AI Agent 协作                               | [AGENTS.md](AGENTS.md)                |
 
 ---
 
