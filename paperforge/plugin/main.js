@@ -1766,6 +1766,21 @@ class PaperForgeStatusView extends ItemView {
             const action = ACTIONS.find(a => a.id === 'paperforge-doctor');
             if (action) this._runAction(action, globalDoctorBtn);
         });
+
+        const globalStatusBtn = btnsRow.createEl('button', { cls: 'paperforge-contextual-btn' });
+        globalStatusBtn.createEl('span', { cls: 'paperforge-contextual-btn-icon', text: '\u2139' });
+        globalStatusBtn.createEl('span', { text: 'Refresh Status' });
+        globalStatusBtn.addEventListener('click', () => {
+            this._fetchStats();
+        });
+
+        const globalRepairBtn = btnsRow.createEl('button', { cls: 'paperforge-contextual-btn' });
+        globalRepairBtn.createEl('span', { cls: 'paperforge-contextual-btn-icon', text: '\u21BA' });
+        globalRepairBtn.createEl('span', { text: 'Repair Issues' });
+        globalRepairBtn.addEventListener('click', () => {
+            const action = ACTIONS.find(a => a.id === 'paperforge-repair');
+            if (action) this._runAction(action, globalRepairBtn);
+        });
     }
 
     /* ── System Status Row helper ── */
@@ -4837,7 +4852,9 @@ module.exports = class PaperForgePlugin extends Plugin {
                 const pyResult = resolvePythonExecutable(vaultPath, this.settings);
                 if (!pyResult.path) { this._autoSyncRunning = false; return; }
 
-                const cmd = `"${pyResult.path}" -m paperforge --vault "${vaultPath}" sync --key "${entry.name}"`;
+                // `paperforge sync` has no `--key` selector. Fall back to a full sync
+                // so OCR state changes still propagate into the canonical index.
+                const cmd = `"${pyResult.path}" -m paperforge --vault "${vaultPath}" sync`;
                 exec(cmd, { timeout: 30000, encoding: 'utf-8' }, () => {
                     this._autoSyncRunning = false;
                     this._memoryStatusText = null;
