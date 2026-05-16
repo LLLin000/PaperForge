@@ -617,8 +617,9 @@ Object.assign(LANG.en, {
     validate_notes: 'Notes directory is required',
     validate_index: 'Index directory is required',
     validate_base: 'Base directory is required',
-    validate_key: 'PaddleOCR API key is required',
-    validate_zotero: 'Zotero data directory is required',
+    validate_key: 'PaddleOCR API key (optional, needed for OCR)',
+    validate_zotero: 'Zotero data directory (optional, needed for PDF linking)',
+    optional_later: '(can be set later in Settings)',
     validate_system: 'System directory is required',
     notice_python_missing: 'Python was not detected. Install Python 3.10+ and add it to PATH.',
     api_key_set: 'Entered',
@@ -770,6 +771,7 @@ Object.assign(LANG.zh, {
     ocr_privacy_warning: 'OCR 会将 PDF 上传到 PaddleOCR API 进行处理。请不要上传包含敏感信息或无法外传的文献。',
     ocr_understand: '我了解，继续',
     install_validating: '正在校验安装环境…',
+    optional_later: '（稍后可在设置中补充）',
     install_bootstrapping: '未检测到 PaperForge Python 包，正在自动安装…',
     wizard_safety: '安全说明：如果你选择的目录里已经有文件，安装向导会保留已有内容，只补充缺失的 PaperForge 文件和目录。',
 
@@ -1747,6 +1749,22 @@ class PaperForgeStatusView extends ItemView {
         globalSyncBtn.addEventListener('click', () => {
             const action = ACTIONS.find(a => a.id === 'paperforge-sync');
             if (action) this._runAction(action, globalSyncBtn);
+        });
+
+        const globalOcrBtn = btnsRow.createEl('button', { cls: 'paperforge-contextual-btn' });
+        globalOcrBtn.createEl('span', { cls: 'paperforge-contextual-btn-icon', text: '\u229E' });
+        globalOcrBtn.createEl('span', { text: 'Run OCR' });
+        globalOcrBtn.addEventListener('click', () => {
+            const action = ACTIONS.find(a => a.id === 'paperforge-ocr');
+            if (action) this._runAction(action, globalOcrBtn);
+        });
+
+        const globalDoctorBtn = btnsRow.createEl('button', { cls: 'paperforge-contextual-btn' });
+        globalDoctorBtn.createEl('span', { cls: 'paperforge-contextual-btn-icon', text: '\u2695' });
+        globalDoctorBtn.createEl('span', { text: 'Run Doctor' });
+        globalDoctorBtn.addEventListener('click', () => {
+            const action = ACTIONS.find(a => a.id === 'paperforge-doctor');
+            if (action) this._runAction(action, globalDoctorBtn);
         });
     }
 
@@ -3171,15 +3189,32 @@ class PaperForgeSettingTab extends PluginSettingTab {
             });
         }
 
-        // --- Section: Memory Layer ---
-        containerEl.createEl('h3', { text: 'Memory Layer' });
+        // --- Section: Advanced (Memory Layer + Vector DB, collapsed by default) ---
+        const advHeader = containerEl.createEl('div', { cls: 'paperforge-collapsible-header' });
+        advHeader.style.cssText = 'cursor:pointer; display:flex; align-items:center; gap:8px; padding:8px 0; user-select:none;';
+        const advArrow = advHeader.createEl('span', { text: '\u25B6', cls: 'paperforge-collapsible-arrow' });
+        advArrow.style.cssText = 'display:inline-block; transition:transform 0.2s; font-size:10px; transform:rotate(90deg);';
+        advHeader.createEl('h3', { text: 'Advanced', cls: 'paperforge-collapsible-title' });
+        advHeader.createEl('span', { text: 'Memory + Vector DB + Embedding', cls: 'paperforge-collapsible-sub' });
+        advHeader.lastChild.style.cssText = 'font-size:11px; color:var(--text-muted); margin-left:8px;';
 
-        const memoryDescEl = containerEl.createEl('div', { cls: 'paperforge-desc-box' });
+        const advContent = containerEl.createEl('div', { cls: 'paperforge-collapsible-content' });
+        advContent.style.display = 'none';
+
+        advHeader.addEventListener('click', () => {
+            const collapsed = advContent.style.display === 'none';
+            advContent.style.display = collapsed ? '' : 'none';
+            advArrow.style.transform = collapsed ? 'rotate(0deg)' : 'rotate(90deg)';
+        });
+
+        // Memory Layer section (inside Advanced)
+        advContent.createEl('h4', { text: 'Memory Layer' });
+
+        const memoryDescEl = advContent.createEl('div', { cls: 'paperforge-desc-box' });
         memoryDescEl.style.cssText = 'padding:8px 12px; margin:0 0 12px; background:var(--background-secondary); border-radius:4px; font-size:12px; color:var(--text-muted); line-height:1.5;';
         memoryDescEl.setText(t('feat_memory_desc'));
 
-        // Always-on SQLite status display
-        const statusRow = containerEl.createEl('div', { cls: 'paperforge-memory-status' });
+        const statusRow = advContent.createEl('div', { cls: 'paperforge-memory-status' });
         statusRow.style.cssText = 'display:flex; align-items:center; padding:8px 12px; margin:8px 0; background:var(--background-secondary); border-radius:4px;';
 
         const vp = this.app.vault.adapter.basePath;
@@ -3193,7 +3228,7 @@ class PaperForgeSettingTab extends PluginSettingTab {
         }
         this._renderMemoryStatusText(statusRow, this._memoryStatusText, this._lastSyncTime);
 
-        this._renderVectorSection(containerEl);
+        this._renderVectorSection(advContent);
     }
 
     _renderVectorSection(containerEl) {
@@ -4397,8 +4432,8 @@ class PaperForgeSetupModal extends Modal {
             '--base-dir', s.base_dir.trim(),
             '--agent', s.agent_platform || 'opencode',
         ];
-        setupArgs.push('--zotero-data', s.zotero_data_dir.trim());
-        setupArgs.push('--paddleocr-key', s.paddleocr_api_key.trim());
+        if (s.zotero_data_dir && s.zotero_data_dir.trim()) setupArgs.push('--zotero-data', s.zotero_data_dir.trim());
+        if (s.paddleocr_api_key && s.paddleocr_api_key.trim()) setupArgs.push('--paddleocr-key', s.paddleocr_api_key.trim());
 
         try {
             let hasPaperforge = true;
@@ -4500,8 +4535,8 @@ class PaperForgeSetupModal extends Modal {
         if (!s.resources_dir || !s.resources_dir.trim()) errors.push(t('validate_resources'));
         if (!s.literature_dir || !s.literature_dir.trim()) errors.push(t('validate_notes'));
         if (!s.base_dir || !s.base_dir.trim()) errors.push(t('validate_base'));
-        if (!s.paddleocr_api_key || !s.paddleocr_api_key.trim()) errors.push(t('validate_key'));
-        if (!s.zotero_data_dir || !s.zotero_data_dir.trim()) errors.push(t('validate_zotero'));
+        if (!s.paddleocr_api_key || !s.paddleocr_api_key.trim()) this._log('  ! ' + t('validate_key') + ' ' + t('optional_later'));
+        if (!s.zotero_data_dir || !s.zotero_data_dir.trim()) this._log('  ! ' + t('validate_zotero') + ' ' + t('optional_later'));
         return errors;
     }
 
