@@ -8,7 +8,8 @@ from paperforge.core.errors import ErrorCode
 from paperforge.core.result import PFError, PFResult
 from paperforge.memory.chunker import chunk_fulltext
 from paperforge.memory.state_snapshot import write_vector_runtime
-from paperforge.memory.vector_db import (
+from paperforge.worker.asset_index import read_index
+from paperforge.embedding import (
     delete_paper_vectors,
     embed_paper,
     get_collection,
@@ -17,8 +18,7 @@ from paperforge.memory.vector_db import (
     mark_vector_build_state,
     read_vector_build_state,
 )
-from paperforge.worker.asset_index import read_index
-from paperforge.worker.vector_db import _preflight_check
+from paperforge.embedding.preflight import _preflight_check
 from paperforge import __version__ as PF_VERSION
 
 
@@ -32,21 +32,14 @@ def run(args: argparse.Namespace) -> int:
 
         # Write vector-runtime-state.json snapshot (JS-First Memory State)
         _dep_missing = []
-        _current_mode = status.get("mode", "local") or "local"
-        if _current_mode == "api":
-            try:
-                import openai  # noqa: F401
-            except ImportError:
-                _dep_missing.append("openai")
-        else:
-            try:
-                import chromadb  # noqa: F401
-            except ImportError:
-                _dep_missing.append("chromadb")
-            try:
-                import sentence_transformers  # noqa: F401
-            except ImportError:
-                _dep_missing.append("sentence_transformers")
+        try:
+            import openai  # noqa: F401
+        except ImportError:
+            _dep_missing.append("openai")
+        try:
+            import chromadb  # noqa: F401
+        except ImportError:
+            _dep_missing.append("chromadb")
         write_vector_runtime(
             vault,
             enabled=bool(status.get("mode", "")),
@@ -58,6 +51,8 @@ def run(args: argparse.Namespace) -> int:
             db_exists=status.get("db_exists", False),
             chunk_count=status.get("chunk_count", 0),
             build_state=status.get("build_state"),
+            healthy=status.get("healthy", True),
+            error=status.get("error", ""),
         )
 
         result = PFResult(ok=True, command="embed status", version=PF_VERSION, data=status)
@@ -199,6 +194,8 @@ def run(args: argparse.Namespace) -> int:
                 db_exists=get_vector_db_path(vault).exists(),
                 chunk_count=chunks_embedded,
                 build_state=read_vector_build_state(vault),
+                healthy=False,
+                error=str(e),
             )
             result = PFResult(ok=False, command="embed build", version=PF_VERSION,
                              error=PFError(code=ErrorCode.INTERNAL_ERROR, message=str(e)))
@@ -222,6 +219,8 @@ def run(args: argparse.Namespace) -> int:
         db_exists=True,
         chunk_count=chunks_embedded,
         build_state=read_vector_build_state(vault),
+        healthy=True,
+        error="",
     )
 
     print("EMBED_DONE", flush=True)
