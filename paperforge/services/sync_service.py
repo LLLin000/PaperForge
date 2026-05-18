@@ -6,21 +6,11 @@ from pathlib import Path
 
 from paperforge import __version__
 from paperforge.adapters.bbt import (
-    extract_authors,
-    identify_main_pdf,
     load_export_rows,
-    normalize_attachment_path,
-    resolve_item_collection_paths,
 )
 from paperforge.adapters.obsidian_frontmatter import (
     candidate_markdown,
     read_frontmatter_dict,
-    update_frontmatter_field,
-)
-from paperforge.adapters.zotero_paths import (
-    absolutize_vault_path,
-    obsidian_wikilink_for_path,
-    obsidian_wikilink_for_pdf,
 )
 from paperforge.core.errors import ErrorCode
 from paperforge.core.result import PFError, PFResult
@@ -209,7 +199,8 @@ class SyncService:
         return candidates
 
     def run(
-        self, verbose: bool = False, json_output: bool = False, selection_only: bool = False, index_only: bool = False
+        self, verbose: bool = False, json_output: bool = False, selection_only: bool = False, index_only: bool = False,
+        prune: bool = False, prune_force: bool = False
     ) -> PFResult:
         """Full sync orchestration. Returns PFResult contract.
 
@@ -302,6 +293,27 @@ class SyncService:
                 memory_rebuild_error = exc
                 logger.error("Failed to rebuild memory DB after sync: %s", exc)
 
+            # ── Phase 4: Prune orphans ──
+            prune_result = None
+            if prune or prune_force:
+                dry_run_prune = not prune_force
+                prune_result = self.prune(paths, fresh_index=None, dry_run=dry_run_prune)
+                if not json_output:
+                    pdata = prune_result or {}
+                    preview = pdata.get("preview", [])
+                    if preview:
+                        print(f"prune: found {len(preview)} orphan paper(s)")
+                        if dry_run_prune:
+                            print("prune: dry-run (pass --prune-force to delete)")
+                        else:
+                            counts = pdata.get("counts", {})
+                            msg = (f"prune: deleted {len(pdata.get('deleted', []))} paper(s) "
+                                   f"(ws={counts.get('workspace',0)} ocr={counts.get('ocr',0)} "
+                                   f"vec={counts.get('vectors',0)})")
+                            print(msg)
+                    else:
+                        print("prune: no orphans found")
+
             if not json_output:
                 print(f"index-refresh: {index_count} entries in index")
                 total = sum(1 for _ in paths["literature"].rglob("*.md")) if paths["literature"].exists() else 0
@@ -319,6 +331,7 @@ class SyncService:
             data={
                 "selection": selection_result,
                 "index": {"updated": index_count, "orphaned_cleaned": orphaned, "flat_cleaned": flat_cleaned},
+                "prune": prune_result,
             },
         )
 
@@ -338,6 +351,14 @@ class SyncService:
             })
 
         return result
+
+    def prune(self, paths: dict, fresh_index: dict | None = None, *, dry_run: bool = True) -> dict:
+        """Run orphan paper cleanup. Default dry_run=True (preview only)."""
+        if fresh_index is None:
+            from paperforge.worker.asset_index import read_index
+            fresh_index = read_index(self.vault)
+        from paperforge.worker.prune import prune_orphan_papers
+        return prune_orphan_papers(self.vault, fresh_index=fresh_index, dry_run=dry_run)
 
     # ── Legacy passthrough (backward-compat for commands/sync.py) ──
 

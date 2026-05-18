@@ -186,6 +186,8 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Output result as JSON (PFResult envelope)",
     )
+    p_sync.add_argument("--prune", action="store_true", help="Preview orphan cleanup (dry-run)")
+    p_sync.add_argument("--prune-force", action="store_true", help="Execute orphan cleanup")
 
     # selection-sync (backward compat)
     sub.add_parser("selection-sync", help="Sync Zotero selection to library records")
