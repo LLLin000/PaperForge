@@ -3906,8 +3906,8 @@ class PaperForgeOrphanModal extends Modal {
 
     _updateUI() {
         const sel = this.orphans.filter(o => o._selected);
-        this._countEl.setText('Delete ' + sel.length + ' selected');
-        this._selectAllBtn.setText(sel.length === this.orphans.length ? 'Deselect all' : 'Select all');
+        this._countEl.setText(t('orphan_delete_selected').replace('{count}', sel.length));
+        this._selectAllBtn.setText(sel.length === this.orphans.length ? t('orphan_deselect_all') : t('orphan_select_all'));
         for (const o of this.orphans) {
             const row = this._rowEls[o._idx];
             if (!row) continue;
@@ -3944,7 +3944,7 @@ class PaperForgeOrphanModal extends Modal {
             if (o.authors) meta.push(o.authors);
             if (o.year) meta.push(o.year);
             if (meta.length > 0) left.createEl('div', { cls: 'paperforge-orphan-meta', text: meta.join(' \u00B7 ') });
-            left.createEl('div', { cls: 'paperforge-orphan-explain', text: 'Removed from Zotero. ' + (o.has_pdf ? 'Had a PDF synced.' : 'No PDF was attached.') + ' Workspace files remain on disk.' });
+            left.createEl('div', { cls: 'paperforge-orphan-explain', text: t('orphan_explain') });
 
             row.addEventListener('click', () => {
                 o._selected = !o._selected;
@@ -3966,7 +3966,7 @@ class PaperForgeOrphanModal extends Modal {
 
         this._countEl.addEventListener('click', () => {
             const selected = this.orphans.filter(o => o._selected);
-            if (selected.length === 0) { new Notice('No papers selected for deletion'); return; }
+            if (selected.length === 0) { new Notice(t('orphan_none_selected')); return; }
             this._countEl.setText('Deleting...');
             this._countEl.setAttr('disabled', '');
             this._selectAllBtn.setAttr('disabled', '');
