@@ -53,7 +53,6 @@ def run(args) -> int:
 
 def _dashboard_from_db(vault: Path) -> dict | None:
     """Build dashboard stats from paperforge.db. Returns None if DB unavailable."""
-    from pathlib import Path as _P
     db_path = vault / "System" / "PaperForge" / "indexes" / "paperforge.db"
     if not db_path.exists():
         return None

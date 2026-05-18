@@ -35,13 +35,13 @@ def _read_dotenv(vault: Path, key: str) -> str:
     return ""
 
 
-from paperforge.worker.asset_index import refresh_index_entry
 from paperforge.worker._retry import retry_with_meta
 from paperforge.worker._utils import (
     pipeline_paths,
     read_json,
     write_json,
 )
+from paperforge.worker.asset_index import refresh_index_entry
 from paperforge.worker.sync import (
     load_control_actions,
     load_export_rows,

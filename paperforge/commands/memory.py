@@ -63,9 +63,9 @@ def run(args: argparse.Namespace) -> int:
             status = get_memory_status(vault)
             # Write memory-runtime-state.json snapshot (JS-First Memory State)
             try:
-                from paperforge.memory.state_snapshot import write_memory_runtime
-                from paperforge.memory.db import get_memory_db_path, get_connection
+                from paperforge.memory.db import get_connection, get_memory_db_path
                 from paperforge.memory.schema import get_schema_version
+                from paperforge.memory.state_snapshot import write_memory_runtime
                 _last_full_build = ""
                 _schema_ver_db = 0
                 _fts_ok = False

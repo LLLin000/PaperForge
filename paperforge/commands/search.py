@@ -3,11 +3,11 @@ from __future__ import annotations
 import argparse
 import sys
 
+from paperforge import __version__ as PF_VERSION
 from paperforge.core.errors import ErrorCode
 from paperforge.core.result import PFError, PFResult
 from paperforge.memory.db import get_connection, get_memory_db_path
 from paperforge.memory.fts import search_papers
-from paperforge import __version__ as PF_VERSION
 
 
 def run(args: argparse.Namespace) -> int:

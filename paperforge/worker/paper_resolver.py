@@ -13,7 +13,6 @@ import re
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
 
 
 @dataclass
@@ -81,7 +80,7 @@ class PaperResolver:
             self._items = []
         self._loaded = True
 
-    def resolve_key(self, key: str) -> Optional[PaperWorkspace]:
+    def resolve_key(self, key: str) -> PaperWorkspace | None:
         """Exact match on zotero_key."""
         self._ensure_loaded()
         for entry in self._items:
@@ -89,7 +88,7 @@ class PaperResolver:
                 return self._build_workspace(entry)
         return None
 
-    def resolve_doi(self, doi: str) -> Optional[PaperWorkspace]:
+    def resolve_doi(self, doi: str) -> PaperWorkspace | None:
         """Exact match on DOI (case-insensitive, normalized)."""
         self._ensure_loaded()
         normalized = self._normalize_doi(doi)
@@ -101,10 +100,10 @@ class PaperResolver:
 
     def search(
         self,
-        title: Optional[str] = None,
-        author: Optional[str] = None,
-        year: Optional[int | str] = None,
-        domain: Optional[str] = None,
+        title: str | None = None,
+        author: str | None = None,
+        year: int | str | None = None,
+        domain: str | None = None,
         limit: int = 20,
     ) -> list[PaperWorkspace]:
         """Multi-field search with substring matching, sorted by relevance score.
@@ -214,7 +213,7 @@ class PaperResolver:
         return s
 
 
-def _resolve_ocr_base(paths: dict[str, Path], key: str) -> Optional[Path]:
+def _resolve_ocr_base(paths: dict[str, Path], key: str) -> Path | None:
     """Get the OCR directory for a given zotero key."""
     ocr_dir = paths.get("ocr")
     if ocr_dir and key:

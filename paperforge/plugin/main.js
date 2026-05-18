@@ -1982,21 +1982,26 @@ class PaperForgeStatusView extends ItemView {
             for (const qa of pairs) {
                 const item = card.createEl('div', { cls: 'paperforge-discussion-item' });
                 const qEl = item.createEl('div', { cls: 'paperforge-discussion-q' });
-                await MarkdownRenderer.render(this.app, '**提问：**' + qa.question, qEl, mdPath, this);
+                qEl.createEl('span', { cls: 'paperforge-discussion-q-label', text: '提问：' });
+                qEl.createEl('span', { cls: 'paperforge-discussion-q-text', text: qa.question });
 
                 const aEl = item.createEl('div', { cls: 'paperforge-discussion-a' });
+                let longAnswer = false;
                 if (qa.answer && qa.answer.length > 500) {
-                    aEl.style.maxHeight = '200px';
-                    aEl.style.overflow = 'hidden';
-                    const toggle = item.createEl('button', { cls: 'paperforge-expand-btn', text: '展开更多 ▾' });
-                    let expanded = false;
-                    toggle.addEventListener('click', () => {
-                        expanded = !expanded;
-                        aEl.style.maxHeight = expanded ? '' : '200px';
-                        toggle.setText(expanded ? '收起 ▴' : '展开更多 ▾');
-                    });
+                    longAnswer = true;
+                    aEl.classList.add('paperforge-discussion-a-collapsed');
                 }
                 await MarkdownRenderer.render(this.app, qa.answer || '', aEl, mdPath, this);
+
+                if (longAnswer) {
+                    let expanded = false;
+                    item.style.cursor = 'pointer';
+                    item.addEventListener('click', () => {
+                        expanded = !expanded;
+                        aEl.classList.toggle('paperforge-discussion-a-collapsed', !expanded);
+                        aEl.classList.toggle('paperforge-discussion-a-expanded', expanded);
+                    });
+                }
             }
 
             // "查看全部" link

@@ -23,10 +23,7 @@ def get_api_key(vault: Path) -> str:
         env_file = vault / ".env"
         if env_file.exists():
             for line in env_file.read_text(encoding="utf-8").splitlines():
-                if line.startswith("VECTOR_DB_API_KEY="):
-                    api_key = line.split("=", 1)[1].strip().strip('"').strip("'")
-                    break
-                elif line.startswith("OPENAI_API_KEY="):
+                if line.startswith("VECTOR_DB_API_KEY=") or line.startswith("OPENAI_API_KEY="):
                     api_key = line.split("=", 1)[1].strip().strip('"').strip("'")
                     break
     return api_key
