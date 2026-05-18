@@ -229,9 +229,13 @@ class SyncService:
         # ── Phase 1: Select ──
         if not index_only:
             from paperforge.worker.sync import run_selection_sync
+            import time as _time
 
+            _t0 = _time.time()
             try:
                 selection_result = run_selection_sync(self.vault, verbose=verbose, json_output=json_output)
+                _t1 = _time.time()
+                logger.info("select: %d items in %.1fs", selection_result.get("updated", 0), _t1 - _t0)
             except Exception as exc:
                 return PFResult(
                     ok=False,
@@ -273,7 +277,10 @@ class SyncService:
 
             import paperforge.worker.asset_index as asset_index
 
+            _t2 = _time.time()
             index_count = asset_index.build_index(self.vault, verbose)
+            _t3 = _time.time()
+            logger.info("build_index: %d entries in %.1fs", index_count, _t3 - _t2)
 
             # ── Phase 3: Clean ──
             orphaned = self.clean_orphaned_records(exports, paths, json_output=json_output)
