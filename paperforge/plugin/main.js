@@ -1,4 +1,4 @@
-const { Plugin, Notice, ItemView, Modal, Setting, PluginSettingTab, addIcon } = require('obsidian');
+const { Plugin, Notice, ItemView, Modal, Setting, PluginSettingTab, MarkdownRenderer, addIcon } = require('obsidian');
 const { exec, execFile, spawn, execFileSync } = require('node:child_process');
 const fs = require('fs');
 const path = require('path');
@@ -1956,7 +1956,7 @@ class PaperForgeStatusView extends ItemView {
         return para.length > 300 ? para.slice(0, 300) + '...' : para;
     }
 
-    /* ── Recent Discussion Card: read ai/discussion.json ── */
+    /* ── Recent Discussion Card: read ai/discussion.md ── */
     _renderRecentDiscussionCard(container, entry) {
         const card = container.createEl('div', { cls: 'paperforge-discussion-card' });
         card.style.display = 'none';
@@ -1964,70 +1964,71 @@ class PaperForgeStatusView extends ItemView {
         if (!entry.note_path) return;
         const lastSlash = entry.note_path.lastIndexOf('/');
         const wsDir = lastSlash !== -1 ? entry.note_path.substring(0, lastSlash) : '.';
-        const discPath = wsDir + '/ai/discussion.json';
+        const mdPath = wsDir + '/ai/discussion.md';
 
-        // Use Obsidian adapter for path correctness (handles unicode reliably)
-        this.app.vault.adapter.exists(discPath).then((exists) => {
+        this.app.vault.adapter.exists(mdPath).then((exists) => {
             if (!exists) return;
-            return this.app.vault.adapter.read(discPath);
-        }).then((raw) => {
+            return this.app.vault.adapter.read(mdPath);
+        }).then(async (raw) => {
             if (!raw) return;
-            const data = JSON.parse(raw);
-            if (!data.sessions || data.sessions.length === 0) return;
+
+            const pairs = this._parseDiscussionMD(raw);
+            if (!pairs || pairs.length === 0) return;
 
             card.style.display = 'block';
             const header = card.createEl('div', { cls: 'paperforge-discussion-header' });
             header.createEl('span', { cls: 'paperforge-discussion-title', text: '最近讨论' });
 
-            const latestSession = data.sessions[data.sessions.length - 1];
-            const pairs = (latestSession.qa_pairs || []).slice(-3);
-
             for (const qa of pairs) {
                 const item = card.createEl('div', { cls: 'paperforge-discussion-item' });
-                const qEl = item.createEl('div', { cls: 'paperforge-discussion-q', text: '提问：' + qa.question });
+                const qEl = item.createEl('div', { cls: 'paperforge-discussion-q' });
+                await MarkdownRenderer.render(this.app, '**提问：**' + qa.question, qEl, mdPath, this);
+
                 const aEl = item.createEl('div', { cls: 'paperforge-discussion-a' });
-                const shortAnswer = qa.answer && qa.answer.length > 150
-                    ? qa.answer.slice(0, 150) + '...'
-                    : (qa.answer || '');
-                aEl.createEl('span', { cls: 'paperforge-discussion-a-text', text: '解答：' + shortAnswer });
-                if (qa.answer && qa.answer.length > 150) {
-                    const expandContainer = aEl.createEl('div', { cls: 'paperforge-expand-container' });
-                    const expandBtn = expandContainer.createEl('button', { cls: 'paperforge-expand-icon', title: '展开/收起' });
-                    
-                    // Insert arrow SVG
-                    expandBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>';
-                    
+                if (qa.answer && qa.answer.length > 500) {
+                    aEl.style.maxHeight = '200px';
+                    aEl.style.overflow = 'hidden';
+                    const toggle = item.createEl('button', { cls: 'paperforge-expand-btn', text: '展开更多 ▾' });
                     let expanded = false;
-                    
-                    // Make the whole container clickable
-                    expandContainer.addEventListener('click', () => {
-                        const textSpan = aEl.querySelector('.paperforge-discussion-a-text');
-                        if (textSpan) {
-                            textSpan.setText(expanded ? ('解答：' + shortAnswer) : ('解答：' + qa.answer));
-                        }
-                        expandBtn.innerHTML = expanded 
-                            ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>'
-                            : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>';
+                    toggle.addEventListener('click', () => {
                         expanded = !expanded;
+                        aEl.style.maxHeight = expanded ? '' : '200px';
+                        toggle.setText(expanded ? '收起 ▴' : '展开更多 ▾');
                     });
                 }
+                await MarkdownRenderer.render(this.app, qa.answer || '', aEl, mdPath, this);
             }
 
             // "查看全部" link
             const viewAll = card.createEl('a', { cls: 'paperforge-discussion-viewall', text: '查看全部讨论 →' });
             viewAll.addEventListener('click', (e) => {
                 e.preventDefault();
-                const discMdPath = wsDir + '/ai/discussion.md';
-                const discFile = this.app.vault.getAbstractFileByPath(discMdPath);
+                const discFile = this.app.vault.getAbstractFileByPath(mdPath);
                 if (discFile) {
-                    this.app.workspace.openLinkText(discMdPath, '');
+                    this.app.workspace.openLinkText(mdPath, '');
                 } else {
                     new Notice('讨论文件尚未生成');
                 }
             });
         }).catch((e) => {
-            console.error('PaperForge: discussion.json read error', discPath, e.message);
+            console.error('PaperForge: discussion.md read error', mdPath, e.message);
         });
+    }
+
+    _parseDiscussionMD(content) {
+        const sessions = content.split(/\n## /).slice(1);
+        if (sessions.length === 0) return null;
+        const lastSession = sessions[sessions.length - 1];
+        const pairs = [];
+        const qaBlocks = lastSession.split(/\*\*问题:\*\*/).slice(1);
+        for (const block of qaBlocks) {
+            const answerMatch = block.match(/\*\*解答:\*\*/);
+            if (!answerMatch) continue;
+            const question = block.substring(0, answerMatch.index).trim();
+            const answer = block.substring(answerMatch.index + '**解答:**'.length).trim();
+            pairs.push({ question, answer });
+        }
+        return pairs.slice(-3);
     }
 
     /* ── Paper Technical Details (disclosure with workflow toggles) ── */
