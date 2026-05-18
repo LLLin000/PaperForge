@@ -118,7 +118,7 @@ def _check_index(vault: Path) -> dict:
 
 
 def _check_vector(vault: Path) -> dict:
-    from paperforge.memory.vector_db import get_vector_db_path, read_vector_build_state
+    from paperforge.embedding import get_vector_db_path, read_vector_build_state
 
     settings_path = vault / ".obsidian" / "plugins" / "paperforge" / "data.json"
     vector_enabled = False

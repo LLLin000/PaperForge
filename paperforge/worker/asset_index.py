@@ -436,9 +436,6 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
     # Write per-workspace paper-meta.json (Phase 37: internal state outside frontmatter)
     write_paper_meta(workspace_dir, entry, paperforge_version=PAPERFORGE_VERSION)
 
-    # Auto-embed vectors if this paper just completed OCR
-    _vec_auto_embed_if_new(vault, entry)
-
     return entry
 
 
@@ -454,12 +451,9 @@ def _vec_auto_embed_if_new(vault: Path, entry: dict) -> None:
         return
     # Check if vector DB is enabled and set up
     try:
-        from paperforge.memory.vector_db import (
-            _read_plugin_settings,
-            chunk_fulltext,
-            embed_paper,
-            get_vector_db_path,
-        )
+        from paperforge.embedding._config import _read_plugin_settings
+        from paperforge.embedding import embed_paper, get_vector_db_path
+        from paperforge.memory.chunker import chunk_fulltext
         settings = _read_plugin_settings(vault)
         if not settings.get("features", {}).get("vector_db", False):
             return
