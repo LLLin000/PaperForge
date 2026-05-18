@@ -767,6 +767,16 @@ Object.assign(LANG.en, {
     feat_model_changed_warn: 'Model changed ({0} -> {1}). Existing vectors are incompatible — rebuild required.',
     feat_cache_removed: 'Model cache removed.',
     feat_cache_remove_failed: 'Failed: {0}',
+    orphan_title: 'Found {count} orphan paper(s)',
+    orphan_desc: 'These papers are no longer in your Zotero library.',
+    orphan_select_all: 'Select all',
+    orphan_deselect_all: 'Deselect all',
+    orphan_delete_selected: 'Delete {count} selected',
+    orphan_keep_all: 'Keep all',
+    orphan_explain: 'Removed from Zotero. Workspace files remain on disk.',
+    orphan_deleted: 'Deleted {count} orphan workspace(s)',
+    orphan_none_selected: 'No papers selected for deletion',
+    orphan_delete_failed: 'Prune failed',
 });
 
 /* ── LANG.zh: v1.12 runtime health, OCR queue, pf-deep, dashboard translations ── */
@@ -864,6 +874,16 @@ Object.assign(LANG.zh, {
     feat_model_changed_warn: '模型已更换（{0} -> {1}）。已有向量不兼容——需要重建。',
     feat_cache_removed: '模型缓存已清除。',
     feat_cache_remove_failed: '失败：{0}',
+    orphan_title: '发现 {count} 篇残留文献',
+    orphan_desc: '这些文献已从 Zotero 中移除。',
+    orphan_select_all: '全选',
+    orphan_deselect_all: '取消全选',
+    orphan_delete_selected: '删除 {count} 篇',
+    orphan_keep_all: '保留全部',
+    orphan_explain: '已从 Zotero 中移除。工作区文件仍保留在磁盘上。',
+    orphan_deleted: '已删除 {count} 篇残留文献',
+    orphan_none_selected: '未选择任何文献',
+    orphan_delete_failed: '清理失败',
 });
 
 function langFromApp(app) {
@@ -3555,7 +3575,7 @@ class PaperForgeSettingTab extends PluginSettingTab {
                 // Chunk count + buttons
                 if (hasChunks && !isCorrupted) {
                     embedControls.createEl('span', {
-                        text: `${embedInfo.chunk_count} chunks embedded`,
+                        text: embedInfo.chunk_count + ' chunks embedded',
                         cls: 'setting-item-description'
                     });
                 }
@@ -3898,10 +3918,10 @@ class PaperForgeOrphanModal extends Modal {
     onOpen() {
         const { contentEl } = this;
         contentEl.addClass('paperforge-modal');
-        contentEl.createEl('h2', { text: 'Found ' + this.orphans.length + ' orphan paper(s)' });
+        contentEl.createEl('h2', { text: t('orphan_title').replace('{count}', this.orphans.length) });
         contentEl.createEl('p', {
             cls: 'paperforge-modal-desc',
-            text: 'These papers are no longer in your Zotero library. Click a row to toggle whether to delete it.'
+            text: t('orphan_desc')
         });
 
         this._rowEls = [];
