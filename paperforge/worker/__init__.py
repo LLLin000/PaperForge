@@ -1,34 +1,34 @@
 """PaperForge worker modules — migrated from pipeline/worker/scripts."""
 
-from paperforge.worker.base_views import build_base_views, ensure_base_views, merge_base_views
-from paperforge.worker.deep_reading import run_deep_reading
-from paperforge.worker.ocr import run_ocr
-from paperforge.worker.repair import run_repair
-from paperforge.worker.status import run_doctor, run_status
-from paperforge.worker.sync import (
-    _identify_main_pdf,
-    _normalize_attachment_path,
-    absolutize_vault_path,
-    load_export_rows,
-    obsidian_wikilink_for_pdf,
-    run_index_refresh,
-    run_selection_sync,
-)
+from __future__ import annotations
 
-__all__ = [
-    "load_export_rows",
-    "run_selection_sync",
-    "run_index_refresh",
-    "run_ocr",
-    "run_repair",
-    "run_doctor",
-    "run_status",
-    "run_deep_reading",
-    "build_base_views",
-    "merge_base_views",
-    "ensure_base_views",
-    "obsidian_wikilink_for_pdf",
-    "absolutize_vault_path",
-    "_normalize_attachment_path",
-    "_identify_main_pdf",
-]
+import importlib
+from typing import Any
+
+_MODULE_MAP: dict[str, str] = {
+    "load_export_rows": "paperforge.worker.sync",
+    "run_selection_sync": "paperforge.worker.sync",
+    "run_index_refresh": "paperforge.worker.sync",
+    "run_ocr": "paperforge.worker.ocr",
+    "run_repair": "paperforge.worker.repair",
+    "run_doctor": "paperforge.worker.status",
+    "run_status": "paperforge.worker.status",
+    "run_deep_reading": "paperforge.worker.deep_reading",
+    "build_base_views": "paperforge.worker.base_views",
+    "merge_base_views": "paperforge.worker.base_views",
+    "ensure_base_views": "paperforge.worker.base_views",
+    "obsidian_wikilink_for_pdf": "paperforge.worker.sync",
+    "absolutize_vault_path": "paperforge.worker.sync",
+    "_normalize_attachment_path": "paperforge.worker.sync",
+    "_identify_main_pdf": "paperforge.worker.sync",
+}
+
+__all__ = list(_MODULE_MAP.keys())
+
+
+def __getattr__(name: str) -> Any:
+    """Lazy-import worker functions to avoid circular / broken import chains."""
+    if name in _MODULE_MAP:
+        mod = importlib.import_module(_MODULE_MAP[name])
+        return getattr(mod, name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
