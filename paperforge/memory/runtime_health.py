@@ -53,8 +53,8 @@ def _check_bootstrap(vault: Path) -> dict:
 
 
 def _check_read(vault: Path) -> dict:
-    from paperforge.memory.db import get_memory_db_path
     from paperforge.config import paperforge_paths
+    from paperforge.memory.db import get_memory_db_path
 
     paths = paperforge_paths(vault)
     index_path = paths.get("index")

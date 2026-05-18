@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
-from typing import Optional
 
 
 def _yaml_quote(value: str) -> str:
@@ -51,14 +50,14 @@ def read_frontmatter_bool(note_path: Path, key: str, default: bool = False) -> b
         return default
 
 
-def _read_frontmatter_optional_bool_from_text(text: str, key: str) -> Optional[bool]:
+def _read_frontmatter_optional_bool_from_text(text: str, key: str) -> bool | None:
     match = re.search(rf"^{re.escape(key)}:\s*(?:[\"'])?(true|false)(?:[\"'])?\s*$", text, re.MULTILINE | re.IGNORECASE)
     if not match:
         return None
     return match.group(1).lower() == "true"
 
 
-def read_frontmatter_optional_bool(note_path: Path, key: str) -> Optional[bool]:
+def read_frontmatter_optional_bool(note_path: Path, key: str) -> bool | None:
     """Read an optional boolean field from a formal note's YAML frontmatter (Path-based)."""
     if not note_path or not note_path.exists():
         return None
@@ -69,7 +68,7 @@ def read_frontmatter_optional_bool(note_path: Path, key: str) -> Optional[bool]:
         return None
 
 
-def _legacy_control_flags(paths: dict[str, Path], zotero_key: str) -> dict[str, Optional[bool]]:
+def _legacy_control_flags(paths: dict[str, Path], zotero_key: str) -> dict[str, bool | None]:
     records_root = paths.get("library_records")
     if not records_root or not records_root.exists():
         return {"do_ocr": None, "analyze": None}
@@ -333,6 +332,7 @@ def read_frontmatter_dict(text: str) -> dict:
     Returns empty dict if no frontmatter.
     """
     import re
+
     import yaml
 
     fm_match = re.match(r"^---\s*\n(.*?)\n---", text, re.DOTALL)

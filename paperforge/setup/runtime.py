@@ -4,12 +4,11 @@ from __future__ import annotations
 
 import subprocess
 import sys
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable
 
 from paperforge.core.errors import ErrorCode
 from paperforge.setup import SetupStepResult
-
 
 ProgressCallback = Callable[[str], None]
 
@@ -74,9 +73,7 @@ class RuntimeInstaller:
             )
         else:
             error_code = ErrorCode.INTERNAL_ERROR
-            if "pip" in stderr.lower():
-                error_code = ErrorCode.INTERNAL_ERROR
-            elif "connection" in stderr.lower() or "timeout" in stderr.lower():
+            if "pip" in stderr.lower() or "connection" in stderr.lower() or "timeout" in stderr.lower():
                 error_code = ErrorCode.INTERNAL_ERROR
 
             return SetupStepResult(

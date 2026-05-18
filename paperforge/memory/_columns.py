@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 
-
 PAPER_COLUMNS = [
     "zotero_key", "citation_key", "title", "year", "doi", "pmid",
     "journal", "first_author", "authors_json", "abstract", "domain",

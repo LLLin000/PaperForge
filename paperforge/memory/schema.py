@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-import sqlite3
-
 import logging
+import sqlite3
 
 logger = logging.getLogger(__name__)
 

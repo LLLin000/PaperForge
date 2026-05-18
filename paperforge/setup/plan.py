@@ -3,16 +3,15 @@
 from __future__ import annotations
 
 import json
-import sys
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable
 
 from paperforge.setup import SetupStepResult
+from paperforge.setup.agent import AgentInstaller
 from paperforge.setup.checker import SetupChecker
 from paperforge.setup.config_writer import ConfigWriter
-from paperforge.setup.vault import VaultInitializer
 from paperforge.setup.runtime import RuntimeInstaller
-from paperforge.setup.agent import AgentInstaller
+from paperforge.setup.vault import VaultInitializer
 
 ProgressCallback = Callable[[str], None]
 

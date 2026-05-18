@@ -2,13 +2,12 @@ from __future__ import annotations
 
 import argparse
 import sys
-import json
 
+from paperforge import __version__ as PF_VERSION
 from paperforge.core.errors import ErrorCode
 from paperforge.core.result import PFError, PFResult
-from paperforge.memory.db import get_connection, get_memory_db_path
 from paperforge.embedding import retrieve_chunks
-from paperforge import __version__ as PF_VERSION
+from paperforge.memory.db import get_connection, get_memory_db_path
 
 
 def run(args: argparse.Namespace) -> int:

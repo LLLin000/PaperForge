@@ -8,8 +8,6 @@ import argparse
 import logging
 from pathlib import Path
 
-from paperforge.core.result import PFResult
-
 logger = logging.getLogger(__name__)
 
 

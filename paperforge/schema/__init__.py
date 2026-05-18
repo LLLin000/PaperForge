@@ -18,7 +18,7 @@ def load_field_registry(path: Path | None = None) -> dict:
     if not path.exists():
         return {}
 
-    with open(path, "r", encoding="utf-8") as f:
+    with open(path, encoding="utf-8") as f:
         data = yaml.safe_load(f)
 
     return data if isinstance(data, dict) else {}

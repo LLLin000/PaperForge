@@ -70,7 +70,7 @@ class ConfigWriter:
         if not self.config_path.exists():
             return None
         try:
-            with open(self.config_path, "r", encoding="utf-8") as f:
+            with open(self.config_path, encoding="utf-8") as f:
                 return json.load(f)
         except Exception:
             return None

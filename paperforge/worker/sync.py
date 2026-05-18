@@ -6,7 +6,6 @@ from __future__ import annotations
 #   New logic → services/ / adapters/ / core/.
 #   This file: deletion, migration, legacy wrappers only.
 # =============================================================================
-
 import html
 import logging
 import os
@@ -14,32 +13,29 @@ import re
 import urllib.parse
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Optional
 from xml.etree import ElementTree as ET
 
 import requests
 
-from paperforge.config import load_vault_config, paperforge_paths
-from paperforge.worker._domain import build_collection_lookup, load_domain_config, load_domain_collections
+import paperforge.worker.asset_index as asset_index
+from paperforge.adapters.bbt import (
+    collection_fields,
+    load_export_rows,
+)
+from paperforge.adapters.obsidian_frontmatter import (
+    _legacy_control_flags,
+    _read_frontmatter_optional_bool_from_text,
+    canonicalize_decision,
+    compute_final_collection,
+    extract_preserved_deep_reading,
+    update_frontmatter_field,
+)
 from paperforge.adapters.zotero_paths import (
-    absolutize_vault_path,
     obsidian_wikilink_for_path,
     obsidian_wikilink_for_pdf,
 )
-from paperforge.adapters.obsidian_frontmatter import (
-    _add_missing_frontmatter_fields,
-    _extract_section,
-    _legacy_control_flags,
-    _read_frontmatter_bool_from_text,
-    _read_frontmatter_optional_bool_from_text,
-    canonicalize_decision,
-    candidate_markdown,
-    compute_final_collection,
-    extract_preserved_deep_reading,
-    generate_review,
-    has_deep_reading_content,
-    update_frontmatter_field,
-)
+from paperforge.config import load_vault_config
+from paperforge.worker._domain import load_domain_collections, load_domain_config
 from paperforge.worker._utils import (
     _extract_year,
     lookup_impact_factor,
@@ -53,18 +49,6 @@ from paperforge.worker._utils import (
     yaml_list,
     yaml_quote,
 )
-
-from paperforge.adapters.bbt import (
-    _identify_main_pdf,
-    _normalize_attachment_path,
-    collection_fields,
-    extract_authors,
-    load_export_rows,
-    resolve_item_collection_paths,
-)
-
-
-import paperforge.worker.asset_index as asset_index
 
 logger = logging.getLogger(__name__)
 
@@ -1231,7 +1215,6 @@ def run_index_refresh(
         json_output: If True, suppress human-readable print output.
     """
     from paperforge.worker.base_views import ensure_base_views
-    from paperforge.worker.ocr import validate_ocr_meta
 
     paths = pipeline_paths(vault)
     config = load_domain_config(paths)

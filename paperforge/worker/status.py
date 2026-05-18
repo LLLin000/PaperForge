@@ -10,12 +10,14 @@ from json import JSONDecodeError
 from pathlib import Path
 
 from paperforge.config import (
+    CONFIG_PATH_KEYS,
+    get_paperforge_schema_version,
     load_vault_config,
     paperforge_paths,
     read_paperforge_json,
-    CONFIG_PATH_KEYS,
-    get_paperforge_schema_version,
 )
+from paperforge.core.result import PFResult
+from paperforge.memory.state_snapshot import write_memory_runtime
 from paperforge.worker._domain import load_domain_config
 from paperforge.worker._utils import (
     pipeline_paths,
@@ -23,9 +25,6 @@ from paperforge.worker._utils import (
     write_json,
 )
 from paperforge.worker.base_views import ensure_base_views
-from paperforge.memory.state_snapshot import write_memory_runtime
-
-from paperforge.core.result import PFResult
 
 logger = logging.getLogger(__name__)
 
@@ -610,8 +609,8 @@ def run_doctor(vault: Path, verbose: bool = False, json_output: bool = False) ->
 
     # --- Field registry validation (Phase 59) ---
     try:
-        from paperforge.schema import load_field_registry
         from paperforge.doctor.field_validator import validate_frontmatter_from_file
+        from paperforge.schema import load_field_registry
 
         registry = load_field_registry()
     except Exception:
@@ -673,7 +672,8 @@ def run_doctor(vault: Path, verbose: bool = False, json_output: bool = False) ->
 
     # --- Index Health section (Phase 25: derived from canonical index) ---
     try:
-        from paperforge.worker.asset_index import read_index as _read_idx, summarize_index as _summarize_idx
+        from paperforge.worker.asset_index import read_index as _read_idx
+        from paperforge.worker.asset_index import summarize_index as _summarize_idx
 
         _summary = _summarize_idx(vault)
     except Exception:
@@ -1073,8 +1073,8 @@ def run_status(vault: Path, verbose: bool = False, json_output: bool = False) ->
 
     # Write memory-runtime-state.json snapshot (JS-First Memory State)
     try:
+        from paperforge.memory.db import get_connection, get_memory_db_path
         from paperforge.memory.query import get_memory_status
-        from paperforge.memory.db import get_memory_db_path, get_connection
         from paperforge.memory.schema import get_schema_version
         ms = get_memory_status(vault)
         _last_full_build = ""

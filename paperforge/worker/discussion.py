@@ -19,9 +19,10 @@ import os
 import sys
 import tempfile
 import uuid
-import filelock
 from datetime import datetime, timezone
 from pathlib import Path
+
+import filelock
 
 from paperforge.config import paperforge_paths
 from paperforge.worker._utils import slugify_filename

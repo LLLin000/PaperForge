@@ -3,10 +3,10 @@ from __future__ import annotations
 import argparse
 import sys
 
+from paperforge import __version__ as PF_VERSION
 from paperforge.core.errors import ErrorCode
 from paperforge.core.result import PFError, PFResult
 from paperforge.memory.context import get_agent_context
-from paperforge import __version__ as PF_VERSION
 
 COMMANDS = {
     "paper-status": {

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import hashlib
 import base64
+import hashlib
 import json
 import logging
 import os
@@ -14,11 +14,7 @@ import zipfile
 from datetime import datetime
 from pathlib import Path
 
-from paperforge.config import load_vault_config, paperforge_paths
-from paperforge.worker._utils import (
-    read_json,
-    write_json,
-)
+from paperforge.config import load_vault_config
 from paperforge.worker.status import GITHUB_REPO, GITHUB_ZIP, UPDATEABLE_PATHS
 
 logger = logging.getLogger(__name__)
@@ -28,6 +24,7 @@ GITHUB_PIP_SOURCE = f"git+https://github.com/{GITHUB_REPO}.git"
 def _sync_obsidian_plugin(vault: Path) -> None:
     """Reload utils and sync the Obsidian plugin into the current vault."""
     import importlib
+
     import paperforge.worker._utils as _pf_utils
 
     importlib.reload(_pf_utils)
@@ -245,8 +242,8 @@ def update_via_zip(vault: Path) -> bool:
 def _deploy_all_skills(vault: Path) -> None:
     """Deploy latest skills and AGENTS.md to vault after update."""
     try:
-        from paperforge.services.skill_deploy import deploy_skills
         from paperforge.config import load_vault_config
+        from paperforge.services.skill_deploy import deploy_skills
 
         config = load_vault_config(vault)
         agent_key = config.get("agent_platform") or "opencode"

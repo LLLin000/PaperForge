@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import argparse
-import sys
 
 from paperforge import __version__ as PF_VERSION
 from paperforge.core.result import PFResult

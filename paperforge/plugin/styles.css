@@ -1926,17 +1926,60 @@
 }
 
 .paperforge-discussion-q {
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--text-normal);
-    margin-bottom: 4px;
+    padding: 8px 10px;
+    margin-bottom: 8px;
+    border-radius: 6px;
+    background: color-mix(in srgb, #3e5a47 15%, transparent);
     line-height: 1.5;
+}
+
+.paperforge-discussion-q-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-muted);
+    margin-right: 4px;
+}
+
+.paperforge-discussion-q-text {
+    color: var(--text-normal);
+    font-weight: 600;
 }
 
 .paperforge-discussion-a {
     font-size: 14px;
     color: var(--text-normal);
     line-height: 1.68;
+}
+
+.paperforge-discussion-a-collapsed {
+    max-height: 200px;
+    overflow: hidden;
+    position: relative;
+}
+
+.paperforge-discussion-a-collapsed::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: linear-gradient(transparent, var(--background-primary));
+    pointer-events: none;
+}
+
+.paperforge-discussion-a-expanded {
+    max-height: none;
+    overflow: visible;
+}
+
+.paperforge-discussion-item {
+    position: relative;
+    margin-bottom: 12px;
+}
+
+.paperforge-discussion-item:last-child {
+    margin-bottom: 0;
 }
 
 

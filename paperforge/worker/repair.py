@@ -4,12 +4,12 @@ import logging
 import re
 from pathlib import Path
 
-from paperforge.config import load_vault_config, paperforge_paths
-from paperforge.worker.asset_index import refresh_index_entry
+from paperforge.config import load_vault_config
 from paperforge.worker._utils import (
     read_json,
     write_json,
 )
+from paperforge.worker.asset_index import refresh_index_entry
 from paperforge.worker.ocr import validate_ocr_meta
 from paperforge.worker.sync import (
     load_export_rows,

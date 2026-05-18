@@ -3,13 +3,10 @@ from __future__ import annotations
 import argparse
 import os
 import sys
-from pathlib import Path
 
+from paperforge import __version__ as PF_VERSION
 from paperforge.core.errors import ErrorCode
 from paperforge.core.result import PFError, PFResult
-from paperforge.memory.chunker import chunk_fulltext
-from paperforge.memory.state_snapshot import write_vector_runtime
-from paperforge.worker.asset_index import read_index
 from paperforge.embedding import (
     delete_paper_vectors,
     embed_paper,
@@ -20,7 +17,9 @@ from paperforge.embedding import (
     read_vector_build_state,
 )
 from paperforge.embedding.preflight import _preflight_check
-from paperforge import __version__ as PF_VERSION
+from paperforge.memory.chunker import chunk_fulltext
+from paperforge.memory.state_snapshot import write_vector_runtime
+from paperforge.worker.asset_index import read_index
 
 
 def run(args: argparse.Namespace) -> int:

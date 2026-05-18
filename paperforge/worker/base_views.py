@@ -4,11 +4,8 @@ import logging
 import os
 from pathlib import Path
 
-from paperforge.config import paperforge_paths
 from paperforge.worker._utils import (
-    read_json,
     slugify_filename,
-    write_json,
 )
 
 logger = logging.getLogger(__name__)
@@ -284,7 +281,6 @@ def merge_base_views(existing_content: str | None, new_views: list[dict]) -> str
     Returns:
         Merged .base file content with PaperForge views updated, user views preserved.
     """
-    import re
 
     PROPERTIES_YAML = """properties:
   zotero_key:

@@ -13,8 +13,8 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
-from paperforge.worker._utils import read_json, write_json
 from paperforge.adapters.collections import build_collection_lookup
+from paperforge.worker._utils import read_json, write_json
 
 logger = logging.getLogger(__name__)
 
