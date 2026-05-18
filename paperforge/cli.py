@@ -276,6 +276,11 @@ def build_parser() -> argparse.ArgumentParser:
     p_retrieve.add_argument("--limit", type=int, default=5)
     p_retrieve.add_argument("--expand", action="store_true", default=True)
 
+    # prune
+    p_prune = sub.add_parser("prune", help="Delete orphan paper artifacts (dry-run by default)")
+    p_prune.add_argument("--force", action="store_true", help="Actually delete (default: dry-run)")
+    p_prune.add_argument("--json", action="store_true", help="Output as JSON")
+
     # Memory Layer commands
     p_memory = sub.add_parser("memory", help="Manage the Memory Layer")
     p_memory_sp = p_memory.add_subparsers(dest="memory_subcommand", required=True)
@@ -566,6 +571,11 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "retrieve":
         from paperforge.commands.retrieve import run
+
+        return run(args)
+
+    if args.command == "prune":
+        from paperforge.commands.prune import run
 
         return run(args)
 
