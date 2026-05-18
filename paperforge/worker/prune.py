@@ -57,6 +57,7 @@ def prune_orphan_papers(
     *,
     fresh_index: dict,
     dry_run: bool = True,
+    _candidates: list[dict] | None = None,
 ) -> dict:
     cfg = paperforge_paths(vault)
     lit_dir = cfg.get("literature")
@@ -65,7 +66,10 @@ def prune_orphan_papers(
 
     fresh_keys = {item["zotero_key"] for item in fresh_index.get("items", []) if item.get("zotero_key")}
 
-    candidates = _collect_orphan_candidates(lit_dir, fresh_keys)
+    if _candidates is not None:
+        candidates = _candidates
+    else:
+        candidates = _collect_orphan_candidates(lit_dir, fresh_keys)
     if not candidates:
         return {"preview": [], "deleted": [], "counts": {}}
 
