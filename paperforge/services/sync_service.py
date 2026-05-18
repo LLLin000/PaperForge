@@ -200,7 +200,7 @@ class SyncService:
 
     def run(
         self, verbose: bool = False, json_output: bool = False, selection_only: bool = False, index_only: bool = False,
-        prune: bool = False, prune_force: bool = False
+        prune: bool = False, prune_force: bool = False,
     ) -> PFResult:
         """Full sync orchestration. Returns PFResult contract.
 
@@ -290,16 +290,16 @@ class SyncService:
                 index_count = asset_index.build_index(self.vault, verbose)
 
             # ── Phase 4: Prune orphans ──
-            prune_result = None
+            prune_data = self.prune(paths, fresh_index=None, dry_run=True)
+            if prune_force:
+                prune_data = self.prune(paths, fresh_index=None, dry_run=False)
             if prune or prune_force:
-                dry_run_prune = not prune_force
-                prune_result = self.prune(paths, fresh_index=None, dry_run=dry_run_prune)
                 if not json_output:
-                    pdata = prune_result or {}
+                    pdata = prune_data or {}
                     preview = pdata.get("preview", [])
                     if preview:
                         print(f"prune: found {len(preview)} orphan paper(s)")
-                        if dry_run_prune:
+                        if not prune_force:
                             print("prune: dry-run (pass --prune-force to delete)")
                         else:
                             counts = pdata.get("counts", {})
@@ -309,6 +309,8 @@ class SyncService:
                             print(msg)
                     else:
                         print("prune: no orphans found")
+            # always include prune preview in result (for plugin consumption)
+            _prune_preview = prune_data.get("preview", []) if prune_data else []
 
             if not json_output:
                 print(f"index-refresh: {index_count} entries in index")
@@ -317,6 +319,9 @@ class SyncService:
 
         is_ok = selection_result.get("failed", 0) == 0 and not selection_result.get("errors")
 
+        if not selection_only:
+            _prune_preview = locals().get("_prune_preview", [])
+
         result = PFResult(
             ok=is_ok,
             command="sync",
@@ -324,7 +329,7 @@ class SyncService:
             data={
                 "selection": selection_result,
                 "index": {"updated": index_count, "orphaned_cleaned": orphaned, "flat_cleaned": flat_cleaned},
-                "prune": prune_result,
+                "prune": {"preview": _prune_preview} if _prune_preview else None,
             },
         )
 

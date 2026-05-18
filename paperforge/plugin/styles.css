@@ -2472,3 +2472,120 @@
     color: var(--text-faint);
     font-family: var(--font-monospace);
 }
+
+/* ── Orphan Modal ── */
+.paperforge-modal-desc {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin: 0 0 16px;
+}
+
+.paperforge-orphan-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 20px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.paperforge-orphan-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 10px 12px;
+    background: var(--background-secondary);
+    border-radius: 6px;
+    gap: 12px;
+    cursor: pointer;
+    transition: opacity 0.15s;
+}
+.paperforge-orphan-row:hover {
+    background: var(--background-modifier-hover);
+}
+.paperforge-orphan-dimmed {
+    opacity: 0.45;
+}
+.paperforge-orphan-dimmed:hover {
+    opacity: 0.6;
+}
+
+.paperforge-orphan-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.paperforge-orphan-key {
+    font-size: 12px;
+    font-weight: 600;
+    font-family: var(--font-monospace);
+    color: var(--text-normal);
+}
+
+.paperforge-orphan-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.paperforge-orphan-explain {
+    font-size: 10px;
+    color: var(--text-faint);
+    margin-top: 4px;
+}
+
+.paperforge-orphan-title {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.paperforge-orphan-meta {
+    font-size: 11px;
+    color: var(--text-faint);
+    margin-top: 4px;
+}
+
+.paperforge-orphan-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    flex-shrink: 0;
+    align-items: flex-start;
+    max-width: 160px;
+}
+
+.paperforge-tag {
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+.tag-pdf {
+    background: rgba(76, 175, 80, 0.15);
+    color: #4caf50;
+}
+
+.tag-nopdf {
+    background: var(--background-modifier-border);
+    color: var(--text-muted);
+}
+
+.tag-collection {
+    background: rgba(33, 150, 243, 0.12);
+    color: #2196f3;
+}
+
+.paperforge-modal-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+}

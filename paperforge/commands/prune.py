@@ -57,6 +57,7 @@ def run(args: argparse.Namespace) -> int:
     vault = args.vault_path
     force = getattr(args, "force", False)
     json_output = getattr(args, "json", False)
+    keys_filter = getattr(args, "keys", None) or []
 
     try:
         fresh_index = read_index(vault)
@@ -76,18 +77,43 @@ def run(args: argparse.Namespace) -> int:
 
     result_data = prune_orphan_papers(vault, fresh_index=fresh_index, dry_run=True)
 
+    preview = result_data.get("preview", [])
+    if keys_filter:
+        keys_set = set(keys_filter)
+        preview = [p for p in preview if p["key"] in keys_set]
+
+    if not preview:
+        if json_output:
+            result = PFResult(ok=True, command="prune", version=__version__, data={"preview": [], "deleted": [], "counts": {}})
+            print(result.to_json())
+        else:
+            msg = "[OK] No orphan papers found." if not keys_filter else "[OK] No matching orphan papers found."
+            print(msg)
+        return 0
+
+    if json_output and force:
+        candidates = [
+            {
+                "key": p["key"],
+                "domain": p["domain"],
+                "workspace_dir": Path(p["workspace"]),
+                "ocr_dir": Path(p["ocr_dir"]) if p.get("ocr_dir") else None,
+            }
+            for p in preview
+        ]
+        result_data = prune_orphan_papers(vault, fresh_index=fresh_index, dry_run=False, _candidates=candidates)
+        result = PFResult(ok=True, command="prune", version=__version__, data=result_data)
+        print(result.to_json())
+        return 0
+
     if json_output:
         data_out = dict(result_data)
         data_out["dry_run"] = not force
+        data_out["preview"] = preview
         result = PFResult(
             ok=True, command="prune", version=__version__, data=data_out,
         )
         print(result.to_json())
-        return 0
-
-    preview = result_data.get("preview", [])
-    if not preview:
-        print("[OK] No orphan papers found.")
         return 0
 
     print(f"[PRUNE] Found {len(preview)} orphan paper(s):")

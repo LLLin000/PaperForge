@@ -282,6 +282,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_prune = sub.add_parser("prune", help="Delete orphan paper artifacts (dry-run by default)")
     p_prune.add_argument("--force", action="store_true", help="Actually delete (default: dry-run)")
     p_prune.add_argument("--json", action="store_true", help="Output as JSON")
+    p_prune.add_argument("keys", nargs="*", metavar="KEY", help="Only process these zotero keys")
 
     # Memory Layer commands
     p_memory = sub.add_parser("memory", help="Manage the Memory Layer")
