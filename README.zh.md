@@ -282,7 +282,9 @@ paperforge/
 ├── core/          契约层 — PFResult/ErrorCode/状态机
 ├── adapters/      适配器层 — BBT 解析、路径、frontmatter
 ├── services/      服务层 — SyncService 编排
-├── worker/        工人层 — OCR、状态、修复
+├── memory/        记忆层 — SQLite + FTS5 元数据检索引擎
+├── embedding/     向量层 — ChromaDB 全文语义搜索
+├── worker/        工人层 — OCR、状态、修复、孤儿清理
 ├── commands/      CLI 分发
 ├── setup/         安装向导（目录创建、Agent 部署、Zotero 链接）
 ├── plugin/        Obsidian 插件（Dashboard、设置面板）
