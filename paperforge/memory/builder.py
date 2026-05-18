@@ -155,6 +155,7 @@ def build_from_index(vault: Path) -> dict:
             if cached and cached[0] == canonical_hash and stored_version == CURRENT_SCHEMA_VERSION:
                 papers_count = conn.execute("SELECT COUNT(*) FROM papers").fetchone()[0]
                 conn.close()
+                logger.info("Index unchanged, skipping memory rebuild (%s papers)", papers_count)
                 return {
                     "papers_indexed": papers_count,
                     "db_path": str(db_path),
