@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from paperforge.memory.vector_db import (
+from paperforge.embedding.build_state import (
     get_vector_build_state_path,
     read_vector_build_state,
     write_vector_build_state,
