@@ -100,7 +100,7 @@ $PYTHON -m paperforge --vault "$VAULT" reading-log --write <paper_id> \
 $PYTHON -m paperforge --vault "$VAULT" reading-log --render --project "<project>"
 ```
 
-输出到 `Project/<project>/reading-log.md`。
+输出到 `Resources/Projects/<project>/reading-log.md`。
 
 ---
 

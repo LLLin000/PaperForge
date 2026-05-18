@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from pathlib import Path
 
@@ -73,15 +74,27 @@ def run(args: argparse.Namespace) -> int:
             import signal
             try:
                 os.kill(pid, signal.SIGTERM)
-            except Exception:
-                pass
+            except Exception as exc:
+                result = PFResult(
+                    ok=False,
+                    command="embed stop",
+                    version=PF_VERSION,
+                    error=PFError(code=ErrorCode.INTERNAL_ERROR, message=f"Failed to stop embed build: {exc}"),
+                    data={"state": "running", "pid": pid},
+                )
+                if args.json:
+                    print(result.to_json())
+                else:
+                    print(result.error.message, file=sys.stderr)
+                return 1
             mark_vector_build_state(vault, status="stopping", message="Stop requested")
-        result = PFResult(ok=True, command="embed stop", version=PF_VERSION,
-                         data={"state": "stopping" if pid else "idle"})
+            result = PFResult(ok=True, command="embed stop", version=PF_VERSION, data={"state": "stopping", "pid": pid})
+        else:
+            result = PFResult(ok=True, command="embed stop", version=PF_VERSION, data={"state": "idle"})
         if args.json:
             print(result.to_json())
         else:
-            print("Stop requested." if pid else "No active build.")
+            print("Stop requested." if result.data["state"] == "stopping" else "No active build.")
         return 0
 
     # Build

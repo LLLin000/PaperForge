@@ -98,7 +98,17 @@ Reading-log 不是事实源。它记录的是**之前的关注点、解读和预
 
 ## 6. 意图路由
 
-用户输入对应唯一一个 workflow 文件（打开并执行其完整流程）：
+用户输入分两类处理：
+
+### A. 机械命令（直接执行并解读结果，不走研究 workflow）
+
+| 用户说 | 动作 |
+| --- | --- |
+| `/pf-sync` | 执行 `paperforge sync`，检查结果并解释 |
+| `/pf-ocr` | 执行 `paperforge ocr`，检查结果并解释 |
+| `/pf-status` | 执行 `paperforge status --json` 或 `paperforge runtime-health --json`，解读状态 |
+
+### B. 研究工作流（打开唯一 workflow 文件并执行完整流程）
 
 | 用户说                                                   | 打开                             |
 | -------------------------------------------------------- | -------------------------------- |
@@ -108,10 +118,11 @@ Reading-log 不是事实源。它记录的是**之前的关注点、解读和预
 | "记一下" "记录阅读" "reading log" "读完这段记一下"       | `workflows/reading-log.md`       |
 | "总结会话" "工作记录" "项目记录" "project log" "记决策"   | `workflows/project-log.md`       |
 | "提取方法论" "总结规律" "存档写作规律"                    | `workflows/methodology.md`       |
-| "branch" "代码审查" "feature" "dashboard" "memory layer" "用户反馈" "报错" "安装失败" "Git" "Zotero" "BetterBibTeX" "OCR" "插件" | `workflows/project-engineering.md` |
+| "branch" "代码审查" "feature" "dashboard" "memory layer" "用户反馈" "报错" "安装失败" "Git" "Zotero" "BetterBibTeX" "插件" | `workflows/project-engineering.md` |
 | 不确定 / 空输入                                          | 问用户：搜文献、精读、问答、记笔记、记工作、提方法论？ |
 
 路由后如用户切换意图，重新判断并打开对应 workflow。
+未知或拼错的 `/pf-*` 命令不要静默掉进 `project-engineering`，必须明确提示用户命令不存在或请澄清意图。
 
 ---
 

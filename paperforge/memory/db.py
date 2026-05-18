@@ -9,10 +9,10 @@ from paperforge.config import paperforge_paths
 def get_memory_db_path(vault: Path) -> Path:
     """Return the absolute path to paperforge.db."""
     paths = paperforge_paths(vault)
-    db_path = paths.get("memory_db")
-    if not db_path:
-        raise FileNotFoundError("memory_db path not configured")
-    return db_path
+    index_path = paths.get("index")
+    if not index_path:
+        raise FileNotFoundError("index path not configured")
+    return index_path.parent / "paperforge.db"
 
 
 def get_connection(db_path: Path, read_only: bool = False) -> sqlite3.Connection:
