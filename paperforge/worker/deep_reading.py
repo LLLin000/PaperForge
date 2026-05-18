@@ -3,17 +3,14 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
-from paperforge.config import paperforge_paths
 from paperforge.worker._domain import load_domain_config
 from paperforge.worker._utils import (
     get_analyze_queue,
     pipeline_paths,
-    read_json,
-    write_json,
 )
 from paperforge.worker.asset_index import refresh_index_entry
 from paperforge.worker.base_views import ensure_base_views
-from paperforge.worker.sync import has_deep_reading_content
+from paperforge.adapters.obsidian_frontmatter import has_deep_reading_content
 
 logger = logging.getLogger(__name__)
 
