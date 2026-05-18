@@ -18,7 +18,12 @@ def _collect_orphan_candidates(lit_dir: Path, fresh_keys: set[str]) -> list[dict
     for domain_dir in sorted(lit_dir.iterdir()):
         if not domain_dir.is_dir():
             continue
-        for sub in sorted(domain_dir.iterdir()):
+        try:
+            entries = sorted(domain_dir.iterdir())
+        except OSError as exc:
+            logger.warning("prune: cannot scan %s: %s", domain_dir, exc)
+            continue
+        for sub in entries:
             if not sub.is_dir():
                 continue
             parts = sub.name.split(" - ", 1)
@@ -89,12 +94,14 @@ def prune_orphan_papers(
             ocr = c["ocr_dir"]
             if ocr and ocr.exists():
                 shutil.rmtree(ocr, ignore_errors=True)
-                counts["ocr"] += 1
+                if not ocr.exists():
+                    counts["ocr"] += 1
 
             ws = c["workspace_dir"]
             if ws.exists():
                 shutil.rmtree(ws, ignore_errors=True)
-                counts["workspace"] += 1
+                if not ws.exists():
+                    counts["workspace"] += 1
 
             try:
                 n = delete_paper_vectors(vault, key)

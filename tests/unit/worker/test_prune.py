@@ -8,6 +8,7 @@ import pytest
 
 from paperforge.worker.prune import (
     _collect_orphan_candidates,
+    _resolve_ocr_dir,
     prune_orphan_papers,
 )
 
@@ -63,6 +64,14 @@ class TestCollectOrphanCandidates:
         assert len(result) == 2
         returned_keys = {c["key"] for c in result}
         assert returned_keys == {"key2", "key3"}
+
+
+class TestResolveOcrDir:
+    """_resolve_ocr_dir(vault, key)"""
+
+    def test_resolves_ocr_dir_name_is_key(self, tmp_path: Path) -> None:
+        result = _resolve_ocr_dir(tmp_path, "testkey123")
+        assert result.name == "testkey123"
 
 
 class TestPruneOrphanPapers:
@@ -124,7 +133,16 @@ class TestPruneOrphanPapers:
         prune_orphan_papers(tmp_path, fresh_index=fresh_index, dry_run=True)
         assert calls == []
 
-    def test_orphan_not_in_fresh_index_is_skipped(self, tmp_path: Path) -> None:
+    def test_empty_fresh_index_does_not_crash(self, tmp_path: Path) -> None:
+        result = prune_orphan_papers(tmp_path, fresh_index={}, dry_run=True)
+        assert result["preview"] == []
+
+    def test_handles_missing_lit_dir(self, tmp_path: Path) -> None:
+        no_lit = tmp_path / "NoLiterature"
+        result = prune_orphan_papers(no_lit, fresh_index={"schema_version": "3", "items": []}, dry_run=False)
+        assert result["deleted"] == []
+
+    def test_active_papers_are_not_deleted(self, tmp_path: Path) -> None:
         lit = tmp_path / "Resources" / "Literature" / "CS"
         ws = lit / "key1 - Active Paper"
         ws.mkdir(parents=True)
