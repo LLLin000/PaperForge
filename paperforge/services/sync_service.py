@@ -282,15 +282,6 @@ class SyncService:
             if orphaned > 0 or flat_cleaned > 0:
                 index_count = asset_index.build_index(self.vault, verbose)
 
-            # ├─ best-effort: rebuild memory DB (does not affect sync result)
-            try:
-                from paperforge.memory.builder import build_from_index
-                from paperforge.memory.db import get_memory_db_path
-                if get_memory_db_path(self.vault).exists():
-                    build_from_index(self.vault)
-            except Exception as exc:
-                logger.warning("memory rebuild deferred: %s", exc)
-
             # ── Phase 4: Prune orphans ──
             prune_result = None
             if prune or prune_force:

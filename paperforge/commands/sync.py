@@ -66,27 +66,20 @@ def run(args: argparse.Namespace) -> int:
 
     if json_output:
         print(result.to_json())
-        if result.ok and not dry_run:
-            try:
-                from paperforge.memory.builder import build_from_index
-                build_from_index(vault)
-            except Exception:
-                pass
-            try:
-                import subprocess, sys
-                subprocess.Popen(
-                    [sys.executable, "-m", "paperforge", "embed", "build", "--resume"],
-                    cwd=str(vault),
-                    creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if sys.platform == "win32" else 0,
-                )
-            except Exception:
-                pass
+        if result.ok and not dry_run and not index_only and not selection_only:
+            import subprocess, sys
+            subprocess.Popen(
+                [sys.executable, "-m", "paperforge", "embed", "build", "--resume"],
+                cwd=str(vault),
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if sys.platform == "win32" else 0,
+            )
         return 0
 
     if not result.ok:
         return 1
 
-    # best-effort: rebuild memory DB for immediate search
+    # best-effort: memory rebuild
     try:
         from paperforge.memory.builder import build_from_index
         counts = build_from_index(vault)
@@ -94,15 +87,16 @@ def run(args: argparse.Namespace) -> int:
     except Exception as e:
         print(f"memory: deferred ({e})")
 
-    # best-effort: trigger vector resume in background
+    # trigger vector resume (background, no output)
     try:
         import subprocess, sys
         subprocess.Popen(
             [sys.executable, "-m", "paperforge", "embed", "build", "--resume"],
             cwd=str(vault),
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
             creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if sys.platform == "win32" else 0,
         )
-        print("vector: resume started in background")
+        print("vector: resume started")
     except Exception as e:
         print(f"vector: deferred ({e})")
 
