@@ -141,26 +141,47 @@ def run(args: argparse.Namespace) -> int:
     print(f"EMBED_START:{total}", flush=True)
 
     import os as _os
+    import gc as _gc
     _now = __import__('datetime').datetime.now(__import__('datetime').timezone.utc).isoformat
-    mark_vector_build_state(vault,
-        status="running",
-        current=0, total=total, paper_id="",
-        started_at=_now(), finished_at="",
-        message="", pid=_os.getpid(),
-        model=get_embed_status(vault)["model"],
-        mode=get_embed_status(vault)["mode"],
-    )
-
-    if args.force:
-        db_path = get_vector_db_path(vault)
-        if db_path.exists():
-            import shutil
-            shutil.rmtree(str(db_path), ignore_errors=True)
 
     papers_embedded = 0
     chunks_embedded = 0
     papers_skipped = 0
     resume = getattr(args, "resume", False)
+
+    from paperforge.embedding._config import get_api_model
+    _current_model = get_api_model(vault)
+
+    if resume:
+        build_state = read_vector_build_state(vault)
+        stored_model = build_state.get("model", "")
+        if stored_model and _current_model and stored_model != _current_model:
+            msg = f"Model changed: {stored_model} -> {_current_model}. Re-embedding all papers."
+            if not getattr(args, "json", False):
+                print(msg)
+            resume = False
+
+    _force_rebuild = args.force or (resume is False and getattr(args, "resume", False))
+    if _force_rebuild:
+        _gc.collect()
+        db_path = get_vector_db_path(vault)
+        if db_path.exists():
+            import shutil
+            shutil.rmtree(str(db_path), ignore_errors=True)
+            if db_path.exists():
+                import time
+                time.sleep(0.5)
+                shutil.rmtree(str(db_path), ignore_errors=True)
+
+    mark_vector_build_state(vault,
+        status="running",
+        current=0, total=total, paper_id="",
+        started_at=_now(), finished_at="",
+        message="", pid=_os.getpid(),
+        model=_current_model,
+        mode=get_embed_status(vault)["mode"],
+    )
+
     i = 0
     for entry in done_papers:
         key = entry.get("zotero_key")
@@ -196,19 +217,27 @@ def run(args: argparse.Namespace) -> int:
                 last_update=_now(),
             )
         except Exception as e:
+            try:
+                _actual = get_embed_status(vault).get("chunk_count", chunks_embedded)
+                _mode = get_embed_status(vault).get("mode", "")
+                _model = get_embed_status(vault).get("model", "")
+            except Exception:
+                _actual = chunks_embedded
+                _mode = ""
+                _model = ""
             mark_vector_build_state(vault,
                 status="failed", message=str(e), pid=0,
             )
             write_vector_runtime(
                 vault,
-                enabled=bool(get_embed_status(vault).get("mode", "")),
-                mode=get_embed_status(vault)["mode"],
-                model=get_embed_status(vault)["model"],
+                enabled=bool(_mode),
+                mode=_mode,
+                model=_model,
                 deps_installed=True,
                 deps_missing=None,
                 py_version=sys.version.split()[0],
                 db_exists=get_vector_db_path(vault).exists(),
-                chunk_count=chunks_embedded,
+                chunk_count=_actual,
                 build_state=read_vector_build_state(vault),
                 healthy=False,
                 error=str(e),
@@ -224,16 +253,26 @@ def run(args: argparse.Namespace) -> int:
         message="", pid=0,
     )
 
+    try:
+        _status = get_embed_status(vault)
+        _real_chunks = _status.get("chunk_count", chunks_embedded)
+        _mode = _status.get("mode", "")
+        _model = _status.get("model", "")
+    except Exception:
+        _real_chunks = chunks_embedded
+        _mode = ""
+        _model = ""
+
     write_vector_runtime(
         vault,
-        enabled=bool(get_embed_status(vault).get("mode", "")),
-        mode=get_embed_status(vault)["mode"],
-        model=get_embed_status(vault)["model"],
+        enabled=bool(_mode),
+        mode=_mode,
+        model=_model,
         deps_installed=True,
         deps_missing=None,
         py_version=sys.version.split()[0],
         db_exists=True,
-        chunk_count=chunks_embedded,
+        chunk_count=_real_chunks,
         build_state=read_vector_build_state(vault),
         healthy=True,
         error="",
