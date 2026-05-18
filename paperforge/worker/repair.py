@@ -287,25 +287,6 @@ def run_repair(vault: Path, paths: dict, verbose: bool = False, fix: bool = Fals
                     if new_record_text != record_text:
                         record_path.write_text(new_record_text, encoding="utf-8")
                         fixed_formal_note_primary = True
-                    if index_ocr_status is not None:
-                        try:
-                            index_data = read_json(paths["index"])
-                            if isinstance(index_data, dict):
-                                idx_items = index_data.get("items", [])
-                            elif isinstance(index_data, list):
-                                idx_items = index_data
-                            else:
-                                idx_items = []
-                            for entry in idx_items:
-                                if isinstance(entry, dict) and entry.get("zotero_key") == zotero_key:
-                                    entry["ocr_status"] = new_status
-                                    break
-                            if isinstance(index_data, dict):
-                                index_data["items"] = idx_items
-                                write_json(paths["index"], index_data)
-                            fixed_index_entry = True
-                        except Exception as e:
-                            logger.warning("Failed to update index entry for %s: %s", zotero_key, e)
                     if meta_validated_status is not None and meta_validated_status != "done":
                         if meta_path.exists():
                             try:
@@ -328,25 +309,6 @@ def run_repair(vault: Path, paths: dict, verbose: bool = False, fix: bool = Fals
                     if new_record_text != record_text:
                         record_path.write_text(new_record_text, encoding="utf-8")
                         fixed_formal_note_primary = True
-                    if index_ocr_status is not None:
-                        try:
-                            index_data = read_json(paths["index"])
-                            if isinstance(index_data, dict):
-                                idx_items = index_data.get("items", [])
-                            elif isinstance(index_data, list):
-                                idx_items = index_data
-                            else:
-                                idx_items = []
-                            for entry in idx_items:
-                                if isinstance(entry, dict) and entry.get("zotero_key") == zotero_key:
-                                    entry["ocr_status"] = new_status
-                                    break
-                            if isinstance(index_data, dict):
-                                index_data["items"] = idx_items
-                                write_json(paths["index"], index_data)
-                            fixed_index_entry = True
-                        except Exception as e:
-                            logger.warning("Failed to update index entry for %s: %s", zotero_key, e)
                     if meta_path.exists():
                         try:
                             meta = read_json(meta_path)
@@ -370,9 +332,14 @@ def run_repair(vault: Path, paths: dict, verbose: bool = False, fix: bool = Fals
                     logger.info("fixed %d files for %s", fixed_count, zotero_key)
                 if fixed_count > 0:
                     try:
-                        refresh_index_entry(vault, zotero_key)
+                        fixed_index_entry = refresh_index_entry(vault, zotero_key)
                     except Exception as e:
                         logger.warning("Failed to refresh index for %s: %s", zotero_key, e)
+                    else:
+                        if fixed_index_entry:
+                            result["fixed"] += 1
+                        else:
+                            logger.warning("Failed to update index entry for %s via shared refresh", zotero_key)
     # Path error detection and repair
     path_errors = _detect_path_errors(paths, verbose)
     if path_errors["total"] > 0:

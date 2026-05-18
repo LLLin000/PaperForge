@@ -59,6 +59,46 @@ LOCK_TIMEOUT = 10
 ``filelock.Timeout``."""
 
 
+def _index_lock(path: Path) -> filelock.FileLock:
+    return filelock.FileLock(path.with_suffix(".json.lock"), timeout=LOCK_TIMEOUT)
+
+
+def mutate_index(vault: Path, mutator) -> bool:
+    """Read, mutate, and write the canonical index under one lock."""
+    path = get_index_path(vault)
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    with _index_lock(path):
+        if not path.exists():
+            return False
+        try:
+            with open(path, encoding="utf-8") as fh:
+                current = json.load(fh)
+        except (json.JSONDecodeError, OSError) as exc:
+            logger.warning("Corrupt index at %s during mutation: %s", path, exc)
+            return False
+
+        updated = mutator(current)
+        if updated is None:
+            return False
+
+        tmp = tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", delete=False, dir=path.parent)
+        try:
+            json.dump(updated, tmp, ensure_ascii=False, indent=2)
+            tmp.flush()
+            os.fsync(tmp.fileno())
+            tmp.close()
+            os.replace(tmp.name, path)
+        except BaseException:
+            tmp.close()
+            try:
+                os.unlink(tmp.name)
+            except OSError:
+                pass
+            raise
+    return True
+
+
 # ---------------------------------------------------------------------------
 # Path resolution
 # ---------------------------------------------------------------------------
@@ -123,10 +163,7 @@ def atomic_write_index(path: Path, data: dict) -> None:
     """
     path.parent.mkdir(parents=True, exist_ok=True)
 
-    lock_path = path.with_suffix(".json.lock")
-    lock = filelock.FileLock(lock_path, timeout=LOCK_TIMEOUT)
-
-    with lock:
+    with _index_lock(path):
         tmp = None
         try:
             tmp = tempfile.NamedTemporaryFile(
@@ -581,9 +618,6 @@ def refresh_index_entry(vault: Path, key: str) -> bool:
         build_index(vault)
         return False
 
-    # Envelope format — incremental refresh
-    items = existing.get("items", [])
-
     # Find the export item for the requested key
     config = load_domain_config(paths)
     domain_lookup = {entry["export_file"]: entry["domain"] for entry in config["domains"]}
@@ -617,19 +651,24 @@ def refresh_index_entry(vault: Path, key: str) -> bool:
     except Exception:
         pass  # memory DB refresh is best-effort
 
-    replaced = False
-    for i, existing_entry in enumerate(items):
-        if existing_entry.get("zotero_key") == key:
-            items[i] = new_entry
-            replaced = True
-            break
-    if not replaced:
-        items.append(new_entry)
+    def _apply(current):
+        if is_legacy_format(current) or not isinstance(current, dict):
+            return None
+        items = list(current.get("items", []))
+        replaced = False
+        for i, existing_entry in enumerate(items):
+            if existing_entry.get("zotero_key") == key:
+                items[i] = new_entry
+                replaced = True
+                break
+        if not replaced:
+            items.append(new_entry)
+        return build_envelope(items)
 
-    # Write back atomically
-    index_path = paths["index"]
-    envelope = build_envelope(items)
-    atomic_write_index(index_path, envelope)
+    if not mutate_index(vault, _apply):
+        build_index(vault)
+        return False
+
     logger.info("refresh_index_entry: updated entry %s (%s)", key, found_domain)
     return True
 

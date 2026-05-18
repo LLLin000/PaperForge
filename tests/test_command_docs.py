@@ -188,8 +188,8 @@ class TestPaperforgeCommandExamplesInUserDocs:
     @pytest.mark.parametrize(
         "doc_key,pattern",
         [
-            ("README", r"paperforge (status|paths)"),
-            ("AGENTS", r"paperforge (status|paths)"),
+        ("README", r"paperforge (sync|ocr|status)"),
+        ("AGENTS", r"paperforge (search|status|sync)"),
         ],
     )
     def test_user_doc_contains_paperforge_stable_example(

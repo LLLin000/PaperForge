@@ -10,8 +10,38 @@ const memoryState = (() => {
   const path = require('path');
   const { execFileSync } = require('node:child_process');
 
+  function readPathConfig(vaultPath) {
+    const pfPath = path.join(vaultPath, 'paperforge.json');
+    const defaults = {
+      system_dir: 'System',
+      resources_dir: 'Resources',
+      literature_dir: 'Literature',
+      base_dir: 'Bases',
+    };
+
+    try {
+      if (!fs.existsSync(pfPath)) {
+        return { ...defaults, _warning: 'paperforge.json not found; using defaults' };
+      }
+      const raw = fs.readFileSync(pfPath, 'utf-8');
+      const data = JSON.parse(raw);
+      const vc = data.vault_config || {};
+      return {
+        system_dir: vc.system_dir || data.system_dir || defaults.system_dir,
+        resources_dir: vc.resources_dir || data.resources_dir || defaults.resources_dir,
+        literature_dir: vc.literature_dir || data.literature_dir || defaults.literature_dir,
+        base_dir: vc.base_dir || data.base_dir || defaults.base_dir,
+        _warning: null,
+      };
+    } catch (e) {
+      console.warn('PaperForge: Failed to read paperforge.json, using defaults', e);
+      return { ...defaults, _warning: 'paperforge.json invalid; using defaults' };
+    }
+  }
+
   function resolveVaultPaths(vaultPath) {
-    const systemDir = path.join(vaultPath, 'System', 'PaperForge');
+    const cfg = readPathConfig(vaultPath);
+    const systemDir = path.join(vaultPath, cfg.system_dir, 'PaperForge');
     return {
       vault: vaultPath,
       systemDir,
@@ -22,8 +52,11 @@ const memoryState = (() => {
       vectorStatePath: path.join(systemDir, 'indexes', 'vector-runtime-state.json'),
       healthStatePath: path.join(systemDir, 'indexes', 'runtime-health.json'),
       buildStatePath: path.join(systemDir, 'indexes', 'vector-build-state.json'),
+      exportsDir: path.join(systemDir, 'exports'),
+      ocrDir: path.join(systemDir, 'ocr'),
       pluginDataPath: path.join(vaultPath, '.obsidian', 'plugins', 'paperforge', 'data.json'),
       pfJsonPath: path.join(vaultPath, 'paperforge.json'),
+      configWarning: cfg._warning,
     };
   }
 
@@ -99,7 +132,7 @@ const memoryState = (() => {
         return _cachedPython;
       }
     }
-    var sysCandidates = [{path:'python',extraArgs:[]},{path:'python3',extraArgs:[]}];
+    var sysCandidates = [{path:'py',extraArgs:['-3']},{path:'python',extraArgs:[]},{path:'python3',extraArgs:[]}];
     for (var j = 0; j < sysCandidates.length; j++) {
       try {
         var c = sysCandidates[j];
@@ -170,6 +203,7 @@ function resolvePythonExecutable(vaultPath, settings, _fs, _execFileSync) {
     }
 
     const systemCandidates = [
+        { path: "py", extraArgs: ["-3"] },
         { path: "python", extraArgs: [] },
         { path: "python3", extraArgs: [] },
     ];
@@ -242,7 +276,7 @@ function buildRuntimeInstallCommand(pythonExe, version, extraArgs) {
     const gitUrl = `git+https://github.com/LLLin000/PaperForge.git@v${version}`;
     const pypiArgs = [...extraArgs, "-m", "pip", "install", "--upgrade", pypiPkg];
     const gitArgs = [...extraArgs, "-m", "pip", "install", "--upgrade", gitUrl];
-    return { cmd: pythonExe, pypiArgs, gitArgs, timeout: 120000 };
+    return { cmd: pythonExe, url: gitUrl.replace('@v', '@'), args: gitArgs, pypiArgs, gitArgs, timeout: 120000 };
 }
 
 function parseRuntimeStatus(err, stdout, stderr) {
@@ -583,8 +617,9 @@ Object.assign(LANG.en, {
     validate_notes: 'Notes directory is required',
     validate_index: 'Index directory is required',
     validate_base: 'Base directory is required',
-    validate_key: 'PaddleOCR API key is required',
-    validate_zotero: 'Zotero data directory is required',
+    validate_key: 'PaddleOCR API key (optional, needed for OCR)',
+    validate_zotero: 'Zotero data directory (optional, needed for PDF linking)',
+    optional_later: '(can be set later in Settings)',
     validate_system: 'System directory is required',
     notice_python_missing: 'Python was not detected. Install Python 3.10+ and add it to PATH.',
     api_key_set: 'Entered',
@@ -736,6 +771,7 @@ Object.assign(LANG.zh, {
     ocr_privacy_warning: 'OCR 会将 PDF 上传到 PaddleOCR API 进行处理。请不要上传包含敏感信息或无法外传的文献。',
     ocr_understand: '我了解，继续',
     install_validating: '正在校验安装环境…',
+    optional_later: '（稍后可在设置中补充）',
     install_bootstrapping: '未检测到 PaperForge Python 包，正在自动安装…',
     wizard_safety: '安全说明：如果你选择的目录里已经有文件，安装向导会保留已有内容，只补充缺失的 PaperForge 文件和目录。',
 
@@ -1713,6 +1749,37 @@ class PaperForgeStatusView extends ItemView {
         globalSyncBtn.addEventListener('click', () => {
             const action = ACTIONS.find(a => a.id === 'paperforge-sync');
             if (action) this._runAction(action, globalSyncBtn);
+        });
+
+        const globalOcrBtn = btnsRow.createEl('button', { cls: 'paperforge-contextual-btn' });
+        globalOcrBtn.createEl('span', { cls: 'paperforge-contextual-btn-icon', text: '\u229E' });
+        globalOcrBtn.createEl('span', { text: 'Run OCR' });
+        globalOcrBtn.addEventListener('click', () => {
+            const action = ACTIONS.find(a => a.id === 'paperforge-ocr');
+            if (action) this._runAction(action, globalOcrBtn);
+        });
+
+        const globalDoctorBtn = btnsRow.createEl('button', { cls: 'paperforge-contextual-btn' });
+        globalDoctorBtn.createEl('span', { cls: 'paperforge-contextual-btn-icon', text: '\u2695' });
+        globalDoctorBtn.createEl('span', { text: 'Run Doctor' });
+        globalDoctorBtn.addEventListener('click', () => {
+            const action = ACTIONS.find(a => a.id === 'paperforge-doctor');
+            if (action) this._runAction(action, globalDoctorBtn);
+        });
+
+        const globalStatusBtn = btnsRow.createEl('button', { cls: 'paperforge-contextual-btn' });
+        globalStatusBtn.createEl('span', { cls: 'paperforge-contextual-btn-icon', text: '\u2139' });
+        globalStatusBtn.createEl('span', { text: 'Refresh Status' });
+        globalStatusBtn.addEventListener('click', () => {
+            this._fetchStats();
+        });
+
+        const globalRepairBtn = btnsRow.createEl('button', { cls: 'paperforge-contextual-btn' });
+        globalRepairBtn.createEl('span', { cls: 'paperforge-contextual-btn-icon', text: '\u21BA' });
+        globalRepairBtn.createEl('span', { text: 'Repair Issues' });
+        globalRepairBtn.addEventListener('click', () => {
+            const action = ACTIONS.find(a => a.id === 'paperforge-repair');
+            if (action) this._runAction(action, globalRepairBtn);
         });
     }
 
@@ -3137,15 +3204,32 @@ class PaperForgeSettingTab extends PluginSettingTab {
             });
         }
 
-        // --- Section: Memory Layer ---
-        containerEl.createEl('h3', { text: 'Memory Layer' });
+        // --- Section: Advanced (Memory Layer + Vector DB, collapsed by default) ---
+        const advHeader = containerEl.createEl('div', { cls: 'paperforge-collapsible-header' });
+        advHeader.style.cssText = 'cursor:pointer; display:flex; align-items:center; gap:8px; padding:8px 0; user-select:none;';
+        const advArrow = advHeader.createEl('span', { text: '\u25B6', cls: 'paperforge-collapsible-arrow' });
+        advArrow.style.cssText = 'display:inline-block; transition:transform 0.2s; font-size:10px; transform:rotate(90deg);';
+        advHeader.createEl('h3', { text: 'Advanced', cls: 'paperforge-collapsible-title' });
+        advHeader.createEl('span', { text: 'Memory + Vector DB + Embedding', cls: 'paperforge-collapsible-sub' });
+        advHeader.lastChild.style.cssText = 'font-size:11px; color:var(--text-muted); margin-left:8px;';
 
-        const memoryDescEl = containerEl.createEl('div', { cls: 'paperforge-desc-box' });
+        const advContent = containerEl.createEl('div', { cls: 'paperforge-collapsible-content' });
+        advContent.style.display = 'none';
+
+        advHeader.addEventListener('click', () => {
+            const collapsed = advContent.style.display === 'none';
+            advContent.style.display = collapsed ? '' : 'none';
+            advArrow.style.transform = collapsed ? 'rotate(0deg)' : 'rotate(90deg)';
+        });
+
+        // Memory Layer section (inside Advanced)
+        advContent.createEl('h4', { text: 'Memory Layer' });
+
+        const memoryDescEl = advContent.createEl('div', { cls: 'paperforge-desc-box' });
         memoryDescEl.style.cssText = 'padding:8px 12px; margin:0 0 12px; background:var(--background-secondary); border-radius:4px; font-size:12px; color:var(--text-muted); line-height:1.5;';
         memoryDescEl.setText(t('feat_memory_desc'));
 
-        // Always-on SQLite status display
-        const statusRow = containerEl.createEl('div', { cls: 'paperforge-memory-status' });
+        const statusRow = advContent.createEl('div', { cls: 'paperforge-memory-status' });
         statusRow.style.cssText = 'display:flex; align-items:center; padding:8px 12px; margin:8px 0; background:var(--background-secondary); border-radius:4px;';
 
         const vp = this.app.vault.adapter.basePath;
@@ -3159,7 +3243,7 @@ class PaperForgeSettingTab extends PluginSettingTab {
         }
         this._renderMemoryStatusText(statusRow, this._memoryStatusText, this._lastSyncTime);
 
-        this._renderVectorSection(containerEl);
+        this._renderVectorSection(advContent);
     }
 
     _renderVectorSection(containerEl) {
@@ -4363,8 +4447,8 @@ class PaperForgeSetupModal extends Modal {
             '--base-dir', s.base_dir.trim(),
             '--agent', s.agent_platform || 'opencode',
         ];
-        setupArgs.push('--zotero-data', s.zotero_data_dir.trim());
-        setupArgs.push('--paddleocr-key', s.paddleocr_api_key.trim());
+        if (s.zotero_data_dir && s.zotero_data_dir.trim()) setupArgs.push('--zotero-data', s.zotero_data_dir.trim());
+        if (s.paddleocr_api_key && s.paddleocr_api_key.trim()) setupArgs.push('--paddleocr-key', s.paddleocr_api_key.trim());
 
         try {
             let hasPaperforge = true;
@@ -4466,8 +4550,8 @@ class PaperForgeSetupModal extends Modal {
         if (!s.resources_dir || !s.resources_dir.trim()) errors.push(t('validate_resources'));
         if (!s.literature_dir || !s.literature_dir.trim()) errors.push(t('validate_notes'));
         if (!s.base_dir || !s.base_dir.trim()) errors.push(t('validate_base'));
-        if (!s.paddleocr_api_key || !s.paddleocr_api_key.trim()) errors.push(t('validate_key'));
-        if (!s.zotero_data_dir || !s.zotero_data_dir.trim()) errors.push(t('validate_zotero'));
+        if (!s.paddleocr_api_key || !s.paddleocr_api_key.trim()) this._log('  ! ' + t('validate_key') + ' ' + t('optional_later'));
+        if (!s.zotero_data_dir || !s.zotero_data_dir.trim()) this._log('  ! ' + t('validate_zotero') + ' ' + t('optional_later'));
         return errors;
     }
 
@@ -4618,7 +4702,7 @@ module.exports = class PaperForgePlugin extends Plugin {
 
 
         /* ── Auto-update PaperForge (deferred — don't slow startup) ── */
-        if (this.settings.auto_update !== false && this.settings.setup_complete) {
+        if (this.settings.auto_update_on_startup === true && this.settings.setup_complete) {
             setTimeout(() => this._autoUpdate(), 3000);
         }
         this._startFilePolling();
@@ -4627,14 +4711,22 @@ module.exports = class PaperForgePlugin extends Plugin {
         (() => {
             const vp = this.app.vault.adapter.basePath;
             if (!vp) return;
-            const memSnap = require('path').join(vp, 'System', 'PaperForge', 'indexes', 'memory-runtime-state.json');
+            const runtimePaths = memoryState.resolveVaultPaths(vp);
+            const memSnap = runtimePaths.memoryStatePath;
             const fs = require('fs');
             if (!fs.existsSync(memSnap)) {
                 // No snapshots — first launch or upgrade. Fire and forget.
                 const py = resolvePythonExecutable(vp, this.settings);
                 const { execFile } = require('node:child_process');
-                const args = [...py.extraArgs, '-m', 'paperforge', '--vault', vp, 'runtime-health', '--json'];
-                execFile(py.path, args, { cwd: vp, timeout: 60000, windowsHide: true }, () => {});
+                const commands = [
+                    ['runtime-health', '--json'],
+                    ['memory', 'status', '--json'],
+                    ['embed', 'status', '--json'],
+                ];
+                commands.forEach((cmdArgs) => {
+                    const args = [...py.extraArgs, '-m', 'paperforge', '--vault', vp, ...cmdArgs];
+                    execFile(py.path, args, { cwd: vp, timeout: 60000, windowsHide: true }, () => {});
+                });
             }
         })();
     }
@@ -4692,7 +4784,7 @@ module.exports = class PaperForgePlugin extends Plugin {
 
     _checkExports(vaultPath, fs, path, exec) {
         if (this._autoSyncRunning) return;
-        const exportsDir = path.join(vaultPath, 'System', 'PaperForge', 'exports');
+        const exportsDir = memoryState.resolveVaultPaths(vaultPath).exportsDir;
         if (!fs.existsSync(exportsDir)) return;
 
         let newestMtime = 0;
@@ -4728,7 +4820,7 @@ module.exports = class PaperForgePlugin extends Plugin {
             try {
                 const fs = require('fs');
                 const path = require('path');
-                const exportsDir = path.join(vaultPath, 'System', 'PaperForge', 'exports');
+                const exportsDir = memoryState.resolveVaultPaths(vaultPath).exportsDir;
                 let newest = 0;
                 fs.readdirSync(exportsDir).forEach(f => {
                     if (!f.endsWith('.json')) return;
@@ -4741,7 +4833,7 @@ module.exports = class PaperForgePlugin extends Plugin {
 
     _checkOcr(vaultPath, fs, path, exec) {
         if (this._autoSyncRunning) return;
-        const ocrDir = path.join(vaultPath, 'System', 'PaperForge', 'ocr');
+        const ocrDir = memoryState.resolveVaultPaths(vaultPath).ocrDir;
         if (!fs.existsSync(ocrDir)) return;
 
         try {
@@ -4760,7 +4852,9 @@ module.exports = class PaperForgePlugin extends Plugin {
                 const pyResult = resolvePythonExecutable(vaultPath, this.settings);
                 if (!pyResult.path) { this._autoSyncRunning = false; return; }
 
-                const cmd = `"${pyResult.path}" -m paperforge --vault "${vaultPath}" sync --key "${entry.name}"`;
+                // `paperforge sync` has no `--key` selector. Fall back to a full sync
+                // so OCR state changes still propagate into the canonical index.
+                const cmd = `"${pyResult.path}" -m paperforge --vault "${vaultPath}" sync`;
                 exec(cmd, { timeout: 30000, encoding: 'utf-8' }, () => {
                     this._autoSyncRunning = false;
                     this._memoryStatusText = null;

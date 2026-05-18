@@ -14,12 +14,12 @@ COMMANDS = {
         "purpose": "Look up one paper's full status and recommended next action",
     },
     "search": {
-        "usage": "paperforge search <query> --json [--collection NAME] [--domain NAME] [--ocr done|pending] [--year-from N] [--year-to N] [--limit N]",
-        "purpose": "Full-text search with optional collection/domain/lifecycle filters",
+        "usage": "paperforge search <query> --json [--domain NAME] [--ocr done|pending|failed|processing] [--year-from N] [--year-to N] [--limit N] [--lifecycle indexed|pdf_ready|fulltext_ready|deep_read_done]",
+        "purpose": "Full-text search with optional domain and workflow-state filters",
     },
     "retrieve": {
         "usage": "paperforge retrieve <query> --json [--limit N]",
-        "purpose": "Search OCR fulltext chunks for evidence paragraphs (coming soon)",
+        "purpose": "Search OCR fulltext chunks for evidence paragraphs",
     },
     "deep": {
         "usage": "/pf-deep <zotero_key>",

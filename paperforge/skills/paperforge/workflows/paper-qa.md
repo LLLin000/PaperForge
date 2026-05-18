@@ -21,21 +21,29 @@
 
 用户可能给 zotero_key、DOI、标题片段、作者+年份。按以下方式查找：
 
-**优先用 paper-context（一次拿到全部信息）：**
+**如果用户给的是 zotero_key：**
 
 ```bash
-$PYTHON -m paperforge --vault "$VAULT" paper-context <query> --json
+$PYTHON -m paperforge --vault "$VAULT" paper-context <zotero_key> --json
 ```
 
 返回 JSON 包含 paper 元数据、OCR 状态、prior_notes 等。
 
-**paper-context 无结果时的备选：**
+**如果用户给的是 DOI、标题片段、作者+年份，先解析成候选：**
+
+```bash
+$PYTHON -m paperforge --vault "$VAULT" paper-status "<query>" --json
+```
+
+如果 `paper-status` 直接唯一命中，取返回的 `zotero_key` 再调 `paper-context`。
+
+**paper-status 无法唯一定位时的备选：**
 
 ```bash
 $PYTHON -m paperforge --vault "$VAULT" search "<query>" --json --limit 5
 ```
 
-如果多候选，列出让用户选（同 paper-search 的 Step 4-5 格式）。
+如果多候选，列出让用户选（同 paper-search 的 Step 4-5 格式）；用户选定后，再用选中的 `zotero_key` 调 `paper-context`。
 如果无结果，告知用户并停止。
 
 ### Step 2: 加载文献内容

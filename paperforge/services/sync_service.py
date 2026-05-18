@@ -257,6 +257,7 @@ class SyncService:
         index_count = 0
         orphaned = 0
         flat_cleaned = 0
+        memory_rebuild_error: Exception | None = None
 
         if not selection_only:
             from paperforge.worker._domain import load_domain_config
@@ -288,12 +289,27 @@ class SyncService:
             orphaned = self.clean_orphaned_records(exports, paths, json_output=json_output)
             flat_cleaned = self.clean_flat_notes(paths, json_output=json_output)
 
+            if orphaned > 0 or flat_cleaned > 0:
+                index_count = asset_index.build_index(self.vault, verbose)
+
+            try:
+                from paperforge.memory.builder import build_from_index
+                from paperforge.memory.db import get_memory_db_path
+
+                if get_memory_db_path(self.vault).exists():
+                    build_from_index(self.vault)
+            except Exception as exc:
+                memory_rebuild_error = exc
+                logger.error("Failed to rebuild memory DB after sync: %s", exc)
+
             if not json_output:
                 print(f"index-refresh: {index_count} entries in index")
                 total = sum(1 for _ in paths["literature"].rglob("*.md")) if paths["literature"].exists() else 0
                 print(f"index-refresh: {total} formal note(s) in literature")
 
         all_errors = list(selection_result.get("errors", []))
+        if memory_rebuild_error is not None:
+            all_errors.append(f"memory rebuild failed: {memory_rebuild_error}")
         is_ok = selection_result.get("failed", 0) == 0 and len(all_errors) == 0
 
         result = PFResult(
@@ -308,6 +324,18 @@ class SyncService:
 
         if _export_code != "ok":
             result.warnings.append(f"BBT exports: {_export_code}")
+
+        if memory_rebuild_error is not None:
+            result.error = PFError(
+                code=ErrorCode.SYNC_FAILED,
+                message=f"Sync completed but memory rebuild failed: {memory_rebuild_error}",
+                details={"phase": "memory_rebuild", "exception_type": type(memory_rebuild_error).__name__},
+                suggestions=["Run paperforge memory build to rebuild the memory DB from the cleaned canonical index."],
+            )
+            result.next_actions.append({
+                "command": "paperforge memory build",
+                "reason": "Rebuild memory DB so it matches the cleaned canonical index",
+            })
 
         return result
 
