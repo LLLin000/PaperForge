@@ -40,10 +40,15 @@ $PYTHON -m paperforge --vault "$VAULT" paper-context <zotero_key> --json
 $PYTHON "$SKILL_DIR/scripts/pf_deep.py" prepare --key <zotero_key> --vault "$VAULT"
 ```
 
+> **WARNING：`--force` 禁止在精读过程中使用。** `--force` 会清除已有精读内容重新生成骨架，
+> 仅在用户明确要求重读时才能用。任何时候都不要主动加 `--force`。
+
 解析返回 JSON：
-- `status: "ok"` → 记下 `figure_map`、`chart_type_map`、`formal_note`、`fulltext_md`、`figures`、`tables` 的路径和数量
+- `status: "ok"` → **记下 `figures`（数字）、`tables`（数字）、`figure_map`、`chart_type_map`、`formal_note`、`fulltext_md` 路径**
 - `status: "warn"` + `deep_reading_status: done` → 告知用户"该文献已精读过"，确认是否重读
 - `status: "error"` → 报告 `message`，停止
+
+**把 `figures` 数量记在当前上下文**——Step 4 要用。
 
 读 formal note，确认 `## 精读` 骨架已插入。
 
@@ -119,6 +124,8 @@ $PYTHON "$SKILL_DIR/scripts/pf_deep.py" prepare --key <zotero_key> --vault "$VAU
 
 ### Step 4: Postprocess（跑校验，修正问题）
 
+**`N` = Step 1 prepare 输出中的 `figures` 值，不要自己猜。**
+
 ```bash
 $PYTHON "$SKILL_DIR/scripts/pf_deep.py" postprocess-pass2 "<formal_note_path>" --figures <N>
 ```
@@ -152,6 +159,13 @@ $PYTHON "$SKILL_DIR/scripts/pf_deep.py" validate-note "<formal_note_path>" --ful
 - 输出 `OK` → 告知用户精读完成
 - 输出错误 → 修正缺失项，直到通过
 
+**如果 validate 反复失败（超过 3 轮）→ 先自查：**
+1. 检查 note 结构：`## 🔍 精读` 骨架是否完整？是否被多次 `prepare` 破坏？
+2. 检查 `Pass 2` 中每个 figure 的子标题是否完整（6 个子标题全部存在？）
+3. 检查 Pass 1 和 Pass 2 之间是否有内容错位
+4. 检查 `--figures N` 是否和 paper 实际图片数一致（读 fulltext caption 核实）
+5. 以上都确认无误还失败 → 报告全部错误给用户，不要继续重试
+
 ---
 
 ## Callout 格式规则
@@ -170,3 +184,7 @@ $PYTHON "$SKILL_DIR/scripts/pf_deep.py" validate-note "<formal_note_path>" --ful
 - 不要在 Pass 1 完成前碰 Pass 2/3
 - 不要把推断写成文献事实——区分"作者说了 X"和"我推断 Y"
 - 不要跨 figure 写综合判断（Pass 2 逐图，Pass 3 才做综合）
+- **禁止主动加 `--force`** — 只有用户明确要求重读时才能用
+- **禁止猜测 `--figures N`** — N 必须来自 Step 1 prepare 输出的实际数字
+- **禁止重复跑 `prepare`** — prepare 只跑一次。跑了两次以上 → 检查 note 结构是否被破坏
+- **validate 失败超过 3 轮 → 执行自查清单，不要盲目重试**

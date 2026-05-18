@@ -93,6 +93,7 @@ const memoryState = (() => {
     if (!s.enabled) return false;
     if (!s.deps_installed) return false;
     if (!s.db_exists) return false;
+    if (s.healthy === false) return false;
     if (s.chunk_count === 0) return false;
     return true;
   }
@@ -111,6 +112,7 @@ const memoryState = (() => {
   function getVectorStatusText(vaultPath) {
     var s = getVectorRuntime(vaultPath);
     if (!s) return 'Status unavailable';
+    if (s.healthy === false) return 'Vector index unreadable - rebuild required';
     return 'Chunks: ' + s.chunk_count + ' | ' + s.model + ' | ' + s.mode;
   }
 
@@ -372,6 +374,20 @@ function runSubprocess(pythonExe, args, cwd, timeout, _spawn, env) {
         });
     });
 
+}
+
+function getDisclosureState(store, key, defaultCollapsed) {
+    if (!store || typeof store !== 'object') return !!defaultCollapsed;
+    if (!Object.prototype.hasOwnProperty.call(store, key)) return !!defaultCollapsed;
+    return !!store[key];
+}
+
+function toggleDisclosureState(store, key, defaultCollapsed) {
+    const next = !getDisclosureState(store, key, defaultCollapsed);
+    if (store && typeof store === 'object') {
+        store[key] = next;
+    }
+    return next;
 }
 
 // ── Cross-platform Python and BBT detection (macOS/Linux) ──
@@ -671,22 +687,12 @@ Object.assign(LANG.en, {
     feat_skills_system: 'System Skills ship with PaperForge and are updated alongside PaperForge.',
     feat_skills_user: 'User Skills are custom skills you install from community or create yourself.',
     feat_memory_desc: 'The Memory Layer is the core data engine of PaperForge, powered by SQLite. It integrates all literature metadata (papers, assets, aliases, reading events), provides FTS5 full-text search across titles/abstracts/authors/collections, and enables the agent-context and paper-status commands. Always active — no toggle needed.',
-    feat_vector_desc: 'Vector Database enables semantic search across OCR-extracted fulltext using embedding models. Documents are split into chunks, embedded into vector space, and stored in ChromaDB. Supports local models (free, CPU) or OpenAI API (paid, faster).',
-    feat_vector_config_label: 'Advanced Configuration',
+    feat_vector_desc: 'Vector Database enables semantic search across OCR-extracted fulltext via API embedding. Documents are split into chunks, embedded via OpenAI-compatible API, and stored in ChromaDB.',
+    feat_vector_config_label: 'Vector Settings',
     feat_agent_platform: 'Agent Platform',
     feat_agent_platform_desc: 'Select which agent platform to manage skills for.',
     feat_vector_enable: 'Enable Vector Retrieval',
-    feat_vector_enable_desc: 'Semantic search across OCR fulltext. Requires: pip install chromadb sentence-transformers openai (~500MB).',
-    feat_hf_mirror: 'HF Mirror / Endpoint',
-    feat_hf_mirror_desc: 'Model download source. Try official if mirror fails. Custom: type any URL.',
-    feat_custom_endpoint: 'Custom Endpoint',
-    feat_custom_endpoint_desc: 'Enter a custom HuggingFace mirror URL.',
-    feat_hf_token: 'HF Token',
-    feat_hf_token_desc: 'HuggingFace access token (optional, helps with rate limits and gated models).',
-    feat_model: 'Model',
-    feat_embed_mode: 'Embedding Mode',
-    feat_embed_mode_local: 'Local (free, CPU)',
-    feat_embed_mode_api: 'API (OpenAI, paid)',
+    feat_vector_enable_desc: 'Semantic search across OCR fulltext. Requires: pip install openai chromadb (~35MB).',
     feat_openai_key: 'OpenAI API Key',
     feat_openai_key_desc: 'Used for API embedding calls. Model is defined below.',
     feat_verify: 'Verify',
@@ -695,23 +701,18 @@ Object.assign(LANG.en, {
     feat_rebuild_vectors_desc: 'Rebuild all OCR fulltext vectors. Required after model or mode change.',
     feat_rebuild_vectors_changed: 'Model changed — rebuild to update all vectors.',
     feat_install_deps: 'Install Dependencies',
-    feat_install_deps_desc: 'pip install chromadb sentence-transformers openai (~500MB).',
-    feat_install_deps_desc_api: 'pip install openai (~5MB).',
-    feat_install_deps_desc_local: 'pip install chromadb sentence-transformers openai (~500MB).',
-    feat_model_bge_small: 'Best balance — fast, accurate, recommended for most users (384d, 130MB)',
-    feat_model_minilm: 'Lightest & fastest — lower accuracy, minimal disk (384d, 80MB)',
-    feat_model_bge_base: 'Highest accuracy — slower, large disk footprint (768d, 440MB)',
+    feat_install_deps_desc: 'pip install chromadb openai (~35MB).',
     feat_api_base_url: 'API Base URL',
     feat_api_base_url_desc: 'Custom OpenAI-compatible API endpoint. Leave empty for default.',
     feat_api_model: 'API Model',
     feat_api_model_desc: 'Embedding model name for this endpoint.',
-    feat_deps_missing: 'Dependencies not installed. Required: chromadb, sentence-transformers, openai.',
-    feat_deps_missing_api: 'Dependencies not installed. Required: openai.',
-    feat_deps_missing_local: 'Dependencies not installed. Required: chromadb, sentence-transformers, openai.',
+    feat_deps_missing: 'Dependencies not installed. Required: chromadb, openai.',
     feat_deps_checking: 'Checking dependencies...',
     feat_no_python: 'No Python found. Check Installation tab.',
     feat_rebuild_btn: 'Rebuild',
     feat_build_btn: 'Build',
+    feat_vector_corrupted: 'Vector index corrupted — needs force rebuild.',
+    feat_vector_rebuild_force_btn: 'Force Rebuild',
     feat_building: 'Building...',
     feat_installing: 'Installing...',
     feat_install_btn: 'Install',
@@ -784,21 +785,12 @@ Object.assign(LANG.zh, {
     feat_skills_user: '用户技能是你自行安装或创建的自定义技能。',
     feat_memory_desc: '记忆层是 PaperForge 的核心数据引擎，基于 SQLite 构建。它整合了所有文献元数据（论文、资源文件、别名、阅读事件），支持 FTS5 全文检索（可搜索标题、摘要、作者、分类），并为 agent-context 和 paper-status 命令提供数据支撑。始终运行，无需手动开启。',
     feat_vector_desc: '向量数据库通过嵌入模型实现 OCR 全文的语义搜索。文档被切分为文本块（chunk），编码为向量存入 ChromaDB。支持本地模型（免费，CPU 运行）或 OpenAI API（付费，更快速）。',
-    feat_vector_config_label: '高级配置',
+    feat_vector_config_label: '向量库配置',
     feat_agent_platform: 'Agent 平台',
     feat_agent_platform_desc: '选择要管理的 Agent 平台。',
     feat_vector_enable: '启用向量检索',
     feat_vector_enable_desc: '对 OCR 全文进行语义搜索。需安装: pip install chromadb sentence-transformers openai (~500MB)。',
-    feat_hf_mirror: 'HF 镜像站 / 端点',
-    feat_hf_mirror_desc: '模型下载源。镜像不可用时尝试官方源。自定义：输入任意 URL。',
-    feat_custom_endpoint: '自定义端点',
-    feat_custom_endpoint_desc: '输入自定义 HuggingFace 镜像 URL。',
-    feat_hf_token: 'HF Token',
-    feat_hf_token_desc: 'HuggingFace 访问令牌（可选，有助于解除限速和下载受限模型）。',
     feat_model: '模型',
-    feat_embed_mode: '嵌入模式',
-    feat_embed_mode_local: '本地（免费，CPU）',
-    feat_embed_mode_api: 'API（OpenAI，付费）',
     feat_openai_key: 'OpenAI API Key',
     feat_openai_key_desc: '用于 API 嵌入调用，模型在下方定义。',
     feat_verify: '验证',
@@ -807,23 +799,17 @@ Object.assign(LANG.zh, {
     feat_rebuild_vectors_desc: '重建所有 OCR 全文向量。更换模型或模式后需要重建。',
     feat_rebuild_vectors_changed: '模型已更换 — 需要重建向量。',
     feat_install_deps: '安装依赖',
-    feat_install_deps_desc: 'pip install chromadb sentence-transformers openai (~500MB)。',
-    feat_install_deps_desc_api: 'pip install openai (~5MB)。',
-    feat_install_deps_desc_local: 'pip install chromadb sentence-transformers openai (~500MB)。',
-    feat_model_bge_small: '最佳平衡 — 快速、准确，推荐大多数用户使用 (384d, 130MB)',
-    feat_model_minilm: '最轻最快 — 精度略低，磁盘占用最小 (384d, 80MB)',
-    feat_model_bge_base: '最高精度 — 较慢，磁盘占用大 (768d, 440MB)',
     feat_api_base_url: 'API 地址',
     feat_api_base_url_desc: '自定义 OpenAI 兼容 API 端点。留空使用默认地址。',
     feat_api_model: 'API 模型',
     feat_api_model_desc: '该端点使用的嵌入模型名称。',
-    feat_deps_missing: '依赖未安装。需要：chromadb, sentence-transformers, openai。',
-    feat_deps_missing_api: '依赖未安装。需要：openai。',
-    feat_deps_missing_local: '依赖未安装。需要：chromadb, sentence-transformers, openai。',
+    feat_deps_missing: '依赖未安装。需要：chromadb, openai。',
     feat_deps_checking: '正在检测依赖…',
     feat_no_python: '未找到 Python。请查看安装标签页。',
     feat_rebuild_btn: '重建',
     feat_build_btn: '构建',
+    feat_vector_corrupted: '向量索引已损坏 — 需要强制重建。',
+    feat_vector_rebuild_force_btn: '强制重建',
     feat_building: '构建中…',
     feat_installing: '安装中…',
     feat_install_btn: '安装',
@@ -885,14 +871,9 @@ const DEFAULT_SETTINGS = {
         vector_db: false,
     },
     selected_skill_platform: 'opencode',
-    vector_db_mode: 'api',
-    vector_db_model: 'BAAI/bge-small-en-v1.5',
     vector_db_api_key: '',
     vector_db_api_base: '',
     vector_db_api_model: 'text-embedding-3-small',
-    vector_db_hf_endpoint: 'https://hf-mirror.com',
-    vector_db_hf_token: '',
-    vector_db_last_model: '',
     frozen_skills: {},
 };
 
@@ -2592,6 +2573,7 @@ class PaperForgeSettingTab extends PluginSettingTab {
         this._vectorDepsOk = null;       // null = not checked, bool = cached
         this._embedStatusText = null;
         this._skillsCollapsed = { user: true };  // User skills collapsed by default
+        this._featurePanelsCollapsed = {};
         this.activeTab = 'setup';
     }
 
@@ -3205,21 +3187,23 @@ class PaperForgeSettingTab extends PluginSettingTab {
         }
 
         // --- Section: Advanced (Memory Layer + Vector DB, collapsed by default) ---
+        if (this._advCollapsed === undefined) this._advCollapsed = true;
         const advHeader = containerEl.createEl('div', { cls: 'paperforge-collapsible-header' });
         advHeader.style.cssText = 'cursor:pointer; display:flex; align-items:center; gap:8px; padding:8px 0; user-select:none;';
         const advArrow = advHeader.createEl('span', { text: '\u25B6', cls: 'paperforge-collapsible-arrow' });
-        advArrow.style.cssText = 'display:inline-block; transition:transform 0.2s; font-size:10px; transform:rotate(90deg);';
-        advHeader.createEl('h3', { text: 'Advanced', cls: 'paperforge-collapsible-title' });
-        advHeader.createEl('span', { text: 'Memory + Vector DB + Embedding', cls: 'paperforge-collapsible-sub' });
-        advHeader.lastChild.style.cssText = 'font-size:11px; color:var(--text-muted); margin-left:8px;';
+        advArrow.style.cssText = 'display:inline-block; transition:transform 0.2s; font-size:10px; transform:' + (this._advCollapsed ? 'rotate(0deg)' : 'rotate(90deg)') + ';';
+        const advTitle = advHeader.createEl('span', { text: 'Advanced' });
+        advTitle.style.cssText = 'font-size:16px; font-weight:700; line-height:1.4;';
+        const advSub = advHeader.createEl('span', { text: 'Memory + Vector DB + Embedding' });
+        advSub.style.cssText = 'font-size:12px; color:var(--text-muted); margin-left:10px;';
 
         const advContent = containerEl.createEl('div', { cls: 'paperforge-collapsible-content' });
-        advContent.style.display = 'none';
+        advContent.style.display = this._advCollapsed ? 'none' : '';
 
         advHeader.addEventListener('click', () => {
-            const collapsed = advContent.style.display === 'none';
-            advContent.style.display = collapsed ? '' : 'none';
-            advArrow.style.transform = collapsed ? 'rotate(0deg)' : 'rotate(90deg)';
+            this._advCollapsed = !this._advCollapsed;
+            advContent.style.display = this._advCollapsed ? 'none' : '';
+            advArrow.style.transform = this._advCollapsed ? 'rotate(0deg)' : 'rotate(90deg)';
         });
 
         // Memory Layer section (inside Advanced)
@@ -3285,11 +3269,16 @@ class PaperForgeSettingTab extends PluginSettingTab {
         vecConfigHeader.createEl('span', { text: t('feat_vector_config_label'), cls: '' }).style.cssText = 'font-size:12px; color:var(--text-muted);';
         const vecConfigContent = containerEl.createEl('div', { cls: 'paperforge-vector-config' });
 
-        let vecConfigCollapsed = false;
+        const applyVectorConfigDisclosure = (collapsed) => {
+            vecConfigContent.style.display = collapsed ? 'none' : '';
+            vecArrow.style.transform = collapsed ? 'rotate(-90deg)' : 'rotate(0deg)';
+        };
+
+        applyVectorConfigDisclosure(getDisclosureState(this._featurePanelsCollapsed, 'vectorConfig', false));
+
         vecConfigHeader.addEventListener('click', () => {
-            vecConfigCollapsed = !vecConfigCollapsed;
-            vecConfigContent.style.display = vecConfigCollapsed ? 'none' : '';
-            vecArrow.style.transform = vecConfigCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)';
+            const collapsed = toggleDisclosureState(this._featurePanelsCollapsed, 'vectorConfig', false);
+            applyVectorConfigDisclosure(collapsed);
         });
 
         // === Resolve state ===
@@ -3312,61 +3301,7 @@ class PaperForgeSettingTab extends PluginSettingTab {
         }
     }
 
-    _renderHfMirror(containerEl) {
-        const setting = new Setting(containerEl)
-            .setName(t('feat_hf_mirror'))
-            .setDesc(t('feat_hf_mirror_desc'))
-            .addDropdown(dropdown => {
-                dropdown.addOption('https://hf-mirror.com', 'hf-mirror.com (recommended)');
-                dropdown.addOption('https://huggingface.co', 'huggingface.co (official)');
-                dropdown.addOption('__custom__', 'Custom...');
-                const current = this.plugin.settings.vector_db_hf_endpoint || 'https://hf-mirror.com';
-                const isPreset = ['https://hf-mirror.com', 'https://huggingface.co'].includes(current);
-                dropdown.setValue(isPreset ? current : '__custom__')
-                    .onChange(value => {
-                        if (value !== '__custom__') {
-                            this.plugin.settings.vector_db_hf_endpoint = value;
-                            this.plugin.saveSettings();
-                            if (customInput) { customInput.settingEl.style.display = 'none'; if (this._hfCustomText) this._hfCustomText.setValue(''); }
-                        } else {
-                            if (customInput) customInput.settingEl.style.display = '';
-                        }
-                    });
-            });
-        const customInput = new Setting(containerEl)
-            .setName(t('feat_custom_endpoint'))
-            .setDesc(t('feat_custom_endpoint_desc'))
-            .addText(text => {
-                this._hfCustomText = text;
-                const current = this.plugin.settings.vector_db_hf_endpoint || '';
-                const isPreset = ['https://hf-mirror.com', 'https://huggingface.co'].includes(current);
-                text.setPlaceholder('https://your-mirror.com')
-                    .setValue(isPreset ? '' : current)
-                    .onChange(value => {
-                        this.plugin.settings.vector_db_hf_endpoint = value;
-                        this.plugin.saveSettings();
-                    });
-            });
-        const current = this.plugin.settings.vector_db_hf_endpoint || 'https://hf-mirror.com';
-        const isPreset = ['https://hf-mirror.com', 'https://huggingface.co'].includes(current);
-        if (isPreset) customInput.settingEl.style.display = 'none';
-
-        new Setting(containerEl)
-            .setName(t('feat_hf_token'))
-            .setDesc(t('feat_hf_token_desc'))
-            .addText(text => {
-                text.setPlaceholder('hf_...')
-                    .setValue(this.plugin.settings.vector_db_hf_token || '')
-                    .onChange(value => {
-                        this.plugin.settings.vector_db_hf_token = value;
-                        this.plugin.saveSettings();
-                    });
-            });
-    }
-
     _renderApiConfig(containerEl) {
-        if (this.plugin.settings.vector_db_mode !== 'api') return;
-
         new Setting(containerEl)
             .setName(t('feat_openai_key'))
             .setDesc(t('feat_openai_key_desc'))
@@ -3405,12 +3340,11 @@ class PaperForgeSettingTab extends PluginSettingTab {
     _renderVectorNoDeps(containerEl) {
         const box = containerEl.createEl('div');
         box.style.cssText = 'padding:8px 12px; margin:8px 0; background:var(--background-secondary); border-radius:4px;';
-        const modeKey = (this.plugin.settings.vector_db_mode === 'api') ? 'api' : 'local';
-        box.setText(t('feat_deps_missing_' + modeKey));
+        box.setText(t('feat_deps_missing'));
 
         new Setting(containerEl)
             .setName(t('feat_install_deps'))
-            .setDesc(t('feat_install_deps_desc_' + modeKey))
+            .setDesc(t('feat_install_deps_desc'))
             .addButton(button => {
                 button.setButtonText(t('feat_install_btn'))
                     .setCta()
@@ -3420,12 +3354,11 @@ class PaperForgeSettingTab extends PluginSettingTab {
                         if (!pyResult.path) { new Notice(t('feat_no_python')); return; }
                         button.setButtonText(t('feat_installing'));
                             button.setDisabled(true);
-                            const mode = this.plugin.settings.vector_db_mode || 'api';
-                            const pkgs = mode === 'api' ? 'openai' : 'chromadb sentence-transformers openai';
+                            const pkgs = 'chromadb openai';
                             const notice = new Notice(t('feat_installing_pkgs').replace('{pkgs}', pkgs), 0);
                         try {
                             const { execFile: execFileInstall } = require('node:child_process');
-                            const env = Object.assign({}, process.env, { PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1', HF_ENDPOINT: this.plugin.settings.vector_db_hf_endpoint || 'https://hf-mirror.com', HF_TOKEN: this.plugin.settings.vector_db_hf_token || '' });
+                            const env = Object.assign({}, process.env, { PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1' });
                             const pkgsArg = pkgs.split(' ');
                             await new Promise((resolve, reject) => {
                                  execFileInstall(pyResult.path, [...pyResult.extraArgs, '-m', 'pip', 'install', ...pkgsArg], {
@@ -3454,127 +3387,7 @@ class PaperForgeSettingTab extends PluginSettingTab {
         statusEl.style.cssText = 'padding:8px 12px; margin:8px 0; background:var(--background-secondary); border-radius:4px;';
         statusEl.setText(memoryState.getVectorStatusText(vp));
 
-        // Detect model mismatch
-        const embedInfo = memoryState.getVectorRuntime(vp);
-        const currentModel = this._getCurrentModelKey();
-        const lastModel = this.plugin.settings.vector_db_last_model || '';
-        const modelChanged = embedInfo && embedInfo.db_exists && lastModel && lastModel !== currentModel;
-
-        if (modelChanged) {
-            const warnEl = containerEl.createEl('div');
-            warnEl.style.cssText = 'padding:8px 12px; margin:8px 0; background:var(--background-modifier-warning); border-radius:4px;';
-            warnEl.setText(t('feat_model_changed_warn').replace('{0}', lastModel).replace('{1}', currentModel));
-        }
-
-        // Mode selector
-        new Setting(containerEl)
-            .setName(t('feat_embed_mode'))
-            .addDropdown(dropdown => {
-                dropdown.addOption('api', t('feat_embed_mode_api'));
-                dropdown.addOption('local', t('feat_embed_mode_local'));
-                dropdown.setValue(this.plugin.settings.vector_db_mode)
-                    .onChange(value => {
-                        this.plugin.settings.vector_db_mode = value;
-                        this.plugin.saveSettings();
-                        // Clear cache immediately — show "checking..." then refresh in background
-                        this._vectorDepsOk = null;
-                        this._embedStatusText = null;
-                        this.display();
-                        const vp = this.app.vault.adapter.basePath;
-                        const py = memoryState.getCachedPython(vp, this.plugin.settings);
-                        const { execFile } = require('node:child_process');
-                        const args = [...py.extraArgs, '-m', 'paperforge', '--vault', vp, 'embed', 'status', '--json'];
-                        execFile(py.path, args, { cwd: vp, timeout: 15000, windowsHide: true }, () => {
-                            this._vectorDepsOk = null;
-                            this._embedStatusText = null;
-                            this.display();
-                        });
-                    });
-            });
-
-        // Model selector (local mode)
-        if (this.plugin.settings.vector_db_mode === 'local') {
-            // HF settings only relevant for local model downloads
-            this._renderHfMirror(containerEl);
-            const modelDesc = {
-                'BAAI/bge-small-en-v1.5': t('feat_model_bge_small'),
-                'sentence-transformers/all-MiniLM-L6-v2': t('feat_model_minilm'),
-                'BAAI/bge-base-en-v1.5': t('feat_model_bge_base'),
-            };
-            new Setting(containerEl)
-                .setName(t('feat_model'))
-                .setDesc(modelDesc[this.plugin.settings.vector_db_model] || '')
-                .addDropdown(dropdown => {
-                    dropdown.addOption('BAAI/bge-small-en-v1.5', 'bge-small (384d, 130MB)');
-                    dropdown.addOption('sentence-transformers/all-MiniLM-L6-v2', 'MiniLM (384d, 80MB)');
-                    dropdown.addOption('BAAI/bge-base-en-v1.5', 'bge-base (768d, 440MB)');
-                    dropdown.setValue(this.plugin.settings.vector_db_model)
-                        .onChange(value => {
-                            this.plugin.settings.vector_db_model = value;
-                            this.plugin.saveSettings();
-                            this.display();
-                        });
-                })
-                .addButton(button => {
-                    const model = this.plugin.settings.vector_db_model;
-                    const cacheName = 'models--' + model.replace('/', '--');
-                    const fs = require('fs');
-                    const os = require('os');
-                    const path = require('path');
-                    const cachePath = path.join(os.homedir(), '.cache', 'huggingface', 'hub', cacheName);
-
-                    // Check integrity: directory exists AND has snapshots with files
-                    let isCached = false;
-                    if (fs.existsSync(cachePath)) {
-                        const snapDir = path.join(cachePath, 'snapshots');
-                        if (fs.existsSync(snapDir)) {
-                            try {
-                                const entries = fs.readdirSync(snapDir);
-                                isCached = entries.some(e => {
-                                    const p = path.join(snapDir, e);
-                                    return fs.statSync(p).isDirectory() && fs.readdirSync(p).length > 0;
-                                });
-                            } catch (_) {}
-                        }
-                    }
-
-                    if (isCached) {
-                        button.setButtonText(t('feat_uninstall_btn')).setWarning();
-                    } else {
-                        button.setButtonText(t('feat_not_cached'));
-                        button.setDisabled(true);
-                    }
-                    button.onClick(async () => {
-                        if (!isCached) return;
-                        button.setButtonText(t('feat_removing'));
-                        button.setDisabled(true);
-                        try {
-                            const pyResult = memoryState.getCachedPython(vp, this.plugin.settings);
-                            const { execFile: execFileRm } = require('node:child_process');
-                            const env = Object.assign({}, process.env, { PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1' });
-                            await new Promise((resolve, reject) => {
-                                execFileRm(pyResult.path, [...pyResult.extraArgs, '-c', 'import shutil, os; p=os.path.join(os.path.expanduser("~/.cache/huggingface/hub"), "' + cacheName + '"); shutil.rmtree(p,ignore_errors=True); print("done")'], {
-                                    cwd: vp, timeout: 30000, env: env, windowsHide: true,
-                                }, (error) => error ? reject(error) : resolve());
-                            });
-                            new Notice(t('feat_cache_removed'));
-                        } catch (e) {
-                            new Notice(t('feat_cache_remove_failed').replace('{0}', e.stderr || e.message || String(e)));
-                        }
-                        this.display();
-                    });
-                });
-
-            // INFO: HF download notice for local mode
-            const infoDiv = containerEl.createDiv({ cls: 'setting-item-description' });
-            infoDiv.createEl('p', {
-                text: 'Local mode downloads models from Hugging Face on first use. '
-                    + 'If inaccessible, set an HF Endpoint above (e.g. https://hf-mirror.com) or switch to API mode.',
-                cls: 'paperforge-settings-desc',
-            });
-        }
-
-        // API config (api mode)
+        // API config
         this._renderApiConfig(containerEl);
 
         // Embed build section with progress bar
@@ -3640,33 +3453,20 @@ class PaperForgeSettingTab extends PluginSettingTab {
             } else {
                 const embedInfo = memoryState.getVectorRuntime(vp);
                 const hasChunks = embedInfo && embedInfo.chunk_count > 0;
+                const isCorrupted = embedInfo && embedInfo.corrupted;
 
-                if (hasChunks) {
-                    embedControls.createEl('span', {
-                        text: `${embedInfo.chunk_count} chunks embedded`,
-                        cls: 'setting-item-description'
-                    });
-                }
-
-                const buildBtn = embedControls.createEl('button');
-                buildBtn.setText(hasChunks ? t('feat_rebuild_btn') : t('feat_build_btn'));
-                buildBtn.addClass('mod-cta');
-                buildBtn.addEventListener('click', () => {
+                const startBuild = (flag) => {
                     const py = memoryState.getCachedPython(vp, this.plugin.settings);
                     if (!py.path) { new Notice(t('feat_no_python')); return; }
-
                     const env = Object.assign({}, process.env, {
                         PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1',
-                        HF_ENDPOINT: this.plugin.settings.vector_db_hf_endpoint || 'https://hf-mirror.com',
-                        HF_TOKEN: this.plugin.settings.vector_db_hf_token || '',
                         VECTOR_DB_API_KEY: this.plugin.settings.vector_db_api_key || '',
                         VECTOR_DB_API_BASE: this.plugin.settings.vector_db_api_base || '',
                         VECTOR_DB_API_MODEL: this.plugin.settings.vector_db_api_model || ''
                     });
                     this.plugin._embedStderr = '';
                     this.plugin._embedProgress = { current: 0, total: 0, key: '' };
-
-                    this.plugin._embedProcess = this._callPython(['embed', 'build', '--resume'], {
+                    this.plugin._embedProcess = this._callPython(['embed', 'build', flag], {
                         stream: true,
                         env: env,
                         onData: (data) => {
@@ -3698,7 +3498,6 @@ class PaperForgeSettingTab extends PluginSettingTab {
                             this.plugin._embedProcess = null;
                             if (code === 0) {
                                 this.plugin._embedProgress.current = this.plugin._embedProgress.total;
-                                this.plugin.settings.vector_db_last_model = currentModel;
                                 this.plugin.saveSettings();
                                 this._embedStatusText = memoryState.getVectorStatusText(vp);
                                 new Notice(t('feat_build_complete'));
@@ -3714,7 +3513,35 @@ class PaperForgeSettingTab extends PluginSettingTab {
                     });
 
                     this.display();
-                });
+                }
+
+                // Corruption warning
+                if (isCorrupted) {
+                    const warnEl = embedSection.createEl('div');
+                    warnEl.style.cssText = 'padding:8px 12px; margin:8px 0; background:var(--background-modifier-warning); border-radius:4px; font-size:12px; display:flex; align-items:center; justify-content:space-between;';
+                    warnEl.createEl('span', { text: t('feat_vector_corrupted') });
+                    const forceBtn = warnEl.createEl('button', { text: t('feat_vector_rebuild_force_btn') });
+                    forceBtn.className = 'mod-cta';
+                    forceBtn.addEventListener('click', () => startBuild('--force'));
+                }
+
+                // Chunk count + buttons
+                if (hasChunks && !isCorrupted) {
+                    embedControls.createEl('span', {
+                        text: `${embedInfo.chunk_count} chunks embedded`,
+                        cls: 'setting-item-description'
+                    });
+                }
+                const buildBtn = embedControls.createEl('button');
+                buildBtn.setText(hasChunks ? t('feat_rebuild_btn') : t('feat_build_btn'));
+                buildBtn.addClass('mod-cta');
+                buildBtn.addEventListener('click', () => startBuild('--resume'));
+                if (!isCorrupted && hasChunks) {
+                    const forceBtn2 = embedControls.createEl('button');
+                    forceBtn2.setText(t('feat_vector_rebuild_force_btn'));
+                    forceBtn2.style.marginLeft = '6px';
+                    forceBtn2.addEventListener('click', () => startBuild('--force'));
+                }
             }
         };
 
@@ -3722,8 +3549,7 @@ class PaperForgeSettingTab extends PluginSettingTab {
     }
 
     _getCurrentModelKey() {
-        if (this.plugin.settings.vector_db_mode === 'api') return this.plugin.settings.vector_db_api_model || 'openai/text-embedding-3-small';
-        return this.plugin.settings.vector_db_model || 'BAAI/bge-small-en-v1.5';
+        return this.plugin.settings.vector_db_api_model || 'text-embedding-3-small';
     }
 
     _parseEmbedStatus(text) {

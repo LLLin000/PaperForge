@@ -261,6 +261,20 @@ function shouldRenderVectorReady(vectorDepsOk, embedStatusText) {
     return vectorDepsOk === true;
 }
 
+function getDisclosureState(store, key, defaultCollapsed) {
+    if (!store || typeof store !== 'object') return !!defaultCollapsed;
+    if (!Object.prototype.hasOwnProperty.call(store, key)) return !!defaultCollapsed;
+    return !!store[key];
+}
+
+function toggleDisclosureState(store, key, defaultCollapsed) {
+    const next = !getDisclosureState(store, key, defaultCollapsed);
+    if (store && typeof store === 'object') {
+        store[key] = next;
+    }
+    return next;
+}
+
 module.exports = {
     readPathConfig,
     resolveRuntimePaths,
@@ -274,4 +288,6 @@ module.exports = {
     buildCommandArgs,
     runSubprocess,
     shouldRenderVectorReady,
+    getDisclosureState,
+    toggleDisclosureState,
 };

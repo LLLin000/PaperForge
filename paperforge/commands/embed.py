@@ -53,6 +53,7 @@ def run(args: argparse.Namespace) -> int:
             chunk_count=status.get("chunk_count", 0),
             build_state=status.get("build_state"),
             healthy=status.get("healthy", True),
+            corrupted=status.get("corrupted", False),
             error=status.get("error", ""),
         )
 
@@ -176,7 +177,10 @@ def run(args: argparse.Namespace) -> int:
                 if existing and existing.get("ids") and len(existing["ids"]) > 0:
                     papers_skipped += 1
                     continue
-            except Exception:
+            except Exception as exc:
+                err = str(exc).lower()
+                if "hnsw" in err or "compaction" in err:
+                    logger.warning("ChromaDB index corrupted — rebuilding from scratch. Use --force next time for clean rebuild.")
                 pass
         chunks = chunk_fulltext(fulltext_path)
         if not chunks:

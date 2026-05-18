@@ -28,10 +28,20 @@ def embed_paper(vault: Path, zotero_key: str, chunks: list[dict]) -> int:
     ]
 
     embeddings = provider.encode(texts)
-    collection.add(
-        ids=ids,
-        embeddings=embeddings,
-        documents=texts,
-        metadatas=metadatas,
-    )
+    try:
+        collection.add(
+            ids=ids,
+            embeddings=embeddings,
+            documents=texts,
+            metadatas=metadatas,
+        )
+    except Exception as exc:
+        err = str(exc).lower()
+        if "hnsw" in err or "compaction" in err or "segment" in err:
+            raise RuntimeError(
+                f"ChromaDB index error (possibly corrupted). "
+                f"Run 'paperforge embed build --force' to rebuild from scratch. "
+                f"Original error: {exc}"
+            ) from exc
+        raise
     return len(chunks)

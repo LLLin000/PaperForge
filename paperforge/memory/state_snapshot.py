@@ -38,7 +38,8 @@ def write_memory_runtime(vault: Path, *, paper_count_db: int,
 def write_vector_runtime(vault: Path, *, enabled: bool, mode: str, model: str,
                          deps_installed: bool, deps_missing: list[str] | None,
                          py_version: str, db_exists: bool, chunk_count: int,
-                         build_state: dict | None) -> None:
+                         build_state: dict | None, healthy: bool = True,
+                         error: str = "", corrupted: bool = False) -> None:
     snap = {
         "schema_version": 1,
         "updated_at": datetime.now(timezone.utc).isoformat(),
@@ -51,6 +52,9 @@ def write_vector_runtime(vault: Path, *, enabled: bool, mode: str, model: str,
         "py_version": py_version,
         "db_exists": db_exists,
         "chunk_count": chunk_count,
+        "healthy": healthy,
+        "corrupted": corrupted,
+        "error": error,
         "build_state": build_state or {},
     }
     path = _snapshot_dir(vault) / "vector-runtime-state.json"
