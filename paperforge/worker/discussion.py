@@ -1,7 +1,6 @@
 """Discussion recorder -- writes structured AI-paper Q&A into ai/ workspace directory.
 
-Atomic append-only writes for both JSON (canonical) and Markdown (human-readable).
-stdlib only -- no dependencies beyond Python standard library.
+Atomic append-only writes for Markdown (canonical). stdlib only.
 
 API:
     record_session(vault_path, zotero_key, agent, model, qa_pairs) -> dict
@@ -17,7 +16,6 @@ import argparse
 import json
 import logging
 import os
-import re
 import sys
 import tempfile
 import uuid
@@ -37,8 +35,6 @@ logger = logging.getLogger(__name__)
 _SCHEMA_VERSION = "1"
 _ISO_FORMAT = "%Y-%m-%dT%H:%M:%S%z"
 _MD_SEPARATOR = "---"
-_MD_SPECIAL_CHARS = re.compile(r"([*#\[\]_`])")
-"""Regex for markdown special characters that must be escaped in QA text fields."""
 
 LOCK_TIMEOUT = 10
 """Seconds to wait for cross-process file lock before raising filelock.Timeout."""
@@ -54,16 +50,6 @@ _CST = timezone.utc
 def _now_iso() -> str:
     """Return current time in ISO 8601 with UTC timezone."""
     return datetime.now(_CST).isoformat()
-
-
-def _escape_md(text: str) -> str:
-    """Escape markdown special characters in QA text fields.
-
-    Escapes: *, #, [, ], _, ` -- prevents broken Obsidian formatting
-    when user questions or AI answers contain these characters.
-    Does not double-escape already-escaped characters.
-    """
-    return _MD_SPECIAL_CHARS.sub(r"\\\1", text)
 
 
 def _today_str(iso_stamp: str) -> str:
@@ -142,35 +128,6 @@ def _build_session(
     }
 
 
-def _atomic_write_json(target_path: Path, envelope: dict) -> None:
-    """Atomically write JSON file via tempfile + os.replace.
-
-    Uses ensure_ascii=False for CJK support, newline='\\n' for consistent
-    line endings on Windows.
-    """
-    target_path.parent.mkdir(parents=True, exist_ok=True)
-    content = json.dumps(envelope, ensure_ascii=False, indent=2) + "\n"
-
-    fd, tmp_path_str = tempfile.mkstemp(
-        suffix=".json",
-        prefix="discussion_",
-        dir=str(target_path.parent),
-    )
-    tmp_path = Path(tmp_path_str)
-    try:
-        os.write(fd, content.encode("utf-8"))
-        os.close(fd)
-        fd = None
-        os.replace(tmp_path_str, str(target_path))
-    except Exception:
-        # Cleanup temp file on failure
-        if fd is not None:
-            os.close(fd)
-        if tmp_path.exists():
-            tmp_path.unlink()
-        raise
-
-
 def _build_md_header(paper_title: str) -> str:
     return f"# AI Discussion Record: {paper_title}\n\n"
 
@@ -183,8 +140,8 @@ def _build_md_session(session: dict) -> str:
     model = session["model"]
     lines = [f"## {date_str} -- {agent} ({model})\n"]
     for qa in session["qa_pairs"]:
-        lines.append(f"**问题:** {_escape_md(qa['question'])}")
-        lines.append(f"**解答:** {_escape_md(qa['answer'])}\n")
+        lines.append(f"**问题:** {qa['question']}")
+        lines.append(f"**解答:** {qa['answer']}\n")
     lines.append(f"{_MD_SEPARATOR}\n")
     return "\n".join(lines)
 
@@ -233,8 +190,7 @@ def record_session(
 ) -> dict:
     """Record an AI-paper discussion session.
 
-    Creates or appends to ai/discussion.json (canonical) and
-    ai/discussion.md (human-readable) with atomic writes.
+    Creates or appends to ai/discussion.md (canonical) with atomic writes.
 
     Args:
         vault_path: Path to the Obsidian vault root.
@@ -284,7 +240,6 @@ def record_session(
         # Fallback: construct from metadata
         ai_dir = _build_ai_dir(vault_path, domain, zotero_key, paper_title)
 
-    json_path = ai_dir / "discussion.json"
     md_path = ai_dir / "discussion.md"
 
     # --- Build session object ---
@@ -293,32 +248,11 @@ def record_session(
     except Exception as exc:
         return {"status": "error", "message": f"Error building session: {exc}"}
 
-    # --- Write discussion.json + discussion.md (atomic, locked) ---
-    # HARDEN-01: Cross-process file lock prevents concurrent write corruption.
-    # Uses same filelock pattern as asset_index.py: lock on .json.lock suffix,
-    # timeout after LOCK_TIMEOUT seconds.
-    lock_path = json_path.with_suffix(".json.lock")
+    # --- Write discussion.md (atomic, locked) ---
+    lock_path = md_path.with_suffix(".md.lock")
     lock = filelock.FileLock(lock_path, timeout=LOCK_TIMEOUT)
     try:
         with lock:
-            # Write discussion.json
-            existing_sessions = []
-            if json_path.exists():
-                try:
-                    existing_data = json.loads(json_path.read_text(encoding="utf-8"))
-                    existing_sessions = existing_data.get("sessions", [])
-                except (json.JSONDecodeError, OSError) as exc:
-                    logger.warning("Corrupted discussion.json, starting fresh: %s", exc)
-                    existing_sessions = []
-
-            envelope = {
-                "schema_version": "1",
-                "paper_key": zotero_key,
-                "sessions": [*existing_sessions, session],
-            }
-            _atomic_write_json(json_path, envelope)
-
-            # Write discussion.md
             existing_md = ""
             if md_path.exists():
                 try:
@@ -332,17 +266,13 @@ def record_session(
             content = _md_content(existing_md, header, session_md)
             _atomic_write_md(md_path, content)
     except filelock.Timeout:
-        logger.warning("Could not acquire lock for discussion files: %s", lock_path)
+        logger.warning("Could not acquire lock for discussion file: %s", lock_path)
         return {"status": "error", "message": "Concurrent access conflict. Please try again."}
     except Exception as exc:
-        logger.warning("Failed to write discussion files: %s", exc)
-        return {"status": "error", "message": f"Failed to write discussion files: {exc}"}
+        logger.warning("Failed to write discussion file: %s", exc)
+        return {"status": "error", "message": f"Failed to write discussion file: {exc}"}
 
-    return {
-        "status": "ok",
-        "json_path": str(json_path),
-        "md_path": str(md_path),
-    }
+    return {"status": "ok", "md_path": str(md_path)}
 
 
 # ---------------------------------------------------------------------------

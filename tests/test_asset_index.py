@@ -211,6 +211,40 @@ class TestBuildIndexEmpty:
         envelope = json.loads(index_path.read_text(encoding="utf-8"))
         assert envelope["paper_count"] == 0
 
+    def test_build_index_does_not_auto_embed_vectors(self, monkeypatch, tmp_path: Path) -> None:
+        """sync/index build must not trigger vector embedding work."""
+        vault = _minimal_vault(tmp_path)
+        _ensure_domain_config(vault)
+
+        exports_dir = vault / "99_System" / "PaperForge" / "exports"
+        exports_dir.mkdir(parents=True, exist_ok=True)
+        (exports_dir / "library.json").write_text(
+            json.dumps([
+                {
+                    "key": "ABC12345",
+                    "title": "Paper A",
+                    "creators": [],
+                    "collections": [],
+                    "attachments": [],
+                    "doi": "",
+                    "pmid": "",
+                    "date": "",
+                    "extra": "",
+                    "abstractNote": "",
+                    "publicationTitle": "",
+                    "itemType": "journalArticle",
+                }
+            ]),
+            encoding="utf-8",
+        )
+
+        def _unexpected_auto_embed(_vault, _entry):
+            raise AssertionError("build_index must not auto-embed vectors")
+
+        monkeypatch.setattr("paperforge.worker.asset_index._vec_auto_embed_if_new", _unexpected_auto_embed)
+
+        build_index(vault, verbose=False)
+
 
 class TestSummarizeIndex:
     """summarize_index(vault) -> dict | None"""

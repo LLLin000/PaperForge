@@ -12,13 +12,14 @@ logger = logging.getLogger(__name__)
 def get_embed_status(vault: Path) -> dict:
     """Get vector DB status. API-only mode.
 
-    Returns dict with keys: db_exists, chunk_count, model, mode, healthy, error.
+    Returns dict with keys: db_exists, chunk_count, model, mode, healthy, error, corrupted.
     """
     db_path = get_vector_db_path(vault)
     exists = db_path.exists()
     chunk_count = 0
     healthy = True
     error = ""
+    corrupted = False
     if exists:
         try:
             collection = get_collection(vault)
@@ -26,6 +27,8 @@ def get_embed_status(vault: Path) -> dict:
         except Exception as exc:
             healthy = False
             error = str(exc)
+            err_lower = str(exc).lower()
+            corrupted = "hnsw" in err_lower or "corrupt" in err_lower
 
     model = get_api_model(vault)
 
@@ -35,5 +38,6 @@ def get_embed_status(vault: Path) -> dict:
         "model": model,
         "mode": "api",
         "healthy": healthy,
+        "corrupted": corrupted,
         "error": error,
     }
