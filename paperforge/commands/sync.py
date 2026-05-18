@@ -3,9 +3,9 @@
 import argparse
 import logging
 
+from paperforge import __version__
 from paperforge.config import migrate_paperforge_json
 from paperforge.core.result import PFResult
-from paperforge import __version__
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +34,8 @@ def run(args: argparse.Namespace) -> int:
     selection_only = getattr(args, "selection", False)
     index_only = getattr(args, "index", False)
     json_output = getattr(args, "json", False)
+    prune_flag = getattr(args, "prune", False)
+    prune_force = getattr(args, "prune_force", False)
 
     if dry_run:
         if json_output:
@@ -59,7 +61,8 @@ def run(args: argparse.Namespace) -> int:
     from paperforge.services.sync_service import SyncService
 
     svc = SyncService(vault)
-    result = svc.run(verbose=verbose, json_output=json_output, selection_only=selection_only, index_only=index_only)
+    result = svc.run(verbose=verbose, json_output=json_output, selection_only=selection_only, index_only=index_only,
+                     prune=prune_flag, prune_force=prune_force)
 
     # Auto-build memory DB after successful sync so search works immediately
     if result.ok and not dry_run:
