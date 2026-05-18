@@ -83,7 +83,8 @@ def run(args: argparse.Namespace) -> int:
     try:
         from paperforge.memory.builder import build_from_index
         counts = build_from_index(vault)
-        print(f"memory: {counts.get('papers_indexed', 0)} papers indexed")
+        tag = " (fast)" if counts.get("hash_match") else ""
+        print(f"memory: {counts.get('papers_indexed', 0)} papers{tag}")
     except Exception as e:
         print(f"memory: deferred ({e})")
 
