@@ -7,7 +7,7 @@ import json
 from paperforge.core.errors import ErrorCode
 from paperforge.core.result import PFError, PFResult
 from paperforge.memory.db import get_connection, get_memory_db_path
-from paperforge.memory.vector_db import retrieve_chunks
+from paperforge.embedding import retrieve_chunks
 from paperforge import __version__ as PF_VERSION
 
 
@@ -17,8 +17,28 @@ def run(args: argparse.Namespace) -> int:
     limit = args.limit or 5
 
     # Check if vector index exists
-    from paperforge.worker.vector_db import get_embed_status
+    from paperforge.embedding import get_embed_status
     status = get_embed_status(vault)
+    if not status.get("healthy", True):
+        result = PFResult(
+            ok=False,
+            command="retrieve",
+            version=PF_VERSION,
+            error=PFError(
+                code=ErrorCode.INTERNAL_ERROR,
+                message="Vector index is unreadable. Rebuild vectors before retrieving.",
+            ),
+            data={
+                "next_action": "paperforge embed build --force",
+                "details": status.get("error", ""),
+            },
+        )
+        if args.json:
+            print(result.to_json())
+        else:
+            print(f"Error: {result.error.message}", file=sys.stderr)
+        return 1
+
     if status.get("chunk_count", 0) == 0:
         result = PFResult(
             ok=False,
