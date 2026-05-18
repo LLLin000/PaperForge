@@ -20,8 +20,8 @@ STANDARD_VIEW_NAMES = frozenset(
 # --- Journal Database ---
 
 
+from paperforge.core.date_utils import extract_year as _extract_year
 from paperforge.core.io import read_json, write_json
-
 
 _JOURNAL_DB: dict[str, dict] | None = None
 
@@ -123,7 +123,6 @@ def slugify_filename(text: str) -> str:
     return cleaned or "untitled"
 
 
-from paperforge.core.date_utils import extract_year as _extract_year
 
 
 # --- Deep-Reading Queue ---
