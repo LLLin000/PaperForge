@@ -291,6 +291,9 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
     meta_path = paths["ocr"] / key / "meta.json"
     meta = read_json(meta_path) if meta_path.exists() else {}
     if meta:
+        has_valid_pdf_now = bool(pdf_attachments) and bool(resolved_pdf)  # noqa: F821
+        if meta.get("ocr_status") == "nopdf" and has_valid_pdf_now:
+            meta["ocr_status"] = "pending"
         validated_ocr_status, validated_error = validate_ocr_meta(paths, meta)
         meta["ocr_status"] = validated_ocr_status
         if validated_error:

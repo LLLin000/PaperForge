@@ -87,7 +87,7 @@ def run(args: argparse.Namespace) -> int:
     except Exception as e:
         print(f"memory: deferred ({e})")
 
-    # trigger vector resume (background, no output)
+    # background: trigger vector resume (silent, no output unless embed actually runs)
     try:
         import subprocess, sys
         subprocess.Popen(
@@ -96,8 +96,7 @@ def run(args: argparse.Namespace) -> int:
             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
             creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if sys.platform == "win32" else 0,
         )
-        print("vector: resume started")
-    except Exception as e:
-        print(f"vector: deferred ({e})")
+    except Exception:
+        pass
 
     return 0
