@@ -282,8 +282,16 @@ paperforge/
 ├── core/          契约层 — PFResult/ErrorCode/状态机
 ├── adapters/      适配器层 — BBT 解析、路径、frontmatter
 ├── services/      服务层 — SyncService 编排
-├── memory/        记忆层 — SQLite + FTS5 元数据检索引擎
-├── embedding/     向量层 — ChromaDB 全文语义搜索
+├── memory/        记忆层 — SQLite + FTS5
+│                  └─ 全量重建的只读缓存
+│                     papers+assets+aliases 表
+│                     FTS5 全文检索引擎（标题/摘要/作者/分类）
+│                     阅读/项目/事件日志
+│                     由 build_from_index() 从 formal-library.json 重建
+├── embedding/     向量层 — ChromaDB
+│                  └─ OCR 全文语义搜索
+│                     chunk 分块 → API 嵌入 → 余弦相似度检索
+│                     --resume 增量 / --force 全量 / 模型变更自动检测
 ├── worker/        工人层 — OCR、状态、修复、孤儿清理
 ├── commands/      CLI 分发
 ├── setup/         安装向导（目录创建、Agent 部署、Zotero 链接）
