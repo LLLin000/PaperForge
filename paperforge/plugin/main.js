@@ -52,6 +52,7 @@ const memoryState = (() => {
       vectorStatePath: path.join(systemDir, 'indexes', 'vector-runtime-state.json'),
       healthStatePath: path.join(systemDir, 'indexes', 'runtime-health.json'),
       buildStatePath: path.join(systemDir, 'indexes', 'vector-build-state.json'),
+      orphanStatePath: path.join(systemDir, 'indexes', 'sync-orphan-state.json'),
       exportsDir: path.join(systemDir, 'exports'),
       ocrDir: path.join(systemDir, 'ocr'),
       pluginDataPath: path.join(vaultPath, '.obsidian', 'plugins', 'paperforge', 'data.json'),
@@ -177,6 +178,33 @@ const memoryState = (() => {
     getCachedPython, buildSnapshot,
   };
 })();
+
+/* ── Orphan paper auto-detection (called after sync) ── */
+function checkOrphanState(app, plugin, vp) {
+    console.log('[PF] checkOrphanState called');
+    try {
+        const paths = memoryState.resolveVaultPaths(vp);
+        const orphanPath = paths.orphanStatePath;
+        const fs = require('fs');
+        if (!fs.existsSync(orphanPath)) {
+            console.log('[PF] orphan file NOT FOUND');
+            return;
+        }
+        console.log('[PF] orphan file FOUND');
+        const raw = fs.readFileSync(orphanPath, 'utf-8');
+        const data = JSON.parse(raw);
+        const orphans = data.orphans || [];
+        console.log('[PF] orphans count:', orphans.length);
+        if (orphans.length === 0) return;
+        const py = memoryState.getCachedPython(vp, plugin.settings);
+        console.log('[PF] py.path:', py ? py.path : 'null');
+        new PaperForgeOrphanModal(app, orphans, vp, py).open();
+        fs.unlinkSync(orphanPath);
+        console.log('[PF] orphan file cleaned');
+    } catch (e) {
+        console.log('[PF] checkOrphanState exception:', e.message || e);
+    }
+}
 
 // ── Inlined from src/testable.js ──
 
@@ -2326,16 +2354,6 @@ class PaperForgeStatusView extends ItemView {
 
     /* ── Run Action ── */
     _runAction(a, card) {
-        // DASH-03: OCR privacy warning — once per session
-        if (a.id === 'paperforge-ocr' && !this._ocrPrivacyShown) {
-            const modal = new PaperForgeOcrPrivacyModal(this.app, () => {
-                this._ocrPrivacyShown = true;
-                this._runAction(a, card);  // Re-trigger after acknowledgment
-            });
-            modal.open();
-            return;
-        }
-
         // Guard: disabled actions show coming-soon notice
         if (a.disabled) {
             new Notice(`[i] ${a.disabledMsg || 'This action is not yet available.'}`, 6000);
@@ -2453,7 +2471,9 @@ class PaperForgeStatusView extends ItemView {
                 new Notice('[OK] ' + a.okMsg);
                 if (this._contentEl) this._contentEl.removeClass('switching');
                 this._cachedStats = null;
-                this._fetchStats();
+                try { this._fetchStats(); } catch (e) { console.log('[PF] fetchStats error:', e); }
+                console.log('[PF] close cmd=' + a.cmd + ' id=' + a.id);
+                if (a.cmd === 'sync') checkOrphanState(this.app, this.app.plugins.plugins['paperforge'], vp);
             }
         });
         child.on('error', (err) => {
@@ -2982,6 +3002,7 @@ class PaperForgeSettingTab extends PluginSettingTab {
                 }
                 this.display();
                 this._refreshSnapshots(vp);
+                checkOrphanState(this.app, this.plugin, vp);
             }
         });
     }
@@ -3846,6 +3867,102 @@ class PaperForgeOcrPrivacyModal extends Modal {
         confirmBtn.addEventListener('click', () => {
             this.close();
             if (this._onConfirm) this._onConfirm();
+        });
+    }
+
+    onClose() {
+        this.contentEl.empty();
+    }
+}
+
+/* ── Orphan Paper Cleanup Modal ── */
+class PaperForgeOrphanModal extends Modal {
+    constructor(app, orphans, vaultPath, py) {
+        super(app);
+        this.orphans = orphans.map((o, i) => ({ ...o, _selected: true, _idx: i }));
+        this.vaultPath = vaultPath;
+        this.py = py;
+    }
+
+    _updateUI() {
+        const sel = this.orphans.filter(o => o._selected);
+        this._countEl.setText('Delete ' + sel.length + ' selected');
+        this._selectAllBtn.setText(sel.length === this.orphans.length ? 'Deselect all' : 'Select all');
+        for (const o of this.orphans) {
+            const row = this._rowEls[o._idx];
+            if (!row) continue;
+            row.toggleClass('paperforge-orphan-dimmed', !o._selected);
+        }
+    }
+
+    onOpen() {
+        const { contentEl } = this;
+        contentEl.addClass('paperforge-modal');
+        contentEl.createEl('h2', { text: 'Found ' + this.orphans.length + ' orphan paper(s)' });
+        contentEl.createEl('p', {
+            cls: 'paperforge-modal-desc',
+            text: 'These papers are no longer in your Zotero library. Click a row to toggle whether to delete it.'
+        });
+
+        this._rowEls = [];
+        const listEl = contentEl.createEl('div', { cls: 'paperforge-orphan-list' });
+        for (const o of this.orphans) {
+            const row = listEl.createEl('div', { cls: 'paperforge-orphan-row' + (o._selected ? '' : ' paperforge-orphan-dimmed') });
+            this._rowEls.push(row);
+
+            const left = row.createEl('div', { cls: 'paperforge-orphan-info' });
+
+            // Header: citation key + tags
+            const hdr = left.createEl('div', { cls: 'paperforge-orphan-header' });
+            hdr.createEl('span', { cls: 'paperforge-orphan-key', text: o.citation_key || o.key });
+            const tags = hdr.createEl('span', { cls: 'paperforge-orphan-tags' });
+            tags.createEl('span', { cls: 'paperforge-tag ' + (o.has_pdf ? 'tag-pdf' : 'tag-nopdf'), text: o.has_pdf ? 'PDF' : 'no PDF' });
+            if (o.collection_path) tags.createEl('span', { cls: 'paperforge-tag tag-collection', text: o.collection_path });
+
+            if (o.title) left.createEl('div', { cls: 'paperforge-orphan-title', text: o.title });
+            const meta = [];
+            if (o.authors) meta.push(o.authors);
+            if (o.year) meta.push(o.year);
+            if (meta.length > 0) left.createEl('div', { cls: 'paperforge-orphan-meta', text: meta.join(' \u00B7 ') });
+            left.createEl('div', { cls: 'paperforge-orphan-explain', text: 'Removed from Zotero. ' + (o.has_pdf ? 'Had a PDF synced.' : 'No PDF was attached.') + ' Workspace files remain on disk.' });
+
+            row.addEventListener('click', () => {
+                o._selected = !o._selected;
+                this._updateUI();
+            });
+        }
+
+        const btnRow = contentEl.createEl('div', { cls: 'paperforge-modal-actions' });
+        this._selectAllBtn = btnRow.createEl('button', { cls: 'paperforge-step-btn', text: 'Deselect all' });
+        this._selectAllBtn.addEventListener('click', () => {
+            const allSel = this.orphans.every(o => o._selected);
+            for (const o of this.orphans) o._selected = !allSel;
+            this._updateUI();
+        });
+
+        this._countEl = btnRow.createEl('button', { cls: 'paperforge-step-btn mod-cta', text: 'Delete ' + this.orphans.length + ' selected' });
+
+        btnRow.createEl('button', { cls: 'paperforge-step-btn', text: 'Keep all' }).addEventListener('click', () => this.close());
+
+        this._countEl.addEventListener('click', () => {
+            const selected = this.orphans.filter(o => o._selected);
+            if (selected.length === 0) { new Notice('No papers selected for deletion'); return; }
+            this._countEl.setText('Deleting...');
+            this._countEl.setAttr('disabled', '');
+            this._selectAllBtn.setAttr('disabled', '');
+            if (!this.py || !this.py.path) { new Notice('PaperForge: Python not found'); this.close(); return; }
+            const keys = selected.map(o => o.key);
+            const { execFile } = require('node:child_process');
+            execFile(this.py.path, [...this.py.extraArgs, '-m', 'paperforge', '--vault', this.vaultPath, 'prune', '--force', '--json', ...keys],
+                { cwd: this.vaultPath, timeout: 60000 }, (err, stdout) => {
+                    if (err) { new Notice('PaperForge: prune failed'); this.close(); return; }
+                    try {
+                        const r = JSON.parse(stdout);
+                        const deleted = (r.data && r.data.deleted) || [];
+                        new Notice('Deleted ' + deleted.length + ' orphan workspace(s)');
+                    } catch (_) { new Notice('PaperForge: prune done'); }
+                    this.close();
+                });
         });
     }
 

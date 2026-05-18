@@ -52,11 +52,52 @@ def _resolve_ocr_dir(vault: Path, key: str) -> Path:
     return ocr_root / key
 
 
+def _enrich_orphan_preview(vault: Path, candidates: list[dict]) -> list[dict]:
+    from paperforge.adapters.obsidian_frontmatter import read_frontmatter_dict
+
+    enriched = []
+    for c in candidates:
+        key = c["key"]
+        ws = c["workspace_dir"]
+
+        title_from_dir = ws.name.split(" - ", 1)[1] if " - " in ws.name else key
+
+        note_path = ws / f"{key}.md"
+        fm = {}
+        if note_path.exists():
+            try:
+                fm = read_frontmatter_dict(note_path.read_text(encoding="utf-8"))
+            except Exception:
+                pass
+
+        title = fm.get("title", title_from_dir) or title_from_dir
+        first_author = fm.get("first_author", "") or ""
+        coll = fm.get("collection_path", "")
+        if isinstance(coll, list):
+            coll = " | ".join(coll)
+
+        enriched.append({
+            "key": key,
+            "citation_key": fm.get("citation_key") or key,
+            "title": title,
+            "year": str(fm.get("year", "")),
+            "authors": first_author,
+            "has_pdf": fm.get("has_pdf", False) in (True, "true"),
+            "collection_path": coll,
+            "domain": c["domain"],
+            "workspace": str(ws),
+            "ocr_dir": str(c["ocr_dir"]) if c["ocr_dir"] and c["ocr_dir"].exists() else None,
+        })
+
+    return enriched
+
+
 def prune_orphan_papers(
     vault: Path,
     *,
     fresh_index: dict,
     dry_run: bool = True,
+    enrich: bool = True,
     _candidates: list[dict] | None = None,
 ) -> dict:
     cfg = paperforge_paths(vault)
@@ -76,15 +117,18 @@ def prune_orphan_papers(
     for c in candidates:
         c["ocr_dir"] = _resolve_ocr_dir(vault, c["key"])
 
-    preview = [
-        {
-            "key": c["key"],
-            "domain": c["domain"],
-            "workspace": str(c["workspace_dir"]),
-            "ocr_dir": str(c["ocr_dir"]) if c["ocr_dir"].exists() else None,
-        }
-        for c in candidates
-    ]
+    if enrich:
+        preview = _enrich_orphan_preview(vault, candidates)
+    else:
+        preview = [
+            {
+                "key": c["key"],
+                "domain": c["domain"],
+                "workspace": str(c["workspace_dir"]),
+                "ocr_dir": str(c["ocr_dir"]) if c["ocr_dir"].exists() else None,
+            }
+            for c in candidates
+        ]
 
     if dry_run:
         return {"preview": preview, "deleted": [], "counts": {}}

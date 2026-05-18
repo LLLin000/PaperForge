@@ -11,16 +11,9 @@ logger = logging.getLogger(__name__)
 
 
 def run(args: argparse.Namespace) -> int:
-    """Run sync command through SyncService.
-
-    By default runs both selection-sync and index-refresh + cleanup.
-    Use --selection or --index to run only one phase.
-    SyncService is the canonical entry point for all sync operations.
-    """
     vault = getattr(args, "vault_path", None)
     if vault is None:
         from paperforge.config import resolve_vault
-
         vault = resolve_vault(cli_vault=getattr(args, "vault", None))
 
     verbose = getattr(args, "verbose", False)
@@ -64,22 +57,31 @@ def run(args: argparse.Namespace) -> int:
     result = svc.run(verbose=verbose, json_output=json_output, selection_only=selection_only, index_only=index_only,
                      prune=prune_flag, prune_force=prune_force)
 
+    _write_orphan_state(vault, result)
+
     if json_output:
         print(result.to_json())
         if result.ok and not dry_run and not index_only and not selection_only:
-            import subprocess, sys
-            subprocess.Popen(
-                [sys.executable, "-m", "paperforge", "embed", "build", "--resume"],
-                cwd=str(vault),
-                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-                creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if sys.platform == "win32" else 0,
-            )
+            try:
+                from paperforge.memory.builder import build_from_index
+                build_from_index(vault)
+            except Exception:
+                pass
+            try:
+                import subprocess, sys
+                subprocess.Popen(
+                    [sys.executable, "-m", "paperforge", "embed", "build", "--resume"],
+                    cwd=str(vault),
+                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                    creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if sys.platform == "win32" else 0,
+                )
+            except Exception:
+                pass
         return 0
 
     if not result.ok:
         return 1
 
-    # best-effort: memory rebuild
     try:
         from paperforge.memory.builder import build_from_index
         counts = build_from_index(vault)
@@ -88,7 +90,6 @@ def run(args: argparse.Namespace) -> int:
     except Exception as e:
         print(f"memory: deferred ({e})")
 
-    # background: trigger vector resume (silent, no output unless embed actually runs)
     try:
         import subprocess, sys
         subprocess.Popen(
@@ -101,3 +102,23 @@ def run(args: argparse.Namespace) -> int:
         pass
 
     return 0
+
+
+def _write_orphan_state(vault, result: PFResult) -> None:
+    preview = (result.data or {}).get("prune", {}) if result.data else {}
+    items = preview.get("preview", []) if isinstance(preview, dict) else []
+    orphan_path = vault / "System" / "PaperForge" / "indexes" / "sync-orphan-state.json"
+    if not items:
+        try:
+            orphan_path.unlink(missing_ok=True)
+        except Exception:
+            pass
+        return
+
+    import json as _json
+
+    orphan_path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        orphan_path.write_text(_json.dumps({"orphans": items, "count": len(items)}, indent=2), encoding="utf-8")
+    except Exception:
+        pass

@@ -60,7 +60,7 @@ class TestSyncServiceRunPrune:
         (vault / "Resources" / "Literature").mkdir(parents=True)
         return SyncService(vault)
 
-    def test_run_with_prune_calls_prune_method(self, tmp_path: Path) -> None:
+    def test_run_with_prune_force_calls_prune_twice(self, tmp_path: Path) -> None:
         svc = self._make_svc(tmp_path)
         svc.paths = {
             "literature": tmp_path / "Resources" / "Literature",
@@ -82,9 +82,12 @@ class TestSyncServiceRunPrune:
                 stack.enter_context(patch("paperforge.worker.asset_index.read_index", return_value={"schema_version": "3", "items": []}))
                 svc.run(prune=True, prune_force=True)
 
-        mock_prune.assert_called_once()
+        # prune always runs dry-run; prune_force triggers a second call for actual delete
+        assert mock_prune.call_count == 2
+        assert mock_prune.call_args_list[0][1]["dry_run"] is True
+        assert mock_prune.call_args_list[1][1]["dry_run"] is False
 
-    def test_run_without_prune_does_not_call_prune(self, tmp_path: Path) -> None:
+    def test_run_without_prune_calls_dry_run_only(self, tmp_path: Path) -> None:
         svc = self._make_svc(tmp_path)
         svc.paths = {
             "literature": tmp_path / "Resources" / "Literature",
@@ -94,6 +97,7 @@ class TestSyncServiceRunPrune:
         }
 
         with patch.object(svc, "prune") as mock_prune:
+            mock_prune.return_value = {"preview": [], "deleted": [], "counts": {}}
             with ExitStack() as stack:
                 stack.enter_context(patch.object(svc, "resolve_paths", return_value=svc.paths))
                 stack.enter_context(patch("paperforge.worker.sync.load_export_rows", return_value=[]))
@@ -105,4 +109,6 @@ class TestSyncServiceRunPrune:
                 stack.enter_context(patch("paperforge.worker.asset_index.read_index", return_value={"schema_version": "3", "items": []}))
                 svc.run()
 
-        mock_prune.assert_not_called()
+        # prune always runs once (dry-run) to collect orphan data for the result
+        mock_prune.assert_called_once()
+        assert mock_prune.call_args[1]["dry_run"] is True
