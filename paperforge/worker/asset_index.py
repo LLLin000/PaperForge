@@ -277,10 +277,10 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
     )
     from paperforge.worker.ocr import validate_ocr_meta
     from paperforge.worker.paper_meta import write_paper_meta
+    from paperforge.adapters.obsidian_frontmatter import has_deep_reading_content
     from paperforge.worker.sync import (
         collection_fields,
         frontmatter_note,
-        has_deep_reading_content,
         obsidian_wikilink_for_path,
         obsidian_wikilink_for_pdf,
     )
@@ -488,8 +488,8 @@ def _vec_auto_embed_if_new(vault: Path, entry: dict) -> None:
         return
     # Check if vector DB is enabled and set up
     try:
-        from paperforge.embedding._config import _read_plugin_settings
         from paperforge.embedding import embed_paper, get_vector_db_path
+        from paperforge.embedding._config import _read_plugin_settings
         from paperforge.memory.chunker import chunk_fulltext
         settings = _read_plugin_settings(vault)
         if not settings.get("features", {}).get("vector_db", False):

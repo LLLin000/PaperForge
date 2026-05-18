@@ -64,17 +64,46 @@ def run(args: argparse.Namespace) -> int:
     result = svc.run(verbose=verbose, json_output=json_output, selection_only=selection_only, index_only=index_only,
                      prune=prune_flag, prune_force=prune_force)
 
-    # Auto-build memory DB after successful sync so search works immediately
-    if result.ok and not dry_run:
-        try:
-            from paperforge.memory.builder import build_from_index
-            counts = build_from_index(vault)
-            logger.info("Memory DB built: %s papers indexed", counts.get("papers_indexed", 0))
-        except Exception as e:
-            logger.warning("Memory DB build skipped: %s", e)
-
     if json_output:
         print(result.to_json())
+        if result.ok and not dry_run:
+            try:
+                from paperforge.memory.builder import build_from_index
+                build_from_index(vault)
+            except Exception:
+                pass
+            try:
+                import subprocess, sys
+                subprocess.Popen(
+                    [sys.executable, "-m", "paperforge", "embed", "build", "--resume"],
+                    cwd=str(vault),
+                    creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if sys.platform == "win32" else 0,
+                )
+            except Exception:
+                pass
         return 0
 
-    return 0 if result.ok else 1
+    if not result.ok:
+        return 1
+
+    # best-effort: rebuild memory DB for immediate search
+    try:
+        from paperforge.memory.builder import build_from_index
+        counts = build_from_index(vault)
+        print(f"memory: {counts.get('papers_indexed', 0)} papers indexed")
+    except Exception as e:
+        print(f"memory: deferred ({e})")
+
+    # best-effort: trigger vector resume in background
+    try:
+        import subprocess, sys
+        subprocess.Popen(
+            [sys.executable, "-m", "paperforge", "embed", "build", "--resume"],
+            cwd=str(vault),
+            creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if sys.platform == "win32" else 0,
+        )
+        print("vector: resume started in background")
+    except Exception as e:
+        print(f"vector: deferred ({e})")
+
+    return 0
