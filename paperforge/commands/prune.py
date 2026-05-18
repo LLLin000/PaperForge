@@ -54,7 +54,7 @@ def run(args: argparse.Namespace) -> int:
         print(f"  {p['key']} ({p['domain']}) — workspace + {' + '.join(extras)}")
 
     if dry_run:
-        print(f"\n--- Dry run (pass --force to actually delete) ---")
+        print("\n--- Dry run (pass --force to actually delete) ---")
     else:
         counts = result_data.get("counts", {})
         print(f"\n[PRUNE] Deleted {len(result_data.get('deleted', []))} paper(s)")
@@ -63,8 +63,8 @@ def run(args: argparse.Namespace) -> int:
         print(f"  vectors:    {counts.get('vectors', 0)}")
         if counts.get("failed", 0):
             print(f"  failed:     {counts['failed']}")
-        print(f"\n  To restore: paperforge sync  (re-adds entry to index)")
-        print(f"  To recover: paperforge ocr run  (re-OCR)")
-        print(f"  To rebuild: paperforge embed build --resume  (re-embed)")
+        print("\n  To restore: paperforge sync  (re-adds entry to index)")
+        print("  To recover: paperforge ocr run  (re-OCR)")
+        print("  To rebuild: paperforge embed build --resume  (re-embed)")
 
     return 0

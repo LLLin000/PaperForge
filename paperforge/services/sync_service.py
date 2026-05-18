@@ -108,7 +108,7 @@ class SyncService:
                     continue
 
             to_delete: list[str] = []
-            for normalized, keys in records_by_title.items():
+            for _normalized, keys in records_by_title.items():
                 keys_in_export = [k for k in keys if k in domain_export_keys]
                 keys_not_in_export = [k for k in keys if k not in domain_export_keys]
                 if keys_in_export and keys_not_in_export:
@@ -261,7 +261,7 @@ class SyncService:
 
             from paperforge.config import load_vault_config
 
-            cfg = load_vault_config(self.vault)
+            load_vault_config(self.vault)
             exports: dict[str, dict[str, dict]] = {}
             for export_path in sorted(paths["exports"].glob("*.json")):
                 domain = domain_lookup.get(export_path.name, export_path.stem)
