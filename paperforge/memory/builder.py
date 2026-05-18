@@ -129,7 +129,7 @@ def _import_correction_log(conn, vault: Path) -> int:
 
 def build_from_index(vault: Path) -> dict:
     """Read formal-library.json and build/rebuild paperforge.db.
-    
+
     Returns a dict with counts for reporting.
     """
     envelope = read_index(vault)
@@ -137,7 +137,6 @@ def build_from_index(vault: Path) -> dict:
         raise FileNotFoundError(
             "Canonical index not found. Run paperforge sync --rebuild-index."
         )
-    # Legacy format: bare list of entries (pre-envelope)
     if isinstance(envelope, list):
         items = envelope
         generated_at = ""
@@ -147,6 +146,24 @@ def build_from_index(vault: Path) -> dict:
     canonical_hash = compute_hash(items) if isinstance(items, list) and items and isinstance(items[0], dict) else ""
 
     db_path = get_memory_db_path(vault)
+    # fast-path: if index hash matches, nothing changed
+    if canonical_hash and db_path.exists():
+        try:
+            conn = get_connection(db_path, read_only=False)
+            cached = conn.execute("SELECT value FROM meta WHERE key='canonical_index_hash'").fetchone()
+            stored_version = get_schema_version(conn)
+            if cached and cached[0] == canonical_hash and stored_version == CURRENT_SCHEMA_VERSION:
+                papers_count = conn.execute("SELECT COUNT(*) FROM papers").fetchone()[0]
+                conn.close()
+                return {
+                    "papers_indexed": papers_count,
+                    "db_path": str(db_path),
+                    "hash_match": True,
+                }
+            conn.close()
+        except Exception:
+            pass
+
     conn = get_connection(db_path, read_only=False)
     try:
         stored_version = get_schema_version(conn)
