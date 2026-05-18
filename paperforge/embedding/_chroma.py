@@ -22,17 +22,10 @@ def get_collection(vault: Path):
     db_path = get_vector_db_path(vault)
     db_path.mkdir(parents=True, exist_ok=True)
     client = chroma.PersistentClient(path=str(db_path))
-    try:
-        return client.get_or_create_collection(
-            name="paperforge_fulltext",
-            metadata={"hnsw:space": "cosine"},
-        )
-    except Exception:
-        client.delete_collection("paperforge_fulltext")
-        return client.create_collection(
-            name="paperforge_fulltext",
-            metadata={"hnsw:space": "cosine"},
-        )
+    return client.get_or_create_collection(
+        name="paperforge_fulltext",
+        metadata={"hnsw:space": "cosine"},
+    )
 
 
 def delete_paper_vectors(vault: Path, zotero_key: str) -> int:
