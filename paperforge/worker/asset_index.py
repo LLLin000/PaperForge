@@ -119,7 +119,7 @@ def get_index_path(vault: Path) -> Path:
 # ---------------------------------------------------------------------------
 
 
-def build_envelope(items: list[dict]) -> dict:
+def build_envelope(items: list[dict], export_hash: str = "") -> dict:
     """Wrap *items* in a versioned envelope dict.
 
     Returns::
@@ -137,6 +137,7 @@ def build_envelope(items: list[dict]) -> dict:
         "generated_at": datetime.now(timezone(timedelta(hours=8))).isoformat(),
         "paper_count": len(items),
         "paperforge_version": _paperforge_version,
+        "export_hash": export_hash,
         "items": items,
     }
 
@@ -512,23 +513,26 @@ def _vec_auto_embed_if_new(vault: Path, entry: dict) -> None:
 # ---------------------------------------------------------------------------
 
 
+def _compute_export_hash(paths: dict) -> str:
+    import hashlib
+
+    h = hashlib.sha256()
+    for p in sorted(paths["exports"].glob("*.json")):
+        h.update(p.read_bytes())
+    return h.hexdigest()
+
+
 def build_index(vault: Path, verbose: bool = False) -> int:
     """Full rebuild of the canonical asset index for *vault*.
 
-    This function is the core build loop:
-    1. Reads all Better BibTeX export JSON files.
-    2. For each paper entry, delegates to ``_build_entry()`` for metadata
-       collection and formal note writing.
-    3. Wraps the entries in a versioned envelope.
-    4. Writes the index atomically via ``atomic_write_index``.
-
-    The orphaned-record cleanup that follows in ``run_index_refresh()`` is
-    **not** included here.
+    3-tier fast-path:
+    1. Computes a hash of BBT export JSON files.
+    2. Compares with ``export_hash`` stored in the existing index envelope.
+    3. If unchanged AND schema version matches, skips the entire rebuild loop.
 
     Returns:
-        Number of items written to the index.
+        Number of items written to (or already present in) the index.
     """
-    # Lazy imports to avoid circular dependencies with sync.py
     from paperforge.config import load_vault_config
     from paperforge.worker._utils import pipeline_paths  # noqa: F811
     from paperforge.worker.base_views import ensure_base_views
@@ -538,12 +542,10 @@ def build_index(vault: Path, verbose: bool = False) -> int:
     config = load_domain_config(paths)
     ensure_base_views(vault, paths, config)
 
-    # Legacy format migration — detect bare-list format and back up before rebuild
     migrated = migrate_legacy_index(vault)
     if migrated:
         print("Legacy index format detected and backed up. Rebuilding with envelope...")
 
-    # Schema version check — mismatch triggers full rebuild
     existing_data = read_index(vault)
     if isinstance(existing_data, dict) and existing_data.get("schema_version") != CURRENT_SCHEMA_VERSION:
         print(
@@ -553,6 +555,14 @@ def build_index(vault: Path, verbose: bool = False) -> int:
 
     cfg = load_vault_config(vault)
     zotero_dir = vault / cfg.get("system_dir", "System") / "Zotero"
+
+    export_hash = _compute_export_hash(paths)
+    if isinstance(existing_data, dict) and existing_data.get("export_hash") == export_hash:
+        if existing_data.get("schema_version") == CURRENT_SCHEMA_VERSION:
+            count = len(existing_data.get("items", []))
+            if verbose:
+                print(f"index-refresh: {count} entries (unchanged)")
+            return count
 
     domain_lookup = {entry["export_file"]: entry["domain"] for entry in config["domains"]}
 
@@ -564,16 +574,9 @@ def build_index(vault: Path, verbose: bool = False) -> int:
         for item in export_rows:
             entry = _build_entry(item, vault, paths, domain, zotero_dir)
             index_rows.append(entry)
-            try:
-                from paperforge.memory.refresh import refresh_paper
 
-                refresh_paper(vault, entry)
-            except Exception:
-                pass  # memory DB refresh is best-effort
-
-    # Atomically write the envelope-wrapped index
     index_path = paths["index"]
-    envelope = build_envelope(index_rows)
+    envelope = build_envelope(index_rows, export_hash)
     atomic_write_index(index_path, envelope)
     print(f"index-refresh: wrote {len(index_rows)} index rows")
     return len(index_rows)
