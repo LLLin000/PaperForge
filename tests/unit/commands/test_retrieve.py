@@ -11,7 +11,7 @@ def test_retrieve_reports_corrupted_vector_index(tmp_path, capsys):
     vault.mkdir()
     args = Namespace(vault_path=vault, query="acl", limit=5, expand=True, json=False)
 
-    with patch("paperforge.embedding.status.get_embed_status") as mock_status:
+    with patch("paperforge.embedding.get_embed_status") as mock_status:
         mock_status.return_value = {
             "db_exists": True,
             "chunk_count": 0,
