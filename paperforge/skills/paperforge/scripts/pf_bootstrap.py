@@ -260,6 +260,35 @@ def main():
     # --- 8. Scan methodology archive ---
     result["methodology_index"] = _scan_methodology_archive(pf_root)
 
+    # --- 9. Capability probes ---
+    rg_available = False
+    try:
+        rg_result = subprocess.run(
+            ["rg", "--version"],
+            capture_output=True, text=True, timeout=10,
+            encoding="utf-8", errors="replace",
+        )
+        rg_available = rg_result.returncode == 0
+    except Exception:
+        pass
+
+    semantic_enabled = False
+    if dc_json.exists():
+        try:
+            with open(dc_json, encoding="utf-8") as f:
+                plugin_data = json.load(f)
+            semantic_enabled = plugin_data.get("features", {}).get("vector_db", False)
+        except Exception:
+            pass
+
+    result["capabilities"] = {
+        "rg": rg_available,
+        "metadata_search": True,
+        "paper_context": True,
+        "semantic_enabled": semantic_enabled,
+        "semantic_ready": semantic_enabled,
+    }
+
     result["ok"] = True
     json.dump(result, sys.stdout, ensure_ascii=False, indent=2)
 
