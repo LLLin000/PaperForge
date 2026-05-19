@@ -4,10 +4,15 @@
 
 ---
 
-## 前置条件
+## Pre-flight Checklist
 
-- bootstrap 已完成（有 `$VAULT`、`$PYTHON`、`$LIT_DIR`）
-- `atoms/retrieval-routing.md` 已就绪（提供检索梯级选择）
+进入此 molecule 前，确认以下检查已完成：
+
+- [ ] SKILL.md Section 1a Pre-flight 全部通过
+- [ ] `$VAULT`、`$PYTHON`、`$LIT_DIR` 已从 bootstrap 获取
+- [ ] `capabilities` 已读取（关键：`rg`、`semantic_enabled`、`semantic_ready`）
+- [ ] `atoms/retrieval-routing.md` 已就绪（提供检索梯级选择）
+- [ ] intent 已确定为 `find_supporting_evidence`
 
 ---
 

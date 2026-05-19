@@ -10,9 +10,14 @@
 
 ---
 
-## 前置条件
+## Pre-flight Checklist
 
-- bootstrap 已完成（有 `$VAULT`、`$PYTHON`）
+进入此 molecule 前，确认以下检查已完成：
+
+- [ ] SKILL.md Section 1a Pre-flight 全部通过
+- [ ] `$VAULT`、`$PYTHON` 已从 bootstrap 获取
+- [ ] 已确定唯一 paper（zotero_key / DOI / 标题）
+- [ ] intent 已确定为 `read_known_paper`
 
 ---
 
