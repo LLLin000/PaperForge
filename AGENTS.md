@@ -57,8 +57,8 @@ JS 读（同步，不推断）:
 | `/pf-sync` | 机械 | 执行 `paperforge sync`，解释结果 |
 | `/pf-ocr` | 机械 | 执行 `paperforge ocr`，解释结果 |
 | `/pf-status` | 机械 | 执行 `paperforge status --json` 或 `paperforge runtime-health --json`，解读状态 |
-| `/pf-deep` | 思考 | 打开 `workflows/deep-reading.md` 执行完整流程 |
-| `/pf-paper` | 思考 | 打开 `workflows/paper-qa.md` 执行完整流程 |
+| `/pf-deep` | 思考 | 打开 `molecules/deep-analyze-paper.md` 执行完整流程 |
+| `/pf-paper` | 思考 | 打开 `molecules/read-known-paper.md` 执行完整流程 |
 
 ---
 
