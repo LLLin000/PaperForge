@@ -151,7 +151,7 @@ def resolve_cfg(raw: dict) -> dict:
     return cfg
 
 
-def main():
+def main() -> None:
     import argparse
     p = argparse.ArgumentParser(description="PaperForge bootstrap")
     p.add_argument("--vault", default=None, help="Vault root path (auto-detect if omitted)")
@@ -165,13 +165,13 @@ def main():
         pf_json = vault / "paperforge.json"
         if not pf_json.exists():
             result["error"] = f"paperforge.json not found at {vault}"
-            json.dump(result, sys.stdout, ensure_ascii=False)
+            json.dump(result, sys.stdout, ensure_ascii=False, indent=2)
             sys.exit(0)
     else:
         pf_json = _find_paperforge_json(Path.cwd())
         if pf_json is None:
             result["error"] = "paperforge.json not found from CWD upward. Set --vault."
-            json.dump(result, sys.stdout, ensure_ascii=False)
+            json.dump(result, sys.stdout, ensure_ascii=False, indent=2)
             sys.exit(0)
         vault = pf_json.parent
 
@@ -182,7 +182,7 @@ def main():
         cfg = _read_pf_config(pf_json)
     except Exception as e:
         result["error"] = f"Cannot read paperforge.json: {e}"
-        json.dump(result, sys.stdout, ensure_ascii=False)
+        json.dump(result, sys.stdout, ensure_ascii=False, indent=2)
         sys.exit(0)
 
     cfg = resolve_cfg(cfg)
