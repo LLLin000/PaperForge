@@ -89,7 +89,7 @@ $PYTHON "$SKILL_DIR/scripts/pf_deep.py" prepare --key <zotero_key> --vault "$VAU
 
 **B: Agent 读 caption 做最终判断**
 1. 读该 figure 的 caption（来自 fulltext）
-2. 打开 `references/chart-reading/INDEX.md`，对照 caption 内容判断图表类型
+2. 打开 `atoms/chart-reading/INDEX.md`，对照 caption 内容判断图表类型
 3. chart-type-map 建议和 Agent 判断不一致时 → 以 Agent 判断为准
 4. 无法确定类型 → 跳过 chart guide，按通用结构分析
 5. 确定类型 → 读对应 chart-reading 指南，按指南中的检查清单分析
