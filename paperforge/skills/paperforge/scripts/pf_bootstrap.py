@@ -247,6 +247,7 @@ def main():
             memory_layer["fts_search"] = True
         except:
             pass
+    plugin_data = None
     if dc_json.exists():
         try:
             with open(dc_json, encoding="utf-8") as f:
@@ -272,20 +273,17 @@ def main():
     except Exception:
         pass
 
-    semantic_enabled = False
-    if dc_json.exists():
-        try:
-            with open(dc_json, encoding="utf-8") as f:
-                plugin_data = json.load(f)
-            semantic_enabled = plugin_data.get("features", {}).get("vector_db", False)
-        except Exception:
-            pass
+    semantic_enabled = plugin_data.get("features", {}).get("vector_db", False) if plugin_data else False
 
     result["capabilities"] = {
         "rg": rg_available,
         "metadata_search": True,
         "paper_context": True,
+        # Duplicates memory_layer.vector_search by design — bootstrap provides
+        # convenience capabilities without the indirection. runtime-health is authoritative.
         "semantic_enabled": semantic_enabled,
+        # Placeholder: same as semantic_enabled until a separate readiness probe
+        # (e.g. runtime-health ping) is implemented.
         "semantic_ready": semantic_enabled,
     }
 
