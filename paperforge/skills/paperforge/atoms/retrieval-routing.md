@@ -61,8 +61,3 @@ If semantic is available:
 - Every semantic hit must be verified by rg/fulltext/paper-context before use
 ```
 
-## 6. Commit convention
-
-```
-feat(skill): add retrieval-routing atom
-```
