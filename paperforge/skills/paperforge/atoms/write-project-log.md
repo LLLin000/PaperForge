@@ -128,4 +128,4 @@ $PYTHON -m paperforge --vault "$VAULT" project-log --render --project "<project>
 
 ## 参考
 
-详情请看 `workflows/project-log.md`。
+详情请看本 atom 顶部的确认模板部分。

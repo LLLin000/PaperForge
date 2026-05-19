@@ -52,7 +52,7 @@
 
 **必须**在写入前以交互方式展示给用户确认。
 
-格式参考对应 workflow（`workflows/reading-log.md`、`workflows/project-log.md`）中的确认模板。
+格式参考对应 atom（`atoms/write-reading-log-jsonl.md`、`atoms/write-project-reading-log.md`、`atoms/write-project-log.md`）中的确认模板。
 
 ### Step 4: 写入后反馈
 
