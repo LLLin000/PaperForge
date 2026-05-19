@@ -68,8 +68,8 @@ $PYTHON -m paperforge --vault "$VAULT" runtime-health --json
 
 检查返回 JSON：
 
-- `data.summary.safe_read == false`：禁止路由到 paper-search、paper-qa、deep-reading
-- `data.summary.safe_write == false`：禁止路由到 reading-log、project-log
+- `data.summary.safe_read == false`：禁止路由到 discover-papers、read-known-paper、deep-analyze-paper
+- `data.summary.safe_write == false`：禁止路由到 write-reading-log-jsonl、write-project-reading-log、write-project-log
 - `data.layers.vector.status != "ok"`：禁止把 semantic retrieve 当主路径，必要时退回 FTS / paper-context / fulltext
 - `data.layers.*.repair_command` 存在时，优先把该命令作为修复建议返回给用户
 
@@ -145,7 +145,7 @@ Reading-log 不是事实源。它记录的是**之前的关注点、解读和预
 
 - **禁止自行拼接文件路径**。所有路径从 bootstrap 或 paper-context 获取。
 - **禁止绕过 CLI 直接操作文件**。搜索用 `$PYTHON -m paperforge search`，不用 glob/grep 扫库。
-- **禁止在未完成 paper-context 检查前读取原文**（适用于 deep-reading、paper-qa）。
+- **禁止在未完成 paper-context 检查前读取原文**（适用于 read-known-paper、deep-analyze-paper）。
 
 ---
 
