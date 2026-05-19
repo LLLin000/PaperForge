@@ -40,6 +40,18 @@ python $SKILL_DIR/scripts/pf_bootstrap.py --vault "$VAULT"
 
 bootstrap 现在也返回一个 `capabilities` 块（rg, semantic, metadata 等）。
 
+## 1a. Pre-flight Checklist
+
+**进入任何 molecule 之前，必须完成以下检查。标记为 `[x]` 后才可前进。**
+
+- [ ] **bootstrap completed**：`$VAULT`、`$PYTHON`、`$LIT_DIR`、`$SKILL_DIR` 已定义
+- [ ] **capabilities**：已读取 `capabilities` 块中的 `rg`、`metadata_search`、`paper_context`、`semantic_enabled`、`semantic_ready`
+- [ ] **runtime-health passed**：`safe_read`、`safe_write` 已知，vector 状态已知
+- [ ] **intent identified**：用户意图已映射到一个顶层 research intent
+- [ ] **molecule selected**：已路由到对应的 `molecules/<intent>.md`
+
+如果任一检查未通过，先执行对应的步骤，**不跳过**。
+
 ---
 
 ## 2. Agent Context — bootstrap 成功后执行

@@ -4,9 +4,14 @@
 
 ---
 
-## 前置条件
+## Pre-flight Checklist
 
-- bootstrap 已完成（有 `$VAULT`、`$PYTHON`、`$LIT_DIR`）
+进入此 molecule 前，确认以下检查已完成。每项完成后标记 `[x]`：
+
+- [ ] SKILL.md Section 1a Pre-flight 全部通过
+- [ ] `$VAULT`、`$PYTHON`、`$LIT_DIR` 已从 bootstrap 获取
+- [ ] `capabilities` 已读取（至少确认 `metadata_search` 可用）
+- [ ] intent 已确定为 `discover_papers`
 
 ---
 

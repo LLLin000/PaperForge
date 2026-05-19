@@ -2,6 +2,15 @@
 
 捕获和持久化从阅读中获得的知识到项目记忆。
 
+## Pre-flight Checklist
+
+- [ ] SKILL.md Section 1a Pre-flight 全部通过
+- [ ] `$VAULT`、`$PYTHON` 已从 bootstrap 获取
+- [ ] 待保存的内容已就绪（证据/讨论/方法论）
+- [ ] intent 已确定为 `capture_project_knowledge`
+
+ 或作为 post-action（在其他 molecule 输出后用户要求保存）
+
 ---
 
 ## 触发模式
