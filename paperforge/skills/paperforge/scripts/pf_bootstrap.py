@@ -35,6 +35,12 @@ import subprocess
 import sys
 from pathlib import Path
 
+try:
+    import paperforge
+    SKILL_VERSION = paperforge.__version__
+except Exception:
+    SKILL_VERSION = "unknown"
+
 
 def _find_paperforge_json(start: Path) -> Path | None:
     current = start.resolve()
@@ -288,6 +294,7 @@ def main() -> None:
     }
 
     result["ok"] = True
+    result["skill_version"] = SKILL_VERSION
     json.dump(result, sys.stdout, ensure_ascii=False, indent=2)
 
 

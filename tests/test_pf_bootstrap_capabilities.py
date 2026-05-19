@@ -75,3 +75,8 @@ def test_bootstrap_capabilities_contract(tmp_path: Path) -> None:
 
     assert "semantic_ready" in caps, "capabilities.semantic_ready missing"
     assert isinstance(caps["semantic_ready"], bool), "capabilities.semantic_ready must be bool"
+
+    # Skill version
+    sv = output.get("skill_version")
+    assert sv is not None, "skill_version missing from bootstrap output"
+    assert isinstance(sv, str) and sv != "unknown", f"skill_version invalid: {sv}"
