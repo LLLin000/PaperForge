@@ -804,54 +804,48 @@ function setupSelectionCapture(containerEl, vaultPath, pdfPath) {
                 { name: 'purple', hex: '#a28ae5' }, { name: 'magenta', hex: '#e56eee' },
                 { name: 'orange', hex: '#f19837' }, { name: 'gray', hex: '#aaaaaa' },
             ];
-            function doCreateAnnotation(color) {
+            async function doCreateAnnotation(color) {
                 var selectedText = sel.toString().trim();
-                var cv = pageEl.querySelector('canvas');
+                var pv = _pdfInternalHandle && _pdfInternalHandle.getPageView(pageNum - 1);
+                // Get PDF page dimensions from viewport
                 var pdfW = 612, pdfH = 792;
-                if (cv && cv.clientWidth > 0) {
-                    var ar = cv.clientWidth / cv.clientHeight;
-                    if (ar > 0.65 && ar < 0.75) { pdfW = 595; pdfH = 842; }
+                if (pv && pv.viewport && pv.viewport.viewBox) {
+                    var vb = pv.viewport.viewBox;
+                    pdfW = vb[2]; pdfH = vb[3];
                 }
-                var canvasEl = pageEl.querySelector('canvas');
-                if (!canvasEl) return;
-                var canvasBox = canvasEl.getBoundingClientRect();
-                var zoomX = pdfW / canvasBox.width, zoomY = pdfH / canvasBox.height;
-                // Collect individual text layer spans within the range (per-span precision)
+                // Get text content items with per-character data (PDF++ approach)
                 var pdfRects = [];
                 try {
-                    var tlSpans = pageEl.querySelectorAll('.textLayer > span');
-                    var seen = new Set();
-                    for (var si = 0; si < tlSpans.length; si++) {
-                        var sp = tlSpans[si];
-                        if (seen.has(sp)) continue;
-                        seen.add(sp);
-                        if (!range.intersectsNode(sp)) continue;
-                        var sr = sp.getBoundingClientRect();
-                        if (sr.width < 2 || sr.height < 2) continue;
-                        pdfRects.push([
-                            (sr.left - canvasBox.left) * zoomX,
-                            pdfH - (sr.bottom - canvasBox.top) * zoomY,
-                            (sr.right - canvasBox.left) * zoomX,
-                            pdfH - (sr.top - canvasBox.top) * zoomY
-                        ]);
-                    }
-                } catch (_) {}
-                // Fallback: range.getClientRects
-                if (pdfRects.length === 0) {
-                    try {
-                        var crs = range.getClientRects();
-                        for (var cri = 0; cri < crs.length; cri++) {
-                            var cr = crs[cri];
-                            if (cr.width < 2 || cr.height < 2) continue;
-                            pdfRects.push([
-                                (cr.left - canvasBox.left) * zoomX,
-                                pdfH - (cr.bottom - canvasBox.top) * zoomY,
-                                (cr.right - canvasBox.left) * zoomX,
-                                pdfH - (cr.top - canvasBox.top) * zoomY
-                            ]);
+                    if (_pdfInternalHandle && _pdfInternalHandle.pdfDocument) {
+                        var page = await _pdfInternalHandle.pdfDocument.getPage(pageNum);
+                        var tc = await page.getTextContent({ includeChars: true });
+                        // Concatenate item strings and find match
+                        var textPositions = [];
+                        var fullText = '';
+                        for (var ii = 0; ii < tc.items.length; ii++) {
+                            var item = tc.items[ii];
+                            var s = item.str || '';
+                            if (!s) continue;
+                            textPositions.push({ idx: ii, start: fullText.length, end: fullText.length + s.length });
+                            fullText += s;
                         }
-                    } catch (_) {}
-                }
+                        var selNorm = selectedText.replace(/\s+/g, ' ');
+                        var fullNorm = fullText.replace(/\s+/g, ' ');
+                        var matchIdx = fullNorm.indexOf(selNorm);
+                        if (matchIdx >= 0) {
+                            for (var ii = 0; ii < textPositions.length; ii++) {
+                                var tp = textPositions[ii];
+                                if (tp.start > matchIdx + selNorm.length || tp.end < matchIdx) continue;
+                                var item = tc.items[tp.idx];
+                                var tr = item.transform;
+                                if (!tr || tr.length < 6) continue;
+                                var iw = item.width || 0;
+                                var ih = item.height || 10;
+                                pdfRects.push([tr[4], tr[5] - ih, tr[4] + iw, tr[5]]);
+                            }
+                        }
+                    }
+                } catch (e) { console.warn('[PF] textContent:', e.message); }
                 if (pdfRects.length === 0) return;
                 var annPayload = {
                     pdf_path: pdfPath,
