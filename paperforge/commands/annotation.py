@@ -7,6 +7,8 @@ import json
 import sys
 from pathlib import Path
 
+from paperforge.core.errors import ErrorCode
+
 from paperforge import __version__ as PF_VERSION
 from paperforge.annotation.db import get_annotations_db_path, get_annotations_connection
 from paperforge.annotation.importer import run_import
@@ -135,23 +137,71 @@ def _cmd_import(vault, args, json_output):
     except Exception as exc:
         result = PFResult(
             ok=False, command="annotation import", version=PF_VERSION,
-            error=PFError(code="IMPORT_FAILED", message=str(exc)),
+            error=PFError(code=ErrorCode.INTERNAL_ERROR, message=str(exc)),
         )
         return _emit(result, json_output)
 
 
+def _resolve_paper_key(vault, pdf_path):
+    """Resolve a vault-relative PDF path to a paper zotero key via memory DB."""
+    if not pdf_path:
+        return ""
+    import sqlite3
+    db = Path(str(vault)) / "System" / "PaperForge" / "indexes" / "paperforge.db"
+    if not db.exists():
+        return ""
+    try:
+        mem = sqlite3.connect(str(db))
+        mem.row_factory = sqlite3.Row
+        pdf_name = Path(pdf_path).name
+        # Memory DB stores pdf_path as wikilink: [[path/to/file.pdf]]
+        # Match by filename inside wikilink, or by the raw path
+        for like_pattern in [f"%/{pdf_name}]", f"%\\{pdf_name}]", f"%{pdf_name}%"]:
+            row = mem.execute(
+                "SELECT zotero_key FROM papers WHERE pdf_path LIKE ? LIMIT 1",
+                (like_pattern,),
+            ).fetchone()
+            if row:
+                mem.close()
+                return row["zotero_key"]
+        # Last resort: extract storage folder key (8-char HEX) from PDF path
+        # e.g. System/Zotero/storage/XJSUZL8W/file.pdf -> XJSUZL8W
+        m = __import__("re").search(r"storage[\\/]([A-Z0-9]{8})", pdf_path, __import__("re").IGNORECASE)
+        if m:
+            row = mem.execute(
+                "SELECT zotero_key FROM papers WHERE pdf_path LIKE ? LIMIT 1",
+                (f"%{m.group(1)}%",),
+            ).fetchone()
+            if row:
+                mem.close()
+                return row["zotero_key"]
+        mem.close()
+    except Exception:
+        pass
+    return ""
+
+
 def _cmd_list(vault, args, json_output):
+    paper_key = args.paper_key or ""
+    if not paper_key and getattr(args, "pdf_path", None):
+        paper_key = _resolve_paper_key(vault, args.pdf_path)
+        if not paper_key:
+            result = PFResult(
+                ok=False, command="annotation list", version=PF_VERSION,
+                error=PFError(code="PATH_NOT_FOUND", message=f"Could not resolve PDF path to paper key: {args.pdf_path}"),
+            )
+            return _emit(result, json_output)
     conn = _db_conn(vault)
     try:
         anns = list_annotations(
             conn,
-            paper_id=args.paper_key,
+            paper_id=paper_key,
             page_index=getattr(args, "page", None),
             annotation_type=getattr(args, "ann_type", ""),
             limit=getattr(args, "limit", 100),
         )
         result = PFResult(ok=True, command="annotation list", version=PF_VERSION, data={
-            "paper_id": args.paper_key, "annotations": anns, "count": len(anns),
+            "paper_id": paper_key, "annotations": anns, "count": len(anns),
         })
         return _emit(result, json_output)
     finally:

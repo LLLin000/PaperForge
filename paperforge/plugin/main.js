@@ -734,14 +734,32 @@ function renderAnnotationRect(layer, ann, vaultPath, pdfPath, containerEl) {
     const rects = getAnnotationRects(ann);
     if (!rects || rects.length === 0) return;
     const isReadonly = isReadonlyAnnotation(ann);
+    // Normalize PDF points (0-612 x 0-792) to 0-1 percentage
+    // Use the layer parent (page div) dimensions, or fall back to 612x792
+    let pageW = 612, pageH = 792;
+    try {
+        const pageEl = layer.parentElement;
+        if (pageEl) {
+            const pw = pageEl.offsetWidth;
+            const ph = pageEl.offsetHeight;
+            if (pw > 0) pageW = pw;
+            if (ph > 0) pageH = ph;
+        }
+    } catch (_) {}
     for (let i = 0; i < rects.length; i++) {
         const rect = rects[i];
+        // PDF rect format: [left, bottom, right, top] — bottom-left origin
+        // CSS: top-left origin, so mirror Y axis
+        var cssLeft = rect[0];
+        var cssTop = pageH - rect[3];
+        var cssW = rect[2] - rect[0];
+        var cssH = rect[3] - rect[1];
         const el = document.createElement('div');
         el.className = 'pf-annotation-rect pf-annotation-rect--' + ann.type;
-        el.style.left = (rect[0] * 100) + '%';
-        el.style.top = (rect[1] * 100) + '%';
-        el.style.width = ((rect[2] - rect[0]) * 100) + '%';
-        el.style.height = ((rect[3] - rect[1]) * 100) + '%';
+        el.style.left = ((cssLeft / pageW) * 100) + '%';
+        el.style.top = ((cssTop / pageH) * 100) + '%';
+        el.style.width = ((cssW / pageW) * 100) + '%';
+        el.style.height = ((cssH / pageH) * 100) + '%';
         if (ann.color) {
             el.style.backgroundColor = ann.color;
             if (ann.type === 'highlight') el.style.opacity = '0.25';
@@ -867,6 +885,13 @@ function hideAnnotationPopover() {
 
 function getAnnotationRects(ann) {
     if (!ann) return null;
+    // position_json stores full position: {"pageIndex":0, "rects":[[l,t,r,b],...]}
+    if (ann.position_json) {
+        try {
+            const pos = JSON.parse(ann.position_json);
+            if (pos && Array.isArray(pos.rects)) return pos.rects;
+        } catch { return null; }
+    }
     if (ann.rects_json) {
         try { return JSON.parse(ann.rects_json); } catch { return null; }
     }

@@ -9,7 +9,7 @@ from paperforge.core.errors import ErrorCode
 
 @dataclass
 class PFError:
-    code: ErrorCode
+    code: ErrorCode | str
     message: str
     details: dict = field(default_factory=dict)
     suggestions: list[str] = field(default_factory=list)
@@ -39,8 +39,9 @@ class PFResult:
         else:
             raw["data"] = None
         if self.error is not None:
+            code_val = self.error.code.value if isinstance(self.error.code, ErrorCode) else str(self.error.code)
             raw["error"] = {
-                "code": self.error.code.value,
+                "code": code_val,
                 "message": self.error.message,
                 "details": self.error.details,
             }

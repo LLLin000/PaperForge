@@ -27,7 +27,7 @@ def _probe_to_row(
     now: str,
 ) -> dict[str, Any]:
     """Convert a normalized probe annotation dict into a DB row."""
-    paper_id = ann.get("parentItemKey", "")
+    paper_id = ann.get("parentItemKey", "") or ann.get("attachmentKey", "")
     zotero_key = ann.get("annotationKey", "")
     zotero_attachment_key = ann.get("attachmentKey", "")
     pdf_path = ann.get("attachment_path", "")

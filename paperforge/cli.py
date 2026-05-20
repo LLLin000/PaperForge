@@ -304,7 +304,8 @@ def build_parser() -> argparse.ArgumentParser:
     p_ann_import.add_argument("--json", action="store_true")
 
     p_ann_list = p_ann_sp.add_parser("list", help="List annotations for a paper")
-    p_ann_list.add_argument("paper_key", help="Paper zotero key")
+    p_ann_list.add_argument("paper_key", nargs="?", default="", help="Paper zotero key")
+    p_ann_list.add_argument("--pdf-path", help="Resolve paper key from vault PDF path")
     p_ann_list.add_argument("--page", type=int, help="Filter by page index")
     p_ann_list.add_argument("--type", dest="ann_type", help="Filter by annotation type")
     p_ann_list.add_argument("--limit", type=int, default=100, help="Max results")
