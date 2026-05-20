@@ -418,7 +418,74 @@ function toggleDisclosureState(store, key, defaultCollapsed) {
     return next;
 }
 
-/* ── Annotation DB (sql.js, no subprocess) ── */
+/* ── Annotation DB (sql.js, inlined — cannot require() local files) ── */
+
+class AnnotationDB {
+    constructor() {
+        this.db = null;
+        this.SQL = null;
+        this._cache = null;
+        this._cachePaperId = null;
+    }
+
+    async init() {
+        if (this.SQL) return;
+        const initSqlJs = require('sql.js');
+        this.SQL = await initSqlJs({
+            locateFile: (f) => path.join(__dirname, f),
+        });
+    }
+
+    _dbPath(vaultPath) {
+        var paths = memoryState.resolveVaultPaths(vaultPath);
+        return path.join(paths.indexesDir, 'annotations.db');
+    }
+
+    _open(vaultPath) {
+        var dbPath = this._dbPath(vaultPath);
+        try {
+            if (!fs.existsSync(dbPath)) { console.warn('[PF-ann] annotations.db not found at', dbPath); return false; }
+            var buf = fs.readFileSync(dbPath);
+            this.db = new this.SQL.Database(buf);
+            return true;
+        } catch (e) {
+            console.warn('[PF-ann] failed to open annotations.db:', e.message);
+            return false;
+        }
+    }
+
+    _ensureOpen(vaultPath) {
+        if (this.db) return true;
+        return this._open(vaultPath);
+    }
+
+    getAnnotationsByPaper(vaultPath, paperId) {
+        if (!this._ensureOpen(vaultPath)) return [];
+        if (this._cachePaperId === paperId && this._cache) return this._cache;
+        try {
+            var stmt = this.db.prepare(
+                'SELECT * FROM annotations WHERE paper_id = ? AND deleted_at IS NULL ORDER BY sort_index'
+            );
+            stmt.bind([paperId]);
+            var results = [];
+            while (stmt.step()) { results.push(stmt.getAsObject()); }
+            stmt.free();
+            this._cache = results;
+            this._cachePaperId = paperId;
+            return results;
+        } catch (e) {
+            console.warn('[PF-ann] query failed:', e.message);
+            return [];
+        }
+    }
+
+    close() {
+        if (this.db) { this.db.close(); this.db = null; }
+        this._cache = null; this._cachePaperId = null;
+    }
+}
+
+/* ── Annotation DB bridge ── */
 
 let _annotationDB = null;
 let _annotationCache = null;
@@ -426,12 +493,11 @@ let _annotationCachePdfKey = null;
 
 function _resolvePaperKeyFromDB(vaultPath, pdfPath) {
     try {
-        var dbPath = memoryState.resolveVaultPaths(vaultPath).indexesDir + '\\paperforge.db';
-        var fs = require('fs');
-        if (!fs.existsSync(dbPath)) return '';
-        var buf = fs.readFileSync(dbPath);
         var SQL = _annotationDB && _annotationDB.SQL;
         if (!SQL) return '';
+        var dbPath = memoryState.resolveVaultPaths(vaultPath).indexesDir + '\\paperforge.db';
+        if (!fs.existsSync(dbPath)) return '';
+        var buf = fs.readFileSync(dbPath);
         var mdb = new SQL.Database(buf);
         var stmt = mdb.prepare("SELECT zotero_key FROM papers WHERE pdf_path LIKE ?");
         // Try storage folder key first
