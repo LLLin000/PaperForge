@@ -9,6 +9,9 @@ const {
     parseRuntimeStatus,
     detectConflictingPlugins,
     canUseAnnotationOverlay,
+    hasPdfJsLayerAlignment,
+    tryResolvePdfInternalViewer,
+    canRenderPdfInternalOverlayHandle,
 } = await import('../src/testable.js');
 
 describe('classifyError', () => {
@@ -155,5 +158,49 @@ describe('canUseAnnotationOverlay', () => {
     it('returns false when Annotator is active', () => {
         const app = { plugins: { plugins: { 'obsidian-annotator': {} } } };
         expect(canUseAnnotationOverlay(app, false)).toBe(false);
+    });
+});
+
+describe('hasPdfJsLayerAlignment', () => {
+    it('returns true when setLayerDimensions exists', () => {
+        expect(hasPdfJsLayerAlignment({ pdfjsLib: { setLayerDimensions: function () {} } })).toBe(true);
+    });
+    it('returns false when pdfjsLib is missing', () => {
+        expect(hasPdfJsLayerAlignment({})).toBe(false);
+    });
+    it('returns false for null', () => {
+        expect(hasPdfJsLayerAlignment(null)).toBe(false);
+    });
+    it('returns false when setLayerDimensions is not a function', () => {
+        expect(hasPdfJsLayerAlignment({ pdfjsLib: { setLayerDimensions: 42 } })).toBe(false);
+    });
+});
+
+describe('tryResolvePdfInternalViewer', () => {
+    it('returns null for null view', () => {
+        expect(tryResolvePdfInternalViewer(null)).toBeNull();
+    });
+    it('returns null when view has no accessible pdf viewer', () => {
+        expect(tryResolvePdfInternalViewer({})).toBeNull();
+    });
+    it('resolves getPageView from deep pdfViewer path', () => {
+        var view = {
+            viewer: { pdfViewer: { getPageView: function () {}, currentScale: 1, pagesCount: 10 } },
+        };
+        var handle = tryResolvePdfInternalViewer(view);
+        expect(handle).toBeTruthy();
+        expect(typeof handle.getPageView).toBe('function');
+    });
+});
+
+describe('canRenderPdfInternalOverlayHandle', () => {
+    it('returns true for valid handle', () => {
+        expect(canRenderPdfInternalOverlayHandle({ getPageView: function () {}, currentScale: 1, pagesCount: 10 })).toBe(true);
+    });
+    it('returns false for null', () => {
+        expect(canRenderPdfInternalOverlayHandle(null)).toBe(false);
+    });
+    it('returns false when getPageView is missing', () => {
+        expect(canRenderPdfInternalOverlayHandle({ currentScale: 1, pagesCount: 10 })).toBe(false);
     });
 });

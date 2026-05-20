@@ -206,6 +206,43 @@ function canUseAnnotationOverlay(app, isMobile) {
     return true;
 }
 
+function hasPdfJsLayerAlignment(windowObj) {
+    try {
+        return !!(windowObj && windowObj.pdfjsLib && typeof windowObj.pdfjsLib.setLayerDimensions === 'function');
+    } catch { return false; }
+}
+
+function tryResolvePdfInternalViewer(view) {
+    if (!view) return null;
+    try {
+        // Try common internal property paths used by Obsidian's PDF viewer
+        var viewerComponent = view.viewer || view.pdfViewer || view.pdfViewerComponent;
+        if (!viewerComponent && view.constructor && view.constructor.prototype) {
+            var proto = view.constructor.prototype;
+            var desc = Object.getOwnPropertyDescriptor(proto, 'viewer')
+                || Object.getOwnPropertyDescriptor(proto, 'pdfViewer');
+            if (desc) {
+                viewerComponent = typeof desc.get === 'function' ? desc.get.call(view) : (desc.value || (view[desc]));
+            }
+        }
+        if (!viewerComponent && view.pdfViewer) viewerComponent = view.pdfViewer;
+        if (!viewerComponent) return null;
+        // Check if pdfViewer has getPageView
+        var pdfViewer = viewerComponent.pdfViewer || viewerComponent;
+        if (pdfViewer && typeof pdfViewer.getPageView === 'function') return pdfViewer;
+        return null;
+    } catch { return null; }
+}
+
+function canRenderPdfInternalOverlayHandle(handle) {
+    if (!handle) return false;
+    try {
+        return typeof handle.getPageView === 'function'
+            && typeof handle.currentScale === 'number'
+            && typeof handle.pagesCount === 'number';
+    } catch { return false; }
+}
+
 // ── Bridge helpers ──
 
 function runAnnotationSubprocess(vaultPath, pythonInfo, args, timeout, _spawn) {
@@ -461,6 +498,9 @@ module.exports = {
     toggleDisclosureState,
     detectConflictingPlugins,
     canUseAnnotationOverlay,
+    hasPdfJsLayerAlignment,
+    tryResolvePdfInternalViewer,
+    canRenderPdfInternalOverlayHandle,
     runAnnotationSubprocess,
     ANNOTATION_COLORS,
     ANNOTATION_DEFAULT_COLOR,
