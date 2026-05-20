@@ -53,7 +53,11 @@ def run(args) -> int:
 
 def _dashboard_from_db(vault: Path) -> dict | None:
     """Build dashboard stats from paperforge.db. Returns None if DB unavailable."""
-    db_path = vault / "System" / "PaperForge" / "indexes" / "paperforge.db"
+    paths = paperforge_paths(vault)
+    index_path = paths.get("index")
+    if not index_path:
+        return None
+    db_path = index_path.parent / "paperforge.db"
     if not db_path.exists():
         return None
     try:

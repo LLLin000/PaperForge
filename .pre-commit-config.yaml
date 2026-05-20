@@ -8,3 +8,13 @@ repos:
       - id: ruff
         args: [--fix]
       - id: ruff-format
+
+  - repo: local
+    hooks:
+      - id: audit-hardcoded-paths
+        name: audit hardcoded paths
+        description: Fail if any Python source uses a hardcoded config-driven path instead of the config system
+        entry: python -m pytest tests/audit/test_hardcoded_paths.py -x --no-header -q
+        language: system
+        pass_filenames: false
+        types: [python]

@@ -69,7 +69,7 @@ def _find_paper_metadata(vault: Path, zotero_key: str) -> dict | None:
         logger.warning("Failed to resolve PaperForge paths: %s", exc)
         return None
 
-    index_path = paths["paperforge"] / "indexes" / "formal-library.json"
+    index_path = paths.get("index") or (paths["paperforge"] / "indexes" / "formal-library.json")
     if not index_path.exists():
         logger.warning("Canonical index does not exist: %s", index_path)
         return None

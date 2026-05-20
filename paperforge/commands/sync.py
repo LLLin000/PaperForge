@@ -105,9 +105,11 @@ def run(args: argparse.Namespace) -> int:
 
 
 def _write_orphan_state(vault, result: PFResult) -> None:
+    from paperforge.config import paperforge_paths
     preview = (result.data or {}).get("prune", {}) if result.data else {}
     items = preview.get("preview", []) if isinstance(preview, dict) else []
-    orphan_path = vault / "System" / "PaperForge" / "indexes" / "sync-orphan-state.json"
+    paths = paperforge_paths(vault)
+    orphan_path = paths["index"].parent / "sync-orphan-state.json"
     if not items:
         try:
             orphan_path.unlink(missing_ok=True)
