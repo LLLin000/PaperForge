@@ -7,6 +7,8 @@ const {
     classifyError,
     buildRuntimeInstallCommand,
     parseRuntimeStatus,
+    detectConflictingPlugins,
+    canUseAnnotationOverlay,
 } = await import('../src/testable.js');
 
 describe('classifyError', () => {
@@ -113,5 +115,45 @@ describe('parseRuntimeStatus', () => {
         const result = parseRuntimeStatus(err, null, 'some output');
         expect(result.status).toBe('error');
         expect(result.type).toBe('unknown');
+    });
+});
+
+describe('detectConflictingPlugins', () => {
+    it('returns null when no plugins conflict', () => {
+        const app = { plugins: { plugins: { 'some-plugin': {} } } };
+        expect(detectConflictingPlugins(app)).toBeNull();
+    });
+    it('detects PDF++ by plugin id', () => {
+        const app = { plugins: { plugins: { 'pdf-plus': { manifest: { id: 'pdf-plus' } } } } };
+        expect(detectConflictingPlugins(app)).toBe('PDF++');
+    });
+    it('detects Obsidian Annotator', () => {
+        const app = { plugins: { plugins: { 'obsidian-annotator': {} } } };
+        expect(detectConflictingPlugins(app)).toBe('Obsidian Annotator');
+    });
+    it('returns null for null app', () => {
+        expect(detectConflictingPlugins(null)).toBeNull();
+    });
+    it('returns null for missing plugins object', () => {
+        expect(detectConflictingPlugins({})).toBeNull();
+    });
+});
+
+describe('canUseAnnotationOverlay', () => {
+    it('returns true on desktop with no conflicts', () => {
+        const app = { plugins: { plugins: { 'some-plugin': {} } } };
+        expect(canUseAnnotationOverlay(app, false)).toBe(true);
+    });
+    it('returns false on mobile', () => {
+        const app = { plugins: { plugins: {} } };
+        expect(canUseAnnotationOverlay(app, true)).toBe(false);
+    });
+    it('returns false when PDF++ is active', () => {
+        const app = { plugins: { plugins: { 'pdf-plus': {} } } };
+        expect(canUseAnnotationOverlay(app, false)).toBe(false);
+    });
+    it('returns false when Annotator is active', () => {
+        const app = { plugins: { plugins: { 'obsidian-annotator': {} } } };
+        expect(canUseAnnotationOverlay(app, false)).toBe(false);
     });
 });

@@ -530,6 +530,179 @@ async function deleteLocalAnnotation(vaultPath, annotationId) {
     return { ok: parsed.ok, error: parsed.error || null, data: parsed.data || null };
 }
 
+/* ── PDF annotation overlay patch lifecycle ── */
+
+let _overlayInstalled = false;
+
+function detectConflictingPdfPlugins(app) {
+    try {
+        const plugins = app && app.plugins && app.plugins.plugins;
+        if (!plugins) return null;
+        if (plugins['pdf-plus']) return 'PDF++';
+        if (plugins['obsidian-annotator']) return 'Obsidian Annotator';
+        return null;
+    } catch { return null; }
+}
+
+function installAnnotationOverlay(app, vaultPath) {
+    if (_overlayInstalled) return;
+    if (app.isMobile && app.isMobile()) {
+        console.log('[PF] annotation overlay: mobile not supported');
+        return;
+    }
+    const conflict = detectConflictingPdfPlugins(app);
+    if (conflict) {
+        console.warn('[PF] annotation overlay disabled: ' + conflict + ' detected');
+        return;
+    }
+    try {
+        setupPdfObserver(app, vaultPath);
+        _overlayInstalled = true;
+        console.log('[PF] annotation overlay installed');
+    } catch (e) {
+        console.warn('[PF] annotation overlay install failed:', e.message);
+    }
+}
+
+function setupPdfObserver(app, vaultPath) {
+    const observer = new MutationObserver(function () {
+        const pdfLeaves = app.workspace.getLeavesOfType('pdf');
+        if (!pdfLeaves || pdfLeaves.length === 0) return;
+        const pdfContainers = [];
+        for (let i = 0; i < pdfLeaves.length; i++) {
+            const leaf = pdfLeaves[i];
+            const view = leaf.view;
+            if (!view || !view.containerEl) continue;
+            const viewerEl = view.containerEl.querySelector('.pdf-viewer-container, .pdf-viewer');
+            if (viewerEl) pdfContainers.push({ leaf, viewerEl, view });
+        }
+        if (pdfContainers.length === 0) return;
+        for (let ci = 0; ci < pdfContainers.length; ci++) {
+            const pc = pdfContainers[ci];
+            if (pc.viewerEl.dataset.pfOverlayActive) continue;
+            pc.viewerEl.dataset.pfOverlayActive = '1';
+            const pdfPath = resolvePdfPathFromLeaf(pc.leaf);
+            injectPdfEventHooks(pc.viewerEl, pc.view, vaultPath, pdfPath);
+        }
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+    app.register(function () { observer.disconnect(); });
+}
+
+function resolvePdfPathFromLeaf(leaf) {
+    try {
+        const view = leaf && leaf.view;
+        const file = view && view.file;
+        if (file && file.path) return file.path;
+    } catch {}
+    return null;
+}
+
+function getPdfPageElements(containerEl) {
+    return containerEl.querySelectorAll('.page[data-page-number]');
+}
+
+function injectPdfEventHooks(containerEl, view, vaultPath, pdfPath) {
+    if (!pdfPath) return;
+    fetchAnnotationsForPaper(vaultPath, pdfPath).then(function () {
+        renderAnnotationsOnExistingPages(containerEl);
+    });
+    var pageObserver = new MutationObserver(function () {
+        renderAnnotationsOnExistingPages(containerEl);
+    });
+    pageObserver.observe(containerEl, { childList: true, subtree: false });
+    view.app.register(function () { pageObserver.disconnect(); });
+}
+
+function renderAnnotationsOnExistingPages(containerEl) {
+    const pages = getPdfPageElements(containerEl);
+    if (_annotationCache === null || _annotationCache.length === 0) return;
+    const grouped = groupAnnotationsByPage(_annotationCache);
+    for (let i = 0; i < pages.length; i++) {
+        const pageEl = pages[i];
+        const pageNum = parseInt(pageEl.dataset.pageNumber, 10);
+        if (isNaN(pageNum)) continue;
+        const pageAnns = grouped[pageNum - 1];
+        if (!pageAnns || pageAnns.length === 0) continue;
+        ensureOverlayLayer(pageEl);
+        renderOverlaysForPage(pageEl, pageAnns);
+    }
+}
+
+function ensureOverlayLayer(pageEl) {
+    if (pageEl.querySelector('.pf-annotation-overlay')) return;
+    const layer = document.createElement('div');
+    layer.className = 'pf-annotation-overlay';
+    pageEl.appendChild(layer);
+}
+
+function renderOverlaysForPage(pageEl, annotations) {
+    const layer = pageEl.querySelector('.pf-annotation-overlay');
+    if (!layer) return;
+    let existing = layer.querySelectorAll('.pf-annotation-rect');
+    for (let e = 0; e < existing.length; e++) existing[e].remove();
+    for (let i = 0; i < annotations.length; i++) {
+        const ann = annotations[i];
+        if (!ann.type || !isAnnotationSupportedType(ann.type)) continue;
+        renderAnnotationRect(layer, ann);
+    }
+}
+
+function isAnnotationSupportedType(type) {
+    return type === 'highlight' || type === 'underline' || type === 'note';
+}
+
+function renderAnnotationRect(layer, ann) {
+    const rects = getAnnotationRects(ann);
+    if (!rects || rects.length === 0) return;
+    for (let i = 0; i < rects.length; i++) {
+        const rect = rects[i];
+        const el = document.createElement('div');
+        el.className = 'pf-annotation-rect pf-annotation-rect--' + ann.type;
+        el.style.left = (rect[0] * 100) + '%';
+        el.style.top = (rect[1] * 100) + '%';
+        el.style.width = ((rect[2] - rect[0]) * 100) + '%';
+        el.style.height = ((rect[3] - rect[1]) * 100) + '%';
+        if (ann.color) {
+            el.style.backgroundColor = ann.color;
+            if (ann.type === 'highlight') el.style.opacity = '0.25';
+            else if (ann.type === 'underline') el.style.borderBottomColor = ann.color;
+        }
+        if (ann.type === 'underline') el.style.borderBottom = '2px solid ' + (ann.color || '#ffd400');
+        if (ann.type === 'note') el.style.backgroundColor = (ann.color || '#ffd400') + '40';
+        el.dataset.annotationId = String(ann.id || i);
+        if (isReadonlyAnnotation(ann)) el.dataset.readonly = '1';
+        layer.appendChild(el);
+    }
+}
+
+function getAnnotationRects(ann) {
+    if (!ann) return null;
+    if (ann.rects_json) {
+        try { return JSON.parse(ann.rects_json); } catch { return null; }
+    }
+    if (ann.position && Array.isArray(ann.position.rects)) {
+        return ann.position.rects;
+    }
+    return null;
+}
+
+function groupAnnotationsByPage(annotations) {
+    if (!annotations || !Array.isArray(annotations)) return {};
+    const grouped = {};
+    for (let i = 0; i < annotations.length; i++) {
+        const a = annotations[i];
+        const page = (a.page_index != null) ? a.page_index : 0;
+        if (!grouped[page]) grouped[page] = [];
+        grouped[page].push(a);
+    }
+    return grouped;
+}
+
+function isReadonlyAnnotation(annotation) {
+    return !!(annotation && annotation.sync_state === 'zotero_synced');
+}
+
 // ── Cross-platform Python and BBT detection (macOS/Linux) ──
 
 let _gitDir = null;
@@ -4781,6 +4954,13 @@ module.exports = class PaperForgePlugin extends Plugin {
             });
         }
 
+
+        /* ── PDF annotation overlay (deferred — after startup) ── */
+        setTimeout(() => {
+            if (this.settings.setup_complete && this.app.vault.adapter.basePath) {
+                installAnnotationOverlay(this.app, this.app.vault.adapter.basePath);
+            }
+        }, 2000);
 
         /* ── Auto-update PaperForge (deferred — don't slow startup) ── */
         if (this.settings.auto_update_on_startup === true && this.settings.setup_complete) {

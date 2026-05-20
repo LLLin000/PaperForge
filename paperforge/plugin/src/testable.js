@@ -187,6 +187,24 @@ function parseRuntimeStatus(err, stdout, stderr) {
 
 // ── Action definitions ──
 
+// ── Overlay helpers ──
+
+function detectConflictingPlugins(app) {
+    try {
+        const plugins = app && app.plugins && app.plugins.plugins;
+        if (!plugins) return null;
+        if (plugins['pdf-plus']) return 'PDF++';
+        if (plugins['obsidian-annotator']) return 'Obsidian Annotator';
+        return null;
+    } catch { return null; }
+}
+
+function canUseAnnotationOverlay(app, isMobile) {
+    if (isMobile) return false;
+    if (detectConflictingPlugins(app)) return false;
+    return true;
+}
+
 // ── Bridge helpers ──
 
 function runAnnotationSubprocess(vaultPath, pythonInfo, args, timeout, _spawn) {
@@ -388,6 +406,8 @@ module.exports = {
     shouldRenderVectorReady,
     getDisclosureState,
     toggleDisclosureState,
+    detectConflictingPlugins,
+    canUseAnnotationOverlay,
     runAnnotationSubprocess,
     ANNOTATION_COLORS,
     ANNOTATION_DEFAULT_COLOR,
