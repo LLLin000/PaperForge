@@ -603,6 +603,9 @@ function deleteLocalAnnotation(vaultPath, annotationId) {
 let _overlayInstalled = false;
 let _currentVaultPath = null;
 let _currentPdfPath = null;
+var _pdfNavStack = [];
+var _pdfNavPos = -1;
+var _navProgrammatic = false;
 
 function detectConflictingPdfPlugins(app) {
     try {
@@ -696,6 +699,9 @@ function injectPdfEventHooks(containerEl, view, vaultPath, pdfPath, plugin) {
     _currentContainerEl = containerEl;
     _pdfInternalHandle = null;
     _pdfEventSubscriptions = [];
+    _pdfNavStack = [];
+    _pdfNavPos = -1;
+    _navProgrammatic = false;
     _invalidatePdfPageCaches();
     var anns = fetchAnnotationsForPaper(vaultPath, pdfPath);
     // Try resolving PDF.js internal viewer handle
@@ -765,14 +771,104 @@ function _subscribePdfEvents(handle, pdfPath, vaultPath, plugin) {
             _rebuildVisibleLayers(handle, pdfPath, vaultPath);
         }, 80);
     }
+    var _lastNavPage = null;
+    function onPageChanging(evt) {
+        if (_navProgrammatic) { _navProgrammatic = false; return; }
+        if (_lastNavPage !== null && Math.abs(evt.pageNumber - _lastNavPage) > 1) {
+            _pushPdfNav(_lastNavPage);
+        }
+        _lastNavPage = evt.pageNumber;
+    }
     bus.on('pagerendered', onPageRendered);
     bus.on('scalechanged', onScaleChanged);
+    bus.on('pagechanging', onPageChanging);
     if (plugin && typeof plugin.register === 'function') {
         plugin.register(function () {
             try { bus.off('pagerendered', onPageRendered); } catch {}
             try { bus.off('scalechanged', onScaleChanged); } catch {}
+            try { bus.off('pagechanging', onPageChanging); } catch {}
         });
     }
+}
+
+/* ── PDF back/forward navigation ── */
+function _pushPdfNav(pageNumber) {
+    if (_pdfNavPos < _pdfNavStack.length - 1) {
+        _pdfNavStack = _pdfNavStack.slice(0, _pdfNavPos + 1);
+    }
+    _pdfNavStack.push(pageNumber);
+    if (_pdfNavStack.length > 100) _pdfNavStack.shift();
+    _pdfNavPos = _pdfNavStack.length - 1;
+    _renderPdfNavButtons();
+}
+
+function _renderPdfNavButtons() {
+    var c = document.querySelector('.pdf-viewer-container');
+    if (!c) return;
+    var old = c.querySelectorAll('.pf-nav-btn');
+    for (var oi = 0; oi < old.length; oi++) old[oi].remove();
+    if (_pdfNavPos < 0) return;
+    if (_pdfNavPos > 0) {
+        var bk = document.createElement('button');
+        bk.className = 'pf-nav-btn pf-nav-back';
+        bk.textContent = '\u25C0';
+        bk.title = 'Go back to page ' + _pdfNavStack[_pdfNavPos - 1];
+        bk.addEventListener('click', function () {
+            if (_pdfNavPos <= 0 || !_pdfInternalHandle) return;
+            _navProgrammatic = true;
+            _pdfNavPos--;
+            _pdfInternalHandle.scrollPageIntoView({ pageNumber: _pdfNavStack[_pdfNavPos] });
+            _renderPdfNavButtons();
+        });
+        c.appendChild(bk);
+    }
+    if (_pdfNavPos < _pdfNavStack.length - 1) {
+        var fw = document.createElement('button');
+        fw.className = 'pf-nav-btn pf-nav-forward';
+        fw.textContent = '\u25B6';
+        fw.title = 'Go forward to page ' + _pdfNavStack[_pdfNavPos + 1];
+        fw.addEventListener('click', function () {
+            if (_pdfNavPos >= _pdfNavStack.length - 1 || !_pdfInternalHandle) return;
+            _navProgrammatic = true;
+            _pdfNavPos++;
+            _pdfInternalHandle.scrollPageIntoView({ pageNumber: _pdfNavStack[_pdfNavPos] });
+            _renderPdfNavButtons();
+        });
+        c.appendChild(fw);
+    }
+}
+/* ── Undo pill on delete ── */
+var _undoPillEl = null;
+var _undoTimer = null;
+
+function _showUndoPill(undoEntry) {
+    if (_undoPillEl) _undoPillEl.remove();
+    if (_undoTimer) clearTimeout(_undoTimer);
+    _undoPillEl = document.createElement('div');
+    _undoPillEl.className = 'pf-undo-pill';
+    _undoPillEl.innerHTML = '<span>Annotation deleted</span> <button>Undo</button>';
+    _undoPillEl.querySelector('button').addEventListener('click', function () {
+        _appendAnnotationToMemory(undoEntry.annotation);
+        _renderAnnotationToPage(undoEntry.annotation);
+        createLocalAnnotation(undoEntry.vaultPath, undoEntry.pdfPath, {
+            type: undoEntry.annotation.type,
+            page_index: undoEntry.annotation.page_index,
+            page_label: undoEntry.annotation.page_label || '',
+            selected_text: undoEntry.annotation.selected_text || '',
+            comment: undoEntry.annotation.comment || '',
+            color: undoEntry.annotation.color || '#ffd400',
+            position_json: JSON.stringify(undoEntry.annotation.position),
+        }).then(function () {
+            _scheduleAnnotationCacheFlush(undoEntry.vaultPath);
+        });
+        _undoPillEl.remove();
+        _undoPillEl = null;
+    });
+    var c = document.querySelector('.pdf-viewer-container');
+    if (c) c.appendChild(_undoPillEl);
+    _undoTimer = setTimeout(function () {
+        if (_undoPillEl) { _undoPillEl.remove(); _undoPillEl = null; }
+    }, 8000);
 }
 
 function _getOrCreateAlignedLayer(pageView) {
@@ -1296,7 +1392,11 @@ function showAnnotationPopover(event, ann, rectEl, vaultPath, pdfPath, container
         delBtn.className = 'pf-annotation-popover-btn pf-annotation-popover-btn--danger';
         delBtn.textContent = 'Delete';
         delBtn.addEventListener('click', function () {
-            if (!confirm('Delete this annotation?')) return;
+            _showUndoPill({
+                annotation: JSON.parse(JSON.stringify(ann)),
+                vaultPath: _currentVaultPath,
+                pdfPath: _currentPdfPath,
+            });
             _removeAnnotationRectsFromDom(ann.id);
             _removeAnnotationFromMemory(ann.id);
             deleteLocalAnnotation(_currentVaultPath, ann.id).then(function (result) {
