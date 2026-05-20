@@ -744,16 +744,24 @@ function renderAnnotationRect(layer, ann, vaultPath, pdfPath, containerEl) {
     const rects = getAnnotationRects(ann);
     if (!rects || rects.length === 0) { console.log('[PF] no rects for ann', ann && ann.id); return; }
     const isReadonly = isReadonlyAnnotation(ann);
-    // Use the canvas inside the page div for accurate viewport dimensions
+    // PDF coordinate space: US Letter = 612x792 points.
+    // Percentage = PDF_point / PDF_page_size * 100 (NOT canvas pixel size,
+    // because canvas = PDF_page * zoom, and % is relative to the CSS
+    // container which matches canvas size.  Since zoom cancels out,
+    // dividing by 612/792 gives the correct ratio regardless of zoom.)
     var pageW = 612, pageH = 792;
     try {
         var pageEl = layer.parentElement;
         if (pageEl) {
             var cv = pageEl.querySelector('canvas');
             if (cv && cv.clientWidth > 0 && cv.clientHeight > 0) {
-                pageW = cv.clientWidth; pageH = cv.clientHeight;
-            } else {
-                pageW = pageEl.offsetWidth; pageH = pageEl.offsetHeight;
+                // Derive actual PDF page size from canvas at current zoom
+                // zoom = canvas_width / pdf_page_width, so pdf_page_width = canvas_width / zoom
+                // We don't know zoom, but we can approximate from aspect ratio
+                var ar = cv.clientWidth / cv.clientHeight;
+                if (ar > 0.7 && ar < 0.8) { pageW = 612; pageH = 792; }     // US Letter
+                else if (ar > 0.65 && ar < 0.75) { pageW = 595; pageH = 842; } // A4
+                else { pageW = cv.clientWidth; pageH = cv.clientHeight; }
             }
         }
     } catch (_) {}
@@ -766,24 +774,26 @@ function renderAnnotationRect(layer, ann, vaultPath, pdfPath, containerEl) {
         var cssTop = pageH - rect[3];
         var cssW = rect[2] - rect[0];
         var cssH = rect[3] - rect[1];
-        const el = document.createElement('div');
-        el.className = 'pf-annotation-rect pf-annotation-rect--' + ann.type;
         var pctL = (cssLeft / pageW) * 100;
         var pctT = (cssTop / pageH) * 100;
         var pctW = (cssW / pageW) * 100;
         var pctH = (cssH / pageH) * 100;
         if (i === 0) { console.log('[PF] rect0 raw=' + JSON.stringify(rect) + ' css=' + cssLeft.toFixed(1) + ',' + cssTop.toFixed(1) + ' ' + cssW.toFixed(1) + 'x' + cssH.toFixed(1) + ' pct=' + pctL.toFixed(2) + '% ' + pctT.toFixed(2) + '% ' + pctW.toFixed(2) + '% x ' + pctH.toFixed(2) + '% on ' + pageW + 'x' + pageH); }
+        const el = document.createElement('div');
+        el.className = 'pf-annotation-rect pf-annotation-rect--' + ann.type;
         el.style.left = pctL + '%';
         el.style.top = pctT + '%';
         el.style.width = pctW + '%';
         el.style.height = pctH + '%';
         if (ann.color) {
             el.style.backgroundColor = ann.color;
-            if (ann.type === 'highlight') el.style.opacity = '0.25';
+            if (ann.type === 'highlight') el.style.opacity = '0.3';
             else if (ann.type === 'underline') el.style.borderBottomColor = ann.color;
         }
         if (ann.type === 'underline') el.style.borderBottom = '2px solid ' + (ann.color || '#ffd400');
         if (ann.type === 'note') el.style.backgroundColor = (ann.color || '#ffd400') + '40';
+        el.dataset.annotationId = String(ann.id || i);
+        if (isReadonly) el.dataset.readonly = '1';
         el.dataset.annotationId = String(ann.id || i);
         if (isReadonly) el.dataset.readonly = '1';
         el.addEventListener('click', function (e) {
