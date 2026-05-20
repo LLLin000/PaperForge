@@ -38,3 +38,6 @@ Thumbs.db
 
 .vite/
 paperforge/plugin/node_modules/
+
+# Generated SQLite fixtures
+fixtures/zotero/*.sqlite
