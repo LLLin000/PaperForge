@@ -818,52 +818,58 @@ function setupSelectionCapture(containerEl, vaultPath, pdfPath) {
                 var canvasBox = canvasEl.getBoundingClientRect();
                 // Read PDF coordinates directly from each span's CSS transform matrix
                 // (avoids getBoundingClientRect sub-pixel errors)
-                var spanSet = new Set();
-                var spanRects = [];
-                var rootNode = range.commonAncestorContainer;
-                if (rootNode.nodeType === 3) rootNode = rootNode.parentElement;
-                var nodeIter = document.createNodeIterator(rootNode, 4);
-                var tn;
-                while ((tn = nodeIter.nextNode())) {
-                    if (!range.intersectsNode(tn)) continue;
-                    var sp = tn.parentElement;
-                    if (!sp || spanSet.has(sp)) continue;
-                    spanSet.add(sp);
-                    var mstr = sp.style.transform;
-                    if (!mstr || !mstr.startsWith('matrix(')) continue;
-                    var parts = mstr.slice(7, -1).split(',').map(Number);
-                    if (parts.length < 6) continue;
-                    var spanLeft = parts[4];
-                    var spanTop = parts[5];
-                    var spanW = sp.offsetWidth;
-                    var spanH = sp.offsetHeight;
-                    if (spanW < 1 || spanH < 1) continue;
-                    var sl = spanLeft * zoomX;
-                    var sr = (spanLeft + spanW) * zoomX;
-                    var stInPDF = spanTop * zoomY;
-                    var sbInPDF = (spanTop + spanH) * zoomY;
-                    spanRects.push({ l: sl, b: pdfH - sbInPDF, r: sr, t: pdfH - stInPDF });
-                }
-                // Merge spans on same line into single rects (like Zotero)
+                // Compute PDF rects: try per-span transform matrix, fall back to getClientRects
                 var pdfRects = [];
-                if (spanRects.length > 0) {
-                    spanRects.sort(function (a, b) { return a.t - b.t || a.l - b.l; });
-                    var merged = [spanRects[0]];
-                    for (var si = 1; si < spanRects.length; si++) {
-                        var lastR = merged[merged.length - 1];
-                        var curR = spanRects[si];
-                        if (Math.abs(curR.t - lastR.t) < 15) {
-                            lastR.l = Math.min(lastR.l, curR.l);
-                            lastR.r = Math.max(lastR.r, curR.r);
-                            lastR.b = Math.min(lastR.b, curR.b);
-                            lastR.t = Math.max(lastR.t, curR.t);
-                        } else {
-                            merged.push({ l: curR.l, b: curR.b, r: curR.r, t: curR.t });
+                try {
+                    // Method 1: read spans' CSS transform matrices for exact positions
+                    var spanSet = new Set();
+                    var spanRects = [];
+                    var rootNode = range.commonAncestorContainer;
+                    if (rootNode.nodeType === 3) rootNode = rootNode.parentElement;
+                    if (rootNode) {
+                        var nodeIter = document.createNodeIterator(rootNode, 4);
+                        var tn;
+                        while ((tn = nodeIter.nextNode())) {
+                            if (!range.intersectsNode(tn)) continue;
+                            var sp = tn.parentElement;
+                            if (!sp || spanSet.has(sp)) continue;
+                            spanSet.add(sp);
+                            var mstr = sp.style.transform;
+                            if (!mstr || !mstr.startsWith('matrix(')) continue;
+                            var parts = mstr.slice(7, -1).split(',').map(Number);
+                            if (parts.length < 6) continue;
+                            var sw = sp.offsetWidth, sh = sp.offsetHeight;
+                            if (sw < 1 || sh < 1) continue;
+                            spanRects.push({ l: parts[4] * zoomX, b: pdfH - (parts[5] + sh) * zoomY, r: (parts[4] + sw) * zoomX, t: pdfH - parts[5] * zoomY });
                         }
                     }
-                    for (var mi = 0; mi < merged.length; mi++) {
-                        pdfRects.push([merged[mi].l, merged[mi].b, merged[mi].r, merged[mi].t]);
+                    if (spanRects.length > 0) {
+                        spanRects.sort(function (a, b) { return a.t - b.t || a.l - b.l; });
+                        var merged = [spanRects[0]];
+                        for (var si = 1; si < spanRects.length; si++) {
+                            var lr = merged[merged.length - 1], cr = spanRects[si];
+                            if (Math.abs(cr.t - lr.t) < 15) {
+                                lr.l = Math.min(lr.l, cr.l); lr.r = Math.max(lr.r, cr.r);
+                                lr.b = Math.min(lr.b, cr.b); lr.t = Math.max(lr.t, cr.t);
+                            } else { merged.push({ l: cr.l, b: cr.b, r: cr.r, t: cr.t }); }
+                        }
+                        for (var mi = 0; mi < merged.length; mi++)
+                            pdfRects.push([merged[mi].l, merged[mi].b, merged[mi].r, merged[mi].t]);
                     }
+                } catch (_) {}
+                // Fallback: use getClientRects (less precise but always works)
+                if (pdfRects.length === 0) {
+                    try {
+                        var crs = range.getClientRects();
+                        for (var cri = 0; cri < crs.length; cri++) {
+                            var cr = crs[cri];
+                            var rl = (cr.left - canvasBox.left) * zoomX;
+                            var rt = (cr.top - canvasBox.top) * zoomY;
+                            var rr = (cr.right - canvasBox.left) * zoomX;
+                            var rb = (cr.bottom - canvasBox.top) * zoomY;
+                            pdfRects.push([rl, pdfH - rb, rr, pdfH - rt]);
+                        }
+                    } catch (_) {}
                 }
                 if (pdfRects.length === 0) return;
                 var annPayload = {
