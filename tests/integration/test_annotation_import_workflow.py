@@ -157,3 +157,52 @@ class TestZoteroImportWorkflow:
         ).fetchone()
         assert stored["comment"] == "Updated comment"
         assert stored["source_version"] == 4
+
+
+class TestMemoryRebuildSurvival:
+    """Annotations must survive memory layer rebuilds."""
+
+    def test_annotations_survive_memory_build(self, zotero_copy, tmp_path):
+        """Import annotations → run memory build → verify annotations still exist."""
+        from paperforge.annotation.probe import open_readonly, fetch_annotations
+        from paperforge.annotation.importer import run_import
+        from paperforge.annotation.db import get_annotations_db_path, get_annotations_connection
+        from paperforge.annotation.schema import ensure_schema
+
+        # Setup: import annotations
+        ann_db_path = get_annotations_db_path(tmp_path)
+        ann_conn = get_annotations_connection(ann_db_path, read_only=False)
+        ensure_schema(ann_conn)
+
+        probe_conn = open_readonly(zotero_copy)
+        try:
+            anns = fetch_annotations(probe_conn, limit=10)
+        finally:
+            probe_conn.close()
+
+        import_result = run_import(ann_conn, anns, source="zotero_db")
+        assert import_result["imported"] == 3
+        ann_conn.close()
+
+        # Simulate memory build by touching paperforge.db (which shouldn't
+        # affect annotations.db since they are separate databases)
+        from paperforge.memory.db import get_memory_db_path, get_connection
+        from paperforge.memory.schema import ensure_schema as ensure_memory_schema
+
+        mem_db_path = get_memory_db_path(tmp_path)
+        mem_conn = get_connection(mem_db_path, read_only=False)
+        # This is what memory build does — drop and recreate the memory schema
+        from paperforge.memory.schema import drop_all_tables
+        drop_all_tables(mem_conn)
+        ensure_memory_schema(mem_conn)
+        mem_conn.close()
+
+        # Verify: annotations should still be in annotations.db
+        ann_conn2 = get_annotations_connection(ann_db_path, read_only=True)
+        try:
+            count = ann_conn2.execute(
+                "SELECT COUNT(*) as cnt FROM annotations WHERE deleted_at IS NULL"
+            ).fetchone()["cnt"]
+            assert count == 3, f"Expected 3 annotations after memory rebuild, got {count}"
+        finally:
+            ann_conn2.close()
