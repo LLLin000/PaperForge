@@ -4,6 +4,34 @@
 
 ---
 
+## 0. 文献入口规则 — 必须无条件遵守
+
+**当用户提到以下任何内容时，你必须先加载 paperforge skill，再执行任何操作：**
+
+```
+"查文献" "搜文献" "找文献" "搜一下" "找一下" "查一下"
+"搜论文" "找论文" "查论文" "搜文章" "找文章" "查文章"
+"文献里" "库里" "collection"
+"找证据" "找支持" "找依据" "找参数"
+"读一下" "看看这篇" "精读"
+"DC电场" "电刺激" "galvanotaxis" "电泳" 或其他学术术语
+"保存这次" "记录一下" "提取方法论"
+"review" "看到篇" "这篇论文"
+```
+
+**禁止行为（犯过一次的错误，不再犯）：**
+- ❌ 用 `grep`/`rg`/`glob` 直接搜 vault 文件系统 — 必须用 `$PYTHON -m paperforge search/retrieve/context`
+- ❌ 只用一个搜索工具就下结论 — 必须用多臂策略（retrieve 全文 + search 元数据 + context collection）
+- ❌ 跳过大量搜索结果不告诉用户 — 超过 20 篇必须告知用户总数并提供缩小选项
+- ❌ 在 `retrieve`（语义全文搜索）可用时只用 `search`（元数据搜索）— `retrieve` 能找到正文 Methods 中的内容
+
+**加载方法：**
+
+如果是 OpenCode：`<skill name="paperforge">`
+如果是其他 Agent：读取 `.opencode/skills/paperforge/SKILL.md` 并按流程执行。
+
+---
+
 ## 1. 核心不变式
 
 1. **CLI 是命令真相源。** 所有 skill、workflow、文档命令引用必须对齐 `paperforge/cli.py`。
@@ -62,7 +90,7 @@ JS 读（同步，不推断）:
 
 ## 3. 安全命令惯例
 
-- 搜索用 `$PYTHON -m paperforge search`，不用 `grep`/`glob` 扫库。
+- 搜索用 `$PYTHON -m paperforge search` / `retrieve` / `context`，不用 `grep`/`rg`/`glob` 扫库。
 - 路径从 bootstrap 或 paper-context 获取，禁止自行拼接。
 - 未完成 paper-context 检查前不读原文（适用于 read-known-paper、deep-analyze-paper）。
 - Reading-log 不是事实源，只能用做复查定位。

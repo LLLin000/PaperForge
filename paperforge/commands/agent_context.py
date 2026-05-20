@@ -19,7 +19,11 @@ COMMANDS = {
     },
     "retrieve": {
         "usage": "paperforge retrieve <query> --json [--limit N]",
-        "purpose": "Search OCR fulltext chunks for evidence paragraphs",
+        "purpose": "Semantic search across OCR fulltext — discover papers by body content, not just title/abstract",
+    },
+    "context": {
+        "usage": "paperforge context <key> | --domain D | --collection P | --all",
+        "purpose": "List all papers in a collection/domain (no truncation) or get single paper context pack",
     },
     "deep": {
         "usage": "/pf-deep <zotero_key>",
@@ -36,10 +40,13 @@ COMMANDS = {
 }
 
 RULES = [
-    "Use paperforge.db via CLI commands before reading individual files.",
+    "Use paperforge CLI commands before reading individual files — never grep/glob the vault directly.",
     "Do not infer paper state from stale frontmatter when memory status is fresh.",
-    "Read source files only after resolving candidates via paper-status or search.",
+    "Read source files only after resolving candidates via paper-status, search, retrieve, or context.",
     "To locate a paper: start with collection scope if known, then expand to full library search.",
+    "Paper discovery must use multi-arm strategy: retrieve (body text) + search (metadata) + context --collection (inventory). Never rely on a single search tool.",
+    "When a search returns > 20 results, present the count to the user and offer to narrow — never silently skip large result sets.",
+    "Check embed status --json (db_exists + chunk_count) before calling retrieve; skip retrieve if vector index is unavailable.",
 ]
 
 
