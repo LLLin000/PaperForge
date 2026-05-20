@@ -812,17 +812,18 @@ function setupSelectionCapture(containerEl, vaultPath, pdfPath) {
                     var ar = cv.clientWidth / cv.clientHeight;
                     if (ar > 0.65 && ar < 0.75) { pdfW = 595; pdfH = 842; }
                 }
-                var cvRect = pageEl.getBoundingClientRect();
-                var zoomX = pdfW / cvRect.width, zoomY = pdfH / cvRect.height;
+                var textLayer = pageEl.querySelector('.textLayer');
+                var refRect = textLayer ? textLayer.getBoundingClientRect() : pageEl.getBoundingClientRect();
+                var zoomX = pdfW / refRect.width, zoomY = pdfH / refRect.height;
                 // Compute per-line rects using getClientRects for shaped highlights
                 var clientRects = range.getClientRects();
                 var pdfRects = [];
                 for (var cri = 0; cri < clientRects.length; cri++) {
                     var cr = clientRects[cri];
-                    var rLeft = (cr.left - cvRect.left) * zoomX;
-                    var rTop = (cr.top - cvRect.top) * zoomY;
-                    var rRight = (cr.right - cvRect.left) * zoomX;
-                    var rBottom = (cr.bottom - cvRect.top) * zoomY;
+                    var rLeft = (cr.left - refRect.left) * zoomX;
+                    var rTop = (cr.top - refRect.top) * zoomY;
+                    var rRight = (cr.right - refRect.left) * zoomX;
+                    var rBottom = (cr.bottom - refRect.top) * zoomY;
                     // Mirror Y: screen [left,top,right,bottom] → PDF [left,bottom,right,top]
                     pdfRects.push([rLeft, pdfH - rBottom, rRight, pdfH - rTop]);
                 }
