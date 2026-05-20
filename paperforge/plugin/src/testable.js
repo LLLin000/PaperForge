@@ -48,6 +48,7 @@ function resolveRuntimePaths(vaultPath, _fs) {
         vectorStatePath: path.join(systemRoot, 'indexes', 'vector-runtime-state.json'),
         healthStatePath: path.join(systemRoot, 'indexes', 'runtime-health.json'),
         buildStatePath: path.join(systemRoot, 'indexes', 'vector-build-state.json'),
+        annotationsDbPath: path.join(systemRoot, 'indexes', 'annotations.db'),
         exportsDir: path.join(systemRoot, 'exports'),
         ocrDir: path.join(systemRoot, 'ocr'),
         pluginDataPath: path.join(vaultPath, '.obsidian', 'plugins', 'paperforge', 'data.json'),
@@ -212,6 +213,76 @@ function runAnnotationSubprocess(vaultPath, pythonInfo, args, timeout, _spawn) {
     const extra = py.extraArgs || [];
     const allArgs = [...extra, '-m', 'paperforge', '--vault', vaultPath, ...args];
     return runSubprocess(py.path || 'python', allArgs, vaultPath, timeout || 30000, _spawn);
+}
+
+// ── sql.js annotation DB reader ──
+
+class AnnotationDB {
+    constructor() {
+        this.db = null;
+        this.SQL = null;
+        this._cache = null;
+        this._cachePaperId = null;
+    }
+
+    async init() {
+        if (this.SQL) return;
+        const initSqlJs = require('sql.js');
+        this.SQL = await initSqlJs({
+            locateFile: (f) => path.join(__dirname, f),
+        });
+    }
+
+    _dbPath(vaultPath) {
+        var paths = resolveRuntimePaths(vaultPath);
+        return path.join(paths.indexesDir, 'annotations.db');
+    }
+
+    _open(vaultPath) {
+        var dbPath = this._dbPath(vaultPath);
+        if (!fs.existsSync(dbPath)) return false;
+        try {
+            var buf = fs.readFileSync(dbPath);
+            this.db = new this.SQL.Database(buf);
+            return true;
+        } catch (e) {
+            console.warn('[PF-ann] failed to open annotations.db:', e.message);
+            return false;
+        }
+    }
+
+    _ensureOpen(vaultPath) {
+        if (this.db) return true;
+        return this._open(vaultPath);
+    }
+
+    getAnnotationsByPaper(vaultPath, paperId) {
+        if (!this._ensureOpen(vaultPath)) return [];
+        if (this._cachePaperId === paperId && this._cache) return this._cache;
+        try {
+            var stmt = this.db.prepare(
+                'SELECT * FROM annotations WHERE paper_id = ? AND deleted_at IS NULL ORDER BY sort_index'
+            );
+            stmt.bind([paperId]);
+            var results = [];
+            while (stmt.step()) {
+                results.push(stmt.getAsObject());
+            }
+            stmt.free();
+            this._cache = results;
+            this._cachePaperId = paperId;
+            return results;
+        } catch (e) {
+            console.warn('[PF-ann] query failed:', e.message);
+            return [];
+        }
+    }
+
+    close() {
+        if (this.db) { this.db.close(); this.db = null; }
+        this._cache = null;
+        this._cachePaperId = null;
+    }
 }
 
 // ── Annotation helpers ──

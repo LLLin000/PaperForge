@@ -418,116 +418,111 @@ function toggleDisclosureState(store, key, defaultCollapsed) {
     return next;
 }
 
-/* ── Annotation bridge ── */
+/* ── Annotation DB (sql.js, no subprocess) ── */
 
+let _annotationDB = null;
 let _annotationCache = null;
-let _annotationCachePdfPath = null;
+let _annotationCachePdfKey = null;
 
-function buildAnnotationBaseArgs(vaultPath) {
-    const py = memoryState.getCachedPython(vaultPath);
-    const extra = (py && py.extraArgs) || [];
-    return [...extra, '-m', 'paperforge', '--vault', vaultPath];
-}
-
-function runAnnotationCommand(vaultPath, args, timeout, _spawn) {
-    const py = memoryState.getCachedPython(vaultPath);
-    if (!py) {
-        return Promise.resolve({ stdout: '', stderr: 'Python not configured', exitCode: -1, elapsed: 0 });
-    }
-    return runSubprocess(py.path, args, vaultPath, timeout || 30000, _spawn);
-}
-
-function parseAnnotationResult(jsonString) {
+function _resolvePaperKeyFromDB(vaultPath, pdfPath) {
     try {
-        const parsed = JSON.parse(jsonString);
-        if (parsed && parsed.ok === true) {
-            return { ok: true, data: parsed.result || parsed.data || null };
+        var dbPath = memoryState.resolveVaultPaths(vaultPath).indexesDir + '\\paperforge.db';
+        var fs = require('fs');
+        if (!fs.existsSync(dbPath)) return '';
+        var buf = fs.readFileSync(dbPath);
+        var SQL = _annotationDB && _annotationDB.SQL;
+        if (!SQL) return '';
+        var mdb = new SQL.Database(buf);
+        var stmt = mdb.prepare("SELECT zotero_key FROM papers WHERE pdf_path LIKE ?");
+        // Try storage folder key first
+        var match = pdfPath.match(/storage[\\/]([A-Z0-9]{8})/i);
+        if (match) {
+            stmt.bind(['%' + match[1] + '%']);
+            if (stmt.step()) { var r = stmt.getAsObject(); stmt.free(); mdb.close(); return r.zotero_key; }
+            stmt.reset();
         }
-        return { ok: false, error: (parsed && parsed.error) || 'Unknown error' };
-    } catch (e) {
-        return { ok: false, error: 'JSON parse: ' + e.message };
+        // Fallback: try filename
+        var fname = pdfPath.split(/[\\/]/).pop();
+        stmt.bind(['%' + fname + '%']);
+        if (stmt.step()) { var r2 = stmt.getAsObject(); stmt.free(); mdb.close(); return r2.zotero_key; }
+        stmt.free();
+        mdb.close();
+    } catch (e) { console.warn('[PF] resolve key error:', e.message); }
+    return '';
+}
+
+function fetchAnnotationsForPaper(vaultPath, pdfPath) {
+    if (!_annotationDB) {
+        console.warn('[PF] annotation DB not initialized');
+        return [];
     }
+    // Resolve paper key from the vault PDF path
+    var paperId = _resolvePaperKeyFromDB(vaultPath, pdfPath);
+    if (!paperId) {
+        console.warn('[PF] could not resolve paper key for:', pdfPath);
+        return [];
+    }
+    // Cache by paper key
+    if (_annotationCachePdfKey === pdfPath + '|' + paperId && _annotationCache !== null) {
+        return _annotationCache;
+    }
+    var anns = _annotationDB.getAnnotationsByPaper(vaultPath, paperId);
+    _annotationCachePdfKey = pdfPath + '|' + paperId;
+    _annotationCache = anns;
+    console.log('[PF] fetched ' + anns.length + ' annotations from sql.js for paper ' + paperId);
+    return anns;
 }
 
 function invalidateAnnotationCache() {
     _annotationCache = null;
-    _annotationCachePdfPath = null;
+    _annotationCachePdfKey = null;
 }
 
-async function fetchAnnotationsForPaper(vaultPath, pdfPath) {
-    if (_annotationCachePdfPath === pdfPath && _annotationCache !== null) {
-        return _annotationCache;
-    }
-    const baseArgs = buildAnnotationBaseArgs(vaultPath);
-    baseArgs.push('annotation', 'list', '--pdf-path', pdfPath, '--json');
-    const result = await runAnnotationCommand(vaultPath, baseArgs);
-    if (result.exitCode !== 0) {
-        console.warn('[PF] annotation list failed:', result.stderr);
-        _annotationCachePdfPath = pdfPath;
-        _annotationCache = [];
-        return _annotationCache;
-    }
-    const parsed = parseAnnotationResult(result.stdout);
-    if (!parsed.ok) {
-        console.warn('[PF] annotation list parse error:', parsed.error);
-        _annotationCachePdfPath = pdfPath;
-        _annotationCache = [];
-        return _annotationCache;
-    }
-    _annotationCachePdfPath = pdfPath;
-    _annotationCache = (parsed.data && parsed.data.annotations) || [];
-    return _annotationCache;
+function _buildAnnotationWriteArgs(vaultPath, subcmd) {
+    var py = memoryState.getCachedPython(vaultPath);
+    var extra = (py && py.extraArgs) || [];
+    return [...extra, '-m', 'paperforge', '--vault', vaultPath, 'annotation', subcmd, '--json'];
 }
 
-async function createLocalAnnotation(vaultPath, pdfPath, payload) {
-    const baseArgs = buildAnnotationBaseArgs(vaultPath);
-    baseArgs.push('annotation', 'create', '--json');
-    if (pdfPath) baseArgs.push('--pdf-path', pdfPath);
-    if (payload.page_index != null) baseArgs.push('--page-index', String(payload.page_index));
-    if (payload.type) baseArgs.push('--type', payload.type);
-    if (payload.color) baseArgs.push('--color', payload.color);
-    if (payload.selected_text) baseArgs.push('--selected-text', payload.selected_text);
-    if (payload.comment) baseArgs.push('--comment', payload.comment);
-    if (payload.position_json) baseArgs.push('--position-json', payload.position_json);
-
-    const result = await runAnnotationCommand(vaultPath, baseArgs);
-    if (result.exitCode !== 0) {
-        invalidateAnnotationCache();
-        return { ok: false, error: result.stderr || 'Subprocess failed', data: null };
-    }
-    const parsed = parseAnnotationResult(result.stdout);
-    if (parsed.ok) invalidateAnnotationCache();
-    return { ok: parsed.ok, error: parsed.error || null, data: parsed.data || null };
+function _runAnnotationSubprocess(vaultPath, args) {
+    var py = memoryState.getCachedPython(vaultPath);
+    if (!py) return Promise.resolve({ ok: false, error: 'Python not configured' });
+    return runSubprocess(py.path, args, vaultPath, 30000).then(function (result) {
+        if (result.exitCode !== 0) return { ok: false, error: result.stderr || 'Subprocess failed' };
+        try {
+            var parsed = JSON.parse(result.stdout);
+            if (parsed && parsed.ok) return { ok: true, data: parsed.data || parsed.result };
+            return { ok: false, error: (parsed && parsed.error) || 'Unknown response' };
+        } catch (e) {
+            return { ok: false, error: 'JSON parse: ' + e.message };
+        }
+    });
 }
 
-async function patchLocalAnnotation(vaultPath, annotationId, patch) {
-    const baseArgs = buildAnnotationBaseArgs(vaultPath);
-    baseArgs.push('annotation', 'patch', String(annotationId), '--json');
-    if (patch.comment != null) baseArgs.push('--comment', patch.comment);
-    if (patch.color != null) baseArgs.push('--color', patch.color);
-
-    const result = await runAnnotationCommand(vaultPath, baseArgs);
-    if (result.exitCode !== 0) {
-        invalidateAnnotationCache();
-        return { ok: false, error: result.stderr || 'Subprocess failed', data: null };
-    }
-    const parsed = parseAnnotationResult(result.stdout);
-    if (parsed.ok) invalidateAnnotationCache();
-    return { ok: parsed.ok, error: parsed.error || null, data: parsed.data || null };
+function createLocalAnnotation(vaultPath, pdfPath, payload) {
+    var args = _buildAnnotationWriteArgs(vaultPath, 'create');
+    if (pdfPath) args.push('--pdf-path', pdfPath);
+    if (payload.page_index != null) args.push('--page-index', String(payload.page_index));
+    if (payload.type) args.push('--type', payload.type);
+    if (payload.color) args.push('--color', payload.color);
+    if (payload.selected_text) args.push('--selected-text', payload.selected_text);
+    if (payload.comment) args.push('--comment', payload.comment);
+    if (payload.position_json) args.push('--position-json', payload.position_json);
+    return _runAnnotationSubprocess(vaultPath, args).then(function (r) { invalidateAnnotationCache(); return r; });
 }
 
-async function deleteLocalAnnotation(vaultPath, annotationId) {
-    const baseArgs = buildAnnotationBaseArgs(vaultPath);
-    baseArgs.push('annotation', 'delete', String(annotationId), '--json');
+function patchLocalAnnotation(vaultPath, annotationId, patch) {
+    var args = _buildAnnotationWriteArgs(vaultPath, 'patch');
+    args.push(String(annotationId));
+    if (patch.comment != null) args.push('--comment', patch.comment);
+    if (patch.color != null) args.push('--color', patch.color);
+    return _runAnnotationSubprocess(vaultPath, args).then(function (r) { invalidateAnnotationCache(); return r; });
+}
 
-    const result = await runAnnotationCommand(vaultPath, baseArgs);
-    if (result.exitCode !== 0) {
-        invalidateAnnotationCache();
-        return { ok: false, error: result.stderr || 'Subprocess failed', data: null };
-    }
-    const parsed = parseAnnotationResult(result.stdout);
-    if (parsed.ok) invalidateAnnotationCache();
-    return { ok: parsed.ok, error: parsed.error || null, data: parsed.data || null };
+function deleteLocalAnnotation(vaultPath, annotationId) {
+    var args = _buildAnnotationWriteArgs(vaultPath, 'delete');
+    args.push(String(annotationId));
+    return _runAnnotationSubprocess(vaultPath, args).then(function (r) { invalidateAnnotationCache(); return r; });
 }
 
 /* ── PDF annotation overlay patch lifecycle ── */
@@ -608,17 +603,25 @@ function getPdfPageElements(containerEl) {
 
 function injectPdfEventHooks(containerEl, view, vaultPath, pdfPath, plugin) {
     if (!pdfPath) return;
+    console.log('[PF] injectPdfEventHooks: ' + pdfPath);
     _currentVaultPath = vaultPath;
     _currentPdfPath = pdfPath;
-    fetchAnnotationsForPaper(vaultPath, pdfPath).then(function () {
-        renderAnnotationsOnExistingPages(containerEl);
+    var anns = fetchAnnotationsForPaper(vaultPath, pdfPath);
+    console.log('[PF] fetched ' + (anns ? anns.length : 0) + ' annotations for ' + pdfPath);
+    if (anns && anns.length > 0) { renderAnnotationsOnExistingPages(containerEl); }
+    var pageObserver = new MutationObserver(function (mutations) {
+        var changed = false;
+        for (var mi = 0; mi < mutations.length; mi++) {
+            if (mutations[mi].addedNodes.length > 0) { changed = true; break; }
+        }
+        if (changed) {
+            console.log('[PF] page DOM changed, re-rendering overlays');
+            renderAnnotationsOnExistingPages(containerEl);
+        }
     });
-    var pageObserver = new MutationObserver(function () {
-        renderAnnotationsOnExistingPages(containerEl);
-    });
-    pageObserver.observe(containerEl, { childList: true, subtree: false });
+    pageObserver.observe(containerEl, { childList: true, subtree: true });
     if (plugin && typeof plugin.register === 'function') {
-        plugin.register(function () { pageObserver.disconnect(); });
+        plugin.register(function () { console.log('[PF] disconnecting page observer'); pageObserver.disconnect(); });
     }
     setupSelectionCapture(containerEl, vaultPath, pdfPath);
 }
@@ -697,15 +700,17 @@ function setupSelectionCapture(containerEl, vaultPath, pdfPath) {
 }
 
 function renderAnnotationsOnExistingPages(containerEl) {
-    const pages = getPdfPageElements(containerEl);
-    if (_annotationCache === null || _annotationCache.length === 0) return;
-    const grouped = groupAnnotationsByPage(_annotationCache);
-    for (let i = 0; i < pages.length; i++) {
-        const pageEl = pages[i];
-        const pageNum = parseInt(pageEl.dataset.pageNumber, 10);
+    var pages = getPdfPageElements(containerEl);
+    console.log('[PF] renderAnnotationsOnExistingPages: ' + pages.length + ' pages, cache=' + (_annotationCache ? _annotationCache.length : 'null'));
+    if (_annotationCache === null || _annotationCache.length === 0) { console.log('[PF] skip: no annotations in cache'); return; }
+    var grouped = groupAnnotationsByPage(_annotationCache);
+    for (var i = 0; i < pages.length; i++) {
+        var pageEl = pages[i];
+        var pageNum = parseInt(pageEl.dataset.pageNumber, 10);
         if (isNaN(pageNum)) continue;
-        const pageAnns = grouped[pageNum - 1];
+        var pageAnns = grouped[pageNum - 1];
         if (!pageAnns || pageAnns.length === 0) continue;
+        console.log('[PF] page ' + pageNum + ' has ' + pageAnns.length + ' annotations');
         ensureOverlayLayer(pageEl);
         renderOverlaysForPage(pageEl, pageAnns, _currentVaultPath, _currentPdfPath, containerEl);
     }
@@ -736,20 +741,22 @@ function isAnnotationSupportedType(type) {
 
 function renderAnnotationRect(layer, ann, vaultPath, pdfPath, containerEl) {
     const rects = getAnnotationRects(ann);
-    if (!rects || rects.length === 0) return;
+    if (!rects || rects.length === 0) { console.log('[PF] no rects for ann', ann && ann.id); return; }
     const isReadonly = isReadonlyAnnotation(ann);
-    // Normalize PDF points (0-612 x 0-792) to 0-1 percentage
-    // Use the layer parent (page div) dimensions, or fall back to 612x792
-    let pageW = 612, pageH = 792;
+    // Use the canvas inside the page div for accurate viewport dimensions
+    var pageW = 612, pageH = 792;
     try {
-        const pageEl = layer.parentElement;
+        var pageEl = layer.parentElement;
         if (pageEl) {
-            const pw = pageEl.offsetWidth;
-            const ph = pageEl.offsetHeight;
-            if (pw > 0) pageW = pw;
-            if (ph > 0) pageH = ph;
+            var cv = pageEl.querySelector('canvas');
+            if (cv && cv.clientWidth > 0 && cv.clientHeight > 0) {
+                pageW = cv.clientWidth; pageH = cv.clientHeight;
+            } else {
+                pageW = pageEl.offsetWidth; pageH = pageEl.offsetHeight;
+            }
         }
     } catch (_) {}
+    console.log('[PF] render ' + rects.length + ' rects on ' + pageW + 'x' + pageH + ' canvas for ann ' + ann.id + ' type=' + ann.type);
     for (let i = 0; i < rects.length; i++) {
         const rect = rects[i];
         // PDF rect format: [left, bottom, right, top] — bottom-left origin
@@ -760,10 +767,15 @@ function renderAnnotationRect(layer, ann, vaultPath, pdfPath, containerEl) {
         var cssH = rect[3] - rect[1];
         const el = document.createElement('div');
         el.className = 'pf-annotation-rect pf-annotation-rect--' + ann.type;
-        el.style.left = ((cssLeft / pageW) * 100) + '%';
-        el.style.top = ((cssTop / pageH) * 100) + '%';
-        el.style.width = ((cssW / pageW) * 100) + '%';
-        el.style.height = ((cssH / pageH) * 100) + '%';
+        var pctL = (cssLeft / pageW) * 100;
+        var pctT = (cssTop / pageH) * 100;
+        var pctW = (cssW / pageW) * 100;
+        var pctH = (cssH / pageH) * 100;
+        if (i === 0) { console.log('[PF] rect0 raw=' + JSON.stringify(rect) + ' css=' + cssLeft.toFixed(1) + ',' + cssTop.toFixed(1) + ' ' + cssW.toFixed(1) + 'x' + cssH.toFixed(1) + ' pct=' + pctL.toFixed(2) + '% ' + pctT.toFixed(2) + '% ' + pctW.toFixed(2) + '% x ' + pctH.toFixed(2) + '% on ' + pageW + 'x' + pageH); }
+        el.style.left = pctL + '%';
+        el.style.top = pctT + '%';
+        el.style.width = pctW + '%';
+        el.style.height = pctH + '%';
         if (ann.color) {
             el.style.backgroundColor = ann.color;
             if (ann.type === 'highlight') el.style.opacity = '0.25';
@@ -5174,9 +5186,15 @@ module.exports = class PaperForgePlugin extends Plugin {
 
 
         /* ── PDF annotation overlay (deferred — after startup) ── */
-        setTimeout(() => {
+        setTimeout(async () => {
             if (this.settings.setup_complete && this.app.vault.adapter.basePath) {
-                installAnnotationOverlay(this.app, this.app.vault.adapter.basePath, this);
+                try {
+                    _annotationDB = new AnnotationDB();
+                    await _annotationDB.init();
+                    installAnnotationOverlay(this.app, this.app.vault.adapter.basePath, this);
+                } catch (e) {
+                    console.warn('[PF] annotation DB init failed:', e.message);
+                }
             }
         }, 2000);
 
