@@ -757,7 +757,7 @@ function _fallbackObserver(containerEl, vaultPath, pdfPath, plugin, anns) {
 }
 
 function setupSelectionCapture(containerEl, vaultPath, pdfPath) {
-    var toolbar = null;
+    var toolbar = null, _selColor = '#ffd400';
     containerEl.addEventListener('mouseup', function (e) {
         setTimeout(function () {
             var sel = window.getSelection();
@@ -781,25 +781,63 @@ function setupSelectionCapture(containerEl, vaultPath, pdfPath) {
             if (toolbar) toolbar.remove();
             toolbar = document.createElement('div');
             toolbar.className = 'pf-annotation-toolbar';
-            toolbar.style.cssText = 'position:fixed;z-index:100;background:var(--background-primary);border:1px solid var(--background-modifier-border);border-radius:8px;padding:6px 10px;display:flex;gap:6px;box-shadow:0 2px 12px rgba(0,0,0,0.12);font-size:13px;';
+            toolbar.style.cssText = 'position:fixed;z-index:100;background:var(--background-primary);border:1px solid var(--background-modifier-border);border-radius:8px;padding:6px 10px;display:flex;gap:6px;box-shadow:0 2px 12px rgba(0,0,0,0.12);align-items:center;';
+            // Color swatches
+            var colors = [
+                { name: 'yellow', hex: '#ffd400' }, { name: 'red', hex: '#ff6666' },
+                { name: 'green', hex: '#5fb236' }, { name: 'blue', hex: '#2ea8e5' },
+                { name: 'purple', hex: '#a28ae5' }, { name: 'magenta', hex: '#e56eee' },
+                { name: 'orange', hex: '#f19837' }, { name: 'gray', hex: '#aaaaaa' },
+            ];
+            for (var ci = 0; ci < colors.length; ci++) {
+                (function (swatchColor) {
+                    var swatch = document.createElement('span');
+                    swatch.style.cssText = 'display:inline-block;width:18px;height:18px;border-radius:50%;cursor:pointer;border:2px solid transparent;background:' + swatchColor.hex + ';';
+                    if (swatchColor.hex === _selColor) swatch.style.border = '2px solid var(--text-normal)';
+                    swatch.addEventListener('click', function () {
+                        _selColor = swatchColor.hex;
+                        if (toolbar) {
+                            var swatches = toolbar.querySelectorAll('.pf-color-swatch');
+                            for (var si = 0; si < swatches.length; si++) {
+                                swatches[si].style.border = '2px solid transparent';
+                            }
+                            swatch.style.border = '2px solid var(--text-normal)';
+                        }
+                    });
+                    swatch.className = 'pf-color-swatch';
+                    toolbar.appendChild(swatch);
+                })(colors[ci]);
+            }
+            // Separator
+            var sep = document.createElement('span');
+            sep.textContent = '|';
+            sep.style.cssText = 'color:var(--background-modifier-border);margin:0 2px;';
+            toolbar.appendChild(sep);
+            // Create button
             var hlBtn = document.createElement('button');
-            hlBtn.textContent = '+ Highlight';
-            hlBtn.style.cssText = 'padding:4px 12px;border:1px solid var(--background-modifier-border);border-radius:4px;background:var(--interactive-accent);color:var(--text-on-accent);cursor:pointer;';
+            hlBtn.textContent = 'Highlight';
+            hlBtn.style.cssText = 'padding:4px 12px;border:none;border-radius:4px;background:var(--interactive-accent);color:var(--text-on-accent);cursor:pointer;font-size:12px;white-space:nowrap;';
             hlBtn.addEventListener('click', function () {
                 var selectedText = sel.toString().trim();
-                var relRect = {
-                    left: (rect.left - containerEl.getBoundingClientRect().left) / containerEl.offsetWidth,
-                    top: (rect.top - containerEl.getBoundingClientRect().top) / containerEl.offsetHeight,
-                    right: (rect.right - containerEl.getBoundingClientRect().left) / containerEl.offsetWidth,
-                    bottom: (rect.bottom - containerEl.getBoundingClientRect().top) / containerEl.offsetHeight,
-                };
+                var cv = pageEl.querySelector('canvas');
+                var pdfW = 612, pdfH = 792;
+                if (cv && cv.clientWidth > 0) {
+                    var ar = cv.clientWidth / cv.clientHeight;
+                    if (ar > 0.65 && ar < 0.75) { pdfW = 595; pdfH = 842; }
+                }
+                var cvRect = cv ? cv.getBoundingClientRect() : containerEl.getBoundingClientRect();
+                var zoomX = pdfW / cvRect.width, zoomY = pdfH / cvRect.height;
+                var pdfLeft = (rect.left - cvRect.left) * zoomX;
+                var pdfTop = (rect.top - cvRect.top) * zoomY;
+                var pdfRight = (rect.right - cvRect.left) * zoomX;
+                var pdfBottom = (rect.bottom - cvRect.top) * zoomY;
                 var annPayload = {
                     pdf_path: pdfPath,
                     page_index: pageNum - 1,
                     type: 'highlight',
-                    color: '#ffd400',
+                    color: _selColor,
                     selected_text: selectedText,
-                    position_json: JSON.stringify({ pageIndex: pageNum - 1, rects: [[relRect.left, relRect.top, relRect.right, relRect.bottom]] }),
+                    position_json: JSON.stringify({ pageIndex: pageNum - 1, rects: [[pdfLeft, pdfTop, pdfRight, pdfBottom]] }),
                 };
                 createLocalAnnotation(vaultPath, pdfPath, annPayload).then(function (result) {
                     if (result.ok) {

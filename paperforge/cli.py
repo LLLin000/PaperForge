@@ -321,6 +321,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_ann_create.add_argument("--comment", default="", help="Comment")
     p_ann_create.add_argument("--color", default="#ffd400", help="Color hex")
     p_ann_create.add_argument("--sort-index", default="", help="Sort index")
+    p_ann_create.add_argument("--position-json", default="", help="Position JSON string")
     p_ann_create.add_argument("--json", action="store_true")
 
     p_ann_patch = p_ann_sp.add_parser("patch", help="Update an annotation")

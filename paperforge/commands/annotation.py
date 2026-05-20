@@ -236,6 +236,13 @@ def _cmd_create(vault, args, json_output):
             return _emit(result, json_output)
     conn = _db_conn(vault)
     try:
+        pos_str = getattr(args, "position_json", "") or ""
+        pos = None
+        if pos_str:
+            try:
+                pos = json.loads(pos_str)
+            except json.JSONDecodeError:
+                pass
         ann = create_annotation(
             conn,
             paper_id=paper_id,
@@ -246,6 +253,7 @@ def _cmd_create(vault, args, json_output):
             comment=getattr(args, "comment", ""),
             color=getattr(args, "color", "#ffd400"),
             sort_index=getattr(args, "sort_index", ""),
+            position_json=pos,
         )
         result = PFResult(ok=True, command="annotation create", version=PF_VERSION, data=ann)
         try:

@@ -12,7 +12,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from pypdf import PdfReader
+try:
+    from pypdf import PdfReader
+except ImportError:
+    PdfReader = None
 
 
 def _now() -> str:
@@ -73,6 +76,8 @@ def _load_pdf_page_sizes(vault_path: Path, attachment_key: str) -> dict[int, tup
         return {}
     pdf_files = sorted(storage_dir.glob("*.pdf"))
     if not pdf_files:
+        return {}
+    if PdfReader is None:
         return {}
     try:
         reader = PdfReader(str(pdf_files[0]))
