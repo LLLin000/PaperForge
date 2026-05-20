@@ -816,9 +816,7 @@ function setupSelectionCapture(containerEl, vaultPath, pdfPath) {
                     if (result.ok) {
                         sel.removeAllRanges();
                         if (toolbar) { toolbar.remove(); toolbar = null; }
-                        invalidateAnnotationCache();
-                        fetchAnnotationsForPaper(vaultPath, pdfPath);
-                        renderAnnotationsOnExistingPages(containerEl);
+                        _refreshOverlays();
                     } else {
                         console.warn('[PF] create annotation failed:', result.error);
                     }
@@ -958,6 +956,16 @@ function colorWithAlpha(color, alpha) {
 
 function _cleanDebugFlags() { _annotationSummaryLogged = true; }
 
+function _refreshOverlays() {
+    invalidateAnnotationCache();
+    fetchAnnotationsForPaper(_currentVaultPath, _currentPdfPath);
+    if (_pdfInternalHandle) {
+        _rebuildVisibleLayers(_pdfInternalHandle, _currentPdfPath, _currentVaultPath);
+    } else if (_currentContainerEl) {
+        renderAnnotationsOnExistingPages(_currentContainerEl);
+    }
+}
+
 function _removeAllOverlays() {
     var allOverlays = document.querySelectorAll('.pf-annotation-overlay');
     for (var oi = 0; oi < allOverlays.length; oi++) allOverlays[oi].remove();
@@ -1074,12 +1082,10 @@ function showAnnotationPopover(event, ann, rectEl, vaultPath, pdfPath, container
         delBtn.textContent = 'Delete';
         delBtn.addEventListener('click', function () {
             if (!confirm('Delete this annotation?')) return;
-            deleteLocalAnnotation(vaultPath, ann.id).then(function (result) {
+            deleteLocalAnnotation(_currentVaultPath, ann.id).then(function (result) {
                 hideAnnotationPopover();
                 if (result.ok) {
-                    fetchAnnotationsForPaper(vaultPath, pdfPath).then(function () {
-                        renderAnnotationsOnExistingPages(containerEl);
-                    });
+                    _refreshOverlays();
                 } else {
                     console.warn('[PF] delete annotation failed:', result.error);
                 }
