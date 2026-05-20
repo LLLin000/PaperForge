@@ -807,16 +807,16 @@ function getTextSelectionRange(pageEl, range) {
 
 function mergeCharRects(charRects) {
     if (!charRects || charRects.length === 0) return [];
+    // Group by vertical position (same text line), ignore horizontal gaps
     charRects.sort(function (a, b) { return (b[1] - a[1]) || (a[0] - b[0]); });
-    var LINE_THRESHOLD = 3;
+    var LINE_THRESHOLD = 5;
     var lines = [];
     var curLine = [charRects[0]];
     for (var i = 1; i < charRects.length; i++) {
-        var prev = charRects[i - 1], cur = charRects[i];
-        if (Math.abs(cur[1] - prev[1]) < LINE_THRESHOLD && cur[0] >= prev[2]) {
-            curLine.push(cur);
+        if (Math.abs(charRects[i][1] - charRects[i - 1][1]) < LINE_THRESHOLD) {
+            curLine.push(charRects[i]);
         } else {
-            lines.push(curLine); curLine = [cur];
+            lines.push(curLine); curLine = [charRects[i]];
         }
     }
     lines.push(curLine);
