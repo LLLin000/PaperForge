@@ -876,7 +876,22 @@ function ensureOverlayLayer(pageEl) {
         layer.className = 'pf-annotation-overlay';
         pageEl.appendChild(layer);
     }
-    syncOverlayLayerGeometry(pageEl, layer);
+    // Try PDF.js viewport alignment if possible
+    var needsAlign = !layer.dataset.aligned;
+    if (needsAlign) {
+        try {
+            for (var k in pageEl) {
+                if ((k.toLowerCase().indexOf('pageview') >= 0 || k.toLowerCase().indexOf('pdfpage') >= 0)) {
+                    var pv = pageEl[k];
+                    if (pv && pv.div === pageEl && pv.viewport && window.pdfjsLib && window.pdfjsLib.setLayerDimensions) {
+                        window.pdfjsLib.setLayerDimensions(layer, pv.viewport);
+                        layer.dataset.aligned = '1';
+                        break;
+                    }
+                }
+            }
+        } catch (_) {}
+    }
     if (!_annotationPdfProbeLogged) {
         _annotationPdfProbeLogged = true;
         try {
@@ -959,12 +974,27 @@ function _cleanDebugFlags() { _annotationSummaryLogged = true; }
 
 function _refreshOverlays() {
     invalidateAnnotationCache();
-    fetchAnnotationsForPaper(_currentVaultPath, _currentPdfPath);
-    if (_pdfInternalHandle) {
-        _rebuildVisibleLayers(_pdfInternalHandle, _currentPdfPath, _currentVaultPath);
-    } else if (_currentContainerEl) {
-        renderAnnotationsOnExistingPages(_currentContainerEl);
+    var anns = fetchAnnotationsForPaper(_currentVaultPath, _currentPdfPath);
+    if (!anns || anns.length === 0) return;
+    // Remove all existing overlay layers, then re-render via fallback
+    _removeAllOverlays();
+    // Re-fetch after clearing
+    anns = fetchAnnotationsForPaper(_currentVaultPath, _currentPdfPath);
+    if (!anns || anns.length === 0) return;
+    var grouped = groupAnnotationsByPage(anns);
+    var pageEls = document.querySelectorAll('.page[data-page-number]');
+    var rendered = 0;
+    for (var pi = 0; pi < pageEls.length; pi++) {
+        var pEl = pageEls[pi];
+        var pn = parseInt(pEl.dataset.pageNumber, 10);
+        if (isNaN(pn)) continue;
+        var pageAnns = grouped[pn - 1];
+        if (!pageAnns || pageAnns.length === 0) continue;
+        ensureOverlayLayer(pEl);
+        renderOverlaysForPage(pEl, pageAnns, _currentVaultPath, _currentPdfPath, _currentContainerEl);
+        rendered += pageAnns.length;
     }
+    console.log('[PF] rendered ' + rendered + ' anns on ' + pageEls.length + ' pages');
 }
 
 function _removeAllOverlays() {
