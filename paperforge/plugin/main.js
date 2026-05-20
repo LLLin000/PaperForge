@@ -816,27 +816,33 @@ function setupSelectionCapture(containerEl, vaultPath, pdfPath) {
                 var canvasEl = pageEl.querySelector('canvas');
                 if (!canvasEl) return;
                 var canvasBox = canvasEl.getBoundingClientRect();
-                var zoomX = pdfW / canvasBox.width, zoomY = pdfH / canvasBox.height;
-                // Compute per-character rects by iterating individual text layer spans
-                // (more precise than Range.getClientRects which returns full line boxes)
+                // Read PDF coordinates directly from each span's CSS transform matrix
+                // (avoids getBoundingClientRect sub-pixel errors)
                 var spanSet = new Set();
                 var spanRects = [];
                 var nodeIter = document.createNodeIterator(range.commonAncestorContainer, 4);
-                var textNode;
-                while ((textNode = nodeIter.nextNode())) {
-                    if (!range.intersectsNode(textNode)) continue;
-                    var spanParent = textNode.parentElement;
-                    if (!spanParent || spanSet.has(spanParent)) continue;
-                    spanSet.add(spanParent);
-                    var spr = spanParent.getBoundingClientRect();
-                    if (spr.width < 1 || spr.height < 1) continue;
-                    var sl = (spr.left - canvasBox.left) * zoomX;
-                    var st = (spr.top - canvasBox.top) * zoomY;
-                    var sr2 = (spr.right - canvasBox.left) * zoomX;
-                    var sb = (spr.bottom - canvasBox.top) * zoomY;
-                    spanRects.push({ l: sl, t: st, r: sr2, b: sb });
+                var tn;
+                while ((tn = nodeIter.nextNode())) {
+                    if (!range.intersectsNode(tn)) continue;
+                    var sp = tn.parentElement;
+                    if (!sp || spanSet.has(sp)) continue;
+                    spanSet.add(sp);
+                    var mstr = sp.style.transform;
+                    if (!mstr || !mstr.startsWith('matrix(')) continue;
+                    var parts = mstr.slice(7, -1).split(',').map(Number);
+                    if (parts.length < 6) continue;
+                    var spanLeft = parts[4];
+                    var spanTop = parts[5];
+                    var spanW = sp.offsetWidth;
+                    var spanH = sp.offsetHeight;
+                    if (spanW < 1 || spanH < 1) continue;
+                    var sl = spanLeft * zoomX;
+                    var sr = (spanLeft + spanW) * zoomX;
+                    var stInPDF = spanTop * zoomY;
+                    var sbInPDF = (spanTop + spanH) * zoomY;
+                    spanRects.push({ l: sl, b: pdfH - sbInPDF, r: sr, t: pdfH - stInPDF });
                 }
-                // Merge consecutive spans on the same visual line
+                // Merge spans on same line into single rects (like Zotero)
                 var pdfRects = [];
                 if (spanRects.length > 0) {
                     spanRects.sort(function (a, b) { return a.t - b.t || a.l - b.l; });
@@ -847,15 +853,14 @@ function setupSelectionCapture(containerEl, vaultPath, pdfPath) {
                         if (Math.abs(curR.t - lastR.t) < 15) {
                             lastR.l = Math.min(lastR.l, curR.l);
                             lastR.r = Math.max(lastR.r, curR.r);
-                            lastR.b = Math.max(lastR.b, curR.b);
-                            lastR.t = Math.min(lastR.t, curR.t);
+                            lastR.b = Math.min(lastR.b, curR.b);
+                            lastR.t = Math.max(lastR.t, curR.t);
                         } else {
-                            merged.push({ l: curR.l, t: curR.t, r: curR.r, b: curR.b });
+                            merged.push({ l: curR.l, b: curR.b, r: curR.r, t: curR.t });
                         }
                     }
                     for (var mi = 0; mi < merged.length; mi++) {
-                        var m = merged[mi];
-                        pdfRects.push([m.l, pdfH - m.b, m.r, pdfH - m.t]);
+                        pdfRects.push([merged[mi].l, merged[mi].b, merged[mi].r, merged[mi].t]);
                     }
                 }
                 if (pdfRects.length === 0) return;
