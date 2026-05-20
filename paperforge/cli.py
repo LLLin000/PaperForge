@@ -292,6 +292,55 @@ def build_parser() -> argparse.ArgumentParser:
     p_memory_status = p_memory_sp.add_parser("status", help="Check memory database status")
     p_memory_status.add_argument("--json", action="store_true", help="Output as JSON")
 
+    # Annotation commands
+    p_ann = sub.add_parser("annotation", help="Manage PDF annotations")
+    p_ann_sp = p_ann.add_subparsers(dest="annotation_subcommand", required=True)
+
+    p_ann_import = p_ann_sp.add_parser("import", help="Import annotations from Zotero SQLite")
+    p_ann_import.add_argument("--zotero-db", metavar="PATH", help="Path to zotero.sqlite")
+    p_ann_import.add_argument("--paper", metavar="KEY", help="Filter by paper key")
+    p_ann_import.add_argument("--dry-run", action="store_true", help="Preview without importing")
+    p_ann_import.add_argument("--no-copy", action="store_true", help="Read zotero.sqlite directly (risk if Zotero is running)")
+    p_ann_import.add_argument("--json", action="store_true")
+
+    p_ann_list = p_ann_sp.add_parser("list", help="List annotations for a paper")
+    p_ann_list.add_argument("paper_key", help="Paper zotero key")
+    p_ann_list.add_argument("--page", type=int, help="Filter by page index")
+    p_ann_list.add_argument("--type", dest="ann_type", help="Filter by annotation type")
+    p_ann_list.add_argument("--limit", type=int, default=100, help="Max results")
+    p_ann_list.add_argument("--json", action="store_true")
+
+    p_ann_create = p_ann_sp.add_parser("create", help="Create a local annotation")
+    p_ann_create.add_argument("--paper", required=True, help="Paper zotero key")
+    p_ann_create.add_argument("--type", dest="ann_type", required=True, help="Annotation type")
+    p_ann_create.add_argument("--page-index", type=int, help="Page index")
+    p_ann_create.add_argument("--page-label", default="", help="Page label")
+    p_ann_create.add_argument("--selected-text", default="", help="Selected text")
+    p_ann_create.add_argument("--comment", default="", help="Comment")
+    p_ann_create.add_argument("--color", default="#ffd400", help="Color hex")
+    p_ann_create.add_argument("--sort-index", default="", help="Sort index")
+    p_ann_create.add_argument("--json", action="store_true")
+
+    p_ann_patch = p_ann_sp.add_parser("patch", help="Update an annotation")
+    p_ann_patch.add_argument("annotation_id", help="Annotation ID")
+    p_ann_patch.add_argument("--comment", help="New comment")
+    p_ann_patch.add_argument("--color", help="New color hex")
+    p_ann_patch.add_argument("--json", action="store_true")
+
+    p_ann_delete = p_ann_sp.add_parser("delete", help="Delete an annotation")
+    p_ann_delete.add_argument("annotation_id", help="Annotation ID")
+    p_ann_delete.add_argument("--hard", action="store_true", help="Permanent delete")
+    p_ann_delete.add_argument("--json", action="store_true")
+
+    p_ann_export = p_ann_sp.add_parser("export", help="Export annotations")
+    p_ann_export.add_argument("paper_key", help="Paper zotero key")
+    p_ann_export.add_argument("--format", choices=["json", "markdown"], default="json")
+    p_ann_export.add_argument("--output", help="Write to file")
+    p_ann_export.add_argument("--json", action="store_true")
+
+    p_ann_status = p_ann_sp.add_parser("status", help="Check annotation DB status")
+    p_ann_status.add_argument("--json", action="store_true")
+
     p_paper_status = sub.add_parser("paper-status", help="Look up a paper's status")
     p_paper_status.add_argument("query", help="Paper identifier (zotero_key, DOI, title, alias)")
     p_paper_status.add_argument("--json", action="store_true", help="Output as JSON")
@@ -564,6 +613,11 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "memory":
         from paperforge.commands.memory import run
+
+        return run(args)
+
+    if args.command == "annotation":
+        from paperforge.commands.annotation import run
 
         return run(args)
 
