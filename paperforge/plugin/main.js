@@ -608,6 +608,7 @@ var _currentContainerEl = null;
 function injectPdfEventHooks(containerEl, view, vaultPath, pdfPath, plugin) {
     if (!pdfPath) return;
     console.log('[PF] pdf ' + pdfPath);
+    _removeAllOverlays();
     _currentVaultPath = vaultPath;
     _currentPdfPath = pdfPath;
     _currentContainerEl = containerEl;
@@ -789,35 +790,7 @@ function setupSelectionCapture(containerEl, vaultPath, pdfPath) {
                 { name: 'purple', hex: '#a28ae5' }, { name: 'magenta', hex: '#e56eee' },
                 { name: 'orange', hex: '#f19837' }, { name: 'gray', hex: '#aaaaaa' },
             ];
-            for (var ci = 0; ci < colors.length; ci++) {
-                (function (swatchColor) {
-                    var swatch = document.createElement('span');
-                    swatch.style.cssText = 'display:inline-block;width:18px;height:18px;border-radius:50%;cursor:pointer;border:2px solid transparent;background:' + swatchColor.hex + ';';
-                    if (swatchColor.hex === _selColor) swatch.style.border = '2px solid var(--text-normal)';
-                    swatch.addEventListener('click', function () {
-                        _selColor = swatchColor.hex;
-                        if (toolbar) {
-                            var swatches = toolbar.querySelectorAll('.pf-color-swatch');
-                            for (var si = 0; si < swatches.length; si++) {
-                                swatches[si].style.border = '2px solid transparent';
-                            }
-                            swatch.style.border = '2px solid var(--text-normal)';
-                        }
-                    });
-                    swatch.className = 'pf-color-swatch';
-                    toolbar.appendChild(swatch);
-                })(colors[ci]);
-            }
-            // Separator
-            var sep = document.createElement('span');
-            sep.textContent = '|';
-            sep.style.cssText = 'color:var(--background-modifier-border);margin:0 2px;';
-            toolbar.appendChild(sep);
-            // Create button
-            var hlBtn = document.createElement('button');
-            hlBtn.textContent = 'Highlight';
-            hlBtn.style.cssText = 'padding:4px 12px;border:none;border-radius:4px;background:var(--interactive-accent);color:var(--text-on-accent);cursor:pointer;font-size:12px;white-space:nowrap;';
-            hlBtn.addEventListener('click', function () {
+            function doCreateAnnotation(color) {
                 var selectedText = sel.toString().trim();
                 var cv = pageEl.querySelector('canvas');
                 var pdfW = 612, pdfH = 792;
@@ -835,7 +808,7 @@ function setupSelectionCapture(containerEl, vaultPath, pdfPath) {
                     pdf_path: pdfPath,
                     page_index: pageNum - 1,
                     type: 'highlight',
-                    color: _selColor,
+                    color: color,
                     selected_text: selectedText,
                     position_json: JSON.stringify({ pageIndex: pageNum - 1, rects: [[pdfLeft, pdfTop, pdfRight, pdfBottom]] }),
                 };
@@ -843,15 +816,24 @@ function setupSelectionCapture(containerEl, vaultPath, pdfPath) {
                     if (result.ok) {
                         sel.removeAllRanges();
                         if (toolbar) { toolbar.remove(); toolbar = null; }
-                        fetchAnnotationsForPaper(vaultPath, pdfPath).then(function () {
-                            renderAnnotationsOnExistingPages(containerEl);
-                        });
+                        invalidateAnnotationCache();
+                        fetchAnnotationsForPaper(vaultPath, pdfPath);
+                        renderAnnotationsOnExistingPages(containerEl);
                     } else {
                         console.warn('[PF] create annotation failed:', result.error);
                     }
                 });
-            });
-            toolbar.appendChild(hlBtn);
+            }
+            for (var ci = 0; ci < colors.length; ci++) {
+                (function (swatchColor) {
+                    var swatch = document.createElement('span');
+                    swatch.style.cssText = 'display:inline-block;width:18px;height:18px;border-radius:50%;cursor:pointer;border:2px solid transparent;background:' + swatchColor.hex + ';';
+                    swatch.className = 'pf-color-swatch';
+                    swatch.title = swatchColor.name;
+                    swatch.addEventListener('click', function () { doCreateAnnotation(swatchColor.hex); });
+                    toolbar.appendChild(swatch);
+                })(colors[ci]);
+            }
             document.body.appendChild(toolbar);
             var tbRect = toolbar.getBoundingClientRect();
             var left = rect.left + rect.width / 2 - tbRect.width / 2;
@@ -975,6 +957,15 @@ function colorWithAlpha(color, alpha) {
 }
 
 function _cleanDebugFlags() { _annotationSummaryLogged = true; }
+
+function _removeAllOverlays() {
+    var allOverlays = document.querySelectorAll('.pf-annotation-overlay');
+    for (var oi = 0; oi < allOverlays.length; oi++) allOverlays[oi].remove();
+    _annotationCache = null;
+    _annotationCacheKey = null;
+    _jsonCache = null;
+    _jsonCachePath = null;
+}
 
 function renderAnnotationRect(layer, ann, vaultPath, pdfPath, containerEl) {
     const rects = getAnnotationRects(ann);
