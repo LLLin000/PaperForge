@@ -617,17 +617,15 @@ function injectPdfEventHooks(containerEl, view, vaultPath, pdfPath, plugin) {
     var anns = fetchAnnotationsForPaper(vaultPath, pdfPath);
     console.log('[PF] fetched ' + (anns ? anns.length : 0));
     // Try resolving PDF.js internal viewer handle
-    try {
-        var pdfViewerHandle = _resolvePdfHandle(view);
-        if (pdfViewerHandle) {
-            _pdfInternalHandle = pdfViewerHandle;
-            _subscribePdfEvents(pdfViewerHandle, pdfPath, vaultPath, plugin);
-            // Initial render since pages may already be loaded
-            if (anns && anns.length > 0) { renderAnnotationsOnExistingPages(containerEl); }
-        } else {
-            _fallbackObserver(containerEl, vaultPath, pdfPath, plugin, anns);
-        }
-    } catch (_) {
+    var pdfViewerHandle = null;
+    try { pdfViewerHandle = _resolvePdfHandle(view); } catch (_) {}
+    if (pdfViewerHandle) {
+        _pdfInternalHandle = pdfViewerHandle;
+        _subscribePdfEvents(pdfViewerHandle, pdfPath, vaultPath, plugin);
+        if (anns && anns.length > 0) { renderAnnotationsOnExistingPages(containerEl); }
+        console.log('[PF] handle=ok');
+    } else {
+        console.log('[PF] handle=null, fallback');
         _fallbackObserver(containerEl, vaultPath, pdfPath, plugin, anns);
     }
     setupSelectionCapture(containerEl, vaultPath, pdfPath);
