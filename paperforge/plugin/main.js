@@ -422,6 +422,8 @@ function toggleDisclosureState(store, key, defaultCollapsed) {
 
 let _jsonCache = null;
 let _jsonCachePath = null;
+let _annotationCache = null;
+let _annotationCacheKey = null;
 
 function _loadAnnotationCache(vaultPath) {
     var paths = memoryState.resolveVaultPaths(vaultPath);
@@ -441,22 +443,22 @@ function _loadAnnotationCache(vaultPath) {
 
 function _resolvePaperIdFromCache(pdfPath, cache) {
     if (!cache || !cache.by_paper) return '';
-    // Extract storage folder key from path: .../storage/XXXXXXXX/file.pdf
+    // Extract storage folder key from path: .../storage/5AWBHQ59/file.pdf
     var m = pdfPath.match(/storage[\\/]([A-Z0-9]{8})/i);
     if (m) {
         var sk = m[1].toUpperCase();
-        // Search all papers for matching attachment key
+        // Search all papers for matching attachment key (ak)
         for (var pid in cache.by_paper) {
             var anns = cache.by_paper[pid];
             for (var i = 0; i < anns.length; i++) {
-                if (anns[i].zk === sk) return pid;
+                if (anns[i].ak === sk) return pid;
             }
         }
     }
-    // Fallback: try matching by paper_id stored in the path itself
+    // Fallback: try matching by paper_id if the storage folder IS the paper id
     var parts = pdfPath.split(/[\\/]/);
     for (var pi = 0; pi < parts.length; pi++) {
-        var part = parts[pi];
+        var part = parts[pi].toUpperCase();
         if (/^[A-Z0-9]{8}$/.test(part) && cache.by_paper[part]) return part;
     }
     return '';

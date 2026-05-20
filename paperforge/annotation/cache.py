@@ -21,7 +21,8 @@ CACHE_FILENAME = "annotation-cache.json"
 
 CACHE_QUERY = """
 SELECT
-    id, paper_id, zotero_key, type, page_index, page_label,
+    id, paper_id, zotero_key, zotero_attachment_key,
+    type, page_index, page_label,
     selected_text, comment, color, sort_index,
     tags_json, position_json, sync_state, is_readonly
 FROM annotations
@@ -47,6 +48,7 @@ def _row_to_dict(row: sqlite3.Row) -> dict[str, Any]:
         "id": row["id"],
         "pid": row["paper_id"],
         "zk": row["zotero_key"] or "",
+        "ak": row["zotero_attachment_key"] or "",  # storage folder name for key resolution
         "t": row["type"],
         "pi": row["page_index"],
         "pl": row["page_label"] or "",
