@@ -12,6 +12,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from pypdf import PdfReader
+
 
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
@@ -63,13 +65,46 @@ def _row_to_dict(row: sqlite3.Row) -> dict[str, Any]:
     }
 
 
-def build_cache(conn: sqlite3.Connection) -> dict[str, Any]:
+def _load_pdf_page_sizes(vault_path: Path, attachment_key: str) -> dict[int, tuple[float, float]]:
+    if not attachment_key:
+        return {}
+    storage_dir = vault_path / "System" / "Zotero" / "storage" / attachment_key
+    if not storage_dir.exists():
+        return {}
+    pdf_files = sorted(storage_dir.glob("*.pdf"))
+    if not pdf_files:
+        return {}
+    try:
+        reader = PdfReader(str(pdf_files[0]))
+    except Exception:
+        return {}
+    sizes: dict[int, tuple[float, float]] = {}
+    for idx, page in enumerate(reader.pages):
+        try:
+            box = page.mediabox
+            sizes[idx] = (float(box.width), float(box.height))
+        except Exception:
+            continue
+    return sizes
+
+
+def build_cache(conn: sqlite3.Connection, vault_path: Path | str) -> dict[str, Any]:
     """Read all non-deleted annotations and group by paper_id."""
+    vault = Path(str(vault_path))
     conn.row_factory = sqlite3.Row
     rows = conn.execute(CACHE_QUERY).fetchall()
     by_paper: dict[str, list[dict[str, Any]]] = {}
+    attachment_page_sizes: dict[str, dict[int, tuple[float, float]]] = {}
     for r in rows:
         d = _row_to_dict(r)
+        attachment_key = d["zotero_attachment_key"]
+        if attachment_key and attachment_key not in attachment_page_sizes:
+            attachment_page_sizes[attachment_key] = _load_pdf_page_sizes(vault, attachment_key)
+        page_sizes = attachment_page_sizes.get(attachment_key, {})
+        page_size = page_sizes.get(int(d.get("page_index") or 0))
+        if page_size:
+            d["page_width"] = page_size[0]
+            d["page_height"] = page_size[1]
         pid = d["paper_id"]
         if pid not in by_paper:
             by_paper[pid] = []
@@ -93,6 +128,6 @@ def write_cache(conn: sqlite3.Connection, vault_path: Path | str) -> str | None:
     if not indexes_dir.exists():
         return None
     cache_path = indexes_dir / CACHE_FILENAME
-    data = build_cache(conn)
+    data = build_cache(conn, vault)
     cache_path.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
     return str(cache_path)

@@ -424,6 +424,9 @@ let _jsonCache = null;
 let _jsonCachePath = null;
 let _annotationCache = null;
 let _annotationCacheKey = null;
+let _annotationOverlayDebugLogged = false;
+let _annotationSummaryLogged = false;
+let _annotationPdfProbeLogged = false;
 
 function _loadAnnotationCache(vaultPath) {
     var paths = memoryState.resolveVaultPaths(vaultPath);
@@ -475,7 +478,7 @@ function fetchAnnotationsForPaper(vaultPath, pdfPath) {
     if (key === _annotationCacheKey && _annotationCache) return _annotationCache;
     _annotationCacheKey = key;
     _annotationCache = cache.by_paper[paperId] || [];
-    console.log('[PF] got ' + _annotationCache.length + ' annotations for ' + paperId);
+    console.log('[PF] annotations ' + _annotationCache.length + ' for ' + paperId);
     return _annotationCache;
 }
 
@@ -601,11 +604,11 @@ function getPdfPageElements(containerEl) {
 
 function injectPdfEventHooks(containerEl, view, vaultPath, pdfPath, plugin) {
     if (!pdfPath) return;
-    console.log('[PF] injectPdfEventHooks: ' + pdfPath);
+    console.log('[PF] pdf ' + pdfPath);
     _currentVaultPath = vaultPath;
     _currentPdfPath = pdfPath;
     var anns = fetchAnnotationsForPaper(vaultPath, pdfPath);
-    console.log('[PF] fetched ' + (anns ? anns.length : 0) + ' annotations for ' + pdfPath);
+    console.log('[PF] fetched ' + (anns ? anns.length : 0));
     if (anns && anns.length > 0) { renderAnnotationsOnExistingPages(containerEl); }
     var pageObserver = new MutationObserver(function (mutations) {
         var hasNewPage = false;
@@ -702,16 +705,27 @@ function setupSelectionCapture(containerEl, vaultPath, pdfPath) {
 
 function renderAnnotationsOnExistingPages(containerEl) {
     var pages = getPdfPageElements(containerEl);
-    console.log('[PF] renderAnnotationsOnExistingPages: ' + pages.length + ' pages, cache=' + (_annotationCache ? _annotationCache.length : 'null'));
-    if (_annotationCache === null || _annotationCache.length === 0) { console.log('[PF] skip: no annotations in cache'); return; }
+    if (_annotationCache === null || _annotationCache.length === 0) { console.log('[PF] no-cache'); return; }
     var grouped = groupAnnotationsByPage(_annotationCache);
+    if (!_annotationSummaryLogged) {
+        _annotationSummaryLogged = true;
+        var pageCount = 0;
+        var firstSummary = '';
+        Object.keys(grouped).sort(function (a, b) { return Number(a) - Number(b); }).forEach(function (key) {
+            var count = grouped[key] ? grouped[key].length : 0;
+            if (count > 0) {
+                pageCount += 1;
+                if (!firstSummary) firstSummary = 'p' + (Number(key) + 1) + '=' + count;
+            }
+        });
+        console.log('[PF] pages ' + pages.length + ', annotated ' + pageCount + (firstSummary ? ', ' + firstSummary : ''));
+    }
     for (var i = 0; i < pages.length; i++) {
         var pageEl = pages[i];
         var pageNum = parseInt(pageEl.dataset.pageNumber, 10);
         if (isNaN(pageNum)) continue;
         var pageAnns = grouped[pageNum - 1];
         if (!pageAnns || pageAnns.length === 0) continue;
-        console.log('[PF] page ' + pageNum + ' has ' + pageAnns.length + ' annotations');
         ensureOverlayLayer(pageEl);
         renderOverlaysForPage(pageEl, pageAnns, _currentVaultPath, _currentPdfPath, containerEl);
     }
@@ -722,6 +736,27 @@ function ensureOverlayLayer(pageEl) {
     const layer = document.createElement('div');
     layer.className = 'pf-annotation-overlay';
     pageEl.appendChild(layer);
+    if (!_annotationPdfProbeLogged) {
+        _annotationPdfProbeLogged = true;
+        try {
+            var pdfjs = window.pdfjsLib;
+            var textLayer = pageEl.querySelector('.textLayer');
+            var annotationLayer = pageEl.querySelector('.annotationLayer');
+            var ownKeys = Object.keys(pageEl).filter(function (k) {
+                return /page|view|pdf|viewport/i.test(k);
+            }).slice(0, 12);
+            console.log('[PF] pdfjs probe setLayer=' + Boolean(pdfjs && typeof pdfjs.setLayerDimensions === 'function'));
+            console.log('[PF] page probe textLayer=' + Boolean(textLayer) + ', annotationLayer=' + Boolean(annotationLayer) + ', keys=' + ownKeys.join('|'));
+            if (textLayer) {
+                console.log('[PF] textLayer box ' + [textLayer.clientWidth, textLayer.clientHeight, textLayer.style.width || '-', textLayer.style.height || '-'].join(','));
+            }
+            if (annotationLayer) {
+                console.log('[PF] annotationLayer box ' + [annotationLayer.clientWidth, annotationLayer.clientHeight, annotationLayer.style.width || '-', annotationLayer.style.height || '-'].join(','));
+            }
+        } catch (err) {
+            console.log('[PF] pdfjs probe failed: ' + (err && err.message ? err.message : String(err)));
+        }
+    }
 }
 
 function renderOverlaysForPage(pageEl, annotations, vaultPath, pdfPath, containerEl) {
@@ -744,28 +779,9 @@ function renderAnnotationRect(layer, ann, vaultPath, pdfPath, containerEl) {
     const rects = getAnnotationRects(ann);
     if (!rects || rects.length === 0) { console.log('[PF] no rects for ann', ann && ann.id); return; }
     const isReadonly = isReadonlyAnnotation(ann);
-    // PDF coordinate space: US Letter = 612x792 points.
-    // Percentage = PDF_point / PDF_page_size * 100 (NOT canvas pixel size,
-    // because canvas = PDF_page * zoom, and % is relative to the CSS
-    // container which matches canvas size.  Since zoom cancels out,
-    // dividing by 612/792 gives the correct ratio regardless of zoom.)
-    var pageW = 612, pageH = 792;
-    try {
-        var pageEl = layer.parentElement;
-        if (pageEl) {
-            var cv = pageEl.querySelector('canvas');
-            if (cv && cv.clientWidth > 0 && cv.clientHeight > 0) {
-                // Derive actual PDF page size from canvas at current zoom
-                // zoom = canvas_width / pdf_page_width, so pdf_page_width = canvas_width / zoom
-                // We don't know zoom, but we can approximate from aspect ratio
-                var ar = cv.clientWidth / cv.clientHeight;
-                if (ar > 0.7 && ar < 0.8) { pageW = 612; pageH = 792; }     // US Letter
-                else if (ar > 0.65 && ar < 0.75) { pageW = 595; pageH = 842; } // A4
-                else { pageW = cv.clientWidth; pageH = cv.clientHeight; }
-            }
-        }
-    } catch (_) {}
-    console.log('[PF] render ' + rects.length + ' rects on ' + pageW + 'x' + pageH + ' canvas for ann ' + ann.id + ' type=' + ann.type);
+    // Prefer exact PDF page size from cache, fall back conservatively.
+    var pageW = Number(ann.page_width) || 612;
+    var pageH = Number(ann.page_height) || 792;
     for (let i = 0; i < rects.length; i++) {
         const rect = rects[i];
         // PDF rect format: [left, bottom, right, top] — bottom-left origin
@@ -778,7 +794,7 @@ function renderAnnotationRect(layer, ann, vaultPath, pdfPath, containerEl) {
         var pctT = (cssTop / pageH) * 100;
         var pctW = (cssW / pageW) * 100;
         var pctH = (cssH / pageH) * 100;
-        if (i === 0) { console.log('[PF] rect0 raw=' + JSON.stringify(rect) + ' css=' + cssLeft.toFixed(1) + ',' + cssTop.toFixed(1) + ' ' + cssW.toFixed(1) + 'x' + cssH.toFixed(1) + ' pct=' + pctL.toFixed(2) + '% ' + pctT.toFixed(2) + '% ' + pctW.toFixed(2) + '% x ' + pctH.toFixed(2) + '% on ' + pageW + 'x' + pageH); }
+        if (i === 0 && !_annotationOverlayDebugLogged) { console.log('[PF] rect raw=' + JSON.stringify(rect) + ' pct=' + pctL.toFixed(1) + ',' + pctT.toFixed(1) + ' ' + pctW.toFixed(1) + 'x' + pctH.toFixed(1)); }
         const el = document.createElement('div');
         el.className = 'pf-annotation-rect pf-annotation-rect--' + ann.type;
         el.style.left = pctL + '%';
@@ -787,7 +803,10 @@ function renderAnnotationRect(layer, ann, vaultPath, pdfPath, containerEl) {
         el.style.height = pctH + '%';
         if (ann.color) {
             el.style.backgroundColor = ann.color;
-            if (ann.type === 'highlight') el.style.opacity = '0.3';
+            if (ann.type === 'highlight') {
+                el.style.opacity = '0.65';
+                el.style.outline = '1px solid rgba(0, 0, 0, 0.18)';
+            }
             else if (ann.type === 'underline') el.style.borderBottomColor = ann.color;
         }
         if (ann.type === 'underline') el.style.borderBottom = '2px solid ' + (ann.color || '#ffd400');
@@ -806,6 +825,31 @@ function renderAnnotationRect(layer, ann, vaultPath, pdfPath, containerEl) {
             el.style.filter = '';
         });
         layer.appendChild(el);
+        if (!_annotationOverlayDebugLogged) {
+            _annotationOverlayDebugLogged = true;
+            try {
+                var pageBox = layer.parentElement ? layer.parentElement.getBoundingClientRect() : null;
+                var layerBox = layer.getBoundingClientRect();
+                var rectBox = el.getBoundingClientRect();
+                var layerStyle = window.getComputedStyle(layer);
+                var rectStyle = window.getComputedStyle(el);
+                console.log('[PF] pageBox ' + (pageBox ? [pageBox.x.toFixed(1), pageBox.y.toFixed(1), pageBox.width.toFixed(1), pageBox.height.toFixed(1)].join(',') : 'null'));
+                console.log('[PF] layerBox ' + [layerBox.x.toFixed(1), layerBox.y.toFixed(1), layerBox.width.toFixed(1), layerBox.height.toFixed(1), layerStyle.position, layerStyle.zIndex, layerStyle.visibility].join(','));
+                console.log('[PF] rectBox ' + [rectBox.x.toFixed(1), rectBox.y.toFixed(1), rectBox.width.toFixed(1), rectBox.height.toFixed(1), rectStyle.display, rectStyle.visibility, rectStyle.opacity, rectStyle.backgroundColor].join(','));
+                var cx = rectBox.x + (rectBox.width / 2);
+                var cy = rectBox.y + (rectBox.height / 2);
+                var topEl = document.elementFromPoint(cx, cy);
+                console.log('[PF] hitTest ' + [
+                    cx.toFixed(1),
+                    cy.toFixed(1),
+                    topEl ? topEl.tagName : 'null',
+                    topEl ? (topEl.className || '') : '',
+                    topEl === el ? 'SELF' : 'OTHER',
+                ].join(','));
+            } catch (err) {
+                console.log('[PF] overlay-debug failed:', err && err.message ? err.message : String(err));
+            }
+        }
     }
 }
 
