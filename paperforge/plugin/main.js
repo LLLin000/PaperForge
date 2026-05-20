@@ -418,6 +418,118 @@ function toggleDisclosureState(store, key, defaultCollapsed) {
     return next;
 }
 
+/* ── Annotation bridge ── */
+
+let _annotationCache = null;
+let _annotationCachePdfPath = null;
+
+function buildAnnotationBaseArgs(vaultPath) {
+    const py = memoryState.getCachedPython(vaultPath);
+    const extra = (py && py.extraArgs) || [];
+    return [...extra, '-m', 'paperforge', '--vault', vaultPath];
+}
+
+function runAnnotationCommand(vaultPath, args, timeout, _spawn) {
+    const py = memoryState.getCachedPython(vaultPath);
+    if (!py) {
+        return Promise.resolve({ stdout: '', stderr: 'Python not configured', exitCode: -1, elapsed: 0 });
+    }
+    return runSubprocess(py.path, args, vaultPath, timeout || 30000, _spawn);
+}
+
+function parseAnnotationResult(jsonString) {
+    try {
+        const parsed = JSON.parse(jsonString);
+        if (parsed && parsed.ok === true) {
+            return { ok: true, data: parsed.result || parsed.data || null };
+        }
+        return { ok: false, error: (parsed && parsed.error) || 'Unknown error' };
+    } catch (e) {
+        return { ok: false, error: 'JSON parse: ' + e.message };
+    }
+}
+
+function invalidateAnnotationCache() {
+    _annotationCache = null;
+    _annotationCachePdfPath = null;
+}
+
+async function fetchAnnotationsForPaper(vaultPath, pdfPath) {
+    if (_annotationCachePdfPath === pdfPath && _annotationCache !== null) {
+        return _annotationCache;
+    }
+    const baseArgs = buildAnnotationBaseArgs(vaultPath);
+    baseArgs.push('annotation', 'list', '--pdf-path', pdfPath, '--json');
+    const result = await runAnnotationCommand(vaultPath, baseArgs);
+    if (result.exitCode !== 0) {
+        console.warn('[PF] annotation list failed:', result.stderr);
+        _annotationCachePdfPath = pdfPath;
+        _annotationCache = [];
+        return _annotationCache;
+    }
+    const parsed = parseAnnotationResult(result.stdout);
+    if (!parsed.ok) {
+        console.warn('[PF] annotation list parse error:', parsed.error);
+        _annotationCachePdfPath = pdfPath;
+        _annotationCache = [];
+        return _annotationCache;
+    }
+    _annotationCachePdfPath = pdfPath;
+    _annotationCache = parsed.data || [];
+    return _annotationCache;
+}
+
+async function createLocalAnnotation(vaultPath, pdfPath, payload) {
+    const baseArgs = buildAnnotationBaseArgs(vaultPath);
+    baseArgs.push('annotation', 'create', '--json');
+    if (pdfPath) baseArgs.push('--pdf-path', pdfPath);
+    if (payload.page_index != null) baseArgs.push('--page-index', String(payload.page_index));
+    if (payload.type) baseArgs.push('--type', payload.type);
+    if (payload.color) baseArgs.push('--color', payload.color);
+    if (payload.selected_text) baseArgs.push('--selected-text', payload.selected_text);
+    if (payload.comment) baseArgs.push('--comment', payload.comment);
+    if (payload.position_json) baseArgs.push('--position-json', payload.position_json);
+
+    const result = await runAnnotationCommand(vaultPath, baseArgs);
+    if (result.exitCode !== 0) {
+        invalidateAnnotationCache();
+        return { ok: false, error: result.stderr || 'Subprocess failed', data: null };
+    }
+    const parsed = parseAnnotationResult(result.stdout);
+    if (parsed.ok) invalidateAnnotationCache();
+    return { ok: parsed.ok, error: parsed.error || null, data: parsed.data || null };
+}
+
+async function patchLocalAnnotation(vaultPath, annotationId, patch) {
+    const baseArgs = buildAnnotationBaseArgs(vaultPath);
+    baseArgs.push('annotation', 'patch', String(annotationId), '--json');
+    if (patch.comment != null) baseArgs.push('--comment', patch.comment);
+    if (patch.color != null) baseArgs.push('--color', patch.color);
+
+    const result = await runAnnotationCommand(vaultPath, baseArgs);
+    if (result.exitCode !== 0) {
+        invalidateAnnotationCache();
+        return { ok: false, error: result.stderr || 'Subprocess failed', data: null };
+    }
+    const parsed = parseAnnotationResult(result.stdout);
+    if (parsed.ok) invalidateAnnotationCache();
+    return { ok: parsed.ok, error: parsed.error || null, data: parsed.data || null };
+}
+
+async function deleteLocalAnnotation(vaultPath, annotationId) {
+    const baseArgs = buildAnnotationBaseArgs(vaultPath);
+    baseArgs.push('annotation', 'delete', String(annotationId), '--json');
+
+    const result = await runAnnotationCommand(vaultPath, baseArgs);
+    if (result.exitCode !== 0) {
+        invalidateAnnotationCache();
+        return { ok: false, error: result.stderr || 'Subprocess failed', data: null };
+    }
+    const parsed = parseAnnotationResult(result.stdout);
+    if (parsed.ok) invalidateAnnotationCache();
+    return { ok: parsed.ok, error: parsed.error || null, data: parsed.data || null };
+}
+
 // ── Cross-platform Python and BBT detection (macOS/Linux) ──
 
 let _gitDir = null;

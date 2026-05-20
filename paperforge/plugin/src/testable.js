@@ -187,6 +187,15 @@ function parseRuntimeStatus(err, stdout, stderr) {
 
 // ── Action definitions ──
 
+// ── Bridge helpers ──
+
+function runAnnotationSubprocess(vaultPath, pythonInfo, args, timeout, _spawn) {
+    const py = pythonInfo || {};
+    const extra = py.extraArgs || [];
+    const allArgs = [...extra, '-m', 'paperforge', '--vault', vaultPath, ...args];
+    return runSubprocess(py.path || 'python', allArgs, vaultPath, timeout || 30000, _spawn);
+}
+
 // ── Annotation helpers ──
 
 const ANNOTATION_COLORS = [
@@ -379,6 +388,7 @@ module.exports = {
     shouldRenderVectorReady,
     getDisclosureState,
     toggleDisclosureState,
+    runAnnotationSubprocess,
     ANNOTATION_COLORS,
     ANNOTATION_DEFAULT_COLOR,
     buildAnnotationSubprocessArgs,
