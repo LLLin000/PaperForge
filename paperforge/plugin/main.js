@@ -812,7 +812,7 @@ function setupSelectionCapture(containerEl, vaultPath, pdfPath) {
                     var ar = cv.clientWidth / cv.clientHeight;
                     if (ar > 0.65 && ar < 0.75) { pdfW = 595; pdfH = 842; }
                 }
-                var cvRect = cv ? cv.getBoundingClientRect() : containerEl.getBoundingClientRect();
+                var cvRect = pageEl.getBoundingClientRect();
                 var zoomX = pdfW / cvRect.width, zoomY = pdfH / cvRect.height;
                 // Compute per-line rects using getClientRects for shaped highlights
                 var clientRects = range.getClientRects();
