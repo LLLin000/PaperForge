@@ -825,7 +825,18 @@ function setupSelectionCapture(containerEl, vaultPath, pdfPath) {
                     if (result.ok) {
                         sel.removeAllRanges();
                         if (toolbar) { toolbar.remove(); toolbar = null; }
-                        _refreshOverlays();
+                        invalidateAnnotationCache();
+                        // Add the new rect to the page directly if handle is available
+                        var newAnn = result.data;
+                        if (newAnn && newAnn.page_index != null && _pdfInternalHandle) {
+                            try {
+                                var pv = _pdfInternalHandle.getPageView(Number(newAnn.page_index));
+                                if (pv && pv.div) {
+                                    var l = _getOrCreateAlignedLayer(pv);
+                                    renderAnnotationRect(l, newAnn, vaultPath, pdfPath, null);
+                                }
+                            } catch (_) {}
+                        }
                     } else {
                         console.warn('[PF] create annotation failed:', result.error);
                     }
@@ -1138,7 +1149,9 @@ function showAnnotationPopover(event, ann, rectEl, vaultPath, pdfPath, container
             deleteLocalAnnotation(_currentVaultPath, ann.id).then(function (result) {
                 hideAnnotationPopover();
                 if (result.ok) {
-                    _refreshOverlays();
+                    // Remove the rect element directly — no full rebuild
+                    if (targetEl && targetEl.parentElement) targetEl.remove();
+                    invalidateAnnotationCache();
                 } else {
                     console.warn('[PF] delete annotation failed:', result.error);
                 }
