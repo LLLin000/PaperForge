@@ -900,10 +900,12 @@ function hideAnnotationPopover() {
 
 function getAnnotationRects(ann) {
     if (!ann) return null;
-    // position_json stores full position: {"pageIndex":0, "rects":[[l,t,r,b],...]}
+    // Cache format: "pos" is already parsed object: {pageIndex:N, rects:[[l,b,r,t],...]}
+    if (ann.pos && Array.isArray(ann.pos.rects)) return ann.pos.rects;
+    // Full position_json string from CLI output
     if (ann.position_json) {
         try {
-            const pos = JSON.parse(ann.position_json);
+            var pos = JSON.parse(ann.position_json);
             if (pos && Array.isArray(pos.rects)) return pos.rects;
         } catch { return null; }
     }
