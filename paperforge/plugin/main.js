@@ -608,15 +608,13 @@ function injectPdfEventHooks(containerEl, view, vaultPath, pdfPath, plugin) {
     var anns = fetchAnnotationsForPaper(vaultPath, pdfPath);
     console.log('[PF] fetched ' + (anns ? anns.length : 0) + ' annotations for ' + pdfPath);
     if (anns && anns.length > 0) { renderAnnotationsOnExistingPages(containerEl); }
-    var pageObserver = new MutationObserver(function (mutations) {
-        var changed = false;
-        for (var mi = 0; mi < mutations.length; mi++) {
-            if (mutations[mi].addedNodes.length > 0) { changed = true; break; }
-        }
-        if (changed) {
-            console.log('[PF] page DOM changed, re-rendering overlays');
+    var _debounceTimer = null;
+    var pageObserver = new MutationObserver(function () {
+        if (_debounceTimer) clearTimeout(_debounceTimer);
+        _debounceTimer = setTimeout(function () {
+            _debounceTimer = null;
             renderAnnotationsOnExistingPages(containerEl);
-        }
+        }, 200);
     });
     pageObserver.observe(containerEl, { childList: true, subtree: true });
     if (plugin && typeof plugin.register === 'function') {
