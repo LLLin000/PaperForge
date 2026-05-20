@@ -976,25 +976,30 @@ function _refreshOverlays() {
     invalidateAnnotationCache();
     var anns = fetchAnnotationsForPaper(_currentVaultPath, _currentPdfPath);
     if (!anns || anns.length === 0) return;
-    // Remove all existing overlay layers, then re-render via fallback
-    _removeAllOverlays();
-    // Re-fetch after clearing
-    anns = fetchAnnotationsForPaper(_currentVaultPath, _currentPdfPath);
-    if (!anns || anns.length === 0) return;
     var grouped = groupAnnotationsByPage(anns);
-    var pageEls = document.querySelectorAll('.page[data-page-number]');
-    var rendered = 0;
-    for (var pi = 0; pi < pageEls.length; pi++) {
-        var pEl = pageEls[pi];
-        var pn = parseInt(pEl.dataset.pageNumber, 10);
-        if (isNaN(pn)) continue;
-        var pageAnns = grouped[pn - 1];
-        if (!pageAnns || pageAnns.length === 0) continue;
-        ensureOverlayLayer(pEl);
-        renderOverlaysForPage(pEl, pageAnns, _currentVaultPath, _currentPdfPath, _currentContainerEl);
-        rendered += pageAnns.length;
+    if (_pdfInternalHandle) {
+        // Use handle-based path (preferred, aligns with setLayerDimensions)
+        _rebuildVisibleLayers(_pdfInternalHandle, _currentPdfPath, _currentVaultPath);
+    } else {
+        // Fallback: iterate DOM pages
+        _removeAllOverlays();
+        anns = fetchAnnotationsForPaper(_currentVaultPath, _currentPdfPath);
+        if (!anns || anns.length === 0) return;
+        grouped = groupAnnotationsByPage(anns);
+        var pageEls = document.querySelectorAll('.page[data-page-number]');
+        var rendered = 0;
+        for (var pi = 0; pi < pageEls.length; pi++) {
+            var pEl = pageEls[pi];
+            var pn = parseInt(pEl.dataset.pageNumber, 10);
+            if (isNaN(pn)) continue;
+            var pageAnns = grouped[pn - 1];
+            if (!pageAnns || pageAnns.length === 0) continue;
+            ensureOverlayLayer(pEl);
+            renderOverlaysForPage(pEl, pageAnns, _currentVaultPath, _currentPdfPath, _currentContainerEl);
+            rendered += pageAnns.length;
+        }
+        console.log('[PF] rendered ' + rendered + ' anns on ' + pageEls.length + ' pages');
     }
-    console.log('[PF] rendered ' + rendered + ' anns on ' + pageEls.length + ' pages');
 }
 
 function _removeAllOverlays() {
