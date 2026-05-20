@@ -447,11 +447,10 @@ function _resolvePaperIdFromCache(pdfPath, cache) {
     var m = pdfPath.match(/storage[\\/]([A-Z0-9]{8})/i);
     if (m) {
         var sk = m[1].toUpperCase();
-        // Search all papers for matching attachment key (ak)
         for (var pid in cache.by_paper) {
             var anns = cache.by_paper[pid];
             for (var i = 0; i < anns.length; i++) {
-                if (anns[i].ak === sk) return pid;
+                if (anns[i].zotero_attachment_key === sk) return pid;
             }
         }
     }
@@ -608,13 +607,18 @@ function injectPdfEventHooks(containerEl, view, vaultPath, pdfPath, plugin) {
     var anns = fetchAnnotationsForPaper(vaultPath, pdfPath);
     console.log('[PF] fetched ' + (anns ? anns.length : 0) + ' annotations for ' + pdfPath);
     if (anns && anns.length > 0) { renderAnnotationsOnExistingPages(containerEl); }
-    var _debounceTimer = null;
-    var pageObserver = new MutationObserver(function () {
-        if (_debounceTimer) clearTimeout(_debounceTimer);
-        _debounceTimer = setTimeout(function () {
-            _debounceTimer = null;
-            renderAnnotationsOnExistingPages(containerEl);
-        }, 200);
+    var pageObserver = new MutationObserver(function (mutations) {
+        var hasNewPage = false;
+        for (var mi = 0; mi < mutations.length; mi++) {
+            var added = mutations[mi].addedNodes;
+            for (var ai = 0; ai < added.length; ai++) {
+                if (added[ai].nodeType === 1 && added[ai].matches && added[ai].matches('.page[data-page-number]')) {
+                    hasNewPage = true; break;
+                }
+            }
+            if (hasNewPage) break;
+        }
+        if (hasNewPage) renderAnnotationsOnExistingPages(containerEl);
     });
     pageObserver.observe(containerEl, { childList: true, subtree: true });
     if (plugin && typeof plugin.register === 'function') {
@@ -898,8 +902,8 @@ function hideAnnotationPopover() {
 
 function getAnnotationRects(ann) {
     if (!ann) return null;
-    // Cache format: "pos" is already parsed object: {pageIndex:N, rects:[[l,b,r,t],...]}
-    if (ann.pos && Array.isArray(ann.pos.rects)) return ann.pos.rects;
+    // Cache format: "position" is already parsed: {pageIndex:N, rects:[[l,b,r,t],...]}
+    if (ann.position && Array.isArray(ann.position.rects)) return ann.position.rects;
     // Full position_json string from CLI output
     if (ann.position_json) {
         try {

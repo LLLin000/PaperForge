@@ -46,20 +46,20 @@ def _row_to_dict(row: sqlite3.Row) -> dict[str, Any]:
             tags = []
     return {
         "id": row["id"],
-        "pid": row["paper_id"],
-        "zk": row["zotero_key"] or "",
-        "ak": row["zotero_attachment_key"] or "",  # storage folder name for key resolution
-        "t": row["type"],
-        "pi": row["page_index"],
-        "pl": row["page_label"] or "",
-        "st": row["selected_text"] or "",
-        "c": row["comment"] or "",
-        "cl": row["color"] or "#ffd400",
-        "si": row["sort_index"] or "",
-        "tg": tags,
-        "pos": pos,
-        "ss": row["sync_state"],
-        "ir": bool(row["is_readonly"]),
+        "paper_id": row["paper_id"],
+        "zotero_key": row["zotero_key"] or "",
+        "zotero_attachment_key": row["zotero_attachment_key"] or "",
+        "type": row["type"],
+        "page_index": row["page_index"],
+        "page_label": row["page_label"] or "",
+        "selected_text": row["selected_text"] or "",
+        "comment": row["comment"] or "",
+        "color": row["color"] or "#ffd400",
+        "sort_index": row["sort_index"] or "",
+        "tags": tags,
+        "position": pos,
+        "sync_state": row["sync_state"],
+        "is_readonly": bool(row["is_readonly"]),
     }
 
 
