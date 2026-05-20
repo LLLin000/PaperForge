@@ -822,10 +822,10 @@ function setupSelectionCapture(containerEl, vaultPath, pdfPath) {
                 var pdfRects = [];
                 for (var cri = 0; cri < clientRects.length; cri++) {
                     var cr = clientRects[cri];
-                    var rLeft = (cr.left - refRect.left) * zoomX;
-                    var rTop = (cr.top - refRect.top) * zoomY;
-                    var rRight = (cr.right - refRect.left) * zoomX;
-                    var rBottom = (cr.bottom - refRect.top) * zoomY;
+                    var rLeft = (cr.left - canvasBox.left) * zoomX;
+                    var rTop = (cr.top - canvasBox.top) * zoomY;
+                    var rRight = (cr.right - canvasBox.left) * zoomX;
+                    var rBottom = (cr.bottom - canvasBox.top) * zoomY;
                     // Mirror Y: screen [left,top,right,bottom] → PDF [left,bottom,right,top]
                     pdfRects.push([rLeft, pdfH - rBottom, rRight, pdfH - rTop]);
                 }
