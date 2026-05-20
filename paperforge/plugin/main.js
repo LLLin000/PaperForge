@@ -671,7 +671,12 @@ function _subscribePdfEvents(handle, pdfPath, vaultPath, plugin) {
             var pageView = handle.getPageView(pageNum - 1);
             if (!pageView || !pageView.div) return;
             var layer = _getOrCreateAlignedLayer(pageView);
-            _renderPageAnnotations(layer, pageAnns, vaultPath, pdfPath, _currentContainerEl);
+            var pw = 612, ph = 792;
+            if (pageView.viewport && pageView.viewport.viewBox) {
+                var vb = pageView.viewport.viewBox;
+                pw = vb[2]; ph = vb[3];
+            }
+            _renderPageAnnotations(layer, pageAnns, vaultPath, pdfPath, _currentContainerEl, pw, ph);
         } catch (_) {}
     }
     function onScaleChanged() {
@@ -813,13 +818,18 @@ function setupSelectionCapture(containerEl, vaultPath, pdfPath) {
                 var pdfTop = (rect.top - cvRect.top) * zoomY;
                 var pdfRight = (rect.right - cvRect.left) * zoomX;
                 var pdfBottom = (rect.bottom - cvRect.top) * zoomY;
+                // Convert screen rect [left,top,right,bottom] to PDF [left,bottom,right,top]
+                var pdfRectLeft = pdfLeft;
+                var pdfRectBottom = pdfH - pdfBottom;  // mirror Y to PDF bottom-left origin
+                var pdfRectRight = pdfRight;
+                var pdfRectTop = pdfH - pdfTop;
                 var annPayload = {
                     pdf_path: pdfPath,
                     page_index: pageNum - 1,
                     type: 'highlight',
                     color: color,
                     selected_text: selectedText,
-                    position_json: JSON.stringify({ pageIndex: pageNum - 1, rects: [[pdfLeft, pdfTop, pdfRight, pdfBottom]] }),
+                    position_json: JSON.stringify({ pageIndex: pageNum - 1, rects: [[pdfRectLeft, pdfRectBottom, pdfRectRight, pdfRectTop]] }),
                 };
                 createLocalAnnotation(vaultPath, pdfPath, annPayload).then(function (result) {
                     if (result.ok) {
@@ -972,8 +982,8 @@ function renderOverlaysForPage(pageEl, annotations, vaultPath, pdfPath, containe
         var cv = pageEl.querySelector('canvas');
         if (cv && cv.clientWidth > 0 && cv.clientHeight > 0) {
             var ar = cv.clientWidth / cv.clientHeight;
-            if (ar > 0.7 && ar < 0.8) { pdfW = 612; pdfH = 792; }
-            else if (ar > 0.65 && ar < 0.75) { pdfW = 595; pdfH = 842; }
+            if (ar > 0.65 && ar < 0.75) { pdfW = 595; pdfH = 842; }      // A4
+            else if (ar > 0.7 && ar < 0.8) { pdfW = 612; pdfH = 792; }    // US Letter
         }
     } catch (_) {}
     for (let i = 0; i < annotations.length; i++) {
