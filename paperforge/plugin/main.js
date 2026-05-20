@@ -736,18 +736,22 @@ function _rebuildVisibleLayers(handle, pdfPath, vaultPath) {
         } catch (_) {}
     }
     console.log('[PF] rebuild ' + (anns ? anns.length : 0) + ' anns on ' + pageCount + ' pages, rendered ' + rendered);
-    // Diagnostic: count actual DOM rects and add a test rect
+    // Diagnostic: check DOM visibility
     setTimeout(function () {
-        var total = document.querySelectorAll('.pf-annotation-rect').length;
         var layers = document.querySelectorAll('.pf-annotation-overlay');
-        console.log('[PF-verify] dom: ' + layers.length + ' layers, ' + total + ' rects');
+        var rects = document.querySelectorAll('.pf-annotation-rect');
+        console.log('[PF-verify] dom: ' + layers.length + ' layers, ' + rects.length + ' rects');
         if (layers.length > 0) {
-            var firstLayer = layers[0];
-            var testRect = document.createElement('div');
-            testRect.className = 'pf-annotation-rect';
-            testRect.style.cssText = 'left:10% !important; top:10% !important; width:80% !important; height:5% !important; background:rgba(255,0,0,0.7) !important; border:3px solid red !important; z-index:9999 !important;';
-            firstLayer.appendChild(testRect);
-            console.log('[PF-verify] test rect appended to layer 0');
+            var l = layers[0];
+            var cs = getComputedStyle(l);
+            console.log('[PF-verify] L0 pos=' + cs.position + ' display=' + cs.display + ' vis=' + cs.visibility + ' op=' + cs.opacity + ' w=' + cs.width + ' h=' + cs.height + ' zi=' + cs.zIndex + ' l=' + cs.left + ' t=' + cs.top);
+            var parent = l.parentElement;
+            console.log('[PF-verify] L0 parent:' + (parent ? parent.tagName + '.' + (parent.className || '') + ' pos=' + getComputedStyle(parent).position + ' w=' + parent.offsetWidth : 'null'));
+            if (rects.length > 0) {
+                var r = rects[0];
+                var rcs = getComputedStyle(r);
+                console.log('[PF-verify] R0: pos=' + rcs.position + ' l=' + rcs.left + ' t=' + rcs.top + ' w=' + rcs.width + ' h=' + rcs.height + ' bg=' + rcs.backgroundColor + ' op=' + rcs.opacity);
+            }
         }
     }, 500);
 }
