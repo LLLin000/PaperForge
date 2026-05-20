@@ -814,22 +814,26 @@ function setupSelectionCapture(containerEl, vaultPath, pdfPath) {
                 }
                 var cvRect = cv ? cv.getBoundingClientRect() : containerEl.getBoundingClientRect();
                 var zoomX = pdfW / cvRect.width, zoomY = pdfH / cvRect.height;
-                var pdfLeft = (rect.left - cvRect.left) * zoomX;
-                var pdfTop = (rect.top - cvRect.top) * zoomY;
-                var pdfRight = (rect.right - cvRect.left) * zoomX;
-                var pdfBottom = (rect.bottom - cvRect.top) * zoomY;
-                // Convert screen rect [left,top,right,bottom] to PDF [left,bottom,right,top]
-                var pdfRectLeft = pdfLeft;
-                var pdfRectBottom = pdfH - pdfBottom;  // mirror Y to PDF bottom-left origin
-                var pdfRectRight = pdfRight;
-                var pdfRectTop = pdfH - pdfTop;
+                // Compute per-line rects using getClientRects for shaped highlights
+                var clientRects = range.getClientRects();
+                var pdfRects = [];
+                for (var cri = 0; cri < clientRects.length; cri++) {
+                    var cr = clientRects[cri];
+                    var rLeft = (cr.left - cvRect.left) * zoomX;
+                    var rTop = (cr.top - cvRect.top) * zoomY;
+                    var rRight = (cr.right - cvRect.left) * zoomX;
+                    var rBottom = (cr.bottom - cvRect.top) * zoomY;
+                    // Mirror Y: screen [left,top,right,bottom] → PDF [left,bottom,right,top]
+                    pdfRects.push([rLeft, pdfH - rBottom, rRight, pdfH - rTop]);
+                }
+                if (pdfRects.length === 0) return;
                 var annPayload = {
                     pdf_path: pdfPath,
                     page_index: pageNum - 1,
                     type: 'highlight',
                     color: color,
                     selected_text: selectedText,
-                    position_json: JSON.stringify({ pageIndex: pageNum - 1, rects: [[pdfRectLeft, pdfRectBottom, pdfRectRight, pdfRectTop]] }),
+                    position_json: JSON.stringify({ pageIndex: pageNum - 1, rects: pdfRects }),
                 };
                 createLocalAnnotation(vaultPath, pdfPath, annPayload).then(function (result) {
                     if (result.ok) {
