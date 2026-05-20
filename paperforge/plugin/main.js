@@ -1150,7 +1150,7 @@ function showAnnotationPopover(event, ann, rectEl, vaultPath, pdfPath, container
                 hideAnnotationPopover();
                 if (result.ok) {
                     // Remove the rect element directly — no full rebuild
-                    if (targetEl && targetEl.parentElement) targetEl.remove();
+                    if (rectEl && rectEl.parentElement) rectEl.remove();
                     invalidateAnnotationCache();
                 } else {
                     console.warn('[PF] delete annotation failed:', result.error);
