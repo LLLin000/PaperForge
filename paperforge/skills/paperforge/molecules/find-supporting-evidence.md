@@ -27,15 +27,35 @@
 
 ### Step 2: 检索梯级选择（`atoms/retrieval-routing.md`）
 
-根据运行时状态选择合适的梯级：
+**先检查 `retrieve` 是否可用：**
 
-1. **Ladder B**（优先）-- 用 `rg` 在全文中定位精确证据
+```bash
+$PYTHON -m paperforge --vault "$VAULT" embed status --json
+```
+
+仅当 `data.db_exists == true && data.chunk_count > 0` 时 `retrieve` 可用。
+
+根据运行时状态，从以下路径中选择：
+
+1. **Ladder B1**（首选，当 `retrieve` 可用）-- 语义全文快速定位
+   - 直接调 `paperforge retrieve <query> --json --limit 30` 获取语义匹配的全文块
+   - `retrieve` 返回的 chunks 已包含 `section`、`page_number`、`chunk_text`、`paper_id`
+   - 按论文分组组织结果 → 直接进入 Step 3 展示
+   - 如需精确定位验证，再用 `rg` / `grep` 在论文全文中确认
+
+2. **Ladder B2**（备选，无 `retrieve` 但有 `rg`）-- 元数据→全文 grep
    - 先用 `paperforge search` 生成元数据候选集
    - 用 `runtime-health` 或 `paper-context` 筛选有 OCR/全文的论文
    - 在解析后的全文中运行 `rg` 定位匹配片段
-2. **Ladder C**（回退）-- 无 `rg` 时用 `grep`/`findstr`
-3. **Ladder D**（补充）-- 语义候选扩展（仅当 `semantic_enabled && semantic_ready`）
-4. **元数据降级** -- 当没有任何论文有 OCR/全文时，只出候选论文列表，不做片段验证
+
+3. **Ladder C**（回退）-- 无 `rg` 时用 `grep`/`findstr`
+   - 同上流程但用系统搜索工具代替 rg
+
+4. **Ladder D**（补充）-- 当 Ladder B1 命中太少时，用 `search` 做元数据补充
+   - 取 `retrieve` 结果 + `search` 结果的并集
+   - 去重后展示更完整的证据列表
+
+5. **元数据降级** -- 当没有任何论文有 OCR/全文时，只出候选论文列表，不做片段验证
 
 ### Step 3: 展示分组证据命中（grouped evidence hits with snippets）
 
