@@ -995,15 +995,14 @@ function _refreshOverlays() {
     var anns = fetchAnnotationsForPaper(_currentVaultPath, _currentPdfPath);
     if (!anns || anns.length === 0) return;
     var grouped = groupAnnotationsByPage(anns);
+    console.log('[PF] _refreshOverlays: ' + anns.length + ' anns, ' + Object.keys(grouped).length + ' pages');
+    // Remove all existing overlay elements from the DOM
+    document.querySelectorAll('.pf-annotation-overlay').forEach(function (el) { el.remove(); });
+    // Find the PDF container
+    _currentContainerEl = document.querySelector('.pdf-viewer-container, .pdf-viewer');
     if (_pdfInternalHandle) {
-        // Use handle-based path (preferred, aligns with setLayerDimensions)
         _rebuildVisibleLayers(_pdfInternalHandle, _currentPdfPath, _currentVaultPath);
     } else {
-        // Fallback: iterate DOM pages
-        _removeAllOverlays();
-        anns = fetchAnnotationsForPaper(_currentVaultPath, _currentPdfPath);
-        if (!anns || anns.length === 0) return;
-        grouped = groupAnnotationsByPage(anns);
         var pageEls = document.querySelectorAll('.page[data-page-number]');
         var rendered = 0;
         for (var pi = 0; pi < pageEls.length; pi++) {
