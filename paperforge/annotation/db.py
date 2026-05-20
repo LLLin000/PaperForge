@@ -16,11 +16,10 @@ def get_annotations_db_path(vault: Path) -> Path:
     """Return the absolute path to annotations.db, co-located with paperforge.db."""
     paths = paperforge_paths(vault)
     index_path = paths.get("index")
-    if index_path:
-        return index_path.parent / "annotations.db"
-    # Fallback: derive from paperforge dir
-    pf_root = paths.get("paperforge", vault / "System" / "PaperForge")
-    return pf_root / "indexes" / "annotations.db"
+    if index_path is None:
+        msg = "paperforge_paths did not return an 'index' key; cannot determine annotations.db location"
+        raise FileNotFoundError(msg)
+    return index_path.parent / "annotations.db"
 
 
 def get_annotations_connection(db_path: Path, read_only: bool = False) -> sqlite3.Connection:
