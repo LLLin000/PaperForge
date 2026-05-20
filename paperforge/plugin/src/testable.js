@@ -304,6 +304,28 @@ function isAnnotationSupportedType(type) {
     return ['highlight', 'underline', 'note'].includes(type);
 }
 
+function normalizePdfRectToViewportPercent(rect, viewBox) {
+    // rect: [left, bottom, right, top] — PDF bottom-left origin
+    // viewBox: [x, y, x2, y2] — PDF.js page viewBox
+    if (!rect || rect.length < 4) return { left: 0, top: 0, width: 0, height: 0 };
+    if (!viewBox || viewBox.length < 4) return { left: 0, top: 0, width: 0, height: 0 };
+    var l = rect[0], b = rect[1], r = rect[2], t = rect[3];
+    var vx = viewBox[0], vy = viewBox[1], vx2 = viewBox[2], vy2 = viewBox[3];
+    var pw = vx2 - vx, ph = vy2 - vy;
+    if (pw <= 0 || ph <= 0) return { left: 0, top: 0, width: 0, height: 0 };
+    // Mirror Y: PDF bottom-left -> CSS top-left
+    var cssTop = vy2 - t + vy;
+    var cssLeft = l - vx;
+    var cssW = r - l;
+    var cssH = t - b;
+    return {
+        left: (cssLeft / pw) * 100,
+        top: (cssTop / ph) * 100,
+        width: (cssW / pw) * 100,
+        height: (cssH / ph) * 100,
+    };
+}
+
 function buildAnnotationPayloadFromSelection(pdfPath, selectedText, pageIndex, rect, type) {
     const positionJson = JSON.stringify({
         pageIndex: pageIndex,
@@ -452,5 +474,6 @@ module.exports = {
     groupAnnotationsByPage,
     isAnnotationSupportedType,
     normalizeAnnotationRects,
+    normalizePdfRectToViewportPercent,
     buildAnnotationPayloadFromSelection,
 };

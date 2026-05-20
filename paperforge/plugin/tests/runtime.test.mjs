@@ -13,6 +13,11 @@ const {
     getPluginVersion,
     checkRuntimeVersion,
     runAnnotationSubprocess,
+    normalizePdfRectToViewportPercent,
+    groupAnnotationsByPage,
+    isReadonlyAnnotation,
+    isAnnotationSupportedType,
+    ANNOTATION_COLORS,
 } = await import('../src/testable.js');
 
 describe('readPathConfig', () => {
@@ -217,5 +222,102 @@ describe('runAnnotationSubprocess', () => {
         errCb(new Error('ENOENT'));
         const r = await promise;
         expect(r.exitCode).toBe(-1);
+    });
+});
+
+describe('annotation contract: normalizePdfRectToViewportPercent', () => {
+    it('mirrors Y and returns correct percentages for letter-size viewBox', () => {
+        // A Zotero highlight at bottom of page 1
+        // rect: [left=61.1, bottom=323.2, right=291.8, top=331.8]
+        // viewBox for US Letter: [0, 0, 612, 792]
+        const pct = normalizePdfRectToViewportPercent(
+            [61.137, 323.189, 291.762, 331.788],
+            [0, 0, 612, 792]
+        );
+        expect(pct.left).toBeCloseTo(9.99, 1);
+        expect(pct.top).toBeCloseTo(58.11, 1);
+        expect(pct.width).toBeCloseTo(37.68, 1);
+        expect(pct.height).toBeCloseTo(1.09, 1);
+    });
+
+    it('mirrors Y for a top-of-page rect', () => {
+        const pct = normalizePdfRectToViewportPercent(
+            [47.976, 127.268, 186.025, 135.866],
+            [0, 0, 612, 792]
+        );
+        expect(pct.top).toBeCloseTo(82.85, 1);
+        expect(pct.left).toBeCloseTo(7.84, 1);
+    });
+
+    it('returns zeros for empty input', () => {
+        const pct = normalizePdfRectToViewportPercent(null, [0, 0, 612, 792]);
+        expect(pct.left).toBe(0);
+        expect(pct.top).toBe(0);
+    });
+
+    it('returns zeros for missing viewBox', () => {
+        const pct = normalizePdfRectToViewportPercent([61, 323, 292, 332], null);
+        expect(pct.left).toBe(0);
+    });
+});
+
+describe('annotation contract: groupAnnotationsByPage', () => {
+    it('groups annotations by page_index', () => {
+        const anns = [
+            { id: 'a', page_index: 0 },
+            { id: 'b', page_index: 1 },
+            { id: 'c', page_index: 0 },
+        ];
+        const g = groupAnnotationsByPage(anns);
+        expect(g[0]).toHaveLength(2);
+        expect(g[1]).toHaveLength(1);
+    });
+
+    it('uses 0 for missing page_index', () => {
+        const g = groupAnnotationsByPage([{ id: 'x' }]);
+        expect(g[0]).toHaveLength(1);
+    });
+
+    it('returns empty object for null', () => {
+        expect(groupAnnotationsByPage(null)).toEqual({});
+    });
+});
+
+describe('annotation contract: isReadonlyAnnotation', () => {
+    it('returns true for zotero_synced annotations', () => {
+        expect(isReadonlyAnnotation({ sync_state: 'zotero_synced' })).toBe(true);
+    });
+
+    it('returns false for local annotations', () => {
+        expect(isReadonlyAnnotation({ sync_state: 'local' })).toBe(false);
+        expect(isReadonlyAnnotation({})).toBe(false);
+        expect(isReadonlyAnnotation(null)).toBe(false);
+    });
+});
+
+describe('annotation contract: isAnnotationSupportedType', () => {
+    it('supports highlight, underline, note', () => {
+        expect(isAnnotationSupportedType('highlight')).toBe(true);
+        expect(isAnnotationSupportedType('underline')).toBe(true);
+        expect(isAnnotationSupportedType('note')).toBe(true);
+    });
+
+    it('rejects image, ink, text', () => {
+        expect(isAnnotationSupportedType('image')).toBe(false);
+        expect(isAnnotationSupportedType('ink')).toBe(false);
+        expect(isAnnotationSupportedType('text')).toBe(false);
+    });
+});
+
+describe('annotation contract: ANNOTATION_COLORS', () => {
+    it('has 8 named colors', () => {
+        expect(ANNOTATION_COLORS).toHaveLength(8);
+        expect(ANNOTATION_COLORS[0].name).toBe('yellow');
+    });
+
+    it('each entry has a hex color', () => {
+        for (const c of ANNOTATION_COLORS) {
+            expect(c.hex).toMatch(/^#[0-9a-fA-F]{6}$/);
+        }
     });
 });
