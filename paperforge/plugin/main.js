@@ -820,7 +820,9 @@ function setupSelectionCapture(containerEl, vaultPath, pdfPath) {
                 // (avoids getBoundingClientRect sub-pixel errors)
                 var spanSet = new Set();
                 var spanRects = [];
-                var nodeIter = document.createNodeIterator(range.commonAncestorContainer, 4);
+                var rootNode = range.commonAncestorContainer;
+                if (rootNode.nodeType === 3) rootNode = rootNode.parentElement;
+                var nodeIter = document.createNodeIterator(rootNode, 4);
                 var tn;
                 while ((tn = nodeIter.nextNode())) {
                     if (!range.intersectsNode(tn)) continue;
