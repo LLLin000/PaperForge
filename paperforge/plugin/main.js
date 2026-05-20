@@ -533,6 +533,8 @@ async function deleteLocalAnnotation(vaultPath, annotationId) {
 /* ── PDF annotation overlay patch lifecycle ── */
 
 let _overlayInstalled = false;
+let _currentVaultPath = null;
+let _currentPdfPath = null;
 
 function detectConflictingPdfPlugins(app) {
     try {
@@ -604,6 +606,8 @@ function getPdfPageElements(containerEl) {
 
 function injectPdfEventHooks(containerEl, view, vaultPath, pdfPath) {
     if (!pdfPath) return;
+    _currentVaultPath = vaultPath;
+    _currentPdfPath = pdfPath;
     fetchAnnotationsForPaper(vaultPath, pdfPath).then(function () {
         renderAnnotationsOnExistingPages(containerEl);
     });
@@ -612,6 +616,80 @@ function injectPdfEventHooks(containerEl, view, vaultPath, pdfPath) {
     });
     pageObserver.observe(containerEl, { childList: true, subtree: false });
     view.app.register(function () { pageObserver.disconnect(); });
+    setupSelectionCapture(containerEl, vaultPath, pdfPath);
+}
+
+function setupSelectionCapture(containerEl, vaultPath, pdfPath) {
+    var toolbar = null;
+    containerEl.addEventListener('mouseup', function (e) {
+        setTimeout(function () {
+            var sel = window.getSelection();
+            if (!sel || sel.isCollapsed || !sel.toString().trim()) {
+                if (toolbar) { toolbar.remove(); toolbar = null; }
+                return;
+            }
+            var pageEl = e.target.closest('.page[data-page-number]');
+            if (!pageEl) {
+                if (toolbar) { toolbar.remove(); toolbar = null; }
+                return;
+            }
+            var pageNum = parseInt(pageEl.dataset.pageNumber, 10);
+            if (isNaN(pageNum)) return;
+            var range = sel.getRangeAt(0);
+            var rect = range.getBoundingClientRect();
+            if (!rect || rect.width < 2 || rect.height < 2) {
+                if (toolbar) { toolbar.remove(); toolbar = null; }
+                return;
+            }
+            if (toolbar) toolbar.remove();
+            toolbar = document.createElement('div');
+            toolbar.className = 'pf-annotation-toolbar';
+            toolbar.style.cssText = 'position:fixed;z-index:100;background:var(--background-primary);border:1px solid var(--background-modifier-border);border-radius:8px;padding:6px 10px;display:flex;gap:6px;box-shadow:0 2px 12px rgba(0,0,0,0.12);font-size:13px;';
+            var hlBtn = document.createElement('button');
+            hlBtn.textContent = '+ Highlight';
+            hlBtn.style.cssText = 'padding:4px 12px;border:1px solid var(--background-modifier-border);border-radius:4px;background:var(--interactive-accent);color:var(--text-on-accent);cursor:pointer;';
+            hlBtn.addEventListener('click', function () {
+                var selectedText = sel.toString().trim();
+                var relRect = {
+                    left: (rect.left - containerEl.getBoundingClientRect().left) / containerEl.offsetWidth,
+                    top: (rect.top - containerEl.getBoundingClientRect().top) / containerEl.offsetHeight,
+                    right: (rect.right - containerEl.getBoundingClientRect().left) / containerEl.offsetWidth,
+                    bottom: (rect.bottom - containerEl.getBoundingClientRect().top) / containerEl.offsetHeight,
+                };
+                var annPayload = {
+                    pdf_path: pdfPath,
+                    page_index: pageNum - 1,
+                    type: 'highlight',
+                    color: '#ffd400',
+                    selected_text: selectedText,
+                    position_json: JSON.stringify({ pageIndex: pageNum - 1, rects: [[relRect.left, relRect.top, relRect.right, relRect.bottom]] }),
+                };
+                createLocalAnnotation(vaultPath, pdfPath, annPayload).then(function (result) {
+                    if (result.ok) {
+                        sel.removeAllRanges();
+                        if (toolbar) { toolbar.remove(); toolbar = null; }
+                        fetchAnnotationsForPaper(vaultPath, pdfPath).then(function () {
+                            renderAnnotationsOnExistingPages(containerEl);
+                        });
+                    } else {
+                        console.warn('[PF] create annotation failed:', result.error);
+                    }
+                });
+            });
+            toolbar.appendChild(hlBtn);
+            document.body.appendChild(toolbar);
+            var tbRect = toolbar.getBoundingClientRect();
+            var left = rect.left + rect.width / 2 - tbRect.width / 2;
+            var top = rect.bottom + 8;
+            if (top + tbRect.height > window.innerHeight - 10) {
+                top = rect.top - tbRect.height - 8;
+            }
+            if (left < 10) left = 10;
+            if (left + tbRect.width > window.innerWidth - 10) left = window.innerWidth - tbRect.width - 10;
+            toolbar.style.left = Math.max(10, left) + 'px';
+            toolbar.style.top = Math.max(10, top) + 'px';
+        }, 100);
+    });
 }
 
 function renderAnnotationsOnExistingPages(containerEl) {
@@ -625,7 +703,7 @@ function renderAnnotationsOnExistingPages(containerEl) {
         const pageAnns = grouped[pageNum - 1];
         if (!pageAnns || pageAnns.length === 0) continue;
         ensureOverlayLayer(pageEl);
-        renderOverlaysForPage(pageEl, pageAnns);
+        renderOverlaysForPage(pageEl, pageAnns, _currentVaultPath, _currentPdfPath, containerEl);
     }
 }
 
@@ -636,7 +714,7 @@ function ensureOverlayLayer(pageEl) {
     pageEl.appendChild(layer);
 }
 
-function renderOverlaysForPage(pageEl, annotations) {
+function renderOverlaysForPage(pageEl, annotations, vaultPath, pdfPath, containerEl) {
     const layer = pageEl.querySelector('.pf-annotation-overlay');
     if (!layer) return;
     let existing = layer.querySelectorAll('.pf-annotation-rect');
@@ -644,7 +722,7 @@ function renderOverlaysForPage(pageEl, annotations) {
     for (let i = 0; i < annotations.length; i++) {
         const ann = annotations[i];
         if (!ann.type || !isAnnotationSupportedType(ann.type)) continue;
-        renderAnnotationRect(layer, ann);
+        renderAnnotationRect(layer, ann, vaultPath, pdfPath, containerEl);
     }
 }
 
@@ -652,7 +730,7 @@ function isAnnotationSupportedType(type) {
     return type === 'highlight' || type === 'underline' || type === 'note';
 }
 
-function renderAnnotationRect(layer, ann) {
+function renderAnnotationRect(layer, ann, vaultPath, pdfPath, containerEl) {
     const rects = getAnnotationRects(ann);
     if (!rects || rects.length === 0) return;
     const isReadonly = isReadonlyAnnotation(ann);
@@ -674,8 +752,7 @@ function renderAnnotationRect(layer, ann) {
         el.dataset.annotationId = String(ann.id || i);
         if (isReadonly) el.dataset.readonly = '1';
         el.addEventListener('click', function (e) {
-            if (isReadonly) return;
-            showAnnotationPopover(e, ann, el);
+            showAnnotationPopover(e, ann, el, vaultPath, pdfPath, containerEl);
         });
         el.addEventListener('mouseenter', function () {
             el.style.filter = 'brightness(1.4)';
@@ -687,7 +764,7 @@ function renderAnnotationRect(layer, ann) {
     }
 }
 
-function showAnnotationPopover(event, ann, rectEl) {
+function showAnnotationPopover(event, ann, rectEl, vaultPath, pdfPath, containerEl) {
     hideAnnotationPopover();
     const popover = document.createElement('div');
     popover.className = 'pf-annotation-popover';
@@ -735,7 +812,23 @@ function showAnnotationPopover(event, ann, rectEl) {
         actionsEl.className = 'pf-annotation-popover-actions';
         popover.addEventListener('click', function (e) { e.stopPropagation(); });
         popover.dataset.editable = '1';
-        actionsEl.innerHTML = '<span class="pf-annotation-popover-btn pf-annotation-popover-btn--readonly">Edit/delete coming in v1.1</span>';
+        const delBtn = document.createElement('button');
+        delBtn.className = 'pf-annotation-popover-btn pf-annotation-popover-btn--danger';
+        delBtn.textContent = 'Delete';
+        delBtn.addEventListener('click', function () {
+            if (!confirm('Delete this annotation?')) return;
+            deleteLocalAnnotation(vaultPath, ann.id).then(function (result) {
+                hideAnnotationPopover();
+                if (result.ok) {
+                    fetchAnnotationsForPaper(vaultPath, pdfPath).then(function () {
+                        renderAnnotationsOnExistingPages(containerEl);
+                    });
+                } else {
+                    console.warn('[PF] delete annotation failed:', result.error);
+                }
+            });
+        });
+        actionsEl.appendChild(delBtn);
         popover.appendChild(actionsEl);
     }
 

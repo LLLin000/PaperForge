@@ -303,6 +303,21 @@ function isAnnotationSupportedType(type) {
     return ['highlight', 'underline', 'note'].includes(type);
 }
 
+function buildAnnotationPayloadFromSelection(pdfPath, selectedText, pageIndex, rect, type) {
+    const positionJson = JSON.stringify({
+        pageIndex: pageIndex,
+        rects: [[rect.left, rect.top, rect.right, rect.bottom]],
+    });
+    return {
+        pdf_path: pdfPath,
+        page_index: pageIndex,
+        type: type || 'highlight',
+        color: ANNOTATION_DEFAULT_COLOR,
+        selected_text: selectedText,
+        position_json: positionJson,
+    };
+}
+
 function normalizeAnnotationRects(ann) {
     if (!ann) return null;
     if (ann.rects_json) {
@@ -436,4 +451,5 @@ module.exports = {
     groupAnnotationsByPage,
     isAnnotationSupportedType,
     normalizeAnnotationRects,
+    buildAnnotationPayloadFromSelection,
 };

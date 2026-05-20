@@ -15,6 +15,7 @@ const {
     parseAnnotationResult, isReadonlyAnnotation,
     groupAnnotationsByPage, isAnnotationSupportedType,
     normalizeAnnotationRects,
+    buildAnnotationPayloadFromSelection,
 } = await import('../src/testable.js');
 
 describe('ACTIONS', () => {
@@ -379,5 +380,26 @@ describe('normalizeAnnotationRects', () => {
     });
     it('returns null for invalid rects_json', () => {
         expect(normalizeAnnotationRects({ rects_json: 'not json' })).toBeNull();
+    });
+});
+
+describe('buildAnnotationPayloadFromSelection', () => {
+    it('constructs payload with position JSON', () => {
+        const payload = buildAnnotationPayloadFromSelection('paper.pdf', 'selected text', 2, { left: 0, top: 10, right: 100, bottom: 20 }, 'highlight');
+        expect(payload.pdf_path).toBe('paper.pdf');
+        expect(payload.selected_text).toBe('selected text');
+        expect(payload.page_index).toBe(2);
+        expect(payload.type).toBe('highlight');
+        expect(payload.color).toBe('#ffd400');
+        expect(payload.position_json).toContain('"pageIndex":2');
+        expect(payload.position_json).toContain('"rects"');
+    });
+    it('defaults type to highlight', () => {
+        const payload = buildAnnotationPayloadFromSelection('p.pdf', 'txt', 0, { left: 0, top: 0, right: 10, bottom: 10 });
+        expect(payload.type).toBe('highlight');
+    });
+    it('accepts custom type', () => {
+        const payload = buildAnnotationPayloadFromSelection('p.pdf', 'txt', 0, { left: 0, top: 0, right: 10, bottom: 10 }, 'underline');
+        expect(payload.type).toBe('underline');
     });
 });
