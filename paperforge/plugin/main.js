@@ -827,6 +827,12 @@ function setupSelectionCapture(containerEl, vaultPath, pdfPath) {
                     // Mirror Y: screen [left,top,right,bottom] → PDF [left,bottom,right,top]
                     pdfRects.push([rLeft, pdfH - rBottom, rRight, pdfH - rTop]);
                 }
+                // Diagnostic: log first rect values for comparison
+                if (pdfRects.length > 0) {
+                    var fcr = clientRects[0];
+                    var fr = pdfRects[0];
+                    console.log('[PF-create] pdfW=' + pdfW + ' pdfH=' + pdfH + ' refW=' + refRect.width.toFixed(1) + ' refH=' + refRect.height.toFixed(1) + ' screen=' + fcr.top.toFixed(1) + 'x' + fcr.left.toFixed(1) + ' pdfRect=' + fr[0].toFixed(1) + ',' + fr[1].toFixed(1) + ',' + fr[2].toFixed(1) + ',' + fr[3].toFixed(1));
+                }
                 if (pdfRects.length === 0) return;
                 var annPayload = {
                     pdf_path: pdfPath,
