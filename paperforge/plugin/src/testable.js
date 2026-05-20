@@ -187,6 +187,95 @@ function parseRuntimeStatus(err, stdout, stderr) {
 
 // ── Action definitions ──
 
+// ── Annotation helpers ──
+
+const ANNOTATION_COLORS = [
+    { name: 'yellow', hex: '#ffd400' },
+    { name: 'red', hex: '#ff6666' },
+    { name: 'green', hex: '#5fb236' },
+    { name: 'blue', hex: '#2ea8e5' },
+    { name: 'purple', hex: '#a28ae5' },
+    { name: 'magenta', hex: '#e56eee' },
+    { name: 'orange', hex: '#f19837' },
+    { name: 'gray', hex: '#aaaaaa' },
+];
+
+const ANNOTATION_DEFAULT_COLOR = '#ffd400';
+
+function buildAnnotationSubprocessArgs(vaultPath, pythonInfo) {
+    const extra = (pythonInfo && pythonInfo.extraArgs) || [];
+    return [...extra, '-m', 'paperforge', '--vault', vaultPath];
+}
+
+function buildAnnotationListArgs(vaultPath, pythonInfo, pdfPath) {
+    const args = buildAnnotationSubprocessArgs(vaultPath, pythonInfo);
+    args.push('annotation', 'list');
+    if (pdfPath) args.push('--pdf-path', pdfPath);
+    args.push('--json');
+    return args;
+}
+
+function buildAnnotationCreateArgs(vaultPath, pythonInfo, payload) {
+    const args = buildAnnotationSubprocessArgs(vaultPath, pythonInfo);
+    args.push('annotation', 'create', '--json');
+    if (payload.pdf_path) args.push('--pdf-path', payload.pdf_path);
+    if (payload.page_index != null) args.push('--page-index', String(payload.page_index));
+    if (payload.type) args.push('--type', payload.type);
+    if (payload.color) args.push('--color', payload.color);
+    if (payload.selected_text) args.push('--selected-text', payload.selected_text);
+    if (payload.comment) args.push('--comment', payload.comment);
+    if (payload.position_json) args.push('--position-json', payload.position_json);
+    return args;
+}
+
+function buildAnnotationPatchArgs(vaultPath, pythonInfo, annotationId, patch) {
+    const args = buildAnnotationSubprocessArgs(vaultPath, pythonInfo);
+    args.push('annotation', 'patch', String(annotationId), '--json');
+    if (patch.comment != null) args.push('--comment', patch.comment);
+    if (patch.color != null) args.push('--color', patch.color);
+    return args;
+}
+
+function buildAnnotationDeleteArgs(vaultPath, pythonInfo, annotationId) {
+    const args = buildAnnotationSubprocessArgs(vaultPath, pythonInfo);
+    args.push('annotation', 'delete', String(annotationId), '--json');
+    return args;
+}
+
+function parseAnnotationResult(jsonString) {
+    try {
+        const parsed = JSON.parse(jsonString);
+        if (parsed && parsed.ok === true) {
+            return { ok: true, data: parsed.result || parsed.data || null, raw: parsed };
+        }
+        if (parsed && parsed.ok === false) {
+            return { ok: false, error: parsed.error || 'Unknown error', raw: parsed };
+        }
+        return { ok: false, error: 'Unexpected envelope', raw: parsed };
+    } catch (e) {
+        return { ok: false, error: 'JSON parse failed: ' + e.message, raw: null };
+    }
+}
+
+function isReadonlyAnnotation(annotation) {
+    return !!(annotation && annotation.sync_state === 'zotero_synced');
+}
+
+function groupAnnotationsByPage(annotations) {
+    if (!annotations || !Array.isArray(annotations)) return {};
+    const grouped = {};
+    for (const a of annotations) {
+        const page = (a.page_index != null) ? a.page_index : 0;
+        if (!grouped[page]) grouped[page] = [];
+        grouped[page].push(a);
+    }
+    return grouped;
+}
+
+function isAnnotationSupportedType(type) {
+    return ['highlight', 'underline', 'note'].includes(type);
+}
+
 const ACTIONS = [
     {
         id: "paperforge-sync",
@@ -290,4 +379,15 @@ module.exports = {
     shouldRenderVectorReady,
     getDisclosureState,
     toggleDisclosureState,
+    ANNOTATION_COLORS,
+    ANNOTATION_DEFAULT_COLOR,
+    buildAnnotationSubprocessArgs,
+    buildAnnotationListArgs,
+    buildAnnotationCreateArgs,
+    buildAnnotationPatchArgs,
+    buildAnnotationDeleteArgs,
+    parseAnnotationResult,
+    isReadonlyAnnotation,
+    groupAnnotationsByPage,
+    isAnnotationSupportedType,
 };
