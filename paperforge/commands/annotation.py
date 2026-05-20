@@ -10,6 +10,7 @@ from pathlib import Path
 from paperforge.core.errors import ErrorCode
 
 from paperforge import __version__ as PF_VERSION
+from paperforge.annotation.cache import write_cache
 from paperforge.annotation.db import get_annotations_db_path, get_annotations_connection
 from paperforge.annotation.importer import run_import
 from paperforge.annotation.probe import copy_db_to_temp, open_readonly, fetch_annotations
@@ -96,6 +97,16 @@ def run(args: argparse.Namespace) -> int:
         return 1
 
 
+def _write_cache(vault: Path) -> None:
+    """Open annotations.db, build JSON cache, write to indexes directory."""
+    from paperforge.annotation.cache import write_cache as _wc
+    conn = _db_conn(vault)
+    try:
+        _wc(conn, vault)
+    finally:
+        conn.close()
+
+
 def _emit(result: PFResult, json_output: bool) -> int:
     if json_output:
         print(result.to_json())
@@ -132,6 +143,11 @@ def _cmd_import(vault, args, json_output):
             dry_run=getattr(args, "dry_run", False),
             no_copy=getattr(args, "no_copy", False),
         )
+        if not getattr(args, "dry_run", False):
+            try:
+                _write_cache(vault)
+            except Exception:
+                pass
         result = PFResult(ok=True, command="annotation import", version=PF_VERSION, data=data)
         return _emit(result, json_output)
     except Exception as exc:
@@ -232,6 +248,51 @@ def _cmd_create(vault, args, json_output):
             sort_index=getattr(args, "sort_index", ""),
         )
         result = PFResult(ok=True, command="annotation create", version=PF_VERSION, data=ann)
+        try:
+            _write_cache(vault)
+        except Exception:
+            pass
+        return _emit(result, json_output)
+    except Exception as exc:
+        result = PFResult(
+            ok=False, command="annotation create", version=PF_VERSION,
+            error=PFError(code="CREATE_FAILED", message=str(exc)),
+        )
+        return _emit(result, json_output)
+
+
+def _cmd_patch(vault, args, json_output):
+    conn = _db_conn(vault)
+    try:
+        kwargs = {}
+        if getattr(args, "comment", None) is not None:
+            kwargs["comment"] = args.comment
+        if getattr(args, "color", None) is not None:
+            kwargs["color"] = args.color
+        ann = patch_annotation(conn, args.annotation_id, **kwargs)
+        result = PFResult(ok=True, command="annotation patch", version=PF_VERSION, data=ann)
+        try:
+            _write_cache(vault)
+        except Exception:
+            pass
+        return _emit(result, json_output)
+    except Exception as exc:
+        result = PFResult(
+            ok=False, command="annotation patch", version=PF_VERSION,
+            error=PFError(code="PATCH_FAILED", message=str(exc)),
+        )
+        return _emit(result, json_output)
+
+
+def _cmd_delete(vault, args, json_output):
+    conn = _db_conn(vault)
+    try:
+        ann = delete_annotation(conn, args.annotation_id, hard=getattr(args, "hard", False))
+        result = PFResult(ok=True, command="annotation delete", version=PF_VERSION, data=ann)
+        try:
+            _write_cache(vault)
+        except Exception:
+            pass
         return _emit(result, json_output)
     except Exception as exc:
         result = PFResult(

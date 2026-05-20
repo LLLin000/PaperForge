@@ -418,130 +418,69 @@ function toggleDisclosureState(store, key, defaultCollapsed) {
     return next;
 }
 
-/* ── Annotation DB (sql.js, inlined — cannot require() local files) ── */
+/* ── Annotation cache (JSON snapshot, no subprocess for reads) ── */
 
-class AnnotationDB {
-    constructor() {
-        this.db = null;
-        this.SQL = null;
-        this._cache = null;
-        this._cachePaperId = null;
-    }
+let _jsonCache = null;
+let _jsonCachePath = null;
 
-    async init() {
-        if (this.SQL) return;
-        const initSqlJs = require('sql.js');
-        this.SQL = await initSqlJs({
-            locateFile: (f) => path.join(__dirname, f),
-        });
-    }
-
-    _dbPath(vaultPath) {
-        var paths = memoryState.resolveVaultPaths(vaultPath);
-        return path.join(paths.indexesDir, 'annotations.db');
-    }
-
-    _open(vaultPath) {
-        var dbPath = this._dbPath(vaultPath);
-        try {
-            if (!fs.existsSync(dbPath)) { console.warn('[PF-ann] annotations.db not found at', dbPath); return false; }
-            var buf = fs.readFileSync(dbPath);
-            this.db = new this.SQL.Database(buf);
-            return true;
-        } catch (e) {
-            console.warn('[PF-ann] failed to open annotations.db:', e.message);
-            return false;
-        }
-    }
-
-    _ensureOpen(vaultPath) {
-        if (this.db) return true;
-        return this._open(vaultPath);
-    }
-
-    getAnnotationsByPaper(vaultPath, paperId) {
-        if (!this._ensureOpen(vaultPath)) return [];
-        if (this._cachePaperId === paperId && this._cache) return this._cache;
-        try {
-            var stmt = this.db.prepare(
-                'SELECT * FROM annotations WHERE paper_id = ? AND deleted_at IS NULL ORDER BY sort_index'
-            );
-            stmt.bind([paperId]);
-            var results = [];
-            while (stmt.step()) { results.push(stmt.getAsObject()); }
-            stmt.free();
-            this._cache = results;
-            this._cachePaperId = paperId;
-            return results;
-        } catch (e) {
-            console.warn('[PF-ann] query failed:', e.message);
-            return [];
-        }
-    }
-
-    close() {
-        if (this.db) { this.db.close(); this.db = null; }
-        this._cache = null; this._cachePaperId = null;
+function _loadAnnotationCache(vaultPath) {
+    var paths = memoryState.resolveVaultPaths(vaultPath);
+    var cp = path.join(paths.indexesDir, 'annotation-cache.json');
+    if (_jsonCachePath === cp && _jsonCache) return _jsonCache;
+    try {
+        if (!fs.existsSync(cp)) { console.log('[PF] no annotation cache at', cp); return null; }
+        var raw = fs.readFileSync(cp, 'utf-8');
+        _jsonCache = JSON.parse(raw);
+        _jsonCachePath = cp;
+        return _jsonCache;
+    } catch (e) {
+        console.warn('[PF] annotation cache load failed:', e.message);
+        return null;
     }
 }
 
-/* ── Annotation DB bridge ── */
-
-let _annotationDB = null;
-let _annotationCache = null;
-let _annotationCachePdfKey = null;
-
-function _resolvePaperKeyFromDB(vaultPath, pdfPath) {
-    try {
-        var SQL = _annotationDB && _annotationDB.SQL;
-        if (!SQL) return '';
-        var dbPath = memoryState.resolveVaultPaths(vaultPath).indexesDir + '\\paperforge.db';
-        if (!fs.existsSync(dbPath)) return '';
-        var buf = fs.readFileSync(dbPath);
-        var mdb = new SQL.Database(buf);
-        var stmt = mdb.prepare("SELECT zotero_key FROM papers WHERE pdf_path LIKE ?");
-        // Try storage folder key first
-        var match = pdfPath.match(/storage[\\/]([A-Z0-9]{8})/i);
-        if (match) {
-            stmt.bind(['%' + match[1] + '%']);
-            if (stmt.step()) { var r = stmt.getAsObject(); stmt.free(); mdb.close(); return r.zotero_key; }
-            stmt.reset();
+function _resolvePaperIdFromCache(pdfPath, cache) {
+    if (!cache || !cache.by_paper) return '';
+    // Extract storage folder key from path: .../storage/XXXXXXXX/file.pdf
+    var m = pdfPath.match(/storage[\\/]([A-Z0-9]{8})/i);
+    if (m) {
+        var sk = m[1].toUpperCase();
+        // Search all papers for matching attachment key
+        for (var pid in cache.by_paper) {
+            var anns = cache.by_paper[pid];
+            for (var i = 0; i < anns.length; i++) {
+                if (anns[i].zk === sk) return pid;
+            }
         }
-        // Fallback: try filename
-        var fname = pdfPath.split(/[\\/]/).pop();
-        stmt.bind(['%' + fname + '%']);
-        if (stmt.step()) { var r2 = stmt.getAsObject(); stmt.free(); mdb.close(); return r2.zotero_key; }
-        stmt.free();
-        mdb.close();
-    } catch (e) { console.warn('[PF] resolve key error:', e.message); }
+    }
+    // Fallback: try matching by paper_id stored in the path itself
+    var parts = pdfPath.split(/[\\/]/);
+    for (var pi = 0; pi < parts.length; pi++) {
+        var part = parts[pi];
+        if (/^[A-Z0-9]{8}$/.test(part) && cache.by_paper[part]) return part;
+    }
     return '';
 }
 
 function fetchAnnotationsForPaper(vaultPath, pdfPath) {
-    if (!_annotationDB) {
-        console.warn('[PF] annotation DB not initialized');
-        return [];
-    }
-    // Resolve paper key from the vault PDF path
-    var paperId = _resolvePaperKeyFromDB(vaultPath, pdfPath);
+    var cache = _loadAnnotationCache(vaultPath);
+    if (!cache) return [];
+    var paperId = _resolvePaperIdFromCache(pdfPath, cache);
     if (!paperId) {
-        console.warn('[PF] could not resolve paper key for:', pdfPath);
+        console.log('[PF] no paper found for path:', pdfPath);
         return [];
     }
-    // Cache by paper key
-    if (_annotationCachePdfKey === pdfPath + '|' + paperId && _annotationCache !== null) {
-        return _annotationCache;
-    }
-    var anns = _annotationDB.getAnnotationsByPaper(vaultPath, paperId);
-    _annotationCachePdfKey = pdfPath + '|' + paperId;
-    _annotationCache = anns;
-    console.log('[PF] fetched ' + anns.length + ' annotations from sql.js for paper ' + paperId);
-    return anns;
+    var key = pdfPath + '|' + paperId;
+    if (key === _annotationCacheKey && _annotationCache) return _annotationCache;
+    _annotationCacheKey = key;
+    _annotationCache = cache.by_paper[paperId] || [];
+    console.log('[PF] got ' + _annotationCache.length + ' annotations for ' + paperId);
+    return _annotationCache;
 }
 
 function invalidateAnnotationCache() {
-    _annotationCache = null;
-    _annotationCachePdfKey = null;
+    _jsonCache = null; _jsonCachePath = null;
+    _annotationCache = null; _annotationCacheKey = null;
 }
 
 function _buildAnnotationWriteArgs(vaultPath, subcmd) {
@@ -574,14 +513,6 @@ function createLocalAnnotation(vaultPath, pdfPath, payload) {
     if (payload.selected_text) args.push('--selected-text', payload.selected_text);
     if (payload.comment) args.push('--comment', payload.comment);
     if (payload.position_json) args.push('--position-json', payload.position_json);
-    return _runAnnotationSubprocess(vaultPath, args).then(function (r) { invalidateAnnotationCache(); return r; });
-}
-
-function patchLocalAnnotation(vaultPath, annotationId, patch) {
-    var args = _buildAnnotationWriteArgs(vaultPath, 'patch');
-    args.push(String(annotationId));
-    if (patch.comment != null) args.push('--comment', patch.comment);
-    if (patch.color != null) args.push('--color', patch.color);
     return _runAnnotationSubprocess(vaultPath, args).then(function (r) { invalidateAnnotationCache(); return r; });
 }
 
@@ -5252,15 +5183,9 @@ module.exports = class PaperForgePlugin extends Plugin {
 
 
         /* ── PDF annotation overlay (deferred — after startup) ── */
-        setTimeout(async () => {
+        setTimeout(() => {
             if (this.settings.setup_complete && this.app.vault.adapter.basePath) {
-                try {
-                    _annotationDB = new AnnotationDB();
-                    await _annotationDB.init();
-                    installAnnotationOverlay(this.app, this.app.vault.adapter.basePath, this);
-                } catch (e) {
-                    console.warn('[PF] annotation DB init failed:', e.message);
-                }
+                installAnnotationOverlay(this.app, this.app.vault.adapter.basePath, this);
             }
         }, 2000);
 
