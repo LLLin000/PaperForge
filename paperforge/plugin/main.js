@@ -728,6 +728,11 @@ function _rebuildVisibleLayers(handle, pdfPath, vaultPath) {
         try {
             var pageView = handle.getPageView(pn - 1);
             if (!pageView || !pageView.div) continue;
+            if (pn === 6 && pageAnns.length > 0) {
+                var a0 = pageAnns[0];
+                var vbProbe = pageView.viewport ? (pageView.viewport.viewBox || 'noVB') : 'noVP';
+                console.log('[PF-probe] pn=' + pn + ' viewBox=' + JSON.stringify(vbProbe) + ' vpW=' + (pageView.viewport ? pageView.viewport.width : '?') + ' annId=' + (a0.id || a0.zotero_key || '').slice(0,8) + ' rects=' + JSON.stringify((a0.position||{}).rects||[]).slice(0,100));
+            }
             var layer = _getOrCreateAlignedLayer(pageView);
             var pw = 612, ph = 792;
             if (pageView.viewport && pageView.viewport.viewBox) {
