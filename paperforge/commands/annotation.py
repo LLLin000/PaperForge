@@ -301,7 +301,12 @@ def _cmd_patch(vault, args, json_output):
 def _cmd_delete(vault, args, json_output):
     conn = _db_conn(vault)
     try:
-        ann = delete_annotation(conn, args.annotation_id, hard=getattr(args, "hard", False))
+        if getattr(args, "hard", False):
+            hard_delete(conn, args.annotation_id)
+            ann = {"id": args.annotation_id, "deleted": True, "hard": True}
+        else:
+            delete_annotation(conn, args.annotation_id)
+            ann = {"id": args.annotation_id, "deleted": True, "hard": False}
         result = PFResult(ok=True, command="annotation delete", version=PF_VERSION, data=ann)
         conn.commit()
         try:
