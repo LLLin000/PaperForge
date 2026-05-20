@@ -65,11 +65,12 @@ def _row_to_dict(row: sqlite3.Row) -> dict[str, Any]:
 
 def build_cache(conn: sqlite3.Connection) -> dict[str, Any]:
     """Read all non-deleted annotations and group by paper_id."""
+    conn.row_factory = sqlite3.Row
     rows = conn.execute(CACHE_QUERY).fetchall()
     by_paper: dict[str, list[dict[str, Any]]] = {}
     for r in rows:
         d = _row_to_dict(r)
-        pid = d["pid"]
+        pid = d["paper_id"]
         if pid not in by_paper:
             by_paper[pid] = []
         by_paper[pid].append(d)
