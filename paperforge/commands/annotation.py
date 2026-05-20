@@ -256,6 +256,7 @@ def _cmd_create(vault, args, json_output):
             position_json=pos,
         )
         result = PFResult(ok=True, command="annotation create", version=PF_VERSION, data=ann)
+        conn.commit()
         try:
             _write_cache(vault)
         except Exception:
@@ -279,6 +280,7 @@ def _cmd_patch(vault, args, json_output):
             kwargs["color"] = args.color
         ann = patch_annotation(conn, args.annotation_id, **kwargs)
         result = PFResult(ok=True, command="annotation patch", version=PF_VERSION, data=ann)
+        conn.commit()
         try:
             _write_cache(vault)
         except Exception:
@@ -297,6 +299,7 @@ def _cmd_delete(vault, args, json_output):
     try:
         ann = delete_annotation(conn, args.annotation_id, hard=getattr(args, "hard", False))
         result = PFResult(ok=True, command="annotation delete", version=PF_VERSION, data=ann)
+        conn.commit()
         try:
             _write_cache(vault)
         except Exception:
