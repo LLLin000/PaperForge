@@ -723,6 +723,7 @@ function _rebuildVisibleLayers(handle, pdfPath, vaultPath) {
     if (!anns || anns.length === 0) return;
     var grouped = groupAnnotationsByPage(anns);
     var pageCount = handle.pagesCount || 0;
+    var rendered = 0;
     for (var pn = 1; pn <= pageCount; pn++) {
         var pageAnns = grouped[pn - 1];
         if (!pageAnns || pageAnns.length === 0) continue;
@@ -731,8 +732,10 @@ function _rebuildVisibleLayers(handle, pdfPath, vaultPath) {
             if (!pageView || !pageView.div) continue;
             var layer = _getOrCreateAlignedLayer(pageView);
             _renderPageAnnotations(layer, pageAnns, vaultPath, pdfPath, null);
+            rendered += pageAnns.length;
         } catch (_) {}
     }
+    console.log('[PF] rebuild ' + (anns ? anns.length : 0) + ' anns on ' + pageCount + ' pages, rendered ' + rendered);
 }
 
 function _fallbackObserver(containerEl, vaultPath, pdfPath, plugin, anns) {
