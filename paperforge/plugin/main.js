@@ -705,16 +705,14 @@ function _getOrCreateAlignedLayer(pageView) {
     return layer;
 }
 
-function _renderPageAnnotations(layer, annotations, vaultPath, pdfPath, container) {
+function _renderPageAnnotations(layer, annotations, vaultPath, pdfPath, container, pdfW, pdfH) {
     if (!layer || !annotations) return;
-    // Remove stale rects
     var existing = layer.querySelectorAll('.pf-annotation-rect');
     for (var ei = 0; ei < existing.length; ei++) existing[ei].remove();
-    // Render current annotations
     for (var i = 0; i < annotations.length; i++) {
         var ann = annotations[i];
         if (!ann.type || !isAnnotationSupportedType(ann.type)) continue;
-        renderAnnotationRect(layer, ann, vaultPath, pdfPath, container);
+        renderAnnotationRect(layer, ann, vaultPath, pdfPath, container, pdfW, pdfH);
     }
 }
 
@@ -731,29 +729,16 @@ function _rebuildVisibleLayers(handle, pdfPath, vaultPath) {
             var pageView = handle.getPageView(pn - 1);
             if (!pageView || !pageView.div) continue;
             var layer = _getOrCreateAlignedLayer(pageView);
-            _renderPageAnnotations(layer, pageAnns, vaultPath, pdfPath, null);
+            var pw = 612, ph = 792;
+            if (pageView.viewport && pageView.viewport.viewBox) {
+                var vb = pageView.viewport.viewBox;
+                pw = vb[2]; ph = vb[3];
+            }
+            _renderPageAnnotations(layer, pageAnns, vaultPath, pdfPath, null, pw, ph);
             rendered += pageAnns.length;
         } catch (_) {}
     }
     console.log('[PF] rebuild ' + (anns ? anns.length : 0) + ' anns on ' + pageCount + ' pages, rendered ' + rendered);
-    // Diagnostic: check DOM visibility
-    setTimeout(function () {
-        var layers = document.querySelectorAll('.pf-annotation-overlay');
-        var rects = document.querySelectorAll('.pf-annotation-rect');
-        console.log('[PF-verify] dom: ' + layers.length + ' layers, ' + rects.length + ' rects');
-        if (layers.length > 0) {
-            var l = layers[0];
-            var cs = getComputedStyle(l);
-            console.log('[PF-verify] L0 pos=' + cs.position + ' display=' + cs.display + ' vis=' + cs.visibility + ' op=' + cs.opacity + ' w=' + cs.width + ' h=' + cs.height + ' zi=' + cs.zIndex + ' l=' + cs.left + ' t=' + cs.top);
-            var parent = l.parentElement;
-            console.log('[PF-verify] L0 parent:' + (parent ? parent.tagName + '.' + (parent.className || '') + ' pos=' + getComputedStyle(parent).position + ' w=' + parent.offsetWidth : 'null'));
-            if (rects.length > 0) {
-                var r = rects[0];
-                var rcs = getComputedStyle(r);
-                console.log('[PF-verify] R0: pos=' + rcs.position + ' l=' + rcs.left + ' t=' + rcs.top + ' w=' + rcs.width + ' h=' + rcs.height + ' bg=' + rcs.backgroundColor + ' op=' + rcs.opacity);
-            }
-        }
-    }, 500);
 }
 
 function _fallbackObserver(containerEl, vaultPath, pdfPath, plugin, anns) {
@@ -965,10 +950,20 @@ function renderOverlaysForPage(pageEl, annotations, vaultPath, pdfPath, containe
     syncOverlayLayerGeometry(pageEl, layer);
     let existing = layer.querySelectorAll('.pf-annotation-rect');
     for (let e = 0; e < existing.length; e++) existing[e].remove();
+    // Derive PDF page dimensions from rendered canvas if possible
+    var pdfW = 612, pdfH = 792;
+    try {
+        var cv = pageEl.querySelector('canvas');
+        if (cv && cv.clientWidth > 0 && cv.clientHeight > 0) {
+            var ar = cv.clientWidth / cv.clientHeight;
+            if (ar > 0.7 && ar < 0.8) { pdfW = 612; pdfH = 792; }
+            else if (ar > 0.65 && ar < 0.75) { pdfW = 595; pdfH = 842; }
+        }
+    } catch (_) {}
     for (let i = 0; i < annotations.length; i++) {
         const ann = annotations[i];
         if (!ann.type || !isAnnotationSupportedType(ann.type)) continue;
-        renderAnnotationRect(layer, ann, vaultPath, pdfPath, containerEl);
+        renderAnnotationRect(layer, ann, vaultPath, pdfPath, containerEl, pdfW, pdfH);
     }
 }
 
@@ -1029,13 +1024,13 @@ function _removeAllOverlays() {
     _jsonCachePath = null;
 }
 
-function renderAnnotationRect(layer, ann, vaultPath, pdfPath, containerEl) {
+function renderAnnotationRect(layer, ann, vaultPath, pdfPath, containerEl, pdfW, pdfH) {
     const rects = getAnnotationRects(ann);
     if (!rects || rects.length === 0) { console.log('[PF] no rects for ann', ann && ann.id); return; }
     const isReadonly = isReadonlyAnnotation(ann);
-    // Prefer exact PDF page size from cache, fall back conservatively.
-    var pageW = Number(ann.page_width) || 612;
-    var pageH = Number(ann.page_height) || 792;
+    // Use caller-supplied PDF page dimensions, else cache value, else US Letter.
+    var pageW = pdfW || Number(ann.page_width) || 612;
+    var pageH = pdfH || Number(ann.page_height) || 792;
     for (let i = 0; i < rects.length; i++) {
         const rect = rects[i];
         // PDF rect format: [left, bottom, right, top] — bottom-left origin
