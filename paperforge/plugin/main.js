@@ -817,19 +817,47 @@ function setupSelectionCapture(containerEl, vaultPath, pdfPath) {
                 if (!canvasEl) return;
                 var canvasBox = canvasEl.getBoundingClientRect();
                 var zoomX = pdfW / canvasBox.width, zoomY = pdfH / canvasBox.height;
-                // Compute per-line rects using getClientRects for shaped highlights
-                var clientRects = range.getClientRects();
-                var pdfRects = [];
-                for (var cri = 0; cri < clientRects.length; cri++) {
-                    var cr = clientRects[cri];
-                    var rLeft = (cr.left - canvasBox.left) * zoomX;
-                    var rTop = (cr.top - canvasBox.top) * zoomY;
-                    var rRight = (cr.right - canvasBox.left) * zoomX;
-                    var rBottom = (cr.bottom - canvasBox.top) * zoomY;
-                    // Mirror Y: screen [left,top,right,bottom] → PDF [left,bottom,right,top]
-                    pdfRects.push([rLeft, pdfH - rBottom, rRight, pdfH - rTop]);
+                // Compute per-character rects by iterating individual text layer spans
+                // (more precise than Range.getClientRects which returns full line boxes)
+                var spanSet = new Set();
+                var spanRects = [];
+                var nodeIter = document.createNodeIterator(range.commonAncestorContainer, 4);
+                var textNode;
+                while ((textNode = nodeIter.nextNode())) {
+                    if (!range.intersectsNode(textNode)) continue;
+                    var spanParent = textNode.parentElement;
+                    if (!spanParent || spanSet.has(spanParent)) continue;
+                    spanSet.add(spanParent);
+                    var spr = spanParent.getBoundingClientRect();
+                    if (spr.width < 1 || spr.height < 1) continue;
+                    var sl = (spr.left - canvasBox.left) * zoomX;
+                    var st = (spr.top - canvasBox.top) * zoomY;
+                    var sr2 = (spr.right - canvasBox.left) * zoomX;
+                    var sb = (spr.bottom - canvasBox.top) * zoomY;
+                    spanRects.push({ l: sl, t: st, r: sr2, b: sb });
                 }
-
+                // Merge consecutive spans on the same visual line
+                var pdfRects = [];
+                if (spanRects.length > 0) {
+                    spanRects.sort(function (a, b) { return a.t - b.t || a.l - b.l; });
+                    var merged = [spanRects[0]];
+                    for (var si = 1; si < spanRects.length; si++) {
+                        var lastR = merged[merged.length - 1];
+                        var curR = spanRects[si];
+                        if (Math.abs(curR.t - lastR.t) < 15) {
+                            lastR.l = Math.min(lastR.l, curR.l);
+                            lastR.r = Math.max(lastR.r, curR.r);
+                            lastR.b = Math.max(lastR.b, curR.b);
+                            lastR.t = Math.min(lastR.t, curR.t);
+                        } else {
+                            merged.push({ l: curR.l, t: curR.t, r: curR.r, b: curR.b });
+                        }
+                    }
+                    for (var mi = 0; mi < merged.length; mi++) {
+                        var m = merged[mi];
+                        pdfRects.push([m.l, pdfH - m.b, m.r, pdfH - m.t]);
+                    }
+                }
                 if (pdfRects.length === 0) return;
                 var annPayload = {
                     pdf_path: pdfPath,
