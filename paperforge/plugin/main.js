@@ -736,6 +736,20 @@ function _rebuildVisibleLayers(handle, pdfPath, vaultPath) {
         } catch (_) {}
     }
     console.log('[PF] rebuild ' + (anns ? anns.length : 0) + ' anns on ' + pageCount + ' pages, rendered ' + rendered);
+    // Diagnostic: count actual DOM rects and add a test rect
+    setTimeout(function () {
+        var total = document.querySelectorAll('.pf-annotation-rect').length;
+        var layers = document.querySelectorAll('.pf-annotation-overlay');
+        console.log('[PF-verify] dom: ' + layers.length + ' layers, ' + total + ' rects');
+        if (layers.length > 0) {
+            var firstLayer = layers[0];
+            var testRect = document.createElement('div');
+            testRect.className = 'pf-annotation-rect';
+            testRect.style.cssText = 'left:10% !important; top:10% !important; width:80% !important; height:5% !important; background:rgba(255,0,0,0.7) !important; border:3px solid red !important; z-index:9999 !important;';
+            firstLayer.appendChild(testRect);
+            console.log('[PF-verify] test rect appended to layer 0');
+        }
+    }, 500);
 }
 
 function _fallbackObserver(containerEl, vaultPath, pdfPath, plugin, anns) {
