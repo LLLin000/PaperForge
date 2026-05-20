@@ -829,14 +829,7 @@ function setupSelectionCapture(containerEl, vaultPath, pdfPath) {
                     // Mirror Y: screen [left,top,right,bottom] → PDF [left,bottom,right,top]
                     pdfRects.push([rLeft, pdfH - rBottom, rRight, pdfH - rTop]);
                 }
-                // Diagnostic: log ALL coordinate values for debugging
-                if (pdfRects.length > 0) {
-                    var fcr = clientRects[0];
-                    var fr = pdfRects[0];
-                    var tl = pageEl.querySelector('.textLayer');
-                    var tlBox = tl ? tl.getBoundingClientRect() : {top:0,left:0};
-                    console.log('[PF-create] pdf=' + pdfW + 'x' + pdfH + ' cnvBox=' + canvasBox.top.toFixed(1) + ',' + canvasBox.left.toFixed(1) + 'x' + canvasBox.width.toFixed(0) + 'x' + canvasBox.height.toFixed(0) + ' tlBox=' + tlBox.top.toFixed(1) + ' crTop=' + fcr.top.toFixed(1) + ' crLeft=' + fcr.left.toFixed(1) + ' offY=' + (fcr.top - canvasBox.top).toFixed(1) + ' zoom=' + zoomY.toFixed(4) + ' pdfRect=' + fr[0].toFixed(1) + ',' + fr[1].toFixed(1) + ',' + fr[2].toFixed(1) + ',' + fr[3].toFixed(1));
-                }
+
                 if (pdfRects.length === 0) return;
                 var annPayload = {
                     pdf_path: pdfPath,
