@@ -771,8 +771,68 @@ function _fallbackObserver(containerEl, vaultPath, pdfPath, plugin, anns) {
     }
 }
 
+/* ── create: DOM range → PDF char rects ── */
+
+function _offsetInItem(span, container, offset) {
+    var acc = 0;
+    var walker = document.createTreeWalker(span, NodeFilter.SHOW_TEXT, null, false);
+    var node;
+    while (node = walker.nextNode()) {
+        if (node === container) return acc + offset;
+        acc += node.textContent.length;
+    }
+    return offset;
+}
+
+function getTextSelectionRange(pageEl, range) {
+    var textLayer = pageEl.querySelector('.textLayer');
+    if (!textLayer) return null;
+    var spans = textLayer.querySelectorAll('.textLayerNode');
+    var result = { startIdx: -1, startChar: -1, endIdx: -1, endChar: -1 };
+    for (var s = 0; s < spans.length; s++) {
+        var span = spans[s];
+        var idx = parseInt(span.getAttribute('data-idx'), 10);
+        if (isNaN(idx)) continue;
+        if (span.contains(range.startContainer)) {
+            result.startIdx = idx;
+            result.startChar = _offsetInItem(span, range.startContainer, range.startOffset);
+        }
+        if (span.contains(range.endContainer)) {
+            result.endIdx = idx;
+            result.endChar = _offsetInItem(span, range.endContainer, range.endOffset);
+        }
+    }
+    return result;
+}
+
+function mergeCharRects(charRects) {
+    if (!charRects || charRects.length === 0) return [];
+    charRects.sort(function (a, b) { return (b[1] - a[1]) || (a[0] - b[0]); });
+    var LINE_THRESHOLD = 3;
+    var lines = [];
+    var curLine = [charRects[0]];
+    for (var i = 1; i < charRects.length; i++) {
+        var prev = charRects[i - 1], cur = charRects[i];
+        if (Math.abs(cur[1] - prev[1]) < LINE_THRESHOLD && cur[0] >= prev[2]) {
+            curLine.push(cur);
+        } else {
+            lines.push(curLine); curLine = [cur];
+        }
+    }
+    lines.push(curLine);
+    return lines.map(function (chars) {
+        var l = chars[0][0], b = chars[0][1], r = chars[0][2], t = chars[0][3];
+        for (var i = 1; i < chars.length; i++) {
+            l = Math.min(l, chars[i][0]); b = Math.min(b, chars[i][1]);
+            r = Math.max(r, chars[i][2]); t = Math.max(t, chars[i][3]);
+        }
+        if (t - b < 4) t = b + 10;
+        return (l >= r || b >= t) ? null : [l, b, r, t];
+    }).filter(function (x) { return x !== null; });
+}
+
 function setupSelectionCapture(containerEl, vaultPath, pdfPath) {
-    var toolbar = null, _selColor = '#ffd400';
+    var toolbar = null;
     containerEl.addEventListener('mouseup', function (e) {
         setTimeout(function () {
             var sel = window.getSelection();
@@ -797,77 +857,73 @@ function setupSelectionCapture(containerEl, vaultPath, pdfPath) {
             toolbar = document.createElement('div');
             toolbar.className = 'pf-annotation-toolbar';
             toolbar.style.cssText = 'position:fixed;z-index:100;background:var(--background-primary);border:1px solid var(--background-modifier-border);border-radius:8px;padding:6px 10px;display:flex;gap:6px;box-shadow:0 2px 12px rgba(0,0,0,0.12);align-items:center;';
-            // Color swatches
             var colors = [
                 { name: 'yellow', hex: '#ffd400' }, { name: 'red', hex: '#ff6666' },
                 { name: 'green', hex: '#5fb236' }, { name: 'blue', hex: '#2ea8e5' },
                 { name: 'purple', hex: '#a28ae5' }, { name: 'magenta', hex: '#e56eee' },
                 { name: 'orange', hex: '#f19837' }, { name: 'gray', hex: '#aaaaaa' },
             ];
+
             async function doCreateAnnotation(color) {
                 var selectedText = sel.toString().trim();
+                // Step 1: map DOM Range → textContent item indices + char offsets
+                var selInfo = getTextSelectionRange(pageEl, range);
+                if (!selInfo || selInfo.startIdx < 0 || selInfo.endIdx < 0) {
+                    console.warn('[PF] cannot map selection to text items');
+                    return;
+                }
+                // Step 2: get PDF.js text content with per-character rects
+                var pdfRects = [];
+                try {
+                    if (_pdfInternalHandle && _pdfInternalHandle.pdfDocument) {
+                        var pdfPage = await _pdfInternalHandle.pdfDocument.getPage(pageNum);
+                        var tc = await pdfPage.getTextContent({ includeChars: true });
+                        var startIdx = selInfo.startIdx, endIdx = selInfo.endIdx;
+                        for (var ii = startIdx; ii <= endIdx && ii < tc.items.length; ii++) {
+                            var item = tc.items[ii];
+                            if (!item || !item.chars) continue;
+                            var from = (ii === startIdx) ? Math.max(0, selInfo.startChar) : 0;
+                            var to = (ii === endIdx) ? Math.min(item.chars.length, selInfo.endChar) : item.chars.length;
+                            for (var jj = from; jj < to; jj++) {
+                                var ch = item.chars[jj];
+                                if (ch && Array.isArray(ch.r) && ch.r.length === 4) {
+                                    pdfRects.push(ch.r);
+                                }
+                            }
+                        }
+                    }
+                } catch (e) { console.warn('[PF] pdf chars:', e.message); }
+                if (pdfRects.length === 0) {
+                    console.warn('[PF] no char rects from selection');
+                    return;
+                }
+                var merged = mergeCharRects(pdfRects);
                 var pv = _pdfInternalHandle && _pdfInternalHandle.getPageView(pageNum - 1);
-                // Get PDF page dimensions from viewport
                 var pdfW = 612, pdfH = 792;
                 if (pv && pv.viewport && pv.viewport.viewBox) {
                     var vb = pv.viewport.viewBox;
                     pdfW = vb[2]; pdfH = vb[3];
                 }
-                // Get text content items with per-character data (PDF++ approach)
-                var pdfRects = [];
-                try {
-                    if (_pdfInternalHandle && _pdfInternalHandle.pdfDocument) {
-                        var page = await _pdfInternalHandle.pdfDocument.getPage(pageNum);
-                        var tc = await page.getTextContent({ includeChars: true });
-                        // Concatenate item strings and find match
-                        var textPositions = [];
-                        var fullText = '';
-                        for (var ii = 0; ii < tc.items.length; ii++) {
-                            var item = tc.items[ii];
-                            var s = item.str || '';
-                            if (!s) continue;
-                            textPositions.push({ idx: ii, start: fullText.length, end: fullText.length + s.length });
-                            fullText += s;
-                        }
-                        var selNorm = selectedText.replace(/\s+/g, ' ');
-                        var fullNorm = fullText.replace(/\s+/g, ' ');
-                        var matchIdx = fullNorm.indexOf(selNorm);
-                        if (matchIdx >= 0) {
-                            for (var ii = 0; ii < textPositions.length; ii++) {
-                                var tp = textPositions[ii];
-                                if (tp.start > matchIdx + selNorm.length || tp.end < matchIdx) continue;
-                                var item = tc.items[tp.idx];
-                                var tr = item.transform;
-                                if (!tr || tr.length < 6) continue;
-                                var iw = item.width || 0;
-                                var ih = item.height || 10;
-                                pdfRects.push([tr[4], tr[5] - ih, tr[4] + iw, tr[5]]);
-                            }
-                        }
-                    }
-                } catch (e) { console.warn('[PF] textContent:', e.message); }
-                if (pdfRects.length === 0) return;
                 var annPayload = {
                     pdf_path: pdfPath,
                     page_index: pageNum - 1,
                     type: 'highlight',
                     color: color,
                     selected_text: selectedText,
-                    position_json: JSON.stringify({ pageIndex: pageNum - 1, rects: pdfRects }),
+                    position_json: JSON.stringify({ pageIndex: pageNum - 1, rects: merged }),
                 };
                 createLocalAnnotation(vaultPath, pdfPath, annPayload).then(function (result) {
                     if (result.ok) {
                         sel.removeAllRanges();
                         if (toolbar) { toolbar.remove(); toolbar = null; }
                         invalidateAnnotationCache();
-                        // Add the new rect to the page directly if handle is available
                         var newAnn = result.data;
                         if (newAnn && newAnn.page_index != null && _pdfInternalHandle) {
                             try {
-                                var pv = _pdfInternalHandle.getPageView(Number(newAnn.page_index));
-                                if (pv && pv.div) {
-                                    var l = _getOrCreateAlignedLayer(pv);
-                                    renderAnnotationRect(l, newAnn, vaultPath, pdfPath, null);
+                                var pv2 = _pdfInternalHandle.getPageView(Number(newAnn.page_index));
+                                if (pv2 && pv2.div) {
+                                    var l = _getOrCreateAlignedLayer(pv2);
+                                    renderAnnotationRect(l, newAnn, vaultPath, pdfPath, null, pdfW, pdfH);
                                 }
                             } catch (_) {}
                         }
@@ -876,6 +932,7 @@ function setupSelectionCapture(containerEl, vaultPath, pdfPath) {
                     }
                 });
             }
+
             for (var ci = 0; ci < colors.length; ci++) {
                 (function (swatchColor) {
                     var swatch = document.createElement('span');
