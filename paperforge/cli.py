@@ -312,7 +312,8 @@ def build_parser() -> argparse.ArgumentParser:
     p_ann_list.add_argument("--json", action="store_true")
 
     p_ann_create = p_ann_sp.add_parser("create", help="Create a local annotation")
-    p_ann_create.add_argument("--paper", required=True, help="Paper zotero key")
+    p_ann_create.add_argument("--paper", help="Paper zotero key")
+    p_ann_create.add_argument("--pdf-path", help="Resolve paper key from vault PDF path")
     p_ann_create.add_argument("--type", dest="ann_type", required=True, help="Annotation type")
     p_ann_create.add_argument("--page-index", type=int, help="Page index")
     p_ann_create.add_argument("--page-label", default="", help="Page label")

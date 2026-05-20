@@ -209,11 +209,20 @@ def _cmd_list(vault, args, json_output):
 
 
 def _cmd_create(vault, args, json_output):
+    paper_id = args.paper or ""
+    if not paper_id and getattr(args, "pdf_path", None):
+        paper_id = _resolve_paper_key(vault, args.pdf_path)
+        if not paper_id:
+            result = PFResult(
+                ok=False, command="annotation create", version=PF_VERSION,
+                error=PFError(code="PATH_NOT_FOUND", message=f"Could not resolve PDF path to paper key: {args.pdf_path}"),
+            )
+            return _emit(result, json_output)
     conn = _db_conn(vault)
     try:
         ann = create_annotation(
             conn,
-            paper_id=args.paper,
+            paper_id=paper_id,
             annotation_type=args.ann_type,
             page_index=getattr(args, "page_index", None),
             page_label=getattr(args, "page_label", ""),

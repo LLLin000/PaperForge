@@ -475,7 +475,7 @@ async function fetchAnnotationsForPaper(vaultPath, pdfPath) {
         return _annotationCache;
     }
     _annotationCachePdfPath = pdfPath;
-    _annotationCache = parsed.data || [];
+    _annotationCache = (parsed.data && parsed.data.annotations) || [];
     return _annotationCache;
 }
 
@@ -546,7 +546,7 @@ function detectConflictingPdfPlugins(app) {
     } catch { return null; }
 }
 
-function installAnnotationOverlay(app, vaultPath) {
+function installAnnotationOverlay(app, vaultPath, plugin) {
     if (_overlayInstalled) return;
     if (app.isMobile && app.isMobile()) {
         console.log('[PF] annotation overlay: mobile not supported');
@@ -558,7 +558,7 @@ function installAnnotationOverlay(app, vaultPath) {
         return;
     }
     try {
-        setupPdfObserver(app, vaultPath);
+        setupPdfObserver(app, vaultPath, plugin);
         _overlayInstalled = true;
         console.log('[PF] annotation overlay installed');
     } catch (e) {
@@ -566,7 +566,7 @@ function installAnnotationOverlay(app, vaultPath) {
     }
 }
 
-function setupPdfObserver(app, vaultPath) {
+function setupPdfObserver(app, vaultPath, plugin) {
     const observer = new MutationObserver(function () {
         const pdfLeaves = app.workspace.getLeavesOfType('pdf');
         if (!pdfLeaves || pdfLeaves.length === 0) return;
@@ -584,11 +584,13 @@ function setupPdfObserver(app, vaultPath) {
             if (pc.viewerEl.dataset.pfOverlayActive) continue;
             pc.viewerEl.dataset.pfOverlayActive = '1';
             const pdfPath = resolvePdfPathFromLeaf(pc.leaf);
-            injectPdfEventHooks(pc.viewerEl, pc.view, vaultPath, pdfPath);
+            injectPdfEventHooks(pc.viewerEl, pc.view, vaultPath, pdfPath, plugin);
         }
     });
     observer.observe(document.body, { childList: true, subtree: true });
-    app.register(function () { observer.disconnect(); });
+    if (plugin && typeof plugin.register === 'function') {
+        plugin.register(function () { observer.disconnect(); });
+    }
 }
 
 function resolvePdfPathFromLeaf(leaf) {
@@ -604,7 +606,7 @@ function getPdfPageElements(containerEl) {
     return containerEl.querySelectorAll('.page[data-page-number]');
 }
 
-function injectPdfEventHooks(containerEl, view, vaultPath, pdfPath) {
+function injectPdfEventHooks(containerEl, view, vaultPath, pdfPath, plugin) {
     if (!pdfPath) return;
     _currentVaultPath = vaultPath;
     _currentPdfPath = pdfPath;
@@ -615,7 +617,9 @@ function injectPdfEventHooks(containerEl, view, vaultPath, pdfPath) {
         renderAnnotationsOnExistingPages(containerEl);
     });
     pageObserver.observe(containerEl, { childList: true, subtree: false });
-    view.app.register(function () { pageObserver.disconnect(); });
+    if (plugin && typeof plugin.register === 'function') {
+        plugin.register(function () { pageObserver.disconnect(); });
+    }
     setupSelectionCapture(containerEl, vaultPath, pdfPath);
 }
 
@@ -5172,7 +5176,7 @@ module.exports = class PaperForgePlugin extends Plugin {
         /* ── PDF annotation overlay (deferred — after startup) ── */
         setTimeout(() => {
             if (this.settings.setup_complete && this.app.vault.adapter.basePath) {
-                installAnnotationOverlay(this.app, this.app.vault.adapter.basePath);
+                installAnnotationOverlay(this.app, this.app.vault.adapter.basePath, this);
             }
         }, 2000);
 
