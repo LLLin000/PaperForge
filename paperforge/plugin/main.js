@@ -602,32 +602,159 @@ function getPdfPageElements(containerEl) {
     return containerEl.querySelectorAll('.page[data-page-number]');
 }
 
+var _pdfInternalHandle = null;
+var _pdfEventSubscriptions = [];
+var _currentContainerEl = null;
+
 function injectPdfEventHooks(containerEl, view, vaultPath, pdfPath, plugin) {
     if (!pdfPath) return;
     console.log('[PF] pdf ' + pdfPath);
     _currentVaultPath = vaultPath;
     _currentPdfPath = pdfPath;
+    _currentContainerEl = containerEl;
+    _pdfInternalHandle = null;
+    _pdfEventSubscriptions = [];
     var anns = fetchAnnotationsForPaper(vaultPath, pdfPath);
     console.log('[PF] fetched ' + (anns ? anns.length : 0));
+    // Try resolving PDF.js internal viewer handle
+    try {
+        var pdfViewerHandle = _resolvePdfHandle(view);
+        if (pdfViewerHandle) {
+            _pdfInternalHandle = pdfViewerHandle;
+            _subscribePdfEvents(pdfViewerHandle, pdfPath, vaultPath, plugin);
+            // Initial render since pages may already be loaded
+            if (anns && anns.length > 0) { renderAnnotationsOnExistingPages(containerEl); }
+        } else {
+            _fallbackObserver(containerEl, vaultPath, pdfPath, plugin, anns);
+        }
+    } catch (_) {
+        _fallbackObserver(containerEl, vaultPath, pdfPath, plugin, anns);
+    }
+    setupSelectionCapture(containerEl, vaultPath, pdfPath);
+}
+
+function _resolvePdfHandle(view) {
+    if (!view) return null;
+    // Try multiple Obsidian PDF viewer internal paths
+    // Path 1: view.viewer.child.pdfViewer (most common modern Obsidian)
+    try {
+        var vc = view.viewer; // PDFViewerComponent
+        if (vc && vc.child && vc.child.pdfViewer && vc.child.pdfViewer.pdfViewer) {
+            var h = vc.child.pdfViewer.pdfViewer;
+            if (typeof h.getPageView === 'function' && h.eventBus) return h;
+        }
+        if (vc && vc.child && vc.child.pdfViewer && typeof vc.child.pdfViewer.getPageView === 'function') {
+            var h2 = vc.child.pdfViewer;
+            if (h2.eventBus) return h2;
+        }
+    } catch {}
+    // Path 2: view.pdfViewer (direct property on some versions)
+    try {
+        if (view.pdfViewer && typeof view.pdfViewer.getPageView === 'function' && view.pdfViewer.eventBus) {
+            return view.pdfViewer;
+        }
+    } catch {}
+    return null;
+}
+
+function _subscribePdfEvents(handle, pdfPath, vaultPath, plugin) {
+    var bus = handle.eventBus;
+    if (!bus) return;
+    function onPageRendered(data) {
+        if (!handle.pdfDocument) return;
+        var pageNum = data && data.pageNumber;
+        if (!pageNum) return;
+        var anns = fetchAnnotationsForPaper(vaultPath, pdfPath);
+        if (!anns || anns.length === 0) return;
+        var grouped = groupAnnotationsByPage(anns);
+        var pageAnns = grouped[pageNum - 1];
+        if (!pageAnns || pageAnns.length === 0) return;
+        try {
+            var pageView = handle.getPageView(pageNum - 1);
+            if (!pageView || !pageView.div) return;
+            var layer = _getOrCreateAlignedLayer(pageView);
+            _renderPageAnnotations(layer, pageAnns, vaultPath, pdfPath, _currentContainerEl);
+        } catch (_) {}
+    }
+    function onScaleChanged() {
+        // After zoom, re-render all pages with visible overlays
+        _rebuildVisibleLayers(handle, pdfPath, vaultPath);
+    }
+    bus.on('pagerendered', onPageRendered);
+    bus.on('scalechanged', onScaleChanged);
+    if (plugin && typeof plugin.register === 'function') {
+        plugin.register(function () {
+            try { bus.off('pagerendered', onPageRendered); } catch {}
+            try { bus.off('scalechanged', onScaleChanged); } catch {}
+        });
+    }
+}
+
+function _getOrCreateAlignedLayer(pageView) {
+    var pageDiv = pageView.div;
+    if (!pageDiv) return null;
+    var layer = pageDiv.querySelector('.pf-annotation-overlay');
+    if (!layer) {
+        layer = document.createElement('div');
+        layer.className = 'pf-annotation-overlay';
+        pageDiv.appendChild(layer);
+        try {
+            if (window.pdfjsLib && typeof window.pdfjsLib.setLayerDimensions === 'function' && pageView.viewport) {
+                window.pdfjsLib.setLayerDimensions(layer, pageView.viewport);
+            }
+        } catch (_) {}
+    }
+    return layer;
+}
+
+function _renderPageAnnotations(layer, annotations, vaultPath, pdfPath, container) {
+    if (!layer || !annotations) return;
+    // Remove stale rects
+    var existing = layer.querySelectorAll('.pf-annotation-rect');
+    for (var ei = 0; ei < existing.length; ei++) existing[ei].remove();
+    // Render current annotations
+    for (var i = 0; i < annotations.length; i++) {
+        var ann = annotations[i];
+        if (!ann.type || !isAnnotationSupportedType(ann.type)) continue;
+        renderAnnotationRect(layer, ann, vaultPath, pdfPath, container);
+    }
+}
+
+function _rebuildVisibleLayers(handle, pdfPath, vaultPath) {
+    var anns = fetchAnnotationsForPaper(vaultPath, pdfPath);
+    if (!anns || anns.length === 0) return;
+    var grouped = groupAnnotationsByPage(anns);
+    var pageCount = handle.pagesCount || 0;
+    for (var pn = 1; pn <= pageCount; pn++) {
+        var pageAnns = grouped[pn - 1];
+        if (!pageAnns || pageAnns.length === 0) continue;
+        try {
+            var pageView = handle.getPageView(pn - 1);
+            if (!pageView || !pageView.div) continue;
+            var layer = _getOrCreateAlignedLayer(pageView);
+            _renderPageAnnotations(layer, pageAnns, vaultPath, pdfPath, null);
+        } catch (_) {}
+    }
+}
+
+function _fallbackObserver(containerEl, vaultPath, pdfPath, plugin, anns) {
+    console.log('[PF] pdf internal handle unavailable, using DOM fallback');
     if (anns && anns.length > 0) { renderAnnotationsOnExistingPages(containerEl); }
     var pageObserver = new MutationObserver(function (mutations) {
-        var hasNewPage = false;
         for (var mi = 0; mi < mutations.length; mi++) {
             var added = mutations[mi].addedNodes;
             for (var ai = 0; ai < added.length; ai++) {
                 if (added[ai].nodeType === 1 && added[ai].matches && added[ai].matches('.page[data-page-number]')) {
-                    hasNewPage = true; break;
+                    renderAnnotationsOnExistingPages(containerEl);
+                    return;
                 }
             }
-            if (hasNewPage) break;
         }
-        if (hasNewPage) renderAnnotationsOnExistingPages(containerEl);
     });
     pageObserver.observe(containerEl, { childList: true, subtree: true });
     if (plugin && typeof plugin.register === 'function') {
-        plugin.register(function () { console.log('[PF] disconnecting page observer'); pageObserver.disconnect(); });
+        plugin.register(function () { pageObserver.disconnect(); });
     }
-    setupSelectionCapture(containerEl, vaultPath, pdfPath);
 }
 
 function setupSelectionCapture(containerEl, vaultPath, pdfPath) {
@@ -732,10 +859,13 @@ function renderAnnotationsOnExistingPages(containerEl) {
 }
 
 function ensureOverlayLayer(pageEl) {
-    if (pageEl.querySelector('.pf-annotation-overlay')) return;
-    const layer = document.createElement('div');
-    layer.className = 'pf-annotation-overlay';
-    pageEl.appendChild(layer);
+    let layer = pageEl.querySelector('.pf-annotation-overlay');
+    if (!layer) {
+        layer = document.createElement('div');
+        layer.className = 'pf-annotation-overlay';
+        pageEl.appendChild(layer);
+    }
+    syncOverlayLayerGeometry(pageEl, layer);
     if (!_annotationPdfProbeLogged) {
         _annotationPdfProbeLogged = true;
         try {
@@ -759,9 +889,36 @@ function ensureOverlayLayer(pageEl) {
     }
 }
 
+function syncOverlayLayerGeometry(pageEl, layer) {
+    try {
+        var basis = pageEl.querySelector('.textLayer')
+            || pageEl.querySelector('.annotationLayer')
+            || pageEl.querySelector('.canvasWrapper')
+            || pageEl.querySelector('canvas');
+        if (!basis) {
+            layer.style.left = '0';
+            layer.style.top = '0';
+            layer.style.width = '100%';
+            layer.style.height = '100%';
+            return;
+        }
+        var pageBox = pageEl.getBoundingClientRect();
+        var basisBox = basis.getBoundingClientRect();
+        layer.style.left = (basisBox.left - pageBox.left) + 'px';
+        layer.style.top = (basisBox.top - pageBox.top) + 'px';
+        layer.style.width = basisBox.width + 'px';
+        layer.style.height = basisBox.height + 'px';
+        layer.style.right = 'auto';
+        layer.style.bottom = 'auto';
+        layer.style.transform = '';
+        layer.style.transformOrigin = '0 0';
+    } catch (_) {}
+}
+
 function renderOverlaysForPage(pageEl, annotations, vaultPath, pdfPath, containerEl) {
     const layer = pageEl.querySelector('.pf-annotation-overlay');
     if (!layer) return;
+    syncOverlayLayerGeometry(pageEl, layer);
     let existing = layer.querySelectorAll('.pf-annotation-rect');
     for (let e = 0; e < existing.length; e++) existing[e].remove();
     for (let i = 0; i < annotations.length; i++) {
@@ -773,6 +930,18 @@ function renderOverlaysForPage(pageEl, annotations, vaultPath, pdfPath, containe
 
 function isAnnotationSupportedType(type) {
     return type === 'highlight' || type === 'underline' || type === 'note';
+}
+
+function colorWithAlpha(color, alpha) {
+    if (!color || typeof color !== 'string') return 'rgba(255, 212, 0, ' + alpha + ')';
+    var hex = color.trim();
+    if (/^#[0-9a-fA-F]{6}$/.test(hex)) {
+        var r = parseInt(hex.slice(1, 3), 16);
+        var g = parseInt(hex.slice(3, 5), 16);
+        var b = parseInt(hex.slice(5, 7), 16);
+        return 'rgba(' + r + ', ' + g + ', ' + b + ', ' + alpha + ')';
+    }
+    return color;
 }
 
 function renderAnnotationRect(layer, ann, vaultPath, pdfPath, containerEl) {
@@ -801,16 +970,36 @@ function renderAnnotationRect(layer, ann, vaultPath, pdfPath, containerEl) {
         el.style.top = pctT + '%';
         el.style.width = pctW + '%';
         el.style.height = pctH + '%';
+        var isVisualProbe = ann && ann.zotero_key === 'LJ8FR3BS' && i === 0;
         if (ann.color) {
-            el.style.backgroundColor = ann.color;
             if (ann.type === 'highlight') {
-                el.style.opacity = '0.65';
-                el.style.outline = '1px solid rgba(0, 0, 0, 0.18)';
+                el.style.backgroundColor = colorWithAlpha(ann.color, 0.78);
+                el.style.opacity = '1';
+                el.style.outline = '1px solid rgba(0, 0, 0, 0.28)';
             }
-            else if (ann.type === 'underline') el.style.borderBottomColor = ann.color;
+            else if (ann.type === 'underline') {
+                el.style.backgroundColor = 'transparent';
+                el.style.borderBottomColor = ann.color;
+            }
+            else {
+                el.style.backgroundColor = colorWithAlpha(ann.color, 0.42);
+            }
         }
         if (ann.type === 'underline') el.style.borderBottom = '2px solid ' + (ann.color || '#ffd400');
-        if (ann.type === 'note') el.style.backgroundColor = (ann.color || '#ffd400') + '40';
+        if (ann.type === 'note') el.style.border = '1px solid rgba(0, 0, 0, 0.18)';
+        if (isVisualProbe) {
+            el.style.backgroundColor = 'rgba(255, 0, 0, 0.95)';
+            el.style.outline = '3px solid #000';
+            el.style.zIndex = '9999';
+            el.textContent = 'PF TEST';
+            el.style.color = '#fff';
+            el.style.fontSize = '10px';
+            el.style.fontWeight = '700';
+            el.style.lineHeight = '1';
+            el.style.overflow = 'visible';
+            el.style.whiteSpace = 'nowrap';
+            console.log('[PF] visual-probe applied');
+        }
         el.dataset.annotationId = String(ann.id || i);
         if (isReadonly) el.dataset.readonly = '1';
         el.dataset.annotationId = String(ann.id || i);
