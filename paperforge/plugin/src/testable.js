@@ -303,6 +303,21 @@ function isAnnotationSupportedType(type) {
     return ['highlight', 'underline', 'note'].includes(type);
 }
 
+function normalizeAnnotationRects(ann) {
+    if (!ann) return null;
+    if (ann.rects_json) {
+        try {
+            const parsed = JSON.parse(ann.rects_json);
+            if (Array.isArray(parsed)) return parsed;
+            return null;
+        } catch { return null; }
+    }
+    if (ann.position && Array.isArray(ann.position.rects)) {
+        return ann.position.rects;
+    }
+    return null;
+}
+
 const ACTIONS = [
     {
         id: "paperforge-sync",
@@ -420,4 +435,5 @@ module.exports = {
     isReadonlyAnnotation,
     groupAnnotationsByPage,
     isAnnotationSupportedType,
+    normalizeAnnotationRects,
 };

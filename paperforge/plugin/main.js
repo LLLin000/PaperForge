@@ -655,6 +655,7 @@ function isAnnotationSupportedType(type) {
 function renderAnnotationRect(layer, ann) {
     const rects = getAnnotationRects(ann);
     if (!rects || rects.length === 0) return;
+    const isReadonly = isReadonlyAnnotation(ann);
     for (let i = 0; i < rects.length; i++) {
         const rect = rects[i];
         const el = document.createElement('div');
@@ -671,8 +672,103 @@ function renderAnnotationRect(layer, ann) {
         if (ann.type === 'underline') el.style.borderBottom = '2px solid ' + (ann.color || '#ffd400');
         if (ann.type === 'note') el.style.backgroundColor = (ann.color || '#ffd400') + '40';
         el.dataset.annotationId = String(ann.id || i);
-        if (isReadonlyAnnotation(ann)) el.dataset.readonly = '1';
+        if (isReadonly) el.dataset.readonly = '1';
+        el.addEventListener('click', function (e) {
+            if (isReadonly) return;
+            showAnnotationPopover(e, ann, el);
+        });
+        el.addEventListener('mouseenter', function () {
+            el.style.filter = 'brightness(1.4)';
+        });
+        el.addEventListener('mouseleave', function () {
+            el.style.filter = '';
+        });
         layer.appendChild(el);
+    }
+}
+
+function showAnnotationPopover(event, ann, rectEl) {
+    hideAnnotationPopover();
+    const popover = document.createElement('div');
+    popover.className = 'pf-annotation-popover';
+
+    const meta = document.createElement('div');
+    meta.className = 'pf-annotation-popover-meta';
+    const colorDot = document.createElement('span');
+    colorDot.className = 'pf-annotation-popover-color';
+    colorDot.style.backgroundColor = ann.color || '#ffd400';
+    meta.appendChild(colorDot);
+    meta.appendChild(document.createTextNode(ann.type + ' \u00B7 page ' + (ann.page_index != null ? ann.page_index + 1 : '?')));
+    popover.appendChild(meta);
+
+    if (ann.selected_text) {
+        const textEl = document.createElement('div');
+        textEl.className = 'pf-annotation-popover-text';
+        textEl.textContent = ann.selected_text.slice(0, 200);
+        popover.appendChild(textEl);
+    }
+
+    if (ann.comment) {
+        const commentEl = document.createElement('div');
+        commentEl.className = 'pf-annotation-popover-comment';
+        commentEl.textContent = ann.comment;
+        popover.appendChild(commentEl);
+    }
+
+    if (ann.tags && Array.isArray(ann.tags) && ann.tags.length > 0) {
+        const tagsEl = document.createElement('div');
+        tagsEl.className = 'pf-annotation-popover-tags';
+        for (let t = 0; t < ann.tags.length; t++) {
+            const tag = typeof ann.tags[t] === 'string' ? ann.tags[t] : (ann.tags[t].tag || ann.tags[t].name || '');
+            if (tag) {
+                const tagEl = document.createElement('span');
+                tagEl.className = 'pf-annotation-popover-tag';
+                tagEl.textContent = tag;
+                tagsEl.appendChild(tagEl);
+            }
+        }
+        if (tagsEl.children.length > 0) popover.appendChild(tagsEl);
+    }
+
+    if (!isReadonlyAnnotation(ann)) {
+        const actionsEl = document.createElement('div');
+        actionsEl.className = 'pf-annotation-popover-actions';
+        popover.addEventListener('click', function (e) { e.stopPropagation(); });
+        popover.dataset.editable = '1';
+        actionsEl.innerHTML = '<span class="pf-annotation-popover-btn pf-annotation-popover-btn--readonly">Edit/delete coming in v1.1</span>';
+        popover.appendChild(actionsEl);
+    }
+
+    document.body.appendChild(popover);
+
+    const rect = rectEl.getBoundingClientRect();
+    let left = rect.left + rect.width / 2 - 160;
+    let top = rect.bottom + 4;
+    if (top + popover.offsetHeight > window.innerHeight - 10) {
+        top = rect.top - popover.offsetHeight - 4;
+    }
+    if (left < 10) left = 10;
+    if (left + 320 > window.innerWidth - 10) left = window.innerWidth - 330;
+    popover.style.left = Math.max(10, left) + 'px';
+    popover.style.top = Math.max(10, top) + 'px';
+
+    _activePopover = popover;
+
+    function dismissOnClickOutside(ev) {
+        if (!popover.contains(ev.target)) {
+            hideAnnotationPopover();
+            document.removeEventListener('click', dismissOnClickOutside);
+        }
+    }
+    setTimeout(function () { document.addEventListener('click', dismissOnClickOutside); }, 0);
+}
+
+let _activePopover = null;
+
+function hideAnnotationPopover() {
+    if (_activePopover) {
+        _activePopover.remove();
+        _activePopover = null;
     }
 }
 

@@ -14,6 +14,7 @@ const {
     buildAnnotationDeleteArgs,
     parseAnnotationResult, isReadonlyAnnotation,
     groupAnnotationsByPage, isAnnotationSupportedType,
+    normalizeAnnotationRects,
 } = await import('../src/testable.js');
 
 describe('ACTIONS', () => {
@@ -354,5 +355,29 @@ describe('isAnnotationSupportedType', () => {
     });
     it('returns false for unknown', () => {
         expect(isAnnotationSupportedType('text')).toBe(false);
+    });
+});
+
+describe('normalizeAnnotationRects', () => {
+    it('extracts rects from position.rects', () => {
+        const ann = { position: { pageIndex: 1, rects: [[0, 0, 100, 20], [50, 30, 150, 40]] } };
+        const rects = normalizeAnnotationRects(ann);
+        expect(rects).toHaveLength(2);
+        expect(rects[0]).toEqual([0, 0, 100, 20]);
+    });
+    it('parses rects from rects_json string', () => {
+        const ann = { rects_json: '[[10, 20, 100, 30]]' };
+        const rects = normalizeAnnotationRects(ann);
+        expect(rects).toHaveLength(1);
+        expect(rects[0]).toEqual([10, 20, 100, 30]);
+    });
+    it('returns null for null input', () => {
+        expect(normalizeAnnotationRects(null)).toBeNull();
+    });
+    it('returns null when no rects available', () => {
+        expect(normalizeAnnotationRects({})).toBeNull();
+    });
+    it('returns null for invalid rects_json', () => {
+        expect(normalizeAnnotationRects({ rects_json: 'not json' })).toBeNull();
     });
 });
