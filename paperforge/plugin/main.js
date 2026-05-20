@@ -1240,8 +1240,10 @@ function showAnnotationPopover(event, ann, rectEl, vaultPath, pdfPath, container
             deleteLocalAnnotation(_currentVaultPath, ann.id).then(function (result) {
                 hideAnnotationPopover();
                 if (result.ok) {
-                    // Remove the rect element directly — no full rebuild
-                    if (rectEl && rectEl.parentElement) rectEl.remove();
+                    // One annotation can render as many rects (one per line).
+                    // Remove every visible rect with the same annotation id.
+                    var selector = '.pf-annotation-rect[data-annotation-id="' + String(ann.id) + '"]';
+                    document.querySelectorAll(selector).forEach(function (node) { node.remove(); });
                     invalidateAnnotationCache();
                 } else {
                     console.warn('[PF] delete annotation failed:', result.error);

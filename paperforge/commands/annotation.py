@@ -268,6 +268,8 @@ def _cmd_create(vault, args, json_output):
             error=PFError(code="CREATE_FAILED", message=str(exc)),
         )
         return _emit(result, json_output)
+    finally:
+        conn.close()
 
 
 def _cmd_patch(vault, args, json_output):
@@ -292,6 +294,8 @@ def _cmd_patch(vault, args, json_output):
             error=PFError(code="PATCH_FAILED", message=str(exc)),
         )
         return _emit(result, json_output)
+    finally:
+        conn.close()
 
 
 def _cmd_delete(vault, args, json_output):
@@ -307,46 +311,12 @@ def _cmd_delete(vault, args, json_output):
         return _emit(result, json_output)
     except Exception as exc:
         result = PFResult(
-            ok=False, command="annotation create", version=PF_VERSION,
-            error=PFError(code="CREATE_FAILED", message=str(exc)),
-        )
-        return _emit(result, json_output)
-
-
-def _cmd_patch(vault, args, json_output):
-    conn = _db_conn(vault)
-    try:
-        kwargs = {}
-        if getattr(args, "comment", None) is not None:
-            kwargs["comment"] = args.comment
-        if getattr(args, "color", None) is not None:
-            kwargs["color"] = args.color
-        ann = patch_annotation(conn, args.annotation_id, **kwargs)
-        result = PFResult(ok=True, command="annotation patch", version=PF_VERSION, data=ann)
-        return _emit(result, json_output)
-    except ValueError as exc:
-        result = PFResult(
-            ok=False, command="annotation patch", version=PF_VERSION,
-            error=PFError(code="PATCH_FAILED", message=str(exc)),
-        )
-        return _emit(result, json_output)
-
-
-def _cmd_delete(vault, args, json_output):
-    conn = _db_conn(vault)
-    try:
-        if getattr(args, "hard", False):
-            hard_delete(conn, args.annotation_id)
-        else:
-            delete_annotation(conn, args.annotation_id)
-        result = PFResult(ok=True, command="annotation delete", version=PF_VERSION, data={"id": args.annotation_id})
-        return _emit(result, json_output)
-    except ValueError as exc:
-        result = PFResult(
             ok=False, command="annotation delete", version=PF_VERSION,
             error=PFError(code="DELETE_FAILED", message=str(exc)),
         )
         return _emit(result, json_output)
+    finally:
+        conn.close()
 
 
 def _cmd_export(vault, args, json_output):
