@@ -322,18 +322,24 @@ def build_parser() -> argparse.ArgumentParser:
     p_ann_create.add_argument("--color", default="#ffd400", help="Color hex")
     p_ann_create.add_argument("--sort-index", default="", help="Sort index")
     p_ann_create.add_argument("--position-json", default="", help="Position JSON string")
+    p_ann_create.add_argument("--defer-cache-refresh", action="store_true", help="Skip immediate annotation-cache.json rebuild")
     p_ann_create.add_argument("--json", action="store_true")
 
     p_ann_patch = p_ann_sp.add_parser("patch", help="Update an annotation")
     p_ann_patch.add_argument("annotation_id", help="Annotation ID")
     p_ann_patch.add_argument("--comment", help="New comment")
     p_ann_patch.add_argument("--color", help="New color hex")
+    p_ann_patch.add_argument("--defer-cache-refresh", action="store_true", help="Skip immediate annotation-cache.json rebuild")
     p_ann_patch.add_argument("--json", action="store_true")
 
     p_ann_delete = p_ann_sp.add_parser("delete", help="Delete an annotation")
     p_ann_delete.add_argument("annotation_id", help="Annotation ID")
     p_ann_delete.add_argument("--hard", action="store_true", help="Permanent delete")
+    p_ann_delete.add_argument("--defer-cache-refresh", action="store_true", help="Skip immediate annotation-cache.json rebuild")
     p_ann_delete.add_argument("--json", action="store_true")
+
+    p_ann_cache = p_ann_sp.add_parser("cache-refresh", help="Rebuild annotation-cache.json from annotations.db")
+    p_ann_cache.add_argument("--json", action="store_true")
 
     p_ann_export = p_ann_sp.add_parser("export", help="Export annotations")
     p_ann_export.add_argument("paper_key", help="Paper zotero key")

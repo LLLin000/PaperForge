@@ -92,6 +92,8 @@ def run(args: argparse.Namespace) -> int:
         return _cmd_export(vault, args, json_output)
     elif sub == "status":
         return _cmd_status(vault, args, json_output)
+    elif sub == "cache-refresh":
+        return _cmd_cache_refresh(vault, args, json_output)
     else:
         print(f"Unknown annotation subcommand: {sub}", file=sys.stderr)
         return 1
@@ -257,10 +259,11 @@ def _cmd_create(vault, args, json_output):
         )
         result = PFResult(ok=True, command="annotation create", version=PF_VERSION, data=ann)
         conn.commit()
-        try:
-            _write_cache(vault)
-        except Exception:
-            pass
+        if not getattr(args, "defer_cache_refresh", False):
+            try:
+                _write_cache(vault)
+            except Exception:
+                pass
         return _emit(result, json_output)
     except Exception as exc:
         result = PFResult(
@@ -283,10 +286,11 @@ def _cmd_patch(vault, args, json_output):
         ann = patch_annotation(conn, args.annotation_id, **kwargs)
         result = PFResult(ok=True, command="annotation patch", version=PF_VERSION, data=ann)
         conn.commit()
-        try:
-            _write_cache(vault)
-        except Exception:
-            pass
+        if not getattr(args, "defer_cache_refresh", False):
+            try:
+                _write_cache(vault)
+            except Exception:
+                pass
         return _emit(result, json_output)
     except Exception as exc:
         result = PFResult(
@@ -309,10 +313,11 @@ def _cmd_delete(vault, args, json_output):
             ann = {"id": args.annotation_id, "deleted": True, "hard": False}
         result = PFResult(ok=True, command="annotation delete", version=PF_VERSION, data=ann)
         conn.commit()
-        try:
-            _write_cache(vault)
-        except Exception:
-            pass
+        if not getattr(args, "defer_cache_refresh", False):
+            try:
+                _write_cache(vault)
+            except Exception:
+                pass
         return _emit(result, json_output)
     except Exception as exc:
         result = PFResult(
@@ -368,4 +373,10 @@ def _cmd_status(vault, args, json_output):
         finally:
             conn.close()
     result = PFResult(ok=True, command="annotation status", version=PF_VERSION, data=data)
+    return _emit(result, json_output)
+
+
+def _cmd_cache_refresh(vault, args, json_output):
+    _write_cache(vault)
+    result = PFResult(ok=True, command="annotation cache-refresh", version=PF_VERSION, data={"refreshed": True})
     return _emit(result, json_output)

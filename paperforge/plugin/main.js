@@ -427,6 +427,7 @@ let _annotationCacheKey = null;
 let _annotationGroupedCache = null;
 let _annotationGroupedCacheKey = null;
 let _pdfPageTextContentCache = new Map();
+let _annotationCacheFlushTimer = null;
 
 function _loadAnnotationCache(vaultPath) {
     var paths = memoryState.resolveVaultPaths(vaultPath);
@@ -489,6 +490,43 @@ function invalidateAnnotationCache() {
     _annotationGroupedCache = null; _annotationGroupedCacheKey = null;
 }
 
+function _invalidateGroupedOnly() {
+    _annotationGroupedCache = null;
+    _annotationGroupedCacheKey = null;
+}
+
+function _appendAnnotationToMemory(ann) {
+    if (!_annotationCache || !ann) return;
+    _annotationCache.push(ann);
+    _invalidateGroupedOnly();
+}
+
+function _removeAnnotationFromMemory(annotationId) {
+    if (!_annotationCache || !annotationId) return;
+    _annotationCache = _annotationCache.filter(function (ann) {
+        return String(ann.id) !== String(annotationId);
+    });
+    _invalidateGroupedOnly();
+}
+
+function _removeAnnotationRectsFromDom(annotationId) {
+    if (!annotationId) return;
+    var selector = '.pf-annotation-rect[data-annotation-id="' + String(annotationId) + '"]';
+    document.querySelectorAll(selector).forEach(function (node) { node.remove(); });
+}
+
+function _scheduleAnnotationCacheFlush(vaultPath) {
+    if (!vaultPath) return;
+    if (_annotationCacheFlushTimer) clearTimeout(_annotationCacheFlushTimer);
+    _annotationCacheFlushTimer = setTimeout(function () {
+        _annotationCacheFlushTimer = null;
+        var args = _buildAnnotationWriteArgs(vaultPath, 'cache-refresh');
+        _runAnnotationSubprocess(vaultPath, args).then(function (result) {
+            if (!result.ok) console.warn('[PF] cache refresh failed:', result.error);
+        });
+    }, 700);
+}
+
 function _invalidatePdfPageCaches(pdfPath) {
     if (!pdfPath) {
         _pdfPageTextContentCache.clear();
@@ -549,13 +587,15 @@ function createLocalAnnotation(vaultPath, pdfPath, payload) {
     if (payload.selected_text) args.push('--selected-text', payload.selected_text);
     if (payload.comment) args.push('--comment', payload.comment);
     if (payload.position_json) args.push('--position-json', payload.position_json);
-    return _runAnnotationSubprocess(vaultPath, args).then(function (r) { invalidateAnnotationCache(); return r; });
+    args.push('--defer-cache-refresh');
+    return _runAnnotationSubprocess(vaultPath, args);
 }
 
 function deleteLocalAnnotation(vaultPath, annotationId) {
     var args = _buildAnnotationWriteArgs(vaultPath, 'delete');
     args.push(String(annotationId));
-    return _runAnnotationSubprocess(vaultPath, args).then(function (r) { invalidateAnnotationCache(); return r; });
+    args.push('--defer-cache-refresh');
+    return _runAnnotationSubprocess(vaultPath, args);
 }
 
 /* ── PDF annotation overlay patch lifecycle ── */
@@ -865,6 +905,16 @@ function mergeCharRects(charRects) {
     }).filter(function (x) { return x !== null; });
 }
 
+function _renderAnnotationToPage(ann, pdfW, pdfH, vaultPath, pdfPath) {
+    if (!ann || ann.page_index == null || !_pdfInternalHandle) return;
+    try {
+        var pv = _pdfInternalHandle.getPageView(Number(ann.page_index));
+        if (!pv || !pv.div) return;
+        var layer = _getOrCreateAlignedLayer(pv);
+        renderAnnotationRect(layer, ann, vaultPath, pdfPath, null, pdfW, pdfH);
+    } catch (_) {}
+}
+
 function setupSelectionCapture(containerEl, vaultPath, pdfPath) {
     var toolbar = null;
     containerEl.addEventListener('mouseup', function (e) {
@@ -945,22 +995,30 @@ function setupSelectionCapture(containerEl, vaultPath, pdfPath) {
                     selected_text: selectedText,
                     position_json: JSON.stringify({ pageIndex: pageNum - 1, rects: merged }),
                 };
+                var tempAnn = {
+                    id: 'temp-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7),
+                    page_index: pageNum - 1,
+                    type: 'highlight',
+                    color: color,
+                    selected_text: selectedText,
+                    position: { pageIndex: pageNum - 1, rects: merged },
+                    sync_state: 'local',
+                };
+                _appendAnnotationToMemory(tempAnn);
+                _renderAnnotationToPage(tempAnn, pdfW, pdfH, vaultPath, pdfPath);
+                sel.removeAllRanges();
+                if (toolbar) { toolbar.remove(); toolbar = null; }
                 createLocalAnnotation(vaultPath, pdfPath, annPayload).then(function (result) {
                     if (result.ok) {
-                        sel.removeAllRanges();
-                        if (toolbar) { toolbar.remove(); toolbar = null; }
-                        invalidateAnnotationCache();
+                        _removeAnnotationRectsFromDom(tempAnn.id);
+                        _removeAnnotationFromMemory(tempAnn.id);
                         var newAnn = result.data;
-                        if (newAnn && newAnn.page_index != null && _pdfInternalHandle) {
-                            try {
-                                var pv2 = _pdfInternalHandle.getPageView(Number(newAnn.page_index));
-                                if (pv2 && pv2.div) {
-                                    var l = _getOrCreateAlignedLayer(pv2);
-                                    renderAnnotationRect(l, newAnn, vaultPath, pdfPath, null, pdfW, pdfH);
-                                }
-                            } catch (_) {}
-                        }
+                        _appendAnnotationToMemory(newAnn);
+                        _renderAnnotationToPage(newAnn, pdfW, pdfH, vaultPath, pdfPath);
+                        _scheduleAnnotationCacheFlush(vaultPath);
                     } else {
+                        _removeAnnotationRectsFromDom(tempAnn.id);
+                        _removeAnnotationFromMemory(tempAnn.id);
                         console.warn('[PF] create annotation failed:', result.error);
                     }
                 });
@@ -1100,6 +1158,7 @@ function _refreshOverlays() {
     invalidateAnnotationCache();
     var anns = fetchAnnotationsForPaper(_currentVaultPath, _currentPdfPath);
     if (!anns || anns.length === 0) return;
+    var grouped = getGroupedAnnotationsForCurrentPaper(_currentVaultPath, _currentPdfPath);
     // Remove all existing overlay elements from the DOM
     document.querySelectorAll('.pf-annotation-overlay').forEach(function (el) { el.remove(); });
     // Find the PDF container
@@ -1238,15 +1297,15 @@ function showAnnotationPopover(event, ann, rectEl, vaultPath, pdfPath, container
         delBtn.textContent = 'Delete';
         delBtn.addEventListener('click', function () {
             if (!confirm('Delete this annotation?')) return;
+            _removeAnnotationRectsFromDom(ann.id);
+            _removeAnnotationFromMemory(ann.id);
             deleteLocalAnnotation(_currentVaultPath, ann.id).then(function (result) {
                 hideAnnotationPopover();
                 if (result.ok) {
-                    // One annotation can render as many rects (one per line).
-                    // Remove every visible rect with the same annotation id.
-                    var selector = '.pf-annotation-rect[data-annotation-id="' + String(ann.id) + '"]';
-                    document.querySelectorAll(selector).forEach(function (node) { node.remove(); });
-                    invalidateAnnotationCache();
+                    _scheduleAnnotationCacheFlush(_currentVaultPath);
                 } else {
+                    _appendAnnotationToMemory(ann);
+                    _renderAnnotationToPage(ann, Number(ann.page_width) || 612, Number(ann.page_height) || 792, _currentVaultPath, _currentPdfPath);
                     console.warn('[PF] delete annotation failed:', result.error);
                 }
             });
