@@ -424,8 +424,9 @@ let _jsonCache = null;
 let _jsonCachePath = null;
 let _annotationCache = null;
 let _annotationCacheKey = null;
-let _annotationSummaryLogged = false;
-let _annotationPdfProbeLogged = false;
+let _annotationGroupedCache = null;
+let _annotationGroupedCacheKey = null;
+let _pdfPageTextContentCache = new Map();
 
 function _loadAnnotationCache(vaultPath) {
     var paths = memoryState.resolveVaultPaths(vaultPath);
@@ -477,13 +478,45 @@ function fetchAnnotationsForPaper(vaultPath, pdfPath) {
     if (key === _annotationCacheKey && _annotationCache) return _annotationCache;
     _annotationCacheKey = key;
     _annotationCache = cache.by_paper[paperId] || [];
-    console.log('[PF] annotations ' + _annotationCache.length + ' for ' + paperId);
+    _annotationGroupedCache = null;
+    _annotationGroupedCacheKey = null;
     return _annotationCache;
 }
 
 function invalidateAnnotationCache() {
     _jsonCache = null; _jsonCachePath = null;
     _annotationCache = null; _annotationCacheKey = null;
+    _annotationGroupedCache = null; _annotationGroupedCacheKey = null;
+}
+
+function _invalidatePdfPageCaches(pdfPath) {
+    if (!pdfPath) {
+        _pdfPageTextContentCache.clear();
+        return;
+    }
+    for (const k of Array.from(_pdfPageTextContentCache.keys())) {
+        if (k.startsWith(pdfPath + '|')) _pdfPageTextContentCache.delete(k);
+    }
+}
+
+function getGroupedAnnotationsForCurrentPaper(vaultPath, pdfPath) {
+    var anns = fetchAnnotationsForPaper(vaultPath, pdfPath);
+    if (!anns || anns.length === 0) return {};
+    var key = _annotationCacheKey || (pdfPath + '|grouped');
+    if (key === _annotationGroupedCacheKey && _annotationGroupedCache) return _annotationGroupedCache;
+    _annotationGroupedCache = groupAnnotationsByPage(anns);
+    _annotationGroupedCacheKey = key;
+    return _annotationGroupedCache;
+}
+
+async function _getPdfPageTextContent(pageNum) {
+    if (!_pdfInternalHandle || !_pdfInternalHandle.pdfDocument || !_currentPdfPath) return null;
+    var key = _currentPdfPath + '|' + String(pageNum);
+    if (_pdfPageTextContentCache.has(key)) return _pdfPageTextContentCache.get(key);
+    var pdfPage = await _pdfInternalHandle.pdfDocument.getPage(pageNum);
+    var tc = await pdfPage.getTextContent({ includeChars: true });
+    _pdfPageTextContentCache.set(key, tc);
+    return tc;
 }
 
 function _buildAnnotationWriteArgs(vaultPath, subcmd) {
@@ -562,7 +595,9 @@ function installAnnotationOverlay(app, vaultPath, plugin) {
 }
 
 function setupPdfObserver(app, vaultPath, plugin) {
-    const observer = new MutationObserver(function () {
+    let scanTimer = null;
+    function scanPdfLeaves() {
+        scanTimer = null;
         const pdfLeaves = app.workspace.getLeavesOfType('pdf');
         if (!pdfLeaves || pdfLeaves.length === 0) return;
         const pdfContainers = [];
@@ -581,10 +616,18 @@ function setupPdfObserver(app, vaultPath, plugin) {
             const pdfPath = resolvePdfPathFromLeaf(pc.leaf);
             injectPdfEventHooks(pc.viewerEl, pc.view, vaultPath, pdfPath, plugin);
         }
+    }
+    const observer = new MutationObserver(function () {
+        if (scanTimer) return;
+        scanTimer = setTimeout(scanPdfLeaves, 80);
     });
     observer.observe(document.body, { childList: true, subtree: true });
     if (plugin && typeof plugin.register === 'function') {
-        plugin.register(function () { observer.disconnect(); });
+        plugin.register(function () {
+            observer.disconnect();
+            if (scanTimer) clearTimeout(scanTimer);
+            scanTimer = null;
+        });
     }
 }
 
@@ -607,15 +650,14 @@ var _currentContainerEl = null;
 
 function injectPdfEventHooks(containerEl, view, vaultPath, pdfPath, plugin) {
     if (!pdfPath) return;
-    console.log('[PF] pdf ' + pdfPath);
     _removeAllOverlays();
     _currentVaultPath = vaultPath;
     _currentPdfPath = pdfPath;
     _currentContainerEl = containerEl;
     _pdfInternalHandle = null;
     _pdfEventSubscriptions = [];
+    _invalidatePdfPageCaches();
     var anns = fetchAnnotationsForPaper(vaultPath, pdfPath);
-    console.log('[PF] fetched ' + (anns ? anns.length : 0));
     // Try resolving PDF.js internal viewer handle
     var pdfViewerHandle = null;
     try { pdfViewerHandle = _resolvePdfHandle(view); } catch (_) {}
@@ -623,9 +665,7 @@ function injectPdfEventHooks(containerEl, view, vaultPath, pdfPath, plugin) {
         _pdfInternalHandle = pdfViewerHandle;
         _subscribePdfEvents(pdfViewerHandle, pdfPath, vaultPath, plugin);
         if (anns && anns.length > 0) { renderAnnotationsOnExistingPages(containerEl); }
-        console.log('[PF] handle=ok');
     } else {
-        console.log('[PF] handle=null, fallback');
         _fallbackObserver(containerEl, vaultPath, pdfPath, plugin, anns);
     }
     setupSelectionCapture(containerEl, vaultPath, pdfPath);
@@ -662,9 +702,7 @@ function _subscribePdfEvents(handle, pdfPath, vaultPath, plugin) {
         if (!handle.pdfDocument) return;
         var pageNum = data && data.pageNumber;
         if (!pageNum) return;
-        var anns = fetchAnnotationsForPaper(vaultPath, pdfPath);
-        if (!anns || anns.length === 0) return;
-        var grouped = groupAnnotationsByPage(anns);
+        var grouped = getGroupedAnnotationsForCurrentPaper(vaultPath, pdfPath);
         var pageAnns = grouped[pageNum - 1];
         if (!pageAnns || pageAnns.length === 0) return;
         try {
@@ -679,9 +717,13 @@ function _subscribePdfEvents(handle, pdfPath, vaultPath, plugin) {
             _renderPageAnnotations(layer, pageAnns, vaultPath, pdfPath, _currentContainerEl, pw, ph);
         } catch (_) {}
     }
+    var scaleDebounce = null;
     function onScaleChanged() {
-        // After zoom, re-render all pages with visible overlays
-        _rebuildVisibleLayers(handle, pdfPath, vaultPath);
+        if (scaleDebounce) clearTimeout(scaleDebounce);
+        scaleDebounce = setTimeout(function () {
+            scaleDebounce = null;
+            _rebuildVisibleLayers(handle, pdfPath, vaultPath);
+        }, 80);
     }
     bus.on('pagerendered', onPageRendered);
     bus.on('scalechanged', onScaleChanged);
@@ -722,22 +764,17 @@ function _renderPageAnnotations(layer, annotations, vaultPath, pdfPath, containe
 }
 
 function _rebuildVisibleLayers(handle, pdfPath, vaultPath) {
-    var anns = fetchAnnotationsForPaper(vaultPath, pdfPath);
-    if (!anns || anns.length === 0) return;
-    var grouped = groupAnnotationsByPage(anns);
-    var pageCount = handle.pagesCount || 0;
-    var rendered = 0;
-    for (var pn = 1; pn <= pageCount; pn++) {
+    var grouped = getGroupedAnnotationsForCurrentPaper(vaultPath, pdfPath);
+    var pageEls = _currentContainerEl ? getPdfPageElements(_currentContainerEl) : [];
+    if (!pageEls || pageEls.length === 0) return;
+    for (var pi = 0; pi < pageEls.length; pi++) {
+        var pn = parseInt(pageEls[pi].dataset.pageNumber, 10);
+        if (isNaN(pn)) continue;
         var pageAnns = grouped[pn - 1];
         if (!pageAnns || pageAnns.length === 0) continue;
         try {
             var pageView = handle.getPageView(pn - 1);
             if (!pageView || !pageView.div) continue;
-            if (pn === 6 && pageAnns.length > 0) {
-                var a0 = pageAnns[0];
-                var vbProbe = pageView.viewport ? (pageView.viewport.viewBox || 'noVB') : 'noVP';
-                console.log('[PF-probe] pn=' + pn + ' viewBox=' + JSON.stringify(vbProbe) + ' vpW=' + (pageView.viewport ? pageView.viewport.width : '?') + ' annId=' + (a0.id || a0.zotero_key || '').slice(0,8) + ' rects=' + JSON.stringify((a0.position||{}).rects||[]).slice(0,100));
-            }
             var layer = _getOrCreateAlignedLayer(pageView);
             var pw = 612, ph = 792;
             if (pageView.viewport && pageView.viewport.viewBox) {
@@ -745,14 +782,11 @@ function _rebuildVisibleLayers(handle, pdfPath, vaultPath) {
                 pw = vb[2]; ph = vb[3];
             }
             _renderPageAnnotations(layer, pageAnns, vaultPath, pdfPath, null, pw, ph);
-            rendered += pageAnns.length;
         } catch (_) {}
     }
-    console.log('[PF] rebuild ' + (anns ? anns.length : 0) + ' anns on ' + pageCount + ' pages, rendered ' + rendered);
 }
 
 function _fallbackObserver(containerEl, vaultPath, pdfPath, plugin, anns) {
-    console.log('[PF] pdf internal handle unavailable, using DOM fallback');
     if (anns && anns.length > 0) { renderAnnotationsOnExistingPages(containerEl); }
     var pageObserver = new MutationObserver(function (mutations) {
         for (var mi = 0; mi < mutations.length; mi++) {
@@ -876,8 +910,7 @@ function setupSelectionCapture(containerEl, vaultPath, pdfPath) {
                 var pdfRects = [];
                 try {
                     if (_pdfInternalHandle && _pdfInternalHandle.pdfDocument) {
-                        var pdfPage = await _pdfInternalHandle.pdfDocument.getPage(pageNum);
-                        var tc = await pdfPage.getTextContent({ includeChars: true });
+                        var tc = await _getPdfPageTextContent(pageNum);
                         var startIdx = selInfo.startIdx, endIdx = selInfo.endIdx;
                         for (var ii = startIdx; ii <= endIdx && ii < tc.items.length; ii++) {
                             var item = tc.items[ii];
@@ -960,14 +993,8 @@ function setupSelectionCapture(containerEl, vaultPath, pdfPath) {
 
 function renderAnnotationsOnExistingPages(containerEl) {
     var pages = getPdfPageElements(containerEl);
-    if (_annotationCache === null || _annotationCache.length === 0) { console.log('[PF] no-cache'); return; }
-    var grouped = groupAnnotationsByPage(_annotationCache);
-    if (!_annotationSummaryLogged && pages.length > 0) {
-        _annotationSummaryLogged = true;
-        var annCount = 0;
-        Object.keys(grouped).forEach(function (k) { if (grouped[k]) annCount += grouped[k].length; });
-        console.log('[PF] ' + annCount + ' anns on ' + pages.length + ' pages');
-    }
+    if (_annotationCache === null || _annotationCache.length === 0) { return; }
+    var grouped = getGroupedAnnotationsForCurrentPaper(_currentVaultPath, _currentPdfPath);
     for (var i = 0; i < pages.length; i++) {
         var pageEl = pages[i];
         var pageNum = parseInt(pageEl.dataset.pageNumber, 10);
@@ -1001,27 +1028,6 @@ function ensureOverlayLayer(pageEl) {
                 }
             }
         } catch (_) {}
-    }
-    if (!_annotationPdfProbeLogged) {
-        _annotationPdfProbeLogged = true;
-        try {
-            var pdfjs = window.pdfjsLib;
-            var textLayer = pageEl.querySelector('.textLayer');
-            var annotationLayer = pageEl.querySelector('.annotationLayer');
-            var ownKeys = Object.keys(pageEl).filter(function (k) {
-                return /page|view|pdf|viewport/i.test(k);
-            }).slice(0, 12);
-            console.log('[PF] pdfjs probe setLayer=' + Boolean(pdfjs && typeof pdfjs.setLayerDimensions === 'function'));
-            console.log('[PF] page probe textLayer=' + Boolean(textLayer) + ', annotationLayer=' + Boolean(annotationLayer) + ', keys=' + ownKeys.join('|'));
-            if (textLayer) {
-                console.log('[PF] textLayer box ' + [textLayer.clientWidth, textLayer.clientHeight, textLayer.style.width || '-', textLayer.style.height || '-'].join(','));
-            }
-            if (annotationLayer) {
-                console.log('[PF] annotationLayer box ' + [annotationLayer.clientWidth, annotationLayer.clientHeight, annotationLayer.style.width || '-', annotationLayer.style.height || '-'].join(','));
-            }
-        } catch (err) {
-            console.log('[PF] pdfjs probe failed: ' + (err && err.message ? err.message : String(err)));
-        }
     }
 }
 
@@ -1090,14 +1096,10 @@ function colorWithAlpha(color, alpha) {
     return color;
 }
 
-function _cleanDebugFlags() { _annotationSummaryLogged = true; }
-
 function _refreshOverlays() {
     invalidateAnnotationCache();
     var anns = fetchAnnotationsForPaper(_currentVaultPath, _currentPdfPath);
     if (!anns || anns.length === 0) return;
-    var grouped = groupAnnotationsByPage(anns);
-    console.log('[PF] _refreshOverlays: ' + anns.length + ' anns, ' + Object.keys(grouped).length + ' pages');
     // Remove all existing overlay elements from the DOM
     document.querySelectorAll('.pf-annotation-overlay').forEach(function (el) { el.remove(); });
     // Find the PDF container
@@ -1117,7 +1119,6 @@ function _refreshOverlays() {
             renderOverlaysForPage(pEl, pageAnns, _currentVaultPath, _currentPdfPath, _currentContainerEl);
             rendered += pageAnns.length;
         }
-        console.log('[PF] rendered ' + rendered + ' anns on ' + pageEls.length + ' pages');
     }
 }
 
