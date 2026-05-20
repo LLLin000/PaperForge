@@ -567,7 +567,13 @@ function _runAnnotationSubprocess(vaultPath, args) {
     var py = memoryState.getCachedPython(vaultPath);
     if (!py) return Promise.resolve({ ok: false, error: 'Python not configured' });
     return runSubprocess(py.path, args, vaultPath, 30000).then(function (result) {
-        if (result.exitCode !== 0) return { ok: false, error: result.stderr || 'Subprocess failed' };
+        if (result.exitCode !== 0) {
+            try {
+                var errBody = JSON.parse(result.stdout);
+                if (errBody && errBody.error && errBody.error.message) return { ok: false, error: errBody.error.message };
+            } catch (_) {}
+            return { ok: false, error: result.stderr || 'Subprocess failed' };
+        }
         try {
             var parsed = JSON.parse(result.stdout);
             if (parsed && parsed.ok) return { ok: true, data: parsed.data || parsed.result };
