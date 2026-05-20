@@ -2597,7 +2597,7 @@
     position: absolute;
     inset: 0;
     pointer-events: none;
-    z-index: 10;
+    z-index: 2;
     overflow: hidden;
 }
 
@@ -2606,19 +2606,17 @@
     pointer-events: auto;
     cursor: pointer;
     border-radius: 2px;
-    transition: opacity 0.15s, filter 0.15s;
+    transition: filter 0.15s;
     min-width: 4px;
     min-height: 4px;
 }
 
 .pf-annotation-rect--highlight {
-    opacity: 0.3;
     mix-blend-mode: multiply;
 }
 
 .theme-dark .pf-annotation-rect--highlight {
     mix-blend-mode: screen;
-    opacity: 0.25;
 }
 
 .pf-annotation-rect--underline {

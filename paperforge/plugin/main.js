@@ -424,7 +424,6 @@ let _jsonCache = null;
 let _jsonCachePath = null;
 let _annotationCache = null;
 let _annotationCacheKey = null;
-let _annotationOverlayDebugLogged = false;
 let _annotationSummaryLogged = false;
 let _annotationPdfProbeLogged = false;
 
@@ -834,18 +833,11 @@ function renderAnnotationsOnExistingPages(containerEl) {
     var pages = getPdfPageElements(containerEl);
     if (_annotationCache === null || _annotationCache.length === 0) { console.log('[PF] no-cache'); return; }
     var grouped = groupAnnotationsByPage(_annotationCache);
-    if (!_annotationSummaryLogged) {
+    if (!_annotationSummaryLogged && pages.length > 0) {
         _annotationSummaryLogged = true;
-        var pageCount = 0;
-        var firstSummary = '';
-        Object.keys(grouped).sort(function (a, b) { return Number(a) - Number(b); }).forEach(function (key) {
-            var count = grouped[key] ? grouped[key].length : 0;
-            if (count > 0) {
-                pageCount += 1;
-                if (!firstSummary) firstSummary = 'p' + (Number(key) + 1) + '=' + count;
-            }
-        });
-        console.log('[PF] pages ' + pages.length + ', annotated ' + pageCount + (firstSummary ? ', ' + firstSummary : ''));
+        var annCount = 0;
+        Object.keys(grouped).forEach(function (k) { if (grouped[k]) annCount += grouped[k].length; });
+        console.log('[PF] ' + annCount + ' anns on ' + pages.length + ' pages');
     }
     for (var i = 0; i < pages.length; i++) {
         var pageEl = pages[i];
@@ -944,6 +936,8 @@ function colorWithAlpha(color, alpha) {
     return color;
 }
 
+function _cleanDebugFlags() { _annotationSummaryLogged = true; }
+
 function renderAnnotationRect(layer, ann, vaultPath, pdfPath, containerEl) {
     const rects = getAnnotationRects(ann);
     if (!rects || rects.length === 0) { console.log('[PF] no rects for ann', ann && ann.id); return; }
@@ -963,45 +957,26 @@ function renderAnnotationRect(layer, ann, vaultPath, pdfPath, containerEl) {
         var pctT = (cssTop / pageH) * 100;
         var pctW = (cssW / pageW) * 100;
         var pctH = (cssH / pageH) * 100;
-        if (i === 0 && !_annotationOverlayDebugLogged) { console.log('[PF] rect raw=' + JSON.stringify(rect) + ' pct=' + pctL.toFixed(1) + ',' + pctT.toFixed(1) + ' ' + pctW.toFixed(1) + 'x' + pctH.toFixed(1)); }
         const el = document.createElement('div');
         el.className = 'pf-annotation-rect pf-annotation-rect--' + ann.type;
         el.style.left = pctL + '%';
         el.style.top = pctT + '%';
         el.style.width = pctW + '%';
         el.style.height = pctH + '%';
-        var isVisualProbe = ann && ann.zotero_key === 'LJ8FR3BS' && i === 0;
         if (ann.color) {
             if (ann.type === 'highlight') {
-                el.style.backgroundColor = colorWithAlpha(ann.color, 0.78);
-                el.style.opacity = '1';
-                el.style.outline = '1px solid rgba(0, 0, 0, 0.28)';
+                el.style.backgroundColor = colorWithAlpha(ann.color, 0.45);
             }
             else if (ann.type === 'underline') {
                 el.style.backgroundColor = 'transparent';
                 el.style.borderBottomColor = ann.color;
+                el.style.borderBottom = '2px solid ' + ann.color;
             }
             else {
-                el.style.backgroundColor = colorWithAlpha(ann.color, 0.42);
+                el.style.backgroundColor = colorWithAlpha(ann.color, 0.35);
+                el.style.border = '1px solid rgba(0, 0, 0, 0.12)';
             }
         }
-        if (ann.type === 'underline') el.style.borderBottom = '2px solid ' + (ann.color || '#ffd400');
-        if (ann.type === 'note') el.style.border = '1px solid rgba(0, 0, 0, 0.18)';
-        if (isVisualProbe) {
-            el.style.backgroundColor = 'rgba(255, 0, 0, 0.95)';
-            el.style.outline = '3px solid #000';
-            el.style.zIndex = '9999';
-            el.textContent = 'PF TEST';
-            el.style.color = '#fff';
-            el.style.fontSize = '10px';
-            el.style.fontWeight = '700';
-            el.style.lineHeight = '1';
-            el.style.overflow = 'visible';
-            el.style.whiteSpace = 'nowrap';
-            console.log('[PF] visual-probe applied');
-        }
-        el.dataset.annotationId = String(ann.id || i);
-        if (isReadonly) el.dataset.readonly = '1';
         el.dataset.annotationId = String(ann.id || i);
         if (isReadonly) el.dataset.readonly = '1';
         el.addEventListener('click', function (e) {
@@ -1014,31 +989,6 @@ function renderAnnotationRect(layer, ann, vaultPath, pdfPath, containerEl) {
             el.style.filter = '';
         });
         layer.appendChild(el);
-        if (!_annotationOverlayDebugLogged) {
-            _annotationOverlayDebugLogged = true;
-            try {
-                var pageBox = layer.parentElement ? layer.parentElement.getBoundingClientRect() : null;
-                var layerBox = layer.getBoundingClientRect();
-                var rectBox = el.getBoundingClientRect();
-                var layerStyle = window.getComputedStyle(layer);
-                var rectStyle = window.getComputedStyle(el);
-                console.log('[PF] pageBox ' + (pageBox ? [pageBox.x.toFixed(1), pageBox.y.toFixed(1), pageBox.width.toFixed(1), pageBox.height.toFixed(1)].join(',') : 'null'));
-                console.log('[PF] layerBox ' + [layerBox.x.toFixed(1), layerBox.y.toFixed(1), layerBox.width.toFixed(1), layerBox.height.toFixed(1), layerStyle.position, layerStyle.zIndex, layerStyle.visibility].join(','));
-                console.log('[PF] rectBox ' + [rectBox.x.toFixed(1), rectBox.y.toFixed(1), rectBox.width.toFixed(1), rectBox.height.toFixed(1), rectStyle.display, rectStyle.visibility, rectStyle.opacity, rectStyle.backgroundColor].join(','));
-                var cx = rectBox.x + (rectBox.width / 2);
-                var cy = rectBox.y + (rectBox.height / 2);
-                var topEl = document.elementFromPoint(cx, cy);
-                console.log('[PF] hitTest ' + [
-                    cx.toFixed(1),
-                    cy.toFixed(1),
-                    topEl ? topEl.tagName : 'null',
-                    topEl ? (topEl.className || '') : '',
-                    topEl === el ? 'SELF' : 'OTHER',
-                ].join(','));
-            } catch (err) {
-                console.log('[PF] overlay-debug failed:', err && err.message ? err.message : String(err));
-            }
-        }
     }
 }
 
@@ -1128,18 +1078,23 @@ function showAnnotationPopover(event, ann, rectEl, vaultPath, pdfPath, container
     function dismissOnClickOutside(ev) {
         if (!popover.contains(ev.target)) {
             hideAnnotationPopover();
-            document.removeEventListener('click', dismissOnClickOutside);
         }
     }
+    _activePopoverDismiss = dismissOnClickOutside;
     setTimeout(function () { document.addEventListener('click', dismissOnClickOutside); }, 0);
 }
 
 let _activePopover = null;
+let _activePopoverDismiss = null;
 
 function hideAnnotationPopover() {
     if (_activePopover) {
         _activePopover.remove();
         _activePopover = null;
+    }
+    if (_activePopoverDismiss) {
+        document.removeEventListener('click', _activePopoverDismiss);
+        _activePopoverDismiss = null;
     }
 }
 
