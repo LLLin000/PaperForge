@@ -37,8 +37,9 @@
 
 ### New / Modified Tests
 
-- `fixtures/zotero/test_annotations.sqlite` — minimal Zotero SQLite fixture for importer/integration coverage
-- `tests/unit/annotation/test_schema.py` — new schema creation/version tests
+ - `tests/audit/test_hardcoded_paths.py` — gate that fails if any Python source hardcodes config-driven path literals; run by `pre-commit` hook
+ - `fixtures/zotero/test_annotations.sqlite` — minimal Zotero SQLite fixture for importer/integration coverage
+ - `tests/unit/annotation/test_schema.py` — new schema creation/version tests
 - `tests/unit/annotation/test_probe.py` — read-only SQLite normalization tests
 - `tests/unit/annotation/test_importer.py` — import/update/delete reconciliation tests
 - `tests/unit/annotation/test_service.py` — create/patch/delete/list/export behavior tests
@@ -59,7 +60,29 @@
 - `tests/cli/test_json_contracts.py` — JSON contract assertions pattern
 
 ---
-
+ 
+## Pre-Phase Gate: Hardcoded Path Audit
+ 
+Every commit must pass the hardcoded-path audit before it is allowed. This prevents new code from bypassing the config system with literal directory strings.
+ 
+Requires `pre-commit` installed (`pip install pre-commit && pre-commit install`).
+ 
+- [ ] **Step 1: Verify audit passes on baseline**
+ 
+Run: `python -m pytest tests/audit/test_hardcoded_paths.py -v`
+ 
+If it fails, fix or explicitly exempt the violation before proceeding.
+ 
+- [ ] **Step 2: Install pre-commit hook**
+ 
+Run: `pre-commit install`
+ 
+- [ ] **Step 3 (future): When adding new Python code to `paperforge/`, always use the config system (`paperforge_paths()`, `cfg.get()`, `load_vault_config()`) instead of `vault / "System" / "PaperForge" / ...` patterns.**
+ 
+The audit test scans for these patterns and will reject commits that violate this rule.
+ 
+---
+ 
 ## Package A: Dedicated Annotation Database
 
 ### Task A1: Add Annotation DB Path and Connection Helpers

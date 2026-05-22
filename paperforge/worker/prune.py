@@ -48,7 +48,7 @@ def _collect_orphan_candidates(lit_dir: Path, fresh_keys: set[str]) -> list[dict
 
 def _resolve_ocr_dir(vault: Path, key: str) -> Path:
     cfg = paperforge_paths(vault)
-    ocr_root = cfg.get("ocr", vault / "System" / "PaperForge" / "ocr")
+    ocr_root = cfg["ocr"]
     return ocr_root / key
 
 
@@ -76,18 +76,20 @@ def _enrich_orphan_preview(vault: Path, candidates: list[dict]) -> list[dict]:
         if isinstance(coll, list):
             coll = " | ".join(coll)
 
-        enriched.append({
-            "key": key,
-            "citation_key": fm.get("citation_key") or key,
-            "title": title,
-            "year": str(fm.get("year", "")),
-            "authors": first_author,
-            "has_pdf": fm.get("has_pdf", False) in (True, "true"),
-            "collection_path": coll,
-            "domain": c["domain"],
-            "workspace": str(ws),
-            "ocr_dir": str(c["ocr_dir"]) if c["ocr_dir"] and c["ocr_dir"].exists() else None,
-        })
+        enriched.append(
+            {
+                "key": key,
+                "citation_key": fm.get("citation_key") or key,
+                "title": title,
+                "year": str(fm.get("year", "")),
+                "authors": first_author,
+                "has_pdf": fm.get("has_pdf", False) in (True, "true"),
+                "collection_path": coll,
+                "domain": c["domain"],
+                "workspace": str(ws),
+                "ocr_dir": str(c["ocr_dir"]) if c["ocr_dir"] and c["ocr_dir"].exists() else None,
+            }
+        )
 
     return enriched
 

@@ -33,22 +33,29 @@ def _layer(status: str, evidence: list, next_action: str = "", repair_command: s
 def _check_bootstrap(vault: Path) -> dict:
     pf_json = vault / "paperforge.json"
     if not pf_json.exists():
-        return _layer("blocked", [f"paperforge.json not found at {vault}"],
-                      "Run paperforge setup to initialize vault",
-                      "paperforge setup --headless")
+        return _layer(
+            "blocked",
+            [f"paperforge.json not found at {vault}"],
+            "Run paperforge setup to initialize vault",
+            "paperforge setup --headless",
+        )
     try:
         import json
+
         cfg = json.loads(pf_json.read_text(encoding="utf-8"))
     except Exception as e:
-        return _layer("blocked", [f"Cannot read paperforge.json: {e}"],
-                      "Fix paperforge.json syntax",
-                      "paperforge doctor")
+        return _layer(
+            "blocked", [f"Cannot read paperforge.json: {e}"], "Fix paperforge.json syntax", "paperforge doctor"
+        )
     system_dir = cfg.get("vault_config", {}).get("system_dir") or cfg.get("system_dir", "System")
     pf_root = vault / system_dir / "PaperForge"
     if not pf_root.exists():
-        return _layer("degraded", [f"PaperForge directory not found at {pf_root}"],
-                      "Run setup to create directory structure",
-                      "paperforge doctor")
+        return _layer(
+            "degraded",
+            [f"PaperForge directory not found at {pf_root}"],
+            "Run setup to create directory structure",
+            "paperforge doctor",
+        )
     return _layer("ok", [f"paperforge.json ok at {pf_json}"])
 
 
@@ -59,29 +66,36 @@ def _check_read(vault: Path) -> dict:
     paths = paperforge_paths(vault)
     index_path = paths.get("index")
     if index_path and not Path(index_path).exists():
-        return _layer("degraded", ["Canonical index not found"],
-                      "Run paperforge sync --rebuild-index",
-                      "paperforge sync --rebuild-index")
+        return _layer(
+            "degraded",
+            ["Canonical index not found"],
+            "Run paperforge sync --rebuild-index",
+            "paperforge sync --rebuild-index",
+        )
 
     db_path = get_memory_db_path(vault)
     if not db_path.exists():
-        return _layer("degraded", ["Memory DB not found, can be rebuilt"],
-                      "Run paperforge memory build",
-                      "paperforge memory build")
+        return _layer(
+            "degraded",
+            ["Memory DB not found, can be rebuilt"],
+            "Run paperforge memory build",
+            "paperforge memory build",
+        )
 
-    logs_dir = paths.get("paperforge", vault / "System" / "PaperForge") / "logs"
+    logs_dir = paths["paperforge"] / "logs"
     if not logs_dir.exists():
-        return _layer("degraded", ["JSONL logs directory missing"],
-                      "Create logs directory or run sync",
-                      "mkdir -p \"$logs_dir\"")
+        return _layer(
+            "degraded", ["JSONL logs directory missing"], "Create logs directory or run sync", 'mkdir -p "$logs_dir"'
+        )
 
     return _layer("ok", ["Canonical index found", "Memory DB exists", "JSONL logs dir found"])
 
 
 def _check_write(vault: Path) -> dict:
     from paperforge.config import paperforge_paths
+
     paths = paperforge_paths(vault)
-    pf_root = paths.get("paperforge", vault / "System" / "PaperForge")
+    pf_root = paths["paperforge"]
     logs_dir = pf_root / "logs"
     evidence = []
     try:
@@ -91,30 +105,25 @@ def _check_write(vault: Path) -> dict:
         test_file.unlink()
         evidence.append("JSONL logs dir writable")
     except Exception as e:
-        return _layer("blocked", [f"JSONL logs dir not writable: {e}"],
-                      "Check filesystem permissions", "")
+        return _layer("blocked", [f"JSONL logs dir not writable: {e}"], "Check filesystem permissions", "")
     return _layer("ok", evidence)
 
 
 def _check_index(vault: Path) -> dict:
     from paperforge.memory.db import get_connection, get_memory_db_path
+
     db_path = get_memory_db_path(vault)
     if not db_path.exists():
-        return _layer("blocked", ["Memory DB not found"],
-                      "Run paperforge memory build",
-                      "paperforge memory build")
+        return _layer("blocked", ["Memory DB not found"], "Run paperforge memory build", "paperforge memory build")
     try:
         conn = get_connection(db_path, read_only=True)
         version = conn.execute("SELECT value FROM meta WHERE key='schema_version'").fetchone()
         conn.close()
         if version:
             return _layer("ok", [f"Schema version: {version['value']}"])
-        return _layer("degraded", ["Schema version unknown"],
-                      "Rebuild memory DB", "paperforge memory build")
+        return _layer("degraded", ["Schema version unknown"], "Rebuild memory DB", "paperforge memory build")
     except Exception as e:
-        return _layer("blocked", [f"DB query failed: {e}"],
-                      "Rebuild memory DB",
-                      "paperforge memory build")
+        return _layer("blocked", [f"DB query failed: {e}"], "Rebuild memory DB", "paperforge memory build")
 
 
 def _check_vector(vault: Path) -> dict:
@@ -125,6 +134,7 @@ def _check_vector(vault: Path) -> dict:
     if settings_path.exists():
         try:
             import json
+
             data = json.loads(settings_path.read_text(encoding="utf-8"))
             vector_enabled = bool(data.get("features", {}).get("vector_db", False))
         except Exception:
@@ -136,19 +146,20 @@ def _check_vector(vault: Path) -> dict:
     build_state = read_vector_build_state(vault)
     job_status = build_state.get("status", "idle")
     if job_status == "running":
-        return _layer("degraded", ["Vector build in progress"],
-                      "Wait for build to complete",
-                      "paperforge embed status --json")
+        return _layer(
+            "degraded", ["Vector build in progress"], "Wait for build to complete", "paperforge embed status --json"
+        )
     if job_status == "failed":
-        return _layer("degraded", [f"Last build failed: {build_state.get('message', '')}"],
-                      "Check error and rebuild",
-                      "paperforge embed build --resume")
+        return _layer(
+            "degraded",
+            [f"Last build failed: {build_state.get('message', '')}"],
+            "Check error and rebuild",
+            "paperforge embed build --resume",
+        )
 
     db_path = get_vector_db_path(vault)
     if not db_path.exists():
-        return _layer("degraded", ["Vector DB not built yet"],
-                      "Run embed build",
-                      "paperforge embed build --resume")
+        return _layer("degraded", ["Vector DB not built yet"], "Run embed build", "paperforge embed build --resume")
 
     return _layer("ok", ["Vector DB exists"])
 

@@ -8,12 +8,14 @@ logger = logging.getLogger(__name__)
 
 def get_vector_db_path(vault: Path) -> Path:
     from paperforge.config import paperforge_paths
+
     paths = paperforge_paths(vault)
-    return (paths.get("memory_db", paths.get("index", vault / "System" / "PaperForge"))).parent / "vectors"
+    return paths["index"].parent / "vectors"
 
 
 def _get_chroma():
     import chromadb
+
     return chromadb
 
 

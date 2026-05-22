@@ -14,6 +14,7 @@ def run(args: argparse.Namespace) -> int:
     vault = getattr(args, "vault_path", None)
     if vault is None:
         from paperforge.config import resolve_vault
+
         vault = resolve_vault(cli_vault=getattr(args, "vault", None))
 
     verbose = getattr(args, "verbose", False)
@@ -54,8 +55,14 @@ def run(args: argparse.Namespace) -> int:
     from paperforge.services.sync_service import SyncService
 
     svc = SyncService(vault)
-    result = svc.run(verbose=verbose, json_output=json_output, selection_only=selection_only, index_only=index_only,
-                     prune=prune_flag, prune_force=prune_force)
+    result = svc.run(
+        verbose=verbose,
+        json_output=json_output,
+        selection_only=selection_only,
+        index_only=index_only,
+        prune=prune_flag,
+        prune_force=prune_force,
+    )
 
     _write_orphan_state(vault, result)
 
@@ -64,15 +71,19 @@ def run(args: argparse.Namespace) -> int:
         if result.ok and not dry_run and not index_only and not selection_only:
             try:
                 from paperforge.memory.builder import build_from_index
+
                 build_from_index(vault)
             except Exception:
                 pass
             try:
-                import subprocess, sys
+                import subprocess
+                import sys
+
                 subprocess.Popen(
                     [sys.executable, "-m", "paperforge", "embed", "build", "--resume"],
                     cwd=str(vault),
-                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
                     creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if sys.platform == "win32" else 0,
                 )
             except Exception:
@@ -84,6 +95,7 @@ def run(args: argparse.Namespace) -> int:
 
     try:
         from paperforge.memory.builder import build_from_index
+
         counts = build_from_index(vault)
         tag = " (fast)" if counts.get("hash_match") else ""
         print(f"memory: {counts.get('papers_indexed', 0)} papers{tag}")
@@ -91,11 +103,14 @@ def run(args: argparse.Namespace) -> int:
         print(f"memory: deferred ({e})")
 
     try:
-        import subprocess, sys
+        import subprocess
+        import sys
+
         subprocess.Popen(
             [sys.executable, "-m", "paperforge", "embed", "build", "--resume"],
             cwd=str(vault),
-            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
             creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if sys.platform == "win32" else 0,
         )
     except Exception:
@@ -108,8 +123,7 @@ def _write_orphan_state(vault, result: PFResult) -> None:
     from paperforge.config import paperforge_paths
     preview = (result.data or {}).get("prune", {}) if result.data else {}
     items = preview.get("preview", []) if isinstance(preview, dict) else []
-    paths = paperforge_paths(vault)
-    orphan_path = paths["index"].parent / "sync-orphan-state.json"
+    orphan_path = paperforge_paths(vault)["index"].parent / "sync-orphan-state.json"
     if not items:
         try:
             orphan_path.unlink(missing_ok=True)

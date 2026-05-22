@@ -48,11 +48,13 @@ def _preflight_check(vault: Path, settings: dict | None = None) -> dict:
         }
 
     # 4. OCR done papers
-    from paperforge.worker._utils import pipeline_paths
-    paths = pipeline_paths(vault)
-    idx_path = paths.get("indexes", Path("")) / "formal-library.json" if paths.get("indexes") else None
+    from paperforge.config import paperforge_paths
+
+    paths = paperforge_paths(vault)
+    idx_path = paths.get("index")
     if idx_path and idx_path.exists():
         import json
+
         data = json.loads(idx_path.read_text(encoding="utf-8"))
         items = data.get("items", []) if isinstance(data, dict) else data
         done = sum(1 for i in (items or []) if i.get("ocr_status") == "done")

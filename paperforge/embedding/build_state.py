@@ -6,8 +6,9 @@ from pathlib import Path
 
 def get_vector_build_state_path(vault: Path) -> Path:
     from paperforge.config import paperforge_paths
+
     paths = paperforge_paths(vault)
-    index_dir = (paths.get("memory_db", paths.get("index", vault / "System" / "PaperForge"))).parent
+    index_dir = paths["index"].parent
     return index_dir / "vector-build-state.json"
 
 

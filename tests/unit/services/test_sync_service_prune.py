@@ -46,6 +46,18 @@ class TestSyncServicePruneMethod:
         mock_read.assert_called_once()
         mock_fn.assert_called_once()
 
+    def test_load_exports_defaults_to_system_dir_when_config_missing(self, tmp_path: Path) -> None:
+        svc = SyncService(tmp_path)
+        exports_dir = tmp_path / "System" / "PaperForge" / "exports"
+        exports_dir.mkdir(parents=True)
+        (exports_dir / "demo.json").write_text("[]", encoding="utf-8")
+
+        with patch("paperforge.services.sync_service.load_export_rows", return_value=[{"key": "K1"}]) as mock_load:
+            rows = svc.load_exports()
+
+        mock_load.assert_called_once_with(exports_dir / "demo.json")
+        assert rows == [{"key": "K1"}]
+
 
 class TestSyncServiceRunPrune:
     """SyncService.run() with prune/prune_force flags."""

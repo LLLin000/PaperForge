@@ -13,8 +13,8 @@ class VaultInitializer:
     """Create vault directory structure, Zotero junction, and .env file."""
 
     DEFAULT_DIRS = {
-        "system_dir": "99_System",
-        "resources_dir": "03_Resources",
+        "system_dir": "System",
+        "resources_dir": "Resources",
         "literature_dir": "Literature",
         # control_dir 已淘汰 (v2.1+ workspace 架构)
     }

@@ -7,25 +7,22 @@ import json
 import sys
 from pathlib import Path
 
-from paperforge.core.errors import ErrorCode
-
 from paperforge import __version__ as PF_VERSION
-from paperforge.annotation.cache import write_cache
-from paperforge.annotation.db import get_annotations_db_path, get_annotations_connection
+from paperforge.annotation.db import get_annotations_connection, get_annotations_db_path
 from paperforge.annotation.importer import run_import
-from paperforge.annotation.probe import copy_db_to_temp, open_readonly, fetch_annotations
+from paperforge.annotation.probe import copy_db_to_temp, fetch_annotations, open_readonly
 from paperforge.annotation.schema import ensure_schema, get_schema_version
 from paperforge.annotation.service import (
     create_annotation,
     delete_annotation,
     export_annotations_json,
     export_annotations_markdown,
-    get_annotation,
     hard_delete,
     list_annotations,
     patch_annotation,
 )
 from paperforge.config import paperforge_paths
+from paperforge.core.errors import ErrorCode
 from paperforge.core.result import PFError, PFResult
 
 
@@ -165,7 +162,10 @@ def _resolve_paper_key(vault, pdf_path):
     if not pdf_path:
         return ""
     import sqlite3
-    db = Path(str(vault)) / "System" / "PaperForge" / "indexes" / "paperforge.db"
+
+    from paperforge.memory.db import get_memory_db_path
+
+    db = get_memory_db_path(Path(str(vault)))
     if not db.exists():
         return ""
     try:

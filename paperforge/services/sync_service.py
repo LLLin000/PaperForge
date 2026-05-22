@@ -42,11 +42,9 @@ class SyncService:
 
     def load_exports(self) -> list[dict]:
         """Load all BBT export JSON files."""
-        from paperforge.config import load_vault_config
+        from paperforge.config import paperforge_paths
 
-        cfg = load_vault_config(self.vault)
-        system_dir = self.vault / cfg.get("system_dir", "99_System")
-        exports_dir = system_dir / "PaperForge" / "exports"
+        exports_dir = paperforge_paths(self.vault)["exports"]
         if not exports_dir.exists():
             logger.warning("Exports directory not found: %s", exports_dir)
             return []
@@ -199,8 +197,13 @@ class SyncService:
         return candidates
 
     def run(
-        self, verbose: bool = False, json_output: bool = False, selection_only: bool = False, index_only: bool = False,
-        prune: bool = False, prune_force: bool = False,
+        self,
+        verbose: bool = False,
+        json_output: bool = False,
+        selection_only: bool = False,
+        index_only: bool = False,
+        prune: bool = False,
+        prune_force: bool = False,
     ) -> PFResult:
         """Full sync orchestration. Returns PFResult contract.
 
@@ -228,8 +231,9 @@ class SyncService:
 
         # ── Phase 1: Select ──
         if not index_only:
-            from paperforge.worker.sync import run_selection_sync
             import time as _time
+
+            from paperforge.worker.sync import run_selection_sync
 
             _t0 = _time.time()
             try:
@@ -303,9 +307,11 @@ class SyncService:
                             print("prune: dry-run (pass --prune-force to delete)")
                         else:
                             counts = pdata.get("counts", {})
-                            msg = (f"prune: deleted {len(pdata.get('deleted', []))} paper(s) "
-                                   f"(ws={counts.get('workspace',0)} ocr={counts.get('ocr',0)} "
-                                   f"vec={counts.get('vectors',0)})")
+                            msg = (
+                                f"prune: deleted {len(pdata.get('deleted', []))} paper(s) "
+                                f"(ws={counts.get('workspace', 0)} ocr={counts.get('ocr', 0)} "
+                                f"vec={counts.get('vectors', 0)})"
+                            )
                             print(msg)
                     else:
                         print("prune: no orphans found")
@@ -342,8 +348,10 @@ class SyncService:
         """Run orphan paper cleanup. Default dry_run=True (preview only)."""
         if fresh_index is None:
             from paperforge.worker.asset_index import read_index
+
             fresh_index = read_index(self.vault)
         from paperforge.worker.prune import prune_orphan_papers
+
         return prune_orphan_papers(self.vault, fresh_index=fresh_index, dry_run=dry_run)
 
     # ── Legacy passthrough (backward-compat for commands/sync.py) ──

@@ -2192,8 +2192,8 @@ class PaperForgeStatusView extends ItemView {
     }
 
     _fallbackFetchStats(quiet, vp, plugin) {
-        const systemDir = plugin?.settings?.system_dir || 'System';
-        const indexPath = path.join(vp, systemDir, 'PaperForge', 'indexes', 'formal-library.json');
+        const runtimePaths = resolveVaultPaths(vp);
+        const indexPath = path.join(runtimePaths.indexesDir, 'formal-library.json');
 
         try {
             const raw = fs.readFileSync(indexPath, 'utf-8');
@@ -2301,9 +2301,8 @@ class PaperForgeStatusView extends ItemView {
     /* ── Index Loading (D-11, D-17, D-19) ── */
     _loadIndex() {
         const vp = this.app.vault.adapter.basePath;
-        const plugin = this.app.plugins.plugins['paperforge'];
-        const systemDir = plugin?.settings?.system_dir || 'System';
-        const indexPath = path.join(vp, systemDir, 'PaperForge', 'indexes', 'formal-library.json');
+        const runtimePaths = resolveVaultPaths(vp);
+        const indexPath = path.join(runtimePaths.indexesDir, 'formal-library.json');
         try {
             const raw = fs.readFileSync(indexPath, 'utf-8');
             return JSON.parse(raw);
@@ -2754,11 +2753,11 @@ class PaperForgeStatusView extends ItemView {
             indexOk ? (index.items.length + ' entries') : 'formal-library.json not found');
 
         // Zotero export (check if any JSON export exists)
-        const systemDir = plugin?.settings?.system_dir || 'System';
         const vp = this.app.vault.adapter.basePath;
+        const runtimePaths = resolveVaultPaths(vp);
         let exportOk = false, exportDetail = 'No exports found';
         try {
-            const exportsDir = path.join(vp, systemDir, 'PaperForge', 'exports');
+            const exportsDir = runtimePaths.exportsDir;
             if (fs.existsSync(exportsDir)) {
                 const files = fs.readdirSync(exportsDir).filter(f => f.endsWith('.json'));
                 exportOk = files.length > 0;
@@ -2771,8 +2770,7 @@ class PaperForgeStatusView extends ItemView {
         let tokenOk = !!(plugin?.settings?.paddleocr_api_key);
         if (!tokenOk) {
             try {
-                const sysDir = plugin?.settings?.system_dir || 'System';
-                const envPath = path.join(vp, sysDir, 'PaperForge', '.env');
+                const envPath = path.join(runtimePaths.systemDir, '.env');
                 if (fs.existsSync(envPath)) {
                     const envContent = fs.readFileSync(envPath, 'utf-8');
                     const tokenMatch = envContent.match(/^PADDLEOCR_API_TOKEN\s*=\s*(.+)$/m);

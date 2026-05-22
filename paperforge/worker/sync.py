@@ -34,7 +34,6 @@ from paperforge.adapters.zotero_paths import (
     obsidian_wikilink_for_path,
     obsidian_wikilink_for_pdf,
 )
-from paperforge.config import load_vault_config
 from paperforge.worker._domain import load_domain_collections, load_domain_config
 from paperforge.worker._utils import (
     _extract_year,
@@ -218,8 +217,7 @@ def run_selection_sync(vault: Path, verbose: bool = False, json_output: bool = F
             raw_pdf_path = pdf_attachments[0].get("path", "") if pdf_attachments else ""
             from paperforge.pdf_resolver import resolve_pdf_path
 
-            cfg = load_vault_config(vault)
-            zotero_dir = vault / cfg.get("system_dir", "System") / "Zotero"
+            zotero_dir = paths["zotero_dir"]
             resolved_pdf = resolve_pdf_path(raw_pdf_path, has_pdf, vault, zotero_dir)
             collection_meta = collection_fields(item.get("collections", []))
             meta_path = paths["ocr"] / item["key"] / "meta.json"
@@ -1221,8 +1219,7 @@ def run_index_refresh(
     ensure_base_views(vault, paths, config)
     domain_lookup = {entry["export_file"]: entry["domain"] for entry in config["domains"]}
 
-    cfg = load_vault_config(vault)
-    zotero_dir = vault / cfg.get("system_dir", "System") / "Zotero"
+    zotero_dir = paths["zotero_dir"]
     exports = {}
     for export_path in sorted(paths["exports"].glob("*.json")):
         domain = domain_lookup.get(export_path.name, export_path.stem)

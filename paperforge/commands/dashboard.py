@@ -53,15 +53,13 @@ def run(args) -> int:
 
 def _dashboard_from_db(vault: Path) -> dict | None:
     """Build dashboard stats from paperforge.db. Returns None if DB unavailable."""
-    paths = paperforge_paths(vault)
-    index_path = paths.get("index")
-    if not index_path:
-        return None
-    db_path = index_path.parent / "paperforge.db"
+    paths = paperforge_paths(vault, load_vault_config(vault))
+    db_path = paths["index"].parent / "paperforge.db"
     if not db_path.exists():
         return None
     try:
         import sqlite3
+
         conn = sqlite3.connect(str(db_path))
         conn.row_factory = sqlite3.Row
         # Aggregate stats via single GROUP BY

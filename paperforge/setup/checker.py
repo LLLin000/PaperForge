@@ -7,6 +7,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from paperforge.config import load_vault_config
 from paperforge.setup import SetupStepResult
 
 
@@ -45,7 +46,7 @@ class SetupChecker:
         details["zotero_found"] = zotero_path is not None
 
         # Check Better BibTeX exports
-        system_dir = self.vault / "99_System"
+        system_dir = self.vault / load_vault_config(self.vault).get("system_dir", "System")
         exports_dir = system_dir / "PaperForge" / "exports"
         bbt_exists = exports_dir.exists() and len(list(exports_dir.glob("*.json"))) > 0
         details["bbt_exports_found"] = bbt_exists

@@ -269,6 +269,7 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
     import shutil
 
     from paperforge import __version__ as PAPERFORGE_VERSION
+    from paperforge.adapters.obsidian_frontmatter import has_deep_reading_content
     from paperforge.worker._utils import lookup_impact_factor, read_json, slugify_filename, write_json, yaml_quote
     from paperforge.worker.asset_state import (
         compute_health,
@@ -278,7 +279,6 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
     )
     from paperforge.worker.ocr import validate_ocr_meta
     from paperforge.worker.paper_meta import write_paper_meta
-    from paperforge.adapters.obsidian_frontmatter import has_deep_reading_content
     from paperforge.worker.sync import (
         collection_fields,
         frontmatter_note,
@@ -369,7 +369,7 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
                 note_text = fp.read_text(encoding="utf-8")
                 fm = read_frontmatter_dict(note_text)
                 fm_cached_text = note_text
-                fm_was_main = (fp == main_note_path)
+                fm_was_main = fp == main_note_path
                 break
             except Exception:
                 continue
@@ -469,8 +469,10 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
         else:
             main_note_path.write_text(frontmatter_note(entry, text), encoding="utf-8")
     else:
-        existing_text = fm_cached_text if not fm_was_main and fm_cached_text else (
-            note_path.read_text(encoding="utf-8") if note_path.exists() else ""
+        existing_text = (
+            fm_cached_text
+            if not fm_was_main and fm_cached_text
+            else (note_path.read_text(encoding="utf-8") if note_path.exists() else "")
         )
         main_note_path.write_text(frontmatter_note(entry, existing_text), encoding="utf-8")
 
@@ -495,6 +497,7 @@ def _vec_auto_embed_if_new(vault: Path, entry: dict) -> None:
         from paperforge.embedding import embed_paper, get_vector_db_path
         from paperforge.embedding._config import _read_plugin_settings
         from paperforge.memory.chunker import chunk_fulltext
+
         settings = _read_plugin_settings(vault)
         if not settings.get("features", {}).get("vector_db", False):
             return
@@ -507,6 +510,7 @@ def _vec_auto_embed_if_new(vault: Path, entry: dict) -> None:
         embed_paper(vault, entry["zotero_key"], chunks)
     except Exception:
         pass  # ChromaDB / model not installed — silently skip
+
 
 # ---------------------------------------------------------------------------
 # Full index build
@@ -533,7 +537,6 @@ def build_index(vault: Path, verbose: bool = False) -> int:
     Returns:
         Number of items written to (or already present in) the index.
     """
-    from paperforge.config import load_vault_config
     from paperforge.worker._utils import pipeline_paths  # noqa: F811
     from paperforge.worker.base_views import ensure_base_views
     from paperforge.worker.sync import load_domain_config, load_export_rows
@@ -553,8 +556,7 @@ def build_index(vault: Path, verbose: bool = False) -> int:
             f"need {CURRENT_SCHEMA_VERSION}. Rebuilding..."
         )
 
-    cfg = load_vault_config(vault)
-    zotero_dir = vault / cfg.get("system_dir", "System") / "Zotero"
+    zotero_dir = paths["zotero_dir"]
 
     export_hash = _compute_export_hash(paths)
     if isinstance(existing_data, dict) and existing_data.get("export_hash") == export_hash:
@@ -608,7 +610,6 @@ def refresh_index_entry(vault: Path, key: str) -> bool:
         ``True`` if incremental refresh was performed,
         ``False`` if a full rebuild was triggered instead.
     """
-    from paperforge.config import load_vault_config
     from paperforge.worker._utils import pipeline_paths
     from paperforge.worker.sync import load_domain_config, load_export_rows
 
@@ -627,8 +628,7 @@ def refresh_index_entry(vault: Path, key: str) -> bool:
     # Find the export item for the requested key
     config = load_domain_config(paths)
     domain_lookup = {entry["export_file"]: entry["domain"] for entry in config["domains"]}
-    cfg = load_vault_config(vault)
-    zotero_dir = vault / cfg.get("system_dir", "System") / "Zotero"
+    zotero_dir = paths["zotero_dir"]
 
     found_item = None
     found_domain = ""

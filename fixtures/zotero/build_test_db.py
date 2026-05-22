@@ -13,6 +13,8 @@ from pathlib import Path
 
 
 def build_test_db(path: Path) -> None:
+    if path.exists():
+        path.unlink()
     conn = sqlite3.connect(str(path))
     conn.execute("PRAGMA journal_mode=OFF")
 
