@@ -1,0 +1,65 @@
+```mermaid
+graph TB
+    subgraph "Zotero Cloud"
+        ZAPI[Zotero Web API]
+        ZStorage[Zotero File Storage]
+    end
+
+    subgraph "Web Worker"
+        direction TB
+        Sync[SyncService]
+        Annotation[AnnotationService]
+        IDB[(IndexedDB\nDexie)]
+        Tpl[TemplateService\nLiquidJS]
+        Attach[AttachmentService]
+        PDFW[PDF Process Worker]
+        Conflict[ConflictService]
+    end
+
+    subgraph "Main Thread (Obsidian Plugin)"
+        direction TB
+        WB[WorkerBridge\nComlink]
+        Plugin[ZotFlow Plugin]
+        RB[ReaderBridge\nPenpal]
+        CM6[CodeMirror 6\nExtensions]
+        Tree[Tree View\nReact]
+        Activity[Activity Center]
+    end
+
+    subgraph "Reader Iframe"
+        direction TB
+        Reader[Zotero Reader Engine]
+        AM[Annotation Manager]
+        PDFJS[PDF.js]
+    end
+
+    subgraph "Obsidian Vault"
+        SN[Source Notes\n.md]
+        ZF[.zf.json Sidecar\nfor local files]
+    end
+
+    ZAPI -->|"REST API\nversion-based"| Sync
+    ZStorage -->|"File download"| Attach
+    Sync --> IDB
+    IDB --> Annotation
+    Annotation -->|"getAnnotations()"| WB
+    Annotation -->|"saveAnnotations()"| Tpl
+    Tpl --> SN
+    Attach -->|"Blob"| WB
+    WB <--> Plugin
+    Plugin --> RB
+    RB -->|"initReader(data)"| Reader
+    Reader --> PDFJS
+    Reader --> AM
+    AM -->|"annotationsSaved"| RB
+    AM -->|"annotationsDeleted"| RB
+    WB <-->|"extractExternalAnnotations"| PDFW
+    Plugin --> CM6
+    Plugin --> Tree
+    Plugin --> Activity
+    Plugin -->|"LocalReader"| ZF
+
+    style ZAPI fill:#f9f,stroke:#333,stroke-width:2px
+    style IDB fill:#bbf,stroke:#333,stroke-width:2px
+    style Reader fill:#bfb,stroke:#333,stroke-width:2px
+```
