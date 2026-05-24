@@ -1,18 +1,14 @@
 /**
- * Vitest tests for runtime.js — resolvePythonExecutable, getPluginVersion, checkRuntimeVersion.
+ * Vitest tests for runtime functions — readPathConfig, resolveVaultPaths,
+ * resolvePythonExecutable, getPluginVersion, checkRuntimeVersion.
  *
  * Uses dependency injection (last parameter) instead of vi.mock to avoid
  * CJS/ESM module mocking limitations in vitest v2.1.x.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-const {
-    readPathConfig,
-    resolveRuntimePaths,
-    resolvePythonExecutable,
-    getPluginVersion,
-    checkRuntimeVersion,
-} = await import('../src/testable.js');
+import { readPathConfig, resolveVaultPaths as resolveRuntimePaths } from "../src/services/memory-state";
+import { resolvePythonExecutable, getPluginVersion, checkRuntimeVersion } from "../src/services/python-bridge";
 
 describe('readPathConfig', () => {
     it('uses vault_config system_dir when present', () => {
