@@ -76,7 +76,8 @@ let _cachedPython: PythonResult | null = null;
 
 // ── Functions ──
 
-export function readPathConfig(vaultPath: string): PathConfig {
+export function readPathConfig(vaultPath: string, _fs?: any): PathConfig {
+  const f = _fs || fs;
   const pfPath = path.join(vaultPath, 'paperforge.json');
   const defaults = {
     system_dir: 'System',
@@ -86,10 +87,10 @@ export function readPathConfig(vaultPath: string): PathConfig {
   };
 
   try {
-    if (!fs.existsSync(pfPath)) {
+    if (!f.existsSync(pfPath)) {
       return { ...defaults, _warning: 'paperforge.json not found; using defaults' };
     }
-    const raw = fs.readFileSync(pfPath, 'utf-8');
+    const raw = f.readFileSync(pfPath, 'utf-8');
     const data = JSON.parse(raw);
     const vc = data.vault_config || {};
     return {
@@ -105,8 +106,8 @@ export function readPathConfig(vaultPath: string): PathConfig {
   }
 }
 
-export function resolveVaultPaths(vaultPath: string): ResolvedPaths {
-  const cfg = readPathConfig(vaultPath);
+export function resolveVaultPaths(vaultPath: string, _fs?: any): ResolvedPaths {
+  const cfg = readPathConfig(vaultPath, _fs);
   const systemDir = path.join(vaultPath, cfg.system_dir, 'PaperForge');
   return {
     vault: vaultPath,
