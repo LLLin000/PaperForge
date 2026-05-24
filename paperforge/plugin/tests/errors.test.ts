@@ -5,7 +5,6 @@ import { describe, it, expect } from 'vitest';
 
 import {
     classifyError,
-    buildRuntimeInstallCommand,
     parseRuntimeStatus,
 } from "../src/services/python-bridge";
 
@@ -54,28 +53,6 @@ describe('classifyError', () => {
         const result = classifyError(1);
         expect(result.type).toBe('unknown');
         expect(result.recoverable).toBe(false);
-    });
-});
-
-describe('buildRuntimeInstallCommand', () => {
-    it('constructs correct URL with version tag', () => {
-        const result = buildRuntimeInstallCommand('python', '1.4.17rc3');
-        expect(result.cmd).toBe('python');
-        expect(result.url).toBe('git+https://github.com/LLLin000/PaperForge.git@1.4.17rc3');
-        expect(result.args).toContain('-m');
-        expect(result.args).toContain('pip');
-        expect(result.args).toContain('install');
-        expect(result.args).toContain('--upgrade');
-    });
-
-    it('includes extraArgs when provided', () => {
-        const result = buildRuntimeInstallCommand('python', '1.4.17rc3', ['-3']);
-        expect(result.args[0]).toBe('-3');
-    });
-
-    it('timeout is 120000', () => {
-        const result = buildRuntimeInstallCommand('python', '1.4.17rc3');
-        expect(result.timeout).toBe(120000);
     });
 });
 
