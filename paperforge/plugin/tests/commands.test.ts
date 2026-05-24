@@ -6,7 +6,8 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-const { ACTIONS, buildCommandArgs, runSubprocess } = await import('../src/testable.js');
+import { ACTIONS } from "../src/constants";
+import { buildCommandArgs, runSubprocess } from "../src/services/python-bridge";
 
 describe('ACTIONS', () => {
     it('has exactly 4 entries', () => {
