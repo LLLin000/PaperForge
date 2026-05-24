@@ -52,7 +52,13 @@ jobs:
       - name: Run unit tests
         shell: bash
         run: |
-          python -m pytest tests/unit/ \
+          python -m pytest tests/ \
+            --ignore=tests/sandbox \
+            --ignore=tests/cli \
+            --ignore=tests/e2e \
+            --ignore=tests/journey \
+            --ignore=tests/chaos \
+            --ignore=tests/audit \
             -v --tb=short --timeout=60
 
   # ---------------------------------------------------------------------------
