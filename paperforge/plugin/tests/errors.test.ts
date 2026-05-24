@@ -3,11 +3,11 @@
  */
 import { describe, it, expect } from 'vitest';
 
-const {
+import {
     classifyError,
     buildRuntimeInstallCommand,
     parseRuntimeStatus,
-} = await import('../src/testable.js');
+} from "../src/services/python-bridge";
 
 describe('classifyError', () => {
     it('classifies ENOENT as python_missing', () => {
