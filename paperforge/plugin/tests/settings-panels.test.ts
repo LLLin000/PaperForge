@@ -1,10 +1,6 @@
 import { describe, expect, test } from 'vitest';
-import testable from '../src/testable.js';
 
-const {
-  getDisclosureState,
-  toggleDisclosureState,
-} = testable;
+import { getDisclosureState, toggleDisclosureState } from "../src/utils/disclosure";
 
 describe('feature panel disclosure state', () => {
   test('defaults vector config panel to expanded when no state exists', () => {
