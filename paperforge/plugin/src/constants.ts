@@ -60,7 +60,9 @@ export const ACTIONS: ActionDef[] = [
 
 export interface PaperForgeSettings {
   python_path: string;
+  vault_path: string;
   setup_complete: boolean;
+  auto_update: boolean;
   auto_update_on_startup: boolean;
   features: Record<string, boolean>;
   frozen_skills: Record<string, string>;
@@ -68,6 +70,14 @@ export interface PaperForgeSettings {
   resources_dir: string;
   literature_dir: string;
   base_dir: string;
+  agent_platform: string;
+  language: string;
+  paddleocr_api_key: string;
+  zotero_data_dir: string;
+  selected_skill_platform: string;
+  vector_db_api_key: string;
+  vector_db_api_base: string;
+  vector_db_api_model: string;
   _python_path_stale?: boolean;
   [key: string]: unknown;
 }
