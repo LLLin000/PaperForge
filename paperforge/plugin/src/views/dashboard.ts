@@ -128,7 +128,7 @@ export class PaperForgeStatusView extends ItemView {
   /* ---------------------------------------------------------------------- */
   _fetchVersion() {
     const vp = (this.app.vault.adapter as any).basePath as string;
-    const plugin = ((this.app as any).plugins as any)['paperforge'] as any;
+    const plugin = ((this.app as any).plugins.plugins as any)['paperforge'] as any;
     const pluginVer = plugin?.manifest?.version || '?';
     const { path: pythonExe, extraArgs = [] } = resolvePythonExecutable(vp, plugin?.settings ?? null, undefined, undefined);
     checkRuntimeVersion(pythonExe, pluginVer, vp, 10000, undefined).then((result: any) => {
@@ -156,7 +156,7 @@ export class PaperForgeStatusView extends ItemView {
       return;
     }
     const vp = (this.app.vault.adapter as any).basePath as string;
-    const plugin = ((this.app as any).plugins as any)['paperforge'] as any;
+    const plugin = ((this.app as any).plugins.plugins as any)['paperforge'] as any;
     const { path: pythonExe, extraArgs = [] } = resolvePythonExecutable(vp, plugin?.settings ?? null, undefined, undefined);
     (execFile as any)(pythonExe, [...extraArgs, '-m', 'paperforge', 'dashboard', '--json'], { cwd: vp, timeout: 30000 }, (err: any, stdout: string) => {
       if (!err) {
@@ -293,7 +293,7 @@ export class PaperForgeStatusView extends ItemView {
   /* ── Index Loading (D-11, D-17, D-19) ── */
   _loadIndex(): any {
     const vp = (this.app.vault.adapter as any).basePath as string;
-    const plugin = ((this.app as any).plugins as any)['paperforge'] as any;
+    const plugin = ((this.app as any).plugins.plugins as any)['paperforge'] as any;
     const systemDir = plugin?.settings?.system_dir || 'System';
     const indexPath = path.join(vp, systemDir, 'PaperForge', 'indexes', 'formal-library.json');
     try {
@@ -669,7 +669,7 @@ export class PaperForgeStatusView extends ItemView {
     const statusSection = view.createEl('div', { cls: 'paperforge-system-status' });
     statusSection.createEl('div', { cls: 'paperforge-section-label', text: 'System Status' });
     const statusGrid = statusSection.createEl('div', { cls: 'paperforge-status-grid' });
-    const plugin = ((this.app as any).plugins as any)['paperforge'] as any;
+    const plugin = ((this.app as any).plugins.plugins as any)['paperforge'] as any;
     const pluginVer = plugin?.manifest?.version || '?';
     let pyVer = this._paperforgeVersion;
     if (!pyVer) {
@@ -1128,7 +1128,7 @@ export class PaperForgeStatusView extends ItemView {
           new Notice('[!!] Clipboard write failed', 6000);
         });
       });
-      const platformKey = (((this.app as any).plugins as any)['paperforge'] as any)?.settings?.agent_platform || 'opencode';
+      const platformKey = (((this.app as any).plugins.plugins as any)['paperforge'] as any)?.settings?.agent_platform || 'opencode';
       const AGENTS: Record<string, string> = {
         'opencode': 'OpenCode',
         'claude': 'Claude Code',
@@ -1326,7 +1326,7 @@ export class PaperForgeStatusView extends ItemView {
       extraArgs = [...extraArgs, '--all'];
     }
     const cmdTimeout = a.needsFilter ? 60000 : (a.needsKey ? 30000 : 600000);
-    const { path: pythonExe, extraArgs: pyExtra = [] } = resolvePythonExecutable(vp, ((this.app as any).plugins as any)['paperforge']?.settings ?? null, undefined, undefined);
+    const { path: pythonExe, extraArgs: pyExtra = [] } = resolvePythonExecutable(vp, ((this.app as any).plugins.plugins as any)['paperforge']?.settings ?? null, undefined, undefined);
     const child = spawn(pythonExe, [...pyExtra, '-m', 'paperforge', a.cmd, ...extraArgs], { cwd: vp, timeout: cmdTimeout });
     const log: string[] = [];
     const startTime = Date.now();
@@ -1335,7 +1335,7 @@ export class PaperForgeStatusView extends ItemView {
       const lines = data.toString('utf-8').split('\n').filter(Boolean);
       for (const l of lines) {
         const clean = l.trim();
-        if (clean) { log.push(clean); this._showMessage(log.slice(-8).join('\n'), 'running'); new Notice(clean, 5000); }
+        if (clean) { log.push(clean); this._showMessage(log.slice(-8).join('\n'), 'running'); }
       }
     });
     child.stderr.on('data', (data: Buffer) => {
@@ -1343,7 +1343,7 @@ export class PaperForgeStatusView extends ItemView {
       for (const l of lines) {
         if (l.includes('\r') || l.includes('%') || l.includes('\u2588')) continue;
         const trim = l.trim();
-        if (trim && !trim.match(/^\d+%|^\|/)) { log.push(trim); this._showMessage(log.slice(-8).join('\n'), 'running'); new Notice(trim, 5000); }
+        if (trim && !trim.match(/^\d+%|^\|/)) { log.push(trim); this._showMessage(log.slice(-8).join('\n'), 'running'); }
       }
     });
     child.on('close', (code: number | null) => {
@@ -1392,7 +1392,7 @@ export class PaperForgeStatusView extends ItemView {
         this._cachedStats = null;
         try { this._fetchStats(false); } catch (e) { console.log('[PF] fetchStats error:', e); }
         console.log('[PF] close cmd=' + a.cmd + ' id=' + a.id);
-        if (a.cmd === 'sync') checkOrphanState(this.app, ((this.app as any).plugins as any)['paperforge'], vp);
+        if (a.cmd === 'sync') checkOrphanState(this.app, ((this.app as any).plugins.plugins as any)['paperforge'], vp);
       }
     });
     child.on('error', (err: Error) => {
