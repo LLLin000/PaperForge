@@ -68,6 +68,7 @@ $PYTHON -m paperforge --vault "$VAULT" search "<query>" --json --limit 30 \
 
 - FTS5 搜索标题、摘要、作者、期刊、domain、collection 路径
 - 返回 JSON：`data.matches[]` 包含 `zotero_key`、`title`、`year`、`first_author` 等
+- **作者+年份搜索**：query 放作者名，年份放 `--year-from`/`--year-to`（如 `search "Brighton" --year-from 1983 --year-to 1983`）
 
 #### Arm 3 — Collection/Domain 列举（完整列表，不截断）
 
