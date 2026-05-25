@@ -82,7 +82,18 @@ def _fts_query(conn, query, filter_clause, filter_params, limit):
 
 
 def _like_query(conn, query, filter_clause, filter_params, limit):
-    like_param = f"%{query}%"
+    tokens = re.findall(r"[\w\u4e00-\u9fff]+", query)
+    if not tokens:
+        tokens = [query]
+
+    field_clauses = []
+    params = []
+    for field in ["p.title", "p.abstract", "p.doi", "p.citation_key"]:
+        token_clauses = [f"{field} LIKE ?" for _ in tokens]
+        params.extend(f"%{t}%" for t in tokens)
+        field_clauses.append("(" + " AND ".join(token_clauses) + ")")
+
+    where_clause = "(" + " OR ".join(field_clauses) + ")"
     sql = f"""
         SELECT p.zotero_key, p.citation_key, p.title, p.year, p.doi,
                p.first_author, p.journal, p.domain, p.lifecycle,
@@ -90,10 +101,10 @@ def _like_query(conn, query, filter_clause, filter_params, limit):
                substr(p.abstract, 1, 300) as abstract,
                0 as rank
         FROM papers p
-        WHERE (p.title LIKE ? OR p.abstract LIKE ? OR p.doi LIKE ? OR p.citation_key LIKE ?){filter_clause}
+        WHERE {where_clause}{filter_clause}
         ORDER BY p.year DESC
         LIMIT ?
     """
     conn.row_factory = sqlite3.Row
-    rows = conn.execute(sql, [like_param, like_param, like_param, like_param] + filter_params + [limit]).fetchall()
+    rows = conn.execute(sql, params + filter_params + [limit]).fetchall()
     return [dict(r) for r in rows]

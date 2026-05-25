@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from pathlib import Path
 
 from paperforge.memory.builder import compute_hash
@@ -79,7 +80,7 @@ def get_memory_status(vault: Path) -> dict:
 
 def _entry_from_row(row) -> dict:
     """Reconstruct an entry dict from a papers row (sqlite3.Row)."""
-    entry = {k: row[k] for k in row.keys()}
+    entry = {k: row[k] for k in row}
     for key in ("has_pdf", "do_ocr", "analyze"):
         if key in entry and entry[key] is not None:
             entry[key] = bool(entry[key])
@@ -108,11 +109,16 @@ def lookup_paper(conn, query: str) -> list[dict]:
         if row:
             return [_entry_from_row(row)]
 
+    tokens = re.findall(r"[\w\u4e00-\u9fff]+", q)
+    if not tokens:
+        tokens = [q]
+    title_conditions = " AND ".join("LOWER(title) LIKE ?" for _ in tokens)
+    title_params = [f"%{t.lower()}%" for t in tokens]
     rows = conn.execute(
-        """SELECT * FROM papers
-           WHERE LOWER(title) LIKE '%' || LOWER(?) || '%'
+        f"""SELECT * FROM papers
+           WHERE {title_conditions}
            LIMIT 20""",
-        (q,),
+        title_params,
     ).fetchall()
     if rows:
         return [_entry_from_row(r) for r in rows]

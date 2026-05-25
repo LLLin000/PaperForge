@@ -56,6 +56,7 @@ $PYTHON -m paperforge --vault "$VAULT" search "<query>" --json --limit 30
 - Uses FTS5 on title, abstract, authors, journal, domain, collection_path
 - Fast, always works
 - Limit 30 by default; user can request more
+- **Author+year search**: put author name in `<query>`, year in `--year-from`/`--year-to` (e.g. `search "Brighton" --year-from 1983 --year-to 1983`)
 
 #### Arm 3 — Collection/domain inventory (full list, no truncation)
 
