@@ -92,7 +92,7 @@ export default class PaperForgePlugin extends Plugin {
     const { path: pythonExe, extraArgs = [] } = resolvePythonExecutable(vp, this.settings, undefined, undefined);
     const ver = this.manifest.version;
     const pypiPkg = `paperforge==${ver}`;
-    const gitUrl = `git+https://github.com/LLLin000/PaperForge.git@v${ver}`;
+    const gitUrl = `git+https://github.com/LLLin000/PaperForge.git@${ver}`;
 
     const doInstall = (pkg: string, onDone: (ok: boolean) => void) => {
       const child = spawn(pythonExe, [...extraArgs, '-m', 'pip', 'install', '--upgrade', pkg], { cwd: vp, timeout: 120000, env: paperforgeEnrichedEnv() });

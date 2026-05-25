@@ -148,10 +148,10 @@ export function classifyError(errorCode: string): ErrorClassification {
 export function buildRuntimeInstallCommand(pythonExe: string, version: string, extraArgs: string[]): InstallCommand {
     if (extraArgs === undefined) extraArgs = [];
     const pypiPkg = `paperforge==${version}`;
-    const gitUrl = `git+https://github.com/LLLin000/PaperForge.git@v${version}`;
+    const gitUrl = `git+https://github.com/LLLin000/PaperForge.git@${version}`;
     const pypiArgs = [...extraArgs, "-m", "pip", "install", "--upgrade", pypiPkg];
     const gitArgs = [...extraArgs, "-m", "pip", "install", "--upgrade", gitUrl];
-    return { cmd: pythonExe, url: gitUrl.replace('@v', '@'), args: gitArgs, pypiArgs, gitArgs, timeout: 120000 };
+    return { cmd: pythonExe, url: gitUrl, args: gitArgs, pypiArgs, gitArgs, timeout: 120000 };
 }
 
 export function parseRuntimeStatus(err: any, stdout: any, stderr: any): RuntimeStatus {

@@ -52,7 +52,7 @@ class RuntimeInstaller:
         self._log("Installing PaperForge...")
 
         if self.version:
-            tag = self.version if self.version.startswith("v") else f"v{self.version}"
+            tag = self.version.removeprefix("v") if self.version else self.version
             pypi_spec = f"paperforge=={self.version}"
             git_spec = f"git+https://github.com/LLLin000/PaperForge.git@{tag}"
         else:
