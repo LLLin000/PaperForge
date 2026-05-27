@@ -61,7 +61,7 @@ def code_block_lines(content: str) -> list[str]:
 
 @pytest.fixture
 def command_docs() -> dict[str, Path]:
-    base = REPO_ROOT / "command"
+    base = REPO_ROOT / "paperforge" / "command_files"
     return {
         "pf-status": base / "pf-status.md",
         "pf-sync": base / "pf-sync.md",

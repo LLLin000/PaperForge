@@ -25,6 +25,14 @@
 - **范围限制**：是否限定特定 domain、作者、年份
 - **证据类型**：统计结果、方法引用、临床发现、机制解释等
 
+**先调用 query-plan：**
+
+```bash
+$PYTHON -m paperforge --vault "$VAULT" query-plan "<user_query>" --intent content --json
+```
+
+如果 `query-plan` 推荐 `retrieve`，直接从 `retrieve` 开始，不要先走一遍 paper discovery。
+
 ### Step 2: 检索梯级选择（`atoms/retrieval-routing.md`）
 
 **先检查 `retrieve` 是否可用：**
@@ -44,7 +52,9 @@ $PYTHON -m paperforge --vault "$VAULT" embed status --json
    - 如需精确定位验证，再用 `rg` / `grep` 在论文全文中确认
 
 2. **Ladder B2**（备选，无 `retrieve` 但有 `rg`）-- 元数据→全文 grep
-   - 先用 `paperforge search` 生成元数据候选集
+   - 默认不要静默降级到 metadata search
+   - 先根据 query-plan 返回向用户解释：retrieve 不可用 / 0 结果，需要选择 fallback 模式
+   - 如果用户同意 metadata 缩一轮，再用 `paperforge search` 生成候选集
    - 用 `runtime-health` 或 `paper-context` 筛选有 OCR/全文的论文
    - 在解析后的全文中运行 `rg` 定位匹配片段
 

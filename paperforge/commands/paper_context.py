@@ -9,6 +9,7 @@ from paperforge.core.errors import ErrorCode
 from paperforge.core.result import PFError, PFResult
 from paperforge.memory.db import get_connection, get_memory_db_path
 from paperforge.memory.permanent import get_corrections_for_paper, get_reading_notes_for_paper
+from paperforge.memory.query import lookup_paper
 
 
 def _build_paper_context(vault, key: str) -> dict | None:
@@ -20,13 +21,17 @@ def _build_paper_context(vault, key: str) -> dict | None:
 
     conn = get_connection(db_path, read_only=True)
     try:
+        matches = lookup_paper(conn, key)
+        if not matches or len(matches) != 1:
+            return None
+        resolved_key = matches[0]["zotero_key"]
         row = conn.execute(
             """SELECT zotero_key, citation_key, title, year, doi, journal,
                       first_author, domain, collection_path, has_pdf,
                       ocr_status, analyze, deep_reading_status, lifecycle,
                       next_step, pdf_path, note_path, fulltext_path, paper_root
                FROM papers WHERE zotero_key = ?""",
-            (key,),
+            (resolved_key,),
         ).fetchone()
 
         if not row:
@@ -34,7 +39,7 @@ def _build_paper_context(vault, key: str) -> dict | None:
 
         paper = dict(row)
 
-        prior_notes = get_reading_notes_for_paper(vault, key)
+        prior_notes = get_reading_notes_for_paper(vault, resolved_key)
 
         corrections = []
         corr_rows = conn.execute(
@@ -42,7 +47,7 @@ def _build_paper_context(vault, key: str) -> dict | None:
                FROM paper_events
                WHERE paper_id = ? AND event_type = 'correction_note'
                ORDER BY created_at DESC""",
-            (key,),
+            (resolved_key,),
         ).fetchall()
         seen_ids: set[str] = set()
         for cr in corr_rows:
@@ -57,7 +62,7 @@ def _build_paper_context(vault, key: str) -> dict | None:
             if orig_id:
                 seen_ids.add(orig_id)
 
-        jsonl_corrections = get_corrections_for_paper(vault, key)
+        jsonl_corrections = get_corrections_for_paper(vault, resolved_key)
         for c in jsonl_corrections:
             cid = c.get("original_id", "")
             if cid and cid in seen_ids:

@@ -27,16 +27,28 @@
 
 用户可能给 zotero_key、DOI、标题关键词、作者+年份。按以下方式查找：
 
+**先调用 query-plan，不要自己发明第一条 query：**
+
+```bash
+$PYTHON -m paperforge --vault "$VAULT" query-plan "<user_query>" --intent known-paper --json
+```
+
+执行 `recommended_primary.command` 与其 `args`。规则：
+
+- `doi` / `zotero_key` / `citation_key` → 直接 `paper-context`
+- `author + year` → 第一轮只跑作者 + 年份过滤，不加标题词
+- 模糊标题 / 主题词 → `search` 或 `paper-status`
+
 **如果知道 zotero_key：**
 
 ```bash
 $PYTHON -m paperforge --vault "$VAULT" paper-context <zotero_key> --json
 ```
 
-**如果知道 DOI：**
+**如果知道 DOI / citation_key：**
 
 ```bash
-$PYTHON -m paperforge --vault "$VAULT" paper-context <DOI> --json
+$PYTHON -m paperforge --vault "$VAULT" paper-context <DOI_OR_CITATION_KEY> --json
 ```
 
 **如果知道 作者+年份：**
@@ -65,7 +77,7 @@ $PYTHON -m paperforge --vault "$VAULT" search "<query>" --json --limit 5
 
 无论哪种方式命中，取 `zotero_key` 调 `paper-context` 获取完整信息。
 如果多候选，列出让用户选。
-如果无结果，告知用户并停止。
+如果无结果，不要直接说“库里没有”；先说明这是规范化后的无结果，再告知用户未找到。
 
 ### Step 2: 加载文献内容
 
