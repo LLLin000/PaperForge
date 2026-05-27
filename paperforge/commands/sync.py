@@ -1,6 +1,7 @@
 """Sync command — unified sync through SyncService."""
 
 import argparse
+import inspect
 import logging
 
 from paperforge import __version__
@@ -54,8 +55,21 @@ def run(args: argparse.Namespace) -> int:
     from paperforge.services.sync_service import SyncService
 
     svc = SyncService(vault)
-    result = svc.run(verbose=verbose, json_output=json_output, selection_only=selection_only, index_only=index_only,
-                     prune=prune_flag, prune_force=prune_force)
+    run_kwargs = {
+        "verbose": verbose,
+        "json_output": json_output,
+        "selection_only": selection_only,
+        "index_only": index_only,
+        "prune": prune_flag,
+        "prune_force": prune_force,
+    }
+    try:
+        sig = inspect.signature(svc.run)
+        accepted = {name for name in sig.parameters.keys() if name != "self"}
+        filtered_kwargs = {k: v for k, v in run_kwargs.items() if k in accepted}
+    except Exception:
+        filtered_kwargs = run_kwargs
+    result = svc.run(**filtered_kwargs)
 
     _write_orphan_state(vault, result)
 

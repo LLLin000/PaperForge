@@ -31,15 +31,65 @@ If anything fails: ok=false, error explains why.
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
 
-try:
-    import paperforge
-    SKILL_VERSION = paperforge.__version__
-except Exception:
-    SKILL_VERSION = "unknown"
+REPO_ROOT = Path(__file__).resolve().parents[4]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+
+def _read_plugin_version() -> str:
+    init_py = REPO_ROOT / "paperforge" / "__init__.py"
+    if not init_py.exists():
+        return "unknown"
+    try:
+        text = init_py.read_text(encoding="utf-8")
+    except Exception:
+        return "unknown"
+    match = re.search(r'__version__\s*=\s*["\']([^"\']+)["\']', text)
+    return match.group(1) if match else "unknown"
+
+
+PLUGIN_VERSION = _read_plugin_version()
+
+
+def _parse_skill_metadata() -> tuple[str, int | None]:
+    skill_md = Path(__file__).resolve().parent.parent / "SKILL.md"
+    if not skill_md.exists():
+        return ("unknown", None)
+    try:
+        text = skill_md.read_text(encoding="utf-8")
+    except Exception:
+        return ("unknown", None)
+
+    if not text.startswith("---"):
+        return ("unknown", None)
+    lines = text.splitlines()
+    skill_version = "unknown"
+    skill_api_version: int | None = None
+    in_frontmatter = False
+    for line in lines:
+        if line.strip() == "---":
+            if not in_frontmatter:
+                in_frontmatter = True
+                continue
+            break
+        if not in_frontmatter or ":" not in line:
+            continue
+        key, value = line.split(":", 1)
+        key = key.strip()
+        value = value.strip().strip('"').strip("'")
+        if key == "skill_version":
+            skill_version = value
+        elif key == "skill_api_version":
+            try:
+                skill_api_version = int(value)
+            except ValueError:
+                pass
+    return (skill_version, skill_api_version)
 
 
 def _find_paperforge_json(start: Path) -> Path | None:
@@ -164,6 +214,7 @@ def main() -> None:
     args = p.parse_args()
 
     result: dict = {"ok": False}
+    skill_version, skill_api_version = _parse_skill_metadata()
 
     # --- 1. Find vault ---
     if args.vault:
@@ -294,7 +345,9 @@ def main() -> None:
     }
 
     result["ok"] = True
-    result["skill_version"] = SKILL_VERSION
+    result["plugin_version"] = PLUGIN_VERSION
+    result["skill_version"] = skill_version
+    result["skill_api_version"] = skill_api_version
     json.dump(result, sys.stdout, ensure_ascii=False, indent=2)
 
 

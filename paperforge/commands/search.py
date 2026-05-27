@@ -8,6 +8,7 @@ from paperforge.core.errors import ErrorCode
 from paperforge.core.result import PFError, PFResult
 from paperforge.memory.db import get_connection, get_memory_db_path
 from paperforge.memory.fts import search_papers
+from paperforge.query_planning import build_query_plan, enrich_query_plan_with_runtime
 
 
 def run(args: argparse.Namespace) -> int:
@@ -58,7 +59,32 @@ def run(args: argparse.Namespace) -> int:
                 "next_step": args.next_step,
             },
         }
-        result = PFResult(ok=True, command="search", version=PF_VERSION, data=data)
+        warnings: list[str] = []
+        next_actions: list[dict] = []
+        if len(results) == 0:
+            plan = enrich_query_plan_with_runtime(build_query_plan(query, "discover"), vault)
+            data["query_diagnostic"] = {
+                "query_class": plan["query_class"],
+                "recommended_primary": plan["recommended_primary"],
+                "query_writing_rules": plan["query_writing_rules"],
+                "scope_assessment": plan.get("scope_assessment"),
+            }
+            if plan["query_class"] in {"mixed_query", "author_year"}:
+                warnings.append("Zero results may reflect a noncanonical metadata query rather than library absence.")
+            next_actions.append(
+                {
+                    "command": "paperforge query-plan",
+                    "reason": "Normalize the query and choose the correct first retrieval command.",
+                }
+            )
+            if plan["recommended_primary"]["command"] != "search":
+                next_actions.append(
+                    {
+                        "command": f"paperforge {plan['recommended_primary']['command']}",
+                        "reason": "The planning layer recommends a different first command for this query.",
+                    }
+                )
+        result = PFResult(ok=True, command="search", version=PF_VERSION, data=data, warnings=warnings, next_actions=next_actions)
     except Exception as exc:
         result = PFResult(
             ok=False, command="search", version=PF_VERSION,

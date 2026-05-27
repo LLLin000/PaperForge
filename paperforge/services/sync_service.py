@@ -225,6 +225,7 @@ class SyncService:
             _export_code = "BBT_EXPORT_INVALID"
 
         selection_result: dict = {"new": 0, "updated": 0, "skipped": 0, "failed": 0, "errors": []}
+        _prune_preview: list[dict] = []
 
         # ── Phase 1: Select ──
         if not index_only:
@@ -318,9 +319,6 @@ class SyncService:
                 print(f"index-refresh: {total} formal note(s) in literature")
 
         is_ok = selection_result.get("failed", 0) == 0 and not selection_result.get("errors")
-
-        if not selection_only:
-            _prune_preview = locals().get("_prune_preview", [])
 
         result = PFResult(
             ok=is_ok,

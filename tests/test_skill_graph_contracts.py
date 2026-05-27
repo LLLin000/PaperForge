@@ -62,6 +62,12 @@ def test_retrieval_routing_has_semantic_optional_rule() -> None:
     assert "optional" in text.lower() or "supplementary" in text.lower() or "only for candidate expansion" in text
 
 
+def test_skill_md_has_intent_level_trigger_language() -> None:
+    text = SKILL_MD.read_text(encoding="utf-8")
+    assert "必须调用 paperforge skill" in text
+    assert "collection / domain" in text or "正文内容" in text
+
+
 # --- Group 4: Molecule output shape contracts ---
 
 def test_discover_papers_output_is_paper_list() -> None:
@@ -72,3 +78,10 @@ def test_discover_papers_output_is_paper_list() -> None:
 def test_find_evidence_output_is_grouped_hits() -> None:
     text = EVIDENCE_MD.read_text(encoding="utf-8")
     assert "group" in text.lower() or "evidence hit" in text.lower() or "snippet" in text.lower()
+
+
+def test_molecules_reference_query_plan() -> None:
+    discover_text = DISCOVER_MD.read_text(encoding="utf-8")
+    evidence_text = EVIDENCE_MD.read_text(encoding="utf-8")
+    assert "query-plan" in discover_text
+    assert "query-plan" in evidence_text

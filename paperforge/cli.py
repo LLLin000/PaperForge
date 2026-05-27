@@ -272,11 +272,16 @@ def build_parser() -> argparse.ArgumentParser:
     p_embed_stop = p_embed_sp.add_parser("stop", help="Stop running embed build")
     p_embed_stop.add_argument("--json", action="store_true")
 
-    p_retrieve = sub.add_parser("retrieve", help="Semantic search across OCR fulltext")
+    p_retrieve = sub.add_parser("retrieve", help="Semantic content retrieval across OCR fulltext")
     p_retrieve.add_argument("query", help="Search query")
     p_retrieve.add_argument("--json", action="store_true")
     p_retrieve.add_argument("--limit", type=int, default=5)
     p_retrieve.add_argument("--expand", action="store_true", default=True)
+
+    p_qp = sub.add_parser("query-plan", help="Classify a literature query and recommend the first retrieval command")
+    p_qp.add_argument("query", help="User query to classify")
+    p_qp.add_argument("--intent", choices=["discover", "content", "known-paper"], required=True, help="Retrieval intent")
+    p_qp.add_argument("--json", action="store_true", help="Output as JSON")
 
     # prune
     p_prune = sub.add_parser("prune", help="Delete orphan paper artifacts (dry-run by default)")
@@ -296,8 +301,8 @@ def build_parser() -> argparse.ArgumentParser:
     p_paper_status.add_argument("query", help="Paper identifier (zotero_key, DOI, title, alias)")
     p_paper_status.add_argument("--json", action="store_true", help="Output as JSON")
 
-    p_pc = sub.add_parser("paper-context", help="Get full context for a paper (metadata + reading notes + corrections)")
-    p_pc.add_argument("key", help="Zotero key")
+    p_pc = sub.add_parser("paper-context", help="Get full context for a paper by zotero key, DOI, or citation key")
+    p_pc.add_argument("key", help="Paper identifier (zotero key, DOI, or citation key)")
     p_pc.add_argument("--json", action="store_true", help="Output as JSON")
 
     p_rl = sub.add_parser("reading-log", help="Record or export reading notes")
@@ -330,8 +335,8 @@ def build_parser() -> argparse.ArgumentParser:
     p_pl.add_argument("--limit", type=int, default=50, help="Max entries to list")
     p_pl.add_argument("--json", action="store_true", help="Output as PFResult JSON")
 
-    p_search = sub.add_parser("search", help="Full-text search across the library")
-    p_search.add_argument("query", help="Search query (supports FTS5 syntax)")
+    p_search = sub.add_parser("search", help="Metadata FTS search across indexed paper fields")
+    p_search.add_argument("query", help="Search query for title/abstract/author/journal/domain/collection metadata")
     p_search.add_argument("--json", action="store_true", help="Output as JSON")
     p_search.add_argument("--limit", type=int, default=20, help="Max results")
     p_search.add_argument("--domain", help="Filter by domain")
@@ -462,15 +467,26 @@ def main(argv: list[str] | None = None) -> int:
     if argv is None:
         argv = sys.argv[1:]
 
-    _resolve_pipeline()
-    _import_worker_functions()
-
     parser = build_parser()
     args = parser.parse_args(argv)
 
     if args.command is None:
         parser.print_help()
         return 1
+
+    # Resolve/import worker modules only for commands that actually need them.
+    lightweight_commands = {
+        "paths", "sync", "ocr", "status", "deep-reading", "deep-finalize",
+        "context", "repair", "dashboard", "memory", "embed", "retrieve",
+        "query-plan", "prune", "paper-status", "paper-context", "reading-log",
+        "project-log", "search", "agent-context", "runtime-health", "doctor",
+        "update", "setup", "selection-sync", "index-refresh", "base-refresh",
+    }
+    if args.command in lightweight_commands:
+        _resolve_pipeline()
+    worker_import_commands = {"status", "deep-reading", "ocr", "selection-sync", "index-refresh", "base-refresh"}
+    if args.command in worker_import_commands:
+        _import_worker_functions()
 
     # Resolve vault
     try:
@@ -574,6 +590,11 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "retrieve":
         from paperforge.commands.retrieve import run
+
+        return run(args)
+
+    if args.command == "query-plan":
+        from paperforge.commands.query_plan import run
 
         return run(args)
 
@@ -696,6 +717,7 @@ def _cmd_paths(vault: Path, args: argparse.Namespace) -> int:
         filtered["vault"] = str(vault.resolve())
         filtered["worker_script"] = str(paths["worker_script"].resolve())
         filtered["pf_deep_script"] = str(paths["pf_deep_script"].resolve())
+        filtered["ld_deep_script"] = filtered["pf_deep_script"]
         print(json.dumps(filtered, ensure_ascii=False, indent=2))
     else:
         for key, path_str in sorted(all_paths.items()):

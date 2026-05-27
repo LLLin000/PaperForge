@@ -9,17 +9,21 @@ from paperforge.core.result import PFError, PFResult
 from paperforge.memory.context import get_agent_context
 
 COMMANDS = {
+    "query-plan": {
+        "usage": "paperforge query-plan <query> --intent discover|content|known-paper --json",
+        "purpose": "Classify the query, choose the best first retrieval command, and explain fallback rules",
+    },
     "paper-status": {
         "usage": "paperforge paper-status <zotero_key|citation_key|doi|title> --json",
         "purpose": "Look up one paper's full status and recommended next action",
     },
     "search": {
         "usage": "paperforge search <query> --json [--domain NAME] [--ocr done|pending|failed|processing] [--year-from N] [--year-to N] [--limit N] [--lifecycle indexed|pdf_ready|fulltext_ready|deep_read_done]",
-        "purpose": "Full-text search with optional domain and workflow-state filters",
+        "purpose": "Metadata FTS search over title, abstract, authors, journal, domain, and collection fields",
     },
     "retrieve": {
         "usage": "paperforge retrieve <query> --json [--limit N]",
-        "purpose": "Semantic search across OCR fulltext — discover papers by body content, not just title/abstract",
+        "purpose": "Semantic content retrieval across OCR fulltext — use this first when the user wants something inside papers",
     },
     "context": {
         "usage": "paperforge context <key> | --domain D | --collection P | --all",
@@ -45,7 +49,11 @@ RULES = [
     "Read source files only after resolving candidates via paper-status, search, retrieve, or context.",
     "To locate a paper: start with collection scope if known, then expand to full library search.",
     "Paper discovery must use multi-arm strategy: retrieve (body text) + search (metadata) + context --collection (inventory). Never rely on a single search tool.",
+    "Use query-plan before freeform retrieval when the query mixes author/year/title/content signals.",
+    "For known-paper lookup, DOI/zotero_key/citation_key are higher-signal than title words; author+year first-pass search should exclude title terms.",
+    "For content lookup, start with retrieve. Search is not semantic fulltext discovery.",
     "When a search returns > 20 results, present the count to the user and offer to narrow — never silently skip large result sets.",
+    "A raw zero-result search does not prove library absence when the query is noncanonical for metadata search.",
     "Check embed status --json (db_exists + chunk_count) before calling retrieve; skip retrieve if vector index is unavailable.",
 ]
 

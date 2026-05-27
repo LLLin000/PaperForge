@@ -44,6 +44,14 @@ export interface RuntimeStatus {
   action?: string;
 }
 
+export interface QueryPlanResult {
+  ok: boolean;
+  command: string;
+  version: string;
+  data: Record<string, unknown> | null;
+  error: Record<string, unknown> | null;
+}
+
 // ── Cross-platform state ──
 
 let _gitDir: string | null = null;
@@ -212,6 +220,44 @@ export function runSubprocess(pythonExe: string, args: string[], cwd: string, ti
                 exitCode: -1, elapsed: Date.now() - startTime });
         });
     });
+}
+
+export function runQueryPlan(
+  pythonExe: string,
+  extraArgs: string[],
+  vaultPath: string,
+  query: string,
+  intent: "discover" | "content" | "known-paper",
+  timeout = 20000,
+  _execFile?: any,
+): Promise<QueryPlanResult> {
+  const exe = _execFile || execFile;
+  return new Promise((resolve) => {
+    const args = [...extraArgs, "-m", "paperforge", "--vault", vaultPath, "query-plan", query, "--intent", intent, "--json"];
+    exe(pythonExe, args, { cwd: vaultPath, timeout, windowsHide: true }, (err: any, stdout: any, stderr: any) => {
+      if (err) {
+        resolve({
+          ok: false,
+          command: "query-plan",
+          version: "",
+          data: null,
+          error: { message: stderr || err.message || "query-plan failed" },
+        });
+        return;
+      }
+      try {
+        resolve(JSON.parse(stdout));
+      } catch (parseErr: any) {
+        resolve({
+          ok: false,
+          command: "query-plan",
+          version: "",
+          data: null,
+          error: { message: parseErr.message || "Invalid query-plan JSON" },
+        });
+      }
+    });
+  });
 }
 
 // ── Cross-platform Python and BBT detection (macOS/Linux) ──

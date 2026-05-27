@@ -24,6 +24,15 @@
 - **范围**：domain（如"骨科"）、不指定=全库
 - **过滤条件**：OCR 状态、年份范围（`--year-from`/`--year-to`）、lifecycle
 
+**先调用 query-plan：**
+
+```bash
+$PYTHON -m paperforge --vault "$VAULT" query-plan "<user_query>" --intent discover --json
+```
+
+执行 `recommended_primary.command` 与其 `args`。不要把作者、年份、标题词、主题词混成一条 search query。
+如果 `query-plan` 判断是 `author + year` 或 `mixed_query`，第一轮只用作者 + 年份。
+
 ### Step 2: 多臂搜索策略
 
 打开 `atoms/retrieval-routing.md` 参照 Ladder A。
@@ -69,6 +78,7 @@ $PYTHON -m paperforge --vault "$VAULT" search "<query>" --json --limit 30 \
 - FTS5 搜索标题、摘要、作者、期刊、domain、collection 路径
 - 返回 JSON：`data.matches[]` 包含 `zotero_key`、`title`、`year`、`first_author` 等
 - **作者+年份搜索**：query 放作者名，年份放 `--year-from`/`--year-to`（如 `search "Brighton" --year-from 1983 --year-to 1983`）
+- 不要把标题词塞进第一轮 author+year 查询；标题词只用于人工二次缩小
 
 #### Arm 3 — Collection/Domain 列举（完整列表，不截断）
 
@@ -102,6 +112,12 @@ $PYTHON -m paperforge --vault "$VAULT" context --domain "<domain>" --json
 > 语义全文搜索不可用（向量索引未构建）。已降级到元数据搜索。运行 `paperforge embed build` 后可开启正文发现。
 
 然后只运行 Arm 2（或 Arm 3 如果是 collection/domain 查询）。
+
+#### 当 `search` 0 结果时
+
+- 不要把 raw 0 结果直接解释成“库里没有”
+- 先检查 query-plan 是否已给出规范化写法
+- 只有规范化后的第一轮也 0 结果时，才能报告“未找到匹配”
 
 ### Step 3: Top-hit 富化（`paperforge paper-context`）
 

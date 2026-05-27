@@ -13,6 +13,7 @@ _COMMAND_REGISTRY: dict[str, str] = {
     "memory": "paperforge.commands.memory",
     "embed": "paperforge.commands.embed",
     "retrieve": "paperforge.commands.retrieve",
+    "query-plan": "paperforge.commands.query_plan",
     "paper-status": "paperforge.commands.paper_status",
     "agent-context": "paperforge.commands.agent_context",
     "prune": "paperforge.commands.prune",
