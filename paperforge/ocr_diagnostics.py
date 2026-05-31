@@ -61,7 +61,7 @@ def ocr_doctor(config: dict[str, str] | None, live: bool = False) -> dict:
         resp = requests.post(
             job_url,
             headers={"Authorization": f"bearer {token}"},
-            json={"model": os.environ.get("PADDLEOCR_MODEL", "PaddleOCR-VL-1.5")},
+            json={"model": os.environ.get("PADDLEOCR_MODEL", "PaddleOCR-VL-1.6")},
             timeout=30,
         )
         if resp.status_code == 401:
@@ -98,7 +98,7 @@ def ocr_doctor(config: dict[str, str] | None, live: bool = False) -> dict:
     # L3 — API response structure
     try:
         minimal_payload = {
-            "model": os.environ.get("PADDLEOCR_MODEL", "PaddleOCR-VL-1.5"),
+            "model": os.environ.get("PADDLEOCR_MODEL", "PaddleOCR-VL-1.6"),
             "optionalPayload": json.dumps({"useDocOrientationClassify": False}),
         }
         resp = requests.post(
@@ -159,7 +159,7 @@ def ocr_doctor(config: dict[str, str] | None, live: bool = False) -> dict:
                 resp = requests.post(
                     job_url,
                     headers={"Authorization": f"bearer {token}"},
-                    data={"model": os.environ.get("PADDLEOCR_MODEL", "PaddleOCR-VL-1.5")},
+                    data={"model": os.environ.get("PADDLEOCR_MODEL", "PaddleOCR-VL-1.6")},
                     files={"file": f},
                     timeout=120,
                 )

@@ -718,7 +718,7 @@ def headless_setup(
         {
             "PADDLEOCR_API_TOKEN": raw_key,
             "PADDLEOCR_JOB_URL": paddleocr_url,
-            "PADDLEOCR_MODEL": "PaddleOCR-VL-1.5",
+            "PADDLEOCR_MODEL": "PaddleOCR-VL-1.6",
             "ZOTERO_DATA_DIR": zotero_data or "",
         },
     )
