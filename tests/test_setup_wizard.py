@@ -458,3 +458,24 @@ def test_headless_setup_preserves_existing_files(tmp_path: Path, monkeypatch: py
     assert "PADDLEOCR_API_TOKEN=new-token" not in env_text
     assert plugin_main.read_text(encoding="utf-8") == "custom plugin\n"
     assert existing_note.read_text(encoding="utf-8") == "keep note\n"
+
+
+def test_headless_setup_allows_empty_paddleocr_key(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    from paperforge.setup_wizard import headless_setup
+    import paperforge.setup_wizard as sw
+
+    def patched_check_deps(self) -> CheckResult:
+        r = CheckResult("Dependencies")
+        r.passed = True
+        r.detail = "mocked"
+        return r
+
+    monkeypatch.setattr(sw.EnvChecker, "check_dependencies", patched_check_deps)
+
+    rv = headless_setup(
+        vault=tmp_path,
+        agent_key="opencode",
+        paddleocr_key=None,
+        skip_checks=True,
+    )
+    assert rv == 0, f"setup failed with empty paddleocr key, code {rv}"
