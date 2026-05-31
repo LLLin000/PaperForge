@@ -8,6 +8,7 @@ import { PaperForgeSettings } from "../constants";
 import { resolveVaultPaths, getCachedPython } from "../services/memory-state";
 import { resolvePythonExecutable, resolveGitDir, paperforgeEnrichedEnv } from "../services/python-bridge";
 import type { PythonResult } from "../services/python-bridge";
+import { shouldBlockStep3 } from "./step3-gate";
 
 // ── Interfaces ──
 
@@ -210,6 +211,7 @@ export class PaperForgeSetupModal extends Modal {
   private _pendingSave: ReturnType<typeof setTimeout> | null = null;
   private _apiKeyValidated!: boolean;
   private _apiKeyStatus!: HTMLElement;
+  private _showSkipConfirm: boolean = false;
 
   constructor(app: App, plugin: IPluginRef) {
     super(app);
@@ -263,13 +265,24 @@ export class PaperForgeSetupModal extends Modal {
     const nav = this.contentEl.createEl('div', { cls: 'paperforge-step-nav' });
     if (this._step > 1) {
       nav.createEl('button', { cls: 'paperforge-step-btn', text: t('nav_prev') })
-        .addEventListener('click', () => { this._step--; this._render(); });
+        .addEventListener('click', () => { this._step--; this._showSkipConfirm = false; this._render(); });
     }
     if (this._step < 5) {
       const nextBtn = nav.createEl('button', { cls: 'paperforge-step-btn mod-cta', text: t('nav_next') });
       nextBtn.addEventListener('click', () => {
-        if (this._step === 3 && !this._validateStep3()) return;
+        if (this._step === 3) {
+          const result = this._validateStep3();
+          if (result.blocked) {
+            if (result.reason === 'zotero') return;
+            if (result.reason === 'ocr') {
+              this._showSkipConfirm = true;
+              this._render();
+              return;
+            }
+          }
+        }
         this._step++;
+        this._showSkipConfirm = false;
         this._render();
       });
     } else {
@@ -278,36 +291,35 @@ export class PaperForgeSetupModal extends Modal {
     }
   }
 
-  _validateStep3() {
+  _validateStep3(): { blocked: boolean; reason?: 'ocr' | 'zotero' } {
     const s = this.plugin.settings;
 
-    // Check API key validated
-    if (!this._apiKeyValidated) {
-      new Notice('\u8BF7\u5148\u9A8C\u8BC1 PaddleOCR API \u5BC6\u94A5');
-      return false;
-    }
-
-    // Check Zotero data directory: required + exists + is directory + has storage/
+    // Hard block: Zotero data directory (required, exists, is directory, has storage/)
     if (!s.zotero_data_dir || !s.zotero_data_dir.trim()) {
       new Notice('Zotero \u6570\u636E\u76EE\u5F55\u4E3A\u5FC5\u586B\u9879\uFF0C\u8BF7\u586B\u5199\u8DEF\u5F84');
-      return false;
+      return { blocked: true, reason: 'zotero' };
     }
     const zotPath = s.zotero_data_dir.trim();
     if (!fs.existsSync(zotPath)) {
       new Notice('Zotero \u6570\u636E\u76EE\u5F55\u8DEF\u5F84\u4E0D\u5B58\u5728');
-      return false;
+      return { blocked: true, reason: 'zotero' };
     }
     if (!fs.statSync(zotPath).isDirectory()) {
       new Notice('Zotero \u6570\u636E\u76EE\u5F55\u8DEF\u5F84\u4E0D\u662F\u4E00\u4E2A\u76EE\u5F55');
-      return false;
+      return { blocked: true, reason: 'zotero' };
     }
     const storagePath = path.join(zotPath, 'storage');
     if (!fs.existsSync(storagePath) || !fs.statSync(storagePath).isDirectory()) {
       new Notice('Zotero \u6570\u636E\u76EE\u5F55\u4E2D\u672A\u627E\u5230 storage/ \u5B50\u76EE\u5F55');
-      return false;
+      return { blocked: true, reason: 'zotero' };
     }
 
-    return true;
+    // Soft block: OCR key not validated (confirmation, not hard block)
+    if (!this._apiKeyValidated) {
+      return { blocked: true, reason: 'ocr' };
+    }
+
+    return { blocked: false };
   }
 
   /* ── Step 1: Overview ── */
@@ -394,6 +406,12 @@ export class PaperForgeSetupModal extends Modal {
   /* ── Step 3: Keys, Zotero & Agent ── */
   _stepKeys(el: HTMLElement) {
     el.createEl('h2', { text: t('wizard_step3') });
+
+    if (this._showSkipConfirm) {
+      this._renderSkipConfirm(el);
+      return;
+    }
+
     const s = this.plugin.settings;
 
     el.createEl('p', { text: t('wizard_agent_hint'), cls: 'paperforge-modal-hint' });
@@ -443,6 +461,8 @@ export class PaperForgeSetupModal extends Modal {
     if (this._pendingSave) clearTimeout(this._pendingSave);
     this._pendingSave = setTimeout(() => { this.plugin.saveSettings(); this._pendingSave = null; }, 500);
 
+    el.createEl('p', { text: t('wizard_api_hint_skip'), cls: 'paperforge-modal-hint' });
+
     // Zotero data directory (now required)
     const zotRow = el.createEl('div', { cls: 'paperforge-modal-field' });
     zotRow.createEl('label', { cls: 'paperforge-modal-label', text: t('field_zotero_data') });
@@ -460,7 +480,7 @@ export class PaperForgeSetupModal extends Modal {
 
   _validateApiKey(key: string, btn: HTMLButtonElement) {
     if (!key || key.length < 10) {
-      this._apiKeyStatus.textContent = '\u5BC6\u94A5\u683C\u5F0F\u4E0D\u6B63\u786E';
+      this._apiKeyStatus.textContent = '\u5BC6\u94A5\u683C\u5F0F\u4E0D\u6B63\u786E\u3002\u53EF\u70B9\u4E0B\u4E00\u6B65\u8DF3\u8FC7\uFF0C\u7B49\u4F1A\u513F\u518D\u914D\u7F6E\u3002';
       this._apiKeyStatus.className = 'paperforge-apikey-status error';
       return;
     }
@@ -495,16 +515,16 @@ export class PaperForgeSetupModal extends Modal {
             this._apiKeyStatus.className = 'paperforge-apikey-status ok';
             this._apiKeyValidated = true;
           } else if (res.statusCode === 401) {
-            this._apiKeyStatus.textContent = '\u9A8C\u8BC1\u5931\u8D25\uFF1A\u5BC6\u94A5\u65E0\u6548';
+            this._apiKeyStatus.textContent = '\u9A8C\u8BC1\u5931\u8D25\uFF1A\u5BC6\u94A5\u65E0\u6548\u3002\u53EF\u70B9\u4E0B\u4E00\u6B65\u8DF3\u8FC7\uFF0C\u7B49\u4F1A\u513F\u518D\u914D\u7F6E\u3002';
             this._apiKeyStatus.className = 'paperforge-apikey-status error';
             this._apiKeyValidated = false;
           } else {
-            this._apiKeyStatus.textContent = '\u9A8C\u8BC1\u5931\u8D25\uFF1AAPI \u8FD4\u56DE ' + res.statusCode;
+            this._apiKeyStatus.textContent = '\u9A8C\u8BC1\u5931\u8D25\uFF1AAPI \u8FD4\u56DE ' + res.statusCode + '\u3002\u53EF\u70B9\u4E0B\u4E00\u6B65\u8DF3\u8FC7\uFF0C\u7B49\u4F1A\u513F\u518D\u914D\u7F6E\u3002';
             this._apiKeyStatus.className = 'paperforge-apikey-status error';
             this._apiKeyValidated = false;
           }
         } catch (e) {
-          this._apiKeyStatus.textContent = '\u9A8C\u8BC1\u5931\u8D25\uFF1A\u65E0\u6CD5\u89E3\u6790\u54CD\u5E94';
+          this._apiKeyStatus.textContent = '\u9A8C\u8BC1\u5931\u8D25\uFF1A\u65E0\u6CD5\u89E3\u6790\u54CD\u5E94\u3002\u53EF\u70B9\u4E0B\u4E00\u6B65\u8DF3\u8FC7\uFF0C\u7B49\u4F1A\u513F\u518D\u914D\u7F6E\u3002';
           this._apiKeyStatus.className = 'paperforge-apikey-status error';
           this._apiKeyValidated = false;
         }
@@ -513,12 +533,29 @@ export class PaperForgeSetupModal extends Modal {
     req.on('error', (e) => {
       btn.disabled = false;
       btn.textContent = '\u9A8C\u8BC1';
-      this._apiKeyStatus.textContent = '\u9A8C\u8BC1\u5931\u8D25\uFF1A\u65E0\u6CD5\u8FDE\u63A5 (' + e.message + ')';
+      this._apiKeyStatus.textContent = '\u9A8C\u8BC1\u5931\u8D25\uFF1A\u65E0\u6CD5\u8FDE\u63A5 (' + e.message + ')\u3002\u53EF\u70B9\u4E0B\u4E00\u6B65\u8DF3\u8FC7\uFF0C\u7B49\u4F1A\u513F\u518D\u914D\u7F6E\u3002';
       this._apiKeyStatus.className = 'paperforge-apikey-status error';
       this._apiKeyValidated = false;
     });
     req.write(postData);
     req.end();
+  }
+
+  _renderSkipConfirm(el: HTMLElement) {
+    el.createEl('p', { text: t('wizard_skip_ocr_desc'), cls: 'paperforge-modal-desc' });
+
+    const btnRow = el.createEl('div', { cls: 'paperforge-modal-actions' });
+    btnRow.createEl('button', { cls: 'paperforge-step-btn mod-cta', text: t('wizard_skip_ocr_continue') })
+      .addEventListener('click', () => {
+        this._showSkipConfirm = false;
+        this._step++;
+        this._render();
+      });
+    btnRow.createEl('button', { cls: 'paperforge-step-btn', text: t('wizard_skip_ocr_back') })
+      .addEventListener('click', () => {
+        this._showSkipConfirm = false;
+        this._render();
+      });
   }
 
   /* ── Modal form helpers ── */
