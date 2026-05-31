@@ -1,0 +1,28 @@
+{
+  "classes": {
+    "raw_interleave": [
+      {"key": "24YKLTHQ", "page": 1},
+      {"key": "26WC6NT7", "page": 1}
+    ],
+    "mixed_body_media": [
+      {"key": "23T2B8ZX", "page": 3},
+      {"key": "24A2QUAH", "page": 4}
+    ],
+    "heading_media_mix": [
+      {"key": "24A2QUAH", "page": 8},
+      {"key": "24YKLTHQ", "page": 5}
+    ],
+    "cross_column_body": [
+      {"key": "24A2QUAH", "page": 1},
+      {"key": "27MSS3VH", "page": 2}
+    ],
+    "multi_heading_multicol": [
+      {"key": "23T2B8ZX", "page": 2},
+      {"key": "24YKLTHQ", "page": 10}
+    ],
+    "session_regression_7C8829BD": [
+      {"key": "7C8829BD", "page": 7},
+      {"key": "7C8829BD", "page": 14}
+    ]
+  }
+}
