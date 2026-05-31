@@ -354,8 +354,10 @@ def _normalize_tags(tags_value: object) -> list[str]:
 def extract_preserved_tags(text: str) -> list[str] | None:
     """Extract preserved tags from existing note frontmatter.
 
-    Returns None when frontmatter is malformed/unreadable.
-    Returns a normalized list of tag strings otherwise.
+    Returns None when frontmatter is malformed/unreadable, or when the
+    tags key is absent (caller should supply defaults).
+    Returns a normalized list of tag strings otherwise (empty list means
+    tags were explicitly set to empty).
     Only trusts YAML-parsed data — does not use regex fallback.
     """
     fm_match = re.match(r"^---\s*\n(.*?)\n---", text, re.DOTALL)
@@ -363,13 +365,15 @@ def extract_preserved_tags(text: str) -> list[str] | None:
     if not fm_match:
         if text.strip().startswith("---"):
             return None
-        return []
+        return None
 
     try:
         import yaml
 
         data = yaml.safe_load(fm_match.group(1))
         if not isinstance(data, dict):
+            return None
+        if "tags" not in data:
             return None
         return _normalize_tags(data.get("tags"))
     except Exception:

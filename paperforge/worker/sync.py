@@ -28,6 +28,7 @@ from paperforge.adapters.obsidian_frontmatter import (
     canonicalize_decision,
     compute_final_collection,
     extract_preserved_deep_reading,
+    extract_preserved_tags,
     update_frontmatter_field,
 )
 from paperforge.adapters.zotero_paths import (
@@ -994,8 +995,10 @@ def next_key(domain: str, export_rows: list[dict]) -> str:
     return f"{prefix}{max_num + 1:03d}"
 
 
-def frontmatter_note(entry: dict, existing_text: str = "") -> str:
+def frontmatter_note(entry: dict, existing_text: str = "", preserved_tags: list[str] | None = None) -> str:
     preserved_deep = extract_preserved_deep_reading(existing_text)
+    if preserved_tags is None and existing_text:
+        preserved_tags = extract_preserved_tags(existing_text)
     first_author = entry.get("first_author", "")
     if not first_author:
         authors = entry.get("authors", [])
@@ -1028,9 +1031,22 @@ def frontmatter_note(entry: dict, existing_text: str = "") -> str:
             f"deep_reading_status: {yaml_quote(entry.get('deep_reading_status', 'pending'))}",
             f"pdf_path: {yaml_quote(entry.get('pdf_path', ''))}",
             f"fulltext_md_path: {yaml_quote('[[{}]]'.format(entry['fulltext_path']) if entry.get('ocr_status') == 'done' and entry.get('fulltext_path') else '')}",
-            "tags:",
-            "  - 文献阅读",
-            f"  - {entry.get('domain', '')}",
+        ]
+    )
+    if preserved_tags is not None:
+        lines.append("tags:")
+        for tag in preserved_tags:
+            lines.append(f"  - {tag}")
+    else:
+        lines.extend(
+            [
+                "tags:",
+                "  - 文献阅读",
+                f"  - {entry.get('domain', '')}",
+            ]
+        )
+    lines.extend(
+        [
             "---",
             "",
             f"# {entry.get('title', '')}",
