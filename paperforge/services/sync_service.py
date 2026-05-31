@@ -291,9 +291,14 @@ class SyncService:
                 index_count = asset_index.build_index(self.vault, verbose)
 
             # ── Phase 4: Prune orphans ──
-            prune_data = self.prune(paths, fresh_index=None, dry_run=True)
-            if prune_force:
-                prune_data = self.prune(paths, fresh_index=None, dry_run=False)
+            prune_data = None
+            try:
+                prune_data = self.prune(paths, fresh_index=None, dry_run=True)
+                if prune_force:
+                    prune_data = self.prune(paths, fresh_index=None, dry_run=False)
+            except Exception as exc:
+                logger.warning("prune skipped: %s", exc)
+                prune_data = {"preview": [], "deleted": [], "counts": {"workspace": 0, "ocr": 0, "vectors": 0, "failed": 0}}
             if prune or prune_force:
                 if not json_output:
                     pdata = prune_data or {}

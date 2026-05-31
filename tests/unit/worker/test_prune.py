@@ -124,7 +124,7 @@ class TestPruneOrphanPapers:
             calls.append(key)
             return 0
 
-        monkeypatch.setattr("paperforge.worker.prune.delete_paper_vectors", _mock_delete)
+        monkeypatch.setattr("paperforge.embedding._chroma.delete_paper_vectors", _mock_delete)
 
         lit = tmp_path / "Resources" / "Literature" / "CS"
         (lit / "key1 - Orphan").mkdir(parents=True)

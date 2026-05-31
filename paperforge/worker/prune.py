@@ -5,7 +5,6 @@ import shutil
 from pathlib import Path
 
 from paperforge.config import paperforge_paths
-from paperforge.embedding._chroma import delete_paper_vectors
 
 logger = logging.getLogger(__name__)
 
@@ -152,6 +151,7 @@ def prune_orphan_papers(
                     counts["workspace"] += 1
 
             try:
+                from paperforge.embedding._chroma import delete_paper_vectors
                 n = delete_paper_vectors(vault, key)
                 if n > 0:
                     counts["vectors"] += n
