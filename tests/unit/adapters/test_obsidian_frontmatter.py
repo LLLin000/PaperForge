@@ -12,6 +12,7 @@ from paperforge.adapters.obsidian_frontmatter import (
     candidate_markdown,
     compute_final_collection,
     extract_preserved_deep_reading,
+    extract_preserved_tags,
     generate_review,
     has_deep_reading_content,
     read_frontmatter_dict,
@@ -247,3 +248,17 @@ class TestUpdateFrontmatterField:
         content = "no frontmatter"
         result = update_frontmatter_field(content, "key", "val")
         assert result == content
+
+
+class TestExtractPreservedTags:
+    def test_existing_scalar_tag_normalizes_to_single_item_list(self) -> None:
+        text = "---\ntags: foo\n---\nbody\n"
+        assert extract_preserved_tags(text) == ["foo"]
+
+    def test_existing_empty_tags_are_preserved_as_empty_list(self) -> None:
+        text = "---\ntags: []\n---\nbody\n"
+        assert extract_preserved_tags(text) == []
+
+    def test_malformed_frontmatter_returns_unreadable_sentinel(self) -> None:
+        text = "---\ntags:\n  - foo\nbody without closing frontmatter"
+        assert extract_preserved_tags(text) is None

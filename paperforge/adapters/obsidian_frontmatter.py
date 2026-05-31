@@ -325,6 +325,57 @@ def update_frontmatter_field(content: str, key: str, value: str) -> str:
     return new_content
 
 
+def _normalize_tags(tags_value: object) -> list[str]:
+    """Normalize YAML-parsed tags value to a list of strings.
+
+    None / empty list / empty string -> []
+    Scalar string -> single-item list
+    List items -> stringified non-empty items (None items skipped)
+    Other scalar types -> stringified single-item list (empty if blank)
+    """
+    if tags_value is None:
+        return []
+    if isinstance(tags_value, str):
+        s = tags_value.strip()
+        return [s] if s else []
+    if isinstance(tags_value, list):
+        result: list[str] = []
+        for item in tags_value:
+            if item is None:
+                continue
+            s = str(item).strip()
+            if s:
+                result.append(s)
+        return result
+    s = str(tags_value).strip()
+    return [s] if s else []
+
+
+def extract_preserved_tags(text: str) -> list[str] | None:
+    """Extract preserved tags from existing note frontmatter.
+
+    Returns None when frontmatter is malformed/unreadable.
+    Returns a normalized list of tag strings otherwise.
+    Only trusts YAML-parsed data — does not use regex fallback.
+    """
+    fm_match = re.match(r"^---\s*\n(.*?)\n---", text, re.DOTALL)
+
+    if not fm_match:
+        if text.strip().startswith("---"):
+            return None
+        return []
+
+    try:
+        import yaml
+
+        data = yaml.safe_load(fm_match.group(1))
+        if not isinstance(data, dict):
+            return None
+        return _normalize_tags(data.get("tags"))
+    except Exception:
+        return None
+
+
 def read_frontmatter_dict(text: str) -> dict:
     """Parse YAML frontmatter from markdown text using yaml.safe_load.
 
