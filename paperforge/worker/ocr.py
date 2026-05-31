@@ -66,7 +66,7 @@ def ensure_ocr_meta(vault: Path, row: dict) -> dict:
         meta = {}
     meta.setdefault("zotero_key", key)
     meta.setdefault("source_pdf", row.get("pdf_path", ""))
-    meta.setdefault("ocr_provider", "PaddleOCR-VL-1.5")
+    meta.setdefault("ocr_provider", "PaddleOCR-VL-1.6")
     meta.setdefault("mode", "async")
     meta.setdefault("ocr_status", "pending")
     meta.setdefault("ocr_job_id", "")
@@ -1029,6 +1029,8 @@ def is_embedded_figure_text_block(block: dict, blocks: list[dict], page_width: i
     label = block.get("block_label", "")
     if label not in {"text", "paragraph_title"}:
         return False
+    if label == "paragraph_title":
+        return False
     text = clean_block_text(block.get("block_content", ""))
     if not text:
         return False
@@ -1681,6 +1683,9 @@ def run_ocr(vault: Path, verbose: bool = False, no_progress: bool = False) -> in
             meta["retry_count"] = 0
             write_json(paths["ocr"] / key / "meta.json", meta)
     ocr_queue = sync_ocr_queue(paths, target_rows)
+    print(f"DEBUG: target_keys count={len(target_keys)}, target_rows count={len(target_rows)}, queue count={len(ocr_queue)}", flush=True)
+    if ocr_queue:
+        print(f"DEBUG: first item={ocr_queue[0].get('zotero_key')} status={ocr_queue[0].get('queue_status')}", flush=True)
     max_items_raw = os.environ.get("PADDLEOCR_MAX_ITEMS", "").strip()
     max_items = 3
     if max_items_raw:
@@ -1703,7 +1708,7 @@ def run_ocr(vault: Path, verbose: bool = False, no_progress: bool = False) -> in
         # Fallback: parse vault-root .env
         token = _read_dotenv(vault, "PADDLEOCR_API_TOKEN")
     job_url = os.environ.get("PADDLEOCR_JOB_URL", "https://paddleocr.aistudio-app.com/api/v2/ocr/jobs").strip()
-    model = os.environ.get("PADDLEOCR_MODEL", "PaddleOCR-VL-1.5").strip()
+    model = os.environ.get("PADDLEOCR_MODEL", "PaddleOCR-VL-1.6").strip()
     optional_payload = {"useDocOrientationClassify": False, "useDocUnwarping": False, "useChartRecognition": False}
     changed = 0
     active_submitted = 0
