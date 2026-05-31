@@ -263,7 +263,7 @@ def _inject_widths_into_block(text: str, widths: dict[str, int]) -> str:
     return "\n".join(result)
 
 
-def merge_base_views(existing_content: str | None, new_views: list[dict]) -> str:
+def merge_base_views(existing_content: str | None, new_views: list[dict], folder_filter: str = "") -> str:
     """Incrementally merge standard PaperForge views into an existing .base file.
 
     Strategy:
@@ -277,6 +277,7 @@ def merge_base_views(existing_content: str | None, new_views: list[dict]) -> str
     Args:
         existing_content: Raw text of existing .base file (or None/empty for fresh generation).
         new_views: List of 8 view dicts from build_base_views().
+        folder_filter: Vault-relative folder path for file.inFolder() (used for fresh generation).
 
     Returns:
         Merged .base file content with PaperForge views updated, user views preserved.
@@ -315,7 +316,7 @@ def merge_base_views(existing_content: str | None, new_views: list[dict]) -> str
         fresh_views_yaml = _render_views_section(new_views)
         return f"""filters:
   and:
-    - file.inFolder("{new_views[0]["name"]}")
+    - file.inFolder("{folder_filter}")
     - file.ext == "md"
     - !zotero_key.isEmpty()
 {PROPERTIES_YAML}

@@ -79,7 +79,7 @@ class TestBuildBaseViews:
 
     def test_properties_yaml_updated(self):
         from paperforge.worker.base_views import merge_base_views
-        fresh = merge_base_views(None, build_base_views("骨科"))
+        fresh = merge_base_views(None, build_base_views("骨科"), folder_filter="Resources/Literature/骨科")
         assert "lifecycle:" not in fresh
         assert "maturity_level:" not in fresh
         assert "next_step:" not in fresh
