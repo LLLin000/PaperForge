@@ -3,9 +3,11 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+REPO_ROOT = Path(__file__).resolve().parent.parent
+
 
 def test_fixture_inventory_has_required_failure_classes() -> None:
-    inventory_path = Path("tests/fixtures/ocr_reading_order/fixture_inventory.json")
+    inventory_path = REPO_ROOT / "tests" / "fixtures" / "ocr_reading_order" / "fixture_inventory.json"
     data = json.loads(inventory_path.read_text(encoding="utf-8"))
 
     required_classes = {
