@@ -37,6 +37,7 @@ import filelock
 from paperforge import __version__ as _paperforge_version
 from paperforge.adapters.obsidian_frontmatter import (
     _legacy_control_flags,
+    extract_preserved_tags,
     read_frontmatter_dict,
 )
 from paperforge.config import paperforge_paths
@@ -269,6 +270,7 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
     import shutil
 
     from paperforge import __version__ as PAPERFORGE_VERSION
+    from paperforge.adapters.obsidian_frontmatter import has_deep_reading_content
     from paperforge.worker._utils import lookup_impact_factor, read_json, slugify_filename, write_json, yaml_quote
     from paperforge.worker.asset_state import (
         compute_health,
@@ -278,7 +280,6 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
     )
     from paperforge.worker.ocr import validate_ocr_meta
     from paperforge.worker.paper_meta import write_paper_meta
-    from paperforge.adapters.obsidian_frontmatter import has_deep_reading_content
     from paperforge.worker.sync import (
         collection_fields,
         frontmatter_note,
@@ -459,7 +460,8 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
         fm_close = text.find("---\n", 4)  # closing --- after opening ---
         if fm_close != -1:
             body = text[fm_close + 4 :]  # everything after frontmatter
-            new_full = frontmatter_note(entry, "")
+            preserved_tags = extract_preserved_tags(text)
+            new_full = frontmatter_note(entry, text, preserved_tags=preserved_tags)
             new_fm_close = new_full.find("---\n", 4)
             if new_fm_close != -1:
                 new_fm = new_full[: new_fm_close + 4]  # new frontmatter block with closing ---\n

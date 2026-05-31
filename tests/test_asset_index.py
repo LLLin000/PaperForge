@@ -8,7 +8,6 @@ from __future__ import annotations
 import json
 import os
 import threading
-import time
 from pathlib import Path
 
 import filelock
@@ -17,13 +16,13 @@ import pytest
 from paperforge.worker.asset_index import (
     CURRENT_SCHEMA_VERSION,
     INDEX_FILENAME,
-    LOCK_TIMEOUT,
     atomic_write_index,
     build_envelope,
     build_index,
     get_index_path,
     summarize_index,
 )
+from paperforge.worker.sync import frontmatter_note
 
 
 class TestGetIndexPath:
@@ -371,6 +370,62 @@ def _minimal_vault(tmp_path: Path) -> Path:
         encoding="utf-8",
     )
     return vault
+
+
+class TestFrontmatterNoteTagPreservation:
+    """Unit tests for frontmatter_note() tag preservation behavior."""
+
+    def _make_entry(self, zotero_key: str, domain: str = "test") -> dict:
+        return {
+            "title": "Test Paper",
+            "domain": domain,
+            "zotero_key": zotero_key,
+            "first_author": "Author",
+            "authors": ["Author"],
+            "doi": "",
+            "pmid": "",
+            "year": "",
+            "journal": "",
+            "citation_key": "",
+            "collections": [],
+            "collection_tags": [],
+            "collection_path": "",
+            "impact_factor": "",
+            "abstract": "",
+            "has_pdf": False,
+            "do_ocr": False,
+            "ocr_status": "pending",
+            "deep_reading_status": "pending",
+            "pdf_path": "",
+            "fulltext_path": "",
+        }
+
+    def test_frontmatter_note_preserves_custom_tags(self):
+        entry = self._make_entry("ABC1")
+        existing_text = "---\ntags:\n  - mine\n  - keep\n---\nmy body\n"
+        result = frontmatter_note(entry, existing_text)
+        assert "  - mine" in result
+        assert "  - keep" in result
+        assert "  - 文献阅读" not in result
+
+    def test_frontmatter_note_adds_defaults_when_no_tags(self):
+        entry = self._make_entry("ABC2")
+        existing_text = "---\ntitle: Test Paper\n---\nbody\n"
+        result = frontmatter_note(entry, existing_text)
+        assert "  - 文献阅读" in result
+        assert "  - test" in result
+
+    def test_frontmatter_note_preserves_empty_tags(self):
+        entry = self._make_entry("ABC3")
+        existing_text = "---\ntags: []\n---\nbody\n"
+        result = frontmatter_note(entry, existing_text)
+        assert "  - 文献阅读" not in result
+
+    def test_frontmatter_note_falls_back_when_malformed(self):
+        entry = self._make_entry("ABC4")
+        existing_text = "---\ntags:\n  - foo\nbody without closing frontmatter"
+        result = frontmatter_note(entry, existing_text)
+        assert "  - 文献阅读" in result
 
 
 def _ensure_domain_config(vault: Path) -> None:
