@@ -317,6 +317,42 @@ Workers never trigger Agents, and Agents never trigger Workers. The handoff poin
 The `paperforge ocr` command scans all formal notes for `do_ocr: true` and `ocr_status != done`, uploads PDFs, and updates both persistence layers. The `paperforge deep-reading` command checks `ocr_status == done` before listing a paper as "ready."
 **Consequences:**
 - (+) Resilient to crashes: status is persisted, not in-memory.
+
+---
+
+### ADR-003a: OCR Reading Order — Layered Pipeline
+
+**Status:** Proposed (May 2026)
+**Phase:** OCR Improvement
+
+**Context:** The original `paperforge/worker/ocr.py` bundled block normalization, figure/caption grouping, body-width estimation, embedded-media suppression, column reordering, and markdown emission into one file with intertwined responsibilities. Fixes to one page class often regressed others because rules were not separated by decision responsibility.
+
+**Decision:** Refactor OCR processing into explicit layers, treating PaddleOCR output as the primary structural prior with PaperForge rules as confidence-aware local corrections.
+
+Layer responsibilities:
+
+| Layer | Module | Role |
+|-------|--------|------|
+| Normalization | `ocr_normalize.py` | Text cleanup, bbox normalization, raw provenance |
+| Role Assignment | `ocr_roles.py` | Assign document roles (`section_heading`, `body_paragraph`, `figure_caption`, etc.) with Paddle labels as priors |
+| Body Spine | `ocr_body_spine.py` | Extract body-text candidates; exclude figures, captions, references from body ordering |
+| Layout Zones | `ocr_layout.py` | Detect local 1/2/3-column regimes per zone (not per page); build body reading order |
+| Attachment | `ocr_attach.py` | Bind captions to media; attach non-body objects to body spine anchors |
+| Emission | `ocr_emit.py` | Serialize ordered spine + attachment graph into markdown |
+
+Design principles:
+
+- PaddleOCR `block_order`, labels, and local grouping are the default prior
+- PaperForge rules only override when contradiction evidence is strong
+- Low-confidence decisions degrade conservatively (preserve OCR prior)
+- Section headings are first-class structural signals, not subject to media suppression
+- Fallback: when model and rules disagree without decisive evidence, preserve OCR order
+
+**Consequences:**
+
+- (+) Failures are diagnosable by layer: role, spine, regime, ordering, or attachment
+- (+) Mixed-regime pages (body + figure + caption) no longer break body flow
+- (-) Increased module count requires fixture-driven regression matrix before rollout
 - (+) Idempotent: re-running `paperforge ocr` skips already-done papers.
 - (+) Observable: users can check status without re-running the worker.
 - (-) Requires dual persistence: `meta.json` and formal note frontmatter must stay in sync.
