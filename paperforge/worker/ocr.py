@@ -367,9 +367,76 @@ def crop_block_asset(page_image_path: Path, bbox: list[int], destination: Path) 
         return False
 
 
-def block_sort_key(block: dict) -> tuple[int, int, int, int]:
+def block_sort_key(block: dict) -> tuple:
     bbox = block.get("block_bbox", [0, 0, 0, 0])
-    return (int(bbox[1]), int(bbox[0]), int(bbox[3]), int(bbox[2]))
+    order = block.get("block_order")
+    return (0 if order is not None else 1, order or 0, int(bbox[1]), int(bbox[0]))
+
+
+def _col_xc(block: dict) -> float | None:
+    bbox = block.get("block_bbox", [0, 0, 0, 0])
+    if len(bbox) < 3 or bbox[2] <= bbox[0]:
+        return None
+    return (bbox[0] + bbox[2]) / 2
+
+
+def _col_switches(blocks: list[dict], page_width: int) -> int:
+    mid = page_width / 2 if page_width else 600
+    switches = 0
+    prev_col = None
+    for b in blocks:
+        xc = _col_xc(b)
+        if xc is None:
+            continue
+        col = "L" if xc < mid * 0.95 else "R" if xc > mid * 1.05 else "S"
+        if prev_col and col != "S" and prev_col != "S" and col != prev_col:
+            switches += 1
+        if col != "S":
+            prev_col = col
+    return switches
+
+
+def validate_block_order(blocks: list[dict], page_width: int) -> list[dict]:
+    if len(blocks) < 4 or not page_width:
+        return blocks
+    mid = page_width / 2
+
+    if _col_switches(blocks, page_width) > 3:
+        left = [b for b in blocks if _col_xc(b) is not None and (_col_xc(b) or 0) < mid]
+        right = [b for b in blocks if _col_xc(b) is not None and (_col_xc(b) or 0) >= mid]
+        other = [b for b in blocks if _col_xc(b) is None]
+        left.sort(key=lambda b: b.get("block_bbox", [0, 0, 0, 0])[1])
+        right.sort(key=lambda b: b.get("block_bbox", [0, 0, 0, 0])[1])
+        return left + right + other
+
+    col_buckets: dict[str, list[dict]] = {"L": [], "R": []}
+    for b in blocks:
+        xc = _col_xc(b)
+        if xc is None:
+            continue
+        if xc < mid:
+            col_buckets["L"].append(b)
+        else:
+            col_buckets["R"].append(b)
+
+    for key in ("L", "R"):
+        sorted_col = sorted(col_buckets[key], key=lambda b: b.get("block_bbox", [0, 0, 0, 0])[1])
+        if [id(blk) for blk in col_buckets[key]] != [id(blk) for blk in sorted_col]:
+            col_buckets[key] = sorted_col
+
+    result: list[dict] = []
+    iters = {"L": iter(col_buckets["L"]), "R": iter(col_buckets["R"])}
+    for b in blocks:
+        xc = _col_xc(b)
+        if xc is None:
+            result.append(b)
+            continue
+        col_key = "L" if xc < mid else "R"
+        try:
+            result.append(next(iters[col_key]))
+        except StopIteration:
+            pass
+    return result
 
 
 def clean_block_text(text: str) -> str:
@@ -1208,12 +1275,13 @@ def render_page_blocks(
     vault: Path, page_index: int, result: dict, images_dir: Path, page_cache_dir: Path, pdf_doc=None
 ) -> list[str]:
     pruned = result.get("prunedResult", {})
+    ocr_width = int(pruned.get("width", 0) or 0)
     blocks = sorted(pruned.get("parsing_res_list", []), key=block_sort_key)
+    blocks = validate_block_order(blocks, ocr_width)
     raw_reference_blocks = [block for block in blocks if block.get("block_label") == "reference_content"]
     first_reference_y = min(
         (block.get("block_bbox", [0, 10**9, 0, 0])[1] for block in raw_reference_blocks), default=10**9
     )
-    ocr_width = int(pruned.get("width", 0) or 0)
     ocr_height = int(pruned.get("height", 0) or 0)
     page_image = render_pdf_page_cached(
         pdf_doc, page_index, ocr_width, ocr_height, page_cache_dir / f"page_{page_index:03d}.png"
