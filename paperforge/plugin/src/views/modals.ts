@@ -294,29 +294,30 @@ export class PaperForgeSetupModal extends Modal {
   _validateStep3(): { blocked: boolean; reason?: 'ocr' | 'zotero' } {
     const s = this.plugin.settings;
 
-    // Hard block: Zotero data directory (required, exists, is directory, has storage/)
-    if (!s.zotero_data_dir || !s.zotero_data_dir.trim()) {
-      new Notice('Zotero \u6570\u636E\u76EE\u5F55\u4E3A\u5FC5\u586B\u9879\uFF0C\u8BF7\u586B\u5199\u8DEF\u5F84');
-      return { blocked: true, reason: 'zotero' };
-    }
-    const zotPath = s.zotero_data_dir.trim();
-    if (!fs.existsSync(zotPath)) {
-      new Notice('Zotero \u6570\u636E\u76EE\u5F55\u8DEF\u5F84\u4E0D\u5B58\u5728');
-      return { blocked: true, reason: 'zotero' };
-    }
-    if (!fs.statSync(zotPath).isDirectory()) {
-      new Notice('Zotero \u6570\u636E\u76EE\u5F55\u8DEF\u5F84\u4E0D\u662F\u4E00\u4E2A\u76EE\u5F55');
-      return { blocked: true, reason: 'zotero' };
-    }
-    const storagePath = path.join(zotPath, 'storage');
-    if (!fs.existsSync(storagePath) || !fs.statSync(storagePath).isDirectory()) {
-      new Notice('Zotero \u6570\u636E\u76EE\u5F55\u4E2D\u672A\u627E\u5230 storage/ \u5B50\u76EE\u5F55');
-      return { blocked: true, reason: 'zotero' };
+    const gate = shouldBlockStep3(this._apiKeyValidated, s.zotero_data_dir);
+    if (gate.reason === 'ocr') {
+      return gate;
     }
 
-    // Soft block: OCR key not validated (confirmation, not hard block)
-    if (!this._apiKeyValidated) {
-      return { blocked: true, reason: 'ocr' };
+    if (gate.reason === 'zotero') {
+      const zotPath = (s.zotero_data_dir || '').trim();
+      if (!zotPath) {
+        new Notice('Zotero \u6570\u636E\u76EE\u5F55\u4E3A\u5FC5\u586B\u9879\uFF0C\u8BF7\u586B\u5199\u8DEF\u5F84');
+        return { blocked: true, reason: 'zotero' };
+      }
+      if (!fs.existsSync(zotPath)) {
+        new Notice('Zotero \u6570\u636E\u76EE\u5F55\u8DEF\u5F84\u4E0D\u5B58\u5728');
+        return { blocked: true, reason: 'zotero' };
+      }
+      if (!fs.statSync(zotPath).isDirectory()) {
+        new Notice('Zotero \u6570\u636E\u76EE\u5F55\u8DEF\u5F84\u4E0D\u662F\u4E00\u4E2A\u76EE\u5F55');
+        return { blocked: true, reason: 'zotero' };
+      }
+      const storagePath = path.join(zotPath, 'storage');
+      if (!fs.existsSync(storagePath) || !fs.statSync(storagePath).isDirectory()) {
+        new Notice('Zotero \u6570\u636E\u76EE\u5F55\u4E2D\u672A\u627E\u5230 storage/ \u5B50\u76EE\u5F55');
+        return { blocked: true, reason: 'zotero' };
+      }
     }
 
     return { blocked: false };
