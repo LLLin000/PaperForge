@@ -35,6 +35,11 @@ def _read_dotenv(vault: Path, key: str) -> str:
     return ""
 
 
+try:
+    from paperforge.worker.ocr_roles import assign_block_role  # noqa: F401
+except ImportError:
+    pass
+
 from paperforge.worker._retry import retry_with_meta
 from paperforge.worker._utils import (
     pipeline_paths,
