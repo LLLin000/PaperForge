@@ -1276,6 +1276,14 @@ def caption_group_assignments(blocks: list[dict]) -> tuple[dict[int, list[dict]]
     return (figure_map, table_map)
 
 
+def _apply_layered_body_reorder(blocks: list[dict], page_width: int, page_height: int) -> list[dict]:
+    try:
+        from paperforge.worker.ocr_orchestrator import reorder_blocks_layered
+        return reorder_blocks_layered(blocks, page_width=page_width, page_height=page_height)
+    except ImportError:
+        return blocks
+
+
 def render_page_blocks(
     vault: Path, page_index: int, result: dict, images_dir: Path, page_cache_dir: Path, pdf_doc=None
 ) -> list[str]:
@@ -1283,11 +1291,12 @@ def render_page_blocks(
     ocr_width = int(pruned.get("width", 0) or 0)
     blocks = sorted(pruned.get("parsing_res_list", []), key=block_sort_key)
     blocks = validate_block_order(blocks, ocr_width)
+    ocr_height = int(pruned.get("height", 0) or 0)
+    blocks = _apply_layered_body_reorder(blocks, ocr_width, ocr_height)
     raw_reference_blocks = [block for block in blocks if block.get("block_label") == "reference_content"]
     first_reference_y = min(
         (block.get("block_bbox", [0, 10**9, 0, 0])[1] for block in raw_reference_blocks), default=10**9
     )
-    ocr_height = int(pruned.get("height", 0) or 0)
     page_image = render_pdf_page_cached(
         pdf_doc, page_index, ocr_width, ocr_height, page_cache_dir / f"page_{page_index:03d}.png"
     )
