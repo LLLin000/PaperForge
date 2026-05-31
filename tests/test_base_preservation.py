@@ -234,7 +234,7 @@ views:
       - title
 """
         views = build_base_views("骨科")
-        result = merge_base_views(existing, views)
+        result = merge_base_views(existing, views, folder_filter="Resources/Literature/骨科")
 
         assert "My Custom View" in result, "User view was lost"
         assert "推荐分析" in result
@@ -243,7 +243,7 @@ views:
     def test_merge_base_views_first_run_generates_fresh(self):
         """merge_base_views with no existing content generates fresh YAML."""
         views = build_base_views("骨科")
-        result = merge_base_views(None, views)
+        result = merge_base_views(None, views, folder_filter="Resources/Literature/骨科")
 
         assert "views:" in result
         assert "type: table" in result
