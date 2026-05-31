@@ -45,6 +45,134 @@ def test_caption_group_assignments_respects_columns() -> None:
     assert right_ids == [3]
 
 
+def test_validate_block_order_falls_back_to_column_major_on_excessive_switches() -> None:
+    from paperforge.worker.ocr import validate_block_order
+
+    blocks = [
+        {"block_id": 1, "block_label": "text", "block_order": 0, "block_bbox": [80, 100, 500, 140], "block_content": "L1"},
+        {"block_id": 2, "block_label": "text", "block_order": 1, "block_bbox": [700, 110, 1120, 150], "block_content": "R1"},
+        {"block_id": 3, "block_label": "text", "block_order": 2, "block_bbox": [80, 200, 500, 240], "block_content": "L2"},
+        {"block_id": 4, "block_label": "text", "block_order": 3, "block_bbox": [700, 210, 1120, 250], "block_content": "R2"},
+        {"block_id": 5, "block_label": "text", "block_order": 4, "block_bbox": [80, 300, 500, 340], "block_content": "L3"},
+        {"block_id": 6, "block_label": "text", "block_order": 5, "block_bbox": [700, 310, 1120, 350], "block_content": "R3"},
+        {"block_id": 7, "block_label": "text", "block_order": 6, "block_bbox": [80, 400, 500, 440], "block_content": "L4"},
+        {"block_id": 8, "block_label": "text", "block_order": 7, "block_bbox": [700, 410, 1120, 450], "block_content": "R4"},
+    ]
+
+    ordered = validate_block_order(blocks, page_width=1200)
+
+    assert [block["block_content"] for block in ordered] == ["L1", "L2", "L3", "L4", "R1", "R2", "R3", "R4"]
+
+
+def test_validate_block_order_repairs_non_monotonic_order_within_column() -> None:
+    from paperforge.worker.ocr import validate_block_order
+
+    blocks = [
+        {"block_id": 1, "block_label": "text", "block_order": 0, "block_bbox": [80, 100, 500, 140], "block_content": "L1"},
+        {"block_id": 2, "block_label": "text", "block_order": 1, "block_bbox": [80, 300, 500, 340], "block_content": "L3"},
+        {"block_id": 3, "block_label": "text", "block_order": 2, "block_bbox": [80, 200, 500, 240], "block_content": "L2"},
+        {"block_id": 4, "block_label": "text", "block_order": 3, "block_bbox": [700, 150, 1120, 190], "block_content": "R1"},
+    ]
+
+    ordered = validate_block_order(blocks, page_width=1200)
+
+    assert [block["block_content"] for block in ordered] == ["L1", "L2", "L3", "R1"]
+
+
+def test_validate_block_order_keeps_bbox_sort_when_block_order_missing() -> None:
+    from paperforge.worker.ocr import block_sort_key, validate_block_order
+
+    blocks = [
+        {"block_id": 1, "block_label": "text", "block_bbox": [700, 300, 1120, 340], "block_content": "R2"},
+        {"block_id": 2, "block_label": "text", "block_bbox": [80, 100, 500, 140], "block_content": "L1"},
+        {"block_id": 3, "block_label": "text", "block_bbox": [700, 100, 1120, 140], "block_content": "R1"},
+        {"block_id": 4, "block_label": "text", "block_bbox": [80, 300, 500, 340], "block_content": "L2"},
+    ]
+
+    ordered = validate_block_order(sorted(blocks, key=block_sort_key), page_width=0)
+
+    assert [block["block_content"] for block in ordered] == ["L1", "R1", "L2", "R2"]
+
+
+def test_validate_block_order_preserves_center_spanning_blocks() -> None:
+    from paperforge.worker.ocr import validate_block_order
+
+    blocks = [
+        {"block_id": 1, "block_label": "text", "block_order": 0, "block_bbox": [120, 80, 1080, 140], "block_content": "Full-width section heading"},
+        {"block_id": 2, "block_label": "text", "block_order": 1, "block_bbox": [80, 180, 500, 240], "block_content": "Left paragraph one"},
+        {"block_id": 3, "block_label": "text", "block_order": 2, "block_bbox": [700, 190, 1120, 250], "block_content": "Right paragraph one"},
+        {"block_id": 4, "block_label": "text", "block_order": 3, "block_bbox": [80, 280, 500, 340], "block_content": "Left paragraph two"},
+        {"block_id": 5, "block_label": "text", "block_order": 4, "block_bbox": [700, 290, 1120, 350], "block_content": "Right paragraph two"},
+    ]
+
+    ordered = validate_block_order(blocks, page_width=1200)
+
+    assert [block["block_content"] for block in ordered] == [
+        "Full-width section heading",
+        "Left paragraph one",
+        "Right paragraph one",
+        "Left paragraph two",
+        "Right paragraph two",
+    ]
+
+
+def test_validate_block_order_retains_blocks_with_invalid_bbox() -> None:
+    from paperforge.worker.ocr import validate_block_order
+
+    blocks = [
+        {"block_id": 1, "block_label": "text", "block_order": 0, "block_bbox": [80, 100, 500, 140], "block_content": "Left valid"},
+        {"block_id": 2, "block_label": "text", "block_order": 1, "block_bbox": [500, 160, 500, 200], "block_content": "Broken bbox"},
+        {"block_id": 3, "block_label": "text", "block_order": 2, "block_bbox": [700, 180, 1120, 220], "block_content": "Right valid"},
+        {"block_id": 4, "block_label": "text", "block_order": 3, "block_bbox": [80, 260, 500, 300], "block_content": "Left lower"},
+    ]
+
+    ordered = validate_block_order(blocks, page_width=1200)
+
+    assert [block["block_content"] for block in ordered] == ["Left valid", "Broken bbox", "Right valid", "Left lower"]
+
+
+def test_render_page_blocks_reorders_interleaved_two_column_text_by_geometry(tmp_path: Path) -> None:
+    from paperforge.worker.ocr import render_page_blocks
+
+    vault = tmp_path / "vault"
+    images_dir = vault / "System" / "PaperForge" / "ocr" / "KEY" / "images"
+    page_cache_dir = vault / "System" / "PaperForge" / "ocr" / "KEY" / "pages"
+    images_dir.mkdir(parents=True)
+    page_cache_dir.mkdir(parents=True)
+
+    result = {
+        "prunedResult": {
+            "width": 1200,
+            "height": 1600,
+            "parsing_res_list": [
+                {"block_id": 1, "block_label": "text", "block_order": 0, "block_bbox": [80, 100, 500, 160], "block_content": "Left intro paragraph with enough body text."},
+                {"block_id": 2, "block_label": "text", "block_order": 1, "block_bbox": [700, 110, 1120, 170], "block_content": "Right intro paragraph with enough body text."},
+                {"block_id": 3, "block_label": "text", "block_order": 2, "block_bbox": [80, 200, 500, 260], "block_content": "Left methods paragraph with enough body text."},
+                {"block_id": 4, "block_label": "text", "block_order": 3, "block_bbox": [700, 210, 1120, 270], "block_content": "Right methods paragraph with enough body text."},
+                {"block_id": 5, "block_label": "text", "block_order": 4, "block_bbox": [80, 300, 500, 360], "block_content": "Left results paragraph with enough body text."},
+                {"block_id": 6, "block_label": "text", "block_order": 5, "block_bbox": [700, 310, 1120, 370], "block_content": "Right results paragraph with enough body text."},
+                {"block_id": 7, "block_label": "text", "block_order": 6, "block_bbox": [80, 400, 500, 460], "block_content": "Left discussion paragraph with enough body text."},
+                {"block_id": 8, "block_label": "text", "block_order": 7, "block_bbox": [700, 410, 1120, 470], "block_content": "Right discussion paragraph with enough body text."},
+            ],
+        },
+        "inputImage": "",
+    }
+
+    rendered = render_page_blocks(vault, 2, result, images_dir, page_cache_dir, pdf_doc=None)
+    body_lines = [line for line in rendered if line and not line.startswith("<!-- page")]
+
+    assert body_lines == [
+        "Left intro paragraph with enough body text.",
+        "Left methods paragraph with enough body text.",
+        "Left results paragraph with enough body text.",
+        "Left discussion paragraph with enough body text.",
+        "Right intro paragraph with enough body text.",
+        "Right methods paragraph with enough body text.",
+        "Right results paragraph with enough body text.",
+        "Right discussion paragraph with enough body text.",
+    ]
+
+
 def test_render_page_blocks_links_media_for_text_caption(tmp_path: Path) -> None:
     from paperforge.worker.ocr import render_page_blocks
 
