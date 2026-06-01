@@ -262,7 +262,11 @@ views:
     - file.inFolder("Resources/Literature/骨科")
     - file.ext == "md"
     - !zotero_key.isEmpty()
-properties: {}
+properties:
+  ocr_status:
+    displayName: "OCR Status"
+  deep_reading_status:
+    displayName: "Deep Reading"
 views:
 # PAPERFORGE_VIEW: 控制面板
   - type: table

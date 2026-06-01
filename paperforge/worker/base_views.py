@@ -477,11 +477,22 @@ def ensure_base_views(vault: Path, paths: dict[str, Path], config: dict, force: 
                         updated += "\n" + _render_single_pf_view(v)
 
             # Check for missing properties (e.g. ocr_redo)
-            if "  ocr_redo:" not in updated and "properties:" in updated:
-                updated = updated.replace(
-                    "  ocr_status:\n    displayName: \"OCR Status\"",
-                    "  ocr_status:\n    displayName: \"OCR Status\"\n  ocr_redo:\n    displayName: \"重做OCR\""
-                )
+            if "  ocr_redo:" not in updated:
+                lines = updated.split("\n")
+                prop_insert_idx = None
+                for i, line in enumerate(lines):
+                    stripped = line.strip()
+                    if stripped.startswith("ocr_status:") and not stripped.startswith("ocr_status "):
+                        # Find the end of the ocr_status block (next line without leading space or next property)
+                        blk_end = i + 1
+                        while blk_end < len(lines) and lines[blk_end].startswith("  ") and not lines[blk_end].lstrip().startswith("ocr_"):
+                            blk_end += 1
+                        prop_insert_idx = blk_end
+                        break
+                if prop_insert_idx is not None:
+                    lines.insert(prop_insert_idx, "  ocr_redo:")
+                    lines.insert(prop_insert_idx + 1, '    displayName: "重做OCR"')
+                    updated = "\n".join(lines)
 
             if updated != existing:
                 base_path.write_text(updated, encoding="utf-8")
