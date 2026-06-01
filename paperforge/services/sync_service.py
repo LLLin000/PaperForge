@@ -280,7 +280,7 @@ class SyncService:
             import paperforge.worker.asset_index as asset_index
 
             _t2 = _time.time()
-            index_count = asset_index.build_index(self.vault, verbose)
+            index_count = asset_index.build_index(self.vault, verbose, force_rebuild=rebuild_index)
             _t3 = _time.time()
             logger.info("build_index: %d entries in %.1fs", index_count, _t3 - _t2)
 
@@ -289,7 +289,7 @@ class SyncService:
             flat_cleaned = self.clean_flat_notes(paths, json_output=json_output)
 
             if orphaned > 0 or flat_cleaned > 0:
-            index_count = asset_index.build_index(self.vault, verbose, force_rebuild=rebuild_index)
+                index_count = asset_index.build_index(self.vault, verbose, force_rebuild=rebuild_index)
 
             # ── Phase 4: Prune orphans ──
             prune_data = None
