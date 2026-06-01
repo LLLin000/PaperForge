@@ -105,11 +105,12 @@ class TestIncrementalMerge:
         assert refreshed.count(PAPERFORGE_VIEW_PREFIX) == 4
 
     def test_user_modified_filter_on_standard_view_is_preserved(self):
-        """User changes filter on a standard PF view — on refresh it is PRESERVED.
-        
-        v1.4.17+: Base views are no longer regenerated on every sync.
-        Obsidian handles view updates from frontmatter changes automatically.
-        User modifications to PF-managed views are left untouched.
+        """User changes filter on a standard PF view — on refresh it is REPLACED.
+
+        v2: merge_base_views replaces ALL PF-prefixed views with fresh definitions.
+        User modifications to standard view filters are reset.
+        User-added views (no prefix) are preserved.
+        force=True does full regeneration (same behavior as before).
         """
         domain_base = self.bases / f"{slugify_filename('骨科')}.base"
         ensure_base_views(self.vault, self.paths, self.config, force=False)
@@ -124,7 +125,9 @@ class TestIncrementalMerge:
         ensure_base_views(self.vault, self.paths, self.config, force=False)
         refreshed = domain_base.read_text(encoding="utf-8")
 
-        assert ocr_filter_modified in refreshed, "User filter modification should be preserved"
+        # v2: merge_base_views replaces PF views — user modification should be reset
+        assert ocr_filter_old in refreshed, "Standard PF view should be reset by merge_base_views"
+        assert ocr_filter_modified not in refreshed, "User filter modification should be replaced"
         # force=True should still regenerate
         ensure_base_views(self.vault, self.paths, self.config, force=True)
         force_refreshed = domain_base.read_text(encoding="utf-8")
@@ -142,6 +145,107 @@ class TestIncrementalMerge:
         content = domain_base.read_text(encoding="utf-8")
         assert content.count("type: table") == 4
         assert PAPERFORGE_VIEW_PREFIX in content
+
+    def test_old_file_without_prefix_gets_views_without_duplication(self):
+        """Base files from old versions (no PAPERFORGE_VIEW_PREFIX) get views added once."""
+        domain_base = self.bases / f"{slugify_filename('骨科')}.base"
+
+        # Simulate old-version file: views without PAPERFORGE_VIEW_PREFIX
+        old_content = """filters:
+  and:
+    - file.inFolder("Resources/Literature/骨科")
+    - file.ext == "md"
+    - !zotero_key.isEmpty()
+properties: {}
+views:
+  - type: table
+    name: "控制面板"
+    order:
+      - file.name
+      - title
+  - type: table
+    name: "待 OCR"
+    order:
+      - year
+      - title
+    filter: 'do_ocr == true && ocr_status == "pending"'
+"""
+        domain_base.write_text(old_content, encoding="utf-8")
+
+        ensure_base_views(self.vault, self.paths, self.config, force=False)
+        content = domain_base.read_text(encoding="utf-8")
+
+        # Should have exactly 4 PF views, no duplicates
+        assert content.count(PAPERFORGE_VIEW_PREFIX) == 4
+        assert content.count('name: "控制面板"') == 1
+        assert content.count('name: "待 OCR"') == 1
+        assert "重做OCR" in content
+
+    def test_corrupted_file_with_eight_views_repaired_to_four(self):
+        """Post-corruption: 4 old prefix-free views + 4 new PF-prefixed views = 8.
+        merge_base_views should replace ALL PF views -> exactly 4, no duplicates.
+        This is the actual user state after the V1 bug: each sync appended duplicates."""
+        domain_base = self.bases / f"{slugify_filename('骨科')}.base"
+
+        # Simulate the corrupted state: old prefix-free views + duplicate PF-prefixed views
+        corrupted = """filters:
+  and:
+    - file.inFolder("Resources/Literature/骨科")
+    - file.ext == "md"
+    - !zotero_key.isEmpty()
+properties: {}
+views:
+  - type: table
+    name: "控制面板"
+    order:
+      - file.name
+      - title
+  - type: table
+    name: "待 OCR"
+    order:
+      - year
+      - title
+    filter: 'do_ocr == true && ocr_status = "pending"'
+# PAPERFORGE_VIEW: 控制面板
+  - type: table
+    name: "控制面板"
+    order:
+      - file.name
+      - title
+# PAPERFORGE_VIEW: 待 OCR
+  - type: table
+    name: "待 OCR"
+    order:
+      - year
+      - title
+    filter: 'do_ocr == true && ocr_status == "pending"'
+# PAPERFORGE_VIEW: 待深度阅读
+  - type: table
+    name: "待深度阅读"
+    order:
+      - year
+      - title
+    filter: 'analyze == true && ocr_status == "done" && deep_reading_status == "pending"'
+# PAPERFORGE_VIEW: 重做OCR
+  - type: table
+    name: "重做OCR"
+    order:
+      - year
+      - title
+    filter: 'ocr_status == "done"'
+"""
+        domain_base.write_text(corrupted, encoding="utf-8")
+
+        ensure_base_views(self.vault, self.paths, self.config, force=False)
+        content = domain_base.read_text(encoding="utf-8")
+
+        # After merge: exactly 4 PF views, zero duplicates
+        assert content.count(PAPERFORGE_VIEW_PREFIX) == 4
+        assert content.count('name: "控制面板"') == 1, f"Expected 1 控制面板, got {content.count('name: \"控制面板\"')}"
+        assert content.count('name: "待 OCR"') == 1
+        assert content.count('name: "待深度阅读"') == 1
+        assert content.count('name: "重做OCR"') == 1
+        assert "重做OCR" in content
 
 
 class TestLiteratureHubBase:
@@ -237,7 +341,9 @@ views:
         result = merge_base_views(existing, views, folder_filter="Resources/Literature/骨科")
 
         assert "My Custom View" in result, "User view was lost"
-        assert result.count("type: table") >= 6
+        assert result.count("type: table") == 5
+        assert result.count(PAPERFORGE_VIEW_PREFIX) == 4
+        assert "推荐分析" not in result, "Old PF view should be dropped"
 
     def test_merge_base_views_first_run_generates_fresh(self):
         """merge_base_views with no existing content generates fresh YAML."""
