@@ -17,6 +17,7 @@ import {
   checkRuntimeVersion, paperforgeEnrichedEnv
 } from "../services/python-bridge";
 import { getDisclosureState, toggleDisclosureState } from "../utils/disclosure";
+import { extractZoteroKeyFromPath } from "../utils/zotero-path";
 import { checkOrphanState } from "./modals";
 
 // ── Interface for plugin ref used by static open ──
@@ -557,18 +558,7 @@ export class PaperForgeStatusView extends ItemView {
 
   /* ── Extract zotero_key from workspace directory name ── */
   _extractZoteroKeyFromPath(filePath: string): string | null {
-    if (!filePath) return null;
-    let dir = path.dirname(filePath);
-    while (true) {
-      const basename = path.basename(dir);
-      if (!basename || basename === '.') break;
-      const match = basename.match(/^([A-Z0-9]{8})(?:\s*-\s*)/i);
-      if (match) return match[1];
-      const parent = path.dirname(dir);
-      if (parent === dir) break;
-      dir = parent;
-    }
-    return null;
+    return extractZoteroKeyFromPath(filePath);
   }
 
   /* ── Pure Mode Resolution (D-07, Phase 32) ── */
@@ -800,7 +790,7 @@ export class PaperForgeStatusView extends ItemView {
     });
     const globalRedoBtn = btnsRow.createEl('button', { cls: 'paperforge-contextual-btn warn' });
     globalRedoBtn.createEl('span', { cls: 'paperforge-contextual-btn-icon', text: '\u21BA' });
-    globalRedoBtn.createEl('span', { text: '\u91CD\u505AOCR' });
+    globalRedoBtn.createEl('span', { text: 'Redo OCR' });
     globalRedoBtn.addEventListener('click', () => {
       const action = ACTIONS.find(a => a.id === 'paperforge-ocr-redo');
       if (action) this._runAction(action, globalRedoBtn);
@@ -1263,7 +1253,7 @@ export class PaperForgeStatusView extends ItemView {
     });
     const redoBtn = actionsRow.createEl('button', { cls: 'paperforge-contextual-btn warn' });
     redoBtn.createEl('span', { cls: 'paperforge-contextual-btn-icon', text: '\u21BA' });
-    redoBtn.createEl('span', { text: '\u91CD\u505AOCR' });
+    redoBtn.createEl('span', { text: 'Redo OCR' });
     redoBtn.addEventListener('click', () => {
       const action = ACTIONS.find(a => a.id === 'paperforge-ocr-redo');
       if (action) this._runAction(action, redoBtn);
@@ -1317,6 +1307,11 @@ export class PaperForgeStatusView extends ItemView {
         const cache = this.app.metadataCache.getFileCache(activeFile);
         if (cache && cache.frontmatter && cache.frontmatter.zotero_key) {
           key = cache.frontmatter.zotero_key;
+        } else {
+          key = this._extractZoteroKeyFromPath(activeFile.path);
+        }
+        if (key) {
+          extraArgs = [...extraArgs, key];
         } else if (cache && cache.frontmatter) {
           this._showMessage('[!!] No zotero_key in active note frontmatter', 'error');
           new Notice('[!!] Open a paper note with a zotero_key in its frontmatter first', 6000);
@@ -1334,7 +1329,6 @@ export class PaperForgeStatusView extends ItemView {
         card.removeClass('running');
         return;
       }
-      extraArgs = [...extraArgs, key];
     }
     if (a.needsFilter) {
       extraArgs = [...extraArgs, '--all'];

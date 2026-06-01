@@ -1,4 +1,4 @@
-import { Plugin, addIcon, Notice } from "obsidian";
+import { Plugin, addIcon, Notice, Modal, Setting } from "obsidian";
 import * as fs from "fs";
 import * as path from "path";
 import { execFile, exec, spawn } from "child_process";
@@ -32,13 +32,13 @@ export default class PaperForgePlugin extends Plugin {
 
     const redoAction = ACTIONS.find(a => a.id === "paperforge-ocr-redo");
     if (redoAction) {
-      this.addRibbonIcon("reset", "PaperForge: 重做OCR", () => {
+      this.addRibbonIcon("reset", "PaperForge: Redo OCR", () => {
         const vp = (this.app.vault.adapter as any).basePath as string;
-        new Notice(`PaperForge: 重做OCR starting...`);
+        new Notice(`PaperForge: Redo OCR starting...`);
         const { path: py, extraArgs: ex } = resolvePythonExecutable(vp, this.settings, undefined, undefined);
         execFile(py, [...ex, "-m", "paperforge", "ocr", "redo"], { cwd: vp, timeout: 600000 }, (err, stdout, stderr) => {
-          if (err) { new Notice(`PaperForge: 重做OCR failed`); return; }
-          new Notice(`PaperForge: 重做OCR done`);
+          if (err) { new Notice(`PaperForge: Redo OCR failed`); return; }
+          new Notice(`PaperForge: Redo OCR done`);
         });
       });
     }
@@ -80,6 +80,7 @@ export default class PaperForgePlugin extends Plugin {
     }
     this._startFilePolling();
     this._firstLaunchSnapshotMigration();
+    this._checkReleaseNotes();
   }
 
   private _firstLaunchSnapshotMigration() {
@@ -334,5 +335,68 @@ export default class PaperForgePlugin extends Plugin {
       }
     }
     await this.saveData(dataToSave);
+  }
+
+  private _checkReleaseNotes() {
+    const currentVersion = this.manifest.version;
+    const seen = this.settings.last_seen_version;
+    if (seen === currentVersion) return;
+
+    const releaseNotesData = require("./release-notes.json");
+    const versions = releaseNotesData.versions || [];
+    const currentEntry = versions.find((v: any) => v.version === currentVersion);
+
+    class ReleaseNotesModal extends Modal {
+      private _entry: any;
+      constructor(app: any, entry: any) {
+        super(app);
+        this._entry = entry;
+      }
+      onOpen() {
+        const { contentEl } = this;
+        contentEl.createEl("h2", { text: `PaperForge v${currentVersion} \u66F4\u65B0\u8BF4\u660E` });
+        if (this._entry) {
+          contentEl.createEl("p", { text: this._entry.title, cls: "paperforge-modal-subtitle" });
+          if (this._entry.breaking_or_migration && this._entry.breaking_or_migration.length > 0) {
+            contentEl.createEl("h4", { text: "\u884C\u4E3A\u53D8\u66F4 / \u8FC1\u79FB\u6CE8\u610F" });
+            for (const item of this._entry.breaking_or_migration) {
+              contentEl.createEl("p", { text: `\u2022 ${item}`, cls: "paperforge-modal-item" });
+            }
+          }
+          if (this._entry.new_features && this._entry.new_features.length > 0) {
+            contentEl.createEl("h4", { text: "\u65B0\u529F\u80FD" });
+            for (const item of this._entry.new_features) {
+              contentEl.createEl("p", { text: `\u2022 ${item}`, cls: "paperforge-modal-item" });
+            }
+          }
+          if (this._entry.fixes && this._entry.fixes.length > 0) {
+            contentEl.createEl("h4", { text: "\u4FEE\u590D" });
+            for (const item of this._entry.fixes) {
+              contentEl.createEl("p", { text: `\u2022 ${item}`, cls: "paperforge-modal-item" });
+            }
+          }
+          if (this._entry.recommended_actions && this._entry.recommended_actions.length > 0) {
+            contentEl.createEl("h4", { text: "\u5EFA\u8BAE\u64CD\u4F5C" });
+            for (const item of this._entry.recommended_actions) {
+              contentEl.createEl("p", { text: `\u2022 ${item}`, cls: "paperforge-modal-item" });
+            }
+          }
+        } else {
+          contentEl.createEl("p", { text: "\u7248\u672C\u5DF2\u66F4\u65B0\u81F3 v" + currentVersion + "\uFF0C\u8BF7\u524D\u5F80\u8BBE\u7F6E \u2192 \u66F4\u65B0\u4E0E\u624B\u518C \u67E5\u770B\u5B8C\u6574\u66F4\u65B0\u8BB0\u5F55\u3002" });
+        }
+        new Setting(contentEl)
+          .addButton(btn => btn.setButtonText("\u77E5\u9053\u4E86").setCta().onClick(() => {
+            this.close();
+          }));
+      }
+      onClose() {
+        const { contentEl } = this;
+        contentEl.empty();
+      }
+    }
+
+    new ReleaseNotesModal(this.app, currentEntry).open();
+    this.settings.last_seen_version = currentVersion;
+    this.saveSettings();
   }
 }

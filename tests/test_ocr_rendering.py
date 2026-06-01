@@ -404,6 +404,225 @@ def test_render_page_blocks_orders_references_within_column(tmp_path: Path) -> N
     assert ref_items == ["Amin, B. (2019).", "Cai, J. (2018).", "Bagnato, G. L. (2016).", "Bentley, G. (2012)."]
 
 
+def test_render_page_blocks_keeps_top_figure_before_body_and_keeps_author_et_al_sentence_in_body(tmp_path: Path) -> None:
+    from paperforge.worker.ocr import render_page_blocks
+
+    vault = tmp_path / "vault"
+    images_dir = vault / "System" / "PaperForge" / "ocr" / "KEY" / "images"
+    page_cache_dir = vault / "System" / "PaperForge" / "ocr" / "KEY" / "pages"
+    images_dir.mkdir(parents=True)
+    page_cache_dir.mkdir(parents=True)
+
+    page_image = page_cache_dir / "page_008.png"
+    Image.new("RGB", (1200, 1600), color="white").save(page_image)
+
+    result = {
+        "prunedResult": {
+            "width": 1200,
+            "height": 1600,
+            "parsing_res_list": [
+                {
+                    "block_id": 1,
+                    "block_label": "figure_title",
+                    "block_order": 0,
+                    "block_bbox": [97, 114, 306, 197],
+                    "block_content": "Fig. 3 Schematic representation of mechanical stimulation for tissue engineering constructs",
+                },
+                {
+                    "block_id": 2,
+                    "block_label": "image",
+                    "block_order": 1,
+                    "block_bbox": [374, 117, 1089, 436],
+                    "block_content": "",
+                },
+                {
+                    "block_id": 3,
+                    "block_label": "paragraph_title",
+                    "block_order": 2,
+                    "block_bbox": [96, 470, 513, 520],
+                    "block_content": "2.5 Electrical stimulation for tissue-engineered articular cartilage",
+                },
+                {
+                    "block_id": 4,
+                    "block_label": "text",
+                    "block_order": 3,
+                    "block_bbox": [95, 543, 583, 918],
+                    "block_content": "As hyaline cartilage is an avascular tissue, the synovial fluid is responsible for chondrocyte nutrition and maintenance.",
+                },
+                {
+                    "block_id": 5,
+                    "block_label": "text",
+                    "block_order": 4,
+                    "block_bbox": [95, 920, 583, 1043],
+                    "block_content": "Regenerative pathways for cartilage regeneration on iPSCs engineered constructs can be stimulated by endogenous electrical stimulation.",
+                },
+                {
+                    "block_id": 6,
+                    "block_label": "text",
+                    "block_order": 5,
+                    "block_bbox": [95, 1045, 583, 1265],
+                    "block_content": "After incorporating ES on stem cells, this stimulus generates ATP oscillations driven by calcium oscillations.",
+                },
+                {
+                    "block_id": 7,
+                    "block_label": "paragraph_title",
+                    "block_order": 6,
+                    "block_bbox": [607, 893, 736, 917],
+                    "block_content": "3 Discussion",
+                },
+                {
+                    "block_id": 8,
+                    "block_label": "text",
+                    "block_order": 7,
+                    "block_bbox": [604, 943, 1094, 1341],
+                    "block_content": "Bioreactors can be one of the most efficient and reliable methods for testing in vitro articular cartilage-engineered constructs.",
+                },
+                {
+                    "block_id": 9,
+                    "block_label": "text",
+                    "block_order": 8,
+                    "block_bbox": [95, 1268, 583, 1418],
+                    "block_content": "Kwon et al. demonstrated that ES also drives ATP oscillations by cAMP modulation, leading to chondrogenic differentiation in the absence of exogenous growth factors.",
+                },
+            ],
+        },
+        "inputImage": "",
+    }
+
+    with patch("paperforge.worker.ocr.render_pdf_page_cached", return_value=page_image):
+        rendered = render_page_blocks(vault, 8, result, images_dir, page_cache_dir, pdf_doc=None)
+
+    body_lines = [line for line in rendered if line and not line.startswith("<!-- page")]
+
+    assert body_lines[0].startswith("Fig. 3 Schematic representation")
+    assert body_lines[1].startswith("![[")
+    assert body_lines[2] == "### 2.5 Electrical stimulation for tissue-engineered articular cartilage"
+    assert body_lines[6].startswith("Kwon et al. demonstrated")
+    assert body_lines[7] == "### 3 Discussion"
+
+
+def test_validate_block_order_preserves_full_width_blocks_between_columns() -> None:
+    from paperforge.worker.ocr import validate_block_order
+
+    blocks = [
+        {
+            "block_id": 1,
+            "block_label": "abstract",
+            "block_order": 6,
+            "block_bbox": [96, 603, 1094, 800],
+            "block_content": "BACKGROUND",
+        },
+        {
+            "block_id": 2,
+            "block_label": "abstract",
+            "block_order": 7,
+            "block_bbox": [97, 802, 1094, 851],
+            "block_content": "METHODS",
+        },
+        {
+            "block_id": 3,
+            "block_label": "abstract",
+            "block_order": 8,
+            "block_bbox": [96, 899, 1093, 977],
+            "block_content": "CONCLUSION",
+        },
+        {
+            "block_id": 4,
+            "block_label": "text",
+            "block_order": 9,
+            "block_bbox": [97, 1000, 872, 1025],
+            "block_content": "Keywords",
+        },
+        {
+            "block_id": 5,
+            "block_label": "paragraph_title",
+            "block_order": 10,
+            "block_bbox": [98, 1062, 246, 1086],
+            "block_content": "1 Introduction",
+        },
+        {
+            "block_id": 6,
+            "block_label": "text",
+            "block_order": 11,
+            "block_bbox": [96, 1113, 582, 1190],
+            "block_content": "Introduction body",
+        },
+        {
+            "block_id": 7,
+            "block_label": "text",
+            "block_order": 12,
+            "block_bbox": [604, 1063, 1094, 1414],
+            "block_content": "Right column body",
+        },
+    ]
+
+    ordered = validate_block_order(blocks, page_width=1191)
+
+    assert [block["block_content"] for block in ordered[:5]] == [
+        "BACKGROUND",
+        "METHODS",
+        "CONCLUSION",
+        "Keywords",
+        "1 Introduction",
+    ]
+
+
+def test_render_page_blocks_keeps_abstract_heading_before_abstract_body_on_first_page(tmp_path: Path) -> None:
+    from paperforge.worker.ocr import render_page_blocks
+
+    vault = tmp_path / "vault"
+    images_dir = vault / "System" / "PaperForge" / "ocr" / "KEY" / "images"
+    page_cache_dir = vault / "System" / "PaperForge" / "ocr" / "KEY" / "pages"
+    images_dir.mkdir(parents=True)
+    page_cache_dir.mkdir(parents=True)
+
+    result = {
+        "prunedResult": {
+            "width": 1200,
+            "height": 1600,
+            "parsing_res_list": [
+                {"block_id": 1, "block_label": "doc_title", "block_order": 0, "block_bbox": [96, 210, 949, 284], "block_content": "Paper Title"},
+                {"block_id": 2, "block_label": "text", "block_order": 1, "block_bbox": [95, 312, 761, 365], "block_content": "Author One · Author Two"},
+                {"block_id": 3, "block_label": "text", "block_order": 2, "block_bbox": [96, 485, 880, 528], "block_content": "Received: 10 February 2023"},
+                {"block_id": 4, "block_label": "paragraph_title", "block_order": 3, "block_bbox": [97, 577, 181, 599], "block_content": "Abstract"},
+                {"block_id": 5, "block_label": "abstract", "block_order": 4, "block_bbox": [96, 603, 1094, 800], "block_content": "BACKGROUND: Background text."},
+                {"block_id": 6, "block_label": "abstract", "block_order": 5, "block_bbox": [97, 802, 1094, 851], "block_content": "METHODS: Methods text."},
+                {"block_id": 7, "block_label": "abstract", "block_order": 6, "block_bbox": [96, 899, 1093, 977], "block_content": "CONCLUSION: Conclusion text."},
+                {"block_id": 8, "block_label": "text", "block_order": 7, "block_bbox": [97, 1000, 872, 1025], "block_content": "Keywords one two three"},
+                {"block_id": 9, "block_label": "paragraph_title", "block_order": 8, "block_bbox": [98, 1062, 246, 1086], "block_content": "1 Introduction"},
+                {"block_id": 10, "block_label": "text", "block_order": 9, "block_bbox": [96, 1113, 582, 1190], "block_content": "Introduction body."},
+            ],
+        },
+        "inputImage": "",
+    }
+
+    rendered = render_page_blocks(vault, 1, result, images_dir, page_cache_dir, pdf_doc=None)
+    body_lines = [line for line in rendered if line and not line.startswith("<!-- page")]
+
+    abstract_idx = body_lines.index("### Abstract")
+    background_idx = body_lines.index("BACKGROUND: Background text.")
+    methods_idx = body_lines.index("METHODS: Methods text.")
+    conclusion_idx = body_lines.index("CONCLUSION: Conclusion text.")
+    keywords_idx = body_lines.index("Keywords one two three")
+    intro_idx = body_lines.index("### 1 Introduction")
+
+    assert abstract_idx < background_idx < methods_idx < conclusion_idx < keywords_idx < intro_idx
+
+
+def test_media_clusters_merge_side_by_side_panels_with_small_gap() -> None:
+    from paperforge.worker.ocr import media_clusters
+
+    blocks = [
+        {"block_id": 1, "block_label": "image", "block_bbox": [366, 165, 631, 766], "block_content": ""},
+        {"block_id": 2, "block_label": "image", "block_bbox": [675, 118, 1091, 738], "block_content": ""},
+    ]
+
+    block_to_cluster, clusters = media_clusters(blocks)
+
+    assert len(clusters) == 1
+    assert block_to_cluster[1] == block_to_cluster[2]
+
+
 def test_embedded_figure_text_excludes_body_paragraph_like_text() -> None:
     from paperforge.worker.ocr import is_embedded_figure_text_block
 

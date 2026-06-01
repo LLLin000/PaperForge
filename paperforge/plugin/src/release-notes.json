@@ -1,0 +1,31 @@
+{
+  "versions": [
+    {
+      "version": "1.5.15",
+      "date": "2026-06-01",
+      "title": "OCR 重新设计 — 全文单一真相源 + Redo 闭环 + 阅读顺序修复",
+      "breaking_or_migration": [
+        "fulltext 正文现在统一位于 System/PaperForge/ocr/<key>/fulltext.md，工作区 Resources/.../fulltext.md 不再保留为正文副本",
+        "OCR Redo 现在会立即重跑 OCR（闭环执行），不再只是标记状态后需要手动再跑一次"
+      ],
+      "new_features": [
+        "新增 OCR Redo 闭环执行：勾选重做后自动删除旧产物 → 强制 do_ocr → 立即重跑 OCR → 成功后写回 ocr_redo:false",
+        "设置页新增「更新与手册」标签页，可随时查看版本更新记录与使用手册链接",
+        "首次更新时自动弹出更新说明"
+      ],
+      "fixes": [
+        "修复 OCR 双栏阅读顺序混乱：2.5 / Discussion / Introduction 等章节标题和正文错位",
+        "修复 Kwon et al. 等叙述句被误判为参考文献，导致正文段落被提前截断并插入 Discussion",
+        "修复 Fig.3 / Fig.4 等页首图注和图块被重排逻辑整体后移，导致图文断裂",
+        "修复首页（page 1）Abstract / Introduction 排序错乱，METHODS 行跑到 Introduction 后",
+        "修复并排 panel（如 Fig.2 的左右两块）未合并为单张 composite figure，被拆成两张独立图片",
+        "修复 redo OCR 后工作区 fulltext 未被同步覆盖，导致用户看到的仍是旧乱序版本",
+        "Dashboard 现在可以识别 System/PaperForge/ocr/<key>/fulltext.md 路径，打开全文后能切到对应 paper 视图"
+      ],
+      "recommended_actions": [
+        "如果论文是此版本前完成的 OCR，建议对重要论文执行一次「重做OCR」（在 Base 视图勾选 ocr_redo 后点 ribbon Redo 按钮），以修复阅读顺序问题",
+        "打开全文请直接使用 Dashboard 的「打开全文」按钮，正文已经统一迁至 System/PaperForge/ocr/ 下"
+      ]
+    }
+  ]
+}

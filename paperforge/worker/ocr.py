@@ -385,15 +385,31 @@ def _col_xc(block: dict) -> float | None:
     return (bbox[0] + bbox[2]) / 2
 
 
-def _col_switches(blocks: list[dict], page_width: int) -> int:
+def _column_kind(block: dict, page_width: int) -> str | None:
+    bbox = block.get("block_bbox", [0, 0, 0, 0])
+    if len(bbox) < 4 or bbox[2] <= bbox[0]:
+        return None
     mid = page_width / 2 if page_width else 600
+    x1, _, x2, _ = bbox
+    width = x2 - x1
+    # Full-width or center-spanning blocks should keep their original slot.
+    if (x1 < mid and x2 > mid) or (page_width and width >= page_width * 0.55):
+        return "S"
+    xc = (x1 + x2) / 2
+    if xc < mid * 0.95:
+        return "L"
+    if xc > mid * 1.05:
+        return "R"
+    return "S"
+
+
+def _col_switches(blocks: list[dict], page_width: int) -> int:
     switches = 0
     prev_col = None
     for b in blocks:
-        xc = _col_xc(b)
-        if xc is None:
+        col = _column_kind(b, page_width)
+        if col is None:
             continue
-        col = "L" if xc < mid * 0.95 else "R" if xc > mid * 1.05 else "S"
         if prev_col and col != "S" and prev_col != "S" and col != prev_col:
             switches += 1
         if col != "S":
@@ -404,25 +420,34 @@ def _col_switches(blocks: list[dict], page_width: int) -> int:
 def validate_block_order(blocks: list[dict], page_width: int) -> list[dict]:
     if len(blocks) < 4 or not page_width:
         return blocks
-    mid = page_width / 2
 
     if _col_switches(blocks, page_width) > 3:
-        left = [b for b in blocks if _col_xc(b) is not None and (_col_xc(b) or 0) < mid]
-        right = [b for b in blocks if _col_xc(b) is not None and (_col_xc(b) or 0) >= mid]
-        other = [b for b in blocks if _col_xc(b) is None]
+        left = [b for b in blocks if _column_kind(b, page_width) == "L"]
+        right = [b for b in blocks if _column_kind(b, page_width) == "R"]
+        centered = [b for b in blocks if _column_kind(b, page_width) not in {"L", "R"}]
         left.sort(key=lambda b: b.get("block_bbox", [0, 0, 0, 0])[1])
         right.sort(key=lambda b: b.get("block_bbox", [0, 0, 0, 0])[1])
-        return left + right + other
+        if not centered:
+            return left + right
+        result: list[dict] = []
+        iters = {"L": iter(left), "R": iter(right)}
+        for b in blocks:
+            col_key = _column_kind(b, page_width)
+            if col_key not in {"L", "R"}:
+                result.append(b)
+                continue
+            try:
+                result.append(next(iters[col_key]))
+            except StopIteration:
+                result.append(b)
+        return result
 
     col_buckets: dict[str, list[dict]] = {"L": [], "R": []}
     for b in blocks:
-        xc = _col_xc(b)
-        if xc is None:
+        col_key = _column_kind(b, page_width)
+        if col_key not in {"L", "R"}:
             continue
-        if xc < mid:
-            col_buckets["L"].append(b)
-        else:
-            col_buckets["R"].append(b)
+        col_buckets[col_key].append(b)
 
     for key in ("L", "R"):
         sorted_col = sorted(col_buckets[key], key=lambda b: b.get("block_bbox", [0, 0, 0, 0])[1])
@@ -432,11 +457,10 @@ def validate_block_order(blocks: list[dict], page_width: int) -> list[dict]:
     result: list[dict] = []
     iters = {"L": iter(col_buckets["L"]), "R": iter(col_buckets["R"])}
     for b in blocks:
-        xc = _col_xc(b)
-        if xc is None:
+        col_key = _column_kind(b, page_width)
+        if col_key not in {"L", "R"}:
             result.append(b)
             continue
-        col_key = "L" if xc < mid else "R"
         try:
             result.append(next(iters[col_key]))
         except StopIteration:
@@ -794,7 +818,17 @@ def media_clusters(blocks: list[dict]) -> tuple[dict[int, int], list[list[dict]]
             cy1 = min(item["block_bbox"][1] for item in cluster) - 40
             cx2 = max(item["block_bbox"][2] for item in cluster) + 40
             cy2 = max(item["block_bbox"][3] for item in cluster) + 40
-            if not (x2 < cx1 or x1 > cx2 or y2 < cy1 or (y1 > cy2)):
+            vertical_overlap = max(0, min(y2, cy2) - max(y1, cy1))
+            min_height = max(1, min(y2 - y1, cy2 - cy1))
+            if x2 < cx1:
+                horizontal_gap = cx1 - x2
+            elif x1 > cx2:
+                horizontal_gap = x1 - cx2
+            else:
+                horizontal_gap = 0
+            overlaps_cluster = not (x2 < cx1 or x1 > cx2 or y2 < cy1 or y1 > cy2)
+            side_by_side_panel = vertical_overlap >= int(min_height * 0.35) and horizontal_gap <= 60
+            if overlaps_cluster or side_by_side_panel:
                 assigned = idx
                 break
         if assigned is None:
@@ -1373,9 +1407,10 @@ def render_page_blocks(
     pruned = result.get("prunedResult", {})
     ocr_width = int(pruned.get("width", 0) or 0)
     blocks = sorted(pruned.get("parsing_res_list", []), key=block_sort_key)
-    blocks = validate_block_order(blocks, ocr_width)
     ocr_height = int(pruned.get("height", 0) or 0)
-    blocks = _apply_layered_body_reorder(blocks, ocr_width, ocr_height)
+    if page_index != 1:
+        blocks = validate_block_order(blocks, ocr_width)
+        blocks = _apply_layered_body_reorder(blocks, ocr_width, ocr_height)
     raw_reference_blocks = [block for block in blocks if block.get("block_label") == "reference_content"]
     first_reference_y = min(
         (block.get("block_bbox", [0, 10**9, 0, 0])[1] for block in raw_reference_blocks), default=10**9
@@ -1467,11 +1502,11 @@ def render_page_blocks(
             if page_index == 1 and affiliation_buffer:
                 rendered.extend(affiliation_buffer)
                 affiliation_buffer.clear()
-            rendered.append(clean_block_text(content))
             if page_index == 1 and deferred_meta:
                 rendered.extend(deferred_meta)
                 deferred_meta.clear()
                 first_page_meta_done = True
+            rendered.append(clean_block_text(content))
             continue
         if label == "reference_content":
             text = clean_block_text(content)
@@ -1667,14 +1702,32 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
     return (page_num, markdown_path, json_path, fulltext_md_path)
 
 
-def ocr_redo_papers(vault: Path, dry_run: bool = False, verbose: bool = False) -> int:
-    """Scan for papers with ocr_redo: true, reset their OCR state.
+def _workspace_fulltext_candidates(lit_root: Path, zotero_key: str) -> list[Path]:
+    if not lit_root.exists():
+        return []
+    matches: list[Path] = []
+    for candidate in lit_root.rglob(f"{zotero_key} - *"):
+        if candidate.is_dir():
+            fulltext_path = candidate / "fulltext.md"
+            if fulltext_path.exists():
+                matches.append(fulltext_path)
+    return matches
+
+
+def _rewrite_note_fields(text: str, **fields: object) -> str:
+    updated = text
+    for field, value in fields.items():
+        updated = _sync.update_frontmatter_field(updated, field, value)
+    return updated
+
+
+def ocr_redo_papers(vault: Path, dry_run: bool = False, verbose: bool = False, no_progress: bool = False) -> int:
+    """Scan for papers with ocr_redo: true, reset and immediately rerun OCR.
 
     Spec 2.6: paperforge ocr redo [--dry-run]
     """
     from paperforge.adapters.obsidian_frontmatter import (
         extract_preserved_ocr_redo,
-        update_frontmatter_field,
     )
 
     paths = pipeline_paths(vault)
@@ -1686,7 +1739,7 @@ def ocr_redo_papers(vault: Path, dry_run: bool = False, verbose: bool = False) -
             logger.info("No literature directory found, nothing to redo")
         return 0
 
-    redo_entries = []
+    redo_entry_map: dict[str, tuple[Path, str]] = {}
     for note_file in sorted(lit_root.rglob("*.md")):
         if note_file.name in ("fulltext.md", "deep-reading.md", "discussion.md"):
             continue
@@ -1704,7 +1757,11 @@ def ocr_redo_papers(vault: Path, dry_run: bool = False, verbose: bool = False) -
             if verbose:
                 logger.warning("Skipping invalid zotero_key: %s", zotero_key)
             continue
-        redo_entries.append((zotero_key, note_file, text))
+        existing = redo_entry_map.get(zotero_key)
+        if existing is None or note_file.name == f"{zotero_key}.md":
+            redo_entry_map[zotero_key] = (note_file, text)
+
+    redo_entries = [(key, note_file, text) for key, (note_file, text) in sorted(redo_entry_map.items())]
 
     if not redo_entries:
         print("No papers with ocr_redo: true found", flush=True)
@@ -1715,29 +1772,61 @@ def ocr_redo_papers(vault: Path, dry_run: bool = False, verbose: bool = False) -
         print(f"  {zotero_key}  ({note_file.parent.name})", flush=True)
 
     if dry_run:
-        print("\nDry-run mode: no changes made. Run without --dry-run to reset.", flush=True)
+        print("\nDry-run mode: no changes made. Run without --dry-run to rerun OCR.", flush=True)
         return 0
 
     reset_keys = []
     for zotero_key, note_file, text in redo_entries:
+        for workspace_fulltext in _workspace_fulltext_candidates(lit_root, zotero_key):
+            workspace_fulltext.unlink(missing_ok=True)
+            if verbose:
+                logger.info("Deleted workspace fulltext for %s", zotero_key)
         ocr_dir = ocr_root / zotero_key if ocr_root else None
         if ocr_dir and ocr_dir.exists():
             shutil.rmtree(ocr_dir)
             if verbose:
                 logger.info("Deleted OCR directory for %s", zotero_key)
 
-        text = update_frontmatter_field(text, "ocr_status", "pending")
-        text = update_frontmatter_field(text, "ocr_redo", False)
-        text = update_frontmatter_field(text, "fulltext_md_path", "")
+        text = _rewrite_note_fields(
+            text,
+            do_ocr=True,
+            ocr_status="pending",
+            fulltext_md_path="",
+            ocr_redo=True,
+        )
         note_file.write_text(text, encoding="utf-8")
         reset_keys.append(zotero_key)
 
     print(f"Reset {len(reset_keys)} paper(s): {', '.join(reset_keys)}", flush=True)
-    print("Run 'paperforge ocr run' to process the reset papers.", flush=True)
-    return 0
+    print("Launching OCR immediately for reset papers...", flush=True)
+
+    exit_code = run_ocr(vault, verbose=verbose, no_progress=no_progress, selected_keys=set(reset_keys))
+
+    success_keys: list[str] = []
+    failed_keys: list[str] = []
+    for zotero_key, note_file, _original_text in redo_entries:
+        current_text = note_file.read_text(encoding="utf-8")
+        meta_path = ocr_root / zotero_key / "meta.json" if ocr_root else None
+        meta = read_json(meta_path) if meta_path and meta_path.exists() else {}
+        status, _error = validate_ocr_meta(paths, meta) if meta else ("pending", "")
+        current_text = _rewrite_note_fields(current_text, ocr_status=status)
+        if status == "done":
+            current_text = _rewrite_note_fields(current_text, ocr_redo=False)
+            success_keys.append(zotero_key)
+        else:
+            current_text = _rewrite_note_fields(current_text, ocr_redo=True)
+            failed_keys.append(zotero_key)
+        note_file.write_text(current_text, encoding="utf-8")
+        refresh_index_entry(vault, zotero_key)
+
+    if success_keys:
+        print(f"Redo OCR done={len(success_keys)}: {', '.join(success_keys)}", flush=True)
+    if failed_keys:
+        print(f"Redo OCR pending/failed={len(failed_keys)}: {', '.join(failed_keys)}", flush=True)
+    return exit_code
 
 
-def run_ocr(vault: Path, verbose: bool = False, no_progress: bool = False) -> int:
+def run_ocr(vault: Path, verbose: bool = False, no_progress: bool = False, selected_keys: set[str] | None = None) -> int:
     from paperforge.pdf_resolver import resolve_pdf_path
 
     paths = pipeline_paths(vault)
@@ -1774,6 +1863,8 @@ def run_ocr(vault: Path, verbose: bool = False, no_progress: bool = False) -> in
 
     control_actions = load_control_actions(paths)
     target_keys = {key for key, action in control_actions.items() if action.get("do_ocr", False)}
+    if selected_keys is not None:
+        target_keys &= set(selected_keys)
 
     target_rows = []
     for export_path in sorted(paths["exports"].glob("*.json")):

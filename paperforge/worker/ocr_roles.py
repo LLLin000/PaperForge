@@ -27,7 +27,7 @@ _TABLE_PREFIX_PATTERN = re.compile(
 )
 
 _REFERENCE_PATTERN = re.compile(
-    r"^\s*(?:\d+\.\s|[A-Z][a-z]+ et al\.|\([A-Z][a-z]+ et al\., \d{4}\))",
+    r"^\s*(?:\d+\.\s|[A-Z][A-Za-z'’\-]+\s+et al\.\s*\(\d{4}[a-z]?\)|\([A-Z][A-Za-z'’\-]+\s+et al\.,\s*\d{4}[a-z]?\))",
 )
 
 
@@ -73,6 +73,12 @@ def assign_block_role(
 
     # Paddle priors
     if raw_label == "paragraph_title":
+        if text.strip().lower() == "abstract":
+            return RoleAssignment(
+                role="frontmatter_heading",
+                confidence=0.95,
+                evidence=["abstract heading stays out of body reorder"],
+            )
         if _has_heading_numbering(text):
             return RoleAssignment(
                 role="section_heading" if re.match(r"^\d+\s", text) else "subsection_heading",

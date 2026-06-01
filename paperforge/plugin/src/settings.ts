@@ -5,6 +5,7 @@ import * as os from "os";
 import { execFile, execFileSync, spawn, exec } from "child_process";
 import { t, setLanguage } from "./i18n";
 import { PaperForgeSettings } from "./constants";
+import releaseNotesData from "./release-notes.json";
 import {
   resolvePythonExecutable, buildRuntimeInstallCommand,
   paperforgeEnrichedEnv, scanBbtUnderProfiles, scanBbtDirectChildren,
@@ -83,6 +84,16 @@ export class PaperForgeSettingTab extends PluginSettingTab {
                 .paperforge-skills-group { margin-bottom: 10px; }
                 .paperforge-skills-group:last-child { margin-bottom: 0; }
                 .vertical-tab-content-container { overflow-y: scroll !important; }
+                .paperforge-release-card { border: 1px solid var(--background-modifier-border); border-radius: 6px; padding: 12px; margin-bottom: 12px; }
+                .paperforge-release-header { margin-bottom: 8px; }
+                .paperforge-release-date { color: var(--text-muted); font-size: 12px; }
+                .paperforge-release-section { margin-bottom: 6px; }
+                .paperforge-release-label { font-weight: 600; color: var(--text-accent); margin-bottom: 2px; font-size: 13px; }
+                .paperforge-release-item { font-size: 13px; margin-left: 8px; color: var(--text-muted); }
+                .paperforge-manual-links { margin-top: 8px; }
+                .paperforge-manual-links a { color: var(--text-accent); }
+                .paperforge-modal-subtitle { color: var(--text-muted); font-size: 13px; margin-bottom: 12px; }
+                .paperforge-modal-item { font-size: 13px; margin-left: 8px; color: var(--text-muted); }
             `;
       document.head.appendChild(style);
     }
@@ -90,8 +101,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     // --- Tab bar ---
     const tabBar = containerEl.createDiv({ cls: "paperforge-settings-tabs" });
     const tabs = [
-      { id: "setup", label: t("tab_setup") || "Installation" },
-      { id: "features", label: t("tab_features") || "Features" },
+      { id: "setup", label: t("tab_setup") || "\u5B89\u88C5" },
+      { id: "features", label: t("tab_features") || "\u529F\u80FD" },
+      { id: "release-notes", label: "\u66F4\u65B0\u4E0E\u624B\u518C" },
     ];
     const tabContents: Record<string, HTMLDivElement> = {};
 
@@ -116,8 +128,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     // --- Render active tab ---
     if (this.activeTab === "setup") {
       this._renderSetupTab(tabContents.setup);
-    } else {
+    } else if (this.activeTab === "features") {
       this._renderFeaturesTab(tabContents.features);
+    } else {
+      this._renderReleaseNotesTab(tabContents["release-notes"]);
     }
   }
 
@@ -1241,5 +1255,60 @@ export class PaperForgeSettingTab extends PluginSettingTab {
 
       onPass();
     });
+  }
+
+  _renderReleaseNotesTab(containerEl: HTMLElement) {
+    containerEl.createEl("h2", { text: "\u66F4\u65B0\u4E0E\u624B\u518C" });
+
+    containerEl.createEl("h3", { text: "\u7248\u672C\u66F4\u65B0\u8BB0\u5F55" });
+
+    const versions = (releaseNotesData as any).versions || [];
+    for (const ver of versions) {
+      const card = containerEl.createEl("div", { cls: "paperforge-release-card" });
+
+      const header = card.createEl("div", { cls: "paperforge-release-header" });
+      header.createEl("strong", { text: `v${ver.version} \u2014 ${ver.title}` });
+      header.createEl("span", { cls: "paperforge-release-date", text: `  (${ver.date})` });
+
+      if (ver.breaking_or_migration && ver.breaking_or_migration.length > 0) {
+        const section = card.createEl("div", { cls: "paperforge-release-section" });
+        section.createEl("div", { cls: "paperforge-release-label", text: "\u884C\u4E3A\u53D8\u66F4 / \u8FC1\u79FB\u6CE8\u610F" });
+        for (const item of ver.breaking_or_migration) {
+          section.createEl("div", { cls: "paperforge-release-item", text: `\u2022 ${item}` });
+        }
+      }
+
+      if (ver.new_features && ver.new_features.length > 0) {
+        const section = card.createEl("div", { cls: "paperforge-release-section" });
+        section.createEl("div", { cls: "paperforge-release-label", text: "\u65B0\u529F\u80FD" });
+        for (const item of ver.new_features) {
+          section.createEl("div", { cls: "paperforge-release-item", text: `\u2022 ${item}` });
+        }
+      }
+
+      if (ver.fixes && ver.fixes.length > 0) {
+        const section = card.createEl("div", { cls: "paperforge-release-section" });
+        section.createEl("div", { cls: "paperforge-release-label", text: "\u4FEE\u590D" });
+        for (const item of ver.fixes) {
+          section.createEl("div", { cls: "paperforge-release-item", text: `\u2022 ${item}` });
+        }
+      }
+
+      if (ver.recommended_actions && ver.recommended_actions.length > 0) {
+        const section = card.createEl("div", { cls: "paperforge-release-section" });
+        section.createEl("div", { cls: "paperforge-release-label", text: "\u5EFA\u8BAE\u64CD\u4F5C" });
+        for (const item of ver.recommended_actions) {
+          section.createEl("div", { cls: "paperforge-release-item", text: `\u2022 ${item}` });
+        }
+      }
+    }
+
+    containerEl.createEl("h3", { text: "\u4F7F\u7528\u624B\u518C" });
+    const manualSection = containerEl.createEl("div", { cls: "paperforge-manual-links" });
+    const manualLink = manualSection.createEl("a", {
+      text: "\u2192 \u67E5\u770B\u5B8C\u6574\u4F7F\u7528\u624B\u518C\uFF08GitHub\uFF09",
+      href: "https://github.com/LLLin000/PaperForge/blob/main/docs/user-manual.md",
+    });
+    manualLink.setAttr("target", "_blank");
   }
 }
