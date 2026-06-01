@@ -380,6 +380,21 @@ def extract_preserved_tags(text: str) -> list[str] | None:
         return None
 
 
+def extract_preserved_ocr_redo(text: str) -> bool:
+    """Extract ocr_redo flag from existing note frontmatter.
+
+    Returns True if ocr_redo is explicitly set to true in YAML frontmatter.
+    Returns False otherwise (missing, unreadable, or explicitly false).
+    """
+    data = read_frontmatter_dict(text)
+    val = data.get("ocr_redo", False)
+    if isinstance(val, bool):
+        return val
+    if isinstance(val, str):
+        return val.strip().lower() in ("true", "yes", "1")
+    return False
+
+
 def read_frontmatter_dict(text: str) -> dict:
     """Parse YAML frontmatter from markdown text using yaml.safe_load.
 

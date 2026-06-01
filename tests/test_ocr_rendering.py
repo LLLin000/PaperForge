@@ -6,6 +6,39 @@ from unittest.mock import patch
 from PIL import Image
 
 
+def test_extract_preserved_ocr_redo_preserves_flag_across_frontmatter_rewrite() -> None:
+    """Simulate sync preserving ocr_redo through frontmatter_note()."""
+    from paperforge.adapters.obsidian_frontmatter import extract_preserved_ocr_redo
+    from paperforge.worker.sync import frontmatter_note
+
+    entry = {"zotero_key": "TEST", "title": "Test", "year": "2025"}
+
+    original = """---
+zotero_key: TEST
+title: Test
+year: 2025
+ocr_redo: true
+---
+"""
+    preserved = extract_preserved_ocr_redo(original)
+    assert preserved is True
+
+    rewritten = frontmatter_note(entry, existing_text=original)
+    assert "ocr_redo: true" in rewritten
+
+
+def test_extract_preserved_ocr_redo_false_by_default() -> None:
+    from paperforge.adapters.obsidian_frontmatter import extract_preserved_ocr_redo
+
+    text = """---
+zotero_key: TEST
+title: Test
+---
+"""
+    assert extract_preserved_ocr_redo(text) is False
+
+
+
 def test_caption_group_assignments_respects_columns() -> None:
     from paperforge.worker.ocr import caption_group_assignments
 
@@ -254,6 +287,121 @@ def test_render_page_blocks_links_media_for_text_caption(tmp_path: Path) -> None
 
     assert any(line.startswith("![[") for line in rendered)
     assert any(line.startswith("Figure 4 RT-qPCR results.") for line in rendered)
+
+
+def test_render_page_blocks_keeps_author_year_references_as_reference_items(tmp_path: Path) -> None:
+    from paperforge.worker.ocr import render_page_blocks
+
+    vault = tmp_path / "vault"
+    images_dir = vault / "System" / "PaperForge" / "ocr" / "KEY" / "images"
+    page_cache_dir = vault / "System" / "PaperForge" / "ocr" / "KEY" / "pages"
+    images_dir.mkdir(parents=True)
+    page_cache_dir.mkdir(parents=True)
+
+    result = {
+        "prunedResult": {
+            "width": 1200,
+            "height": 1600,
+            "parsing_res_list": [
+                {"block_id": 1, "block_label": "paragraph_title", "block_bbox": [90, 120, 330, 160], "block_content": "References"},
+                {
+                    "block_id": 2,
+                    "block_label": "reference_content",
+                    "block_bbox": [90, 220, 520, 300],
+                    "block_content": "Amin, B., Elahi, M. A., and Porter, E. (2019). A review of dielectric properties.",
+                },
+                {
+                    "block_id": 3,
+                    "block_label": "reference_content",
+                    "block_bbox": [620, 220, 1100, 300],
+                    "block_content": "Barker, A. T., and Lunt, M. J. (1983). The effects of pulsed magnetic fields.",
+                },
+            ],
+        },
+        "inputImage": "",
+    }
+
+    rendered = render_page_blocks(vault, 22, result, images_dir, page_cache_dir, pdf_doc=None)
+
+    assert "### References" in rendered
+    assert any(line.startswith("Amin, B., Elahi") for line in rendered)
+    assert any(line.startswith("Barker, A. T.") for line in rendered)
+
+
+def test_render_page_blocks_does_not_mix_tail_sections_into_references(tmp_path: Path) -> None:
+    from paperforge.worker.ocr import render_page_blocks
+
+    vault = tmp_path / "vault"
+    images_dir = vault / "System" / "PaperForge" / "ocr" / "KEY" / "images"
+    page_cache_dir = vault / "System" / "PaperForge" / "ocr" / "KEY" / "pages"
+    images_dir.mkdir(parents=True)
+    page_cache_dir.mkdir(parents=True)
+
+    result = {
+        "prunedResult": {
+            "width": 1200,
+            "height": 1600,
+            "parsing_res_list": [
+                {"block_id": 1, "block_label": "paragraph_title", "block_bbox": [90, 120, 330, 160], "block_content": "References"},
+                {
+                    "block_id": 2,
+                    "block_label": "reference_content",
+                    "block_bbox": [90, 220, 520, 300],
+                    "block_content": "Amin, B., Elahi, M. A., and Porter, E. (2019). A review of dielectric properties.",
+                },
+                {
+                    "block_id": 3,
+                    "block_label": "paragraph_title",
+                    "block_bbox": [620, 120, 1080, 160],
+                    "block_content": "Generative AI statement",
+                },
+                {
+                    "block_id": 4,
+                    "block_label": "text",
+                    "block_bbox": [620, 220, 1100, 280],
+                    "block_content": "The author(s) declare that no Generative AI was used in the creation of this manuscript.",
+                },
+            ],
+        },
+        "inputImage": "",
+    }
+
+    rendered = render_page_blocks(vault, 22, result, images_dir, page_cache_dir, pdf_doc=None)
+    refs_index = rendered.index("### References")
+    ai_index = rendered.index("### Generative AI statement")
+
+    assert rendered[refs_index + 1].startswith("Amin, B., Elahi")
+    assert rendered[ai_index + 1].startswith("The author(s) declare")
+
+
+def test_render_page_blocks_orders_references_within_column(tmp_path: Path) -> None:
+    from paperforge.worker.ocr import render_page_blocks
+
+    vault = tmp_path / "vault"
+    images_dir = vault / "System" / "PaperForge" / "ocr" / "KEY" / "images"
+    page_cache_dir = vault / "System" / "PaperForge" / "ocr" / "KEY" / "pages"
+    images_dir.mkdir(parents=True)
+    page_cache_dir.mkdir(parents=True)
+
+    result = {
+        "prunedResult": {
+            "width": 1200,
+            "height": 1600,
+            "parsing_res_list": [
+                {"block_id": 1, "block_label": "paragraph_title", "block_bbox": [90, 120, 330, 160], "block_content": "References"},
+                {"block_id": 2, "block_label": "reference_content", "block_bbox": [620, 200, 1100, 250], "block_content": "Bagnato, G. L. (2016)."},
+                {"block_id": 3, "block_label": "reference_content", "block_bbox": [90, 200, 520, 250], "block_content": "Amin, B. (2019)."},
+                {"block_id": 4, "block_label": "reference_content", "block_bbox": [90, 300, 520, 350], "block_content": "Cai, J. (2018)."},
+                {"block_id": 5, "block_label": "reference_content", "block_bbox": [620, 300, 1100, 350], "block_content": "Bentley, G. (2012)."},
+            ],
+        },
+        "inputImage": "",
+    }
+
+    rendered = render_page_blocks(vault, 22, result, images_dir, page_cache_dir, pdf_doc=None)
+    ref_items = [line for line in rendered if line.startswith(("Amin", "Cai", "Bagnato", "Bentley"))]
+
+    assert ref_items == ["Amin, B. (2019).", "Cai, J. (2018).", "Bagnato, G. L. (2016).", "Bentley, G. (2012)."]
 
 
 def test_embedded_figure_text_excludes_body_paragraph_like_text() -> None:
