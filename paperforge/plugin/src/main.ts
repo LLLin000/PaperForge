@@ -376,9 +376,11 @@ export default class PaperForgePlugin extends Plugin {
             }
           }
           if (this._entry.recommended_actions && this._entry.recommended_actions.length > 0) {
-            contentEl.createEl("h4", { text: "\u5EFA\u8BAE\u64CD\u4F5C" });
+            const section = contentEl.createEl("div", { cls: "paperforge-release-recommended" });
+            section.createEl("h4", { text: "\u5EFA\u8BAE\u64CD\u4F5C", cls: "" });
+            section.style.marginBottom = "8px";
             for (const item of this._entry.recommended_actions) {
-              contentEl.createEl("p", { text: `\u2022 ${item}`, cls: "paperforge-modal-item" });
+              section.createEl("p", { text: `\u2022 ${item}`, cls: "paperforge-release-item-bold" });
             }
           }
         } else {
