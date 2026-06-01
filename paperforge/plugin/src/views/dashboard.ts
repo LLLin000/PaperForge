@@ -1133,6 +1133,7 @@ export class PaperForgeStatusView extends ItemView {
         'github_copilot': 'GitHub Copilot',
         'windsurf': 'Windsurf',
         'codex': 'Codex',
+        'gemini': 'Gemini CLI',
         'cline': 'Cline'
       };
       const platformName = AGENTS[platformKey] || platformKey;

@@ -17,6 +17,7 @@ AGENT_SKILL_DIRS: dict[str, str] = {
     "cursor":         ".cursor/skills",
     "windsurf":       ".windsurf/skills",
     "github_copilot": ".github/skills",
+    "gemini":         ".gemini/skills",
     "cline":          ".clinerules",
     "augment":        ".augment/skills",
     "trae":           ".trae/skills",

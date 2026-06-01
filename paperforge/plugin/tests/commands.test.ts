@@ -10,8 +10,8 @@ import { ACTIONS } from "../src/constants";
 import { buildCommandArgs, runSubprocess } from "../src/services/python-bridge";
 
 describe('ACTIONS', () => {
-    it('has exactly 4 entries', () => {
-        expect(ACTIONS).toHaveLength(4);
+    it('has exactly 5 entries', () => {
+        expect(ACTIONS).toHaveLength(5);
     });
     it('every entry has id, title, cmd, okMsg', () => {
         for (const a of ACTIONS) {

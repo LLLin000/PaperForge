@@ -43,6 +43,7 @@ AGENT_NAMES = {
     "cursor":         "Cursor",
     "windsurf":       "Windsurf",
     "github_copilot": "GitHub Copilot",
+    "gemini":         "Gemini CLI",
     "cline":          "Cline",
     "augment":        "Augment",
     "trae":           "Trae",
