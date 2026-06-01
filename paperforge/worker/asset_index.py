@@ -524,17 +524,8 @@ def _compute_export_hash(paths: dict) -> str:
     return h.hexdigest()
 
 
-def build_index(vault: Path, verbose: bool = False) -> int:
+def build_index(vault: Path, verbose: bool = False, force_rebuild: bool = False) -> int:
     """Full rebuild of the canonical asset index for *vault*.
-
-    3-tier fast-path:
-    1. Computes a hash of BBT export JSON files.
-    2. Compares with ``export_hash`` stored in the existing index envelope.
-    3. If unchanged AND schema version matches, skips the entire rebuild loop.
-
-    Returns:
-        Number of items written to (or already present in) the index.
-    """
     from paperforge.config import load_vault_config
     from paperforge.worker._utils import pipeline_paths  # noqa: F811
     from paperforge.worker.base_views import ensure_base_views
@@ -559,7 +550,7 @@ def build_index(vault: Path, verbose: bool = False) -> int:
     zotero_dir = vault / cfg.get("system_dir", "System") / "Zotero"
 
     export_hash = _compute_export_hash(paths)
-    if isinstance(existing_data, dict) and existing_data.get("export_hash") == export_hash:
+    if not force_rebuild and isinstance(existing_data, dict) and existing_data.get("export_hash") == export_hash:
         if existing_data.get("schema_version") == CURRENT_SCHEMA_VERSION:
             count = len(existing_data.get("items", []))
             if verbose:
