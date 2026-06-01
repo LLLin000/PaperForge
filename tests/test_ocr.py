@@ -74,6 +74,6 @@ fulltext_md_path: "[[old_path]]"
     assert rc == 0
 
     content = note.read_text(encoding="utf-8")
-    assert 'ocr_redo: "false"' in content
+    assert 'ocr_redo: false' in content
     assert 'ocr_status: "pending"' in content
     assert 'fulltext_md_path: ""' in content

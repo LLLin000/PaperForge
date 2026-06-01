@@ -1727,7 +1727,7 @@ def ocr_redo_papers(vault: Path, dry_run: bool = False, verbose: bool = False) -
                 logger.info("Deleted OCR directory for %s", zotero_key)
 
         text = update_frontmatter_field(text, "ocr_status", "pending")
-        text = update_frontmatter_field(text, "ocr_redo", "false")
+        text = update_frontmatter_field(text, "ocr_redo", False)
         text = update_frontmatter_field(text, "fulltext_md_path", "")
         note_file.write_text(text, encoding="utf-8")
         reset_keys.append(zotero_key)
