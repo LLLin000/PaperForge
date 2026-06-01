@@ -239,6 +239,8 @@ def merge_base_views(existing_content: str | None, new_views: list[dict], folder
     displayName: "Analyze"
   ocr_status:
     displayName: "OCR Status"
+  ocr_redo:
+    displayName: "重做OCR"
   deep_reading_status:
     displayName: "Deep Reading"
   pdf_path:
@@ -412,6 +414,8 @@ properties:
     displayName: "Analyze"
   ocr_status:
     displayName: "OCR Status"
+  ocr_redo:
+    displayName: "重做OCR"
   deep_reading_status:
     displayName: "Deep Reading"
   pdf_path:
@@ -471,6 +475,13 @@ def ensure_base_views(vault: Path, paths: dict[str, Path], config: dict, force: 
                 for v in views:
                     if v["name"] in missing:
                         updated += "\n" + _render_single_pf_view(v)
+
+            # Check for missing properties (e.g. ocr_redo)
+            if "  ocr_redo:" not in updated and "properties:" in updated:
+                updated = updated.replace(
+                    "  ocr_status:\n    displayName: \"OCR Status\"",
+                    "  ocr_status:\n    displayName: \"OCR Status\"\n  ocr_redo:\n    displayName: \"重做OCR\""
+                )
 
             if updated != existing:
                 base_path.write_text(updated, encoding="utf-8")
