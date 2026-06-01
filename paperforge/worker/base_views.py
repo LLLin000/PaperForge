@@ -39,7 +39,7 @@ PAPERFORGE_VIEW_PREFIX = "# PAPERFORGE_VIEW: "
 
 
 def build_base_views(domain: str) -> list[dict]:
-    """Build the 8-view list for a domain Base file.
+    """Build the 4-view list for a domain Base file.
 
     Uses workflow gate columns (has_pdf, do_ocr, analyze, ocr_status)
     matching the master version's Base views.  See REQUIREMENTS.md
@@ -49,7 +49,7 @@ def build_base_views(domain: str) -> list[dict]:
         domain: The domain name (e.g., "骨科").
 
     Returns:
-        List of 8 view dicts, each with keys: name, order, filter, sort.
+        List of 4 view dicts, each with keys: name, order, filter, sort.
     """
     return [
         {
@@ -72,32 +72,9 @@ def build_base_views(domain: str) -> list[dict]:
             "filter": None,
         },
         {
-            "name": "推荐分析",
-            "order": [
-                "year",
-                "title",
-                "first_author",
-                "journal",
-                "impact_factor",
-                "has_pdf",
-                "do_ocr",
-                "analyze",
-                "ocr_status",
-                "deep_reading_status",
-                "pdf_path",
-                "fulltext_md_path",
-            ],
-            "filter": "analyze = true AND has_pdf = true",
-        },
-        {
             "name": "待 OCR",
             "order": ["year", "first_author", "title", "has_pdf", "do_ocr", "ocr_status", "pdf_path"],
             "filter": "do_ocr = true AND ocr_status = 'pending'",
-        },
-        {
-            "name": "OCR 完成",
-            "order": ["year", "first_author", "title", "has_pdf", "do_ocr", "ocr_status", "pdf_path"],
-            "filter": "ocr_status = 'done'",
         },
         {
             "name": "待深度阅读",
@@ -115,51 +92,9 @@ def build_base_views(domain: str) -> list[dict]:
             "filter": "analyze = true AND ocr_status = 'done' AND deep_reading_status = 'pending'",
         },
         {
-            "name": "深度阅读完成",
-            "order": [
-                "year",
-                "first_author",
-                "title",
-                "has_pdf",
-                "do_ocr",
-                "analyze",
-                "ocr_status",
-                "deep_reading_status",
-                "pdf_path",
-            ],
-            "filter": "deep_reading_status = 'done'",
-        },
-        {
-            "name": "正式卡片",
-            "order": [
-                "title",
-                "year",
-                "first_author",
-                "journal",
-                "impact_factor",
-                "has_pdf",
-                "deep_reading_status",
-                "pdf_path",
-            ],
-            "filter": "deep_reading_status = 'done'",
-        },
-        {
-            "name": "全记录",
-            "order": [
-                "title",
-                "year",
-                "first_author",
-                "journal",
-                "impact_factor",
-                "has_pdf",
-                "do_ocr",
-                "analyze",
-                "ocr_status",
-                "deep_reading_status",
-                "pdf_path",
-                "fulltext_md_path",
-            ],
-            "filter": None,
+            "name": "重做OCR",
+            "order": ["year", "first_author", "title", "ocr_redo", "ocr_status"],
+            "filter": "ocr_status = 'done'",
         },
     ]
 
@@ -267,7 +202,7 @@ def merge_base_views(existing_content: str | None, new_views: list[dict], folder
     """Incrementally merge standard PaperForge views into an existing .base file.
 
     Strategy:
-    - PaperForge generates exactly 8 views with known names (STANDARD_VIEW_NAMES).
+    - PaperForge generates exactly 4 views with known names.
     - Any OTHER views in the existing file are user-defined and MUST be preserved.
     - Each PaperForge view is preceded by a PAPERFORGE_VIEW_PREFIX comment marker.
     - On refresh: replace ALL PaperForge views (identified by prefix) with fresh ones.
@@ -276,7 +211,7 @@ def merge_base_views(existing_content: str | None, new_views: list[dict], folder
 
     Args:
         existing_content: Raw text of existing .base file (or None/empty for fresh generation).
-        new_views: List of 8 view dicts from build_base_views().
+        new_views: List of 4 view dicts from build_base_views().
         folder_filter: Vault-relative folder path for file.inFolder() (used for fresh generation).
 
     Returns:

@@ -43,7 +43,7 @@ class TestIncrementalMerge:
 
         ensure_base_views(self.vault, self.paths, self.config, force=False)
         content = domain_base.read_text(encoding="utf-8")
-        assert content.count("type: table") == 8
+        assert content.count("type: table") == 4
 
         user_custom = (
             content
@@ -61,9 +61,9 @@ class TestIncrementalMerge:
         refreshed = domain_base.read_text(encoding="utf-8")
 
         assert "My Custom Dashboard" in refreshed, "User custom view was lost on incremental refresh"
-        assert refreshed.count("type: table") == 9
+        assert refreshed.count("type: table") == 5
         assert "控制面板" in refreshed
-        assert "OCR 完成" in refreshed
+        assert "重做OCR" in refreshed
 
     def test_standard_paperforge_views_are_updated_on_refresh(self):
         """Standard views are replaced with fresh content on each refresh."""
@@ -71,12 +71,12 @@ class TestIncrementalMerge:
         ensure_base_views(self.vault, self.paths, self.config, force=False)
 
         content1 = domain_base.read_text(encoding="utf-8")
-        assert content1.count(PAPERFORGE_VIEW_PREFIX) == 8
+        assert content1.count(PAPERFORGE_VIEW_PREFIX) == 4
 
         ensure_base_views(self.vault, self.paths, self.config, force=False)
         content2 = domain_base.read_text(encoding="utf-8")
 
-        assert content2.count("type: table") == 8
+        assert content2.count("type: table") == 4
         assert "${LIBRARY_RECORDS}" not in content2
 
     def test_force_flag_does_full_regeneration(self):
@@ -101,8 +101,8 @@ class TestIncrementalMerge:
         refreshed = domain_base.read_text(encoding="utf-8")
 
         assert "My Custom View" not in refreshed, "force=True should have replaced all views"
-        assert refreshed.count("type: table") == 8
-        assert refreshed.count(PAPERFORGE_VIEW_PREFIX) == 8
+        assert refreshed.count("type: table") == 4
+        assert refreshed.count(PAPERFORGE_VIEW_PREFIX) == 4
 
     def test_user_modified_filter_on_standard_view_is_preserved(self):
         """User changes filter on a standard PF view — on refresh it is PRESERVED.
@@ -140,7 +140,7 @@ class TestIncrementalMerge:
 
         assert domain_base.exists()
         content = domain_base.read_text(encoding="utf-8")
-        assert content.count("type: table") == 8
+        assert content.count("type: table") == 4
         assert PAPERFORGE_VIEW_PREFIX in content
 
 
@@ -174,7 +174,7 @@ class TestLiteratureHubBase:
         hub_base = bases / "Literature Hub.base"
         assert hub_base.exists(), "Literature Hub.base not created"
         content = hub_base.read_text(encoding="utf-8")
-        assert content.count("type: table") == 8, f"Expected 8 views, got {content.count('type: table')}"
+        assert content.count("type: table") == 4, f"Expected 4 views, got {content.count('type: table')}"
         assert PAPERFORGE_VIEW_PREFIX in content
         assert "${LIBRARY_RECORDS}" not in content, "Placeholder should be substituted"
 
@@ -237,8 +237,7 @@ views:
         result = merge_base_views(existing, views, folder_filter="Resources/Literature/骨科")
 
         assert "My Custom View" in result, "User view was lost"
-        assert "推荐分析" in result
-        assert result.count("type: table") >= 8
+        assert result.count("type: table") >= 6
 
     def test_merge_base_views_first_run_generates_fresh(self):
         """merge_base_views with no existing content generates fresh YAML."""
@@ -285,9 +284,9 @@ views:
       - file.name
       - title
       - year
-# PAPERFORGE_VIEW: OCR 完成
+# PAPERFORGE_VIEW: 重做OCR
   - type: table
-    name: "OCR 完成"
+    name: "重做OCR"
     widths:
       year: 55
       title: 380
