@@ -595,8 +595,8 @@ def refresh_index_entry(vault: Path, key: str) -> bool:
     *key* is the Zotero citation key (8-character alphanumeric).
 
     Behaviour:
-    * If the index does not exist → delegates to ``build_index()`` (full rebuild).
-    * If the index is in legacy bare-list format → delegates to ``build_index()``.
+    * If the index does not exist, delegates to ``build_index()`` (full rebuild).
+    * If the index is in legacy bare-list format, delegates to ``build_index()``.
     * If the index is envelope format:
         1. Reads the existing ``items`` list.
         2. Finds the entry whose ``zotero_key`` matches *key*.
