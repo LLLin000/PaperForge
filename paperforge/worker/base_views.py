@@ -421,14 +421,201 @@ views:
 {views_yaml}"""
 
 
-def ensure_base_views(vault: Path, paths: dict[str, Path], config: dict, force: bool = False) -> None:
-    """Generate Domain Base files on first run; subsequent calls only update folder filter.
+def _sanitize_base_file(content: str, views: list[dict], folder_filter: str) -> str:
+    """Minimally sanitize a .base file: deduplicate views, fix syntax, ensure standard views exist.
 
-    Base views are static — Obsidian automatically reflects frontmatter changes.
-    PaperForge should not regenerate views on every sync; it only ensures:
-    1. Base files exist (create on first setup).
-    2. Folder filter stays in sync with configured directory paths.
-    3. force=True allows full regeneration when explicitly requested.
+    This function does NOT modify existing view content (columns, filters, widths, sort).
+    It only:
+    1. Removes duplicate views with the same name (keeps PF-prefixed, then first occurrence).
+    2. Fixes common syntax issues (quoted !zotero_key.isEmpty(), broken ocr_redo placement).
+    3. Updates the folder filter for file.inFolder().
+    4. Ensures the 4 standard views exist (appends missing ones with PAPERFORGE_VIEW_PREFIX).
+    5. Ensures ocr_redo property exists at the correct position in properties section.
+    6. Other views are left completely untouched.
+    """
+    STANDARD_NAMES = {v["name"] for v in views}
+
+    # --- Phase 1: split into header (pre-views:) and view blocks ---
+    lines = content.split("\n")
+    views_start_idx = None
+    for i, line in enumerate(lines):
+        if line.strip().startswith("views:"):
+            views_start_idx = i
+            break
+
+    if views_start_idx is None:
+        # Missing views: section — treat whole file as header, append views
+        header = content.rstrip("\n")
+        if not header.endswith("\n"):
+            header += "\n"
+        fresh_views_yaml = _render_views_section(views)
+        return f"{header}\nviews:\n{fresh_views_yaml}\n"
+
+    header_lines = lines[: views_start_idx + 1]
+    view_body_lines = lines[views_start_idx + 1 :]
+
+    # --- Phase 2: parse view blocks ---
+    # A view block is either: PAPERFORGE_VIEW_PREFIX + indented block, or - type: table + indented block
+    view_blocks = []  # list of (is_pf: bool, view_name: str, block_text: str)
+    i = 0
+    while i < len(view_body_lines):
+        line = view_body_lines[i]
+        if not line.strip():
+            i += 1
+            continue
+
+        if line.startswith(PAPERFORGE_VIEW_PREFIX):
+            view_name = line[len(PAPERFORGE_VIEW_PREFIX):].strip()
+            block_lines = [line]
+            i += 1
+            type_table_count = 0
+            while i < len(view_body_lines):
+                next_line = view_body_lines[i]
+                if next_line.strip().startswith(PAPERFORGE_VIEW_PREFIX):
+                    break
+                if next_line.strip().startswith("- type: table"):
+                    if type_table_count >= 1:
+                        break
+                    type_table_count += 1
+                if next_line.strip() and not next_line.startswith(" ") and not next_line.startswith("\t"):
+                    break
+                block_lines.append(next_line)
+                i += 1
+            view_blocks.append((True, view_name, "\n".join(block_lines)))
+            continue
+
+        elif line.strip().startswith("- type: table"):
+            block_lines = [line]
+            i += 1
+            while i < len(view_body_lines):
+                next_line = view_body_lines[i]
+                if next_line.strip().startswith(PAPERFORGE_VIEW_PREFIX):
+                    break
+                if next_line.strip().startswith("- type: table"):
+                    break
+                if next_line.strip() and not next_line.startswith(" ") and not next_line.startswith("\t"):
+                    break
+                block_lines.append(next_line)
+                i += 1
+            block_text = "\n".join(block_lines)
+            name_match = re.search(r'name:\s*"?([^"]*)"?', block_text)
+            view_name = name_match.group(1) if name_match else ""
+            view_blocks.append((False, view_name, block_text))
+            continue
+        else:
+            i += 1
+
+    # --- Phase 3: deduplicate ---
+    # For each view name, keep PF-prefixed if exists, otherwise first occurrence
+    deduped: dict[str, str] = {}  # view_name -> block_text (NO prefix included for non-PF)
+    for is_pf, view_name, block_text in view_blocks:
+        if not view_name:
+            continue
+        if view_name in deduped:
+            if is_pf:
+                # PF block wins over user block
+                deduped[view_name] = block_text
+            # else: keep existing (first occurrence or existing PF)
+        else:
+            deduped[view_name] = block_text
+
+    # --- Phase 4: ensure standard views exist ---
+    # For each standard name NOT in deduped, generate a fresh PF view block
+    # For existing standard views, keep them AS-IS (don't replace content)
+    for v in views:
+        if v["name"] not in deduped:
+            block = f"{PAPERFORGE_VIEW_PREFIX}{v['name']}\n"
+            block += "  - type: table\n"
+            block += f'    name: "{v["name"]}"\n'
+            block += "    order:\n"
+            for col in v["order"]:
+                block += f"      - {col}\n"
+            if v["filter"]:
+                block += f"    filter: '{v['filter']}'\n"
+            deduped[v["name"]] = block
+
+    # --- Phase 5: fix properties section ---
+    header_text = "\n".join(header_lines)
+    header_lines_fixed = header_text.split("\n")
+
+    # 5a: Fix quoted !zotero_key.isEmpty()
+    for j in range(len(header_lines_fixed)):
+        stripped = header_lines_fixed[j].strip()
+        if stripped in ('"!zotero_key.isEmpty()"', "'!zotero_key.isEmpty()'"):
+            header_lines_fixed[j] = header_lines_fixed[j].replace('"!zotero_key.isEmpty()"', "!zotero_key.isEmpty()")
+            header_lines_fixed[j] = header_lines_fixed[j].replace("'!zotero_key.isEmpty()'", "!zotero_key.isEmpty()")
+
+    # 5b: Fix broken ocr_redo placement (between ocr_status: and its displayName)
+    # Strip all existing ocr_redo blocks, then re-insert after ocr_status block
+    cleaned = []
+    skip_next = False
+    for j, line in enumerate(header_lines_fixed):
+        if skip_next:
+            skip_next = False
+            continue
+        if line.strip() == "ocr_redo:" and (j + 1 < len(header_lines_fixed)):
+            next_stripped = header_lines_fixed[j + 1].strip()
+            if "displayName" in next_stripped or next_stripped.startswith("displayName"):
+                skip_next = True
+                continue
+        cleaned.append(line)
+    header_lines_fixed = cleaned
+
+    # Find ocr_status block and insert ocr_redo after its displayName
+    target_idx = None
+    for j, line in enumerate(header_lines_fixed):
+        if line.strip() == "ocr_status:":
+            # Find the end of ocr_status block (its displayName line, if any)
+            if j + 1 < len(header_lines_fixed) and "displayName" in header_lines_fixed[j + 1]:
+                target_idx = j + 2  # After displayName
+            else:
+                target_idx = j + 1  # After ocr_status:
+            break
+
+    if target_idx is not None:
+        has_redo = any(
+            line.strip() == "ocr_redo:" for line in header_lines_fixed[target_idx : target_idx + 2]
+        )
+        if not has_redo:
+            header_lines_fixed.insert(target_idx, "  ocr_redo:")
+            header_lines_fixed.insert(target_idx + 1, '    displayName: "重做OCR"')
+
+    # 5c: Update folder filter
+    for j in range(len(header_lines_fixed)):
+        if 'file.inFolder(' in header_lines_fixed[j]:
+            header_lines_fixed[j] = re.sub(
+                r'file\.inFolder\("[^"]*"\)',
+                f'file.inFolder("{folder_filter}")',
+                header_lines_fixed[j],
+            )
+            break
+
+    # --- Phase 6: rebuild ---
+    rebuilt = "\n".join(header_lines_fixed) + "\n"
+    # Rebuild view blocks in order: standard views first, then non-standard (preserve original order)
+    view_order = []
+    seen = set()
+    for v in views:
+        if v["name"] in deduped and v["name"] not in seen:
+            view_order.append(v["name"])
+            seen.add(v["name"])
+    for view_name in deduped:
+        if view_name not in seen:
+            view_order.append(view_name)
+            seen.add(view_name)
+
+    for view_name in view_order:
+        rebuilt += deduped[view_name] + "\n"
+
+    return rebuilt
+
+
+def ensure_base_views(vault: Path, paths: dict[str, Path], config: dict, force: bool = False) -> None:
+    """Generate and minimally sanitize domain Base files.
+
+    For existing files (force=False): sanitizes — dedups views, fixes syntax,
+    ensures 4 standard views exist. Does NOT modify existing view content.
+    For new files or force=True: generates fresh from template.
     """
     paths["bases"].mkdir(parents=True, exist_ok=True)
 
@@ -436,15 +623,9 @@ def ensure_base_views(vault: Path, paths: dict[str, Path], config: dict, force: 
         resolved_filter = substitute_config_placeholders(folder_filter, paths)
         if base_path.exists() and not force:
             existing = base_path.read_text(encoding="utf-8")
-            existing = re.sub(
-                r'file\.inFolder\("[^"]+"\)',
-                f'file.inFolder("{resolved_filter}")',
-                existing,
-                count=1,
-            )
-            merged = merge_base_views(existing, views, folder_filter=resolved_filter)
-            if merged != existing:
-                base_path.write_text(merged, encoding="utf-8")
+            sanitized = _sanitize_base_file(existing, views, folder_filter=resolved_filter)
+            if sanitized != existing:
+                base_path.write_text(sanitized, encoding="utf-8")
             return
         merged = _build_base_yaml(resolved_filter, views)
         merged = substitute_config_placeholders(merged, paths)
