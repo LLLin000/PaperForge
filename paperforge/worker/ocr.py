@@ -1667,7 +1667,77 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
     return (page_num, markdown_path, json_path, fulltext_md_path)
 
 
-def run_ocr(vault: Path, verbose: bool = False, no_progress: bool = False, redo_mode: bool = False) -> int:
+def ocr_redo_papers(vault: Path, dry_run: bool = False, verbose: bool = False) -> int:
+    """Scan for papers with ocr_redo: true, reset their OCR state.
+
+    Spec 2.6: paperforge ocr redo [--dry-run]
+    """
+    from paperforge.adapters.obsidian_frontmatter import (
+        extract_preserved_ocr_redo,
+        update_frontmatter_field,
+    )
+
+    paths = pipeline_paths(vault)
+    ocr_root = paths.get("ocr")
+    lit_root = paths.get("literature")
+
+    if not lit_root or not lit_root.exists():
+        if verbose:
+            logger.info("No literature directory found, nothing to redo")
+        return 0
+
+    redo_entries = []
+    for note_file in sorted(lit_root.rglob("*.md")):
+        if note_file.name in ("fulltext.md", "deep-reading.md", "discussion.md"):
+            continue
+        try:
+            text = note_file.read_text(encoding="utf-8")
+        except Exception:
+            continue
+        if not extract_preserved_ocr_redo(text):
+            continue
+        key_match = re.search(r"^zotero_key:\s*(.+)$", text, re.MULTILINE)
+        if not key_match:
+            continue
+        zotero_key = key_match.group(1).strip().strip('"').strip("'")
+        if not zotero_key or not re.match(r"^[A-Za-z0-9]{8}$", zotero_key):
+            if verbose:
+                logger.warning("Skipping invalid zotero_key: %s", zotero_key)
+            continue
+        redo_entries.append((zotero_key, note_file, text))
+
+    if not redo_entries:
+        print("No papers with ocr_redo: true found", flush=True)
+        return 0
+
+    print(f"Found {len(redo_entries)} paper(s) with ocr_redo: true:", flush=True)
+    for zotero_key, note_file, _text in redo_entries:
+        print(f"  {zotero_key}  ({note_file.parent.name})", flush=True)
+
+    if dry_run:
+        print("\nDry-run mode: no changes made. Run without --dry-run to reset.", flush=True)
+        return 0
+
+    reset_keys = []
+    for zotero_key, note_file, text in redo_entries:
+        ocr_dir = ocr_root / zotero_key if ocr_root else None
+        if ocr_dir and ocr_dir.exists():
+            shutil.rmtree(ocr_dir)
+            if verbose:
+                logger.info("Deleted OCR directory for %s", zotero_key)
+
+        text = update_frontmatter_field(text, "ocr_status", "pending")
+        text = update_frontmatter_field(text, "ocr_redo", "false")
+        text = update_frontmatter_field(text, "fulltext_md_path", "")
+        note_file.write_text(text, encoding="utf-8")
+        reset_keys.append(zotero_key)
+
+    print(f"Reset {len(reset_keys)} paper(s): {', '.join(reset_keys)}", flush=True)
+    print("Run 'paperforge ocr run' to process the reset papers.", flush=True)
+    return 0
+
+
+def run_ocr(vault: Path, verbose: bool = False, no_progress: bool = False) -> int:
     from paperforge.pdf_resolver import resolve_pdf_path
 
     paths = pipeline_paths(vault)
@@ -1704,41 +1774,6 @@ def run_ocr(vault: Path, verbose: bool = False, no_progress: bool = False, redo_
 
     control_actions = load_control_actions(paths)
     target_keys = {key for key, action in control_actions.items() if action.get("do_ocr", False)}
-
-    if redo_mode:
-        redo_keys = [key for key, action in control_actions.items() if action.get("ocr_redo", False)]
-        if redo_keys:
-            logger.info("OCR redo mode: processing %d paper(s) with ocr_redo: true", len(redo_keys))
-            ocr_root = paths.get("ocr")
-            lit_root = paths.get("literature")
-            for key in redo_keys:
-                if not key or not re.match(r"^[A-Za-z0-9]{8}$", key):
-                    logger.warning("Skipping invalid zotero_key for redo: %s", key)
-                    continue
-                ocr_dir = ocr_root / key if ocr_root else None
-                if ocr_dir and ocr_dir.exists():
-                    shutil.rmtree(ocr_dir)
-                    logger.info("Deleted OCR directory for %s", key)
-                target_keys.add(key)
-            if lit_root and lit_root.exists():
-                for note_file in lit_root.rglob("*.md"):
-                    if note_file.name in ("fulltext.md", "deep-reading.md", "discussion.md"):
-                        continue
-                    try:
-                        text = note_file.read_text(encoding="utf-8")
-                    except Exception:
-                        continue
-                    for key in redo_keys:
-                        if key in text:
-                            text = re.sub(r"^ocr_status:\s*.+$", "ocr_status: pending", text, flags=re.MULTILINE)
-                            text = re.sub(r"^ocr_redo:\s*.+$", "ocr_redo: false", text, flags=re.MULTILINE)
-                            text = re.sub(r"^fulltext_md_path:\s*.+$", "fulltext_md_path: ''", text, flags=re.MULTILINE)
-                            note_file.write_text(text, encoding="utf-8")
-                            logger.info("Reset frontmatter for %s", key)
-                            break
-            # Only mark for OCR, do NOT auto-run
-            logger.info("OCR redo: marked %d paper(s) as pending. Run 'paperforge ocr run' to process.", len(redo_keys))
-            return 0
 
     target_rows = []
     for export_path in sorted(paths["exports"].glob("*.json")):
