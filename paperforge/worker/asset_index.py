@@ -1,15 +1,15 @@
-"""Canonical literature asset index — envelope format, atomic writes, cross-process locking.
+"""Canonical literature asset index -- envelope format, atomic writes, cross-process locking.
 
 This module is the single canonical home for generating and writing the
 literature asset index (``formal-library.json``).  Responsibilities:
 
-* ``get_index_path(vault)`` — resolve the index file location.
-* ``build_envelope(items)`` — wrap a list of paper entries in a versioned
+* ``get_index_path(vault)`` -- resolve the index file location.
+* ``build_envelope(items)`` -- wrap a list of paper entries in a versioned
   envelope (schema_version, generated_at, paper_count).
-* ``atomic_write_index(path, data)`` — write index JSON atomically using
+* ``atomic_write_index(path, data)`` -- write index JSON atomically using
   ``tempfile.NamedTemporaryFile`` + ``os.replace``, protected by a
   ``filelock`` cross-process lock (10 s timeout).
-* ``build_index(vault, verbose)`` — full index rebuild extracted from the
+* ``build_index(vault, verbose)`` -- full index rebuild extracted from the
   legacy ``sync.run_index_refresh`` loop; writes formal notes and produces
   the canonical index.
 
@@ -156,7 +156,7 @@ def atomic_write_index(path: Path, data: dict) -> None:
     2. Acquire a ``filelock`` on ``<path>.lock`` with a 10-second timeout.
     3. Write to a temporary file in the same directory (same-filesystem for
        Windows-safe ``os.replace``).
-    4. ``os.replace(temp.name, path)`` — atomic on both POSIX and Windows.
+    4. ``os.replace(temp.name, path)`` -- atomic on both POSIX and Windows.
     5. On failure: clean up the temp file before propagating.
 
     Raises:
@@ -229,7 +229,7 @@ def migrate_legacy_index(vault: Path) -> bool:
     rebuild should happen.  If the file is already envelope format, does
     not exist, or is corrupt, returns ``False`` (no action needed).
 
-    The backup is idempotent — calling repeatedly overwrites the previous
+    The backup is idempotent -- calling repeatedly overwrites the previous
     backup with the latest legacy state.
     """
     path = get_index_path(vault)
@@ -360,7 +360,7 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
     legacy_flags = _legacy_control_flags(paths, key)
     legacy_do_ocr = legacy_flags.get("do_ocr")
     legacy_analyze = legacy_flags.get("analyze")
-    # Single frontmatter read for all control fields — cache text for reuse
+    # Single frontmatter read for all control fields -- cache text for reuse
     fm = {}
     fm_cached_text = ""
     fm_was_main = False
@@ -392,7 +392,7 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
         analyze_value = meta.get("analyze") is True or meta.get("deep_reading_status") == "done"
 
     # Compute deep reading status once, reusing cached text when possible.
-    # main_note_path is canonical — don't fall back to note_path when it exists.
+    # main_note_path is canonical -- don't fall back to note_path when it exists.
     _dr_status = "pending"
     if note_dr == "done":
         _dr_status = "done"
@@ -433,6 +433,7 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
         "ocr_json_path": meta.get("json_path", ""),
         "deep_reading_status": _dr_status,
         "ocr_redo": note_ocr_redo,
+        "ocr_time": meta.get("ocr_finished_at", ""),
         "note_path": str((main_note_path if main_note_path.exists() else note_path).relative_to(vault)).replace(
             "\\", "/"
         ),
@@ -457,7 +458,7 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
     entry["maturity"] = compute_maturity(entry)
     entry["next_step"] = compute_next_step(entry)
 
-    # Slug already frozen above — for existing notes, update frontmatter only (preserve body)
+    # Slug already frozen above -- for existing notes, update frontmatter only (preserve body)
     if main_note_path.exists():
         text = fm_cached_text if fm_was_main else main_note_path.read_text(encoding="utf-8")
         fm_close = text.find("---\n", 4)  # closing --- after opening ---
@@ -511,7 +512,7 @@ def _vec_auto_embed_if_new(vault: Path, entry: dict) -> None:
             return
         embed_paper(vault, entry["zotero_key"], chunks)
     except Exception:
-        pass  # ChromaDB / model not installed — silently skip
+        pass  # ChromaDB / model not installed -- silently skip
 
 # ---------------------------------------------------------------------------
 # Full index build
@@ -528,7 +529,7 @@ def _compute_export_hash(paths: dict) -> str:
 
 
 def build_index(vault: Path, verbose: bool = False, force_rebuild: bool = False) -> int:
-    """Full rebuild of the canonical asset index for *vault*.
+    """Full rebuild of the canonical asset index for *vault*."""
     from paperforge.config import load_vault_config
     from paperforge.worker._utils import pipeline_paths  # noqa: F811
     from paperforge.worker.base_views import ensure_base_views
@@ -646,7 +647,7 @@ def refresh_index_entry(vault: Path, key: str) -> bool:
             break
 
     if found_item is None:
-        logger.warning("Key %s not found in any export — cannot refresh", key)
+        logger.warning("Key %s not found in any export -- cannot refresh", key)
         return False
 
     # Build single entry and update the items list
@@ -687,38 +688,9 @@ def refresh_index_entry(vault: Path, key: str) -> bool:
 
 
 def summarize_index(vault: Path) -> dict | None:
-    """Read the canonical index and return summary aggregates.
+    # Read the canonical index and return summary aggregates.
+    # Returns None if missing, corrupt, or legacy format.
 
-    Returns a dict with lifecycle counts, per-dimension health counts,
-    and maturity distribution — or ``None`` if the index is missing,
-    corrupt, or in legacy bare-list format.
-
-    The caller (``status.py``) handles filesystem fallback when this
-    returns ``None``.
-
-    Return shape::
-
-        {
-            "paper_count": int,
-            "lifecycle_level_counts": {
-                "indexed": int,
-                "pdf_ready": int,
-                "fulltext_ready": int,
-                "deep_read_done": int,
-                "ai_context_ready": int,
-            },
-            "health_aggregate": {
-                "pdf_health": {"healthy": int, "unhealthy": int},
-                "ocr_health": {"healthy": int, "unhealthy": int},
-                "note_health": {"healthy": int, "unhealthy": int},
-                "asset_health": {"healthy": int, "unhealthy": int},
-            },
-            "maturity_distribution": {
-                "1": int, "2": int, "3": int,
-                "4": int, "5": int, "6": int,
-            },
-        }
-    """
     data = read_index(vault)
     if data is None:
         return None

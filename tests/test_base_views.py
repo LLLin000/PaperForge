@@ -17,7 +17,7 @@ class TestBuildBaseViews:
         views = build_base_views("骨科")
         redo = next(v for v in views if v["name"] == "重做OCR")
 
-        assert redo["order"] == ["year", "first_author", "title", "ocr_redo", "ocr_status"]
+        assert redo["order"] == ["year", "first_author", "title", "ocr_redo", "ocr_time", "ocr_status"]
         assert redo["filter"] == 'ocr_status == "done"'
 
     def test_returns_exactly_4_views(self):

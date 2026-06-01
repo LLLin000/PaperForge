@@ -1039,6 +1039,7 @@ def frontmatter_note(entry: dict, existing_text: str = "", preserved_tags: list[
     )
     ocr_redo_value = bool(preserved_ocr_redo)
     lines.append(f"ocr_redo: {str(ocr_redo_value).lower()}")
+    lines.append(f"ocr_time: {yaml_quote(entry.get('ocr_time', ''))}")
     if preserved_tags is not None:
         lines.append("tags:")
         for tag in preserved_tags:
