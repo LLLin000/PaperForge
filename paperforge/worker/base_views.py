@@ -256,7 +256,7 @@ def merge_base_views(existing_content: str | None, new_views: list[dict], folder
   and:
     - file.inFolder("{folder_filter}")
     - file.ext == "md"
-    - !zotero_key.isEmpty()
+    - "!zotero_key.isEmpty()"
 {PROPERTIES_YAML}
 views:
 {fresh_views_yaml}"""
@@ -387,7 +387,7 @@ def _build_base_yaml(folder_filter: str, views: list[dict]) -> str:
   and:
     - file.inFolder("{folder_filter}")
     - file.ext == "md"
-    - !zotero_key.isEmpty()
+    - "!zotero_key.isEmpty()"
 properties:
   zotero_key:
     displayName: "Zotero Key"
@@ -538,12 +538,12 @@ def _sanitize_base_file(content: str, views: list[dict], folder_filter: str) -> 
     header_text = "\n".join(header_lines)
     header_lines_fixed = header_text.split("\n")
 
-    # 5a: Fix quoted !zotero_key.isEmpty()
+    # 5a: Ensure !zotero_key.isEmpty() is properly quoted (YAML treats ! as tag prefix)
     for j in range(len(header_lines_fixed)):
         stripped = header_lines_fixed[j].strip()
-        if stripped in ('"!zotero_key.isEmpty()"', "'!zotero_key.isEmpty()'"):
-            header_lines_fixed[j] = header_lines_fixed[j].replace('"!zotero_key.isEmpty()"', "!zotero_key.isEmpty()")
-            header_lines_fixed[j] = header_lines_fixed[j].replace("'!zotero_key.isEmpty()'", "!zotero_key.isEmpty()")
+        if stripped == "!zotero_key.isEmpty()":
+            indent = header_lines_fixed[j][: len(header_lines_fixed[j]) - len(header_lines_fixed[j].lstrip())]
+            header_lines_fixed[j] = f'{indent}"!zotero_key.isEmpty()"'
 
     # 5b: Fix broken ocr_redo placement (between ocr_status: and its displayName)
     # Strip all existing ocr_redo blocks, then re-insert after ocr_status block
