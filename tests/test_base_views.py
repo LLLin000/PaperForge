@@ -18,7 +18,7 @@ class TestBuildBaseViews:
         redo = next(v for v in views if v["name"] == "重做OCR")
 
         assert redo["order"] == ["year", "first_author", "title", "ocr_redo", "ocr_status"]
-        assert redo["filter"] == "ocr_status = 'done'"
+        assert redo["filter"] == 'ocr_status == "done"'
 
     def test_returns_exactly_4_views(self):
         views = build_base_views("骨科")
@@ -41,15 +41,15 @@ class TestBuildBaseViews:
     def test_pending_ocr_filter(self):
         views = build_base_views("骨科")
         pending = next(v for v in views if v["name"] == "待 OCR")
-        assert "do_ocr = true" in pending["filter"]
-        assert "ocr_status = 'pending'" in pending["filter"]
+        assert "do_ocr == true" in pending["filter"]
+        assert 'ocr_status == "pending"' in pending["filter"]
 
     def test_deep_reading_pending_filter(self):
         views = build_base_views("骨科")
         pending = next(v for v in views if v["name"] == "待深度阅读")
-        assert "analyze = true" in pending["filter"]
-        assert "ocr_status = 'done'" in pending["filter"]
-        assert "deep_reading_status = 'pending'" in pending["filter"]
+        assert "analyze == true" in pending["filter"]
+        assert 'ocr_status == "done"' in pending["filter"]
+        assert 'deep_reading_status == "pending"' in pending["filter"]
 
     def test_removed_views_not_present(self):
         removed = {"推荐分析", "OCR 完成", "深度阅读完成", "正式卡片", "全记录"}
@@ -111,3 +111,41 @@ class TestSubstituteConfigPlaceholders:
         lit.mkdir()
         result = substitute_config_placeholders(content, {"literature": lit, "vault": vault})
         assert "\\" not in result  # Should use forward slash
+
+
+class TestBaseFilterYAMLSyntax:
+    """Verify generated Base YAML uses correct Obsidian Base filter syntax."""
+
+    def test_all_filters_use_double_equals_and_double_quotes(self):
+        """Filter values must use == and " for strings, per Obsidian Base docs."""
+        views = build_base_views("test")
+        for v in views:
+            if not v["filter"]:
+                continue
+            f = v["filter"]
+            assert "=" not in f.replace("==", ""), f"single = in filter: {f}"
+            assert "'" not in f, f"single quote in filter: {f}"
+
+    def test_rendered_yaml_wraps_filter_in_single_quotes(self):
+        """YAML output must wrap filter strings in single quotes to protect double quotes inside."""
+        from paperforge.worker.base_views import _render_views_section
+
+        views = build_base_views("test")
+        yaml_output = _render_views_section(views)
+
+        for v in views:
+            if not v["filter"]:
+                continue
+            expected_line = f"    filter: '{v['filter']}'"
+            assert expected_line in yaml_output, (
+                f"Expected YAML line not found: {expected_line}\nGot:\n{yaml_output}"
+            )
+
+    def test_no_single_quote_in_rendered_filter_value(self):
+        """No single quote inside the filter value (would break YAML single-quote wrapping)."""
+        views = build_base_views("test")
+        for v in views:
+            if not v["filter"]:
+                continue
+            inner = v["filter"]
+            assert "'" not in inner, f"single quote inside filter value: {inner}"
