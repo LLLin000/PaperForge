@@ -54,6 +54,15 @@ export const ACTIONS: ActionDef[] = [
     args: ["--fix", "--fix-paths"],
     okMsg: "Repair complete",
   },
+  {
+    id: "paperforge-ocr-redo",
+    title: "重做OCR",
+    desc: "Re-run OCR for papers marked ocr_redo: true",
+    icon: "\u21BA",
+    cmd: "ocr",
+    args: ["redo"],
+    okMsg: "OCR redo started",
+  },
 ];
 
 // ── Settings ──
