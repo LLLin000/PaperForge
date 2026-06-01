@@ -476,22 +476,38 @@ def ensure_base_views(vault: Path, paths: dict[str, Path], config: dict, force: 
                     if v["name"] in missing:
                         updated += "\n" + _render_single_pf_view(v)
 
-            # Check for missing properties (e.g. ocr_redo)
-            if "  ocr_redo:" not in updated:
-                lines = updated.split("\n")
-                prop_insert_idx = None
-                for i, line in enumerate(lines):
-                    stripped = line.strip()
-                    if stripped.startswith("ocr_status:") and not stripped.startswith("ocr_status "):
-                        # Find the end of the ocr_status block (next line without leading space or next property)
-                        blk_end = i + 1
-                        while blk_end < len(lines) and lines[blk_end].startswith("  ") and not lines[blk_end].lstrip().startswith("ocr_"):
-                            blk_end += 1
-                        prop_insert_idx = blk_end
-                        break
-                if prop_insert_idx is not None:
-                    lines.insert(prop_insert_idx, "  ocr_redo:")
-                    lines.insert(prop_insert_idx + 1, '    displayName: "重做OCR"')
+            # Ensure ocr_redo property exists at correct position (after ocr_status block)
+            lines = updated.split("\n")
+
+            # 1. Strip all existing ocr_redo property blocks
+            cleaned = []
+            skip_next = False
+            for i, line in enumerate(lines):
+                if skip_next:
+                    skip_next = False
+                    continue
+                if line.strip() == "ocr_redo:" and "displayName" in (lines[i + 1] if i + 1 < len(lines) else ""):
+                    skip_next = True
+                    continue
+                cleaned.append(line)
+            lines = cleaned
+
+            # 2. Find target: the line containing "displayName: OCR Status" — insert AFTER it
+            target_idx = None
+            for i, line in enumerate(lines):
+                if "displayName: OCR Status" in line:
+                    target_idx = i + 1
+                    break
+
+            # 3. If ocr_redo not already at target, ensure it's there
+            if target_idx is not None:
+                has_redo_at_target = (
+                    target_idx < len(lines)
+                    and lines[target_idx].strip() == "ocr_redo:"
+                )
+                if not has_redo_at_target:
+                    lines.insert(target_idx, "  ocr_redo:")
+                    lines.insert(target_idx + 1, '    displayName: "重做OCR"')
                     updated = "\n".join(lines)
 
             if updated != existing:
