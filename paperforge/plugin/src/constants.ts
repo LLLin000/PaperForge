@@ -130,7 +130,7 @@ export function overlayEntryWorkflowState(app: any, entry: any): WorkflowState {
   const fm = cache && cache.frontmatter;
   if (!fm) return entry;
   const merged = { ...entry };
-  for (const key of ["do_ocr", "analyze", "ocr_status", "deep_reading_status"]) {
+  for (const key of ["do_ocr", "analyze", "ocr_status", "ocr_redo", "deep_reading_status"]) {
     if (Object.prototype.hasOwnProperty.call(fm, key)) merged[key] = fm[key];
   }
   return merged;
