@@ -113,7 +113,175 @@ class TestSubstituteConfigPlaceholders:
         assert "\\" not in result  # Should use forward slash
 
 
-class TestBaseFilterYAMLSyntax:
+class TestEnsureBaseViewsSurgicalAppend:
+    """Verify that ensure_base_views appends missing standard views without touching existing ones."""
+
+    def test_appends_missing_pf_view(self, tmp_path):
+        from paperforge.worker.base_views import ensure_base_views
+
+        vault = tmp_path / "vault"
+        vault.mkdir()
+        lit = vault / "Resources" / "Literature" / "骨科"
+        lit.mkdir(parents=True)
+        bases = vault / "Bases"
+        bases.mkdir(parents=True)
+        base_path = bases / "骨科.base"
+
+        existing_content = """filters:
+  and:
+    - file.inFolder("Resources/Literature/骨科")
+    - file.ext == "md"
+    - !zotero_key.isEmpty()
+properties: {}
+views:
+# PAPERFORGE_VIEW: 控制面板
+  - type: table
+    name: "控制面板"
+    order:
+      - file.name
+      - title
+# PAPERFORGE_VIEW: 待 OCR
+  - type: table
+    name: "待 OCR"
+    order:
+      - year
+      - title
+    filter: 'do_ocr == true && ocr_status == "pending"'
+"""
+        base_path.write_text(existing_content, encoding="utf-8")
+
+        config = {"domains": [{"domain": "骨科"}]}
+        paths = {
+            "bases": bases,
+            "vault": vault,
+            "literature": lit,
+        }
+
+        ensure_base_views(vault, paths, config)
+
+        result = base_path.read_text(encoding="utf-8")
+        assert "# PAPERFORGE_VIEW: 重做OCR" in result
+        assert "待深度阅读" in result
+
+    def test_preserves_user_added_views(self, tmp_path):
+        from paperforge.worker.base_views import ensure_base_views
+
+        vault = tmp_path / "vault"
+        vault.mkdir()
+        lit = vault / "Resources" / "Literature" / "骨科"
+        lit.mkdir(parents=True)
+        bases = vault / "Bases"
+        bases.mkdir(parents=True)
+        base_path = bases / "骨科.base"
+
+        existing_content = """filters:
+  and:
+    - file.inFolder("Resources/Literature/骨科")
+    - file.ext == "md"
+    - !zotero_key.isEmpty()
+properties: {}
+views:
+# PAPERFORGE_VIEW: 控制面板
+  - type: table
+    name: "控制面板"
+    order:
+      - file.name
+      - title
+  - type: table
+    name: "我的自定义视图"
+    order:
+      - file.name
+      - year
+    filter: 'year > 2020'
+"""
+        base_path.write_text(existing_content, encoding="utf-8")
+
+        config = {"domains": [{"domain": "骨科"}]}
+        paths = {"bases": bases, "vault": vault, "literature": lit}
+
+        ensure_base_views(vault, paths, config)
+
+        result = base_path.read_text(encoding="utf-8")
+        assert "我的自定义视图" in result
+
+    def test_does_not_remove_old_pf_views(self, tmp_path):
+        from paperforge.worker.base_views import ensure_base_views
+
+        vault = tmp_path / "vault"
+        vault.mkdir()
+        lit = vault / "Resources" / "Literature" / "骨科"
+        lit.mkdir(parents=True)
+        bases = vault / "Bases"
+        bases.mkdir(parents=True)
+        base_path = bases / "骨科.base"
+
+        existing_content = """filters:
+  and:
+    - file.inFolder("Resources/Literature/骨科")
+    - file.ext == "md"
+    - !zotero_key.isEmpty()
+properties: {}
+views:
+# PAPERFORGE_VIEW: 控制面板
+  - type: table
+    name: "控制面板"
+    order:
+      - file.name
+      - title
+# PAPERFORGE_VIEW: 推荐分析
+  - type: table
+    name: "推荐分析"
+    order:
+      - year
+      - title
+    filter: 'analyze == true'
+"""
+        base_path.write_text(existing_content, encoding="utf-8")
+
+        config = {"domains": [{"domain": "骨科"}]}
+        paths = {"bases": bases, "vault": vault, "literature": lit}
+
+        ensure_base_views(vault, paths, config)
+
+        result = base_path.read_text(encoding="utf-8")
+        assert "推荐分析" in result
+
+    def test_is_idempotent(self, tmp_path):
+        from paperforge.worker.base_views import ensure_base_views
+
+        vault = tmp_path / "vault"
+        vault.mkdir()
+        lit = vault / "Resources" / "Literature" / "骨科"
+        lit.mkdir(parents=True)
+        bases = vault / "Bases"
+        bases.mkdir(parents=True)
+        base_path = bases / "骨科.base"
+
+        base_path.write_text("""filters:
+  and:
+    - file.inFolder("Resources/Literature/骨科")
+    - file.ext == "md"
+    - !zotero_key.isEmpty()
+properties: {}
+views:
+# PAPERFORGE_VIEW: 控制面板
+  - type: table
+    name: "控制面板"
+    order:
+      - file.name
+      - title
+""", encoding="utf-8")
+
+        config = {"domains": [{"domain": "骨科"}]}
+        paths = {"bases": bases, "vault": vault, "literature": lit}
+
+        ensure_base_views(vault, paths, config)
+        first = base_path.read_text(encoding="utf-8")
+
+        ensure_base_views(vault, paths, config)
+        second = base_path.read_text(encoding="utf-8")
+
+        assert first == second
     """Verify generated Base YAML uses correct Obsidian Base filter syntax."""
 
     def test_all_filters_use_double_equals_and_double_quotes(self):
