@@ -53,7 +53,7 @@ class TestFrontmatterFields:
             "zotero_key", "citation_key", "domain", "title", "year", "doi",
             "collection_path", "collection_tags", "has_pdf", "pdf_path", "supplementary",
             "fulltext_md_path", "recommend_analyze", "analyze",
-            "do_ocr", "ocr_status", "deep_reading_status", "path_error",
+            "do_ocr", "ocr_status", "ocr_redo", "deep_reading_status", "path_error",
         }
         assert set(fm.keys()) == expected
 
