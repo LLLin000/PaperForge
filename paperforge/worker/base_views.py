@@ -358,16 +358,6 @@ views:
     return "\n".join(result_lines)
 
 
-def _update_folder_filter(content: str, new_filter: str) -> str:
-    """Update the folder filter in a .base file if it changed."""
-    import re
-
-    old_match = re.search(r'file\.inFolder\("([^"]+)"\)', content)
-    if not old_match or old_match.group(1) == new_filter:
-        return content
-    return content.replace(old_match.group(1), new_filter, 1)
-
-
 def _build_base_yaml(folder_filter: str, views: list[dict]) -> str:
     """Build complete .base YAML with PAPERFORGE_VIEW_PREFIX markers on each view."""
     views_yaml = ""
@@ -426,31 +416,6 @@ views:
 {views_yaml}"""
 
 
-def _get_missing_pf_view_names(content: str, views: list[dict]) -> set[str]:
-    """Return view names from `views` that are NOT present in `content`.
-
-    Parses existing PAPERFORGE_VIEW_PREFIX lines from the Base file content.
-    """
-    existing_names = set()
-    for line in content.splitlines():
-        if line.startswith(PAPERFORGE_VIEW_PREFIX):
-            existing_names.add(line[len(PAPERFORGE_VIEW_PREFIX):].strip())
-    return {v["name"] for v in views} - existing_names
-
-
-def _render_single_pf_view(v: dict) -> str:
-    """Render one PF view block with PAPERFORGE_VIEW_PREFIX and valid YAML."""
-    lines = [f"{PAPERFORGE_VIEW_PREFIX}{v['name']}"]
-    lines.append("  - type: table")
-    lines.append(f'    name: "{v["name"]}"')
-    lines.append("    order:")
-    for col in v["order"]:
-        lines.append(f"      - {col}")
-    if v["filter"]:
-        lines.append(f"    filter: '{v['filter']}'")
-    return "\n".join(lines)
-
-
 def ensure_base_views(vault: Path, paths: dict[str, Path], config: dict, force: bool = False) -> None:
     """Generate Domain Base files on first run; subsequent calls only update folder filter.
 
@@ -465,55 +430,11 @@ def ensure_base_views(vault: Path, paths: dict[str, Path], config: dict, force: 
     def refresh_base(base_path: Path, folder_filter: str, views: list[dict]) -> None:
         resolved_filter = substitute_config_placeholders(folder_filter, paths)
         if base_path.exists() and not force:
-            # File exists: update folder filter, then surgically append missing PF views
             existing = base_path.read_text(encoding="utf-8")
-            updated = _update_folder_filter(existing, resolved_filter)
-
-            # Check for missing standard views and append
-            missing = _get_missing_pf_view_names(updated, views)
-            if missing:
-                for v in views:
-                    if v["name"] in missing:
-                        updated += "\n" + _render_single_pf_view(v)
-
-            # Ensure ocr_redo property exists at correct position (after ocr_status block)
-            lines = updated.split("\n")
-
-            # 1. Strip all existing ocr_redo property blocks
-            cleaned = []
-            skip_next = False
-            for i, line in enumerate(lines):
-                if skip_next:
-                    skip_next = False
-                    continue
-                if line.strip() == "ocr_redo:" and "displayName" in (lines[i + 1] if i + 1 < len(lines) else ""):
-                    skip_next = True
-                    continue
-                cleaned.append(line)
-            lines = cleaned
-
-            # 2. Find target: the line containing "displayName: OCR Status" — insert AFTER it
-            target_idx = None
-            for i, line in enumerate(lines):
-                if "displayName: OCR Status" in line:
-                    target_idx = i + 1
-                    break
-
-            # 3. If ocr_redo not already at target, ensure it's there
-            if target_idx is not None:
-                has_redo_at_target = (
-                    target_idx < len(lines)
-                    and lines[target_idx].strip() == "ocr_redo:"
-                )
-                if not has_redo_at_target:
-                    lines.insert(target_idx, "  ocr_redo:")
-                    lines.insert(target_idx + 1, '    displayName: "重做OCR"')
-                    updated = "\n".join(lines)
-
-            if updated != existing:
-                base_path.write_text(updated, encoding="utf-8")
+            merged = merge_base_views(existing, views, folder_filter=resolved_filter)
+            if merged != existing:
+                base_path.write_text(merged, encoding="utf-8")
             return
-        # File does not exist (or force=True): generate fresh
         merged = _build_base_yaml(resolved_filter, views)
         merged = substitute_config_placeholders(merged, paths)
         base_path.write_text(merged, encoding="utf-8")
