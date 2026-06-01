@@ -497,6 +497,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       cursor: "Cursor",
       windsurf: "Windsurf",
       github_copilot: "GitHub Copilot",
+      gemini: "Gemini CLI",
     };
     const agentDirs: Record<string, string> = {
       opencode: ".opencode/skills",
@@ -505,6 +506,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       cursor: ".cursor/skills",
       windsurf: ".windsurf/skills",
       github_copilot: ".github/skills",
+      gemini: ".gemini/skills",
     };
 
     const vaultPath = (this.app.vault.adapter as any).basePath as string;

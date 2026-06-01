@@ -423,6 +423,7 @@ export class PaperForgeSetupModal extends Modal {
       { key: 'github_copilot', name: 'GitHub Copilot' },
       { key: 'windsurf', name: 'Windsurf' },
       { key: 'codex', name: 'Codex' },
+      { key: 'gemini', name: 'Gemini CLI' },
       { key: 'cline', name: 'Cline' },
     ];
     const agentRow = el.createEl('div', { cls: 'paperforge-modal-field' });

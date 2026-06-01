@@ -385,7 +385,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--agent",
         metavar="AGENT",
         default="opencode",
-        choices=["opencode", "cursor", "claude", "codex", "windsurf", "github_copilot", "cline", "augment", "trae"],
+        choices=["opencode", "cursor", "claude", "codex", "windsurf", "github_copilot", "gemini", "cline", "augment", "trae"],
         help="AI Agent platform (default: opencode)",
     )
     p_setup.add_argument(
