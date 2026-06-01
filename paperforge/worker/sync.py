@@ -1037,8 +1037,8 @@ def frontmatter_note(entry: dict, existing_text: str = "", preserved_tags: list[
             f"fulltext_md_path: {yaml_quote('[[{}]]'.format(entry['fulltext_path']) if entry.get('ocr_status') == 'done' and entry.get('fulltext_path') else '')}",
         ]
     )
-    if preserved_ocr_redo:
-        lines.append("ocr_redo: true")
+    ocr_redo_value = bool(preserved_ocr_redo)
+    lines.append(f"ocr_redo: {str(ocr_redo_value).lower()}")
     if preserved_tags is not None:
         lines.append("tags:")
         for tag in preserved_tags:
