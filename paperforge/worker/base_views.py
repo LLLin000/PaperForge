@@ -74,7 +74,7 @@ def build_base_views(domain: str) -> list[dict]:
         {
             "name": "待 OCR",
             "order": ["year", "first_author", "title", "has_pdf", "do_ocr", "ocr_status", "pdf_path"],
-            "filter": "do_ocr = true AND ocr_status = 'pending'",
+            "filter": 'do_ocr == true && ocr_status == "pending"',
         },
         {
             "name": "待深度阅读",
@@ -89,12 +89,12 @@ def build_base_views(domain: str) -> list[dict]:
                 "deep_reading_status",
                 "pdf_path",
             ],
-            "filter": "analyze = true AND ocr_status = 'done' AND deep_reading_status = 'pending'",
+            "filter": 'analyze == true && ocr_status == "done" && deep_reading_status == "pending"',
         },
         {
             "name": "重做OCR",
             "order": ["year", "first_author", "title", "ocr_redo", "ocr_status"],
-            "filter": "ocr_status = 'done'",
+            "filter": 'ocr_status == "done"',
         },
     ]
 
@@ -137,7 +137,7 @@ def _render_views_section(views: list[dict]) -> str:
         for col in v["order"]:
             lines.append(f"      - {col}")
         if v["filter"]:
-            lines.append(f'    filter: "{v["filter"]}"')
+            lines.append(f"    filter: '{v['filter']}'")
         if v.get("sort"):
             lines.append("    sort:")
             for sort_item in v["sort"]:
@@ -285,7 +285,7 @@ views:
         for col in v["order"]:
             rendered += f"      - {col}\n"
         if v["filter"]:
-            rendered += f'    filter: "{v["filter"]}"\n'
+            rendered += f"    filter: '{v['filter']}'\n"
         else:
             rendered += "\n"
         if v.get("sort"):
@@ -377,7 +377,7 @@ def _build_base_yaml(folder_filter: str, views: list[dict]) -> str:
         for col in v["order"]:
             views_yaml += f"      - {col}\n"
         if v["filter"]:
-            views_yaml += f'    filter: "{v["filter"]}"\n'
+            views_yaml += f"    filter: '{v['filter']}'\n"
         else:
             views_yaml += "\n"
         if v.get("sort"):
