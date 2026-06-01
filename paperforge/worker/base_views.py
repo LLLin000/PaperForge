@@ -300,6 +300,7 @@ views:
 
     rebuilt_views_lines = []
     pf_names_seen = set()
+    pf_view_names = {name for name, _ in new_pf_blocks}
     i = views_start_idx + 1
     while i < len(lines):
         line = lines[i]
@@ -345,6 +346,9 @@ views:
                 view_block_lines.append(next_line)
                 i += 1
             block_text = "\n".join(view_block_lines)
+            name_match = re.search(r'name:\s*"([^"]*)"', block_text)
+            if name_match and name_match.group(1) in pf_view_names:
+                continue
             rebuilt_views_lines.append(block_text)
             continue
 
