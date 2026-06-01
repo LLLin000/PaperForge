@@ -422,6 +422,31 @@ views:
 {views_yaml}"""
 
 
+def _get_missing_pf_view_names(content: str, views: list[dict]) -> set[str]:
+    """Return view names from `views` that are NOT present in `content`.
+
+    Parses existing PAPERFORGE_VIEW_PREFIX lines from the Base file content.
+    """
+    existing_names = set()
+    for line in content.splitlines():
+        if line.startswith(PAPERFORGE_VIEW_PREFIX):
+            existing_names.add(line[len(PAPERFORGE_VIEW_PREFIX):].strip())
+    return {v["name"] for v in views} - existing_names
+
+
+def _render_single_pf_view(v: dict) -> str:
+    """Render one PF view block with PAPERFORGE_VIEW_PREFIX and valid YAML."""
+    lines = [f"{PAPERFORGE_VIEW_PREFIX}{v['name']}"]
+    lines.append("  - type: table")
+    lines.append(f'    name: "{v["name"]}"')
+    lines.append("    order:")
+    for col in v["order"]:
+        lines.append(f"      - {col}")
+    if v["filter"]:
+        lines.append(f"    filter: '{v['filter']}'")
+    return "\n".join(lines)
+
+
 def ensure_base_views(vault: Path, paths: dict[str, Path], config: dict, force: bool = False) -> None:
     """Generate Domain Base files on first run; subsequent calls only update folder filter.
 
@@ -436,9 +461,17 @@ def ensure_base_views(vault: Path, paths: dict[str, Path], config: dict, force: 
     def refresh_base(base_path: Path, folder_filter: str, views: list[dict]) -> None:
         resolved_filter = substitute_config_placeholders(folder_filter, paths)
         if base_path.exists() and not force:
-            # File exists: only update folder filter if paths changed
+            # File exists: update folder filter, then surgically append missing PF views
             existing = base_path.read_text(encoding="utf-8")
             updated = _update_folder_filter(existing, resolved_filter)
+
+            # Check for missing standard views and append
+            missing = _get_missing_pf_view_names(updated, views)
+            if missing:
+                for v in views:
+                    if v["name"] in missing:
+                        updated += "\n" + _render_single_pf_view(v)
+
             if updated != existing:
                 base_path.write_text(updated, encoding="utf-8")
             return

@@ -115,21 +115,21 @@ class TestIncrementalMerge:
         ensure_base_views(self.vault, self.paths, self.config, force=False)
         content1 = domain_base.read_text(encoding="utf-8")
 
-        ocr_done_filter_old = "ocr_status = 'done'"
-        ocr_done_filter_modified = "ocr_status = 'done' AND extra_check = true"
+        ocr_filter_old = 'ocr_status == "pending"'
+        ocr_filter_modified = 'ocr_status == "pending" && extra_check == true'
 
-        modified = content1.replace(ocr_done_filter_old, ocr_done_filter_modified)
+        modified = content1.replace(ocr_filter_old, ocr_filter_modified)
         domain_base.write_text(modified, encoding="utf-8")
 
         ensure_base_views(self.vault, self.paths, self.config, force=False)
         refreshed = domain_base.read_text(encoding="utf-8")
 
-        assert ocr_done_filter_modified in refreshed, "User filter modification should be preserved"
+        assert ocr_filter_modified in refreshed, "User filter modification should be preserved"
         # force=True should still regenerate
         ensure_base_views(self.vault, self.paths, self.config, force=True)
         force_refreshed = domain_base.read_text(encoding="utf-8")
-        assert ocr_done_filter_old in force_refreshed
-        assert ocr_done_filter_modified not in force_refreshed
+        assert ocr_filter_old in force_refreshed
+        assert ocr_filter_modified not in force_refreshed
 
     def test_new_domain_base_is_created_on_first_run(self):
         """First run creates domain base if none exists."""
