@@ -94,7 +94,7 @@ def build_base_views(domain: str) -> list[dict]:
         },
         {
             "name": "重做OCR",
-            "order": ["year", "first_author", "title", "ocr_redo", "ocr_status"],
+            "order": ["year", "first_author", "title", "ocr_redo", "ocr_time", "ocr_status"],
             "filter": 'ocr_status == "done"',
         },
     ]
@@ -241,7 +241,9 @@ def merge_base_views(existing_content: str | None, new_views: list[dict], folder
   ocr_status:
     displayName: "OCR Status"
   ocr_redo:
-    displayName: "重做OCR"
+    displayName: "\u91CD\u505AOCR"
+  ocr_time:
+    displayName: "\u5B8C\u6210\u65F6\u95F4"
   deep_reading_status:
     displayName: "Deep Reading"
   pdf_path:
@@ -410,7 +412,9 @@ properties:
   ocr_status:
     displayName: "OCR Status"
   ocr_redo:
-    displayName: "重做OCR"
+    displayName: "\u91CD\u505AOCR"
+  ocr_time:
+    displayName: "\u5B8C\u6210\u65F6\u95F4"
   deep_reading_status:
     displayName: "Deep Reading"
   pdf_path:
