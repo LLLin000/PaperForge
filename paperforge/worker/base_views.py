@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 from pathlib import Path
 
 from paperforge.worker._utils import (
@@ -431,6 +432,12 @@ def ensure_base_views(vault: Path, paths: dict[str, Path], config: dict, force: 
         resolved_filter = substitute_config_placeholders(folder_filter, paths)
         if base_path.exists() and not force:
             existing = base_path.read_text(encoding="utf-8")
+            existing = re.sub(
+                r'file\.inFolder\("[^"]+"\)',
+                f'file.inFolder("{resolved_filter}")',
+                existing,
+                count=1,
+            )
             merged = merge_base_views(existing, views, folder_filter=resolved_filter)
             if merged != existing:
                 base_path.write_text(merged, encoding="utf-8")
