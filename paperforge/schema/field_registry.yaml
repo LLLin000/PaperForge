@@ -128,6 +128,13 @@ frontmatter:
     owner: ocr
     default: "none"
     introduced_in: "2.1"
+  ocr_redo:
+    type: bool
+    required: false
+    public: true
+    description: "User requests OCR redo"
+    owner: user
+    introduced_in: "1.5.14"
   deep_reading_status:
     type: enum
     values:

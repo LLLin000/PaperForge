@@ -28,6 +28,7 @@ from paperforge.adapters.obsidian_frontmatter import (
     canonicalize_decision,
     compute_final_collection,
     extract_preserved_deep_reading,
+    extract_preserved_ocr_redo,
     extract_preserved_tags,
     update_frontmatter_field,
 )
@@ -995,10 +996,12 @@ def next_key(domain: str, export_rows: list[dict]) -> str:
     return f"{prefix}{max_num + 1:03d}"
 
 
-def frontmatter_note(entry: dict, existing_text: str = "", preserved_tags: list[str] | None = None) -> str:
+def frontmatter_note(entry: dict, existing_text: str = "", preserved_tags: list[str] | None = None, preserved_ocr_redo: bool | None = None) -> str:
     preserved_deep = extract_preserved_deep_reading(existing_text)
     if preserved_tags is None and existing_text:
         preserved_tags = extract_preserved_tags(existing_text)
+    if preserved_ocr_redo is None and existing_text:
+        preserved_ocr_redo = extract_preserved_ocr_redo(existing_text)
     first_author = entry.get("first_author", "")
     if not first_author:
         authors = entry.get("authors", [])
@@ -1033,6 +1036,8 @@ def frontmatter_note(entry: dict, existing_text: str = "", preserved_tags: list[
             f"fulltext_md_path: {yaml_quote('[[{}]]'.format(entry['fulltext_path']) if entry.get('ocr_status') == 'done' and entry.get('fulltext_path') else '')}",
         ]
     )
+    if preserved_ocr_redo:
+        lines.append("ocr_redo: true")
     if preserved_tags is not None:
         lines.append("tags:")
         for tag in preserved_tags:
