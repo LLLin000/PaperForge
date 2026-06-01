@@ -498,8 +498,8 @@ def _sanitize_base_file(content: str, views: list[dict], folder_filter: str) -> 
                 block_lines.append(next_line)
                 i += 1
             block_text = "\n".join(block_lines)
-            name_match = re.search(r'name:\s*"?([^"]*)"?', block_text)
-            view_name = name_match.group(1) if name_match else ""
+            name_match = re.search(r'name:\s*"?([^"\n]*)"?', block_text)
+            view_name = name_match.group(1).strip() if name_match else ""
             view_blocks.append((False, view_name, block_text))
             continue
         else:
