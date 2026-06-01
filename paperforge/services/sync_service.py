@@ -200,7 +200,7 @@ class SyncService:
 
     def run(
         self, verbose: bool = False, json_output: bool = False, selection_only: bool = False, index_only: bool = False,
-        prune: bool = False, prune_force: bool = False,
+        prune: bool = False, prune_force: bool = False, rebuild_index: bool = False,
     ) -> PFResult:
         """Full sync orchestration. Returns PFResult contract.
 
@@ -229,8 +229,9 @@ class SyncService:
 
         # ── Phase 1: Select ──
         if not index_only:
-            from paperforge.worker.sync import run_selection_sync
             import time as _time
+
+            from paperforge.worker.sync import run_selection_sync
 
             _t0 = _time.time()
             try:
@@ -288,7 +289,7 @@ class SyncService:
             flat_cleaned = self.clean_flat_notes(paths, json_output=json_output)
 
             if orphaned > 0 or flat_cleaned > 0:
-                index_count = asset_index.build_index(self.vault, verbose)
+            index_count = asset_index.build_index(self.vault, verbose, force_rebuild=rebuild_index)
 
             # ── Phase 4: Prune orphans ──
             prune_data = None

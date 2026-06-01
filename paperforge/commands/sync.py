@@ -62,6 +62,7 @@ def run(args: argparse.Namespace) -> int:
         "index_only": index_only,
         "prune": prune_flag,
         "prune_force": prune_force,
+        "rebuild_index": getattr(args, "rebuild_index", False),
     }
     try:
         sig = inspect.signature(svc.run)
@@ -82,7 +83,8 @@ def run(args: argparse.Namespace) -> int:
             except Exception:
                 pass
             try:
-                import subprocess, sys
+                import subprocess
+                import sys
                 subprocess.Popen(
                     [sys.executable, "-m", "paperforge", "embed", "build", "--resume"],
                     cwd=str(vault),
@@ -105,7 +107,8 @@ def run(args: argparse.Namespace) -> int:
         print(f"memory: deferred ({e})")
 
     try:
-        import subprocess, sys
+        import subprocess
+        import sys
         subprocess.Popen(
             [sys.executable, "-m", "paperforge", "embed", "build", "--resume"],
             cwd=str(vault),
