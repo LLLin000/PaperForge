@@ -558,9 +558,9 @@ def build_index(vault: Path, verbose: bool = False, force_rebuild: bool = False)
         if existing_data.get("schema_version") == CURRENT_SCHEMA_VERSION:
             items = existing_data.get("items", [])
             sample = items[:min(5, len(items))]
-            if sample and not all(isinstance(it, dict) and "ocr_redo" in it for it in sample):
+            if sample and not all(isinstance(it, dict) and "ocr_redo" in it and "ocr_time" in it for it in sample):
                 if verbose:
-                    print("index-refresh: ocr_redo field missing in index, forcing rebuild")
+                    print("index-refresh: ocr_redo or ocr_time field missing in index, forcing rebuild")
             else:
                 count = len(items)
                 if verbose:
