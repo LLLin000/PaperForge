@@ -90,6 +90,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
                 .paperforge-release-section { margin-bottom: 6px; }
                 .paperforge-release-label { font-weight: 600; color: var(--text-accent); margin-bottom: 2px; font-size: 13px; }
                 .paperforge-release-item { font-size: 13px; margin-left: 8px; color: var(--text-muted); }
+                .paperforge-release-item-bold { font-size: 13px; margin-left: 8px; font-weight: 600; color: var(--text-normal); }
+                .paperforge-release-recommended { background: rgba(var(--color-orange-rgb, 255,166,0), 0.08); border-radius: 4px; padding: 6px 8px; }
                 .paperforge-manual-links { margin-top: 8px; }
                 .paperforge-manual-links a { color: var(--text-accent); }
                 .paperforge-modal-subtitle { color: var(--text-muted); font-size: 13px; margin-bottom: 12px; }
@@ -1295,10 +1297,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       }
 
       if (ver.recommended_actions && ver.recommended_actions.length > 0) {
-        const section = card.createEl("div", { cls: "paperforge-release-section" });
+        const section = card.createEl("div", { cls: "paperforge-release-section paperforge-release-recommended" });
         section.createEl("div", { cls: "paperforge-release-label", text: "\u5EFA\u8BAE\u64CD\u4F5C" });
         for (const item of ver.recommended_actions) {
-          section.createEl("div", { cls: "paperforge-release-item", text: `\u2022 ${item}` });
+          section.createEl("div", { cls: "paperforge-release-item paperforge-release-item-bold", text: `\u2022 ${item}` });
         }
       }
     }
