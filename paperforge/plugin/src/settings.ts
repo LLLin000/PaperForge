@@ -1309,7 +1309,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const manualSection = containerEl.createEl("div", { cls: "paperforge-manual-links" });
     const manualLink = manualSection.createEl("a", {
       text: "\u2192 \u67E5\u770B\u5B8C\u6574\u4F7F\u7528\u624B\u518C\uFF08GitHub\uFF09",
-      href: "https://github.com/LLLin000/PaperForge/blob/main/docs/user-manual.md",
+      href: "https://github.com/LLLin000/PaperForge/blob/master/docs/user-manual.md",
     });
     manualLink.setAttr("target", "_blank");
   }
