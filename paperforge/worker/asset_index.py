@@ -380,6 +380,8 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
     _v = fm.get("analyze")
     note_analyze = _v if isinstance(_v, bool) else None
     note_dr = str(fm.get("deep_reading_status", "")).strip()
+    _v = fm.get("ocr_redo")
+    note_ocr_redo = _v if isinstance(_v, bool) else False
 
     do_ocr_value = note_do_ocr if note_do_ocr is not None else legacy_do_ocr
     if do_ocr_value is None:
@@ -430,6 +432,7 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
         "ocr_md_path": obsidian_wikilink_for_path(vault, meta.get("markdown_path", "")),
         "ocr_json_path": meta.get("json_path", ""),
         "deep_reading_status": _dr_status,
+        "ocr_redo": note_ocr_redo,
         "note_path": str((main_note_path if main_note_path.exists() else note_path).relative_to(vault)).replace(
             "\\", "/"
         ),
@@ -552,10 +555,16 @@ def build_index(vault: Path, verbose: bool = False, force_rebuild: bool = False)
     export_hash = _compute_export_hash(paths)
     if not force_rebuild and isinstance(existing_data, dict) and existing_data.get("export_hash") == export_hash:
         if existing_data.get("schema_version") == CURRENT_SCHEMA_VERSION:
-            count = len(existing_data.get("items", []))
-            if verbose:
-                print(f"index-refresh: {count} entries (unchanged)")
-            return count
+            items = existing_data.get("items", [])
+            sample = items[:min(5, len(items))]
+            if sample and not all(isinstance(it, dict) and "ocr_redo" in it for it in sample):
+                if verbose:
+                    print("index-refresh: ocr_redo field missing in index, forcing rebuild")
+            else:
+                count = len(items)
+                if verbose:
+                    print(f"index-refresh: {count} entries (unchanged)")
+                return count
 
     domain_lookup = {entry["export_file"]: entry["domain"] for entry in config["domains"]}
 
