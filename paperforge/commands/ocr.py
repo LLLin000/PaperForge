@@ -2,6 +2,8 @@
 
 import argparse
 import logging
+import re as _re
+import shutil
 from pathlib import Path
 
 from paperforge import __version__
@@ -126,6 +128,57 @@ def _get_run_ocr():
     return run_ocr
 
 
+def _run_ocr_redo(vault: Path, verbose: bool = False, no_progress: bool = False) -> int:
+    """Scan for papers with ocr_redo: true, reset their OCR state, then run OCR queue."""
+    from paperforge.adapters.obsidian_frontmatter import extract_preserved_ocr_redo
+    from paperforge.worker._utils import pipeline_paths
+    from paperforge.worker.ocr import run_ocr
+
+    paths = pipeline_paths(vault)
+    ocr_root = paths.get("ocr")
+    lit_root = paths.get("literature")
+
+    if not lit_root or not lit_root.exists():
+        logger.info("No literature directory found, nothing to redo")
+        return 0
+
+    redo_entries = []
+    for note_file in sorted(lit_root.rglob("*.md")):
+        if note_file.name in ("fulltext.md", "deep-reading.md", "discussion.md"):
+            continue
+        try:
+            text = note_file.read_text(encoding="utf-8")
+        except Exception:
+            continue
+        if not extract_preserved_ocr_redo(text):
+            continue
+        key_match = _re.search(r"^zotero_key:\s*(.+)$", text, _re.MULTILINE)
+        if not key_match:
+            continue
+        zotero_key = key_match.group(1).strip().strip('"').strip("'")
+        redo_entries.append((zotero_key, note_file, text))
+
+    if not redo_entries:
+        logger.info("No papers with ocr_redo: true found")
+        return 0
+
+    logger.info("Found %d paper(s) with ocr_redo: true", len(redo_entries))
+    for zotero_key, note_file, text in redo_entries:
+        # Delete OCR output directory
+        ocr_dir = ocr_root / zotero_key if ocr_root else None
+        if ocr_dir and ocr_dir.exists():
+            shutil.rmtree(ocr_dir)
+            logger.info("Deleted OCR directory for %s", zotero_key)
+
+        # Update library note frontmatter: ocr_status -> pending, ocr_redo -> false
+        text = _re.sub(r"^ocr_status:\s*.+$", "ocr_status: pending", text, flags=_re.MULTILINE)
+        text = _re.sub(r"^ocr_redo:\s*.+$", "ocr_redo: false", text, flags=_re.MULTILINE)
+        note_file.write_text(text, encoding="utf-8")
+        logger.info("Reset ocr_status to pending and ocr_redo to false for %s", zotero_key)
+
+    return run_ocr(vault, verbose=verbose, no_progress=no_progress)
+
+
 def run(args: argparse.Namespace) -> int:
     """Run OCR command.
 
@@ -149,6 +202,15 @@ def run(args: argparse.Namespace) -> int:
     ocr_action = getattr(args, "ocr_action", None)
     if ocr_action == "doctor" or diagnose_only:
         return _diagnose(vault, live=live, json_output=json_output)
+
+    if ocr_action == "redo":
+        logger.info("OCR redo: scanning for ocr_redo: true papers...")
+        rc = _run_ocr_redo(
+            vault,
+            verbose=getattr(args, "verbose", False),
+            no_progress=getattr(args, "no_progress", False),
+        )
+        return rc
 
     if key:
         logger.info("Processing specific key: %s", key)

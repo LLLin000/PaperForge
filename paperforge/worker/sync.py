@@ -198,7 +198,8 @@ def load_control_actions(paths: dict[str, Path]) -> dict[str, dict]:
         )
         if analyze_match:
             analyze = analyze_match.group(1).lower() == "true"
-        actions[zotero_key] = {"analyze": analyze, "do_ocr": do_ocr}
+        ocr_redo = bool(extract_preserved_ocr_redo(text))
+        actions[zotero_key] = {"analyze": analyze, "do_ocr": do_ocr, "ocr_redo": ocr_redo}
     return actions
 
 

@@ -532,6 +532,26 @@ def parse_reference_number(text: str) -> int | None:
     return None
 
 
+def is_reference_lead_block(text: str) -> bool:
+    text = clean_block_text(text)
+    if not text:
+        return False
+    if parse_reference_number(text) is not None:
+        return True
+    if re.match(r"^\s*[^\n]{1,160}\(\d{4}[a-z]?\)\.", text):
+        return True
+    if re.match(r"^\s*[A-Z][A-Za-z'’\-]+(?:\s+[A-Z][A-Za-z'’\-]+)*(?:,\s|\s+et al\.)", text):
+        return True
+    return False
+
+
+def _bbox_column_bucket_xc(block: dict) -> float | None:
+    bbox = block.get("block_bbox", [0, 0, 0, 0])
+    if bbox[2] <= bbox[0]:
+        return None
+    return (bbox[0] + bbox[2]) / 2
+
+
 def sort_reference_blocks(blocks: list[dict]) -> list[dict]:
     numbered_count = sum(parse_reference_number(block.get("block_content", "")) is not None for block in blocks)
     if numbered_count >= max(3, len(blocks) // 2):
@@ -543,9 +563,23 @@ def sort_reference_blocks(blocks: list[dict]) -> list[dict]:
                 block_sort_key(block),
             ),
         )
-    return sorted(
-        blocks, key=lambda block: (block.get("block_bbox", [0, 0, 0, 0])[0], block.get("block_bbox", [0, 0, 0, 0])[1])
-    )
+    xcs = [xc for block in blocks if (xc := _bbox_column_bucket_xc(block)) is not None]
+    if not xcs:
+        mid = 600
+    else:
+        mid = sum(xcs) / len(xcs)
+    left: list[dict] = []
+    right: list[dict] = []
+    for block in blocks:
+        xc = _bbox_column_bucket_xc(block)
+        if xc is None or xc < mid - 60:
+            left.append(block)
+        else:
+            right.append(block)
+    y_sort = lambda block: int(block.get("block_bbox", [0, 0, 0, 0])[1])
+    left.sort(key=y_sort)
+    right.sort(key=y_sort)
+    return left + right
 
 
 def assign_reference_continuation(continuation_block: dict, reference_blocks: list[dict]) -> int | None:
@@ -564,6 +598,53 @@ def assign_reference_continuation(continuation_block: dict, reference_blocks: li
         return None
     candidates.sort(key=lambda item: (-item[1], item[2]))
     return candidates[0][0]
+
+
+def build_reference_section_lines(reference_blocks: list[dict], reference_continuations: list[dict]) -> list[str]:
+    if not reference_blocks:
+        return []
+    lines = [""]
+    ordered_reference_blocks = sort_reference_blocks(reference_blocks)
+    continuation_map: dict[int, list[str]] = {}
+    sorted_continuations = sorted(reference_continuations, key=block_sort_key)
+    assigned_continuation_indexes: set[int] = set()
+    incomplete_reference_indexes = [
+        index
+        for index, block in enumerate(ordered_reference_blocks)
+        if clean_block_text(block.get("block_content", "")).rstrip().endswith(":")
+    ]
+    for index, continuation in zip(incomplete_reference_indexes, sorted_continuations, strict=False):
+        continuation_text = clean_block_text(continuation.get("block_content", ""))
+        if continuation_text:
+            continuation_map.setdefault(index, []).append(continuation_text)
+            assigned_continuation_indexes.add(id(continuation))
+    for continuation in sorted_continuations:
+        if id(continuation) in assigned_continuation_indexes:
+            continue
+        target_index = assign_reference_continuation(continuation, ordered_reference_blocks)
+        if target_index is None:
+            continue
+        continuation_map.setdefault(target_index, []).append(clean_block_text(continuation.get("block_content", "")))
+        assigned_continuation_indexes.add(id(continuation))
+    unassigned_continuations = [
+        clean_block_text(continuation.get("block_content", ""))
+        for continuation in sorted_continuations
+        if id(continuation) not in assigned_continuation_indexes
+    ]
+    for index, block in enumerate(ordered_reference_blocks):
+        text = clean_block_text(block.get("block_content", ""))
+        if text:
+            lines.append(text)
+        for continuation_text in continuation_map.get(index, []):
+            if continuation_text:
+                lines.append(continuation_text)
+        if text.rstrip().endswith(":") and unassigned_continuations:
+            lines.append(unassigned_continuations.pop(0))
+    return lines
+
+
+def append_reference_section(rendered: list[str], reference_blocks: list[dict], reference_continuations: list[dict]) -> None:
+    rendered.extend(build_reference_section_lines(reference_blocks, reference_continuations))
 
 
 def clean_author_line(text: str) -> str:
@@ -1324,6 +1405,10 @@ def render_page_blocks(
     reference_continuations: list[dict] = []
     footnotes: list[str] = []
     footnote_counter = 0
+    references_heading_seen = False
+    references_section_active = False
+    references_emitted = False
+    references_insert_index: int | None = None
     rendered_cluster_ids: set[int] = set()
     rendered_caption_media_ids: set[int] = set()
     first_page_meta_done = page_index != 1
@@ -1367,7 +1452,16 @@ def render_page_blocks(
                 rendered.extend(deferred_meta)
                 deferred_meta.clear()
                 first_page_meta_done = True
+            if references_heading_seen and (not references_emitted) and title.lower() != "references":
+                if reference_blocks:
+                    append_reference_section(rendered, reference_blocks, reference_continuations)
+                    references_emitted = True
+                references_section_active = False
             rendered.append(f"### {title}")
+            if title.lower() == "references":
+                references_heading_seen = True
+                references_section_active = True
+                references_insert_index = len(rendered)
             continue
         if label == "abstract":
             if page_index == 1 and affiliation_buffer:
@@ -1382,10 +1476,10 @@ def render_page_blocks(
         if label == "reference_content":
             text = clean_block_text(content)
             if text and (not is_reference_tail_noise_line(text)):
-                if parse_reference_number(text) is None:
-                    reference_continuations.append(block)
-                else:
+                if is_reference_lead_block(text):
                     reference_blocks.append(block)
+                else:
+                    reference_continuations.append(block)
             continue
         if label == "text":
             text = clean_block_text(content)
@@ -1397,7 +1491,7 @@ def render_page_blocks(
                 or is_embedded_figure_text_block(block, blocks, page_width=ocr_width, page_height=ocr_height)
             ):
                 continue
-            if raw_reference_blocks and bbox[1] >= first_reference_y - 10:
+            if references_section_active and raw_reference_blocks and bbox[1] >= first_reference_y - 10:
                 reference_continuations.append(block)
                 continue
             if is_numbered_figure_caption(text):
@@ -1525,46 +1619,12 @@ def render_page_blocks(
         rendered.append("")
         rendered.extend(footnotes)
     rendered = dedupe_page_media_lines(rendered)
-    if reference_blocks:
-        rendered.append("")
-        ordered_reference_blocks = sort_reference_blocks(reference_blocks)
-        continuation_map: dict[int, list[str]] = {}
-        sorted_continuations = sorted(reference_continuations, key=block_sort_key)
-        assigned_continuation_indexes: set[int] = set()
-        incomplete_reference_indexes = [
-            index
-            for index, block in enumerate(ordered_reference_blocks)
-            if clean_block_text(block.get("block_content", "")).rstrip().endswith(":")
-        ]
-        for index, continuation in zip(incomplete_reference_indexes, sorted_continuations, strict=False):
-            continuation_text = clean_block_text(continuation.get("block_content", ""))
-            if continuation_text:
-                continuation_map.setdefault(index, []).append(continuation_text)
-                assigned_continuation_indexes.add(id(continuation))
-        for continuation in sorted_continuations:
-            if id(continuation) in assigned_continuation_indexes:
-                continue
-            target_index = assign_reference_continuation(continuation, ordered_reference_blocks)
-            if target_index is None:
-                continue
-            continuation_map.setdefault(target_index, []).append(
-                clean_block_text(continuation.get("block_content", ""))
-            )
-            assigned_continuation_indexes.add(id(continuation))
-        unassigned_continuations = [
-            clean_block_text(continuation.get("block_content", ""))
-            for continuation in sorted_continuations
-            if id(continuation) not in assigned_continuation_indexes
-        ]
-        for index, block in enumerate(ordered_reference_blocks):
-            text = clean_block_text(block.get("block_content", ""))
-            if text:
-                rendered.append(text)
-            for continuation_text in continuation_map.get(index, []):
-                if continuation_text:
-                    rendered.append(continuation_text)
-            if text.rstrip().endswith(":") and unassigned_continuations:
-                rendered.append(unassigned_continuations.pop(0))
+    if reference_blocks and not references_emitted:
+        reference_lines = build_reference_section_lines(reference_blocks, reference_continuations)
+        if references_insert_index is not None:
+            rendered[references_insert_index:references_insert_index] = reference_lines
+        else:
+            rendered.extend(reference_lines)
     return [part for part in rendered if part]
 
 
@@ -1607,7 +1667,7 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
     return (page_num, markdown_path, json_path, fulltext_md_path)
 
 
-def run_ocr(vault: Path, verbose: bool = False, no_progress: bool = False) -> int:
+def run_ocr(vault: Path, verbose: bool = False, no_progress: bool = False, redo_mode: bool = False) -> int:
     from paperforge.pdf_resolver import resolve_pdf_path
 
     paths = pipeline_paths(vault)
@@ -1644,6 +1704,35 @@ def run_ocr(vault: Path, verbose: bool = False, no_progress: bool = False) -> in
 
     control_actions = load_control_actions(paths)
     target_keys = {key for key, action in control_actions.items() if action.get("do_ocr", False)}
+
+    if redo_mode:
+        redo_keys = [key for key, action in control_actions.items() if action.get("ocr_redo", False)]
+        if redo_keys:
+            logger.info("OCR redo mode: processing %d paper(s) with ocr_redo: true", len(redo_keys))
+            ocr_root = paths.get("ocr")
+            lit_root = paths.get("literature")
+            for key in redo_keys:
+                ocr_dir = ocr_root / key if ocr_root else None
+                if ocr_dir and ocr_dir.exists():
+                    shutil.rmtree(ocr_dir)
+                    logger.info("Deleted OCR directory for %s", key)
+                target_keys.add(key)
+            if lit_root and lit_root.exists():
+                for note_file in lit_root.rglob("*.md"):
+                    if note_file.name in ("fulltext.md", "deep-reading.md", "discussion.md"):
+                        continue
+                    try:
+                        text = note_file.read_text(encoding="utf-8")
+                    except Exception:
+                        continue
+                    for key in redo_keys:
+                        if key in text:
+                            text = re.sub(r"^ocr_status:\s*.+$", "ocr_status: pending", text, flags=re.MULTILINE)
+                            text = re.sub(r"^ocr_redo:\s*.+$", "ocr_redo: false", text, flags=re.MULTILINE)
+                            note_file.write_text(text, encoding="utf-8")
+                            logger.info("Reset frontmatter for %s", key)
+                            break
+
     target_rows = []
     for export_path in sorted(paths["exports"].glob("*.json")):
         for item in load_export_rows(export_path):
