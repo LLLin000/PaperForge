@@ -127,10 +127,10 @@ def _get_run_ocr():
 
 
 def _run_ocr_redo(vault: Path, dry_run: bool = False, verbose: bool = False, no_progress: bool = False) -> int:
-    """Scan for papers with ocr_redo: true, reset their OCR state."""
+    """Scan for papers with ocr_redo: true, reset and immediately rerun OCR."""
     from paperforge.worker.ocr import ocr_redo_papers
 
-    return ocr_redo_papers(vault, dry_run=dry_run, verbose=verbose)
+    return ocr_redo_papers(vault, dry_run=dry_run, verbose=verbose, no_progress=no_progress)
 
 
 def run(args: argparse.Namespace) -> int:
@@ -171,7 +171,13 @@ def run(args: argparse.Namespace) -> int:
         logger.info("Processing specific key: %s", key)
 
     run_ocr = _get_run_ocr()
-    exit_code = run_ocr(vault, verbose=getattr(args, "verbose", False), no_progress=getattr(args, "no_progress", False))
+    selected_keys = {key} if key else None
+    exit_code = run_ocr(
+        vault,
+        verbose=getattr(args, "verbose", False),
+        no_progress=getattr(args, "no_progress", False),
+        selected_keys=selected_keys,
+    )
 
     if json_output:
         queue_data = _collect_ocr_queue_data(vault)

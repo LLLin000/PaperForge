@@ -1158,6 +1158,9 @@ def migrate_to_workspace(vault: Path, paths: dict) -> int:
         legacy_flags = _legacy_control_flags(paths, key)
 
         if workspace_dir.exists():
+            stale_workspace_fulltext = workspace_dir / "fulltext.md"
+            if stale_workspace_fulltext.exists():
+                stale_workspace_fulltext.unlink()
             if main_note_path.exists() and any(value is not None for value in legacy_flags.values()):
                 try:
                     workspace_content = main_note_path.read_text(encoding="utf-8")
@@ -1197,21 +1200,6 @@ def migrate_to_workspace(vault: Path, paths: dict) -> int:
         # Create ai/ directory
         ai_dir = workspace_dir / "ai"
         ai_dir.mkdir(exist_ok=True)
-
-        # WS-04: Bridge OCR fulltext to workspace if available
-        meta_path = paths.get("ocr", Path()) / key / "meta.json"
-        if meta_path.exists():
-            try:
-                meta = read_json(meta_path)
-                if meta.get("ocr_status") == "done":
-                    source_fulltext = meta_path.parent / "fulltext.md"
-                    target_fulltext = workspace_dir / "fulltext.md"
-                    if source_fulltext.exists() and not target_fulltext.exists():
-                        import shutil
-
-                        shutil.copy2(str(source_fulltext), str(target_fulltext))
-            except Exception:
-                pass
 
         migrated += 1
 

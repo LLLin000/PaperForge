@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 
 @dataclass
@@ -16,6 +16,14 @@ def _bbox_order_key(block: dict) -> tuple:
     return (int(bbox[1]), int(bbox[0]))
 
 
+def _bbox_top(block: dict) -> int:
+    return int(block.get("block_bbox", [0, 0, 0, 0])[1])
+
+
+def _bbox_bottom(block: dict) -> int:
+    return int(block.get("block_bbox", [0, 0, 0, 0])[3])
+
+
 def reorder_blocks_layered(
     blocks: list[dict],
     page_width: int = 0,
@@ -25,9 +33,9 @@ def reorder_blocks_layered(
         return blocks
 
     try:
-        from paperforge.worker.ocr_roles import assign_block_role
         from paperforge.worker.ocr_body_spine import BodySpineNode
         from paperforge.worker.ocr_layout import detect_layout_zones, order_body_spine
+        from paperforge.worker.ocr_roles import assign_block_role
     except ImportError:
         return blocks
 
@@ -76,5 +84,27 @@ def reorder_blocks_layered(
         if idx is not None and idx < len(body_annotated):
             body_result.append(body_annotated[idx].block)
 
-    non_body_result: list[dict] = [a.block for a in non_body]
-    return body_result + non_body_result
+    body_iter = iter(body_result)
+    result: list[dict] = []
+    for annotated_block in annotated:
+        if annotated_block in body_annotated:
+            try:
+                result.append(next(body_iter))
+            except StopIteration:
+                result.append(annotated_block.block)
+        else:
+            result.append(annotated_block.block)
+    result.extend(body_iter)
+
+    first_body_y = min((_bbox_top(block) for block in body_result), default=None)
+    if first_body_y is not None:
+        leading_roles = {"figure_caption", "table_caption", "media_asset"}
+        leading_blocks = [
+            a.block
+            for a in annotated
+            if a.role in leading_roles and _bbox_bottom(a.block) <= first_body_y
+        ]
+        if leading_blocks:
+            leading_ids = {id(block) for block in leading_blocks}
+            result = leading_blocks + [block for block in result if id(block) not in leading_ids]
+    return result

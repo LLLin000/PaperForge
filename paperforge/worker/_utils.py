@@ -92,6 +92,20 @@ def write_jsonl(path: Path, rows) -> None:
     path.write_text(text, encoding="utf-8")
 
 
+def sync_workspace_fulltext(source_fulltext: Path, target_fulltext: Path) -> bool:
+    if not source_fulltext.exists():
+        return False
+    if target_fulltext.exists():
+        try:
+            if source_fulltext.read_text(encoding="utf-8") == target_fulltext.read_text(encoding="utf-8"):
+                return False
+        except Exception:
+            pass
+    target_fulltext.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(str(source_fulltext), str(target_fulltext))
+    return True
+
+
 # --- YAML Helpers ---
 
 

@@ -341,16 +341,15 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
             except Exception:
                 pass  # alias will be injected on next full frontmatter_note pass
             break  # only one old file per key
-    target_fulltext = workspace_dir / "fulltext.md"
     source_fulltext = paths["ocr"] / key / "fulltext.md"
+    stale_workspace_fulltext = workspace_dir / "fulltext.md"
 
     workspace_dir.mkdir(parents=True, exist_ok=True)
     (workspace_dir / "ai").mkdir(parents=True, exist_ok=True)
-    if meta.get("ocr_status") == "done" and source_fulltext.exists() and not target_fulltext.exists():
-        shutil.copy2(str(source_fulltext), str(target_fulltext))
-        logger.info("Bridged fulltext.md to workspace for %s", key)
+    if stale_workspace_fulltext.exists():
+        stale_workspace_fulltext.unlink()
 
-    fulltext_exists = target_fulltext.exists()
+    fulltext_exists = source_fulltext.exists()
 
     # ---- entry dict -------------------------------------------------------
     authors = item.get("authors", [])
@@ -447,7 +446,7 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
         # Workspace path fields are only advertised when the backing files/dirs exist.
         "paper_root": str(workspace_dir.relative_to(vault)).replace("\\", "/") + "/",
         "main_note_path": str(main_note_path.relative_to(vault)).replace("\\", "/"),
-        "fulltext_path": str(target_fulltext.relative_to(vault)).replace("\\", "/") if fulltext_exists else "",
+        "fulltext_path": str(source_fulltext.relative_to(vault)).replace("\\", "/") if fulltext_exists else "",
         "deep_reading_path": "",  # deprecated: deep reading content now lives in main note as ## 🔍 精读
         "ai_path": str((workspace_dir / "ai").relative_to(vault)).replace("\\", "/") + "/",
     }

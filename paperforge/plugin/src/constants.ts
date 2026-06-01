@@ -56,7 +56,7 @@ export const ACTIONS: ActionDef[] = [
   },
   {
     id: "paperforge-ocr-redo",
-    title: "重做OCR",
+    title: "Redo OCR",
     desc: "Re-run OCR for papers marked ocr_redo: true",
     icon: "\u21BA",
     cmd: "ocr",
@@ -87,6 +87,7 @@ export interface PaperForgeSettings {
   vector_db_api_key: string;
   vector_db_api_base: string;
   vector_db_api_model: string;
+  last_seen_version: string;
   _python_path_stale?: boolean;
   [key: string]: unknown;
 }
@@ -114,6 +115,7 @@ export const DEFAULT_SETTINGS: PaperForgeSettings = {
   resources_dir: "",
   literature_dir: "",
   base_dir: "",
+  last_seen_version: "",
 };
 
 // ── Workflow state helpers ──
