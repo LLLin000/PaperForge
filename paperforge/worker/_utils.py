@@ -20,10 +20,17 @@ STANDARD_VIEW_NAMES = frozenset(
 # --- Journal Database ---
 
 
-from paperforge.core.date_utils import extract_year as _extract_year
-from paperforge.core.io import read_json, write_json
+from paperforge.core.io import read_json, write_json  # noqa: F401
 
 _JOURNAL_DB: dict[str, dict] | None = None
+
+
+def _extract_year(pubdate: str) -> str:
+    """Extract a 4-digit year from a pubdate string."""
+    if not pubdate:
+        return ""
+    match = re.search(r"(\d{4})", str(pubdate))
+    return match.group(1) if match else ""
 
 
 def load_journal_db(vault: Path) -> dict[str, dict]:

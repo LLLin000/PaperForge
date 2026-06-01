@@ -105,12 +105,11 @@ class TestIncrementalMerge:
         assert refreshed.count(PAPERFORGE_VIEW_PREFIX) == 4
 
     def test_user_modified_filter_on_standard_view_is_preserved(self):
-        """User changes filter on a standard PF view — on refresh it is REPLACED.
+        """User changes filter on a standard PF view — on refresh it is PRESERVED.
 
-        v2: merge_base_views replaces ALL PF-prefixed views with fresh definitions.
-        User modifications to standard view filters are reset.
-        User-added views (no prefix) are preserved.
-        force=True does full regeneration (same behavior as before).
+        v3: _sanitize_base_file does NOT touch existing view content.
+        User modifications to standard view filters, columns, widths, sort survive refresh.
+        Only: duplicate removal, syntax fixes, missing standard views appended.
         """
         domain_base = self.bases / f"{slugify_filename('骨科')}.base"
         ensure_base_views(self.vault, self.paths, self.config, force=False)
@@ -125,10 +124,9 @@ class TestIncrementalMerge:
         ensure_base_views(self.vault, self.paths, self.config, force=False)
         refreshed = domain_base.read_text(encoding="utf-8")
 
-        # v2: merge_base_views replaces PF views — user modification should be reset
-        assert ocr_filter_old in refreshed, "Standard PF view should be reset by merge_base_views"
-        assert ocr_filter_modified not in refreshed, "User filter modification should be replaced"
-        # force=True should still regenerate
+        # v3: existing view content is preserved — user modification survives
+        assert ocr_filter_modified in refreshed, "User filter modification should be preserved"
+        # force=True should still regenerate (user mods lost when force)
         ensure_base_views(self.vault, self.paths, self.config, force=True)
         force_refreshed = domain_base.read_text(encoding="utf-8")
         assert ocr_filter_old in force_refreshed
@@ -147,10 +145,10 @@ class TestIncrementalMerge:
         assert PAPERFORGE_VIEW_PREFIX in content
 
     def test_old_file_without_prefix_gets_views_without_duplication(self):
-        """Base files from old versions (no PAPERFORGE_VIEW_PREFIX) get views added once."""
+        """Old base files (no PAPERFORGE_VIEW_PREFIX): existing views preserved, missing standard views appended."""
         domain_base = self.bases / f"{slugify_filename('骨科')}.base"
 
-        # Simulate old-version file: views without PAPERFORGE_VIEW_PREFIX
+        # Simulate old-version file: 2 views without PAPERFORGE_VIEW_PREFIX
         old_content = """filters:
   and:
     - file.inFolder("Resources/Literature/骨科")
@@ -175,11 +173,12 @@ views:
         ensure_base_views(self.vault, self.paths, self.config, force=False)
         content = domain_base.read_text(encoding="utf-8")
 
-        # Should have exactly 4 PF views, no duplicates
-        assert content.count(PAPERFORGE_VIEW_PREFIX) == 4
+        # Old views preserved as-is (no prefix added to existing); missing views appended with prefix
         assert content.count('name: "控制面板"') == 1
         assert content.count('name: "待 OCR"') == 1
+        assert content.count(PAPERFORGE_VIEW_PREFIX) == 2  # Only 待深度阅读 + 重做OCR added
         assert "重做OCR" in content
+        assert "待深度阅读" in content
 
     def test_corrupted_file_with_eight_views_repaired_to_four(self):
         """Post-corruption: 4 old prefix-free views + 4 new PF-prefixed views = 8.
