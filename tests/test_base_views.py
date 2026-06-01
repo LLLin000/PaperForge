@@ -1,4 +1,4 @@
-"""Tests for the 8-view Base generation system (Phase 39: workflow-gate views)."""
+"""Tests for the 4-view Base generation system (Phase 44: slim base views)."""
 
 from paperforge.worker.base_views import (
     build_base_views,
@@ -7,15 +7,22 @@ from paperforge.worker.base_views import (
 
 
 class TestBuildBaseViews:
-    def test_returns_exactly_8_views(self):
+    def test_build_base_views_has_4_standard_views(self):
         views = build_base_views("骨科")
-        assert len(views) == 8
+        names = {v["name"] for v in views}
 
-    def test_all_view_names_present(self):
+        assert names == {"控制面板", "待 OCR", "待深度阅读", "重做OCR"}
+
+    def test_ocr_redo_view_has_correct_columns(self):
         views = build_base_views("骨科")
-        names = [v["name"] for v in views]
-        expected = ["控制面板", "推荐分析", "待 OCR", "OCR 完成", "待深度阅读", "深度阅读完成", "正式卡片", "全记录"]
-        assert names == expected
+        redo = next(v for v in views if v["name"] == "重做OCR")
+
+        assert redo["order"] == ["year", "first_author", "title", "ocr_redo", "ocr_status"]
+        assert redo["filter"] == "ocr_status = 'done'"
+
+    def test_returns_exactly_4_views(self):
+        views = build_base_views("骨科")
+        assert len(views) == 4
 
     def test_each_view_has_required_keys(self):
         views = build_base_views("骨科")
@@ -37,11 +44,6 @@ class TestBuildBaseViews:
         assert "do_ocr = true" in pending["filter"]
         assert "ocr_status = 'pending'" in pending["filter"]
 
-    def test_ocr_done_filter(self):
-        views = build_base_views("骨科")
-        done = next(v for v in views if v["name"] == "OCR 完成")
-        assert "ocr_status = 'done'" in done["filter"]
-
     def test_deep_reading_pending_filter(self):
         views = build_base_views("骨科")
         pending = next(v for v in views if v["name"] == "待深度阅读")
@@ -49,44 +51,16 @@ class TestBuildBaseViews:
         assert "ocr_status = 'done'" in pending["filter"]
         assert "deep_reading_status = 'pending'" in pending["filter"]
 
-    def test_build_base_views_includes_workflow_flags(self):
+    def test_removed_views_not_present(self):
+        removed = {"推荐分析", "OCR 完成", "深度阅读完成", "正式卡片", "全记录"}
         views = build_base_views("骨科")
-        for v in views:
-            order_set = set(v["order"])
-            assert "has_pdf" in order_set, f"View '{v['name']}' missing has_pdf"
-            if v["name"] not in ("正式卡片",):
-                assert "do_ocr" in order_set, f"View '{v['name']}' missing do_ocr"
-            if v["name"] not in ("正式卡片", "待 OCR", "OCR 完成"):
-                assert "analyze" in order_set, f"View '{v['name']}' missing analyze"
-
-    def test_build_base_views_removes_ghost_columns(self):
-        views = build_base_views("骨科")
-        ghost_fields = {"lifecycle", "maturity_level", "next_step"}
-        for v in views:
-            order_set = set(v["order"])
-            assert ghost_fields.isdisjoint(order_set), f"View '{v['name']}' still contains ghost lifecycle columns"
-
-    def test_build_base_views_filters_use_workflow_gates(self):
-        views = build_base_views("骨科")
-        for v in views:
-            if v["filter"] is not None:
-                assert "lifecycle" not in v["filter"], f"View '{v['name']}' filter uses lifecycle instead of workflow gates"
+        names = {v["name"] for v in views}
+        assert removed.isdisjoint(names), f"Removed views still present: {removed & names}"
 
     def test_build_base_views_has_no_sort(self):
         views = build_base_views("骨科")
         for v in views:
-            assert "sort" not in v, f"View '{v['name']}' should not have sort key (lifecycle removed from frontmatter)"
-
-    def test_properties_yaml_updated(self):
-        from paperforge.worker.base_views import merge_base_views
-        fresh = merge_base_views(None, build_base_views("骨科"), folder_filter="Resources/Literature/骨科")
-        assert "lifecycle:" not in fresh
-        assert "maturity_level:" not in fresh
-        assert "next_step:" not in fresh
-        assert "has_pdf:" in fresh
-        assert "do_ocr:" in fresh
-        assert "analyze:" in fresh
-        assert "ocr_status:" in fresh
+            assert "sort" not in v, f"View '{v['name']}' should not have sort key"
 
 
 class TestSubstituteConfigPlaceholders:
