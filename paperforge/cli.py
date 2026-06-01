@@ -232,6 +232,7 @@ def build_parser() -> argparse.ArgumentParser:
     doctor_parser = ocr_sub.add_parser("doctor", help="Diagnose OCR configuration and connectivity")
     doctor_parser.add_argument("--live", action="store_true", help="Run live PDF test (L4)")
     redo_parser = ocr_sub.add_parser("redo", help="Re-run OCR for papers marked ocr_redo: true")
+    redo_parser.add_argument("--dry-run", action="store_true", help="List papers that would be reset without making changes")
     redo_parser.set_defaults(ocr_action="redo")
 
     # context (Phase 26: traceable AI context packs)
