@@ -1712,6 +1712,9 @@ def run_ocr(vault: Path, verbose: bool = False, no_progress: bool = False, redo_
             ocr_root = paths.get("ocr")
             lit_root = paths.get("literature")
             for key in redo_keys:
+                if not key or not re.match(r"^[A-Za-z0-9]{8}$", key):
+                    logger.warning("Skipping invalid zotero_key for redo: %s", key)
+                    continue
                 ocr_dir = ocr_root / key if ocr_root else None
                 if ocr_dir and ocr_dir.exists():
                     shutil.rmtree(ocr_dir)
@@ -1729,9 +1732,13 @@ def run_ocr(vault: Path, verbose: bool = False, no_progress: bool = False, redo_
                         if key in text:
                             text = re.sub(r"^ocr_status:\s*.+$", "ocr_status: pending", text, flags=re.MULTILINE)
                             text = re.sub(r"^ocr_redo:\s*.+$", "ocr_redo: false", text, flags=re.MULTILINE)
+                            text = re.sub(r"^fulltext_md_path:\s*.+$", "fulltext_md_path: ''", text, flags=re.MULTILINE)
                             note_file.write_text(text, encoding="utf-8")
                             logger.info("Reset frontmatter for %s", key)
                             break
+            # Only mark for OCR, do NOT auto-run
+            logger.info("OCR redo: marked %d paper(s) as pending. Run 'paperforge ocr run' to process.", len(redo_keys))
+            return 0
 
     target_rows = []
     for export_path in sorted(paths["exports"].glob("*.json")):

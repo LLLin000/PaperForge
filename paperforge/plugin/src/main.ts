@@ -30,6 +30,19 @@ export default class PaperForgePlugin extends Plugin {
     try { addIcon(PF_ICON_ID, PF_RIBBON_SVG); } catch (_) {}
     this.addRibbonIcon(PF_ICON_ID, "PaperForge Dashboard", () => PaperForgeStatusView.open(this as any));
 
+    const redoAction = ACTIONS.find(a => a.id === "paperforge-ocr-redo");
+    if (redoAction) {
+      this.addRibbonIcon("reset", "PaperForge: 重做OCR", () => {
+        const vp = (this.app.vault.adapter as any).basePath as string;
+        new Notice(`PaperForge: 重做OCR starting...`);
+        const { path: py, extraArgs: ex } = resolvePythonExecutable(vp, this.settings, undefined, undefined);
+        execFile(py, [...ex, "-m", "paperforge", "ocr", "redo"], { cwd: vp, timeout: 600000 }, (err, stdout, stderr) => {
+          if (err) { new Notice(`PaperForge: 重做OCR failed`); return; }
+          new Notice(`PaperForge: 重做OCR done`);
+        });
+      });
+    }
+
     this.addSettingTab(new PaperForgeSettingTab(this.app, this as any));
 
     this.addCommand({
@@ -50,7 +63,8 @@ export default class PaperForgePlugin extends Plugin {
           const vp = (this.app.vault.adapter as any).basePath as string;
           new Notice(`PaperForge: running ${a.cmd}...`);
           const { path: cmdPythonExe, extraArgs: cmdExtra = [] } = resolvePythonExecutable(vp, this.settings, undefined, undefined);
-          execFile(cmdPythonExe, [...cmdExtra, "-m", "paperforge", a.cmd], { cwd: vp, timeout: 300000 }, (err, stdout, stderr) => {
+          const cmdArgs = Array.isArray(a.args) ? [...a.args] : [];
+          execFile(cmdPythonExe, [...cmdExtra, "-m", "paperforge", a.cmd, ...cmdArgs], { cwd: vp, timeout: 300000 }, (err, stdout, stderr) => {
             if (err) {
               new Notice(`[!!] ${a.cmd} failed: ${(stderr || err.message).slice(0, 120)}`, 8000);
               return;
