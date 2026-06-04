@@ -1,0 +1,70 @@
+from __future__ import annotations
+
+
+def test_resolved_metadata_prefers_zotero_but_preserves_ocr_candidates() -> None:
+    from paperforge.worker.ocr_metadata import resolve_metadata
+
+    source_metadata = {
+        "zotero_key": "KEY001",
+        "title": "Canonical Zotero Title",
+        "authors": ["Alice", "Bob"],
+        "year": 2024,
+        "journal": "Journal A",
+        "doi": "10.1000/xyz",
+        "source": "zotero_bbt",
+    }
+    frontmatter_candidates = {
+        "title": "Canonical Zotero Title",
+        "authors_text": "Alice, Bob, Carol",
+        "doi_candidates": ["10.1000/xyz"],
+    }
+
+    resolved = resolve_metadata(source_metadata, frontmatter_candidates)
+
+    assert resolved["title"]["value"] == "Canonical Zotero Title"
+    assert resolved["title"]["source"] == "zotero"
+    assert resolved["authors"]["value"] == ["Alice", "Bob"]
+    assert "raw_frontmatter" in resolved
+
+
+def test_resolved_metadata_has_confidence_scores() -> None:
+    from paperforge.worker.ocr_metadata import resolve_metadata
+
+    resolved = resolve_metadata(
+        {
+            "zotero_key": "KEY002",
+            "title": "Z Title",
+            "authors": ["A"],
+            "year": 2023,
+            "doi": "10.1001/abc",
+        },
+        {},
+    )
+
+    assert isinstance(resolved["title"]["confidence"], float)
+    assert resolved["title"]["confidence"] > 0.5
+
+
+def test_resolved_metadata_preserves_alternatives() -> None:
+    from paperforge.worker.ocr_metadata import resolve_metadata
+
+    resolved = resolve_metadata(
+        {
+            "zotero_key": "KEY003",
+            "title": "Primary Title",
+            "authors": ["Author A"],
+            "year": 2022,
+            "doi": "10.1002/def",
+        },
+        {
+            "title": "Alternative OCR Title",
+            "authors_text": "Author B",
+        },
+    )
+
+    assert "alternatives" in resolved["title"]
+    assert len(resolved["title"]["alternatives"]) >= 1
+    assert any(
+        alt["source"] == "ocr_frontmatter"
+        for alt in resolved["title"]["alternatives"]
+    )
