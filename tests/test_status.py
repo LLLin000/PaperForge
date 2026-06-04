@@ -9,9 +9,6 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-import pytest
-
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -179,10 +176,10 @@ class TestDoctorIndexHealth:
 
     def _run_doctor(self, vault: Path) -> str:
         """Run doctor and return captured stdout."""
-        from paperforge.worker.status import run_doctor
-
         import io
         import sys
+
+        from paperforge.worker.status import run_doctor
 
         old_stdout = sys.stdout
         sys.stdout = buf = io.StringIO()

@@ -14,8 +14,6 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-import pytest
-
 from paperforge.config import paperforge_paths
 from paperforge.worker.asset_index import build_index, read_index
 from paperforge.worker.sync import run_index_refresh, run_selection_sync

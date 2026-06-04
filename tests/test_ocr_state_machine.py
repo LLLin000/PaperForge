@@ -895,7 +895,6 @@ class TestOcrEdgeCases:
         """max_items=1 throttles concurrency but never leaves items unprocessed."""
         vault, ocr_root, exports, library_records = _make_vault(tmp_path)
         paths = _mock_paths(vault, ocr_root, exports, library_records)
-        import os as _os
 
         with patch.dict(
             "os.environ",
@@ -1118,12 +1117,10 @@ class TestOcrEdgeCases:
 
     def test_full_cycle_from_pending_to_done(self, tmp_path: Path) -> None:
         """Happy path: pending -> upload -> queued -> poll done -> postprocess -> done."""
+        import sys as _sys
         from pathlib import Path as P
 
-        import sys as _sys
-
         _sys.path.insert(0, str(P(__file__).resolve().parent.parent))
-        from paperforge.worker.ocr import postprocess_ocr_result
 
         vault, ocr_root, exports, library_records = _make_vault(tmp_path)
         paths = _mock_paths(vault, ocr_root, exports, library_records)

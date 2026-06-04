@@ -267,7 +267,6 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
     Lazy imports inside avoid circular dependencies with ``sync.py``.
     """
     # Lazy imports to avoid circular deps with sync.py
-    import shutil
 
     from paperforge import __version__ as PAPERFORGE_VERSION
     from paperforge.adapters.obsidian_frontmatter import has_deep_reading_content

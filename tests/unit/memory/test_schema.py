@@ -3,14 +3,14 @@ from __future__ import annotations
 import tempfile
 from pathlib import Path
 
+from paperforge.memory.db import get_connection
 from paperforge.memory.schema import (
     ALL_TABLES,
-    ensure_schema,
-    drop_all_tables,
-    get_schema_version,
     CURRENT_SCHEMA_VERSION,
+    drop_all_tables,
+    ensure_schema,
+    get_schema_version,
 )
-from paperforge.memory.db import get_connection
 
 
 def test_ensure_schema_creates_all_tables():

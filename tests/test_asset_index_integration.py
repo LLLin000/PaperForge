@@ -13,9 +13,6 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-import pytest
-
-
 # ---------------------------------------------------------------------------
 # Helpers (matching test_asset_index.py pattern)
 # ---------------------------------------------------------------------------
@@ -113,7 +110,6 @@ def _setup_incremental_vault(
         Path to the vault root.
     """
     from paperforge.worker.asset_index import (
-        build_envelope,
         get_index_path,
     )
 
@@ -217,7 +213,6 @@ class TestIncrementalRefreshBehavior:
     def test_incremental_refresh_fallback_on_legacy(self, tmp_path: Path) -> None:
         """refresh_index_entry falls back to build_index when index is legacy format."""
         from paperforge.worker.asset_index import (
-            build_envelope,
             get_index_path,
             is_legacy_format,
             read_index,
@@ -298,8 +293,6 @@ class TestWorkspacePaths:
     def test_workspace_paths_in_entry(self, tmp_path: Path) -> None:
         """Each entry in the built index contains all 5 workspace path fields."""
         from paperforge.worker.asset_index import (
-            build_envelope,
-            get_index_path,
             read_index,
             refresh_index_entry,
         )
@@ -464,7 +457,7 @@ class TestDerivedStateFields:
         assert "note_health" in health
         assert "asset_health" in health
         for v in health.values():
-            assert isinstance(v, str) and len(v) > 0, f"health value should be non-empty string"
+            assert isinstance(v, str) and len(v) > 0, "health value should be non-empty string"
 
     def test_maturity_structure(self, tmp_path: Path) -> None:
         """maturity field is a dict with level (int 1-4), level_name (str), checks (4 bools), blocking."""
