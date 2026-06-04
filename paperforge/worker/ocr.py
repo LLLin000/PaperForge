@@ -63,6 +63,10 @@ from paperforge.worker.ocr_figures import (
     build_figure_inventory,
     write_figure_inventory,
 )
+from paperforge.worker.ocr_tables import (
+    build_table_inventory,
+    write_table_inventory,
+)
 from paperforge.worker.ocr_metadata import (
     extract_frontmatter_candidates,
     resolve_metadata,
@@ -1766,6 +1770,13 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
     write_figure_inventory(
         artifacts.blocks_structured.parent / "figure_inventory.json",
         figure_inventory,
+    )
+
+    # --- Phase 2: table inventory ---
+    table_inventory = build_table_inventory(structured)
+    write_table_inventory(
+        artifacts.blocks_structured.parent / "table_inventory.json",
+        table_inventory,
     )
 
     # Update meta.json with version payloads
