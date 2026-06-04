@@ -74,3 +74,39 @@ def test_unmatched_assets_are_preserved() -> None:
 
     assert inventory["official_figure_count"] == 0
     assert len(inventory["unmatched_assets"]) == 1
+
+
+def test_extract_figure_number_basic() -> None:
+    from paperforge.worker.ocr_figures import _extract_figure_number
+    assert _extract_figure_number("Figure 1. Caption") == 1
+
+
+def test_extract_figure_number_fig_dot() -> None:
+    from paperforge.worker.ocr_figures import _extract_figure_number
+    assert _extract_figure_number("Fig. 2. Test") == 2
+
+
+def test_extract_figure_number_supplementary() -> None:
+    from paperforge.worker.ocr_figures import _extract_figure_number
+    assert _extract_figure_number("Supplementary Fig. S3") == 3
+
+
+def test_extract_figure_number_extended_data() -> None:
+    from paperforge.worker.ocr_figures import _extract_figure_number
+    assert _extract_figure_number("Extended Data Fig. 4.") == 4
+
+
+def test_extract_figure_number_decimal_truncated() -> None:
+    from paperforge.worker.ocr_figures import _extract_figure_number
+    result = _extract_figure_number("Figure 1.2. Magnified view")
+    assert result == 1 or result == 1.2
+
+
+def test_extract_figure_number_none() -> None:
+    from paperforge.worker.ocr_figures import _extract_figure_number
+    assert _extract_figure_number("Some random text") is None
+
+
+def test_extract_figure_number_multiline() -> None:
+    from paperforge.worker.ocr_figures import _extract_figure_number
+    assert _extract_figure_number("Figure 3.\nDescription continues") == 3
