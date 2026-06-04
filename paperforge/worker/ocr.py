@@ -48,7 +48,7 @@ from paperforge.worker._utils import (
 )
 from paperforge.worker.asset_index import refresh_index_entry
 from paperforge.worker.ocr_artifacts import artifact_paths_for_key, build_version_payload, compute_pdf_fingerprint, compute_json_hash
-from paperforge.worker.ocr_blocks import build_raw_blocks_for_result_lines, write_raw_blocks_jsonl
+from paperforge.worker.ocr_blocks import build_raw_blocks_for_result_lines, build_structured_blocks, write_raw_blocks_jsonl, write_structured_blocks_jsonl
 from paperforge.worker.sync import (
     load_control_actions,
     load_export_rows,
@@ -1732,8 +1732,8 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
     artifacts.blocks_structured.parent.mkdir(parents=True, exist_ok=True)
     all_raw_blocks = build_raw_blocks_for_result_lines(key, all_results)
     write_raw_blocks_jsonl(artifacts.blocks_raw, all_raw_blocks)
-    if not artifacts.blocks_structured.exists():
-        artifacts.blocks_structured.write_text("", encoding="utf-8")
+    structured = build_structured_blocks(all_raw_blocks)
+    write_structured_blocks_jsonl(artifacts.blocks_structured, structured)
 
     # Update meta.json with version payloads
     ocr_model = meta.get("ocr_model", meta.get("ocr_provider", "PaddleOCR"))

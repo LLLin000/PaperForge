@@ -1,6 +1,30 @@
 from __future__ import annotations
 
 
+def test_build_structured_blocks_preserves_noise_and_confidence() -> None:
+    from paperforge.worker.ocr_blocks import build_structured_blocks
+
+    raw_blocks = [
+        {
+            "paper_id": "KEY001",
+            "page": 1,
+            "block_id": "p1_b1",
+            "raw_label": "header",
+            "raw_order": 0,
+            "bbox": [1, 2, 3, 4],
+            "text": "Header",
+            "page_width": 1200,
+            "page_height": 1600,
+        }
+    ]
+
+    rows = build_structured_blocks(raw_blocks)
+
+    assert rows[0]["role"] in {"noise", "page_header"}
+    assert "role_confidence" in rows[0]
+    assert "evidence" in rows[0]
+
+
 def test_build_raw_blocks_preserves_every_block() -> None:
     from paperforge.worker.ocr_blocks import build_raw_blocks_for_page
 
