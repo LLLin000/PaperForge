@@ -293,8 +293,6 @@ def test_postprocess_writes_phase1_artifacts(tmp_path: Path) -> None:
     assert (ocr_dir / "canonical" / "blocks.raw.jsonl").exists()
     assert (ocr_dir / "structure" / "blocks.structured.jsonl").exists()
 
-    import json
-
     meta = json.loads((ocr_dir / "meta.json").read_text(encoding="utf-8"))
     assert "raw_version" in meta
     assert meta["raw_version"]["ocr_model"] == "PaddleOCR-VL-1.6"
@@ -329,3 +327,29 @@ def test_postprocess_writes_resolved_metadata(tmp_path: Path) -> None:
     # Phase 2: resolved_metadata.json does not exist yet — this test will fail
     # The assertion goes here as a contract test
     assert (ocr_dir / "metadata" / "resolved_metadata.json").exists()
+
+
+def test_postprocess_writes_figure_inventory(tmp_path: Path) -> None:
+    import json
+
+    from paperforge.worker.ocr import postprocess_ocr_result
+
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    (vault / "paperforge.json").write_text(
+        json.dumps({"vault_config": {"system_dir": "System", "resources_dir": "Resources"}}),
+        encoding="utf-8",
+    )
+    ocr_root = vault / "System" / "PaperForge" / "ocr"
+    ocr_root.mkdir(parents=True)
+    ocr_dir = ocr_root / "FIG001"
+    ocr_dir.mkdir()
+    (ocr_dir / "meta.json").write_text(
+        '{"zotero_key":"FIG001","ocr_status":"done","ocr_model":"PaddleOCR"}',
+        encoding="utf-8",
+    )
+
+    _, _, _, _ = postprocess_ocr_result(vault, "FIG001", [])
+
+    # Phase 2: figure_inventory.json does not exist yet -- test will fail
+    assert (ocr_dir / "structure" / "figure_inventory.json").exists()

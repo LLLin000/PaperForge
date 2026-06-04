@@ -8,12 +8,9 @@ from __future__ import annotations
 
 import json
 import os
-import tempfile
 from pathlib import Path
 
 import filelock
-
-import pytest
 
 from paperforge.worker.discussion import record_session
 

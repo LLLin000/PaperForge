@@ -91,8 +91,9 @@ def journey_established_vault(tmp_path: Path) -> tuple[Path, object]:
     Returns:
         (vault_path, vault_builder) tuple so tests can inspect or extend.
     """
-    from fixtures.vault_builder import VaultBuilder
     import json
+
+    from fixtures.vault_builder import VaultBuilder
 
     builder = VaultBuilder()
     vault = Path(builder.build("full"))

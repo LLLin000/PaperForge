@@ -6,12 +6,10 @@ Simulates an existing user: established vault with papers -> add new paper -> sy
 from __future__ import annotations
 
 import json
-import shutil
 from pathlib import Path
 
 import pytest
 import yaml
-
 
 pytestmark = pytest.mark.journey
 
@@ -156,8 +154,8 @@ def test_existing_user_adds_paper(
     # Verify new note frontmatter
     fm = _read_frontmatter(new_note)
     assert fm.get("zotero_key") == new_key, f"Expected zotero_key {new_key}, got {fm.get('zotero_key')}"
-    assert "domain" in fm and fm.get("domain"), f"Missing or empty domain in new note"
-    assert "has_pdf" in fm, f"Missing has_pdf in new note"
+    assert "domain" in fm and fm.get("domain"), "Missing or empty domain in new note"
+    assert "has_pdf" in fm, "Missing has_pdf in new note"
 
     # Verify existing notes are unchanged (same frontmatter hash)
     for n in current_notes:
@@ -196,8 +194,8 @@ def test_existing_user_adds_paper(
     # Verify new note frontmatter
     fm = _read_frontmatter(new_note)
     assert fm.get("zotero_key") == new_key, f"Expected zotero_key {new_key}, got {fm.get('zotero_key')}"
-    assert "domain" in fm and fm.get("domain"), f"Missing or empty domain in new note"
-    assert "has_pdf" in fm, f"Missing has_pdf in new note"
+    assert "domain" in fm and fm.get("domain"), "Missing or empty domain in new note"
+    assert "has_pdf" in fm, "Missing has_pdf in new note"
     assert fm.get("ocr_status") in ("pending",), f"Expected pending ocr_status, got {fm.get('ocr_status')}"
 
     # Verify existing notes are unchanged (same frontmatter hash)

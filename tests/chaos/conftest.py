@@ -6,12 +6,10 @@ ALL chaos test vaults MUST use tmp_path and include the isolation assertion:
 
 from __future__ import annotations
 
-import json
 import os
 import random
 import shutil
 import stat
-import string
 import subprocess
 import sys
 from pathlib import Path

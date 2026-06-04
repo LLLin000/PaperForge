@@ -140,8 +140,8 @@ def run(args: argparse.Namespace) -> int:
     total = len(done_papers)
     print(f"EMBED_START:{total}", flush=True)
 
-    import os as _os
     import gc as _gc
+    import os as _os
     _now = __import__('datetime').datetime.now(__import__('datetime').timezone.utc).isoformat
 
     papers_embedded = 0

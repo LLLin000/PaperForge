@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-from pathlib import Path
 import json
 
 from paperforge.memory.runtime_health import (
-    get_runtime_health,
     _check_bootstrap,
     _check_write,
+    get_runtime_health,
 )
 
 

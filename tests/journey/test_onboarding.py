@@ -5,7 +5,6 @@ Simulates a brand-new user: fresh vault -> sync -> OCR -> analyze -> deep-read r
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 from typing import Any
 
@@ -13,7 +12,6 @@ import pytest
 import yaml
 
 from fixtures.ocr.mock_ocr_backend import mock_ocr_success
-
 
 pytestmark = pytest.mark.journey
 

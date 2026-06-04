@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 from paperforge.embedding.build_state import (
-    get_vector_build_state_path,
+    mark_vector_build_state,
     read_vector_build_state,
     write_vector_build_state,
-    mark_vector_build_state,
 )
 
 

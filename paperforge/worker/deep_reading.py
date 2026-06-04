@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
+from paperforge.adapters.obsidian_frontmatter import has_deep_reading_content
 from paperforge.worker._domain import load_domain_config
 from paperforge.worker._utils import (
     get_analyze_queue,
@@ -10,7 +11,6 @@ from paperforge.worker._utils import (
 )
 from paperforge.worker.asset_index import refresh_index_entry
 from paperforge.worker.base_views import ensure_base_views
-from paperforge.adapters.obsidian_frontmatter import has_deep_reading_content
 
 logger = logging.getLogger(__name__)
 

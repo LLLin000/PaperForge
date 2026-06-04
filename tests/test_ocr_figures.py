@@ -1,0 +1,76 @@
+"""Phase 2 contract tests for figure inventory.
+
+paperforge.worker.ocr_figures does not exist yet -- tests will fail until
+Task 5 implements the module.
+"""
+
+from __future__ import annotations
+
+
+def test_formal_figure_count_is_based_on_legends_not_raw_images() -> None:
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    structured_blocks = [
+        {
+            "paper_id": "KEY001",
+            "page": 3,
+            "block_id": "p3_b21",
+            "role": "figure_caption",
+            "text": "Figure 1. Left column figure.",
+            "bbox": [66, 446, 559, 628],
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 3,
+            "block_id": "p3_b22",
+            "role": "figure_asset",
+            "text": "",
+            "bbox": [80, 116, 546, 434],
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 3,
+            "block_id": "p3_b23",
+            "role": "figure_asset",
+            "text": "",
+            "bbox": [598, 114, 1063, 493],
+        },
+    ]
+
+    inventory = build_figure_inventory(structured_blocks)
+
+    assert inventory["official_figure_count"] == 1
+    assert len(inventory["figure_legends"]) == 1
+
+
+def test_figure_inventory_includes_all_sections() -> None:
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    inventory = build_figure_inventory([])
+
+    assert "figure_legends" in inventory
+    assert "figure_assets" in inventory
+    assert "matched_figures" in inventory
+    assert "unmatched_legends" in inventory
+    assert "unmatched_assets" in inventory
+    assert "official_figure_count" in inventory
+
+
+def test_unmatched_assets_are_preserved() -> None:
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    structured_blocks = [
+        {
+            "paper_id": "KEY001",
+            "page": 5,
+            "block_id": "p5_b10",
+            "role": "figure_asset",
+            "text": "",
+            "bbox": [100, 100, 500, 400],
+        },
+    ]
+
+    inventory = build_figure_inventory(structured_blocks)
+
+    assert inventory["official_figure_count"] == 0
+    assert len(inventory["unmatched_assets"]) == 1

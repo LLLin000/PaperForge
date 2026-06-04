@@ -5,10 +5,6 @@ Covers: yaml_quote, yaml_block, yaml_list
 
 from __future__ import annotations
 
-from pathlib import Path
-
-import pytest
-
 from paperforge.worker._utils import yaml_block, yaml_list, yaml_quote
 
 

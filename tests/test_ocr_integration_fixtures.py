@@ -134,3 +134,26 @@ def test_fixture_raw_blocks_nonzero(tmp_path) -> None:
     write_raw_blocks_jsonl(out_path, rows)
     assert out_path.exists()
     assert out_path.stat().st_size > 0
+
+
+# Phase 2: forward-looking contract test; fails until ocr_figures module exists
+def test_fixture_figure_inventory_basic(tmp_path) -> None:
+    """Verify figure inventory can run against a real OCR fixture."""
+    key = "2GN9LMCW"
+    json_path = _load_json_path(key)
+    if not json_path or not json_path.exists():
+        pytest.skip("fixture not available")
+
+    data = json.loads(json_path.read_text(encoding="utf-8"))
+    from paperforge.worker.ocr_blocks import build_raw_blocks_for_result_lines, build_structured_blocks
+
+    raw_blocks = build_raw_blocks_for_result_lines(key, data)
+    structured = build_structured_blocks(raw_blocks)
+
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    inventory = build_figure_inventory(structured)
+
+    assert isinstance(inventory["official_figure_count"], int)
+    assert isinstance(inventory["figure_legends"], list)
+    assert isinstance(inventory["figure_assets"], list)
