@@ -33,15 +33,17 @@ class TestCanonicalIndexOcrState:
         resources.mkdir()
         (resources / "Literature").mkdir(parents=True)
         (vault / "paperforge.json").write_text(
-            json.dumps({
-                "vault_config": {
-                    "system_dir": "99_System",
-                    "resources_dir": "03_Resources",
-                    "literature_dir": "Literature",
-                    "control_dir": "LiteratureControl",
-                    "base_dir": "05_Bases",
+            json.dumps(
+                {
+                    "vault_config": {
+                        "system_dir": "99_System",
+                        "resources_dir": "03_Resources",
+                        "literature_dir": "Literature",
+                        "control_dir": "LiteratureControl",
+                        "base_dir": "05_Bases",
+                    }
                 }
-            }),
+            ),
             encoding="utf-8",
         )
         return vault
@@ -89,6 +91,7 @@ class TestCanonicalIndexOcrState:
             mock_paths.return_value = self._base_mock_paths(vault)
             mock_domain.return_value = {"domains": [{"export_file": "test.json", "domain": "TestDomain"}]}
             from paperforge.worker.asset_index import build_index
+
             build_index(vault)
 
         index_path = vault / "99_System" / "PaperForge" / "indexes" / "formal-library.json"
@@ -114,6 +117,7 @@ class TestCanonicalIndexOcrState:
             mock_paths.return_value = self._base_mock_paths(vault)
             mock_domain.return_value = {"domains": [{"export_file": "test.json", "domain": "TestDomain"}]}
             from paperforge.worker.asset_index import build_index
+
             build_index(vault)
 
         index_path = vault / "99_System" / "PaperForge" / "indexes" / "formal-library.json"
@@ -142,12 +146,14 @@ class TestCanonicalIndexOcrState:
             encoding="utf-8",
         )
         (ocr_dir / "meta.json").write_text(
-            json.dumps({
-                "ocr_status": "done",
-                "zotero_key": "OCR_DONE",
-                "page_count": 2,
-                "markdown_path": str(ocr_dir / "fulltext.md"),
-            }),
+            json.dumps(
+                {
+                    "ocr_status": "done",
+                    "zotero_key": "OCR_DONE",
+                    "page_count": 2,
+                    "markdown_path": str(ocr_dir / "fulltext.md"),
+                }
+            ),
             encoding="utf-8",
         )
         with (
@@ -160,6 +166,7 @@ class TestCanonicalIndexOcrState:
             mock_paths.return_value = self._base_mock_paths(vault)
             mock_domain.return_value = {"domains": [{"export_file": "test.json", "domain": "TestDomain"}]}
             from paperforge.worker.asset_index import build_index
+
             build_index(vault)
 
         index_path = vault / "99_System" / "PaperForge" / "indexes" / "formal-library.json"
@@ -169,6 +176,58 @@ class TestCanonicalIndexOcrState:
         assert entry["has_pdf"] is True
         assert entry["do_ocr"] is True
         assert entry["ocr_status"] == "done"
+
+
+def test_phase2_artifact_dirs_dont_break_index(tmp_path: Path) -> None:
+    """Verify Phase 2 directories don't break build_index()."""
+    import json
+
+    from paperforge.worker.asset_index import build_index
+
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    system = vault / "99_System"
+    system.mkdir()
+    (system / "PaperForge" / "exports").mkdir(parents=True)
+    (system / "PaperForge" / "exports" / "test.json").write_text("[]", encoding="utf-8")
+    (system / "PaperForge" / "ocr").mkdir(parents=True)
+    (system / "PaperForge" / "indexes").mkdir(parents=True)
+    resources = vault / "03_Resources"
+    resources.mkdir()
+    (resources / "Literature").mkdir(parents=True)
+    (vault / "paperforge.json").write_text(
+        json.dumps(
+            {
+                "vault_config": {
+                    "system_dir": "99_System",
+                    "resources_dir": "03_Resources",
+                    "literature_dir": "Literature",
+                    "control_dir": "LiteratureControl",
+                    "base_dir": "05_Bases",
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    # Simulate a paper with Phase 2 artifact dirs
+    ocr_dir = system / "PaperForge" / "ocr" / "PHASE2CK"
+    ocr_dir.mkdir(parents=True)
+    (ocr_dir / "metadata").mkdir()
+    (ocr_dir / "metadata" / "resolved_metadata.json").write_text("{}", encoding="utf-8")
+    (ocr_dir / "structure").mkdir()
+    (ocr_dir / "structure" / "figure_inventory.json").write_text("{}", encoding="utf-8")
+    (ocr_dir / "structure" / "table_inventory.json").write_text("{}", encoding="utf-8")
+    (ocr_dir / "assets" / "figures").mkdir(parents=True)
+    (ocr_dir / "assets" / "tables").mkdir(parents=True)
+    (ocr_dir / "assets" / "orphans").mkdir(parents=True)
+    (ocr_dir / "render" / "figures").mkdir(parents=True)
+    (ocr_dir / "render" / "tables").mkdir(parents=True)
+    (ocr_dir / "meta.json").write_text('{"zotero_key":"PHASE2CK","ocr_status":"done"}', encoding="utf-8")
+
+    # build_index should not raise or fail on Phase 2 directories
+    rc = build_index(vault)
+    assert rc == 0, f"build_index failed with rc={rc}"
 
 
 def test_sync_reads_enriched_meta_without_breaking_ocr_status(tmp_path: Path) -> None:
@@ -210,14 +269,22 @@ def test_sync_reads_enriched_meta_without_breaking_ocr_status(tmp_path: Path) ->
 
     # Write required compatibility files with valid sizes
     (ocr_root / "fulltext.md").write_text(
-        "<!-- page 1 -->\n" + "A" * 700 + "\n<!-- page 2 -->\n" + "B" * 700
-        + "\n<!-- page 3 -->\n" + "C" * 700 + "\n<!-- page 4 -->\n" + "D" * 700
-        + "\n<!-- page 5 -->\n" + "E" * 700,
+        "<!-- page 1 -->\n"
+        + "A" * 700
+        + "\n<!-- page 2 -->\n"
+        + "B" * 700
+        + "\n<!-- page 3 -->\n"
+        + "C" * 700
+        + "\n<!-- page 4 -->\n"
+        + "D" * 700
+        + "\n<!-- page 5 -->\n"
+        + "E" * 700,
         encoding="utf-8",
     )
     (ocr_root / "json").mkdir(exist_ok=True)
     result_data = {"pages": 5, "blocks": [{"id": i, "text": "x" * 100} for i in range(30)]}
     import json as _json
+
     (ocr_root / "json" / "result.json").write_text(_json.dumps(result_data), encoding="utf-8")
 
     paths = paperforge_paths(tmp_path)

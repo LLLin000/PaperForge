@@ -10,14 +10,17 @@ def test_ocr_redo_papers_dry_run_no_changes(tmp_path):
     literature.mkdir(parents=True)
 
     note = literature / "test note.md"
-    note.write_text("""---
+    note.write_text(
+        """---
 zotero_key: "ABCD1234"
 title: "Test"
 ocr_redo: true
 ocr_status: done
 fulltext_md_path: "[[old_path]]"
 ---
-""", encoding="utf-8")
+""",
+        encoding="utf-8",
+    )
 
     ocr_root = vault / "System" / "PaperForge" / "ocr"
     ocr_root.mkdir(parents=True)
@@ -66,7 +69,8 @@ def test_ocr_redo_papers_updates_frontmatter(tmp_path):
     workspace = literature / "AB12CD34 - Test"
     workspace.mkdir()
     note = workspace / "AB12CD34.md"
-    note.write_text("""---
+    note.write_text(
+        """---
 zotero_key: "AB12CD34"
 title: "Test"
 ocr_redo: true
@@ -74,7 +78,9 @@ do_ocr: false
 ocr_status: done
 fulltext_md_path: "[[old_path]]"
 ---
-""", encoding="utf-8")
+""",
+        encoding="utf-8",
+    )
 
     (workspace / "fulltext.md").write_text("old workspace copy\n", encoding="utf-8")
 
@@ -111,10 +117,10 @@ fulltext_md_path: "[[old_path]]"
         monkeypatch.undo()
 
     content = note.read_text(encoding="utf-8")
-    assert 'ocr_redo: false' in content
+    assert "ocr_redo: false" in content
     assert 'ocr_status: "done"' in content
     assert 'fulltext_md_path: ""' in content
-    assert 'do_ocr: true' in content
+    assert "do_ocr: true" in content
     assert calls["selected_keys"] == {"AB12CD34"}
     assert not (workspace / "fulltext.md").exists()
 
@@ -130,14 +136,17 @@ def test_ocr_redo_papers_keeps_flag_true_when_rerun_not_done(tmp_path):
     workspace = literature / "ZXCV1234 - Test"
     workspace.mkdir()
     note = workspace / "ZXCV1234.md"
-    note.write_text("""---
+    note.write_text(
+        """---
 zotero_key: "ZXCV1234"
 title: "Test"
 ocr_redo: true
 do_ocr: false
 ocr_status: done
 ---
-""", encoding="utf-8")
+""",
+        encoding="utf-8",
+    )
 
     monkeypatch = __import__("pytest").MonkeyPatch()
     monkeypatch.setattr(ocr_worker, "run_ocr", lambda *_args, **_kwargs: 1)
@@ -150,7 +159,7 @@ ocr_status: done
         monkeypatch.undo()
 
     content = note.read_text(encoding="utf-8")
-    assert 'ocr_redo: true' in content
+    assert "ocr_redo: true" in content
     assert 'ocr_status: "pending"' in content
 
 
@@ -167,7 +176,8 @@ def test_ocr_redo_rebuilds_phase1_artifacts(tmp_path: Path) -> None:
     workspace = literature / f"{key} - Test"
     workspace.mkdir()
     note = workspace / f"{key}.md"
-    note.write_text(f"""---
+    note.write_text(
+        f"""---
 zotero_key: "{key}"
 title: "Test"
 ocr_redo: true
@@ -175,7 +185,9 @@ do_ocr: false
 ocr_status: done
 fulltext_md_path: "[[old_path]]"
 ---
-""", encoding="utf-8")
+""",
+        encoding="utf-8",
+    )
 
     (workspace / "fulltext.md").write_text("old workspace copy\n", encoding="utf-8")
 
@@ -197,8 +209,11 @@ fulltext_md_path: "[[old_path]]"
         (new_dir / "raw" / "raw_meta.json").write_text('{"ocr_provider":"PaddleOCR"}', encoding="utf-8")
         (new_dir / "raw" / "source_metadata.json").write_text(f'{{"zotero_key":"{key}"}}', encoding="utf-8")
         (new_dir / "canonical" / "blocks.raw.jsonl").write_text(f'{{"paper_id":"{key}","page":1}}\n', encoding="utf-8")
-        (new_dir / "structure" / "blocks.structured.jsonl").write_text(f'{{"paper_id":"{key}","role":"body_paragraph"}}\n', encoding="utf-8")
+        (new_dir / "structure" / "blocks.structured.jsonl").write_text(
+            f'{{"paper_id":"{key}","role":"body_paragraph"}}\n', encoding="utf-8"
+        )
         import json
+
         meta = {
             "zotero_key": key,
             "ocr_status": "done",
@@ -233,7 +248,7 @@ fulltext_md_path: "[[old_path]]"
 
     # Verify ocr_redo flipped to false
     content = note.read_text(encoding="utf-8")
-    assert 'ocr_redo: false' in content
+    assert "ocr_redo: false" in content
 
 
 def test_postprocess_preserves_compatibility_outputs(tmp_path: Path) -> None:
@@ -252,9 +267,7 @@ def test_postprocess_preserves_compatibility_outputs(tmp_path: Path) -> None:
     ocr_root.mkdir(parents=True)
     ocr_dir = ocr_root / "COMPAT1"
     ocr_dir.mkdir()
-    (ocr_dir / "meta.json").write_text(
-        '{"zotero_key":"COMPAT1","ocr_status":"done"}', encoding="utf-8"
-    )
+    (ocr_dir / "meta.json").write_text('{"zotero_key":"COMPAT1","ocr_status":"done"}', encoding="utf-8")
 
     page_num, md_path, json_path, fulltext_md_path = postprocess_ocr_result(vault, "COMPAT1", [])
 
@@ -294,10 +307,44 @@ def test_postprocess_writes_phase1_artifacts(tmp_path: Path) -> None:
     assert (ocr_dir / "structure" / "blocks.structured.jsonl").exists()
 
     meta = json.loads((ocr_dir / "meta.json").read_text(encoding="utf-8"))
+    assert "zotero_key" in meta  # original field preserved
+    assert "ocr_status" in meta  # original field preserved
     assert "raw_version" in meta
     assert meta["raw_version"]["ocr_model"] == "PaddleOCR-VL-1.6"
     assert "derived_version" in meta
     assert "renderer_version" in meta["derived_version"]
+
+
+def test_postprocess_meta_json_preserves_original_fields(tmp_path: Path) -> None:
+    """Verify postprocess preserves pre-Phase-1 meta.json fields."""
+    import json
+
+    from paperforge.worker.ocr import postprocess_ocr_result
+
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    (vault / "paperforge.json").write_text(
+        json.dumps({"vault_config": {"system_dir": "System", "resources_dir": "Resources"}}),
+        encoding="utf-8",
+    )
+    ocr_root = vault / "System" / "PaperForge" / "ocr"
+    ocr_root.mkdir(parents=True)
+    ocr_dir = ocr_root / "METAORIG"
+    ocr_dir.mkdir()
+    (ocr_dir / "meta.json").write_text(
+        '{"zotero_key":"METAORIG","ocr_status":"done","ocr_model":"PaddleOCR",'
+        '"page_count":3,"source_pdf":"nonexistent.pdf"}',
+        encoding="utf-8",
+    )
+
+    _, _, _, _ = postprocess_ocr_result(vault, "METAORIG", [])
+
+    meta = json.loads((ocr_dir / "meta.json").read_text(encoding="utf-8"))
+    assert meta.get("zotero_key") == "METAORIG"
+    assert meta.get("ocr_status") == "done"
+    assert meta.get("page_count") == 3
+    assert "raw_version" in meta
+    assert "derived_version" in meta
 
 
 def test_postprocess_writes_resolved_metadata(tmp_path: Path) -> None:
