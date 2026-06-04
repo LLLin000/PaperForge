@@ -300,3 +300,32 @@ def test_postprocess_writes_phase1_artifacts(tmp_path: Path) -> None:
     assert meta["raw_version"]["ocr_model"] == "PaddleOCR-VL-1.6"
     assert "derived_version" in meta
     assert "renderer_version" in meta["derived_version"]
+
+
+def test_postprocess_writes_resolved_metadata(tmp_path: Path) -> None:
+    import json
+
+    from paperforge.worker.ocr import postprocess_ocr_result
+
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    (vault / "paperforge.json").write_text(
+        json.dumps({"vault_config": {"system_dir": "System", "resources_dir": "Resources"}}),
+        encoding="utf-8",
+    )
+    ocr_root = vault / "System" / "PaperForge" / "ocr"
+    ocr_root.mkdir(parents=True)
+    ocr_dir = ocr_root / "META001"
+    ocr_dir.mkdir()
+    (ocr_dir / "meta.json").write_text(
+        '{"zotero_key":"META001","ocr_status":"done","ocr_model":"PaddleOCR"}',
+        encoding="utf-8",
+    )
+
+    _, _, _, _ = postprocess_ocr_result(vault, "META001", [])
+
+    assert (ocr_dir / "raw" / "raw_meta.json").exists()
+    assert (ocr_dir / "raw" / "source_metadata.json").exists()
+    # Phase 2: resolved_metadata.json does not exist yet — this test will fail
+    # The assertion goes here as a contract test
+    assert (ocr_dir / "metadata" / "resolved_metadata.json").exists()
