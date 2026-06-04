@@ -379,3 +379,34 @@ def test_postprocess_writes_table_inventory(tmp_path: Path) -> None:
 
     # Phase 2: table_inventory.json does not exist yet -- will fail
     assert (ocr_dir / "structure" / "table_inventory.json").exists()
+
+
+def test_postprocess_creates_object_directories(tmp_path: Path) -> None:
+    """Verify postprocess creates object directories even with empty results."""
+    import json
+
+    from paperforge.worker.ocr import postprocess_ocr_result
+
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    (vault / "paperforge.json").write_text(
+        json.dumps({"vault_config": {"system_dir": "System", "resources_dir": "Resources"}}),
+        encoding="utf-8",
+    )
+    ocr_root = vault / "System" / "PaperForge" / "ocr"
+    ocr_root.mkdir(parents=True)
+    ocr_dir = ocr_root / "OBJ001"
+    ocr_dir.mkdir()
+    (ocr_dir / "meta.json").write_text(
+        '{"zotero_key":"OBJ001","ocr_status":"done","ocr_model":"PaddleOCR"}',
+        encoding="utf-8",
+    )
+
+    _, _, _, _ = postprocess_ocr_result(vault, "OBJ001", [])
+
+    # Phase 2: object artifact directories are created during postprocess
+    assert (ocr_dir / "render" / "figures").exists()
+    assert (ocr_dir / "render" / "tables").exists()
+    assert (ocr_dir / "assets" / "figures").exists()
+    assert (ocr_dir / "assets" / "tables").exists()
+    assert (ocr_dir / "assets" / "orphans").exists()
