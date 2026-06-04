@@ -1,3 +1,6 @@
+from pathlib import Path
+
+
 def test_ocr_redo_papers_dry_run_no_changes(tmp_path):
     from paperforge.worker.ocr import ocr_redo_papers
 
@@ -149,3 +152,24 @@ ocr_status: done
     content = note.read_text(encoding="utf-8")
     assert 'ocr_redo: true' in content
     assert 'ocr_status: "pending"' in content
+
+
+def test_postprocess_writes_phase1_artifacts(tmp_path: Path) -> None:
+    from paperforge.worker.ocr import postprocess_ocr_result
+
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    ocr_root = vault / "System" / "PaperForge" / "ocr"
+    ocr_root.mkdir(parents=True)
+    ocr_dir = ocr_root / "ABCD1234"
+    ocr_dir.mkdir()
+    (ocr_dir / "meta.json").write_text(
+        '{"zotero_key":"ABCD1234","ocr_status":"done"}', encoding="utf-8"
+    )
+
+    page_num, _, _, _ = postprocess_ocr_result(vault, "ABCD1234", [])
+    assert page_num == 0
+    assert (ocr_dir / "raw" / "raw_meta.json").exists()
+    assert (ocr_dir / "raw" / "source_metadata.json").exists()
+    assert (ocr_dir / "canonical" / "blocks.raw.jsonl").exists()
+    assert (ocr_dir / "structure" / "blocks.structured.jsonl").exists()
