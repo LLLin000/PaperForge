@@ -1779,6 +1779,20 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
         table_inventory,
     )
 
+    # --- Phase 2: object artifacts ---
+    from paperforge.worker.ocr_objects import extract_and_write_objects
+
+    ocr_asset_root = ocr_root / "assets"
+    ocr_render_root = ocr_root / "render"
+
+    extract_and_write_objects(
+        pdf_path=source_pdf_path,
+        figure_inventory=figure_inventory,
+        table_inventory=table_inventory,
+        asset_root=ocr_asset_root,
+        render_root=ocr_render_root,
+    )
+
     # Update meta.json with version payloads
     ocr_model = meta.get("ocr_model", meta.get("ocr_provider", "PaddleOCR"))
     version_payload = build_version_payload(
