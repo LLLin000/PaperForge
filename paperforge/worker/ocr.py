@@ -59,6 +59,10 @@ from paperforge.worker.ocr_blocks import (
     write_raw_blocks_jsonl,
     write_structured_blocks_jsonl,
 )
+from paperforge.worker.ocr_figures import (
+    build_figure_inventory,
+    write_figure_inventory,
+)
 from paperforge.worker.ocr_metadata import (
     extract_frontmatter_candidates,
     resolve_metadata,
@@ -1756,6 +1760,13 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
     frontmatter_candidates = extract_frontmatter_candidates(artifacts.blocks_structured)
     resolved = resolve_metadata(source_meta, frontmatter_candidates)
     write_resolved_metadata(metadata_dir / "resolved_metadata.json", resolved)
+
+    # --- Phase 2: figure inventory ---
+    figure_inventory = build_figure_inventory(structured)
+    write_figure_inventory(
+        artifacts.blocks_structured.parent / "figure_inventory.json",
+        figure_inventory,
+    )
 
     # Update meta.json with version payloads
     ocr_model = meta.get("ocr_model", meta.get("ocr_provider", "PaddleOCR"))
