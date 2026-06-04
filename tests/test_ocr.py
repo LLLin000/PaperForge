@@ -154,6 +154,88 @@ ocr_status: done
     assert 'ocr_status: "pending"' in content
 
 
+def test_ocr_redo_rebuilds_phase1_artifacts(tmp_path: Path) -> None:
+    """Verify ocr redo produces all Phase 1 artifacts."""
+    from paperforge.worker import ocr as ocr_worker
+
+    key = "REDO0012"
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    literature = vault / "Resources" / "Literature" / "test_domain"
+    literature.mkdir(parents=True)
+
+    workspace = literature / f"{key} - Test"
+    workspace.mkdir()
+    note = workspace / f"{key}.md"
+    note.write_text(f"""---
+zotero_key: "{key}"
+title: "Test"
+ocr_redo: true
+do_ocr: false
+ocr_status: done
+fulltext_md_path: "[[old_path]]"
+---
+""", encoding="utf-8")
+
+    (workspace / "fulltext.md").write_text("old workspace copy\n", encoding="utf-8")
+
+    ocr_root = vault / "System" / "PaperForge" / "ocr"
+    ocr_root.mkdir(parents=True)
+    ocr_dir = ocr_root / key
+    ocr_dir.mkdir()
+    (ocr_dir / "fulltext.md").write_text("old canonical content\n", encoding="utf-8")
+
+    def fake_run_ocr(vault_arg, verbose=False, no_progress=False, selected_keys=None):
+        new_dir = ocr_root / key
+        (new_dir / "json").mkdir(parents=True, exist_ok=True)
+        (new_dir / "raw").mkdir(parents=True, exist_ok=True)
+        (new_dir / "canonical").mkdir(parents=True, exist_ok=True)
+        (new_dir / "structure").mkdir(parents=True, exist_ok=True)
+        fulltext = "<!-- page 1 -->\n" + ("A" * 700)
+        (new_dir / "fulltext.md").write_text(fulltext, encoding="utf-8")
+        (new_dir / "json" / "result.json").write_text("{" + ('"x":1,' * 600) + '"done":true}', encoding="utf-8")
+        (new_dir / "raw" / "raw_meta.json").write_text('{"ocr_provider":"PaddleOCR"}', encoding="utf-8")
+        (new_dir / "raw" / "source_metadata.json").write_text(f'{{"zotero_key":"{key}"}}', encoding="utf-8")
+        (new_dir / "canonical" / "blocks.raw.jsonl").write_text(f'{{"paper_id":"{key}","page":1}}\n', encoding="utf-8")
+        (new_dir / "structure" / "blocks.structured.jsonl").write_text(f'{{"paper_id":"{key}","role":"body_paragraph"}}\n', encoding="utf-8")
+        import json
+        meta = {
+            "zotero_key": key,
+            "ocr_status": "done",
+            "page_count": 1,
+            "fulltext_md_path": "",
+            "markdown_path": f"System/PaperForge/ocr/{key}/fulltext.md",
+            "json_path": f"System/PaperForge/ocr/{key}/json/result.json",
+            "raw_version": {"ocr_model": "PaddleOCR-VL-1.6"},
+            "derived_version": {"renderer_version": "1.0.0-compat"},
+        }
+        (new_dir / "meta.json").write_text(json.dumps(meta), encoding="utf-8")
+        return 0
+
+    monkeypatch = __import__("pytest").MonkeyPatch()
+    monkeypatch.setattr(ocr_worker, "run_ocr", fake_run_ocr)
+    monkeypatch.setattr(ocr_worker, "refresh_index_entry", lambda _vault, _key: None)
+
+    try:
+        rc = ocr_worker.ocr_redo_papers(vault, dry_run=False, verbose=True)
+        assert rc == 0
+    finally:
+        monkeypatch.undo()
+
+    # Verify Phase 1 artifacts exist after redo
+    assert (ocr_dir / "json" / "result.json").exists()
+    assert (ocr_dir / "raw" / "raw_meta.json").exists()
+    assert (ocr_dir / "canonical" / "blocks.raw.jsonl").exists()
+    assert (ocr_dir / "structure" / "blocks.structured.jsonl").exists()
+
+    # Verify compatibility outputs still exist
+    assert (ocr_dir / "fulltext.md").exists()
+
+    # Verify ocr_redo flipped to false
+    content = note.read_text(encoding="utf-8")
+    assert 'ocr_redo: false' in content
+
+
 def test_postprocess_preserves_compatibility_outputs(tmp_path: Path) -> None:
     """Verify that postprocess still writes compat fulltext.md and result.json."""
     import json
