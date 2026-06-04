@@ -1,6 +1,51 @@
 from __future__ import annotations
 
 
+def test_structured_block_has_render_default_for_body() -> None:
+    from paperforge.worker.ocr_blocks import build_structured_blocks
+
+    raw_blocks = [
+        {
+            "paper_id": "KEY001",
+            "page": 1,
+            "block_id": "p1_b1",
+            "raw_label": "text",
+            "raw_order": 0,
+            "bbox": [100, 200, 900, 300],
+            "text": "This is a body paragraph with enough text to be meaningful and avoid the short-text threshold.",
+            "page_width": 1200,
+            "page_height": 1600,
+        }
+    ]
+
+    rows = build_structured_blocks(raw_blocks)
+    assert rows[0]["role"] == "body_paragraph"
+    assert rows[0]["render_default"] is True
+    assert rows[0]["index_default"] is True
+
+
+def test_structured_block_marks_noise_as_not_renderable() -> None:
+    from paperforge.worker.ocr_blocks import build_structured_blocks
+
+    raw_blocks = [
+        {
+            "paper_id": "KEY001",
+            "page": 1,
+            "block_id": "p1_b1",
+            "raw_label": "header",
+            "raw_order": 0,
+            "bbox": [1, 2, 100, 20],
+            "text": "Running head: SOME JOURNAL",
+            "page_width": 1200,
+            "page_height": 1600,
+        }
+    ]
+
+    rows = build_structured_blocks(raw_blocks)
+    assert rows[0]["role"] in {"noise", "page_header"}
+    assert rows[0]["render_default"] is False
+
+
 def test_heading_role_is_not_figure_text() -> None:
     from paperforge.worker.ocr_roles import assign_block_role
 
