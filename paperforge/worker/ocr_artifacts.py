@@ -18,8 +18,8 @@ class OCRArtifactPaths:
     blocks_structured: Path
 
 
-def artifact_paths_for_key(vault: Path, zotero_key: str) -> OCRArtifactPaths:
-    paper_root = vault / "System" / "PaperForge" / "ocr" / zotero_key
+def artifact_paths_for_root(ocr_root: Path, zotero_key: str) -> OCRArtifactPaths:
+    paper_root = ocr_root / zotero_key
     return OCRArtifactPaths(
         paper_root=paper_root,
         meta_json=paper_root / "meta.json",
@@ -30,6 +30,12 @@ def artifact_paths_for_key(vault: Path, zotero_key: str) -> OCRArtifactPaths:
         blocks_raw=paper_root / "canonical" / "blocks.raw.jsonl",
         blocks_structured=paper_root / "structure" / "blocks.structured.jsonl",
     )
+
+
+def artifact_paths_for_key(vault: Path, zotero_key: str) -> OCRArtifactPaths:
+    from paperforge.worker._utils import pipeline_paths
+    paths = pipeline_paths(vault)
+    return artifact_paths_for_root(paths["ocr"], zotero_key)
 
 
 def build_version_payload(
