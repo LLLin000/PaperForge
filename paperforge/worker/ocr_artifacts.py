@@ -1,0 +1,74 @@
+from __future__ import annotations
+
+import hashlib
+import json
+from dataclasses import dataclass
+from pathlib import Path
+
+
+@dataclass(frozen=True)
+class OCRArtifactPaths:
+    paper_root: Path
+    meta_json: Path
+    result_json: Path
+    compat_fulltext: Path
+    raw_meta: Path
+    source_metadata: Path
+    blocks_raw: Path
+    blocks_structured: Path
+
+
+def artifact_paths_for_key(vault: Path, zotero_key: str) -> OCRArtifactPaths:
+    paper_root = vault / "System" / "PaperForge" / "ocr" / zotero_key
+    return OCRArtifactPaths(
+        paper_root=paper_root,
+        meta_json=paper_root / "meta.json",
+        result_json=paper_root / "json" / "result.json",
+        compat_fulltext=paper_root / "fulltext.md",
+        raw_meta=paper_root / "raw" / "raw_meta.json",
+        source_metadata=paper_root / "raw" / "source_metadata.json",
+        blocks_raw=paper_root / "canonical" / "blocks.raw.jsonl",
+        blocks_structured=paper_root / "structure" / "blocks.structured.jsonl",
+    )
+
+
+def build_version_payload(
+    *,
+    pdf_fingerprint: str,
+    result_json_hash: str,
+    ocr_model: str,
+) -> dict:
+    return {
+        "raw_version": {
+            "ocr_provider": "PaddleOCR",
+            "ocr_model": ocr_model,
+            "ocr_raw_schema_version": "1.0.0",
+            "pdf_fingerprint": pdf_fingerprint,
+            "result_json_hash": result_json_hash,
+        },
+        "derived_version": {
+            "canonical_block_version": "1.0.0",
+            "structure_version": "1.0.0",
+            "metadata_resolver_version": "0.0.0-phase1",
+            "asset_extractor_version": "0.0.0-phase1",
+            "renderer_version": "1.0.0-compat",
+            "doctor_version": "0.0.0-phase1",
+        },
+    }
+
+
+def _sha256_hexdigest(data: bytes) -> str:
+    return "sha256:" + hashlib.sha256(data).hexdigest()
+
+
+def compute_pdf_fingerprint(pdf_path: Path) -> str:
+    try:
+        return _sha256_hexdigest(pdf_path.read_bytes())
+    except (FileNotFoundError, OSError):
+        return "unknown"
+
+
+def compute_json_hash(data: list | dict) -> str:
+    if isinstance(data, list):
+        data = {"data": data}
+    return _sha256_hexdigest(json.dumps(data, sort_keys=True).encode("utf-8"))
