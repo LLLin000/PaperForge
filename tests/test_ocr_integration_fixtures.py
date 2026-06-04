@@ -3,6 +3,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 OCR_CORPUS = Path("D:/L/OB/Literature-hub/System/PaperForge/ocr")
 
 
@@ -111,3 +113,24 @@ def test_session_regression_figure_not_in_unrelated_section() -> None:
             continue
 
     assert True
+
+
+def test_fixture_raw_blocks_nonzero(tmp_path) -> None:
+    """Load a real result.json, write blocks.raw.jsonl, verify rows."""
+    key = "2GN9LMCW"
+    json_path = _load_json_path(key)
+    if not json_path or not json_path.exists():
+        pytest.skip("fixture not available")
+
+    data = json.loads(json_path.read_text(encoding="utf-8"))
+    from paperforge.worker.ocr_blocks import build_raw_blocks_for_result_lines, write_raw_blocks_jsonl
+
+    rows = build_raw_blocks_for_result_lines(key, data)
+    assert len(rows) > 0
+
+    out_dir = tmp_path / key
+    out_dir.mkdir(parents=True)
+    out_path = out_dir / "blocks.raw.jsonl"
+    write_raw_blocks_jsonl(out_path, rows)
+    assert out_path.exists()
+    assert out_path.stat().st_size > 0
