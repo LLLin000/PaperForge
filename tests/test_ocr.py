@@ -164,7 +164,8 @@ def test_postprocess_writes_phase1_artifacts(tmp_path: Path) -> None:
     ocr_dir = ocr_root / "ABCD1234"
     ocr_dir.mkdir()
     (ocr_dir / "meta.json").write_text(
-        '{"zotero_key":"ABCD1234","ocr_status":"done"}', encoding="utf-8"
+        '{"zotero_key":"ABCD1234","ocr_status":"done","ocr_model":"PaddleOCR-VL-1.6"}',
+        encoding="utf-8",
     )
 
     page_num, _, _, _ = postprocess_ocr_result(vault, "ABCD1234", [])
@@ -173,3 +174,11 @@ def test_postprocess_writes_phase1_artifacts(tmp_path: Path) -> None:
     assert (ocr_dir / "raw" / "source_metadata.json").exists()
     assert (ocr_dir / "canonical" / "blocks.raw.jsonl").exists()
     assert (ocr_dir / "structure" / "blocks.structured.jsonl").exists()
+
+    import json
+
+    meta = json.loads((ocr_dir / "meta.json").read_text(encoding="utf-8"))
+    assert "raw_version" in meta
+    assert meta["raw_version"]["ocr_model"] == "PaddleOCR-VL-1.6"
+    assert "derived_version" in meta
+    assert "renderer_version" in meta["derived_version"]

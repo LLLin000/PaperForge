@@ -47,6 +47,7 @@ from paperforge.worker._utils import (
     write_json,
 )
 from paperforge.worker.asset_index import refresh_index_entry
+from paperforge.worker.ocr_artifacts import artifact_paths_for_key, build_version_payload, compute_pdf_fingerprint, compute_json_hash
 from paperforge.worker.sync import (
     load_control_actions,
     load_export_rows,
@@ -1691,6 +1692,59 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
         if pdf_doc is not None:
             pdf_doc.close()
     write_json(json_dir / "result.json", all_results)
+
+    # --- Phase 1: raw metadata and source metadata ---
+    artifacts = artifact_paths_for_key(vault, key)
+
+    # raw_meta.json
+    source_pdf_path = Path(meta.get("source_pdf", "")) if meta.get("source_pdf") else None
+    pdf_fingerprint = compute_pdf_fingerprint(source_pdf_path) if source_pdf_path and source_pdf_path.exists() else "unknown"
+    result_hash = compute_json_hash(all_results)
+    now_iso = datetime.now(timezone.utc).isoformat()
+    raw_meta = {
+        "ocr_provider": meta.get("ocr_provider", "PaddleOCR"),
+        "ocr_model": meta.get("ocr_model", "PaddleOCR"),
+        "ocr_raw_schema_version": "1.0.0",
+        "created_at": now_iso,
+        "updated_at": now_iso,
+        "pdf_fingerprint": pdf_fingerprint,
+        "result_hash": result_hash,
+    }
+    write_json(artifacts.raw_meta, raw_meta)
+
+    # source_metadata.json
+    source_meta = {
+        "zotero_key": meta.get("zotero_key", key),
+        "source_pdf": meta.get("source_pdf", ""),
+        "title": meta.get("title", ""),
+        "authors": meta.get("authors", []),
+        "year": meta.get("year", 0),
+        "journal": meta.get("journal", ""),
+        "doi": meta.get("doi", ""),
+        "bbt_citekey": meta.get("bbt_citekey", ""),
+        "source": "zotero_bbt",
+    }
+    write_json(artifacts.source_metadata, source_meta)
+
+    # Ensure canonical and structure directories exist (Phase 1 placeholders)
+    artifacts.blocks_raw.parent.mkdir(parents=True, exist_ok=True)
+    artifacts.blocks_structured.parent.mkdir(parents=True, exist_ok=True)
+    if not artifacts.blocks_raw.exists():
+        artifacts.blocks_raw.write_text("", encoding="utf-8")
+    if not artifacts.blocks_structured.exists():
+        artifacts.blocks_structured.write_text("", encoding="utf-8")
+
+    # Update meta.json with version payloads
+    ocr_model = meta.get("ocr_model", meta.get("ocr_provider", "PaddleOCR"))
+    version_payload = build_version_payload(
+        pdf_fingerprint=pdf_fingerprint,
+        result_json_hash=result_hash,
+        ocr_model=ocr_model,
+    )
+    meta["raw_version"] = version_payload["raw_version"]
+    meta["derived_version"] = version_payload["derived_version"]
+    write_json(meta_path, meta)
+
     fulltext_path = ocr_root / "fulltext.md"
     fulltext_path.write_text("\n\n".join(merged_parts).strip() + "\n", encoding="utf-8")
     markdown_dir = ocr_root / "markdown"
