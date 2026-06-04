@@ -47,8 +47,18 @@ from paperforge.worker._utils import (
     write_json,
 )
 from paperforge.worker.asset_index import refresh_index_entry
-from paperforge.worker.ocr_artifacts import artifact_paths_for_key, build_version_payload, compute_pdf_fingerprint, compute_json_hash
-from paperforge.worker.ocr_blocks import build_raw_blocks_for_result_lines, build_structured_blocks, write_raw_blocks_jsonl, write_structured_blocks_jsonl
+from paperforge.worker.ocr_artifacts import (
+    artifact_paths_for_key,
+    build_version_payload,
+    compute_json_hash,
+    compute_pdf_fingerprint,
+)
+from paperforge.worker.ocr_blocks import (
+    build_raw_blocks_for_result_lines,
+    build_structured_blocks,
+    write_raw_blocks_jsonl,
+    write_structured_blocks_jsonl,
+)
 from paperforge.worker.sync import (
     load_control_actions,
     load_export_rows,
@@ -1751,8 +1761,8 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
     markdown_dir = ocr_root / "markdown"
     if markdown_dir.exists():
         shutil.rmtree(markdown_dir)
-    markdown_path = str(fulltext_path.relative_to(vault)).replace("\\", "/") if page_num else ""
-    json_path = str((json_dir / "result.json").relative_to(vault)).replace("\\", "/")
+    markdown_path = str(fulltext_path.relative_to(paths["vault"])).replace("\\", "/") if page_num else ""
+    json_path = str((json_dir / "result.json").relative_to(paths["vault"])).replace("\\", "/")
     fulltext_md_path = str(fulltext_path.resolve())
     return (page_num, markdown_path, json_path, fulltext_md_path)
 

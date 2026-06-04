@@ -154,11 +154,47 @@ ocr_status: done
     assert 'ocr_status: "pending"' in content
 
 
-def test_postprocess_writes_phase1_artifacts(tmp_path: Path) -> None:
+def test_postprocess_preserves_compatibility_outputs(tmp_path: Path) -> None:
+    """Verify that postprocess still writes compat fulltext.md and result.json."""
+    import json
+
     from paperforge.worker.ocr import postprocess_ocr_result
 
     vault = tmp_path / "vault"
     vault.mkdir()
+    (vault / "paperforge.json").write_text(
+        json.dumps({"vault_config": {"system_dir": "System", "resources_dir": "Resources"}}),
+        encoding="utf-8",
+    )
+    ocr_root = vault / "System" / "PaperForge" / "ocr"
+    ocr_root.mkdir(parents=True)
+    ocr_dir = ocr_root / "COMPAT1"
+    ocr_dir.mkdir()
+    (ocr_dir / "meta.json").write_text(
+        '{"zotero_key":"COMPAT1","ocr_status":"done"}', encoding="utf-8"
+    )
+
+    page_num, md_path, json_path, fulltext_md_path = postprocess_ocr_result(vault, "COMPAT1", [])
+
+    assert page_num == 0
+    assert (ocr_dir / "fulltext.md").exists()
+    assert (ocr_dir / "json" / "result.json").exists()
+    assert isinstance(md_path, str)
+    assert isinstance(json_path, str)
+    assert isinstance(fulltext_md_path, str)
+
+
+def test_postprocess_writes_phase1_artifacts(tmp_path: Path) -> None:
+    import json
+
+    from paperforge.worker.ocr import postprocess_ocr_result
+
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    (vault / "paperforge.json").write_text(
+        json.dumps({"vault_config": {"system_dir": "System", "resources_dir": "Resources"}}),
+        encoding="utf-8",
+    )
     ocr_root = vault / "System" / "PaperForge" / "ocr"
     ocr_root.mkdir(parents=True)
     ocr_dir = ocr_root / "ABCD1234"
