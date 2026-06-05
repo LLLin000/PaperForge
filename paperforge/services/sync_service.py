@@ -100,6 +100,8 @@ def summarize_ocr_runtime_followups(
         "derived_rebuild_mode": mode,
         "legacy_count": len(legacy),
         "legacy_keys": [p["zotero_key"] for p in legacy],
+        "backfill_count": len(legacy),
+        "backfill_keys": [p["zotero_key"] for p in legacy],
     }
 
     if mode == "suppressed_dirty_runtime":
@@ -481,6 +483,22 @@ class SyncService:
 
                     if ocr_runtime_summary["raw_upgrade_count"] > 0 and not json_output:
                         print(f"ocr: {ocr_runtime_summary['raw_upgrade_count']} paper(s) can be upgraded (redo available)")
+
+                    # Legacy backfill: can_backfill papers get derived artifacts rebuilt
+                    if ocr_runtime_summary.get("backfill_count", 0) > 0:
+                        from paperforge.worker.ocr_rebuild import backfill_from_result, select_legacy_papers_for_backfill
+
+                        backfill_keys = select_legacy_papers_for_backfill(papers)
+                        backfill_results: list[dict] = []
+                        for bk in backfill_keys:
+                            br = backfill_from_result(self.vault, bk)
+                            backfill_results.append(br)
+
+                        ocr_runtime_summary["backfill_results"] = backfill_results
+                        done_count = sum(1 for r in backfill_results if r.get("backfill_status") == "done")
+
+                        if not json_output and done_count > 0:
+                            print(f"ocr: backfilled {done_count} legacy paper(s) with derived artifacts")
 
             except Exception as exc:
                 logger.warning("ocr version scan skipped: %s", exc)
