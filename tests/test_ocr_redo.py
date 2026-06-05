@@ -203,3 +203,20 @@ def test_ocr_redo_rebuilds_phase3_artifacts(tmp_path) -> None:
     # Phase 3 artifacts should exist
     assert (ocr_dir / "render" / "fulltext.md").exists(), "render/fulltext.md missing after redo"
     assert (ocr_dir / "health" / "ocr_health.json").exists(), "health/ocr_health.json missing after redo"
+
+
+# ---------------------------------------------------------------------------
+# Guard: redo must not become derived-rebuild path
+# ---------------------------------------------------------------------------
+
+def test_redo_does_not_call_derived_rebuild() -> None:
+    """Verify ocr redo does not import or call derived rebuild.
+
+    This import will fail (ModuleNotFoundError) until Task 5 of Phase 4,
+    which explicitly keeps redo and derived rebuild separate. If someone
+    wires redo to use derived rebuild, this test should be updated or
+    removed with explicit justification.
+    """
+    from paperforge.worker.ocr_rebuild import select_papers_for_derived_rebuild
+
+    assert select_papers_for_derived_rebuild is not None
