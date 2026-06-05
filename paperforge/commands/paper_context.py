@@ -83,6 +83,24 @@ def _build_paper_context(vault, key: str) -> dict | None:
                     f"{n.get('section', 'unknown')}: {n.get('excerpt', '')[:80]}..."
                 )
 
+        try:
+            from paperforge.core.io import read_json
+            from paperforge.worker._utils import pipeline_paths
+            from paperforge.worker.ocr_evidence import build_paper_evidence_summary
+
+            ocr_root = pipeline_paths(vault)["ocr"]
+            paper_ocr_dir = ocr_root / paper.get("zotero_key", key)
+            role_index_path = paper_ocr_dir / "index" / "role-index.json"
+            if role_index_path.exists():
+                role_indexes = read_json(role_index_path)
+                evidence = build_paper_evidence_summary(
+                    paper_id=paper.get("zotero_key", key),
+                    role_indexes=role_indexes,
+                )
+                paper["ocr_evidence"] = evidence
+        except Exception:
+            pass
+
         return {
             "warning": "Prior reading notes are not verified facts. Re-check source before reuse.",
             "paper": paper,
