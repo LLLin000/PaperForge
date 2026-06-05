@@ -1,18 +1,20 @@
+"""Contract tests for OCR Phase 4.1 runtime cleanup semantics."""
+
 from __future__ import annotations
 
 
-def test_sync_detects_derived_drift_without_failing_sync(tmp_path) -> None:
-    from paperforge.services.sync_service import summarize_ocr_version_actions
+def test_derived_rebuild_does_not_clear_raw_upgradable() -> None:
+    from paperforge.worker.ocr_rebuild import _apply_post_rebuild_version_flags
 
-    summary = summarize_ocr_version_actions(
-        papers=[
-            {"zotero_key": "A", "derived_stale": True, "raw_upgradable": False},
-            {"zotero_key": "B", "derived_stale": False, "raw_upgradable": True},
-        ]
-    )
+    meta = {
+        "derived_stale": True,
+        "raw_upgradable": True,
+    }
 
-    assert summary["derived_rebuild_count"] == 1
-    assert summary["raw_upgrade_count"] == 1
+    updated = _apply_post_rebuild_version_flags(meta)
+
+    assert updated["derived_stale"] is False
+    assert updated["raw_upgradable"] is True
 
 
 def test_sync_runtime_summary_can_schedule_derived_rebuild_without_inline_execution() -> None:
