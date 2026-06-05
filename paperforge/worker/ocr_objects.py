@@ -4,7 +4,6 @@ from pathlib import Path
 from typing import Any
 
 
-
 def render_figure_object_markdown(figure: dict[str, Any]) -> str:
     """Render object markdown for a figure entry.
 
