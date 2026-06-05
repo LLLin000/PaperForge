@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from paperforge.worker.ocr_roles import FRONTMATTER_NOISE
+
 
 def render_fulltext_markdown(
     *,
@@ -43,8 +45,7 @@ def render_fulltext_markdown(
     abstract_blocks = [
         b
         for b in structured_blocks
-        if b.get("role") in ("abstract_heading", "abstract_body")
-        and b.get("render_default", True)
+        if b.get("role") in ("abstract_heading", "abstract_body") and b.get("render_default", True)
     ]
     if abstract_blocks:
         lines.append("## Abstract")
@@ -62,7 +63,7 @@ def render_fulltext_markdown(
         if not block.get("render_default", True):
             continue
         role = block.get("role", "")
-        if role in ("abstract_heading", "abstract_body", "figure_caption", "table_caption"):
+        if role in ("abstract_heading", "abstract_body", "figure_caption", "table_caption", "frontmatter_noise"):
             continue
 
         text = block.get("text", "")
@@ -74,6 +75,8 @@ def render_fulltext_markdown(
             lines.append("")
 
         if role == "section_heading":
+            if text.strip().lower() in FRONTMATTER_NOISE:
+                continue
             lines.append(f"## {text}")
             lines.append("")
         elif role == "subsection_heading":

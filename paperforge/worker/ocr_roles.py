@@ -26,6 +26,20 @@ _TABLE_PREFIX_PATTERN = re.compile(
     flags=re.IGNORECASE,
 )
 
+FRONTMATTER_NOISE = {
+    "open access",
+    "copyright",
+    "citation",
+    "keywords",
+    "edited by",
+    "reviewed by",
+    "correspondence",
+    "received",
+    "accepted",
+    "published",
+    "present address",
+}
+
 _REFERENCE_PATTERN = re.compile(
     r"^\s*(?:\d+\.\s|[A-Z][A-Za-z'’\-]+\s+et al\.\s*\(\d{4}[a-z]?\)|\([A-Z][A-Za-z'’\-]+\s+et al\.,\s*\d{4}[a-z]?\))",
 )
@@ -73,11 +87,24 @@ def assign_block_role(
 
     # Paddle priors
     if raw_label == "paragraph_title":
-        if text.strip().lower() == "abstract":
+        lower = text.strip().lower()
+        if lower in FRONTMATTER_NOISE:
             return RoleAssignment(
-                role="frontmatter_heading",
+                role="frontmatter_noise",
+                confidence=0.9,
+                evidence=[f"frontmatter noise: {text[:60]}"],
+            )
+        if lower == "abstract":
+            return RoleAssignment(
+                role="abstract_heading",
                 confidence=0.95,
-                evidence=["abstract heading stays out of body reorder"],
+                evidence=["abstract heading"],
+            )
+        if lower in ("references", "bibliography"):
+            return RoleAssignment(
+                role="reference_heading",
+                confidence=0.9,
+                evidence=[f"references heading: {text[:60]}"],
             )
         if _has_heading_numbering(text):
             return RoleAssignment(
@@ -86,9 +113,9 @@ def assign_block_role(
                 evidence=[f"paragraph_title label with numbering: {text[:60]}"],
             )
         return RoleAssignment(
-            role="section_heading" if len(text) < 60 else "subsection_heading",
+            role="paper_title",
             confidence=0.7,
-            evidence=[f"paragraph_title label: {text[:60]}"],
+            evidence=[f"unnumbered paragraph_title, likely paper title: {text[:60]}"],
         )
 
     if raw_label == "figure_title":

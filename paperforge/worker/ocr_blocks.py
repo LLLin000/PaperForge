@@ -23,9 +23,9 @@ def build_structured_blocks(raw_blocks: list[dict]) -> list[dict]:
         )
         render_default = role.role not in {"noise", "unknown_structural"}
         index_default = True
-        if role.role in {"noise", "page_header", "page_footer"}:
+        if role.role in {"noise", "page_header", "page_footer", "frontmatter_noise"}:
             render_default = False
-        if role.role in {"noise"}:
+        if role.role in {"noise", "frontmatter_noise"}:
             index_default = False
         row = {
             "paper_id": block["paper_id"],
@@ -59,18 +59,20 @@ def build_raw_blocks_for_page(paper_id: str, page: int, result: dict) -> list[di
     blocks = pruned.get("parsing_res_list", [])
     rows = []
     for i, block in enumerate(blocks):
-        rows.append({
-            "paper_id": paper_id,
-            "page": page,
-            "block_id": block.get("block_id", f"p{page}_b{i}"),
-            "raw_label": block.get("block_label", "unknown"),
-            "raw_order": block.get("block_order", i),
-            "bbox": block.get("block_bbox", [0, 0, 0, 0]),
-            "text": block.get("block_content", "") or "",
-            "page_width": width,
-            "page_height": height,
-            "source": "ocr_raw",
-        })
+        rows.append(
+            {
+                "paper_id": paper_id,
+                "page": page,
+                "block_id": block.get("block_id", f"p{page}_b{i}"),
+                "raw_label": block.get("block_label", "unknown"),
+                "raw_order": block.get("block_order", i),
+                "bbox": block.get("block_bbox", [0, 0, 0, 0]),
+                "text": block.get("block_content", "") or "",
+                "page_width": width,
+                "page_height": height,
+                "source": "ocr_raw",
+            }
+        )
     return rows
 
 
