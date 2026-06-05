@@ -703,3 +703,139 @@ def test_embedded_figure_text_keeps_narrow_in_figure_note() -> None:
     ]
 
     assert is_embedded_figure_text_block(blocks[2], blocks, page_width=1200, page_height=1600) is True
+
+
+# --- Structured renderer regression tests ---
+
+
+def test_structured_renderer_abstract_before_introduction() -> None:
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+
+    structured_blocks = [
+        {
+            "role": "section_heading",
+            "text": "1 Introduction",
+            "render_default": True,
+            "page": 1,
+        },
+        {
+            "role": "abstract_heading",
+            "text": "",
+            "render_default": True,
+            "page": 1,
+        },
+        {
+            "role": "abstract_body",
+            "text": "This is the abstract body text.",
+            "render_default": True,
+            "page": 1,
+        },
+        {
+            "role": "body_paragraph",
+            "text": "Some body paragraph after the introduction heading.",
+            "render_default": True,
+            "page": 1,
+        },
+    ]
+
+    output = render_fulltext_markdown(
+        structured_blocks=structured_blocks,
+        resolved_metadata={},
+        figure_inventory={},
+        table_inventory={},
+    )
+
+    abstract_idx = output.index("## Abstract")
+    abstract_text_idx = output.index("This is the abstract body text.")
+    intro_idx = output.index("## 1 Introduction")
+
+    assert abstract_idx < abstract_text_idx < intro_idx
+
+
+def test_structured_renderer_figure_and_table_links_rendered() -> None:
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+
+    structured_blocks = [
+        {
+            "role": "figure_caption",
+            "text": "Figure 1. A test figure caption.",
+            "render_default": True,
+            "page": 1,
+        },
+        {
+            "role": "table_caption",
+            "text": "Table 1. A test table caption.",
+            "render_default": True,
+            "page": 1,
+        },
+        {
+            "role": "body_paragraph",
+            "text": "Body text between figures and tables.",
+            "render_default": True,
+            "page": 1,
+        },
+    ]
+
+    figure_inventory = {
+        "matched_figures": [
+            {"figure_id": "fig_001"},
+        ]
+    }
+    table_inventory = {
+        "tables": [
+            {"table_id": "tbl_001", "has_asset": True},
+        ]
+    }
+
+    output = render_fulltext_markdown(
+        structured_blocks=structured_blocks,
+        resolved_metadata={},
+        figure_inventory=figure_inventory,
+        table_inventory=table_inventory,
+    )
+
+    assert "![[render/figures/fig_001.md]]" in output
+    assert "![[render/tables/tbl_001.md]]" in output
+
+
+def test_structured_renderer_respects_render_default_false() -> None:
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+
+    structured_blocks = [
+        {
+            "role": "body_paragraph",
+            "text": "VISIBLE_BODY",
+            "render_default": True,
+            "page": 1,
+        },
+        {
+            "role": "body_paragraph",
+            "text": "HIDDEN_BODY",
+            "render_default": False,
+            "page": 1,
+        },
+        {
+            "role": "section_heading",
+            "text": "Hidden Heading",
+            "render_default": False,
+            "page": 2,
+        },
+        {
+            "role": "body_paragraph",
+            "text": "ALSO_VISIBLE",
+            "render_default": True,
+            "page": 2,
+        },
+    ]
+
+    output = render_fulltext_markdown(
+        structured_blocks=structured_blocks,
+        resolved_metadata={},
+        figure_inventory={},
+        table_inventory={},
+    )
+
+    assert "VISIBLE_BODY" in output
+    assert "ALSO_VISIBLE" in output
+    assert "HIDDEN_BODY" not in output
+    assert "Hidden Heading" not in output
