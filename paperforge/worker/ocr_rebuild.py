@@ -145,3 +145,60 @@ def run_derived_rebuild_for_keys(vault: Path, keys: list[str]) -> dict:
         rebuilt_count += 1
 
     return {"rebuild_count": rebuilt_count}
+
+
+def backfill_from_result(vault: Path, key: str) -> dict:
+    """Backfill all derived OCR artifacts from an existing result.json.
+
+    For papers that were OCR'd before the structured pipeline existed,
+    this reads the stored result.json, normalizes it, and runs the
+    full postprocess pipeline to produce all Phase 1-5 artifacts.
+
+    Args:
+        vault: Vault root path.
+        key: Zotero key of the paper to backfill.
+
+    Returns:
+        Dict with backfill_status and paper_key.
+    """
+    from paperforge.worker._utils import pipeline_paths
+    from paperforge.worker.ocr import postprocess_ocr_result
+
+    ocr_root = pipeline_paths(vault)["ocr"]
+    paper_dir = ocr_root / key
+    result_path = paper_dir / "json" / "result.json"
+
+    if not result_path.exists():
+        return {"backfill_status": "skipped_no_result", "paper_key": key}
+
+    try:
+        raw = read_json(result_path)
+    except Exception:
+        return {"backfill_status": "failed_read", "paper_key": key}
+
+    # Normalize: legacy result.json may be {"pages": [...]} dict or a list directly
+    if isinstance(raw, dict):
+        all_results = raw.get("pages", [])
+        if not isinstance(all_results, list):
+            all_results = [raw]
+    elif isinstance(raw, list):
+        all_results = raw
+    else:
+        return {"backfill_status": "failed_format", "paper_key": key}
+
+    if not all_results:
+        return {"backfill_status": "skipped_empty", "paper_key": key}
+
+    try:
+        _, _, _, _ = postprocess_ocr_result(vault, key, all_results)
+
+        # Add backfill metadata
+        meta_path = paper_dir / "meta.json"
+        meta = read_json(meta_path) if meta_path.exists() else {}
+        meta["is_backfilled"] = True
+        meta["backfilled_at"] = __import__("datetime").datetime.now().isoformat()
+        write_json(meta_path, meta)
+
+        return {"backfill_status": "done", "paper_key": key}
+    except Exception as e:
+        return {"backfill_status": "failed", "paper_key": key, "error": str(e)}
