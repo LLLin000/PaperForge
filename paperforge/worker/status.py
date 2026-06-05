@@ -1110,6 +1110,10 @@ def run_status(vault: Path, verbose: bool = False, json_output: bool = False) ->
     except Exception:
         pass
 
+    # Structured OCR health
+    from paperforge.commands.ocr import _collect_ocr_health_summary as _collect_health
+    _structured_health = _collect_health(vault)
+
     if json_output:
         payload = {
             "version": __import__("paperforge").__version__,
@@ -1128,6 +1132,7 @@ def run_status(vault: Path, verbose: bool = False, json_output: bool = False) ->
                 "done": ocr_done,
                 "failed": ocr_failed,
             },
+            "structured_ocr_health": _structured_health,
             "path_errors": path_error_count,
             "env_configured": len(env_found) > 0,
             # Phase 25: lifecycle/health/maturity from canonical index ({} when unavailable)
@@ -1171,8 +1176,17 @@ def run_status(vault: Path, verbose: bool = False, json_output: bool = False) ->
             f"asset={ha['asset_health']['healthy']}/{ha['asset_health']['unhealthy']}"
         )
     print(
-        f"- ocr: {ocr_done}/{ocr_total} done (pending: {ocr_pending}, processing: {ocr_processing}, failed: {ocr_failed})"
+        f"- ocr: {ocr_done}/{ocr_total} done "
+        f"(pending: {ocr_pending}, processing: {ocr_processing}, failed: {ocr_failed})"
     )
+    if _structured_health:
+        print(f"- structured_ocr_health: {len(_structured_health)} paper(s)")
+        for entry in _structured_health:
+            print(
+                f"  - {entry['key']}: overall={entry['overall']}, "
+                f"{entry['page_count']} pages, {entry['blocks_count']} blocks, "
+                f"{entry['figure_count']} figures, {entry['table_count']} tables"
+            )
     print(f"- path_errors: {path_error_count}")
     if path_error_count > 0:
         print("  Tip: Run `paperforge repair --fix-paths` to attempt resolution")

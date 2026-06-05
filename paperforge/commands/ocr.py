@@ -1,6 +1,7 @@
 """OCR command — unifies OCR run and diagnose."""
 
 import argparse
+import json
 import logging
 from pathlib import Path
 
@@ -51,6 +52,35 @@ def _collect_ocr_queue_data(vault: Path) -> dict:
     }
 
 
+def _collect_ocr_health_summary(vault: Path) -> list[dict]:
+    """Scan OCR directories for health/ocr_health.json files and return summaries."""
+    from paperforge.worker._utils import pipeline_paths
+
+    paths = pipeline_paths(vault)
+    ocr_root = paths.get("ocr")
+    if not ocr_root or not ocr_root.exists():
+        return []
+    summaries = []
+    for dir_path in sorted(ocr_root.iterdir()):
+        if not dir_path.is_dir():
+            continue
+        health_path = dir_path / "health" / "ocr_health.json"
+        if health_path.exists():
+            try:
+                health = json.loads(health_path.read_text(encoding="utf-8"))
+                summaries.append({
+                    "key": dir_path.name,
+                    "overall": health.get("overall", "unknown"),
+                    "page_count": health.get("page_count", 0),
+                    "blocks_count": health.get("blocks_count", 0),
+                    "figure_count": health.get("figure_caption_count", 0),
+                    "table_count": health.get("table_caption_count", 0),
+                })
+            except Exception:
+                continue
+    return summaries
+
+
 def _diagnose(vault: Path, live: bool = False, json_output: bool = False) -> int:
     """Run OCR diagnostics and print results."""
     from paperforge.ocr_diagnostics import ocr_doctor
@@ -61,6 +91,7 @@ def _diagnose(vault: Path, live: bool = False, json_output: bool = False) -> int
 
     if json_output:
         queue_data = _collect_ocr_queue_data(vault)
+        structured_health = _collect_ocr_health_summary(vault)
         pf_error = None
         if not passed:
             if level == 1:
@@ -86,6 +117,7 @@ def _diagnose(vault: Path, live: bool = False, json_output: bool = False) -> int
                     "passed": passed,
                     "message": result.get("message", result.get("error", "")),
                 },
+                "structured_health": structured_health,
                 **queue_data,
             },
             error=pf_error,
@@ -97,13 +129,25 @@ def _diagnose(vault: Path, live: bool = False, json_output: bool = False) -> int
     print("-" * 40)
     if passed:
         print(f"[PASS] {result.get('message', 'All checks passed')}")
-        return 0
     else:
         print(f"[FAIL] Level {level}: {result.get('error', 'Unknown failure')}")
         print(f"[FIX]  {result.get('fix', 'No fix suggestion available')}")
         if result.get("raw_response"):
             print(f"[RAW]  {result['raw_response'][:200]}...")
-        return 1
+
+    structured_health = _collect_ocr_health_summary(vault)
+    if structured_health:
+        print()
+        print("--- Structured OCR Health ---")
+        print(f"Papers with health data: {len(structured_health)}")
+        for entry in structured_health:
+            print(
+                f"- {entry['key']}: overall={entry['overall']}, "
+                f"{entry['page_count']} pages, {entry['blocks_count']} blocks, "
+                f"{entry['figure_count']} figures, {entry['table_count']} tables"
+            )
+
+    return 0 if passed else 1
 
 
 def _get_run_ocr():
