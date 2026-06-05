@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 
 def test_resolved_metadata_prefers_zotero_but_preserves_ocr_candidates() -> None:
     from paperforge.worker.ocr_metadata import resolve_metadata
@@ -68,3 +70,21 @@ def test_resolved_metadata_preserves_alternatives() -> None:
         alt["source"] == "ocr_frontmatter"
         for alt in resolved["title"]["alternatives"]
     )
+
+
+def test_legacy_frontmatter_recovers_title_from_first_page(tmp_path: Path) -> None:
+    from paperforge.worker.ocr_metadata import extract_frontmatter_candidates
+    import json
+
+    blocks_path = tmp_path / "blocks.structured.jsonl"
+    blocks_path.write_text(
+        json.dumps({"role": "paper_title", "text": "Test Paper Title"}) + "\n"
+        + json.dumps({"role": "authors", "text": "Author A, Author B"}) + "\n"
+        + json.dumps({"role": "doi", "text": "10.1000/xyz"}) + "\n",
+        encoding="utf-8",
+    )
+
+    candidates = extract_frontmatter_candidates(blocks_path)
+    assert candidates["title"] == "Test Paper Title"
+    assert candidates["authors_text"] == "Author A, Author B"
+    assert "10.1000/xyz" in candidates.get("doi_candidates", [])
