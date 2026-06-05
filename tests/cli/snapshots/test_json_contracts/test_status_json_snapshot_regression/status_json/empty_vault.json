@@ -25,7 +25,9 @@
       "derived_stale_count": 0,
       "raw_upgradable_count": 0,
       "derived_stale_keys": [],
-      "raw_upgrade_keys": []
+      "raw_upgrade_keys": [],
+      "legacy_backfilled_count": 0,
+      "legacy_backfilled_keys": []
     },
     "path_errors": 0,
     "env_configured": true,
