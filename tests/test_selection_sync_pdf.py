@@ -291,3 +291,32 @@ def test_sync_reads_enriched_meta_without_breaking_ocr_status(tmp_path: Path) ->
     status, error = validate_ocr_meta(paths, meta)
     assert status == "done"
     assert error == ""
+
+
+def test_postprocess_writes_compat_fulltext_at_top_level(tmp_path) -> None:
+    """Phase 3 compatibility: top-level fulltext.md must still exist."""
+    import json as _json
+
+    from paperforge.worker.ocr import postprocess_ocr_result
+
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    (vault / "paperforge.json").write_text(
+        _json.dumps({"vault_config": {"system_dir": "System", "resources_dir": "Resources"}}),
+        encoding="utf-8",
+    )
+    ocr_root = vault / "System" / "PaperForge" / "ocr"
+    ocr_root.mkdir(parents=True)
+    ocr_dir = ocr_root / "COMP001"
+    ocr_dir.mkdir()
+    (ocr_dir / "meta.json").write_text(
+        '{"zotero_key":"COMP001","ocr_status":"done","ocr_model":"PaddleOCR"}',
+        encoding="utf-8",
+    )
+
+    page_num, markdown_path, json_path, fulltext_md_path = postprocess_ocr_result(vault, "COMP001", [])
+
+    # Top-level fulltext.md must exist
+    assert (ocr_dir / "fulltext.md").exists(), "top-level fulltext.md missing"
+    # Returned path must resolve to the top-level fulltext.md
+    assert "fulltext.md" in fulltext_md_path, "returned path does not point to fulltext.md"
