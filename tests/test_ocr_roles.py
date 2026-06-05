@@ -123,7 +123,7 @@ def test_stabilize_role_classifies_paper_title() -> None:
     from paperforge.worker.ocr_roles import assign_block_role
 
     assignment = assign_block_role(
-        block={"block_label": "paragraph_title", "block_content": "Test Paper About Science"},
+        block={"block_label": "paragraph_title", "block_content": "Test Paper About Science", "page": 1},
         page_blocks=[],
     )
 

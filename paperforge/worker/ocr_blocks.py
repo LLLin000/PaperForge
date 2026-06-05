@@ -25,7 +25,7 @@ def build_structured_blocks(raw_blocks: list[dict]) -> list[dict]:
         index_default = True
         if role.role in {"noise", "page_header", "page_footer", "frontmatter_noise"}:
             render_default = False
-        if role.role in {"noise", "frontmatter_noise"}:
+        if role.role in {"noise", "frontmatter_noise", "table_html"}:
             index_default = False
         row = {
             "paper_id": block["paper_id"],
