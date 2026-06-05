@@ -1,8 +1,22 @@
 from __future__ import annotations
 
+import datetime
 from pathlib import Path
 
 from paperforge.core.io import read_json, write_json
+
+
+def _apply_post_rebuild_version_flags(meta: dict) -> dict:
+    """Update version state flags after a derived-layer rebuild.
+
+    - derived_stale becomes False (derived artifacts are now current)
+    - raw_upgradable is preserved (only raw OCR can clear this)
+    - version_state_updated_at is refreshed
+    """
+    updated = dict(meta)
+    updated["derived_stale"] = False
+    updated["version_state_updated_at"] = datetime.datetime.now().isoformat()
+    return updated
 
 
 def select_papers_for_derived_rebuild(papers: list[dict]) -> list[str]:
@@ -116,9 +130,7 @@ def run_derived_rebuild_for_keys(vault: Path, keys: list[str]) -> dict:
 
         # Update version state in meta.json
         meta = read_json(artifacts.meta_json) if artifacts.meta_json.exists() else {}
-        meta["derived_stale"] = False
-        meta["raw_upgradable"] = False
-        meta["version_state_updated_at"] = __import__("datetime").datetime.now().isoformat()
+        meta = _apply_post_rebuild_version_flags(meta)
         write_json(artifacts.meta_json, meta)
 
         rebuilt_count += 1
