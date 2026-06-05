@@ -63,14 +63,14 @@ from paperforge.worker.ocr_figures import (
     build_figure_inventory,
     write_figure_inventory,
 )
-from paperforge.worker.ocr_tables import (
-    build_table_inventory,
-    write_table_inventory,
-)
 from paperforge.worker.ocr_metadata import (
     extract_frontmatter_candidates,
     resolve_metadata,
     write_resolved_metadata,
+)
+from paperforge.worker.ocr_tables import (
+    build_table_inventory,
+    write_table_inventory,
 )
 from paperforge.worker.sync import (
     load_control_actions,
@@ -1699,7 +1699,6 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
     images_dir.mkdir(parents=True, exist_ok=True)
     page_cache_dir.mkdir(parents=True, exist_ok=True)
     page_num = 0
-    merged_parts = []
     meta = read_json(meta_path) if meta_path.exists() else {}
     source_pdf = Path(meta.get("source_pdf", "")) if meta.get("source_pdf") else None
     pdf_doc = None
@@ -1709,9 +1708,7 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
         for page_payload in all_results:
             for res in page_payload.get("layoutParsingResults", []):
                 page_num += 1
-                merged_parts.append(
-                    "\n\n".join(render_page_blocks(vault, page_num, res, images_dir, page_cache_dir, pdf_doc=pdf_doc))
-                )
+                render_page_blocks(vault, page_num, res, images_dir, page_cache_dir, pdf_doc=pdf_doc)
     finally:
         if pdf_doc is not None:
             pdf_doc.close()
@@ -1793,6 +1790,21 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
         render_root=ocr_render_root,
     )
 
+    # --- Phase 3: structured renderer ---
+    from paperforge.worker.ocr_render import render_fulltext_markdown, write_render_outputs
+
+    markdown = render_fulltext_markdown(
+        structured_blocks=structured,
+        resolved_metadata=resolved,
+        figure_inventory=figure_inventory,
+        table_inventory=table_inventory,
+    )
+    write_render_outputs(
+        render_root=ocr_root / "render",
+        compat_fulltext=ocr_root / "fulltext.md",
+        markdown=markdown,
+    )
+
     # Update meta.json with version payloads
     ocr_model = meta.get("ocr_model", meta.get("ocr_provider", "PaddleOCR"))
     version_payload = build_version_payload(
@@ -1805,7 +1817,6 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
     write_json(meta_path, meta)
 
     fulltext_path = ocr_root / "fulltext.md"
-    fulltext_path.write_text("\n\n".join(merged_parts).strip() + "\n", encoding="utf-8")
     markdown_dir = ocr_root / "markdown"
     if markdown_dir.exists():
         shutil.rmtree(markdown_dir)
