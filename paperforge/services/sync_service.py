@@ -88,6 +88,7 @@ def summarize_ocr_runtime_followups(
     """
     derived_stale = [p for p in papers if p.get("derived_stale") and not p.get("raw_upgradable")]
     raw_upgradable = [p for p in papers if p.get("raw_upgradable")]
+    legacy = [p for p in papers if p.get("is_legacy")]
 
     mode = "suppressed_dirty_runtime" if dirty_runtime_files else "deferred"
 
@@ -97,6 +98,8 @@ def summarize_ocr_runtime_followups(
         "derived_stale_keys": [p["zotero_key"] for p in derived_stale],
         "raw_upgrade_keys": [p["zotero_key"] for p in raw_upgradable],
         "derived_rebuild_mode": mode,
+        "legacy_count": len(legacy),
+        "legacy_keys": [p["zotero_key"] for p in legacy],
     }
 
     if mode == "suppressed_dirty_runtime":
@@ -421,6 +424,7 @@ class SyncService:
                 from paperforge.core.io import read_json
                 from paperforge.worker._utils import pipeline_paths
                 from paperforge.worker.ocr_versions import (
+                    classify_legacy_ocr_state,
                     classify_version_state,
                     expected_derived_payload,
                     expected_raw_payload,
@@ -442,14 +446,21 @@ class SyncService:
                             expected_raw=expected_raw_payload(ocr_model=raw_ver.get("ocr_model", "unknown")),
                             expected_derived=expected_derived_payload(),
                         )
-                        if state["has_version_state"]:
-                            papers.append({
-                                "zotero_key": paper_dir.name,
-                                "derived_stale": state["derived_stale"],
-                                "raw_upgradable": state["raw_upgradable"],
-                                "derived_reasons": state["derived_reasons"],
-                                "raw_reasons": state["raw_reasons"],
-                            })
+
+                        legacy_state = classify_legacy_ocr_state(
+                            meta=meta,
+                            ocr_dir=paper_dir,
+                        )
+
+                        papers.append({
+                            "zotero_key": paper_dir.name,
+                            "derived_stale": state["derived_stale"],
+                            "raw_upgradable": state["raw_upgradable"],
+                            "derived_reasons": state["derived_reasons"],
+                            "raw_reasons": state["raw_reasons"],
+                            "is_legacy": legacy_state["is_legacy"],
+                            "can_backfill": legacy_state["can_backfill"],
+                        })
 
                     # Check for dirty runtime files
                     _dirty = _get_dirty_files()

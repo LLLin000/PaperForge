@@ -30,6 +30,55 @@ def expected_derived_payload() -> dict:
     }
 
 
+def classify_legacy_ocr_state(
+    meta: dict,
+    ocr_dir: Path | None = None,
+) -> dict:
+    """Classify if a paper has legacy (pre-structured-pipeline) OCR output.
+
+    A paper is legacy when ocr_status == "done" but neither raw_version
+    nor derived_version exist in meta. That means its OCR was produced
+    before the structured pipeline was introduced.
+
+    Args:
+        meta: The contents of meta.json for the paper.
+        ocr_dir: Optional path to the paper's OCR directory, for
+            file-level checks like existence of json/result.json.
+
+    Returns:
+        Dict with is_legacy, can_backfill, has_version_state,
+        missing_keys, has_result_json, ocr_status.
+    """
+    has_raw = "raw_version" in meta
+    has_derived = "derived_version" in meta
+    has_version_state = has_raw or has_derived
+    ocr_done = meta.get("ocr_status") == "done"
+
+    is_legacy = ocr_done and not has_version_state
+
+    has_result_json = False
+    if ocr_dir is not None:
+        has_result_json = (ocr_dir / "json" / "result.json").exists()
+
+    can_backfill = bool(is_legacy and (ocr_dir is None or has_result_json))
+
+    missing_keys: list[str] = []
+    if not is_legacy:
+        if not has_raw:
+            missing_keys.append("raw_version")
+        if not has_derived:
+            missing_keys.append("derived_version")
+
+    return {
+        "is_legacy": is_legacy,
+        "can_backfill": can_backfill,
+        "has_version_state": has_version_state,
+        "missing_keys": missing_keys,
+        "has_result_json": has_result_json,
+        "ocr_status": ocr_done,
+    }
+
+
 def classify_version_state(
     meta: dict,
     expected_raw: dict,

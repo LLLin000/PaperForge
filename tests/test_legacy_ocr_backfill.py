@@ -58,6 +58,7 @@ def test_backfill_from_result_rebuilds_derived_artifacts(tmp_path) -> None:
     ocr_dir = vault / "System" / "PaperForge" / "ocr" / "LEGACY001"
     ocr_dir.mkdir(parents=True)
     # Has result.json (old OCR) but no version state
+    (ocr_dir / "json").mkdir(parents=True)
     (ocr_dir / "json" / "result.json").write_text(
         '{"pages": [{"page": {"text": "legacy text"}}]}',
         encoding="utf-8",
