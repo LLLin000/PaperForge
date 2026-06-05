@@ -183,6 +183,7 @@ export class PaperForgeStatusView extends ItemView {
     const stats = data.stats || {};
     const ocrHealth = stats.ocr_health || {};
     const pdfHealth = stats.pdf_health || {};
+    const ocrVersionState = data.ocr_version_state || {};
     const ocrTotal = (ocrHealth.done || 0) + (ocrHealth.pending || 0) + (ocrHealth.failed || 0);
     return {
       total_papers: stats.papers || 0,
@@ -191,6 +192,11 @@ export class PaperForgeStatusView extends ItemView {
       bases: 0,
       ocr: { total: ocrTotal, pending: ocrHealth.pending || 0, processing: 0, done: ocrHealth.done || 0, failed: ocrHealth.failed || 0 },
       path_errors: (pdfHealth.broken || 0) + (pdfHealth.missing || 0),
+      ocr_version_state: {
+        total_papers: ocrVersionState.total_papers || 0,
+        derived_stale_count: ocrVersionState.derived_stale_count || 0,
+        raw_upgradable_count: ocrVersionState.raw_upgradable_count || 0,
+      },
     };
   }
 
@@ -358,6 +364,16 @@ export class PaperForgeStatusView extends ItemView {
       if (m.barMax > 0) {
         this._buildMetricBar(card, m.value, m.barMax);
       }
+    }
+    const vs = d.ocr_version_state || {};
+    if (vs.total_papers > 0 && (vs.derived_stale_count > 0 || vs.raw_upgradable_count > 0)) {
+      const vsParts: string[] = [];
+      if (vs.derived_stale_count > 0) vsParts.push(`${vs.derived_stale_count} stale`);
+      if (vs.raw_upgradable_count > 0) vsParts.push(`${vs.raw_upgradable_count} upgradable`);
+      const card = this._metricsEl.createEl('div', { cls: 'paperforge-metric-card' });
+      card.style.setProperty('--metric-color', 'var(--color-yellow)');
+      card.createEl('div', { cls: 'paperforge-metric-value', text: vsParts.join(', ') });
+      card.createEl('div', { cls: 'paperforge-metric-label', text: 'OCR Version' });
     }
   }
 
