@@ -85,17 +85,85 @@ def _is_body_mention(block: dict) -> bool:
     return False
 
 
-def build_figure_inventory(structured_blocks: list[dict]) -> dict[str, Any]:
+def _is_formal_legend(text: str, block: dict | None = None, page_width: float = 1200) -> bool:
+    if not text:
+        return False
+
+    if _FIGURE_NUMBER_PATTERN.search(text):
+        return True
+
+    if block is not None:
+        bbox = block.get("bbox") or block.get("block_bbox")
+        if bbox and len(bbox) >= 4:
+            block_width = bbox[2] - bbox[0]
+            if block_width < page_width * 0.3:
+                return False
+
+        lower = text.lower().strip()
+        axis_words = {
+            "days",
+            "time",
+            "concentration",
+            "percentage",
+            "volume",
+            "frequency",
+            "intensity",
+            "ratio",
+            "expression",
+            "level",
+            "content",
+            "activity",
+            "treatment",
+            "group",
+            "control",
+            "dose",
+            "response",
+            "size",
+        }
+        words = set(lower.rstrip(". ").split())
+        stop_words = {
+            "of",
+            "the",
+            "in",
+            "and",
+            "to",
+            "a",
+            "an",
+            "by",
+            "at",
+            "for",
+            "with",
+            "on",
+            "is",
+            "are",
+            "was",
+            "were",
+        }
+        if len(text) < 60 and words and words.issubset(axis_words | stop_words):
+            return False
+
+    return True
+
+
+def build_figure_inventory(structured_blocks: list[dict], page_width: float = 1200) -> dict[str, Any]:
     legends: list[dict] = []
+    rejected_legends: list[dict] = []
     assets: list[dict] = []
     unmatched_legends: list[dict] = []
     unmatched_assets: list[dict] = []
     matched_figures: list[dict] = []
 
     for block in structured_blocks:
+        if block.get("page_width"):
+            page_width = float(block["page_width"])
+
+    for block in structured_blocks:
         role = block.get("role", "")
         if role == "figure_caption":
             if _is_body_mention(block):
+                continue
+            if not _is_formal_legend(block.get("text", ""), block, page_width):
+                rejected_legends.append(block)
                 continue
             legends.append(block)
         elif role == "figure_asset":
@@ -187,6 +255,7 @@ def build_figure_inventory(structured_blocks: list[dict]) -> dict[str, Any]:
         "matched_figures": matched_figures,
         "unmatched_legends": unmatched_legends,
         "unmatched_assets": unmatched_assets,
+        "rejected_legends": rejected_legends,
         "official_figure_count": len(matched_figures),
     }
 
