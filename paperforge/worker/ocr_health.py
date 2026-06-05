@@ -13,8 +13,14 @@ def build_ocr_health(
     table_inventory: dict,
 ) -> dict[str, Any]:
     section_heading_count = sum(1 for b in structured_blocks if b.get("role") == "section_heading")
-    abstract_found = any(b.get("role") == "abstract_body" for b in structured_blocks)
-    references_found = any(b.get("role") == "reference_item" for b in structured_blocks)
+    abstract_found = any(
+        b.get("role") in ("abstract_heading", "abstract_body") or b.get("raw_label") == "abstract"
+        for b in structured_blocks
+    )
+    references_found = any(
+        b.get("role") in ("reference_heading", "reference_item") or b.get("raw_label") == "reference_content"
+        for b in structured_blocks
+    )
     figure_caption_count = sum(1 for b in structured_blocks if b.get("role") == "figure_caption")
     table_caption_count = sum(1 for b in structured_blocks if b.get("role") == "table_caption")
 
