@@ -1118,6 +1118,7 @@ def run_status(vault: Path, verbose: bool = False, json_output: bool = False) ->
     _ocr_version_state = {
         "total_papers": 0, "derived_stale_count": 0, "raw_upgradable_count": 0,
         "derived_stale_keys": [], "raw_upgrade_keys": [],
+        "legacy_backfilled_count": 0, "legacy_backfilled_keys": [],
     }
     try:
         ocr_root = vault / cfg["system_dir"] / "PaperForge" / "ocr"
@@ -1129,8 +1130,11 @@ def run_status(vault: Path, verbose: bool = False, json_output: bool = False) ->
                 meta_path = paper_dir / "meta.json"
                 if meta_path.exists():
                     meta = read_json(meta_path)
-                    if "raw_version" in meta or "derived_version" in meta:
+                    has_state = "raw_version" in meta or "derived_version" in meta
+                    if has_state:
                         papers.append(meta)
+                    elif meta.get("ocr_status") == "done" and meta.get("is_backfilled"):
+                        papers.append({**meta, "is_legacy_backfilled": True})
             if papers:
                 _ocr_version_state["total_papers"] = len(papers)
                 _ocr_version_state["derived_stale_count"] = sum(1 for m in papers if m.get("derived_stale"))
@@ -1140,6 +1144,10 @@ def run_status(vault: Path, verbose: bool = False, json_output: bool = False) ->
                 ]
                 _ocr_version_state["raw_upgrade_keys"] = [
                     m.get("zotero_key", "?") for m in papers if m.get("raw_upgradable")
+                ]
+                _ocr_version_state["legacy_backfilled_count"] = sum(1 for m in papers if m.get("is_legacy_backfilled"))
+                _ocr_version_state["legacy_backfilled_keys"] = [
+                    m.get("zotero_key", "?") for m in papers if m.get("is_legacy_backfilled")
                 ]
     except Exception:
         pass
@@ -1226,6 +1234,9 @@ def run_status(vault: Path, verbose: bool = False, json_output: bool = False) ->
             print(f"  derived_stale: {stale} (auto-rebuilt on sync)")
         if upgradable:
             print(f"  raw_upgradable: {upgradable} (run `paperforge ocr redo` to upgrade)")
+        legacy_count = _ocr_version_state.get("legacy_backfilled_count", 0)
+        if legacy_count:
+            print(f"  legacy_backfilled: {legacy_count} (backfilled from old OCR result)")
     print(f"- path_errors: {path_error_count}")
     if path_error_count > 0:
         print("  Tip: Run `paperforge repair --fix-paths` to attempt resolution")
