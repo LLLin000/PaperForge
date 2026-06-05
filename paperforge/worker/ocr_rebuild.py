@@ -202,3 +202,15 @@ def backfill_from_result(vault: Path, key: str) -> dict:
         return {"backfill_status": "done", "paper_key": key}
     except Exception as e:
         return {"backfill_status": "failed", "paper_key": key, "error": str(e)}
+
+
+def select_legacy_papers_for_backfill(papers: list[dict]) -> list[str]:
+    """Filter papers that need legacy backfill.
+
+    Args:
+        papers: List of paper dicts with is_legacy and can_backfill flags.
+
+    Returns:
+        List of zotero_keys needing backfill.
+    """
+    return [p["zotero_key"] for p in papers if p.get("is_legacy") and p.get("can_backfill")]
