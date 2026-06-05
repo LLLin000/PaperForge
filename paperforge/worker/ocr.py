@@ -1692,11 +1692,12 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
     paths = pipeline_paths(vault)
     ocr_root = paths["ocr"] / key
     json_dir = ocr_root / "json"
-    images_dir = ocr_root / "images"  # legacy compat - use assets/ going forward
+    assets_dir = ocr_root / "assets"
+    images_dir = ocr_root / "images"  # legacy compat mirror
     page_cache_dir = ocr_root / "pages"
     meta_path = ocr_root / "meta.json"
     json_dir.mkdir(parents=True, exist_ok=True)
-    images_dir.mkdir(parents=True, exist_ok=True)
+    assets_dir.mkdir(parents=True, exist_ok=True)
     page_cache_dir.mkdir(parents=True, exist_ok=True)
     page_num = 0
     meta = read_json(meta_path) if meta_path.exists() else {}
@@ -1708,20 +1709,19 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
         for page_payload in all_results:
             for res in page_payload.get("layoutParsingResults", []):
                 page_num += 1
-                render_page_blocks(vault, page_num, res, images_dir, page_cache_dir, pdf_doc=pdf_doc)
+                render_page_blocks(vault, page_num, res, assets_dir, page_cache_dir, pdf_doc=pdf_doc)
     finally:
         if pdf_doc is not None:
             pdf_doc.close()
     write_json(json_dir / "result.json", all_results)
 
-    # Sync images/ to assets/ for structured truth
-    # images/ remains as legacy compat
-    assets_dir = ocr_root / "assets"
-    if images_dir.exists():
-        for img in images_dir.rglob("*"):
+    # Mirror assets/ to images/ for legacy compatibility
+    if assets_dir.exists():
+        images_dir.mkdir(parents=True, exist_ok=True)
+        for img in assets_dir.rglob("*"):
             if img.is_file():
-                rel = img.relative_to(images_dir)
-                dst = assets_dir / rel
+                rel = img.relative_to(assets_dir)
+                dst = images_dir / rel
                 dst.parent.mkdir(parents=True, exist_ok=True)
                 if not dst.exists():
                     import shutil
