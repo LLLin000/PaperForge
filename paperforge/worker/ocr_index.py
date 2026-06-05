@@ -41,20 +41,22 @@ def build_role_indexes(
             captions.append(entry)
         elif role == "table_caption":
             tables.append(entry)
-        elif role == "reference_item":
+        elif role in ("reference_item", "reference_heading"):
             references.append(entry)
 
     metadata_index: list[dict[str, Any]] = []
     for key in ("title", "authors", "doi", "journal", "year"):
         value = resolved_metadata.get(key, {}).get("value", "")
         if value:
-            metadata_index.append({
-                "paper_id": structured_blocks[0].get("paper_id", "") if structured_blocks else "",
-                "page": 0,
-                "block_id": f"meta_{key}",
-                "role": f"metadata_{key}",
-                "text": str(value),
-            })
+            metadata_index.append(
+                {
+                    "paper_id": structured_blocks[0].get("paper_id", "") if structured_blocks else "",
+                    "page": 0,
+                    "block_id": f"meta_{key}",
+                    "role": f"metadata_{key}",
+                    "text": str(value),
+                }
+            )
 
     return {
         "body": body,
