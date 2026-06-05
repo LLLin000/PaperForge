@@ -113,8 +113,16 @@ def render_fulltext_markdown(
         block_page = block.get("page")
 
         if block_page is not None and block_page != current_page:
-            # Fill in page markers for any pages that had no renderable blocks
-            # (e.g. page 1 with only frontmatter_noise blocks)
+            # Emit objects for the page we just finished rendering
+            if current_page is not None:
+                for fig_id in figures_by_page.get(current_page, []):
+                    lines.append(f"![[render/figures/{fig_id}.md]]")
+                    lines.append("")
+                for tbl_id in tables_by_page.get(current_page, []):
+                    lines.append(f"![[render/tables/{tbl_id}.md]]")
+                    lines.append("")
+                emitted_pages.add(current_page)
+            # Fill in page markers for skipped pages (no renderable blocks)
             first_new_page = (current_page or 0) + 1
             for p in range(first_new_page, block_page):
                 lines.append(f"<!-- page {p} -->")
@@ -129,6 +137,7 @@ def render_fulltext_markdown(
             current_page = block_page
             lines.append(f"<!-- page {block_page} -->")
             lines.append("")
+            emitted_pages.add(block_page)
 
         if role == "section_heading":
             if text.strip().lower() in FRONTMATTER_NOISE:
