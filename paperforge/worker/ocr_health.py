@@ -27,8 +27,12 @@ def build_ocr_health(
     figure_asset_count = len(figure_inventory.get("matched_figures", []))
     unmatched_legends = len(figure_inventory.get("unmatched_legends", []))
     unmatched_figure_assets = len(figure_inventory.get("unmatched_assets", []))
-    table_asset_count = sum(1 for t in table_inventory.get("tables", []) if t.get("has_asset"))
-    empty_tables = sum(1 for t in table_inventory.get("tables", []) if not t.get("has_asset"))
+    tables = table_inventory.get("tables", [])
+    table_asset_count = sum(1 for t in tables if t.get("has_asset"))
+    empty_tables = sum(1 for t in tables if not t.get("has_asset"))
+    formal_table_count = len([t for t in tables if not t.get("is_continuation")])
+    entries_with_asset = sum(1 for t in tables if t.get("has_asset"))
+    table_segment_count = entries_with_asset + len(table_inventory.get("unmatched_assets", []))
 
     media_without_caption = unmatched_figure_assets
     caption_without_media = unmatched_legends + len(table_inventory.get("unmatched_captions", []))
@@ -66,6 +70,8 @@ def build_ocr_health(
         "figure_asset_count": figure_asset_count,
         "table_caption_count": table_caption_count,
         "table_asset_count": table_asset_count,
+        "formal_table_count": formal_table_count,
+        "table_segment_count": table_segment_count,
         "media_without_caption_count": media_without_caption,
         "caption_without_media_count": caption_without_media,
         "empty_table_count": empty_tables,

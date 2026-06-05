@@ -8,40 +8,56 @@ from paperforge.worker.ocr_roles import assign_block_role
 
 
 def build_structured_blocks(raw_blocks: list[dict]) -> list[dict]:
-    rows = []
+    # Group raw blocks by page so assign_block_role can see page-local context
+    by_page: dict[int, list[dict]] = {}
     for block in raw_blocks:
-        mapped = {
-            "block_label": block.get("raw_label", "unknown"),
-            "block_content": block.get("text", ""),
-            "block_bbox": block.get("bbox", [0, 0, 0, 0]),
-        }
-        role = assign_block_role(
-            mapped,
-            page_blocks=[],
-            page_width=block.get("page_width", 0),
-            page_height=block.get("page_height", 0),
-        )
-        render_default = role.role not in {"noise", "unknown_structural"}
-        index_default = True
-        if role.role in {"noise", "page_header", "page_footer", "frontmatter_noise"}:
-            render_default = False
-        if role.role in {"noise", "frontmatter_noise", "table_html"}:
-            index_default = False
-        row = {
-            "paper_id": block["paper_id"],
-            "page": block["page"],
-            "block_id": block["block_id"],
-            "raw_label": block.get("raw_label", "unknown"),
-            "raw_order": block.get("raw_order", 0),
-            "bbox": block.get("bbox", [0, 0, 0, 0]),
-            "text": block.get("text", ""),
-            "role": role.role,
-            "role_confidence": role.confidence,
-            "evidence": role.evidence,
-            "render_default": render_default,
-            "index_default": index_default,
-        }
-        rows.append(row)
+        page = block.get("page", 1)
+        by_page.setdefault(page, []).append(block)
+
+    rows = []
+    for page in sorted(by_page.keys()):
+        raw_page_blocks = by_page[page]
+        # Build mapped versions for role-assignment consumption
+        # (assign_block_role expects block_label/block_content keys)
+        page_as_role_input: list[dict] = []
+        for raw_block in raw_page_blocks:
+            page_as_role_input.append({
+                "block_label": raw_block.get("raw_label", "unknown"),
+                "block_content": raw_block.get("text", ""),
+                "block_bbox": raw_block.get("bbox", [0, 0, 0, 0]),
+                "page": raw_block.get("page", 1),
+            })
+        for i, block in enumerate(raw_page_blocks):
+            role_input = page_as_role_input[i]
+            role = assign_block_role(
+                role_input,
+                page_blocks=page_as_role_input,
+                page_width=block.get("page_width", 0),
+                page_height=block.get("page_height", 0),
+            )
+            render_default = role.role not in {"noise", "unknown_structural"}
+            index_default = True
+            if role.role in {"noise", "page_header", "page_footer", "frontmatter_noise"}:
+                render_default = False
+            if role.role in {"noise", "frontmatter_noise", "table_html"}:
+                index_default = False
+            row = {
+                "paper_id": block["paper_id"],
+                "page": block["page"],
+                "block_id": block["block_id"],
+                "raw_label": block.get("raw_label", "unknown"),
+                "raw_order": block.get("raw_order", 0),
+                "bbox": block.get("bbox", [0, 0, 0, 0]),
+                "text": block.get("text", ""),
+                "page_width": block.get("page_width", 0),
+                "page_height": block.get("page_height", 0),
+                "role": role.role,
+                "role_confidence": role.confidence,
+                "evidence": role.evidence,
+                "render_default": render_default,
+                "index_default": index_default,
+            }
+            rows.append(row)
     return rows
 
 

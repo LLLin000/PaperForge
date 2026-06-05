@@ -38,6 +38,7 @@ def run_derived_rebuild_for_keys(vault: Path, keys: list[str]) -> dict:
     render outputs, and health — from stored raw blocks only.
     """
     from paperforge.worker._utils import pipeline_paths, read_jsonl
+    from paperforge.worker.ocr import validate_ocr_meta
     from paperforge.worker.ocr_artifacts import artifact_paths_for_root
 
     ocr_root = pipeline_paths(vault)["ocr"]
@@ -93,22 +94,36 @@ def run_derived_rebuild_for_keys(vault: Path, keys: list[str]) -> dict:
 
         ocr_meta = read_json(artifacts.meta_json) if artifacts.meta_json.exists() else {}
         source_pdf_path = Path(ocr_meta.get("source_pdf", "")) if ocr_meta.get("source_pdf") else None
+        page_dimensions_by_page: dict[int, tuple[int, int]] = {}
+        for block in structured:
+            page = int(block.get("page", 0) or 0)
+            width = int(block.get("page_width", 0) or 0)
+            height = int(block.get("page_height", 0) or 0)
+            if page and width and height and page not in page_dimensions_by_page:
+                page_dimensions_by_page[page] = (width, height)
+
         extract_and_write_objects(
             pdf_path=source_pdf_path,
             figure_inventory=figure_inventory,
             table_inventory=table_inventory,
             asset_root=paper_root / "assets",
             render_root=paper_root / "render",
+            page_dimensions_by_page=page_dimensions_by_page,
         )
 
         # Rebuild render output
         from paperforge.worker.ocr_render import render_fulltext_markdown, write_render_outputs
 
+        rebuild_page_count = ocr_meta.get("page_count", 0) or 0
+        if not rebuild_page_count:
+            all_rebuild_pages = {int(b["page"]) for b in structured if b.get("page")}
+            rebuild_page_count = max(all_rebuild_pages) if all_rebuild_pages else 0
         markdown = render_fulltext_markdown(
             structured_blocks=structured,
             resolved_metadata=resolved,
             figure_inventory=figure_inventory,
             table_inventory=table_inventory,
+            page_count=rebuild_page_count,
         )
         write_render_outputs(
             render_root=paper_root / "render",
@@ -140,6 +155,15 @@ def run_derived_rebuild_for_keys(vault: Path, keys: list[str]) -> dict:
         # Update version state in meta.json
         meta = read_json(artifacts.meta_json) if artifacts.meta_json.exists() else {}
         meta = _apply_post_rebuild_version_flags(meta)
+        # Rebuild regenerated the derived outputs; validate from a clean
+        # optimistic status instead of short-circuiting on a stale
+        # done_incomplete value from a previous render.
+        meta["ocr_status"] = "done"
+        # Re-validate and clear stale errors (e.g. page marker mismatch from pre-fix render)
+        paths_dict = {"ocr": pipeline_paths(vault)["ocr"]}
+        _status, _err = validate_ocr_meta(paths_dict, meta)
+        meta["ocr_status"] = _status
+        meta["error"] = _err if _err else ""
         write_json(artifacts.meta_json, meta)
 
         rebuilt_count += 1
@@ -155,6 +179,7 @@ def _enrich_meta_from_paper_note(vault: Path, key: str, meta_path: Path) -> None
     """
     try:
         from paperforge.worker._utils import pipeline_paths
+
         paths = pipeline_paths(vault)
         lit_dir = paths.get("literature")
         if lit_dir and lit_dir.exists():
@@ -164,6 +189,7 @@ def _enrich_meta_from_paper_note(vault: Path, key: str, meta_path: Path) -> None
             note = next((m for m in matches if m.stem == key), None)
             if note and note.exists():
                 from paperforge.adapters.obsidian_frontmatter import read_frontmatter_dict
+
                 content = note.read_text(encoding="utf-8", errors="replace")
                 fm = read_frontmatter_dict(content)
                 if not fm:
@@ -233,11 +259,23 @@ def backfill_from_result(vault: Path, key: str) -> dict:
             meta_before = read_json(paper_dir / "meta.json") if (paper_dir / "meta.json").exists() else {}
             src = str(meta_before.get("source_pdf", ""))
             if src and "storage:" in src:
-                from paperforge.pdf_resolver import resolve_pdf_path
-                from paperforge.config import load_vault_config
-                cfg = load_vault_config(vault)
-                zotero_dir = cfg.get("zotero_dir", "")
-                resolved = resolve_pdf_path(src, True, vault, Path(zotero_dir) if zotero_dir else None)
+                from paperforge.pdf_resolver import resolve_junction, resolve_pdf_path
+
+                pf_cfg = read_json(vault / "paperforge.json") if (vault / "paperforge.json").exists() else {}
+                zotero_path = None
+                zotero_dir = pf_cfg.get("zotero_data_dir", "") or pf_cfg.get("zotero_link", "")
+                if zotero_dir:
+                    zotero_path = Path(zotero_dir)
+                    if not zotero_path.is_absolute():
+                        zotero_path = resolve_junction((vault / zotero_dir).resolve())
+                resolved = resolve_pdf_path(src, True, vault, zotero_path)
+                if not resolved and zotero_path and src.startswith("storage:"):
+                    storage_key = src[len("storage:") :].split("/")[0].strip()
+                    storage_dir = (zotero_path / "storage" / storage_key).resolve()
+                    if storage_dir.exists():
+                        pdfs = [f for f in storage_dir.iterdir() if f.suffix.lower() == ".pdf"]
+                        if pdfs:
+                            resolved = str(pdfs[0])
                 if resolved:
                     meta_before["source_pdf"] = resolved
                     write_json(paper_dir / "meta.json", meta_before)

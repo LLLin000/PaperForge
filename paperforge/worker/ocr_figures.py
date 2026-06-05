@@ -13,6 +13,30 @@ _FIGURE_NUMBER_PATTERN = re.compile(
     flags=re.IGNORECASE,
 )
 
+_BODY_MENTION_VERBS = (
+    "shows",
+    "illustrates",
+    "depicts",
+    "presents",
+    "summarizes",
+    "demonstrates",
+    "displays",
+    "reveals",
+    "indicates",
+    "highlights",
+    "compares",
+    "outlines",
+    "reports",
+    "lists",
+)
+
+_BODY_MENTION_PATTERN = re.compile(
+    r"\b(?:Figure|Fig\.?|Supplementary\s+Figure|Supplementary\s+Fig\.?|"
+    r"Extended\s+Data\s+Figure|Extended\s+Data\s+Fig\.?)\s+"
+    r"\d+\.?\s+(?:" + "|".join(_BODY_MENTION_VERBS) + r")\b",
+    flags=re.IGNORECASE,
+)
+
 
 def _extract_figure_number(text: str) -> int | None:
     m = _FIGURE_NUMBER_PATTERN.search(text)
@@ -51,15 +75,28 @@ def _centroid_y(bbox: list[float]) -> float:
     return (bbox[1] + bbox[3]) / 2
 
 
+def _is_body_mention(block: dict) -> bool:
+    raw_role = block.get("raw_role", block.get("role", ""))
+    if raw_role == "body_paragraph":
+        return True
+    if block.get("block_label", "") == "text":
+        text = block.get("text", "")
+        return bool(_BODY_MENTION_PATTERN.search(text))
+    return False
+
+
 def build_figure_inventory(structured_blocks: list[dict]) -> dict[str, Any]:
     legends: list[dict] = []
     assets: list[dict] = []
+    unmatched_legends: list[dict] = []
     unmatched_assets: list[dict] = []
     matched_figures: list[dict] = []
 
     for block in structured_blocks:
         role = block.get("role", "")
         if role == "figure_caption":
+            if _is_body_mention(block):
+                continue
             legends.append(block)
         elif role == "figure_asset":
             assets.append(block)
@@ -75,7 +112,7 @@ def build_figure_inventory(structured_blocks: list[dict]) -> dict[str, Any]:
         legend_text = legend.get("text", "")
         fig_num = _extract_figure_number(legend_text)
 
-        candidate_pages = [legend_page, legend_page + 1, legend_page - 1]
+        candidate_pages = [legend_page]
 
         matched_assets = []
         for page in candidate_pages:
@@ -93,8 +130,7 @@ def build_figure_inventory(structured_blocks: list[dict]) -> dict[str, Any]:
                 overlap = _compute_overlap_score(legend_bbox, asset_bbox)
                 dist_y = abs(_centroid_y(legend_bbox) - _centroid_y(asset_bbox))
                 direction_bonus = 1.0 if _centroid_y(asset_bbox) < _centroid_y(legend_bbox) else 0.5
-                same_page_bonus = 2.0 if page == legend_page else 0.0
-                score = overlap * 10 + direction_bonus + same_page_bonus - dist_y * 0.01
+                score = overlap * 10 + direction_bonus + 2.0 - dist_y * 0.01
                 candidates_for_page.append(
                     {
                         "asset_index": i,
@@ -102,7 +138,7 @@ def build_figure_inventory(structured_blocks: list[dict]) -> dict[str, Any]:
                         "score": score,
                         "overlap": overlap,
                         "distance_y": dist_y,
-                        "same_page": page == legend_page,
+                        "same_page": True,
                     }
                 )
 
@@ -118,6 +154,8 @@ def build_figure_inventory(structured_blocks: list[dict]) -> dict[str, Any]:
             if matched_assets:
                 break
 
+        is_legend_only = len(matched_assets) == 0
+
         matched_figures.append(
             {
                 "legend_block_id": legend.get("block_id", ""),
@@ -131,10 +169,13 @@ def build_figure_inventory(structured_blocks: list[dict]) -> dict[str, Any]:
                     }
                     for a in matched_assets
                 ],
-                "confidence": 0.85 if matched_assets else 0.4,
-                "flags": [] if matched_assets else ["legend_only"],
+                "confidence": 0.85 if not is_legend_only else 0.4,
+                "flags": [] if not is_legend_only else ["legend_only"],
             }
         )
+
+        if is_legend_only:
+            unmatched_legends.append(legend)
 
     for i, asset in enumerate(assets):
         if i not in used_asset_indices:
@@ -144,7 +185,7 @@ def build_figure_inventory(structured_blocks: list[dict]) -> dict[str, Any]:
         "figure_legends": legends,
         "figure_assets": assets,
         "matched_figures": matched_figures,
-        "unmatched_legends": [],
+        "unmatched_legends": unmatched_legends,
         "unmatched_assets": unmatched_assets,
         "official_figure_count": len(matched_figures),
     }

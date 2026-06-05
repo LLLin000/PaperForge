@@ -5,9 +5,30 @@ def test_stabilize_render_suppresses_frontmatter_noise() -> None:
     from paperforge.worker.ocr_render import render_fulltext_markdown
 
     structured_blocks = [
-        {"paper_id": "KEY001", "page": 1, "block_id": "b1", "role": "section_heading", "text": "OPEN ACCESS", "render_default": True},
-        {"paper_id": "KEY001", "page": 1, "block_id": "b2", "role": "section_heading", "text": "CITATION", "render_default": True},
-        {"paper_id": "KEY001", "page": 1, "block_id": "b3", "role": "body_paragraph", "text": "Real body text should render.", "render_default": True},
+        {
+            "paper_id": "KEY001",
+            "page": 1,
+            "block_id": "b1",
+            "role": "section_heading",
+            "text": "OPEN ACCESS",
+            "render_default": True,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 1,
+            "block_id": "b2",
+            "role": "section_heading",
+            "text": "CITATION",
+            "render_default": True,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 1,
+            "block_id": "b3",
+            "role": "body_paragraph",
+            "text": "Real body text should render.",
+            "render_default": True,
+        },
     ]
 
     md = render_fulltext_markdown(
@@ -33,9 +54,30 @@ def test_stabilize_render_output_starts_with_metadata_and_abstract() -> None:
         "doi": {"value": "10.1000/xyz"},
     }
     structured_blocks = [
-        {"paper_id": "KEY001", "page": 1, "block_id": "b1", "role": "abstract_heading", "text": "Abstract", "render_default": True},
-        {"paper_id": "KEY001", "page": 1, "block_id": "b2", "role": "abstract_body", "text": "This is the abstract text.", "render_default": True},
-        {"paper_id": "KEY001", "page": 2, "block_id": "b3", "role": "section_heading", "text": "1 Introduction", "render_default": True},
+        {
+            "paper_id": "KEY001",
+            "page": 1,
+            "block_id": "b1",
+            "role": "abstract_heading",
+            "text": "Abstract",
+            "render_default": True,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 1,
+            "block_id": "b2",
+            "role": "abstract_body",
+            "text": "This is the abstract text.",
+            "render_default": True,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 2,
+            "block_id": "b3",
+            "role": "section_heading",
+            "text": "1 Introduction",
+            "render_default": True,
+        },
     ]
 
     md = render_fulltext_markdown(
@@ -57,9 +99,30 @@ def test_stabilize_figure_not_appended_at_end() -> None:
     from paperforge.worker.ocr_render import render_fulltext_markdown
 
     structured_blocks = [
-        {"paper_id": "KEY001", "page": 1, "block_id": "b1", "role": "body_paragraph", "text": "Body text.", "render_default": True},
-        {"paper_id": "KEY001", "page": 2, "block_id": "b2", "role": "figure_caption", "text": "Figure 1. Results.", "render_default": True},
-        {"paper_id": "KEY001", "page": 3, "block_id": "b3", "role": "section_heading", "text": "2 Discussion", "render_default": True},
+        {
+            "paper_id": "KEY001",
+            "page": 1,
+            "block_id": "b1",
+            "role": "body_paragraph",
+            "text": "Body text.",
+            "render_default": True,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 2,
+            "block_id": "b2",
+            "role": "figure_caption",
+            "text": "Figure 1. Results.",
+            "render_default": True,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 3,
+            "block_id": "b3",
+            "role": "section_heading",
+            "text": "2 Discussion",
+            "render_default": True,
+        },
     ]
     figure_inventory = {
         "matched_figures": [{"figure_id": "fig_001", "page": 2}],
@@ -81,8 +144,14 @@ def test_stabilize_latex_normalization() -> None:
     from paperforge.worker.ocr_render import render_fulltext_markdown
 
     structured_blocks = [
-        {"paper_id": "KEY001", "page": 1, "block_id": "b1", "role": "body_paragraph",
-         "text": "Expression $ ^{1} $ and $ ^{\\u2020} $ should be compact.", "render_default": True},
+        {
+            "paper_id": "KEY001",
+            "page": 1,
+            "block_id": "b1",
+            "role": "body_paragraph",
+            "text": "Expression $ ^{1} $ and $ ^{\\u2020} $ should be compact.",
+            "render_default": True,
+        },
     ]
 
     md = render_fulltext_markdown(
@@ -101,10 +170,22 @@ def test_stabilize_no_inline_table_html() -> None:
     from paperforge.worker.ocr_render import render_fulltext_markdown
 
     structured_blocks = [
-        {"paper_id": "KEY001", "page": 1, "block_id": "b1", "role": "table_html",
-         "text": "<table><tr><td>data</td></tr></table>", "render_default": True},
-        {"paper_id": "KEY001", "page": 1, "block_id": "b2", "role": "body_paragraph",
-         "text": "Real body text.", "render_default": True},
+        {
+            "paper_id": "KEY001",
+            "page": 1,
+            "block_id": "b1",
+            "role": "table_html",
+            "text": "<table><tr><td>data</td></tr></table>",
+            "render_default": True,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 1,
+            "block_id": "b2",
+            "role": "body_paragraph",
+            "text": "Real body text.",
+            "render_default": True,
+        },
     ]
 
     md = render_fulltext_markdown(
@@ -123,8 +204,10 @@ def test_stabilize_author_recovery_from_ocr() -> None:
     import json, tempfile, pathlib
 
     blocks_data = (
-        json.dumps({"role": "paper_title", "text": "Test Paper"}) + "\n"
-        + json.dumps({"role": "authors", "text": "Alice Smith, Bob Jones"}) + "\n"
+        json.dumps({"role": "paper_title", "text": "Test Paper"})
+        + "\n"
+        + json.dumps({"role": "authors", "text": "Alice Smith, Bob Jones"})
+        + "\n"
     )
     with tempfile.NamedTemporaryFile(mode="w", suffix=".jsonl", delete=False, encoding="utf-8") as f:
         f.write(blocks_data)
@@ -146,10 +229,22 @@ def test_stabilize_heading_sanity_downgrades_long_heading() -> None:
     # A very long section_heading (>100 chars) should be downgraded to body text
     long_text = "This is a very long heading that exceeds one hundred characters and should definitely be downgraded to a body paragraph instead of being rendered as a heading"
     structured_blocks = [
-        {"paper_id": "KEY001", "page": 1, "block_id": "b1", "role": "section_heading",
-         "text": long_text, "render_default": True},
-        {"paper_id": "KEY001", "page": 1, "block_id": "b2", "role": "body_paragraph",
-         "text": "Normal body text.", "render_default": True},
+        {
+            "paper_id": "KEY001",
+            "page": 1,
+            "block_id": "b1",
+            "role": "section_heading",
+            "text": long_text,
+            "render_default": True,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 1,
+            "block_id": "b2",
+            "role": "body_paragraph",
+            "text": "Normal body text.",
+            "render_default": True,
+        },
     ]
 
     md = render_fulltext_markdown(
@@ -170,11 +265,22 @@ def test_stabilize_heading_sanity_downgrades_multi_sentence_heading() -> None:
 
     # A heading with multiple sentence-ending periods should be downgraded
     structured_blocks = [
-        {"paper_id": "KEY001", "page": 1, "block_id": "b1", "role": "section_heading",
-         "text": "This is a heading. It has multiple sentences. This is the third one.",
-         "render_default": True},
-        {"paper_id": "KEY001", "page": 1, "block_id": "b2", "role": "body_paragraph",
-         "text": "Normal body text.", "render_default": True},
+        {
+            "paper_id": "KEY001",
+            "page": 1,
+            "block_id": "b1",
+            "role": "section_heading",
+            "text": "This is a heading. It has multiple sentences. This is the third one.",
+            "render_default": True,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 1,
+            "block_id": "b2",
+            "role": "body_paragraph",
+            "text": "Normal body text.",
+            "render_default": True,
+        },
     ]
 
     md = render_fulltext_markdown(
@@ -192,8 +298,14 @@ def test_stabilize_heading_sanity_allows_valid_short_heading() -> None:
     from paperforge.worker.ocr_render import render_fulltext_markdown
 
     structured_blocks = [
-        {"paper_id": "KEY001", "page": 1, "block_id": "b1", "role": "section_heading",
-         "text": "1 Introduction", "render_default": True},
+        {
+            "paper_id": "KEY001",
+            "page": 1,
+            "block_id": "b1",
+            "role": "section_heading",
+            "text": "1 Introduction",
+            "render_default": True,
+        },
     ]
 
     md = render_fulltext_markdown(
@@ -211,11 +323,22 @@ def test_stabilize_heading_sanity_downgrades_verb_heavy_heading() -> None:
 
     # A heading longer than 50 chars with common sentence verbs should be downgraded
     structured_blocks = [
-        {"paper_id": "KEY001", "page": 1, "block_id": "b1", "role": "section_heading",
-         "text": "This is a method that was used for the experiment and has many words",
-         "render_default": True},
-        {"paper_id": "KEY001", "page": 1, "block_id": "b2", "role": "body_paragraph",
-         "text": "Normal body text.", "render_default": True},
+        {
+            "paper_id": "KEY001",
+            "page": 1,
+            "block_id": "b1",
+            "role": "section_heading",
+            "text": "This is a method that was used for the experiment and has many words",
+            "render_default": True,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 1,
+            "block_id": "b2",
+            "role": "body_paragraph",
+            "text": "Normal body text.",
+            "render_default": True,
+        },
     ]
 
     md = render_fulltext_markdown(
@@ -234,8 +357,14 @@ def test_stabilize_heading_sanity_allows_verb_short_heading() -> None:
 
     # A short heading with verbs is OK (under 50 chars)
     structured_blocks = [
-        {"paper_id": "KEY001", "page": 1, "block_id": "b1", "role": "section_heading",
-         "text": "Results are shown", "render_default": True},
+        {
+            "paper_id": "KEY001",
+            "page": 1,
+            "block_id": "b1",
+            "role": "section_heading",
+            "text": "Results are shown",
+            "render_default": True,
+        },
     ]
 
     md = render_fulltext_markdown(
@@ -258,3 +387,238 @@ def test_stabilize_reference_content_mapped() -> None:
 
     assert assignment.role == "reference_item"
     assert assignment.confidence >= 0.8
+
+
+def test_stabilize_page_marker_count_matches_page_count() -> None:
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+
+    structured_blocks = [
+        {
+            "paper_id": "KEY001",
+            "page": 1,
+            "block_id": "b1",
+            "role": "body_paragraph",
+            "text": "Page 1 body.",
+            "render_default": True,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 3,
+            "block_id": "b2",
+            "role": "body_paragraph",
+            "text": "Page 3 body.",
+            "render_default": True,
+        },
+    ]
+
+    md = render_fulltext_markdown(
+        structured_blocks=structured_blocks,
+        resolved_metadata={},
+        figure_inventory={},
+        table_inventory={},
+        page_count=5,
+    )
+
+    page_markers = [line for line in md.split("\n") if line.strip().startswith("<!-- page")]
+    expected_page_count = 5
+    assert len(page_markers) == expected_page_count, (
+        f"Expected {expected_page_count} page markers, got {len(page_markers)}"
+    )
+
+
+def test_stabilize_references_renders_as_heading() -> None:
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+
+    structured_blocks = [
+        {
+            "paper_id": "KEY001",
+            "page": 5,
+            "block_id": "b1",
+            "role": "reference_heading",
+            "text": "References",
+            "render_default": True,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 5,
+            "block_id": "b2",
+            "role": "reference_item",
+            "text": "Smith J, Jones B. (2024) A study on something. Journal of Examples.",
+            "render_default": True,
+        },
+    ]
+
+    md = render_fulltext_markdown(
+        structured_blocks=structured_blocks,
+        resolved_metadata={},
+        figure_inventory={},
+        table_inventory={},
+    )
+
+    assert "## References" in md
+    assert "Smith J, Jones B." in md
+
+
+def test_stabilize_reference_items_grouped_under_heading() -> None:
+    """Reference items stay under ## References, not claimed by later headings."""
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+
+    structured_blocks = [
+        {
+            "paper_id": "KEY001",
+            "page": 22,
+            "block_id": "b1",
+            "role": "reference_heading",
+            "text": "References",
+            "render_default": True,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 22,
+            "block_id": "b2",
+            "role": "reference_item",
+            "text": "Smith J. (2024) A study.",
+            "render_default": True,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 22,
+            "block_id": "b3",
+            "role": "backmatter_heading",
+            "text": "Publisher's note",
+            "render_default": True,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 22,
+            "block_id": "b4",
+            "role": "backmatter_body",
+            "text": "Springer Nature remains neutral.",
+            "render_default": True,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 22,
+            "block_id": "b5",
+            "role": "reference_item",
+            "text": "Jones B. (2023) Another study.",
+            "render_default": True,
+        },
+    ]
+
+    md = render_fulltext_markdown(
+        structured_blocks=structured_blocks,
+        resolved_metadata={},
+        figure_inventory={},
+        table_inventory={},
+    )
+
+    ref_idx = md.index("## References")
+    pub_idx = md.index("## Publisher's note")
+    smith_idx = md.index("Smith J.")
+    jones_idx = md.index("Jones B.")
+
+    assert smith_idx > pub_idx, "First reference item should appear under References, after backmatter"
+    assert jones_idx > pub_idx, "Second reference item should appear under References, after backmatter"
+    assert smith_idx > ref_idx and jones_idx > ref_idx, "Reference items should appear after References heading"
+
+
+def test_stabilize_tail_zone_references_kept_separate() -> None:
+    """Multi-page tail: reference items on continuation page stay under References."""
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+
+    structured_blocks = [
+        {
+            "paper_id": "KEY001",
+            "page": 22,
+            "block_id": "b1",
+            "role": "reference_heading",
+            "text": "References",
+            "render_default": True,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 22,
+            "block_id": "b2",
+            "role": "reference_item",
+            "text": "Smith J. (2024) A study on electric fields.",
+            "render_default": True,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 22,
+            "block_id": "b3",
+            "role": "backmatter_heading",
+            "text": "Generative AI statement",
+            "render_default": True,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 22,
+            "block_id": "b4",
+            "role": "backmatter_body",
+            "text": "The authors declare no AI-generated content.",
+            "render_default": True,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 22,
+            "block_id": "b5",
+            "role": "backmatter_heading",
+            "text": "Publisher's note",
+            "render_default": True,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 22,
+            "block_id": "b6",
+            "role": "backmatter_body",
+            "text": "Springer Nature remains neutral.",
+            "render_default": True,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 23,
+            "block_id": "b7",
+            "role": "reference_item",
+            "text": "Jones B. (2023) Another study on galvanotaxis.",
+            "render_default": True,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 23,
+            "block_id": "b8",
+            "role": "reference_item",
+            "text": "Cai J. (2020) Additional reference.",
+            "render_default": True,
+        },
+    ]
+
+    md = render_fulltext_markdown(
+        structured_blocks=structured_blocks,
+        resolved_metadata={},
+        figure_inventory={},
+        table_inventory={},
+        page_count=23,
+    )
+
+    assert "## References" in md
+    assert "## Generative AI statement" in md
+    assert "## Publisher's note" in md
+
+    refs_idx = md.index("## References")
+    gen_ai_idx = md.index("## Generative AI statement")
+    pub_idx = md.index("## Publisher's note")
+    decl_idx = md.index("The authors declare no AI-generated content.")
+    springer_idx = md.index("Springer Nature remains neutral.")
+    smith_idx = md.index("Smith J.")
+    jones_idx = md.index("Jones B.")
+    cai_idx = md.index("Cai J.")
+
+    assert decl_idx < refs_idx, "Gen AI body should appear before References"
+    assert springer_idx < refs_idx, "Publisher's note body should appear before References"
+    assert smith_idx > refs_idx, "Page 22 reference item should be under References"
+    assert jones_idx > refs_idx, "Page 23 reference item should be under References, not dropped"
+    assert cai_idx > refs_idx, "Page 23 second reference item should be under References"
+    assert "<!-- page 22" in md, "Page marker for page 22 should be present"
+    assert "<!-- page 23" in md, "Page marker for page 23 should be present"
