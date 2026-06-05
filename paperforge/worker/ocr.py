@@ -1805,6 +1805,19 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
         markdown=markdown,
     )
 
+    # --- Phase 3: OCR health report ---
+    from paperforge.worker.ocr_health import build_ocr_health, write_ocr_health
+
+    health_report = build_ocr_health(
+        page_count=page_num,
+        raw_blocks_count=len(all_raw_blocks),
+        structured_blocks=structured,
+        figure_inventory=figure_inventory,
+        table_inventory=table_inventory,
+    )
+    write_ocr_health(ocr_root / "health", health_report)
+    meta["ocr_health_overall"] = health_report["overall"]
+
     # Update meta.json with version payloads
     ocr_model = meta.get("ocr_model", meta.get("ocr_provider", "PaddleOCR"))
     version_payload = build_version_payload(
