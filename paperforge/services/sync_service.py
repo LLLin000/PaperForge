@@ -486,7 +486,10 @@ class SyncService:
 
                     # Legacy backfill: can_backfill papers get derived artifacts rebuilt
                     if ocr_runtime_summary.get("backfill_count", 0) > 0:
-                        from paperforge.worker.ocr_rebuild import backfill_from_result, select_legacy_papers_for_backfill
+                        from paperforge.worker.ocr_rebuild import (
+                            backfill_from_result,
+                            select_legacy_papers_for_backfill,
+                        )
 
                         backfill_keys = select_legacy_papers_for_backfill(papers)
                         backfill_results: list[dict] = []

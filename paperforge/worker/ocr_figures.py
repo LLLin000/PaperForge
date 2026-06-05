@@ -101,45 +101,22 @@ def _is_formal_legend(text: str, block: dict | None = None, page_width: float = 
 
         lower = text.lower().strip()
         axis_words = {
-            "days",
-            "time",
-            "concentration",
-            "percentage",
-            "volume",
-            "frequency",
-            "intensity",
-            "ratio",
-            "expression",
-            "level",
-            "content",
-            "activity",
-            "treatment",
-            "group",
-            "control",
-            "dose",
-            "response",
-            "size",
+            "days", "time", "concentration", "percentage", "volume",
+            "frequency", "intensity", "ratio", "expression", "level",
+            "content", "activity", "treatment", "group", "control",
+            "dose", "response", "size", "culture", "medium",
+            "supplemented", "differentiation", "osteogenic",
+            "chondrogenic", "adipogenic", "induction", "stimulation",
+            "exposure", "incubation", "harvest", "collection",
         }
         words = set(lower.rstrip(". ").split())
         stop_words = {
-            "of",
-            "the",
-            "in",
-            "and",
-            "to",
-            "a",
-            "an",
-            "by",
-            "at",
-            "for",
-            "with",
-            "on",
-            "is",
-            "are",
-            "was",
-            "were",
+            "of", "the", "in", "and", "to", "a", "an",
+            "by", "at", "for", "with", "on", "is", "are",
+            "was", "were", "post", "after", "during", "before",
         }
-        if len(text) < 60 and words and words.issubset(axis_words | stop_words):
+        text_len = len(text)
+        if text_len < 100 and words and words.issubset(axis_words | stop_words):
             return False
 
     return True
@@ -157,6 +134,8 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
         if block.get("page_width"):
             page_width = float(block["page_width"])
 
+    low_conf_legends: list[dict] = []
+
     for block in structured_blocks:
         role = block.get("role", "")
         if role == "figure_caption":
@@ -164,8 +143,9 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
                 continue
             if not _is_formal_legend(block.get("text", ""), block, page_width):
                 rejected_legends.append(block)
-                continue
-            legends.append(block)
+                low_conf_legends.append(block)
+            else:
+                legends.append(block)
         elif role == "figure_asset":
             assets.append(block)
         elif role == "media_asset":
@@ -244,6 +224,38 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
 
         if is_legend_only:
             unmatched_legends.append(legend)
+
+    # Fallback: for low-confidence legends (rejected by formality check),
+    # match them to the first unmatched asset on the same page.
+    # Each low-confidence legend produces at most one figure entry.
+    used_low_conf: set[int] = set()
+    for li, legend in enumerate(low_conf_legends):
+        leg_page = legend.get("page", 0)
+        leg_text = legend.get("text", "")
+        fig_num = _extract_figure_number(leg_text)
+
+        # Find first unmatched asset on the legend's page
+        match_idx = None
+        for i, asset in enumerate(assets):
+            if i not in used_asset_indices and asset.get("page", 0) == leg_page:
+                match_idx = i
+                break
+
+        if match_idx is not None and li not in used_low_conf:
+            matched_figures.append({
+                "legend_block_id": legend.get("block_id", ""),
+                "page": leg_page,
+                "text": leg_text,
+                "figure_number": fig_num,
+                "matched_assets": [{
+                    "block_id": assets[match_idx].get("block_id", ""),
+                    "bbox": assets[match_idx].get("bbox", [0, 0, 0, 0]),
+                }],
+                "confidence": 0.3,
+                "flags": ["legend_uncertain"],
+            })
+            used_asset_indices.add(match_idx)
+            used_low_conf.add(li)
 
     for i, asset in enumerate(assets):
         if i not in used_asset_indices:

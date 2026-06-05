@@ -1,9 +1,23 @@
 from __future__ import annotations
 
 import re
+from collections import namedtuple
 from pathlib import Path
 
 from paperforge.worker.ocr_roles import FRONTMATTER_NOISE
+
+TailBoundary = namedtuple(
+    "TailBoundary",
+    [
+        "body_end_page",
+        "backmatter_start",
+        "references_start",
+        "spread_start",
+        "spread_end",
+        "is_clean_separated",
+        "reason",
+    ],
+)
 
 
 def _normalize_latex(text: str) -> str:
@@ -349,6 +363,44 @@ def _disambiguate_heading_role(block: dict, style_profiles: dict) -> str | None:
     return None
 
 
+def _attach_container_bodies(
+    body_pool: list[dict],
+    backmatter_sections: list[dict],
+    page_width: float,
+    ref_section: dict | None,
+) -> list[dict]:
+    """Attach container-regime bodies to their nearest heading above.
+
+    Bodies with ``_backmatter_regime == "container"`` are matched to the
+    nearest backmatter heading (boundary or child) via geometric ownership.
+    Bodies that cannot find a heading above them fall through to the boundary
+    heading section.  Returns the remaining (non-container) bodies so the
+    caller can continue with generic Phase 4 processing.
+    """
+    remaining: list[dict] = []
+    for body in body_pool:
+        if body.get("_backmatter_regime") != "container":
+            remaining.append(body)
+            continue
+        idx = _find_owning_heading(body, backmatter_sections, page_width)
+        if idx is not None:
+            backmatter_sections[idx]["bodies"].append(body)
+        else:
+            boundary_idx = next(
+                (
+                    i
+                    for i, s in enumerate(backmatter_sections)
+                    if s["heading"].get("role") == "backmatter_boundary_heading"
+                ),
+                None,
+            )
+            if boundary_idx is not None:
+                backmatter_sections[boundary_idx]["bodies"].append(body)
+            else:
+                remaining.append(body)
+    return remaining
+
+
 def _reorder_tail_run(
     tail_blocks: list[dict],
     carried_ref: dict | None = None,
@@ -430,7 +482,12 @@ def _reorder_tail_run(
         else:
             body_pool.append(block)
 
-    # Phase 4 — geometric body attachment
+    # Phase 4a — container regime body attachment (run before generic
+    # body loop so container bodies are matched to their specific child
+    # heading rather than falling through to ref-section absorption)
+    body_pool = _attach_container_bodies(body_pool, backmatter_sections, page_width, ref_section)
+
+    # Phase 4b — geometric body attachment for remaining bodies
     first_local_anchor_top: float | None = None
     local_heading_tops = []
     for sec in backmatter_sections:
@@ -471,12 +528,13 @@ def _reorder_tail_run(
     result: list[dict] = []
     result.extend(non_tail_pass)
     result.extend(carried_bodies)
-    boundary_secs = [s for s in backmatter_sections
-                     if s["heading"].get("role") == "backmatter_boundary_heading"]
-    sub_secs = [s for s in backmatter_sections
-                if s["heading"].get("role") != "backmatter_boundary_heading"]
+    boundary_secs = [s for s in backmatter_sections if s["heading"].get("role") == "backmatter_boundary_heading"]
+    sub_secs = [s for s in backmatter_sections if s["heading"].get("role") != "backmatter_boundary_heading"]
     for sec in boundary_secs + sub_secs:
-        result.append(sec["heading"])
+        h = sec["heading"]
+        if h.get("_backmatter_regime") == "container" and h.get("role") == "backmatter_heading":
+            h["_container_child"] = True
+        result.append(h)
         result.extend(sec["bodies"])
     if ref_section is not None and ref_section is not carried_ref:
         result.append(ref_section["heading"])
@@ -535,12 +593,13 @@ def _reorder_tail_run_fifo(
 
     result: list[dict] = []
     result.extend(non_tail_pass)
-    boundary_secs = [s for s in backmatter_sections
-                     if s["heading"].get("role") == "backmatter_boundary_heading"]
-    sub_secs = [s for s in backmatter_sections
-                if s["heading"].get("role") != "backmatter_boundary_heading"]
+    boundary_secs = [s for s in backmatter_sections if s["heading"].get("role") == "backmatter_boundary_heading"]
+    sub_secs = [s for s in backmatter_sections if s["heading"].get("role") != "backmatter_boundary_heading"]
     for sec in boundary_secs + sub_secs:
-        result.append(sec["heading"])
+        h = sec["heading"]
+        if h.get("_backmatter_regime") == "container" and h.get("role") == "backmatter_heading":
+            h["_container_child"] = True
+        result.append(h)
         result.extend(sec["bodies"])
     if ref_section is not None and ref_section is not carried_ref:
         result.append(ref_section["heading"])
@@ -553,7 +612,7 @@ def _reorder_tail_run_fifo(
 
 def _promote_tail_body_candidates(
     blocks: list[dict],
-    tail_spread: tuple[int, int] | None,
+    tail_spread: TailBoundary | None,
     header_band: float | None = None,
     footer_band: float | None = None,
 ) -> list[dict]:
@@ -563,10 +622,10 @@ def _promote_tail_body_candidates(
     those body paragraphs that are geometrically compatible with tail section
     ownership inside the reconciled tail spread.
     """
-    if tail_spread is None:
+    if tail_spread is None or tail_spread.spread_start is None or tail_spread.spread_end is None:
         return blocks
 
-    spread_start, spread_end = tail_spread
+    spread_start, spread_end = tail_spread.spread_start, tail_spread.spread_end
     by_page: dict[int, list[int]] = {}
     for idx, block in enumerate(blocks):
         page = block.get("page")
@@ -754,13 +813,33 @@ def _detect_backward_backmatter_start(blocks: list[dict]) -> int | None:
     return None
 
 
-def _reconcile_tail_spread(blocks: list[dict]) -> tuple[int, int] | None:
-    """Reconcile forward and backward scans into a tail spread page range.
+def _detect_references_start(blocks: list[dict], body_end_page: int | None) -> int | None:
+    """Scan from body end page forward for the first page with a reference
+    heading or reference item.  Returns None if no references zone is found."""
+    if body_end_page is None:
+        return None
+    by_page: dict[int, list[dict]] = {}
+    for block in blocks:
+        p = block.get("page")
+        if p is not None:
+            by_page.setdefault(p, []).append(block)
+    pages = sorted(p for p in by_page if p >= body_end_page)
+    for page in pages:
+        roles = {b.get("role") for b in by_page[page]}
+        if "reference_heading" in roles or "reference_item" in roles:
+            return page
+    return None
 
-    Returns (start_page, end_page) or None when no tail spread exists.
+
+def _reconcile_tail_spread(blocks: list[dict]) -> TailBoundary | None:
+    """Reconcile forward and backward scans into a structured TailBoundary.
+
+    Returns a TailBoundary namedtuple or None when no tail spread exists.
+    The ``reason`` field provides an explainability trace.
     """
     forward_end = _detect_forward_body_end(blocks)
     backward_start = _detect_backward_backmatter_start(blocks)
+    references_start = _detect_references_start(blocks, forward_end)
 
     if forward_end is None and backward_start is None:
         return None
@@ -773,23 +852,126 @@ def _reconcile_tail_spread(blocks: list[dict]) -> tuple[int, int] | None:
 
     if forward_end is None and backward_start is not None:
         start = max(1, backward_start - 2)
-        return (start, max_page)
+        reason = (
+            f"forward body end not detected, backward backmatter start "
+            f"at page {backward_start}, references start at page "
+            f"{references_start or 'N/A'}"
+        )
+        return TailBoundary(
+            body_end_page=None,
+            backmatter_start=backward_start,
+            references_start=references_start,
+            spread_start=start,
+            spread_end=max_page,
+            is_clean_separated=False,
+            reason=reason,
+        )
 
     if backward_start is None and forward_end is not None:
         return None
 
     if forward_end is not None and backward_start is not None:
-        if forward_end < backward_start:
-            return (forward_end + 1, backward_start)
+        is_clean = forward_end < backward_start
+        if is_clean:
+            spread_start = forward_end + 1
+            spread_end = backward_start
         else:
-            return (backward_start, forward_end)
+            spread_start = backward_start
+            spread_end = forward_end
+        reason = (
+            f"forward body end at page {forward_end}, "
+            f"backward backmatter start at page {backward_start}, "
+            f"references start at page {references_start or 'N/A'}"
+        )
+        return TailBoundary(
+            body_end_page=forward_end,
+            backmatter_start=backward_start,
+            references_start=references_start,
+            spread_start=spread_start,
+            spread_end=spread_end,
+            is_clean_separated=is_clean,
+            reason=reason,
+        )
 
     return None
 
 
+def _classify_backmatter_form(tail_boundary: TailBoundary, blocks: list[dict]) -> str:
+    """Return ``"container"`` (PeerJ-style boundary heading with >= 3
+    child sections) or ``"flat"`` (Frontiers-style, no boundary or few
+    children).
+    """
+    if tail_boundary.spread_start is None or tail_boundary.spread_end is None:
+        return "flat"
+
+    boundary_page = None
+    for block in blocks:
+        p = block.get("page")
+        if (
+            p is not None
+            and tail_boundary.spread_start <= p <= tail_boundary.spread_end
+            and block.get("role") == "backmatter_boundary_heading"
+        ):
+            boundary_page = p
+            break
+
+    if boundary_page is None:
+        return "flat"
+
+    child_count = 0
+    seen_boundary = False
+    for block in blocks:
+        p = block.get("page")
+        if p is not None and (p < boundary_page or (p == boundary_page and not seen_boundary)):
+            if block.get("role") == "backmatter_boundary_heading" and p == boundary_page:
+                seen_boundary = True
+            continue
+        if p is not None and p > tail_boundary.spread_end:
+            break
+        if not seen_boundary:
+            if block.get("role") == "backmatter_boundary_heading":
+                seen_boundary = True
+            continue
+        if block.get("role") == "reference_heading":
+            break
+        if block.get("role") == "backmatter_heading":
+            text = block.get("text", "")
+            if len(text) < 40:
+                child_count += 1
+
+    return "container" if child_count >= 3 else "flat"
+
+
+def _label_backmatter_regime(tail_boundary: TailBoundary, backmatter_form: str, blocks: list[dict]) -> None:
+    """Enrich tail-spread blocks with a ``_backmatter_regime`` field.
+
+    Blocks after a ``backmatter_boundary_heading`` in container mode get
+    ``_backmatter_regime = "container"``; everything else in the spread
+    gets ``_backmatter_regime = "flat"``.  The enrichment is in-place.
+    """
+    if tail_boundary.spread_start is None:
+        return
+
+    boundary_seen = False
+    for block in blocks:
+        p = block.get("page")
+        if p is not None and p < tail_boundary.spread_start:
+            continue
+        if p is not None and p > tail_boundary.spread_end:
+            continue
+
+        if block.get("role") in _TAIL_ROLES:
+            if block.get("role") == "backmatter_boundary_heading":
+                boundary_seen = True
+            if backmatter_form == "container" and boundary_seen:
+                block["_backmatter_regime"] = "container"
+            else:
+                block["_backmatter_regime"] = "flat"
+
+
 def _assign_tail_spread_ownership(
     blocks: list[dict],
-    tail_spread: tuple[int, int] | None = None,
+    tail_spread: TailBoundary | None = None,
 ) -> list[dict]:
     """Assign tail_candidate_body blocks to backmatter anchors across pages.
 
@@ -805,8 +987,8 @@ def _assign_tail_spread_ownership(
     anchors = [b for b in blocks if b.get("role") in tail_heading_roles]
     ref_heading = next((b for b in blocks if b.get("role") == "reference_heading"), None)
 
-    if tail_spread is not None:
-        spread_start, spread_end = tail_spread
+    if tail_spread is not None and tail_spread.spread_start is not None and tail_spread.spread_end is not None:
+        spread_start, spread_end = tail_spread.spread_start, tail_spread.spread_end
     else:
         spread_start, spread_end = 0, 0
 
@@ -876,6 +1058,11 @@ def _order_tail_blocks(blocks: list[dict], style_profiles: dict | None = None) -
 
     # Step 0: Reconcile tail spread boundary
     tail_spread = _reconcile_tail_spread(blocks)
+
+    # Step 0.25: Classify backmatter form and label tail-spread blocks
+    if tail_spread is not None:
+        backmatter_form = _classify_backmatter_form(tail_spread, blocks)
+        _label_backmatter_regime(tail_spread, backmatter_form, blocks)
 
     # Step 0.5: only inside the reconciled tail spread, promote plausible
     # body paragraphs into tail candidates using geometry rather than
@@ -1079,7 +1266,10 @@ def render_fulltext_markdown(
             emitted_pages.add(block_page)
 
         if role == "backmatter_boundary_heading" or role == "backmatter_heading" or role == "reference_heading":
-            lines.append(f"## {text}")
+            if block.get("_container_child"):
+                lines.append(f"### {text}")
+            else:
+                lines.append(f"## {text}")
             lines.append("")
         elif role == "section_heading":
             if text.strip().lower() in FRONTMATTER_NOISE:
