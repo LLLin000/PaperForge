@@ -220,3 +220,74 @@ def test_unmatched_legends_populated() -> None:
 
     assert len(inventory["unmatched_legends"]) == 1
     assert inventory["unmatched_legends"][0]["block_id"] == "p3_b1"
+
+
+def test_body_mention_not_mistaken_for_formal_legend() -> None:
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    structured_blocks = [
+        {
+            "paper_id": "K001",
+            "page": 1,
+            "block_id": "p1_b1",
+            "role": "figure_caption",
+            "block_label": "text",
+            "text": "Figure 3 shows quantitative results of cell migration under applied DC electric field.",
+            "bbox": [50, 100, 550, 130],
+        },
+        {
+            "paper_id": "K001",
+            "page": 2,
+            "block_id": "p2_b1",
+            "role": "figure_caption",
+            "block_label": "figure_title",
+            "text": "Figure 3. Quantitative analysis of cell migration under DC electric field stimulation.",
+            "bbox": [50, 700, 550, 740],
+        },
+        {
+            "paper_id": "K001",
+            "page": 2,
+            "block_id": "p2_b2",
+            "role": "figure_asset",
+            "text": "",
+            "bbox": [50, 50, 550, 680],
+        },
+    ]
+
+    inventory = build_figure_inventory(structured_blocks)
+
+    assert len(inventory["matched_figures"]) == 1
+    assert inventory["matched_figures"][0]["legend_block_id"] == "p2_b1"
+    assert len(inventory["matched_figures"][0]["matched_assets"]) == 1
+    assert inventory["matched_figures"][0]["matched_assets"][0]["block_id"] == "p2_b2"
+
+
+def test_legend_does_not_steal_offpage_asset() -> None:
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    structured_blocks = [
+        {
+            "paper_id": "K001",
+            "page": 1,
+            "block_id": "p1_b1",
+            "role": "figure_caption",
+            "text": "Figure 1. A caption with no asset on the same page.",
+            "bbox": [50, 700, 550, 740],
+        },
+        {
+            "paper_id": "K001",
+            "page": 2,
+            "block_id": "p2_b1",
+            "role": "figure_asset",
+            "text": "",
+            "bbox": [50, 50, 550, 400],
+        },
+    ]
+
+    inventory = build_figure_inventory(structured_blocks)
+
+    assert len(inventory["matched_figures"]) == 1
+    assert len(inventory["matched_figures"][0]["matched_assets"]) == 0
+    assert "legend_only" in inventory["matched_figures"][0]["flags"]
+    assert len(inventory["unmatched_assets"]) == 1
+    assert inventory["unmatched_assets"][0]["block_id"] == "p2_b1"

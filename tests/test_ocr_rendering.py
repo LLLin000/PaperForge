@@ -38,7 +38,6 @@ title: Test
     assert extract_preserved_ocr_redo(text) is False
 
 
-
 def test_caption_group_assignments_respects_columns() -> None:
     from paperforge.worker.ocr import caption_group_assignments
 
@@ -82,14 +81,62 @@ def test_validate_block_order_falls_back_to_column_major_on_excessive_switches()
     from paperforge.worker.ocr import validate_block_order
 
     blocks = [
-        {"block_id": 1, "block_label": "text", "block_order": 0, "block_bbox": [80, 100, 500, 140], "block_content": "L1"},
-        {"block_id": 2, "block_label": "text", "block_order": 1, "block_bbox": [700, 110, 1120, 150], "block_content": "R1"},
-        {"block_id": 3, "block_label": "text", "block_order": 2, "block_bbox": [80, 200, 500, 240], "block_content": "L2"},
-        {"block_id": 4, "block_label": "text", "block_order": 3, "block_bbox": [700, 210, 1120, 250], "block_content": "R2"},
-        {"block_id": 5, "block_label": "text", "block_order": 4, "block_bbox": [80, 300, 500, 340], "block_content": "L3"},
-        {"block_id": 6, "block_label": "text", "block_order": 5, "block_bbox": [700, 310, 1120, 350], "block_content": "R3"},
-        {"block_id": 7, "block_label": "text", "block_order": 6, "block_bbox": [80, 400, 500, 440], "block_content": "L4"},
-        {"block_id": 8, "block_label": "text", "block_order": 7, "block_bbox": [700, 410, 1120, 450], "block_content": "R4"},
+        {
+            "block_id": 1,
+            "block_label": "text",
+            "block_order": 0,
+            "block_bbox": [80, 100, 500, 140],
+            "block_content": "L1",
+        },
+        {
+            "block_id": 2,
+            "block_label": "text",
+            "block_order": 1,
+            "block_bbox": [700, 110, 1120, 150],
+            "block_content": "R1",
+        },
+        {
+            "block_id": 3,
+            "block_label": "text",
+            "block_order": 2,
+            "block_bbox": [80, 200, 500, 240],
+            "block_content": "L2",
+        },
+        {
+            "block_id": 4,
+            "block_label": "text",
+            "block_order": 3,
+            "block_bbox": [700, 210, 1120, 250],
+            "block_content": "R2",
+        },
+        {
+            "block_id": 5,
+            "block_label": "text",
+            "block_order": 4,
+            "block_bbox": [80, 300, 500, 340],
+            "block_content": "L3",
+        },
+        {
+            "block_id": 6,
+            "block_label": "text",
+            "block_order": 5,
+            "block_bbox": [700, 310, 1120, 350],
+            "block_content": "R3",
+        },
+        {
+            "block_id": 7,
+            "block_label": "text",
+            "block_order": 6,
+            "block_bbox": [80, 400, 500, 440],
+            "block_content": "L4",
+        },
+        {
+            "block_id": 8,
+            "block_label": "text",
+            "block_order": 7,
+            "block_bbox": [700, 410, 1120, 450],
+            "block_content": "R4",
+        },
     ]
 
     ordered = validate_block_order(blocks, page_width=1200)
@@ -101,10 +148,34 @@ def test_validate_block_order_repairs_non_monotonic_order_within_column() -> Non
     from paperforge.worker.ocr import validate_block_order
 
     blocks = [
-        {"block_id": 1, "block_label": "text", "block_order": 0, "block_bbox": [80, 100, 500, 140], "block_content": "L1"},
-        {"block_id": 2, "block_label": "text", "block_order": 1, "block_bbox": [80, 300, 500, 340], "block_content": "L3"},
-        {"block_id": 3, "block_label": "text", "block_order": 2, "block_bbox": [80, 200, 500, 240], "block_content": "L2"},
-        {"block_id": 4, "block_label": "text", "block_order": 3, "block_bbox": [700, 150, 1120, 190], "block_content": "R1"},
+        {
+            "block_id": 1,
+            "block_label": "text",
+            "block_order": 0,
+            "block_bbox": [80, 100, 500, 140],
+            "block_content": "L1",
+        },
+        {
+            "block_id": 2,
+            "block_label": "text",
+            "block_order": 1,
+            "block_bbox": [80, 300, 500, 340],
+            "block_content": "L3",
+        },
+        {
+            "block_id": 3,
+            "block_label": "text",
+            "block_order": 2,
+            "block_bbox": [80, 200, 500, 240],
+            "block_content": "L2",
+        },
+        {
+            "block_id": 4,
+            "block_label": "text",
+            "block_order": 3,
+            "block_bbox": [700, 150, 1120, 190],
+            "block_content": "R1",
+        },
     ]
 
     ordered = validate_block_order(blocks, page_width=1200)
@@ -131,11 +202,41 @@ def test_validate_block_order_preserves_center_spanning_blocks() -> None:
     from paperforge.worker.ocr import validate_block_order
 
     blocks = [
-        {"block_id": 1, "block_label": "text", "block_order": 0, "block_bbox": [120, 80, 1080, 140], "block_content": "Full-width section heading"},
-        {"block_id": 2, "block_label": "text", "block_order": 1, "block_bbox": [80, 180, 500, 240], "block_content": "Left paragraph one"},
-        {"block_id": 3, "block_label": "text", "block_order": 2, "block_bbox": [700, 190, 1120, 250], "block_content": "Right paragraph one"},
-        {"block_id": 4, "block_label": "text", "block_order": 3, "block_bbox": [80, 280, 500, 340], "block_content": "Left paragraph two"},
-        {"block_id": 5, "block_label": "text", "block_order": 4, "block_bbox": [700, 290, 1120, 350], "block_content": "Right paragraph two"},
+        {
+            "block_id": 1,
+            "block_label": "text",
+            "block_order": 0,
+            "block_bbox": [120, 80, 1080, 140],
+            "block_content": "Full-width section heading",
+        },
+        {
+            "block_id": 2,
+            "block_label": "text",
+            "block_order": 1,
+            "block_bbox": [80, 180, 500, 240],
+            "block_content": "Left paragraph one",
+        },
+        {
+            "block_id": 3,
+            "block_label": "text",
+            "block_order": 2,
+            "block_bbox": [700, 190, 1120, 250],
+            "block_content": "Right paragraph one",
+        },
+        {
+            "block_id": 4,
+            "block_label": "text",
+            "block_order": 3,
+            "block_bbox": [80, 280, 500, 340],
+            "block_content": "Left paragraph two",
+        },
+        {
+            "block_id": 5,
+            "block_label": "text",
+            "block_order": 4,
+            "block_bbox": [700, 290, 1120, 350],
+            "block_content": "Right paragraph two",
+        },
     ]
 
     ordered = validate_block_order(blocks, page_width=1200)
@@ -153,10 +254,34 @@ def test_validate_block_order_retains_blocks_with_invalid_bbox() -> None:
     from paperforge.worker.ocr import validate_block_order
 
     blocks = [
-        {"block_id": 1, "block_label": "text", "block_order": 0, "block_bbox": [80, 100, 500, 140], "block_content": "Left valid"},
-        {"block_id": 2, "block_label": "text", "block_order": 1, "block_bbox": [500, 160, 500, 200], "block_content": "Broken bbox"},
-        {"block_id": 3, "block_label": "text", "block_order": 2, "block_bbox": [700, 180, 1120, 220], "block_content": "Right valid"},
-        {"block_id": 4, "block_label": "text", "block_order": 3, "block_bbox": [80, 260, 500, 300], "block_content": "Left lower"},
+        {
+            "block_id": 1,
+            "block_label": "text",
+            "block_order": 0,
+            "block_bbox": [80, 100, 500, 140],
+            "block_content": "Left valid",
+        },
+        {
+            "block_id": 2,
+            "block_label": "text",
+            "block_order": 1,
+            "block_bbox": [500, 160, 500, 200],
+            "block_content": "Broken bbox",
+        },
+        {
+            "block_id": 3,
+            "block_label": "text",
+            "block_order": 2,
+            "block_bbox": [700, 180, 1120, 220],
+            "block_content": "Right valid",
+        },
+        {
+            "block_id": 4,
+            "block_label": "text",
+            "block_order": 3,
+            "block_bbox": [80, 260, 500, 300],
+            "block_content": "Left lower",
+        },
     ]
 
     ordered = validate_block_order(blocks, page_width=1200)
@@ -178,14 +303,62 @@ def test_render_page_blocks_reorders_interleaved_two_column_text_by_geometry(tmp
             "width": 1200,
             "height": 1600,
             "parsing_res_list": [
-                {"block_id": 1, "block_label": "text", "block_order": 0, "block_bbox": [80, 100, 500, 160], "block_content": "Left intro paragraph with enough body text."},
-                {"block_id": 2, "block_label": "text", "block_order": 1, "block_bbox": [700, 110, 1120, 170], "block_content": "Right intro paragraph with enough body text."},
-                {"block_id": 3, "block_label": "text", "block_order": 2, "block_bbox": [80, 200, 500, 260], "block_content": "Left methods paragraph with enough body text."},
-                {"block_id": 4, "block_label": "text", "block_order": 3, "block_bbox": [700, 210, 1120, 270], "block_content": "Right methods paragraph with enough body text."},
-                {"block_id": 5, "block_label": "text", "block_order": 4, "block_bbox": [80, 300, 500, 360], "block_content": "Left results paragraph with enough body text."},
-                {"block_id": 6, "block_label": "text", "block_order": 5, "block_bbox": [700, 310, 1120, 370], "block_content": "Right results paragraph with enough body text."},
-                {"block_id": 7, "block_label": "text", "block_order": 6, "block_bbox": [80, 400, 500, 460], "block_content": "Left discussion paragraph with enough body text."},
-                {"block_id": 8, "block_label": "text", "block_order": 7, "block_bbox": [700, 410, 1120, 470], "block_content": "Right discussion paragraph with enough body text."},
+                {
+                    "block_id": 1,
+                    "block_label": "text",
+                    "block_order": 0,
+                    "block_bbox": [80, 100, 500, 160],
+                    "block_content": "Left intro paragraph with enough body text.",
+                },
+                {
+                    "block_id": 2,
+                    "block_label": "text",
+                    "block_order": 1,
+                    "block_bbox": [700, 110, 1120, 170],
+                    "block_content": "Right intro paragraph with enough body text.",
+                },
+                {
+                    "block_id": 3,
+                    "block_label": "text",
+                    "block_order": 2,
+                    "block_bbox": [80, 200, 500, 260],
+                    "block_content": "Left methods paragraph with enough body text.",
+                },
+                {
+                    "block_id": 4,
+                    "block_label": "text",
+                    "block_order": 3,
+                    "block_bbox": [700, 210, 1120, 270],
+                    "block_content": "Right methods paragraph with enough body text.",
+                },
+                {
+                    "block_id": 5,
+                    "block_label": "text",
+                    "block_order": 4,
+                    "block_bbox": [80, 300, 500, 360],
+                    "block_content": "Left results paragraph with enough body text.",
+                },
+                {
+                    "block_id": 6,
+                    "block_label": "text",
+                    "block_order": 5,
+                    "block_bbox": [700, 310, 1120, 370],
+                    "block_content": "Right results paragraph with enough body text.",
+                },
+                {
+                    "block_id": 7,
+                    "block_label": "text",
+                    "block_order": 6,
+                    "block_bbox": [80, 400, 500, 460],
+                    "block_content": "Left discussion paragraph with enough body text.",
+                },
+                {
+                    "block_id": 8,
+                    "block_label": "text",
+                    "block_order": 7,
+                    "block_bbox": [700, 410, 1120, 470],
+                    "block_content": "Right discussion paragraph with enough body text.",
+                },
             ],
         },
         "inputImage": "",
@@ -303,7 +476,12 @@ def test_render_page_blocks_keeps_author_year_references_as_reference_items(tmp_
             "width": 1200,
             "height": 1600,
             "parsing_res_list": [
-                {"block_id": 1, "block_label": "paragraph_title", "block_bbox": [90, 120, 330, 160], "block_content": "References"},
+                {
+                    "block_id": 1,
+                    "block_label": "paragraph_title",
+                    "block_bbox": [90, 120, 330, 160],
+                    "block_content": "References",
+                },
                 {
                     "block_id": 2,
                     "block_label": "reference_content",
@@ -342,7 +520,12 @@ def test_render_page_blocks_does_not_mix_tail_sections_into_references(tmp_path:
             "width": 1200,
             "height": 1600,
             "parsing_res_list": [
-                {"block_id": 1, "block_label": "paragraph_title", "block_bbox": [90, 120, 330, 160], "block_content": "References"},
+                {
+                    "block_id": 1,
+                    "block_label": "paragraph_title",
+                    "block_bbox": [90, 120, 330, 160],
+                    "block_content": "References",
+                },
                 {
                     "block_id": 2,
                     "block_label": "reference_content",
@@ -388,11 +571,36 @@ def test_render_page_blocks_orders_references_within_column(tmp_path: Path) -> N
             "width": 1200,
             "height": 1600,
             "parsing_res_list": [
-                {"block_id": 1, "block_label": "paragraph_title", "block_bbox": [90, 120, 330, 160], "block_content": "References"},
-                {"block_id": 2, "block_label": "reference_content", "block_bbox": [620, 200, 1100, 250], "block_content": "Bagnato, G. L. (2016)."},
-                {"block_id": 3, "block_label": "reference_content", "block_bbox": [90, 200, 520, 250], "block_content": "Amin, B. (2019)."},
-                {"block_id": 4, "block_label": "reference_content", "block_bbox": [90, 300, 520, 350], "block_content": "Cai, J. (2018)."},
-                {"block_id": 5, "block_label": "reference_content", "block_bbox": [620, 300, 1100, 350], "block_content": "Bentley, G. (2012)."},
+                {
+                    "block_id": 1,
+                    "block_label": "paragraph_title",
+                    "block_bbox": [90, 120, 330, 160],
+                    "block_content": "References",
+                },
+                {
+                    "block_id": 2,
+                    "block_label": "reference_content",
+                    "block_bbox": [620, 200, 1100, 250],
+                    "block_content": "Bagnato, G. L. (2016).",
+                },
+                {
+                    "block_id": 3,
+                    "block_label": "reference_content",
+                    "block_bbox": [90, 200, 520, 250],
+                    "block_content": "Amin, B. (2019).",
+                },
+                {
+                    "block_id": 4,
+                    "block_label": "reference_content",
+                    "block_bbox": [90, 300, 520, 350],
+                    "block_content": "Cai, J. (2018).",
+                },
+                {
+                    "block_id": 5,
+                    "block_label": "reference_content",
+                    "block_bbox": [620, 300, 1100, 350],
+                    "block_content": "Bentley, G. (2012).",
+                },
             ],
         },
         "inputImage": "",
@@ -404,7 +612,9 @@ def test_render_page_blocks_orders_references_within_column(tmp_path: Path) -> N
     assert ref_items == ["Amin, B. (2019).", "Cai, J. (2018).", "Bagnato, G. L. (2016).", "Bentley, G. (2012)."]
 
 
-def test_render_page_blocks_keeps_top_figure_before_body_and_keeps_author_et_al_sentence_in_body(tmp_path: Path) -> None:
+def test_render_page_blocks_keeps_top_figure_before_body_and_keeps_author_et_al_sentence_in_body(
+    tmp_path: Path,
+) -> None:
     from paperforge.worker.ocr import render_page_blocks
 
     vault = tmp_path / "vault"
@@ -581,16 +791,76 @@ def test_render_page_blocks_keeps_abstract_heading_before_abstract_body_on_first
             "width": 1200,
             "height": 1600,
             "parsing_res_list": [
-                {"block_id": 1, "block_label": "doc_title", "block_order": 0, "block_bbox": [96, 210, 949, 284], "block_content": "Paper Title"},
-                {"block_id": 2, "block_label": "text", "block_order": 1, "block_bbox": [95, 312, 761, 365], "block_content": "Author One · Author Two"},
-                {"block_id": 3, "block_label": "text", "block_order": 2, "block_bbox": [96, 485, 880, 528], "block_content": "Received: 10 February 2023"},
-                {"block_id": 4, "block_label": "paragraph_title", "block_order": 3, "block_bbox": [97, 577, 181, 599], "block_content": "Abstract"},
-                {"block_id": 5, "block_label": "abstract", "block_order": 4, "block_bbox": [96, 603, 1094, 800], "block_content": "BACKGROUND: Background text."},
-                {"block_id": 6, "block_label": "abstract", "block_order": 5, "block_bbox": [97, 802, 1094, 851], "block_content": "METHODS: Methods text."},
-                {"block_id": 7, "block_label": "abstract", "block_order": 6, "block_bbox": [96, 899, 1093, 977], "block_content": "CONCLUSION: Conclusion text."},
-                {"block_id": 8, "block_label": "text", "block_order": 7, "block_bbox": [97, 1000, 872, 1025], "block_content": "Keywords one two three"},
-                {"block_id": 9, "block_label": "paragraph_title", "block_order": 8, "block_bbox": [98, 1062, 246, 1086], "block_content": "1 Introduction"},
-                {"block_id": 10, "block_label": "text", "block_order": 9, "block_bbox": [96, 1113, 582, 1190], "block_content": "Introduction body."},
+                {
+                    "block_id": 1,
+                    "block_label": "doc_title",
+                    "block_order": 0,
+                    "block_bbox": [96, 210, 949, 284],
+                    "block_content": "Paper Title",
+                },
+                {
+                    "block_id": 2,
+                    "block_label": "text",
+                    "block_order": 1,
+                    "block_bbox": [95, 312, 761, 365],
+                    "block_content": "Author One · Author Two",
+                },
+                {
+                    "block_id": 3,
+                    "block_label": "text",
+                    "block_order": 2,
+                    "block_bbox": [96, 485, 880, 528],
+                    "block_content": "Received: 10 February 2023",
+                },
+                {
+                    "block_id": 4,
+                    "block_label": "paragraph_title",
+                    "block_order": 3,
+                    "block_bbox": [97, 577, 181, 599],
+                    "block_content": "Abstract",
+                },
+                {
+                    "block_id": 5,
+                    "block_label": "abstract",
+                    "block_order": 4,
+                    "block_bbox": [96, 603, 1094, 800],
+                    "block_content": "BACKGROUND: Background text.",
+                },
+                {
+                    "block_id": 6,
+                    "block_label": "abstract",
+                    "block_order": 5,
+                    "block_bbox": [97, 802, 1094, 851],
+                    "block_content": "METHODS: Methods text.",
+                },
+                {
+                    "block_id": 7,
+                    "block_label": "abstract",
+                    "block_order": 6,
+                    "block_bbox": [96, 899, 1093, 977],
+                    "block_content": "CONCLUSION: Conclusion text.",
+                },
+                {
+                    "block_id": 8,
+                    "block_label": "text",
+                    "block_order": 7,
+                    "block_bbox": [97, 1000, 872, 1025],
+                    "block_content": "Keywords one two three",
+                },
+                {
+                    "block_id": 9,
+                    "block_label": "paragraph_title",
+                    "block_order": 8,
+                    "block_bbox": [98, 1062, 246, 1086],
+                    "block_content": "1 Introduction",
+                },
+                {
+                    "block_id": 10,
+                    "block_label": "text",
+                    "block_order": 9,
+                    "block_bbox": [96, 1113, 582, 1190],
+                    "block_content": "Introduction body.",
+                },
             ],
         },
         "inputImage": "",
@@ -846,7 +1116,14 @@ def test_stabilize_renderer_output_starts_with_title() -> None:
 
     md = render_fulltext_markdown(
         structured_blocks=[
-            {"paper_id": "KEY001", "page": 1, "block_id": "b1", "role": "body_paragraph", "text": "Body.", "render_default": True},
+            {
+                "paper_id": "KEY001",
+                "page": 1,
+                "block_id": "b1",
+                "role": "body_paragraph",
+                "text": "Body.",
+                "render_default": True,
+            },
         ],
         resolved_metadata={"title": {"value": "The Paper Title"}},
         figure_inventory={},
@@ -854,3 +1131,755 @@ def test_stabilize_renderer_output_starts_with_title() -> None:
     )
 
     assert md.startswith("# The Paper Title")
+
+
+def test_structured_renderer_no_duplicate_authors() -> None:
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+
+    structured_blocks = [
+        {
+            "paper_id": "KEY001",
+            "page": 1,
+            "block_id": "b1",
+            "role": "authors",
+            "text": "Alice Smith, Bob Jones",
+            "render_default": True,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 1,
+            "block_id": "b2",
+            "role": "abstract_heading",
+            "text": "Abstract",
+            "render_default": True,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 1,
+            "block_id": "b3",
+            "role": "abstract_body",
+            "text": "Abstract body text.",
+            "render_default": True,
+        },
+    ]
+    resolved_metadata = {
+        "title": {"value": "Test Paper"},
+        "authors": {"value": ["Alice Smith", "Bob Jones"]},
+        "journal": {"value": "Test Journal"},
+        "year": {"value": 2025},
+        "doi": {"value": "10.1000/xyz"},
+    }
+
+    md = render_fulltext_markdown(
+        structured_blocks=structured_blocks,
+        resolved_metadata=resolved_metadata,
+        figure_inventory={},
+        table_inventory={},
+    )
+
+    assert md.count("Alice Smith") == 1
+    assert md.count("Bob Jones") == 1
+
+
+def test_structured_renderer_no_inline_table_html() -> None:
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+
+    structured_blocks = [
+        {
+            "paper_id": "KEY001",
+            "page": 1,
+            "block_id": "b1",
+            "role": "body_paragraph",
+            "text": "The results are shown below:\n<table><tr><td>Tabular data</td></tr></table>",
+            "render_default": True,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 1,
+            "block_id": "b2",
+            "role": "body_paragraph",
+            "text": "Body text after table.",
+            "render_default": True,
+        },
+    ]
+
+    md = render_fulltext_markdown(
+        structured_blocks=structured_blocks,
+        resolved_metadata={},
+        figure_inventory={},
+        table_inventory={},
+    )
+
+    assert "<table>" not in md
+
+
+def test_structured_renderer_backmatter_sections() -> None:
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+
+    structured_blocks = [
+        {
+            "paper_id": "KEY001",
+            "page": 3,
+            "block_id": "b1",
+            "role": "backmatter_heading",
+            "text": "Author contributions",
+            "render_default": True,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 3,
+            "block_id": "b2",
+            "role": "backmatter_body",
+            "text": "AS and BJ designed the study. CJ collected the data.",
+            "render_default": True,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 3,
+            "block_id": "b3",
+            "role": "backmatter_heading",
+            "text": "Funding",
+            "render_default": True,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 3,
+            "block_id": "b4",
+            "role": "backmatter_body",
+            "text": "This work was supported by NIH grant R01-XX.",
+            "render_default": True,
+        },
+    ]
+
+    md = render_fulltext_markdown(
+        structured_blocks=structured_blocks,
+        resolved_metadata={},
+        figure_inventory={},
+        table_inventory={},
+    )
+
+    assert "## Author contributions" in md
+    assert "AS and BJ designed the study" in md
+    assert "## Funding" in md
+
+
+def test_structured_renderer_references_as_heading() -> None:
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+
+    structured_blocks = [
+        {
+            "paper_id": "KEY001",
+            "page": 5,
+            "block_id": "b1",
+            "role": "reference_heading",
+            "text": "References",
+            "render_default": True,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 5,
+            "block_id": "b2",
+            "role": "reference_item",
+            "text": "Smith J, Jones B. (2024) A study on something. Journal of Examples.",
+            "render_default": True,
+        },
+    ]
+
+    md = render_fulltext_markdown(
+        structured_blocks=structured_blocks,
+        resolved_metadata={},
+        figure_inventory={},
+        table_inventory={},
+    )
+
+    assert "## References" in md
+
+
+def test_structured_renderer_heading_body_attachment() -> None:
+    """Headings with interleaved bodies attach correctly, not cross-wired."""
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+
+    structured_blocks = [
+        {
+            "paper_id": "KEY001",
+            "page": 22,
+            "block_id": "b1",
+            "role": "backmatter_heading",
+            "text": "Generative AI statement",
+            "render_default": True,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 22,
+            "block_id": "b2",
+            "role": "reference_heading",
+            "text": "References",
+            "render_default": True,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 22,
+            "block_id": "b3",
+            "role": "backmatter_heading",
+            "text": "Publisher's note",
+            "render_default": True,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 22,
+            "block_id": "b4",
+            "role": "backmatter_body",
+            "text": "The authors declare no AI-generated content.",
+            "render_default": True,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 22,
+            "block_id": "b5",
+            "role": "backmatter_body",
+            "text": "Springer Nature remains neutral.",
+            "render_default": True,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 22,
+            "block_id": "b6",
+            "role": "reference_item",
+            "text": "Smith J. (2024) A study.",
+            "render_default": True,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 22,
+            "block_id": "b7",
+            "role": "reference_item",
+            "text": "Jones B. (2023) Another study.",
+            "render_default": True,
+        },
+    ]
+
+    md = render_fulltext_markdown(
+        structured_blocks=structured_blocks,
+        resolved_metadata={},
+        figure_inventory={},
+        table_inventory={},
+    )
+
+    assert "## Generative AI statement" in md
+    assert "## References" in md
+    assert "## Publisher's note" in md
+
+    gen_ai_idx = md.index("## Generative AI statement")
+    refs_idx = md.index("## References")
+    pub_idx = md.index("## Publisher's note")
+    decl_idx = md.index("The authors declare no AI-generated content.")
+    springer_idx = md.index("Springer Nature remains neutral.")
+    smith_idx = md.index("Smith J. (2024) A study.")
+    jones_idx = md.index("Jones B. (2023) Another study.")
+
+    assert gen_ai_idx < decl_idx, "Generative AI body should appear after its heading"
+    assert decl_idx < pub_idx, "Generative AI body should appear before Publisher's note"
+    assert pub_idx < springer_idx, "Publisher's note body should appear after its heading"
+    assert refs_idx > springer_idx, "References should appear after all backmatter sections"
+    assert smith_idx > refs_idx and jones_idx > refs_idx, "Reference items should appear under References"
+
+
+def test_structured_renderer_mixed_column_ordering() -> None:
+    """Two-column tail page blocks resolve to correct heading-body attachment."""
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+
+    structured_blocks = [
+        {
+            "paper_id": "KEY001",
+            "page": 22,
+            "block_id": "b1",
+            "role": "reference_heading",
+            "text": "References",
+            "render_default": True,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 22,
+            "block_id": "b2",
+            "role": "backmatter_heading",
+            "text": "Generative AI statement",
+            "render_default": True,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 22,
+            "block_id": "b3",
+            "role": "backmatter_heading",
+            "text": "Publisher's note",
+            "render_default": True,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 22,
+            "block_id": "b4",
+            "role": "reference_item",
+            "text": "Smith J. (2024) A study.",
+            "render_default": True,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 22,
+            "block_id": "b5",
+            "role": "reference_item",
+            "text": "Jones B. (2023) Another study.",
+            "render_default": True,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 22,
+            "block_id": "b6",
+            "role": "backmatter_body",
+            "text": "The authors declare no AI-generated content.",
+            "render_default": True,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 22,
+            "block_id": "b7",
+            "role": "backmatter_body",
+            "text": "Springer Nature remains neutral.",
+            "render_default": True,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 22,
+            "block_id": "b8",
+            "role": "backmatter_heading",
+            "text": "Supplementary material",
+            "render_default": True,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 22,
+            "block_id": "b9",
+            "role": "backmatter_body",
+            "text": "Supplementary data are available online.",
+            "render_default": True,
+        },
+    ]
+
+    md = render_fulltext_markdown(
+        structured_blocks=structured_blocks,
+        resolved_metadata={},
+        figure_inventory={},
+        table_inventory={},
+    )
+
+    gen_ai_idx = md.index("## Generative AI statement")
+    refs_idx = md.index("## References")
+    pub_idx = md.index("## Publisher's note")
+    supp_idx = md.index("## Supplementary material")
+    decl_idx = md.index("The authors declare no AI-generated content.")
+    springer_idx = md.index("Springer Nature remains neutral.")
+    smith_idx = md.index("Smith J. (2024) A study.")
+
+    assert gen_ai_idx < decl_idx, "Generative AI body after its heading"
+    assert decl_idx < pub_idx, "Generative AI body before Publisher's note"
+    assert pub_idx < springer_idx, "Publisher's note body after its heading"
+    assert springer_idx < supp_idx, "Supplementary material after Publisher's note"
+    assert refs_idx > supp_idx, "References should appear after all backmatter sections"
+    assert smith_idx > refs_idx, "Reference items should appear under References"
+    assert md.index("Supplementary data are available online.") > supp_idx, (
+        "Supplementary body under Supplementary heading"
+    )
+
+
+def test_tail_zone_noise_band_guard() -> None:
+    """Mixed tail page: backmatter body in left column below ref items gets stolen.
+
+    Block order simulates a real OCR scan where a backmatter_body block
+    lands in the left column (from a left-column backmatter heading like
+    "Author contributions"), interleaved AFTER reference_items in column-sorted
+    order.  The FIFO heading_queue has no heading to match it, so ref_section
+    absorbs it incorrectly.
+    """
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+
+    structured_blocks = [
+        {
+            "paper_id": "KEY001",
+            "page": 22,
+            "block_id": "b1",
+            "role": "reference_heading",
+            "text": "References",
+            "render_default": True,
+            "block_bbox": [80, 100, 520, 140],
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 22,
+            "block_id": "b2",
+            "role": "reference_item",
+            "text": "Smith J. (2024) A study on electric fields.",
+            "render_default": True,
+            "block_bbox": [80, 180, 520, 220],
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 22,
+            "block_id": "b3",
+            "role": "reference_item",
+            "text": "Jones B. (2023) Another study on galvanotaxis.",
+            "render_default": True,
+            "block_bbox": [80, 260, 520, 300],
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 22,
+            "block_id": "b4",
+            "role": "backmatter_body",
+            "text": "AS and BJ designed the study. CJ collected the data.",
+            "render_default": True,
+            "block_bbox": [80, 340, 520, 380],
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 22,
+            "block_id": "b5",
+            "role": "backmatter_heading",
+            "text": "Author contributions",
+            "render_default": True,
+            "block_bbox": [620, 50, 1100, 90],
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 22,
+            "block_id": "b6",
+            "role": "backmatter_heading",
+            "text": "Generative AI statement",
+            "render_default": True,
+            "block_bbox": [620, 400, 1100, 440],
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 22,
+            "block_id": "b7",
+            "role": "backmatter_body",
+            "text": "The authors declare no AI-generated content.",
+            "render_default": True,
+            "block_bbox": [620, 480, 1100, 520],
+        },
+    ]
+
+    md = render_fulltext_markdown(
+        structured_blocks=structured_blocks,
+        resolved_metadata={},
+        figure_inventory={},
+        table_inventory={},
+    )
+
+    assert "## Author contributions" in md
+    assert "## References" in md
+    assert "## Generative AI statement" in md
+
+    gen_ai_idx = md.index("## Generative AI statement")
+    refs_idx = md.index("## References")
+    decl_idx = md.index("The authors declare no AI-generated content.")
+    contributions_idx = md.index("AS and BJ designed the study")
+
+    assert contributions_idx < refs_idx, (
+        "Author contributions body should appear BEFORE References, not absorbed into ref_section"
+    )
+    assert gen_ai_idx < decl_idx < refs_idx, "Gen AI section (heading + body) before References, body after its heading"
+
+
+def test_tail_zone_supplementary_material_not_noise() -> None:
+    """Supplementary material body in usable middle band is not treated as noise."""
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+
+    structured_blocks = [
+        {
+            "paper_id": "KEY001",
+            "page": 22,
+            "block_id": "b1",
+            "role": "reference_heading",
+            "text": "References",
+            "render_default": True,
+            "block_bbox": [80, 450, 520, 490],
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 22,
+            "block_id": "b2",
+            "role": "reference_item",
+            "text": "Smith J. (2024) A study.",
+            "render_default": True,
+            "block_bbox": [80, 520, 520, 560],
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 22,
+            "block_id": "b3",
+            "role": "backmatter_heading",
+            "text": "Supplementary material",
+            "render_default": True,
+            "block_bbox": [620, 120, 1100, 160],
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 22,
+            "block_id": "b4",
+            "role": "backmatter_body",
+            "text": "Supplementary material body in the middle band of the page.",
+            "render_default": True,
+            "block_bbox": [620, 300, 1100, 350],
+        },
+    ]
+
+    md = render_fulltext_markdown(
+        structured_blocks=structured_blocks,
+        resolved_metadata={},
+        figure_inventory={},
+        table_inventory={},
+    )
+
+    assert "## Supplementary material" in md
+    assert "Supplementary material body in the middle band" in md
+
+
+def test_tail_candidate_overreach_does_not_absorb_late_body() -> None:
+    """Late body paragraphs are NOT absorbed into backmatter sections.
+
+    The FIFO fallback in _reorder_tail_run_fifo treats body_paragraph as
+    attachable to the heading_queue, causing late body text to be pulled
+    into the backmatter section instead of appearing before it.
+    """
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+
+    structured_blocks = [
+        {
+            "paper_id": "KEY001",
+            "page": 5,
+            "block_id": "b1",
+            "role": "body_paragraph",
+            "text": "In conclusion, this study demonstrates that the proposed approach achieves significant improvement across all evaluated metrics, outperforming existing methods in both accuracy and efficiency.",
+            "render_default": True,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 5,
+            "block_id": "b2",
+            "role": "body_paragraph",
+            "text": "Future work should investigate the applicability of this framework to larger patient cohorts and broader clinical contexts.",
+            "render_default": True,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 5,
+            "block_id": "b3",
+            "role": "backmatter_heading",
+            "text": "Funding",
+            "render_default": True,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 5,
+            "block_id": "b4",
+            "role": "backmatter_body",
+            "text": "This work was supported by NIH grant R01-XX and NSF grant DMR-1234.",
+            "render_default": True,
+        },
+    ]
+
+    md = render_fulltext_markdown(
+        structured_blocks=structured_blocks,
+        resolved_metadata={},
+        figure_inventory={},
+        table_inventory={},
+    )
+
+    body_idx = md.index("In conclusion, this study demonstrates")
+    funding_idx = md.index("## Funding")
+
+    assert body_idx < funding_idx, (
+        "Late body paragraphs should appear before backmatter sections, not absorbed into them"
+    )
+
+
+def test_cross_page_funding_continuation_preserves_order() -> None:
+    """Funding body continuation on next page stays before References.
+
+    Cross-page continuation of a backmatter body (tail_candidate_body on
+    a subsequent page) should be placed after its heading and before any
+    References section.  Current FIFO fallback absorbs it into the
+    reference zone when reference_heading precedes it.
+    """
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+
+    structured_blocks = [
+        {
+            "paper_id": "KEY001",
+            "page": 5,
+            "block_id": "b1",
+            "role": "backmatter_heading",
+            "text": "Funding",
+            "render_default": True,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 5,
+            "block_id": "b2",
+            "role": "backmatter_body",
+            "text": "This work was supported by NIH grant R01-XX. Additional funding was provided by NSF grant DMR-1234.",
+            "render_default": True,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 6,
+            "block_id": "b3",
+            "role": "reference_heading",
+            "text": "References",
+            "render_default": True,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 6,
+            "block_id": "b4",
+            "role": "tail_candidate_body",
+            "text": "The funders had no role in study design, data collection, analysis, decision to publish, or preparation of the manuscript.",
+            "render_default": True,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 6,
+            "block_id": "b5",
+            "role": "reference_item",
+            "text": "Smith J, Jones B. (2024) A study on electric fields. Journal of Bioelectricity.",
+            "render_default": True,
+        },
+    ]
+
+    md = render_fulltext_markdown(
+        structured_blocks=structured_blocks,
+        resolved_metadata={},
+        figure_inventory={},
+        table_inventory={},
+    )
+
+    funding_idx = md.index("## Funding")
+    continuation_idx = md.index("The funders had no role")
+    refs_idx = md.index("## References")
+
+    assert funding_idx < continuation_idx, "Funding continuation should appear after its heading"
+    assert continuation_idx < refs_idx, (
+        "Funding continuation should appear before References, not absorbed into the reference section"
+    )
+
+
+def test_mixed_tail_page_keeps_late_body_out_of_funding_and_attaches_real_funding() -> None:
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+
+    structured_blocks = [
+        {
+            "paper_id": "KEY001",
+            "page": 21,
+            "block_id": "b1",
+            "role": "body_paragraph",
+            "text": "Late conclusion paragraph that should stay in the main body before any tail sections.",
+            "render_default": True,
+            "block_bbox": [80, 240, 520, 360],
+            "page_width": 1200,
+            "page_height": 1700,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 21,
+            "block_id": "b2",
+            "role": "backmatter_heading",
+            "text": "Funding",
+            "render_default": True,
+            "block_bbox": [650, 1200, 900, 1240],
+            "page_width": 1200,
+            "page_height": 1700,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 21,
+            "block_id": "b3",
+            "role": "body_paragraph",
+            "text": "This work was supported by Grant A and Grant B.",
+            "render_default": True,
+            "block_bbox": [650, 1280, 1120, 1500],
+            "page_width": 1200,
+            "page_height": 1700,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 22,
+            "block_id": "b4",
+            "role": "body_paragraph",
+            "text": "Additional funding continuation text from the next page.",
+            "render_default": True,
+            "block_bbox": [80, 160, 520, 320],
+            "page_width": 1200,
+            "page_height": 1700,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 22,
+            "block_id": "b5",
+            "role": "backmatter_heading",
+            "text": "Acknowledgments",
+            "render_default": True,
+            "block_bbox": [80, 420, 420, 460],
+            "page_width": 1200,
+            "page_height": 1700,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 22,
+            "block_id": "b6",
+            "role": "backmatter_body",
+            "text": "We thank our collaborators.",
+            "render_default": True,
+            "block_bbox": [80, 500, 520, 620],
+            "page_width": 1200,
+            "page_height": 1700,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 22,
+            "block_id": "b7",
+            "role": "reference_heading",
+            "text": "References",
+            "render_default": True,
+            "block_bbox": [80, 700, 320, 740],
+            "page_width": 1200,
+            "page_height": 1700,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 22,
+            "block_id": "b8",
+            "role": "reference_item",
+            "text": "Smith J. (2024) Tail ordering paper.",
+            "render_default": True,
+            "block_bbox": [80, 780, 520, 840],
+            "page_width": 1200,
+            "page_height": 1700,
+        },
+    ]
+
+    md = render_fulltext_markdown(
+        structured_blocks=structured_blocks,
+        resolved_metadata={},
+        figure_inventory={},
+        table_inventory={},
+        page_count=22,
+    )
+
+    late_body_idx = md.index("Late conclusion paragraph that should stay")
+    funding_idx = md.index("## Funding")
+    funding_body_idx = md.index("This work was supported by Grant A")
+    funding_cont_idx = md.index("Additional funding continuation text")
+    ack_idx = md.index("## Acknowledgments")
+    refs_idx = md.index("## References")
+
+    assert late_body_idx < funding_idx, "Late body text must remain before Funding"
+    assert funding_idx < funding_body_idx < funding_cont_idx, "Funding body and continuation must stay under Funding"
+    assert funding_cont_idx < ack_idx < refs_idx, "Funding continuation must complete before later tail sections"

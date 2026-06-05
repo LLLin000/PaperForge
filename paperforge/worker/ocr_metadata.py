@@ -8,6 +8,19 @@ from typing import Any
 from paperforge.core.io import write_json
 
 
+def _clean_author_display(author_text: str) -> str:
+    text = author_text
+    text = re.sub(r'\$\s+\^', '$^', text)
+    text = re.sub(r'\^\s+\{', '^{', text)
+    text = re.sub(r'\}\s+\$', '}$', text)
+    text = re.sub(r',(\s*)and(\s*)', r', and ', text)
+    text = re.sub(r';(\s*)and(\s*)', r'; and ', text)
+    text = re.sub(r'([,;:])\1+', r'\1', text)
+    text = re.sub(r'\s{2,}', ' ', text)
+    text = text.strip().strip(';, ')
+    return text.strip()
+
+
 def extract_frontmatter_candidates(blocks_structured_path: Path) -> dict[str, Any]:
     candidates: dict[str, Any] = {
         "title": None,
@@ -61,6 +74,25 @@ def resolve_metadata(
     # --- title ---
     zotero_title = source_metadata.get("title", "")
     ocr_title = frontmatter_candidates.get("title", "")
+    _BACKMATTER_TITLE_DENY_LIST = {
+        "generative ai statement",
+        "acknowledgments",
+        "acknowledgements",
+        "funding",
+        "conflict of interest",
+        "competing interests",
+        "data availability",
+        "supplementary materials",
+        "supplementary material",
+        "author contributions",
+        "declaration of competing interest",
+        "credit authorship contribution statement",
+        "ethical statement",
+        "ethics statement",
+        "institutional review board",
+    }
+    if ocr_title and ocr_title.lower().strip() in _BACKMATTER_TITLE_DENY_LIST:
+        ocr_title = ""
     title_entry: dict[str, Any] = {
         "value": zotero_title or ocr_title,
         "source": "zotero" if zotero_title else ("ocr_frontmatter" if ocr_title else "unknown"),
@@ -68,11 +100,13 @@ def resolve_metadata(
     title_entry["confidence"] = 0.99 if zotero_title else (0.7 if ocr_title else 0.3)
     alternatives = []
     if ocr_title and ocr_title != zotero_title:
-        alternatives.append({
-            "value": ocr_title,
-            "source": "ocr_frontmatter",
-            "confidence": 0.7,
-        })
+        alternatives.append(
+            {
+                "value": ocr_title,
+                "source": "ocr_frontmatter",
+                "confidence": 0.7,
+            }
+        )
     if alternatives:
         title_entry["alternatives"] = alternatives
     resolved["title"] = title_entry
@@ -81,8 +115,7 @@ def resolve_metadata(
     zotero_authors = source_metadata.get("authors", [])
     ocr_authors_text = frontmatter_candidates.get("authors_text", "")
     ocr_author_list = (
-        [a.strip() for a in re.split(r",\s+(?=[A-Z])", ocr_authors_text) if a.strip()]
-        if ocr_authors_text else []
+        [a.strip() for a in re.split(r",\s+(?=[A-Z])", ocr_authors_text) if a.strip()] if ocr_authors_text else []
     )
 
     if isinstance(zotero_authors, list) and len(zotero_authors) > 0:
@@ -103,6 +136,14 @@ def resolve_metadata(
             "source": "unknown",
             "confidence": 0.3,
         }
+
+    # --- authors_display (cleaned string for UI) ---
+    if isinstance(zotero_authors, list) and len(zotero_authors) > 0:
+        resolved["authors_display"] = ", ".join(zotero_authors)
+    elif ocr_authors_text:
+        resolved["authors_display"] = _clean_author_display(ocr_authors_text)
+    else:
+        resolved["authors_display"] = ""
 
     # --- year ---
     zotero_year = source_metadata.get("year", 0)

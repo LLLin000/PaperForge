@@ -1782,12 +1782,21 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
     ocr_asset_root = ocr_root / "assets"
     ocr_render_root = ocr_root / "render"
 
+    page_dimensions_by_page: dict[int, tuple[int, int]] = {}
+    for block in structured:
+        page = int(block.get("page", 0) or 0)
+        width = int(block.get("page_width", 0) or 0)
+        height = int(block.get("page_height", 0) or 0)
+        if page and width and height and page not in page_dimensions_by_page:
+            page_dimensions_by_page[page] = (width, height)
+
     extract_and_write_objects(
         pdf_path=source_pdf_path,
         figure_inventory=figure_inventory,
         table_inventory=table_inventory,
         asset_root=ocr_asset_root,
         render_root=ocr_render_root,
+        page_dimensions_by_page=page_dimensions_by_page,
     )
 
     # --- Phase 3: structured renderer ---
@@ -1798,6 +1807,7 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
         resolved_metadata=resolved,
         figure_inventory=figure_inventory,
         table_inventory=table_inventory,
+        page_count=page_num,
     )
     write_render_outputs(
         render_root=ocr_root / "render",
