@@ -57,6 +57,25 @@ def detect_ocr_runtime_preflight_issues(dirty_files: list[str]) -> list[str]:
     return warnings
 
 
+def summarize_ocr_version_actions(papers: list[dict]) -> dict:
+    """Summarize OCR version actions across a list of paper version states.
+
+    Args:
+        papers: List of paper dicts with derived_stale and raw_upgradable flags.
+
+    Returns:
+        Dict with derived_rebuild_count, raw_upgrade_count, and paper list.
+    """
+    derived_stale = [p for p in papers if p.get("derived_stale")]
+    raw_upgradable = [p for p in papers if p.get("raw_upgradable")]
+    return {
+        "derived_rebuild_count": len(derived_stale),
+        "raw_upgrade_count": len(raw_upgradable),
+        "derived_stale_keys": [p["zotero_key"] for p in derived_stale],
+        "raw_upgrade_keys": [p["zotero_key"] for p in raw_upgradable],
+    }
+
+
 class SyncService:
     """Orchestrates the sync lifecycle: load BBT exports, match entries, generate notes.
 
@@ -363,6 +382,63 @@ class SyncService:
                 total = sum(1 for _ in paths["literature"].rglob("*.md")) if paths["literature"].exists() else 0
                 print(f"index-refresh: {total} formal note(s) in literature")
 
+            # ── Phase 5: OCR version scan ──
+            ocr_runtime_summary = {
+                "derived_rebuild_count": 0, "raw_upgrade_count": 0,
+                "derived_stale_keys": [], "raw_upgrade_keys": [],
+            }
+            try:
+                from paperforge.core.io import read_json
+                from paperforge.worker._utils import pipeline_paths
+                from paperforge.worker.ocr_versions import (
+                    classify_version_state,
+                    expected_derived_payload,
+                    expected_raw_payload,
+                )
+
+                ocr_root = pipeline_paths(self.vault)["ocr"]
+                if ocr_root.exists():
+                    papers: list[dict] = []
+                    for paper_dir in ocr_root.iterdir():
+                        if not paper_dir.is_dir():
+                            continue
+                        meta_path = paper_dir / "meta.json"
+                        if not meta_path.exists():
+                            continue
+                        meta = read_json(meta_path)
+                        raw_ver = meta.get("raw_version", {})
+                        state = classify_version_state(
+                            meta=meta,
+                            expected_raw=expected_raw_payload(ocr_model=raw_ver.get("ocr_model", "unknown")),
+                            expected_derived=expected_derived_payload(),
+                        )
+                        if state["has_version_state"]:
+                            papers.append({
+                                "zotero_key": paper_dir.name,
+                                "derived_stale": state["derived_stale"],
+                                "raw_upgradable": state["raw_upgradable"],
+                                "derived_reasons": state["derived_reasons"],
+                                "raw_reasons": state["raw_reasons"],
+                            })
+                    ocr_runtime_summary = summarize_ocr_version_actions(papers)
+
+                    # Trigger non-blocking derived rebuild for stale papers
+                    if ocr_runtime_summary["derived_stale_keys"]:
+                        from paperforge.worker.ocr_rebuild import run_derived_rebuild_for_keys
+                        rebuild_result = run_derived_rebuild_for_keys(
+                            self.vault, ocr_runtime_summary["derived_stale_keys"]
+                        )
+                        ocr_runtime_summary["derived_rebuilt"] = rebuild_result["rebuild_count"]
+                        if not json_output:
+                            print(f"ocr: rebuilt {rebuild_result['rebuild_count']} derived-stale paper(s)")
+
+                    if ocr_runtime_summary["raw_upgrade_count"] > 0 and not json_output:
+                        msg = f"ocr: {ocr_runtime_summary['raw_upgrade_count']} paper(s) can be upgraded"
+                        print(f"{msg} (redo available)")
+
+            except Exception as exc:
+                logger.warning("ocr version scan skipped: %s", exc)
+
         is_ok = selection_result.get("failed", 0) == 0 and not selection_result.get("errors")
 
         result = PFResult(
@@ -373,6 +449,7 @@ class SyncService:
                 "selection": selection_result,
                 "index": {"updated": index_count, "orphaned_cleaned": orphaned, "flat_cleaned": flat_cleaned},
                 "prune": {"preview": _prune_preview} if _prune_preview else None,
+                "ocr_runtime": ocr_runtime_summary,
             },
         )
 
