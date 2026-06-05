@@ -82,7 +82,7 @@ def classify_signals(query: str) -> QuerySignals:
     title_like_tokens: list[str] = []
     content_terms: list[str] = []
 
-    lowered = [t.lower() for t in raw_tokens]
+    _lowered = [t.lower() for t in raw_tokens]
     content_keywords = {
         "hz",
         "v/cm",
@@ -179,10 +179,19 @@ def build_query_plan(query: str, intent: str) -> dict:
             ]
         )
         suggested_modes = [
-            {"mode": "ocr_evidence_layer", "description": "Check OCR role-index for exact evidence blocks (body, captions, references)."},
-            {"mode": "metadata_narrow", "description": "Narrow by domain/year/author for targeted evidence verification."},
-            {"mode": "read_fulltext", "description": "Read structured fulltext for context around evidence hits."},
-        ]  # fmt: skip
+            {
+                "mode": "ocr_evidence_layer",
+                "description": "Check OCR role-index for exact evidence blocks.",
+            },
+            {
+                "mode": "metadata_narrow",
+                "description": "Narrow by domain/year/author for targeted verification.",
+            },
+            {
+                "mode": "read_fulltext",
+                "description": "Read structured fulltext for evidence context.",
+            },
+        ]
     elif intent == "content":
         content_query = (
             " ".join(signals.content_terms or signals.title_like_tokens or tokenize(query)[:6]).strip() or query.strip()

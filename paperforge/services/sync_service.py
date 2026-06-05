@@ -89,10 +89,7 @@ def summarize_ocr_runtime_followups(
     derived_stale = [p for p in papers if p.get("derived_stale") and not p.get("raw_upgradable")]
     raw_upgradable = [p for p in papers if p.get("raw_upgradable")]
 
-    if dirty_runtime_files:
-        mode = "suppressed_dirty_runtime"
-    else:
-        mode = "deferred"
+    mode = "suppressed_dirty_runtime" if dirty_runtime_files else "deferred"
 
     result: dict = {
         "derived_rebuild_count": len(derived_stale),
