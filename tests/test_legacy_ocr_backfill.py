@@ -67,3 +67,86 @@ def test_backfill_from_result_rebuilds_derived_artifacts(tmp_path) -> None:
     state = classify_legacy_ocr_state({"zotero_key": "LEGACY001", "ocr_status": "done"}, ocr_dir=ocr_dir)
     assert state["is_legacy"] is True
     assert state["has_result_json"] is True
+
+
+def test_backfill_from_result_rebuilds_all_derived_artifacts(tmp_path) -> None:
+    from paperforge.worker.ocr_rebuild import backfill_from_result
+
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    (vault / "paperforge.json").write_text(
+        '{"vault_config": {"system_dir": "System", "resources_dir": "Resources"}}',
+        encoding="utf-8",
+    )
+    ocr_dir = vault / "System" / "PaperForge" / "ocr" / "BFL002"
+    ocr_dir.mkdir(parents=True)
+    (ocr_dir / "meta.json").write_text(
+        '{"zotero_key":"BFL002","ocr_status":"done","ocr_model":"PaddleOCR"}',
+        encoding="utf-8",
+    )
+    (ocr_dir / "json").mkdir(parents=True)
+    (ocr_dir / "json" / "result.json").write_text(
+        '{"pages": [{"layoutParsingResults": [{"prunedResult": {"parsing_res_list": []}}]}]}',
+        encoding="utf-8",
+    )
+
+    result = backfill_from_result(vault, "BFL002")
+
+    assert result["backfill_status"] == "done"
+    assert result["paper_key"] == "BFL002"
+    # Verify derived artifacts exist
+    assert (ocr_dir / "index" / "role-index.json").exists()
+    assert (ocr_dir / "health" / "ocr_health.json").exists()
+    assert (ocr_dir / "render" / "fulltext.md").exists()
+    # Verify backfill metadata
+    meta = __import__("json").loads((ocr_dir / "meta.json").read_text(encoding="utf-8"))
+    assert meta.get("is_backfilled") is True
+    assert "backfilled_at" in meta
+
+
+def test_backfill_from_result_skips_if_no_result_json(tmp_path) -> None:
+    from paperforge.worker.ocr_rebuild import backfill_from_result
+
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    (vault / "paperforge.json").write_text(
+        '{"vault_config": {"system_dir": "System", "resources_dir": "Resources"}}',
+        encoding="utf-8",
+    )
+    ocr_dir = vault / "System" / "PaperForge" / "ocr" / "NODATA"
+    ocr_dir.mkdir(parents=True)
+    (ocr_dir / "meta.json").write_text(
+        '{"zotero_key":"NODATA","ocr_status":"done"}',
+        encoding="utf-8",
+    )
+
+    result = backfill_from_result(vault, "NODATA")
+
+    assert result["backfill_status"] == "skipped_no_result"
+
+
+def test_backfill_from_result_handles_list_format(tmp_path) -> None:
+    """Handle the case where result.json is already a list (current format)."""
+    from paperforge.worker.ocr_rebuild import backfill_from_result
+
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    (vault / "paperforge.json").write_text(
+        '{"vault_config": {"system_dir": "System", "resources_dir": "Resources"}}',
+        encoding="utf-8",
+    )
+    ocr_dir = vault / "System" / "PaperForge" / "ocr" / "LIST001"
+    ocr_dir.mkdir(parents=True)
+    (ocr_dir / "meta.json").write_text(
+        '{"zotero_key":"LIST001","ocr_status":"done","ocr_model":"PaddleOCR"}',
+        encoding="utf-8",
+    )
+    (ocr_dir / "json").mkdir(parents=True)
+    (ocr_dir / "json" / "result.json").write_text(
+        '[{"layoutParsingResults": [{"prunedResult": {"parsing_res_list": []}}]}]',
+        encoding="utf-8",
+    )
+
+    result = backfill_from_result(vault, "LIST001")
+
+    assert result["backfill_status"] == "done"
