@@ -1692,12 +1692,11 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
     paths = pipeline_paths(vault)
     ocr_root = paths["ocr"] / key
     json_dir = ocr_root / "json"
-    assets_dir = ocr_root / "assets"
-    images_dir = ocr_root / "images"  # legacy compat mirror
+    images_dir = ocr_root / "images"
     page_cache_dir = ocr_root / "pages"
     meta_path = ocr_root / "meta.json"
     json_dir.mkdir(parents=True, exist_ok=True)
-    assets_dir.mkdir(parents=True, exist_ok=True)
+    images_dir.mkdir(parents=True, exist_ok=True)
     page_cache_dir.mkdir(parents=True, exist_ok=True)
     page_num = 0
     meta = read_json(meta_path) if meta_path.exists() else {}
@@ -1709,23 +1708,11 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
         for page_payload in all_results:
             for res in page_payload.get("layoutParsingResults", []):
                 page_num += 1
-                render_page_blocks(vault, page_num, res, assets_dir, page_cache_dir, pdf_doc=pdf_doc)
+                render_page_blocks(vault, page_num, res, images_dir, page_cache_dir, pdf_doc=pdf_doc)
     finally:
         if pdf_doc is not None:
             pdf_doc.close()
     write_json(json_dir / "result.json", all_results)
-
-    # Mirror assets/ to images/ for legacy compatibility
-    if assets_dir.exists():
-        images_dir.mkdir(parents=True, exist_ok=True)
-        for img in assets_dir.rglob("*"):
-            if img.is_file():
-                rel = img.relative_to(assets_dir)
-                dst = images_dir / rel
-                dst.parent.mkdir(parents=True, exist_ok=True)
-                if not dst.exists():
-                    import shutil
-                    shutil.copy2(img, dst)
 
     # --- Phase 1: raw metadata and source metadata ---
     artifacts = artifact_paths_for_key(vault, key)
@@ -1864,6 +1851,7 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
         meta["legacy_images_path"] = str(images_dir.relative_to(vault)).replace("\\", "/")
     except ValueError:
         meta["legacy_images_path"] = str(images_dir)
+    meta["path_map"] = {"structured_truth": "assets/", "legacy_compat": "images/"}
     write_json(meta_path, meta)
 
     fulltext_path = ocr_root / "fulltext.md"
