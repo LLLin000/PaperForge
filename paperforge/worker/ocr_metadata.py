@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 from typing import Any
 
@@ -79,7 +80,10 @@ def resolve_metadata(
     # --- authors ---
     zotero_authors = source_metadata.get("authors", [])
     ocr_authors_text = frontmatter_candidates.get("authors_text", "")
-    ocr_author_list = [a.strip() for a in ocr_authors_text.split(",") if a.strip()] if ocr_authors_text else []
+    ocr_author_list = (
+        [a.strip() for a in re.split(r",\s+(?=[A-Z])", ocr_authors_text) if a.strip()]
+        if ocr_authors_text else []
+    )
 
     if isinstance(zotero_authors, list) and len(zotero_authors) > 0:
         resolved["authors"] = {
