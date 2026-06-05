@@ -41,3 +41,20 @@ def test_dirty_runtime_files_suppress_auto_derived_rebuild() -> None:
 
     assert with_dirty["derived_rebuild_mode"] == "suppressed_dirty_runtime"
     assert with_dirty["suppressed_keys"] == ["A"]
+
+
+def test_sync_legacy_scan_detects_papers_without_version_state() -> None:
+    """Sync's OCR runtime scan should identify legacy papers
+    that have ocr_status=done but no version state."""
+    from paperforge.services.sync_service import summarize_ocr_runtime_followups
+
+    summary = summarize_ocr_runtime_followups(
+        papers=[
+            {"zotero_key": "LEGACY", "derived_stale": False, "raw_upgradable": False, "is_legacy": True},
+            {"zotero_key": "MODERN", "derived_stale": False, "raw_upgradable": False, "is_legacy": False},
+            {"zotero_key": "STALE", "derived_stale": True, "raw_upgradable": False, "is_legacy": False},
+        ]
+    )
+
+    assert summary["legacy_count"] == 1
+    assert summary["legacy_keys"] == ["LEGACY"]
