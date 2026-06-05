@@ -44,21 +44,15 @@ def build_version_payload(
     result_json_hash: str,
     ocr_model: str,
 ) -> dict:
+    from paperforge.worker.ocr_versions import expected_derived_payload, expected_raw_payload
     return {
         "raw_version": {
-            "ocr_provider": "PaddleOCR",
-            "ocr_model": ocr_model,
-            "ocr_raw_schema_version": "1.0.0",
+            **expected_raw_payload(ocr_model=ocr_model),
             "pdf_fingerprint": pdf_fingerprint,
             "result_json_hash": result_json_hash,
         },
         "derived_version": {
-            "canonical_block_version": "1.0.0",
-            "structure_version": "1.0.0",
-            "metadata_resolver_version": "0.0.0-phase1",
-            "asset_extractor_version": "0.0.0-phase1",
-            "renderer_version": "1.0.0-compat",
-            "doctor_version": "0.0.0-phase1",
+            **expected_derived_payload(),
         },
     }
 

@@ -1827,6 +1827,17 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
     )
     meta["raw_version"] = version_payload["raw_version"]
     meta["derived_version"] = version_payload["derived_version"]
+
+    from paperforge.worker.ocr_versions import classify_version_state, expected_raw_payload, expected_derived_payload
+
+    state = classify_version_state(
+        meta=meta,
+        expected_raw=expected_raw_payload(ocr_model=meta.get("raw_version", {}).get("ocr_model", "unknown")),
+        expected_derived=expected_derived_payload(),
+    )
+    meta["raw_upgradable"] = state["raw_upgradable"]
+    meta["derived_stale"] = state["derived_stale"]
+    meta["version_state_updated_at"] = __import__("datetime").datetime.now().isoformat()
     write_json(meta_path, meta)
 
     fulltext_path = ocr_root / "fulltext.md"
