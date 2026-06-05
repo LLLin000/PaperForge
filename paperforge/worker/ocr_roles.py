@@ -38,6 +38,9 @@ FRONTMATTER_NOISE = {
     "accepted",
     "published",
     "present address",
+    "supplementary material",
+    "these authors have contributed equally",
+    "publisher's note",
 }
 
 _REFERENCE_PATTERN = re.compile(
@@ -87,7 +90,8 @@ def assign_block_role(
 
     # Paddle priors
     if raw_label == "paragraph_title":
-        lower = text.strip().lower()
+        stripped = text.strip().lstrip("*•·-–—")
+        lower = stripped.lower()
         if lower in FRONTMATTER_NOISE:
             return RoleAssignment(
                 role="frontmatter_noise",
@@ -163,6 +167,20 @@ def assign_block_role(
 
     # text -> body paragraph by default, but with lower confidence
     if raw_label == "text":
+        stripped = text.strip().lstrip("*•·-–—_")
+        lower_txt = stripped.lower()
+        if any(lower_txt.startswith(n) for n in FRONTMATTER_NOISE):
+            return RoleAssignment(
+                role="frontmatter_noise",
+                confidence=0.7,
+                evidence=[f"frontmatter noise text: {text[:60]}"],
+            )
+        if _has_heading_numbering(text):
+            return RoleAssignment(
+                role="section_heading" if re.match(r"^\d+\s", text) else "subsection_heading",
+                confidence=0.65,
+                evidence=[f"numbered text block: {text[:60]}"],
+            )
         if len(text) < 20:
             return RoleAssignment(
                 role="unknown_structural",

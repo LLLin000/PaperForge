@@ -147,6 +147,41 @@ def run_derived_rebuild_for_keys(vault: Path, keys: list[str]) -> dict:
     return {"rebuild_count": rebuilt_count}
 
 
+def _enrich_meta_from_paper_note(vault: Path, key: str, meta_path: Path) -> None:
+    """Read the paper note's Zotero frontmatter and inject into meta.json.
+
+    This ensures legacy backfill captures the real title/authors/DOI from
+    Zotero rather than relying on OCR frontmatter guessing.
+    """
+    try:
+        from paperforge.worker._utils import pipeline_paths
+        paths = pipeline_paths(vault)
+        lit_dir = paths.get("literature")
+        if lit_dir and lit_dir.exists():
+            pattern = f"**/{key}*.md"
+            matches = list(lit_dir.rglob(pattern))
+            # Filter to exact key match: the note file is named <key>.md
+            note = next((m for m in matches if m.stem == key), None)
+            if note and note.exists():
+                from paperforge.adapters.obsidian_frontmatter import read_frontmatter_dict
+                content = note.read_text(encoding="utf-8", errors="replace")
+                fm = read_frontmatter_dict(content)
+                if not fm:
+                    return
+                meta = read_json(meta_path) if meta_path.exists() else {}
+                changed = False
+                for field in ("title", "authors", "year", "journal", "doi"):
+                    if field not in meta or not meta.get(field):
+                        val = fm.get(field)
+                        if val:
+                            meta[field] = val
+                            changed = True
+                if changed:
+                    write_json(meta_path, meta)
+    except Exception:
+        pass
+
+
 def backfill_from_result(vault: Path, key: str) -> dict:
     """Backfill all derived OCR artifacts from an existing result.json.
 
@@ -190,6 +225,9 @@ def backfill_from_result(vault: Path, key: str) -> dict:
         return {"backfill_status": "skipped_empty", "paper_key": key}
 
     try:
+        # Inject Zotero metadata from paper note frontmatter before postprocess
+        _enrich_meta_from_paper_note(vault, key, paper_dir / "meta.json")
+
         _, _, _, _ = postprocess_ocr_result(vault, key, all_results)
 
         # Add backfill metadata
@@ -197,6 +235,7 @@ def backfill_from_result(vault: Path, key: str) -> dict:
         meta = read_json(meta_path) if meta_path.exists() else {}
         meta["is_backfilled"] = True
         meta["backfilled_at"] = __import__("datetime").datetime.now().isoformat()
+        meta["ocr_status"] = "done"
         write_json(meta_path, meta)
 
         return {"backfill_status": "done", "paper_key": key}

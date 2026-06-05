@@ -70,20 +70,24 @@ def render_fulltext_markdown(
     figures_by_page: dict[int, list[str]] = {}
     for i, fig in enumerate(figure_inventory.get("matched_figures", [])):
         fig_id = fig.get("figure_id") or f"figure_{i + 1:03d}"
-        page = fig.get("page", 0)
+        page = fig.get("page", 0) or 1
         figures_by_page.setdefault(page, []).append(fig_id)
 
     tables_by_page: dict[int, list[str]] = {}
     for i, tbl in enumerate(table_inventory.get("tables", [])):
         if tbl.get("has_asset"):
             tbl_id = tbl.get("table_id") or f"table_{i + 1:03d}"
-            page = tbl.get("page", 0)
+            page = tbl.get("page", 0) or 1
             tables_by_page.setdefault(page, []).append(tbl_id)
 
     emitted_pages: set[int] = set()
 
     # --- body with anchored figures/tables ---
+    # Find the min and max page across ALL blocks (including suppressed)
+    all_pages = {b.get("page", 0) for b in structured_blocks if b.get("page") is not None}
+    max_page = max(all_pages) if all_pages else 0
     current_page: int | None = None
+
     for block in structured_blocks:
         if not block.get("render_default", True):
             continue
@@ -95,17 +99,19 @@ def render_fulltext_markdown(
         block_page = block.get("page")
 
         if block_page is not None and block_page != current_page:
-            # Emit objects for pages between old and new page
-            # This handles pages that had no renderable blocks (e.g. only figure_caption)
-            if current_page is not None:
-                for p in range(current_page, block_page):
-                    for fig_id in figures_by_page.get(p, []):
-                        lines.append(f"![[render/figures/{fig_id}.md]]")
-                        lines.append("")
-                    for tbl_id in tables_by_page.get(p, []):
-                        lines.append(f"![[render/tables/{tbl_id}.md]]")
-                        lines.append("")
-                    emitted_pages.add(p)
+            # Fill in page markers for any pages that had no renderable blocks
+            # (e.g. page 1 with only frontmatter_noise blocks)
+            first_new_page = (current_page or 0) + 1
+            for p in range(first_new_page, block_page):
+                lines.append(f"<!-- page {p} -->")
+                lines.append("")
+                for fig_id in figures_by_page.get(p, []):
+                    lines.append(f"![[render/figures/{fig_id}.md]]")
+                    lines.append("")
+                for tbl_id in tables_by_page.get(p, []):
+                    lines.append(f"![[render/tables/{tbl_id}.md]]")
+                    lines.append("")
+                emitted_pages.add(p)
             current_page = block_page
             lines.append(f"<!-- page {block_page} -->")
             lines.append("")
@@ -137,15 +143,23 @@ def render_fulltext_markdown(
             lines.append("")
         emitted_pages.add(current_page)
 
-    # Emit any remaining pages not covered by body transitions
-    all_object_pages = sorted(set(figures_by_page.keys()) | set(tables_by_page.keys()))
-    for p in all_object_pages:
-        if p not in emitted_pages:
+    # Emit any remaining objects for pages not covered by body transitions
+    # (includes pages before, after, and between renderable body pages)
+    if current_page is not None:
+        for p in range(1, max_page + 1):
+            if p in emitted_pages:
+                continue
+            had_objects = False
             for fig_id in figures_by_page.get(p, []):
                 lines.append(f"![[render/figures/{fig_id}.md]]")
                 lines.append("")
+                had_objects = True
             for tbl_id in tables_by_page.get(p, []):
                 lines.append(f"![[render/tables/{tbl_id}.md]]")
+                lines.append("")
+                had_objects = True
+            if not had_objects and p > (current_page or 0):
+                lines.append(f"<!-- page {p} -->")
                 lines.append("")
 
     return "\n".join(lines).strip() + "\n"
