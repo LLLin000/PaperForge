@@ -17,6 +17,45 @@ from paperforge.core.result import PFError, PFResult
 
 logger = logging.getLogger(__name__)
 
+_OCR_RUNTIME_FILES: tuple[str, ...] = (
+    "paperforge/worker/ocr_render.py",
+    "paperforge/worker/ocr_objects.py",
+)
+
+
+def _get_dirty_files() -> list[str]:
+    """Return list of files with unstaged changes via git diff --name-only."""
+    import subprocess
+
+    try:
+        result = subprocess.run(
+            ["git", "diff", "--name-only"],
+            capture_output=True, text=True, timeout=10,
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            return [line.strip() for line in result.stdout.splitlines() if line.strip()]
+    except Exception:
+        pass
+    return []
+
+
+def detect_ocr_runtime_preflight_issues(dirty_files: list[str]) -> list[str]:
+    """Check if any watched OCR runtime files have uncommitted changes.
+
+    Args:
+        dirty_files: Relative paths of files with uncommitted changes.
+
+    Returns:
+        List of warning strings. Empty if no issues.
+    """
+    watched = {f.replace("\\", "/") for f in _OCR_RUNTIME_FILES}
+    warnings: list[str] = []
+    for dirty in dirty_files:
+        normalized = dirty.replace("\\", "/")
+        if normalized in watched:
+            warnings.append(f"OCR runtime file has uncommitted changes: {dirty}")
+    return warnings
+
 
 class SyncService:
     """Orchestrates the sync lifecycle: load BBT exports, match entries, generate notes.
@@ -339,6 +378,11 @@ class SyncService:
 
         if _export_code != "ok":
             result.warnings.append(f"BBT exports: {_export_code}")
+
+        # ── Preflight: OCR runtime dirty files ──
+        _dirty = _get_dirty_files()
+        if _dirty:
+            result.warnings.extend(detect_ocr_runtime_preflight_issues(_dirty))
 
         return result
 
