@@ -228,6 +228,22 @@ def backfill_from_result(vault: Path, key: str) -> dict:
         # Inject Zotero metadata from paper note frontmatter before postprocess
         _enrich_meta_from_paper_note(vault, key, paper_dir / "meta.json")
 
+        # Resolve source_pdf so extract_and_write_objects can crop figures/tables
+        try:
+            meta_before = read_json(paper_dir / "meta.json") if (paper_dir / "meta.json").exists() else {}
+            src = str(meta_before.get("source_pdf", ""))
+            if src and "storage:" in src:
+                from paperforge.pdf_resolver import resolve_pdf_path
+                from paperforge.config import load_vault_config
+                cfg = load_vault_config(vault)
+                zotero_dir = cfg.get("zotero_dir", "")
+                resolved = resolve_pdf_path(src, True, vault, Path(zotero_dir) if zotero_dir else None)
+                if resolved:
+                    meta_before["source_pdf"] = resolved
+                    write_json(paper_dir / "meta.json", meta_before)
+        except Exception:
+            pass
+
         _, _, _, _ = postprocess_ocr_result(vault, key, all_results)
 
         # Add backfill metadata
