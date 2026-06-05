@@ -300,3 +300,61 @@ def test_status_text_structured_ocr_health(tmp_path: Path, capsys) -> None:
     assert "structured_ocr_health" in captured
     assert "HLTH001" in captured
     assert "yellow" in captured
+
+
+# ---------------------------------------------------------------------------
+# OCR version runtime state in status
+# ---------------------------------------------------------------------------
+def test_status_json_includes_ocr_version_state(tmp_path: Path, capsys) -> None:
+    """JSON output includes ocr_version_state with version info."""
+    from paperforge.worker.status import run_status
+
+    vault = _minimal_vault(tmp_path)
+    _ensure_domain_config(vault)
+    _ensure_exports(vault)
+
+    ocr_dir = vault / "99_System" / "PaperForge" / "ocr" / "VST001"
+    ocr_dir.mkdir(parents=True)
+    meta = {
+        "zotero_key": "VST001",
+        "raw_version": {"ocr_model": "PaddleOCR-VL-1.6", "ocr_raw_schema_version": "1.0.0"},
+        "derived_version": {"renderer_version": "2.0.0"},
+        "raw_upgradable": False,
+        "derived_stale": False,
+    }
+    (ocr_dir / "meta.json").write_text(json.dumps(meta), encoding="utf-8")
+
+    code = run_status(vault, json_output=True)
+    assert code == 0
+    captured = capsys.readouterr().out
+    envelope = json.loads(captured)
+    payload = envelope["data"]
+    assert "ocr_version_state" in payload
+    assert payload["ocr_version_state"]["total_papers"] == 1
+    assert payload["ocr_version_state"]["derived_stale_count"] == 0
+    assert payload["ocr_version_state"]["raw_upgradable_count"] == 0
+
+
+def test_status_text_ocr_version_state(tmp_path: Path, capsys) -> None:
+    """Text output includes ocr_version_state line."""
+    from paperforge.worker.status import run_status
+
+    vault = _minimal_vault(tmp_path)
+    _ensure_domain_config(vault)
+    _ensure_exports(vault)
+
+    ocr_dir = vault / "99_System" / "PaperForge" / "ocr" / "VST001"
+    ocr_dir.mkdir(parents=True)
+    meta = {
+        "zotero_key": "VST001",
+        "raw_version": {"ocr_model": "PaddleOCR-VL-1.5", "ocr_raw_schema_version": "1.0.0"},
+        "derived_version": {"renderer_version": "1.0.0-compat"},
+        "raw_upgradable": True,
+        "derived_stale": True,
+    }
+    (ocr_dir / "meta.json").write_text(json.dumps(meta), encoding="utf-8")
+
+    code = run_status(vault)
+    assert code == 0
+    captured = capsys.readouterr().out
+    assert "ocr_version_state" in captured

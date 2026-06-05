@@ -224,3 +224,36 @@ def test_doctor_reads_structured_ocr_health(tmp_path: Path, capsys) -> None:
     assert "HLTH001" in captured.out
     assert "3 figures" in captured.out
     assert "2 tables" in captured.out
+
+
+# ---------------------------------------------------------------------------
+# OCR version state in _diagnose()
+# ---------------------------------------------------------------------------
+def test_doctor_mentions_version_state(tmp_path: Path, capsys) -> None:
+    """_diagnose() output includes OCR version state."""
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    (vault / "paperforge.json").write_text(
+        json.dumps({"vault_config": {"system_dir": "System", "resources_dir": "Resources"}}),
+        encoding="utf-8",
+    )
+    ocr_dir = vault / "System" / "PaperForge" / "ocr" / "DOC001"
+    ocr_dir.mkdir(parents=True)
+    meta = {
+        "zotero_key": "DOC001",
+        "raw_version": {"ocr_model": "PaddleOCR-VL-1.5", "ocr_raw_schema_version": "1.0.0"},
+        "derived_version": {"renderer_version": "1.0.0-compat"},
+        "raw_upgradable": True,
+        "derived_stale": True,
+    }
+    (ocr_dir / "meta.json").write_text(json.dumps(meta), encoding="utf-8")
+
+    from paperforge.commands.ocr import _diagnose
+
+    with patch("paperforge.ocr_diagnostics.ocr_doctor",
+               return_value={"level": 3, "passed": True, "message": "All good"}):
+        exit_code = _diagnose(vault, live=False)
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "raw_upgradable" in captured.out or "version" in captured.out or "stale" in captured.out

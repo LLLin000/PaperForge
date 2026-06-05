@@ -89,6 +89,31 @@ def _diagnose(vault: Path, live: bool = False, json_output: bool = False) -> int
     level = result.get("level", 0)
     passed = result.get("passed", False)
 
+    # Collect OCR version state
+    _version_state_summary: dict = {"total_papers": 0, "derived_stale": [], "raw_upgradable": []}
+    try:
+        from paperforge.config import load_vault_config
+        cfg = load_vault_config(vault)
+        ocr_root = vault / cfg["system_dir"] / "PaperForge" / "ocr"
+        if ocr_root.exists():
+            from paperforge.worker._utils import read_json
+            _version_papers = []
+            for paper_dir in ocr_root.iterdir():
+                if not paper_dir.is_dir():
+                    continue
+                meta_path = paper_dir / "meta.json"
+                if meta_path.exists():
+                    meta = read_json(meta_path)
+                    if "raw_version" in meta or "derived_version" in meta:
+                        _version_papers.append(meta)
+            _version_state_summary = {
+                "total_papers": len(_version_papers),
+                "derived_stale": [m.get("zotero_key", "?") for m in _version_papers if m.get("derived_stale")],
+                "raw_upgradable": [m.get("zotero_key", "?") for m in _version_papers if m.get("raw_upgradable")],
+            }
+    except Exception:
+        pass
+
     if json_output:
         queue_data = _collect_ocr_queue_data(vault)
         structured_health = _collect_ocr_health_summary(vault)
@@ -118,6 +143,7 @@ def _diagnose(vault: Path, live: bool = False, json_output: bool = False) -> int
                     "message": result.get("message", result.get("error", "")),
                 },
                 "structured_health": structured_health,
+                "ocr_version_state": _version_state_summary,
                 **queue_data,
             },
             error=pf_error,
@@ -146,6 +172,19 @@ def _diagnose(vault: Path, live: bool = False, json_output: bool = False) -> int
                 f"{entry['page_count']} pages, {entry['blocks_count']} blocks, "
                 f"{entry['figure_count']} figures, {entry['table_count']} tables"
             )
+
+    if _version_state_summary["total_papers"] > 0:
+        print()
+        print("--- OCR Version State ---")
+        print(f"  ocr_version_state: {_version_state_summary['total_papers']} paper(s)")
+        if _version_state_summary["derived_stale"]:
+            print(f"    derived_stale: {len(_version_state_summary['derived_stale'])} paper(s)")
+            for k in _version_state_summary["derived_stale"]:
+                print(f"      - {k}")
+        if _version_state_summary["raw_upgradable"]:
+            print(f"    raw_upgradable: {len(_version_state_summary['raw_upgradable'])} paper(s)")
+            for k in _version_state_summary["raw_upgradable"]:
+                print(f"      - {k}")
 
     return 0 if passed else 1
 
