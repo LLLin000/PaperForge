@@ -76,6 +76,38 @@ def summarize_ocr_version_actions(papers: list[dict]) -> dict:
     }
 
 
+def summarize_ocr_runtime_followups(
+    papers: list[dict],
+    dirty_runtime_files: bool = False,
+) -> dict:
+    """Summarize OCR runtime follow-up actions with scheduling mode.
+
+    When dirty_runtime_files is True, auto-derived-rebuild is suppressed
+    and the mode is 'suppressed_dirty_runtime'. Otherwise the mode is
+    'deferred' --- sync records what needs doing but does not execute inline.
+    """
+    derived_stale = [p for p in papers if p.get("derived_stale") and not p.get("raw_upgradable")]
+    raw_upgradable = [p for p in papers if p.get("raw_upgradable")]
+
+    if dirty_runtime_files:
+        mode = "suppressed_dirty_runtime"
+    else:
+        mode = "deferred"
+
+    result: dict = {
+        "derived_rebuild_count": len(derived_stale),
+        "raw_upgrade_count": len(raw_upgradable),
+        "derived_stale_keys": [p["zotero_key"] for p in derived_stale],
+        "raw_upgrade_keys": [p["zotero_key"] for p in raw_upgradable],
+        "derived_rebuild_mode": mode,
+    }
+
+    if mode == "suppressed_dirty_runtime":
+        result["suppressed_keys"] = [p["zotero_key"] for p in derived_stale]
+
+    return result
+
+
 class SyncService:
     """Orchestrates the sync lifecycle: load BBT exports, match entries, generate notes.
 
@@ -386,6 +418,7 @@ class SyncService:
             ocr_runtime_summary = {
                 "derived_rebuild_count": 0, "raw_upgrade_count": 0,
                 "derived_stale_keys": [], "raw_upgrade_keys": [],
+                "derived_rebuild_mode": "deferred",
             }
             try:
                 from paperforge.core.io import read_json
@@ -420,21 +453,26 @@ class SyncService:
                                 "derived_reasons": state["derived_reasons"],
                                 "raw_reasons": state["raw_reasons"],
                             })
-                    ocr_runtime_summary = summarize_ocr_version_actions(papers)
 
-                    # Trigger non-blocking derived rebuild for stale papers
-                    if ocr_runtime_summary["derived_stale_keys"]:
-                        from paperforge.worker.ocr_rebuild import run_derived_rebuild_for_keys
-                        rebuild_result = run_derived_rebuild_for_keys(
-                            self.vault, ocr_runtime_summary["derived_stale_keys"]
-                        )
-                        ocr_runtime_summary["derived_rebuilt"] = rebuild_result["rebuild_count"]
-                        if not json_output:
-                            print(f"ocr: rebuilt {rebuild_result['rebuild_count']} derived-stale paper(s)")
+                    # Check for dirty runtime files
+                    _dirty = _get_dirty_files()
+                    watched_dirty = bool(detect_ocr_runtime_preflight_issues(_dirty))
+
+                    ocr_runtime_summary = summarize_ocr_runtime_followups(
+                        papers=papers,
+                        dirty_runtime_files=watched_dirty,
+                    )
+
+                    if ocr_runtime_summary["derived_rebuild_count"] > 0 and not json_output:
+                        mode = ocr_runtime_summary["derived_rebuild_mode"]
+                        count = ocr_runtime_summary["derived_rebuild_count"]
+                        if mode == "suppressed_dirty_runtime":
+                            print(f"ocr: {count} derived-stale paper(s) deferred (dirty runtime files)")
+                        elif mode == "deferred":
+                            print(f"ocr: {count} derived-stale paper(s) identified (deferred)")
 
                     if ocr_runtime_summary["raw_upgrade_count"] > 0 and not json_output:
-                        msg = f"ocr: {ocr_runtime_summary['raw_upgrade_count']} paper(s) can be upgraded"
-                        print(f"{msg} (redo available)")
+                        print(f"ocr: {ocr_runtime_summary['raw_upgrade_count']} paper(s) can be upgraded (redo available)")
 
             except Exception as exc:
                 logger.warning("ocr version scan skipped: %s", exc)
