@@ -15,7 +15,7 @@ def test_figure_object_markdown_links_image_and_legend() -> None:
 
     assert "# Figure 1" in md
     assert "![](../../assets/figures/figure_001.jpg)" in md
-    assert "**Legend:**" in md
+    assert "## Legend" in md
     assert "Figure 1. Example." in md
 
 
@@ -32,6 +32,7 @@ def test_table_object_markdown_includes_image_and_caption() -> None:
 
     assert "# Table 1" in md
     assert "![](../../assets/tables/table_001.jpg)" in md
+    assert "## Caption" in md
     assert "Table 1. Results." in md
 
 

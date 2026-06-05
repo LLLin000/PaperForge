@@ -14,6 +14,18 @@ def _normalize_latex(text: str) -> str:
     return text
 
 
+def _is_bogus_heading(text: str) -> bool:
+    t = text.strip()
+    if len(t) > 100:
+        return True
+    if t.count(". ") > 1:
+        return True
+    if any(v in t.lower().split() for v in ["is", "are", "was", "were", "have", "has", "been"]):
+        if len(t) > 50:
+            return True
+    return False
+
+
 def render_fulltext_markdown(
     *,
     structured_blocks: list[dict],
@@ -121,8 +133,13 @@ def render_fulltext_markdown(
         if role == "section_heading":
             if text.strip().lower() in FRONTMATTER_NOISE:
                 continue
-            lines.append(f"## {text}")
-            lines.append("")
+            if _is_bogus_heading(text):
+                if text:
+                    lines.append(text)
+                    lines.append("")
+            else:
+                lines.append(f"## {text}")
+                lines.append("")
         elif role == "subsection_heading":
             lines.append(f"### {text}")
             lines.append("")

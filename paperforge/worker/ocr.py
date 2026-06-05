@@ -1847,6 +1847,10 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
     meta["raw_upgradable"] = state["raw_upgradable"]
     meta["derived_stale"] = state["derived_stale"]
     meta["version_state_updated_at"] = __import__("datetime").datetime.now().isoformat()
+    try:
+        meta["legacy_images_path"] = str(images_dir.relative_to(vault)).replace("\\", "/")
+    except ValueError:
+        meta["legacy_images_path"] = str(images_dir)
     write_json(meta_path, meta)
 
     fulltext_path = ocr_root / "fulltext.md"

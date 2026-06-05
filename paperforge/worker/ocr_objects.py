@@ -20,7 +20,7 @@ def render_figure_object_markdown(figure: dict[str, Any]) -> str:
 
     parts = [f"# {label}", "", f"![](../../{image_relpath})", ""]
     if caption:
-        parts.append("**Legend:**")
+        parts.append("## Legend")
         parts.append(caption)
     if figure.get("page"):
         parts.append("")
@@ -42,7 +42,7 @@ def render_table_object_markdown(table: dict[str, Any]) -> str:
 
     parts = [f"# {label}", "", f"![](../../{image_relpath})", ""]
     if caption:
-        parts.append("**Legend:**")
+        parts.append("## Caption")
         parts.append(caption)
     if table.get("page"):
         parts.append("")

@@ -140,6 +140,114 @@ def test_stabilize_author_recovery_from_ocr() -> None:
         tmppath.unlink()
 
 
+def test_stabilize_heading_sanity_downgrades_long_heading() -> None:
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+
+    # A very long section_heading (>100 chars) should be downgraded to body text
+    long_text = "This is a very long heading that exceeds one hundred characters and should definitely be downgraded to a body paragraph instead of being rendered as a heading"
+    structured_blocks = [
+        {"paper_id": "KEY001", "page": 1, "block_id": "b1", "role": "section_heading",
+         "text": long_text, "render_default": True},
+        {"paper_id": "KEY001", "page": 1, "block_id": "b2", "role": "body_paragraph",
+         "text": "Normal body text.", "render_default": True},
+    ]
+
+    md = render_fulltext_markdown(
+        structured_blocks=structured_blocks,
+        resolved_metadata={},
+        figure_inventory={},
+        table_inventory={},
+    )
+
+    # The long heading should NOT appear as a markdown heading
+    assert "## " + long_text not in md
+    # But the text itself should still be present (downgraded)
+    assert long_text in md
+
+
+def test_stabilize_heading_sanity_downgrades_multi_sentence_heading() -> None:
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+
+    # A heading with multiple sentence-ending periods should be downgraded
+    structured_blocks = [
+        {"paper_id": "KEY001", "page": 1, "block_id": "b1", "role": "section_heading",
+         "text": "This is a heading. It has multiple sentences. This is the third one.",
+         "render_default": True},
+        {"paper_id": "KEY001", "page": 1, "block_id": "b2", "role": "body_paragraph",
+         "text": "Normal body text.", "render_default": True},
+    ]
+
+    md = render_fulltext_markdown(
+        structured_blocks=structured_blocks,
+        resolved_metadata={},
+        figure_inventory={},
+        table_inventory={},
+    )
+
+    assert "## This is a heading" not in md
+    assert "This is a heading. It has multiple sentences." in md
+
+
+def test_stabilize_heading_sanity_allows_valid_short_heading() -> None:
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+
+    structured_blocks = [
+        {"paper_id": "KEY001", "page": 1, "block_id": "b1", "role": "section_heading",
+         "text": "1 Introduction", "render_default": True},
+    ]
+
+    md = render_fulltext_markdown(
+        structured_blocks=structured_blocks,
+        resolved_metadata={},
+        figure_inventory={},
+        table_inventory={},
+    )
+
+    assert "## 1 Introduction" in md
+
+
+def test_stabilize_heading_sanity_downgrades_verb_heavy_heading() -> None:
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+
+    # A heading longer than 50 chars with common sentence verbs should be downgraded
+    structured_blocks = [
+        {"paper_id": "KEY001", "page": 1, "block_id": "b1", "role": "section_heading",
+         "text": "This is a method that was used for the experiment and has many words",
+         "render_default": True},
+        {"paper_id": "KEY001", "page": 1, "block_id": "b2", "role": "body_paragraph",
+         "text": "Normal body text.", "render_default": True},
+    ]
+
+    md = render_fulltext_markdown(
+        structured_blocks=structured_blocks,
+        resolved_metadata={},
+        figure_inventory={},
+        table_inventory={},
+    )
+
+    assert "## This is a method" not in md
+    assert "This is a method that was used" in md
+
+
+def test_stabilize_heading_sanity_allows_verb_short_heading() -> None:
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+
+    # A short heading with verbs is OK (under 50 chars)
+    structured_blocks = [
+        {"paper_id": "KEY001", "page": 1, "block_id": "b1", "role": "section_heading",
+         "text": "Results are shown", "render_default": True},
+    ]
+
+    md = render_fulltext_markdown(
+        structured_blocks=structured_blocks,
+        resolved_metadata={},
+        figure_inventory={},
+        table_inventory={},
+    )
+
+    assert "## Results are shown" in md
+
+
 def test_stabilize_reference_content_mapped() -> None:
     from paperforge.worker.ocr_roles import assign_block_role
 
