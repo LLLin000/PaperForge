@@ -157,3 +157,45 @@ def test_fixture_figure_inventory_basic(tmp_path) -> None:
     assert isinstance(inventory["official_figure_count"], int)
     assert isinstance(inventory["figure_legends"], list)
     assert isinstance(inventory["figure_assets"], list)
+
+
+def test_fixture_structured_renderer_has_headings_and_body() -> None:
+    """Verify the structured renderer preserves headings and body text from a real OCR fixture."""
+    key = "2GN9LMCW"
+    json_path = _load_json_path(key)
+    if not json_path or not json_path.exists():
+        pytest.skip("fixture not available")
+
+    data = json.loads(json_path.read_text(encoding="utf-8"))
+    from paperforge.worker.ocr_blocks import build_raw_blocks_for_result_lines, build_structured_blocks
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+
+    raw_blocks = build_raw_blocks_for_result_lines(key, data)
+    structured = build_structured_blocks(raw_blocks)
+
+    output = render_fulltext_markdown(
+        structured_blocks=structured,
+        resolved_metadata={},
+        figure_inventory={},
+        table_inventory={},
+    )
+
+    assert len(output) > 0, "renderer produced empty output"
+
+    lines = output.split("\n")
+    headings = [l for l in lines if l.startswith("## ") or l.startswith("### ")]
+    assert len(headings) >= 1, (
+        f"expected at least one ## or ### heading in rendered output, "
+        f"found {len(headings)} headings in:\n{output[:800]}"
+    )
+
+    non_heading_text = [
+        l for l in lines
+        if l.strip()
+        and not l.startswith("#")
+        and not l.startswith("<!--")
+        and not l.startswith("![[")
+    ]
+    assert len(non_heading_text) >= 1, (
+        f"expected at least one line of body text in rendered output:\n{output[:800]}"
+    )
