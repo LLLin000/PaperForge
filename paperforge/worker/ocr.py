@@ -101,9 +101,9 @@ def ensure_ocr_meta(vault: Path, row: dict) -> dict:
     meta.setdefault("markdown_path", "")
     meta.setdefault("json_path", "")
     try:
-        assets_path = str((paths["ocr"] / key / "images").relative_to(vault)).replace("\\", "/")
+        assets_path = str((paths["ocr"] / key / "assets").relative_to(vault)).replace("\\", "/")
     except ValueError:
-        assets_path = str(paths["ocr"] / key / "images")
+        assets_path = str(paths["ocr"] / key / "assets")
     meta.setdefault("assets_path", assets_path)
     meta.setdefault("fulltext_md_path", "")
     meta.setdefault("error", "")
@@ -1692,7 +1692,7 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
     paths = pipeline_paths(vault)
     ocr_root = paths["ocr"] / key
     json_dir = ocr_root / "json"
-    images_dir = ocr_root / "images"
+    images_dir = ocr_root / "images"  # legacy compat - use assets/ going forward
     page_cache_dir = ocr_root / "pages"
     meta_path = ocr_root / "meta.json"
     json_dir.mkdir(parents=True, exist_ok=True)

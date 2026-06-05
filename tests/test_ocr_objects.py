@@ -15,6 +15,7 @@ def test_figure_object_markdown_links_image_and_legend() -> None:
 
     assert "# Figure 1" in md
     assert "![](../../assets/figures/figure_001.jpg)" in md
+    assert "**Legend:**" in md
     assert "Figure 1. Example." in md
 
 
