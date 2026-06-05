@@ -150,6 +150,33 @@ class TestStatusJsonIndexSource:
         assert data["health_aggregate"] == {}
         assert data["maturity_distribution"] == {}
 
+    def test_status_json_includes_structured_ocr_health(self, tmp_path: Path, capsys) -> None:
+        """JSON output includes structured_ocr_health key."""
+        from paperforge.worker.status import run_status
+
+        vault = _minimal_vault(tmp_path)
+        _ensure_domain_config(vault)
+        _ensure_exports(vault)
+
+        ocr_dir = vault / "99_System" / "PaperForge" / "ocr" / "HLTH001"
+        ocr_dir.mkdir(parents=True)
+        health_dir = ocr_dir / "health"
+        health_dir.mkdir(parents=True)
+        (health_dir / "ocr_health.json").write_text(
+            json.dumps({"overall": "green", "page_count": 3, "blocks_count": 50}),
+            encoding="utf-8",
+        )
+
+        code = run_status(vault, json_output=True)
+        captured = capsys.readouterr().out
+        assert code == 0
+        envelope = json.loads(captured)
+        data = envelope["data"]
+        assert "structured_ocr_health" in data
+        assert len(data["structured_ocr_health"]) == 1
+        assert data["structured_ocr_health"][0]["key"] == "HLTH001"
+        assert data["structured_ocr_health"][0]["overall"] == "green"
+
     def test_status_text_output_includes_index_section(self, tmp_path: Path, capsys) -> None:
         """Text output contains 'lifecycle:' line when index is present."""
         from paperforge.worker.status import run_status
@@ -245,3 +272,31 @@ class TestDoctorIndexHealth:
         output = self._run_doctor(vault)
         assert "Index Health" in output
         assert "No canonical index" in output
+
+
+# ---------------------------------------------------------------------------
+# Structured OCR Health in status
+# ---------------------------------------------------------------------------
+def test_status_text_structured_ocr_health(tmp_path: Path, capsys) -> None:
+    """run_status() text output shows structured OCR health."""
+    from paperforge.worker.status import run_status
+
+    vault = _minimal_vault(tmp_path)
+    _ensure_domain_config(vault)
+    _ensure_exports(vault)
+
+    ocr_dir = vault / "99_System" / "PaperForge" / "ocr" / "HLTH001"
+    ocr_dir.mkdir(parents=True)
+    health_dir = ocr_dir / "health"
+    health_dir.mkdir(parents=True)
+    (health_dir / "ocr_health.json").write_text(
+        json.dumps({"overall": "yellow", "page_count": 5, "blocks_count": 100}),
+        encoding="utf-8",
+    )
+
+    code = run_status(vault)
+    captured = capsys.readouterr().out
+    assert code == 0
+    assert "structured_ocr_health" in captured
+    assert "HLTH001" in captured
+    assert "yellow" in captured

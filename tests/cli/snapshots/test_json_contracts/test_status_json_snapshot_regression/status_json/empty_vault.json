@@ -19,6 +19,7 @@
       "done": 0,
       "failed": 0
     },
+    "structured_ocr_health": [],
     "path_errors": 0,
     "env_configured": true,
     "lifecycle_level_counts": {},

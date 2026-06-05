@@ -47,7 +47,7 @@ class TestStatusJson:
     OPTIONAL_KEYS = {
         "version",  # duplicated from envelope (old format preserved in data)
         "formal_notes", "exports", "domains", "bases", "path_errors",
-        "env_configured", "ocr",
+        "env_configured", "ocr", "structured_ocr_health",
         "lifecycle_level_counts", "health_aggregate", "maturity_distribution",
     }
 
