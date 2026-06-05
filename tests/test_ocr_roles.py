@@ -117,3 +117,36 @@ def test_unknown_structural_for_unrecognized() -> None:
 
     assert role.role in {"body_paragraph", "unknown_structural"}
     assert role.confidence < 0.8
+
+
+def test_stabilize_role_classifies_paper_title() -> None:
+    from paperforge.worker.ocr_roles import assign_block_role
+
+    assignment = assign_block_role(
+        block={"block_label": "paragraph_title", "block_content": "Test Paper About Science"},
+        page_blocks=[],
+    )
+
+    assert assignment.role == "paper_title"
+
+
+def test_stabilize_abstract_heading_is_not_body() -> None:
+    from paperforge.worker.ocr_roles import assign_block_role
+
+    assignment = assign_block_role(
+        block={"block_label": "paragraph_title", "block_content": "Abstract"},
+        page_blocks=[],
+    )
+
+    assert assignment.role == "abstract_heading"
+
+
+def test_stabilize_frontmatter_noise_not_section_heading() -> None:
+    from paperforge.worker.ocr_roles import assign_block_role
+
+    for noise in ("OPEN ACCESS", "CITATION", "COPYRIGHT", "KEYWORDS", "EDITED BY", "REVIEWED BY"):
+        assignment = assign_block_role(
+            block={"block_label": "paragraph_title", "block_content": noise},
+            page_blocks=[],
+        )
+        assert assignment.role not in ("section_heading", "subsection_heading"), f"{noise} should not be a heading"

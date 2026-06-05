@@ -839,3 +839,18 @@ def test_structured_renderer_respects_render_default_false() -> None:
     assert "ALSO_VISIBLE" in output
     assert "HIDDEN_BODY" not in output
     assert "Hidden Heading" not in output
+
+
+def test_stabilize_renderer_output_starts_with_title() -> None:
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+
+    md = render_fulltext_markdown(
+        structured_blocks=[
+            {"paper_id": "KEY001", "page": 1, "block_id": "b1", "role": "body_paragraph", "text": "Body.", "render_default": True},
+        ],
+        resolved_metadata={"title": {"value": "The Paper Title"}},
+        figure_inventory={},
+        table_inventory={},
+    )
+
+    assert md.startswith("# The Paper Title")

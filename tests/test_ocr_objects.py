@@ -47,3 +47,17 @@ def test_orphan_object_markdown() -> None:
 
     assert "# Orphan Media" in md
     assert "![[../assets/orphans/orphan_001.jpg]]" in md
+
+
+def test_stabilize_object_wikilink_uses_correct_relative_path() -> None:
+    from paperforge.worker.ocr_objects import render_figure_object_markdown
+
+    md = render_figure_object_markdown({
+        "figure_id": "figure_001",
+        "page": 5,
+        "caption": "Figure 1. Results.",
+        "image_relpath": "assets/figures/figure_001.jpg",
+        "confidence": 0.9,
+    })
+
+    assert "![[../../assets/figures/figure_001.jpg]]" in md
