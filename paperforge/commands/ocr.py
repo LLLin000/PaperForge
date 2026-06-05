@@ -90,7 +90,7 @@ def _diagnose(vault: Path, live: bool = False, json_output: bool = False) -> int
     passed = result.get("passed", False)
 
     # Collect OCR version state
-    _version_state_summary: dict = {"total_papers": 0, "derived_stale": [], "raw_upgradable": []}
+    _version_state_summary: dict = {"total_papers": 0, "derived_stale": [], "raw_upgradable": [], "legacy_backfilled": []}
     try:
         from paperforge.config import load_vault_config
         cfg = load_vault_config(vault)
@@ -104,12 +104,16 @@ def _diagnose(vault: Path, live: bool = False, json_output: bool = False) -> int
                 meta_path = paper_dir / "meta.json"
                 if meta_path.exists():
                     meta = read_json(meta_path)
-                    if "raw_version" in meta or "derived_version" in meta:
+                    has_state = "raw_version" in meta or "derived_version" in meta
+                    if has_state:
                         _version_papers.append(meta)
+                    elif meta.get("ocr_status") == "done" and meta.get("is_backfilled"):
+                        _version_papers.append({**meta, "is_legacy": True})
             _version_state_summary = {
                 "total_papers": len(_version_papers),
                 "derived_stale": [m.get("zotero_key", "?") for m in _version_papers if m.get("derived_stale")],
                 "raw_upgradable": [m.get("zotero_key", "?") for m in _version_papers if m.get("raw_upgradable")],
+                "legacy_backfilled": [m.get("zotero_key", "?") for m in _version_papers if m.get("is_legacy")],
             }
     except Exception:
         pass
@@ -184,6 +188,10 @@ def _diagnose(vault: Path, live: bool = False, json_output: bool = False) -> int
         if _version_state_summary["raw_upgradable"]:
             print(f"    raw_upgradable: {len(_version_state_summary['raw_upgradable'])} paper(s)")
             for k in _version_state_summary["raw_upgradable"]:
+                print(f"      - {k}")
+        if _version_state_summary.get("legacy_backfilled"):
+            print(f"    legacy_backfilled: {len(_version_state_summary['legacy_backfilled'])} paper(s)")
+            for k in _version_state_summary["legacy_backfilled"]:
                 print(f"      - {k}")
 
     return 0 if passed else 1

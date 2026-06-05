@@ -229,6 +229,32 @@ def test_doctor_reads_structured_ocr_health(tmp_path: Path, capsys) -> None:
 # ---------------------------------------------------------------------------
 # OCR version state in _diagnose()
 # ---------------------------------------------------------------------------
+def test_doctor_shows_legacy_backfilled_papers(tmp_path: Path, capsys) -> None:
+    """_diagnose() output includes legacy_backfilled for papers with is_backfilled flag."""
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    (vault / "paperforge.json").write_text(
+        json.dumps({"vault_config": {"system_dir": "System", "resources_dir": "Resources"}}),
+        encoding="utf-8",
+    )
+    ocr_dir = vault / "System" / "PaperForge" / "ocr" / "LEGACY001"
+    ocr_dir.mkdir(parents=True)
+    (ocr_dir / "meta.json").write_text(
+        json.dumps({"zotero_key": "LEGACY001", "ocr_status": "done", "is_backfilled": True}),
+        encoding="utf-8",
+    )
+
+    from paperforge.commands.ocr import _diagnose
+
+    with patch("paperforge.ocr_diagnostics.ocr_doctor",
+               return_value={"level": 3, "passed": True, "message": "All good"}):
+        exit_code = _diagnose(vault, live=False)
+
+    captured = capsys.readouterr().out
+    assert exit_code == 0
+    assert "legacy_backfilled" in captured
+
+
 def test_doctor_mentions_version_state(tmp_path: Path, capsys) -> None:
     """_diagnose() output includes OCR version state."""
     vault = tmp_path / "vault"

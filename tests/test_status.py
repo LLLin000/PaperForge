@@ -358,3 +358,26 @@ def test_status_text_ocr_version_state(tmp_path: Path, capsys) -> None:
     assert code == 0
     captured = capsys.readouterr().out
     assert "ocr_version_state" in captured
+
+
+def test_status_text_legacy_backfilled(tmp_path: Path, capsys) -> None:
+    """Text output includes legacy_backfilled count when papers are backfilled."""
+    from paperforge.worker.status import run_status
+
+    vault = _minimal_vault(tmp_path)
+    _ensure_domain_config(vault)
+    _ensure_exports(vault)
+
+    ocr_dir = vault / "99_System" / "PaperForge" / "ocr" / "LEGACY001"
+    ocr_dir.mkdir(parents=True)
+    meta = {
+        "zotero_key": "LEGACY001",
+        "ocr_status": "done",
+        "is_backfilled": True,
+    }
+    (ocr_dir / "meta.json").write_text(json.dumps(meta), encoding="utf-8")
+
+    code = run_status(vault)
+    assert code == 0
+    captured = capsys.readouterr().out
+    assert "legacy_backfilled" in captured
