@@ -88,30 +88,31 @@ def build_figure_inventory(structured_blocks: list[dict]) -> dict[str, Any]:
             if raw_label in {"image", "chart", "figure_title", "figure"} or not raw_label:
                 assets.append(block)
 
-    # --- Step 1: Split legends into formal and candidate paths ---
-    formal_legends: list[dict] = []
-    candidate_legends: list[dict] = []
-    for leg in legends:
+    # --- Step 1: Classify each legend with confidence level ---
+    # All legends are included; the classification affects confidence scoring
+    legend_classification: dict[int, str] = {}  # legend index -> "formal" | "candidate" | "fallback"
+    for i, leg in enumerate(legends):
         text = leg.get("text", "")
         bbox = leg.get("bbox", [0, 0, 0, 0])
         if _extract_figure_number(text) is not None:
-            formal_legends.append(leg)
-        elif _compute_text_confidence(text, bbox, formal_legends):
-            candidate_legends.append(leg)
-
-    all_legends = formal_legends + candidate_legends
+            legend_classification[i] = "formal"
+        elif _compute_text_confidence(text, bbox, [legends[j] for j in range(i) if legend_classification.get(j) == "formal"]):
+            legend_classification[i] = "candidate"
+        else:
+            legend_classification[i] = "fallback"
 
     # --- Step 2: Multi-signal matching ---
     used_asset_indices: set[int] = set()
     matched_figures: list[dict] = []
     unmatched_legends: list[dict] = []
 
-    for legend in all_legends:
+    for i_leg, legend in enumerate(legends):
         legend_page = legend.get("page", 0)
         legend_bbox = legend.get("bbox", [0, 0, 0, 0])
         legend_text = legend.get("text", "")
         fig_num = _extract_figure_number(legend_text)
-        is_formal = legend in formal_legends
+        cls = legend_classification.get(i_leg, "fallback")
+        is_formal = cls == "formal"
 
         candidate_pages = [legend_page, legend_page + 1, legend_page - 1]
         matched_assets = []

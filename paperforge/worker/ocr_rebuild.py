@@ -236,6 +236,11 @@ def backfill_from_result(vault: Path, key: str) -> dict:
         meta["is_backfilled"] = True
         meta["backfilled_at"] = __import__("datetime").datetime.now().isoformat()
         meta["ocr_status"] = "done"
+        # Fix assets_path from legacy images/ to structured assets/
+        if meta.get("assets_path", "").endswith("/images"):
+            meta["assets_path"] = meta["assets_path"].replace("/images", "/assets")
+        elif meta.get("assets_path", "").endswith("\\images"):
+            meta["assets_path"] = meta["assets_path"].replace("\\images", "\\assets")
         write_json(meta_path, meta)
 
         return {"backfill_status": "done", "paper_key": key}
