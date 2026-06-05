@@ -128,6 +128,15 @@ def run_derived_rebuild_for_keys(vault: Path, keys: list[str]) -> dict:
         )
         write_ocr_health(paper_root / "health", health_report)
 
+        # Rebuild role index
+        from paperforge.worker.ocr_index import build_role_indexes, write_role_index
+
+        role_indexes = build_role_indexes(
+            structured_blocks=structured,
+            resolved_metadata=resolved,
+        )
+        write_role_index(paper_root / "index", role_indexes)
+
         # Update version state in meta.json
         meta = read_json(artifacts.meta_json) if artifacts.meta_json.exists() else {}
         meta = _apply_post_rebuild_version_flags(meta)

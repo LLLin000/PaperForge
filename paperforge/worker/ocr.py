@@ -1818,6 +1818,15 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
     write_ocr_health(ocr_root / "health", health_report)
     meta["ocr_health_overall"] = health_report["overall"]
 
+    # --- Phase 5: role-based OCR index ---
+    from paperforge.worker.ocr_index import build_role_indexes, write_role_index
+
+    role_indexes = build_role_indexes(
+        structured_blocks=structured,
+        resolved_metadata=resolved,
+    )
+    write_role_index(ocr_root / "index", role_indexes)
+
     # Update meta.json with version payloads
     ocr_model = meta.get("ocr_model", meta.get("ocr_provider", "PaddleOCR"))
     version_payload = build_version_payload(
