@@ -1714,6 +1714,19 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
             pdf_doc.close()
     write_json(json_dir / "result.json", all_results)
 
+    # Sync images/ to assets/ for structured truth
+    # images/ remains as legacy compat
+    assets_dir = ocr_root / "assets"
+    if images_dir.exists():
+        for img in images_dir.rglob("*"):
+            if img.is_file():
+                rel = img.relative_to(images_dir)
+                dst = assets_dir / rel
+                dst.parent.mkdir(parents=True, exist_ok=True)
+                if not dst.exists():
+                    import shutil
+                    shutil.copy2(img, dst)
+
     # --- Phase 1: raw metadata and source metadata ---
     artifacts = artifact_paths_for_key(vault, key)
 
