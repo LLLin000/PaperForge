@@ -14,7 +14,7 @@ def test_figure_object_markdown_links_image_and_legend() -> None:
     })
 
     assert "# Figure 1" in md
-    assert "![[../assets/figures/figure_001.jpg]]" in md
+    assert "![[../../assets/figures/figure_001.jpg]]" in md
     assert "Figure 1. Example." in md
 
 
@@ -30,7 +30,7 @@ def test_table_object_markdown_includes_image_and_caption() -> None:
     })
 
     assert "# Table 1" in md
-    assert "![[../assets/tables/table_001.jpg]]" in md
+    assert "![[../../assets/tables/table_001.jpg]]" in md
     assert "Table 1. Results." in md
 
 
@@ -46,7 +46,7 @@ def test_orphan_object_markdown() -> None:
     })
 
     assert "# Orphan Media" in md
-    assert "![[../assets/orphans/orphan_001.jpg]]" in md
+    assert "![[../../assets/orphans/orphan_001.jpg]]" in md
 
 
 def test_stabilize_object_wikilink_uses_correct_relative_path() -> None:

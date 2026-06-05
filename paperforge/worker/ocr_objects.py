@@ -23,7 +23,7 @@ def render_figure_object_markdown(figure: dict[str, Any]) -> str:
         else:
             label = f"Figure {figure_id}"
 
-    parts = [f"# {label}", "", f"![[../{image_relpath}]]", ""]
+    parts = [f"# {label}", "", f"![[../../{image_relpath}]]", ""]
     if caption:
         parts.append(caption)
     if figure.get("page"):
@@ -46,7 +46,7 @@ def render_table_object_markdown(table: dict[str, Any]) -> str:
     if not label:
         label = f"Table {table.get('table_id', 'unknown')}"
 
-    parts = [f"# {label}", "", f"![[../{image_relpath}]]", ""]
+    parts = [f"# {label}", "", f"![[../../{image_relpath}]]", ""]
     if caption:
         parts.append(caption)
     if table.get("page"):
