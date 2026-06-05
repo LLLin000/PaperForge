@@ -92,10 +92,12 @@ def render_fulltext_markdown(
         if not block.get("render_default", True):
             continue
         role = block.get("role", "")
-        if role in ("abstract_heading", "abstract_body", "figure_caption", "table_caption", "frontmatter_noise"):
+        if role in ("abstract_heading", "abstract_body", "figure_caption", "table_caption", "frontmatter_noise", "table_html"):
             continue
 
         text = _normalize_latex(block.get("text", ""))
+        if text.strip().lower().startswith("<table"):
+            continue
         block_page = block.get("page")
 
         if block_page is not None and block_page != current_page:

@@ -12,7 +12,7 @@ class RoleAssignment:
 
 
 _HEADING_NUMBER_PATTERN = re.compile(
-    r"^\d+(?:\.\d+)*\s+\w",
+    r"^\d+(?:\.\d+)*\s+[A-Z]",
 )
 
 _FIGURE_PREFIX_PATTERN = re.compile(
@@ -141,10 +141,17 @@ def assign_block_role(
                 confidence=0.85,
                 evidence=[f"paragraph_title label with numbering: {text[:60]}"],
             )
+        page_num = block.get("page", 1) or 1
+        if page_num <= 1:
+            return RoleAssignment(
+                role="paper_title",
+                confidence=0.7,
+                evidence=[f"unnumbered paragraph_title on page 1, likely paper title: {text[:60]}"],
+            )
         return RoleAssignment(
-            role="paper_title",
-            confidence=0.7,
-            evidence=[f"unnumbered paragraph_title, likely paper title: {text[:60]}"],
+            role="section_heading",
+            confidence=0.6,
+            evidence=[f"unnumbered paragraph_title on page {page_num}, treated as heading: {text[:60]}"],
         )
 
     if raw_label == "figure_title":
@@ -189,6 +196,13 @@ def assign_block_role(
             evidence=["abstract label from Paddle OCR"],
         )
 
+    if raw_label == "reference_content":
+        return RoleAssignment(
+            role="reference_item",
+            confidence=0.85,
+            evidence=[f"reference content label: {text[:60]}"],
+        )
+
     # text with reference-like pattern
     if _looks_like_reference(text):
         return RoleAssignment(
@@ -201,6 +215,14 @@ def assign_block_role(
     if raw_label == "text":
         stripped = text.strip().lstrip("*•·-–—_")
         lower_txt = stripped.lower()
+
+        # Check for inline table HTML
+        if text.strip().lower().startswith("<table"):
+            return RoleAssignment(
+                role="table_html",
+                confidence=0.95,
+                evidence=[f"inline table HTML"],
+            )
 
         # Check for abstract heading (may appear as text block, not paragraph_title)
         if lower_txt.startswith("abstract") and len(text) < 30:
@@ -290,7 +312,11 @@ def assign_block_role(
                 confidence=0.7,
                 evidence=[f"frontmatter noise text: {text[:60]}"],
             )
-        if _has_heading_numbering(text):
+        if (
+            _has_heading_numbering(text)
+            and len(text) < 80
+            and ". " not in text
+        ):
             return RoleAssignment(
                 role="section_heading" if re.match(r"^\d+\s", text) else "subsection_heading",
                 confidence=0.65,

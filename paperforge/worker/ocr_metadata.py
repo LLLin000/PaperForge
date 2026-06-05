@@ -78,11 +78,20 @@ def resolve_metadata(
 
     # --- authors ---
     zotero_authors = source_metadata.get("authors", [])
+    ocr_authors_text = frontmatter_candidates.get("authors_text", "")
+    ocr_author_list = [a.strip() for a in ocr_authors_text.split(",") if a.strip()] if ocr_authors_text else []
+
     if isinstance(zotero_authors, list) and len(zotero_authors) > 0:
         resolved["authors"] = {
             "value": zotero_authors,
             "source": "zotero",
             "confidence": 0.99,
+        }
+    elif ocr_author_list:
+        resolved["authors"] = {
+            "value": ocr_author_list,
+            "source": "ocr_frontmatter",
+            "confidence": 0.6,
         }
     else:
         resolved["authors"] = {
@@ -90,17 +99,6 @@ def resolve_metadata(
             "source": "unknown",
             "confidence": 0.3,
         }
-    ocr_authors_text = frontmatter_candidates.get("authors_text", "")
-    if ocr_authors_text:
-        ocr_author_list = [a.strip() for a in ocr_authors_text.split(",") if a.strip()]
-        if ocr_author_list and ocr_author_list != zotero_authors:
-            resolved["authors"]["alternatives"] = [
-                {
-                    "value": ocr_author_list,
-                    "source": "ocr_frontmatter",
-                    "confidence": 0.6,
-                }
-            ]
 
     # --- year ---
     zotero_year = source_metadata.get("year", 0)
