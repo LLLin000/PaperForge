@@ -25,6 +25,7 @@ def _is_bogus_heading(text: str) -> bool:
 
 _TAIL_ROLES = frozenset(
     {
+        "backmatter_boundary_heading",
         "backmatter_heading",
         "backmatter_body",
         "tail_candidate_body",
@@ -206,19 +207,37 @@ def _extract_style_profile(block: dict) -> dict | None:
 
 
 def _build_heading_style_profiles(blocks: list[dict]) -> dict:
-    heading_roles = frozenset({"section_heading", "subsection_heading", "backmatter_heading", "reference_heading"})
-    profiles_with_sizes = []
+    heading_roles = frozenset(
+        {
+            "backmatter_boundary_heading",
+            "section_heading",
+            "subsection_heading",
+            "sub_subsection_heading",
+            "backmatter_heading",
+            "reference_heading",
+        }
+    )
+    heading_items = []
 
     for block in blocks:
         if block.get("role") in heading_roles:
             profile = _extract_style_profile(block)
             if profile is not None:
-                profiles_with_sizes.append(profile["mean_size"])
+                heading_items.append(
+                    {
+                        "max_size": profile["max_size"],
+                        "mean_size": profile["mean_size"],
+                        "profile": profile,
+                        "block": block,
+                    }
+                )
 
-    if len(profiles_with_sizes) < 3:
+    if len(heading_items) < 3:
         return {}
 
-    unique_sizes = sorted(set(profiles_with_sizes))
+    # Use max_size for clustering — section headings often have slightly larger
+    # first characters, making max_size more discriminating than mean.
+    unique_sizes = sorted(set(item["max_size"] for item in heading_items))
     if not unique_sizes:
         return {}
 
@@ -232,33 +251,70 @@ def _build_heading_style_profiles(blocks: list[dict]) -> dict:
             current = [s]
     clusters.append(current)
 
-    # Build full profiles for each cluster
-    cluster_profiles = []
-    for cluster in clusters:
-        matching = []
-        for block in blocks:
-            if block.get("role") in heading_roles:
-                p = _extract_style_profile(block)
-                if p is not None and any(abs(p["mean_size"] - s) <= 2 for s in cluster):
-                    matching.append(p)
-        cluster_profiles.append(matching)
+    # Build full profile data for each cluster
+    cluster_items = []
+    for cluster_sizes in clusters:
+        matching = [item for item in heading_items if any(abs(item["max_size"] - s) <= 2 for s in cluster_sizes)]
+        cluster_items.append(matching)
 
-    clusters.sort(key=lambda c: sum(c) / len(c), reverse=True)
+    # Sort clusters by max_size descending to establish hierarchy level
+    clusters.sort(key=lambda c: max(c), reverse=True)
+    cluster_items.sort(key=lambda items: max(i["max_size"] for i in items), reverse=True)
 
-    keys = ["primary", "subsection", "backmatter", "body"]
+    keys = ["primary", "subsection", "sub_subsection", "backmatter", "body"]
     result = {}
-    for i, (cluster, profiles) in enumerate(zip(clusters, cluster_profiles, strict=False)):
+    for i, (cluster_sizes, items) in enumerate(zip(clusters, cluster_items, strict=False)):
         if i >= len(keys):
             break
+
+        profiles = [item["profile"] for item in items]
+
         is_bold = any(p["is_bold"] for p in profiles)
         fonts = set()
         for p in profiles:
             fonts.update(p["font_families"])
+
+        # Compute spacing before/after by searching ALL blocks on the same page
+        space_before_vals = []
+        space_after_vals = []
+        for item in items:
+            heading_block = item["block"]
+            heading_page = heading_block.get("page")
+            heading_bbox = heading_block.get("bbox") or heading_block.get("block_bbox")
+            if heading_bbox and len(heading_bbox) >= 4 and heading_page is not None:
+                h_y1 = heading_bbox[1]
+                h_y2 = heading_bbox[3]
+
+                nearest_above_bottom = None
+                nearest_below_top = None
+                for other in blocks:
+                    if other is heading_block:
+                        continue
+                    if other.get("page") == heading_page:
+                        obbox = other.get("bbox") or other.get("block_bbox")
+                        if obbox and len(obbox) >= 4:
+                            o_y2 = obbox[3]
+                            o_y1 = obbox[1]
+                            if o_y2 <= h_y1 and (nearest_above_bottom is None or o_y2 > nearest_above_bottom):
+                                nearest_above_bottom = o_y2
+                            if o_y1 >= h_y2 and (nearest_below_top is None or o_y1 < nearest_below_top):
+                                nearest_below_top = o_y1
+
+                if nearest_above_bottom is not None:
+                    space_before_vals.append(h_y1 - nearest_above_bottom)
+                if nearest_below_top is not None:
+                    space_after_vals.append(nearest_below_top - h_y2)
+
+        space_before = sum(space_before_vals) / len(space_before_vals) if space_before_vals else 0.0
+        space_after = sum(space_after_vals) / len(space_after_vals) if space_after_vals else 0.0
+
         result[keys[i]] = {
-            "size_min": min(cluster),
-            "size_max": max(cluster),
+            "size_min": min(cluster_sizes),
+            "size_max": max(cluster_sizes),
             "bold": is_bold,
             "fonts": fonts,
+            "space_before": space_before,
+            "space_after": space_after,
         }
 
     return result
@@ -271,21 +327,24 @@ def _disambiguate_heading_role(block: dict, style_profiles: dict) -> str | None:
 
     size = profile["mean_size"]
 
-    for role_key in ("primary", "subsection", "backmatter", "body"):
+    for role_key, role_name in [
+        ("primary", "section_heading"),
+        ("subsection", "subsection_heading"),
+        ("sub_subsection", "sub_subsection_heading"),
+        ("backmatter", "backmatter_heading"),
+        ("body", None),
+    ]:
         cfg = style_profiles.get(role_key)
         if cfg is None:
             continue
         if cfg["size_min"] <= size <= cfg["size_max"]:
-            if role_key == "primary":
-                return "section_heading"
-            elif role_key == "subsection":
-                return "subsection_heading"
-            elif role_key == "backmatter":
+            if role_key == "backmatter":
                 if profile["is_bold"]:
-                    return "backmatter_heading"
+                    return role_name
                 return None
             elif role_key == "body":
                 return None
+            return role_name
 
     return None
 
@@ -335,7 +394,7 @@ def _reorder_tail_run(
     body_pool: list[dict] = []
     for block in tail_blocks:
         role = block.get("role")
-        if role == "backmatter_heading":
+        if role in ("backmatter_boundary_heading", "backmatter_heading"):
             backmatter_sections.append({"heading": block, "bodies": []})
         elif role == "reference_heading":
             ref_section = {"heading": block, "bodies": []}
@@ -407,11 +466,16 @@ def _reorder_tail_run(
         else:
             orphan_blocks.append(body)
 
-    # Phase 5 — emit: non-tail pass (body/unknown), then backmatter, then references
+    # Phase 5 — emit: non-tail pass, then boundary heading first
+    # (backmatter container), then sub-sections, then references
     result: list[dict] = []
     result.extend(non_tail_pass)
     result.extend(carried_bodies)
-    for sec in backmatter_sections:
+    boundary_secs = [s for s in backmatter_sections
+                     if s["heading"].get("role") == "backmatter_boundary_heading"]
+    sub_secs = [s for s in backmatter_sections
+                if s["heading"].get("role") != "backmatter_boundary_heading"]
+    for sec in boundary_secs + sub_secs:
         result.append(sec["heading"])
         result.extend(sec["bodies"])
     if ref_section is not None and ref_section is not carried_ref:
@@ -442,7 +506,7 @@ def _reorder_tail_run_fifo(
 
     for block in tail_blocks:
         role = block.get("role")
-        if role == "backmatter_heading":
+        if role in ("backmatter_boundary_heading", "backmatter_heading"):
             sec = {"heading": block, "bodies": []}
             backmatter_sections.append(sec)
             heading_queue.append(sec)
@@ -471,7 +535,11 @@ def _reorder_tail_run_fifo(
 
     result: list[dict] = []
     result.extend(non_tail_pass)
-    for sec in backmatter_sections:
+    boundary_secs = [s for s in backmatter_sections
+                     if s["heading"].get("role") == "backmatter_boundary_heading"]
+    sub_secs = [s for s in backmatter_sections
+                if s["heading"].get("role") != "backmatter_boundary_heading"]
+    for sec in boundary_secs + sub_secs:
         result.append(sec["heading"])
         result.extend(sec["bodies"])
     if ref_section is not None and ref_section is not carried_ref:
@@ -511,7 +579,9 @@ def _promote_tail_body_candidates(
             continue
 
         page_blocks = [result[i] for i in indices]
-        local_headings = [b for b in page_blocks if b.get("role") == "backmatter_heading"]
+        local_headings = [
+            b for b in page_blocks if b.get("role") in ("backmatter_heading", "backmatter_boundary_heading")
+        ]
         ref_heading = next((b for b in page_blocks if b.get("role") == "reference_heading"), None)
         local_anchors = local_headings
         local_tops = []
@@ -634,7 +704,7 @@ def _detect_forward_body_end(blocks: list[dict]) -> int | None:
 
     for page in pages:
         roles = {b.get("role") for b in by_page[page]}
-        has_body = bool(roles & {"body_paragraph", "section_heading", "subsection_heading"})
+        has_body = bool(roles & {"body_paragraph", "section_heading", "subsection_heading", "sub_subsection_heading"})
         has_tail = bool(roles & _TAIL_ROLES)
 
         if has_body and not has_tail:
@@ -674,7 +744,7 @@ def _detect_backward_backmatter_start(blocks: list[dict]) -> int | None:
         page_blocks = by_page[page]
         roles = {b.get("role") for b in page_blocks}
 
-        if "reference_heading" in roles or "backmatter_heading" in roles:
+        if "reference_heading" in roles or "backmatter_heading" in roles or "backmatter_boundary_heading" in roles:
             return page
 
         dense_refs = sum(1 for b in page_blocks if b.get("role") == "reference_item")
@@ -731,7 +801,8 @@ def _assign_tail_spread_ownership(
     with _spread_anchor so the page-local reorder pass does not reassign them.
     Unanchored candidates inside the spread stay as tail_candidate_body.
     """
-    anchors = [b for b in blocks if b.get("role") == "backmatter_heading"]
+    tail_heading_roles = {"backmatter_heading", "backmatter_boundary_heading"}
+    anchors = [b for b in blocks if b.get("role") in tail_heading_roles]
     ref_heading = next((b for b in blocks if b.get("role") == "reference_heading"), None)
 
     if tail_spread is not None:
@@ -1007,7 +1078,7 @@ def render_fulltext_markdown(
             lines.append("")
             emitted_pages.add(block_page)
 
-        if role == "backmatter_heading" or role == "reference_heading":
+        if role == "backmatter_boundary_heading" or role == "backmatter_heading" or role == "reference_heading":
             lines.append(f"## {text}")
             lines.append("")
         elif role == "section_heading":
@@ -1020,7 +1091,7 @@ def render_fulltext_markdown(
             else:
                 lines.append(f"## {text}")
                 lines.append("")
-        elif role == "subsection_heading":
+        elif role == "subsection_heading" or role == "sub_subsection_heading":
             lines.append(f"### {text}")
             lines.append("")
         elif role in ("backmatter_body", "tail_candidate_body", "body_paragraph"):

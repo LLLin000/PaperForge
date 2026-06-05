@@ -109,6 +109,226 @@ def _looks_like_reference(text: str) -> bool:
     return bool(_REFERENCE_PATTERN.match(text.strip()))
 
 
+def _is_backmatter_boundary_heading(block: dict, page_blocks: list[dict]) -> bool:
+    text = str(block.get("block_content", "") or "").strip()
+    if not text:
+        return False
+
+    page_num = block.get("page", 1) or 1
+    if page_num < 8:
+        return False
+
+    raw_label = str(block.get("block_label", "") or "").strip()
+
+    is_heading_label = raw_label == "paragraph_title"
+    span_meta = block.get("span_metadata", {}) or {}
+    is_visually_heading = False
+    if isinstance(span_meta, dict):
+        font_size = span_meta.get("size", 0) or 0
+        font_flags = (span_meta.get("flags", "") or "").lower()
+        is_visually_heading = ("bold" in font_flags and font_size >= 11) or font_size >= 14
+    elif isinstance(span_meta, list):
+        sizes = [s.get("size", 0) or 0 for s in span_meta if isinstance(s, dict)]
+        bold_flags = any(s.get("flags", 0) & 16 for s in span_meta if isinstance(s, dict))
+        avg_size = sum(sizes) / len(sizes) if sizes else 0
+        is_visually_heading = bold_flags or avg_size >= 14
+
+    if not (is_heading_label or is_visually_heading):
+        return False
+
+    upper = text.upper()
+    has_container_words = (
+        "ADDITIONAL" in upper or "SUPPLEMENTARY" in upper or "DECLARATION" in upper or "INFORMATION" in upper
+    )
+    if not has_container_words:
+        return False
+
+    if len(text) <= 20:
+        return False
+
+    lower = text.lower()
+    if lower in ("references", "bibliography"):
+        return False
+    if lower in _BACKMATTER_HEADINGS:
+        return False
+    return lower not in _BACKMATTER_TITLE_DENY_LIST
+
+
+def _looks_like_author_list(text: str) -> bool:
+    """Check if text looks like a list of author names (not a title or body)."""
+    if not text:
+        return False
+    has_name_comma = bool(re.search(r"[A-Z][a-z]+,\s+[A-Z]", text))
+    has_and_name = bool(re.search(r"\band\b\s+[A-Z][a-z]+", text))
+    has_author_marker = bool(re.search(r"[\*†‡§¶#]", text))
+    has_two_name_pairs = bool(re.search(r"[A-Z][a-z]+\s+[A-Z][a-z]+\s*[·•,;]\s*[A-Z][a-z]+", text))
+    has_et_al = "et al" in text.lower()
+    return (has_name_comma or has_and_name or has_author_marker or has_two_name_pairs or has_et_al) and len(text) < 500
+
+
+def _looks_like_affiliation(text: str) -> bool:
+    """Check if text looks like an affiliation block."""
+    lower_txt = text.lower()
+    inst_keywords = [
+        "university",
+        "department",
+        "institute",
+        "college",
+        "school of",
+        "faculty",
+        "laboratory",
+        "lab",
+        "hospital",
+        "center",
+        "centre",
+        "academy",
+        "division",
+        "initiative",
+        "regenerative medicine",
+        "research",
+        "science",
+        "technology",
+        "medicine",
+        "school of materials",
+    ]
+    has_inst = any(kw in lower_txt for kw in inst_keywords)
+    has_city_country = bool(
+        re.search(
+            r"(?:,\s*)(?:USA|UK|China|Germany|France|Japan|Italy|Canada|"
+            r"Australia|Brazil|India|Korea|Spain|Netherlands|Switzerland|"
+            r"Sweden|Norway|Denmark|Austria|Belgium|Finland|Poland|"
+            r"Russia|Mexico|Argentina|Singapore|Taiwan|Hong\s*Kong)",
+            text,
+        )
+    )
+    has_number_prefix = bool(re.match(r"^[\$\s]*\^?\d+\s*", text))
+    has_superscript_number = bool(re.search(r"\$?\^\d+\$?", text))
+    return has_inst or (has_city_country and has_number_prefix) or has_superscript_number
+
+
+def _infer_heading_level(text: str, font_size: float = 0) -> str:
+    """Infer heading level for unnumbered papers using text content heuristics.
+
+    Uses case patterns, word count, and optional font size to distinguish
+    top-level section headings from lower-level sub-sections.  Font size
+    overrides content heuristics when >= 14pt (clearly a major heading).
+    """
+    if not text:
+        return "section_heading"
+    if font_size >= 14:
+        return "section_heading"
+    upper_ratio = sum(1 for c in text if c.isupper()) / max(len(text), 1)
+    is_mostly_upper = upper_ratio > 0.7
+    sentence_verbs = {" is ", " are ", " was ", " were ", " have ", " has ", " been "}
+    has_sentence_verb = any(v in text.lower() for v in sentence_verbs)
+    word_count = len(text.split())
+    if is_mostly_upper and word_count >= 1 and not has_sentence_verb:
+        return "section_heading"
+    if word_count >= 2 and not has_sentence_verb:
+        return "subsection_heading"
+    if word_count == 1 and not has_sentence_verb:
+        return "sub_subsection_heading"
+    return "section_heading"
+
+
+def _detect_frontmatter_zone(
+    block: dict,
+    page_blocks: list[dict],
+    page_height: float,
+    page_width: float,
+    style_profiles: dict | None = None,
+) -> str | None:
+    """Detect frontmatter zone for a block on page 1.
+
+    Returns one of: ``title_zone``, ``author_zone``, ``affiliation_zone``,
+    ``journal_furniture_zone``, ``abstract_zone``, or ``None``.
+    """
+    page_num = block.get("page", 1) or 1
+    if page_num > 1:
+        return None
+
+    bbox = block.get("block_bbox", [0, 0, 0, 0])
+    if len(bbox) < 4:
+        return None
+
+    text = str(block.get("block_content", "") or "").strip()
+    if not text:
+        return None
+
+    lower_txt = text.lower()
+    raw_label = str(block.get("block_label", "") or "").strip()
+    x1, y1, x2 = bbox[0], bbox[1], bbox[2]
+
+    # --- abstract_zone ---
+    if lower_txt.startswith("abstract") and len(text) < 30:
+        return "abstract_zone"
+
+    # --- journal_furniture_zone ---
+    furniture_signals = [
+        "submitted",
+        "accepted",
+        "published",
+        "received",
+        "copyright",
+        "©",
+        "doi:",
+        "doi ",
+        "https://doi.org",
+        "academic editor",
+        "how to cite",
+        "to cite this article",
+        "creative commons",
+        "cc by",
+        "cc license",
+        "this is an open-access article",
+        "reviewed by",
+        "edited by",
+        "present address",
+    ]
+    if any(s in lower_txt for s in furniture_signals):
+        return "journal_furniture_zone"
+
+    narrow_furniture = [
+        "citation:",
+        "correspondence",
+        "orcid",
+        "these authors contributed equally",
+        "equal contribution",
+        "additional information",
+    ]
+    if any(s in lower_txt for s in narrow_furniture):
+        block_width = x2 - x1
+        is_narrow = page_width > 0 and block_width < page_width * 0.35
+        is_top_half = page_height > 0 and y1 < page_height * 0.5
+        if is_narrow or is_top_half:
+            return "journal_furniture_zone"
+
+    # --- title_zone ---
+    if page_height > 0 and y1 < page_height * 0.2:
+        block_width = x2 - x1
+        is_wide_enough = page_width <= 0 or block_width > page_width * 0.4
+        if is_wide_enough and lower_txt not in _BACKMATTER_TITLE_DENY_LIST and not _looks_like_author_list(text):
+            if raw_label in ("paragraph_title", "doc_title"):
+                return "title_zone"
+            if raw_label == "text" and len(text) < 80:
+                return "title_zone"
+
+    # --- author_zone ---
+    if (
+        page_height > 0
+        and y1 < page_height * 0.4
+        and _looks_like_author_list(text)
+        and not _looks_like_affiliation(text)
+    ):
+        return "author_zone"
+
+    # --- affiliation_zone ---
+    if page_height > 0 and y1 < page_height * 0.6 and _looks_like_affiliation(text):
+        return "affiliation_zone"
+
+    return None
+
+
 def assign_block_role(
     block: dict,
     page_blocks: list[dict],
@@ -146,6 +366,50 @@ def assign_block_role(
             confidence=0.9,
             evidence=[f"table prefix matched: {text[:60]}"],
         )
+
+    # --- Page-1 frontmatter zone pre-filter ---
+    page_num = block.get("page", 1) or 1
+    zone = None
+    if page_num == 1 and raw_label in ("paragraph_title", "text"):
+        zone = _detect_frontmatter_zone(
+            block,
+            page_blocks,
+            page_height,
+            page_width,
+            style_profiles,
+        )
+
+    if zone == "title_zone":
+        lower_stripped = text.strip().lstrip("*•·-–—").lower()
+        if lower_stripped not in _BACKMATTER_TITLE_DENY_LIST:
+            return RoleAssignment(
+                role="paper_title",
+                confidence=0.8,
+                evidence=[f"page-1 zone title_zone: {text[:60]}"],
+            )
+
+    if zone == "author_zone":
+        return RoleAssignment(
+            role="authors",
+            confidence=0.8,
+            evidence=[f"page-1 zone author_zone: {text[:60]}"],
+        )
+
+    if zone == "affiliation_zone":
+        return RoleAssignment(
+            role="affiliation",
+            confidence=0.8,
+            evidence=[f"page-1 zone affiliation_zone: {text[:60]}"],
+        )
+
+    if zone == "journal_furniture_zone":
+        return RoleAssignment(
+            role="frontmatter_noise",
+            confidence=0.8,
+            evidence=[f"page-1 zone journal_furniture_zone: {text[:60]}"],
+        )
+
+    # zone == "abstract_zone" → let existing logic handle
 
     # Paddle priors
     if raw_label == "paragraph_title":
@@ -187,6 +451,14 @@ def assign_block_role(
                 confidence=0.5,
                 evidence=[f"backmatter heading text on page 1, treated as section: {text[:60]}"],
             )
+        # Backmatter boundary container heading (e.g. "ADDITIONAL INFORMATION AND DECLARATIONS")
+        # Checked after specific heading detection but before numbered/generic fallback.
+        if _is_backmatter_boundary_heading(block, page_blocks):
+            return RoleAssignment(
+                role="backmatter_boundary_heading",
+                confidence=0.7,
+                evidence=[f"backmatter boundary heading: {text[:60]}"],
+            )
         if _has_heading_numbering(text):
             return RoleAssignment(
                 role="section_heading" if re.match(r"^\d+\s", text) else "subsection_heading",
@@ -199,7 +471,7 @@ def assign_block_role(
             if bbox[1] < max(page_height, 1) * 0.25:
                 if lower in _BACKMATTER_TITLE_DENY_LIST:
                     return RoleAssignment(
-                        role="section_heading",
+                    role="section_heading" if re.match(r"^\d+\s", text) else "subsection_heading",
                         confidence=0.5,
                         evidence=[f"backmatter title in title zone, treated as heading: {text[:60]}"],
                     )
@@ -213,10 +485,11 @@ def assign_block_role(
                 confidence=0.5,
                 evidence=[f"unnumbered paragraph_title on page 1 outside title zone: {text[:60]}"],
             )
+        level = _infer_heading_level(text)
         return RoleAssignment(
-            role="section_heading",
+            role=level,
             confidence=0.6,
-            evidence=[f"unnumbered paragraph_title on page {page_num}, treated as heading: {text[:60]}"],
+            evidence=[f"unnumbered paragraph_title, inferred level {level}: {text[:60]}"],
         )
 
     if raw_label == "figure_title":
@@ -401,7 +674,7 @@ def assign_block_role(
             no_sentence_verbs = not (len(text) > 50 and any(v in text.lower() for v in sentence_verbs))
             if in_top_80 and wide_enough and no_sentence_verbs:
                 return RoleAssignment(
-                    role="section_heading" if re.match(r"^\d+\s", text) else "subsection_heading",
+                    role="section_heading",
                     confidence=0.65,
                     evidence=[f"numbered text block: {text[:60]}"],
                 )
@@ -413,7 +686,7 @@ def assign_block_role(
                 evidence=[f"references heading from text block: {text[:40]}"],
             )
 
-        # Style-aware heading disambiguation (Task 5)
+        # Style-aware heading disambiguation — primary signal for unnumbered papers
         if style_profiles is not None and style_profiles:
             from paperforge.worker.ocr_render import _disambiguate_heading_role
 
@@ -424,7 +697,7 @@ def assign_block_role(
                 if in_top_80 and len(text) >= 5 and len(text) < 60 and ". " not in text:
                     return RoleAssignment(
                         role=style_suggested,
-                        confidence=0.65,
+                        confidence=0.7,
                         evidence=[f"style-aware heading detection: role={style_suggested}, text={text[:40]}"],
                     )
 
@@ -441,11 +714,20 @@ def assign_block_role(
             bbox = block.get("block_bbox", [0, 0, 0, 0])
             in_top_80 = page_height == 0 or (len(bbox) >= 4 and bbox[1] < page_height * 0.8)
             if in_top_80:
+                heading_level = _infer_heading_level(text, font_size)
                 return RoleAssignment(
-                    role="section_heading",
+                    role=heading_level,
                     confidence=0.65,
-                    evidence=[f"heading-style text block: size={font_size}, flags={font_flags}, text={text[:40]}"],
+                    evidence=[f"heading-style text block: size={font_size}, flags={font_flags}, level={heading_level}, text={text[:40]}"],
                 )
+
+        # Backmatter boundary container heading detection for text blocks
+        if _is_backmatter_boundary_heading(block, page_blocks):
+            return RoleAssignment(
+                role="backmatter_boundary_heading",
+                confidence=0.7,
+                evidence=[f"backmatter boundary heading from text block: {text[:60]}"],
+            )
 
         if len(text) < 20:
             return RoleAssignment(
