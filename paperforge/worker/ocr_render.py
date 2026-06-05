@@ -115,6 +115,7 @@ def _find_owning_heading(
 
     body_y = body_bbox[1]
     body_col = _get_column(body, page_width)
+    body_width = body_bbox[2] - body_bbox[0]
 
     candidates: list[tuple[int, float]] = []
     for i, sec in enumerate(sections):
@@ -127,7 +128,11 @@ def _find_owning_heading(
             continue
         h_col = _get_column(h, page_width)
         dist = body_y - h_bottom
-        col_penalty = 0.0 if h_col == body_col else 10000.0
+        horizontal_overlap = max(0.0, min(body_bbox[2], h_bbox[2]) - max(body_bbox[0], h_bbox[0]))
+        if body_width >= page_width * 0.45 and horizontal_overlap > 0:
+            col_penalty = 0.0
+        else:
+            col_penalty = 0.0 if h_col == body_col else 10000.0
         candidates.append((i, dist + col_penalty))
 
     if not candidates:
@@ -532,8 +537,6 @@ def _reorder_tail_run(
     sub_secs = [s for s in backmatter_sections if s["heading"].get("role") != "backmatter_boundary_heading"]
     for sec in boundary_secs + sub_secs:
         h = sec["heading"]
-        if h.get("_backmatter_regime") == "container" and h.get("role") == "backmatter_heading":
-            h["_container_child"] = True
         result.append(h)
         result.extend(sec["bodies"])
     if ref_section is not None and ref_section is not carried_ref:
@@ -597,8 +600,6 @@ def _reorder_tail_run_fifo(
     sub_secs = [s for s in backmatter_sections if s["heading"].get("role") != "backmatter_boundary_heading"]
     for sec in boundary_secs + sub_secs:
         h = sec["heading"]
-        if h.get("_backmatter_regime") == "container" and h.get("role") == "backmatter_heading":
-            h["_container_child"] = True
         result.append(h)
         result.extend(sec["bodies"])
     if ref_section is not None and ref_section is not carried_ref:
@@ -969,6 +970,60 @@ def _label_backmatter_regime(tail_boundary: TailBoundary, backmatter_form: str, 
                 block["_backmatter_regime"] = "flat"
 
 
+def _normalize_backmatter_roles_after_boundary(
+    tail_boundary: TailBoundary | None,
+    backmatter_form: str,
+    blocks: list[dict],
+) -> None:
+    """Normalize mixed roles inside the backmatter region.
+
+    Once the backmatter boundary has been entered, all non-reference headings
+    should be treated as backmatter headings and all owned content should stop
+    competing with body/frontmatter roles.
+    """
+    if (
+        tail_boundary is None
+        or tail_boundary.spread_start is None
+        or tail_boundary.spread_end is None
+        or backmatter_form != "container"
+    ):
+        return
+
+    boundary_seen = False
+    for block in blocks:
+        page = block.get("page")
+        if page is None or page < tail_boundary.spread_start or page > tail_boundary.spread_end:
+            continue
+
+        role = block.get("role")
+        if role == "backmatter_boundary_heading":
+            if boundary_seen:
+                block["role"] = "backmatter_heading"
+                block["_backmatter_regime"] = "container"
+            else:
+                boundary_seen = True
+                block["_backmatter_regime"] = "container"
+            continue
+
+        if not boundary_seen:
+            continue
+
+        if role == "reference_heading":
+            break
+
+        if role in {"section_heading", "subsection_heading", "sub_subsection_heading"}:
+            block["role"] = "backmatter_heading"
+            block["_backmatter_regime"] = "container"
+            block["render_default"] = True
+            continue
+
+        if role in {"body_paragraph", "frontmatter_noise"}:
+            block["role"] = "backmatter_body"
+            block["_backmatter_regime"] = "container"
+            block["render_default"] = True
+            block["index_default"] = True
+
+
 def _assign_tail_spread_ownership(
     blocks: list[dict],
     tail_spread: TailBoundary | None = None,
@@ -1063,6 +1118,7 @@ def _order_tail_blocks(blocks: list[dict], style_profiles: dict | None = None) -
     if tail_spread is not None:
         backmatter_form = _classify_backmatter_form(tail_spread, blocks)
         _label_backmatter_regime(tail_spread, backmatter_form, blocks)
+        _normalize_backmatter_roles_after_boundary(tail_spread, backmatter_form, blocks)
 
     # Step 0.5: only inside the reconciled tail spread, promote plausible
     # body paragraphs into tail candidates using geometry rather than
@@ -1266,10 +1322,7 @@ def render_fulltext_markdown(
             emitted_pages.add(block_page)
 
         if role == "backmatter_boundary_heading" or role == "backmatter_heading" or role == "reference_heading":
-            if block.get("_container_child"):
-                lines.append(f"### {text}")
-            else:
-                lines.append(f"## {text}")
+            lines.append(f"## {text}")
             lines.append("")
         elif role == "section_heading":
             if text.strip().lower() in FRONTMATTER_NOISE:

@@ -1,10 +1,195 @@
-"""Phase 2 contract tests for figure inventory.
-
-paperforge.worker.ocr_figures does not exist yet -- tests will fail until
-Task 5 implements the module.
-"""
+"""Phase 2 contract tests for figure inventory."""
 
 from __future__ import annotations
+
+# --- clustering helpers ---
+
+
+def test_cluster_bbox_union() -> None:
+    from paperforge.worker.ocr_figures import _cluster_bbox
+
+    bboxes = [
+        [100, 100, 300, 300],
+        [250, 200, 500, 400],
+    ]
+    result = _cluster_bbox(bboxes)
+    assert result == [100, 100, 500, 400]
+
+
+def test_cluster_bbox_single() -> None:
+    from paperforge.worker.ocr_figures import _cluster_bbox
+
+    result = _cluster_bbox([[50, 60, 200, 300]])
+    assert result == [50, 60, 200, 300]
+
+
+def test_cluster_bbox_empty() -> None:
+    from paperforge.worker.ocr_figures import _cluster_bbox
+
+    result = _cluster_bbox([])
+    assert result == [0, 0, 0, 0]
+
+
+def test_media_clusters_side_by_side() -> None:
+    from paperforge.worker.ocr_figures import _media_clusters
+
+    blocks = [
+        {"block_id": 1, "page": 1, "role": "figure_asset", "raw_label": "image", "bbox": [0, 0, 100, 200]},
+        {"block_id": 2, "page": 1, "role": "figure_asset", "raw_label": "image", "bbox": [120, 0, 220, 200]},
+    ]
+    clusters = _media_clusters(blocks)
+    assert len(clusters) == 1
+    assert len(clusters[0]) == 2
+
+
+def test_media_clusters_stacked() -> None:
+    from paperforge.worker.ocr_figures import _media_clusters
+
+    blocks = [
+        {"block_id": 1, "page": 1, "role": "figure_asset", "raw_label": "image", "bbox": [0, 0, 200, 100]},
+        {"block_id": 2, "page": 1, "role": "figure_asset", "raw_label": "image", "bbox": [0, 120, 200, 220]},
+    ]
+    clusters = _media_clusters(blocks)
+    assert len(clusters) == 1
+    assert len(clusters[0]) == 2
+
+
+def test_media_clusters_different_pages() -> None:
+    from paperforge.worker.ocr_figures import _media_clusters
+
+    blocks = [
+        {"block_id": 1, "page": 1, "role": "figure_asset", "raw_label": "image", "bbox": [0, 0, 100, 100]},
+        {"block_id": 2, "page": 2, "role": "figure_asset", "raw_label": "image", "bbox": [0, 0, 100, 100]},
+    ]
+    clusters = _media_clusters(blocks)
+    assert len(clusters) == 2
+    assert len(clusters[0]) == 1
+    assert len(clusters[1]) == 1
+
+
+def test_media_clusters_wide_gap_no_cluster() -> None:
+    from paperforge.worker.ocr_figures import _media_clusters
+
+    blocks = [
+        {"block_id": 1, "page": 1, "role": "figure_asset", "raw_label": "image", "bbox": [0, 0, 200, 100]},
+        {"block_id": 2, "page": 1, "role": "figure_asset", "raw_label": "image", "bbox": [0, 200, 200, 300]},
+    ]
+    clusters = _media_clusters(blocks)
+    assert len(clusters) == 2
+
+
+def test_media_clusters_ignores_non_media_assets() -> None:
+    from paperforge.worker.ocr_figures import _media_clusters
+
+    blocks = [
+        {"block_id": 1, "page": 1, "role": "figure_caption", "raw_label": "caption", "bbox": [0, 0, 100, 100]},
+        {"block_id": 2, "page": 1, "role": "figure_asset", "raw_label": "image", "bbox": [0, 0, 100, 100]},
+    ]
+    clusters = _media_clusters(blocks)
+    assert len(clusters) == 1
+    assert len(clusters[0]) == 1
+
+
+def test_precaption_media_region_above() -> None:
+    from paperforge.worker.ocr_figures import _precaption_media_region
+
+    media_cluster = [
+        {"bbox": [0, 0, 200, 100]},
+    ]
+    caption = {"bbox": [0, 120, 200, 150]}
+    assert _precaption_media_region(media_cluster, caption) is True
+
+
+def test_precaption_media_region_below() -> None:
+    from paperforge.worker.ocr_figures import _precaption_media_region
+
+    media_cluster = [
+        {"bbox": [0, 200, 200, 300]},
+    ]
+    caption = {"bbox": [0, 0, 200, 50]}
+    assert _precaption_media_region(media_cluster, caption) is False
+
+
+def test_is_embedded_figure_text_inside_media() -> None:
+    from paperforge.worker.ocr_figures import is_embedded_figure_text
+
+    blocks = [
+        {"block_id": 1, "page": 1, "role": "figure_asset", "raw_label": "image", "bbox": [100, 100, 500, 400]},
+    ]
+    block_inside = {"block_id": 2, "page": 1, "role": "text", "bbox": [200, 200, 300, 250]}
+    assert is_embedded_figure_text(block_inside, blocks) is True
+
+
+def test_is_embedded_figure_text_outside_media() -> None:
+    from paperforge.worker.ocr_figures import is_embedded_figure_text
+
+    blocks = [
+        {"block_id": 1, "page": 1, "role": "figure_asset", "raw_label": "image", "bbox": [100, 100, 500, 400]},
+    ]
+    block_outside = {"block_id": 2, "page": 1, "role": "text", "bbox": [600, 600, 700, 650]}
+    assert is_embedded_figure_text(block_outside, blocks) is False
+
+
+def test_is_embedded_figure_text_narrow_axis_label() -> None:
+    from paperforge.worker.ocr_figures import is_embedded_figure_text
+
+    blocks = [
+        {"block_id": 1, "page": 1, "role": "figure_asset", "raw_label": "image", "bbox": [100, 100, 500, 400]},
+    ]
+    narrow = {"block_id": 2, "page": 1, "role": "text", "bbox": [200, 450, 320, 470]}
+    assert is_embedded_figure_text(narrow, blocks) is True
+
+
+def test_compute_candidate_figure_regions_basic() -> None:
+    from paperforge.worker.ocr_figures import _compute_candidate_figure_regions
+
+    blocks = [
+        {"block_id": 1, "page": 1, "role": "figure_asset", "raw_label": "image", "bbox": [100, 100, 500, 300]},
+        {
+            "block_id": 2,
+            "page": 1,
+            "role": "figure_caption",
+            "text": "Figure 1. Test caption.",
+            "bbox": [100, 320, 500, 360],
+        },
+    ]
+    regions = _compute_candidate_figure_regions(blocks)
+    assert len(regions) == 1
+    assert regions[0]["page"] == 1
+    assert len(regions[0]["media_blocks"]) == 1
+    assert len(regions[0]["attached_captions"]) == 1
+
+
+def test_compute_candidate_figure_regions_no_caption() -> None:
+    from paperforge.worker.ocr_figures import _compute_candidate_figure_regions
+
+    blocks = [
+        {"block_id": 1, "page": 1, "role": "figure_asset", "raw_label": "image", "bbox": [100, 100, 500, 300]},
+    ]
+    regions = _compute_candidate_figure_regions(blocks)
+    assert len(regions) == 1
+    assert len(regions[0]["attached_captions"]) == 0
+
+
+def test_compute_candidate_figure_regions_caption_before_media() -> None:
+    from paperforge.worker.ocr_figures import _compute_candidate_figure_regions
+
+    blocks = [
+        {
+            "block_id": 1,
+            "page": 1,
+            "role": "figure_caption",
+            "text": "Figure 1. Caption before image.",
+            "bbox": [100, 50, 500, 90],
+        },
+        {"block_id": 2, "page": 1, "role": "figure_asset", "raw_label": "image", "bbox": [100, 110, 500, 400]},
+    ]
+    regions = _compute_candidate_figure_regions(blocks)
+    assert len(regions) == 1
+    assert len(regions[0]["attached_captions"]) == 0
+
+
+# --- existing tests ---
 
 
 def test_formal_figure_count_is_based_on_legends_not_raw_images() -> None:
@@ -78,37 +263,44 @@ def test_unmatched_assets_are_preserved() -> None:
 
 def test_extract_figure_number_basic() -> None:
     from paperforge.worker.ocr_figures import _extract_figure_number
+
     assert _extract_figure_number("Figure 1. Caption") == 1
 
 
 def test_extract_figure_number_fig_dot() -> None:
     from paperforge.worker.ocr_figures import _extract_figure_number
+
     assert _extract_figure_number("Fig. 2. Test") == 2
 
 
 def test_extract_figure_number_supplementary() -> None:
     from paperforge.worker.ocr_figures import _extract_figure_number
+
     assert _extract_figure_number("Supplementary Fig. S3") == 3
 
 
 def test_extract_figure_number_extended_data() -> None:
     from paperforge.worker.ocr_figures import _extract_figure_number
+
     assert _extract_figure_number("Extended Data Fig. 4.") == 4
 
 
 def test_extract_figure_number_decimal_truncated() -> None:
     from paperforge.worker.ocr_figures import _extract_figure_number
+
     result = _extract_figure_number("Figure 1.2. Magnified view")
     assert result == 1 or result == 1.2
 
 
 def test_extract_figure_number_none() -> None:
     from paperforge.worker.ocr_figures import _extract_figure_number
+
     assert _extract_figure_number("Some random text") is None
 
 
 def test_extract_figure_number_multiline() -> None:
     from paperforge.worker.ocr_figures import _extract_figure_number
+
     assert _extract_figure_number("Figure 3.\nDescription continues") == 3
 
 
@@ -291,3 +483,81 @@ def test_legend_does_not_steal_offpage_asset() -> None:
     assert "legend_only" in inventory["matched_figures"][0]["flags"]
     assert len(inventory["unmatched_assets"]) == 1
     assert inventory["unmatched_assets"][0]["block_id"] == "p2_b1"
+
+
+def test_low_confidence_inner_label_does_not_create_formal_figure_object() -> None:
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    structured_blocks = [
+        {
+            "paper_id": "K001",
+            "page": 9,
+            "block_id": "p9_b2",
+            "role": "media_asset",
+            "raw_label": "chart",
+            "text": "",
+            "bbox": [429, 237, 733, 485],
+        },
+        {
+            "paper_id": "K001",
+            "page": 9,
+            "block_id": "p9_b3",
+            "role": "media_asset",
+            "raw_label": "chart",
+            "text": "",
+            "bbox": [772, 238, 1071, 484],
+        },
+        {
+            "paper_id": "K001",
+            "page": 9,
+            "block_id": "p9_b4",
+            "role": "media_asset",
+            "raw_label": "chart",
+            "text": "",
+            "bbox": [363, 504, 742, 757],
+        },
+        {
+            "paper_id": "K001",
+            "page": 9,
+            "block_id": "p9_b5",
+            "role": "media_asset",
+            "raw_label": "chart",
+            "text": "",
+            "bbox": [766, 503, 1075, 750],
+        },
+        {
+            "paper_id": "K001",
+            "page": 9,
+            "block_id": "p9_b6",
+            "role": "media_asset",
+            "raw_label": "chart",
+            "text": "",
+            "bbox": [428, 774, 729, 1016],
+        },
+        {
+            "paper_id": "K001",
+            "page": 9,
+            "block_id": "p9_b7",
+            "role": "media_asset",
+            "raw_label": "chart",
+            "text": "",
+            "bbox": [765, 768, 1075, 1013],
+        },
+        {
+            "paper_id": "K001",
+            "page": 9,
+            "block_id": "p9_b8",
+            "role": "figure_caption",
+            "raw_label": "figure_title",
+            "text": "Days post culture in osteogenic differentiation supplemented medium",
+            "bbox": [374, 1046, 1143, 1077],
+        },
+    ]
+
+    inventory = build_figure_inventory(structured_blocks, page_width=1224)
+
+    assert len(inventory["matched_figures"]) == 0, (
+        "Rejected low-confidence inner labels must not create formal matched figures"
+    )
+    assert len(inventory["rejected_legends"]) == 1
+    assert len(inventory["unmatched_assets"]) == 6

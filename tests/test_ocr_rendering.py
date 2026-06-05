@@ -1883,3 +1883,178 @@ def test_mixed_tail_page_keeps_late_body_out_of_funding_and_attaches_real_fundin
     assert late_body_idx < funding_idx, "Late body text must remain before Funding"
     assert funding_idx < funding_body_idx < funding_cont_idx, "Funding body and continuation must stay under Funding"
     assert funding_cont_idx < ack_idx < refs_idx, "Funding continuation must complete before later tail sections"
+
+
+def test_backmatter_boundary_normalizes_child_sections_before_references() -> None:
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+
+    structured_blocks = [
+        {
+            "paper_id": "KEY001",
+            "page": 10,
+            "block_id": "b1",
+            "role": "backmatter_boundary_heading",
+            "text": "ADDITIONAL INFORMATION AND DECLARATIONS",
+            "render_default": True,
+            "block_bbox": [360, 1200, 1080, 1240],
+            "page_width": 1200,
+            "page_height": 1700,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 10,
+            "block_id": "b2",
+            "role": "backmatter_heading",
+            "text": "Funding",
+            "render_default": True,
+            "block_bbox": [360, 1280, 520, 1320],
+            "page_width": 1200,
+            "page_height": 1700,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 10,
+            "block_id": "b3",
+            "role": "backmatter_body",
+            "text": "The work was supported by Grant A.",
+            "render_default": True,
+            "block_bbox": [360, 1330, 1120, 1450],
+            "page_width": 1200,
+            "page_height": 1700,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 11,
+            "block_id": "b4",
+            "role": "subsection_heading",
+            "text": "Grant Disclosures",
+            "render_default": True,
+            "block_bbox": [360, 160, 620, 200],
+            "page_width": 1200,
+            "page_height": 1700,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 11,
+            "block_id": "b5",
+            "role": "body_paragraph",
+            "text": "Grant A was disclosed by the authors.",
+            "render_default": True,
+            "block_bbox": [360, 210, 920, 290],
+            "page_width": 1200,
+            "page_height": 1700,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 11,
+            "block_id": "b6",
+            "role": "backmatter_heading",
+            "text": "Author Contributions",
+            "render_default": True,
+            "block_bbox": [360, 320, 720, 360],
+            "page_width": 1200,
+            "page_height": 1700,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 11,
+            "block_id": "b7",
+            "role": "frontmatter_noise",
+            "text": "Author A conceived the study and wrote the manuscript.",
+            "render_default": True,
+            "block_bbox": [360, 370, 1120, 430],
+            "page_width": 1200,
+            "page_height": 1700,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 11,
+            "block_id": "b8",
+            "role": "backmatter_heading",
+            "text": "Data Availability",
+            "render_default": True,
+            "block_bbox": [360, 460, 680, 500],
+            "page_width": 1200,
+            "page_height": 1700,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 11,
+            "block_id": "b9",
+            "role": "body_paragraph",
+            "text": "The raw data has been supplied as Supplementary Files.",
+            "render_default": True,
+            "block_bbox": [360, 510, 980, 560],
+            "page_width": 1200,
+            "page_height": 1700,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 11,
+            "block_id": "b10",
+            "role": "backmatter_boundary_heading",
+            "text": "Supplemental Information",
+            "render_default": True,
+            "block_bbox": [360, 590, 760, 630],
+            "page_width": 1200,
+            "page_height": 1700,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 11,
+            "block_id": "b11",
+            "role": "body_paragraph",
+            "text": "Supplemental information for this article can be found online.",
+            "render_default": True,
+            "block_bbox": [360, 640, 1120, 700],
+            "page_width": 1200,
+            "page_height": 1700,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 11,
+            "block_id": "b12",
+            "role": "reference_heading",
+            "text": "REFERENCES",
+            "render_default": True,
+            "block_bbox": [360, 760, 620, 800],
+            "page_width": 1200,
+            "page_height": 1700,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 11,
+            "block_id": "b13",
+            "role": "reference_item",
+            "text": "Smith J. Example reference.",
+            "render_default": True,
+            "block_bbox": [360, 820, 1000, 880],
+            "page_width": 1200,
+            "page_height": 1700,
+        },
+    ]
+
+    md = render_fulltext_markdown(
+        structured_blocks=structured_blocks,
+        resolved_metadata={},
+        figure_inventory={},
+        table_inventory={},
+        page_count=11,
+    )
+
+    funding_idx = md.index("## Funding")
+    grant_idx = md.index("## Grant Disclosures")
+    author_idx = md.index("## Author Contributions")
+    data_idx = md.index("## Data Availability")
+    supp_idx = md.index("## Supplemental Information")
+    refs_idx = md.index("## REFERENCES")
+    grant_body_idx = md.index("Grant A was disclosed by the authors.")
+    author_body_idx = md.index("Author A conceived the study")
+    data_body_idx = md.index("The raw data has been supplied")
+    supp_body_idx = md.index("Supplemental information for this article")
+
+    assert funding_idx < grant_idx < author_idx < data_idx < supp_idx < refs_idx
+    assert grant_idx < grant_body_idx < author_idx
+    assert author_idx < author_body_idx < data_idx
+    assert data_idx < data_body_idx < supp_idx
+    assert supp_idx < supp_body_idx < refs_idx

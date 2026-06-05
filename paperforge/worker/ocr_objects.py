@@ -175,6 +175,17 @@ def extract_and_write_objects(
     ):
         d.mkdir(parents=True, exist_ok=True)
 
+    for stale_dir, pattern in (
+        (figures_asset_dir, "*.jpg"),
+        (tables_asset_dir, "*.jpg"),
+        (orphans_asset_dir, "*.jpg"),
+        (figures_render_dir, "*.md"),
+        (tables_render_dir, "*.md"),
+    ):
+        for stale in stale_dir.glob(pattern):
+            with contextlib.suppress(Exception):
+                stale.unlink()
+
     if page_dimensions_by_page is None:
         page_dimensions_by_page = {}
 

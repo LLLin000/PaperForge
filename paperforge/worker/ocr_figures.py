@@ -101,25 +101,182 @@ def _is_formal_legend(text: str, block: dict | None = None, page_width: float = 
 
         lower = text.lower().strip()
         axis_words = {
-            "days", "time", "concentration", "percentage", "volume",
-            "frequency", "intensity", "ratio", "expression", "level",
-            "content", "activity", "treatment", "group", "control",
-            "dose", "response", "size", "culture", "medium",
-            "supplemented", "differentiation", "osteogenic",
-            "chondrogenic", "adipogenic", "induction", "stimulation",
-            "exposure", "incubation", "harvest", "collection",
+            "days",
+            "time",
+            "concentration",
+            "percentage",
+            "volume",
+            "frequency",
+            "intensity",
+            "ratio",
+            "expression",
+            "level",
+            "content",
+            "activity",
+            "treatment",
+            "group",
+            "control",
+            "dose",
+            "response",
+            "size",
+            "culture",
+            "medium",
+            "supplemented",
+            "differentiation",
+            "osteogenic",
+            "chondrogenic",
+            "adipogenic",
+            "induction",
+            "stimulation",
+            "exposure",
+            "incubation",
+            "harvest",
+            "collection",
         }
         words = set(lower.rstrip(". ").split())
         stop_words = {
-            "of", "the", "in", "and", "to", "a", "an",
-            "by", "at", "for", "with", "on", "is", "are",
-            "was", "were", "post", "after", "during", "before",
+            "of",
+            "the",
+            "in",
+            "and",
+            "to",
+            "a",
+            "an",
+            "by",
+            "at",
+            "for",
+            "with",
+            "on",
+            "is",
+            "are",
+            "was",
+            "were",
+            "post",
+            "after",
+            "during",
+            "before",
         }
         text_len = len(text)
         if text_len < 100 and words and words.issubset(axis_words | stop_words):
             return False
 
     return True
+
+
+def _cluster_bbox(bboxes: list[list[float]]) -> list[float]:
+    if not bboxes:
+        return [0, 0, 0, 0]
+    x1 = min(b[0] for b in bboxes)
+    y1 = min(b[1] for b in bboxes)
+    x2 = max(b[2] for b in bboxes)
+    y2 = max(b[3] for b in bboxes)
+    return [x1, y1, x2, y2]
+
+
+def _media_clusters(blocks: list[dict], page_width: float = 1200) -> list[list[dict]]:
+    media = [
+        b
+        for b in blocks
+        if b.get("role") == "figure_asset"
+        or (b.get("role") == "media_asset" and b.get("raw_label", "") in {"image", "chart", "figure"})
+    ]
+    media.sort(key=lambda b: (b.get("page", 0), b.get("bbox", [0, 0, 0, 0])[1], b.get("bbox", [0, 0, 0, 0])[0]))
+
+    clusters: list[list[dict]] = []
+    for m in media:
+        page = m.get("page", 0)
+        bbox = m.get("bbox", [0, 0, 0, 0])
+        placed = False
+        for cluster in clusters:
+            c_page = cluster[0].get("page", 0)
+            if c_page != page:
+                continue
+            c_bbox = _cluster_bbox([cb.get("bbox", [0, 0, 0, 0]) for cb in cluster])
+            mx1, my1, mx2, my2 = bbox
+            cx1, cy1, cx2, cy2 = c_bbox
+            h_overlap = mx1 < cx2 and cx1 < mx2
+            v_overlap = my1 < cy2 and cy1 < my2
+            h_gap = max(cx1 - mx2, mx1 - cx2, 0)
+            v_gap = max(cy1 - my2, my1 - cy2, 0)
+            small_h = min(my2 - my1, cy2 - cy1)
+            if h_overlap and v_gap < small_h * 0.3:
+                cluster.append(m)
+                placed = True
+                break
+            if v_overlap and h_gap < 50:
+                cluster.append(m)
+                placed = True
+                break
+        if not placed:
+            clusters.append([m])
+    return clusters
+
+
+def _precaption_media_region(media_cluster: list[dict], caption_block: dict) -> bool:
+    cluster_bottom = max(b.get("bbox", [0, 0, 0, 0])[3] for b in media_cluster)
+    caption_top = caption_block.get("bbox", [0, 0, 0, 0])[1]
+    tolerance = 10
+    return cluster_bottom < caption_top + tolerance
+
+
+def _compute_candidate_figure_regions(blocks: list[dict], page_width: float = 1200) -> list[dict]:
+    clusters = _media_clusters(blocks, page_width)
+    captions = [b for b in blocks if b.get("role") == "figure_caption"]
+    regions: list[dict] = []
+    for i, cluster in enumerate(clusters):
+        cluster_bbox = _cluster_bbox([b.get("bbox", [0, 0, 0, 0]) for b in cluster])
+        page = cluster[0].get("page", 0)
+        attached: list[dict] = []
+        unvalidated: list[dict] = []
+        for cap in captions:
+            if cap.get("page", 0) != page:
+                continue
+            if _precaption_media_region(cluster, cap):
+                attached.append(cap)
+            else:
+                unvalidated.append(cap)
+        regions.append(
+            {
+                "region_id": f"region_{i + 1:03d}",
+                "page": page,
+                "cluster_bbox": cluster_bbox,
+                "media_blocks": cluster,
+                "attached_captions": attached,
+                "unvalidated_captions": unvalidated,
+            }
+        )
+    return regions
+
+
+def is_embedded_figure_text(block: dict, all_blocks: list[dict], page_width: float = 1200) -> bool:
+    block_bbox = block.get("bbox") or block.get("block_bbox")
+    if not block_bbox or len(block_bbox) < 4:
+        return False
+    bx1, by1, bx2, by2 = block_bbox[:4]
+    cx = (bx1 + bx2) / 2
+    cy = (by1 + by2) / 2
+    block_page = block.get("page", 0)
+
+    for other in all_blocks:
+        if other is block:
+            continue
+        if other.get("role") not in ("figure_asset", "media_asset"):
+            continue
+        if other.get("page", 0) != block_page:
+            continue
+        ob = other.get("bbox") or other.get("block_bbox")
+        if not ob or len(ob) < 4:
+            continue
+        ox1, oy1, ox2, oy2 = ob[:4]
+        if ox1 <= cx <= ox2 and oy1 <= cy <= oy2:
+            return True
+        block_width = bx2 - bx1
+        if block_width < page_width * 0.2:
+            h_overlap = bx1 < ox2 and ox1 < bx2
+            if h_overlap:
+                return True
+
+    return False
 
 
 def build_figure_inventory(structured_blocks: list[dict], page_width: float = 1200) -> dict[str, Any]:
@@ -134,8 +291,6 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
         if block.get("page_width"):
             page_width = float(block["page_width"])
 
-    low_conf_legends: list[dict] = []
-
     for block in structured_blocks:
         role = block.get("role", "")
         if role == "figure_caption":
@@ -143,7 +298,6 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
                 continue
             if not _is_formal_legend(block.get("text", ""), block, page_width):
                 rejected_legends.append(block)
-                low_conf_legends.append(block)
             else:
                 legends.append(block)
         elif role == "figure_asset":
@@ -153,54 +307,41 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
             if raw_label in {"image", "chart", "figure_title", "figure"} or not raw_label:
                 assets.append(block)
 
+    candidate_regions = _compute_candidate_figure_regions(structured_blocks, page_width)
     used_asset_indices: set[int] = set()
+    used_region_ids: set[str] = set()
     for legend in legends:
         legend_page = legend.get("page", 0)
-        legend_bbox = legend.get("bbox", [0, 0, 0, 0])
         legend_text = legend.get("text", "")
         fig_num = _extract_figure_number(legend_text)
-
-        candidate_pages = [legend_page]
-
         matched_assets = []
-        for page in candidate_pages:
-            if page < 1:
-                continue
-            page_assets = [
-                (i, a) for i, a in enumerate(assets) if a.get("page", 0) == page and i not in used_asset_indices
-            ]
-            if not page_assets:
-                continue
-
-            candidates_for_page: list[dict] = []
-            for i, asset in page_assets:
-                asset_bbox = asset.get("bbox", [0, 0, 0, 0])
-                overlap = _compute_overlap_score(legend_bbox, asset_bbox)
-                dist_y = abs(_centroid_y(legend_bbox) - _centroid_y(asset_bbox))
-                direction_bonus = 1.0 if _centroid_y(asset_bbox) < _centroid_y(legend_bbox) else 0.5
-                score = overlap * 10 + direction_bonus + 2.0 - dist_y * 0.01
-                candidates_for_page.append(
-                    {
-                        "asset_index": i,
-                        "asset": asset,
-                        "score": score,
-                        "overlap": overlap,
-                        "distance_y": dist_y,
-                        "same_page": True,
-                    }
-                )
-
-            candidates_for_page.sort(key=lambda c: c["score"], reverse=True)
-
-            for candidate in candidates_for_page:
-                if len(matched_assets) >= 3:
-                    break
-                if candidate["score"] > -5:
-                    matched_assets.append(candidate["asset"])
-                    used_asset_indices.add(candidate["asset_index"])
-
-            if matched_assets:
-                break
+        region_match = None
+        same_page_regions = [
+            region
+            for region in candidate_regions
+            if region["page"] == legend_page and region["region_id"] not in used_region_ids
+        ]
+        attached_regions = [
+            region
+            for region in same_page_regions
+            if any(cap.get("block_id") == legend.get("block_id") for cap in region.get("attached_captions", []))
+        ]
+        region_pool = attached_regions or same_page_regions
+        if region_pool:
+            region_match = max(
+                region_pool,
+                key=lambda region: len(region.get("media_blocks", [])),
+            )
+            matched_assets = list(region_match.get("media_blocks", []))
+            used_region_ids.add(region_match["region_id"])
+            for asset in matched_assets:
+                for i, candidate in enumerate(assets):
+                    if (
+                        candidate.get("block_id") == asset.get("block_id")
+                        and candidate.get("page", 0) == asset.get("page", 0)
+                    ):
+                        used_asset_indices.add(i)
+                        break
 
         is_legend_only = len(matched_assets) == 0
 
@@ -217,7 +358,7 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
                     }
                     for a in matched_assets
                 ],
-                "confidence": 0.85 if not is_legend_only else 0.4,
+                "confidence": 0.85 if region_match is not None else 0.4,
                 "flags": [] if not is_legend_only else ["legend_only"],
             }
         )
@@ -225,37 +366,9 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
         if is_legend_only:
             unmatched_legends.append(legend)
 
-    # Fallback: for low-confidence legends (rejected by formality check),
-    # match them to the first unmatched asset on the same page.
-    # Each low-confidence legend produces at most one figure entry.
-    used_low_conf: set[int] = set()
-    for li, legend in enumerate(low_conf_legends):
-        leg_page = legend.get("page", 0)
-        leg_text = legend.get("text", "")
-        fig_num = _extract_figure_number(leg_text)
-
-        # Find first unmatched asset on the legend's page
-        match_idx = None
-        for i, asset in enumerate(assets):
-            if i not in used_asset_indices and asset.get("page", 0) == leg_page:
-                match_idx = i
-                break
-
-        if match_idx is not None and li not in used_low_conf:
-            matched_figures.append({
-                "legend_block_id": legend.get("block_id", ""),
-                "page": leg_page,
-                "text": leg_text,
-                "figure_number": fig_num,
-                "matched_assets": [{
-                    "block_id": assets[match_idx].get("block_id", ""),
-                    "bbox": assets[match_idx].get("bbox", [0, 0, 0, 0]),
-                }],
-                "confidence": 0.3,
-                "flags": ["legend_uncertain"],
-            })
-            used_asset_indices.add(match_idx)
-            used_low_conf.add(li)
+    # Low-confidence legends remain rejected evidence only. They do not
+    # fabricate formal figure objects; unresolved multi-panel assets remain
+    # available as unmatched assets for downstream inspection/review.
 
     for i, asset in enumerate(assets):
         if i not in used_asset_indices:
