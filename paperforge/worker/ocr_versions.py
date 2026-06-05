@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 # Version constants - single source of truth
 EXPECTED_OCR_PROVIDER = "PaddleOCR"
 EXPECTED_OCR_RAW_SCHEMA_VERSION = "1.0.0"

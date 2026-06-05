@@ -90,7 +90,10 @@ def _diagnose(vault: Path, live: bool = False, json_output: bool = False) -> int
     passed = result.get("passed", False)
 
     # Collect OCR version state
-    _version_state_summary: dict = {"total_papers": 0, "derived_stale": [], "raw_upgradable": [], "legacy_backfilled": []}
+    _version_state_summary: dict = {
+        "total_papers": 0, "derived_stale": [], "raw_upgradable": [],
+        "legacy_backfilled": [],
+    }
     try:
         from paperforge.config import load_vault_config
         cfg = load_vault_config(vault)
