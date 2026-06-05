@@ -1,30 +1,26 @@
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from typing import Any
 
 
 def render_figure_object_markdown(figure: dict[str, Any]) -> str:
-    """Render object markdown for a figure entry.
-
-    Produces Obsidian-flavored markdown with a wikilink embed to the
-    cropped asset image and the caption text.
-    """
     caption = figure.get("caption", "")
     image_relpath = figure.get("image_relpath", "")
 
-    label = ""
-    if caption:
-        label = caption.split(".")[0].strip()
-    if not label:
-        figure_id = figure.get("figure_id", "")
-        if figure_id.startswith("orphan_"):
-            label = "Orphan Media"
-        else:
-            label = f"Figure {figure_id}"
+    # Extract figure number for the title
+    figure_id = figure.get("figure_id", "")
+    if figure_id and not figure_id.startswith("orphan_"):
+        m = re.search(r'\d+', figure_id)
+        num = str(int(m.group())) if m else figure_id
+        label = f"Figure {num}"
+    else:
+        label = "Orphan Media"
 
     parts = [f"# {label}", "", f"![](../../{image_relpath})", ""]
     if caption:
+        parts.append("**Legend:**")
         parts.append(caption)
     if figure.get("page"):
         parts.append("")
@@ -36,18 +32,17 @@ def render_figure_object_markdown(figure: dict[str, Any]) -> str:
 
 
 def render_table_object_markdown(table: dict[str, Any]) -> str:
-    """Render object markdown for a table entry."""
     caption = table.get("caption", "")
     image_relpath = table.get("image_relpath", "")
 
-    label = ""
-    if caption:
-        label = caption.split(".")[0].strip()
-    if not label:
-        label = f"Table {table.get('table_id', 'unknown')}"
+    table_id_raw = table.get("table_id", "unknown")
+    m = re.search(r'\d+', table_id_raw)
+    table_id = str(int(m.group())) if m else table_id_raw
+    label = f"Table {table_id}"
 
     parts = [f"# {label}", "", f"![](../../{image_relpath})", ""]
     if caption:
+        parts.append("**Legend:**")
         parts.append(caption)
     if table.get("page"):
         parts.append("")

@@ -95,3 +95,58 @@ def test_stabilize_latex_normalization() -> None:
     assert "$^{1}$" in md
     assert "$ ^{1} $" not in md
     assert "$^{\\u2020}$" in md or "$^{†}$" in md
+
+
+def test_stabilize_no_inline_table_html() -> None:
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+
+    structured_blocks = [
+        {"paper_id": "KEY001", "page": 1, "block_id": "b1", "role": "table_html",
+         "text": "<table><tr><td>data</td></tr></table>", "render_default": True},
+        {"paper_id": "KEY001", "page": 1, "block_id": "b2", "role": "body_paragraph",
+         "text": "Real body text.", "render_default": True},
+    ]
+
+    md = render_fulltext_markdown(
+        structured_blocks=structured_blocks,
+        resolved_metadata={},
+        figure_inventory={},
+        table_inventory={},
+    )
+
+    assert "<table>" not in md
+    assert "Real body text." in md
+
+
+def test_stabilize_author_recovery_from_ocr() -> None:
+    from paperforge.worker.ocr_metadata import extract_frontmatter_candidates, resolve_metadata
+    import json, tempfile, pathlib
+
+    blocks_data = (
+        json.dumps({"role": "paper_title", "text": "Test Paper"}) + "\n"
+        + json.dumps({"role": "authors", "text": "Alice Smith, Bob Jones"}) + "\n"
+    )
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".jsonl", delete=False, encoding="utf-8") as f:
+        f.write(blocks_data)
+        tmppath = pathlib.Path(f.name)
+
+    try:
+        candidates = extract_frontmatter_candidates(tmppath)
+        resolved = resolve_metadata({"title": "Test Paper"}, candidates)
+        authors = resolved.get("authors", {})
+        assert len(authors.get("value", [])) > 0, "Authors should be recovered from OCR"
+        assert "Alice Smith" in authors["value"]
+    finally:
+        tmppath.unlink()
+
+
+def test_stabilize_reference_content_mapped() -> None:
+    from paperforge.worker.ocr_roles import assign_block_role
+
+    assignment = assign_block_role(
+        block={"block_label": "reference_content", "block_content": "Smith J. et al. (2024) A study on...", "page": 20},
+        page_blocks=[],
+    )
+
+    assert assignment.role == "reference_item"
+    assert assignment.confidence >= 0.8
