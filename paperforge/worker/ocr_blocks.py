@@ -118,7 +118,6 @@ def build_raw_blocks_for_page(paper_id: str, page: int, result: dict) -> list[di
                 "page_width": width,
                 "page_height": height,
                 "source": "ocr_raw",
-                "span_metadata": block.get("span_metadata"),
             }
         )
     return rows
