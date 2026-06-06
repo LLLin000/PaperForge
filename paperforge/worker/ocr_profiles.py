@@ -236,6 +236,96 @@ def cross_validate_with_span(
     }
 
 
+FAMILY_DEFINITIONS: dict[str, list[str]] = {
+    "body_family": ["body_paragraph", "tail_candidate_body", "backmatter_body"],
+    "heading_family": ["section_heading", "subsection_heading", "sub_subsection_heading"],
+    "backmatter_heading_family": ["backmatter_heading", "backmatter_boundary_heading", "reference_heading"],
+    "reference_family": ["reference_item"],
+    "non_body_insert_family": ["non_body_insert"],
+    "caption_family": ["figure_caption", "table_caption"],
+}
+
+
+def build_family_profiles(blocks: list[dict]) -> dict:
+    """Derive family-level profiles from block role/span data.
+
+    Each family groups related roles (e.g. body_family includes
+    body_paragraph, tail_candidate_body, backmatter_body).  Family
+    profile format is the same as role profiles with an added
+    ``member_roles`` list.
+
+    Returns dict keyed by family name (only families with at least
+    one member role having blocks are included).
+    """
+    role_profiles = build_role_span_profiles(blocks)
+    families: dict = {}
+    for family_name, member_roles in FAMILY_DEFINITIONS.items():
+        available = {
+            role: role_profiles[role]
+            for role in member_roles
+            if role in role_profiles and role_profiles[role]["block_count"] > 0
+        }
+        if not available:
+            continue
+
+        total_count = sum(p["block_count"] for p in available.values())
+        weighted_mean_size = (
+            sum(p["mean_size"] * p["block_count"] for p in available.values()) / total_count
+            if total_count > 0
+            else 0.0
+        )
+        max_size = max(p["max_size"] for p in available.values())
+        min_size = min(p["min_size"] for p in available.values())
+        dispersion = (max_size - min_size) / max_size if max_size > 0 else 0.0
+        bold_ratio = (
+            sum(p["bold_ratio"] * p["block_count"] for p in available.values()) / total_count
+            if total_count > 0
+            else 0.0
+        )
+        italic_ratio = (
+            sum(p["italic_ratio"] * p["block_count"] for p in available.values()) / total_count
+            if total_count > 0
+            else 0.0
+        )
+        font_families: set[str] = set()
+        for p in available.values():
+            font_families.update(p.get("font_families", []))
+
+        families[family_name] = {
+            "block_count": total_count,
+            "mean_size": round(weighted_mean_size, 2),
+            "max_size": round(max_size, 2),
+            "min_size": round(min_size, 2),
+            "dispersion": round(dispersion, 4),
+            "quality": _profile_quality(total_count, dispersion),
+            "bold_ratio": round(bold_ratio, 2),
+            "italic_ratio": round(italic_ratio, 2),
+            "font_families": list(font_families),
+            "member_roles": member_roles,
+        }
+    return families
+
+
+def compare_against_family(
+    block_profile: dict,
+    family_profile: dict,
+) -> dict:
+    """Compare a block's style profile against a family-level aggregated profile.
+
+    Same comparison semantics as ``compare_against_role_family`` but
+    operates on family-aggregated stats for broader-baseline matching.
+
+    Returns:
+        {"size_compatible": bool, "bold_compatible": bool,
+         "size_distance": float, "match_score": float}
+    """
+    if not block_profile or not family_profile:
+        return {"size_compatible": False, "bold_compatible": False,
+                "size_distance": 1.0, "match_score": 0.0}
+
+    return compare_against_role_family(block_profile, family_profile)
+
+
 def write_role_span_profiles(
     blocks: list[dict],
     output_dir: str | Path,

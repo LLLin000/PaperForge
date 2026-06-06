@@ -2,7 +2,7 @@ from __future__ import annotations
 
 
 def test_analyze_document_structure_flat_backmatter() -> None:
-    from paperforge.worker.ocr_document import DocumentStructure, PagePosition, analyze_document_structure
+    from paperforge.worker.ocr_document import DocumentStructure, analyze_document_structure
 
     blocks = [
         {"page": 1, "role": "body_paragraph", "text": "Intro"},
@@ -318,6 +318,248 @@ def test_non_body_insert_not_backfilled_to_body() -> None:
     assert len(non_body) == 2, f"Expected 2 non_body_insert, got {len(non_body)}"
     for r in non_body:
         assert r.get("render_default") is False, f"non_body_insert should not render: {r}"
+
+
+# ---------------------------------------------------------------------------
+# Family-level profile tests
+# ---------------------------------------------------------------------------
+
+
+def test_build_family_profiles_body_family() -> None:
+    """body_family aggregates body_paragraph, tail_candidate_body, backmatter_body."""
+    from paperforge.worker.ocr_profiles import build_family_profiles
+
+    blocks = [
+        {"role": "body_paragraph", "span_metadata": {"size": 10, "flags": "normal"}},
+        {"role": "body_paragraph", "span_metadata": {"size": 10.5, "flags": "normal"}},
+        {"role": "tail_candidate_body", "span_metadata": {"size": 10, "flags": "normal"}},
+        {"role": "backmatter_body", "span_metadata": {"size": 9.5, "flags": "italic"}},
+        {"role": "section_heading", "span_metadata": {"size": 14, "flags": "bold"}},
+    ]
+
+    families = build_family_profiles(blocks)
+
+    assert "body_family" in families, f"body_family missing from {list(families.keys())}"
+    bf = families["body_family"]
+    assert bf["block_count"] == 4
+    assert "member_roles" in bf
+    assert "body_paragraph" in bf["member_roles"]
+    assert "tail_candidate_body" in bf["member_roles"]
+    assert "backmatter_body" in bf["member_roles"]
+
+
+def test_build_family_profiles_heading_family() -> None:
+    """heading_family aggregates section_heading, subsection_heading, sub_subsection_heading."""
+    from paperforge.worker.ocr_profiles import build_family_profiles
+
+    blocks = [
+        {"role": "section_heading", "span_metadata": {"size": 14, "flags": "bold"}},
+        {"role": "subsection_heading", "span_metadata": {"size": 12, "flags": "bold"}},
+        {"role": "sub_subsection_heading", "span_metadata": {"size": 11, "flags": "bold"}},
+    ]
+
+    families = build_family_profiles(blocks)
+
+    assert "heading_family" in families
+    hf = families["heading_family"]
+    assert hf["block_count"] == 3
+    assert "section_heading" in hf["member_roles"]
+    assert "subsection_heading" in hf["member_roles"]
+
+
+def test_build_family_profiles_backmatter_heading_family() -> None:
+    """backmatter_heading_family aggregates backmatter headings and reference_heading."""
+    from paperforge.worker.ocr_profiles import build_family_profiles
+
+    blocks = [
+        {"role": "backmatter_heading", "span_metadata": {"size": 12, "flags": "bold"}},
+        {"role": "backmatter_boundary_heading", "span_metadata": {"size": 11, "flags": "bold"}},
+        {"role": "reference_heading", "span_metadata": {"size": 12, "flags": "bold"}},
+    ]
+
+    families = build_family_profiles(blocks)
+
+    assert "backmatter_heading_family" in families
+    assert families["backmatter_heading_family"]["block_count"] == 3
+
+
+def test_compare_against_family_matches_body_block() -> None:
+    """A body-size block should match body_family better than non_body_insert_family."""
+    from paperforge.worker.ocr_profiles import (
+        build_family_profiles,
+        compare_against_family,
+        extract_block_span_profile,
+    )
+
+    blocks = [
+        {"role": "body_paragraph", "span_metadata": {"size": 10, "flags": "normal"}},
+        {"role": "body_paragraph", "span_metadata": {"size": 10.5, "flags": "normal"}},
+        {"role": "non_body_insert", "span_metadata": {"size": 8, "flags": "normal"}},
+        {"role": "non_body_insert", "span_metadata": {"size": 8.5, "flags": "normal"}},
+    ]
+
+    families = build_family_profiles(blocks)
+
+    body_block = {"span_metadata": {"size": 10.2, "flags": "normal"}}
+    bp = extract_block_span_profile(body_block)
+    assert bp is not None
+
+    body_match = compare_against_family(bp, families["body_family"])
+    ni_match = compare_against_family(bp, families["non_body_insert_family"])
+
+    assert body_match["match_score"] > ni_match["match_score"], (
+        f"Body block should match body_family ({body_match['match_score']}) "
+        f"better than non_body_insert_family ({ni_match['match_score']})"
+    )
+
+
+def test_family_level_non_body_insert_validation() -> None:
+    """Narrow non-body insert should match non_body_insert_family, not body_family."""
+    from paperforge.worker.ocr_profiles import (
+        build_family_profiles,
+        compare_against_family,
+        extract_block_span_profile,
+    )
+
+    blocks = [
+        {"role": "body_paragraph", "span_metadata": {"size": 10, "flags": "normal"}},
+        {"role": "body_paragraph", "span_metadata": {"size": 10.5, "flags": "normal"}},
+        {"role": "non_body_insert", "span_metadata": {"size": 8, "flags": "italic"}},
+        {"role": "non_body_insert", "span_metadata": {"size": 8.5, "flags": "italic"}},
+    ]
+
+    families = build_family_profiles(blocks)
+
+    narrow_block = {"span_metadata": {"size": 8.2, "flags": "italic"}}
+    bp = extract_block_span_profile(narrow_block)
+    assert bp is not None
+
+    ni_match = compare_against_family(bp, families["non_body_insert_family"])
+    body_match = compare_against_family(bp, families["body_family"])
+
+    assert ni_match["match_score"] > body_match["match_score"], (
+        f"Narrow italic block should match non_body_insert_family ({ni_match['match_score']}) "
+        f"better than body_family ({body_match['match_score']})"
+    )
+
+
+def test_family_level_rescue_reinstates_false_non_body_insert() -> None:
+    """Non-body insert with body-like style should be reinstated to body_paragraph by family rescue."""
+    from paperforge.worker.ocr_document import rescue_roles_with_document_context
+
+    blocks = [
+        # body paragraphs to establish body_family profile
+        {"role": "body_paragraph", "page": 1, "role_confidence": 0.8,
+         "text": "Normal body paragraph with enough text for profiling purposes in this test case.",
+         "span_metadata": {"size": 10, "flags": "normal"}},
+        {"role": "body_paragraph", "page": 2, "role_confidence": 0.8,
+         "text": "Another body paragraph to strengthen the body font profile for reliable matching.",
+         "span_metadata": {"size": 10, "flags": "normal"}},
+        # marked as non_body_insert but has body-like style (false positive)
+        {"role": "non_body_insert", "page": 2, "role_confidence": 0.5,
+         "_non_body_insert": True,
+         "text": "This block was incorrectly marked as non_body_insert but has a body-paragraph style.",
+         "span_metadata": {"size": 10.2, "flags": "normal"}},
+        # genuine non_body_insert with different style
+        {"role": "non_body_insert", "page": 1, "role_confidence": 0.5,
+         "_non_body_insert": True,
+         "text": "Short bio text",
+         "span_metadata": {"size": 8, "flags": "italic"}},
+    ]
+
+    role_profiles = {
+        "body_paragraph": {"block_count": 2, "mean_size": 10.0, "max_size": 10.5, "min_size": 9.5,
+                          "dispersion": 0.05, "quality": "strong", "bold_ratio": 0.0,
+                          "italic_ratio": 0.0, "font_families": []},
+        "non_body_insert": {"block_count": 2, "mean_size": 9.1, "max_size": 10.2, "min_size": 8.0,
+                           "dispersion": 0.12, "quality": "weak", "bold_ratio": 0.0,
+                           "italic_ratio": 0.5, "font_families": []},
+    }
+
+    result = rescue_roles_with_document_context(blocks, role_profiles)
+
+    reinstated = [b for b in result if b["text"].startswith("This block was incorrectly")]
+    assert len(reinstated) == 1
+    assert reinstated[0]["role"] == "body_paragraph", (
+        f"Expected false-positive non_body_insert to be reinstated to body_paragraph, "
+        f"got {reinstated[0]['role']}"
+    )
+    assert "_non_body_insert" not in reinstated[0], "non_body_insert flag should be removed"
+
+    still_ni = [b for b in result if b["text"] == "Short bio text"]
+    assert len(still_ni) == 1
+    assert still_ni[0]["role"] == "non_body_insert", (
+        f"Genuine non_body_insert should keep its role, got {still_ni[0]['role']}"
+    )
+
+
+def test_family_level_rescue_weak_heading_matches_heading_family() -> None:
+    """Weak heading matching heading_family should NOT be demoted to body_paragraph."""
+    from paperforge.worker.ocr_document import rescue_roles_with_document_context
+
+    blocks = [
+        # body paragraphs
+        {"role": "body_paragraph", "page": 1, "role_confidence": 0.8,
+         "text": "Normal body paragraph with enough text for profiling purposes in this test case.",
+         "span_metadata": {"size": 10, "flags": "normal"}},
+        {"role": "body_paragraph", "page": 2, "role_confidence": 0.8,
+         "text": "Another body paragraph to strengthen the body profile for more reliable comparisons.",
+         "span_metadata": {"size": 10, "flags": "normal"}},
+        # heading blocks to establish heading_family (different size, bold)
+        {"role": "section_heading", "page": 1, "role_confidence": 0.8,
+         "text": "Introduction",
+         "span_metadata": {"size": 14, "flags": "bold"}},
+        {"role": "subsection_heading", "page": 2, "role_confidence": 0.8,
+         "text": "Statistical Analysis",
+         "span_metadata": {"size": 12, "flags": "bold"}},
+        # weak heading that matches heading_family (should NOT be demoted)
+        {"role": "section_heading", "page": 3, "role_confidence": 0.55,
+         "text": "Results",
+         "span_metadata": {"size": 14, "flags": "bold"}},
+    ]
+
+    role_profiles = {
+        "body_paragraph": {"block_count": 2, "mean_size": 10.0, "max_size": 10.5, "min_size": 9.5,
+                          "dispersion": 0.05, "quality": "strong", "bold_ratio": 0.0,
+                          "italic_ratio": 0.0, "font_families": []},
+        "section_heading": {"block_count": 1, "mean_size": 14.0, "max_size": 14.5, "min_size": 13.5,
+                           "dispersion": 0.04, "quality": "strong", "bold_ratio": 1.0,
+                           "italic_ratio": 0.0, "font_families": []},
+        "subsection_heading": {"block_count": 1, "mean_size": 12.0, "max_size": 12.5, "min_size": 11.5,
+                              "dispersion": 0.04, "quality": "strong", "bold_ratio": 1.0,
+                              "italic_ratio": 0.0, "font_families": []},
+    }
+
+    result = rescue_roles_with_document_context(blocks, role_profiles)
+
+    heading = next(b for b in result if b["text"] == "Results")
+    assert heading["role"] == "section_heading", (
+        f"Weak heading matching heading_family should keep its role, "
+        f"got {heading['role']}"
+    )
+
+
+def test_family_level_rescue_does_not_backfill_non_body_insert_when_no_family_profile() -> None:
+    """Non-body insert blocks are left alone when no family profiles are available."""
+    from paperforge.worker.ocr_document import rescue_roles_with_document_context
+
+    blocks = [
+        {
+            "role": "frontmatter_noise",
+            "text": "Dr Ya Huang is currently a professor at the University",
+            "page": 2,
+            "_non_body_insert": True,
+            "role_confidence": 0.5,
+            "span_metadata": {"size": 11, "flags": "normal"},
+        },
+    ]
+    role_profiles = {
+        "body_paragraph": {"size_min": 10, "size_max": 12, "bold": False, "quality": "strong", "fonts": set()},
+    }
+    result = rescue_roles_with_document_context(blocks, role_profiles)
+    non_body = [b for b in result if b.get("_non_body_insert")]
+    assert len(non_body) == 1
+    assert non_body[0]["role"] == "frontmatter_noise"
 
 
 def test_rescue_does_not_touch_non_body_insert() -> None:
