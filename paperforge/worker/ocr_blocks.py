@@ -14,11 +14,12 @@ def build_structured_blocks(raw_blocks: list[dict]) -> list[dict]:
         page = block.get("page", 1)
         by_page.setdefault(page, []).append(block)
 
-    rows = []
+    total_pages = max(by_page.keys()) if by_page else 1  # noqa: F841 - reserved for future use
+
+    # First pass: initial role assignment (no span profiles)
+    rows: list[dict] = []
     for page in sorted(by_page.keys()):
         raw_page_blocks = by_page[page]
-        # Build mapped versions for role-assignment consumption
-        # (assign_block_role expects block_label/block_content keys)
         page_as_role_input: list[dict] = []
         for raw_block in raw_page_blocks:
             page_as_role_input.append(
@@ -61,6 +62,33 @@ def build_structured_blocks(raw_blocks: list[dict]) -> list[dict]:
                 "index_default": index_default,
             }
             rows.append(row)
+
+    # Build role span profiles from first-pass results
+    paper_context: dict = {}
+    if len(rows) >= 10:
+        from paperforge.worker.ocr_profiles import build_role_span_profiles
+
+        paper_context["role_profiles"] = build_role_span_profiles(rows)
+
+    # Second pass: cross-validate low-confidence blocks
+    if paper_context.get("role_profiles"):
+        for row in rows:
+            if row.get("role_confidence", 1.0) < 0.7:
+                from paperforge.worker.ocr_roles import second_pass_cross_validate
+
+                xv_result = second_pass_cross_validate(row, paper_context["role_profiles"])
+                row["role_confidence"] = round(
+                    max(0.0, min(1.0, row.get("role_confidence", 0.5) + xv_result["confidence_adjustment"])),
+                    4,
+                )
+                if xv_result["role_changed"]:
+                    row["role"] = xv_result["role"]
+                    row.setdefault("evidence", []).append(f"second_pass: {xv_result['role']} (span cross-validation)")
+                if xv_result["suggested_roles"]:
+                    row.setdefault("evidence", []).append(
+                        f"span_alternatives: {','.join(xv_result['suggested_roles'])}"
+                    )
+
     return rows
 
 
