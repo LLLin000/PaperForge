@@ -1734,7 +1734,14 @@ def _resolve_ambiguous_candidates(
             is_prose = _looks_like_figure_narrative_prose(text)
             in_body_spine = body_end_page is not None and page <= body_end_page
 
-            has_main_figure = bool(re.search(r'(?:Figure|Fig\.?)\s+\d+(?![a-z])', text))
+            has_main_figure = bool(re.search(r'(?:Figure|Fig\.?)\s+\d+(?:\.\d+)?(?![a-z0-9])', text))
+            has_subfigure_letter = bool(re.search(r'(?:Figure|Fig\.?)\s+\d+[a-z]', text))
+
+            # Subfigure references (Fig. 26c) with narrative prose in body
+            # spine are body mentions — hard reject regardless of style.
+            if has_subfigure_letter and in_body_spine and is_prose:
+                block["role"] = "body_paragraph"
+                continue
 
             if near_media or caption_style or has_main_figure:
                 block["role"] = "figure_caption"
