@@ -376,7 +376,9 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
 
         is_legend_only = len(matched_assets) == 0
 
+        fig_id = f"figure_{fig_num:03d}" if fig_num else f"unmatched_legend_{i:03d}"
         entry = {
+            "figure_id": fig_id,
             "legend_block_id": legend.get("block_id", ""),
             "page": legend_page,
             "text": legend_text,
