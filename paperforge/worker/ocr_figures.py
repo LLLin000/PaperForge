@@ -75,10 +75,28 @@ def _centroid_y(bbox: list[float]) -> float:
     return (bbox[1] + bbox[3]) / 2
 
 
+def _looks_like_figure_narrative_prose(text: str) -> bool:
+    if not text:
+        return False
+    after_fig = _FIGURE_NUMBER_PATTERN.sub("", text, count=1).strip().lstrip(". ")
+    if after_fig.count(". ") >= 2:
+        return True
+    prose_markers = ["we ", "our ", "this study ", "here we ", "in this "]
+    if any(m in text.lower() for m in prose_markers):
+        return True
+    if re.search(r'\$?\^\{[^}]+\}\$?', text):
+        return True
+    return False
+
+
 def _is_body_mention(block: dict) -> bool:
     raw_role = block.get("raw_role", block.get("role", ""))
     if raw_role == "body_paragraph":
         return True
+    if raw_role == "figure_caption_candidate":
+        text = block.get("text", "")
+        if text and _looks_like_figure_narrative_prose(text):
+            return True
     if block.get("block_label", "") == "text":
         text = block.get("text", "")
         return bool(_BODY_MENTION_PATTERN.search(text))
@@ -301,8 +319,13 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
         role = block.get("role", "")
         if block.get("_non_body_media") or role == "non_body_insert":
             continue
-        if role == "figure_caption":
+        if role in ("figure_caption", "figure_caption_candidate"):
             if _is_body_mention(block):
+                continue
+            if _looks_like_figure_narrative_prose(block.get("text", "")):
+                if role == "figure_caption_candidate":
+                    continue
+                rejected_legends.append(block)
                 continue
             if not _is_formal_legend(block.get("text", ""), block, page_width):
                 rejected_legends.append(block)
