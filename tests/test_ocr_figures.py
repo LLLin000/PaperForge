@@ -739,3 +739,93 @@ def test_author_bio_media_does_not_affect_normal_figure_matching() -> None:
     assert inventory["matched_figures"][0]["legend_block_id"] == "p2_b1"
     assert len(inventory["matched_figures"][0]["matched_assets"]) == 1
     assert inventory["matched_figures"][0]["matched_assets"][0]["block_id"] == "p2_b2"
+
+
+# === figure_caption_candidate gating (heuristic gating remediation Task 4) ===
+
+
+def test_fig_26c_narrative_not_legend() -> None:
+    """Multi-sentence narrative prose starting with Fig. N must not become a legend."""
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    structured_blocks = [
+        {
+            "paper_id": "K001",
+            "page": 1,
+            "block_id": "p1_b1",
+            "role": "figure_caption",
+            "raw_role": "figure_caption",
+            "block_label": "text",
+            "text": "Fig. 26c addresses a limiting case. The trend reverses at higher "
+            "concentrations. This is consistent with prior work.",
+            "bbox": [50, 100, 550, 140],
+        },
+    ]
+
+    inventory = build_figure_inventory(structured_blocks)
+
+    assert len(inventory["matched_figures"]) == 0
+    assert len(inventory["rejected_legends"]) == 1
+    assert len(inventory["figure_legends"]) == 0
+
+
+def test_figure_caption_candidate_survives() -> None:
+    """A genuine figure_caption_candidate with formal legend text and nearby media survives."""
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    structured_blocks = [
+        {
+            "paper_id": "K001",
+            "page": 1,
+            "block_id": "p1_b1",
+            "role": "figure_caption_candidate",
+            "raw_role": "figure_caption_candidate",
+            "text": "Figure 1. Quantitative analysis of cell migration under applied DC electric field stimulation over 48 hours.",
+            "bbox": [50, 420, 550, 460],
+        },
+        {
+            "paper_id": "K001",
+            "page": 1,
+            "block_id": "p1_b2",
+            "role": "figure_asset",
+            "text": "",
+            "bbox": [50, 50, 550, 400],
+        },
+    ]
+
+    inventory = build_figure_inventory(structured_blocks)
+
+    assert len(inventory["figure_legends"]) == 1
+    assert len(inventory["matched_figures"]) == 1
+    assert inventory["matched_figures"][0]["figure_number"] == 1
+
+
+def test_prose_shaped_figure_caption_rejected() -> None:
+    """Prose-shaped figure_caption (multi-sentence, no verb match) lands in rejected_legends."""
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    structured_blocks = [
+        {
+            "paper_id": "K001",
+            "page": 1,
+            "block_id": "p1_b1",
+            "role": "figure_caption",
+            "raw_role": "figure_caption",
+            "text": "Fig. 26c addresses our experimental observations. The trend reverses at higher concentrations as expected.",
+            "bbox": [50, 700, 550, 740],
+        },
+        {
+            "paper_id": "K001",
+            "page": 1,
+            "block_id": "p1_b2",
+            "role": "figure_asset",
+            "text": "",
+            "bbox": [50, 50, 550, 300],
+        },
+    ]
+
+    inventory = build_figure_inventory(structured_blocks)
+
+    assert len(inventory["figure_legends"]) == 0
+    assert len(inventory["rejected_legends"]) == 1
+    assert len(inventory["matched_figures"]) == 0
