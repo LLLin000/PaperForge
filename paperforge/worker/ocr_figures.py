@@ -85,6 +85,9 @@ def _is_body_mention(block: dict) -> bool:
     return False
 
 
+_PANEL_SUBCAPTION_PATTERN = re.compile(r"^\s*[a-z][\.\)]\s")
+
+
 def _is_formal_legend(text: str, block: dict | None = None, page_width: float = 1200) -> bool:
     if not text:
         return False
@@ -160,7 +163,7 @@ def _is_formal_legend(text: str, block: dict | None = None, page_width: float = 
         if text_len < 100 and words and words.issubset(axis_words | stop_words):
             return False
 
-    return True
+    return not (_PANEL_SUBCAPTION_PATTERN.match(text) and not _FIGURE_NUMBER_PATTERN.search(text))
 
 
 def _cluster_bbox(bboxes: list[list[float]]) -> list[float]:
@@ -307,10 +310,14 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
             if raw_label in {"image", "chart", "figure_title", "figure"} or not raw_label:
                 assets.append(block)
 
+    numbered_legends = [leg for leg in legends if _extract_figure_number(leg.get("text", "")) is not None]
+    unnumbered_legends = [leg for leg in legends if _extract_figure_number(leg.get("text", "")) is None]
+    ordered_legends = numbered_legends + unnumbered_legends
+
     candidate_regions = _compute_candidate_figure_regions(structured_blocks, page_width)
     used_asset_indices: set[int] = set()
     used_region_ids: set[str] = set()
-    for legend in legends:
+    for legend in ordered_legends:
         legend_page = legend.get("page", 0)
         legend_text = legend.get("text", "")
         fig_num = _extract_figure_number(legend_text)
@@ -336,9 +343,8 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
             used_region_ids.add(region_match["region_id"])
             for asset in matched_assets:
                 for i, candidate in enumerate(assets):
-                    if (
-                        candidate.get("block_id") == asset.get("block_id")
-                        and candidate.get("page", 0) == asset.get("page", 0)
+                    if candidate.get("block_id") == asset.get("block_id") and candidate.get("page", 0) == asset.get(
+                        "page", 0
                     ):
                         used_asset_indices.add(i)
                         break
@@ -385,23 +391,24 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
 
         for asset in media_blocks:
             for i, candidate in enumerate(assets):
-                if (
-                    candidate.get("block_id") == asset.get("block_id")
-                    and candidate.get("page", 0) == asset.get("page", 0)
+                if candidate.get("block_id") == asset.get("block_id") and candidate.get("page", 0) == asset.get(
+                    "page", 0
                 ):
                     used_asset_indices.add(i)
                     break
 
-        unresolved_clusters.append({
-            "cluster_id": f"cluster_{len(unresolved_clusters) + 1:03d}",
-            "page": page,
-            "bbox": bbox,
-            "media_block_ids": media_block_ids,
-            "matched_legend_block_id": None,
-            "status": "unresolved_multi_panel",
-            "confidence": 0.45,
-            "flags": ["legend_rejected", "multi_panel_cluster"],
-        })
+        unresolved_clusters.append(
+            {
+                "cluster_id": f"cluster_{len(unresolved_clusters) + 1:03d}",
+                "page": page,
+                "bbox": bbox,
+                "media_block_ids": media_block_ids,
+                "matched_legend_block_id": None,
+                "status": "unresolved_multi_panel",
+                "confidence": 0.45,
+                "flags": ["legend_rejected", "multi_panel_cluster"],
+            }
+        )
 
     for i, asset in enumerate(assets):
         if i not in used_asset_indices:

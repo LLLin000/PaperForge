@@ -591,3 +591,64 @@ def test_unresolved_clusters_in_inventory() -> None:
     assert len(inventory["unmatched_assets"]) == 0, (
         "Six panels should be consumed by unresolved cluster, not left as individual unmatched assets"
     )
+
+
+# === panel subcaption / formal legend precedence ===
+
+
+def test_panel_subcaption_rejected_by_is_formal_legend() -> None:
+    from paperforge.worker.ocr_figures import _is_formal_legend
+
+    panel_subcaption = "c. Redistribution of cells after 24 hours of treatment"
+    assert _is_formal_legend(panel_subcaption) is False
+
+
+def test_panel_subcaption_with_parenthesis_rejected() -> None:
+    from paperforge.worker.ocr_figures import _is_formal_legend
+
+    panel_subcaption = "a) Control group measurements at 48 hours post stimulation"
+    assert _is_formal_legend(panel_subcaption) is False
+
+
+def test_formal_legend_precedence_over_panel_subcaption() -> None:
+    """When a numbered formal legend and a panel subcaption exist on the same page
+    with a single candidate region, the formal legend must claim the region."""
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    structured_blocks = [
+        {
+            "paper_id": "K001",
+            "page": 1,
+            "block_id": "p1_b1",
+            "role": "figure_caption",
+            "text": "Fig. 2. Quantitative analysis of cell migration under DC electric field "
+            "stimulation over 48 hours.",
+            "bbox": [50, 420, 550, 460],
+        },
+        {
+            "paper_id": "K001",
+            "page": 1,
+            "block_id": "p1_b2",
+            "role": "figure_caption",
+            "text": "c. Redistribution of cells after 24 hours of treatment with "
+            "osteogenic medium for differentiation induction",
+            "bbox": [60, 350, 540, 380],
+        },
+        {
+            "paper_id": "K001",
+            "page": 1,
+            "block_id": "p1_b3",
+            "role": "figure_asset",
+            "text": "",
+            "bbox": [60, 50, 540, 330],
+        },
+    ]
+
+    inventory = build_figure_inventory(structured_blocks)
+
+    assert len(inventory["matched_figures"]) == 1
+    assert inventory["matched_figures"][0]["figure_number"] == 2
+    assert len(inventory["matched_figures"][0]["matched_assets"]) == 1
+
+    assert len(inventory["rejected_legends"]) == 1
+    assert "c. Redistribution" in inventory["rejected_legends"][0].get("text", "")
