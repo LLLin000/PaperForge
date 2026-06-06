@@ -12,7 +12,7 @@ class RoleAssignment:
 
 
 _HEADING_NUMBER_PATTERN = re.compile(
-    r"^\d+(?:\.\d+)*\s+[A-Z]",
+    r"^\d+(?:\.\d+)*\.?\s+[A-Z]",
 )
 
 _FIGURE_PREFIX_PATTERN = re.compile(
@@ -97,8 +97,30 @@ def _has_heading_numbering(text: str) -> bool:
     return bool(_HEADING_NUMBER_PATTERN.match(text.strip()))
 
 
+def _heading_number_depth(text: str) -> int:
+    match = re.match(r"^(\d+(?:\.\d+)*\.?)\s+", text.strip())
+    if not match:
+        return 0
+    token = match.group(1).rstrip(".")
+    return len([part for part in token.split(".") if part])
+
+
 def _has_figure_prefix(text: str) -> bool:
     return bool(_FIGURE_PREFIX_PATTERN.match(text.strip()))
+
+
+def _is_obviously_formal_figure_caption(text: str, block: dict, page_blocks: list[dict]) -> bool:
+    if not _has_figure_prefix(text):
+        return False
+    verb_patterns = ["shows", "illustrates", "depicts", "demonstrates", "presents", "summarizes"]
+    has_verb = any(v in text.lower() for v in verb_patterns)
+    sentence_markers = [" is ", " are ", " was ", " were "]
+    has_sentence = any(m in text.lower() for m in sentence_markers)
+    if has_verb and has_sentence:
+        return False
+    is_short = len(text) <= 80
+    near_media = _is_near_figure_media(block, page_blocks)
+    return is_short or near_media
 
 
 def _is_near_figure_media(block: dict, page_blocks: list[dict], max_gap: int = 200) -> bool:
@@ -300,37 +322,43 @@ def assign_block_role(
     # Figure / table caption patterns override any prior
     if _has_figure_prefix(text):
         if raw_label == "text":
-            verb_patterns = ["shows", "illustrates", "depicts", "demonstrates", "presents", "summarizes"]
-            has_verb = any(v in text.lower() for v in verb_patterns)
-            sentence_markers = [" is ", " are ", " was ", " were "]
-            has_sentence = any(m in text.lower() for m in sentence_markers)
-
-            if has_verb and has_sentence:
+            if _is_obviously_formal_figure_caption(text, block, page_blocks):
+                is_long = len(text) > 80
+                near_media = _is_near_figure_media(block, page_blocks)
+                confidence = 0.9
+                evidence_parts = [f"figure prefix matched: {text[:60]}"]
+                if is_long:
+                    confidence = 0.65
+                    evidence_parts.append("long text, reduced confidence")
+                if near_media:
+                    confidence = min(confidence + 0.25, 0.95)
+                    evidence_parts.append("near figure media assets")
                 return RoleAssignment(
-                    role="body_paragraph",
-                    confidence=0.6,
-                    evidence=[f"body reference to figure, not caption: {text[:60]}"],
+                    role="figure_caption",
+                    confidence=confidence,
+                    evidence=evidence_parts,
                 )
-
-            is_long = len(text) > 80
-            near_media = _is_near_figure_media(block, page_blocks)
-            confidence = 0.9
-            evidence_parts = [f"figure prefix matched: {text[:60]}"]
-            if is_long:
-                confidence = 0.65
-                evidence_parts.append("long text, reduced confidence")
-            if near_media:
-                confidence = min(confidence + 0.25, 0.95)
-                evidence_parts.append("near figure media assets")
+            return RoleAssignment(
+                role="figure_caption_candidate",
+                confidence=0.9,
+                evidence=[f"figure caption candidate (body narrative): {text[:60]}"],
+            )
+        if raw_label == "figure_title":
+            return RoleAssignment(
+                role="figure_caption_candidate",
+                confidence=0.9,
+                evidence=[f"figure_title label: {text[:60]}"],
+            )
+        if _is_obviously_formal_figure_caption(text, block, page_blocks):
             return RoleAssignment(
                 role="figure_caption",
-                confidence=confidence,
-                evidence=evidence_parts,
+                confidence=0.9,
+                evidence=[f"figure prefix matched: {text[:60]}"],
             )
         return RoleAssignment(
-            role="figure_caption",
+            role="figure_caption_candidate",
             confidence=0.9,
-            evidence=[f"figure prefix matched: {text[:60]}"],
+            evidence=[f"figure caption candidate: {text[:60]}"],
         )
 
     if _has_table_prefix(text):
@@ -417,7 +445,7 @@ def assign_block_role(
             page_num = block.get("page", 1) or 1
             if page_num > 1:
                 return RoleAssignment(
-                    role="backmatter_heading",
+                    role="backmatter_heading_candidate",
                     confidence=0.8,
                     evidence=[f"backmatter heading on page {page_num}: {text[:60]}"],
                 )
@@ -437,8 +465,9 @@ def assign_block_role(
                 evidence=[f"backmatter boundary heading: {text[:60]}"],
             )
         if _has_heading_numbering(text):
+            depth = _heading_number_depth(text)
             return RoleAssignment(
-                role="section_heading" if re.match(r"^\d+\s", text) else "subsection_heading",
+                role="section_heading" if depth <= 1 else "subsection_heading",
                 confidence=0.85,
                 evidence=[f"paragraph_title label with numbering: {text[:60]}"],
             )
@@ -447,8 +476,9 @@ def assign_block_role(
         if page_num <= 1:
             if bbox[1] < max(page_height, 1) * 0.25:
                 if lower in _BACKMATTER_TITLE_DENY_LIST:
+                    depth = _heading_number_depth(text)
                     return RoleAssignment(
-                        role="section_heading" if re.match(r"^\d+\s", text) else "subsection_heading",
+                        role="section_heading" if depth <= 1 else "subsection_heading",
                         confidence=0.5,
                         evidence=[f"backmatter title in title zone, treated as heading: {text[:60]}"],
                     )
@@ -471,7 +501,7 @@ def assign_block_role(
 
     if raw_label == "figure_title":
         return RoleAssignment(
-            role="figure_caption",
+            role="figure_caption_candidate",
             confidence=0.9,
             evidence=[f"figure_title label: {text[:60]}"],
         )
