@@ -51,6 +51,42 @@ def test_analyze_document_structure_container_backmatter() -> None:
     assert doc.backmatter_form == "container"
 
 
+def test_normalize_flat_backmatter_unifies_heading_family() -> None:
+    from paperforge.worker.ocr_document import (
+        TailBoundary,
+        _normalize_backmatter_roles_after_boundary,
+    )
+
+    blocks = [
+        {"page": 70, "role": "body_paragraph", "text": "Conclusion continuation"},
+        {"page": 71, "role": "backmatter_heading", "text": "Data availability"},
+        {"page": 71, "role": "backmatter_body", "text": "No new data."},
+        {"page": 71, "role": "subsection_heading", "text": "Conflicts of interest"},
+        {"page": 71, "role": "body_paragraph", "text": "There are no conflicts to declare."},
+        {"page": 71, "role": "backmatter_heading", "text": "Acknowledgements"},
+        {"page": 71, "role": "backmatter_body", "text": "Supported by grant."},
+        {"page": 71, "role": "reference_heading", "text": "References"},
+        {"page": 71, "role": "reference_item", "text": "1. Ref item"},
+    ]
+
+    tail = TailBoundary(
+        body_end_page=70,
+        backmatter_start=71,
+        references_start=71,
+        spread_start=71,
+        spread_end=71,
+        is_clean_separated=True,
+        reason="test",
+    )
+
+    _normalize_backmatter_roles_after_boundary(tail, "flat", blocks)
+
+    assert blocks[3]["role"] == "backmatter_heading"
+    assert blocks[4]["role"] == "backmatter_body"
+    assert blocks[4]["render_default"] is True
+    assert blocks[7]["role"] == "reference_heading"
+
+
 def test_analyze_document_structure_no_tail() -> None:
     from paperforge.worker.ocr_document import DocumentStructure, analyze_document_structure
 
@@ -1586,3 +1622,123 @@ def test_document_structure_json_serialization() -> None:
     assert parsed["body_end_page"] == 70
     assert parsed["page_layouts"]["71"]["column_count"] == 2
     assert parsed["page_layouts"]["71"]["layout_type"] == "two_column"
+
+
+def test_figure_caption_candidate_demoted_in_body() -> None:
+    """figure_caption_candidate with narrative prose in body spine, far from media -> body_paragraph."""
+    from paperforge.worker.ocr_document import (
+        DocumentStructure,
+        _resolve_ambiguous_candidates,
+    )
+
+    blocks = [
+        {
+            "page": 3,
+            "role": "figure_caption_candidate",
+            "text": "Fig. 1 This is a narrative description. We observed significant results. "
+                    "The data suggests a novel mechanism.",
+            "bbox": [100, 200, 500, 230],
+        },
+    ]
+    ds = DocumentStructure(body_end_page=5)
+    _resolve_ambiguous_candidates(blocks, ds, {})
+    assert blocks[0]["role"] == "body_paragraph"
+
+
+def test_figure_caption_candidate_promoted_near_media() -> None:
+    """figure_caption_candidate near media -> figure_caption."""
+    from paperforge.worker.ocr_document import (
+        DocumentStructure,
+        _resolve_ambiguous_candidates,
+    )
+
+    blocks = [
+        {
+            "page": 3,
+            "role": "figure_caption_candidate",
+            "text": "Fig. 1 Short caption.",
+            "block_bbox": [100, 240, 500, 260],
+        },
+        {
+            "page": 3,
+            "role": "figure_asset",
+            "block_label": "image",
+            "block_bbox": [100, 50, 500, 220],
+        },
+    ]
+    ds = DocumentStructure(body_end_page=5)
+    _resolve_ambiguous_candidates(blocks, ds, {})
+    assert blocks[0]["role"] == "figure_caption"
+
+
+def test_backmatter_heading_candidate_before_boundary_demoted() -> None:
+    """backmatter_heading_candidate on page before backmatter -> section_heading."""
+    from paperforge.worker.ocr_document import (
+        DocumentStructure,
+        PagePosition,
+        _resolve_ambiguous_candidates,
+    )
+
+    blocks = [
+        {
+            "page": 5,
+            "role": "backmatter_heading_candidate",
+            "text": "Acknowledgments",
+            "bbox": [100, 100, 500, 130],
+        },
+    ]
+    ds = DocumentStructure(
+        body_end_page=4,
+        backmatter_start=PagePosition(page=6, y=0.0),
+    )
+    _resolve_ambiguous_candidates(blocks, ds, {})
+    assert blocks[0]["role"] == "section_heading"
+    assert blocks[0]["role_confidence"] == 0.5
+
+
+def test_backmatter_heading_candidate_after_boundary_promoted() -> None:
+    """backmatter_heading_candidate inside backmatter -> backmatter_heading."""
+    from paperforge.worker.ocr_document import (
+        DocumentStructure,
+        PagePosition,
+        _resolve_ambiguous_candidates,
+    )
+
+    blocks = [
+        {
+            "page": 7,
+            "role": "backmatter_heading_candidate",
+            "text": "Funding",
+            "bbox": [100, 100, 500, 130],
+        },
+    ]
+    ds = DocumentStructure(
+        body_end_page=5,
+        backmatter_start=PagePosition(page=6, y=0.0),
+    )
+    _resolve_ambiguous_candidates(blocks, ds, {})
+    assert blocks[0]["role"] == "backmatter_heading"
+
+
+def test_container_activation_guard() -> None:
+    """container paper: child heading before boundary stays section_heading."""
+    from paperforge.worker.ocr_document import (
+        DocumentStructure,
+        _resolve_ambiguous_candidates,
+    )
+
+    blocks = [
+        {
+            "page": 3,
+            "role": "backmatter_heading_candidate",
+            "text": "Funding",
+            "bbox": [100, 100, 500, 130],
+        },
+    ]
+    ds = DocumentStructure(
+        body_end_page=5,
+        backmatter_form="container",
+    )
+    _resolve_ambiguous_candidates(blocks, ds, {})
+    assert blocks[0]["role"] == "section_heading"
+    assert blocks[0]["role_confidence"] == 0.5

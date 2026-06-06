@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import dataclasses
+import re
 from collections import namedtuple
 from dataclasses import dataclass, field
 
 from paperforge.worker.ocr_roles import (
     _BACKMATTER_TITLE_DENY_LIST,
+    _is_near_figure_media,
     _looks_like_affiliation,
     _looks_like_author_list,
 )
@@ -694,45 +696,51 @@ def _normalize_backmatter_roles_after_boundary(
     should be treated as backmatter headings and all owned content should stop
     competing with body/frontmatter roles.
     """
-    if (
-        tail_boundary is None
-        or tail_boundary.spread_start is None
-        or tail_boundary.spread_end is None
-        or backmatter_form != "container"
-    ):
+    if tail_boundary is None or tail_boundary.spread_start is None or tail_boundary.spread_end is None:
         return
 
     boundary_seen = False
+    backmatter_started = False
     for block in blocks:
         page = block.get("page")
         if page is None or page < tail_boundary.spread_start or page > tail_boundary.spread_end:
             continue
 
         role = block.get("role")
-        if role == "backmatter_boundary_heading":
-            if boundary_seen:
-                block["role"] = "backmatter_heading"
+        if backmatter_form == "container":
+            if role == "backmatter_boundary_heading":
+                if boundary_seen:
+                    block["role"] = "backmatter_heading"
+                else:
+                    boundary_seen = True
+                backmatter_started = True
                 block["_backmatter_regime"] = "container"
-            else:
-                boundary_seen = True
-                block["_backmatter_regime"] = "container"
-            continue
+                continue
 
-        if not boundary_seen:
-            continue
+            if not boundary_seen:
+                continue
+        else:
+            if role in {"backmatter_heading", "backmatter_boundary_heading"}:
+                backmatter_started = True
+                block["_backmatter_regime"] = "flat"
+                if role == "backmatter_boundary_heading":
+                    block["role"] = "backmatter_heading"
+                continue
+            if not backmatter_started:
+                continue
 
         if role == "reference_heading":
             break
 
         if role in {"section_heading", "subsection_heading", "sub_subsection_heading"}:
             block["role"] = "backmatter_heading"
-            block["_backmatter_regime"] = "container"
+            block["_backmatter_regime"] = backmatter_form
             block["render_default"] = True
             continue
 
         if role in {"body_paragraph", "frontmatter_noise"}:
             block["role"] = "backmatter_body"
-            block["_backmatter_regime"] = "container"
+            block["_backmatter_regime"] = backmatter_form
             block["render_default"] = True
             block["index_default"] = True
 
@@ -987,9 +995,7 @@ def rescue_roles_with_document_context(
                             continue
                         zone_col = zone_data.get("column_index", 0)
                         if p_layout and p_layout.column_count > 1:
-                            bcol = _get_column_index_by_boundaries(
-                                x_center, p_layout.column_boundaries
-                            )
+                            bcol = _get_column_index_by_boundaries(x_center, p_layout.column_boundaries)
                             if bcol != zone_col:
                                 continue
                         if y_center >= zone_data.get("y_start", 0):
@@ -997,11 +1003,7 @@ def rescue_roles_with_document_context(
                             break
 
                 page = block.get("page", 1) or 1
-                if in_reference_zone or (
-                    not ref_zones
-                    and refs_start_page is not None
-                    and page >= refs_start_page
-                ):
+                if in_reference_zone or (not ref_zones and refs_start_page is not None and page >= refs_start_page):
                     if "reference_family" in family_profiles and "body_family" in family_profiles:
                         ref_fam_p = family_profiles["reference_family"]
                         if ref_fam_p.get("quality") in ("moderate", "strong"):
@@ -1090,9 +1092,7 @@ def analyze_document_structure(blocks: list[dict]) -> DocumentStructure:
     )
 
     reading_segments = _build_tail_reading_order(blocks, page_layouts)
-    ds.tail_reading_order = (
-        [dataclasses.asdict(seg) for seg in reading_segments] if reading_segments else None
-    )
+    ds.tail_reading_order = [dataclasses.asdict(seg) for seg in reading_segments] if reading_segments else None
 
     ref_zones = _detect_reference_zones(blocks, page_layouts)
     ds.reference_zones = [dataclasses.asdict(z) for z in ref_zones] if ref_zones else None
@@ -1549,6 +1549,211 @@ def _detect_non_body_insert_clusters(
     return indices
 
 
+def _looks_like_figure_narrative_prose(text: str) -> bool:
+    """Detect narrative prose blocks that start with Fig. but are not formal legends."""
+    sentence_count = text.count(". ") + text.count(".\n")
+    if sentence_count >= 2:
+        return True
+    prose_markers = ["we ", "our ", "this study", "here we", "in this"]
+    if any(m in text.lower() for m in prose_markers):
+        return True
+    return bool(re.search(r"\$?\^\{[^}]+\}\$?", text) and sentence_count >= 1)
+
+
+def _check_caption_style_match(block: dict, blocks: list[dict]) -> bool:
+    """Check if block's span style matches known figure_caption blocks."""
+    span = block.get("span_metadata") or {}
+    if isinstance(span, list):
+        span = span[0] if span else {}
+    block_size = span.get("size")
+    block_font = str(span.get("font", "") or "").lower()
+    if block_size is None:
+        return False
+    caption_sizes: list[float] = []
+    caption_fonts: set[str] = set()
+    for b in blocks:
+        if b.get("role") == "figure_caption":
+            s = b.get("span_metadata") or {}
+            if isinstance(s, list):
+                s = s[0] if s else {}
+            sz = s.get("size")
+            if sz is not None:
+                caption_sizes.append(sz)
+            fn = str(s.get("font", "") or "").lower()
+            if fn:
+                caption_fonts.add(fn)
+    if not caption_sizes:
+        return False
+    size_match = any(abs(block_size - sz) <= 1.0 for sz in caption_sizes)
+    font_match = (block_font in caption_fonts) if block_font else True
+    return size_match and font_match
+
+
+def _resolve_ambiguous_candidates(
+    blocks: list[dict],
+    doc_structure: DocumentStructure,
+    page_layouts: dict[int, PageLayoutProfile],
+) -> None:
+    """Resolve candidate roles from seed pass into final roles using document context.
+
+    Mutates blocks in place.
+    """
+    body_end_page = doc_structure.body_end_page
+    backmatter_start_page: int | None = doc_structure.backmatter_start.page if doc_structure.backmatter_start else None
+    references_start_page: int | None = doc_structure.references_start.page if doc_structure.references_start else None
+    backmatter_form = doc_structure.backmatter_form
+
+    # Pre-compute container boundary heading presence
+    has_container_boundary = False
+    container_boundary_page: int | None = None
+    if backmatter_form == "container":
+        for b in blocks:
+            if b.get("role") == "backmatter_boundary_heading":
+                has_container_boundary = True
+                container_boundary_page = b.get("page")
+                break
+
+    def _child_heading_count(
+        start_idx: int,
+        page: int,
+        col: int,
+        boundaries: list[float],
+    ) -> float:
+        count = 0.0
+        for j in range(start_idx + 1, min(start_idx + 10, len(blocks))):
+            nb = blocks[j]
+            if nb.get("page") != page:
+                continue
+            if len(boundaries) > 1:
+                nbb = nb.get("bbox") or nb.get("block_bbox") or [0, 0, 0, 0]
+                nx = (nbb[0] + nbb[2]) / 2
+                ncol = _get_column_index_by_boundaries(nx, boundaries)
+                if ncol != col:
+                    continue
+            nr = nb.get("role", "")
+            if nr in ("backmatter_heading", "backmatter_heading_candidate"):
+                count += 1.0
+            elif nr == "backmatter_body":
+                count += 0.5
+        return count
+
+    for i, block in enumerate(blocks):
+        role = block.get("role", "")
+        page = block.get("page", 1)
+        bbox = block.get("bbox") or block.get("block_bbox") or [0, 0, 0, 0]
+
+        # ---- 2.1 Resolve backmatter_heading_candidate ----
+        if role == "backmatter_heading_candidate":
+            if backmatter_start_page is None:
+                block["role"] = "section_heading"
+                block["role_confidence"] = 0.5
+                continue
+
+            if backmatter_form == "container":
+                if not has_container_boundary or page < container_boundary_page:
+                    block["role"] = "section_heading"
+                    block["role_confidence"] = 0.5
+                    continue
+                if page == container_boundary_page:
+                    layout = page_layouts.get(page)
+                    if layout and layout.column_count > 1:
+                        boundaries = layout.column_boundaries
+                        x_center = (bbox[0] + bbox[2]) / 2
+                        col = _get_column_index_by_boundaries(x_center, boundaries)
+                        boundary_col: int | None = None
+                        for b in blocks:
+                            if b.get("role") == "backmatter_boundary_heading" and b.get("page") == page:
+                                bb = b.get("bbox") or b.get("block_bbox") or [0, 0, 0, 0]
+                                bx = (bb[0] + bb[2]) / 2
+                                boundary_col = _get_column_index_by_boundaries(bx, boundaries)
+                                break
+                        if boundary_col is not None and col != boundary_col:
+                            block["role"] = "section_heading"
+                            block["role_confidence"] = 0.5
+                            continue
+
+            if page < backmatter_start_page:
+                block["role"] = "section_heading"
+                block["role_confidence"] = 0.5
+                continue
+
+            if page == backmatter_start_page:
+                layout = page_layouts.get(page)
+                if layout and layout.column_count > 1:
+                    boundaries = layout.column_boundaries
+                    x_center = (bbox[0] + bbox[2]) / 2
+                    col = _get_column_index_by_boundaries(x_center, boundaries)
+                    if col == 0:
+                        block["role"] = "section_heading"
+                        block["role_confidence"] = 0.5
+                        continue
+                block["role"] = "backmatter_heading"
+                continue
+
+            block["role"] = "backmatter_heading"
+
+        # ---- 2.2 Resolve backmatter_boundary_candidate ----
+        if role == "backmatter_boundary_candidate":
+            is_in_tail = (body_end_page is not None and page >= body_end_page) or (
+                doc_structure.spread_start is not None and page >= doc_structure.spread_start
+            )
+            if not is_in_tail:
+                block["role"] = "section_heading"
+                continue
+
+            layout = page_layouts.get(page)
+            boundaries = layout.column_boundaries if layout else []
+            x_center = (bbox[0] + bbox[2]) / 2
+            col = _get_column_index_by_boundaries(x_center, boundaries)
+
+            child_count = _child_heading_count(i, page, col, boundaries)
+            if child_count >= 2.0:
+                block["role"] = "backmatter_boundary_heading"
+            else:
+                block["role"] = "section_heading"
+
+        # ---- 2.3 Resolve figure_caption_candidate ----
+        if role == "figure_caption_candidate":
+            text = block.get("text", "") or ""
+            page_blocks = [b for b in blocks if b.get("page") == page]
+
+            near_media = _is_near_figure_media(block, page_blocks)
+            caption_style = _check_caption_style_match(block, blocks)
+            is_prose = _looks_like_figure_narrative_prose(text)
+            in_body_spine = body_end_page is not None and page <= body_end_page
+
+            if near_media or caption_style:
+                block["role"] = "figure_caption"
+                continue
+
+            if in_body_spine and is_prose:
+                block["role"] = "body_paragraph"
+                continue
+
+    # ---- 3. Activation gates (inline) ----
+    for block in blocks:
+        role = block.get("role", "")
+        page = block.get("page", 1)
+
+        if (
+            role in ("backmatter_heading", "backmatter_body")
+            and backmatter_start_page is not None
+            and page < backmatter_start_page
+        ):
+            block["role"] = "body_paragraph"
+
+        if (
+            role == "reference_item"
+            and references_start_page is not None
+            and page < references_start_page
+            and not block.get("_verified_by_seed")
+        ):
+            block["role"] = "body_paragraph"
+
+        if role == "backmatter_heading_candidate" and body_end_page is not None and page <= body_end_page:
+            block["role"] = "section_heading"
+
+
 def _mark_non_body_media(blocks: list[dict]) -> None:
     insert_blocks_by_page: dict[int, list[dict]] = {}
     for block in blocks:
@@ -1661,5 +1866,6 @@ def normalize_document_structure(blocks: list[dict]) -> tuple[DocumentStructure,
             blocks[idx]["_non_body_insert"] = True
 
     _mark_non_body_media(blocks)
+    _resolve_ambiguous_candidates(blocks, doc_structure, page_layouts)
 
     return doc_structure, blocks
