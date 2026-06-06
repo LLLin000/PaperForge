@@ -278,123 +278,6 @@ def _infer_heading_level(
     return "section_heading"
 
 
-def _detect_frontmatter_zone(
-    block: dict,
-    page_blocks: list[dict],
-    page_height: float,
-    page_width: float,
-    style_profiles: dict | None = None,
-) -> str | None:
-    """Detect frontmatter zone for a block on page 1.
-
-    Returns one of: ``title_zone``, ``author_zone``, ``affiliation_zone``,
-    ``journal_furniture_zone``, ``abstract_zone``, or ``None``.
-    """
-    page_num = block.get("page", 1) or 1
-    if page_num > 1:
-        return None
-
-    bbox = block.get("block_bbox", [0, 0, 0, 0])
-    if len(bbox) < 4:
-        return None
-
-    text = str(block.get("block_content", "") or "").strip()
-    if not text:
-        return None
-
-    lower_txt = text.lower()
-    raw_label = str(block.get("block_label", "") or "").strip()
-    x1, y1, x2 = bbox[0], bbox[1], bbox[2]
-
-    # --- abstract_zone ---
-    if lower_txt.startswith("abstract") and len(text) < 30:
-        return "abstract_zone"
-
-    # --- journal_furniture_zone ---
-    furniture_signals = [
-        "submitted",
-        "accepted",
-        "published",
-        "received",
-        "copyright",
-        "©",
-        "doi:",
-        "doi ",
-        "https://doi.org",
-        "academic editor",
-        "how to cite",
-        "to cite this article",
-        "creative commons",
-        "cc by",
-        "cc license",
-        "this is an open-access article",
-        "reviewed by",
-        "edited by",
-        "present address",
-    ]
-    if any(s in lower_txt for s in furniture_signals):
-        return "journal_furniture_zone"
-
-    narrow_furniture = [
-        "citation:",
-        "correspondence",
-        "orcid",
-        "these authors contributed equally",
-        "equal contribution",
-        "additional information",
-    ]
-    if any(s in lower_txt for s in narrow_furniture):
-        block_width = x2 - x1
-        is_narrow = page_width > 0 and block_width < page_width * 0.35
-        is_top_half = page_height > 0 and y1 < page_height * 0.5
-        if is_narrow or is_top_half:
-            return "journal_furniture_zone"
-
-    # --- title_zone ---
-    if page_height > 0 and y1 < page_height * 0.2:
-        block_width = x2 - x1
-        is_wide_enough = page_width <= 0 or block_width > page_width * 0.4
-        if is_wide_enough and lower_txt not in _BACKMATTER_TITLE_DENY_LIST and not _looks_like_author_list(text):
-            if raw_label in ("paragraph_title", "doc_title"):
-                return "title_zone"
-            if raw_label == "text" and len(text) < 80:
-                return "title_zone"
-
-    # --- author_zone ---
-    if (
-        page_height > 0
-        and y1 < page_height * 0.4
-        and _looks_like_author_list(text)
-        and not _looks_like_affiliation(text)
-    ):
-        return "author_zone"
-
-    # --- affiliation_zone ---
-    if page_height > 0 and y1 < page_height * 0.6 and _looks_like_affiliation(text):
-        return "affiliation_zone"
-
-    return None
-
-
-def _page_still_frontmatter(page_blocks: list[dict], page_num: int, page_height: float) -> bool:
-    """Check if page is still in frontmatter regime (no body content yet).
-
-    Uses block labels and vertical position: if any block on a page > 1 has
-    body-type labels (figure_title, chart, table) or a text block in the
-    lower third, body content has started and frontmatter rules should stop.
-    """
-    if page_num == 1:
-        return True
-    for pb in page_blocks:
-        label = pb.get("block_label", "")
-        if label in ("figure_title", "chart", "table", "reference_content"):
-            return False
-        bbox = pb.get("block_bbox", [0, 0, 0, 0])
-        if label == "text" and len(bbox) >= 4 and bbox[1] > page_height * 0.35:
-            return False
-    return True
-
-
 def assign_block_role(
     block: dict,
     page_blocks: list[dict],
@@ -403,6 +286,8 @@ def assign_block_role(
     style_profiles: dict | None = None,
     role_profiles: dict | None = None,
 ) -> RoleAssignment:
+    from paperforge.worker.ocr_document import _page_still_frontmatter
+
     raw_label = str(block.get("block_label", "") or "").strip()
     text = str(block.get("block_content", "") or "").strip()
 
@@ -453,6 +338,8 @@ def assign_block_role(
     page_num = block.get("page", 1) or 1
     zone = None
     if page_num == 1 and raw_label in ("paragraph_title", "text"):
+        from paperforge.worker.ocr_document import _detect_frontmatter_zone
+
         zone = _detect_frontmatter_zone(
             block,
             page_blocks,
@@ -665,7 +552,11 @@ def assign_block_role(
             )
 
         # Check for email / ORCID / DOI patterns (page 1 only)
-        if still_frontmatter and "@" in text and (".edu" in text.lower() or ".com" in text.lower() or ".org" in text.lower()):
+        if (
+            still_frontmatter
+            and "@" in text
+            and (".edu" in text.lower() or ".com" in text.lower() or ".org" in text.lower())
+        ):
             return RoleAssignment(
                 role="frontmatter_noise",
                 confidence=0.85,
@@ -721,8 +612,10 @@ def assign_block_role(
             )
 
         # Affiliation block starting with superscript (page 1 only)
-        if still_frontmatter and _AUTHOR_AFFILIATION_MARKER.match(stripped) and any(
-            kw in lower_txt for kw in ["department", "university", "institute", "college", "school of"]
+        if (
+            still_frontmatter
+            and _AUTHOR_AFFILIATION_MARKER.match(stripped)
+            and any(kw in lower_txt for kw in ["department", "university", "institute", "college", "school of"])
         ):
             return RoleAssignment(
                 role="frontmatter_noise",
