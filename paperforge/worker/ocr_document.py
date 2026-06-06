@@ -967,18 +967,22 @@ def _detect_non_body_insert_clusters(
     body_spine: dict[int, dict],
     page_height: float = 1600,
     page_width: float = 1200,
+    body_end_page: int | None = None,
 ) -> set[int]:
     """Return indices of blocks that belong to early-page non-body insert clusters.
 
     Detection criteria:
-    1. Page <= 3 (early pages near body/frontmatter transition)
-    2. Block role is ``body_paragraph`` (potential misclassification)
+    1. Early document region (relative to body length, not an absolute page number)
+    2. Block role is ``body_paragraph``, ``frontmatter_noise``, or ``unknown_structural``
     Font-family signal (primary): block's font differs from body spine fonts
     Width signal (secondary): block width < 70% of body spine median,
       falling back to page_width * 0.5 if median is contaminated
     Cluster requirement: 2+ candidates on the same page
     """
     indices: set[int] = set()
+
+    # Use a relative early-page bound instead of an absolute page gate
+    max_early_page = min(3, max(1, (body_end_page or 12) // 4 + 1))
 
     def _first_font(block: dict) -> str | None:
         span = block.get("span_metadata") or {}
@@ -994,9 +998,9 @@ def _detect_non_body_insert_clusters(
     candidates_by_page: dict[int, list[int]] = {}
     for i, block in enumerate(blocks):
         page = block.get("page", 1)
-        if page > 3:
+        if page > max_early_page:
             continue
-        if block.get("role") != "body_paragraph":
+        if block.get("role") not in ("body_paragraph", "frontmatter_noise", "unknown_structural"):
             continue
 
         bbox = block.get("bbox", [0, 0, 0, 0])
@@ -1060,10 +1064,13 @@ def normalize_document_structure(blocks: list[dict]) -> tuple[DocumentStructure,
     blocks = _promote_tail_body_candidates(blocks, doc_structure, header_band=header_band, footer_band=footer_band)
     blocks = _assign_tail_spread_ownership(blocks, doc_structure)
 
-    # Detect non-body insert clusters on early pages
+    # Detect non-body insert clusters on early pages (relative to body length)
     body_spine = _detect_body_spine(blocks)
     pw = max((b.get("page_width", 0) or 0) for b in blocks) or 1200
-    insert_indices = _detect_non_body_insert_clusters(blocks, body_spine, page_width=pw)
+    insert_indices = _detect_non_body_insert_clusters(
+        blocks, body_spine, page_width=pw,
+        body_end_page=tail_spread.body_end_page if tail_spread else None,
+    )
     for idx in insert_indices:
         if idx < len(blocks):
             blocks[idx]["role"] = "non_body_insert"
