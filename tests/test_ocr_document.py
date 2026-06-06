@@ -680,3 +680,37 @@ def test_non_body_insert_does_not_promote_real_figure_captions() -> None:
 
     # Wide figure caption should NOT be detected (single block, body-width)
     assert 2 not in indices, f"Real figure caption should not be detected, got indices {indices}"
+
+
+def test_non_body_insert_catches_continuation_fragment() -> None:
+    """A body-width continuation fragment (lowercase start) adjacent to a
+    narrow non-body insert is caught by the expansion pass."""
+    from paperforge.worker.ocr_document import _detect_body_spine, _detect_non_body_insert_clusters
+
+    blocks = [
+        # Page 2: two wide body paragraphs establishing spine width ~700
+        {"role": "body_paragraph", "bbox": [100, 100, 800, 140], "page": 2,
+         "span_metadata": {"font": "BodyFont", "size": 10}},
+        {"role": "body_paragraph", "bbox": [100, 200, 810, 240], "page": 2,
+         "span_metadata": {"font": "BodyFont", "size": 10}},
+        # Narrow non-body inserts (author bio start + name label)
+        {"role": "body_paragraph", "bbox": [50, 600, 250, 640], "page": 2,
+         "span_metadata": {"font": "BodyFont", "size": 10}},
+        {"role": "body_paragraph", "bbox": [50, 680, 250, 720], "page": 2,
+         "span_metadata": {"font": "BodyFont", "size": 10}},
+        # Continuation fragment: SAME width as body paragraphs,
+        # SAME font as body paragraphs, but starts lowercase and is
+        # adjacent to the narrow inserts — should be caught
+        {"role": "body_paragraph", "bbox": [100, 760, 800, 800], "page": 2,
+         "span_metadata": {"font": "BodyFont", "size": 10},
+         "text": "integrate technologies of tissue engineering and flexible electronics"},
+    ]
+    spine = _detect_body_spine(blocks)
+    indices = _detect_non_body_insert_clusters(blocks, spine, body_end_page=8)
+
+    assert 2 in indices, f"Narrow insert at index 2 should be detected, got {indices}"
+    assert 3 in indices, f"Narrow insert at index 3 should be detected, got {indices}"
+    assert 4 in indices, (
+        f"Continuation fragment at index 4 should be detected "
+        f"(body-width, lowercase start, adjacent to insert), got {indices}"
+    )

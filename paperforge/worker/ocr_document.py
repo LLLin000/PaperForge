@@ -1070,6 +1070,37 @@ def _detect_non_body_insert_clusters(
         if len(candidate_indices) >= 2:
             indices.update(candidate_indices)
 
+    # Second pass: expand to orphan continuation fragments adjacent to
+    # detected non-body inserts.  These are body-width blocks (same width
+    # as the body spine) that share a font with the insert cluster but
+    # were split off by OCR and start with a lowercase letter (no
+    # standalone paragraph start).
+    if indices:
+        insert_fonts: set[str] = set()
+        for idx in indices:
+            f = _first_font(blocks[idx])
+            if f:
+                insert_fonts.add(f)
+        if insert_fonts:
+            for i, block in enumerate(blocks):
+                if i in indices:
+                    continue
+                page = block.get("page", 1)
+                if page > max_early_page:
+                    continue
+                if block.get("role") not in ("body_paragraph", "figure_caption", "unknown_structural"):
+                    continue
+                text = block.get("text", "")
+                if not text or not text[0].islower():
+                    continue
+                block_font = _first_font(block)
+                if block_font and block_font in insert_fonts:
+                    # Check adjacency to existing cluster members on the same page
+                    for idx in indices:
+                        if blocks[idx].get("page") == page and abs(i - idx) <= 2:
+                            indices.add(i)
+                            break
+
     return indices
 
 
