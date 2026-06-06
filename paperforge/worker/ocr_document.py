@@ -365,15 +365,17 @@ def _detect_frontmatter_zone(
     if lower_txt.startswith("abstract") and len(text) < 30:
         return "abstract_zone"
 
+    import re as _re
+
+    # "received"/"published" intentionally excluded — too common in body text
+    # ("she received her degree", "published works include...").
+    # Only distinctive frontmatter vocabulary is used.
     furniture_signals = [
         "submitted",
         "accepted",
-        "published",
-        "received",
         "copyright",
         "\u00a9",
         "doi:",
-        "doi ",
         "https://doi.org",
         "academic editor",
         "how to cite",
@@ -386,7 +388,7 @@ def _detect_frontmatter_zone(
         "edited by",
         "present address",
     ]
-    if any(s in lower_txt for s in furniture_signals):
+    if any(_re.search(r"(?<!\w)" + _re.escape(s) + r"(?!\w)", lower_txt) for s in furniture_signals):
         return "journal_furniture_zone"
 
     narrow_furniture = [
@@ -809,6 +811,26 @@ def _detect_body_spine(blocks: list[dict]) -> dict[int, dict]:
     if not all_pages:
         return {}
 
+    # Collect body fonts across ALL pages (not just current page) to handle
+    # early pages where body_paragraph blocks are themselves non-body inserts.
+    all_body_fonts: set[str] = set()
+    for page in all_pages:
+        for b in by_page[page]:
+            if b.get("role") == "body_paragraph":
+                bbox = b.get("bbox", [0, 0, 0, 0])
+                w = bbox[2] - bbox[0]
+                if w >= 400:  # only wide blocks contribute to global font baseline
+                    span = b.get("span_metadata") or {}
+                    if isinstance(span, list):
+                        for s in span:
+                            fam = s.get("font", "")
+                            if fam:
+                                all_body_fonts.add(str(fam).lower())
+                    elif isinstance(span, dict):
+                        fam = span.get("font", "")
+                        if fam:
+                            all_body_fonts.add(str(fam).lower())
+
     per_page_spine: dict[int, dict | None] = {}
     for page in all_pages:
         page_blocks = by_page[page]
@@ -845,6 +867,7 @@ def _detect_body_spine(blocks: list[dict]) -> dict[int, dict]:
                 "median_x": median_x,
                 "width_range": (median_width * 0.7, median_width * 1.3),
                 "fonts": fonts,
+                "all_fonts": all_body_fonts,
             }
         else:
             per_page_spine[page] = None
@@ -866,6 +889,7 @@ def _detect_body_spine(blocks: list[dict]) -> dict[int, dict]:
             filled[page] = prev_val or next_val or {
                 "median_width": 500, "median_x": 100,
                 "width_range": (350, 650), "fonts": set(),
+                "all_fonts": all_body_fonts,
             }
 
     return filled
@@ -879,13 +903,26 @@ def _detect_non_body_insert_clusters(
 ) -> set[int]:
     """Return indices of blocks that belong to early-page non-body insert clusters.
 
-    Detection criteria (primary, geometry-based):
+    Detection criteria:
     1. Page <= 3 (early pages near body/frontmatter transition)
     2. Block role is ``body_paragraph`` (potential misclassification)
-    3. Block width < 70% of body_spine median width for that page
-    4. Multiple such narrow blocks exist on the same page in a cluster
+    Font-family signal (primary): block's font differs from body spine fonts
+    Width signal (secondary): block width < 70% of body spine median,
+      falling back to page_width * 0.5 if median is contaminated
+    Cluster requirement: 2+ candidates on the same page
     """
     indices: set[int] = set()
+
+    def _first_font(block: dict) -> str | None:
+        span = block.get("span_metadata") or {}
+        if isinstance(span, list):
+            for s in span:
+                fam = s.get("font", "")
+                if fam:
+                    return str(fam).lower()
+        elif isinstance(span, dict):
+            return str(span.get("font", "") or "").lower() or None
+        return None
 
     candidates_by_page: dict[int, list[int]] = {}
     for i, block in enumerate(blocks):
@@ -900,7 +937,18 @@ def _detect_non_body_insert_clusters(
         spine = body_spine.get(page, body_spine.get(1, {"median_width": 500}))
         median_width = spine.get("median_width", 500)
 
-        if block_width < 0.7 * median_width:
+        is_narrow = block_width < 0.7 * median_width or (
+            page_width > 0 and median_width < page_width * 0.4
+            and block_width < page_width * 0.35
+        )
+
+        block_font = _first_font(block)
+        spine_fonts = spine.get("all_fonts") or spine.get("fonts", set())
+        if not isinstance(spine_fonts, set):
+            spine_fonts = set(spine_fonts) if spine_fonts else set()
+        font_mismatch = bool(block_font and spine_fonts and block_font not in spine_fonts)
+
+        if is_narrow or font_mismatch:
             candidates_by_page.setdefault(page, []).append(i)
 
     for candidate_indices in candidates_by_page.values():
@@ -947,7 +995,8 @@ def normalize_document_structure(blocks: list[dict]) -> tuple[DocumentStructure,
 
     # Detect non-body insert clusters on early pages
     body_spine = _detect_body_spine(blocks)
-    insert_indices = _detect_non_body_insert_clusters(blocks, body_spine)
+    pw = max((b.get("page_width", 0) or 0) for b in blocks) or 1200
+    insert_indices = _detect_non_body_insert_clusters(blocks, body_spine, page_width=pw)
     for idx in insert_indices:
         if idx < len(blocks):
             blocks[idx]["role"] = "non_body_insert"

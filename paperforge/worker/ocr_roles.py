@@ -195,8 +195,15 @@ def _looks_like_author_list(text: str) -> bool:
 
 
 def _looks_like_affiliation(text: str) -> bool:
-    """Check if text looks like an affiliation block."""
+    """Check if text looks like an affiliation block.
+
+    Affiliation blocks typically contain institution names, addresses,
+    and superscript markers.  Common academic words like ``science``,
+    ``technology``, ``research``, ``medicine`` are NOT used because they
+    appear in every body paragraph.
+    """
     lower_txt = text.lower()
+    # Only genuinely affiliation-specific keywords
     inst_keywords = [
         "university",
         "department",
@@ -211,15 +218,9 @@ def _looks_like_affiliation(text: str) -> bool:
         "centre",
         "academy",
         "division",
-        "initiative",
-        "regenerative medicine",
-        "research",
-        "science",
-        "technology",
-        "medicine",
-        "school of materials",
     ]
-    has_inst = any(kw in lower_txt for kw in inst_keywords)
+    kw_matches = sum(1 for kw in inst_keywords if kw in lower_txt)
+    has_inst = kw_matches >= 2 or (kw_matches >= 1 and len(text) < 80)
     has_city_country = bool(
         re.search(
             r"(?:,\s*)(?:USA|UK|China|Germany|France|Japan|Italy|Canada|"
@@ -231,7 +232,12 @@ def _looks_like_affiliation(text: str) -> bool:
     )
     has_number_prefix = bool(re.match(r"^[\$\s]*\^?\d+\s*", text))
     has_superscript_number = bool(re.search(r"\$?\^\d+\$?", text))
-    return has_inst or (has_city_country and has_number_prefix) or has_superscript_number
+    has_curly_superscript = bool(re.search(r"\$?\^\{", text))
+    return (has_inst
+            or (has_city_country and has_number_prefix)
+            or has_superscript_number
+            or (has_curly_superscript and has_inst)
+            or (has_curly_superscript and has_city_country))
 
 
 def _infer_heading_level(
@@ -337,7 +343,7 @@ def assign_block_role(
     # --- Page-1 frontmatter zone pre-filter ---
     page_num = block.get("page", 1) or 1
     zone = None
-    if page_num == 1 and raw_label in ("paragraph_title", "text"):
+    if page_num == 1 and raw_label in ("paragraph_title", "text", "footnote"):
         from paperforge.worker.ocr_document import _detect_frontmatter_zone
 
         zone = _detect_frontmatter_zone(
