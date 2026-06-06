@@ -652,3 +652,90 @@ def test_formal_legend_precedence_over_panel_subcaption() -> None:
 
     assert len(inventory["rejected_legends"]) == 1
     assert "c. Redistribution" in inventory["rejected_legends"][0].get("text", "")
+
+
+# === non-body insert media exclusion ===
+
+PAGE1_AUTHOR_BIO_FIXTURE = [
+    {
+        "paper_id": "K001",
+        "page": 1,
+        "block_id": "p1_b1",
+        "role": "non_body_insert",
+        "_non_body_insert": True,
+        "text": "Short author biography",
+        "bbox": [50, 50, 230, 120],
+    },
+    {
+        "paper_id": "K001",
+        "page": 1,
+        "block_id": "p1_b2",
+        "role": "non_body_insert",
+        "_non_body_insert": True,
+        "text": "John Smith, PhD, is a professor...",
+        "bbox": [50, 130, 230, 200],
+    },
+    {
+        "paper_id": "K001",
+        "page": 1,
+        "block_id": "p1_b3",
+        "role": "media_asset",
+        "raw_label": "image",
+        "_non_body_media": True,
+        "text": "",
+        "bbox": [240, 50, 350, 180],
+    },
+    {
+        "paper_id": "K001",
+        "page": 2,
+        "block_id": "p2_b1",
+        "role": "figure_caption",
+        "text": "Figure 1. Migration under DC field.",
+        "bbox": [50, 700, 550, 740],
+    },
+    {
+        "paper_id": "K001",
+        "page": 2,
+        "block_id": "p2_b2",
+        "role": "figure_asset",
+        "text": "",
+        "bbox": [50, 50, 550, 680],
+    },
+]
+
+
+def test_non_body_insert_media_not_in_figure_assets() -> None:
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    inventory = build_figure_inventory(PAGE1_AUTHOR_BIO_FIXTURE)
+    asset_ids = [a.get("block_id") for a in inventory["figure_assets"]]
+    assert "p1_b3" not in asset_ids, "Author bio image must be excluded from figure_assets"
+
+
+def test_non_body_insert_text_blocks_not_in_assets() -> None:
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    inventory = build_figure_inventory(PAGE1_AUTHOR_BIO_FIXTURE)
+    asset_ids = [a.get("block_id") for a in inventory["figure_assets"]]
+    assert "p1_b1" not in asset_ids
+    assert "p1_b2" not in asset_ids
+
+
+def test_non_body_insert_media_not_in_unmatched_assets() -> None:
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    inventory = build_figure_inventory(PAGE1_AUTHOR_BIO_FIXTURE)
+    unmatched_ids = [a.get("block_id") for a in inventory["unmatched_assets"]]
+    assert "p1_b3" not in unmatched_ids, (
+        "Author bio image must not appear in unmatched_assets either"
+    )
+
+
+def test_author_bio_media_does_not_affect_normal_figure_matching() -> None:
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    inventory = build_figure_inventory(PAGE1_AUTHOR_BIO_FIXTURE)
+    assert len(inventory["matched_figures"]) == 1
+    assert inventory["matched_figures"][0]["legend_block_id"] == "p2_b1"
+    assert len(inventory["matched_figures"][0]["matched_assets"]) == 1
+    assert inventory["matched_figures"][0]["matched_assets"][0]["block_id"] == "p2_b2"
