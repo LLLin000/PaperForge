@@ -345,30 +345,63 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
 
         is_legend_only = len(matched_assets) == 0
 
-        matched_figures.append(
-            {
-                "legend_block_id": legend.get("block_id", ""),
-                "page": legend_page,
-                "text": legend_text,
-                "figure_number": fig_num,
-                "matched_assets": [
-                    {
-                        "block_id": a.get("block_id", ""),
-                        "bbox": a.get("bbox", [0, 0, 0, 0]),
-                    }
-                    for a in matched_assets
-                ],
-                "confidence": 0.85 if region_match is not None else 0.4,
-                "flags": [] if not is_legend_only else ["legend_only"],
-            }
-        )
+        entry = {
+            "legend_block_id": legend.get("block_id", ""),
+            "page": legend_page,
+            "text": legend_text,
+            "figure_number": fig_num,
+            "matched_assets": [
+                {
+                    "block_id": a.get("block_id", ""),
+                    "bbox": a.get("bbox", [0, 0, 0, 0]),
+                }
+                for a in matched_assets
+            ],
+            "confidence": 0.85 if region_match is not None else 0.4,
+            "flags": [] if not is_legend_only else ["legend_only"],
+        }
+        if region_match is not None and len(matched_assets) > 1:
+            entry["cluster_bbox"] = region_match["cluster_bbox"]
+        matched_figures.append(entry)
 
         if is_legend_only:
             unmatched_legends.append(legend)
 
-    # Low-confidence legends remain rejected evidence only. They do not
-    # fabricate formal figure objects; unresolved multi-panel assets remain
-    # available as unmatched assets for downstream inspection/review.
+    # --- unresolved clusters ---
+    # Candidate regions with 2+ media blocks that were NOT matched to a
+    # formal legend become unresolved multi-panel clusters. Their media
+    # blocks are consumed here so they do not spill into unmatched_assets.
+    unresolved_clusters: list[dict] = []
+    for region in candidate_regions:
+        if region["region_id"] in used_region_ids:
+            continue
+        media_blocks = region.get("media_blocks", [])
+        if len(media_blocks) < 2:
+            continue
+
+        media_block_ids = [b.get("block_id") for b in media_blocks if b.get("block_id") is not None]
+        bbox = region.get("cluster_bbox", [0, 0, 0, 0])
+        page = region.get("page", 0)
+
+        for asset in media_blocks:
+            for i, candidate in enumerate(assets):
+                if (
+                    candidate.get("block_id") == asset.get("block_id")
+                    and candidate.get("page", 0) == asset.get("page", 0)
+                ):
+                    used_asset_indices.add(i)
+                    break
+
+        unresolved_clusters.append({
+            "cluster_id": f"cluster_{len(unresolved_clusters) + 1:03d}",
+            "page": page,
+            "bbox": bbox,
+            "media_block_ids": media_block_ids,
+            "matched_legend_block_id": None,
+            "status": "unresolved_multi_panel",
+            "confidence": 0.45,
+            "flags": ["legend_rejected", "multi_panel_cluster"],
+        })
 
     for i, asset in enumerate(assets):
         if i not in used_asset_indices:
@@ -381,6 +414,7 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
         "unmatched_legends": unmatched_legends,
         "unmatched_assets": unmatched_assets,
         "rejected_legends": rejected_legends,
+        "unresolved_clusters": unresolved_clusters,
         "official_figure_count": len(matched_figures),
     }
 

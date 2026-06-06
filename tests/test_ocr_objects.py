@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-
+from typing import Any
 
 
 def test_figure_object_markdown_links_image_and_legend() -> None:
@@ -65,6 +65,53 @@ def test_stabilize_object_wikilink_uses_correct_relative_path() -> None:
     })
 
     assert "![](../../assets/figures/figure_001.jpg)" in md
+
+
+def test_unresolved_cluster_object_emission(tmp_path: Path) -> None:
+    from paperforge.worker.ocr_objects import extract_and_write_objects
+
+    render_root = tmp_path / "render"
+    asset_root = tmp_path / "assets"
+
+    figure_inventory: dict[str, Any] = {
+        "matched_figures": [],
+        "unmatched_assets": [],
+        "rejected_legends": [],
+        "figure_legends": [],
+        "figure_assets": [],
+        "official_figure_count": 0,
+        "unresolved_clusters": [
+            {
+                "cluster_id": "cluster_001",
+                "page": 9,
+                "cluster_bbox": [363, 237, 1075, 1016],
+                "media_block_ids": ["p9_b2", "p9_b3", "p9_b4", "p9_b5", "p9_b6", "p9_b7"],
+            }
+        ],
+    }
+
+    extract_and_write_objects(
+        pdf_path=None,
+        figure_inventory=figure_inventory,
+        table_inventory={"tables": [], "unmatched_assets": []},
+        asset_root=asset_root,
+        render_root=render_root,
+    )
+
+    render_files = sorted((render_root / "figures").glob("*.md"))
+    assert len(render_files) == 1, (
+        "Unresolved cluster should produce exactly one object note"
+    )
+    content = render_files[0].read_text()
+    assert "# Figure 4" not in content, (
+        "Cluster without a valid legend must not be titled with a figure number"
+    )
+    assert "cluster_001" in render_files[0].stem, (
+        "Object note should be identified by its cluster ID"
+    )
+    assert "cluster_001.jpg" in content, (
+        "Markdown must reference the whole-cluster crop image, not individual panel crops"
+    )
 
 
 def test_crop_asset_uses_ocr_page_coordinates_when_dimensions_provided(tmp_path: Path) -> None:
