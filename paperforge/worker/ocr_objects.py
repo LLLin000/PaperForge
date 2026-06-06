@@ -21,7 +21,11 @@ def render_figure_object_markdown(figure: dict[str, Any]) -> str:
     else:
         label = "Orphan Media"
 
-    parts = [f"# {label}", "", f"![](../../{image_relpath})", ""]
+    was_cropped = figure.get("was_cropped", True)
+    parts = [f"# {label}", ""]
+    if was_cropped and image_relpath:
+        parts.append(f"![](../../{image_relpath})")
+    parts.append("")
     if caption:
         parts.append("## Legend")
         parts.append(caption)
@@ -226,23 +230,6 @@ def extract_and_write_objects(
                     was_cropped = True
                     break
 
-        if not was_cropped:
-            for asset in figure_inventory.get("unmatched_assets", []):
-                bbox = asset.get("bbox", [0, 0, 0, 0])
-                asset_page = asset.get("page", 0)
-                asset_page_width, asset_page_height = _page_dims(asset_page)
-                if pdf_path and bbox and all(v > 0 for v in bbox) and _crop_asset_from_pdf(
-                    pdf_path,
-                    asset_page,
-                    bbox,
-                    asset_path_abs,
-                    page_width=asset_page_width,
-                    page_height=asset_page_height,
-                    page_cache_dir=page_cache_dir,
-                ):
-                    was_cropped = True
-                    break
-
         md = render_figure_object_markdown(
             {
                 "figure_id": fig_id,
@@ -250,6 +237,7 @@ def extract_and_write_objects(
                 "caption": caption_text,
                 "image_relpath": asset_path_rel,
                 "confidence": match.get("confidence", 0.5),
+                "was_cropped": was_cropped,
             }
         )
         _write_object_markdown(md, figures_render_dir / f"{fig_id}.md")

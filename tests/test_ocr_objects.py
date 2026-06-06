@@ -53,6 +53,87 @@ def test_orphan_object_markdown() -> None:
     assert "![](../../assets/orphans/orphan_001.jpg)" in md
 
 
+def test_render_figure_markdown_with_image_when_cropped() -> None:
+    from paperforge.worker.ocr_objects import render_figure_object_markdown
+
+    md = render_figure_object_markdown({
+        "figure_id": "figure_001",
+        "page": 4,
+        "caption": "Figure 1. Example.",
+        "image_relpath": "assets/figures/figure_001.jpg",
+        "confidence": 0.91,
+        "was_cropped": True,
+    })
+
+    assert "![](../../assets/figures/figure_001.jpg)" in md
+
+
+def test_render_figure_markdown_without_image_when_not_cropped() -> None:
+    from paperforge.worker.ocr_objects import render_figure_object_markdown
+
+    md = render_figure_object_markdown({
+        "figure_id": "figure_001",
+        "page": 4,
+        "caption": "Figure 1. Example.",
+        "image_relpath": "assets/figures/figure_001.jpg",
+        "confidence": 0.91,
+        "was_cropped": False,
+    })
+
+    assert "![](" not in md
+    assert "![](../../assets/figures/figure_001.jpg)" not in md
+
+
+def test_legend_only_matched_figure_does_not_use_unmatched_assets(tmp_path: Path) -> None:
+    from paperforge.worker.ocr_objects import extract_and_write_objects
+
+    render_root = tmp_path / "render"
+    asset_root = tmp_path / "assets"
+
+    figure_inventory: dict[str, Any] = {
+        "matched_figures": [
+            {
+                "text": "Figure 1. A legend-only figure.",
+                "page": 3,
+                "confidence": 0.85,
+                "cluster_bbox": None,
+                "matched_assets": [],
+            }
+        ],
+        "unmatched_assets": [
+            {"bbox": [100, 100, 200, 200], "page": 1},
+            {"bbox": [300, 300, 400, 400], "page": 1},
+        ],
+        "rejected_legends": [],
+        "figure_legends": [],
+        "figure_assets": [],
+        "official_figure_count": 1,
+        "unresolved_clusters": [],
+    }
+
+    extract_and_write_objects(
+        pdf_path=None,
+        figure_inventory=figure_inventory,
+        table_inventory={"tables": [], "unmatched_assets": []},
+        asset_root=asset_root,
+        render_root=render_root,
+    )
+
+    render_files = sorted((render_root / "figures").glob("*.md"))
+    assert len(render_files) == 3, (
+        "One matched figure note + two orphan notes from unmatched_assets"
+    )
+    figure_note = render_root / "figures" / "figure_001.md"
+    assert figure_note.exists()
+    content = figure_note.read_text()
+    assert "![](" not in content, (
+        "Legend-only figure must not contain any image reference"
+    )
+    # Verify orphan notes still get image paths
+    orphan_contents = (render_root / "figures" / "orphan_001.md").read_text()
+    assert "![](../../assets/orphans/orphan_001.jpg)" in orphan_contents
+
+
 def test_stabilize_object_wikilink_uses_correct_relative_path() -> None:
     from paperforge.worker.ocr_objects import render_figure_object_markdown
 
