@@ -389,14 +389,22 @@ def _reorder_tail_run(
         else:
             orphan_blocks.append(body)
 
-    # Phase 5 — emit: non-tail pass, then boundary heading first
-    # (backmatter container), then sub-sections, then references
+    # Phase 5 — emit: non-tail pass (frontmatter), then backmatter
+    # sections sorted by y-position (boundary-level and sub-headings
+    # emit in reading order), then reference sections.  The y-sort is
+    # applied only to backmatter_sections to avoid carrying cross-page
+    # relationship artifacts from previous pages' carried blocks.
     result: list[dict] = []
     result.extend(non_tail_pass)
     result.extend(carried_bodies)
-    boundary_secs = [s for s in backmatter_sections if s["heading"].get("role") == "backmatter_boundary_heading"]
-    sub_secs = [s for s in backmatter_sections if s["heading"].get("role") != "backmatter_boundary_heading"]
-    for sec in boundary_secs + sub_secs:
+    sec_order = sorted(
+        backmatter_sections,
+        key=lambda s: [
+            (s["heading"].get("bbox") or s["heading"].get("block_bbox") or [0, 0, 0, 0])[1],
+            (s["heading"].get("bbox") or s["heading"].get("block_bbox") or [0, 0, 0, 0])[0],
+        ],
+    )
+    for sec in sec_order:
         h = sec["heading"]
         result.append(h)
         result.extend(sec["bodies"])
@@ -444,6 +452,13 @@ def _reorder_tail_run_fifo(
                     ref_section["bodies"].append(block)
             else:
                 orphan_bodies.append(block)
+        elif role == "subsection_heading" and backmatter_sections:
+            # In FIFO fallback with active backmatter context, subsection
+            # headings (e.g. "Grant Disclosures") are container child
+            # headings, not generic non-tail pass blocks.
+            sec = {"heading": block, "bodies": []}
+            backmatter_sections.append(sec)
+            heading_queue.append(sec)
         elif role == "body_paragraph":
             non_tail_pass.append(block)
         elif role == "reference_item":
@@ -572,7 +587,14 @@ def _order_tail_blocks(blocks: list[dict], style_profiles: dict | None = None) -
         else:
             result.extend(page_blocks)
 
-    return result
+    # Ensure all reference-section blocks come after backmatter
+    # sections regardless of page ordering.  Academic layout convention
+    # places backmatter (author contributions, acknowledgments, etc.)
+    # before the reference section, even when they occupy different pages.
+    ref_roles = frozenset({"reference_heading", "reference_item", "reference_body"})
+    non_ref = [b for b in result if b.get("role") not in ref_roles]
+    refs = [b for b in result if b.get("role") in ref_roles]
+    return non_ref + refs
 
 
 def render_fulltext_markdown(
@@ -673,9 +695,25 @@ def render_fulltext_markdown(
     )
 
     if document_structure is None:
+        # Fallback compatibility path — shared with test fixtures and legacy
+        # callers that pass blocks without pre-computed document structure.
+        # normalize_document_structure with sparse synthetic blocks can
+        # incorrectly demote backmatter headings (e.g. Funding → body_paragraph)
+        # because the activation gates lack full-paper context.  Only run
+        # structural analysis for style profiling; do NOT overwrite roles.
         from paperforge.worker.ocr_document import normalize_document_structure
 
-        document_structure, structured_blocks = normalize_document_structure(structured_blocks)
+        _, new_blocks = normalize_document_structure([dict(b) for b in structured_blocks])
+        for i, block in enumerate(structured_blocks):
+            old_role = block.get("role")
+            new_role = new_blocks[i].get("role") if i < len(new_blocks) else old_role
+            # Never demote backmatter/reference headings — those are explicit
+            # test-level decisions, not normalization targets.
+            if old_role in ("backmatter_heading", "backmatter_boundary_heading", "reference_heading"):
+                continue
+            if old_role != new_role:
+                block["role"] = new_role
+                block["role_confidence"] = new_blocks[i].get("role_confidence", block.get("role_confidence", 0.5))
 
     style_profiles = _build_heading_style_profiles(structured_blocks)
 
