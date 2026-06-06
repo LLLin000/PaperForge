@@ -459,10 +459,28 @@ def assign_block_role(
         _page_num = block.get("page", 1) or 1
         _total_pages = max((b.get("page", 1) or 1) for b in page_blocks) if page_blocks else _page_num
         if _is_backmatter_boundary_heading(block, _page_num, _total_pages):
+            role_name = "backmatter_boundary_heading"
+            confidence = 0.7
+            lower_txt = text.lower()
+            has_container_words = any(
+                w in lower_txt
+                for w in ["additional information", "declaration", "supplementary"]
+            )
+            span_meta = block.get("span_metadata", {}) or {}
+            is_bold = False
+            if isinstance(span_meta, dict):
+                is_bold = "bold" in (span_meta.get("flags", "") or "").lower()
+            elif isinstance(span_meta, list):
+                is_bold = any(s.get("flags", 0) & 16 for s in span_meta)
+            if not (has_container_words and is_bold):
+                role_name = "backmatter_boundary_candidate"
+                confidence = 0.5
             return RoleAssignment(
-                role="backmatter_boundary_heading",
-                confidence=0.7,
-                evidence=[f"backmatter boundary heading: {text[:60]}"],
+                role=role_name,
+                confidence=confidence,
+                evidence=[
+                    f"backmatter {'boundary heading' if role_name == 'backmatter_boundary_heading' else 'boundary candidate'}: {text[:60]}"
+                ],
             )
         if _has_heading_numbering(text):
             depth = _heading_number_depth(text)
@@ -732,10 +750,28 @@ def assign_block_role(
         _pn2 = block.get("page", 1) or 1
         _tp2 = max((b.get("page", 1) or 1) for b in page_blocks) if page_blocks else _pn2
         if _is_backmatter_boundary_heading(block, _pn2, _tp2):
+            role_name = "backmatter_boundary_heading"
+            confidence = 0.7
+            lower_txt = text.lower()
+            has_container_words = any(
+                w in lower_txt
+                for w in ["additional information", "declaration", "supplementary"]
+            )
+            span_meta = block.get("span_metadata", {}) or {}
+            is_bold = False
+            if isinstance(span_meta, dict):
+                is_bold = "bold" in (span_meta.get("flags", "") or "").lower()
+            elif isinstance(span_meta, list):
+                is_bold = any(s.get("flags", 0) & 16 for s in span_meta)
+            if not (has_container_words and is_bold):
+                role_name = "backmatter_boundary_candidate"
+                confidence = 0.5
             return RoleAssignment(
-                role="backmatter_boundary_heading",
-                confidence=0.7,
-                evidence=[f"backmatter boundary heading from text block: {text[:60]}"],
+                role=role_name,
+                confidence=confidence,
+                evidence=[
+                    f"backmatter {'boundary heading' if role_name == 'backmatter_boundary_heading' else 'boundary candidate'} from text block: {text[:60]}"
+                ],
             )
 
         if len(text) < 20:

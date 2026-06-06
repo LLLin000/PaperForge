@@ -9,7 +9,6 @@ from paperforge.worker.ocr_roles import assign_block_role
 _CANDIDATE_ROLES = frozenset({
     "figure_caption_candidate",
     "backmatter_heading_candidate",
-    "backmatter_boundary_candidate",
 })
 
 
