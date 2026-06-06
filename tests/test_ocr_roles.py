@@ -18,7 +18,7 @@ def test_structured_block_has_render_default_for_body() -> None:
         }
     ]
 
-    rows = build_structured_blocks(raw_blocks)
+    rows, _ = build_structured_blocks(raw_blocks)
     assert rows[0]["role"] == "body_paragraph"
     assert rows[0]["render_default"] is True
     assert rows[0]["index_default"] is True
@@ -41,7 +41,7 @@ def test_structured_block_marks_noise_as_not_renderable() -> None:
         }
     ]
 
-    rows = build_structured_blocks(raw_blocks)
+    rows, _ = build_structured_blocks(raw_blocks)
     assert rows[0]["role"] in {"noise", "page_header"}
     assert rows[0]["render_default"] is False
 

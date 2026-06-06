@@ -148,7 +148,7 @@ def test_fixture_figure_inventory_basic(tmp_path) -> None:
     from paperforge.worker.ocr_blocks import build_raw_blocks_for_result_lines, build_structured_blocks
 
     raw_blocks = build_raw_blocks_for_result_lines(key, data)
-    structured = build_structured_blocks(raw_blocks)
+    structured, _ = build_structured_blocks(raw_blocks)
 
     from paperforge.worker.ocr_figures import build_figure_inventory
 
@@ -171,7 +171,7 @@ def test_fixture_structured_renderer_has_headings_and_body() -> None:
     from paperforge.worker.ocr_render import render_fulltext_markdown
 
     raw_blocks = build_raw_blocks_for_result_lines(key, data)
-    structured = build_structured_blocks(raw_blocks)
+    structured, _ = build_structured_blocks(raw_blocks)
 
     output = render_fulltext_markdown(
         structured_blocks=structured,

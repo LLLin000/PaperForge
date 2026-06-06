@@ -313,7 +313,7 @@ def test_non_body_insert_not_backfilled_to_body() -> None:
             "page_width": 1200, "page_height": 1600, "source": "ocr_raw",
         },
     ]
-    rows = build_structured_blocks(raw_blocks)
+    rows, _ = build_structured_blocks(raw_blocks)
     non_body = [r for r in rows if r.get("role") == "non_body_insert"]
     assert len(non_body) == 2, f"Expected 2 non_body_insert, got {len(non_body)}"
     for r in non_body:
