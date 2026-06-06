@@ -21,12 +21,14 @@ def build_structured_blocks(raw_blocks: list[dict]) -> list[dict]:
         # (assign_block_role expects block_label/block_content keys)
         page_as_role_input: list[dict] = []
         for raw_block in raw_page_blocks:
-            page_as_role_input.append({
-                "block_label": raw_block.get("raw_label", "unknown"),
-                "block_content": raw_block.get("text", ""),
-                "block_bbox": raw_block.get("bbox", [0, 0, 0, 0]),
-                "page": raw_block.get("page", 1),
-            })
+            page_as_role_input.append(
+                {
+                    "block_label": raw_block.get("raw_label", "unknown"),
+                    "block_content": raw_block.get("text", ""),
+                    "block_bbox": raw_block.get("bbox", [0, 0, 0, 0]),
+                    "page": raw_block.get("page", 1),
+                }
+            )
         for i, block in enumerate(raw_page_blocks):
             role_input = page_as_role_input[i]
             role = assign_block_role(
@@ -54,6 +56,7 @@ def build_structured_blocks(raw_blocks: list[dict]) -> list[dict]:
                 "role": role.role,
                 "role_confidence": role.confidence,
                 "evidence": role.evidence,
+                "span_metadata": block.get("span_metadata"),
                 "render_default": render_default,
                 "index_default": index_default,
             }
@@ -87,6 +90,7 @@ def build_raw_blocks_for_page(paper_id: str, page: int, result: dict) -> list[di
                 "page_width": width,
                 "page_height": height,
                 "source": "ocr_raw",
+                "span_metadata": block.get("span_metadata"),
             }
         )
     return rows
