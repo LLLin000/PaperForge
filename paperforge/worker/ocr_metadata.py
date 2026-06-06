@@ -106,6 +106,8 @@ def extract_frontmatter_candidates(blocks_structured_path: Path) -> dict[str, An
             if role == "paper_title":
                 candidates["title"] = text
             elif role == "authors":
+                if block.get("_non_body_insert"):
+                    continue
                 if candidates["authors_text"] is None:
                     candidates["authors_text"] = text
                 else:
