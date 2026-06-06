@@ -483,6 +483,10 @@ def rescue_roles_with_document_context(
     result = list(blocks)
 
     for block in result:
+        # Non-body insert clusters must never be rescued to any body role
+        if block.get("_non_body_insert"):
+            continue
+
         # --- Rule 1: frontmatter_noise → body_paragraph (body section + body font)
         if block.get("role") == "frontmatter_noise":
             page = block.get("page", 1) or 1
