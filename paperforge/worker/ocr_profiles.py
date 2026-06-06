@@ -6,6 +6,9 @@ profile-quality scoring, span cross-validation, role-family comparison.
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 
 def extract_block_span_profile(block: dict) -> dict | None:
     """Extract a normalized style profile dict from a block's span_metadata.
@@ -231,3 +234,18 @@ def cross_validate_with_span(
         "suggested_roles": suggested_roles,
         "match_details": {tentative_role: current_match},
     }
+
+
+def write_role_span_profiles(
+    blocks: list[dict],
+    output_dir: str | Path,
+) -> Path:
+    """Build and write role_span_profiles.json.
+
+    Returns the path to the written file.
+    """
+    profiles = build_role_span_profiles(blocks)
+    output_path = Path(output_dir) / "role_span_profiles.json"
+    with open(output_path, "w", encoding="utf-8") as f:
+        json.dump(profiles, f, indent=2, ensure_ascii=False)
+    return output_path
