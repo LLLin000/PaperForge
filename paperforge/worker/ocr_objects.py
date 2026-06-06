@@ -12,7 +12,9 @@ def render_figure_object_markdown(figure: dict[str, Any]) -> str:
 
     # Extract figure number for the title
     figure_id = figure.get("figure_id", "")
-    if figure_id and not figure_id.startswith("orphan_"):
+    if figure_id.startswith("unresolved_cluster_") or figure_id.startswith("cluster_"):
+        label = "Unresolved Figure Candidate"
+    elif figure_id and not figure_id.startswith("orphan_"):
         m = re.search(r"\d+", figure_id)
         num = str(int(m.group())) if m else figure_id
         label = f"Figure {num}"
@@ -202,19 +204,27 @@ def extract_and_write_objects(
         asset_path_abs = figures_asset_dir / f"{fig_id}.jpg"
 
         was_cropped = False
-        for asset_info in match.get("matched_assets", []):
-            bbox = asset_info.get("bbox", [0, 0, 0, 0])
-            if pdf_path and bbox and all(v > 0 for v in bbox) and _crop_asset_from_pdf(
-                pdf_path,
-                page,
-                bbox,
-                asset_path_abs,
-                page_width=page_width,
-                page_height=page_height,
+        cluster_bbox = match.get("cluster_bbox")
+        if cluster_bbox and all(v > 0 for v in cluster_bbox):
+            was_cropped = _crop_asset_from_pdf(
+                pdf_path, page, cluster_bbox, asset_path_abs,
+                page_width=page_width, page_height=page_height,
                 page_cache_dir=page_cache_dir,
-            ):
-                was_cropped = True
-                break
+            )
+        if not was_cropped:
+            for asset_info in match.get("matched_assets", []):
+                bbox = asset_info.get("bbox", [0, 0, 0, 0])
+                if pdf_path and bbox and all(v > 0 for v in bbox) and _crop_asset_from_pdf(
+                    pdf_path,
+                    page,
+                    bbox,
+                    asset_path_abs,
+                    page_width=page_width,
+                    page_height=page_height,
+                    page_cache_dir=page_cache_dir,
+                ):
+                    was_cropped = True
+                    break
 
         if not was_cropped:
             for asset in figure_inventory.get("unmatched_assets", []):
@@ -243,6 +253,37 @@ def extract_and_write_objects(
             }
         )
         _write_object_markdown(md, figures_render_dir / f"{fig_id}.md")
+
+    # Process unresolved figure clusters (multi-panel without reliable legend)
+    for i, cluster in enumerate(figure_inventory.get("unresolved_clusters", [])):
+        cluster_id = cluster.get("cluster_id", f"cluster_{i + 1:03d}")
+        page = cluster.get("page", 0)
+        bbox = cluster.get("cluster_bbox", [0, 0, 0, 0])
+        page_width, page_height = _page_dims(page)
+        asset_path_rel = f"assets/figures/{cluster_id}.jpg"
+        asset_path_abs = figures_asset_dir / f"{cluster_id}.jpg"
+
+        if pdf_path and bbox and all(v > 0 for v in bbox):
+            _crop_asset_from_pdf(
+                pdf_path,
+                page,
+                bbox,
+                asset_path_abs,
+                page_width=page_width,
+                page_height=page_height,
+                page_cache_dir=page_cache_dir,
+            )
+
+        md = render_figure_object_markdown(
+            {
+                "figure_id": cluster_id,
+                "page": page,
+                "caption": "",
+                "image_relpath": asset_path_rel,
+                "confidence": 0.45,
+            }
+        )
+        _write_object_markdown(md, figures_render_dir / f"{cluster_id}.md")
 
     # Process unmatched assets as orphans
     orphan_count = 0

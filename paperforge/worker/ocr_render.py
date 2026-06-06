@@ -1249,6 +1249,12 @@ def render_fulltext_markdown(
             page = tbl.get("page", 0) or 1
             tables_by_page.setdefault(page, []).append(tbl_id)
 
+    unresolved_clusters_by_page: dict[int, list[str]] = {}
+    for cluster in figure_inventory.get("unresolved_clusters", []):
+        cluster_id = cluster.get("cluster_id", "")
+        page = cluster.get("page", 0) or 1
+        unresolved_clusters_by_page.setdefault(page, []).append(cluster_id)
+
     emitted_pages: set[int] = set()
 
     # --- body with anchored figures/tables ---
@@ -1300,6 +1306,9 @@ def render_fulltext_markdown(
                 for fig_id in figures_by_page.get(current_page, []):
                     lines.append(f"![[render/figures/{fig_id}.md]]")
                     lines.append("")
+                for cluster_id in unresolved_clusters_by_page.get(current_page, []):
+                    lines.append(f"![[render/figures/{cluster_id}.md]]")
+                    lines.append("")
                 for tbl_id in tables_by_page.get(current_page, []):
                     lines.append(f"![[render/tables/{tbl_id}.md]]")
                     lines.append("")
@@ -1311,6 +1320,9 @@ def render_fulltext_markdown(
                 lines.append("")
                 for fig_id in figures_by_page.get(p, []):
                     lines.append(f"![[render/figures/{fig_id}.md]]")
+                    lines.append("")
+                for cluster_id in unresolved_clusters_by_page.get(p, []):
+                    lines.append(f"![[render/figures/{cluster_id}.md]]")
                     lines.append("")
                 for tbl_id in tables_by_page.get(p, []):
                     lines.append(f"![[render/tables/{tbl_id}.md]]")
@@ -1351,6 +1363,9 @@ def render_fulltext_markdown(
         for fig_id in figures_by_page.get(current_page, []):
             lines.append(f"![[render/figures/{fig_id}.md]]")
             lines.append("")
+        for cluster_id in unresolved_clusters_by_page.get(current_page, []):
+            lines.append(f"![[render/figures/{cluster_id}.md]]")
+            lines.append("")
         for tbl_id in tables_by_page.get(current_page, []):
             lines.append(f"![[render/tables/{tbl_id}.md]]")
             lines.append("")
@@ -1368,6 +1383,9 @@ def render_fulltext_markdown(
                 lines.append("")
             for fig_id in figures_by_page.get(p, []):
                 lines.append(f"![[render/figures/{fig_id}.md]]")
+                lines.append("")
+            for cluster_id in unresolved_clusters_by_page.get(p, []):
+                lines.append(f"![[render/figures/{cluster_id}.md]]")
                 lines.append("")
             for tbl_id in tables_by_page.get(p, []):
                 lines.append(f"![[render/tables/{tbl_id}.md]]")

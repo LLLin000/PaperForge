@@ -238,6 +238,7 @@ def test_figure_inventory_includes_all_sections() -> None:
     assert "matched_figures" in inventory
     assert "unmatched_legends" in inventory
     assert "unmatched_assets" in inventory
+    assert "unresolved_clusters" in inventory
     assert "official_figure_count" in inventory
 
 
@@ -485,79 +486,108 @@ def test_legend_does_not_steal_offpage_asset() -> None:
     assert inventory["unmatched_assets"][0]["block_id"] == "p2_b1"
 
 
+# --- shared fixture for unresolved cluster tests ---
+
+UNRESOLVED_CLUSTER_BLOCKS = [
+    {
+        "paper_id": "K001",
+        "page": 9,
+        "block_id": "p9_b2",
+        "role": "media_asset",
+        "raw_label": "chart",
+        "text": "",
+        "bbox": [429, 237, 733, 485],
+    },
+    {
+        "paper_id": "K001",
+        "page": 9,
+        "block_id": "p9_b3",
+        "role": "media_asset",
+        "raw_label": "chart",
+        "text": "",
+        "bbox": [772, 238, 1071, 484],
+    },
+    {
+        "paper_id": "K001",
+        "page": 9,
+        "block_id": "p9_b4",
+        "role": "media_asset",
+        "raw_label": "chart",
+        "text": "",
+        "bbox": [363, 504, 742, 757],
+    },
+    {
+        "paper_id": "K001",
+        "page": 9,
+        "block_id": "p9_b5",
+        "role": "media_asset",
+        "raw_label": "chart",
+        "text": "",
+        "bbox": [766, 503, 1075, 750],
+    },
+    {
+        "paper_id": "K001",
+        "page": 9,
+        "block_id": "p9_b6",
+        "role": "media_asset",
+        "raw_label": "chart",
+        "text": "",
+        "bbox": [428, 774, 729, 1016],
+    },
+    {
+        "paper_id": "K001",
+        "page": 9,
+        "block_id": "p9_b7",
+        "role": "media_asset",
+        "raw_label": "chart",
+        "text": "",
+        "bbox": [765, 768, 1075, 1013],
+    },
+    {
+        "paper_id": "K001",
+        "page": 9,
+        "block_id": "p9_b8",
+        "role": "figure_caption",
+        "raw_label": "figure_title",
+        "text": "Days post culture in osteogenic differentiation supplemented medium",
+        "bbox": [374, 1046, 1143, 1077],
+    },
+]
+
+
 def test_low_confidence_inner_label_does_not_create_formal_figure_object() -> None:
     from paperforge.worker.ocr_figures import build_figure_inventory
 
-    structured_blocks = [
-        {
-            "paper_id": "K001",
-            "page": 9,
-            "block_id": "p9_b2",
-            "role": "media_asset",
-            "raw_label": "chart",
-            "text": "",
-            "bbox": [429, 237, 733, 485],
-        },
-        {
-            "paper_id": "K001",
-            "page": 9,
-            "block_id": "p9_b3",
-            "role": "media_asset",
-            "raw_label": "chart",
-            "text": "",
-            "bbox": [772, 238, 1071, 484],
-        },
-        {
-            "paper_id": "K001",
-            "page": 9,
-            "block_id": "p9_b4",
-            "role": "media_asset",
-            "raw_label": "chart",
-            "text": "",
-            "bbox": [363, 504, 742, 757],
-        },
-        {
-            "paper_id": "K001",
-            "page": 9,
-            "block_id": "p9_b5",
-            "role": "media_asset",
-            "raw_label": "chart",
-            "text": "",
-            "bbox": [766, 503, 1075, 750],
-        },
-        {
-            "paper_id": "K001",
-            "page": 9,
-            "block_id": "p9_b6",
-            "role": "media_asset",
-            "raw_label": "chart",
-            "text": "",
-            "bbox": [428, 774, 729, 1016],
-        },
-        {
-            "paper_id": "K001",
-            "page": 9,
-            "block_id": "p9_b7",
-            "role": "media_asset",
-            "raw_label": "chart",
-            "text": "",
-            "bbox": [765, 768, 1075, 1013],
-        },
-        {
-            "paper_id": "K001",
-            "page": 9,
-            "block_id": "p9_b8",
-            "role": "figure_caption",
-            "raw_label": "figure_title",
-            "text": "Days post culture in osteogenic differentiation supplemented medium",
-            "bbox": [374, 1046, 1143, 1077],
-        },
-    ]
-
-    inventory = build_figure_inventory(structured_blocks, page_width=1224)
+    inventory = build_figure_inventory(UNRESOLVED_CLUSTER_BLOCKS, page_width=1224)
 
     assert len(inventory["matched_figures"]) == 0, (
         "Rejected low-confidence inner labels must not create formal matched figures"
     )
     assert len(inventory["rejected_legends"]) == 1
-    assert len(inventory["unmatched_assets"]) == 6
+
+
+# === unresolved clusters ===
+
+
+def test_unresolved_clusters_in_inventory() -> None:
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    inventory = build_figure_inventory(UNRESOLVED_CLUSTER_BLOCKS, page_width=1224)
+
+    assert len(inventory["matched_figures"]) == 0
+    assert len(inventory["rejected_legends"]) == 1
+    assert "unresolved_clusters" in inventory, (
+        "unresolved_clusters key must exist in inventory"
+    )
+    assert len(inventory["unresolved_clusters"]) == 1, (
+        "One unresolved cluster expected for six panels with rejected legend"
+    )
+    cluster = inventory["unresolved_clusters"][0]
+    assert len(cluster["media_block_ids"]) == 6, (
+        "Cluster must contain all six media block ids"
+    )
+    for bid in ["p9_b2", "p9_b3", "p9_b4", "p9_b5", "p9_b6", "p9_b7"]:
+        assert bid in cluster["media_block_ids"], f"Cluster missing {bid}"
+    assert len(inventory["unmatched_assets"]) == 0, (
+        "Six panels should be consumed by unresolved cluster, not left as individual unmatched assets"
+    )

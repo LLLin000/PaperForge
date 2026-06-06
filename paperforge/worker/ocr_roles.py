@@ -101,6 +101,28 @@ def _has_figure_prefix(text: str) -> bool:
     return bool(_FIGURE_PREFIX_PATTERN.match(text.strip()))
 
 
+def _is_near_figure_media(block: dict, page_blocks: list[dict], max_gap: int = 200) -> bool:
+    block_bbox = block.get("block_bbox", [0, 0, 0, 0])
+    if not block_bbox or len(block_bbox) < 4:
+        return False
+    bx1, by1, bx2 = block_bbox[0], block_bbox[1], block_bbox[2]
+    for other in page_blocks:
+        label = str(other.get("block_label", "") or "").strip()
+        if label not in {"image", "chart", "figure"}:
+            continue
+        ob = other.get("block_bbox", [0, 0, 0, 0])
+        if not ob or len(ob) < 4:
+            continue
+        ox1, oy1, ox2, oy2 = ob[:4]
+        h_overlap = bx1 < ox2 and ox1 < bx2
+        if not h_overlap:
+            continue
+        gap = by1 - oy2
+        if -max_gap * 0.3 <= gap <= max_gap:
+            return True
+    return False
+
+
 def _has_table_prefix(text: str) -> bool:
     return bool(_TABLE_PREFIX_PATTERN.match(text.strip()))
 
@@ -346,14 +368,29 @@ def assign_block_role(
             has_verb = any(v in text.lower() for v in verb_patterns)
             sentence_markers = [" is ", " are ", " was ", " were "]
             has_sentence = any(m in text.lower() for m in sentence_markers)
-            is_long = len(text) > 80
 
-            if (has_verb and has_sentence) or is_long:
+            if has_verb and has_sentence:
                 return RoleAssignment(
                     role="body_paragraph",
                     confidence=0.6,
                     evidence=[f"body reference to figure, not caption: {text[:60]}"],
                 )
+
+            is_long = len(text) > 80
+            near_media = _is_near_figure_media(block, page_blocks)
+            confidence = 0.9
+            evidence_parts = [f"figure prefix matched: {text[:60]}"]
+            if is_long:
+                confidence = 0.65
+                evidence_parts.append("long text, reduced confidence")
+            if near_media:
+                confidence = min(confidence + 0.25, 0.95)
+                evidence_parts.append("near figure media assets")
+            return RoleAssignment(
+                role="figure_caption",
+                confidence=confidence,
+                evidence=evidence_parts,
+            )
         return RoleAssignment(
             role="figure_caption",
             confidence=0.9,
