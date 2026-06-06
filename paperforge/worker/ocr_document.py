@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections import namedtuple
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from paperforge.worker.ocr_roles import (
     _BACKMATTER_TITLE_DENY_LIST,
@@ -41,6 +41,13 @@ class PagePosition:
 
 
 @dataclass
+class PageLayoutProfile:
+    column_count: int = 1
+    column_boundaries: list[float] = field(default_factory=list)
+    layout_type: str = "single_column"
+
+
+@dataclass
 class DocumentStructure:
     body_end_page: int | None = None
     backmatter_start: PagePosition | None = None
@@ -48,6 +55,108 @@ class DocumentStructure:
     spread_start: int | None = None
     spread_end: int | None = None
     backmatter_form: str = "flat"
+    page_layouts: dict[int, PageLayoutProfile] | None = None
+
+
+def _cluster_page_columns(page_blocks: list[dict], page_width: float) -> list[float]:
+    """Cluster block x-centers by column using a gap-based approach.
+
+    Returns one representative x-center per column cluster.
+    """
+    centers: list[float] = []
+    for block in page_blocks:
+        bbox = block.get("bbox") or block.get("block_bbox")
+        if not bbox or len(bbox) < 4:
+            continue
+        block_width = bbox[2] - bbox[0]
+        if block_width <= 50:
+            continue
+        x_center = (bbox[0] + bbox[2]) / 2
+        centers.append(x_center)
+
+    if not centers:
+        return [page_width / 2]
+
+    centers.sort()
+    gap_threshold = page_width * 0.15
+    clusters: list[list[float]] = [[centers[0]]]
+
+    for c in centers[1:]:
+        if c - clusters[-1][-1] > gap_threshold:
+            clusters.append([c])
+        else:
+            clusters[-1].append(c)
+
+    return [sum(cluster) / len(cluster) for cluster in clusters]
+
+
+def _classify_page_layout(page_blocks: list[dict], page_width: float, page_height: float) -> PageLayoutProfile:
+    """Classify a page's layout based on column clusters and role distribution."""
+    centers = _cluster_page_columns(page_blocks, page_width)
+    column_count = len(centers)
+
+    if column_count == 1:
+        return PageLayoutProfile(column_count=1, column_boundaries=centers, layout_type="single_column")
+
+    if column_count == 2:
+        col_blocks: dict[int, list[str]] = {0: [], 1: []}
+        for block in page_blocks:
+            bbox = block.get("bbox") or block.get("block_bbox")
+            if not bbox or len(bbox) < 4:
+                continue
+            x_center = (bbox[0] + bbox[2]) / 2
+            col = 0 if x_center < page_width / 2 else 1
+            col_blocks[col].append(block.get("role", ""))
+
+        body_roles = {
+            "body_paragraph",
+            "section_heading",
+            "subsection_heading",
+            "sub_subsection_heading",
+        }
+
+        col_has_body: dict[int, bool] = {}
+        col_has_tail: dict[int, bool] = {}
+        for col_idx, roles in col_blocks.items():
+            col_has_body[col_idx] = bool(set(roles) & body_roles)
+            col_has_tail[col_idx] = bool(set(roles) & _TAIL_ROLES)
+
+        one_side_body = col_has_body[0] and not col_has_tail[0]
+        other_side_tail = not col_has_body[1] and col_has_tail[1]
+        swapped = col_has_body[1] and not col_has_tail[1]
+        swapped_tail = not col_has_body[0] and col_has_tail[0]
+
+        if (one_side_body and other_side_tail) or (swapped and swapped_tail):
+            return PageLayoutProfile(
+                column_count=2,
+                column_boundaries=centers,
+                layout_type="mixed_tail",
+            )
+
+        return PageLayoutProfile(column_count=2, column_boundaries=centers, layout_type="two_column")
+
+    return PageLayoutProfile(
+        column_count=column_count,
+        column_boundaries=centers,
+        layout_type="two_column",
+    )
+
+
+def _build_page_layout_profiles(blocks: list[dict]) -> dict[int, PageLayoutProfile]:
+    """Build per-page layout profiles for all pages that have blocks."""
+    by_page: dict[int, list[dict]] = {}
+    for block in blocks:
+        p = block.get("page")
+        if p is not None:
+            by_page.setdefault(p, []).append(block)
+
+    profiles: dict[int, PageLayoutProfile] = {}
+    for page, page_blocks in by_page.items():
+        page_width = max((b.get("page_width", 0) or 0) for b in page_blocks) or 1200
+        page_height = max((b.get("page_height", 0) or 0) for b in page_blocks) or 1600
+        profiles[page] = _classify_page_layout(page_blocks, page_width, page_height)
+
+    return profiles
 
 
 def _detect_forward_body_end(blocks: list[dict]) -> int | None:
@@ -1053,8 +1162,7 @@ def _detect_non_body_insert_clusters(
             median_width = 500
 
         is_narrow = block_width < 0.7 * median_width or (
-            page_width > 0 and median_width < page_width * 0.4
-            and block_width < page_width * 0.35
+            page_width > 0 and median_width < page_width * 0.4 and block_width < page_width * 0.35
         )
 
         block_font = _first_font(block)
@@ -1186,6 +1294,10 @@ def normalize_document_structure(blocks: list[dict]) -> tuple[DocumentStructure,
     )
 
     header_band, footer_band = _estimate_noise_bands(blocks)
+
+    page_layouts = _build_page_layout_profiles(blocks)
+    doc_structure.page_layouts = page_layouts
+
     blocks = _promote_tail_body_candidates(blocks, doc_structure, header_band=header_band, footer_band=footer_band)
     blocks = _assign_tail_spread_ownership(blocks, doc_structure)
 

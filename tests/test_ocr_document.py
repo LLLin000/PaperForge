@@ -76,32 +76,61 @@ def test_rescue_frontmatter_noise_to_body_paragraph() -> None:
     )
 
     blocks = [
-        {"page": 1, "role": "body_paragraph", "role_confidence": 0.7, "text": "Intro body paragraph with enough text to establish a profile.",
-         "span_metadata": {"size": 10, "flags": "normal"}},
-        {"page": 2, "role": "body_paragraph", "role_confidence": 0.7, "text": "Methods section describing the experimental setup in full detail.",
-         "span_metadata": {"size": 10, "flags": "normal"}},
-        {"page": 3, "role": "frontmatter_noise", "role_confidence": 0.6, "text": "This block was misclassified as frontmatter noise but is actually body text.",
-         "span_metadata": {"size": 10, "flags": "normal"}},
+        {
+            "page": 1,
+            "role": "body_paragraph",
+            "role_confidence": 0.7,
+            "text": "Intro body paragraph with enough text to establish a profile.",
+            "span_metadata": {"size": 10, "flags": "normal"},
+        },
+        {
+            "page": 2,
+            "role": "body_paragraph",
+            "role_confidence": 0.7,
+            "text": "Methods section describing the experimental setup in full detail.",
+            "span_metadata": {"size": 10, "flags": "normal"},
+        },
+        {
+            "page": 3,
+            "role": "frontmatter_noise",
+            "role_confidence": 0.6,
+            "text": "This block was misclassified as frontmatter noise but is actually body text.",
+            "span_metadata": {"size": 10, "flags": "normal"},
+        },
         {"page": 4, "role": "reference_heading", "role_confidence": 0.9, "text": "References"},
         {"page": 4, "role": "reference_item", "role_confidence": 0.7, "text": "[1] Author A, Journal, 2025"},
     ]
 
     role_profiles = {
-        "body_paragraph": {"block_count": 2, "mean_size": 10.0, "max_size": 10.5, "min_size": 9.5,
-                          "dispersion": 0.05, "quality": "strong", "bold_ratio": 0.0,
-                          "italic_ratio": 0.0, "font_families": []},
-        "frontmatter_noise": {"block_count": 1, "mean_size": 8.0, "max_size": 8.5, "min_size": 7.5,
-                            "dispersion": 0.05, "quality": "weak", "bold_ratio": 0.0,
-                            "italic_ratio": 0.0, "font_families": []},
+        "body_paragraph": {
+            "block_count": 2,
+            "mean_size": 10.0,
+            "max_size": 10.5,
+            "min_size": 9.5,
+            "dispersion": 0.05,
+            "quality": "strong",
+            "bold_ratio": 0.0,
+            "italic_ratio": 0.0,
+            "font_families": [],
+        },
+        "frontmatter_noise": {
+            "block_count": 1,
+            "mean_size": 8.0,
+            "max_size": 8.5,
+            "min_size": 7.5,
+            "dispersion": 0.05,
+            "quality": "weak",
+            "bold_ratio": 0.0,
+            "italic_ratio": 0.0,
+            "font_families": [],
+        },
     }
 
     ds = DocumentStructure(body_end_page=3)
     result = rescue_roles_with_document_context(blocks, role_profiles, ds)
 
     rescued = next(b for b in result if b["text"].startswith("This block was misclassified"))
-    assert rescued["role"] == "body_paragraph", (
-        f"Expected body_paragraph, got {rescued['role']}"
-    )
+    assert rescued["role"] == "body_paragraph", f"Expected body_paragraph, got {rescued['role']}"
 
 
 def test_rescue_body_paragraph_to_reference_item() -> None:
@@ -113,29 +142,53 @@ def test_rescue_body_paragraph_to_reference_item() -> None:
     )
 
     blocks = [
-        {"page": 1, "role": "body_paragraph", "role_confidence": 0.7, "text": "Main body paragraph that is long enough for context.",
-         "span_metadata": {"size": 10.5, "flags": "normal"}},
+        {
+            "page": 1,
+            "role": "body_paragraph",
+            "role_confidence": 0.7,
+            "text": "Main body paragraph that is long enough for context.",
+            "span_metadata": {"size": 10.5, "flags": "normal"},
+        },
         {"page": 5, "role": "reference_heading", "role_confidence": 0.9, "text": "References"},
-        {"page": 5, "role": "body_paragraph", "role_confidence": 0.5, "text": "1. Smith J, Johnson K. A study on something. Journal, 2025.",
-         "span_metadata": {"size": 9.0, "flags": "normal"}},
+        {
+            "page": 5,
+            "role": "body_paragraph",
+            "role_confidence": 0.5,
+            "text": "1. Smith J, Johnson K. A study on something. Journal, 2025.",
+            "span_metadata": {"size": 9.0, "flags": "normal"},
+        },
     ]
 
     role_profiles = {
-        "body_paragraph": {"block_count": 1, "mean_size": 10.5, "max_size": 10.5, "min_size": 10.5,
-                          "dispersion": 0.0, "quality": "strong", "bold_ratio": 0.0,
-                          "italic_ratio": 0.0, "font_families": []},
-        "reference_item": {"block_count": 0, "mean_size": 9.0, "max_size": 9.0, "min_size": 9.0,
-                          "dispersion": 0.0, "quality": "weak", "bold_ratio": 0.0,
-                          "italic_ratio": 0.0, "font_families": []},
+        "body_paragraph": {
+            "block_count": 1,
+            "mean_size": 10.5,
+            "max_size": 10.5,
+            "min_size": 10.5,
+            "dispersion": 0.0,
+            "quality": "strong",
+            "bold_ratio": 0.0,
+            "italic_ratio": 0.0,
+            "font_families": [],
+        },
+        "reference_item": {
+            "block_count": 0,
+            "mean_size": 9.0,
+            "max_size": 9.0,
+            "min_size": 9.0,
+            "dispersion": 0.0,
+            "quality": "weak",
+            "bold_ratio": 0.0,
+            "italic_ratio": 0.0,
+            "font_families": [],
+        },
     }
 
     ds = DocumentStructure(body_end_page=4, references_start=PagePosition(page=5, y=0))
     result = rescue_roles_with_document_context(blocks, role_profiles, ds)
 
     promoted = next(b for b in result if b["text"].startswith("1. Smith"))
-    assert promoted["role"] == "reference_item", (
-        f"Expected reference_item, got {promoted['role']}"
-    )
+    assert promoted["role"] == "reference_item", f"Expected reference_item, got {promoted['role']}"
 
 
 def test_rescue_weak_heading_demoted_to_body() -> None:
@@ -146,30 +199,59 @@ def test_rescue_weak_heading_demoted_to_body() -> None:
     )
 
     blocks = [
-        {"page": 1, "role": "body_paragraph", "role_confidence": 0.7, "text": "Some intro body text that provides a long enough context for profiling.",
-         "span_metadata": {"size": 10, "flags": "normal"}},
-        {"page": 2, "role": "body_paragraph", "role_confidence": 0.7, "text": "More body text to strengthen the body profile for better font matching.",
-         "span_metadata": {"size": 10, "flags": "normal"}},
-        {"page": 2, "role": "section_heading", "role_confidence": 0.5, "text": "Methods",
-         "span_metadata": {"size": 10, "flags": "normal"}},
+        {
+            "page": 1,
+            "role": "body_paragraph",
+            "role_confidence": 0.7,
+            "text": "Some intro body text that provides a long enough context for profiling.",
+            "span_metadata": {"size": 10, "flags": "normal"},
+        },
+        {
+            "page": 2,
+            "role": "body_paragraph",
+            "role_confidence": 0.7,
+            "text": "More body text to strengthen the body profile for better font matching.",
+            "span_metadata": {"size": 10, "flags": "normal"},
+        },
+        {
+            "page": 2,
+            "role": "section_heading",
+            "role_confidence": 0.5,
+            "text": "Methods",
+            "span_metadata": {"size": 10, "flags": "normal"},
+        },
     ]
 
     role_profiles = {
-        "body_paragraph": {"block_count": 2, "mean_size": 10.0, "max_size": 10.5, "min_size": 9.5,
-                          "dispersion": 0.05, "quality": "strong", "bold_ratio": 0.0,
-                          "italic_ratio": 0.0, "font_families": []},
-        "section_heading": {"block_count": 0, "mean_size": 12.0, "max_size": 12.0, "min_size": 12.0,
-                          "dispersion": 0.0, "quality": "no_data", "bold_ratio": 1.0,
-                          "italic_ratio": 0.0, "font_families": []},
+        "body_paragraph": {
+            "block_count": 2,
+            "mean_size": 10.0,
+            "max_size": 10.5,
+            "min_size": 9.5,
+            "dispersion": 0.05,
+            "quality": "strong",
+            "bold_ratio": 0.0,
+            "italic_ratio": 0.0,
+            "font_families": [],
+        },
+        "section_heading": {
+            "block_count": 0,
+            "mean_size": 12.0,
+            "max_size": 12.0,
+            "min_size": 12.0,
+            "dispersion": 0.0,
+            "quality": "no_data",
+            "bold_ratio": 1.0,
+            "italic_ratio": 0.0,
+            "font_families": [],
+        },
     }
 
     ds = DocumentStructure(body_end_page=2)
     result = rescue_roles_with_document_context(blocks, role_profiles, ds)
 
     demoted = next(b for b in result if b["text"] == "Methods")
-    assert demoted["role"] == "body_paragraph", (
-        f"Expected body_paragraph, got {demoted['role']}"
-    )
+    assert demoted["role"] == "body_paragraph", f"Expected body_paragraph, got {demoted['role']}"
 
 
 def test_rescue_strong_numbered_heading_not_demoted() -> None:
@@ -180,25 +262,41 @@ def test_rescue_strong_numbered_heading_not_demoted() -> None:
     )
 
     blocks = [
-        {"page": 1, "role": "body_paragraph", "role_confidence": 0.7, "text": "Body paragraph one with enough text to contribute to a font profile.",
-         "span_metadata": {"size": 10, "flags": "normal"}},
-        {"page": 2, "role": "section_heading", "role_confidence": 0.5, "text": "5.1 Results",
-         "span_metadata": {"size": 10, "flags": "normal"}},
+        {
+            "page": 1,
+            "role": "body_paragraph",
+            "role_confidence": 0.7,
+            "text": "Body paragraph one with enough text to contribute to a font profile.",
+            "span_metadata": {"size": 10, "flags": "normal"},
+        },
+        {
+            "page": 2,
+            "role": "section_heading",
+            "role_confidence": 0.5,
+            "text": "5.1 Results",
+            "span_metadata": {"size": 10, "flags": "normal"},
+        },
     ]
 
     role_profiles = {
-        "body_paragraph": {"block_count": 1, "mean_size": 10.0, "max_size": 10.5, "min_size": 9.5,
-                          "dispersion": 0.05, "quality": "strong", "bold_ratio": 0.0,
-                          "italic_ratio": 0.0, "font_families": []},
+        "body_paragraph": {
+            "block_count": 1,
+            "mean_size": 10.0,
+            "max_size": 10.5,
+            "min_size": 9.5,
+            "dispersion": 0.05,
+            "quality": "strong",
+            "bold_ratio": 0.0,
+            "italic_ratio": 0.0,
+            "font_families": [],
+        },
     }
 
     ds = DocumentStructure(body_end_page=2)
     result = rescue_roles_with_document_context(blocks, role_profiles, ds)
 
     heading = next(b for b in result if b["text"] == "5.1 Results")
-    assert heading["role"] == "section_heading", (
-        f"Expected section_heading preserved, got {heading['role']}"
-    )
+    assert heading["role"] == "section_heading", f"Expected section_heading preserved, got {heading['role']}"
 
 
 def test_rescue_no_document_structure_derived() -> None:
@@ -206,31 +304,60 @@ def test_rescue_no_document_structure_derived() -> None:
     from paperforge.worker.ocr_document import rescue_roles_with_document_context
 
     blocks = [
-        {"page": 1, "role": "body_paragraph", "role_confidence": 0.7, "text": "Body text that is long enough for establishing a font profile here.",
-         "span_metadata": {"size": 10, "flags": "normal"}},
-        {"page": 2, "role": "body_paragraph", "role_confidence": 0.7, "text": "More body text here to help build a solid body paragraph profile.",
-         "span_metadata": {"size": 10, "flags": "normal"}},
-        {"page": 2, "role": "frontmatter_noise", "role_confidence": 0.6, "text": "Misclassified text block that should be rescued to body paragraph.",
-         "span_metadata": {"size": 10, "flags": "normal"}},
+        {
+            "page": 1,
+            "role": "body_paragraph",
+            "role_confidence": 0.7,
+            "text": "Body text that is long enough for establishing a font profile here.",
+            "span_metadata": {"size": 10, "flags": "normal"},
+        },
+        {
+            "page": 2,
+            "role": "body_paragraph",
+            "role_confidence": 0.7,
+            "text": "More body text here to help build a solid body paragraph profile.",
+            "span_metadata": {"size": 10, "flags": "normal"},
+        },
+        {
+            "page": 2,
+            "role": "frontmatter_noise",
+            "role_confidence": 0.6,
+            "text": "Misclassified text block that should be rescued to body paragraph.",
+            "span_metadata": {"size": 10, "flags": "normal"},
+        },
         {"page": 3, "role": "reference_heading", "role_confidence": 0.9, "text": "References"},
         {"page": 3, "role": "reference_item", "role_confidence": 0.7, "text": "[1] Author A, Journal, 2025"},
     ]
 
     role_profiles = {
-        "body_paragraph": {"block_count": 2, "mean_size": 10.0, "max_size": 10.5, "min_size": 9.5,
-                          "dispersion": 0.05, "quality": "strong", "bold_ratio": 0.0,
-                          "italic_ratio": 0.0, "font_families": []},
-        "frontmatter_noise": {"block_count": 1, "mean_size": 8.0, "max_size": 8.5, "min_size": 7.5,
-                            "dispersion": 0.05, "quality": "weak", "bold_ratio": 0.0,
-                            "italic_ratio": 0.0, "font_families": []},
+        "body_paragraph": {
+            "block_count": 2,
+            "mean_size": 10.0,
+            "max_size": 10.5,
+            "min_size": 9.5,
+            "dispersion": 0.05,
+            "quality": "strong",
+            "bold_ratio": 0.0,
+            "italic_ratio": 0.0,
+            "font_families": [],
+        },
+        "frontmatter_noise": {
+            "block_count": 1,
+            "mean_size": 8.0,
+            "max_size": 8.5,
+            "min_size": 7.5,
+            "dispersion": 0.05,
+            "quality": "weak",
+            "bold_ratio": 0.0,
+            "italic_ratio": 0.0,
+            "font_families": [],
+        },
     }
 
     result = rescue_roles_with_document_context(blocks, role_profiles)
 
     rescued = next(b for b in result if b["text"].startswith("Misclassified"))
-    assert rescued["role"] == "body_paragraph", (
-        f"Expected body_paragraph, got {rescued['role']}"
-    )
+    assert rescued["role"] == "body_paragraph", f"Expected body_paragraph, got {rescued['role']}"
 
 
 def test_rescue_analyze_document_structure_mixed_tail_spread() -> None:
@@ -308,26 +435,41 @@ def test_non_body_insert_not_backfilled_to_body() -> None:
 
     raw_blocks = [
         {
-            "paper_id": "TEST001", "page": 1, "block_id": "p1_b1",
-            "raw_label": "text", "raw_order": 0,
+            "paper_id": "TEST001",
+            "page": 1,
+            "block_id": "p1_b1",
+            "raw_label": "text",
+            "raw_order": 0,
             "bbox": [50, 200, 300, 240],
             "text": "The author biography section provides a brief overview of the professional background of each contributor",
-            "page_width": 1200, "page_height": 1600, "source": "ocr_raw",
+            "page_width": 1200,
+            "page_height": 1600,
+            "source": "ocr_raw",
         },
         {
-            "paper_id": "TEST001", "page": 1, "block_id": "p1_b2",
-            "raw_label": "text", "raw_order": 1,
+            "paper_id": "TEST001",
+            "page": 1,
+            "block_id": "p1_b2",
+            "raw_label": "text",
+            "raw_order": 1,
             "bbox": [50, 280, 310, 320],
             "text": "Biographical information about each author is listed in the supplementary materials for this manuscript",
-            "page_width": 1200, "page_height": 1600, "source": "ocr_raw",
+            "page_width": 1200,
+            "page_height": 1600,
+            "source": "ocr_raw",
         },
         # A wide body paragraph
         {
-            "paper_id": "TEST001", "page": 1, "block_id": "p1_b3",
-            "raw_label": "text", "raw_order": 2,
+            "paper_id": "TEST001",
+            "page": 1,
+            "block_id": "p1_b3",
+            "raw_label": "text",
+            "raw_order": 2,
             "bbox": [100, 600, 800, 640],
             "text": "The following experimental results demonstrate the effect of the treatment on cell migration and proliferation assays performed in triplicate",
-            "page_width": 1200, "page_height": 1600, "source": "ocr_raw",
+            "page_width": 1200,
+            "page_height": 1600,
+            "source": "ocr_raw",
         },
     ]
     rows, _ = build_structured_blocks(raw_blocks)
@@ -467,46 +609,90 @@ def test_family_level_rescue_reinstates_false_non_body_insert() -> None:
 
     blocks = [
         # body paragraphs to establish body_family profile
-        {"role": "body_paragraph", "page": 1, "role_confidence": 0.8,
-         "text": "Normal body paragraph with enough text for profiling purposes in this test case.",
-         "span_metadata": {"size": 10, "flags": "normal"}},
-        {"role": "body_paragraph", "page": 2, "role_confidence": 0.8,
-         "text": "Another body paragraph to strengthen the body font profile for reliable matching.",
-         "span_metadata": {"size": 10, "flags": "normal"}},
+        {
+            "role": "body_paragraph",
+            "page": 1,
+            "role_confidence": 0.8,
+            "text": "Normal body paragraph with enough text for profiling purposes in this test case.",
+            "span_metadata": {"size": 10, "flags": "normal"},
+        },
+        {
+            "role": "body_paragraph",
+            "page": 2,
+            "role_confidence": 0.8,
+            "text": "Another body paragraph to strengthen the body font profile for reliable matching.",
+            "span_metadata": {"size": 10, "flags": "normal"},
+        },
         # genuine non_body_insert blocks (4 blocks with consistent small/italic style,
         # dispersion <= 0.15 = strong quality for non_body_insert_family)
-        {"role": "non_body_insert", "page": 1, "role_confidence": 0.5,
-         "_non_body_insert": True,
-         "text": "Short bio text one",
-         "span_metadata": {"size": 9, "flags": "italic"}},
-        {"role": "non_body_insert", "page": 1, "role_confidence": 0.5,
-         "_non_body_insert": True,
-         "text": "Short bio text two",
-         "span_metadata": {"size": 9, "flags": "italic"}},
-        {"role": "non_body_insert", "page": 2, "role_confidence": 0.5,
-         "_non_body_insert": True,
-         "text": "Short bio text three",
-         "span_metadata": {"size": 9, "flags": "italic"}},
-        {"role": "non_body_insert", "page": 2, "role_confidence": 0.5,
-         "_non_body_insert": True,
-         "text": "Short bio text four",
-         "span_metadata": {"size": 9, "flags": "italic"}},
+        {
+            "role": "non_body_insert",
+            "page": 1,
+            "role_confidence": 0.5,
+            "_non_body_insert": True,
+            "text": "Short bio text one",
+            "span_metadata": {"size": 9, "flags": "italic"},
+        },
+        {
+            "role": "non_body_insert",
+            "page": 1,
+            "role_confidence": 0.5,
+            "_non_body_insert": True,
+            "text": "Short bio text two",
+            "span_metadata": {"size": 9, "flags": "italic"},
+        },
+        {
+            "role": "non_body_insert",
+            "page": 2,
+            "role_confidence": 0.5,
+            "_non_body_insert": True,
+            "text": "Short bio text three",
+            "span_metadata": {"size": 9, "flags": "italic"},
+        },
+        {
+            "role": "non_body_insert",
+            "page": 2,
+            "role_confidence": 0.5,
+            "_non_body_insert": True,
+            "text": "Short bio text four",
+            "span_metadata": {"size": 9, "flags": "italic"},
+        },
         # false positive: body-like font in non_body_insert, wide enough to pass geometry guard
-        {"role": "non_body_insert", "page": 2, "role_confidence": 0.5,
-         "_non_body_insert": True,
-         "bbox": [100, 400, 700, 440],
-         "page_width": 1200,
-         "text": "This block was incorrectly marked as non_body_insert but has a body-paragraph style.",
-         "span_metadata": {"size": 10, "flags": "normal"}},
+        {
+            "role": "non_body_insert",
+            "page": 2,
+            "role_confidence": 0.5,
+            "_non_body_insert": True,
+            "bbox": [100, 400, 700, 440],
+            "page_width": 1200,
+            "text": "This block was incorrectly marked as non_body_insert but has a body-paragraph style.",
+            "span_metadata": {"size": 10, "flags": "normal"},
+        },
     ]
 
     role_profiles = {
-        "body_paragraph": {"block_count": 2, "mean_size": 10.0, "max_size": 10.5, "min_size": 9.5,
-                          "dispersion": 0.05, "quality": "strong", "bold_ratio": 0.0,
-                          "italic_ratio": 0.0, "font_families": []},
-        "non_body_insert": {"block_count": 5, "mean_size": 9.2, "max_size": 10.0, "min_size": 9.0,
-                           "dispersion": 0.054, "quality": "strong", "bold_ratio": 0.0,
-                           "italic_ratio": 0.8, "font_families": []},
+        "body_paragraph": {
+            "block_count": 2,
+            "mean_size": 10.0,
+            "max_size": 10.5,
+            "min_size": 9.5,
+            "dispersion": 0.05,
+            "quality": "strong",
+            "bold_ratio": 0.0,
+            "italic_ratio": 0.0,
+            "font_families": [],
+        },
+        "non_body_insert": {
+            "block_count": 5,
+            "mean_size": 9.2,
+            "max_size": 10.0,
+            "min_size": 9.0,
+            "dispersion": 0.054,
+            "quality": "strong",
+            "bold_ratio": 0.0,
+            "italic_ratio": 0.8,
+            "font_families": [],
+        },
     }
 
     result = rescue_roles_with_document_context(blocks, role_profiles)
@@ -516,17 +702,14 @@ def test_family_level_rescue_reinstates_false_non_body_insert() -> None:
     reinstated = [b for b in result if b["text"].startswith("This block was incorrectly")]
     assert len(reinstated) == 1
     assert reinstated[0]["role"] == "body_paragraph", (
-        f"Expected false-positive non_body_insert to be reinstated to body_paragraph, "
-        f"got {reinstated[0]['role']}"
+        f"Expected false-positive non_body_insert to be reinstated to body_paragraph, got {reinstated[0]['role']}"
     )
     assert "_non_body_insert" not in reinstated[0], "non_body_insert flag should be removed"
 
-    still_ni = [b for b in result if "Short bio text" in (b.get("text",""))]
+    still_ni = [b for b in result if "Short bio text" in (b.get("text", ""))]
     assert len(still_ni) == 4
     for b in still_ni:
-        assert b["role"] == "non_body_insert", (
-            f"Genuine non_body_insert should keep its role, got {b['role']}"
-        )
+        assert b["role"] == "non_body_insert", f"Genuine non_body_insert should keep its role, got {b['role']}"
 
 
 def test_family_level_rescue_weak_heading_matches_heading_family() -> None:
@@ -535,43 +718,86 @@ def test_family_level_rescue_weak_heading_matches_heading_family() -> None:
 
     blocks = [
         # body paragraphs
-        {"role": "body_paragraph", "page": 1, "role_confidence": 0.8,
-         "text": "Normal body paragraph with enough text for profiling purposes in this test case.",
-         "span_metadata": {"size": 10, "flags": "normal"}},
-        {"role": "body_paragraph", "page": 2, "role_confidence": 0.8,
-         "text": "Another body paragraph to strengthen the body profile for more reliable comparisons.",
-         "span_metadata": {"size": 10, "flags": "normal"}},
+        {
+            "role": "body_paragraph",
+            "page": 1,
+            "role_confidence": 0.8,
+            "text": "Normal body paragraph with enough text for profiling purposes in this test case.",
+            "span_metadata": {"size": 10, "flags": "normal"},
+        },
+        {
+            "role": "body_paragraph",
+            "page": 2,
+            "role_confidence": 0.8,
+            "text": "Another body paragraph to strengthen the body profile for more reliable comparisons.",
+            "span_metadata": {"size": 10, "flags": "normal"},
+        },
         # heading blocks to establish heading_family (different size, bold)
-        {"role": "section_heading", "page": 1, "role_confidence": 0.8,
-         "text": "Introduction",
-         "span_metadata": {"size": 14, "flags": "bold"}},
-        {"role": "subsection_heading", "page": 2, "role_confidence": 0.8,
-         "text": "Statistical Analysis",
-         "span_metadata": {"size": 12, "flags": "bold"}},
+        {
+            "role": "section_heading",
+            "page": 1,
+            "role_confidence": 0.8,
+            "text": "Introduction",
+            "span_metadata": {"size": 14, "flags": "bold"},
+        },
+        {
+            "role": "subsection_heading",
+            "page": 2,
+            "role_confidence": 0.8,
+            "text": "Statistical Analysis",
+            "span_metadata": {"size": 12, "flags": "bold"},
+        },
         # weak heading that matches heading_family (should NOT be demoted)
-        {"role": "section_heading", "page": 3, "role_confidence": 0.55,
-         "text": "Results",
-         "span_metadata": {"size": 14, "flags": "bold"}},
+        {
+            "role": "section_heading",
+            "page": 3,
+            "role_confidence": 0.55,
+            "text": "Results",
+            "span_metadata": {"size": 14, "flags": "bold"},
+        },
     ]
 
     role_profiles = {
-        "body_paragraph": {"block_count": 2, "mean_size": 10.0, "max_size": 10.5, "min_size": 9.5,
-                          "dispersion": 0.05, "quality": "strong", "bold_ratio": 0.0,
-                          "italic_ratio": 0.0, "font_families": []},
-        "section_heading": {"block_count": 1, "mean_size": 14.0, "max_size": 14.5, "min_size": 13.5,
-                           "dispersion": 0.04, "quality": "strong", "bold_ratio": 1.0,
-                           "italic_ratio": 0.0, "font_families": []},
-        "subsection_heading": {"block_count": 1, "mean_size": 12.0, "max_size": 12.5, "min_size": 11.5,
-                              "dispersion": 0.04, "quality": "strong", "bold_ratio": 1.0,
-                              "italic_ratio": 0.0, "font_families": []},
+        "body_paragraph": {
+            "block_count": 2,
+            "mean_size": 10.0,
+            "max_size": 10.5,
+            "min_size": 9.5,
+            "dispersion": 0.05,
+            "quality": "strong",
+            "bold_ratio": 0.0,
+            "italic_ratio": 0.0,
+            "font_families": [],
+        },
+        "section_heading": {
+            "block_count": 1,
+            "mean_size": 14.0,
+            "max_size": 14.5,
+            "min_size": 13.5,
+            "dispersion": 0.04,
+            "quality": "strong",
+            "bold_ratio": 1.0,
+            "italic_ratio": 0.0,
+            "font_families": [],
+        },
+        "subsection_heading": {
+            "block_count": 1,
+            "mean_size": 12.0,
+            "max_size": 12.5,
+            "min_size": 11.5,
+            "dispersion": 0.04,
+            "quality": "strong",
+            "bold_ratio": 1.0,
+            "italic_ratio": 0.0,
+            "font_families": [],
+        },
     }
 
     result = rescue_roles_with_document_context(blocks, role_profiles)
 
     heading = next(b for b in result if b["text"] == "Results")
     assert heading["role"] == "section_heading", (
-        f"Weak heading matching heading_family should keep its role, "
-        f"got {heading['role']}"
+        f"Weak heading matching heading_family should keep its role, got {heading['role']}"
     )
 
 
@@ -634,20 +860,44 @@ def test_non_body_insert_catches_figure_caption_blocks() -> None:
 
     blocks = [
         # Page 1: wide body paragraphs
-        {"role": "body_paragraph", "bbox": [100, 100, 800, 140], "page": 1,
-         "span_metadata": {"font": "TimesNewRoman", "size": 10}},
-        {"role": "body_paragraph", "bbox": [100, 200, 810, 240], "page": 1,
-         "span_metadata": {"font": "TimesNewRoman", "size": 10}},
+        {
+            "role": "body_paragraph",
+            "bbox": [100, 100, 800, 140],
+            "page": 1,
+            "span_metadata": {"font": "TimesNewRoman", "size": 10},
+        },
+        {
+            "role": "body_paragraph",
+            "bbox": [100, 200, 810, 240],
+            "page": 1,
+            "span_metadata": {"font": "TimesNewRoman", "size": 10},
+        },
         # Page 2: wide body paragraphs
-        {"role": "body_paragraph", "bbox": [100, 100, 800, 140], "page": 2,
-         "span_metadata": {"font": "TimesNewRoman", "size": 10}},
-        {"role": "body_paragraph", "bbox": [100, 200, 810, 240], "page": 2,
-         "span_metadata": {"font": "TimesNewRoman", "size": 10}},
+        {
+            "role": "body_paragraph",
+            "bbox": [100, 100, 800, 140],
+            "page": 2,
+            "span_metadata": {"font": "TimesNewRoman", "size": 10},
+        },
+        {
+            "role": "body_paragraph",
+            "bbox": [100, 200, 810, 240],
+            "page": 2,
+            "span_metadata": {"font": "TimesNewRoman", "size": 10},
+        },
         # Page 2: narrow figure_caption blocks (author bios mislabeled by PaddleOCR)
-        {"role": "figure_caption", "bbox": [50, 600, 300, 640], "page": 2,
-         "span_metadata": {"font": "Arial", "size": 8}},
-        {"role": "figure_caption", "bbox": [50, 680, 310, 720], "page": 2,
-         "span_metadata": {"font": "Arial", "size": 8}},
+        {
+            "role": "figure_caption",
+            "bbox": [50, 600, 300, 640],
+            "page": 2,
+            "span_metadata": {"font": "Arial", "size": 8},
+        },
+        {
+            "role": "figure_caption",
+            "bbox": [50, 680, 310, 720],
+            "page": 2,
+            "span_metadata": {"font": "Arial", "size": 8},
+        },
     ]
     spine = _detect_body_spine(blocks)
     indices = _detect_non_body_insert_clusters(blocks, spine, body_end_page=8)
@@ -667,13 +917,25 @@ def test_non_body_insert_does_not_promote_real_figure_captions() -> None:
 
     blocks = [
         # Wide body paragraphs
-        {"role": "body_paragraph", "bbox": [100, 100, 800, 140], "page": 1,
-         "span_metadata": {"font": "TimesNewRoman", "size": 10}},
-        {"role": "body_paragraph", "bbox": [100, 200, 810, 240], "page": 1,
-         "span_metadata": {"font": "TimesNewRoman", "size": 10}},
+        {
+            "role": "body_paragraph",
+            "bbox": [100, 100, 800, 140],
+            "page": 1,
+            "span_metadata": {"font": "TimesNewRoman", "size": 10},
+        },
+        {
+            "role": "body_paragraph",
+            "bbox": [100, 200, 810, 240],
+            "page": 1,
+            "span_metadata": {"font": "TimesNewRoman", "size": 10},
+        },
         # Real figure caption: wide, near full body width
-        {"role": "figure_caption", "bbox": [100, 500, 780, 530], "page": 1,
-         "span_metadata": {"font": "TimesNewRoman", "size": 9}},
+        {
+            "role": "figure_caption",
+            "bbox": [100, 500, 780, 530],
+            "page": 1,
+            "span_metadata": {"font": "TimesNewRoman", "size": 9},
+        },
     ]
     spine = _detect_body_spine(blocks)
     indices = _detect_non_body_insert_clusters(blocks, spine, body_end_page=8)
@@ -689,21 +951,41 @@ def test_non_body_insert_catches_continuation_fragment() -> None:
 
     blocks = [
         # Page 2: two wide body paragraphs establishing spine width ~700
-        {"role": "body_paragraph", "bbox": [100, 100, 800, 140], "page": 2,
-         "span_metadata": {"font": "BodyFont", "size": 10}},
-        {"role": "body_paragraph", "bbox": [100, 200, 810, 240], "page": 2,
-         "span_metadata": {"font": "BodyFont", "size": 10}},
+        {
+            "role": "body_paragraph",
+            "bbox": [100, 100, 800, 140],
+            "page": 2,
+            "span_metadata": {"font": "BodyFont", "size": 10},
+        },
+        {
+            "role": "body_paragraph",
+            "bbox": [100, 200, 810, 240],
+            "page": 2,
+            "span_metadata": {"font": "BodyFont", "size": 10},
+        },
         # Narrow non-body inserts (author bio start + name label)
-        {"role": "body_paragraph", "bbox": [50, 600, 250, 640], "page": 2,
-         "span_metadata": {"font": "BodyFont", "size": 10}},
-        {"role": "body_paragraph", "bbox": [50, 680, 250, 720], "page": 2,
-         "span_metadata": {"font": "BodyFont", "size": 10}},
+        {
+            "role": "body_paragraph",
+            "bbox": [50, 600, 250, 640],
+            "page": 2,
+            "span_metadata": {"font": "BodyFont", "size": 10},
+        },
+        {
+            "role": "body_paragraph",
+            "bbox": [50, 680, 250, 720],
+            "page": 2,
+            "span_metadata": {"font": "BodyFont", "size": 10},
+        },
         # Continuation fragment: SAME width as body paragraphs,
         # SAME font as body paragraphs, but starts lowercase and is
         # adjacent to the narrow inserts — should be caught
-        {"role": "body_paragraph", "bbox": [100, 760, 800, 800], "page": 2,
-         "span_metadata": {"font": "BodyFont", "size": 10},
-         "text": "integrate technologies of tissue engineering and flexible electronics"},
+        {
+            "role": "body_paragraph",
+            "bbox": [100, 760, 800, 800],
+            "page": 2,
+            "span_metadata": {"font": "BodyFont", "size": 10},
+            "text": "integrate technologies of tissue engineering and flexible electronics",
+        },
     ]
     spine = _detect_body_spine(blocks)
     indices = _detect_non_body_insert_clusters(blocks, spine, body_end_page=8)
@@ -714,3 +996,102 @@ def test_non_body_insert_catches_continuation_fragment() -> None:
         f"Continuation fragment at index 4 should be detected "
         f"(body-width, lowercase start, adjacent to insert), got {indices}"
     )
+
+
+def test_layout_profile_single_column() -> None:
+    from paperforge.worker.ocr_document import (
+        PageLayoutProfile,
+        _classify_page_layout,
+        _cluster_page_columns,
+    )
+
+    page_width = 800.0
+    page_height = 1000.0
+    blocks = [
+        {"bbox": [100, 100, 700, 140], "role": "body_paragraph"},
+        {"bbox": [100, 160, 700, 200], "role": "body_paragraph"},
+        {"bbox": [100, 220, 700, 260], "role": "body_paragraph"},
+    ]
+
+    centers = _cluster_page_columns(blocks, page_width)
+    assert len(centers) == 1, f"Expected 1 cluster, got {len(centers)}"
+
+    profile = _classify_page_layout(blocks, page_width, page_height)
+    assert profile.column_count == 1
+    assert profile.layout_type == "single_column"
+    assert isinstance(profile, PageLayoutProfile)
+
+
+def test_layout_profile_two_column() -> None:
+    from paperforge.worker.ocr_document import (
+        _classify_page_layout,
+        _cluster_page_columns,
+    )
+
+    page_width = 800.0
+    page_height = 1000.0
+    blocks = [
+        {"bbox": [50, 100, 380, 140], "role": "body_paragraph"},
+        {"bbox": [50, 160, 380, 200], "role": "body_paragraph"},
+        {"bbox": [420, 100, 750, 140], "role": "body_paragraph"},
+        {"bbox": [420, 160, 750, 200], "role": "body_paragraph"},
+    ]
+
+    centers = _cluster_page_columns(blocks, page_width)
+    assert len(centers) == 2, f"Expected 2 clusters, got {len(centers)}"
+
+    profile = _classify_page_layout(blocks, page_width, page_height)
+    assert profile.column_count == 2
+    assert profile.layout_type == "two_column"
+
+
+def test_layout_profile_mixed_tail() -> None:
+    from paperforge.worker.ocr_document import (
+        _classify_page_layout,
+        _cluster_page_columns,
+    )
+
+    page_width = 800.0
+    page_height = 1000.0
+    blocks = [
+        # Left column: body continuation
+        {"bbox": [50, 100, 380, 200], "role": "body_paragraph"},
+        {"bbox": [50, 220, 380, 260], "role": "body_paragraph"},
+        # Right column: backmatter/references
+        {"bbox": [420, 100, 750, 140], "role": "backmatter_heading"},
+        {"bbox": [420, 160, 750, 200], "role": "reference_item"},
+    ]
+
+    centers = _cluster_page_columns(blocks, page_width)
+    assert len(centers) == 2, f"Expected 2 clusters, got {len(centers)}"
+
+    profile = _classify_page_layout(blocks, page_width, page_height)
+    assert profile.column_count == 2
+    assert profile.layout_type == "mixed_tail"
+
+
+def test_layout_profile_build_profiles() -> None:
+    from paperforge.worker.ocr_document import (
+        PageLayoutProfile,
+        _build_page_layout_profiles,
+    )
+
+    blocks = [
+        # Page 1: single column body
+        {"page": 1, "bbox": [100, 100, 700, 140], "role": "body_paragraph", "page_width": 800, "page_height": 1000},
+        {"page": 1, "bbox": [100, 160, 700, 200], "role": "body_paragraph", "page_width": 800, "page_height": 1000},
+        # Page 2: two-column, body left + tail right
+        {"page": 2, "bbox": [50, 100, 380, 140], "role": "body_paragraph", "page_width": 800, "page_height": 1000},
+        {"page": 2, "bbox": [420, 100, 750, 140], "role": "backmatter_heading", "page_width": 800, "page_height": 1000},
+        {"page": 2, "bbox": [420, 160, 750, 200], "role": "reference_item", "page_width": 800, "page_height": 1000},
+    ]
+
+    profiles = _build_page_layout_profiles(blocks)
+
+    assert 1 in profiles
+    assert 2 in profiles
+    assert isinstance(profiles[1], PageLayoutProfile)
+    assert isinstance(profiles[2], PageLayoutProfile)
+
+    assert profiles[1].layout_type == "single_column", f"Page 1 expected single_column, got {profiles[1].layout_type}"
+    assert profiles[2].layout_type == "mixed_tail", f"Page 2 expected mixed_tail, got {profiles[2].layout_type}"
