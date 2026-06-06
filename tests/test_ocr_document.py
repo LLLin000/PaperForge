@@ -473,40 +473,46 @@ def test_family_level_rescue_reinstates_false_non_body_insert() -> None:
         {"role": "body_paragraph", "page": 2, "role_confidence": 0.8,
          "text": "Another body paragraph to strengthen the body font profile for reliable matching.",
          "span_metadata": {"size": 10, "flags": "normal"}},
-        # genuine non_body_insert blocks (3 blocks with consistent small/italic style =
-        # moderate quality for non_body_insert_family)
+        # genuine non_body_insert blocks (4 blocks with consistent small/italic style,
+        # dispersion <= 0.15 = strong quality for non_body_insert_family)
         {"role": "non_body_insert", "page": 1, "role_confidence": 0.5,
          "_non_body_insert": True,
          "text": "Short bio text one",
-         "span_metadata": {"size": 8, "flags": "italic"}},
+         "span_metadata": {"size": 9, "flags": "italic"}},
         {"role": "non_body_insert", "page": 1, "role_confidence": 0.5,
          "_non_body_insert": True,
          "text": "Short bio text two",
-         "span_metadata": {"size": 8.2, "flags": "italic"}},
+         "span_metadata": {"size": 9, "flags": "italic"}},
         {"role": "non_body_insert", "page": 2, "role_confidence": 0.5,
          "_non_body_insert": True,
          "text": "Short bio text three",
-         "span_metadata": {"size": 8.1, "flags": "italic"}},
-        # false positive: body-like font in non_body_insert
+         "span_metadata": {"size": 9, "flags": "italic"}},
         {"role": "non_body_insert", "page": 2, "role_confidence": 0.5,
          "_non_body_insert": True,
+         "text": "Short bio text four",
+         "span_metadata": {"size": 9, "flags": "italic"}},
+        # false positive: body-like font in non_body_insert, wide enough to pass geometry guard
+        {"role": "non_body_insert", "page": 2, "role_confidence": 0.5,
+         "_non_body_insert": True,
+         "bbox": [100, 400, 700, 440],
+         "page_width": 1200,
          "text": "This block was incorrectly marked as non_body_insert but has a body-paragraph style.",
-         "span_metadata": {"size": 10.2, "flags": "normal"}},
+         "span_metadata": {"size": 10, "flags": "normal"}},
     ]
 
     role_profiles = {
         "body_paragraph": {"block_count": 2, "mean_size": 10.0, "max_size": 10.5, "min_size": 9.5,
                           "dispersion": 0.05, "quality": "strong", "bold_ratio": 0.0,
                           "italic_ratio": 0.0, "font_families": []},
-        "non_body_insert": {"block_count": 4, "mean_size": 8.6, "max_size": 10.2, "min_size": 8.0,
-                           "dispersion": 0.11, "quality": "moderate", "bold_ratio": 0.0,
-                           "italic_ratio": 0.75, "font_families": []},
+        "non_body_insert": {"block_count": 5, "mean_size": 9.2, "max_size": 10.0, "min_size": 9.0,
+                           "dispersion": 0.054, "quality": "strong", "bold_ratio": 0.0,
+                           "italic_ratio": 0.8, "font_families": []},
     }
 
     result = rescue_roles_with_document_context(blocks, role_profiles)
 
     # The body-like block should be reinstated because non_body_insert_family
-    # has moderate quality
+    # has strong quality
     reinstated = [b for b in result if b["text"].startswith("This block was incorrectly")]
     assert len(reinstated) == 1
     assert reinstated[0]["role"] == "body_paragraph", (
@@ -516,7 +522,7 @@ def test_family_level_rescue_reinstates_false_non_body_insert() -> None:
     assert "_non_body_insert" not in reinstated[0], "non_body_insert flag should be removed"
 
     still_ni = [b for b in result if "Short bio text" in (b.get("text",""))]
-    assert len(still_ni) == 3
+    assert len(still_ni) == 4
     for b in still_ni:
         assert b["role"] == "non_body_insert", (
             f"Genuine non_body_insert should keep its role, got {b['role']}"

@@ -503,16 +503,33 @@ def rescue_roles_with_document_context(
         if block.get("_non_body_insert"):
             bp = extract_block_span_profile(block)
             should_skip = True  # default: keep flag, skip downstream rules
+
+            # Geometry guard: narrow blocks stay non_body_insert even if font
+            # matches body_family — narrowness is structural evidence of being
+            # a profile/sidebar card, not a body paragraph.
+            bbox = block.get("bbox", [0, 0, 0, 0])
+            block_w = (bbox[2] - bbox[0]) if len(bbox) >= 4 else 0
+            page_w = block.get("page_width", 0) or 0
+            # Use body_family's per-page median_width from the spine, or
+            # approximate from page_width.  Blocks narrower than 60% of the
+            # expected body width are structurally incompatible with the spine.
+            if block_w > 0 and page_w > 0:
+                expected_body_min = page_w * 0.35  # ~420px on 1200px-wide page
+                if block_w < expected_body_min:
+                    # Definitely a narrow insert, not a body paragraph — keep.
+                    continue
+
             if bp and "non_body_insert_family" in family_profiles and "body_family" in family_profiles:
                 ni_fam = family_profiles["non_body_insert_family"]
                 ni_quality = ni_fam.get("quality", "no_data")
                 # Only trust family comparison when non_body_insert_family is
-                # well-established (moderate+ quality).  Weak profiles are
-                # unreliable — do not use them to reinstate blocks.
-                if ni_quality in ("moderate", "strong"):
+                # well-established (strong quality, low dispersion).  Moderate
+                # profiles are unreliable because non_body_insert blocks are
+                # naturally heterogeneous (different bio fonts/sizes).
+                if ni_quality == "strong":
                     ni_match = compare_against_family(bp, ni_fam)
                     body_match = compare_against_family(bp, family_profiles["body_family"])
-                    if body_match["match_score"] > max(ni_match["match_score"], 0.5) and body_match["size_compatible"]:
+                    if body_match["match_score"] > max(ni_match["match_score"], 0.6) and body_match["size_compatible"]:
                         del block["_non_body_insert"]
                         block["role"] = "body_paragraph"
                         block.setdefault("evidence", []).append("rescue_family: non_body_insert → body_paragraph")
@@ -1011,15 +1028,26 @@ def _detect_non_body_insert_clusters(
         page = block.get("page", 1)
         if page > max_early_page:
             continue
-        # Only body_paragraph and unknown_structural can be non-body inserts.
-        # frontmatter_noise blocks are genuine furniture, not misclassified bios.
-        if block.get("role") not in ("body_paragraph", "unknown_structural"):
+        # Only body_paragraph can be a non-body insert — bio/profile blocks
+        # that OCR misclassified as text.  frontmatter_noise and
+        # unknown_structural blocks are genuine furniture, not bios.
+        if block.get("role") != "body_paragraph":
             continue
 
         bbox = block.get("bbox", [0, 0, 0, 0])
+
+        # Skip blocks without valid bbox (text-less spacers, rule lines)
+        if len(bbox) < 4:
+            continue
         block_width = bbox[2] - bbox[0]
-        spine = body_spine.get(page, body_spine.get(1, {"median_width": 500}))
+        if block_width <= 10:
+            continue
+
+        spine_key = page if page in body_spine else 1
+        spine = body_spine.get(spine_key, {"median_width": 500})
         median_width = spine.get("median_width", 500)
+        if not isinstance(median_width, (int, float)) or median_width <= 0:
+            median_width = 500
 
         is_narrow = block_width < 0.7 * median_width or (
             page_width > 0 and median_width < page_width * 0.4
