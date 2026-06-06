@@ -131,13 +131,13 @@ def _looks_like_reference(text: str) -> bool:
     return bool(_REFERENCE_PATTERN.match(text.strip()))
 
 
-def _is_backmatter_boundary_heading(block: dict, page_blocks: list[dict]) -> bool:
-    text = str(block.get("block_content", "") or "").strip()
+def _is_backmatter_boundary_heading(block: dict, page_num: int, total_pages: int) -> bool:
+    text = str(block.get("block_content", "") or block.get("text", "") or "").strip()
     if not text:
         return False
 
-    page_num = block.get("page", 1) or 1
-    if page_num < 8:
+    # Relative tail position instead of absolute page gate
+    if total_pages > 0 and (page_num / total_pages) < 0.5:
         return False
 
     raw_label = str(block.get("block_label", "") or "").strip()
@@ -162,7 +162,24 @@ def _is_backmatter_boundary_heading(block: dict, page_blocks: list[dict]) -> boo
     has_container_words = (
         "ADDITIONAL" in upper or "SUPPLEMENTARY" in upper or "DECLARATION" in upper or "INFORMATION" in upper
     )
-    if not has_container_words:
+
+    # Span visual signal — boundary headings are typically bold 11pt+
+    span_meta = block.get("span_metadata", {}) or {}
+    if isinstance(span_meta, dict):
+        font_size = span_meta.get("size", 0) or 0
+        font_flags = (str(span_meta.get("flags", "") or "")).lower()
+        is_visually_heading = ("bold" in font_flags and font_size >= 11) or font_size >= 14
+    elif isinstance(span_meta, list):
+        sizes = [s.get("size", 0) or 0 for s in span_meta if s.get("size")]
+        flags = [s.get("flags", 0) for s in span_meta]
+        mean_size = sum(sizes) / len(sizes) if sizes else 0
+        is_bold = any(bool(f & 16) for f in flags if isinstance(f, int))
+        is_text_bold = any("bold" in (str(s.get("flags", "") or "")).lower() for s in span_meta)
+        is_visually_heading = ((is_bold or is_text_bold) and mean_size >= 11) or mean_size >= 14
+    else:
+        is_visually_heading = False
+
+    if not is_visually_heading and not has_container_words:
         return False
 
     if len(text) <= 20:
@@ -228,17 +245,35 @@ def _looks_like_affiliation(text: str) -> bool:
     return has_inst or (has_city_country and has_number_prefix) or has_superscript_number
 
 
-def _infer_heading_level(text: str, font_size: float = 0) -> str:
-    """Infer heading level for unnumbered papers using text content heuristics.
-
-    Uses case patterns, word count, and optional font size to distinguish
-    top-level section headings from lower-level sub-sections.  Font size
-    overrides content heuristics when >= 14pt (clearly a major heading).
+def _infer_heading_level(
+    text: str,
+    font_size: float = 0,
+    role_profiles: dict | None = None,
+    block: dict | None = None,
+) -> str | None:
+    """Infer heading level for unnumbered papers using text content heuristics
+    and optional role span profiles.
     """
     if not text:
         return "section_heading"
-    if font_size >= 14:
-        return "section_heading"
+
+    # Profile-based matching (preferred)
+    if role_profiles and block:
+        from paperforge.worker.ocr_profiles import extract_block_span_profile, compare_against_role_family
+        block_profile = extract_block_span_profile(block)
+        if block_profile:
+            for candidate_role in (
+                "section_heading",
+                "subsection_heading",
+                "sub_subsection_heading",
+            ):
+                fam = role_profiles.get(candidate_role)
+                if fam and fam.get("quality") in ("strong", "moderate"):
+                    match = compare_against_role_family(block_profile, fam)
+                    if match["size_compatible"] and match["match_score"] > 0.6:
+                        return candidate_role
+
+    # Legacy heuristics (fallback when no profile data)
     upper_ratio = sum(1 for c in text if c.isupper()) / max(len(text), 1)
     is_mostly_upper = upper_ratio > 0.7
     sentence_verbs = {" is ", " are ", " was ", " were ", " have ", " has ", " been "}
@@ -357,6 +392,7 @@ def assign_block_role(
     page_width: int = 0,
     page_height: int = 0,
     style_profiles: dict | None = None,
+    role_profiles: dict | None = None,
 ) -> RoleAssignment:
     raw_label = str(block.get("block_label", "") or "").strip()
     text = str(block.get("block_content", "") or "").strip()
@@ -490,7 +526,9 @@ def assign_block_role(
             )
         # Backmatter boundary container heading (e.g. "ADDITIONAL INFORMATION AND DECLARATIONS")
         # Checked after specific heading detection but before numbered/generic fallback.
-        if _is_backmatter_boundary_heading(block, page_blocks):
+        _page_num = block.get("page", 1) or 1
+        _total_pages = max((b.get("page", 1) or 1) for b in page_blocks) if page_blocks else _page_num
+        if _is_backmatter_boundary_heading(block, _page_num, _total_pages):
             return RoleAssignment(
                 role="backmatter_boundary_heading",
                 confidence=0.7,
@@ -727,7 +765,7 @@ def assign_block_role(
         if style_profiles is not None and style_profiles:
             from paperforge.worker.ocr_render import _disambiguate_heading_role
 
-            style_suggested = _disambiguate_heading_role(block, style_profiles)
+            style_suggested = _disambiguate_heading_role(block, style_profiles, role_profiles=role_profiles)
             if style_suggested is not None:
                 bbox = block.get("block_bbox", [0, 0, 0, 0])
                 in_top_80 = page_height == 0 or (len(bbox) >= 4 and bbox[1] < page_height * 0.8)
@@ -738,15 +776,24 @@ def assign_block_role(
                         evidence=[f"style-aware heading detection: role={style_suggested}, text={text[:40]}"],
                     )
 
-        # Visual heading detection: large or bold text blocks (fallback thresholds)
+        # Visual heading detection — use span_metadata if available
         span_meta = block.get("span_metadata", {}) or {}
         if isinstance(span_meta, dict):
             font_size = span_meta.get("size", 0) or 0
-            font_flags = (span_meta.get("flags", "") or "").lower()
+            font_flags = (str(span_meta.get("flags", "") or "")).lower()
+            is_visually_prominent = ("bold" in font_flags and font_size >= 11) or font_size >= 14
+        elif isinstance(span_meta, list):
+            sizes = [s.get("size", 0) or 0 for s in span_meta if s.get("size")]
+            mean_size = sum(sizes) / len(sizes) if sizes else 0
+            all_flags = [s.get("flags", 0) for s in span_meta]
+            is_bold = any(bool(f & 16) for f in all_flags if isinstance(f, int))
+            font_size = mean_size
+            font_flags = "bold" if is_bold else "normal"
+            is_visually_prominent = (is_bold and mean_size >= 11) or mean_size >= 14
         else:
             font_size = 0
             font_flags = ""
-        is_visually_prominent = (font_size >= 12 and "bold" in font_flags) or font_size >= 14
+            is_visually_prominent = False
         if is_visually_prominent and len(text) >= 5 and len(text) < 60 and ". " not in text:
             bbox = block.get("block_bbox", [0, 0, 0, 0])
             in_top_80 = page_height == 0 or (len(bbox) >= 4 and bbox[1] < page_height * 0.8)
@@ -759,7 +806,9 @@ def assign_block_role(
                 )
 
         # Backmatter boundary container heading detection for text blocks
-        if _is_backmatter_boundary_heading(block, page_blocks):
+        _pn2 = block.get("page", 1) or 1
+        _tp2 = max((b.get("page", 1) or 1) for b in page_blocks) if page_blocks else _pn2
+        if _is_backmatter_boundary_heading(block, _pn2, _tp2):
             return RoleAssignment(
                 role="backmatter_boundary_heading",
                 confidence=0.7,
