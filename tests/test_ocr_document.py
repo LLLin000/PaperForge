@@ -1097,6 +1097,121 @@ def test_layout_profile_build_profiles() -> None:
     assert profiles[2].layout_type == "mixed_tail", f"Page 2 expected mixed_tail, got {profiles[2].layout_type}"
 
 
+# ---------------------------------------------------------------------------
+# Reading segment tests
+# ---------------------------------------------------------------------------
+
+
+def test_reading_segments_single_column() -> None:
+    from paperforge.worker.ocr_document import (
+        PageLayoutProfile,
+        _build_page_reading_segments,
+    )
+
+    page_blocks = [
+        {"page": 1, "bbox": [100, 300, 700, 340], "role": "body_paragraph"},
+        {"page": 1, "bbox": [100, 200, 700, 240], "role": "body_paragraph"},
+        {"page": 1, "bbox": [100, 100, 700, 140], "role": "body_paragraph"},
+    ]
+    profile = PageLayoutProfile(
+        column_count=1, column_boundaries=[400.0], layout_type="single_column"
+    )
+
+    segments = _build_page_reading_segments(page_blocks, profile, page_idx_offset=10)
+
+    assert len(segments) == 1
+    seg = segments[0]
+    assert seg.page == 1
+    assert seg.column_index == 0
+    # blocks sorted by y ascending: index 2 (y=100), 1 (y=200), 0 (y=300)
+    # global indices: 10+2=12, 10+1=11, 10+0=10
+    assert seg.block_indices == [12, 11, 10]
+    assert seg.semantic_hint == "body"
+    assert seg.y_bottom > seg.y_top
+
+
+def test_reading_segments_two_column() -> None:
+    from paperforge.worker.ocr_document import (
+        PageLayoutProfile,
+        _build_page_reading_segments,
+    )
+
+    # Left col: idx0 (y=300), idx1 (y=100)
+    # Right col: idx2 (y=200), idx3 (y=50)
+    page_blocks = [
+        {"page": 2, "bbox": [50, 300, 380, 340], "role": "body_paragraph"},
+        {"page": 2, "bbox": [50, 100, 380, 140], "role": "body_paragraph"},
+        {"page": 2, "bbox": [420, 200, 750, 240], "role": "body_paragraph"},
+        {"page": 2, "bbox": [420, 50, 750, 90], "role": "body_paragraph"},
+    ]
+    profile = PageLayoutProfile(
+        column_count=2,
+        column_boundaries=[215.0, 585.0],
+        layout_type="two_column",
+    )
+
+    segments = _build_page_reading_segments(page_blocks, profile, page_idx_offset=5)
+
+    assert len(segments) == 2
+    # Left column first
+    assert segments[0].column_index == 0
+    assert segments[0].page == 2
+    # y sorted: local idx1 (y=100, global 6), local idx0 (y=300, global 5)
+    assert segments[0].block_indices == [6, 5]
+    assert segments[0].semantic_hint == "body"
+    # Right column second
+    assert segments[1].column_index == 1
+    assert segments[1].page == 2
+    # y sorted: local idx3 (y=50, global 8), local idx2 (y=200, global 7)
+    assert segments[1].block_indices == [8, 7]
+    assert segments[1].semantic_hint == "body"
+
+
+def test_tail_reading_order_mixed_page() -> None:
+    from paperforge.worker.ocr_document import (
+        PageLayoutProfile,
+        _build_tail_reading_order,
+    )
+
+    blocks = [
+        {"page": 1, "bbox": [100, 100, 700, 140], "role": "body_paragraph"},
+        {"page": 1, "bbox": [100, 160, 700, 200], "role": "body_paragraph"},
+        {"page": 2, "bbox": [100, 100, 700, 140], "role": "body_paragraph"},
+        # Page 3: left body, right backmatter (tail page)
+        {"page": 3, "bbox": [50, 100, 380, 140], "role": "body_paragraph"},
+        {"page": 3, "bbox": [50, 160, 380, 200], "role": "body_paragraph"},
+        {"page": 3, "bbox": [420, 100, 750, 140], "role": "backmatter_heading"},
+        {"page": 3, "bbox": [420, 160, 750, 200], "role": "reference_item"},
+    ]
+
+    page_layouts = {
+        1: PageLayoutProfile(
+            column_count=1, column_boundaries=[400.0], layout_type="single_column"
+        ),
+        2: PageLayoutProfile(
+            column_count=1, column_boundaries=[400.0], layout_type="single_column"
+        ),
+        3: PageLayoutProfile(
+            column_count=2,
+            column_boundaries=[215.0, 585.0],
+            layout_type="mixed_tail",
+        ),
+    }
+
+    segments = _build_tail_reading_order(blocks, page_layouts)
+
+    assert len(segments) == 2
+    # Left column (body) first
+    assert segments[0].page == 3
+    assert segments[0].column_index == 0
+    assert segments[0].block_indices == [3, 4]
+    # Right column (backmatter + ref) second
+    assert segments[1].page == 3
+    assert segments[1].column_index == 1
+    assert segments[1].block_indices == [5, 6]
+    assert segments[1].semantic_hint == "mixed"
+
+
 def test_document_structure_json_serialization() -> None:
     """Verify that DocumentStructure with layout profiles serializes to valid JSON."""
     from paperforge.worker.ocr_document import DocumentStructure, PageLayoutProfile
