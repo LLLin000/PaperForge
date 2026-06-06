@@ -1625,7 +1625,7 @@ def test_document_structure_json_serialization() -> None:
 
 
 def test_figure_caption_candidate_demoted_in_body() -> None:
-    """figure_caption_candidate with narrative prose in body spine, far from media -> body_paragraph."""
+    """figure_caption_candidate with subfigure ref + narrative prose in body spine -> body_paragraph."""
     from paperforge.worker.ocr_document import (
         DocumentStructure,
         _resolve_ambiguous_candidates,
@@ -1635,7 +1635,7 @@ def test_figure_caption_candidate_demoted_in_body() -> None:
         {
             "page": 3,
             "role": "figure_caption_candidate",
-            "text": "Fig. 1 This is a narrative description. We observed significant results. "
+            "text": "Fig. 1a This is a narrative description. We observed significant results. "
                     "The data suggests a novel mechanism.",
             "bbox": [100, 200, 500, 230],
         },

@@ -501,8 +501,8 @@ def assign_block_role(
 
     if raw_label == "figure_title":
         return RoleAssignment(
-            role="figure_caption_candidate",
-            confidence=0.9,
+            role="figure_caption",
+            confidence=0.85,
             evidence=[f"figure_title label: {text[:60]}"],
         )
 

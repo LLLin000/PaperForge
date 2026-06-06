@@ -1645,17 +1645,19 @@ def _resolve_ambiguous_candidates(
 
         # ---- 2.1 Resolve backmatter_heading_candidate ----
         if role == "backmatter_heading_candidate":
+            _suppress_heading = False
+
             if backmatter_start_page is None:
                 block["role"] = "section_heading"
                 block["role_confidence"] = 0.5
-                continue
+                _suppress_heading = True
 
-            if backmatter_form == "container":
+            elif backmatter_form == "container":
                 if not has_container_boundary or page < container_boundary_page:
                     block["role"] = "section_heading"
                     block["role_confidence"] = 0.5
-                    continue
-                if page == container_boundary_page:
+                    _suppress_heading = True
+                elif page == container_boundary_page:
                     layout = page_layouts.get(page)
                     if layout and layout.column_count > 1:
                         boundaries = layout.column_boundaries
@@ -1671,11 +1673,16 @@ def _resolve_ambiguous_candidates(
                         if boundary_col is not None and col != boundary_col:
                             block["role"] = "section_heading"
                             block["role_confidence"] = 0.5
-                            continue
+                            _suppress_heading = True
 
-            if page < backmatter_start_page:
+            elif page < backmatter_start_page:
                 block["role"] = "section_heading"
                 block["role_confidence"] = 0.5
+                _suppress_heading = True
+
+            if _suppress_heading:
+                block["role_confidence"] = 0.5
+                block["_suppressed_heading"] = True
                 continue
 
             if page == backmatter_start_page:
@@ -1723,7 +1730,9 @@ def _resolve_ambiguous_candidates(
             is_prose = _looks_like_figure_narrative_prose(text)
             in_body_spine = body_end_page is not None and page <= body_end_page
 
-            if near_media or caption_style:
+            has_main_figure = bool(re.search(r'(?:Figure|Fig\.?)\s+\d+(?![a-z])', text))
+
+            if near_media or caption_style or has_main_figure:
                 block["role"] = "figure_caption"
                 continue
 
@@ -1753,6 +1762,7 @@ def _resolve_ambiguous_candidates(
 
         if role == "backmatter_heading_candidate" and body_end_page is not None and page <= body_end_page:
             block["role"] = "section_heading"
+            block["_suppressed_heading"] = True
 
 
 def _mark_non_body_media(blocks: list[dict]) -> None:
