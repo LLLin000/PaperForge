@@ -12,17 +12,46 @@ from pathlib import Path
 from typing import Any
 
 
+def _map_ocr_bbox_to_pdf_rect(
+    bbox: list[float],
+    page_width: float,
+    page_height: float,
+    pdf_page: Any,
+) -> Any:
+    """Scale OCR-space bbox to PDF-space fitz.Rect.
+
+    OCR bboxes come from rendered page images; PDF coordinates may
+    differ.  Scales by the ratio of PDF page dimensions to OCR image
+    dimensions.
+    """
+    import fitz
+
+    pdf_rect = pdf_page.rect
+    scale_x = pdf_rect.width / page_width if page_width else 1.0
+    scale_y = pdf_rect.height / page_height if page_height else 1.0
+    return fitz.Rect(
+        bbox[0] * scale_x,
+        bbox[1] * scale_y,
+        bbox[2] * scale_x,
+        bbox[3] * scale_y,
+    )
+
+
 def extract_pdf_spans_for_block(
     pdf_doc: Any,
     page_num: int,
     bbox: list[float],
+    page_width: float | None = None,
+    page_height: float | None = None,
 ) -> list[dict] | None:
     """Extract per-character span metadata from a PDF at a given bbox.
 
     Args:
         pdf_doc: An open fitz.Document.
         page_num: 0-indexed page number.
-        bbox: [x1, y1, x2, y2] in PDF coordinates.
+        bbox: [x1, y1, x2, y2] in OCR (or PDF) coordinates.
+        page_width: OCR image width for scaling to PDF space.
+        page_height: OCR image height for scaling to PDF space.
 
     Returns:
         List of per-character span dicts, or None if extraction fails.
@@ -41,7 +70,10 @@ def extract_pdf_spans_for_block(
         return None
 
     try:
-        rect = fitz.Rect(*bbox)
+        if page_width and page_height and page_width > 0 and page_height > 0:
+            rect = _map_ocr_bbox_to_pdf_rect(bbox, page_width, page_height, page)
+        else:
+            rect = fitz.Rect(*bbox)
     except Exception:
         return None
 
@@ -65,12 +97,14 @@ def extract_pdf_spans_for_block(
                 flags = span.get("flags", 0)
                 if not isinstance(flags, int):
                     flags = 0
-                spans.append({
-                    "size": float(size),
-                    "font": str(span.get("font", "")),
-                    "flags": flags,
-                    "color": int(span.get("color", 0)),
-                })
+                spans.append(
+                    {
+                        "size": float(size),
+                        "font": str(span.get("font", "")),
+                        "flags": flags,
+                        "color": int(span.get("color", 0)),
+                    }
+                )
 
     return spans if spans else None
 
@@ -107,7 +141,13 @@ def backfill_span_metadata_from_pdf(
             bbox = block.get("bbox", [])
             if not bbox or len(bbox) < 4:
                 continue
-            spans = extract_pdf_spans_for_block(doc, page_num, bbox)
+            spans = extract_pdf_spans_for_block(
+                doc,
+                page_num,
+                bbox,
+                page_width=block.get("page_width"),
+                page_height=block.get("page_height"),
+            )
             if spans:
                 block["span_metadata"] = spans
     finally:
