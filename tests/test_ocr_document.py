@@ -626,3 +626,57 @@ def test_rescue_does_not_touch_non_body_insert() -> None:
     non_body = [b for b in result if b.get("_non_body_insert")]
     assert len(non_body) == 1
     assert non_body[0]["role"] == "frontmatter_noise", "non_body_insert must not be rescued to body_paragraph"
+
+
+def test_non_body_insert_catches_figure_caption_blocks() -> None:
+    """figure_caption blocks (narrow author bios) are detected as non-body inserts."""
+    from paperforge.worker.ocr_document import _detect_body_spine, _detect_non_body_insert_clusters
+
+    blocks = [
+        # Page 1: wide body paragraphs
+        {"role": "body_paragraph", "bbox": [100, 100, 800, 140], "page": 1,
+         "span_metadata": {"font": "TimesNewRoman", "size": 10}},
+        {"role": "body_paragraph", "bbox": [100, 200, 810, 240], "page": 1,
+         "span_metadata": {"font": "TimesNewRoman", "size": 10}},
+        # Page 2: wide body paragraphs
+        {"role": "body_paragraph", "bbox": [100, 100, 800, 140], "page": 2,
+         "span_metadata": {"font": "TimesNewRoman", "size": 10}},
+        {"role": "body_paragraph", "bbox": [100, 200, 810, 240], "page": 2,
+         "span_metadata": {"font": "TimesNewRoman", "size": 10}},
+        # Page 2: narrow figure_caption blocks (author bios mislabeled by PaddleOCR)
+        {"role": "figure_caption", "bbox": [50, 600, 300, 640], "page": 2,
+         "span_metadata": {"font": "Arial", "size": 8}},
+        {"role": "figure_caption", "bbox": [50, 680, 310, 720], "page": 2,
+         "span_metadata": {"font": "Arial", "size": 8}},
+    ]
+    spine = _detect_body_spine(blocks)
+    indices = _detect_non_body_insert_clusters(blocks, spine, body_end_page=8)
+
+    # All profile-cluster figure_caption blocks must be caught
+    assert 4 in indices, f"Expected index 4 (narrow figure_caption) in {indices}"
+    assert 5 in indices, f"Expected index 5 (narrow figure_caption) in {indices}"
+
+    # No wide body_paragraph block should be falsely detected
+    for i in range(4):
+        assert i not in indices, f"Body paragraph at index {i} should not be in {indices}"
+
+
+def test_non_body_insert_does_not_promote_real_figure_captions() -> None:
+    """A genuine Figure 1 caption (wide, near media) should NOT be detected as non-body insert."""
+    from paperforge.worker.ocr_document import _detect_body_spine, _detect_non_body_insert_clusters
+
+    blocks = [
+        # Wide body paragraphs
+        {"role": "body_paragraph", "bbox": [100, 100, 800, 140], "page": 1,
+         "span_metadata": {"font": "TimesNewRoman", "size": 10}},
+        {"role": "body_paragraph", "bbox": [100, 200, 810, 240], "page": 1,
+         "span_metadata": {"font": "TimesNewRoman", "size": 10}},
+        # Real figure caption: wide, near full body width
+        {"role": "figure_caption", "bbox": [100, 500, 780, 530], "page": 1,
+         "span_metadata": {"font": "TimesNewRoman", "size": 9}},
+    ]
+    spine = _detect_body_spine(blocks)
+    indices = _detect_non_body_insert_clusters(blocks, spine, body_end_page=8)
+
+    # Wide figure caption should NOT be detected (single block, body-width)
+    assert 2 not in indices, f"Real figure caption should not be detected, got indices {indices}"
