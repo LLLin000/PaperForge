@@ -1604,15 +1604,15 @@ def _resolve_ambiguous_candidates(
     references_start_page: int | None = doc_structure.references_start.page if doc_structure.references_start else None
     backmatter_form = doc_structure.backmatter_form
 
-    # Pre-compute container boundary heading presence
+    # Detect container boundary heading (independent of form classification,
+    # since form is determined before resolution promotes candidates)
     has_container_boundary = False
     container_boundary_page: int | None = None
-    if backmatter_form == "container":
-        for b in blocks:
-            if b.get("role") == "backmatter_boundary_heading":
-                has_container_boundary = True
-                container_boundary_page = b.get("page")
-                break
+    for b in blocks:
+        if b.get("role") == "backmatter_boundary_heading":
+            has_container_boundary = True
+            container_boundary_page = b.get("page")
+            break
 
     def _child_heading_count(
         start_idx: int,
@@ -1645,42 +1645,46 @@ def _resolve_ambiguous_candidates(
 
         # ---- 2.1 Resolve backmatter_heading_candidate ----
         if role == "backmatter_heading_candidate":
-            _suppress_heading = False
+            # Papers with a container boundary heading: headings on earlier
+            # pages than the boundary are demoted to body_paragraph.  On the
+            # same page, only headings in a different column than the boundary
+            # (multi-column layout with independent streams) are kept visible.
+            if has_container_boundary and page < container_boundary_page:
+                block["role"] = "body_paragraph"
+                block["role_confidence"] = 0.5
+                continue
+
+            if has_container_boundary and page == container_boundary_page:
+                layout = page_layouts.get(page)
+                _same_column = True  # single-column → same column
+                if layout and layout.column_count > 1:
+                    boundaries = layout.column_boundaries
+                    x_center = (bbox[0] + bbox[2]) / 2
+                    col = _get_column_index_by_boundaries(x_center, boundaries)
+                    for b in blocks:
+                        if b.get("role") == "backmatter_boundary_heading" and b.get("page") == page:
+                            bb = b.get("bbox") or b.get("block_bbox") or [0, 0, 0, 0]
+                            bx = (bb[0] + bb[2]) / 2
+                            boundary_col = _get_column_index_by_boundaries(bx, boundaries)
+                            _same_column = (col == boundary_col)
+                            break
+                if _same_column:
+                    block["role"] = "body_paragraph"
+                    block["role_confidence"] = 0.5
+                    continue
+                # different column on multi-column page → keep visible
+                block["role"] = "section_heading"
+                block["role_confidence"] = 0.5
+                continue
 
             if backmatter_start_page is None:
                 block["role"] = "section_heading"
                 block["role_confidence"] = 0.5
-                _suppress_heading = True
+                block["_suppressed_heading"] = True
+                continue
 
-            elif backmatter_form == "container":
-                if not has_container_boundary or page < container_boundary_page:
-                    block["role"] = "section_heading"
-                    block["role_confidence"] = 0.5
-                    _suppress_heading = True
-                elif page == container_boundary_page:
-                    layout = page_layouts.get(page)
-                    if layout and layout.column_count > 1:
-                        boundaries = layout.column_boundaries
-                        x_center = (bbox[0] + bbox[2]) / 2
-                        col = _get_column_index_by_boundaries(x_center, boundaries)
-                        boundary_col: int | None = None
-                        for b in blocks:
-                            if b.get("role") == "backmatter_boundary_heading" and b.get("page") == page:
-                                bb = b.get("bbox") or b.get("block_bbox") or [0, 0, 0, 0]
-                                bx = (bb[0] + bb[2]) / 2
-                                boundary_col = _get_column_index_by_boundaries(bx, boundaries)
-                                break
-                        if boundary_col is not None and col != boundary_col:
-                            block["role"] = "section_heading"
-                            block["role_confidence"] = 0.5
-                            _suppress_heading = True
-
-            elif page < backmatter_start_page:
+            if page < backmatter_start_page:
                 block["role"] = "section_heading"
-                block["role_confidence"] = 0.5
-                _suppress_heading = True
-
-            if _suppress_heading:
                 block["role_confidence"] = 0.5
                 block["_suppressed_heading"] = True
                 continue
@@ -1761,8 +1765,7 @@ def _resolve_ambiguous_candidates(
             block["role"] = "body_paragraph"
 
         if role == "backmatter_heading_candidate" and body_end_page is not None and page <= body_end_page:
-            block["role"] = "section_heading"
-            block["_suppressed_heading"] = True
+            block["role"] = "body_paragraph"
 
 
 def _mark_non_body_media(blocks: list[dict]) -> None:
