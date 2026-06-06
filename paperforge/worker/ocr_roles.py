@@ -143,25 +143,6 @@ def _is_backmatter_boundary_heading(block: dict, page_num: int, total_pages: int
     raw_label = str(block.get("block_label", "") or "").strip()
 
     is_heading_label = raw_label == "paragraph_title"
-    span_meta = block.get("span_metadata", {}) or {}
-    is_visually_heading = False
-    if isinstance(span_meta, dict):
-        font_size = span_meta.get("size", 0) or 0
-        font_flags = (span_meta.get("flags", "") or "").lower()
-        is_visually_heading = ("bold" in font_flags and font_size >= 11) or font_size >= 14
-    elif isinstance(span_meta, list):
-        sizes = [s.get("size", 0) or 0 for s in span_meta if isinstance(s, dict)]
-        bold_flags = any(s.get("flags", 0) & 16 for s in span_meta if isinstance(s, dict))
-        avg_size = sum(sizes) / len(sizes) if sizes else 0
-        is_visually_heading = bold_flags or avg_size >= 14
-
-    if not (is_heading_label or is_visually_heading):
-        return False
-
-    upper = text.upper()
-    has_container_words = (
-        "ADDITIONAL" in upper or "SUPPLEMENTARY" in upper or "DECLARATION" in upper or "INFORMATION" in upper
-    )
 
     # Span visual signal — boundary headings are typically bold 11pt+
     span_meta = block.get("span_metadata", {}) or {}
@@ -178,6 +159,14 @@ def _is_backmatter_boundary_heading(block: dict, page_num: int, total_pages: int
         is_visually_heading = ((is_bold or is_text_bold) and mean_size >= 11) or mean_size >= 14
     else:
         is_visually_heading = False
+
+    if not is_heading_label and not is_visually_heading:
+        return False
+
+    upper = text.upper()
+    has_container_words = (
+        "ADDITIONAL" in upper or "SUPPLEMENTARY" in upper or "DECLARATION" in upper or "INFORMATION" in upper
+    )
 
     if not is_visually_heading and not has_container_words:
         return False
