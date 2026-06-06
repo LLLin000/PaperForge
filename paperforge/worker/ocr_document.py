@@ -612,6 +612,9 @@ def _reconcile_tail_spread(
     return None
 
 
+_BOUNDARY_ROLES = frozenset({"backmatter_boundary_heading", "backmatter_boundary_candidate"})
+
+
 def _classify_backmatter_form(tail_boundary: TailBoundary, blocks: list[dict]) -> str:
     """Return ``"container"`` (PeerJ-style boundary heading with >= 3
     child sections) or ``"flat"`` (Frontiers-style, no boundary or few
@@ -620,13 +623,18 @@ def _classify_backmatter_form(tail_boundary: TailBoundary, blocks: list[dict]) -
     if tail_boundary.spread_start is None or tail_boundary.spread_end is None:
         return "flat"
 
+    # Search for boundary headings from body_end_page onwards, not just
+    # from spread_start, because the container boundary may lie on the
+    # last body page (before backmatter begins) — e.g. ADDITIONAL
+    # INFORMATION AND DECLARATIONS on page 10 when spread starts at 11.
+    search_start = min(tail_boundary.spread_start, tail_boundary.body_end_page or tail_boundary.spread_start)
     boundary_page = None
     for block in blocks:
         p = block.get("page")
         if (
             p is not None
-            and tail_boundary.spread_start <= p <= tail_boundary.spread_end
-            and block.get("role") == "backmatter_boundary_heading"
+            and search_start <= p <= tail_boundary.spread_end
+            and block.get("role") in _BOUNDARY_ROLES
         ):
             boundary_page = p
             break
@@ -639,23 +647,44 @@ def _classify_backmatter_form(tail_boundary: TailBoundary, blocks: list[dict]) -
     for block in blocks:
         p = block.get("page")
         if p is not None and (p < boundary_page or (p == boundary_page and not seen_boundary)):
-            if block.get("role") == "backmatter_boundary_heading" and p == boundary_page:
+            if block.get("role") in _BOUNDARY_ROLES and p == boundary_page:
                 seen_boundary = True
             continue
         if p is not None and p > tail_boundary.spread_end:
             break
         if not seen_boundary:
-            if block.get("role") == "backmatter_boundary_heading":
+            if block.get("role") in _BOUNDARY_ROLES:
                 seen_boundary = True
             continue
         if block.get("role") == "reference_heading":
             break
-        if block.get("role") == "backmatter_heading":
+        if block.get("role") in ("backmatter_heading", "backmatter_heading_candidate"):
             text = block.get("text", "")
             if len(text) < 40:
                 child_count += 1
 
     return "container" if child_count >= 3 else "flat"
+
+
+def _effective_tail_start(tail_boundary: TailBoundary, blocks: list[dict]) -> int:
+    """Return the effective lower bound for tail analysis.
+
+    Normally ``spread_start``, but for container-form tail spreads the
+    boundary heading may lie on the last body page (before the detected
+    backmatter start).  In that case the tail analysis should include
+    that earlier page so child sections beneath the boundary are not
+    orphaned outside the spread.
+    """
+    effective = tail_boundary.spread_start
+    body_end = tail_boundary.body_end_page
+    if body_end is not None and body_end < effective:
+        for block in blocks:
+            p = block.get("page")
+            if p is not None and body_end <= p < effective:
+                if block.get("role") in _BOUNDARY_ROLES:
+                    effective = min(effective, body_end)
+                    break
+    return effective
 
 
 def _label_backmatter_regime(tail_boundary: TailBoundary, backmatter_form: str, blocks: list[dict]) -> None:
@@ -668,16 +697,17 @@ def _label_backmatter_regime(tail_boundary: TailBoundary, backmatter_form: str, 
     if tail_boundary.spread_start is None:
         return
 
+    tail_start = _effective_tail_start(tail_boundary, blocks)
     boundary_seen = False
     for block in blocks:
         p = block.get("page")
-        if p is not None and p < tail_boundary.spread_start:
+        if p is not None and p < tail_start:
             continue
         if p is not None and p > tail_boundary.spread_end:
             continue
 
         if block.get("role") in _TAIL_ROLES:
-            if block.get("role") == "backmatter_boundary_heading":
+            if block.get("role") in _BOUNDARY_ROLES:
                 boundary_seen = True
             if backmatter_form == "container" and boundary_seen:
                 block["_backmatter_regime"] = "container"
@@ -699,16 +729,17 @@ def _normalize_backmatter_roles_after_boundary(
     if tail_boundary is None or tail_boundary.spread_start is None or tail_boundary.spread_end is None:
         return
 
+    tail_start = _effective_tail_start(tail_boundary, blocks)
     boundary_seen = False
     backmatter_started = False
     for block in blocks:
         page = block.get("page")
-        if page is None or page < tail_boundary.spread_start or page > tail_boundary.spread_end:
+        if page is None or page < tail_start or page > tail_boundary.spread_end:
             continue
 
         role = block.get("role")
         if backmatter_form == "container":
-            if role == "backmatter_boundary_heading":
+            if role in _BOUNDARY_ROLES:
                 if boundary_seen:
                     block["role"] = "backmatter_heading"
                 else:
@@ -720,10 +751,10 @@ def _normalize_backmatter_roles_after_boundary(
             if not boundary_seen:
                 continue
         else:
-            if role in {"backmatter_heading", "backmatter_boundary_heading"}:
+            if role in _BOUNDARY_ROLES | {"backmatter_heading"}:
                 backmatter_started = True
                 block["_backmatter_regime"] = "flat"
-                if role == "backmatter_boundary_heading":
+                if role in _BOUNDARY_ROLES:
                     block["role"] = "backmatter_heading"
                 continue
             if not backmatter_started:
@@ -1609,7 +1640,7 @@ def _resolve_ambiguous_candidates(
     has_container_boundary = False
     container_boundary_page: int | None = None
     for b in blocks:
-        if b.get("role") == "backmatter_boundary_heading":
+        if b.get("role") in _BOUNDARY_ROLES:
             has_container_boundary = True
             container_boundary_page = b.get("page")
             break
@@ -1662,18 +1693,23 @@ def _resolve_ambiguous_candidates(
                     x_center = (bbox[0] + bbox[2]) / 2
                     col = _get_column_index_by_boundaries(x_center, boundaries)
                     for b in blocks:
-                        if b.get("role") == "backmatter_boundary_heading" and b.get("page") == page:
+                        if b.get("role") in _BOUNDARY_ROLES and b.get("page") == page:
                             bb = b.get("bbox") or b.get("block_bbox") or [0, 0, 0, 0]
                             bx = (bb[0] + bb[2]) / 2
                             boundary_col = _get_column_index_by_boundaries(bx, boundaries)
                             _same_column = (col == boundary_col)
+                            boundary_bottom = bb[3] if len(bb) > 3 else 0
                             break
-                if _same_column:
+                    else:
+                        boundary_bottom = 0
+                if _same_column and bbox[1] < boundary_bottom:
                     block["role"] = "body_paragraph"
                     block["role_confidence"] = 0.5
                     continue
-                # different column on multi-column page → keep visible
-                block["role"] = "section_heading"
+                # Different column on boundary page → container child in
+                # multi-column layout (e.g. FUNDING left col, ADDITIONAL
+                # INFORMATION right col).  Promote to backmatter_heading.
+                block["role"] = "backmatter_heading"
                 block["role_confidence"] = 0.5
                 continue
 
@@ -1684,9 +1720,13 @@ def _resolve_ambiguous_candidates(
                 continue
 
             if page < backmatter_start_page:
-                block["role"] = "section_heading"
-                block["role_confidence"] = 0.5
-                block["_suppressed_heading"] = True
+                if has_container_boundary and page == container_boundary_page:
+                    block["role"] = "backmatter_heading"
+                    block["role_confidence"] = 0.5
+                else:
+                    block["role"] = "section_heading"
+                    block["role_confidence"] = 0.5
+                    block["_suppressed_heading"] = True
                 continue
 
             if page == backmatter_start_page:
@@ -1740,6 +1780,7 @@ def _resolve_ambiguous_candidates(
             role in ("backmatter_heading", "backmatter_body")
             and backmatter_start_page is not None
             and page < backmatter_start_page
+            and backmatter_form != "container"
         ):
             block["role"] = "body_paragraph"
 
