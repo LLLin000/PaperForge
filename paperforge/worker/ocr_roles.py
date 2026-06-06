@@ -376,6 +376,25 @@ def _detect_frontmatter_zone(
     return None
 
 
+def _page_still_frontmatter(page_blocks: list[dict], page_num: int, page_height: float) -> bool:
+    """Check if page is still in frontmatter regime (no body content yet).
+
+    Uses block labels and vertical position: if any block on a page > 1 has
+    body-type labels (figure_title, chart, table) or a text block in the
+    lower third, body content has started and frontmatter rules should stop.
+    """
+    if page_num == 1:
+        return True
+    for pb in page_blocks:
+        label = pb.get("block_label", "")
+        if label in ("figure_title", "chart", "table", "reference_content"):
+            return False
+        bbox = pb.get("block_bbox", [0, 0, 0, 0])
+        if label == "text" and len(bbox) >= 4 and bbox[1] > page_height * 0.35:
+            return False
+    return True
+
+
 def assign_block_role(
     block: dict,
     page_blocks: list[dict],
@@ -478,7 +497,7 @@ def assign_block_role(
     if raw_label == "paragraph_title":
         stripped = text.strip().lstrip("*•·-–—")
         lower = stripped.lower()
-        if lower in FRONTMATTER_NOISE and block.get("page", 1) == 1:
+        if lower in FRONTMATTER_NOISE and _page_still_frontmatter(page_blocks, block.get("page", 1) or 1, page_height):
             return RoleAssignment(
                 role="frontmatter_noise",
                 confidence=0.9,
@@ -619,6 +638,7 @@ def assign_block_role(
         stripped = text.strip().lstrip("*•·-–—_")
         lower_txt = stripped.lower()
         page_num = block.get("page", 1) or 1
+        still_frontmatter = _page_still_frontmatter(page_blocks, page_num, page_height)
 
         # Check for inline table HTML
         if text.strip().lower().startswith("<table"):
@@ -637,7 +657,7 @@ def assign_block_role(
             )
 
         # Check for copyright (page 1 only)
-        if page_num == 1 and ("copyright" in lower_txt or "©" in text):
+        if still_frontmatter and ("copyright" in lower_txt or "©" in text):
             return RoleAssignment(
                 role="frontmatter_noise",
                 confidence=0.85,
@@ -645,7 +665,7 @@ def assign_block_role(
             )
 
         # Check for email / ORCID / DOI patterns (page 1 only)
-        if page_num == 1 and "@" in text and (".edu" in text.lower() or ".com" in text.lower() or ".org" in text.lower()):
+        if still_frontmatter and "@" in text and (".edu" in text.lower() or ".com" in text.lower() or ".org" in text.lower()):
             return RoleAssignment(
                 role="frontmatter_noise",
                 confidence=0.85,
@@ -665,7 +685,7 @@ def assign_block_role(
             "these authors have contributed",
             "equal contribution",
         ]
-        if page_num == 1 and any(phrase in lower_txt for phrase in noise_phrases):
+        if still_frontmatter and any(phrase in lower_txt for phrase in noise_phrases):
             return RoleAssignment(
                 role="frontmatter_noise",
                 confidence=0.8,
@@ -673,7 +693,7 @@ def assign_block_role(
             )
 
         # Citation line like "Masante B, Gabetti S, ... and Surname (2025)" — page 1 only
-        if page_num == 1 and _CITATION_LINE_PATTERN.match(stripped) and " and " in text and ")" in text:
+        if still_frontmatter and _CITATION_LINE_PATTERN.match(stripped) and " and " in text and ")" in text:
             return RoleAssignment(
                 role="frontmatter_noise",
                 confidence=0.8,
@@ -701,7 +721,7 @@ def assign_block_role(
             )
 
         # Affiliation block starting with superscript (page 1 only)
-        if page_num == 1 and _AUTHOR_AFFILIATION_MARKER.match(stripped) and any(
+        if still_frontmatter and _AUTHOR_AFFILIATION_MARKER.match(stripped) and any(
             kw in lower_txt for kw in ["department", "university", "institute", "college", "school of"]
         ):
             return RoleAssignment(
@@ -711,7 +731,7 @@ def assign_block_role(
             )
 
         # Keyword content block: short comma-separated list of terms (page 1 only)
-        if page_num == 1 and (
+        if still_frontmatter and (
             "," in text
             and not any(w in lower_txt for w in [" is ", " are ", " was ", " were "])
             and len(text.split(",")) >= 3
@@ -724,7 +744,7 @@ def assign_block_role(
             )
 
         # Existing noise startswith check (page 1 only)
-        if page_num == 1 and any(lower_txt.startswith(n) for n in FRONTMATTER_NOISE):
+        if still_frontmatter and any(lower_txt.startswith(n) for n in FRONTMATTER_NOISE):
             return RoleAssignment(
                 role="frontmatter_noise",
                 confidence=0.7,
