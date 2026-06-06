@@ -6,7 +6,9 @@ from pathlib import Path
 from paperforge.worker.ocr_document import (
     _TAIL_ROLES,
     DocumentStructure,
-    analyze_document_structure,
+    _estimate_noise_bands,
+    _get_column,
+    _is_in_usable_content,
 )
 from paperforge.worker.ocr_roles import FRONTMATTER_NOISE
 
@@ -30,57 +32,6 @@ def _is_bogus_heading(text: str) -> bool:
 
 def _has_tail_role(block: dict) -> bool:
     return block.get("role") in _TAIL_ROLES
-
-
-def _get_column(block: dict, page_width: float = 1200) -> int:
-    bbox = block.get("bbox") or block.get("block_bbox")
-    if bbox and len(bbox) >= 4:
-        x_center = (bbox[0] + bbox[2]) / 2
-        return 0 if x_center < page_width / 2 else 1
-    return 0
-
-
-def _estimate_noise_bands(
-    structured_blocks: list[dict],
-) -> tuple[float | None, float | None]:
-    header_candidates: list[float] = []
-    footer_candidates: list[float] = []
-
-    for block in structured_blocks:
-        role = block.get("role", "")
-        bbox = block.get("bbox") or block.get("block_bbox")
-        if not bbox or len(bbox) < 4:
-            continue
-        page_height = block.get("page_height", 0) or 0
-        if page_height == 0:
-            continue
-        y2, y1 = bbox[3], bbox[1]
-
-        noise_roles = {"noise", "header", "footer", "number"}
-        raw_label = block.get("raw_label", "")
-        if role in noise_roles or raw_label in ("header", "footer", "number"):
-            if y2 < page_height * 0.15:
-                header_candidates.append(y2)
-            if y1 > page_height * 0.85:
-                footer_candidates.append(y1)
-
-    header_band = max(header_candidates) if header_candidates else None
-    footer_band = min(footer_candidates) if footer_candidates else None
-    return header_band, footer_band
-
-
-def _is_in_usable_content(
-    block: dict,
-    header_band: float | None,
-    footer_band: float | None,
-) -> bool:
-    bbox = block.get("bbox") or block.get("block_bbox")
-    if not bbox or len(bbox) < 4:
-        return True
-    y1, y2 = bbox[1], bbox[3]
-    if header_band is not None and y2 < header_band:
-        return False
-    return not (footer_band is not None and y1 > footer_band)
 
 
 def _find_owning_heading(
@@ -118,29 +69,6 @@ def _find_owning_heading(
         return None
     candidates.sort(key=lambda x: x[1])
     return candidates[0][0]
-
-
-def _has_same_column_anchor_above(
-    body: dict,
-    anchors: list[dict],
-    page_width: float = 1200,
-) -> bool:
-    body_bbox = body.get("bbox") or body.get("block_bbox")
-    if not body_bbox or len(body_bbox) < 4:
-        return False
-
-    body_y = body_bbox[1]
-    body_col = _get_column(body, page_width)
-
-    for anchor in anchors:
-        anchor_bbox = anchor.get("bbox") or anchor.get("block_bbox")
-        if not anchor_bbox or len(anchor_bbox) < 4:
-            continue
-        if _get_column(anchor, page_width) != body_col:
-            continue
-        if anchor_bbox[3] <= body_y:
-            return True
-    return False
 
 
 from paperforge.worker.ocr_profiles import extract_block_span_profile as _extract_style_profile
@@ -551,186 +479,7 @@ def _reorder_tail_run_fifo(
     return result, ref_section
 
 
-def _promote_tail_body_candidates(
-    blocks: list[dict],
-    doc: DocumentStructure | None,
-    header_band: float | None = None,
-    footer_band: float | None = None,
-) -> list[dict]:
-    """Promote plausible tail bodies from plain body_paragraph blocks.
 
-    Base role assignment should stay conservative.  This pass upgrades only
-    those body paragraphs that are geometrically compatible with tail section
-    ownership inside the reconciled tail spread.
-    """
-    if doc is None or doc.spread_start is None or doc.spread_end is None:
-        return blocks
-
-    spread_start, spread_end = doc.spread_start, doc.spread_end
-    by_page: dict[int, list[int]] = {}
-    for idx, block in enumerate(blocks):
-        page = block.get("page")
-        if page is not None:
-            by_page.setdefault(page, []).append(idx)
-
-    result = [dict(block) for block in blocks]
-    for page, indices in by_page.items():
-        if page < spread_start or page > spread_end:
-            continue
-
-        page_blocks = [result[i] for i in indices]
-        local_headings = [
-            b for b in page_blocks if b.get("role") in ("backmatter_heading", "backmatter_boundary_heading")
-        ]
-        ref_heading = next((b for b in page_blocks if b.get("role") == "reference_heading"), None)
-        local_anchors = local_headings
-        local_tops = []
-        for anchor in [*local_headings, *([ref_heading] if ref_heading else [])]:
-            bbox = anchor.get("bbox") or anchor.get("block_bbox")
-            if bbox and len(bbox) >= 4:
-                local_tops.append(bbox[1])
-        first_local_anchor_top = min(local_tops) if local_tops else None
-
-        for idx in indices:
-            block = result[idx]
-            if block.get("role") != "body_paragraph":
-                continue
-            if not _is_in_usable_content(block, header_band, footer_band):
-                continue
-
-            bbox = block.get("bbox") or block.get("block_bbox")
-            if not bbox or len(bbox) < 4:
-                continue
-
-            promote = False
-            page_width = block.get("page_width", 1200) or 1200
-            if local_anchors and _has_same_column_anchor_above(block, local_anchors, page_width):
-                promote = True
-            elif page > spread_start:
-                body_top = bbox[1]
-                if first_local_anchor_top is None or body_top < first_local_anchor_top:
-                    promote = True
-
-            if promote:
-                block["role"] = "tail_candidate_body"
-                block["evidence"] = list(block.get("evidence") or []) + ["promoted in tail spread from body_paragraph"]
-
-    return result
-
-
-def _find_best_anchor(
-    body: dict,
-    anchors: list[dict],
-    ref_heading: dict | None = None,
-    page_width: float = 1200,
-) -> int | None:
-    """Find the best backmatter heading anchor for a tail candidate body.
-
-    Prefers same column, then nearest heading above in any column.
-    Handles cross-page continuations: an anchor on an earlier page is
-    always treated as above the body (regardless of raw Y coordinate).
-    Excludes ref_heading.  Returns the anchor index or None.
-    """
-    body_bbox = body.get("bbox") or body.get("block_bbox")
-    if not body_bbox or len(body_bbox) < 4:
-        return None
-    body_y = body_bbox[1]
-    body_page = body.get("page", 0) or 0
-    body_mid = (body_bbox[0] + body_bbox[2]) / 2
-    pw_mid = page_width / 2
-    body_col = 0 if body_mid < pw_mid else 1
-
-    best_same: tuple[int, float] | None = None
-    best_other: tuple[int, float] | None = None
-
-    for idx, anchor in enumerate(anchors):
-        if anchor is ref_heading:
-            continue
-        a_bbox = anchor.get("bbox") or anchor.get("block_bbox")
-        if not a_bbox or len(a_bbox) < 4:
-            continue
-
-        anchor_page = anchor.get("page", 0) or 0
-        if anchor_page > body_page:
-            continue  # anchor on later page → cannot own body
-
-        a_bottom = a_bbox[3]
-        if anchor_page == body_page and a_bottom > body_y:
-            continue  # anchor below body on same page
-
-        # Cross-page anchors (earlier page) are always valid —
-        # raw Y comparison across pages is meaningless.
-        a_mid = (a_bbox[0] + a_bbox[2]) / 2
-        a_col = 0 if a_mid < pw_mid else 1
-
-        if anchor_page == body_page:
-            dist = body_y - a_bottom
-        else:
-            page_extent = body.get("page_height", 0) or page_width
-            dist = (body_page - anchor_page) * page_extent + max(0.0, page_extent - a_bottom)
-
-        if body_col == a_col:
-            if best_same is None or dist < best_same[1]:
-                best_same = (idx, dist)
-        else:
-            if best_other is None or dist < best_other[1]:
-                best_other = (idx, dist)
-
-    best = best_same or best_other
-    return best[0] if best is not None else None
-
-
-def _assign_tail_spread_ownership(
-    blocks: list[dict],
-    doc: DocumentStructure | None = None,
-) -> list[dict]:
-    """Assign tail_candidate_body blocks to backmatter anchors across pages.
-
-    When a doc boundary is provided, only tail_candidate_body blocks
-    within the spread are eligible for anchor matching.  Blocks outside the
-    spread revert to body_paragraph.  Inside the spread, tail_candidate_body
-    is replaced with backmatter_body when the block sits below a valid
-    backmatter heading (same-column preferred).  Marks spread-assigned bodies
-    with _spread_anchor so the page-local reorder pass does not reassign them.
-    Unanchored candidates inside the spread stay as tail_candidate_body.
-    """
-    tail_heading_roles = {"backmatter_heading", "backmatter_boundary_heading"}
-    anchors = [b for b in blocks if b.get("role") in tail_heading_roles]
-    ref_heading = next((b for b in blocks if b.get("role") == "reference_heading"), None)
-
-    if doc is not None and doc.spread_start is not None and doc.spread_end is not None:
-        spread_start, spread_end = doc.spread_start, doc.spread_end
-    else:
-        spread_start, spread_end = 0, 0
-
-    if not anchors:
-        return [{**b, "role": "body_paragraph"} if b.get("role") == "tail_candidate_body" else b for b in blocks]
-
-    result = list(blocks)
-    for i, block in enumerate(result):
-        if block.get("role") != "tail_candidate_body":
-            continue
-
-        block_page = block.get("page", 0) or 0
-
-        # Outside the reconciled tail spread → revert to body_paragraph
-        if doc is not None and (block_page < spread_start or block_page > spread_end):
-            result[i] = dict(block)
-            result[i]["role"] = "body_paragraph"
-            continue
-
-        # Inside tail spread (or no spread set): try geometric anchor matching
-        pw = block.get("page_width", 0) or 1200
-        idx = _find_best_anchor(block, anchors, ref_heading, pw)
-        result[i] = dict(block)
-        if idx is not None:
-            anchor_page = anchors[idx].get("page", 0)
-            result[i]["role"] = "backmatter_body"
-            result[i]["_spread_anchor"] = anchor_page
-        else:
-            # If no anchor match inside the spread, revert to plain body.
-            result[i]["role"] = "body_paragraph"
-    return result
 
 
 def _sort_blocks_by_column(blocks: list[dict], page_width: int) -> list[dict]:
@@ -760,24 +509,13 @@ def _order_tail_blocks(blocks: list[dict], style_profiles: dict | None = None) -
     blocks on such pages by (column, y-position), then groups them into
     backmatter sections and a references zone using geometric ownership.
 
-    Before per-page sorting, runs a multi-page tail-spread ownership pass
-    that resolves tail_candidate_body blocks against backmatter anchors
-    across page boundaries.  Non-tail pages are untouched.
+    Blocks are expected to already have normalized roles.  Non-tail pages
+    are untouched.
     """
     if not blocks:
         return blocks
 
-    # Step 0: Analyze document structure (reconcile tail spread, classify form, label regime)
-    doc_structure = analyze_document_structure(blocks)
-
-    # Step 0.5: only inside the reconciled tail spread, promote plausible
-    # body paragraphs into tail candidates using geometry rather than
-    # page-level text heuristics.
     header_band, footer_band = _estimate_noise_bands(blocks)
-    blocks = _promote_tail_body_candidates(blocks, doc_structure, header_band=header_band, footer_band=footer_band)
-
-    # Step 1: cross-page tail spread ownership (now boundary-aware)
-    blocks = _assign_tail_spread_ownership(blocks, doc_structure)
 
     # Find pages that contain tail blocks and their page widths
     tail_pages: set[int] = set()
@@ -835,6 +573,7 @@ def render_fulltext_markdown(
     figure_inventory: dict,
     table_inventory: dict,
     page_count: int | None = None,
+    document_structure: DocumentStructure | None = None,
 ) -> str:
     lines: list[str] = []
 
@@ -923,6 +662,11 @@ def render_fulltext_markdown(
             "correspondence",
         }
     )
+
+    if document_structure is None:
+        from paperforge.worker.ocr_document import normalize_document_structure
+
+        document_structure, structured_blocks = normalize_document_structure(structured_blocks)
 
     style_profiles = _build_heading_style_profiles(structured_blocks)
     ordered_blocks = _order_tail_blocks(structured_blocks, style_profiles=style_profiles)

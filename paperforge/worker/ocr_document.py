@@ -558,3 +558,269 @@ def analyze_document_structure(blocks: list[dict]) -> DocumentStructure:
         spread_end=tail_spread.spread_end if tail_spread else None,
         backmatter_form=backmatter_form,
     )
+
+
+def _get_column(block: dict, page_width: float = 1200) -> int:
+    bbox = block.get("bbox") or block.get("block_bbox")
+    if bbox and len(bbox) >= 4:
+        x_center = (bbox[0] + bbox[2]) / 2
+        return 0 if x_center < page_width / 2 else 1
+    return 0
+
+
+def _is_in_usable_content(
+    block: dict,
+    header_band: float | None,
+    footer_band: float | None,
+) -> bool:
+    bbox = block.get("bbox") or block.get("block_bbox")
+    if not bbox or len(bbox) < 4:
+        return True
+    y1, y2 = bbox[1], bbox[3]
+    if header_band is not None and y2 < header_band:
+        return False
+    return not (footer_band is not None and y1 > footer_band)
+
+
+def _estimate_noise_bands(
+    structured_blocks: list[dict],
+) -> tuple[float | None, float | None]:
+    header_candidates: list[float] = []
+    footer_candidates: list[float] = []
+
+    for block in structured_blocks:
+        role = block.get("role", "")
+        bbox = block.get("bbox") or block.get("block_bbox")
+        if not bbox or len(bbox) < 4:
+            continue
+        page_height = block.get("page_height", 0) or 0
+        if page_height == 0:
+            continue
+        y2, y1 = bbox[3], bbox[1]
+
+        noise_roles = {"noise", "header", "footer", "number"}
+        raw_label = block.get("raw_label", "")
+        if role in noise_roles or raw_label in ("header", "footer", "number"):
+            if y2 < page_height * 0.15:
+                header_candidates.append(y2)
+            if y1 > page_height * 0.85:
+                footer_candidates.append(y1)
+
+    header_band = max(header_candidates) if header_candidates else None
+    footer_band = min(footer_candidates) if footer_candidates else None
+    return header_band, footer_band
+
+
+def _has_same_column_anchor_above(
+    body: dict,
+    anchors: list[dict],
+    page_width: float = 1200,
+) -> bool:
+    body_bbox = body.get("bbox") or body.get("block_bbox")
+    if not body_bbox or len(body_bbox) < 4:
+        return False
+
+    body_y = body_bbox[1]
+    body_col = _get_column(body, page_width)
+
+    for anchor in anchors:
+        anchor_bbox = anchor.get("bbox") or anchor.get("block_bbox")
+        if not anchor_bbox or len(anchor_bbox) < 4:
+            continue
+        if _get_column(anchor, page_width) != body_col:
+            continue
+        if anchor_bbox[3] <= body_y:
+            return True
+    return False
+
+
+def _find_best_anchor(
+    body: dict,
+    anchors: list[dict],
+    ref_heading: dict | None = None,
+    page_width: float = 1200,
+) -> int | None:
+    body_bbox = body.get("bbox") or body.get("block_bbox")
+    if not body_bbox or len(body_bbox) < 4:
+        return None
+    body_y = body_bbox[1]
+    body_page = body.get("page", 0) or 0
+    body_mid = (body_bbox[0] + body_bbox[2]) / 2
+    pw_mid = page_width / 2
+    body_col = 0 if body_mid < pw_mid else 1
+
+    best_same: tuple[int, float] | None = None
+    best_other: tuple[int, float] | None = None
+
+    for idx, anchor in enumerate(anchors):
+        if anchor is ref_heading:
+            continue
+        a_bbox = anchor.get("bbox") or anchor.get("block_bbox")
+        if not a_bbox or len(a_bbox) < 4:
+            continue
+
+        anchor_page = anchor.get("page", 0) or 0
+        if anchor_page > body_page:
+            continue
+
+        a_bottom = a_bbox[3]
+        if anchor_page == body_page and a_bottom > body_y:
+            continue
+
+        a_mid = (a_bbox[0] + a_bbox[2]) / 2
+        a_col = 0 if a_mid < pw_mid else 1
+
+        if anchor_page == body_page:
+            dist = body_y - a_bottom
+        else:
+            page_extent = body.get("page_height", 0) or page_width
+            dist = (body_page - anchor_page) * page_extent + max(0.0, page_extent - a_bottom)
+
+        if body_col == a_col:
+            if best_same is None or dist < best_same[1]:
+                best_same = (idx, dist)
+        else:
+            if best_other is None or dist < best_other[1]:
+                best_other = (idx, dist)
+
+    best = best_same or best_other
+    return best[0] if best is not None else None
+
+
+def _promote_tail_body_candidates(
+    blocks: list[dict],
+    doc: DocumentStructure | None,
+    header_band: float | None = None,
+    footer_band: float | None = None,
+) -> list[dict]:
+    if doc is None or doc.spread_start is None or doc.spread_end is None:
+        return blocks
+
+    spread_start, spread_end = doc.spread_start, doc.spread_end
+    by_page: dict[int, list[int]] = {}
+    for idx, block in enumerate(blocks):
+        page = block.get("page")
+        if page is not None:
+            by_page.setdefault(page, []).append(idx)
+
+    result = [dict(block) for block in blocks]
+    for page, indices in by_page.items():
+        if page < spread_start or page > spread_end:
+            continue
+
+        page_blocks = [result[i] for i in indices]
+        local_headings = [
+            b for b in page_blocks if b.get("role") in ("backmatter_heading", "backmatter_boundary_heading")
+        ]
+        ref_heading = next((b for b in page_blocks if b.get("role") == "reference_heading"), None)
+        local_anchors = local_headings
+        local_tops = []
+        for anchor in [*local_headings, *([ref_heading] if ref_heading else [])]:
+            bbox = anchor.get("bbox") or anchor.get("block_bbox")
+            if bbox and len(bbox) >= 4:
+                local_tops.append(bbox[1])
+        first_local_anchor_top = min(local_tops) if local_tops else None
+
+        for idx in indices:
+            block = result[idx]
+            if block.get("role") != "body_paragraph":
+                continue
+            if not _is_in_usable_content(block, header_band, footer_band):
+                continue
+
+            bbox = block.get("bbox") or block.get("block_bbox")
+            if not bbox or len(bbox) < 4:
+                continue
+
+            promote = False
+            page_width = block.get("page_width", 1200) or 1200
+            if local_anchors and _has_same_column_anchor_above(block, local_anchors, page_width):
+                promote = True
+            elif page > spread_start:
+                body_top = bbox[1]
+                if first_local_anchor_top is None or body_top < first_local_anchor_top:
+                    promote = True
+
+            if promote:
+                block["role"] = "tail_candidate_body"
+                block["evidence"] = list(block.get("evidence") or []) + ["promoted in tail spread from body_paragraph"]
+
+    return result
+
+
+def _assign_tail_spread_ownership(
+    blocks: list[dict],
+    doc: DocumentStructure | None = None,
+) -> list[dict]:
+    tail_heading_roles = {"backmatter_heading", "backmatter_boundary_heading"}
+    anchors = [b for b in blocks if b.get("role") in tail_heading_roles]
+    ref_heading = next((b for b in blocks if b.get("role") == "reference_heading"), None)
+
+    if doc is not None and doc.spread_start is not None and doc.spread_end is not None:
+        spread_start, spread_end = doc.spread_start, doc.spread_end
+    else:
+        spread_start, spread_end = 0, 0
+
+    if not anchors:
+        return [{**b, "role": "body_paragraph"} if b.get("role") == "tail_candidate_body" else b for b in blocks]
+
+    result = list(blocks)
+    for i, block in enumerate(result):
+        if block.get("role") != "tail_candidate_body":
+            continue
+
+        block_page = block.get("page", 0) or 0
+
+        if doc is not None and (block_page < spread_start or block_page > spread_end):
+            result[i] = dict(block)
+            result[i]["role"] = "body_paragraph"
+            continue
+
+        pw = block.get("page_width", 0) or 1200
+        idx = _find_best_anchor(block, anchors, ref_heading, pw)
+        result[i] = dict(block)
+        if idx is not None:
+            anchor_page = anchors[idx].get("page", 0)
+            result[i]["role"] = "backmatter_body"
+            result[i]["_spread_anchor"] = anchor_page
+        else:
+            result[i]["role"] = "body_paragraph"
+    return result
+
+
+def normalize_document_structure(blocks: list[dict]) -> tuple[DocumentStructure, list[dict]]:
+    """Analyze document structure and normalize roles.
+
+    Returns (document_structure, normalized_blocks).
+    Normalization includes:
+    - backmatter form classification
+    - backmatter role normalization after boundary
+    - tail body candidate promotion
+    - tail spread ownership assignment
+    """
+    tail_spread = _reconcile_tail_spread(blocks)
+    if tail_spread is not None:
+        backmatter_form = _classify_backmatter_form(tail_spread, blocks)
+        _label_backmatter_regime(tail_spread, backmatter_form, blocks)
+        _normalize_backmatter_roles_after_boundary(tail_spread, backmatter_form, blocks)
+    else:
+        backmatter_form = "flat"
+
+    doc_structure = DocumentStructure(
+        body_end_page=tail_spread.body_end_page if tail_spread else None,
+        backmatter_start=PagePosition(page=tail_spread.backmatter_start, y=0.0)
+        if tail_spread and tail_spread.backmatter_start is not None
+        else None,
+        references_start=PagePosition(page=tail_spread.references_start, y=0.0)
+        if tail_spread and tail_spread.references_start is not None
+        else None,
+        spread_start=tail_spread.spread_start if tail_spread else None,
+        spread_end=tail_spread.spread_end if tail_spread else None,
+        backmatter_form=backmatter_form,
+    )
+
+    header_band, footer_band = _estimate_noise_bands(blocks)
+    blocks = _promote_tail_body_candidates(blocks, doc_structure, header_band=header_band, footer_band=footer_band)
+    blocks = _assign_tail_spread_ownership(blocks, doc_structure)
+
+    return doc_structure, blocks
