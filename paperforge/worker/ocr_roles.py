@@ -248,7 +248,8 @@ def _infer_heading_level(
 
     # Profile-based matching (preferred)
     if role_profiles and block:
-        from paperforge.worker.ocr_profiles import extract_block_span_profile, compare_against_role_family
+        from paperforge.worker.ocr_profiles import compare_against_role_family, extract_block_span_profile
+
         block_profile = extract_block_span_profile(block)
         if block_profile:
             for candidate_role in (
@@ -535,7 +536,7 @@ def assign_block_role(
             if bbox[1] < max(page_height, 1) * 0.25:
                 if lower in _BACKMATTER_TITLE_DENY_LIST:
                     return RoleAssignment(
-                    role="section_heading" if re.match(r"^\d+\s", text) else "subsection_heading",
+                        role="section_heading" if re.match(r"^\d+\s", text) else "subsection_heading",
                         confidence=0.5,
                         evidence=[f"backmatter title in title zone, treated as heading: {text[:60]}"],
                     )
@@ -791,7 +792,10 @@ def assign_block_role(
                 return RoleAssignment(
                     role=heading_level,
                     confidence=0.65,
-                    evidence=[f"heading-style text block: size={font_size}, flags={font_flags}, level={heading_level}, text={text[:40]}"],
+                    evidence=[
+                        f"heading-style text block: size={font_size}, flags={font_flags},"
+                        f" level={heading_level}, text={text[:40]}"
+                    ],
                 )
 
         # Backmatter boundary container heading detection for text blocks
@@ -822,3 +826,73 @@ def assign_block_role(
         confidence=0.2,
         evidence=[f"unrecognized label '{raw_label}'"],
     )
+
+
+def second_pass_cross_validate(
+    block: dict,
+    role_profiles: dict,
+) -> dict:
+    """Second-pass cross-validation for low-confidence role assignments.
+
+    Examines low-confidence blocks against role family profiles.
+    Never overrides the assigned role -- only adjusts confidence and
+    suggests alternative roles for review.
+
+    Returns:
+        {"role": str, "confidence_adjustment": float,
+         "role_changed": bool, "suggested_roles": list[str],
+         "match_details": dict}
+    """
+    from paperforge.worker.ocr_profiles import (
+        cross_validate_with_span,
+        extract_block_span_profile,
+    )
+
+    current_role = block.get("role", "")
+    current_confidence = block.get("role_confidence", 0.5)
+
+    # Skip if no span data
+    block_profile = extract_block_span_profile(block)
+    if block_profile is None:
+        return {
+            "role": current_role,
+            "confidence_adjustment": 0.0,
+            "role_changed": False,
+            "suggested_roles": [],
+            "match_details": {},
+        }
+
+    # Run cross-validation
+    xv_result = cross_validate_with_span(block, current_role, role_profiles)
+    adjustment = xv_result["adjustment"]
+    suggested_roles = xv_result["suggested_roles"]
+
+    # Don't change role -- only adjust confidence
+    # Exception: if suggested_roles has exactly one strong candidate
+    # AND current confidence is very low (< 0.3) AND adjustment is strongly negative
+    role_changed = False
+    if len(suggested_roles) == 1 and current_confidence < 0.3 and adjustment < -0.2:
+        # Roles that must never be overridden by second pass
+        never_override = {
+            "paper_title",
+            "abstract_body",
+            "reference_heading",
+            "reference_item",
+            "media_asset",
+            "figure_asset",
+            "table_html",
+            "noise",
+            "unknown_structural",
+        }
+        if current_role in never_override:
+            role_changed = False
+        elif suggested_roles[0] not in never_override:
+            role_changed = True
+
+    return {
+        "role": suggested_roles[0] if role_changed else current_role,
+        "confidence_adjustment": round(adjustment, 4),
+        "role_changed": role_changed,
+        "suggested_roles": suggested_roles,
+        "match_details": xv_result.get("match_details", {}),
+    }
