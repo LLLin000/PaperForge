@@ -463,6 +463,33 @@ def test_formal_figure_caption_still_direct() -> None:
     )
 
 
+def test_weak_backmatter_boundary_signal_emits_candidate():
+    """A paragraph with backmatter boundary text but no bold span_metadata
+    should emit backmatter_boundary_candidate, not backmatter_boundary_heading."""
+    from paperforge.worker.ocr_roles import assign_block_role
+    block = {
+        "block_label": "paragraph_title",
+        "block_content": "ADDITIONAL INFORMATION",
+        "block_bbox": [100, 1200, 500, 1240],
+        "page": 8,
+    }
+    page_blocks = [block] + [
+        {
+            "block_label": "text",
+            "block_content": f"Some body text {i}",
+            "block_bbox": [100, 200 + i * 100, 500, 260 + i * 100],
+            "page": 8,
+        }
+        for i in range(5)
+    ]
+    result = assign_block_role(
+        block, page_blocks=page_blocks, page_width=600, page_height=1600
+    )
+    assert result.role == "backmatter_boundary_candidate", (
+        f"Expected backmatter_boundary_candidate, got {result.role}"
+    )
+
+
 def test_backmatter_boundary_detects_on_early_page() -> None:
     """Backmatter boundary should be detectable on papers with fewer
     than 8 pages, without a hard page gate."""

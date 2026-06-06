@@ -1704,27 +1704,7 @@ def _resolve_ambiguous_candidates(
 
             block["role"] = "backmatter_heading"
 
-        # ---- 2.2 Resolve backmatter_boundary_candidate ----
-        if role == "backmatter_boundary_candidate":
-            is_in_tail = (body_end_page is not None and page >= body_end_page) or (
-                doc_structure.spread_start is not None and page >= doc_structure.spread_start
-            )
-            if not is_in_tail:
-                block["role"] = "section_heading"
-                continue
-
-            layout = page_layouts.get(page)
-            boundaries = layout.column_boundaries if layout else []
-            x_center = (bbox[0] + bbox[2]) / 2
-            col = _get_column_index_by_boundaries(x_center, boundaries)
-
-            child_count = _child_heading_count(i, page, col, boundaries)
-            if child_count >= 2.0:
-                block["role"] = "backmatter_boundary_heading"
-            else:
-                block["role"] = "section_heading"
-
-        # ---- 2.3 Resolve figure_caption_candidate ----
+        # ---- 2.2 Resolve figure_caption_candidate ----
         if role == "figure_caption_candidate":
             text = block.get("text", "") or ""
             page_blocks = [b for b in blocks if b.get("page") == page]
