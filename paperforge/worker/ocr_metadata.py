@@ -21,6 +21,47 @@ def _clean_author_display(author_text: str) -> str:
     return text.strip()
 
 
+def _match_author_block_to_source_authors(block_text: str, source_authors: list[str]) -> dict:
+    """Check if an OCR text block matches the source/Zotero author list.
+
+    Normalizes both sides and computes Jaccard similarity on tokenized names.
+    """
+    normalized = block_text.lower()
+    normalized = re.sub(r"\$?\^?\{[^}]*\}\$?", "", normalized)
+    normalized = re.sub(r"[^\w\s,]", "", normalized)
+    block_names = set()
+    for part in re.split(r",\s*|\s+and\s+", normalized):
+        part = part.strip()
+        if part:
+            block_names.add(part)
+
+    source_names = set()
+    for author in source_authors:
+        s = author.lower().strip()
+        s = re.sub(r"[^\w\s]", "", s)
+        if s:
+            source_names.add(s)
+
+    if not block_names or not source_names:
+        return {
+            "matched": False,
+            "similarity": 0.0,
+            "block_names": sorted(block_names),
+            "source_names": sorted(source_names),
+        }
+
+    intersection = block_names & source_names
+    union = block_names | source_names
+    similarity = len(intersection) / len(union)
+
+    return {
+        "matched": similarity > 0.5,
+        "similarity": similarity,
+        "block_names": sorted(block_names),
+        "source_names": sorted(source_names),
+    }
+
+
 def _name_likeness_score(text: str) -> int:
     """Score how much the text looks like a human-name list vs affiliation/noise."""
     if not text:
@@ -149,11 +190,18 @@ def resolve_metadata(
     )
 
     if isinstance(zotero_authors, list) and len(zotero_authors) > 0:
-        resolved["authors"] = {
+        authors_entry: dict[str, Any] = {
             "value": zotero_authors,
             "source": "zotero",
             "confidence": 0.99,
         }
+        if ocr_authors_text:
+            alignment = _match_author_block_to_source_authors(ocr_authors_text, zotero_authors)
+            authors_entry["alignment"] = {
+                "matched": alignment["matched"],
+                "similarity": alignment["similarity"],
+            }
+        resolved["authors"] = authors_entry
     elif ocr_author_list and not _is_affiliation_like(ocr_authors_text):
         resolved["authors"] = {
             "value": ocr_author_list,
