@@ -1419,37 +1419,40 @@ def caption_group_assignments(blocks: list[dict]) -> tuple[dict[int, list[dict]]
 
 
 def _apply_layered_body_reorder(blocks: list[dict], page_width: int, page_height: int) -> list[dict]:
-    from paperforge.worker.ocr_orchestrator import reorder_blocks_layered as _rbl
+    """Column-major sort for two-column pages.
 
-    result = _rbl(blocks, page_width=page_width, page_height=page_height)
-    if result is not blocks:
-        return result
+    Groups blocks by column (left/center first, right second), each
+    sorted by y-position.  Single-column pages pass through unchanged.
+    """
+    if not page_width or len(blocks) < 4:
+        return blocks
 
-    # Fallback: column-major sort when body spine module unavailable.
-    # Groups by column (left/center first, right second), sorted by y.
-    if page_width and len(blocks) >= 4:
-        mid = page_width / 2
+    mid = page_width / 2
 
-        def _col(b):
-            bb = b.get("block_bbox") or b.get("bbox")
-            if not bb or len(bb) < 4:
-                return 0
-            xc = (bb[0] + bb[2]) / 2
-            w = bb[2] - bb[0]
-            if (bb[0] < mid and bb[2] > mid) or w >= page_width * 0.55:
-                return 0
-            return 1 if xc >= mid else 0
+    def _col(b):
+        bb = b.get("block_bbox") or b.get("bbox")
+        if not bb or len(bb) < 4:
+            return 0
+        xc = (bb[0] + bb[2]) / 2
+        w = bb[2] - bb[0]
+        if (bb[0] < mid and bb[2] > mid) or w >= page_width * 0.55:
+            return 0
+        return 1 if xc >= mid else 0
 
-        left = sorted(
-            [b for b in blocks if _col(b) == 0],
-            key=lambda b: (b.get("block_bbox") or b.get("bbox") or [0, 0, 0, 0])[1],
-        )
-        right = sorted(
-            [b for b in blocks if _col(b) == 1],
-            key=lambda b: (b.get("block_bbox") or b.get("bbox") or [0, 0, 0, 0])[1],
-        )
-        return left + right
-    return blocks
+    has_left = any(_col(b) == 0 for b in blocks)
+    has_right = any(_col(b) == 1 for b in blocks)
+    if not (has_left and has_right):
+        return blocks
+
+    left = sorted(
+        [b for b in blocks if _col(b) == 0],
+        key=lambda b: (b.get("block_bbox") or b.get("bbox") or [0, 0, 0, 0])[1],
+    )
+    right = sorted(
+        [b for b in blocks if _col(b) == 1],
+        key=lambda b: (b.get("block_bbox") or b.get("bbox") or [0, 0, 0, 0])[1],
+    )
+    return left + right
 
 
 def render_page_blocks(
