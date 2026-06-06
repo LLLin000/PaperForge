@@ -478,7 +478,7 @@ def assign_block_role(
     if raw_label == "paragraph_title":
         stripped = text.strip().lstrip("*•·-–—")
         lower = stripped.lower()
-        if lower in FRONTMATTER_NOISE:
+        if lower in FRONTMATTER_NOISE and block.get("page", 1) == 1:
             return RoleAssignment(
                 role="frontmatter_noise",
                 confidence=0.9,
@@ -618,6 +618,7 @@ def assign_block_role(
     if raw_label == "text":
         stripped = text.strip().lstrip("*•·-–—_")
         lower_txt = stripped.lower()
+        page_num = block.get("page", 1) or 1
 
         # Check for inline table HTML
         if text.strip().lower().startswith("<table"):
@@ -635,16 +636,16 @@ def assign_block_role(
                 evidence=[f"abstract heading from text block: {text[:40]}"],
             )
 
-        # Check for copyright
-        if "copyright" in lower_txt or "©" in text:
+        # Check for copyright (page 1 only)
+        if page_num == 1 and ("copyright" in lower_txt or "©" in text):
             return RoleAssignment(
                 role="frontmatter_noise",
                 confidence=0.85,
                 evidence=[f"copyright text: {text[:60]}"],
             )
 
-        # Check for email / ORCID / DOI patterns in first-page blocks
-        if "@" in text and (".edu" in text.lower() or ".com" in text.lower() or ".org" in text.lower()):
+        # Check for email / ORCID / DOI patterns (page 1 only)
+        if page_num == 1 and "@" in text and (".edu" in text.lower() or ".com" in text.lower() or ".org" in text.lower()):
             return RoleAssignment(
                 role="frontmatter_noise",
                 confidence=0.85,
@@ -664,15 +665,15 @@ def assign_block_role(
             "these authors have contributed",
             "equal contribution",
         ]
-        if any(phrase in lower_txt for phrase in noise_phrases):
+        if page_num == 1 and any(phrase in lower_txt for phrase in noise_phrases):
             return RoleAssignment(
                 role="frontmatter_noise",
                 confidence=0.8,
                 evidence=[f"frontmatter phrase: {text[:60]}"],
             )
 
-        # Citation line like "Masante B, Gabetti S, ... and Surname (2025)"
-        if _CITATION_LINE_PATTERN.match(stripped) and " and " in text and ")" in text:
+        # Citation line like "Masante B, Gabetti S, ... and Surname (2025)" — page 1 only
+        if page_num == 1 and _CITATION_LINE_PATTERN.match(stripped) and " and " in text and ")" in text:
             return RoleAssignment(
                 role="frontmatter_noise",
                 confidence=0.8,
@@ -699,8 +700,8 @@ def assign_block_role(
                 evidence=[f"author list with affiliation markers: {text[:60]}"],
             )
 
-        # Affiliation block starting with superscript
-        if _AUTHOR_AFFILIATION_MARKER.match(stripped) and any(
+        # Affiliation block starting with superscript (page 1 only)
+        if page_num == 1 and _AUTHOR_AFFILIATION_MARKER.match(stripped) and any(
             kw in lower_txt for kw in ["department", "university", "institute", "college", "school of"]
         ):
             return RoleAssignment(
@@ -709,8 +710,8 @@ def assign_block_role(
                 evidence=[f"affiliation block: {text[:60]}"],
             )
 
-        # Keyword content block: short comma-separated list of terms (no full sentence)
-        if (
+        # Keyword content block: short comma-separated list of terms (page 1 only)
+        if page_num == 1 and (
             "," in text
             and not any(w in lower_txt for w in [" is ", " are ", " was ", " were "])
             and len(text.split(",")) >= 3
@@ -722,8 +723,8 @@ def assign_block_role(
                 evidence=[f"keyword-like block: {text[:60]}"],
             )
 
-        # Existing noise startswith check
-        if any(lower_txt.startswith(n) for n in FRONTMATTER_NOISE):
+        # Existing noise startswith check (page 1 only)
+        if page_num == 1 and any(lower_txt.startswith(n) for n in FRONTMATTER_NOISE):
             return RoleAssignment(
                 role="frontmatter_noise",
                 confidence=0.7,
