@@ -1747,7 +1747,6 @@ def _resolve_ambiguous_candidates(
             role == "reference_item"
             and references_start_page is not None
             and page < references_start_page
-            and not block.get("_verified_by_seed")
         ):
             block["role"] = "body_paragraph"
 
