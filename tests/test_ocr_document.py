@@ -1095,3 +1095,24 @@ def test_layout_profile_build_profiles() -> None:
 
     assert profiles[1].layout_type == "single_column", f"Page 1 expected single_column, got {profiles[1].layout_type}"
     assert profiles[2].layout_type == "mixed_tail", f"Page 2 expected mixed_tail, got {profiles[2].layout_type}"
+
+
+def test_document_structure_json_serialization() -> None:
+    """Verify that DocumentStructure with layout profiles serializes to valid JSON."""
+    from paperforge.worker.ocr_document import DocumentStructure, PageLayoutProfile
+    import dataclasses, json
+
+    ds = DocumentStructure(
+        body_end_page=70,
+        backmatter_start=None,
+        references_start=None,
+        page_layouts={
+            71: PageLayoutProfile(column_count=2, column_boundaries=[200, 600], layout_type="two_column"),
+        },
+    )
+    data = dataclasses.asdict(ds)
+    js = json.dumps(data, indent=2)
+    parsed = json.loads(js)
+    assert parsed["body_end_page"] == 70
+    assert parsed["page_layouts"]["71"]["column_count"] == 2
+    assert parsed["page_layouts"]["71"]["layout_type"] == "two_column"
