@@ -679,24 +679,37 @@ def render_fulltext_markdown(
             ordered_blocks = _order_tail_blocks(structured_blocks, style_profiles=style_profiles)
 
             tail_spread_pages = set(range(document_structure.spread_start, document_structure.spread_end + 1))
-
-            tail_seg_blocks: list[tuple[int, int, int, dict]] = []
-            tail_other: list[dict] = []
-            non_tail: list[dict] = []
-
+            page_groups: dict[int, list[dict]] = {}
+            page_order: list[int] = []
             for block in ordered_blocks:
                 page = block.get("page")
-                orig = block.get("_ordered_original_index", -1)
-                if page in tail_spread_pages:
-                    if orig in seg_priority:
-                        tail_seg_blocks.append((seg_priority[orig], seg_position[orig], orig, block))
-                    else:
-                        tail_other.append(block)
-                else:
-                    non_tail.append(block)
+                if page is None:
+                    page = -1
+                if page not in page_groups:
+                    page_groups[page] = []
+                    page_order.append(page)
+                page_groups[page].append(block)
 
-            tail_seg_blocks.sort(key=lambda x: (x[0], x[1]))
-            ordered_blocks = non_tail + tail_other + [t[3] for t in tail_seg_blocks]
+            reordered: list[dict] = []
+            for page in page_order:
+                page_blocks = page_groups[page]
+                if page not in tail_spread_pages:
+                    reordered.extend(page_blocks)
+                    continue
+
+                seg_blocks: list[tuple[int, int, int, dict]] = []
+                non_segment_blocks: list[tuple[int, dict]] = []
+                for pos, block in enumerate(page_blocks):
+                    orig = block.get("_ordered_original_index", -1)
+                    if orig in seg_priority:
+                        seg_blocks.append((seg_priority[orig], seg_position[orig], orig, block))
+                    else:
+                        non_segment_blocks.append((pos, block))
+
+                seg_blocks.sort(key=lambda x: (x[0], x[1]))
+                reordered.extend([b for _, b in non_segment_blocks] + [t[3] for t in seg_blocks])
+
+            ordered_blocks = reordered
         else:
             ordered_blocks = _order_tail_blocks(structured_blocks, style_profiles=style_profiles)
     else:
@@ -758,6 +771,8 @@ def render_fulltext_markdown(
             lines.append("")
             emitted_pages.add(block_page)
 
+        if not block.get("render_default", True):
+            continue
         if role == "backmatter_boundary_heading" or role == "backmatter_heading" or role == "reference_heading":
             lines.append(f"## {text}")
             lines.append("")

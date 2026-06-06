@@ -322,10 +322,7 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
         if role in ("figure_caption", "figure_caption_candidate"):
             if _is_body_mention(block):
                 continue
-            if _looks_like_figure_narrative_prose(block.get("text", "")):
-                if role == "figure_caption_candidate":
-                    continue
-                rejected_legends.append(block)
+            if role == "figure_caption_candidate" and _looks_like_figure_narrative_prose(block.get("text", "")):
                 continue
             if not _is_formal_legend(block.get("text", ""), block, page_width):
                 rejected_legends.append(block)

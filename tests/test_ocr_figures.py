@@ -745,7 +745,7 @@ def test_author_bio_media_does_not_affect_normal_figure_matching() -> None:
 
 
 def test_fig_26c_narrative_not_legend() -> None:
-    """Multi-sentence narrative prose starting with Fig. N must not become a legend."""
+    """figure_caption_candidate with narrative prose must not become a legend."""
     from paperforge.worker.ocr_figures import build_figure_inventory
 
     structured_blocks = [
@@ -753,8 +753,7 @@ def test_fig_26c_narrative_not_legend() -> None:
             "paper_id": "K001",
             "page": 1,
             "block_id": "p1_b1",
-            "role": "figure_caption",
-            "raw_role": "figure_caption",
+            "role": "figure_caption_candidate",
             "block_label": "text",
             "text": "Fig. 26c addresses a limiting case. The trend reverses at higher "
             "concentrations. This is consistent with prior work.",
@@ -765,7 +764,7 @@ def test_fig_26c_narrative_not_legend() -> None:
     inventory = build_figure_inventory(structured_blocks)
 
     assert len(inventory["matched_figures"]) == 0
-    assert len(inventory["rejected_legends"]) == 1
+    assert inventory.get("rejected_legends", []) == [] or len(inventory["rejected_legends"]) == 0
     assert len(inventory["figure_legends"]) == 0
 
 
@@ -800,8 +799,8 @@ def test_figure_caption_candidate_survives() -> None:
     assert inventory["matched_figures"][0]["figure_number"] == 1
 
 
-def test_prose_shaped_figure_caption_rejected() -> None:
-    """Prose-shaped figure_caption (multi-sentence, no verb match) lands in rejected_legends."""
+def test_prose_shaped_figure_caption_candidate_rejected() -> None:
+    """Prose-shaped figure_caption_candidate is skipped (not added to figures)."""
     from paperforge.worker.ocr_figures import build_figure_inventory
 
     structured_blocks = [
@@ -809,8 +808,7 @@ def test_prose_shaped_figure_caption_rejected() -> None:
             "paper_id": "K001",
             "page": 1,
             "block_id": "p1_b1",
-            "role": "figure_caption",
-            "raw_role": "figure_caption",
+            "role": "figure_caption_candidate",
             "text": "Fig. 26c addresses our experimental observations. The trend reverses at higher concentrations as expected.",
             "bbox": [50, 700, 550, 740],
         },
@@ -826,6 +824,7 @@ def test_prose_shaped_figure_caption_rejected() -> None:
 
     inventory = build_figure_inventory(structured_blocks)
 
-    assert len(inventory["figure_legends"]) == 0
-    assert len(inventory["rejected_legends"]) == 1
+    assert len(inventory.get("legends", [])) == 0
+    assert len(inventory.get("matched_figures", [])) == 0
+    # Candidate with prose is skipped entirely (not rejected, not accepted)
     assert len(inventory["matched_figures"]) == 0

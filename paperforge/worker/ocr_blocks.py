@@ -107,12 +107,16 @@ def build_structured_blocks(
     # Sync render_default/index_default after role normalizations
     for row in rows:
         role = row.get("role", "")
-        row["render_default"] = role not in ({"noise", "unknown_structural"} | _CANDIDATE_ROLES)
-        if role in {"noise", "page_header", "page_footer", "frontmatter_noise", "non_body_insert"}:
+        if row.get("_suppressed_heading"):
             row["render_default"] = False
-        row["index_default"] = role not in _CANDIDATE_ROLES
-        if role in {"noise", "frontmatter_noise", "table_html", "non_body_insert"}:
             row["index_default"] = False
+        else:
+            row["render_default"] = role not in ({"noise", "unknown_structural"} | _CANDIDATE_ROLES)
+            if role in {"noise", "page_header", "page_footer", "frontmatter_noise", "non_body_insert"}:
+                row["render_default"] = False
+            row["index_default"] = role not in _CANDIDATE_ROLES
+            if role in {"noise", "frontmatter_noise", "table_html", "non_body_insert"}:
+                row["index_default"] = False
 
     # Persist document structure artifact for downstream debugging
     if doc_structure and structure_output_dir:
