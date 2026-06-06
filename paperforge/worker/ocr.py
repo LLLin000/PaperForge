@@ -1752,6 +1752,14 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
     artifacts.blocks_structured.parent.mkdir(parents=True, exist_ok=True)
     all_raw_blocks = build_raw_blocks_for_result_lines(key, all_results)
     write_raw_blocks_jsonl(artifacts.blocks_raw, all_raw_blocks)
+
+    # Backfill span_metadata from source PDF (not from OCR engine)
+    source_pdf_path = Path(meta.get("source_pdf", "")) if meta.get("source_pdf") else None
+    if source_pdf_path and source_pdf_path.exists():
+        from paperforge.worker.ocr_pdf_spans import backfill_span_metadata_from_pdf
+        backfill_span_metadata_from_pdf(all_raw_blocks, source_pdf_path)
+        write_raw_blocks_jsonl(artifacts.blocks_raw, all_raw_blocks)
+
     structured = build_structured_blocks(all_raw_blocks)
     write_structured_blocks_jsonl(artifacts.blocks_structured, structured)
     # Write role-level span profiles

@@ -55,6 +55,15 @@ def run_derived_rebuild_for_keys(vault: Path, keys: list[str]) -> dict:
             continue
         all_raw_blocks = list(read_jsonl(artifacts.blocks_raw))
 
+        # Backfill span_metadata from source PDF
+        ocr_meta = read_json(artifacts.meta_json) if artifacts.meta_json.exists() else {}
+        source_pdf_path = Path(ocr_meta.get("source_pdf", "")) if ocr_meta.get("source_pdf") else None
+        if source_pdf_path and source_pdf_path.exists():
+            from paperforge.worker.ocr_blocks import write_raw_blocks_jsonl
+            from paperforge.worker.ocr_pdf_spans import backfill_span_metadata_from_pdf
+            backfill_span_metadata_from_pdf(all_raw_blocks, source_pdf_path)
+            write_raw_blocks_jsonl(artifacts.blocks_raw, all_raw_blocks)
+
         # Rebuild structured blocks
         from paperforge.worker.ocr_blocks import build_structured_blocks, write_structured_blocks_jsonl
 
