@@ -89,6 +89,21 @@ def test_paragraph_title_is_heading_prior() -> None:
     assert role.confidence >= 0.7
 
 
+def test_paragraph_title_with_trailing_dot_numbering_is_strong_heading() -> None:
+    from paperforge.worker.ocr_roles import assign_block_role
+
+    block = {
+        "block_label": "paragraph_title",
+        "block_content": "8. Conclusion and outlook",
+        "block_bbox": [94, 1328, 520, 1356],
+    }
+
+    role = assign_block_role(block, page_blocks=[], page_width=1191, page_height=1684)
+
+    assert role.role == "section_heading"
+    assert role.confidence >= 0.7
+
+
 def test_figure_title_is_caption_prior() -> None:
     from paperforge.worker.ocr_roles import assign_block_role
 
@@ -100,7 +115,7 @@ def test_figure_title_is_caption_prior() -> None:
 
     role = assign_block_role(block, page_blocks=[], page_width=1200, page_height=1600)
 
-    assert role.role == "figure_caption"
+    assert role.role in {"figure_caption", "figure_caption_candidate"}
     assert role.confidence >= 0.8
 
 
@@ -366,6 +381,86 @@ def test_frontmatter_author_zone_still_works() -> None:
     }
     result = assign_block_role(block, page_blocks=[block], page_width=1200, page_height=1600)
     assert result.role == "authors", f"Expected authors, got {result.role}"
+
+
+def test_figure_caption_candidate_for_narrative_body() -> None:
+    """Fig. 26c addresses ... with body-style text → figure_caption_candidate."""
+    from paperforge.worker.ocr_roles import assign_block_role
+
+    block = {
+        "block_label": "text",
+        "block_content": "Fig. 26c addresses the signaling pathway in detail and demonstrates the mechanism of action for the compound.",
+        "block_bbox": [100, 500, 900, 550],
+        "page": 3,
+    }
+
+    role = assign_block_role(block, page_blocks=[block], page_width=1200, page_height=1600)
+
+    assert role.role == "figure_caption_candidate", (
+        f"Narrative body text with Fig prefix should be candidate, got {role.role}"
+    )
+
+
+def test_backmatter_heading_candidate_on_late_page() -> None:
+    """Funding on page 10 → backmatter_heading_candidate."""
+    from paperforge.worker.ocr_roles import assign_block_role
+
+    block = {
+        "block_label": "paragraph_title",
+        "block_content": "Funding",
+        "block_bbox": [100, 600, 500, 630],
+        "page": 10,
+    }
+
+    role = assign_block_role(block, page_blocks=[], page_height=1000)
+
+    assert role.role == "backmatter_heading_candidate", (
+        f"Funding on page 10 should be backmatter_heading_candidate, got {role.role}"
+    )
+
+
+def test_figure_title_label_becomes_candidate() -> None:
+    """raw label figure_title with Fig. 2 test → figure_caption_candidate."""
+    from paperforge.worker.ocr_roles import assign_block_role
+
+    block = {
+        "block_label": "figure_title",
+        "block_content": "Fig. 2 test",
+        "block_bbox": [300, 1100, 700, 1130],
+        "page": 3,
+    }
+
+    role = assign_block_role(block, page_blocks=[], page_width=1200, page_height=1600)
+
+    assert role.role == "figure_caption_candidate", (
+        f"figure_title label should produce candidate, got {role.role}"
+    )
+
+
+def test_formal_figure_caption_still_direct() -> None:
+    """Figure 3. Expression of ... near media → figure_caption (unchanged)."""
+    from paperforge.worker.ocr_roles import assign_block_role
+
+    block = {
+        "block_label": "text",
+        "block_content": "Figure 3. Expression of target proteins",
+        "block_bbox": [200, 1300, 900, 1330],
+        "page": 3,
+    }
+    media_block = {
+        "block_label": "image",
+        "block_content": "",
+        "block_bbox": [200, 900, 900, 1250],
+        "page": 3,
+    }
+
+    page_blocks = [block, media_block]
+
+    role = assign_block_role(block, page_blocks=page_blocks, page_width=1200, page_height=1600)
+
+    assert role.role == "figure_caption", (
+        f"Formal figure caption near media should be figure_caption, got {role.role}"
+    )
 
 
 def test_backmatter_boundary_detects_on_early_page() -> None:
