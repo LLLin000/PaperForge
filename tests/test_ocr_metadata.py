@@ -88,3 +88,56 @@ def test_legacy_frontmatter_recovers_title_from_first_page(tmp_path: Path) -> No
     assert candidates["title"] == "Test Paper Title"
     assert candidates["authors_text"] == "Author A, Author B"
     assert "10.1000/xyz" in candidates.get("doi_candidates", [])
+
+
+def test_match_author_block_positive() -> None:
+    from paperforge.worker.ocr_metadata import _match_author_block_to_source_authors
+
+    result = _match_author_block_to_source_authors(
+        "Alice Smith, Bob Jones, Charlie Brown",
+        ["Alice Smith", "Bob Jones", "Charlie Brown"],
+    )
+    assert result["matched"] is True
+    assert result["similarity"] > 0.5
+
+
+def test_match_author_block_negative() -> None:
+    from paperforge.worker.ocr_metadata import _match_author_block_to_source_authors
+
+    result = _match_author_block_to_source_authors(
+        "In Section 5, the focus is on ES based bioelectronics",
+        ["Alice Smith", "Bob Jones"],
+    )
+    assert result["matched"] is False
+    assert result["similarity"] < 0.3
+
+
+def test_resolve_metadata_author_alignment_mismatch() -> None:
+    from paperforge.worker.ocr_metadata import resolve_metadata
+
+    source = {"authors": ["Alice Smith", "Bob Jones"]}
+    candidates = {"authors_text": "In Section 5, bioelectronics"}
+    resolved = resolve_metadata(source, candidates)
+    assert resolved["authors"]["source"] == "zotero"
+    assert resolved["authors"]["alignment"]["matched"] is False
+    assert resolved["authors"]["value"] == ["Alice Smith", "Bob Jones"]
+
+
+def test_resolve_metadata_author_alignment_match() -> None:
+    from paperforge.worker.ocr_metadata import resolve_metadata
+
+    source = {"authors": ["Alice Smith", "Bob Jones"]}
+    candidates = {"authors_text": "Alice Smith, Bob Jones"}
+    resolved = resolve_metadata(source, candidates)
+    assert resolved["authors"]["source"] == "zotero"
+    assert resolved["authors"]["alignment"]["matched"] is True
+
+
+def test_resolve_metadata_author_no_zotero_fallback() -> None:
+    from paperforge.worker.ocr_metadata import resolve_metadata
+
+    source = {}
+    candidates = {"authors_text": "Alice Smith, Bob Jones"}
+    resolved = resolve_metadata(source, candidates)
+    assert resolved["authors"]["source"] == "ocr_frontmatter"
+    assert resolved["authors"]["value"] == ["Alice Smith", "Bob Jones"]
