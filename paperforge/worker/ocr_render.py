@@ -164,65 +164,7 @@ def _has_same_column_anchor_above(
     return False
 
 
-def _extract_style_profile(block: dict) -> dict | None:
-    span_meta = block.get("span_metadata")
-    if not span_meta:
-        return None
-
-    # List of per-character spans (future format from PyMuPDF)
-    if isinstance(span_meta, list) and len(span_meta) > 0:
-        sizes = []
-        fonts = set()
-        flags_list = []
-        colors = []
-        for s in span_meta:
-            if not isinstance(s, dict):
-                continue
-            size = s.get("size") or 0
-            if size:
-                sizes.append(size)
-            font = s.get("font", "")
-            if font:
-                fonts.add(font)
-            flags_list.append(s.get("flags", 0) or 0)
-            colors.append(s.get("color", 0) or 0)
-
-        if not sizes:
-            return None
-
-        return {
-            "mean_size": sum(sizes) / len(sizes),
-            "max_size": max(sizes),
-            "font_families": fonts,
-            "is_bold": any(f & 16 for f in flags_list),
-            "is_italic": any(f & 4 for f in flags_list),
-            "is_colored": any(c != 0 for c in colors),
-        }
-
-    # Flat dict format (backward compat with test data)
-    if isinstance(span_meta, dict):
-        size = span_meta.get("size", 0) or 0
-        flags = span_meta.get("flags", "")
-        if isinstance(flags, str):
-            is_bold = "bold" in flags.lower()
-            is_italic = "italic" in flags.lower()
-        else:
-            is_bold = bool(flags & 16) if flags else False
-            is_italic = bool(flags & 4) if flags else False
-
-        if not size and not is_bold:
-            return None
-
-        return {
-            "mean_size": float(size),
-            "max_size": float(size),
-            "font_families": set(),
-            "is_bold": is_bold,
-            "is_italic": is_italic,
-            "is_colored": False,
-        }
-
-    return None
+from paperforge.worker.ocr_profiles import extract_block_span_profile as _extract_style_profile
 
 
 def _build_heading_style_profiles(blocks: list[dict]) -> dict:
