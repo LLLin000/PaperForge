@@ -966,11 +966,42 @@ def rescue_roles_with_document_context(
         # --- Rule 2: body_paragraph → reference_item (refs section + ref font)
         role = block.get("role", "")
         if role == "body_paragraph" and block.get("role_confidence", 1.0) < 0.7:
-            page = block.get("page", 1) or 1
-            if refs_start_page is not None and page >= refs_start_page:
-                bp = extract_block_span_profile(block)
-                if bp:
-                    ref_rescued = False
+            bp = extract_block_span_profile(block)
+            if bp:
+                ref_rescued = False
+
+                # Zone-based gate (layout-aware, column-scoped)
+                ref_zones = document_structure.reference_zones
+                p_layouts = document_structure.page_layouts
+                in_reference_zone = False
+
+                if ref_zones:
+                    block_page = block.get("page", 1) or 1
+                    bbox = block.get("bbox") or [0, 0, 0, 0]
+                    x_center = (bbox[0] + bbox[2]) / 2 if len(bbox) >= 4 else 0
+                    y_center = (bbox[1] + bbox[3]) / 2 if len(bbox) >= 4 else 0
+                    p_layout = (p_layouts or {}).get(block_page)
+
+                    for zone_data in ref_zones:
+                        if zone_data.get("page") != block_page:
+                            continue
+                        zone_col = zone_data.get("column_index", 0)
+                        if p_layout and p_layout.column_count > 1:
+                            bcol = _get_column_index_by_boundaries(
+                                x_center, p_layout.column_boundaries
+                            )
+                            if bcol != zone_col:
+                                continue
+                        if y_center >= zone_data.get("y_start", 0):
+                            in_reference_zone = True
+                            break
+
+                page = block.get("page", 1) or 1
+                if in_reference_zone or (
+                    not ref_zones
+                    and refs_start_page is not None
+                    and page >= refs_start_page
+                ):
                     if "reference_family" in family_profiles and "body_family" in family_profiles:
                         ref_fam_p = family_profiles["reference_family"]
                         if ref_fam_p.get("quality") in ("moderate", "strong"):

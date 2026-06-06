@@ -1391,6 +1391,182 @@ def test_references_start_local_zone() -> None:
     assert 6 in zone.block_indices
 
 
+def test_rescue_reference_zone_respects_column() -> None:
+    """Left-column body stays body_paragraph; right-column body becomes
+    reference_item on a two-column mixed page with reference zones."""
+    from paperforge.worker.ocr_document import (
+        DocumentStructure,
+        PageLayoutProfile,
+        PagePosition,
+        rescue_roles_with_document_context,
+    )
+
+    blocks = [
+        {
+            "page": 1,
+            "role": "body_paragraph",
+            "role_confidence": 0.8,
+            "text": "Introduction paragraph establishing the research context.",
+            "span_metadata": {"size": 10.5, "flags": "normal"},
+            "bbox": [100, 100, 500, 150],
+        },
+        {
+            "page": 71,
+            "role": "body_paragraph",
+            "role_confidence": 0.5,
+            "text": "These results demonstrate the effectiveness of the approach.",
+            "span_metadata": {"size": 9.0, "flags": "normal"},
+            "bbox": [100, 200, 350, 250],
+        },
+        {
+            "page": 71,
+            "role": "reference_heading",
+            "role_confidence": 0.9,
+            "text": "References",
+            "span_metadata": {"size": 12, "flags": "bold"},
+            "bbox": [550, 100, 750, 130],
+        },
+        {
+            "page": 71,
+            "role": "body_paragraph",
+            "role_confidence": 0.5,
+            "text": "1. Smith J, Johnson K. A comprehensive study. Journal, 2025.",
+            "span_metadata": {"size": 9.0, "flags": "normal"},
+            "bbox": [550, 200, 750, 240],
+        },
+    ]
+
+    role_profiles = {
+        "body_paragraph": {
+            "block_count": 1,
+            "mean_size": 10.5,
+            "max_size": 10.5,
+            "min_size": 10.5,
+            "dispersion": 0.0,
+            "quality": "strong",
+            "bold_ratio": 0.0,
+            "italic_ratio": 0.0,
+            "font_families": [],
+        },
+        "reference_item": {
+            "block_count": 0,
+            "mean_size": 9.0,
+            "max_size": 9.0,
+            "min_size": 9.0,
+            "dispersion": 0.0,
+            "quality": "weak",
+            "bold_ratio": 0.0,
+            "italic_ratio": 0.0,
+            "font_families": [],
+        },
+    }
+
+    ds = DocumentStructure(
+        body_end_page=70,
+        references_start=PagePosition(page=71, y=0.0),
+        page_layouts={
+            71: PageLayoutProfile(
+                column_count=2,
+                column_boundaries=[225.0, 650.0],
+                layout_type="mixed_tail",
+            ),
+        },
+        reference_zones=[
+            {
+                "page": 71,
+                "column_index": 1,
+                "y_start": 130.0,
+                "y_end": 240.0,
+                "block_indices": [3],
+            }
+        ],
+    )
+
+    result = rescue_roles_with_document_context(blocks, role_profiles, ds)
+
+    left_body = [b for b in result if "These results" in b.get("text", "")]
+    right_ref = [b for b in result if "Smith J" in b.get("text", "")]
+
+    assert len(left_body) == 1
+    assert left_body[0]["role"] == "body_paragraph", (
+        f"Left-column body should stay body_paragraph, got {left_body[0]['role']}"
+    )
+    assert len(right_ref) == 1
+    assert right_ref[0]["role"] == "reference_item", (
+        f"Right-column reference should become reference_item, got {right_ref[0]['role']}"
+    )
+
+
+def test_rescue_reference_zone_single_column() -> None:
+    """Single-column page without reference zones uses page-level fallback."""
+    from paperforge.worker.ocr_document import (
+        DocumentStructure,
+        PagePosition,
+        rescue_roles_with_document_context,
+    )
+
+    blocks = [
+        {
+            "page": 1,
+            "role": "body_paragraph",
+            "role_confidence": 0.8,
+            "text": "Intro body establishing font profile for the paper body.",
+            "span_metadata": {"size": 10.5, "flags": "normal"},
+        },
+        {
+            "page": 5,
+            "role": "reference_heading",
+            "role_confidence": 0.9,
+            "text": "References",
+        },
+        {
+            "page": 5,
+            "role": "body_paragraph",
+            "role_confidence": 0.5,
+            "text": "1. Author A, B C. A study of things. Journal, 2025.",
+            "span_metadata": {"size": 9.0, "flags": "normal"},
+        },
+    ]
+
+    role_profiles = {
+        "body_paragraph": {
+            "block_count": 1,
+            "mean_size": 10.5,
+            "max_size": 10.5,
+            "min_size": 10.5,
+            "dispersion": 0.0,
+            "quality": "strong",
+            "bold_ratio": 0.0,
+            "italic_ratio": 0.0,
+            "font_families": [],
+        },
+        "reference_item": {
+            "block_count": 0,
+            "mean_size": 9.0,
+            "max_size": 9.0,
+            "min_size": 9.0,
+            "dispersion": 0.0,
+            "quality": "weak",
+            "bold_ratio": 0.0,
+            "italic_ratio": 0.0,
+            "font_families": [],
+        },
+    }
+
+    ds = DocumentStructure(
+        body_end_page=4,
+        references_start=PagePosition(page=5, y=0.0),
+        reference_zones=None,
+    )
+
+    result = rescue_roles_with_document_context(blocks, role_profiles, ds)
+
+    promoted = next(b for b in result if b["text"].startswith("1. Author"))
+    assert promoted["role"] == "reference_item", (
+        f"Expected reference_item via page-level fallback, got {promoted['role']}"
+    )
+
+
 def test_document_structure_json_serialization() -> None:
     """Verify that DocumentStructure with layout profiles serializes to valid JSON."""
     from paperforge.worker.ocr_document import DocumentStructure, PageLayoutProfile
