@@ -817,10 +817,21 @@ def _detect_body_spine(blocks: list[dict]) -> dict[int, dict]:
         if body_blocks:
             widths = []
             x_starts = []
+            fonts: set[str] = set()
             for b in body_blocks:
                 bbox = b.get("bbox", [0, 0, 0, 0])
                 widths.append(bbox[2] - bbox[0])
                 x_starts.append(bbox[0])
+                span = b.get("span_metadata") or {}
+                if isinstance(span, list):
+                    for s in span:
+                        fam = s.get("font", "")
+                        if fam:
+                            fonts.add(str(fam).lower())
+                elif isinstance(span, dict):
+                    fam = span.get("font", "")
+                    if fam:
+                        fonts.add(str(fam).lower())
 
             # Robust body spine estimation: use widest cluster only,
             # rejecting narrow blocks (author profiles, etc.) that
@@ -833,6 +844,7 @@ def _detect_body_spine(blocks: list[dict]) -> dict[int, dict]:
                 "median_width": median_width,
                 "median_x": median_x,
                 "width_range": (median_width * 0.7, median_width * 1.3),
+                "fonts": fonts,
             }
         else:
             per_page_spine[page] = None
@@ -851,7 +863,10 @@ def _detect_body_spine(blocks: list[dict]) -> dict[int, dict]:
                 if p > page and per_page_spine[p] is not None:
                     next_val = per_page_spine[p]
                     break
-            filled[page] = prev_val or next_val or {"median_width": 500, "median_x": 100, "width_range": (350, 650)}
+            filled[page] = prev_val or next_val or {
+                "median_width": 500, "median_x": 100,
+                "width_range": (350, 650), "fonts": set(),
+            }
 
     return filled
 
