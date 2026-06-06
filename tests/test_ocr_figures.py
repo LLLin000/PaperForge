@@ -828,3 +828,20 @@ def test_prose_shaped_figure_caption_candidate_rejected() -> None:
     assert len(inventory.get("matched_figures", [])) == 0
     # Candidate with prose is skipped entirely (not rejected, not accepted)
     assert len(inventory["matched_figures"]) == 0
+
+
+# === resolved figure_caption not rejected by inventory (Task 5) ===
+
+
+def test_resolved_figure_caption_not_rejected_by_inventory():
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    blocks = [
+        {"block_id": "m1", "role": "media_asset", "bbox": [100, 500, 400, 800], "page": 5, "page_width": 1200, "page_height": 1700, "text": ""},
+        {"block_id": "c1", "role": "figure_caption", "text": "Fig. 7. Expression of mRNA in tissue sections.", "bbox": [100, 450, 500, 490], "page": 5, "page_width": 1200, "page_height": 1700, "render_default": True},
+    ]
+
+    inventory = build_figure_inventory(blocks)
+    assert len(inventory["matched_figures"]) == 1, (
+        f"Expected 1 matched figure, got {len(inventory['matched_figures'])}"
+    )
