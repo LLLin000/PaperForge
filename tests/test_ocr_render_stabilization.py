@@ -523,6 +523,132 @@ def test_stabilize_reference_items_grouped_under_heading() -> None:
     assert smith_idx > ref_idx and jones_idx > ref_idx, "Reference items should appear after References heading"
 
 
+def test_render_mixed_tail_page_ordering() -> None:
+    """Mixed tail page rendered via tail_reading_order segments.
+
+    Blocks have no bbox data so _order_tail_blocks falls back to FIFO,
+    which cannot attach backmatter bodies to their headings when bodies
+    appear before headings in source order — bodies end up as orphans
+    emitted after references.  tail_reading_order overrides this to
+    produce correct human reading order.
+    """
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+    from paperforge.worker.ocr_document import DocumentStructure
+
+    blocks = [
+        {
+            "paper_id": "KEY001", "page": 1, "block_id": "b1",
+            "role": "body_paragraph",
+            "text": "Introduction text here.",
+            "render_default": True,
+            "raw_label": "text",
+        },
+        {
+            "paper_id": "KEY001", "page": 71, "block_id": "b4",
+            "role": "backmatter_body",
+            "text": "No AI generated content was used.",
+            "render_default": True,
+            "raw_label": "text",
+        },
+        {
+            "paper_id": "KEY001", "page": 71, "block_id": "b6",
+            "role": "backmatter_body",
+            "text": "Springer Nature remains neutral.",
+            "render_default": True,
+            "raw_label": "text",
+        },
+        {
+            "paper_id": "KEY001", "page": 71, "block_id": "b2",
+            "role": "body_paragraph",
+            "text": "Left column body continuation text.",
+            "render_default": True,
+            "raw_label": "text",
+        },
+        {
+            "paper_id": "KEY001", "page": 71, "block_id": "b3",
+            "role": "backmatter_heading",
+            "text": "Generative AI statement",
+            "render_default": True,
+            "raw_label": "text",
+        },
+        {
+            "paper_id": "KEY001", "page": 71, "block_id": "b5",
+            "role": "backmatter_heading",
+            "text": "Publisher's note",
+            "render_default": True,
+            "raw_label": "text",
+        },
+        {
+            "paper_id": "KEY001", "page": 71, "block_id": "b7",
+            "role": "reference_heading",
+            "text": "References",
+            "render_default": True,
+            "raw_label": "text",
+        },
+        {
+            "paper_id": "KEY001", "page": 71, "block_id": "b8",
+            "role": "reference_item",
+            "text": "Smith J, Jones B. (2024) A study on electric fields.",
+            "render_default": True,
+            "raw_label": "text",
+        },
+    ]
+
+    ds = DocumentStructure(
+        spread_start=71,
+        spread_end=71,
+        tail_reading_order=[
+            {
+                "page": 71, "column_index": 0,
+                "block_indices": [3],
+                "semantic_hint": "body",
+                "y_top": 50, "y_bottom": 100,
+            },
+            {
+                "page": 71, "column_index": 0,
+                "block_indices": [4, 1],
+                "semantic_hint": "backmatter",
+                "y_top": 200, "y_bottom": 300,
+            },
+            {
+                "page": 71, "column_index": 1,
+                "block_indices": [5, 2],
+                "semantic_hint": "backmatter",
+                "y_top": 50, "y_bottom": 150,
+            },
+            {
+                "page": 71, "column_index": 1,
+                "block_indices": [6, 7],
+                "semantic_hint": "references",
+                "y_top": 350, "y_bottom": 450,
+            },
+        ],
+    )
+
+    md = render_fulltext_markdown(
+        structured_blocks=blocks,
+        resolved_metadata={},
+        figure_inventory={},
+        table_inventory={},
+        document_structure=ds,
+    )
+
+    body_idx = md.index("Left column body continuation text.")
+    gen_ai_idx = md.index("## Generative AI statement")
+    gen_ai_body_idx = md.index("No AI generated content was used.")
+    pub_idx = md.index("## Publisher's note")
+    pub_body_idx = md.index("Springer Nature remains neutral.")
+    ref_idx = md.index("## References")
+    smith_idx = md.index("Smith J, Jones B.")
+
+    assert body_idx < gen_ai_idx, "Left body should come before Generative AI backmatter"
+    assert gen_ai_idx < gen_ai_body_idx, "Generative AI heading should come before its body"
+    assert gen_ai_body_idx < pub_idx, "Left backmatter should come before right backmatter"
+    assert pub_idx < pub_body_idx, "Publisher's note heading should come before its body"
+    assert pub_body_idx < ref_idx, "Backmatter body should come before References"
+    assert ref_idx < smith_idx, "References heading should come before items"
+
+
 def test_non_body_insert_not_in_fulltext() -> None:
     """Verify non_body_insert blocks do not appear in fulltext.md."""
     from paperforge.worker.ocr_render import render_fulltext_markdown

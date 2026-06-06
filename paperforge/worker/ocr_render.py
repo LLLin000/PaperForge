@@ -662,7 +662,45 @@ def render_fulltext_markdown(
         document_structure, structured_blocks = normalize_document_structure(structured_blocks)
 
     style_profiles = _build_heading_style_profiles(structured_blocks)
-    ordered_blocks = _order_tail_blocks(structured_blocks, style_profiles=style_profiles)
+
+    if document_structure and document_structure.tail_reading_order and document_structure.spread_start is not None:
+        col_indices = {seg.get("column_index", 0) for seg in document_structure.tail_reading_order}
+        if len(col_indices) > 1:
+            seg_priority: dict[int, int] = {}
+            seg_position: dict[int, int] = {}
+            for seg_idx, seg in enumerate(document_structure.tail_reading_order):
+                for pos, bi in enumerate(seg.get("block_indices", [])):
+                    seg_priority[bi] = seg_idx
+                    seg_position[bi] = pos
+
+            for i, block in enumerate(structured_blocks):
+                block["_ordered_original_index"] = i
+
+            ordered_blocks = _order_tail_blocks(structured_blocks, style_profiles=style_profiles)
+
+            tail_spread_pages = set(range(document_structure.spread_start, document_structure.spread_end + 1))
+
+            tail_seg_blocks: list[tuple[int, int, int, dict]] = []
+            tail_other: list[dict] = []
+            non_tail: list[dict] = []
+
+            for block in ordered_blocks:
+                page = block.get("page")
+                orig = block.get("_ordered_original_index", -1)
+                if page in tail_spread_pages:
+                    if orig in seg_priority:
+                        tail_seg_blocks.append((seg_priority[orig], seg_position[orig], orig, block))
+                    else:
+                        tail_other.append(block)
+                else:
+                    non_tail.append(block)
+
+            tail_seg_blocks.sort(key=lambda x: (x[0], x[1]))
+            ordered_blocks = non_tail + tail_other + [t[3] for t in tail_seg_blocks]
+        else:
+            ordered_blocks = _order_tail_blocks(structured_blocks, style_profiles=style_profiles)
+    else:
+        ordered_blocks = _order_tail_blocks(structured_blocks, style_profiles=style_profiles)
 
     for block in ordered_blocks:
         if not block.get("render_default", True):
