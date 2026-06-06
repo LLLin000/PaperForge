@@ -281,13 +281,29 @@ def _build_heading_style_profiles(blocks: list[dict]) -> dict:
     return result
 
 
-def _disambiguate_heading_role(block: dict, style_profiles: dict) -> str | None:
+def _disambiguate_heading_role(
+    block: dict,
+    style_profiles: dict,
+    role_profiles: dict | None = None,
+) -> str | None:
     profile = _extract_style_profile(block)
     if profile is None:
         return None
 
-    size = profile["mean_size"]
+    # Try role profiles first (persistent, aggregated across papers)
+    if role_profiles:
+        from paperforge.worker.ocr_profiles import compare_against_role_family
+        for candidate_role in (
+            "section_heading", "subsection_heading",
+            "sub_subsection_heading", "backmatter_heading",
+        ):
+            fam = role_profiles.get(candidate_role)
+            if fam and fam.get("quality") in ("strong", "moderate"):
+                match = compare_against_role_family(profile, fam)
+                if match["size_compatible"] and match["match_score"] > 0.6:
+                    return candidate_role
 
+    size = profile["mean_size"]
     for role_key, role_name in [
         ("primary", "section_heading"),
         ("subsection", "subsection_heading"),

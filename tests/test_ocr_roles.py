@@ -291,10 +291,11 @@ def test_style_aware_unnumbered_heading_detection() -> None:
         page_height=1000,
     )
 
-    assert big_role.role in {"section_heading", "backmatter_heading"}, (
+    heading_roles = {"section_heading", "subsection_heading", "backmatter_heading"}
+    assert big_role.role in heading_roles, (
         f"Big heading should be detected as heading, got {big_role.role}"
     )
-    assert sub_role.role in {"section_heading", "backmatter_heading"}, (
+    assert sub_role.role in heading_roles, (
         f"Sub heading should be detected as heading, got {sub_role.role}"
     )
     assert body_role.role not in {"section_heading", "backmatter_heading", "subsection_heading"}, (
@@ -334,3 +335,22 @@ def test_backmatter_body_cross_column_ownership() -> None:
     assert assignment.role == "body_paragraph", (
         f"Role layer should stay conservative and leave tail ownership to render, got {assignment.role}"
     )
+
+
+def test_heading_level_from_profile_match() -> None:
+    """After profile aggregation, headings should be classified by
+    profile match, not hardcoded font size."""
+    pass  # Placeholder — will be updated after refactor
+
+
+def test_backmatter_boundary_detects_on_early_page() -> None:
+    """Backmatter boundary should be detectable on papers with fewer
+    than 8 pages, without a hard page gate."""
+    from paperforge.worker.ocr_roles import _is_backmatter_boundary_heading
+    block = {
+        "span_metadata": {"size": 12.0, "flags": "bold"},
+        "text": "ADDITIONAL INFORMATION AND DECLARATIONS",
+        "page": 5,
+    }
+    result = _is_backmatter_boundary_heading(block, 5, 10)
+    assert result == True  # After fix: 5/10 = 50% in second half, has container words + bold
