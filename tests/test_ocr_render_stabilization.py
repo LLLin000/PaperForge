@@ -644,3 +644,32 @@ def test_stabilize_tail_zone_references_kept_separate() -> None:
     assert cai_idx > refs_idx, "Page 23 second reference item should be under References"
     assert "<!-- page 22" in md, "Page marker for page 22 should be present"
     assert "<!-- page 23" in md, "Page marker for page 23 should be present"
+
+
+def test_normalize_ocr_math_text_delimiter_spacing() -> None:
+    from paperforge.worker.ocr_math import normalize_ocr_math_text
+    assert normalize_ocr_math_text("$ ^{8,49} $") == "$^{8,49}$"
+    assert normalize_ocr_math_text("$ \\\\mu $m") == "$\\\\mu$m"
+
+
+def test_normalize_ocr_math_text_citation_superscript() -> None:
+    from paperforge.worker.ocr_math import normalize_ocr_math_text
+    result = normalize_ocr_math_text("systems.$^{1-3}$One")
+    assert "$^{1-3}$" in result
+    assert "One" in result
+
+
+def test_normalize_ocr_math_text_prose_boundary() -> None:
+    from paperforge.worker.ocr_math import normalize_ocr_math_text
+    assert normalize_ocr_math_text("comparative$C_T$") == "comparative $C_T$"
+
+
+def test_normalize_ocr_math_text_hyphen_preserved() -> None:
+    from paperforge.worker.ocr_math import normalize_ocr_math_text
+    result = normalize_ocr_math_text("TGF-$\\\\beta$")
+    assert "TGF-$\\\\beta$" in result
+
+
+def test_normalize_ocr_math_text_display_math() -> None:
+    from paperforge.worker.ocr_math import normalize_ocr_math_text
+    assert normalize_ocr_math_text("$$ ... $$") == "$$...$$"

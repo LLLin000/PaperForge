@@ -5,6 +5,8 @@ import re
 from pathlib import Path
 from typing import Any
 
+from paperforge.worker.ocr_math import normalize_ocr_math_text
+
 
 def render_figure_object_markdown(figure: dict[str, Any]) -> str:
     caption = figure.get("caption", "")
@@ -28,7 +30,7 @@ def render_figure_object_markdown(figure: dict[str, Any]) -> str:
     parts.append("")
     if caption:
         parts.append("## Legend")
-        parts.append(caption)
+        parts.append(normalize_ocr_math_text(caption))
     if figure.get("page"):
         parts.append("")
         parts.append(f"*Page {figure['page']}*")
@@ -54,7 +56,7 @@ def render_table_object_markdown(table: dict[str, Any]) -> str:
     parts = [f"# {label}", "", f"![](../../{image_relpath})", ""]
     if caption:
         parts.append("## Caption")
-        parts.append(caption)
+        parts.append(normalize_ocr_math_text(caption))
     if table.get("page"):
         parts.append("")
         parts.append(f"*Page {table['page']}*")

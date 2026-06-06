@@ -10,15 +10,8 @@ from paperforge.worker.ocr_document import (
     _get_column,
     _is_in_usable_content,
 )
+from paperforge.worker.ocr_math import normalize_ocr_math_text
 from paperforge.worker.ocr_roles import FRONTMATTER_NOISE
-
-
-def _normalize_latex(text: str) -> str:
-    text = re.sub(r"\$\s+", "$", text)
-    text = re.sub(r"\s+\$", "$", text)
-    text = re.sub(r"\$\^\{\s+", "$^{", text)
-    text = re.sub(r"\s+\}\$", "}$", text)
-    return text
 
 
 def _is_bogus_heading(text: str) -> bool:
@@ -621,7 +614,7 @@ def render_fulltext_markdown(
             if block.get("role") == "abstract_body":
                 text = block.get("text", "")
                 if text:
-                    lines.append(_normalize_latex(text))
+                    lines.append(normalize_ocr_math_text(text))
                     lines.append("")
 
     # Build per-page figure/table lookups
@@ -688,7 +681,7 @@ def render_fulltext_markdown(
         if role in _SKIPPED_BODY_ROLES:
             continue
 
-        text = _normalize_latex(block.get("text", ""))
+        text = normalize_ocr_math_text(block.get("text", ""))
         text = re.sub(r"<table[^>]*>.*?</table>", "", text, flags=re.DOTALL | re.IGNORECASE)
         if text.strip().lower().startswith("<table"):
             continue
