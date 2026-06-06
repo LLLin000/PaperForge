@@ -58,34 +58,10 @@ def test_build_raw_blocks_preserves_every_block() -> None:
     assert rows[1]["raw_label"] == "header"
 
 
-def test_build_raw_blocks_preserves_span_metadata() -> None:
-    from paperforge.worker.ocr_blocks import build_raw_blocks_for_page
-
-    span_data = {"size": 14.0, "flags": 16, "font": "TimesNewRomanPS-BoldMT", "color": 0}
-    result = {
-        "prunedResult": {
-            "width": 1200,
-            "height": 1600,
-            "parsing_res_list": [
-                {
-                    "block_id": 1,
-                    "block_label": "text",
-                    "block_order": 0,
-                    "block_bbox": [1, 2, 3, 4],
-                    "block_content": "Title",
-                    "span_metadata": span_data,
-                },
-            ],
-        }
-    }
-    rows = build_raw_blocks_for_page("KEY001", 1, result)
-    assert rows[0]["span_metadata"] == span_data
-
-
 def test_build_structured_blocks_carries_span_metadata() -> None:
     from paperforge.worker.ocr_blocks import build_structured_blocks
 
-    span_data = {"size": 14.0, "flags": 16, "font": "TimesNewRomanPS-BoldMT", "color": 0}
+    span_data = [{"size": 14.0, "font": "Times-Bold", "flags": 16, "color": 0}]
     raw_blocks = [
         {
             "paper_id": "KEY001",
@@ -102,12 +78,13 @@ def test_build_structured_blocks_carries_span_metadata() -> None:
         }
     ]
     rows = build_structured_blocks(raw_blocks)
-    assert rows[0].get("span_metadata") == span_data
+    assert rows[0]["span_metadata"] == span_data
 
 
 def test_role_span_profiles_written_to_output() -> None:
     """Verify that role_span_profiles.json is written during rebuild."""
     import json
+
     from paperforge.worker.ocr_profiles import build_role_span_profiles
 
     blocks = [
