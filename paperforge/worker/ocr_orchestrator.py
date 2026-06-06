@@ -46,7 +46,7 @@ def reorder_blocks_layered(
             BlockAnnotated(block=b, role=role.role, role_confidence=role.confidence)
         )
 
-    body_annotated = [a for a in annotated if a.role in {"section_heading", "subsection_heading", "body_paragraph"}]
+    body_annotated = [a for a in annotated if a.role in {"section_heading", "subsection_heading", "body_paragraph", "unknown_structural"}]
     non_body = [a for a in annotated if a not in body_annotated]
 
     if not body_annotated:

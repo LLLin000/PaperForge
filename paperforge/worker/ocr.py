@@ -1419,11 +1419,37 @@ def caption_group_assignments(blocks: list[dict]) -> tuple[dict[int, list[dict]]
 
 
 def _apply_layered_body_reorder(blocks: list[dict], page_width: int, page_height: int) -> list[dict]:
-    try:
-        from paperforge.worker.ocr_orchestrator import reorder_blocks_layered
-        return reorder_blocks_layered(blocks, page_width=page_width, page_height=page_height)
-    except ImportError:
-        return blocks
+    from paperforge.worker.ocr_orchestrator import reorder_blocks_layered as _rbl
+
+    result = _rbl(blocks, page_width=page_width, page_height=page_height)
+    if result is not blocks:
+        return result
+
+    # Fallback: column-major sort when body spine module unavailable.
+    # Groups by column (left/center first, right second), sorted by y.
+    if page_width and len(blocks) >= 4:
+        mid = page_width / 2
+
+        def _col(b):
+            bb = b.get("block_bbox") or b.get("bbox")
+            if not bb or len(bb) < 4:
+                return 0
+            xc = (bb[0] + bb[2]) / 2
+            w = bb[2] - bb[0]
+            if (bb[0] < mid and bb[2] > mid) or w >= page_width * 0.55:
+                return 0
+            return 1 if xc >= mid else 0
+
+        left = sorted(
+            [b for b in blocks if _col(b) == 0],
+            key=lambda b: (b.get("block_bbox") or b.get("bbox") or [0, 0, 0, 0])[1],
+        )
+        right = sorted(
+            [b for b in blocks if _col(b) == 1],
+            key=lambda b: (b.get("block_bbox") or b.get("bbox") or [0, 0, 0, 0])[1],
+        )
+        return left + right
+    return blocks
 
 
 def render_page_blocks(
