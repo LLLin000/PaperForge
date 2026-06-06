@@ -523,6 +523,28 @@ def test_stabilize_reference_items_grouped_under_heading() -> None:
     assert smith_idx > ref_idx and jones_idx > ref_idx, "Reference items should appear after References heading"
 
 
+def test_non_body_insert_not_in_fulltext() -> None:
+    """Verify non_body_insert blocks do not appear in fulltext.md."""
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+
+    blocks = [
+        {"role": "non_body_insert", "text": "Dr Ya Huang is currently...", "page": 1,
+         "bbox": [50, 200, 300, 240], "render_default": False,
+         "raw_label": "text", "page_width": 1200, "page_height": 1600},
+        {"role": "body_paragraph", "text": "Real body text here.", "page": 1,
+         "bbox": [100, 600, 800, 640], "render_default": True,
+         "raw_label": "text", "page_width": 1200, "page_height": 1600},
+    ]
+    md = render_fulltext_markdown(
+        structured_blocks=blocks,
+        resolved_metadata={},
+        figure_inventory={},
+        table_inventory={},
+    )
+    assert "Ya Huang" not in md, "non_body_insert should not appear in fulltext"
+    assert "Real body text" in md, "body_paragraph should appear"
+
+
 def test_stabilize_tail_zone_references_kept_separate() -> None:
     """Multi-page tail: reference items on continuation page stay under References."""
     from paperforge.worker.ocr_render import render_fulltext_markdown

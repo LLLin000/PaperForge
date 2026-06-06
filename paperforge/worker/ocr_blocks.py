@@ -43,9 +43,9 @@ def build_structured_blocks(
             )
             render_default = role.role not in {"noise", "unknown_structural"}
             index_default = True
-            if role.role in {"noise", "page_header", "page_footer", "frontmatter_noise"}:
+            if role.role in {"noise", "page_header", "page_footer", "frontmatter_noise", "non_body_insert"}:
                 render_default = False
-            if role.role in {"noise", "frontmatter_noise", "table_html"}:
+            if role.role in {"noise", "frontmatter_noise", "table_html", "non_body_insert"}:
                 index_default = False
             row = {
                 "paper_id": block["paper_id"],
@@ -88,6 +88,15 @@ def build_structured_blocks(
         )
 
         rows = rescue_roles_with_document_context(rows, paper_context["role_profiles"], doc_structure)
+
+    # Sync render_default/index_default after role normalizations
+    for row in rows:
+        role = row.get("role", "")
+        row["render_default"] = role not in {"noise", "unknown_structural"}
+        if role in {"noise", "page_header", "page_footer", "frontmatter_noise", "non_body_insert"}:
+            row["render_default"] = False
+        if role in {"noise", "frontmatter_noise", "table_html", "non_body_insert"}:
+            row["index_default"] = False
 
     # Persist document structure artifact for downstream debugging
     if doc_structure and structure_output_dir:

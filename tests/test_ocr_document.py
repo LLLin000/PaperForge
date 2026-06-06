@@ -252,3 +252,69 @@ def test_rescue_analyze_document_structure_mixed_tail_spread() -> None:
     assert isinstance(doc, DocumentStructure)
     assert doc.spread_start is not None
     assert doc.spread_end is not None
+
+
+def test_detect_body_spine_returns_reasonable_values() -> None:
+    from paperforge.worker.ocr_document import _detect_body_spine
+
+    blocks = [
+        {"role": "body_paragraph", "bbox": [100, 500, 800, 540], "page": 1},
+        {"role": "body_paragraph", "bbox": [100, 600, 810, 640], "page": 1},
+    ]
+    spine = _detect_body_spine(blocks)
+    assert 1 in spine
+    assert spine[1]["median_width"] == 700  # 800-100
+    assert spine[1]["median_x"] == 100
+
+
+def test_detect_non_body_insert_marks_narrow_blocks() -> None:
+    from paperforge.worker.ocr_document import _detect_body_spine, _detect_non_body_insert_clusters
+
+    blocks = [
+        # Two normal body paragraphs (wide)
+        {"role": "body_paragraph", "bbox": [100, 400, 800, 440], "page": 1},
+        {"role": "body_paragraph", "bbox": [100, 500, 810, 540], "page": 1},
+        # A narrow block (author bio type) -- much narrower than 700px
+        {"role": "body_paragraph", "bbox": [50, 200, 300, 250], "page": 1},
+        # Another narrow block on same page
+        {"role": "body_paragraph", "bbox": [50, 300, 310, 350], "page": 1},
+    ]
+    spine = _detect_body_spine(blocks)
+    indices = _detect_non_body_insert_clusters(blocks, spine)
+    assert 2 in indices, f"Expected index 2 in {indices}"
+    assert 3 in indices, f"Expected index 3 in {indices}"
+
+
+def test_non_body_insert_not_backfilled_to_body() -> None:
+    """Verify that non_body_insert blocks are not rescued to body_paragraph."""
+    from paperforge.worker.ocr_blocks import build_structured_blocks
+
+    raw_blocks = [
+        {
+            "paper_id": "TEST001", "page": 1, "block_id": "p1_b1",
+            "raw_label": "text", "raw_order": 0,
+            "bbox": [50, 200, 300, 240],
+            "text": "The author biography section provides a brief overview of the professional background of each contributor",
+            "page_width": 1200, "page_height": 1600, "source": "ocr_raw",
+        },
+        {
+            "paper_id": "TEST001", "page": 1, "block_id": "p1_b2",
+            "raw_label": "text", "raw_order": 1,
+            "bbox": [50, 280, 310, 320],
+            "text": "Biographical information about each author is listed in the supplementary materials for this manuscript",
+            "page_width": 1200, "page_height": 1600, "source": "ocr_raw",
+        },
+        # A wide body paragraph
+        {
+            "paper_id": "TEST001", "page": 1, "block_id": "p1_b3",
+            "raw_label": "text", "raw_order": 2,
+            "bbox": [100, 600, 800, 640],
+            "text": "The following experimental results demonstrate the effect of the treatment on cell migration and proliferation assays performed in triplicate",
+            "page_width": 1200, "page_height": 1600, "source": "ocr_raw",
+        },
+    ]
+    rows = build_structured_blocks(raw_blocks)
+    non_body = [r for r in rows if r.get("role") == "non_body_insert"]
+    assert len(non_body) == 2, f"Expected 2 non_body_insert, got {len(non_body)}"
+    for r in non_body:
+        assert r.get("render_default") is False, f"non_body_insert should not render: {r}"
