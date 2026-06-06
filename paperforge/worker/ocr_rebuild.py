@@ -60,6 +60,9 @@ def run_derived_rebuild_for_keys(vault: Path, keys: list[str]) -> dict:
 
         structured = build_structured_blocks(all_raw_blocks)
         write_structured_blocks_jsonl(artifacts.blocks_structured, structured)
+        # Write role-level span profiles
+        from paperforge.worker.ocr_profiles import write_role_span_profiles
+        write_role_span_profiles(structured, artifacts.blocks_structured.parent)
 
         # Read source metadata
         source_meta = read_json(artifacts.source_metadata) if artifacts.source_metadata.exists() else {}

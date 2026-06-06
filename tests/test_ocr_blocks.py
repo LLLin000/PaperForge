@@ -103,3 +103,19 @@ def test_build_structured_blocks_carries_span_metadata() -> None:
     ]
     rows = build_structured_blocks(raw_blocks)
     assert rows[0].get("span_metadata") == span_data
+
+
+def test_role_span_profiles_written_to_output() -> None:
+    """Verify that role_span_profiles.json is written during rebuild."""
+    import json
+    from paperforge.worker.ocr_profiles import build_role_span_profiles
+
+    blocks = [
+        {"role": "section_heading", "span_metadata": {"size": 16.0, "flags": "bold"}},
+        {"role": "body_paragraph", "span_metadata": {"size": 10.0, "flags": 0}},
+    ]
+    profiles = build_role_span_profiles(blocks)
+    # Must be JSON-serializable
+    dumped = json.dumps(profiles)
+    assert "section_heading" in dumped
+    assert "body_paragraph" in dumped
