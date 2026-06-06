@@ -502,16 +502,22 @@ def rescue_roles_with_document_context(
         # --- Non-body insert cluster validation via family profiles ---
         if block.get("_non_body_insert"):
             bp = extract_block_span_profile(block)
+            should_skip = True  # default: keep flag, skip downstream rules
             if bp and "non_body_insert_family" in family_profiles and "body_family" in family_profiles:
-                ni_match = compare_against_family(bp, family_profiles["non_body_insert_family"])
-                body_match = compare_against_family(bp, family_profiles["body_family"])
-                if body_match["match_score"] > max(ni_match["match_score"], 0.5) and body_match["size_compatible"]:
-                    del block["_non_body_insert"]
-                    block["role"] = "body_paragraph"
-                    block.setdefault("evidence", []).append("rescue_family: non_body_insert → body_paragraph")
-                else:
-                    continue
-            else:
+                ni_fam = family_profiles["non_body_insert_family"]
+                ni_quality = ni_fam.get("quality", "no_data")
+                # Only trust family comparison when non_body_insert_family is
+                # well-established (moderate+ quality).  Weak profiles are
+                # unreliable — do not use them to reinstate blocks.
+                if ni_quality in ("moderate", "strong"):
+                    ni_match = compare_against_family(bp, ni_fam)
+                    body_match = compare_against_family(bp, family_profiles["body_family"])
+                    if body_match["match_score"] > max(ni_match["match_score"], 0.5) and body_match["size_compatible"]:
+                        del block["_non_body_insert"]
+                        block["role"] = "body_paragraph"
+                        block.setdefault("evidence", []).append("rescue_family: non_body_insert → body_paragraph")
+                        should_skip = False
+            if should_skip:
                 continue
 
         # --- Rule 1: frontmatter_noise → body_paragraph (body section + body font)
@@ -977,10 +983,11 @@ def _detect_non_body_insert_clusters(
 
     Detection criteria:
     1. Early document region (relative to body length, not an absolute page number)
-    2. Block role is ``body_paragraph``, ``frontmatter_noise``, or ``unknown_structural``
-    Font-family signal (primary): block's font differs from body spine fonts
-    Width signal (secondary): block width < 70% of body spine median,
+    2. Block role is ``body_paragraph`` or ``unknown_structural`` only
+       (NOT frontmatter_noise — those are genuine furniture blocks)
+    Width signal: block width < 70% of body spine median,
       falling back to page_width * 0.5 if median is contaminated
+    Font-family signal (secondary): block's font differs from body spine fonts
     Cluster requirement: 2+ candidates on the same page
     """
     indices: set[int] = set()
@@ -1004,7 +1011,9 @@ def _detect_non_body_insert_clusters(
         page = block.get("page", 1)
         if page > max_early_page:
             continue
-        if block.get("role") not in ("body_paragraph", "frontmatter_noise", "unknown_structural"):
+        # Only body_paragraph and unknown_structural can be non-body inserts.
+        # frontmatter_noise blocks are genuine furniture, not misclassified bios.
+        if block.get("role") not in ("body_paragraph", "unknown_structural"):
             continue
 
         bbox = block.get("bbox", [0, 0, 0, 0])
@@ -1013,7 +1022,8 @@ def _detect_non_body_insert_clusters(
         median_width = spine.get("median_width", 500)
 
         is_narrow = block_width < 0.7 * median_width or (
-            page_width > 0 and median_width < page_width * 0.4 and block_width < page_width * 0.35
+            page_width > 0 and median_width < page_width * 0.4
+            and block_width < page_width * 0.35
         )
 
         block_font = _first_font(block)

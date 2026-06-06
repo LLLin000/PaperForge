@@ -285,20 +285,21 @@ def test_detect_non_body_insert_marks_narrow_blocks() -> None:
     assert 3 in indices, f"Expected index 3 in {indices}"
 
 
-def test_detect_non_body_insert_catches_frontmatter_noise_blocks() -> None:
-    """frontmatter_noise blocks (author bios) are detected as non-body inserts."""
+def test_detect_non_body_insert_marks_narrow_body_paragraphs() -> None:
+    """Narrow body_paragraph blocks (author bios) are detected as non-body inserts."""
     from paperforge.worker.ocr_document import _detect_body_spine, _detect_non_body_insert_clusters
 
     blocks = [
         {"role": "body_paragraph", "bbox": [100, 100, 800, 140], "page": 1},
         {"role": "body_paragraph", "bbox": [100, 200, 810, 240], "page": 1},
-        {"role": "frontmatter_noise", "bbox": [50, 600, 300, 640], "page": 1},
-        {"role": "frontmatter_noise", "bbox": [50, 680, 310, 720], "page": 1},
+        # narrow body_paragraph = potential author bio
+        {"role": "body_paragraph", "bbox": [50, 600, 300, 640], "page": 1},
+        {"role": "body_paragraph", "bbox": [50, 680, 310, 720], "page": 1},
     ]
     spine = _detect_body_spine(blocks)
     indices = _detect_non_body_insert_clusters(blocks, spine, body_end_page=8)
-    assert 2 in indices, f"Expected index 2 (frontmatter_noise) in {indices}"
-    assert 3 in indices, f"Expected index 3 (frontmatter_noise) in {indices}"
+    assert 2 in indices, f"Expected index 2 (narrow body_paragraph) in {indices}"
+    assert 3 in indices, f"Expected index 3 (narrow body_paragraph) in {indices}"
 
 
 def test_non_body_insert_not_backfilled_to_body() -> None:
@@ -460,7 +461,8 @@ def test_family_level_non_body_insert_validation() -> None:
 
 
 def test_family_level_rescue_reinstates_false_non_body_insert() -> None:
-    """Non-body insert with body-like style should be reinstated to body_paragraph by family rescue."""
+    """Non-body insert with body-like style should be reinstated by family rescue
+    only when non_body_insert_family profile is reliable (moderate+ quality)."""
     from paperforge.worker.ocr_document import rescue_roles_with_document_context
 
     blocks = [
@@ -471,29 +473,40 @@ def test_family_level_rescue_reinstates_false_non_body_insert() -> None:
         {"role": "body_paragraph", "page": 2, "role_confidence": 0.8,
          "text": "Another body paragraph to strengthen the body font profile for reliable matching.",
          "span_metadata": {"size": 10, "flags": "normal"}},
-        # marked as non_body_insert but has body-like style (false positive)
+        # genuine non_body_insert blocks (3 blocks with consistent small/italic style =
+        # moderate quality for non_body_insert_family)
+        {"role": "non_body_insert", "page": 1, "role_confidence": 0.5,
+         "_non_body_insert": True,
+         "text": "Short bio text one",
+         "span_metadata": {"size": 8, "flags": "italic"}},
+        {"role": "non_body_insert", "page": 1, "role_confidence": 0.5,
+         "_non_body_insert": True,
+         "text": "Short bio text two",
+         "span_metadata": {"size": 8.2, "flags": "italic"}},
+        {"role": "non_body_insert", "page": 2, "role_confidence": 0.5,
+         "_non_body_insert": True,
+         "text": "Short bio text three",
+         "span_metadata": {"size": 8.1, "flags": "italic"}},
+        # false positive: body-like font in non_body_insert
         {"role": "non_body_insert", "page": 2, "role_confidence": 0.5,
          "_non_body_insert": True,
          "text": "This block was incorrectly marked as non_body_insert but has a body-paragraph style.",
          "span_metadata": {"size": 10.2, "flags": "normal"}},
-        # genuine non_body_insert with different style
-        {"role": "non_body_insert", "page": 1, "role_confidence": 0.5,
-         "_non_body_insert": True,
-         "text": "Short bio text",
-         "span_metadata": {"size": 8, "flags": "italic"}},
     ]
 
     role_profiles = {
         "body_paragraph": {"block_count": 2, "mean_size": 10.0, "max_size": 10.5, "min_size": 9.5,
                           "dispersion": 0.05, "quality": "strong", "bold_ratio": 0.0,
                           "italic_ratio": 0.0, "font_families": []},
-        "non_body_insert": {"block_count": 2, "mean_size": 9.1, "max_size": 10.2, "min_size": 8.0,
-                           "dispersion": 0.12, "quality": "weak", "bold_ratio": 0.0,
-                           "italic_ratio": 0.5, "font_families": []},
+        "non_body_insert": {"block_count": 4, "mean_size": 8.6, "max_size": 10.2, "min_size": 8.0,
+                           "dispersion": 0.11, "quality": "moderate", "bold_ratio": 0.0,
+                           "italic_ratio": 0.75, "font_families": []},
     }
 
     result = rescue_roles_with_document_context(blocks, role_profiles)
 
+    # The body-like block should be reinstated because non_body_insert_family
+    # has moderate quality
     reinstated = [b for b in result if b["text"].startswith("This block was incorrectly")]
     assert len(reinstated) == 1
     assert reinstated[0]["role"] == "body_paragraph", (
@@ -502,11 +515,12 @@ def test_family_level_rescue_reinstates_false_non_body_insert() -> None:
     )
     assert "_non_body_insert" not in reinstated[0], "non_body_insert flag should be removed"
 
-    still_ni = [b for b in result if b["text"] == "Short bio text"]
-    assert len(still_ni) == 1
-    assert still_ni[0]["role"] == "non_body_insert", (
-        f"Genuine non_body_insert should keep its role, got {still_ni[0]['role']}"
-    )
+    still_ni = [b for b in result if "Short bio text" in (b.get("text",""))]
+    assert len(still_ni) == 3
+    for b in still_ni:
+        assert b["role"] == "non_body_insert", (
+            f"Genuine non_body_insert should keep its role, got {b['role']}"
+        )
 
 
 def test_family_level_rescue_weak_heading_matches_heading_family() -> None:
