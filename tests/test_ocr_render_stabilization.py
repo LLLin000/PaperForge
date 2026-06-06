@@ -649,6 +649,80 @@ def test_render_mixed_tail_page_ordering() -> None:
     assert ref_idx < smith_idx, "References heading should come before items"
 
 
+def test_render_tail_reading_order_does_not_push_tail_page_after_next_page() -> None:
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+    from paperforge.worker.ocr_document import DocumentStructure
+
+    blocks = [
+        {
+            "paper_id": "KEY001", "page": 70, "block_id": "b70",
+            "role": "body_paragraph", "text": "Page 70 body.", "render_default": True,
+            "raw_label": "text",
+        },
+        {
+            "paper_id": "KEY001", "page": 71, "block_id": "b71a",
+            "role": "body_paragraph", "text": "Page 71 tail body.", "render_default": True,
+            "raw_label": "text",
+        },
+        {
+            "paper_id": "KEY001", "page": 71, "block_id": "b71h",
+            "role": "backmatter_heading", "text": "Acknowledgements", "render_default": True,
+            "raw_label": "text",
+        },
+        {
+            "paper_id": "KEY001", "page": 71, "block_id": "b71r",
+            "role": "reference_heading", "text": "References", "render_default": True,
+            "raw_label": "text",
+        },
+        {
+            "paper_id": "KEY001", "page": 71, "block_id": "b71i",
+            "role": "reference_item", "text": "1. Ref on page 71.", "render_default": True,
+            "raw_label": "text",
+        },
+        {
+            "paper_id": "KEY001", "page": 72, "block_id": "b72",
+            "role": "reference_item", "text": "2. Ref on page 72.", "render_default": True,
+            "raw_label": "text",
+        },
+    ]
+
+    ds = DocumentStructure(
+        spread_start=71,
+        spread_end=71,
+        tail_reading_order=[
+            {
+                "page": 71, "column_index": 0,
+                "block_indices": [1, 2],
+                "semantic_hint": "mixed",
+                "y_top": 100, "y_bottom": 300,
+            },
+            {
+                "page": 71, "column_index": 1,
+                "block_indices": [3, 4],
+                "semantic_hint": "references",
+                "y_top": 400, "y_bottom": 700,
+            },
+        ],
+    )
+
+    md = render_fulltext_markdown(
+        structured_blocks=blocks,
+        resolved_metadata={},
+        figure_inventory={},
+        table_inventory={},
+        page_count=72,
+        document_structure=ds,
+    )
+
+    page71_marker = md.index("<!-- page 71 -->")
+    page71_body = md.index("Page 71 tail body.")
+    page71_ref = md.index("1. Ref on page 71.")
+    page72_marker = md.index("<!-- page 72 -->")
+    page72_ref = md.index("2. Ref on page 72.")
+
+    assert page71_marker < page71_body < page71_ref < page72_marker < page72_ref
+
+
 def test_non_body_insert_not_in_fulltext() -> None:
     """Verify non_body_insert blocks do not appear in fulltext.md."""
     from paperforge.worker.ocr_render import render_fulltext_markdown
