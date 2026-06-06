@@ -63,22 +63,28 @@ def build_structured_blocks(raw_blocks: list[dict]) -> list[dict]:
             }
             rows.append(row)
 
-    # Build role span profiles from first-pass results
+    # Normalize document structure (backmatter boundary, role regime, tail promotion)
+    from paperforge.worker.ocr_document import normalize_document_structure
+
+    try:
+        doc_structure, rows = normalize_document_structure(rows)
+    except Exception:
+        doc_structure = None
+
+    # Build role span profiles from normalized results
     paper_context: dict = {}
     if len(rows) >= 10:
         from paperforge.worker.ocr_profiles import build_role_span_profiles
 
         paper_context["role_profiles"] = build_role_span_profiles(rows)
 
-    # Second pass: section-aware role rescue
-    if paper_context.get("role_profiles"):
+    # Third pass: section-aware role rescue with normalized profiles
+    if paper_context.get("role_profiles") and doc_structure:
         from paperforge.worker.ocr_document import (
-            analyze_document_structure,
             rescue_roles_with_document_context,
         )
 
-        document_structure = analyze_document_structure(rows)
-        rows = rescue_roles_with_document_context(rows, paper_context["role_profiles"], document_structure)
+        rows = rescue_roles_with_document_context(rows, paper_context["role_profiles"], doc_structure)
 
     return rows
 
