@@ -1000,8 +1000,10 @@ def _detect_non_body_insert_clusters(
 
     Detection criteria:
     1. Early document region (relative to body length, not an absolute page number)
-    2. Block role is ``body_paragraph`` or ``unknown_structural`` only
+    2. Block role is ``body_paragraph``, ``figure_caption``, or ``unknown_structural``
        (NOT frontmatter_noise — those are genuine furniture blocks)
+       ``figure_caption`` is included because PaddleOCR sometimes labels narrow
+       author-bio side-panel blocks as figure_title/figure_caption.
     Width signal: block width < 70% of body spine median,
       falling back to page_width * 0.5 if median is contaminated
     Font-family signal (secondary): block's font differs from body spine fonts
@@ -1028,10 +1030,11 @@ def _detect_non_body_insert_clusters(
         page = block.get("page", 1)
         if page > max_early_page:
             continue
-        # Only body_paragraph can be a non-body insert — bio/profile blocks
-        # that OCR misclassified as text.  frontmatter_noise and
-        # unknown_structural blocks are genuine furniture, not bios.
-        if block.get("role") != "body_paragraph":
+        # body_paragraph, figure_caption, and unknown_structural can be
+        # non-body inserts — bio/profile blocks that OCR misclassified as
+        # body text or figure titles.  frontmatter_noise blocks are genuine
+        # furniture, not bios, so they are excluded.
+        if block.get("role") not in ("body_paragraph", "figure_caption", "unknown_structural"):
             continue
 
         bbox = block.get("bbox", [0, 0, 0, 0])
