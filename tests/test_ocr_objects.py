@@ -246,3 +246,29 @@ def test_crop_asset_prefers_cached_page_image_when_available(tmp_path: Path) -> 
     assert ok is True
     with Image.open(dst) as img:
         assert img.size == (50, 50)
+
+
+def test_figure_legend_math_normalized() -> None:
+    from paperforge.worker.ocr_objects import render_figure_object_markdown
+    md = render_figure_object_markdown({
+        "figure_id": "figure_001",
+        "caption": "Expression of $ ^{7} $ mRNA",
+        "page": 1,
+        "was_cropped": True,
+        "image_relpath": "figures/figure_001.jpg",
+    })
+    assert "$^{7}$" in md
+    assert "Expression of" in md
+
+
+def test_table_caption_math_normalized() -> None:
+    from paperforge.worker.ocr_objects import render_table_object_markdown
+    md = render_table_object_markdown({
+        "table_id": "table_001",
+        "formal_table_number": 1,
+        "caption": "IC$ _{50} $ values ($ \\\\mu $M)",
+        "image_relpath": "tables/table_001.jpg",
+        "page": 1,
+    })
+    assert "$_{50}$" in md
+    assert "$\\\\mu$M" in md
