@@ -48,6 +48,16 @@ class PageLayoutProfile:
 
 
 @dataclass
+class ReadingSegment:
+    page: int
+    column_index: int
+    y_top: float
+    y_bottom: float
+    block_indices: list[int]
+    semantic_hint: str = ""
+
+
+@dataclass
 class DocumentStructure:
     body_end_page: int | None = None
     backmatter_start: PagePosition | None = None
@@ -56,6 +66,7 @@ class DocumentStructure:
     spread_end: int | None = None
     backmatter_form: str = "flat"
     page_layouts: dict[int, PageLayoutProfile] | None = None
+    tail_reading_order: list[dict] | None = None
 
 
 def _cluster_page_columns(page_blocks: list[dict], page_width: float) -> list[float]:
@@ -157,6 +168,146 @@ def _build_page_layout_profiles(blocks: list[dict]) -> dict[int, PageLayoutProfi
         profiles[page] = _classify_page_layout(page_blocks, page_width, page_height)
 
     return profiles
+
+
+def _block_bbox(block: dict) -> list[float] | None:
+    bbox = block.get("bbox") or block.get("block_bbox")
+    return bbox if bbox and len(bbox) >= 4 else None
+
+
+def _block_y_top(block: dict) -> float:
+    bbox = _block_bbox(block)
+    return bbox[1] if bbox else 0.0
+
+
+def _block_y_bottom(block: dict) -> float:
+    bbox = _block_bbox(block)
+    return bbox[3] if bbox else 0.0
+
+
+def _classify_segment_hint(blocks: list[dict]) -> str:
+    roles = {b.get("role") for b in blocks}
+    body_roles = {
+        "body_paragraph",
+        "section_heading",
+        "subsection_heading",
+        "sub_subsection_heading",
+    }
+    backmatter_roles = {
+        "backmatter_heading",
+        "backmatter_boundary_heading",
+        "backmatter_body",
+        "tail_candidate_body",
+    }
+    ref_roles = {"reference_heading", "reference_item"}
+    has_body = bool(roles & body_roles)
+    has_backmatter = bool(roles & backmatter_roles)
+    has_ref = bool(roles & ref_roles)
+    count = sum([has_body, has_backmatter, has_ref])
+    if count >= 2:
+        return "mixed"
+    if has_body:
+        return "body"
+    if has_backmatter:
+        return "backmatter"
+    if has_ref:
+        return "references"
+    return ""
+
+
+def _get_column_index_by_boundaries(x_center: float, boundaries: list[float]) -> int:
+    if len(boundaries) <= 1:
+        return 0
+    midpoints = [(boundaries[i] + boundaries[i + 1]) / 2 for i in range(len(boundaries) - 1)]
+    for col, mp in enumerate(midpoints):
+        if x_center < mp:
+            return col
+    return len(boundaries) - 1
+
+
+def _build_page_reading_segments(
+    page_blocks: list[dict],
+    page_profile: PageLayoutProfile | None,
+    page_idx_offset: int,
+) -> list[ReadingSegment]:
+    if not page_blocks:
+        return []
+    page = page_blocks[0].get("page", 0) or 0
+    if page_profile is None or page_profile.column_count <= 1:
+        sorted_blocks = sorted(enumerate(page_blocks), key=lambda x: _block_y_top(x[1]))
+        indices = [page_idx_offset + i for i, _ in sorted_blocks]
+        y_top = min(_block_y_top(b) for b in page_blocks)
+        y_bottom = max(_block_y_bottom(b) for b in page_blocks)
+        hint = _classify_segment_hint(page_blocks)
+        return [
+            ReadingSegment(
+                page=page,
+                column_index=0,
+                y_top=y_top,
+                y_bottom=y_bottom,
+                block_indices=indices,
+                semantic_hint=hint,
+            )
+        ]
+    boundaries = page_profile.column_boundaries
+    col_blocks: dict[int, list[tuple[int, dict]]] = {}
+    for i, block in enumerate(page_blocks):
+        bbox = _block_bbox(block)
+        if bbox:
+            x_center = (bbox[0] + bbox[2]) / 2
+            col = _get_column_index_by_boundaries(x_center, boundaries)
+        else:
+            col = 0
+        col_blocks.setdefault(col, []).append((i, block))
+    segments: list[ReadingSegment] = []
+    for col in sorted(col_blocks):
+        items = col_blocks[col]
+        items.sort(key=lambda x: _block_y_top(x[1]))
+        indices = [page_idx_offset + i for i, _ in items]
+        col_blocks_only = [b for _, b in items]
+        y_top = min(_block_y_top(b) for b in col_blocks_only)
+        y_bottom = max(_block_y_bottom(b) for b in col_blocks_only)
+        hint = _classify_segment_hint(col_blocks_only)
+        segments.append(
+            ReadingSegment(
+                page=page,
+                column_index=col,
+                y_top=y_top,
+                y_bottom=y_bottom,
+                block_indices=indices,
+                semantic_hint=hint,
+            )
+        )
+    return segments
+
+
+def _build_tail_reading_order(
+    blocks: list[dict],
+    page_layouts: dict[int, PageLayoutProfile],
+) -> list[ReadingSegment]:
+    tail_pages: set[int] = set()
+    for block in blocks:
+        if block.get("role") in _TAIL_ROLES:
+            p = block.get("page")
+            if p is not None:
+                tail_pages.add(p)
+    if not tail_pages:
+        return []
+    by_page: dict[int, list[tuple[int, dict]]] = {}
+    for i, block in enumerate(blocks):
+        p = block.get("page")
+        if p is not None and p in tail_pages:
+            by_page.setdefault(p, []).append((i, block))
+    segments: list[ReadingSegment] = []
+    for page in sorted(by_page):
+        page_items = by_page[page]
+        page_items.sort(key=lambda x: x[0])
+        page_idx_offset = page_items[0][0]
+        page_blocks_only = [item[1] for item in page_items]
+        profile = page_layouts.get(page)
+        page_segments = _build_page_reading_segments(page_blocks_only, profile, page_idx_offset)
+        segments.extend(page_segments)
+    return segments
 
 
 def _detect_forward_body_end(blocks: list[dict]) -> int | None:
@@ -1297,6 +1448,11 @@ def normalize_document_structure(blocks: list[dict]) -> tuple[DocumentStructure,
 
     page_layouts = _build_page_layout_profiles(blocks)
     doc_structure.page_layouts = page_layouts
+
+    reading_segments = _build_tail_reading_order(blocks, page_layouts)
+    doc_structure.tail_reading_order = (
+        [dataclasses.asdict(seg) for seg in reading_segments] if reading_segments else None
+    )
 
     blocks = _promote_tail_body_candidates(blocks, doc_structure, header_band=header_band, footer_band=footer_band)
     blocks = _assign_tail_spread_ownership(blocks, doc_structure)
