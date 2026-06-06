@@ -1760,7 +1760,10 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
         backfill_span_metadata_from_pdf(all_raw_blocks, source_pdf_path)
         write_raw_blocks_jsonl(artifacts.blocks_raw, all_raw_blocks)
 
-    structured = build_structured_blocks(all_raw_blocks)
+    structured = build_structured_blocks(
+        all_raw_blocks,
+        structure_output_dir=artifacts.blocks_structured.parent,
+    )
     write_structured_blocks_jsonl(artifacts.blocks_structured, structured)
     # Write role-level span profiles
     from paperforge.worker.ocr_profiles import write_role_span_profiles

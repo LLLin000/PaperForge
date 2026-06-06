@@ -7,7 +7,10 @@ from typing import Any
 from paperforge.worker.ocr_roles import assign_block_role
 
 
-def build_structured_blocks(raw_blocks: list[dict]) -> list[dict]:
+def build_structured_blocks(
+    raw_blocks: list[dict],
+    structure_output_dir: str | Path | None = None,
+) -> list[dict]:
     # Group raw blocks by page so assign_block_role can see page-local context
     by_page: dict[int, list[dict]] = {}
     for block in raw_blocks:
@@ -86,7 +89,33 @@ def build_structured_blocks(raw_blocks: list[dict]) -> list[dict]:
 
         rows = rescue_roles_with_document_context(rows, paper_context["role_profiles"], doc_structure)
 
+    # Persist document structure artifact for downstream debugging
+    if doc_structure and structure_output_dir:
+        _write_document_structure_json(doc_structure, structure_output_dir)
+
     return rows
+
+
+def _write_document_structure_json(doc_structure, output_dir: str | Path) -> None:
+    """Serialize DocumentStructure to JSON for downstream inspection."""
+    import dataclasses
+
+    if hasattr(doc_structure, "_asdict"):
+        data = doc_structure._asdict()
+    elif dataclasses.is_dataclass(doc_structure):
+        data = dataclasses.asdict(doc_structure)
+    else:
+        return
+    # Convert non-serializable types
+    for k, v in data.items():
+        if hasattr(v, "_asdict"):
+            data[k] = v._asdict()
+        elif dataclasses.is_dataclass(v):
+            data[k] = dataclasses.asdict(v)
+    output_path = Path(output_dir) / "document_structure.json"
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(output_path, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
 
 
 def write_structured_blocks_jsonl(path: Path, rows: list[dict]) -> None:
