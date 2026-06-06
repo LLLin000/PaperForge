@@ -67,7 +67,10 @@ def run_derived_rebuild_for_keys(vault: Path, keys: list[str]) -> dict:
         # Rebuild structured blocks
         from paperforge.worker.ocr_blocks import build_structured_blocks, write_structured_blocks_jsonl
 
-        structured = build_structured_blocks(all_raw_blocks)
+        structured = build_structured_blocks(
+            all_raw_blocks,
+            structure_output_dir=artifacts.blocks_structured.parent,
+        )
         write_structured_blocks_jsonl(artifacts.blocks_structured, structured)
         # Write role-level span profiles
         from paperforge.worker.ocr_profiles import write_role_span_profiles
