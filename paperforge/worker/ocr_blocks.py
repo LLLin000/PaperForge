@@ -10,7 +10,12 @@ from paperforge.worker.ocr_roles import assign_block_role
 def build_structured_blocks(
     raw_blocks: list[dict],
     structure_output_dir: str | Path | None = None,
-) -> list[dict]:
+) -> tuple[list[dict], Any]:
+    """Build structured blocks with role assignment, normalization, and rescue.
+
+    Returns (rows, doc_structure_or_None) so callers can pass the
+    document structure artifact downstream without re-computing it.
+    """
     # Group raw blocks by page so assign_block_role can see page-local context
     by_page: dict[int, list[dict]] = {}
     for block in raw_blocks:
@@ -69,10 +74,14 @@ def build_structured_blocks(
     # Normalize document structure (backmatter boundary, role regime, tail promotion)
     from paperforge.worker.ocr_document import normalize_document_structure
 
+    doc_structure = None
     try:
         doc_structure, rows = normalize_document_structure(rows)
-    except Exception:
-        doc_structure = None
+    except Exception as exc:
+        import logging
+        logging.getLogger(__name__).warning(
+            "Document structure normalization failed: %s", exc
+        )
 
     # Build role span profiles from normalized results
     paper_context: dict = {}
@@ -102,7 +111,7 @@ def build_structured_blocks(
     if doc_structure and structure_output_dir:
         _write_document_structure_json(doc_structure, structure_output_dir)
 
-    return rows
+    return rows, doc_structure
 
 
 def _write_document_structure_json(doc_structure, output_dir: str | Path) -> None:

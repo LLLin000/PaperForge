@@ -67,7 +67,7 @@ def run_derived_rebuild_for_keys(vault: Path, keys: list[str]) -> dict:
         # Rebuild structured blocks
         from paperforge.worker.ocr_blocks import build_structured_blocks, write_structured_blocks_jsonl
 
-        structured = build_structured_blocks(
+        structured, doc_structure = build_structured_blocks(
             all_raw_blocks,
             structure_output_dir=artifacts.blocks_structured.parent,
         )
@@ -139,6 +139,7 @@ def run_derived_rebuild_for_keys(vault: Path, keys: list[str]) -> dict:
             figure_inventory=figure_inventory,
             table_inventory=table_inventory,
             page_count=rebuild_page_count,
+            document_structure=doc_structure,
         )
         write_render_outputs(
             render_root=paper_root / "render",

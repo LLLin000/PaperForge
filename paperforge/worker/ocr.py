@@ -1760,7 +1760,7 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
         backfill_span_metadata_from_pdf(all_raw_blocks, source_pdf_path)
         write_raw_blocks_jsonl(artifacts.blocks_raw, all_raw_blocks)
 
-    structured = build_structured_blocks(
+    structured, doc_structure = build_structured_blocks(
         all_raw_blocks,
         structure_output_dir=artifacts.blocks_structured.parent,
     )
@@ -1822,6 +1822,7 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
         figure_inventory=figure_inventory,
         table_inventory=table_inventory,
         page_count=page_num,
+        document_structure=doc_structure,
     )
     write_render_outputs(
         render_root=ocr_root / "render",

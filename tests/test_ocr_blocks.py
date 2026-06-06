@@ -18,7 +18,7 @@ def test_build_structured_blocks_preserves_noise_and_confidence() -> None:
         }
     ]
 
-    rows = build_structured_blocks(raw_blocks)
+    rows, _ = build_structured_blocks(raw_blocks)
 
     assert rows[0]["role"] in {"noise", "page_header"}
     assert "role_confidence" in rows[0]
@@ -77,7 +77,7 @@ def test_build_structured_blocks_carries_span_metadata() -> None:
             "span_metadata": span_data,
         }
     ]
-    rows = build_structured_blocks(raw_blocks)
+    rows, _ = build_structured_blocks(raw_blocks)
     assert rows[0]["span_metadata"] == span_data
 
 
