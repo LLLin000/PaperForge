@@ -353,4 +353,4 @@ def test_backmatter_boundary_detects_on_early_page() -> None:
         "page": 5,
     }
     result = _is_backmatter_boundary_heading(block, 5, 10)
-    assert result == True  # After fix: 5/10 = 50% in second half, has container words + bold
+    assert result  # After fix: 5/10 = 50% in second half, has container words + bold

@@ -70,24 +70,15 @@ def build_structured_blocks(raw_blocks: list[dict]) -> list[dict]:
 
         paper_context["role_profiles"] = build_role_span_profiles(rows)
 
-    # Second pass: cross-validate low-confidence blocks
+    # Second pass: section-aware role rescue
     if paper_context.get("role_profiles"):
-        for row in rows:
-            if row.get("role_confidence", 1.0) < 0.7:
-                from paperforge.worker.ocr_roles import second_pass_cross_validate
+        from paperforge.worker.ocr_document import (
+            analyze_document_structure,
+            rescue_roles_with_document_context,
+        )
 
-                xv_result = second_pass_cross_validate(row, paper_context["role_profiles"])
-                row["role_confidence"] = round(
-                    max(0.0, min(1.0, row.get("role_confidence", 0.5) + xv_result["confidence_adjustment"])),
-                    4,
-                )
-                if xv_result["role_changed"]:
-                    row["role"] = xv_result["role"]
-                    row.setdefault("evidence", []).append(f"second_pass: {xv_result['role']} (span cross-validation)")
-                if xv_result["suggested_roles"]:
-                    row.setdefault("evidence", []).append(
-                        f"span_alternatives: {','.join(xv_result['suggested_roles'])}"
-                    )
+        document_structure = analyze_document_structure(rows)
+        rows = rescue_roles_with_document_context(rows, paper_context["role_profiles"], document_structure)
 
     return rows
 

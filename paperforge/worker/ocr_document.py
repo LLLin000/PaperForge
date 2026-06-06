@@ -446,6 +446,92 @@ def _page_still_frontmatter(page_blocks: list[dict], page_num: int, page_height:
     return True
 
 
+def rescue_roles_with_document_context(
+    blocks: list[dict],
+    role_profiles: dict,
+    document_structure: DocumentStructure | None = None,
+) -> list[dict]:
+    """Apply section-context-aware role rescue rules using document structure.
+
+    Uses the previously-built role style profiles and document boundaries to
+    correct common role-assignment errors:
+
+    1. ``frontmatter_noise`` in the body section with body-like font
+       → ``body_paragraph``
+    2. ``body_paragraph`` in the references section with reference-like font
+       → ``reference_item`` (only when confidence < 0.7)
+    3. Weak heading (confidence < 0.6) with body-like font → ``body_paragraph``
+
+    Never overrides: strong formal prefixes (Figure, Table), strong numbering,
+    or explicit boundary-heading logic.
+
+    Returns a new list of blocks with corrected roles.
+    """
+    from paperforge.worker.ocr_profiles import (
+        compare_against_role_family,
+        extract_block_span_profile,
+    )
+    from paperforge.worker.ocr_roles import _has_heading_numbering
+
+    if document_structure is None:
+        document_structure = analyze_document_structure(blocks)
+
+    body_end_page = document_structure.body_end_page
+    refs_start = document_structure.references_start
+    refs_start_page = refs_start.page if refs_start else None
+
+    result = list(blocks)
+
+    for block in result:
+        # --- Rule 1: frontmatter_noise → body_paragraph (body section + body font)
+        if block.get("role") == "frontmatter_noise":
+            page = block.get("page", 1) or 1
+            if body_end_page is not None and page <= body_end_page:
+                bp = extract_block_span_profile(block)
+                if bp:
+                    body_fam = role_profiles.get("body_paragraph", {})
+                    if body_fam:
+                        match = compare_against_role_family(bp, body_fam)
+                        if match["size_compatible"] and match["match_score"] > 0.5:
+                            block["role"] = "body_paragraph"
+                            block["role_confidence"] = min(block.get("role_confidence", 0.5) + 0.1, 1.0)
+                            block.setdefault("evidence", []).append("rescue: frontmatter_noise → body_paragraph")
+
+        # --- Rule 2: body_paragraph → reference_item (refs section + ref font)
+        role = block.get("role", "")
+        if role == "body_paragraph" and block.get("role_confidence", 1.0) < 0.7:
+            page = block.get("page", 1) or 1
+            if refs_start_page is not None and page >= refs_start_page:
+                bp = extract_block_span_profile(block)
+                if bp:
+                    ref_fam = role_profiles.get("reference_item", {})
+                    if ref_fam:
+                        match = compare_against_role_family(bp, ref_fam)
+                        if match["size_compatible"] and match["match_score"] > 0.5:
+                            block["role"] = "reference_item"
+                            block["role_confidence"] = min(block.get("role_confidence", 0.5) + 0.2, 1.0)
+                            block.setdefault("evidence", []).append("rescue: body_paragraph → reference_item")
+
+        # --- Rule 3: weak heading with body font → body_paragraph
+        if (
+            role in {"section_heading", "subsection_heading", "sub_subsection_heading"}
+            and block.get("role_confidence", 1.0) < 0.6
+        ):
+            text = str(block.get("text", "") or block.get("block_content", "") or "")
+            if _has_heading_numbering(text):
+                continue
+            bp = extract_block_span_profile(block)
+            if bp:
+                body_fam = role_profiles.get("body_paragraph", {})
+                if body_fam:
+                    match = compare_against_role_family(bp, body_fam)
+                    if match["size_compatible"] and match["match_score"] > 0.5:
+                        block["role"] = "body_paragraph"
+                        block.setdefault("evidence", []).append("rescue: heading → body_paragraph")
+
+    return result
+
+
 def analyze_document_structure(blocks: list[dict]) -> DocumentStructure:
     """Produce a structured document boundary object.
 
