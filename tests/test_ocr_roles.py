@@ -343,6 +343,31 @@ def test_heading_level_from_profile_match() -> None:
     pass  # Placeholder — will be updated after refactor
 
 
+def test_body_citation_not_authors() -> None:
+    from paperforge.worker.ocr_roles import assign_block_role
+    block = {
+        "block_label": "text",
+        "block_content": "In Section 5, the focus is on ES based bioelectronics $^{8,49}$",
+        "block_bbox": [100, 500, 800, 540],
+        "page": 3,
+    }
+    result = assign_block_role(block, page_blocks=[block], page_width=1200, page_height=1600)
+    assert result.role == "body_paragraph", f"Expected body_paragraph, got {result.role}"
+    assert result.confidence >= 0.5
+
+
+def test_frontmatter_author_zone_still_works() -> None:
+    from paperforge.worker.ocr_roles import assign_block_role
+    block = {
+        "block_label": "text",
+        "block_content": "Alice Smith, Bob Jones, Charlie Brown",
+        "block_bbox": [100, 300, 800, 330],
+        "page": 1,
+    }
+    result = assign_block_role(block, page_blocks=[block], page_width=1200, page_height=1600)
+    assert result.role == "authors", f"Expected authors, got {result.role}"
+
+
 def test_backmatter_boundary_detects_on_early_page() -> None:
     """Backmatter boundary should be detectable on papers with fewer
     than 8 pages, without a hard page gate."""

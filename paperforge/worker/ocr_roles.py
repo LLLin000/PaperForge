@@ -591,26 +591,6 @@ def assign_block_role(
                 evidence=[f"citation line pattern: {text[:60]}"],
             )
 
-        # Author list with superscript affiliation markers → authors, not noise
-        # Distinguish from citation lines (which have year in parens) and
-        # affiliation blocks (which have institutional keywords)
-        has_year_parens = bool(re.search(r"\(\d{4}[a-z]?\)", text))
-        has_inst_keyword = any(
-            kw in lower_txt for kw in ["department", "university", "institute", "college", "school of"]
-        )
-        if (
-            _AUTHOR_AFFILIATION_MARKER.search(text)
-            and "," in text
-            and not has_year_parens
-            and not has_inst_keyword
-            and len(text) < 500
-        ):
-            return RoleAssignment(
-                role="authors",
-                confidence=0.8,
-                evidence=[f"author list with affiliation markers: {text[:60]}"],
-            )
-
         # Affiliation block starting with superscript (page 1 only)
         if (
             still_frontmatter
