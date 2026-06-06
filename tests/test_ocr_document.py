@@ -318,3 +318,33 @@ def test_non_body_insert_not_backfilled_to_body() -> None:
     assert len(non_body) == 2, f"Expected 2 non_body_insert, got {len(non_body)}"
     for r in non_body:
         assert r.get("render_default") is False, f"non_body_insert should not render: {r}"
+
+
+def test_rescue_does_not_touch_non_body_insert() -> None:
+    from paperforge.worker.ocr_document import rescue_roles_with_document_context
+
+    blocks = [
+        {
+            "role": "frontmatter_noise",
+            "text": "Dr Ya Huang is currently a professor at the University",
+            "page": 2,
+            "_non_body_insert": True,
+            "role_confidence": 0.5,
+            "span_metadata": {"size": 11, "flags": "normal"},
+        },
+        {
+            "role": "body_paragraph",
+            "text": "Real body text on page 2.",
+            "page": 2,
+            "_non_body_insert": False,
+            "role_confidence": 0.6,
+            "span_metadata": {"size": 11, "flags": "normal"},
+        },
+    ]
+    role_profiles = {
+        "body_paragraph": {"size_min": 10, "size_max": 12, "bold": False, "quality": "strong", "fonts": set()},
+    }
+    result = rescue_roles_with_document_context(blocks, role_profiles)
+    non_body = [b for b in result if b.get("_non_body_insert")]
+    assert len(non_body) == 1
+    assert non_body[0]["role"] == "frontmatter_noise", "non_body_insert must not be rescued to body_paragraph"
