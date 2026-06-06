@@ -846,6 +846,27 @@ def test_stabilize_tail_zone_references_kept_separate() -> None:
     assert "<!-- page 23" in md, "Page marker for page 23 should be present"
 
 
+def test_fallback_preserves_tail_roles():
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+
+    blocks = [
+        {"paper_id": "KEY", "page": 5, "block_id": "b1", "role": "backmatter_heading", "text": "Funding", "render_default": True, "bbox": [80, 200, 320, 240], "page_width": 1200, "page_height": 1700},
+        {"paper_id": "KEY", "page": 5, "block_id": "b2", "role": "backmatter_body", "text": "This work was supported by Grant A.", "render_default": True, "bbox": [80, 280, 520, 340], "page_width": 1200, "page_height": 1700},
+        {"paper_id": "KEY", "page": 5, "block_id": "b3", "role": "reference_item", "text": "Smith J. (2023)", "render_default": True, "bbox": [80, 400, 520, 440], "page_width": 1200, "page_height": 1700},
+    ]
+
+    md = render_fulltext_markdown(
+        structured_blocks=blocks,
+        resolved_metadata={},
+        figure_inventory={},
+        table_inventory={},
+    )
+
+    assert "## Funding" in md, "backmatter_heading should be preserved"
+    assert "This work was supported" in md, "backmatter_body should be preserved"
+    assert "Smith J." in md, "reference_item should be preserved"
+
+
 def test_normalize_ocr_math_text_delimiter_spacing() -> None:
     from paperforge.worker.ocr_math import normalize_ocr_math_text
     assert normalize_ocr_math_text("$ ^{8,49} $") == "$^{8,49}$"

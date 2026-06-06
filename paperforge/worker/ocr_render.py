@@ -707,9 +707,22 @@ def render_fulltext_markdown(
         for i, block in enumerate(structured_blocks):
             old_role = block.get("role")
             new_role = new_blocks[i].get("role") if i < len(new_blocks) else old_role
-            # Never demote backmatter/reference headings — those are explicit
+            # Never demote tail/candidate roles — those are explicit
             # test-level decisions, not normalization targets.
-            if old_role in ("backmatter_heading", "backmatter_boundary_heading", "reference_heading"):
+            _PROTECTED = frozenset({
+                "backmatter_heading",
+                "backmatter_boundary_heading",
+                "backmatter_body",
+                "reference_heading",
+                "reference_item",
+                "figure_caption_candidate",
+                "backmatter_heading_candidate",
+                "backmatter_boundary_candidate",
+                "non_body_insert",
+                "subsection_heading",
+                "sub_subsection_heading",
+            })
+            if old_role in _PROTECTED:
                 continue
             if old_role != new_role:
                 block["role"] = new_role
