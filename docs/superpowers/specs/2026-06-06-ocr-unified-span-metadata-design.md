@@ -8,6 +8,8 @@
 
 Build a persistent, paper-local `span_metadata` system that strengthens OCR role assignment through **cross-validation**, **family discovery**, and **consistency checks**.
 
+**Span metadata is extracted from the source PDF**, not from the OCR engine. OCR provides block bounding boxes and text content; the PDF itself is the authoritative source for font size, family, bold/italic, and color. This design works for both new OCR runs and retroactive rebuilds of existing papers.
+
 `span_metadata` is **not** a replacement for:
 
 - text pattern heuristics
@@ -138,7 +140,9 @@ Every structured block should be able to carry:
 }
 ```
 
-This is block-level normalized metadata.  
+This is block-level normalized metadata (after extraction from PDF).  
+The raw span data in `blocks.structured.jsonl` retains the **per-character span list** from PyMuPDF: `[{"size": N, "font": "...", "flags": N, "color": N}, ...]`. Normalization to the aggregated form above happens at the `extract_block_span_profile` layer.
+
 It is not intended to preserve every individual character span forever.
 
 Required block-level features:
@@ -571,21 +575,84 @@ But it should never override:
 
 ---
 
+## 6. PDF Font Extraction (Source of Truth)
+
+### 6.1 Method
+
+Span metadata is extracted from the source PDF using each block's bounding box, not from the OCR engine. This uses PyMuPDF (`fitz`) which is already a project dependency.
+
+```python
+import fitz
+
+doc = fitz.open(pdf_path)
+page = doc[page_num - 1]              # PDF pages are 0-indexed
+rect = fitz.Rect(*bbox)               # Use OCR block's bbox as clip rect
+tp = page.get_text("rawdict", clip=rect)  # Per-character data within bbox
+```
+
+`get_text("rawdict")` returns a structured dict where each text span carries:
+
+| Field   | Source                         | Example                    |
+|---------|--------------------------------|----------------------------|
+| `size`  | PDF font size in points        | `11.4`                     |
+| `font`  | PDF font name (PostScript)     | `"TimesNewRomanPS-BoldMT"` |
+| `flags` | PyMuPDF font flags (bitfield)  | `16` (bold), `4` (serif)   |
+| `color` | PDF text color as int          | `0` (black)                |
+
+### 6.2 Flag Normalization
+
+PyMuPDF's `flags` bitfield differs from PaddleOCR's:
+
+| Feature    | PyMuPDF bit | Existing `extract_block_span_profile` check |
+|------------|-------------|---------------------------------------------|
+| Bold       | 4           | `flags & 16`                                |
+| Italic     | 1           | `flags & 4`                                 |
+| Serif      | 2           | —                                           |
+| Superscript| 0           | —                                           |
+
+The existing `extract_block_span_profile` checks `flags & 16` for bold and `flags & 4` for italic.
+PyMuPDF bold = bit 4 = `16` (matches). PyMuPDF italic = bit 1 = `2` (does NOT match `4`).
+
+To handle this, the PDF extraction layer normalizes flags:
+- bold: `flags & 16` (check bit 4 — same as PyMuPDF's bold bit)
+- italic: check font name for "Italic" OR `flags & 2` (PyMuPDF italic bit)
+- color: passed through as-is
+
+This ensures the existing `extract_block_span_profile` continues to work unchanged.
+
+### 6.3 Graceful Degradation
+
+PDF extraction may fail if:
+- `source_pdf` is null or file missing from storage
+- PDF is scanned/image-only (no text to extract)
+- Bbox falls outside page content area
+- Font is embedded without ToUnicode mapping
+
+In all failure cases, `span_metadata` for that block remains `None`.
+The downstream pipeline handles this via `extract_block_span_profile` returning `None`.
+
+---
+
 ## 7. Data Flow
 
 ```text
-raw OCR blocks
-  -> carry span_metadata into raw blocks
+raw OCR blocks from PaddleOCR
+  -> bbox + text content only (NO span_metadata from OCR engine)
+  -> PDF font extraction: for each block, fitz reads font info at bbox position
+  -> span_metadata (list of per-character span dicts) written to raw blocks
   -> first-pass role assignment
   -> build role/family span profiles
   -> cross-validate low-confidence blocks
-  -> write structured blocks with span evidence
+  -> write structured blocks with span metadata
   -> write role_span_profiles.json
 ```
 
+Key invariant: **span_metadata always comes from the PDF, never from the OCR engine.**
+This makes the pipeline OCR-provider-agnostic and enables retroactive backfill for all existing papers.
+
 Outputs:
 
-- `blocks.structured.jsonl` includes normalized `span_metadata`
+- `blocks.structured.jsonl` includes raw per-character span list from PDF
 - `role_span_profiles.json` records family/profile summaries
 
 ---
@@ -597,11 +664,13 @@ These behaviors are considered design defects and should be removed:
 1. absolute page gates for backmatter, especially `page >= 8`
 2. fixed heading font-size gates such as `>= 14` or `>= 12 bold` as primary rules
 3. phrase-only frontmatter/backmatter noise suppression as dominant logic
+4. **reliance on OCR engine for span metadata** — PaddleOCR's `span_metadata` field is inconsistently present across API versions and providers. The PDF is the single source of truth for font information.
 
 ---
 
 ## 9. Acceptance Criteria
 
+- `span_metadata` is extracted from PDF per block bbox, not from OCR engine
 - `span_metadata` is preserved through raw and structured layers
 - `role_span_profiles.json` exists with profile quality
 - heading families are discovered dynamically per paper
@@ -611,4 +680,5 @@ These behaviors are considered design defects and should be removed:
 - `frontmatter_noise` becomes more zone/style driven than phrase driven
 - second-pass cross-validation exists for low-confidence body/caption/heading/reference ambiguity
 - zero span data produces near-zero behavior change
+- span data can be retroactively extracted for papers that were OCR'd before this feature
 
