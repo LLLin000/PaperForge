@@ -464,12 +464,24 @@ def rescue_roles_with_document_context(
        → ``reference_item`` (only when confidence < 0.7)
     3. Weak heading (confidence < 0.6) with body-like font → ``body_paragraph``
 
+    Family-level profiles are layered on top of individual-role profiles for
+    broader-baseline matching:
+
+    - Non-body insert cluster members are validated against
+      ``non_body_insert_family`` vs ``body_family`` — blocks that match
+      body better are reinstated.
+    - Weak heading/body disambiguation uses ``heading_family`` vs
+      ``body_family`` when enough heading data exists.
+    - Reference rescue compares against ``reference_family``.
+
     Never overrides: strong formal prefixes (Figure, Table), strong numbering,
     or explicit boundary-heading logic.
 
     Returns a new list of blocks with corrected roles.
     """
     from paperforge.worker.ocr_profiles import (
+        build_family_profiles,
+        compare_against_family,
         compare_against_role_family,
         extract_block_span_profile,
     )
@@ -478,6 +490,8 @@ def rescue_roles_with_document_context(
     if document_structure is None:
         document_structure = analyze_document_structure(blocks)
 
+    family_profiles = build_family_profiles(blocks)
+
     body_end_page = document_structure.body_end_page
     refs_start = document_structure.references_start
     refs_start_page = refs_start.page if refs_start else None
@@ -485,9 +499,20 @@ def rescue_roles_with_document_context(
     result = list(blocks)
 
     for block in result:
-        # Non-body insert clusters must never be rescued to any body role
+        # --- Non-body insert cluster validation via family profiles ---
         if block.get("_non_body_insert"):
-            continue
+            bp = extract_block_span_profile(block)
+            if bp and "non_body_insert_family" in family_profiles and "body_family" in family_profiles:
+                ni_match = compare_against_family(bp, family_profiles["non_body_insert_family"])
+                body_match = compare_against_family(bp, family_profiles["body_family"])
+                if body_match["match_score"] > max(ni_match["match_score"], 0.5) and body_match["size_compatible"]:
+                    del block["_non_body_insert"]
+                    block["role"] = "body_paragraph"
+                    block.setdefault("evidence", []).append("rescue_family: non_body_insert → body_paragraph")
+                else:
+                    continue
+            else:
+                continue
 
         # --- Rule 1: frontmatter_noise → body_paragraph (body section + body font)
         if block.get("role") == "frontmatter_noise":
@@ -495,13 +520,22 @@ def rescue_roles_with_document_context(
             if body_end_page is not None and page <= body_end_page:
                 bp = extract_block_span_profile(block)
                 if bp:
-                    body_fam = role_profiles.get("body_paragraph", {})
-                    if body_fam:
-                        match = compare_against_role_family(bp, body_fam)
-                        if match["size_compatible"] and match["match_score"] > 0.5:
+                    family_rescued = False
+                    if "body_family" in family_profiles:
+                        body_match = compare_against_family(bp, family_profiles["body_family"])
+                        if body_match["size_compatible"] and body_match["match_score"] > 0.5:
                             block["role"] = "body_paragraph"
                             block["role_confidence"] = min(block.get("role_confidence", 0.5) + 0.1, 1.0)
-                            block.setdefault("evidence", []).append("rescue: frontmatter_noise → body_paragraph")
+                            block.setdefault("evidence", []).append("rescue_family: frontmatter_noise → body_paragraph")
+                            family_rescued = True
+                    if not family_rescued:
+                        body_fam = role_profiles.get("body_paragraph", {})
+                        if body_fam:
+                            match = compare_against_role_family(bp, body_fam)
+                            if match["size_compatible"] and match["match_score"] > 0.5:
+                                block["role"] = "body_paragraph"
+                                block["role_confidence"] = min(block.get("role_confidence", 0.5) + 0.1, 1.0)
+                                block.setdefault("evidence", []).append("rescue: frontmatter_noise → body_paragraph")
 
         # --- Rule 2: body_paragraph → reference_item (refs section + ref font)
         role = block.get("role", "")
@@ -510,13 +544,30 @@ def rescue_roles_with_document_context(
             if refs_start_page is not None and page >= refs_start_page:
                 bp = extract_block_span_profile(block)
                 if bp:
-                    ref_fam = role_profiles.get("reference_item", {})
-                    if ref_fam:
-                        match = compare_against_role_family(bp, ref_fam)
-                        if match["size_compatible"] and match["match_score"] > 0.5:
-                            block["role"] = "reference_item"
-                            block["role_confidence"] = min(block.get("role_confidence", 0.5) + 0.2, 1.0)
-                            block.setdefault("evidence", []).append("rescue: body_paragraph → reference_item")
+                    ref_rescued = False
+                    if "reference_family" in family_profiles and "body_family" in family_profiles:
+                        ref_fam_p = family_profiles["reference_family"]
+                        if ref_fam_p.get("quality") in ("moderate", "strong"):
+                            ref_match = compare_against_family(bp, ref_fam_p)
+                            body_match_r = compare_against_family(bp, family_profiles["body_family"])
+                            if (
+                                ref_match["size_compatible"]
+                                and ref_match["match_score"] > body_match_r["match_score"] + 0.1
+                            ):
+                                block["role"] = "reference_item"
+                                block["role_confidence"] = min(block.get("role_confidence", 0.5) + 0.2, 1.0)
+                                block.setdefault("evidence", []).append(
+                                    "rescue_family: body_paragraph → reference_item"
+                                )
+                                ref_rescued = True
+                    if not ref_rescued:
+                        ref_fam = role_profiles.get("reference_item", {})
+                        if ref_fam:
+                            match = compare_against_role_family(bp, ref_fam)
+                            if match["size_compatible"] and match["match_score"] > 0.5:
+                                block["role"] = "reference_item"
+                                block["role_confidence"] = min(block.get("role_confidence", 0.5) + 0.2, 1.0)
+                                block.setdefault("evidence", []).append("rescue: body_paragraph → reference_item")
 
         # --- Rule 3: weak heading with body font → body_paragraph
         if (
@@ -528,12 +579,28 @@ def rescue_roles_with_document_context(
                 continue
             bp = extract_block_span_profile(block)
             if bp:
-                body_fam = role_profiles.get("body_paragraph", {})
-                if body_fam:
-                    match = compare_against_role_family(bp, body_fam)
-                    if match["size_compatible"] and match["match_score"] > 0.5:
-                        block["role"] = "body_paragraph"
-                        block.setdefault("evidence", []).append("rescue: heading → body_paragraph")
+                heading_demoted = False
+                if "heading_family" in family_profiles and "body_family" in family_profiles:
+                    heading_fam = family_profiles["heading_family"]
+                    if heading_fam.get("quality") in ("moderate", "strong"):
+                        heading_match = compare_against_family(bp, heading_fam)
+                        body_match_h = compare_against_family(bp, family_profiles["body_family"])
+                        if (
+                            body_match_h["size_compatible"]
+                            and body_match_h["match_score"] > heading_match["match_score"] + 0.1
+                        ):
+                            block["role"] = "body_paragraph"
+                            block.setdefault("evidence", []).append(
+                                "rescue_family: heading → body_paragraph"
+                            )
+                            heading_demoted = True
+                if not heading_demoted:
+                    body_fam = role_profiles.get("body_paragraph", {})
+                    if body_fam:
+                        match = compare_against_role_family(bp, body_fam)
+                        if match["size_compatible"] and match["match_score"] > 0.5:
+                            block["role"] = "body_paragraph"
+                            block.setdefault("evidence", []).append("rescue: heading → body_paragraph")
 
     return result
 
