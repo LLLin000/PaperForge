@@ -18,6 +18,13 @@ def normalize_inline_math_delimiters(text: str) -> str:
     return text
 
 
+_RELOP_PATTERN = re.compile(
+    r'(?:\\geq|\\leq|\\sim|\\approx|\\gg|\\ll|>|<)\s*$'
+)
+
+_GREEK_LETTER = re.compile(r'\\(?:[a-zA-Z]+)')
+
+
 def normalize_math_prose_boundaries(text: str) -> str:
     result: list[str] = []
     dollar_count = 0
@@ -31,14 +38,43 @@ def normalize_math_prose_boundaries(text: str) -> str:
         if ch == '$':
             dollar_count += 1
             is_opening = (dollar_count % 2 == 1)
-            if is_opening and i > 0 and text[i - 1].isalnum() and text[i - 1] not in '-–—':
-                result.append(' $')
+            if is_opening:
+                if i > 0 and text[i - 1].isalnum() and text[i - 1] not in '-–—':
+                    result.append(' $')
+                else:
+                    result.append('$')
             else:
                 result.append('$')
         else:
             result.append(ch)
         i += 1
-    return ''.join(result)
+
+    text = ''.join(result)
+
+    def _after_space(m: re.Match) -> str:
+        content = m.group(1)
+        nxt = m.group(2)
+
+        if nxt.isdigit():
+            return f"${content}$ {nxt}"
+
+        if _RELOP_PATTERN.search(content):
+            return f"${content}$ {nxt}"
+
+        if _GREEK_LETTER.fullmatch(content.strip()):
+            return f"${content}${nxt}"
+
+        if nxt.islower():
+            return f"${content}$ {nxt}"
+
+        return f"${content}${nxt}"
+
+    text = re.sub(
+        r'(?<!\$)\$([^$]+?)\$(?!\$)([a-zA-Z0-9])',
+        _after_space,
+        text,
+    )
+    return text
 
 
 def normalize_display_math(text: str) -> str:

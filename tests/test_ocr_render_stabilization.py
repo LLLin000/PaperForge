@@ -649,7 +649,7 @@ def test_stabilize_tail_zone_references_kept_separate() -> None:
 def test_normalize_ocr_math_text_delimiter_spacing() -> None:
     from paperforge.worker.ocr_math import normalize_ocr_math_text
     assert normalize_ocr_math_text("$ ^{8,49} $") == "$^{8,49}$"
-    assert normalize_ocr_math_text("$ \\\\mu $m") == "$\\\\mu$m"
+    assert normalize_ocr_math_text(r"$ \mu $m") == r"$\mu$m"
 
 
 def test_normalize_ocr_math_text_citation_superscript() -> None:
@@ -666,8 +666,28 @@ def test_normalize_ocr_math_text_prose_boundary() -> None:
 
 def test_normalize_ocr_math_text_hyphen_preserved() -> None:
     from paperforge.worker.ocr_math import normalize_ocr_math_text
-    result = normalize_ocr_math_text("TGF-$\\\\beta$")
-    assert "TGF-$\\\\beta$" in result
+    result = normalize_ocr_math_text(r"TGF-$\beta$")
+    assert r"TGF-$\beta$" in result
+
+
+def test_normalize_ocr_math_text_relop_followed_by_digit() -> None:
+    from paperforge.worker.ocr_math import normalize_ocr_math_text
+    assert normalize_ocr_math_text(r"$\geq$100") == r"$\geq$ 100"
+    assert normalize_ocr_math_text(r"$\leq$0.5") == r"$\leq$ 0.5"
+    assert normalize_ocr_math_text(r"$\sim$1000") == r"$\sim$ 1000"
+    assert normalize_ocr_math_text(r"$\approx$3.14") == r"$\approx$ 3.14"
+
+
+def test_normalize_ocr_math_text_relop_followed_by_unit() -> None:
+    from paperforge.worker.ocr_math import normalize_ocr_math_text
+    result = normalize_ocr_math_text(r"$\sim$1000Scm^{-1}")
+    assert r"$\sim$ 1000Scm^{-1}" in result
+
+
+def test_normalize_ocr_math_text_greek_letter_compound_preserved() -> None:
+    from paperforge.worker.ocr_math import normalize_ocr_math_text
+    assert normalize_ocr_math_text(r"NF-$\kappa$B") == r"NF-$\kappa$B"
+    assert normalize_ocr_math_text(r"TGF-$\beta$") == r"TGF-$\beta$"
 
 
 def test_normalize_ocr_math_text_display_math() -> None:
