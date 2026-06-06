@@ -510,18 +510,34 @@ def _order_tail_blocks(blocks: list[dict], style_profiles: dict | None = None) -
 
     header_band, footer_band = _estimate_noise_bands(blocks)
 
-    # Find pages that contain tail blocks and their page widths
+    # Find pages that contain tail blocks and their page widths.
+    # Skip pages where body_paragraph blocks outnumber tail-role blocks —
+    # these are mixed pages (e.g. body continuation + backmatter on same
+    # page) where tail reordering would break reading order.
+    _body_count: dict[int, int] = {}
+    _tail_count: dict[int, int] = {}
+    for block in blocks:
+        p = block.get("page")
+        if p is None:
+            continue
+        if _has_tail_role(block):
+            _tail_count[p] = _tail_count.get(p, 0) + 1
+        elif block.get("role") == "body_paragraph":
+            _body_count[p] = _body_count.get(p, 0) + 1
+
     tail_pages: set[int] = set()
     page_widths: dict[int, int] = {}
     for block in blocks:
+        page = block.get("page")
+        if page is None:
+            continue
         if _has_tail_role(block):
-            page = block.get("page")
-            if page is not None:
-                tail_pages.add(page)
+            if _body_count.get(page, 0) > _tail_count.get(page, 0):
+                continue
+            tail_pages.add(page)
         pw = block.get("page_width") or 0
-        p = block.get("page")
-        if p is not None and pw:
-            page_widths.setdefault(p, pw)
+        if pw:
+            page_widths.setdefault(page, pw)
 
     if not tail_pages:
         return blocks
