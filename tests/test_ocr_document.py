@@ -285,6 +285,22 @@ def test_detect_non_body_insert_marks_narrow_blocks() -> None:
     assert 3 in indices, f"Expected index 3 in {indices}"
 
 
+def test_detect_non_body_insert_catches_frontmatter_noise_blocks() -> None:
+    """frontmatter_noise blocks (author bios) are detected as non-body inserts."""
+    from paperforge.worker.ocr_document import _detect_body_spine, _detect_non_body_insert_clusters
+
+    blocks = [
+        {"role": "body_paragraph", "bbox": [100, 100, 800, 140], "page": 1},
+        {"role": "body_paragraph", "bbox": [100, 200, 810, 240], "page": 1},
+        {"role": "frontmatter_noise", "bbox": [50, 600, 300, 640], "page": 1},
+        {"role": "frontmatter_noise", "bbox": [50, 680, 310, 720], "page": 1},
+    ]
+    spine = _detect_body_spine(blocks)
+    indices = _detect_non_body_insert_clusters(blocks, spine, body_end_page=8)
+    assert 2 in indices, f"Expected index 2 (frontmatter_noise) in {indices}"
+    assert 3 in indices, f"Expected index 3 (frontmatter_noise) in {indices}"
+
+
 def test_non_body_insert_not_backfilled_to_body() -> None:
     """Verify that non_body_insert blocks are not rescued to body_paragraph."""
     from paperforge.worker.ocr_blocks import build_structured_blocks
