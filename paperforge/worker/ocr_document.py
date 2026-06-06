@@ -1476,11 +1476,12 @@ def _detect_non_body_insert_clusters(
         page = block.get("page", 1)
         if page > max_early_page:
             continue
-        # body_paragraph, figure_caption, and unknown_structural can be
-        # non-body inserts — bio/profile blocks that OCR misclassified as
-        # body text or figure titles.  frontmatter_noise blocks are genuine
-        # furniture, not bios, so they are excluded.
-        if block.get("role") not in ("body_paragraph", "figure_caption", "unknown_structural"):
+        # body_paragraph, figure_caption, figure_caption_candidate, and
+        # unknown_structural can be non-body inserts — bio/profile blocks that
+        # OCR misclassified as body text or figure titles.  frontmatter_noise
+        # blocks are genuine furniture, not bios, so they are excluded.
+        _INSERT_CANDIDATE_ROLES = {"body_paragraph", "figure_caption", "figure_caption_candidate", "unknown_structural"}
+        if block.get("role") not in _INSERT_CANDIDATE_ROLES:
             continue
 
         bbox = block.get("bbox", [0, 0, 0, 0])
@@ -1533,7 +1534,7 @@ def _detect_non_body_insert_clusters(
                 page = block.get("page", 1)
                 if page > max_early_page:
                     continue
-                if block.get("role") not in ("body_paragraph", "figure_caption", "unknown_structural"):
+                if block.get("role") not in _INSERT_CANDIDATE_ROLES:
                     continue
                 text = block.get("text", "")
                 if not text or not text[0].islower():
