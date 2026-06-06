@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import dataclasses
 from collections import namedtuple
 from dataclasses import dataclass, field
 
@@ -58,6 +59,15 @@ class ReadingSegment:
 
 
 @dataclass
+class ReferenceZone:
+    page: int
+    column_index: int
+    y_start: float
+    y_end: float
+    block_indices: list[int]
+
+
+@dataclass
 class DocumentStructure:
     body_end_page: int | None = None
     backmatter_start: PagePosition | None = None
@@ -67,6 +77,7 @@ class DocumentStructure:
     backmatter_form: str = "flat"
     page_layouts: dict[int, PageLayoutProfile] | None = None
     tail_reading_order: list[dict] | None = None
+    reference_zones: list[dict] | None = None
 
 
 def _cluster_page_columns(page_blocks: list[dict], page_width: float) -> list[float]:
@@ -310,13 +321,86 @@ def _build_tail_reading_order(
     return segments
 
 
-def _detect_forward_body_end(blocks: list[dict]) -> int | None:
+def _detect_reference_zones(
+    blocks: list[dict],
+    page_layouts: dict[int, PageLayoutProfile],
+) -> list[ReferenceZone]:
+    """Detect local reference zones per page.
+
+    For each page with a ``reference_heading``, creates a ``ReferenceZone``
+    scoped to that heading's column.  Only blocks in the same column and
+    below the heading's bottom y are included in the zone.
+    """
+    zones: list[ReferenceZone] = []
+    for block in blocks:
+        if block.get("role") != "reference_heading":
+            continue
+        page = block.get("page")
+        if page is None:
+            continue
+        profile = page_layouts.get(page)
+        bbox = _block_bbox(block)
+        if not bbox:
+            continue
+        y_start = bbox[3]
+        if profile is None or profile.column_count <= 1:
+            column_index = 0
+        else:
+            x_center = (bbox[0] + bbox[2]) / 2
+            column_index = _get_column_index_by_boundaries(x_center, profile.column_boundaries)
+        zone_indices: list[int] = []
+        max_y = y_start
+        for j, b in enumerate(blocks):
+            if b.get("page") != page:
+                continue
+            bb = _block_bbox(b)
+            if not bb:
+                continue
+            if profile and profile.column_count > 1:
+                bx_center = (bb[0] + bb[2]) / 2
+                bcol = _get_column_index_by_boundaries(bx_center, profile.column_boundaries)
+                if bcol != column_index:
+                    continue
+            if bb[1] < y_start - 1:
+                continue
+            zone_indices.append(j)
+            if bb[3] > max_y:
+                max_y = bb[3]
+        zones.append(
+            ReferenceZone(
+                page=page,
+                column_index=column_index,
+                y_start=y_start,
+                y_end=max_y,
+                block_indices=zone_indices,
+            )
+        )
+    return zones
+
+
+def _block_in_any_reference_zone(
+    block: dict,
+    zones: list[ReferenceZone],
+    global_index: int,
+) -> bool:
+    """Check if a block (by global index) falls within any reference zone."""
+    return any(global_index in zone.block_indices for zone in zones)
+
+
+def _detect_forward_body_end(
+    blocks: list[dict],
+    page_layouts: dict[int, PageLayoutProfile] | None = None,
+) -> int | None:
     """Scan blocks front-to-back and return the last page of stable body.
 
     Tracks pages with body headings (section_heading, subsection_heading)
     and body_paragraph continuity.  When a page has tail roles
     (backmatter_heading, reference_heading, etc.) and no body content,
     the body is considered to have ended on the preceding clean body page.
+
+    With ``page_layouts``, multi-column pages are checked per-column:
+    if any column has body roles without tail roles in that same column,
+    body continues even if other columns have tail content.
     Returns None if no clear body/backmatter boundary is found.
     """
     if not blocks:
@@ -330,12 +414,40 @@ def _detect_forward_body_end(blocks: list[dict]) -> int | None:
     if not pages:
         return None
 
+    body_roles = {"body_paragraph", "section_heading", "subsection_heading", "sub_subsection_heading"}
     last_clean_body_page: int | None = None
 
     for page in pages:
-        roles = {b.get("role") for b in by_page[page]}
-        has_body = bool(roles & {"body_paragraph", "section_heading", "subsection_heading", "sub_subsection_heading"})
+        page_blocks = by_page[page]
+        roles = {b.get("role") for b in page_blocks}
+        has_body = bool(roles & body_roles)
         has_tail = bool(roles & _TAIL_ROLES)
+
+        if page_layouts and page in page_layouts:
+            profile = page_layouts[page]
+            if profile.column_count > 1:
+                boundaries = profile.column_boundaries
+                col_has_body: dict[int, bool] = {}
+                col_has_tail: dict[int, bool] = {}
+                for block in page_blocks:
+                    bbox = _block_bbox(block)
+                    if not bbox:
+                        continue
+                    x_center = (bbox[0] + bbox[2]) / 2
+                    col = _get_column_index_by_boundaries(x_center, boundaries)
+                    role = block.get("role", "")
+                    if role in body_roles:
+                        col_has_body[col] = True
+                    if role in _TAIL_ROLES:
+                        col_has_tail[col] = True
+
+                any_body_without_tail = any(
+                    col_has_body.get(col, False) and not col_has_tail.get(col, False)
+                    for col in range(profile.column_count)
+                )
+                if any_body_without_tail:
+                    last_clean_body_page = page
+                    continue
 
         if has_body and not has_tail:
             last_clean_body_page = page
@@ -348,16 +460,23 @@ def _detect_forward_body_end(blocks: list[dict]) -> int | None:
                     return pages[prev_idx]
                 return None
 
-    return None
+    return last_clean_body_page
 
 
-def _detect_backward_backmatter_start(blocks: list[dict]) -> int | None:
+def _detect_backward_backmatter_start(
+    blocks: list[dict],
+    page_layouts: dict[int, PageLayoutProfile] | None = None,
+) -> int | None:
     """Scan blocks backward and return the page where backmatter begins.
 
     Starting from the last page, looks for the first reference_heading or
     backmatter_heading.  Dense reference pages (>= 4 reference_item blocks)
     are a strong signal.  Short backmatter_body blocks near headings confirm
-    the backmatter zone.  Returns None if no backmatter found.
+    the backmatter zone.
+
+    With ``page_layouts``, multi-column pages check for backmatter headings
+    rather than relying on the dense-refs heuristic, which can be confused
+    by reference-only columns.  Returns None if no backmatter found.
     """
     if not blocks:
         return None
@@ -377,6 +496,11 @@ def _detect_backward_backmatter_start(blocks: list[dict]) -> int | None:
         if "reference_heading" in roles or "backmatter_heading" in roles or "backmatter_boundary_heading" in roles:
             return page
 
+        if page_layouts and page in page_layouts:
+            profile = page_layouts[page]
+            if profile.column_count > 1:
+                continue
+
         dense_refs = sum(1 for b in page_blocks if b.get("role") == "reference_item")
         if dense_refs >= 4:
             return page
@@ -384,11 +508,26 @@ def _detect_backward_backmatter_start(blocks: list[dict]) -> int | None:
     return None
 
 
-def _detect_references_start(blocks: list[dict], body_end_page: int | None) -> int | None:
+def _detect_references_start(
+    blocks: list[dict],
+    body_end_page: int | None,
+    page_layouts: dict[int, PageLayoutProfile] | None = None,
+) -> int | None:
     """Scan from body end page forward for the first page with a reference
-    heading or reference item.  Returns None if no references zone is found."""
+    heading or reference item.
+
+    With ``page_layouts``, uses ``_detect_reference_zones`` internally to
+    find the earliest page with a local reference zone.  Falls back to
+    page-level scanning when layout data is unavailable.
+    Returns None if no references zone is found.
+    """
     if body_end_page is None:
         return None
+    if page_layouts:
+        zones = _detect_reference_zones(blocks, page_layouts)
+        if zones:
+            earliest = min(z.page for z in zones)
+            return max(earliest, body_end_page)
     by_page: dict[int, list[dict]] = {}
     for block in blocks:
         p = block.get("page")
@@ -402,15 +541,19 @@ def _detect_references_start(blocks: list[dict], body_end_page: int | None) -> i
     return None
 
 
-def _reconcile_tail_spread(blocks: list[dict]) -> TailBoundary | None:
+def _reconcile_tail_spread(
+    blocks: list[dict],
+    page_layouts: dict[int, PageLayoutProfile] | None = None,
+) -> TailBoundary | None:
     """Reconcile forward and backward scans into a structured TailBoundary.
 
     Returns a TailBoundary namedtuple or None when no tail spread exists.
     The ``reason`` field provides an explainability trace.
+    ``page_layouts`` is passed to layout-aware boundary detection functions.
     """
-    forward_end = _detect_forward_body_end(blocks)
-    backward_start = _detect_backward_backmatter_start(blocks)
-    references_start = _detect_references_start(blocks, forward_end)
+    forward_end = _detect_forward_body_end(blocks, page_layouts)
+    backward_start = _detect_backward_backmatter_start(blocks, page_layouts)
+    references_start = _detect_references_start(blocks, forward_end, page_layouts)
 
     if forward_end is None and backward_start is None:
         return None
@@ -892,7 +1035,8 @@ def analyze_document_structure(blocks: list[dict]) -> DocumentStructure:
     Uses the existing _detect_forward_body_end, _detect_backward_backmatter_start,
     etc. internally. Returns a DocumentStructure with all boundary info.
     """
-    tail_spread = _reconcile_tail_spread(blocks)
+    page_layouts = _build_page_layout_profiles(blocks)
+    tail_spread = _reconcile_tail_spread(blocks, page_layouts)
     if tail_spread is not None:
         backmatter_form = _classify_backmatter_form(tail_spread, blocks)
         _label_backmatter_regime(tail_spread, backmatter_form, blocks)
@@ -900,7 +1044,7 @@ def analyze_document_structure(blocks: list[dict]) -> DocumentStructure:
     else:
         backmatter_form = "flat"
 
-    return DocumentStructure(
+    ds = DocumentStructure(
         body_end_page=tail_spread.body_end_page if tail_spread else None,
         backmatter_start=PagePosition(page=tail_spread.backmatter_start, y=0.0)
         if tail_spread and tail_spread.backmatter_start is not None
@@ -911,7 +1055,18 @@ def analyze_document_structure(blocks: list[dict]) -> DocumentStructure:
         spread_start=tail_spread.spread_start if tail_spread else None,
         spread_end=tail_spread.spread_end if tail_spread else None,
         backmatter_form=backmatter_form,
+        page_layouts=page_layouts,
     )
+
+    reading_segments = _build_tail_reading_order(blocks, page_layouts)
+    ds.tail_reading_order = (
+        [dataclasses.asdict(seg) for seg in reading_segments] if reading_segments else None
+    )
+
+    ref_zones = _detect_reference_zones(blocks, page_layouts)
+    ds.reference_zones = [dataclasses.asdict(z) for z in ref_zones] if ref_zones else None
+
+    return ds
 
 
 def _get_column(block: dict, page_width: float = 1200) -> int:
@@ -1423,7 +1578,9 @@ def normalize_document_structure(blocks: list[dict]) -> tuple[DocumentStructure,
     - tail body candidate promotion
     - tail spread ownership assignment
     """
-    tail_spread = _reconcile_tail_spread(blocks)
+    page_layouts = _build_page_layout_profiles(blocks)
+
+    tail_spread = _reconcile_tail_spread(blocks, page_layouts)
     if tail_spread is not None:
         backmatter_form = _classify_backmatter_form(tail_spread, blocks)
         _label_backmatter_regime(tail_spread, backmatter_form, blocks)
@@ -1442,17 +1599,18 @@ def normalize_document_structure(blocks: list[dict]) -> tuple[DocumentStructure,
         spread_start=tail_spread.spread_start if tail_spread else None,
         spread_end=tail_spread.spread_end if tail_spread else None,
         backmatter_form=backmatter_form,
+        page_layouts=page_layouts,
     )
 
     header_band, footer_band = _estimate_noise_bands(blocks)
-
-    page_layouts = _build_page_layout_profiles(blocks)
-    doc_structure.page_layouts = page_layouts
 
     reading_segments = _build_tail_reading_order(blocks, page_layouts)
     doc_structure.tail_reading_order = (
         [dataclasses.asdict(seg) for seg in reading_segments] if reading_segments else None
     )
+
+    ref_zones = _detect_reference_zones(blocks, page_layouts)
+    doc_structure.reference_zones = [dataclasses.asdict(z) for z in ref_zones] if ref_zones else None
 
     blocks = _promote_tail_body_candidates(blocks, doc_structure, header_band=header_band, footer_band=footer_band)
     blocks = _assign_tail_spread_ownership(blocks, doc_structure)

@@ -1212,6 +1212,185 @@ def test_tail_reading_order_mixed_page() -> None:
     assert segments[1].semantic_hint == "mixed"
 
 
+# ---------------------------------------------------------------------------
+# Reference zone tests (Task 3)
+# ---------------------------------------------------------------------------
+
+
+def test_reference_zone_single_column() -> None:
+    """Single-column page: zone covers all blocks below ref heading."""
+    from paperforge.worker.ocr_document import (
+        _build_page_layout_profiles,
+        _detect_reference_zones,
+    )
+
+    blocks = [
+        {"page": 1, "bbox": [100, 100, 700, 140], "role": "body_paragraph", "page_width": 800, "page_height": 1000},
+        {"page": 1, "bbox": [100, 160, 700, 200], "role": "body_paragraph", "page_width": 800, "page_height": 1000},
+        {"page": 2, "bbox": [100, 100, 700, 140], "role": "reference_heading", "page_width": 800, "page_height": 1000},
+        {"page": 2, "bbox": [100, 160, 700, 200], "role": "reference_item", "page_width": 800, "page_height": 1000},
+        {"page": 2, "bbox": [100, 220, 700, 260], "role": "reference_item", "page_width": 800, "page_height": 1000},
+    ]
+
+    page_layouts = _build_page_layout_profiles(blocks)
+    zones = _detect_reference_zones(blocks, page_layouts)
+
+    assert len(zones) == 1
+    zone = zones[0]
+    assert zone.page == 2
+    assert zone.column_index == 0
+    # Zone starts at heading bottom y → heading itself excluded
+    assert len(zone.block_indices) == 2
+    for idx in zone.block_indices:
+        assert blocks[idx].get("role") == "reference_item"
+    assert zone.y_end > zone.y_start
+
+
+def test_reference_zone_two_column_mixed() -> None:
+    """Left body + right references: zone only in right column."""
+    from paperforge.worker.ocr_document import (
+        _build_page_layout_profiles,
+        _detect_reference_zones,
+    )
+
+    blocks = [
+        {"page": 1, "bbox": [100, 100, 700, 140], "role": "body_paragraph", "page_width": 800, "page_height": 1000},
+        {"page": 2, "bbox": [50, 100, 380, 140], "role": "body_paragraph", "page_width": 800, "page_height": 1000},
+        {"page": 2, "bbox": [50, 160, 380, 200], "role": "body_paragraph", "page_width": 800, "page_height": 1000},
+        {"page": 2, "bbox": [420, 100, 750, 140], "role": "reference_heading", "page_width": 800, "page_height": 1000},
+        {"page": 2, "bbox": [420, 160, 750, 200], "role": "reference_item", "page_width": 800, "page_height": 1000},
+        {"page": 2, "bbox": [420, 220, 750, 260], "role": "reference_item", "page_width": 800, "page_height": 1000},
+    ]
+
+    page_layouts = _build_page_layout_profiles(blocks)
+    zones = _detect_reference_zones(blocks, page_layouts)
+
+    assert len(zones) == 1
+    zone = zones[0]
+    assert zone.page == 2
+    assert zone.column_index == 1
+    # Zone starts at heading bottom y → heading excluded, only ref items
+    assert len(zone.block_indices) == 2
+    for idx in zone.block_indices:
+        assert blocks[idx].get("role") == "reference_item"
+    # Left-col body blocks should NOT be in zone
+    assert all(idx not in zone.block_indices for idx in [1, 2])
+
+
+def test_block_in_reference_zone() -> None:
+    """Verify block_in_any_reference_zone correctly includes/excludes."""
+    from paperforge.worker.ocr_document import (
+        ReferenceZone,
+        _block_in_any_reference_zone,
+    )
+
+    zones = [
+        ReferenceZone(page=2, column_index=1, y_start=150, y_end=300, block_indices=[3, 4, 5]),
+    ]
+
+    assert _block_in_any_reference_zone({}, zones, 3) is True
+    assert _block_in_any_reference_zone({}, zones, 5) is True
+    assert _block_in_any_reference_zone({}, zones, 0) is False
+    assert _block_in_any_reference_zone({}, zones, 2) is False
+    assert _block_in_any_reference_zone({}, [], 0) is False
+
+
+# ---------------------------------------------------------------------------
+# Layout-aware boundary detection tests (Task 4)
+# ---------------------------------------------------------------------------
+
+
+def test_forward_body_end_mixed_page() -> None:
+    """Two-column page with left body + right tail: body should continue."""
+    from paperforge.worker.ocr_document import (
+        _build_page_layout_profiles,
+        _detect_forward_body_end,
+    )
+
+    blocks = [
+        {"page": 1, "bbox": [100, 100, 700, 140], "role": "body_paragraph", "page_width": 800, "page_height": 1000},
+        {"page": 2, "bbox": [100, 100, 700, 140], "role": "body_paragraph", "page_width": 800, "page_height": 1000},
+        {"page": 3, "bbox": [100, 100, 700, 140], "role": "body_paragraph", "page_width": 800, "page_height": 1000},
+        # Page 4: left body (clean column), right tail
+        {"page": 4, "bbox": [50, 100, 380, 140], "role": "body_paragraph", "page_width": 800, "page_height": 1000},
+        {"page": 4, "bbox": [420, 100, 750, 140], "role": "backmatter_heading", "page_width": 800, "page_height": 1000},
+        {"page": 4, "bbox": [420, 160, 750, 200], "role": "backmatter_body", "page_width": 800, "page_height": 1000},
+        # Page 5: tail only
+        {"page": 5, "bbox": [420, 100, 750, 140], "role": "reference_heading", "page_width": 800, "page_height": 1000},
+        {"page": 5, "bbox": [420, 160, 750, 200], "role": "reference_item", "page_width": 800, "page_height": 1000},
+    ]
+
+    page_layouts = _build_page_layout_profiles(blocks)
+    body_end = _detect_forward_body_end(blocks, page_layouts)
+
+    assert body_end == 4, f"Expected body_end=4 (left body continues on page 4), got {body_end}"
+
+
+def test_backward_backmatter_start_mixed_page() -> None:
+    """Two-column page: dense refs in one column should NOT be backmatter_start."""
+    from paperforge.worker.ocr_document import (
+        _build_page_layout_profiles,
+        _detect_backward_backmatter_start,
+    )
+
+    blocks = [
+        {"page": 1, "bbox": [100, 100, 700, 140], "role": "body_paragraph", "page_width": 800, "page_height": 1000},
+        # Page 5: two-column with dense refs confined to right column
+        {"page": 5, "bbox": [50, 100, 380, 140], "role": "backmatter_body", "page_width": 800, "page_height": 1000},
+        {"page": 5, "bbox": [420, 50, 750, 90], "role": "reference_item", "page_width": 800, "page_height": 1000},
+        {"page": 5, "bbox": [420, 110, 750, 150], "role": "reference_item", "page_width": 800, "page_height": 1000},
+        {"page": 5, "bbox": [420, 170, 750, 210], "role": "reference_item", "page_width": 800, "page_height": 1000},
+        {"page": 5, "bbox": [420, 230, 750, 270], "role": "reference_item", "page_width": 800, "page_height": 1000},
+        {"page": 5, "bbox": [420, 290, 750, 330], "role": "reference_item", "page_width": 800, "page_height": 1000},
+        # Page 4: left backmatter heading, right reference heading
+        {"page": 4, "bbox": [50, 100, 380, 140], "role": "backmatter_heading", "page_width": 800, "page_height": 1000},
+        {"page": 4, "bbox": [420, 100, 750, 140], "role": "reference_heading", "page_width": 800, "page_height": 1000},
+        {"page": 4, "bbox": [420, 160, 750, 200], "role": "reference_item", "page_width": 800, "page_height": 1000},
+    ]
+
+    page_layouts = _build_page_layout_profiles(blocks)
+    bm_start = _detect_backward_backmatter_start(blocks, page_layouts)
+
+    assert bm_start == 4, f"Expected backmatter_start=4 (backmatter heading on page 4), got {bm_start}"
+
+
+def test_references_start_local_zone() -> None:
+    """references_start picks page 71 but zone scopes it to right column only."""
+    from paperforge.worker.ocr_document import (
+        _build_page_layout_profiles,
+        _detect_reference_zones,
+        _detect_references_start,
+    )
+
+    blocks = [
+        {"page": 1, "bbox": [100, 100, 700, 140], "role": "body_paragraph", "page_width": 800, "page_height": 1000},
+        {"page": 2, "bbox": [100, 100, 700, 140], "role": "body_paragraph", "page_width": 800, "page_height": 1000},
+        # Page 3: left body + right references (SAN9AYVR-like)
+        {"page": 3, "bbox": [50, 100, 380, 140], "role": "body_paragraph", "page_width": 800, "page_height": 1000},
+        {"page": 3, "bbox": [50, 200, 380, 240], "role": "body_paragraph", "page_width": 800, "page_height": 1000},
+        {"page": 3, "bbox": [420, 100, 750, 140], "role": "reference_heading", "page_width": 800, "page_height": 1000},
+        {"page": 3, "bbox": [420, 160, 750, 200], "role": "reference_item", "page_width": 800, "page_height": 1000},
+        {"page": 3, "bbox": [420, 220, 750, 260], "role": "reference_item", "page_width": 800, "page_height": 1000},
+    ]
+
+    page_layouts = _build_page_layout_profiles(blocks)
+    refs_start = _detect_references_start(blocks, body_end_page=2, page_layouts=page_layouts)
+    assert refs_start == 3, f"Expected references_start=3, got {refs_start}"
+
+    zones = _detect_reference_zones(blocks, page_layouts)
+    assert len(zones) == 1
+    zone = zones[0]
+    assert zone.column_index == 1
+    # Left-col body blocks NOT in zone
+    assert 2 not in zone.block_indices
+    assert 3 not in zone.block_indices
+    # Heading starts zone but is excluded (zone starts at heading bottom y)
+    assert 4 not in zone.block_indices
+    # Ref items below heading ARE in zone
+    assert 5 in zone.block_indices
+    assert 6 in zone.block_indices
+
+
 def test_document_structure_json_serialization() -> None:
     """Verify that DocumentStructure with layout profiles serializes to valid JSON."""
     from paperforge.worker.ocr_document import DocumentStructure, PageLayoutProfile
