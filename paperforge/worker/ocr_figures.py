@@ -180,8 +180,11 @@ def _media_clusters(blocks: list[dict], page_width: float = 1200) -> list[list[d
     media = [
         b
         for b in blocks
-        if b.get("role") == "figure_asset"
-        or (b.get("role") == "media_asset" and b.get("raw_label", "") in {"image", "chart", "figure"})
+        if not b.get("_non_body_media")
+        and (
+            b.get("role") == "figure_asset"
+            or (b.get("role") == "media_asset" and b.get("raw_label", "") in {"image", "chart", "figure"})
+        )
     ]
     media.sort(key=lambda b: (b.get("page", 0), b.get("bbox", [0, 0, 0, 0])[1], b.get("bbox", [0, 0, 0, 0])[0]))
 
@@ -296,6 +299,8 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
 
     for block in structured_blocks:
         role = block.get("role", "")
+        if block.get("_non_body_media") or role == "non_body_insert":
+            continue
         if role == "figure_caption":
             if _is_body_mention(block):
                 continue

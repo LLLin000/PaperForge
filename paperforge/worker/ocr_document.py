@@ -590,9 +590,7 @@ def rescue_roles_with_document_context(
                             and body_match_h["match_score"] > heading_match["match_score"] + 0.1
                         ):
                             block["role"] = "body_paragraph"
-                            block.setdefault("evidence", []).append(
-                                "rescue_family: heading → body_paragraph"
-                            )
+                            block.setdefault("evidence", []).append("rescue_family: heading → body_paragraph")
                             heading_demoted = True
                 if not heading_demoted:
                     body_fam = role_profiles.get("body_paragraph", {})
@@ -953,11 +951,17 @@ def _detect_body_spine(blocks: list[dict]) -> dict[int, dict]:
                 if p > page and per_page_spine[p] is not None:
                     next_val = per_page_spine[p]
                     break
-            filled[page] = prev_val or next_val or {
-                "median_width": 500, "median_x": 100,
-                "width_range": (350, 650), "fonts": set(),
-                "all_fonts": all_body_fonts,
-            }
+            filled[page] = (
+                prev_val
+                or next_val
+                or {
+                    "median_width": 500,
+                    "median_x": 100,
+                    "width_range": (350, 650),
+                    "fonts": set(),
+                    "all_fonts": all_body_fonts,
+                }
+            )
 
     return filled
 
@@ -1009,8 +1013,7 @@ def _detect_non_body_insert_clusters(
         median_width = spine.get("median_width", 500)
 
         is_narrow = block_width < 0.7 * median_width or (
-            page_width > 0 and median_width < page_width * 0.4
-            and block_width < page_width * 0.35
+            page_width > 0 and median_width < page_width * 0.4 and block_width < page_width * 0.35
         )
 
         block_font = _first_font(block)
@@ -1027,6 +1030,56 @@ def _detect_non_body_insert_clusters(
             indices.update(candidate_indices)
 
     return indices
+
+
+def _mark_non_body_media(blocks: list[dict]) -> None:
+    insert_blocks_by_page: dict[int, list[dict]] = {}
+    for block in blocks:
+        if block.get("_non_body_insert"):
+            page = block.get("page", 1)
+            insert_blocks_by_page.setdefault(page, []).append(block)
+
+    if not insert_blocks_by_page:
+        return
+
+    for page, inserts in insert_blocks_by_page.items():
+        bboxes = []
+        for ins in inserts:
+            b = ins.get("bbox") or ins.get("block_bbox")
+            if b and len(b) >= 4:
+                bboxes.append(b)
+        if not bboxes:
+            continue
+
+        cluster_min_x = min(b[0] for b in bboxes)
+        cluster_min_y = min(b[1] for b in bboxes)
+        cluster_max_x = max(b[2] for b in bboxes)
+        cluster_max_y = max(b[3] for b in bboxes)
+
+        margin = 50
+        cluster_min_x -= margin
+        cluster_min_y -= margin
+        cluster_max_x += margin
+        cluster_max_y += margin
+
+        for block in blocks:
+            if block.get("page", 1) != page:
+                continue
+            if block.get("_non_body_media"):
+                continue
+            role = block.get("role", "")
+            if role not in ("figure_asset", "media_asset"):
+                continue
+
+            b = block.get("bbox") or block.get("block_bbox")
+            if not b or len(b) < 4:
+                continue
+
+            cx = (b[0] + b[2]) / 2
+            cy = (b[1] + b[3]) / 2
+
+            if cluster_min_x <= cx <= cluster_max_x and cluster_min_y <= cy <= cluster_max_y:
+                block["_non_body_media"] = True
 
 
 def normalize_document_structure(blocks: list[dict]) -> tuple[DocumentStructure, list[dict]]:
@@ -1068,12 +1121,16 @@ def normalize_document_structure(blocks: list[dict]) -> tuple[DocumentStructure,
     body_spine = _detect_body_spine(blocks)
     pw = max((b.get("page_width", 0) or 0) for b in blocks) or 1200
     insert_indices = _detect_non_body_insert_clusters(
-        blocks, body_spine, page_width=pw,
+        blocks,
+        body_spine,
+        page_width=pw,
         body_end_page=tail_spread.body_end_page if tail_spread else None,
     )
     for idx in insert_indices:
         if idx < len(blocks):
             blocks[idx]["role"] = "non_body_insert"
             blocks[idx]["_non_body_insert"] = True
+
+    _mark_non_body_media(blocks)
 
     return doc_structure, blocks
