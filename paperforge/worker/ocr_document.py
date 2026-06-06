@@ -788,6 +788,109 @@ def _assign_tail_spread_ownership(
     return result
 
 
+def _detect_body_spine(blocks: list[dict]) -> dict[int, dict]:
+    """Detect the main body column characteristics per page.
+
+    Returns dict[page_num, {"median_width": float, "median_x": float,
+                            "width_range": tuple[float, float]}]
+    """
+    import statistics
+
+    by_page: dict[int, list[dict]] = {}
+    for block in blocks:
+        page = block.get("page", 1)
+        by_page.setdefault(page, []).append(block)
+
+    all_pages = sorted(by_page.keys())
+    if not all_pages:
+        return {}
+
+    per_page_spine: dict[int, dict | None] = {}
+    for page in all_pages:
+        page_blocks = by_page[page]
+        body_blocks = [b for b in page_blocks if b.get("role") == "body_paragraph"]
+
+        if body_blocks:
+            widths = []
+            x_starts = []
+            for b in body_blocks:
+                bbox = b.get("bbox", [0, 0, 0, 0])
+                widths.append(bbox[2] - bbox[0])
+                x_starts.append(bbox[0])
+
+            # Robust body spine estimation: use widest cluster only,
+            # rejecting narrow blocks (author profiles, etc.) that
+            # would contaminate the median
+            max_width = max(widths)
+            core_widths = [w for w in widths if w >= 0.6 * max_width]
+            median_width = statistics.median_low(core_widths) if core_widths else max_width
+            median_x = statistics.median_low(x_starts)
+            per_page_spine[page] = {
+                "median_width": median_width,
+                "median_x": median_x,
+                "width_range": (median_width * 0.7, median_width * 1.3),
+            }
+        else:
+            per_page_spine[page] = None
+
+    filled: dict[int, dict] = {}
+    prev_val = None
+    for page in all_pages:
+        if per_page_spine[page] is not None:
+            prev_val = per_page_spine[page]
+            filled[page] = prev_val
+        elif prev_val is not None:
+            filled[page] = prev_val
+        else:
+            next_val = None
+            for p in all_pages:
+                if p > page and per_page_spine[p] is not None:
+                    next_val = per_page_spine[p]
+                    break
+            filled[page] = prev_val or next_val or {"median_width": 500, "median_x": 100, "width_range": (350, 650)}
+
+    return filled
+
+
+def _detect_non_body_insert_clusters(
+    blocks: list[dict],
+    body_spine: dict[int, dict],
+    page_height: float = 1600,
+    page_width: float = 1200,
+) -> set[int]:
+    """Return indices of blocks that belong to early-page non-body insert clusters.
+
+    Detection criteria (primary, geometry-based):
+    1. Page <= 3 (early pages near body/frontmatter transition)
+    2. Block role is ``body_paragraph`` (potential misclassification)
+    3. Block width < 70% of body_spine median width for that page
+    4. Multiple such narrow blocks exist on the same page in a cluster
+    """
+    indices: set[int] = set()
+
+    candidates_by_page: dict[int, list[int]] = {}
+    for i, block in enumerate(blocks):
+        page = block.get("page", 1)
+        if page > 3:
+            continue
+        if block.get("role") != "body_paragraph":
+            continue
+
+        bbox = block.get("bbox", [0, 0, 0, 0])
+        block_width = bbox[2] - bbox[0]
+        spine = body_spine.get(page, body_spine.get(1, {"median_width": 500}))
+        median_width = spine.get("median_width", 500)
+
+        if block_width < 0.7 * median_width:
+            candidates_by_page.setdefault(page, []).append(i)
+
+    for candidate_indices in candidates_by_page.values():
+        if len(candidate_indices) >= 2:
+            indices.update(candidate_indices)
+
+    return indices
+
+
 def normalize_document_structure(blocks: list[dict]) -> tuple[DocumentStructure, list[dict]]:
     """Analyze document structure and normalize roles.
 
@@ -822,5 +925,13 @@ def normalize_document_structure(blocks: list[dict]) -> tuple[DocumentStructure,
     header_band, footer_band = _estimate_noise_bands(blocks)
     blocks = _promote_tail_body_candidates(blocks, doc_structure, header_band=header_band, footer_band=footer_band)
     blocks = _assign_tail_spread_ownership(blocks, doc_structure)
+
+    # Detect non-body insert clusters on early pages
+    body_spine = _detect_body_spine(blocks)
+    insert_indices = _detect_non_body_insert_clusters(blocks, body_spine)
+    for idx in insert_indices:
+        if idx < len(blocks):
+            blocks[idx]["role"] = "non_body_insert"
+            blocks[idx]["_non_body_insert"] = True
 
     return doc_structure, blocks
