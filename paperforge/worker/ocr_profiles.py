@@ -73,12 +73,6 @@ def extract_block_span_profile(block: dict) -> dict | None:
     return None
 
 
-_PROFILE_QUALITY_STRONG = 3       # block_count >= 3 and low dispersion
-_PROFILE_QUALITY_MODERATE = 2     # block_count >= 3 and acceptable dispersion
-_PROFILE_QUALITY_WEAK = 1         # block_count >= 2 but high dispersion
-_PROFILE_QUALITY_NO_DATA = 0      # insufficient data
-
-
 def _profile_quality(block_count: int, dispersion: float) -> str:
     if block_count >= 3 and dispersion <= 0.15:
         return "strong"

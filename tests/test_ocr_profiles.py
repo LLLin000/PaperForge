@@ -72,7 +72,7 @@ def test_build_role_span_profiles_profile_quality() -> None:
         {"role": "body_paragraph", "span_metadata": {"size": 10.0, "flags": 0}}
     ]
     profiles = build_role_span_profiles(blocks)
-    assert profiles["body_paragraph"]["quality"] in ("weak", "no_data")
+    assert profiles["body_paragraph"]["quality"] == "no_data"
 
 
 def test_build_role_span_profiles_empty_input() -> None:
