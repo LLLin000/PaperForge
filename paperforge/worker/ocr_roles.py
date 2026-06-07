@@ -482,6 +482,27 @@ def assign_block_role(
                     f"backmatter {'boundary heading' if role_name == 'backmatter_boundary_heading' else 'boundary candidate'}: {text[:60]}"
                 ],
             )
+        # Author-like heading guard: prevent bylines from becoming headings
+        _is_author_byline = (
+            re.search(r"&|,.*,", text)
+            and len(text.split()) <= 15
+            and not _has_heading_numbering(text)
+            and not any(text.lower().startswith(w) for w in ["abstract", "introduction", "methods", "results", "discussion", "conclusion", "references"])
+        )
+        if _is_author_byline and page_num == 1:
+            return RoleAssignment(
+                role="frontmatter_noise",
+                confidence=0.5,
+                evidence=[f"author byline on page 1, not heading: {text[:60]}"],
+            )
+
+        if re.search(r"(?:correspondence|orcid|@)", text.lower()) and len(text.split()) <= 20 and page_num == 1:
+            return RoleAssignment(
+                role="frontmatter_noise",
+                confidence=0.5,
+                evidence=[f"correspondence/noise on page 1: {text[:60]}"],
+            )
+
         if _has_heading_numbering(text):
             depth = _heading_number_depth(text)
             return RoleAssignment(
