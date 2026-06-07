@@ -2573,3 +2573,173 @@ def test_span_coverage_strong_when_most_blocks_have_metadata() -> None:
     assert result["blocks_with_span"] == 8
     assert result["blocks_without_span"] == 2
     assert result["degraded_mode_active"] is False
+
+
+# ---------------------------------------------------------------------------
+# Non-body insert: spine quality gating (Task 5)
+# ---------------------------------------------------------------------------
+
+
+def test_non_body_insert_weak_spine_requires_font_mismatch() -> None:
+    """Moderate spine (2 anchor pages) + narrow width + same font → NOT non_body_insert."""
+    from paperforge.worker.ocr_document import _detect_body_spine, _detect_non_body_insert_clusters
+
+    blocks = []
+    # Pages 2-3: 3 body paragraphs each → 2 anchor pages → moderate meta quality
+    for pg in range(2, 4):
+        for i in range(3):
+            blocks.append({
+                "role": "body_paragraph",
+                "page": pg,
+                "bbox": [80, 100 + i * 100, 590, 160 + i * 100],
+                "span_metadata": [{"size": 10, "font": "Times"}],
+                "page_width": 1200,
+                "page_height": 1700,
+            })
+    # Page 1: 2 body paragraphs
+    for i in range(2):
+        blocks.append({
+            "role": "body_paragraph",
+            "page": 1,
+            "bbox": [80, 100 + i * 100, 590, 160 + i * 100],
+            "span_metadata": [{"size": 10, "font": "Times"}],
+            "page_width": 1200,
+            "page_height": 1700,
+        })
+    # Page 1: 2 narrow blocks with SAME font → should NOT be non_body_insert
+    blocks.append({
+        "role": "body_paragraph",
+        "page": 1,
+        "bbox": [50, 600, 300, 640],
+        "span_metadata": [{"size": 10, "font": "Times"}],
+        "page_width": 1200,
+        "page_height": 1700,
+    })
+    blocks.append({
+        "role": "body_paragraph",
+        "page": 1,
+        "bbox": [50, 680, 310, 720],
+        "span_metadata": [{"size": 10, "font": "Times"}],
+        "page_width": 1200,
+        "page_height": 1700,
+    })
+
+    spine = _detect_body_spine(blocks)
+    result = _detect_non_body_insert_clusters(blocks, spine, page_width=1200)
+    assert len(result) == 0, f"Expected 0 non_body_insert with moderate spine + same font, got {result}"
+
+
+def test_non_body_insert_strong_spine_or_gate_ok() -> None:
+    """Strong spine (5 anchor pages) + narrow width or font mismatch → OK to detect."""
+    from paperforge.worker.ocr_document import _detect_body_spine, _detect_non_body_insert_clusters
+
+    blocks = []
+    # Pages 2-6: 3 body paragraphs each → 5 anchor pages → strong meta quality
+    for pg in range(2, 7):
+        for i in range(3):
+            blocks.append({
+                "role": "body_paragraph",
+                "page": pg,
+                "bbox": [80, 100 + i * 100, 590, 160 + i * 100],
+                "span_metadata": [{"size": 10, "font": "Times"}],
+                "page_width": 1200,
+                "page_height": 1700,
+            })
+    # Page 1: 2 narrow blocks with SAME font → should be detected (strong spine trusts narrow alone)
+    blocks.append({
+        "role": "body_paragraph",
+        "page": 1,
+        "bbox": [50, 600, 300, 640],
+        "span_metadata": [{"size": 10, "font": "Times"}],
+        "page_width": 1200,
+        "page_height": 1700,
+    })
+    blocks.append({
+        "role": "body_paragraph",
+        "page": 1,
+        "bbox": [50, 680, 310, 720],
+        "span_metadata": [{"size": 10, "font": "Times"}],
+        "page_width": 1200,
+        "page_height": 1700,
+    })
+
+    spine = _detect_body_spine(blocks)
+    result = _detect_non_body_insert_clusters(blocks, spine, page_width=1200)
+    assert len(result) >= 2, f"Expected at least 2 non_body_insert with strong spine, got {result}"
+
+
+def test_title_not_swept_into_non_body_insert() -> None:
+    """Page 1 title-like block (long text, no bullets) is NOT marked as non_body_insert."""
+    from paperforge.worker.ocr_document import _detect_body_spine, _detect_non_body_insert_clusters
+
+    blocks = []
+    # Pages 2-6: 3 body paragraphs each → strong meta quality
+    for pg in range(2, 7):
+        for i in range(3):
+            blocks.append({
+                "role": "body_paragraph",
+                "page": pg,
+                "bbox": [80, 100 + i * 100, 590, 160 + i * 100],
+                "span_metadata": [{"size": 10, "font": "Times"}],
+                "page_width": 1200,
+                "page_height": 1700,
+            })
+    # Page 1: title-like block (long text, narrow width, no bullets)
+    blocks.append({
+        "role": "body_paragraph",
+        "page": 1,
+        "bbox": [50, 100, 400, 140],  # width 350 < 357 → narrow
+        "text": "Metabolic regulation of skeletal cell fate and function in development and disease",
+        "span_metadata": [{"size": 14, "font": "Times"}],
+        "page_width": 1200,
+        "page_height": 1700,
+    })
+    # Page 1: companion narrow block (also narrow, same font)
+    blocks.append({
+        "role": "body_paragraph",
+        "page": 1,
+        "bbox": [50, 200, 400, 240],  # width 350 < 357 → narrow
+        "text": "Short narrow paragraph that is not a title",
+        "span_metadata": [{"size": 10, "font": "Times"}],
+        "page_width": 1200,
+        "page_height": 1700,
+    })
+
+    spine = _detect_body_spine(blocks)
+    result = _detect_non_body_insert_clusters(blocks, spine, page_width=1200)
+    # Title block must not be in result
+    title_idx = 15  # indices 0-14 are body paragraphs
+    assert title_idx not in result, f"Title block (idx {title_idx}) should not be non_body_insert, got {result}"
+
+
+# ---------------------------------------------------------------------------
+# Layout audit tests (Task 8)
+# ---------------------------------------------------------------------------
+
+
+def test_layout_audit_heading_owns_wrong_body() -> None:
+    """Heading in left column, body above it in right column -> audit flags."""
+    from paperforge.worker.ocr_document import _run_layout_audit
+
+    blocks = [
+        {"page": 1, "role": "body_paragraph", "bbox": [700, 100, 1100, 140], "text": "Body above heading"},
+        {"page": 1, "role": "section_heading", "bbox": [100, 200, 500, 230], "text": "Introduction"},
+    ]
+    result = _run_layout_audit(blocks)
+    assert result["status"] in ("warn", "fail"), f"Expected warn/fail, got {result['status']}"
+    assert "1" in result["page_warnings"], f"Page 1 should have warnings: {result['page_warnings']}"
+    assert result["anomaly_count"] >= 1
+
+
+def test_layout_audit_reference_zone_overlaps_body() -> None:
+    """structured_insert region overlapping body region -> audit flags."""
+    from paperforge.worker.ocr_document import _run_layout_audit
+
+    blocks = [
+        {"page": 1, "role": "body_paragraph", "bbox": [100, 100, 500, 300], "text": "Body text"},
+        {"page": 1, "role": "structured_insert", "bbox": [200, 150, 400, 250], "text": "Insert overlapping body"},
+    ]
+    result = _run_layout_audit(blocks)
+    assert result["status"] in ("warn", "fail"), f"Expected warn/fail, got {result['status']}"
+    assert "1" in result["page_warnings"], f"Page 1 should have warnings: {result['page_warnings']}"
+    assert result["anomaly_count"] >= 1
