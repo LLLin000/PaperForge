@@ -83,3 +83,24 @@ def test_build_spine_health() -> None:
     assert empty["body_spine_quality"] == "weak"
     assert empty["body_anchor_pages"] == []
     assert empty["body_spine_sample_count"] == 0
+
+
+def test_build_span_coverage_health() -> None:
+    from paperforge.worker.ocr_health import build_span_coverage_health
+
+    blocks = [
+        {"span_metadata": {"size": 10}},
+        {"span_metadata": {"size": 10}},
+        {"span_metadata": None},
+    ]
+    result = build_span_coverage_health(blocks)
+    assert result["coverage_ratio"] == 2 / 3
+    assert result["coverage_quality"] == "moderate"
+    assert result["blocks_with_span"] == 2
+    assert result["blocks_without_span"] == 1
+    assert result["degraded_mode_active"] is False
+
+    # Empty blocks
+    empty = build_span_coverage_health([])
+    assert empty["degraded_mode_active"] is True
+    assert empty["coverage_quality"] == "weak"
