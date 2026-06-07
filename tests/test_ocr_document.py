@@ -1111,6 +1111,33 @@ def test_non_body_insert_catches_continuation_fragment() -> None:
     )
 
 
+def test_non_body_insert_not_on_weak_spine() -> None:
+    """Font mismatch alone should not trigger non_body_insert when spine quality is weak."""
+    from paperforge.worker.ocr_document import _detect_body_spine, _detect_non_body_insert_clusters
+
+    blocks = []
+    # Only page 1 body paragraphs -- spine will be weak
+    for i in range(3):
+        blocks.append({"block_id": f"b{i}", "page": 1, "role": "body_paragraph",
+                       "text": f"Body {i}", "bbox": [80, 100 + i * 100, 590, 160 + i * 100],
+                       "page_width": 1200, "page_height": 1700,
+                       "span_metadata": [{"size": 10, "font": "Times", "flags": 0, "color": 0}]})
+    # One narrow block on page 1 with different font
+    blocks.append({"block_id": "b3", "page": 1, "role": "body_paragraph",
+                   "text": "Narrow body", "bbox": [80, 400, 200, 440],
+                   "page_width": 1200, "page_height": 1700,
+                   "span_metadata": [{"size": 10, "font": "Arial", "flags": 0, "color": 0}]})
+    blocks.append({"block_id": "b4", "page": 1, "role": "body_paragraph",
+                   "text": "Another narrow", "bbox": [80, 450, 200, 490],
+                   "page_width": 1200, "page_height": 1700,
+                   "span_metadata": [{"size": 10, "font": "Arial", "flags": 0, "color": 0}]})
+
+    spine = _detect_body_spine(blocks)
+    result = _detect_non_body_insert_clusters(blocks, spine, page_width=1200)
+    # With weak spine, font mismatch alone should NOT trigger
+    assert len(result) == 0, f"Expected 0 non_body_insert indices, got {result}"
+
+
 def test_layout_profile_single_column() -> None:
     from paperforge.worker.ocr_document import (
         PageLayoutProfile,

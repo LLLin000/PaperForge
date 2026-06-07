@@ -1675,7 +1675,7 @@ def _detect_non_body_insert_clusters(
             return str(span.get("font", "") or "").lower() or None
         return None
 
-    candidates_by_page: dict[int, list[int]] = {}
+    raw_candidates: dict[int, list[tuple[int, bool, bool]]] = {}
     for i, block in enumerate(blocks):
         page = block.get("page", 1)
         if page > max_early_page:
@@ -1714,7 +1714,30 @@ def _detect_non_body_insert_clusters(
         font_mismatch = bool(block_font and spine_fonts and block_font not in spine_fonts)
 
         if is_narrow or font_mismatch:
-            candidates_by_page.setdefault(page, []).append(i)
+            raw_candidates.setdefault(page, []).append((i, is_narrow, font_mismatch))
+
+    # Quality-gated filtering: font_mismatch signal reliability depends on
+    # whether anchor pages exist (multi-page width estimate) and spine quality.
+    candidates_by_page: dict[int, list[int]] = {}
+    for page, cand_list in raw_candidates.items():
+        spine_key = page if page in body_spine else 1
+        spine = body_spine.get(spine_key, {})
+        spine_fonts = spine.get("all_fonts") or spine.get("fonts", set())
+        if not isinstance(spine_fonts, set):
+            spine_fonts = set(spine_fonts) if spine_fonts else set()
+        has_font_data = bool(spine_fonts)
+        has_anchors = bool(spine.get("anchor_pages", []))
+        spine_quality = spine.get("quality", "weak") if isinstance(spine, dict) else "weak"
+
+        for i, is_narrow, font_mismatch in cand_list:
+            if not has_font_data or has_anchors or spine_quality == "strong":
+                candidates_by_page.setdefault(page, []).append(i)
+            elif spine_quality == "moderate":
+                if is_narrow and (font_mismatch or len(cand_list) >= 2):
+                    candidates_by_page.setdefault(page, []).append(i)
+            else:  # weak, no anchors
+                if is_narrow and font_mismatch:
+                    candidates_by_page.setdefault(page, []).append(i)
 
     for candidate_indices in candidates_by_page.values():
         if len(candidate_indices) >= 2:
