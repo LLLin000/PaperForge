@@ -1497,6 +1497,16 @@ def _detect_body_spine(blocks: list[dict]) -> dict[int, dict]:
                 core_widths = [w for w in widths if w >= 0.6 * max_width]
                 median_width = statistics.median_low(core_widths) if core_widths else max_width
                 median_x = statistics.median_low(x_starts)
+                min_width = min(widths) if widths else max_width
+                width_dispersion = (max_width - min_width) / median_width if median_width > 0 else 1.0
+                font_coherence = len(fonts) <= 2
+                sample_count = len(anchor_pages)
+                if sample_count >= 3 and font_coherence and width_dispersion < 0.3:
+                    quality = "strong"
+                elif sample_count >= 1 and width_dispersion < 0.5:
+                    quality = "moderate"
+                else:
+                    quality = "weak"
                 per_page_spine[page] = {
                     "median_width": median_width,
                     "median_x": median_x,
@@ -1506,9 +1516,20 @@ def _detect_body_spine(blocks: list[dict]) -> dict[int, dict]:
                     "anchor_pages": anchor_pages,
                     "core_width_range": core_width_range,
                     "core_width_median": core_width_median,
+                    "quality": quality,
                 }
             elif has_anchors:
-                # Non-anchor page: use global anchor baseline
+                local_max_width = max(widths)
+                local_min_width = min(widths)
+                width_dispersion = (local_max_width - local_min_width) / core_width_median if core_width_median > 0 else 1.0
+                font_coherence = len(fonts) <= 2
+                sample_count = len(anchor_pages)
+                if sample_count >= 3 and font_coherence and width_dispersion < 0.3:
+                    quality = "strong"
+                elif sample_count >= 1 and width_dispersion < 0.5:
+                    quality = "moderate"
+                else:
+                    quality = "weak"
                 per_page_spine[page] = {
                     "median_width": core_width_median,
                     "median_x": statistics.median_low(x_starts) if x_starts else 100,
@@ -1518,6 +1539,7 @@ def _detect_body_spine(blocks: list[dict]) -> dict[int, dict]:
                     "anchor_pages": anchor_pages,
                     "core_width_range": core_width_range,
                     "core_width_median": core_width_median,
+                    "quality": quality,
                 }
             else:
                 # No anchors: per-page computation (original behavior)
@@ -1525,6 +1547,16 @@ def _detect_body_spine(blocks: list[dict]) -> dict[int, dict]:
                 core_widths = [w for w in widths if w >= 0.6 * max_width]
                 median_width = statistics.median_low(core_widths) if core_widths else max_width
                 median_x = statistics.median_low(x_starts)
+                min_width = min(widths) if widths else max_width
+                width_dispersion = (max_width - min_width) / median_width if median_width > 0 else 1.0
+                font_coherence = len(fonts) <= 2
+                sample_count = len(anchor_pages)
+                if sample_count >= 3 and font_coherence and width_dispersion < 0.3:
+                    quality = "strong"
+                elif sample_count >= 1 and width_dispersion < 0.5:
+                    quality = "moderate"
+                else:
+                    quality = "weak"
                 all_body_fonts: set[str] = set()
                 for b in body_blocks:
                     span = b.get("span_metadata") or {}
@@ -1546,6 +1578,7 @@ def _detect_body_spine(blocks: list[dict]) -> dict[int, dict]:
                     "anchor_pages": anchor_pages,
                     "core_width_range": core_width_range,
                     "core_width_median": core_width_median,
+                    "quality": quality,
                 }
         else:
             per_page_spine[page] = None
@@ -1577,6 +1610,7 @@ def _detect_body_spine(blocks: list[dict]) -> dict[int, dict]:
                     "anchor_pages": anchor_pages,
                     "core_width_range": core_width_range,
                     "core_width_median": core_width_median,
+                    "quality": "weak",
                 }
             )
 
