@@ -59,3 +59,27 @@ def test_health_report_distinguishes_formal_tables_from_segments() -> None:
 
     assert report.get("formal_table_count", 0) == 2
     assert report.get("table_segment_count", 0) == 5
+
+
+def test_build_spine_health() -> None:
+    from paperforge.worker.ocr_health import build_spine_health
+
+    body_spine = {
+        "_meta": {
+            "quality": "strong",
+            "anchor_pages": [3, 4, 5],
+            "sample_count": 12,
+            "font_coherence": 0.92,
+            "width_dispersion": 0.15,
+        },
+    }
+    result = build_spine_health(body_spine)
+    assert result["body_spine_quality"] == "strong"
+    assert result["body_anchor_pages"] == [3, 4, 5]
+    assert result["body_spine_sample_count"] == 12
+
+    # Missing _meta defaults
+    empty = build_spine_health({})
+    assert empty["body_spine_quality"] == "weak"
+    assert empty["body_anchor_pages"] == []
+    assert empty["body_spine_sample_count"] == 0

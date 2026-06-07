@@ -80,6 +80,15 @@ def build_ocr_health(
     }
 
 
+def build_spine_health(body_spine: dict) -> dict:
+    quality = body_spine.get("_meta", {}).get("quality", "weak")
+    return {
+        "body_spine_quality": quality,
+        "body_anchor_pages": body_spine.get("_meta", {}).get("anchor_pages", []),
+        "body_spine_sample_count": body_spine.get("_meta", {}).get("sample_count", 0),
+    }
+
+
 def write_ocr_health(health_root: Path, report: dict[str, Any]) -> None:
     from paperforge.core.io import write_json
 

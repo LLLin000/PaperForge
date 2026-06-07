@@ -418,8 +418,15 @@ def test_rescue_analyze_document_structure_mixed_tail_spread() -> None:
 
 
 def _make_block(bid: int, pg: int = 1, role: str = "body_paragraph", text: str = "text", w: int = 500) -> dict:
-    return {"block_id": f"b{bid}", "page": pg, "role": role, "text": text,
-            "bbox": [80, 100, 80 + w, 140], "page_width": 1200, "page_height": 1700}
+    return {
+        "block_id": f"b{bid}",
+        "page": pg,
+        "role": role,
+        "text": text,
+        "bbox": [80, 100, 80 + w, 140],
+        "page_width": 1200,
+        "page_height": 1700,
+    }
 
 
 def test_body_anchor_pages_exclude_page_1() -> None:
@@ -433,8 +440,10 @@ def test_body_anchor_pages_exclude_page_1() -> None:
     blocks += [_make_block(i, pg=1, role="noise", text="Copyright", w=136) for i in range(2)]
     # Pages 2-8: clean body paragraphs
     for pg in range(2, 9):
-        blocks += [_make_block(i + pg * 10, pg=pg, role="body_paragraph", text=f"Body para on page {pg}", w=510)
-                    for i in range(5)]
+        blocks += [
+            _make_block(i + pg * 10, pg=pg, role="body_paragraph", text=f"Body para on page {pg}", w=510)
+            for i in range(5)
+        ]
     # Page 9: references
     blocks += [_make_block(i, pg=9, role="reference_heading", text="References", w=150) for i in range(1)]
 
@@ -443,9 +452,7 @@ def test_body_anchor_pages_exclude_page_1() -> None:
     # pages list should exclude page 1.  Currently anchor_pages does not
     # exist → this will be [] → resolves to [1] ≠ [1] → False → fail.
     anchor_pages: list[int] = spine.get(1, {}).get("anchor_pages", [])  # type: ignore[type-arg]
-    assert anchor_pages or [1] != [1], (
-        f"Page 1 anchor pages should exclude page 1, got anchor_pages={anchor_pages!r}"
-    )
+    assert anchor_pages or [1] != [1], f"Page 1 anchor pages should exclude page 1, got anchor_pages={anchor_pages!r}"
 
 
 def test_body_anchor_pages_exclude_tail() -> None:
@@ -455,8 +462,10 @@ def test_body_anchor_pages_exclude_tail() -> None:
     blocks = []
     # Pages 1-5: clean body
     for pg in range(1, 6):
-        blocks += [_make_block(i + pg * 10, pg=pg, role="body_paragraph", text=f"Body para on page {pg}", w=510)
-                    for i in range(5)]
+        blocks += [
+            _make_block(i + pg * 10, pg=pg, role="body_paragraph", text=f"Body para on page {pg}", w=510)
+            for i in range(5)
+        ]
     # Pages 6-8: tail (references, etc.)
     blocks += [_make_block(i, pg=6, role="reference_heading", text="References", w=150) for i in range(1)]
     blocks += [_make_block(i, pg=7, role="reference_item", text="Ref item", w=200) for i in range(3)]
@@ -480,8 +489,10 @@ def test_anchor_ranking_prefers_body_dense_pages() -> None:
     blocks += [_make_block(i, pg=2, role="body_paragraph", text="Body para on page 2", w=510) for i in range(2)]
     # Pages 3-4: many body paragraphs (should rank higher)
     for pg in range(3, 5):
-        blocks += [_make_block(i + pg * 10, pg=pg, role="body_paragraph", text=f"Body para on page {pg}", w=510)
-                    for i in range(8)]
+        blocks += [
+            _make_block(i + pg * 10, pg=pg, role="body_paragraph", text=f"Body para on page {pg}", w=510)
+            for i in range(8)
+        ]
     # Page 5: moderate body paragraphs
     blocks += [_make_block(i, pg=5, role="body_paragraph", text="Body para on page 5", w=510) for i in range(4)]
 
@@ -504,21 +515,91 @@ def test_middle_page_baseline_excludes_frontmatter() -> None:
     # Page 1: contaminated — 2 title, 2 authors, 4 noise, only 2 body_paragraph
     # body_ratio = 2/10 = 0.2 < 0.4 → should be excluded by new scoring
     for i in range(2):
-        blocks.append({"block_id": f"b_title{i}", "page": 1, "role": "paper_title", "text": f"Title {i}", "bbox": [80, 20 + i*40, 280, 60 + i*40], "page_width": 1200, "page_height": 1700})
+        blocks.append(
+            {
+                "block_id": f"b_title{i}",
+                "page": 1,
+                "role": "paper_title",
+                "text": f"Title {i}",
+                "bbox": [80, 20 + i * 40, 280, 60 + i * 40],
+                "page_width": 1200,
+                "page_height": 1700,
+            }
+        )
     for i in range(2):
-        blocks.append({"block_id": f"b_author{i}", "page": 1, "role": "authors", "text": f"Author {i}", "bbox": [80, 120 + i*40, 300, 160 + i*40], "page_width": 1200, "page_height": 1700})
+        blocks.append(
+            {
+                "block_id": f"b_author{i}",
+                "page": 1,
+                "role": "authors",
+                "text": f"Author {i}",
+                "bbox": [80, 120 + i * 40, 300, 160 + i * 40],
+                "page_width": 1200,
+                "page_height": 1700,
+            }
+        )
     for i in range(4):
-        blocks.append({"block_id": f"b_noise{i}", "page": 1, "role": "noise", "text": f"Noise {i}", "bbox": [80, 220 + i*40, 180, 260 + i*40], "page_width": 1200, "page_height": 1700})
+        blocks.append(
+            {
+                "block_id": f"b_noise{i}",
+                "page": 1,
+                "role": "noise",
+                "text": f"Noise {i}",
+                "bbox": [80, 220 + i * 40, 180, 260 + i * 40],
+                "page_width": 1200,
+                "page_height": 1700,
+            }
+        )
     for i in range(2):
-        blocks.append({"block_id": f"b_body1_{i}", "page": 1, "role": "body_paragraph", "text": f"Body on page 1 {i}", "bbox": [80, 400 + i*40, 500, 440 + i*40], "page_width": 1200, "page_height": 1700})
+        blocks.append(
+            {
+                "block_id": f"b_body1_{i}",
+                "page": 1,
+                "role": "body_paragraph",
+                "text": f"Body on page 1 {i}",
+                "bbox": [80, 400 + i * 40, 500, 440 + i * 40],
+                "page_width": 1200,
+                "page_height": 1700,
+            }
+        )
     # Pages 4-8: clean body (3 body paragraphs each)
     for pg in range(4, 9):
         for i in range(3):
-            blocks.append({"block_id": f"b{pg}_{i}", "page": pg, "role": "body_paragraph", "text": f"Body on {pg}", "bbox": [80, 100 + i*80, 550, 140 + i*80], "page_width": 1200, "page_height": 1700})
+            blocks.append(
+                {
+                    "block_id": f"b{pg}_{i}",
+                    "page": pg,
+                    "role": "body_paragraph",
+                    "text": f"Body on {pg}",
+                    "bbox": [80, 100 + i * 80, 550, 140 + i * 80],
+                    "page_width": 1200,
+                    "page_height": 1700,
+                }
+            )
     # Pages 10-11: tail
-    blocks.append({"block_id": "ref_head", "page": 10, "role": "reference_heading", "text": "References", "bbox": [80, 100, 400, 130], "page_width": 1200, "page_height": 1700})
+    blocks.append(
+        {
+            "block_id": "ref_head",
+            "page": 10,
+            "role": "reference_heading",
+            "text": "References",
+            "bbox": [80, 100, 400, 130],
+            "page_width": 1200,
+            "page_height": 1700,
+        }
+    )
     for i in range(3):
-        blocks.append({"block_id": f"ref_{i}", "page": 10, "role": "reference_item", "text": f"Ref {i}", "bbox": [80, 150 + i*40, 500, 190 + i*40], "page_width": 1200, "page_height": 1700})
+        blocks.append(
+            {
+                "block_id": f"ref_{i}",
+                "page": 10,
+                "role": "reference_item",
+                "text": f"Ref {i}",
+                "bbox": [80, 150 + i * 40, 500, 190 + i * 40],
+                "page_width": 1200,
+                "page_height": 1700,
+            }
+        )
 
     spine = _detect_body_spine(blocks)
     anchor_pages: list[int] = spine.get(4, {}).get("anchor_pages", [])
@@ -538,20 +619,80 @@ def test_middle_page_baseline_excludes_tail() -> None:
     blocks = []
     # Page 1: frontmatter only — will be excluded by page==1 guard
     for i in range(3):
-        blocks.append({"block_id": f"b_title{i}", "page": 1, "role": "paper_title", "text": f"Title {i}", "bbox": [80, 20 + i*40, 280, 60 + i*40], "page_width": 1200, "page_height": 1700})
+        blocks.append(
+            {
+                "block_id": f"b_title{i}",
+                "page": 1,
+                "role": "paper_title",
+                "text": f"Title {i}",
+                "bbox": [80, 20 + i * 40, 280, 60 + i * 40],
+                "page_width": 1200,
+                "page_height": 1700,
+            }
+        )
     # Page 2: contaminated (2 body + 6 non-body)
     for i in range(2):
-        blocks.append({"block_id": f"b2_body{i}", "page": 2, "role": "body_paragraph", "text": f"Body on 2 {i}", "bbox": [80, 100 + i*40, 500, 140 + i*40], "page_width": 1200, "page_height": 1700})
+        blocks.append(
+            {
+                "block_id": f"b2_body{i}",
+                "page": 2,
+                "role": "body_paragraph",
+                "text": f"Body on 2 {i}",
+                "bbox": [80, 100 + i * 40, 500, 140 + i * 40],
+                "page_width": 1200,
+                "page_height": 1700,
+            }
+        )
     for i in range(6):
-        blocks.append({"block_id": f"b2_noise{i}", "page": 2, "role": "noise", "text": f"Noise {i}", "bbox": [80, 300 + i*30, 180, 330 + i*30], "page_width": 1200, "page_height": 1700})
+        blocks.append(
+            {
+                "block_id": f"b2_noise{i}",
+                "page": 2,
+                "role": "noise",
+                "text": f"Noise {i}",
+                "bbox": [80, 300 + i * 30, 180, 330 + i * 30],
+                "page_width": 1200,
+                "page_height": 1700,
+            }
+        )
     # Pages 4-8: clean body (4 body paragraphs each)
     for pg in range(4, 9):
         for i in range(4):
-            blocks.append({"block_id": f"b{pg}_{i}", "page": pg, "role": "body_paragraph", "text": f"Body on {pg}", "bbox": [80, 100 + i*60, 550, 140 + i*60], "page_width": 1200, "page_height": 1700})
+            blocks.append(
+                {
+                    "block_id": f"b{pg}_{i}",
+                    "page": pg,
+                    "role": "body_paragraph",
+                    "text": f"Body on {pg}",
+                    "bbox": [80, 100 + i * 60, 550, 140 + i * 60],
+                    "page_width": 1200,
+                    "page_height": 1700,
+                }
+            )
     # Pages 10+: tail (reference heading + items)
-    blocks.append({"block_id": "ref_h", "page": 10, "role": "reference_heading", "text": "References", "bbox": [80, 100, 400, 130], "page_width": 1200, "page_height": 1700})
+    blocks.append(
+        {
+            "block_id": "ref_h",
+            "page": 10,
+            "role": "reference_heading",
+            "text": "References",
+            "bbox": [80, 100, 400, 130],
+            "page_width": 1200,
+            "page_height": 1700,
+        }
+    )
     for i in range(4):
-        blocks.append({"block_id": f"ref_{i}", "page": 10, "role": "reference_item", "text": f"Ref {i}", "bbox": [80, 150 + i*40, 500, 190 + i*40], "page_width": 1200, "page_height": 1700})
+        blocks.append(
+            {
+                "block_id": f"ref_{i}",
+                "page": 10,
+                "role": "reference_item",
+                "text": f"Ref {i}",
+                "bbox": [80, 150 + i * 40, 500, 190 + i * 40],
+                "page_width": 1200,
+                "page_height": 1700,
+            }
+        )
 
     spine = _detect_body_spine(blocks)
     anchor_pages: list[int] = spine.get(4, {}).get("anchor_pages", [])
@@ -1185,19 +1326,43 @@ def test_non_body_insert_not_on_weak_spine() -> None:
     blocks = []
     # Only page 1 body paragraphs -- spine will be weak
     for i in range(3):
-        blocks.append({"block_id": f"b{i}", "page": 1, "role": "body_paragraph",
-                       "text": f"Body {i}", "bbox": [80, 100 + i * 100, 590, 160 + i * 100],
-                       "page_width": 1200, "page_height": 1700,
-                       "span_metadata": [{"size": 10, "font": "Times", "flags": 0, "color": 0}]})
+        blocks.append(
+            {
+                "block_id": f"b{i}",
+                "page": 1,
+                "role": "body_paragraph",
+                "text": f"Body {i}",
+                "bbox": [80, 100 + i * 100, 590, 160 + i * 100],
+                "page_width": 1200,
+                "page_height": 1700,
+                "span_metadata": [{"size": 10, "font": "Times", "flags": 0, "color": 0}],
+            }
+        )
     # One narrow block on page 1 with different font
-    blocks.append({"block_id": "b3", "page": 1, "role": "body_paragraph",
-                   "text": "Narrow body", "bbox": [80, 400, 200, 440],
-                   "page_width": 1200, "page_height": 1700,
-                   "span_metadata": [{"size": 10, "font": "Arial", "flags": 0, "color": 0}]})
-    blocks.append({"block_id": "b4", "page": 1, "role": "body_paragraph",
-                   "text": "Another narrow", "bbox": [80, 450, 200, 490],
-                   "page_width": 1200, "page_height": 1700,
-                   "span_metadata": [{"size": 10, "font": "Arial", "flags": 0, "color": 0}]})
+    blocks.append(
+        {
+            "block_id": "b3",
+            "page": 1,
+            "role": "body_paragraph",
+            "text": "Narrow body",
+            "bbox": [80, 400, 200, 440],
+            "page_width": 1200,
+            "page_height": 1700,
+            "span_metadata": [{"size": 10, "font": "Arial", "flags": 0, "color": 0}],
+        }
+    )
+    blocks.append(
+        {
+            "block_id": "b4",
+            "page": 1,
+            "role": "body_paragraph",
+            "text": "Another narrow",
+            "bbox": [80, 450, 200, 490],
+            "page_width": 1200,
+            "page_height": 1700,
+            "span_metadata": [{"size": 10, "font": "Arial", "flags": 0, "color": 0}],
+        }
+    )
 
     spine = _detect_body_spine(blocks)
     result = _detect_non_body_insert_clusters(blocks, spine, page_width=1200)
@@ -1320,9 +1485,7 @@ def test_reading_segments_single_column() -> None:
         {"page": 1, "bbox": [100, 200, 700, 240], "role": "body_paragraph"},
         {"page": 1, "bbox": [100, 100, 700, 140], "role": "body_paragraph"},
     ]
-    profile = PageLayoutProfile(
-        column_count=1, column_boundaries=[400.0], layout_type="single_column"
-    )
+    profile = PageLayoutProfile(column_count=1, column_boundaries=[400.0], layout_type="single_column")
 
     segments = _build_page_reading_segments(page_blocks, profile, page_idx_offset=10)
 
@@ -1392,12 +1555,8 @@ def test_tail_reading_order_mixed_page() -> None:
     ]
 
     page_layouts = {
-        1: PageLayoutProfile(
-            column_count=1, column_boundaries=[400.0], layout_type="single_column"
-        ),
-        2: PageLayoutProfile(
-            column_count=1, column_boundaries=[400.0], layout_type="single_column"
-        ),
+        1: PageLayoutProfile(column_count=1, column_boundaries=[400.0], layout_type="single_column"),
+        2: PageLayoutProfile(column_count=1, column_boundaries=[400.0], layout_type="single_column"),
         3: PageLayoutProfile(
             column_count=2,
             column_boundaries=[215.0, 585.0],
@@ -1809,7 +1968,7 @@ def test_figure_caption_candidate_demoted_in_body() -> None:
             "page": 3,
             "role": "figure_caption_candidate",
             "text": "Fig. 1a This is a narrative description. We observed significant results. "
-                    "The data suggests a novel mechanism.",
+            "The data suggests a novel mechanism.",
             "bbox": [100, 200, 500, 230],
         },
     ]
@@ -1926,10 +2085,31 @@ def test_body_spine_quality_strong_with_clean_anchors() -> None:
     from paperforge.worker.ocr_document import _detect_body_spine
 
     blocks = []
-    blocks.append({"block_id": "b0", "page": 1, "role": "paper_title", "text": "Title", "bbox": [80, 20, 280, 60], "page_width": 1200, "page_height": 1700})
+    blocks.append(
+        {
+            "block_id": "b0",
+            "page": 1,
+            "role": "paper_title",
+            "text": "Title",
+            "bbox": [80, 20, 280, 60],
+            "page_width": 1200,
+            "page_height": 1700,
+        }
+    )
     for pg in range(2, 6):
         for i in range(3):
-            blocks.append({"block_id": f"b{pg}_{i}", "page": pg, "role": "body_paragraph", "text": f"Body {i}", "bbox": [80, 100 + i * 100, 590, 160 + i * 100], "page_width": 1200, "page_height": 1700, "span_metadata": [{"size": 10.0, "font": "Times", "flags": 0, "color": 0}]})
+            blocks.append(
+                {
+                    "block_id": f"b{pg}_{i}",
+                    "page": pg,
+                    "role": "body_paragraph",
+                    "text": f"Body {i}",
+                    "bbox": [80, 100 + i * 100, 590, 160 + i * 100],
+                    "page_width": 1200,
+                    "page_height": 1700,
+                    "span_metadata": [{"size": 10.0, "font": "Times", "flags": 0, "color": 0}],
+                }
+            )
     spine = _detect_body_spine(blocks)
     sp2 = spine.get(2, {})
     assert sp2.get("quality") == "strong", f"Expected strong, got {sp2.get('quality')}"
@@ -1940,7 +2120,17 @@ def test_body_spine_quality_weak_contaminated() -> None:
 
     blocks = []
     for i in range(3):
-        blocks.append({"block_id": f"b{i}", "page": 1, "role": "body_paragraph", "text": f"Body {i}", "bbox": [80, 100 + i * 100, 200, 160 + i * 100], "page_width": 1200, "page_height": 1700})
+        blocks.append(
+            {
+                "block_id": f"b{i}",
+                "page": 1,
+                "role": "body_paragraph",
+                "text": f"Body {i}",
+                "bbox": [80, 100 + i * 100, 200, 160 + i * 100],
+                "page_width": 1200,
+                "page_height": 1700,
+            }
+        )
     spine = _detect_body_spine(blocks)
     sp1 = spine.get(1, {})
     assert sp1.get("quality") in ("weak", "moderate"), f"Expected weak/moderate, got {sp1.get('quality')}"
@@ -2000,6 +2190,222 @@ def test_no_span_rescue_more_conservative() -> None:
 
 def test_non_body_insert_skips_page1_title() -> None:
     from paperforge.worker.ocr_document import _is_page1_title
+
     assert _is_page1_title("Metabolic regulation of skeletal cell fate and function") is True
     assert _is_page1_title("Review article") is False
     assert _is_page1_title("") is False
+
+
+def test_contaminated_early_page_weak_spine() -> None:
+    """Early pages with mostly non-body blocks produce weak spine quality."""
+    from paperforge.worker.ocr_document import _detect_body_spine
+
+    blocks = []
+    # Single contaminated page: lots of frontmatter/noise, very few narrow body paragraphs
+    for i in range(3):
+        blocks.append(
+            {
+                "block_id": f"t{i}",
+                "page": 1,
+                "role": "paper_title",
+                "text": f"Title {i}",
+                "bbox": [80, 20 + i * 40, 280, 60 + i * 40],
+                "page_width": 1200,
+                "page_height": 1700,
+            }
+        )
+    for i in range(2):
+        blocks.append(
+            {
+                "block_id": f"a{i}",
+                "page": 1,
+                "role": "authors",
+                "text": f"Author {i}",
+                "bbox": [80, 140 + i * 40, 300, 180 + i * 40],
+                "page_width": 1200,
+                "page_height": 1700,
+            }
+        )
+    for i in range(5):
+        blocks.append(
+            {
+                "block_id": f"n{i}",
+                "page": 1,
+                "role": "noise",
+                "text": f"Noise {i}",
+                "bbox": [80, 240 + i * 30, 180, 270 + i * 30],
+                "page_width": 1200,
+                "page_height": 1700,
+            }
+        )
+    # Narrow body paragraphs (width < 400, below anchor minimum)
+    blocks.append(
+        {
+            "block_id": "b0",
+            "page": 1,
+            "role": "body_paragraph",
+            "text": "Narrow body text",
+            "bbox": [80, 400, 300, 440],
+            "page_width": 1200,
+            "page_height": 1700,
+            "span_metadata": [{"size": 10, "font": "Times", "flags": 0}],
+        }
+    )
+
+    spine = _detect_body_spine(blocks)
+    meta = spine.get("_meta", {})
+    assert meta.get("quality") == "weak", f"Expected weak, got {meta.get('quality')!r}"
+    assert meta.get("anchor_pages") == [], f"Expected empty anchor_pages, got {meta.get('anchor_pages')!r}"
+    assert meta.get("sample_count", -1) == 0, f"Expected sample_count 0, got {meta.get('sample_count')!r}"
+
+
+def test_stable_central_pages_strong_spine() -> None:
+    """Clean middle pages with body paragraphs produce strong spine quality."""
+    from paperforge.worker.ocr_document import _detect_body_spine
+
+    blocks = []
+    # Page 1: frontmatter only
+    blocks.append(
+        {
+            "block_id": "t0",
+            "page": 1,
+            "role": "paper_title",
+            "text": "Title",
+            "bbox": [80, 20, 280, 60],
+            "page_width": 1200,
+            "page_height": 1700,
+        }
+    )
+    # Pages 4-8: clean body paragraphs (3 each, width 510, same font)
+    for pg in range(4, 9):
+        for i in range(3):
+            blocks.append(
+                {
+                    "block_id": f"b{pg}_{i}",
+                    "page": pg,
+                    "role": "body_paragraph",
+                    "text": f"Body on page {pg}",
+                    "bbox": [80, 100 + i * 100, 590, 160 + i * 100],
+                    "page_width": 1200,
+                    "page_height": 1700,
+                    "span_metadata": [{"size": 10, "font": "Times", "flags": 0}],
+                }
+            )
+    # Tail
+    blocks.append(
+        {
+            "block_id": "ref",
+            "page": 10,
+            "role": "reference_heading",
+            "text": "References",
+            "bbox": [80, 100, 400, 130],
+            "page_width": 1200,
+            "page_height": 1700,
+        }
+    )
+
+    spine = _detect_body_spine(blocks)
+    meta = spine.get("_meta", {})
+    assert meta.get("quality") == "strong", f"Expected strong, got {meta.get('quality')!r}"
+    assert len(meta.get("anchor_pages", [])) >= 3, f"Expected >= 3 anchor_pages, got {meta.get('anchor_pages')!r}"
+    assert meta.get("font_coherence", 0.0) > 0.8, f"Expected font_coherence > 0.8, got {meta.get('font_coherence')!r}"
+    assert meta.get("width_dispersion", 1.0) < 0.3, (
+        f"Expected width_dispersion < 0.3, got {meta.get('width_dispersion')!r}"
+    )
+    assert meta.get("sample_count", 0) >= 8, f"Expected sample_count >= 8, got {meta.get('sample_count')!r}"
+
+
+# ---------------------------------------------------------------------------
+# Structured insert candidate / cluster tests (Task 4)
+# ---------------------------------------------------------------------------
+
+
+def test_textual_table_not_media_asset() -> None:
+    """A block with raw_label=table but substantive bullet text is NOT media_asset,
+    and enters as structured_insert_candidate instead."""
+    from paperforge.worker.ocr_roles import assign_block_role
+
+    block = {
+        "block_label": "table",
+        "block_content": "Key findings:\n\u2022 Finding one\n\u2022 Finding two\n\u2022 Finding three",
+        "block_bbox": [100, 200, 500, 400],
+        "page": 2,
+    }
+    page_blocks = [
+        {
+            "block_label": "table",
+            "block_content": "Key findings:\n\u2022 Finding one\n\u2022 Finding two\n\u2022 Finding three",
+            "block_bbox": [100, 200, 500, 400],
+            "page": 2,
+        },
+    ]
+    role = assign_block_role(block, page_blocks=page_blocks)
+    assert role.role != "media_asset", f"Expected NOT media_asset, got {role.role}"
+    assert role.role == "structured_insert_candidate"
+
+
+def test_key_points_box_not_body_paragraph() -> None:
+    """A detached summary box with heading + bullet items is clustered as structured_insert,
+    not left as body_paragraph."""
+    from paperforge.worker.ocr_document import _detect_structured_insert_clusters
+
+    blocks = [
+        {
+            "page": 3,
+            "role": "structured_insert_candidate",
+            "block_content": "Key points of the study",
+            "bbox": [100, 200, 500, 230],
+            "block_bbox": [100, 200, 500, 230],
+        },
+        {
+            "page": 3,
+            "role": "structured_insert_candidate",
+            "block_content": "\u2022 First important point\n\u2022 Second important point\n\u2022 Third point",
+            "bbox": [100, 240, 500, 350],
+            "block_bbox": [100, 240, 500, 350],
+        },
+    ]
+    indices = _detect_structured_insert_clusters(blocks)
+    assert len(indices) == 2
+    assert 0 in indices
+    assert 1 in indices
+
+
+def test_structured_insert_cluster_detected() -> None:
+    """Multiple structured insert candidates on the same page with close geometry
+    are detected as a cluster."""
+    from paperforge.worker.ocr_document import _detect_structured_insert_clusters
+
+    blocks = [
+        {
+            "page": 2,
+            "role": "structured_insert_candidate",
+            "block_content": "Box 1. Summary",
+            "bbox": [100, 100, 500, 130],
+            "block_bbox": [100, 100, 500, 130],
+        },
+        {
+            "page": 2,
+            "role": "structured_insert_candidate",
+            "block_content": "\u2022 Item A\n\u2022 Item B\n\u2022 Item C",
+            "bbox": [100, 140, 500, 250],
+            "block_bbox": [100, 140, 500, 250],
+        },
+        {
+            "page": 2,
+            "role": "structured_insert_candidate",
+            "block_content": "Box 2. Additional notes",
+            "bbox": [100, 300, 500, 330],
+            "block_bbox": [100, 300, 500, 330],
+        },
+        {
+            "page": 2,
+            "role": "structured_insert_candidate",
+            "block_content": "\u2022 Note one\n\u2022 Note two",
+            "bbox": [100, 340, 500, 400],
+            "block_bbox": [100, 340, 500, 400],
+        },
+    ]
+    indices = _detect_structured_insert_clusters(blocks)
+    # At least 3 of the 4 blocks should form clusters (two pairs)
+    assert len(indices) >= 3

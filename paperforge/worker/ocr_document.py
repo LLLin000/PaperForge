@@ -649,11 +649,7 @@ def _classify_backmatter_form(tail_boundary: TailBoundary, blocks: list[dict]) -
     boundary_page = None
     for block in blocks:
         p = block.get("page")
-        if (
-            p is not None
-            and search_start <= p <= tail_boundary.spread_end
-            and block.get("role") in _BOUNDARY_ROLES
-        ):
+        if p is not None and search_start <= p <= tail_boundary.spread_end and block.get("role") in _BOUNDARY_ROLES:
             boundary_page = p
             break
 
@@ -1431,7 +1427,7 @@ def _select_body_anchor_pages(blocks: list[dict], doc: DocumentStructure | None 
 
     # Pick top pages
     scores.sort(reverse=True)
-    anchor_pages = [p for _, p in scores[:max(3, len(scores) // 2)]]
+    anchor_pages = [p for _, p in scores[: max(3, len(scores) // 2)]]
     if anchor_pages:
         return sorted(anchor_pages)
     # Fallback: exclude page 1 even in fallback
@@ -1491,6 +1487,8 @@ def _detect_body_spine(blocks: list[dict], doc: DocumentStructure | None = None)
     anchor_widths: list[float] = []
     anchor_x_starts: list[float] = []
     anchor_fonts: set[str] = set()
+    anchor_font_counts: dict[str, int] = {}
+    total_font_blocks = 0
 
     for page in anchor_pages:
         for b in by_page.get(page, []):
@@ -1501,15 +1499,22 @@ def _detect_body_spine(blocks: list[dict], doc: DocumentStructure | None = None)
                     anchor_widths.append(w)
                     anchor_x_starts.append(bbox[0])
                     span = b.get("span_metadata") or {}
+                    first_font: str | None = None
                     if isinstance(span, list):
                         for s in span:
                             fam = s.get("font", "")
                             if fam:
                                 anchor_fonts.add(str(fam).lower())
+                                if first_font is None:
+                                    first_font = str(fam).lower()
                     elif isinstance(span, dict):
                         fam = span.get("font", "")
                         if fam:
                             anchor_fonts.add(str(fam).lower())
+                            first_font = str(fam).lower()
+                    if first_font:
+                        anchor_font_counts[first_font] = anchor_font_counts.get(first_font, 0) + 1
+                        total_font_blocks += 1
 
     if anchor_widths:
         anchor_max = max(anchor_widths)
@@ -1583,7 +1588,9 @@ def _detect_body_spine(blocks: list[dict], doc: DocumentStructure | None = None)
             elif has_anchors:
                 local_max_width = max(widths)
                 local_min_width = min(widths)
-                width_dispersion = (local_max_width - local_min_width) / core_width_median if core_width_median > 0 else 1.0
+                width_dispersion = (
+                    (local_max_width - local_min_width) / core_width_median if core_width_median > 0 else 1.0
+                )
                 font_coherence = len(fonts) <= 2
                 sample_count = len(anchor_pages)
                 if sample_count >= 3 and font_coherence and width_dispersion < 0.3:
@@ -1684,6 +1691,34 @@ def _detect_body_spine(blocks: list[dict], doc: DocumentStructure | None = None)
                     "quality": "weak",
                 }
             )
+
+    # Compute _meta quality from anchor data (after per-page loop to avoid
+    # variable shadowing from per-page font_coherence / width_dispersion).
+    meta_font_coherence = 0.0
+    if total_font_blocks > 0 and anchor_font_counts:
+        majority_count = max(anchor_font_counts.values())
+        meta_font_coherence = majority_count / total_font_blocks
+
+    meta_width_dispersion = 0.0
+    if len(anchor_widths) >= 2:
+        meta_width_dispersion = statistics.stdev(anchor_widths) / statistics.mean(anchor_widths)
+
+    meta_sample_count = len(anchor_widths)
+
+    if len(anchor_pages) >= 3 and meta_font_coherence > 0.8 and meta_width_dispersion < 0.3:
+        meta_quality = "strong"
+    elif len(anchor_pages) >= 1:
+        meta_quality = "moderate"
+    else:
+        meta_quality = "weak"
+
+    filled["_meta"] = {
+        "anchor_pages": anchor_pages,
+        "sample_count": meta_sample_count,
+        "font_coherence": meta_font_coherence,
+        "width_dispersion": meta_width_dispersion,
+        "quality": meta_quality,
+    }
 
     return filled
 
@@ -1942,7 +1977,7 @@ def _resolve_ambiguous_candidates(
                             bb = b.get("bbox") or b.get("block_bbox") or [0, 0, 0, 0]
                             bx = (bb[0] + bb[2]) / 2
                             boundary_col = _get_column_index_by_boundaries(bx, boundaries)
-                            _same_column = (col == boundary_col)
+                            _same_column = col == boundary_col
                             boundary_bottom = bb[3] if len(bb) > 3 else 0
                             break
                     else:
@@ -1999,8 +2034,8 @@ def _resolve_ambiguous_candidates(
             is_prose = _looks_like_figure_narrative_prose(text)
             in_body_spine = body_end_page is not None and page <= body_end_page
 
-            has_main_figure = bool(re.search(r'(?:Figure|Fig\.?)\s+\d+(?:\.\d+)?(?![a-z0-9])', text))
-            has_subfigure_letter = bool(re.search(r'(?:Figure|Fig\.?)\s+\d+[a-z]', text))
+            has_main_figure = bool(re.search(r"(?:Figure|Fig\.?)\s+\d+(?:\.\d+)?(?![a-z0-9])", text))
+            has_subfigure_letter = bool(re.search(r"(?:Figure|Fig\.?)\s+\d+[a-z]", text))
 
             # Subfigure references (Fig. 26c) with narrative prose in body
             # spine are body mentions — hard reject regardless of style.
@@ -2029,11 +2064,7 @@ def _resolve_ambiguous_candidates(
         ):
             block["role"] = "body_paragraph"
 
-        if (
-            role == "reference_item"
-            and references_start_page is not None
-            and page < references_start_page
-        ):
+        if role == "reference_item" and references_start_page is not None and page < references_start_page:
             block["role"] = "body_paragraph"
 
         if role == "backmatter_heading_candidate" and body_end_page is not None and page <= body_end_page:
@@ -2090,19 +2121,54 @@ def _mark_non_body_media(blocks: list[dict]) -> None:
                 block["_non_body_media"] = True
 
 
-_TITLE_SENTENCE_VERBS = frozenset((
-    "provides", "shows", "demonstrates", "describes",
-    "reports", "indicates", "suggests", "reveals",
-    "examines", "investigates", "explores", "analyzes",
-    "presents", "discusses", "proposes", "introduces",
-    "highlights", "summarizes", "evaluates", "compares",
-    "identifies", "includes", "contains", "represents",
-    "involves", "requires", "produces", "results",
-    "performed", "conducted", "observed", "measured",
-    "show", "demonstrate", "describe", "indicate",
-    "suggest", "reveal", "present", "discuss",
-    "propose", "introduce", "examine", "investigate",
-))
+_TITLE_SENTENCE_VERBS = frozenset(
+    (
+        "provides",
+        "shows",
+        "demonstrates",
+        "describes",
+        "reports",
+        "indicates",
+        "suggests",
+        "reveals",
+        "examines",
+        "investigates",
+        "explores",
+        "analyzes",
+        "presents",
+        "discusses",
+        "proposes",
+        "introduces",
+        "highlights",
+        "summarizes",
+        "evaluates",
+        "compares",
+        "identifies",
+        "includes",
+        "contains",
+        "represents",
+        "involves",
+        "requires",
+        "produces",
+        "results",
+        "performed",
+        "conducted",
+        "observed",
+        "measured",
+        "show",
+        "demonstrate",
+        "describe",
+        "indicate",
+        "suggest",
+        "reveal",
+        "present",
+        "discuss",
+        "propose",
+        "introduce",
+        "examine",
+        "investigate",
+    )
+)
 
 
 def _is_page1_title(text: str) -> bool:
@@ -2115,6 +2181,55 @@ def _is_page1_title(text: str) -> bool:
     if any(v in tl for v in (" is ", " are ", " was ", " were ")):
         return False
     return all(w not in _TITLE_SENTENCE_VERBS for w in tl.split())
+
+
+def _detect_structured_insert_clusters(blocks: list[dict]) -> set[int]:
+    """Cluster structured insert candidates into organized insert regions.
+
+    Uses:
+    - detached geometry (blocks near each other but separated from body flow)
+    - heading + short items pattern (short heading followed by bullet/text blocks)
+    - list shape / line-height / family mismatch as supporting evidence
+
+    Returns set of block indices to mark as structured_insert.
+    """
+    candidate_indices = {i for i, b in enumerate(blocks) if b.get("role") == "structured_insert_candidate"}
+    if len(candidate_indices) < 2:
+        return set()
+
+    # Group by page
+    from collections import defaultdict
+
+    by_page = defaultdict(list)
+    for idx in candidate_indices:
+        p = blocks[idx].get("page", 1)
+        by_page[p].append(idx)
+
+    # Per page: check if candidates form a coherent cluster
+    result = set()
+    for page, indices in by_page.items():
+        # Get bboxes
+        bboxes = []
+        for idx in indices:
+            bb = blocks[idx].get("bbox") or blocks[idx].get("block_bbox") or [0, 0, 0, 0]
+            bboxes.append((idx, bb))
+
+        # Check if blocks are near each other (vertical gaps < 100px)
+        bboxes.sort(key=lambda x: x[1][1])
+        cluster_indices = []
+        for i, (idx, bb) in enumerate(bboxes):
+            if not cluster_indices:
+                cluster_indices.append(idx)
+                continue
+            prev_bb = bboxes[i - 1][1]
+            gap = bb[1] - prev_bb[3]
+            if gap < 100 and gap >= -20:  # overlapping or close
+                cluster_indices.append(idx)
+
+        if len(cluster_indices) >= 2:
+            result.update(cluster_indices)
+
+    return result
 
 
 def normalize_document_structure(blocks: list[dict]) -> tuple[DocumentStructure, list[dict]]:
@@ -2184,5 +2299,11 @@ def normalize_document_structure(blocks: list[dict]) -> tuple[DocumentStructure,
 
     _mark_non_body_media(blocks)
     _resolve_ambiguous_candidates(blocks, doc_structure, page_layouts)
+
+    # Detect structured insert clusters (detached summary boxes, key points)
+    structured_insert_indices = _detect_structured_insert_clusters(blocks)
+    for idx in structured_insert_indices:
+        if idx < len(blocks):
+            blocks[idx]["role"] = "structured_insert"
 
     return doc_structure, blocks
