@@ -853,7 +853,6 @@ def render_fulltext_markdown(
             "abstract_heading",
             "abstract_body",
             "figure_caption",
-            "table_caption",
             "frontmatter_noise",
             "table_html",
         }
@@ -970,6 +969,15 @@ def render_fulltext_markdown(
                     lines.append("")
                 last_structured_insert_page = block_page
                 last_structured_insert_bbox = bbox if len(bbox) >= 4 else None
+        elif role == "table_caption":
+            if text:
+                lines.append(f"### {text}")
+                lines.append("")
+            tbl_ids_for_page = tables_by_page.get(block_page, [])
+            if tbl_ids_for_page:
+                tbl_id = tbl_ids_for_page.pop(0)
+                lines.append(f"![[render/tables/{tbl_id}.md]]")
+                lines.append("")
         elif role in ("backmatter_body", "tail_candidate_body", "body_paragraph"):
             if last_structured_insert_page is not None:
                 lines.append("")
