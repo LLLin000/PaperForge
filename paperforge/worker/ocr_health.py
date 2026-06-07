@@ -11,6 +11,7 @@ def build_ocr_health(
     structured_blocks: list[dict],
     figure_inventory: dict,
     table_inventory: dict,
+    doc_structure: Any = None,
 ) -> dict[str, Any]:
     section_heading_count = sum(1 for b in structured_blocks if b.get("role") == "section_heading")
     abstract_found = any(
@@ -64,7 +65,7 @@ def build_ocr_health(
     from paperforge.worker.ocr_document import _compute_span_coverage, _detect_body_spine, _run_layout_audit
 
     span = _compute_span_coverage(structured_blocks)
-    spine = _detect_body_spine(structured_blocks)
+    spine = _detect_body_spine(structured_blocks, doc=doc_structure)
     layout = _run_layout_audit(structured_blocks)
 
     return {

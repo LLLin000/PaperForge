@@ -403,6 +403,25 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
         if i not in used_asset_indices:
             unmatched_assets.append(asset)
 
+    # Build unresolved clusters: spatial clusters of unmatched assets on
+    # pages where all candidate legends were rejected (multi-panel figures
+    # with axis labels or informal captions)
+    if rejected_legends and unmatched_assets:
+        rejected_pages = {leg.get("page") for leg in rejected_legends if leg.get("page")}
+        for cluster in _media_clusters(unmatched_assets, page_width):
+            cluster_page = cluster[0].get("page", 0)
+            if cluster_page not in rejected_pages:
+                continue
+            cluster_ids = [b.get("block_id", "") for b in cluster]
+            unresolved_clusters.append({
+                "media_block_ids": cluster_ids,
+                "cluster_bbox": _cluster_bbox([b.get("bbox", [0, 0, 0, 0]) for b in cluster]),
+                "page": cluster_page,
+            })
+        if unresolved_clusters:
+            consumed = {bid for uc in unresolved_clusters for bid in uc["media_block_ids"]}
+            unmatched_assets = [a for a in unmatched_assets if a.get("block_id", "") not in consumed]
+
     return {
         "figure_legends": legends,
         "figure_assets": assets,
