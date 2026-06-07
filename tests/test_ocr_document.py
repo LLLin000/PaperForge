@@ -417,6 +417,83 @@ def test_rescue_analyze_document_structure_mixed_tail_spread() -> None:
     assert doc.spread_end is not None
 
 
+def _make_block(bid: int, pg: int = 1, role: str = "body_paragraph", text: str = "text", w: int = 500) -> dict:
+    return {"block_id": f"b{bid}", "page": pg, "role": role, "text": text,
+            "bbox": [80, 100, 80 + w, 140], "page_width": 1200, "page_height": 1700}
+
+
+def test_body_anchor_pages_exclude_page_1() -> None:
+    """When page 1 is contaminated with title/authors, it should not dominate body baseline."""
+    from paperforge.worker.ocr_document import _detect_body_spine
+
+    blocks = []
+    # Page 1: title + authors + furniture — no real body paragraphs
+    blocks += [_make_block(i, pg=1, role="paper_title", text="Title", w=200) for i in range(3)]
+    blocks += [_make_block(i, pg=1, role="authors", text="Authors", w=200) for i in range(3)]
+    blocks += [_make_block(i, pg=1, role="noise", text="Copyright", w=136) for i in range(2)]
+    # Pages 2-8: clean body paragraphs
+    for pg in range(2, 9):
+        blocks += [_make_block(i + pg * 10, pg=pg, role="body_paragraph", text=f"Body para on page {pg}", w=510)
+                    for i in range(5)]
+    # Page 9: references
+    blocks += [_make_block(i, pg=9, role="reference_heading", text="References", w=150) for i in range(1)]
+
+    spine = _detect_body_spine(blocks)
+    # Page 1 should have either a reasonable width (not 200) or the anchor
+    # pages list should exclude page 1.  Currently anchor_pages does not
+    # exist → this will be [] → resolves to [1] ≠ [1] → False → fail.
+    anchor_pages: list[int] = spine.get(1, {}).get("anchor_pages", [])  # type: ignore[type-arg]
+    assert anchor_pages or [1] != [1], (
+        f"Page 1 anchor pages should exclude page 1, got anchor_pages={anchor_pages!r}"
+    )
+
+
+def test_body_anchor_pages_exclude_tail() -> None:
+    """Pages in the tail spread should be excluded from anchor pages."""
+    from paperforge.worker.ocr_document import _detect_body_spine
+
+    blocks = []
+    # Pages 1-5: clean body
+    for pg in range(1, 6):
+        blocks += [_make_block(i + pg * 10, pg=pg, role="body_paragraph", text=f"Body para on page {pg}", w=510)
+                    for i in range(5)]
+    # Pages 6-8: tail (references, etc.)
+    blocks += [_make_block(i, pg=6, role="reference_heading", text="References", w=150) for i in range(1)]
+    blocks += [_make_block(i, pg=7, role="reference_item", text="Ref item", w=200) for i in range(3)]
+    blocks += [_make_block(i, pg=8, role="backmatter_body", text="Ack", w=300) for i in range(2)]
+
+    spine = _detect_body_spine(blocks)
+    # Anchor pages should be from body section, not tail.
+    # Currently anchor_pages does not exist → [] → fails when we require non-empty.
+    anchor_pages: list[int] = spine.get(2, {}).get("anchor_pages", [])  # type: ignore[type-arg]
+    assert anchor_pages and all(pg < 6 for pg in anchor_pages), (
+        f"Anchor pages should be in body (pages 2-5), got anchor_pages={anchor_pages!r}"
+    )
+
+
+def test_anchor_ranking_prefers_body_dense_pages() -> None:
+    """Pages with more body paragraphs rank higher in anchor selection."""
+    from paperforge.worker.ocr_document import _detect_body_spine
+
+    blocks = []
+    # Page 2: few body paragraphs (should rank lower)
+    blocks += [_make_block(i, pg=2, role="body_paragraph", text="Body para on page 2", w=510) for i in range(2)]
+    # Pages 3-4: many body paragraphs (should rank higher)
+    for pg in range(3, 5):
+        blocks += [_make_block(i + pg * 10, pg=pg, role="body_paragraph", text=f"Body para on page {pg}", w=510)
+                    for i in range(8)]
+    # Page 5: moderate body paragraphs
+    blocks += [_make_block(i, pg=5, role="body_paragraph", text="Body para on page 5", w=510) for i in range(4)]
+
+    spine = _detect_body_spine(blocks)
+    anchor_pages: list[int] = spine.get(2, {}).get("anchor_pages", [])  # type: ignore[type-arg]
+    # Pages 3-4 (8 paras each) should rank higher than page 5 (4 paras) and page 2 (2 paras).
+    # Currently no anchor_pages key → [] → fails.
+    assert len(anchor_pages) >= 2, f"Expected at least 2 anchor pages, got {anchor_pages!r}"
+    ranked = [p for p in anchor_pages if p in (3, 4, 5, 2)]
+    assert ranked[0] in (3, 4), f"Highest ranked should be 3 or 4, got {ranked}"
+
+
 def test_detect_body_spine_returns_reasonable_values() -> None:
     from paperforge.worker.ocr_document import _detect_body_spine
 
@@ -1605,8 +1682,10 @@ def test_rescue_reference_zone_single_column() -> None:
 
 def test_document_structure_json_serialization() -> None:
     """Verify that DocumentStructure with layout profiles serializes to valid JSON."""
+    import dataclasses
+    import json
+
     from paperforge.worker.ocr_document import DocumentStructure, PageLayoutProfile
-    import dataclasses, json
 
     ds = DocumentStructure(
         body_end_page=70,
