@@ -490,6 +490,32 @@ def test_weak_backmatter_boundary_signal_emits_candidate():
     )
 
 
+def test_author_byline_not_section_heading():
+    from paperforge.worker.ocr_roles import assign_block_role
+
+    # Author byline with & on page 1
+    block = {"block_label": "paragraph_title", "block_content": "John Smith & Jane Doe", "block_bbox": [100, 50, 500, 80], "page": 1}
+    page_blocks = [block,
+        {"block_label": "text", "block_content": "Some frontmatter", "block_bbox": [100, 100, 500, 130], "page": 1},
+        {"block_label": "text", "block_content": "Some abstract content", "block_bbox": [100, 200, 500, 230], "page": 1},
+    ]
+    result = assign_block_role(block, page_blocks=page_blocks, page_width=600, page_height=800)
+    assert result.role not in ("section_heading", "subsection_heading", "sub_subsection_heading"), (
+        f"Author byline got heading role: {result.role}"
+    )
+
+
+def test_correspondence_marker_not_heading():
+    from paperforge.worker.ocr_roles import assign_block_role
+
+    block = {"block_label": "paragraph_title", "block_content": "*Correspondence: john@example.com", "block_bbox": [100, 500, 500, 530], "page": 1}
+    page_blocks = [block]
+    result = assign_block_role(block, page_blocks=page_blocks, page_width=600, page_height=800)
+    assert result.role in ("frontmatter_noise", "unknown_structural"), (
+        f"Correspondence got role: {result.role}"
+    )
+
+
 def test_backmatter_boundary_detects_on_early_page() -> None:
     """Backmatter boundary should be detectable on papers with fewer
     than 8 pages, without a hard page gate."""
