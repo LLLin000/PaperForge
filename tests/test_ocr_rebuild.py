@@ -50,3 +50,44 @@ def test_resolve_source_pdf_stale_missing() -> None:
     meta = {"source_pdf": r"D:\nonexistent\path.pdf"}
     result = _resolve_source_pdf_for_rebuild(vault, "SAN9AYVR", meta)
     assert result is not None and result.exists(), f"Fallback failed for stale key: {result}"
+
+
+def test_enrich_source_metadata_from_paper_note(monkeypatch, tmp_path) -> None:
+    from paperforge.worker import _utils
+    from paperforge.worker.ocr_rebuild import _enrich_meta_from_paper_note
+    from paperforge.core.io import read_json
+
+    vault = tmp_path / "vault"
+    lit_dir = vault / "literature"
+    note_dir = lit_dir / "Biology"
+    note_dir.mkdir(parents=True)
+    note_path = note_dir / "TSCKAVIS.md"
+    note_path.write_text(
+        """---
+zotero_key: TSCKAVIS
+title: Metabolic regulation of skeletal cell fate and function in development and disease
+authors:
+  - Steve Stegen
+  - Geert Carmeliet
+year: 2022
+journal: Nature Reviews Endocrinology
+doi: 10.1038/s41574-021-00588-4
+---
+""",
+        encoding="utf-8",
+    )
+
+    meta_path = vault / "ocr" / "TSCKAVIS" / "source_metadata.json"
+    meta_path.parent.mkdir(parents=True)
+    meta_path.write_text("{}", encoding="utf-8")
+
+    monkeypatch.setattr(_utils, "pipeline_paths", lambda _vault: {"literature": lit_dir, "ocr": vault / "ocr"})
+
+    _enrich_meta_from_paper_note(vault, "TSCKAVIS", meta_path)
+
+    meta = read_json(meta_path)
+    assert meta["title"].startswith("Metabolic regulation")
+    assert meta["authors"] == ["Steve Stegen", "Geert Carmeliet"]
+    assert meta["year"] == 2022
+    assert meta["journal"] == "Nature Reviews Endocrinology"
+    assert meta["doi"] == "10.1038/s41574-021-00588-4"

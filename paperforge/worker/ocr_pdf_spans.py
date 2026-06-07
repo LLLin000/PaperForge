@@ -109,6 +109,48 @@ def extract_pdf_spans_for_block(
     return spans if spans else None
 
 
+def _extract_visual_container_rects(page: Any) -> list:
+    """Extract visible rectangle regions (filled or bordered) from a PDF page.
+
+    Uses PyMuPDF's ``get_drawings()`` to find rectangles with:
+    - noticeable fill color (not white/transparent), OR
+    - visible border/outline
+
+    Returns list of fitz.Rect objects for each detected container.
+    """
+    import fitz
+
+    rects: list = []
+    try:
+        drawings = page.get_drawings()
+    except Exception:
+        return rects
+
+    for drawing in drawings:
+        fill = drawing.get("fill")
+        color = drawing.get("color")
+        stroke_width = drawing.get("width", 0) or 0
+        rect = drawing.get("rect")
+        if not rect:
+            continue
+
+        if rect.width < 100 or rect.height < 50:
+            continue
+
+        is_filled = False
+        if fill and len(fill) >= 3:
+            r, g, b = fill[0], fill[1], fill[2]
+            brightness = (r + g + b) / 3
+            is_filled = brightness < 0.95
+
+        has_border = bool(color) and (isinstance(color, (list, tuple))) and stroke_width > 0
+
+        if is_filled or has_border:
+            rects.append(rect)
+
+    return rects
+
+
 def backfill_span_metadata_from_pdf(
     raw_blocks: list[dict],
     pdf_path: str | Path | None,
@@ -136,6 +178,7 @@ def backfill_span_metadata_from_pdf(
         return raw_blocks
 
     try:
+        by_page_containers: dict[int, list] = {}
         for block in raw_blocks:
             page_num = block.get("page", 1) - 1
             bbox = block.get("bbox", [])
@@ -150,6 +193,94 @@ def backfill_span_metadata_from_pdf(
             )
             if spans:
                 block["span_metadata"] = spans
+
+        import fitz
+        for block in raw_blocks:
+            page_num = block.get("page", 1) - 1
+            bbox = block.get("bbox", [])
+            if not bbox or len(bbox) < 4:
+                continue
+            if page_num not in by_page_containers:
+                try:
+                    pdf_page = doc[page_num]
+                    by_page_containers[page_num] = _extract_visual_container_rects(pdf_page)
+                except Exception:
+                    by_page_containers[page_num] = []
+            containers = by_page_containers[page_num]
+            if not containers:
+                continue
+            pw = block.get("page_width") or block.get("ocr_width") or 0
+            ph = block.get("page_height") or block.get("ocr_height") or 0
+            if pw <= 0 or ph <= 0:
+                try:
+                    pdf_rect = doc[page_num].rect
+                    pw = int(pdf_rect.width * 2) if pdf_rect.width > 0 else 1200
+                    ph = int(pdf_rect.height * 2) if pdf_rect.height > 0 else 1700
+                except Exception:
+                    pw, ph = 1200, 1700
+            if pw > 0 and ph > 0:
+                try:
+                    pdf_page = doc[page_num]
+                    block_rect = _map_ocr_bbox_to_pdf_rect(bbox, pw, ph, pdf_page)
+                except Exception:
+                    continue
+            else:
+                block_rect = fitz.Rect(*bbox)
+            for container_rect in containers:
+                if block_rect.x0 > container_rect.x1 or block_rect.x1 < container_rect.x0:
+                    continue
+                if block_rect.y0 > container_rect.y1 or block_rect.y1 < container_rect.y0:
+                    continue
+                overlap_w = min(block_rect.x1, container_rect.x1) - max(block_rect.x0, container_rect.x0)
+                overlap_h = min(block_rect.y1, container_rect.y1) - max(block_rect.y0, container_rect.y0)
+                if overlap_w > 0 and overlap_h > 0:
+                    block_w = block_rect.x1 - block_rect.x0
+                    block_h = block_rect.y1 - block_rect.y0
+                    overlap_area = overlap_w * overlap_h
+                    block_area = block_w * block_h if block_w > 0 and block_h > 0 else 0
+                    if block_area > 0 and overlap_area / block_area >= 0.3:
+                        block["_in_visual_container"] = True
+                        container_overlap_ratio = overlap_area / block_area
+                        pw = block.get("page_width") or 0
+                        ph = block.get("page_height") or 0
+                        pdf_page_rect = doc[page_num].rect
+                        scale_x = pw / pdf_page_rect.width if (pw and pdf_page_rect.width) else 1
+                        scale_y = ph / pdf_page_rect.height if (ph and pdf_page_rect.height) else 1
+                        block["_container_bbox"] = [
+                            container_rect.x0 * scale_x,
+                            container_rect.y0 * scale_y,
+                            container_rect.x1 * scale_x,
+                            container_rect.y1 * scale_y,
+                        ]
+
+                        in_container_parts: list[str] = []
+                        pdf_page_for_text = doc[page_num]
+                        block_pdf_rect = _map_ocr_bbox_to_pdf_rect(bbox, pw, ph, pdf_page_for_text) if pw and ph else None
+                        for tblock in pdf_page_for_text.get_text("blocks"):
+                            tx0, ty0, tx1, ty1, ttext, *_ = tblock
+                            ttext = (ttext or "").strip()
+                            if not ttext:
+                                continue
+                            in_container = (
+                                max(tx0, container_rect.x0) < min(tx1, container_rect.x1)
+                                and max(ty0, container_rect.y0) < min(ty1, container_rect.y1)
+                            )
+                            if not in_container:
+                                continue
+                            if block_pdf_rect:
+                                in_block = (
+                                    max(tx0, block_pdf_rect.x0) < min(tx1, block_pdf_rect.x1)
+                                    and max(ty0, block_pdf_rect.y0) < min(ty1, block_pdf_rect.y1)
+                                )
+                                if not in_block:
+                                    continue
+                            in_container_parts.append(ttext)
+                        if in_container_parts and container_overlap_ratio > 0.7:
+                            container_text = "\n".join(in_container_parts)
+                            block_text = str(block.get("text") or "")
+                            if container_text and len(container_text) < len(block_text) * 0.8:
+                                block["_container_text"] = container_text
+                        break
     finally:
         doc.close()
 

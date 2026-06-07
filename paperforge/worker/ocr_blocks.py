@@ -72,6 +72,9 @@ def build_structured_blocks(
                 "role_confidence": role.confidence,
                 "evidence": role.evidence,
                 "span_metadata": block.get("span_metadata"),
+                "_in_visual_container": block.get("_in_visual_container", None),
+                "_container_bbox": block.get("_container_bbox", None),
+                "_container_text": block.get("_container_text", None),
                 "render_default": render_default,
                 "index_default": index_default,
             }

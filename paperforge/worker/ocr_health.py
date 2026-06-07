@@ -60,6 +60,13 @@ def build_ocr_health(
     else:
         overall = "red"
 
+    # Compute structural health signals
+    from paperforge.worker.ocr_document import _compute_span_coverage, _detect_body_spine, _run_layout_audit
+
+    span = _compute_span_coverage(structured_blocks)
+    spine = _detect_body_spine(structured_blocks)
+    layout = _run_layout_audit(structured_blocks)
+
     return {
         "page_count": page_count,
         "blocks_count": raw_blocks_count,
@@ -77,6 +84,15 @@ def build_ocr_health(
         "empty_table_count": empty_tables,
         "frontmatter_quality": frontmatter_quality,
         "overall": overall,
+        "span_coverage": span,
+        "span_coverage_quality": span.get("coverage_quality", "weak"),
+        "degraded_mode_active": span.get("degraded_mode_active", True),
+        "body_spine_quality": spine.get("_meta", {}).get("quality", "weak"),
+        "body_anchor_pages": spine.get("_meta", {}).get("anchor_pages", []),
+        "body_spine_sample_count": spine.get("_meta", {}).get("sample_count", 0),
+        "layout_audit_status": layout.get("status", "unknown"),
+        "layout_anomaly_pages": layout.get("anomaly_pages", []),
+        "layout_anomaly_count": layout.get("anomaly_count", 0),
     }
 
 

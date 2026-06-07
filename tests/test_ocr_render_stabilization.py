@@ -315,7 +315,7 @@ def test_stabilize_heading_sanity_allows_valid_short_heading() -> None:
         table_inventory={},
     )
 
-    assert "### 1 Introduction" in md
+    assert "## 1 Introduction" in md
 
 
 def test_stabilize_heading_sanity_downgrades_verb_heavy_heading() -> None:
@@ -374,7 +374,7 @@ def test_stabilize_heading_sanity_allows_verb_short_heading() -> None:
         table_inventory={},
     )
 
-    assert "### Results are shown" in md
+    assert "## Results are shown" in md
 
 
 def test_stabilize_reference_content_mapped() -> None:
@@ -916,8 +916,8 @@ def test_normalize_ocr_math_text_display_math() -> None:
     assert normalize_ocr_math_text("$$ ... $$") == "$$...$$"
 
 
-def test_structured_insert_block_not_rendered() -> None:
-    """structured_insert blocks should not appear in rendered markdown."""
+def test_structured_insert_renders_as_single_callout_without_swallowing_body() -> None:
+    """structured_insert should render as one callout and must not absorb body text."""
     from paperforge.worker.ocr_render import render_fulltext_markdown
 
     blocks = [
@@ -959,9 +959,98 @@ def test_structured_insert_block_not_rendered() -> None:
     md = render_fulltext_markdown(structured_blocks=blocks, resolved_metadata={}, figure_inventory={}, table_inventory={})
 
     assert "2 Results" in md
-    assert "Key points" not in md, "structured_insert should not render"
-    assert "Point one" not in md, "structured_insert content should not render"
+    assert "Key points" in md, "structured_insert heading should render"
+    assert "Point one" in md, "structured_insert content should render"
+    assert "Point two" in md, "structured_insert content should render"
+    assert md.count("[!NOTE]") == 1, f"Expected exactly one callout, got markdown:\n{md}"
     assert "Body text continues" in md
+
+
+def test_adjacent_structured_insert_blocks_merge_into_one_callout() -> None:
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+
+    blocks = [
+        {
+            "paper_id": "KEY",
+            "page": 2,
+            "block_id": "s1",
+            "role": "structured_insert",
+            "text": "Key points",
+            "render_default": False,
+            "index_default": False,
+            "bbox": [80, 100, 200, 130],
+            "page_width": 1200,
+            "page_height": 1700,
+        },
+        {
+            "paper_id": "KEY",
+            "page": 2,
+            "block_id": "s2",
+            "role": "structured_insert",
+            "text": "• Point one\n• Point two",
+            "render_default": False,
+            "index_default": False,
+            "bbox": [80, 140, 500, 260],
+            "page_width": 1200,
+            "page_height": 1700,
+        },
+        {
+            "paper_id": "KEY",
+            "page": 2,
+            "block_id": "b1",
+            "role": "body_paragraph",
+            "text": "Main body resumes here.",
+            "render_default": True,
+            "bbox": [80, 320, 500, 360],
+            "page_width": 1200,
+            "page_height": 1700,
+        },
+    ]
+
+    md = render_fulltext_markdown(structured_blocks=blocks, resolved_metadata={}, figure_inventory={}, table_inventory={})
+
+    assert md.count("[!NOTE]") == 1, f"Expected merged callout, got markdown:\n{md}"
+    assert "Key points" in md
+    assert "Point one" in md
+    assert "Point two" in md
+    assert "Key points\n\n> • Point one" not in md, f"Merged callout should not contain blank separator:\n{md}"
+    assert "Main body resumes here." in md
+
+
+def test_malformed_sidebar_tail_fragment_is_dropped_when_continuation_block_follows() -> None:
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+
+    blocks = [
+        {
+            "paper_id": "KEY",
+            "page": 2,
+            "block_id": "s1",
+            "role": "structured_insert",
+            "text": "<table><tr><td>• Point one</td></tr><tr><td>cell dysfunctionatic and leukaemic cells• their tumorigenic spread.</td></tr></table>",
+            "render_default": False,
+            "index_default": False,
+            "bbox": [80, 140, 500, 260],
+            "page_width": 1200,
+            "page_height": 1700,
+        },
+        {
+            "paper_id": "KEY",
+            "page": 2,
+            "block_id": "s2",
+            "role": "structured_insert",
+            "text": "• Metabolic disturbance is linked to skeletal cell dysfunction during bone pathology, and bone-metastatic and leukaemic cells hijack skeletal cell metabolism to support their tumorigenic spread.",
+            "render_default": False,
+            "index_default": False,
+            "bbox": [80, 265, 500, 320],
+            "page_width": 1200,
+            "page_height": 1700,
+        },
+    ]
+
+    md = render_fulltext_markdown(structured_blocks=blocks, resolved_metadata={}, figure_inventory={}, table_inventory={})
+
+    assert "cell dysfunctionatic and leukaemic cells• their tumorigenic spread." not in md
+    assert "Metabolic disturbance is linked to skeletal cell dysfunction" in md
 
 
 def test_section_heading_renders_with_prefix() -> None:
@@ -970,7 +1059,27 @@ def test_section_heading_renders_with_prefix() -> None:
         {"paper_id": "KEY", "page": 3, "block_id": "b1", "role": "section_heading", "text": "1 Introduction", "render_default": True, "bbox": [80, 200, 500, 230], "page_width": 1200, "page_height": 1700},
     ]
     md = render_fulltext_markdown(structured_blocks=blocks, resolved_metadata={}, figure_inventory={}, table_inventory={})
-    assert "### 1 Introduction" in md, f"Expected ### prefix, got: {md[:200]}"
+    assert "## 1 Introduction" in md, f"Expected ## prefix, got: {md[:200]}"
+
+
+def test_unumbered_subsection_headings_use_double_hash_by_default() -> None:
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+
+    blocks = [
+        {"paper_id": "KEY", "page": 2, "block_id": "h1", "role": "sub_subsection_heading", "text": "Introduction", "render_default": True, "bbox": [80, 200, 300, 230], "page_width": 1200, "page_height": 1700},
+        {"paper_id": "KEY", "page": 2, "block_id": "h2", "role": "subsection_heading", "text": "2.5 Electrical stimulation", "render_default": True, "bbox": [80, 260, 700, 300], "page_width": 1200, "page_height": 1700},
+    ]
+
+    md = render_fulltext_markdown(
+        structured_blocks=blocks,
+        resolved_metadata={},
+        figure_inventory={},
+        table_inventory={},
+    )
+
+    lines = md.splitlines()
+    assert "## Introduction" in lines
+    assert "### 2.5 Electrical stimulation" in lines
 
 
 # === 2GN9LMCW / 7C8829BD guard tests (Task 7 -- preserve tail mainline) ===

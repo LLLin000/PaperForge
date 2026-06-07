@@ -2696,6 +2696,36 @@ def test_non_body_insert_strong_spine_or_gate_ok() -> None:
     assert len(result) >= 2, f"Expected at least 2 non_body_insert with strong spine, got {result}"
 
 
+def test_non_body_insert_strong_spine_does_not_use_font_only_for_body_width_blocks() -> None:
+    """Strong spine should not classify body-width paragraphs by font mismatch alone."""
+    from paperforge.worker.ocr_document import _detect_non_body_insert_clusters
+
+    blocks = [{
+        "role": "body_paragraph",
+        "page": 2,
+        "bbox": [80, 600, 590, 660],
+        "text": "This is real body text with a locally different OCR font family.",
+        "span_metadata": [{"size": 10, "font": "Helvetica"}],
+        "page_width": 1200,
+        "page_height": 1700,
+    }, {
+        "role": "body_paragraph",
+        "page": 2,
+        "bbox": [80, 700, 590, 760],
+        "text": "This continuation paragraph should remain body text as well.",
+        "span_metadata": [{"size": 10, "font": "Helvetica"}],
+        "page_width": 1200,
+        "page_height": 1700,
+    }]
+    body_spine = {
+        2: {"median_width": 510, "all_fonts": {"times"}, "quality": "strong"},
+        "_meta": {"quality": "strong"},
+    }
+
+    result = _detect_non_body_insert_clusters(blocks, body_spine, page_width=1200)
+    assert result == set(), f"Body-width font-only mismatch should not be non_body_insert, got {result}"
+
+
 def test_title_not_swept_into_non_body_insert() -> None:
     """Page 1 title-like block (long text, no bullets) is NOT marked as non_body_insert."""
     from paperforge.worker.ocr_document import _detect_body_spine, _detect_non_body_insert_clusters
@@ -2771,3 +2801,86 @@ def test_layout_audit_reference_zone_overlaps_body() -> None:
     assert result["status"] in ("warn", "fail"), f"Expected warn/fail, got {result['status']}"
     assert "1" in result["page_warnings"], f"Page 1 should have warnings: {result['page_warnings']}"
     assert result["anomaly_count"] >= 1
+
+
+# ---------------------------------------------------------------------------
+# Region prepass tests (Task 3)
+# ---------------------------------------------------------------------------
+
+
+def test_region_prepass_marks_frontmatter_insert_and_body_regions() -> None:
+    from paperforge.worker.ocr_document import _build_region_prepass
+
+    blocks = [
+        {"page": 1, "role": "paper_title", "text": "A Real Paper Title", "bbox": [80, 80, 700, 140], "page_width": 1200, "page_height": 1700},
+        {"page": 1, "role": "authors", "text": "Jane Author & John Writer", "bbox": [80, 160, 600, 200], "page_width": 1200, "page_height": 1700},
+        {"page": 1, "role": "body_paragraph", "text": "Key points", "bbox": [760, 280, 1050, 315], "page_width": 1200, "page_height": 1700},
+        {"page": 1, "role": "body_paragraph", "text": "Important short list item", "bbox": [760, 330, 1050, 370], "page_width": 1200, "page_height": 1700},
+        {"page": 2, "role": "body_paragraph", "text": "This is a real body paragraph with enough words to train the body spine.", "bbox": [80, 220, 640, 270], "page_width": 1200, "page_height": 1700},
+    ]
+
+    prepass = _build_region_prepass(blocks)
+
+    assert prepass.block_regions[0] == "frontmatter"
+    assert prepass.block_regions[1] == "frontmatter"
+    assert prepass.block_regions[2] == "structured_insert"
+    assert prepass.block_regions[3] == "structured_insert"
+    assert prepass.block_regions[4] == "body"
+
+
+def test_body_spine_ignores_region_frontmatter_and_structured_insert_blocks() -> None:
+    from paperforge.worker.ocr_document import _build_region_prepass, _detect_body_spine
+
+    blocks = [
+        {"page": 1, "role": "body_paragraph", "text": "Review article", "bbox": [80, 80, 240, 110], "page_width": 1200, "page_height": 1700, "span_metadata": [{"font": "Heading"}]},
+        {"page": 1, "role": "body_paragraph", "text": "Key points", "bbox": [760, 280, 1050, 315], "page_width": 1200, "page_height": 1700, "span_metadata": [{"font": "Box"}]},
+    ]
+    for page in range(2, 6):
+        for line in range(3):
+            blocks.append({"page": page, "role": "body_paragraph", "text": "Real body paragraph text for spine training.", "bbox": [80, 200 + line * 80, 620, 250 + line * 80], "page_width": 1200, "page_height": 1700, "span_metadata": [{"font": "Body"}]})
+
+    prepass = _build_region_prepass(blocks)
+    spine = _detect_body_spine(blocks, region_prepass=prepass)
+
+    assert "heading" not in spine[1].get("all_fonts", set()), str(spine[1].get("all_fonts"))
+    assert "box" not in spine[1].get("all_fonts", set()), str(spine[1].get("all_fonts"))
+
+
+def test_normalize_marks_structured_insert_before_non_body_insert_suppression() -> None:
+    from paperforge.worker.ocr_document import normalize_document_structure
+
+    blocks = [
+        {"page": 1, "role": "body_paragraph", "text": "Key points", "bbox": [760, 280, 1050, 315], "page_width": 1200, "page_height": 1700},
+        {"page": 1, "role": "body_paragraph", "text": "Short summary point", "bbox": [760, 330, 1050, 370], "page_width": 1200, "page_height": 1700},
+    ]
+    for page in range(2, 6):
+        for line in range(3):
+            blocks.append({"page": page, "role": "body_paragraph", "text": "Real body paragraph text for training.", "bbox": [80, 200 + line * 80, 620, 250 + line * 80], "page_width": 1200, "page_height": 1700, "span_metadata": [{"font": "Body"}]})
+
+    _, normalized = normalize_document_structure(blocks)
+
+    assert normalized[0]["role"] == "structured_insert"
+    assert normalized[1]["role"] == "structured_insert"
+
+
+def test_normalize_promotes_mixed_sidebar_blocks_into_single_structured_insert_cluster() -> None:
+    """Sidebar heading, textual table container, and continuation block should all join one structured insert."""
+    from paperforge.worker.ocr_document import normalize_document_structure
+
+    blocks = [
+        {"page": 2, "role": "body_paragraph", "text": "Key points", "bbox": [80, 220, 180, 247], "page_width": 1200, "page_height": 1700},
+        {"page": 2, "role": "media_asset", "raw_label": "table", "text": "<table><tr><td>• Point one</td></tr><tr><td>• Point two</td></tr></table>", "bbox": [73, 270, 591, 738], "page_width": 1200, "page_height": 1700},
+        {"page": 2, "role": "unknown_structural", "text": "• Point three continues below the detected table box.", "bbox": [74, 675, 566, 743], "page_width": 1200, "page_height": 1700},
+        {"page": 2, "role": "sub_subsection_heading", "text": "Introduction", "bbox": [76, 780, 210, 803], "page_width": 1200, "page_height": 1700},
+        {"page": 2, "role": "body_paragraph", "text": "The skeleton has been considered to be a metabolically active organ for decades.", "bbox": [73, 805, 593, 1192], "page_width": 1200, "page_height": 1700},
+    ]
+    for i in range(3):
+        blocks.append({"page": 3 + i, "role": "body_paragraph", "text": "Real body paragraph text for training and normalization.", "bbox": [80, 200, 620, 260], "page_width": 1200, "page_height": 1700, "span_metadata": [{"font": "Body"}]})
+
+    _, normalized = normalize_document_structure(blocks)
+
+    assert normalized[0]["role"] == "structured_insert"
+    assert normalized[1]["role"] == "structured_insert"
+    assert normalized[2]["role"] == "structured_insert"
+    assert normalized[3]["role"] != "structured_insert"
+    assert normalized[4]["role"] == "body_paragraph"
