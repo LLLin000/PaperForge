@@ -1359,11 +1359,57 @@ def _assign_tail_spread_ownership(
     return result
 
 
+def _select_body_anchor_pages(
+    blocks: list[dict],
+    body_end_page: int | None = None,
+    backmatter_start: int | None = None,
+) -> list[int]:
+    """Select stable middle-body pages for font/width baseline derivation.
+
+    Excludes page 1 (contaminated by frontmatter) and tail pages
+    (contaminated by backmatter/references).  Ranks remaining pages
+    by density of body_paragraph blocks.
+    """
+
+    by_page: dict[int, list[dict]] = {}
+    for b in blocks:
+        p = b.get("page", 1)
+        by_page.setdefault(p, []).append(b)
+
+    # Exclude page 1 and tail spread
+    tail_start = backmatter_start if backmatter_start else (body_end_page or 999) if body_end_page else 999
+
+    candidates: list[tuple[int, int, list[dict]]] = []  # (page, body_count, blocks)
+    for pg in sorted(by_page):
+        if pg == 1:
+            continue
+        if pg >= tail_start:
+            continue
+        page_blocks = by_page[pg]
+        body_count = sum(1 for b in page_blocks if b.get("role") == "body_paragraph")
+        if body_count >= 2:  # at least 2 body paragraphs
+            candidates.append((pg, body_count, page_blocks))
+
+    # Sort by body density descending
+    candidates.sort(key=lambda x: -x[1])
+    return [c[0] for c in candidates]
+
+
 def _detect_body_spine(blocks: list[dict]) -> dict[int, dict]:
     """Detect the main body column characteristics per page.
 
+    Uses a two-pass approach:
+    1. First pass: collect fonts and widths ONLY from anchor pages
+       (stable middle-body pages, excluding page 1 and tail).
+    2. Second pass: use the global anchor baseline for non-anchor pages
+       instead of deriving from local (contaminated) data.
+
     Returns dict[page_num, {"median_width": float, "median_x": float,
-                            "width_range": tuple[float, float]}]
+                            "width_range": tuple[float, float],
+                            "anchor_pages": list[int],
+                            "core_width_range": tuple[float, float],
+                            "core_width_median": float,
+                            "all_fonts": set[str]}]
     """
     import statistics
 
@@ -1376,26 +1422,48 @@ def _detect_body_spine(blocks: list[dict]) -> dict[int, dict]:
     if not all_pages:
         return {}
 
-    # Collect body fonts across ALL pages (not just current page) to handle
-    # early pages where body_paragraph blocks are themselves non-body inserts.
-    all_body_fonts: set[str] = set()
-    for page in all_pages:
-        for b in by_page[page]:
+    # Detect body/tail boundaries to derive anchor pages
+    tail_spine = _reconcile_tail_spread(blocks)
+    body_end = tail_spine.body_end_page if tail_spine else None
+    bm_start = tail_spine.backmatter_start if tail_spine else None
+    anchor_pages = _select_body_anchor_pages(blocks, body_end_page=body_end, backmatter_start=bm_start)
+
+    # ---- Pass 1: collect global anchor baseline from anchor pages only ----
+    anchor_widths: list[float] = []
+    anchor_x_starts: list[float] = []
+    anchor_fonts: set[str] = set()
+
+    for page in anchor_pages:
+        for b in by_page.get(page, []):
             if b.get("role") == "body_paragraph":
                 bbox = b.get("bbox", [0, 0, 0, 0])
                 w = bbox[2] - bbox[0]
-                if w >= 400:  # only wide blocks contribute to global font baseline
+                if w >= 400:
+                    anchor_widths.append(w)
+                    anchor_x_starts.append(bbox[0])
                     span = b.get("span_metadata") or {}
                     if isinstance(span, list):
                         for s in span:
                             fam = s.get("font", "")
                             if fam:
-                                all_body_fonts.add(str(fam).lower())
+                                anchor_fonts.add(str(fam).lower())
                     elif isinstance(span, dict):
                         fam = span.get("font", "")
                         if fam:
-                            all_body_fonts.add(str(fam).lower())
+                            anchor_fonts.add(str(fam).lower())
 
+    if anchor_widths:
+        anchor_max = max(anchor_widths)
+        core_anchor_widths = [w for w in anchor_widths if w >= 0.6 * anchor_max]
+        core_width_median = statistics.median_low(core_anchor_widths) if core_anchor_widths else anchor_max
+        core_width_range = (core_width_median * 0.7, core_width_median * 1.3)
+    else:
+        core_width_median = 500.0
+        core_width_range = (350.0, 650.0)
+
+    has_anchors = bool(anchor_pages)
+
+    # ---- Per-page spine computation ----
     per_page_spine: dict[int, dict | None] = {}
     for page in all_pages:
         page_blocks = by_page[page]
@@ -1420,29 +1488,75 @@ def _detect_body_spine(blocks: list[dict]) -> dict[int, dict]:
                     if fam:
                         fonts.add(str(fam).lower())
 
-            # Robust body spine estimation: use widest cluster only,
-            # rejecting narrow blocks (author profiles, etc.) that
-            # would contaminate the median
-            max_width = max(widths)
-            core_widths = [w for w in widths if w >= 0.6 * max_width]
-            median_width = statistics.median_low(core_widths) if core_widths else max_width
-            median_x = statistics.median_low(x_starts)
-            per_page_spine[page] = {
-                "median_width": median_width,
-                "median_x": median_x,
-                "width_range": (median_width * 0.7, median_width * 1.3),
-                "fonts": fonts,
-                "all_fonts": all_body_fonts,
-            }
+            # For anchor pages: use local clustering (robust estimation)
+            # For non-anchor pages with anchor data: use global anchor baseline
+            # When no anchors exist (e.g. single-page doc), fall back to
+            # per-page computation (original behavior).
+            if page in anchor_pages:
+                max_width = max(widths)
+                core_widths = [w for w in widths if w >= 0.6 * max_width]
+                median_width = statistics.median_low(core_widths) if core_widths else max_width
+                median_x = statistics.median_low(x_starts)
+                per_page_spine[page] = {
+                    "median_width": median_width,
+                    "median_x": median_x,
+                    "width_range": (median_width * 0.7, median_width * 1.3),
+                    "fonts": fonts,
+                    "all_fonts": anchor_fonts,
+                    "anchor_pages": anchor_pages,
+                    "core_width_range": core_width_range,
+                    "core_width_median": core_width_median,
+                }
+            elif has_anchors:
+                # Non-anchor page: use global anchor baseline
+                per_page_spine[page] = {
+                    "median_width": core_width_median,
+                    "median_x": statistics.median_low(x_starts) if x_starts else 100,
+                    "width_range": core_width_range,
+                    "fonts": fonts,
+                    "all_fonts": anchor_fonts,
+                    "anchor_pages": anchor_pages,
+                    "core_width_range": core_width_range,
+                    "core_width_median": core_width_median,
+                }
+            else:
+                # No anchors: per-page computation (original behavior)
+                max_width = max(widths)
+                core_widths = [w for w in widths if w >= 0.6 * max_width]
+                median_width = statistics.median_low(core_widths) if core_widths else max_width
+                median_x = statistics.median_low(x_starts)
+                all_body_fonts: set[str] = set()
+                for b in body_blocks:
+                    span = b.get("span_metadata") or {}
+                    if isinstance(span, list):
+                        for s in span:
+                            fam = s.get("font", "")
+                            if fam:
+                                all_body_fonts.add(str(fam).lower())
+                    elif isinstance(span, dict):
+                        fam = span.get("font", "")
+                        if fam:
+                            all_body_fonts.add(str(fam).lower())
+                per_page_spine[page] = {
+                    "median_width": median_width,
+                    "median_x": median_x,
+                    "width_range": (median_width * 0.7, median_width * 1.3),
+                    "fonts": fonts,
+                    "all_fonts": all_body_fonts,
+                    "anchor_pages": anchor_pages,
+                    "core_width_range": core_width_range,
+                    "core_width_median": core_width_median,
+                }
         else:
             per_page_spine[page] = None
 
+    # Fill missing pages
     filled: dict[int, dict] = {}
     prev_val = None
     for page in all_pages:
         if per_page_spine[page] is not None:
             prev_val = per_page_spine[page]
-            filled[page] = prev_val
+            filled[page] = per_page_spine[page]
         elif prev_val is not None:
             filled[page] = prev_val
         else:
@@ -1455,11 +1569,14 @@ def _detect_body_spine(blocks: list[dict]) -> dict[int, dict]:
                 prev_val
                 or next_val
                 or {
-                    "median_width": 500,
+                    "median_width": core_width_median,
                     "median_x": 100,
-                    "width_range": (350, 650),
+                    "width_range": core_width_range,
                     "fonts": set(),
-                    "all_fonts": all_body_fonts,
+                    "all_fonts": anchor_fonts,
+                    "anchor_pages": anchor_pages,
+                    "core_width_range": core_width_range,
+                    "core_width_median": core_width_median,
                 }
             )
 
