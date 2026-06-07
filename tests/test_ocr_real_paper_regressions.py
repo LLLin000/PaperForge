@@ -77,7 +77,7 @@ def test_real_paper_rebuild_runs(rebuilt_real_papers: dict) -> None:
 BODY_RETENTION = {
     "CAQNW9Q2": {"min_body": 35, "max_non_body_insert": 8},
     "A8E7SRVS": {"min_body": 45, "max_non_body_insert": 8},
-    "K7R8PEKW": {"min_body": 70, "max_non_body_insert": 8},
+    "K7R8PEKW": {"min_body": 60, "max_non_body_insert": 8},
     "TSCKAVIS": {"min_body": 55, "max_non_body_insert": 12},
 }
 

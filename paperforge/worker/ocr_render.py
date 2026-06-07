@@ -490,6 +490,8 @@ def _reorder_tail_run_fifo(
                     orphan_ref_items.append(block)
                 else:
                     ref_section["bodies"].append(block)
+            else:
+                orphan_ref_items.append(block)
         else:
             non_tail_pass.append(block)
 
