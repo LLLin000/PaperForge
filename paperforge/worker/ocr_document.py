@@ -82,6 +82,24 @@ class DocumentStructure:
     reference_zones: list[dict] | None = None
 
 
+def _compute_span_coverage(blocks: list[dict]) -> dict:
+    total = len(blocks)
+    if total == 0:
+        return {"total_blocks": 0, "blocks_with_span": 0, "coverage": 1.0, "coverage_quality": "strong"}
+
+    with_span = sum(1 for b in blocks if b.get("span_metadata"))
+    coverage = with_span / total
+
+    if coverage >= 0.7:
+        quality = "strong"
+    elif coverage >= 0.3:
+        quality = "moderate"
+    else:
+        quality = "weak"
+
+    return {"total_blocks": total, "blocks_with_span": with_span, "coverage": coverage, "coverage_quality": quality}
+
+
 def _cluster_page_columns(page_blocks: list[dict], page_width: float) -> list[float]:
     """Cluster block x-centers by column using a gap-based approach.
 
@@ -933,6 +951,8 @@ def rescue_roles_with_document_context(
         document_structure = analyze_document_structure(blocks)
 
     family_profiles = build_family_profiles(blocks)
+    span_coverage = _compute_span_coverage(blocks)
+    coverage_quality = span_coverage["coverage_quality"]
 
     body_end_page = document_structure.body_end_page
     refs_start = document_structure.references_start
@@ -1005,6 +1025,8 @@ def rescue_roles_with_document_context(
         # --- Rule 2: body_paragraph → reference_item (refs section + ref font)
         role = block.get("role", "")
         if role == "body_paragraph" and block.get("role_confidence", 1.0) < 0.7:
+            if coverage_quality == "weak":
+                continue
             bp = extract_block_span_profile(block)
             if bp:
                 ref_rescued = False

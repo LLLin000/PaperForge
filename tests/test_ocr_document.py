@@ -1850,3 +1850,55 @@ def test_body_spine_quality_weak_contaminated() -> None:
     spine = _detect_body_spine(blocks)
     sp1 = spine.get(1, {})
     assert sp1.get("quality") in ("weak", "moderate"), f"Expected weak/moderate, got {sp1.get('quality')}"
+
+
+# ---------------------------------------------------------------------------
+# No-span degraded mode tests (Task 5)
+# ---------------------------------------------------------------------------
+
+
+def test_span_coverage_weak_when_no_metadata() -> None:
+    """Blocks without span_metadata produce weak coverage."""
+    from paperforge.worker.ocr_document import _compute_span_coverage
+
+    blocks = [{"span_metadata": None}, {"span_metadata": {}}]
+    result = _compute_span_coverage(blocks)
+    assert result.get("coverage", 1.0) < 0.5
+
+
+def test_no_span_rescue_more_conservative() -> None:
+    """When span coverage is weak, body_paragraph->reference_item rescue should not
+    trigger on font alone."""
+    from paperforge.worker.ocr_document import (
+        DocumentStructure,
+        rescue_roles_with_document_context,
+    )
+    from paperforge.worker.ocr_profiles import build_role_span_profiles
+
+    blocks = [
+        {
+            "block_id": "b1",
+            "page": 11,
+            "role": "body_paragraph",
+            "text": "Smith J. (2023) A study about cells.",
+            "bbox": [80, 200, 520, 240],
+            "page_width": 1200,
+            "page_height": 1700,
+            "render_default": True,
+            "role_confidence": 0.5,
+        },
+    ]
+    ds = DocumentStructure(
+        body_end_page=10,
+        backmatter_start=None,
+        references_start=type("PS", (), {"page": 11, "y": 0.0})(),
+        spread_start=11,
+        spread_end=15,
+        backmatter_form="flat",
+        page_layouts={},
+        tail_reading_order=None,
+        reference_zones=None,
+    )
+    profiles = build_role_span_profiles(blocks)
+    result = rescue_roles_with_document_context(blocks, profiles, ds)
+    assert result[0]["role"] == "body_paragraph"
