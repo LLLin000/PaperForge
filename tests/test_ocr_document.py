@@ -2147,7 +2147,8 @@ def test_span_coverage_weak_when_no_metadata() -> None:
 
     blocks = [{"span_metadata": None}, {"span_metadata": {}}]
     result = _compute_span_coverage(blocks)
-    assert result.get("coverage", 1.0) < 0.5
+    assert result.get("coverage_ratio", 1.0) < 0.5
+    assert result.get("degraded_mode_active") is True
 
 
 def test_no_span_rescue_more_conservative() -> None:
@@ -2409,3 +2410,166 @@ def test_structured_insert_cluster_detected() -> None:
     indices = _detect_structured_insert_clusters(blocks)
     # At least 3 of the 4 blocks should form clusters (two pairs)
     assert len(indices) >= 3
+
+
+# ---------------------------------------------------------------------------
+# Degraded mode / span coverage tests (Task 6)
+# ---------------------------------------------------------------------------
+
+
+def test_degraded_mode_weaker_heading_promotion() -> None:
+    """Blocks without span_metadata, with weak heading-to-body rescue →
+    weaker promotion (higher threshold) — heading keeps its role in degraded mode."""
+    from paperforge.worker.ocr_document import (
+        DocumentStructure,
+        rescue_roles_with_document_context,
+    )
+
+    # Most blocks lack span_metadata → ratio = 3/10 = 0.3 → moderate, not weak.
+    # Need 3/11 = 0.27 < 0.3 → weak coverage → degraded mode.
+    blocks = [
+        {
+            "role": "body_paragraph",
+            "role_confidence": 0.7,
+            "page": 1,
+            "text": "Normal body paragraph with font profile data.",
+            "span_metadata": {"size": 10, "flags": "normal"},
+        },
+        {
+            "role": "body_paragraph",
+            "role_confidence": 0.7,
+            "page": 2,
+            "text": "Another body paragraph to strengthen the body profile.",
+            "span_metadata": {"size": 10, "flags": "normal"},
+        },
+        {
+            "role": "section_heading",
+            "role_confidence": 0.5,
+            "page": 2,
+            "text": "Methods",
+            "span_metadata": {"size": 10, "flags": "normal"},
+        },
+    ]
+    # Add 9 blocks without span_metadata to push ratio to 3/12 = 0.25 < 0.3
+    for i in range(9):
+        blocks.append({"role": "body_paragraph", "role_confidence": 0.5, "page": 2, "text": f"No span block {i}"})
+
+    role_profiles = {
+        "body_paragraph": {
+            "block_count": 11,
+            "mean_size": 10.0,
+            "max_size": 10.5,
+            "min_size": 9.5,
+            "dispersion": 0.05,
+            "quality": "strong",
+            "bold_ratio": 0.0,
+            "italic_ratio": 0.0,
+            "font_families": [],
+        },
+        "section_heading": {
+            "block_count": 1,
+            "mean_size": 10.0,
+            "max_size": 10.5,
+            "min_size": 9.5,
+            "dispersion": 0.05,
+            "quality": "weak",
+            "bold_ratio": 0.0,
+            "italic_ratio": 0.0,
+            "font_families": [],
+        },
+    }
+
+    ds = DocumentStructure(body_end_page=2)
+    result = rescue_roles_with_document_context(blocks, role_profiles, ds)
+
+    heading = next(b for b in result if b["text"] == "Methods")
+    assert heading["role"] == "section_heading", (
+        f"Weak heading should keep its role in degraded mode, got {heading['role']}"
+    )
+
+
+def test_degraded_mode_weaker_non_body_insert() -> None:
+    """No-span blocks with moderate narrow+font signal → NOT promoted
+    to non_body_insert when spine weak."""
+    from paperforge.worker.ocr_document import rescue_roles_with_document_context
+
+    blocks = [
+        # Body paragraphs with span_metadata to establish body_family
+        {
+            "role": "body_paragraph",
+            "page": 1,
+            "role_confidence": 0.8,
+            "text": "Normal body paragraph with enough text for profiling purposes.",
+            "span_metadata": {"size": 10, "flags": "normal"},
+        },
+        {
+            "role": "body_paragraph",
+            "page": 2,
+            "role_confidence": 0.8,
+            "text": "Another body paragraph to strengthen the body font profile.",
+            "span_metadata": {"size": 10, "flags": "normal"},
+        },
+        # non_body_insert block without span_metadata — cannot be compared
+        {
+            "role": "non_body_insert",
+            "page": 1,
+            "role_confidence": 0.5,
+            "_non_body_insert": True,
+            "bbox": [100, 400, 700, 440],
+            "page_width": 1200,
+            "text": "This block has no span metadata so rescue cannot run",
+        },
+    ]
+    # Add 7 blocks without span to push coverage to 2/10 = 0.2 < 0.3 → degraded
+    for i in range(7):
+        blocks.append({"role": "body_paragraph", "role_confidence": 0.5, "page": 2, "text": f"No span {i}"})
+
+    role_profiles = {
+        "body_paragraph": {
+            "block_count": 9,
+            "mean_size": 10.0,
+            "max_size": 10.5,
+            "min_size": 9.5,
+            "dispersion": 0.05,
+            "quality": "strong",
+            "bold_ratio": 0.0,
+            "italic_ratio": 0.0,
+            "font_families": [],
+        },
+        "non_body_insert": {
+            "block_count": 1,
+            "mean_size": 10.0,
+            "max_size": 10.5,
+            "min_size": 9.5,
+            "dispersion": 0.05,
+            "quality": "moderate",
+            "bold_ratio": 0.0,
+            "italic_ratio": 0.0,
+            "font_families": [],
+        },
+    }
+
+    result = rescue_roles_with_document_context(blocks, role_profiles)
+    # Without span_metadata, extract_block_span_profile returns None →
+    # the block cannot be rescued, should remain as non_body_insert
+    non_body = [b for b in result if b.get("_non_body_insert")]
+    assert len(non_body) == 1
+    assert non_body[0]["role"] == "non_body_insert"
+
+
+def test_span_coverage_strong_when_most_blocks_have_metadata() -> None:
+    """80%+ blocks have span_metadata → strong coverage."""
+    from paperforge.worker.ocr_document import _compute_span_coverage
+
+    blocks = []
+    for i in range(8):
+        blocks.append({"span_metadata": {"size": 10, "flags": "normal"}})
+    for i in range(2):
+        blocks.append({"span_metadata": None})
+
+    result = _compute_span_coverage(blocks)
+    assert result["coverage_quality"] == "strong"
+    assert result["coverage_ratio"] >= 0.7
+    assert result["blocks_with_span"] == 8
+    assert result["blocks_without_span"] == 2
+    assert result["degraded_mode_active"] is False

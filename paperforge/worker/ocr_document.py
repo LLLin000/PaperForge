@@ -80,24 +80,46 @@ class DocumentStructure:
     page_layouts: dict[int, PageLayoutProfile] | None = None
     tail_reading_order: list[dict] | None = None
     reference_zones: list[dict] | None = None
+    span_coverage: dict | None = None
 
 
 def _compute_span_coverage(blocks: list[dict]) -> dict:
+    """Compute span metadata coverage across the document.
+
+    Returns:
+        coverage_ratio: float 0-1
+        coverage_quality: str "strong" (>=0.7), "moderate" (>=0.3), "weak" (<0.3)
+        blocks_with_span: int
+        blocks_without_span: int
+        degraded_mode_active: bool
+    """
     total = len(blocks)
     if total == 0:
-        return {"total_blocks": 0, "blocks_with_span": 0, "coverage": 1.0, "coverage_quality": "strong"}
+        return {
+            "coverage_ratio": 0.0,
+            "coverage_quality": "weak",
+            "blocks_with_span": 0,
+            "blocks_without_span": 0,
+            "degraded_mode_active": True,
+        }
 
     with_span = sum(1 for b in blocks if b.get("span_metadata"))
-    coverage = with_span / total
+    ratio = with_span / total
 
-    if coverage >= 0.7:
+    if ratio >= 0.7:
         quality = "strong"
-    elif coverage >= 0.3:
+    elif ratio >= 0.3:
         quality = "moderate"
     else:
         quality = "weak"
 
-    return {"total_blocks": total, "blocks_with_span": with_span, "coverage": coverage, "coverage_quality": quality}
+    return {
+        "coverage_ratio": ratio,
+        "coverage_quality": quality,
+        "blocks_with_span": with_span,
+        "blocks_without_span": total - with_span,
+        "degraded_mode_active": quality == "weak",
+    }
 
 
 def _cluster_page_columns(page_blocks: list[dict], page_width: float) -> list[float]:
@@ -948,7 +970,7 @@ def rescue_roles_with_document_context(
 
     family_profiles = build_family_profiles(blocks)
     span_coverage = _compute_span_coverage(blocks)
-    coverage_quality = span_coverage["coverage_quality"]
+    degraded_mode_active = span_coverage["degraded_mode_active"]
 
     body_end_page = document_structure.body_end_page
     refs_start = document_structure.references_start
@@ -1021,8 +1043,6 @@ def rescue_roles_with_document_context(
         # --- Rule 2: body_paragraph → reference_item (refs section + ref font)
         role = block.get("role", "")
         if role == "body_paragraph" and block.get("role_confidence", 1.0) < 0.7:
-            if coverage_quality == "weak":
-                continue
             bp = extract_block_span_profile(block)
             if bp:
                 ref_rescued = False
@@ -1071,13 +1091,16 @@ def rescue_roles_with_document_context(
                     if not ref_rescued:
                         ref_fam = role_profiles.get("reference_item", {})
                         if ref_fam:
+                            threshold = 0.7 if degraded_mode_active else 0.5
                             match = compare_against_role_family(bp, ref_fam)
-                            if match["size_compatible"] and match["match_score"] > 0.5:
+                            if match["size_compatible"] and match["match_score"] > threshold:
                                 block["role"] = "reference_item"
                                 block["role_confidence"] = min(block.get("role_confidence", 0.5) + 0.2, 1.0)
                                 block.setdefault("evidence", []).append("rescue: body_paragraph → reference_item")
 
         # --- Rule 3: weak heading with body font → body_paragraph
+        if degraded_mode_active:
+            continue
         if (
             role in {"section_heading", "subsection_heading", "sub_subsection_heading"}
             and block.get("role_confidence", 1.0) < 0.6
@@ -2278,6 +2301,9 @@ def normalize_document_structure(blocks: list[dict]) -> tuple[DocumentStructure,
 
     blocks = _promote_tail_body_candidates(blocks, doc_structure, header_band=header_band, footer_band=footer_band)
     blocks = _assign_tail_spread_ownership(blocks, doc_structure)
+
+    # Compute span coverage for degraded mode detection
+    doc_structure.span_coverage = _compute_span_coverage(blocks)
 
     # Detect non-body insert clusters on early pages (relative to body length)
     body_spine = _detect_body_spine(blocks, doc_structure)

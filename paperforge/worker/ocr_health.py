@@ -80,6 +80,13 @@ def build_ocr_health(
     }
 
 
+def build_span_coverage_health(blocks: list[dict]) -> dict:
+    """Compute span metadata coverage health from structured blocks."""
+    from paperforge.worker.ocr_document import _compute_span_coverage
+
+    return _compute_span_coverage(blocks)
+
+
 def build_spine_health(body_spine: dict) -> dict:
     quality = body_spine.get("_meta", {}).get("quality", "weak")
     return {
