@@ -1929,3 +1929,10 @@ def test_no_span_rescue_more_conservative() -> None:
     profiles = build_role_span_profiles(blocks)
     result = rescue_roles_with_document_context(blocks, profiles, ds)
     assert result[0]["role"] == "body_paragraph"
+
+
+def test_non_body_insert_skips_page1_title() -> None:
+    from paperforge.worker.ocr_document import _is_page1_title
+    assert _is_page1_title("Metabolic regulation of skeletal cell fate and function") is True
+    assert _is_page1_title("Review article") is False
+    assert _is_page1_title("") is False

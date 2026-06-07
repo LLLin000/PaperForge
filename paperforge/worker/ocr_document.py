@@ -2041,6 +2041,33 @@ def _mark_non_body_media(blocks: list[dict]) -> None:
                 block["_non_body_media"] = True
 
 
+_TITLE_SENTENCE_VERBS = frozenset((
+    "provides", "shows", "demonstrates", "describes",
+    "reports", "indicates", "suggests", "reveals",
+    "examines", "investigates", "explores", "analyzes",
+    "presents", "discusses", "proposes", "introduces",
+    "highlights", "summarizes", "evaluates", "compares",
+    "identifies", "includes", "contains", "represents",
+    "involves", "requires", "produces", "results",
+    "performed", "conducted", "observed", "measured",
+    "show", "demonstrate", "describe", "indicate",
+    "suggest", "reveal", "present", "discuss",
+    "propose", "introduce", "examine", "investigate",
+))
+
+
+def _is_page1_title(text: str) -> bool:
+    t = text.strip()
+    if not t or len(t) < 20:
+        return False
+    if "\u2022" in t or t.startswith("- "):
+        return False
+    tl = t.lower()
+    if any(v in tl for v in (" is ", " are ", " was ", " were ")):
+        return False
+    return all(w not in _TITLE_SENTENCE_VERBS for w in tl.split())
+
+
 def normalize_document_structure(blocks: list[dict]) -> tuple[DocumentStructure, list[dict]]:
     """Analyze document structure and normalize roles.
 
@@ -2099,8 +2126,11 @@ def normalize_document_structure(blocks: list[dict]) -> tuple[DocumentStructure,
     )
     for idx in insert_indices:
         if idx < len(blocks):
-            blocks[idx]["role"] = "non_body_insert"
-            blocks[idx]["_non_body_insert"] = True
+            b = blocks[idx]
+            if b.get("page") == 1 and _is_page1_title(b.get("text", "")):
+                continue
+            b["role"] = "non_body_insert"
+            b["_non_body_insert"] = True
 
     _mark_non_body_media(blocks)
     _resolve_ambiguous_candidates(blocks, doc_structure, page_layouts)
