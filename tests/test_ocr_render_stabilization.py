@@ -315,7 +315,7 @@ def test_stabilize_heading_sanity_allows_valid_short_heading() -> None:
         table_inventory={},
     )
 
-    assert "## 1 Introduction" in md
+    assert "### 1 Introduction" in md
 
 
 def test_stabilize_heading_sanity_downgrades_verb_heavy_heading() -> None:
@@ -374,7 +374,7 @@ def test_stabilize_heading_sanity_allows_verb_short_heading() -> None:
         table_inventory={},
     )
 
-    assert "## Results are shown" in md
+    assert "### Results are shown" in md
 
 
 def test_stabilize_reference_content_mapped() -> None:
@@ -914,3 +914,12 @@ def test_normalize_ocr_math_text_greek_letter_compound_preserved() -> None:
 def test_normalize_ocr_math_text_display_math() -> None:
     from paperforge.worker.ocr_math import normalize_ocr_math_text
     assert normalize_ocr_math_text("$$ ... $$") == "$$...$$"
+
+
+def test_section_heading_renders_with_prefix() -> None:
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+    blocks = [
+        {"paper_id": "KEY", "page": 3, "block_id": "b1", "role": "section_heading", "text": "1 Introduction", "render_default": True, "bbox": [80, 200, 500, 230], "page_width": 1200, "page_height": 1700},
+    ]
+    md = render_fulltext_markdown(structured_blocks=blocks, resolved_metadata={}, figure_inventory={}, table_inventory={})
+    assert "### 1 Introduction" in md, f"Expected ### prefix, got: {md[:200]}"

@@ -843,17 +843,15 @@ def render_fulltext_markdown(
         if role == "backmatter_boundary_heading" or role == "backmatter_heading" or role == "reference_heading":
             lines.append(f"## {text}")
             lines.append("")
-        elif role == "section_heading":
-            if text.strip().lower() in FRONTMATTER_NOISE:
-                continue
-            if _is_bogus_heading(text):
-                if text:
-                    lines.append(text)
-                    lines.append("")
-            else:
-                lines.append(f"## {text}")
-                lines.append("")
-        elif role == "subsection_heading" or role == "sub_subsection_heading":
+        elif role in ("subsection_heading", "sub_subsection_heading", "section_heading"):
+            if role == "section_heading":
+                if text.strip().lower() in FRONTMATTER_NOISE:
+                    continue
+                if _is_bogus_heading(text):
+                    if text:
+                        lines.append(text)
+                        lines.append("")
+                    continue
             lines.append(f"### {text}")
             lines.append("")
         elif role in ("backmatter_body", "tail_candidate_body", "body_paragraph"):
