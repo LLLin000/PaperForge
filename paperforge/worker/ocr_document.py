@@ -1150,6 +1150,9 @@ def analyze_document_structure(blocks: list[dict]) -> DocumentStructure:
     ref_zones = _detect_reference_zones(blocks, page_layouts)
     ds.reference_zones = [dataclasses.asdict(z) for z in ref_zones] if ref_zones else None
 
+    # Build body spine using document structure for stable anchor pages
+    _detect_body_spine(blocks, ds)
+
     return ds
 
 
@@ -1381,43 +1384,62 @@ def _assign_tail_spread_ownership(
     return result
 
 
-def _select_body_anchor_pages(
-    blocks: list[dict],
-    body_end_page: int | None = None,
-    backmatter_start: int | None = None,
-) -> list[int]:
-    """Select stable middle-body pages for font/width baseline derivation.
+def _select_body_anchor_pages(blocks: list[dict], doc: DocumentStructure | None = None) -> list[int]:
+    """Select stable middle pages for body baseline derivation.
 
-    Excludes page 1 (contaminated by frontmatter) and tail pages
-    (contaminated by backmatter/references).  Ranks remaining pages
-    by density of body_paragraph blocks.
+    Excludes:
+    - Page 1 (frontmatter contamination)
+    - Tail spread pages (backmatter/references)
+    - Pages with few body paragraphs
+
+    Returns sorted list of anchor page numbers.
     """
+    if not blocks:
+        return []
+
+    # Determine tail start
+    tail_start = None
+    if doc and doc.spread_start is not None:
+        tail_start = doc.spread_start
 
     by_page: dict[int, list[dict]] = {}
     for b in blocks:
         p = b.get("page", 1)
         by_page.setdefault(p, []).append(b)
 
-    # Exclude page 1 and tail spread
-    tail_start = backmatter_start if backmatter_start else (body_end_page or 999) if body_end_page else 999
+    all_pages = sorted(by_page.keys())
 
-    candidates: list[tuple[int, int, list[dict]]] = []  # (page, body_count, blocks)
-    for pg in sorted(by_page):
-        if pg == 1:
-            continue
-        if pg >= tail_start:
-            continue
-        page_blocks = by_page[pg]
+    scores: list[tuple[float, int]] = []
+    for p in all_pages:
+        if p == 1:
+            continue  # exclude frontmatter
+        if tail_start is not None and p >= tail_start:
+            continue  # exclude tail spread
+
+        page_blocks = by_page[p]
         body_count = sum(1 for b in page_blocks if b.get("role") == "body_paragraph")
-        if body_count >= 2:  # at least 2 body paragraphs
-            candidates.append((pg, body_count, page_blocks))
+        total_count = max(len(page_blocks), 1)
+        body_ratio = body_count / total_count
 
-    # Sort by body density descending
-    candidates.sort(key=lambda x: -x[1])
-    return [c[0] for c in candidates]
+        # Prefer pages with >40% body paragraphs
+        if body_ratio > 0.4:
+            # Boost central pages: distance from edges
+            idx = all_pages.index(p)
+            dist = min(idx, len(all_pages) - 1 - idx)
+            central_boost = 1.0 + dist * 0.1
+            scores.append((body_ratio * central_boost, p))
+
+    # Pick top pages
+    scores.sort(reverse=True)
+    anchor_pages = [p for _, p in scores[:max(3, len(scores) // 2)]]
+    if anchor_pages:
+        return sorted(anchor_pages)
+    # Fallback: exclude page 1 even in fallback
+    fallback = [p for p in all_pages if p != 1][:3]
+    return fallback if fallback else []
 
 
-def _detect_body_spine(blocks: list[dict]) -> dict[int, dict]:
+def _detect_body_spine(blocks: list[dict], doc: DocumentStructure | None = None) -> dict[int, dict]:
     """Detect the main body column characteristics per page.
 
     Uses a two-pass approach:
@@ -1426,12 +1448,19 @@ def _detect_body_spine(blocks: list[dict]) -> dict[int, dict]:
     2. Second pass: use the global anchor baseline for non-anchor pages
        instead of deriving from local (contaminated) data.
 
+    When ``doc`` is provided, uses ``doc.spread_start`` for tail boundary
+    detection.  Falls back to ``_reconcile_tail_spread`` when no doc is given.
+
     Returns dict[page_num, {"median_width": float, "median_x": float,
-                            "width_range": tuple[float, float],
+                            "anchor_median_width": float,
+                            "anchor_fonts": set[str],
                             "anchor_pages": list[int],
+                            "per_page_width": float,
+                            "width_range": tuple[float, float],
                             "core_width_range": tuple[float, float],
                             "core_width_median": float,
-                            "all_fonts": set[str]}]
+                            "all_fonts": set[str],
+                            "quality": str}]
     """
     import statistics
 
@@ -1445,10 +1474,18 @@ def _detect_body_spine(blocks: list[dict]) -> dict[int, dict]:
         return {}
 
     # Detect body/tail boundaries to derive anchor pages
-    tail_spine = _reconcile_tail_spread(blocks)
-    body_end = tail_spine.body_end_page if tail_spine else None
-    bm_start = tail_spine.backmatter_start if tail_spine else None
-    anchor_pages = _select_body_anchor_pages(blocks, body_end_page=body_end, backmatter_start=bm_start)
+    if doc is not None:
+        anchor_pages = _select_body_anchor_pages(blocks, doc)
+    else:
+        # Fallback: detect boundaries via reconciliation
+        tail_spine = _reconcile_tail_spread(blocks)
+        if tail_spine is not None:
+            temp_doc = DocumentStructure(
+                spread_start=tail_spine.spread_start,
+            )
+            anchor_pages = _select_body_anchor_pages(blocks, temp_doc)
+        else:
+            anchor_pages = _select_body_anchor_pages(blocks)
 
     # ---- Pass 1: collect global anchor baseline from anchor pages only ----
     anchor_widths: list[float] = []
@@ -1532,10 +1569,13 @@ def _detect_body_spine(blocks: list[dict]) -> dict[int, dict]:
                 per_page_spine[page] = {
                     "median_width": median_width,
                     "median_x": median_x,
+                    "anchor_median_width": core_width_median,
+                    "anchor_fonts": anchor_fonts,
+                    "anchor_pages": anchor_pages,
+                    "per_page_width": median_width,
                     "width_range": (median_width * 0.7, median_width * 1.3),
                     "fonts": fonts,
                     "all_fonts": anchor_fonts,
-                    "anchor_pages": anchor_pages,
                     "core_width_range": core_width_range,
                     "core_width_median": core_width_median,
                     "quality": quality,
@@ -1555,10 +1595,13 @@ def _detect_body_spine(blocks: list[dict]) -> dict[int, dict]:
                 per_page_spine[page] = {
                     "median_width": core_width_median,
                     "median_x": statistics.median_low(x_starts) if x_starts else 100,
+                    "anchor_median_width": core_width_median,
+                    "anchor_fonts": anchor_fonts,
+                    "anchor_pages": anchor_pages,
+                    "per_page_width": statistics.median_low(widths) if widths else core_width_median,
                     "width_range": core_width_range,
                     "fonts": fonts,
                     "all_fonts": anchor_fonts,
-                    "anchor_pages": anchor_pages,
                     "core_width_range": core_width_range,
                     "core_width_median": core_width_median,
                     "quality": quality,
@@ -1594,10 +1637,13 @@ def _detect_body_spine(blocks: list[dict]) -> dict[int, dict]:
                 per_page_spine[page] = {
                     "median_width": median_width,
                     "median_x": median_x,
+                    "anchor_median_width": core_width_median,
+                    "anchor_fonts": all_body_fonts,
+                    "anchor_pages": anchor_pages,
+                    "per_page_width": median_width,
                     "width_range": (median_width * 0.7, median_width * 1.3),
                     "fonts": fonts,
                     "all_fonts": all_body_fonts,
-                    "anchor_pages": anchor_pages,
                     "core_width_range": core_width_range,
                     "core_width_median": core_width_median,
                     "quality": quality,
@@ -1626,10 +1672,13 @@ def _detect_body_spine(blocks: list[dict]) -> dict[int, dict]:
                 or {
                     "median_width": core_width_median,
                     "median_x": 100,
+                    "anchor_median_width": core_width_median,
+                    "anchor_fonts": anchor_fonts,
+                    "anchor_pages": anchor_pages,
+                    "per_page_width": core_width_median,
                     "width_range": core_width_range,
                     "fonts": set(),
                     "all_fonts": anchor_fonts,
-                    "anchor_pages": anchor_pages,
                     "core_width_range": core_width_range,
                     "core_width_median": core_width_median,
                     "quality": "weak",
@@ -2116,7 +2165,7 @@ def normalize_document_structure(blocks: list[dict]) -> tuple[DocumentStructure,
     blocks = _assign_tail_spread_ownership(blocks, doc_structure)
 
     # Detect non-body insert clusters on early pages (relative to body length)
-    body_spine = _detect_body_spine(blocks)
+    body_spine = _detect_body_spine(blocks, doc_structure)
     pw = max((b.get("page_width", 0) or 0) for b in blocks) or 1200
     insert_indices = _detect_non_body_insert_clusters(
         blocks,
@@ -2128,6 +2177,7 @@ def normalize_document_structure(blocks: list[dict]) -> tuple[DocumentStructure,
         if idx < len(blocks):
             b = blocks[idx]
             if b.get("page") == 1 and _is_page1_title(b.get("text", "")):
+                b["role"] = "body_paragraph"
                 continue
             b["role"] = "non_body_insert"
             b["_non_body_insert"] = True
