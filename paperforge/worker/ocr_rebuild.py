@@ -6,6 +6,31 @@ from pathlib import Path
 from paperforge.core.io import read_json, write_json
 
 
+def _resolve_source_pdf_for_rebuild(vault: Path, key: str, meta: dict) -> Path | None:
+    """Resolve a usable source PDF path for span backfill.
+
+    Resolution order:
+    1. meta['source_pdf'] if exists and file exists
+    2. Zotero storage lookup: {vault}/zotero/storage/{key}/*.pdf
+    3. paper dir: {vault}/System/PaperForge/ocr/{key}/source.pdf
+    """
+    source = meta.get("source_pdf") or ""
+    if source and Path(source).exists():
+        return Path(source)
+
+    storage_dir = vault / "zotero" / "storage" / key
+    if storage_dir.exists():
+        pdfs = list(storage_dir.glob("*.pdf"))
+        if pdfs:
+            return pdfs[0]
+
+    local = vault / "System" / "PaperForge" / "ocr" / key / "source.pdf"
+    if local.exists():
+        return local
+
+    return None
+
+
 def _apply_post_rebuild_version_flags(meta: dict) -> dict:
     """Update version state flags after a derived-layer rebuild.
 
@@ -57,7 +82,7 @@ def run_derived_rebuild_for_keys(vault: Path, keys: list[str]) -> dict:
 
         # Backfill span_metadata from source PDF
         ocr_meta = read_json(artifacts.meta_json) if artifacts.meta_json.exists() else {}
-        source_pdf_path = Path(ocr_meta.get("source_pdf", "")) if ocr_meta.get("source_pdf") else None
+        source_pdf_path = _resolve_source_pdf_for_rebuild(vault, key, ocr_meta)
         if source_pdf_path and source_pdf_path.exists():
             from paperforge.worker.ocr_blocks import write_raw_blocks_jsonl
             from paperforge.worker.ocr_pdf_spans import backfill_span_metadata_from_pdf
