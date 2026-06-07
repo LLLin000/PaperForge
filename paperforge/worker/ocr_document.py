@@ -81,6 +81,7 @@ class DocumentStructure:
     tail_reading_order: list[dict] | None = None
     reference_zones: list[dict] | None = None
     span_coverage: dict | None = None
+    layout_audit: dict | None = None
 
 
 def _compute_span_coverage(blocks: list[dict]) -> dict:
@@ -1782,11 +1783,20 @@ def _detect_non_body_insert_clusters(
             return str(span.get("font", "") or "").lower() or None
         return None
 
-    raw_candidates: dict[int, list[tuple[int, bool, bool]]] = {}
+    # Read spine trust quality from _meta (not per-page quality, which is
+    # contaminated on early pages).  Strong spine: width/font baseline is
+    # reliable enough to trust either signal in isolation.  Moderate spine:
+    # need both signals or cluster support.  Weak spine: no anchor pages
+    # existed, so width/font data are untrustworthy — require both signals.
+    spine_meta = body_spine.get("_meta", {})
+    quality = spine_meta.get("quality", "weak")
+
+    candidates_by_page: dict[int, list[int]] = {}
     for i, block in enumerate(blocks):
         page = block.get("page", 1)
         if page > max_early_page:
             continue
+
         # body_paragraph, figure_caption, figure_caption_candidate, and
         # unknown_structural can be non-body inserts — bio/profile blocks that
         # OCR misclassified as body text or figure titles.  frontmatter_noise
@@ -1794,6 +1804,12 @@ def _detect_non_body_insert_clusters(
         _INSERT_CANDIDATE_ROLES = {"body_paragraph", "figure_caption", "figure_caption_candidate", "unknown_structural"}
         if block.get("role") not in _INSERT_CANDIDATE_ROLES:
             continue
+
+        # Never mark page-1 title-like blocks as non_body_insert
+        if page == 1:
+            text = (block.get("text") or "").strip()
+            if len(text) > 20 and not any(m in text.lower() for m in ["\u2022", "-", "*"]):
+                continue
 
         bbox = block.get("bbox", [0, 0, 0, 0])
 
@@ -1820,31 +1836,15 @@ def _detect_non_body_insert_clusters(
             spine_fonts = set(spine_fonts) if spine_fonts else set()
         font_mismatch = bool(block_font and spine_fonts and block_font not in spine_fonts)
 
-        if is_narrow or font_mismatch:
-            raw_candidates.setdefault(page, []).append((i, is_narrow, font_mismatch))
+        if quality == "strong":
+            passes = is_narrow or font_mismatch
+        elif quality == "moderate":
+            passes = is_narrow and (font_mismatch or len(candidates_by_page.get(page, [])) >= 1)
+        else:
+            passes = is_narrow and font_mismatch
 
-    # Quality-gated filtering: font_mismatch signal reliability depends on
-    # whether anchor pages exist (multi-page width estimate) and spine quality.
-    candidates_by_page: dict[int, list[int]] = {}
-    for page, cand_list in raw_candidates.items():
-        spine_key = page if page in body_spine else 1
-        spine = body_spine.get(spine_key, {})
-        spine_fonts = spine.get("all_fonts") or spine.get("fonts", set())
-        if not isinstance(spine_fonts, set):
-            spine_fonts = set(spine_fonts) if spine_fonts else set()
-        has_font_data = bool(spine_fonts)
-        has_anchors = bool(spine.get("anchor_pages", []))
-        spine_quality = spine.get("quality", "weak") if isinstance(spine, dict) else "weak"
-
-        for i, is_narrow, font_mismatch in cand_list:
-            if not has_font_data or has_anchors or spine_quality == "strong":
-                candidates_by_page.setdefault(page, []).append(i)
-            elif spine_quality == "moderate":
-                if is_narrow and (font_mismatch or len(cand_list) >= 2):
-                    candidates_by_page.setdefault(page, []).append(i)
-            else:  # weak, no anchors
-                if is_narrow and font_mismatch:
-                    candidates_by_page.setdefault(page, []).append(i)
+        if passes:
+            candidates_by_page.setdefault(page, []).append(i)
 
     for candidate_indices in candidates_by_page.values():
         if len(candidate_indices) >= 2:
@@ -2255,6 +2255,72 @@ def _detect_structured_insert_clusters(blocks: list[dict]) -> set[int]:
     return result
 
 
+def _run_layout_audit(blocks: list[dict]) -> dict:
+    """Check resolved structure for obvious geometric contradictions.
+
+    Returns:
+        status: str "pass", "warn", or "fail"
+        page_warnings: dict[int, list[str]] per-page warnings
+        anomaly_count: int
+        anomaly_pages: list[int]
+    """
+    page_warnings: dict[int, list[str]] = {}
+
+    by_page: dict[int, list[dict]] = {}
+    for b in blocks:
+        p = b.get("page", 1)
+        by_page.setdefault(p, []).append(b)
+
+    for page, page_blocks in by_page.items():
+        warnings: list[str] = []
+
+        # Check 1: heading owns body above it (cross-column)
+        headings = [b for b in page_blocks if b.get("role") in ("section_heading", "subsection_heading")]
+        body_blocks = [b for b in page_blocks if b.get("role") == "body_paragraph"]
+        for h in headings:
+            hb = h.get("bbox") or [0, 0, 0, 0]
+            hx = (hb[0] + hb[2]) / 2
+            hy = hb[1]
+            h_col = 0 if hx < 600 else 1
+            for body in body_blocks:
+                bb = body.get("bbox") or [0, 0, 0, 0]
+                bx = (bb[0] + bb[2]) / 2
+                by_ = bb[1]
+                b_col = 0 if bx < 600 else 1
+                if h_col != b_col and by_ < hy:
+                    warnings.append("heading owns body in different column above it")
+                    break
+
+        # Check 2: structured_insert overlaps body region
+        inserts = [b for b in page_blocks if b.get("role") in ("non_body_insert", "structured_insert")]
+        body_blocks_p2 = [b for b in page_blocks if b.get("role") == "body_paragraph"]
+        for ins in inserts:
+            ib = ins.get("bbox") or [0, 0, 0, 0]
+            for body in body_blocks_p2:
+                bb = body.get("bbox") or [0, 0, 0, 0]
+                if ib[0] < bb[2] and ib[2] > bb[0] and ib[1] < bb[3] and ib[3] > bb[1]:
+                    warnings.append("structured_insert overlaps body region")
+                    break
+
+        if warnings:
+            page_warnings[page] = warnings
+
+    total_warnings = sum(len(w) for w in page_warnings.values())
+    if total_warnings == 0:
+        status = "pass"
+    elif total_warnings <= 3:
+        status = "warn"
+    else:
+        status = "fail"
+
+    return {
+        "status": status,
+        "page_warnings": {str(p): w for p, w in page_warnings.items()},
+        "anomaly_count": total_warnings,
+        "anomaly_pages": sorted(page_warnings.keys()),
+    }
+
+
 def normalize_document_structure(blocks: list[dict]) -> tuple[DocumentStructure, list[dict]]:
     """Analyze document structure and normalize roles.
 
@@ -2331,5 +2397,9 @@ def normalize_document_structure(blocks: list[dict]) -> tuple[DocumentStructure,
     for idx in structured_insert_indices:
         if idx < len(blocks):
             blocks[idx]["role"] = "structured_insert"
+
+    # Run layout audit after all resolution is done
+    layout_audit = _run_layout_audit(blocks)
+    doc_structure.layout_audit = layout_audit
 
     return doc_structure, blocks

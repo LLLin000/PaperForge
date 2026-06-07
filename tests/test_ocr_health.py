@@ -104,3 +104,23 @@ def test_build_span_coverage_health() -> None:
     empty = build_span_coverage_health([])
     assert empty["degraded_mode_active"] is True
     assert empty["coverage_quality"] == "weak"
+
+
+def test_layout_audit_health_surface() -> None:
+    from paperforge.worker.ocr_health import build_layout_audit_health
+
+    audit = {
+        "status": "warn",
+        "page_warnings": {"3": ["heading owns body in different column above it"]},
+        "anomaly_count": 1,
+        "anomaly_pages": [3],
+    }
+    result = build_layout_audit_health(audit)
+    assert result["layout_audit_status"] == "warn"
+    assert result["layout_anomaly_pages"] == [3]
+    assert result["layout_anomaly_count"] == 1
+
+    empty = build_layout_audit_health({})
+    assert empty["layout_audit_status"] == "unknown"
+    assert empty["layout_anomaly_pages"] == []
+    assert empty["layout_anomaly_count"] == 0

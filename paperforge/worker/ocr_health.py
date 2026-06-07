@@ -96,6 +96,14 @@ def build_spine_health(body_spine: dict) -> dict:
     }
 
 
+def build_layout_audit_health(layout_audit: dict) -> dict:
+    return {
+        "layout_audit_status": layout_audit.get("status", "unknown"),
+        "layout_anomaly_pages": layout_audit.get("anomaly_pages", []),
+        "layout_anomaly_count": layout_audit.get("anomaly_count", 0),
+    }
+
+
 def write_ocr_health(health_root: Path, report: dict[str, Any]) -> None:
     from paperforge.core.io import write_json
 
