@@ -494,6 +494,73 @@ def test_anchor_ranking_prefers_body_dense_pages() -> None:
     assert ranked[0] in (3, 4), f"Highest ranked should be 3 or 4, got {ranked}"
 
 
+def test_middle_page_baseline_excludes_frontmatter() -> None:
+    """Page 1 contaminated with title/authors/noise — body paragraphs on page 1
+    are few relative to total blocks.  Body baseline should come from central
+    pages 4-8, not from contaminated page 1."""
+    from paperforge.worker.ocr_document import _detect_body_spine
+
+    blocks = []
+    # Page 1: contaminated — 2 title, 2 authors, 4 noise, only 2 body_paragraph
+    # body_ratio = 2/10 = 0.2 < 0.4 → should be excluded by new scoring
+    for i in range(2):
+        blocks.append({"block_id": f"b_title{i}", "page": 1, "role": "paper_title", "text": f"Title {i}", "bbox": [80, 20 + i*40, 280, 60 + i*40], "page_width": 1200, "page_height": 1700})
+    for i in range(2):
+        blocks.append({"block_id": f"b_author{i}", "page": 1, "role": "authors", "text": f"Author {i}", "bbox": [80, 120 + i*40, 300, 160 + i*40], "page_width": 1200, "page_height": 1700})
+    for i in range(4):
+        blocks.append({"block_id": f"b_noise{i}", "page": 1, "role": "noise", "text": f"Noise {i}", "bbox": [80, 220 + i*40, 180, 260 + i*40], "page_width": 1200, "page_height": 1700})
+    for i in range(2):
+        blocks.append({"block_id": f"b_body1_{i}", "page": 1, "role": "body_paragraph", "text": f"Body on page 1 {i}", "bbox": [80, 400 + i*40, 500, 440 + i*40], "page_width": 1200, "page_height": 1700})
+    # Pages 4-8: clean body (3 body paragraphs each)
+    for pg in range(4, 9):
+        for i in range(3):
+            blocks.append({"block_id": f"b{pg}_{i}", "page": pg, "role": "body_paragraph", "text": f"Body on {pg}", "bbox": [80, 100 + i*80, 550, 140 + i*80], "page_width": 1200, "page_height": 1700})
+    # Pages 10-11: tail
+    blocks.append({"block_id": "ref_head", "page": 10, "role": "reference_heading", "text": "References", "bbox": [80, 100, 400, 130], "page_width": 1200, "page_height": 1700})
+    for i in range(3):
+        blocks.append({"block_id": f"ref_{i}", "page": 10, "role": "reference_item", "text": f"Ref {i}", "bbox": [80, 150 + i*40, 500, 190 + i*40], "page_width": 1200, "page_height": 1700})
+
+    spine = _detect_body_spine(blocks)
+    anchor_pages: list[int] = spine.get(4, {}).get("anchor_pages", [])
+    # Page 1 has 2 body + 8 non-body = body_ratio 0.2 → excluded
+    assert 1 not in anchor_pages, f"Page 1 should be excluded from anchor pages, got {anchor_pages}"
+    # Tail pages (10+) should be excluded
+    assert all(pg < 10 for pg in anchor_pages), f"Tail pages should be excluded, got {anchor_pages}"
+    # Central pages 4-8 should be included
+    central = [pg for pg in anchor_pages if pg in (4, 5, 6, 7, 8)]
+    assert len(central) >= 2, f"Expected at least 2 central pages (4-8) in anchors, got {anchor_pages}"
+
+
+def test_middle_page_baseline_excludes_tail() -> None:
+    """Tail pages (backmatter/references) should be excluded from anchor pages."""
+    from paperforge.worker.ocr_document import _detect_body_spine
+
+    blocks = []
+    # Page 1: frontmatter only — will be excluded by page==1 guard
+    for i in range(3):
+        blocks.append({"block_id": f"b_title{i}", "page": 1, "role": "paper_title", "text": f"Title {i}", "bbox": [80, 20 + i*40, 280, 60 + i*40], "page_width": 1200, "page_height": 1700})
+    # Page 2: contaminated (2 body + 6 non-body)
+    for i in range(2):
+        blocks.append({"block_id": f"b2_body{i}", "page": 2, "role": "body_paragraph", "text": f"Body on 2 {i}", "bbox": [80, 100 + i*40, 500, 140 + i*40], "page_width": 1200, "page_height": 1700})
+    for i in range(6):
+        blocks.append({"block_id": f"b2_noise{i}", "page": 2, "role": "noise", "text": f"Noise {i}", "bbox": [80, 300 + i*30, 180, 330 + i*30], "page_width": 1200, "page_height": 1700})
+    # Pages 4-8: clean body (4 body paragraphs each)
+    for pg in range(4, 9):
+        for i in range(4):
+            blocks.append({"block_id": f"b{pg}_{i}", "page": pg, "role": "body_paragraph", "text": f"Body on {pg}", "bbox": [80, 100 + i*60, 550, 140 + i*60], "page_width": 1200, "page_height": 1700})
+    # Pages 10+: tail (reference heading + items)
+    blocks.append({"block_id": "ref_h", "page": 10, "role": "reference_heading", "text": "References", "bbox": [80, 100, 400, 130], "page_width": 1200, "page_height": 1700})
+    for i in range(4):
+        blocks.append({"block_id": f"ref_{i}", "page": 10, "role": "reference_item", "text": f"Ref {i}", "bbox": [80, 150 + i*40, 500, 190 + i*40], "page_width": 1200, "page_height": 1700})
+
+    spine = _detect_body_spine(blocks)
+    anchor_pages: list[int] = spine.get(4, {}).get("anchor_pages", [])
+    # No tail pages should be in anchors
+    assert all(pg < 10 for pg in anchor_pages), f"Tail pages (10+) should be excluded, got {anchor_pages}"
+    # Central pages 4-8 should be included
+    assert any(pg in (4, 5, 6, 7, 8) for pg in anchor_pages), f"Expected central pages in anchors, got {anchor_pages}"
+
+
 def test_detect_body_spine_returns_reasonable_values() -> None:
     from paperforge.worker.ocr_document import _detect_body_spine
 
