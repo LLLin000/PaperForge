@@ -9,6 +9,7 @@ from paperforge.worker.ocr_roles import assign_block_role
 _CANDIDATE_ROLES = frozenset({
     "figure_caption_candidate",
     "backmatter_heading_candidate",
+    "structured_insert_candidate",
 })
 
 
@@ -53,9 +54,9 @@ def build_structured_blocks(
             )
             render_default = role.role not in ({"noise", "unknown_structural"} | _CANDIDATE_ROLES)
             index_default = role.role not in _CANDIDATE_ROLES
-            if role.role in {"noise", "page_header", "page_footer", "frontmatter_noise", "non_body_insert"}:
+            if role.role in {"noise", "page_header", "page_footer", "frontmatter_noise", "non_body_insert", "structured_insert"}:
                 render_default = False
-            if role.role in {"noise", "frontmatter_noise", "table_html", "non_body_insert"}:
+            if role.role in {"noise", "frontmatter_noise", "table_html", "non_body_insert", "structured_insert"}:
                 index_default = False
             row = {
                 "paper_id": block["paper_id"],
@@ -111,10 +112,10 @@ def build_structured_blocks(
             row["index_default"] = False
         else:
             row["render_default"] = role not in ({"noise", "unknown_structural"} | _CANDIDATE_ROLES)
-            if role in {"noise", "page_header", "page_footer", "frontmatter_noise", "non_body_insert"}:
+            if role in {"noise", "page_header", "page_footer", "frontmatter_noise", "non_body_insert", "structured_insert"}:
                 row["render_default"] = False
             row["index_default"] = role not in _CANDIDATE_ROLES
-            if role in {"noise", "frontmatter_noise", "table_html", "non_body_insert"}:
+            if role in {"noise", "frontmatter_noise", "table_html", "non_body_insert", "structured_insert"}:
                 row["index_default"] = False
 
     # Persist document structure artifact for downstream debugging
