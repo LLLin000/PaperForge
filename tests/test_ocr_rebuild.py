@@ -30,3 +30,23 @@ def test_derived_rebuild_excludes_raw_upgradable_papers() -> None:
     selected = select_papers_for_derived_rebuild(papers)
 
     assert selected == ["A"]
+
+
+def test_resolve_source_pdf_fallback_stale_path() -> None:
+    from paperforge.worker.ocr_rebuild import _resolve_source_pdf_for_rebuild
+    from pathlib import Path
+
+    vault = Path(r"D:\L\OB\Literature-hub")
+    meta = {"source_pdf": ""}  # empty path
+    result = _resolve_source_pdf_for_rebuild(vault, "SAN9AYVR", meta)
+    assert result is not None and result.exists(), f"Fallback failed: {result}"
+
+
+def test_resolve_source_pdf_stale_missing() -> None:
+    from paperforge.worker.ocr_rebuild import _resolve_source_pdf_for_rebuild
+    from pathlib import Path
+
+    vault = Path(r"D:\L\OB\Literature-hub")
+    meta = {"source_pdf": r"D:\nonexistent\path.pdf"}
+    result = _resolve_source_pdf_for_rebuild(vault, "SAN9AYVR", meta)
+    assert result is not None and result.exists(), f"Fallback failed for stale key: {result}"
