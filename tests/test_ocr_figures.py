@@ -845,3 +845,100 @@ def test_resolved_figure_caption_not_rejected_by_inventory():
     assert len(inventory["matched_figures"]) == 1, (
         f"Expected 1 matched figure, got {len(inventory['matched_figures'])}"
     )
+
+
+# === SAN9AYVR guard tests (Task 7 -- preserve figure mainline) ===
+
+SAN9AYVR_BODY_AND_FIGURES = [
+    {
+        "paper_id": "SAN9AYVR",
+        "page": 3,
+        "block_id": "p3_b1",
+        "role": "figure_caption_candidate",
+        "block_label": "text",
+        "text": "Fig. 26c addresses the limiting case of the mathematical model where "
+               "the field strength approaches zero. The trend reverses at higher "
+               "concentrations as the system enters a regime where nonlinear effects "
+               "dominate the observed dynamics. This pattern is consistent with "
+               "prior observations in similar experimental systems.",
+        "bbox": [50, 700, 550, 760],
+        "page_width": 1200,
+        "page_height": 1700,
+    },
+    {
+        "paper_id": "SAN9AYVR",
+        "page": 3,
+        "block_id": "p3_b2",
+        "role": "figure_caption",
+        "text": "Figure 26. Quantitative analysis of cell migration under "
+                "applied DC electric field stimulation over 48 hours. "
+                "Data represent mean plus/minus standard deviation from "
+                "three independent experiments performed in triplicate.",
+        "bbox": [50, 420, 550, 480],
+        "page_width": 1200,
+        "page_height": 1700,
+    },
+    {
+        "paper_id": "SAN9AYVR",
+        "page": 3,
+        "block_id": "p3_b3",
+        "role": "figure_asset",
+        "text": "",
+        "bbox": [50, 50, 550, 400],
+        "page_width": 1200,
+        "page_height": 1700,
+    },
+    {
+        "paper_id": "SAN9AYVR",
+        "page": 3,
+        "block_id": "p3_b4",
+        "role": "figure_caption",
+        "text": "Figure 27. Expression levels of key proteins under "
+                "different experimental conditions. Error bars "
+                "represent standard deviation from three independent "
+                "biological replicates measured in duplicate.",
+        "bbox": [600, 420, 1100, 490],
+        "page_width": 1200,
+        "page_height": 1700,
+    },
+    {
+        "paper_id": "SAN9AYVR",
+        "page": 3,
+        "block_id": "p3_b5",
+        "role": "figure_asset",
+        "text": "",
+        "bbox": [600, 50, 1100, 400],
+        "page_width": 1200,
+        "page_height": 1700,
+    },
+]
+
+
+def test_san9ayvr_fig26c_body_narrative() -> None:
+    """SAN9AYVR's Fig. 26c narrative text stays body narrative, not formal legend."""
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    inventory = build_figure_inventory(SAN9AYVR_BODY_AND_FIGURES)
+
+    assert len(inventory["matched_figures"]) == 2, (
+        f"Expected 2 matched figures (Fig. 26, Fig. 27), got {len(inventory['matched_figures'])}"
+    )
+    for m in inventory["matched_figures"]:
+        assert "Fig. 26c" not in m.get("text", ""), (
+            "Narrative Fig. 26c mention must not appear as a formal legend"
+        )
+
+
+def test_san9ayvr_fig26_fig27_remain_formal() -> None:
+    """SAN9AYVR Fig. 26 and Fig. 27 near media remain formal legends."""
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    inventory = build_figure_inventory(SAN9AYVR_BODY_AND_FIGURES)
+
+    fig_numbers = [m["figure_number"] for m in inventory["matched_figures"]]
+    assert 26 in fig_numbers, "Figure 26 must be a matched figure"
+    assert 27 in fig_numbers, "Figure 27 must be a matched figure"
+    for m in inventory["matched_figures"]:
+        assert len(m["matched_assets"]) == 1, (
+            f"Figure {m['figure_number']} must retain its media asset"
+        )
