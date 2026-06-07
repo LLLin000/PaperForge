@@ -145,6 +145,26 @@ def _is_near_figure_media(block: dict, page_blocks: list[dict], max_gap: int = 2
     return False
 
 
+def _is_textual_table(text: str) -> bool:
+    """Check if a table-formatted block is really a textual list/box.
+
+    Returns True if the text:
+    - has no HTML table markup
+    - has bullet-like lines (*, -, \u2022, digits.)
+    - or has lines that are too varied to be a real table
+    """
+    if text.lower().startswith("<table"):
+        return False
+    lines = [l.strip() for l in text.split("\n") if l.strip()]
+    if len(lines) == 0:
+        return False
+    bullet_count = sum(
+        1 for l in lines
+        if l.startswith(("\u2022", "-", "*")) or (l[0].isdigit() and ". " in l[:4])
+    )
+    return bullet_count >= 2
+
+
 def _has_table_prefix(text: str) -> bool:
     return bool(_TABLE_PREFIX_PATTERN.match(text.strip()))
 
@@ -589,6 +609,15 @@ def assign_block_role(
             role="figure_caption",
             confidence=0.85,
             evidence=[f"figure_title label: {text[:60]}"],
+        )
+
+    # Textual table check: bullet-point lists mislabeled as "table"
+    # must NOT enter media_asset — route to structured_insert_candidate instead.
+    if raw_label == "table" and _is_textual_table(text):
+        return RoleAssignment(
+            role="structured_insert_candidate",
+            confidence=0.7,
+            evidence=[f"textual table (bullet list) not media_asset: {text[:60]}"],
         )
 
     if raw_label in {"image", "chart", "table"}:

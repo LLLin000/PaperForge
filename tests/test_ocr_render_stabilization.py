@@ -916,6 +916,54 @@ def test_normalize_ocr_math_text_display_math() -> None:
     assert normalize_ocr_math_text("$$ ... $$") == "$$...$$"
 
 
+def test_structured_insert_block_not_rendered() -> None:
+    """structured_insert blocks should not appear in rendered markdown."""
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+
+    blocks = [
+        {
+            "paper_id": "KEY",
+            "page": 2,
+            "block_id": "b1",
+            "role": "section_heading",
+            "text": "2 Results",
+            "render_default": True,
+            "bbox": [80, 50, 500, 80],
+            "page_width": 1200,
+            "page_height": 1700,
+        },
+        {
+            "paper_id": "KEY",
+            "page": 2,
+            "block_id": "b2",
+            "role": "structured_insert",
+            "text": "Key points:\n\u2022 Point one\n\u2022 Point two",
+            "render_default": False,
+            "index_default": False,
+            "bbox": [80, 100, 500, 200],
+            "page_width": 1200,
+            "page_height": 1700,
+        },
+        {
+            "paper_id": "KEY",
+            "page": 2,
+            "block_id": "b3",
+            "role": "body_paragraph",
+            "text": "Body text continues here.",
+            "render_default": True,
+            "bbox": [80, 220, 500, 250],
+            "page_width": 1200,
+            "page_height": 1700,
+        },
+    ]
+    md = render_fulltext_markdown(structured_blocks=blocks, resolved_metadata={}, figure_inventory={}, table_inventory={})
+
+    assert "2 Results" in md
+    assert "Key points" not in md, "structured_insert should not render"
+    assert "Point one" not in md, "structured_insert content should not render"
+    assert "Body text continues" in md
+
+
 def test_section_heading_renders_with_prefix() -> None:
     from paperforge.worker.ocr_render import render_fulltext_markdown
     blocks = [

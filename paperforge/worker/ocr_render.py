@@ -719,6 +719,7 @@ def render_fulltext_markdown(
                 "backmatter_heading_candidate",
                 "backmatter_boundary_candidate",
                 "non_body_insert",
+                "structured_insert",
                 "subsection_heading",
                 "sub_subsection_heading",
             })
