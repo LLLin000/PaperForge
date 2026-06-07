@@ -1164,6 +1164,10 @@ def rescue_roles_with_document_context(
         # --- Rule 1: frontmatter_noise → body_paragraph (body section + body font)
         if block.get("role") == "frontmatter_noise":
             page = block.get("page", 1) or 1
+            bbox = block.get("bbox") or block.get("block_bbox") or [0, 0, 0, 0]
+            page_h = block.get("page_height") or 1700
+            if len(bbox) >= 4 and bbox[1] > page_h * 0.85:
+                continue
             if body_end_page is not None and page <= body_end_page:
                 bp = extract_block_span_profile(block)
                 if bp:
