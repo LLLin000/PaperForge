@@ -436,6 +436,21 @@ def assign_block_role(
                 confidence=0.9,
                 evidence=[f"references heading: {text[:60]}"],
             )
+        # Running header guard: article-type labels in running-header
+        # position (page > 1, top margin zone) are not section headings.
+        _RUNNING_HEADER_LABELS = frozenset({
+            "review article", "research article", "original article",
+            "case report", "brief communication", "rapid communication",
+        })
+        if lower in _RUNNING_HEADER_LABELS and (block.get("page") or 1) > 1:
+            bbox = block.get("block_bbox") or [0, 0, 0, 0]
+            _ph = block.get("page_height") or 1700
+            if bbox[1] < _ph * 0.12:
+                return RoleAssignment(
+                    role="noise",
+                    confidence=0.8,
+                    evidence=[f"running header: {lower}"],
+                )
         # Backmatter heading detection (tail-zone + text evidence)
         # Known backmatter phrases on tail pages (page > 1) are unambiguous -
         # full-width headings are common in real papers, so geometric checks

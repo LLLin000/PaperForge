@@ -516,6 +516,23 @@ def test_correspondence_marker_not_heading():
     )
 
 
+def test_running_header_not_heading():
+    """Article-type label in top margin should be noise, not heading."""
+    from paperforge.worker.ocr_roles import assign_block_role
+    block = {
+        "block_label": "paragraph_title",
+        "block_content": "Review Article",
+        "block_bbox": [80, 50, 200, 75],
+        "page": 3,
+    }
+    page_blocks = [
+        block,
+        {"block_label": "text", "block_content": "Some body text", "block_bbox": [80, 200, 500, 240], "page": 3},
+    ]
+    result = assign_block_role(block, page_blocks=page_blocks, page_width=600, page_height=1700)
+    assert result.role == "noise", f"Expected noise, got {result.role}"
+
+
 def test_backmatter_boundary_detects_on_early_page() -> None:
     """Backmatter boundary should be detectable on papers with fewer
     than 8 pages, without a hard page gate."""
