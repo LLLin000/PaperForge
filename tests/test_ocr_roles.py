@@ -533,6 +533,43 @@ def test_running_header_not_heading():
     assert result.role == "noise", f"Expected noise, got {result.role}"
 
 
+def test_doc_title_not_body_paragraph() -> None:
+    from paperforge.worker.ocr_roles import assign_block_role
+
+    block = {
+        "block_label": "doc_title",
+        "block_content": "A Very Long Title That Would Normally Be Considered A Document Title Block With Sufficient Length",
+        "block_bbox": [100, 50, 900, 100],
+        "page": 1,
+    }
+    result = assign_block_role(block, page_blocks=[block], page_width=900, page_height=1200)
+    assert result.role != "body_paragraph", (
+        f"doc_title should not be body_paragraph, got {result.role}"
+    )
+
+
+def test_author_byline_comma_only_not_section_heading() -> None:
+    """Comma-separated byline on page 1 below zone detection threshold -> NOT heading."""
+    from paperforge.worker.ocr_roles import assign_block_role
+
+    block = {
+        "block_label": "paragraph_title",
+        "block_content": "John Smith, Jane Doe",
+        "block_bbox": [100, 400, 500, 430],
+        "page": 1,
+    }
+    page_blocks = [block]
+    result = assign_block_role(
+        block,
+        page_blocks=page_blocks,
+        page_width=600,
+        page_height=800,
+    )
+    assert result.role not in ("section_heading", "subsection_heading", "sub_subsection_heading"), (
+        f"Comma-separated byline should not be a heading, got {result.role}"
+    )
+
+
 def test_backmatter_boundary_detects_on_early_page() -> None:
     """Backmatter boundary should be detectable on papers with fewer
     than 8 pages, without a hard page gate."""

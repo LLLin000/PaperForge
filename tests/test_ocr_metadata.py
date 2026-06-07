@@ -141,3 +141,78 @@ def test_resolve_metadata_author_no_zotero_fallback() -> None:
     resolved = resolve_metadata(source, candidates)
     assert resolved["authors"]["source"] == "ocr_frontmatter"
     assert resolved["authors"]["value"] == ["Alice Smith", "Bob Jones"]
+
+
+def test_title_anchored_from_source_metadata() -> None:
+    from paperforge.worker.ocr_metadata import (
+        _align_frontmatter_to_source_metadata,
+    )
+
+    source_meta = {
+        "title": "Correct Research Title That Is Long Enough",
+        "authors": ["Alice Smith", "Bob Jones"],
+    }
+    page1_blocks = [
+        {
+            "block_id": "p1_b1",
+            "block_label": "doc_title",
+            "block_content": "Correct Research Title That Is Long Enough",
+            "block_bbox": [100, 50, 900, 100],
+            "page": 1,
+        }
+    ]
+
+    aligned = _align_frontmatter_to_source_metadata(source_meta, page1_blocks)
+    assert aligned["title"]["source"] == "zotero"
+    assert aligned["title"]["value"] == "Correct Research Title That Is Long Enough"
+    assert aligned["title"].get("ocr_aligned") is True
+
+
+def test_author_anchored_from_source_metadata() -> None:
+    from paperforge.worker.ocr_metadata import (
+        _align_frontmatter_to_source_metadata,
+    )
+
+    source_meta = {
+        "title": "Some Title",
+        "authors": ["Alice Smith", "Bob Jones"],
+    }
+    page1_blocks = [
+        {
+            "block_id": "p1_b2",
+            "block_label": "text",
+            "block_content": "Alice Smith, Bob Jones",
+            "block_bbox": [100, 200, 800, 230],
+            "page": 1,
+        }
+    ]
+
+    aligned = _align_frontmatter_to_source_metadata(source_meta, page1_blocks)
+    assert aligned["authors"]["source"] == "zotero"
+    assert aligned["authors"]["value"] == ["Alice Smith", "Bob Jones"]
+    assert aligned["authors"].get("ocr_aligned") is True
+
+
+def test_mismatched_ocr_title_does_not_pollute_metadata() -> None:
+    from paperforge.worker.ocr_metadata import (
+        _align_frontmatter_to_source_metadata,
+    )
+
+    source_meta = {
+        "title": "Correct Zotero Title That Is Real",
+        "authors": ["Alice Smith"],
+    }
+    page1_blocks = [
+        {
+            "block_id": "p1_b1",
+            "block_label": "doc_title",
+            "block_content": "Totally Wrong OCR Title That Should Not Be Used",
+            "block_bbox": [100, 50, 900, 100],
+            "page": 1,
+        }
+    ]
+
+    aligned = _align_frontmatter_to_source_metadata(source_meta, page1_blocks)
+    assert aligned["title"]["value"] == "Correct Zotero Title That Is Real"
+    assert aligned["title"]["source"] == "zotero"
+    assert aligned["title"].get("ocr_aligned", False) is False
