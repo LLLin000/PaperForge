@@ -185,6 +185,7 @@ def run_derived_rebuild_for_keys(vault: Path, keys: list[str]) -> dict:
             structured_blocks=structured,
             figure_inventory=figure_inventory,
             table_inventory=table_inventory,
+            doc_structure=doc_structure,
         )
         write_ocr_health(paper_root / "health", health_report)
 

@@ -72,3 +72,38 @@ def compute_json_hash(data: list | dict) -> str:
     if isinstance(data, list):
         data = {"data": data}
     return _sha256_hexdigest(json.dumps(data, sort_keys=True).encode("utf-8"))
+
+
+def cleanup_ocr_artifact_cache(paper_root: Path, *, dry_run: bool = False) -> dict[str, Any]:
+    """Remove regenerable cache artifacts while preserving canonical data.
+
+    Canonical (kept):
+      canonical/, structure/, metadata/, assets/, render/, health/, index/
+      raw/, meta.json, fulltext.md
+
+    Cache (removed):
+      pages/ — page render cache, always regenerable from source PDF
+
+    Returns a summary dict with paths removed per category.
+    """
+    report: dict[str, Any] = {"pages_removed": [], "errors": []}
+
+    pages_dir = paper_root / "pages"
+    if pages_dir.is_dir():
+        for f in sorted(pages_dir.iterdir()):
+            if f.suffix in {".jpg", ".png", ".webp"}:
+                if not dry_run:
+                    try:
+                        f.unlink()
+                    except OSError as e:
+                        report["errors"].append(str(e))
+                report["pages_removed"].append(f.name)
+        if not dry_run:
+            try:
+                remaining = list(pages_dir.iterdir())
+                if not remaining:
+                    pages_dir.rmdir()
+            except OSError:
+                pass
+
+    return report
