@@ -719,6 +719,10 @@ def test_detect_non_body_insert_marks_narrow_blocks() -> None:
     from paperforge.worker.ocr_document import _detect_body_spine, _detect_non_body_insert_clusters
 
     blocks = [
+        # Pages 2-4: establish strong body spine
+        *[{"role": "body_paragraph", "bbox": [100, 100 + i * 100, 800, 140 + i * 100],
+           "page": pg, "span_metadata": [{"size": 10, "font": "Times"}]}
+          for pg in range(2, 5) for i in range(3)],
         # Two normal body paragraphs (wide)
         {"role": "body_paragraph", "bbox": [100, 400, 800, 440], "page": 1},
         {"role": "body_paragraph", "bbox": [100, 500, 810, 540], "page": 1},
@@ -729,8 +733,8 @@ def test_detect_non_body_insert_marks_narrow_blocks() -> None:
     ]
     spine = _detect_body_spine(blocks)
     indices = _detect_non_body_insert_clusters(blocks, spine)
-    assert 2 in indices, f"Expected index 2 in {indices}"
-    assert 3 in indices, f"Expected index 3 in {indices}"
+    assert 11 in indices, f"Expected index 11 in {indices}"
+    assert 12 in indices, f"Expected index 12 in {indices}"
 
 
 def test_detect_non_body_insert_marks_narrow_body_paragraphs() -> None:
@@ -738,6 +742,11 @@ def test_detect_non_body_insert_marks_narrow_body_paragraphs() -> None:
     from paperforge.worker.ocr_document import _detect_body_spine, _detect_non_body_insert_clusters
 
     blocks = [
+        # Pages 2-4: establish strong body spine
+        *[{"role": "body_paragraph", "bbox": [100, 100 + i * 100, 800, 140 + i * 100],
+           "page": pg, "span_metadata": [{"size": 10, "font": "Times"}]}
+          for pg in range(2, 5) for i in range(3)],
+        # wide body paragraphs on page 1
         {"role": "body_paragraph", "bbox": [100, 100, 800, 140], "page": 1},
         {"role": "body_paragraph", "bbox": [100, 200, 810, 240], "page": 1},
         # narrow body_paragraph = potential author bio
@@ -746,8 +755,8 @@ def test_detect_non_body_insert_marks_narrow_body_paragraphs() -> None:
     ]
     spine = _detect_body_spine(blocks)
     indices = _detect_non_body_insert_clusters(blocks, spine, body_end_page=8)
-    assert 2 in indices, f"Expected index 2 (narrow body_paragraph) in {indices}"
-    assert 3 in indices, f"Expected index 3 (narrow body_paragraph) in {indices}"
+    assert 11 in indices, f"Expected index 11 (narrow body_paragraph) in {indices}"
+    assert 12 in indices, f"Expected index 12 (narrow body_paragraph) in {indices}"
 
 
 def test_non_body_insert_not_backfilled_to_body() -> None:
@@ -762,7 +771,7 @@ def test_non_body_insert_not_backfilled_to_body() -> None:
             "raw_label": "text",
             "raw_order": 0,
             "bbox": [50, 200, 300, 240],
-            "text": "The author biography section provides a brief overview of the professional background of each contributor",
+            "text": "Short bio line one",
             "page_width": 1200,
             "page_height": 1600,
             "source": "ocr_raw",
@@ -774,7 +783,7 @@ def test_non_body_insert_not_backfilled_to_body() -> None:
             "raw_label": "text",
             "raw_order": 1,
             "bbox": [50, 280, 310, 320],
-            "text": "Biographical information about each author is listed in the supplementary materials for this manuscript",
+            "text": "Short bio line two",
             "page_width": 1200,
             "page_height": 1600,
             "source": "ocr_raw",
@@ -792,6 +801,16 @@ def test_non_body_insert_not_backfilled_to_body() -> None:
             "page_height": 1600,
             "source": "ocr_raw",
         },
+        # Pages 2-4: establish strong body spine
+        *[{
+            "paper_id": "TEST001", "page": pg,
+            "block_id": f"p{pg}_b{i}", "raw_label": "text",
+            "raw_order": 3 + (pg - 2) * 3 + i,
+            "bbox": [100, 100 + i * 100, 800, 140 + i * 100],
+            "text": f"Standard body paragraph on page {pg} providing enough textual content for processing.",
+            "page_width": 1200, "page_height": 1600, "source": "ocr_raw",
+            "span_metadata": {"size": 10, "font": "Times"},
+        } for pg in range(2, 5) for i in range(3)],
     ]
     rows, _ = build_structured_blocks(raw_blocks)
     non_body = [r for r in rows if r.get("role") == "non_body_insert"]
@@ -1308,6 +1327,15 @@ def test_non_body_insert_catches_continuation_fragment() -> None:
             "text": "integrate technologies of tissue engineering and flexible electronics",
         },
     ]
+    # Pages 3-5: establish strong body spine (3+ anchor pages)
+    for pg in range(3, 6):
+        blocks.append({"role": "body_paragraph", "bbox": [100, 100, 800, 140], "page": pg,
+                        "span_metadata": {"font": "BodyFont", "size": 10}})
+        blocks.append({"role": "body_paragraph", "bbox": [100, 200, 810, 240], "page": pg,
+                        "span_metadata": {"font": "BodyFont", "size": 10}})
+        blocks.append({"role": "body_paragraph", "bbox": [100, 300, 800, 340], "page": pg,
+                        "span_metadata": {"font": "BodyFont", "size": 10}})
+
     spine = _detect_body_spine(blocks)
     indices = _detect_non_body_insert_clusters(blocks, spine, body_end_page=8)
 
