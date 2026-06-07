@@ -706,6 +706,26 @@ def _reconcile_tail_spread(
     references_start = _detect_references_start(blocks, forward_end, page_layouts)
 
     if forward_end is None and backward_start is None:
+        max_page = max((b.get("page") for b in blocks if b.get("page")), default=0)
+        if max_page > 0:
+            by_page_refs: dict[int, int] = {}
+            for b in blocks:
+                p = b.get("page")
+                if p and b.get("role") == "reference_item":
+                    by_page_refs[p] = by_page_refs.get(p, 0) + 1
+            if by_page_refs:
+                ref_pages = sorted(by_page_refs.keys())
+                first_ref = ref_pages[0]
+                last_ref = ref_pages[-1]
+                return TailBoundary(
+                    body_end_page=max(1, first_ref - 1),
+                    backmatter_start=first_ref,
+                    references_start=first_ref,
+                    spread_start=first_ref,
+                    spread_end=last_ref,
+                    is_clean_separated=False,
+                    reason=f"backward reference fallback: ref items on pages {first_ref}-{last_ref}",
+                )
         return None
 
     max_page = 0
@@ -732,6 +752,22 @@ def _reconcile_tail_spread(
         )
 
     if backward_start is None and forward_end is not None:
+        if references_start is not None:
+            last_ref_page = references_start
+            for b in blocks:
+                if b.get("role") == "reference_item":
+                    p = b.get("page")
+                    if p and p > last_ref_page:
+                        last_ref_page = p
+            return TailBoundary(
+                body_end_page=forward_end,
+                backmatter_start=references_start,
+                references_start=references_start,
+                spread_start=forward_end + 1,
+                spread_end=last_ref_page,
+                is_clean_separated=False,
+                reason=f"backward backmatter not detected via layout, using references_start={references_start}, last_ref={last_ref_page}",
+            )
         return None
 
     if forward_end is not None and backward_start is not None:
@@ -1181,6 +1217,10 @@ def rescue_roles_with_document_context(
 
                 page = block.get("page", 1) or 1
                 if in_reference_zone or (not ref_zones and refs_start_page is not None and page >= refs_start_page):
+                    text = str(block.get("text") or block.get("block_content") or "")
+                    text_matches_ref = bool(re.search(r"^\d+\.\s", text.strip())) if text else False
+                    if not text_matches_ref:
+                        continue
                     if "reference_family" in family_profiles and "body_family" in family_profiles:
                         ref_fam_p = family_profiles["reference_family"]
                         if ref_fam_p.get("quality") in ("moderate", "strong"):
@@ -2631,5 +2671,17 @@ def normalize_document_structure(blocks: list[dict]) -> tuple[DocumentStructure,
     # Run layout audit after all resolution is done
     layout_audit = _run_layout_audit(blocks)
     doc_structure.layout_audit = layout_audit
+
+    # Rebuild tail reading order after role normalization and block reassignment.
+    # Without this, reading segment block_indices reference stale positions
+    # from before _promote_tail_body_candidates reassigned the blocks list.
+    final_segments = _build_tail_reading_order(blocks, page_layouts)
+    doc_structure.tail_reading_order = (
+        [dataclasses.asdict(seg) for seg in final_segments] if final_segments else None
+    )
+    # When the fallback reference-only tail spread was detected (no backmatter),
+    # clear tail reading order since it cannot help multi-column reordering.
+    if tail_spread is not None and tail_spread.backmatter_start == tail_spread.references_start:
+        doc_structure.tail_reading_order = None
 
     return doc_structure, blocks

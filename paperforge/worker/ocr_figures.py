@@ -310,6 +310,7 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
     unmatched_legends: list[dict] = []
     unmatched_assets: list[dict] = []
     matched_figures: list[dict] = []
+    unresolved_clusters: list[dict] = []
 
     for block in structured_blocks:
         if block.get("page_width"):
@@ -339,44 +340,42 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
     unnumbered_legends = [leg for leg in legends if _extract_figure_number(leg.get("text", "")) is None]
     ordered_legends = numbered_legends + unnumbered_legends
 
-    candidate_regions = _compute_candidate_figure_regions(structured_blocks, page_width)
     used_asset_indices: set[int] = set()
-    used_region_ids: set[str] = set()
     for legend in ordered_legends:
         legend_page = legend.get("page", 0)
         legend_text = legend.get("text", "")
         fig_num = _extract_figure_number(legend_text)
         matched_assets = []
         region_match = None
-        same_page_regions = [
-            region
-            for region in candidate_regions
-            if region["page"] == legend_page and region["region_id"] not in used_region_ids
-        ]
-        attached_regions = [
-            region
-            for region in same_page_regions
-            if any(cap.get("block_id") == legend.get("block_id") for cap in region.get("attached_captions", []))
-        ]
-        region_pool = attached_regions or same_page_regions
-        if region_pool:
-            region_match = max(
-                region_pool,
-                key=lambda region: len(region.get("media_blocks", [])),
-            )
-            matched_assets = list(region_match.get("media_blocks", []))
-            used_region_ids.add(region_match["region_id"])
-            for asset in matched_assets:
-                for i, candidate in enumerate(assets):
-                    if candidate.get("block_id") == asset.get("block_id") and candidate.get("page", 0) == asset.get(
-                        "page", 0
-                    ):
-                        used_asset_indices.add(i)
-                        break
+
+        legend_bb = legend.get("bbox") or legend.get("block_bbox") or [0, 0, 0, 0]
+        lx = (legend_bb[0] + legend_bb[2]) / 2 if len(legend_bb) >= 4 else 0
+        ly = (legend_bb[1] + legend_bb[3]) / 2 if len(legend_bb) >= 4 else 0
+        nearest = None
+        nearest_dist = float("inf")
+        for ai, asset in enumerate(assets):
+            if ai in used_asset_indices:
+                continue
+            if asset.get("page", 0) != legend_page:
+                continue
+            ab = asset.get("bbox") or asset.get("block_bbox") or [0, 0, 0, 0]
+            if len(ab) < 4:
+                continue
+            ax = (ab[0] + ab[2]) / 2
+            ay = (ab[1] + ab[3]) / 2
+            dist = ((ax - lx) ** 2 + (ay - ly) ** 2) ** 0.5
+            if dist < nearest_dist:
+                nearest_dist = dist
+                nearest = (ai, asset)
+        if nearest is not None:
+            ai, asset = nearest
+            matched_assets = [asset]
+            used_asset_indices.add(ai)
+            region_match = {"media_blocks": [asset]}
 
         is_legend_only = len(matched_assets) == 0
 
-        fig_id = f"figure_{fig_num:03d}" if fig_num else f"unmatched_legend_{i:03d}"
+        fig_id = f"figure_{fig_num:03d}" if fig_num else f"unmatched_legend_{len(matched_figures):03d}"
         entry = {
             "figure_id": fig_id,
             "legend_block_id": legend.get("block_id", ""),
@@ -399,43 +398,6 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
 
         if is_legend_only:
             unmatched_legends.append(legend)
-
-    # --- unresolved clusters ---
-    # Candidate regions with 2+ media blocks that were NOT matched to a
-    # formal legend become unresolved multi-panel clusters. Their media
-    # blocks are consumed here so they do not spill into unmatched_assets.
-    unresolved_clusters: list[dict] = []
-    for region in candidate_regions:
-        if region["region_id"] in used_region_ids:
-            continue
-        media_blocks = region.get("media_blocks", [])
-        if len(media_blocks) < 2:
-            continue
-
-        media_block_ids = [b.get("block_id") for b in media_blocks if b.get("block_id") is not None]
-        bbox = region.get("cluster_bbox", [0, 0, 0, 0])
-        page = region.get("page", 0)
-
-        for asset in media_blocks:
-            for i, candidate in enumerate(assets):
-                if candidate.get("block_id") == asset.get("block_id") and candidate.get("page", 0) == asset.get(
-                    "page", 0
-                ):
-                    used_asset_indices.add(i)
-                    break
-
-        unresolved_clusters.append(
-            {
-                "cluster_id": f"cluster_{len(unresolved_clusters) + 1:03d}",
-                "page": page,
-                "bbox": bbox,
-                "media_block_ids": media_block_ids,
-                "matched_legend_block_id": None,
-                "status": "unresolved_multi_panel",
-                "confidence": 0.45,
-                "flags": ["legend_rejected", "multi_panel_cluster"],
-            }
-        )
 
     for i, asset in enumerate(assets):
         if i not in used_asset_indices:

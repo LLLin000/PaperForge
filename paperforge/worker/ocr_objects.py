@@ -202,7 +202,7 @@ def extract_and_write_objects(
 
     # Process matched figures
     for i, match in enumerate(figure_inventory.get("matched_figures", [])):
-        fig_id = f"figure_{i + 1:03d}"
+        fig_id = match.get("figure_id", f"figure_{i + 1:03d}")
         caption_text = match.get("text", "")
         page = match.get("page", 0)
         page_width, page_height = _page_dims(page)
