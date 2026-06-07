@@ -1821,3 +1821,32 @@ def test_container_activation_guard() -> None:
     _resolve_ambiguous_candidates(blocks, ds, {})
     assert blocks[0]["role"] == "section_heading"
     assert blocks[0]["role_confidence"] == 0.5
+
+
+# ---------------------------------------------------------------------------
+# Body spine quality tests (Task 2)
+# ---------------------------------------------------------------------------
+
+
+def test_body_spine_quality_strong_with_clean_anchors() -> None:
+    from paperforge.worker.ocr_document import _detect_body_spine
+
+    blocks = []
+    blocks.append({"block_id": "b0", "page": 1, "role": "paper_title", "text": "Title", "bbox": [80, 20, 280, 60], "page_width": 1200, "page_height": 1700})
+    for pg in range(2, 6):
+        for i in range(3):
+            blocks.append({"block_id": f"b{pg}_{i}", "page": pg, "role": "body_paragraph", "text": f"Body {i}", "bbox": [80, 100 + i * 100, 590, 160 + i * 100], "page_width": 1200, "page_height": 1700, "span_metadata": [{"size": 10.0, "font": "Times", "flags": 0, "color": 0}]})
+    spine = _detect_body_spine(blocks)
+    sp2 = spine.get(2, {})
+    assert sp2.get("quality") == "strong", f"Expected strong, got {sp2.get('quality')}"
+
+
+def test_body_spine_quality_weak_contaminated() -> None:
+    from paperforge.worker.ocr_document import _detect_body_spine
+
+    blocks = []
+    for i in range(3):
+        blocks.append({"block_id": f"b{i}", "page": 1, "role": "body_paragraph", "text": f"Body {i}", "bbox": [80, 100 + i * 100, 200, 160 + i * 100], "page_width": 1200, "page_height": 1700})
+    spine = _detect_body_spine(blocks)
+    sp1 = spine.get(1, {})
+    assert sp1.get("quality") in ("weak", "moderate"), f"Expected weak/moderate, got {sp1.get('quality')}"
