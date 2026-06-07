@@ -129,9 +129,51 @@ def extract_frontmatter_candidates(blocks_structured_path: Path) -> dict[str, An
     return candidates
 
 
+def _token_overlap(a: str, b: str) -> float:
+    ta = set(re.findall(r"[a-zA-Z0-9]+", a))
+    tb = set(re.findall(r"[a-zA-Z0-9]+", b))
+    if not ta or not tb:
+        return 0.0
+    return len(ta & tb) / min(len(ta), len(tb))
+
+
+def _align_frontmatter_to_source_metadata(
+    source_meta: dict,
+    page1_blocks: list[dict],
+) -> dict:
+    result: dict[str, Any] = {}
+
+    source_title = (source_meta.get("title") or "").strip()
+    if source_title:
+        result["title"] = {"source": "zotero", "value": source_title}
+        for b in page1_blocks:
+            t = (b.get("text") or b.get("block_content") or "").strip()
+            if len(t) >= 20 and (
+                t in source_title or source_title in t
+                or _token_overlap(t.lower(), source_title.lower()) > 0.6
+            ):
+                result["title"]["ocr_block_id"] = b.get("block_id")
+                result["title"]["ocr_aligned"] = True
+                break
+
+    source_authors = source_meta.get("authors") or []
+    if source_authors:
+        result["authors"] = {"source": "zotero", "value": source_authors}
+        for b in page1_blocks:
+            t = (b.get("text") or b.get("block_content") or "").strip()
+            match = _match_author_block_to_source_authors(t, source_authors)
+            if match.get("matched"):
+                result["authors"]["ocr_block_id"] = b.get("block_id")
+                result["authors"]["ocr_aligned"] = True
+                break
+
+    return result
+
+
 def resolve_metadata(
     source_metadata: dict[str, Any],
     frontmatter_candidates: dict[str, Any] | None = None,
+    page1_blocks: list[dict] | None = None,
 ) -> dict[str, Any]:
     if frontmatter_candidates is None:
         frontmatter_candidates = {}
@@ -224,6 +266,16 @@ def resolve_metadata(
         resolved["authors_display"] = _clean_author_display(ocr_authors_text)
     else:
         resolved["authors_display"] = ""
+
+    # --- frontmatter alignment (page-1 block anchoring) ---
+    if page1_blocks:
+        alignment = _align_frontmatter_to_source_metadata(source_metadata, page1_blocks)
+        if "title" in resolved and "title" in alignment and alignment["title"].get("ocr_aligned"):
+            resolved["title"]["ocr_block_id"] = alignment["title"]["ocr_block_id"]
+            resolved["title"]["ocr_aligned"] = True
+        if "authors" in resolved and "authors" in alignment and alignment["authors"].get("ocr_aligned"):
+            resolved["authors"]["ocr_block_id"] = alignment["authors"]["ocr_block_id"]
+            resolved["authors"]["ocr_aligned"] = True
 
     # --- year ---
     zotero_year = source_metadata.get("year", 0)

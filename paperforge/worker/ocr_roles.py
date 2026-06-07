@@ -306,6 +306,14 @@ def _infer_heading_level(
     return "section_heading"
 
 
+def _seems_like_authors(text: str) -> bool:
+    parts = [p.strip() for p in text.replace("  ", " ").split(",")]
+    if len(parts) >= 2:
+        name_count = sum(1 for p in parts if re.search(r"[A-Z][a-z]+\s+[A-Z]", p))
+        return name_count >= 2
+    return False
+
+
 def assign_block_role(
     block: dict,
     page_blocks: list[dict],
@@ -414,6 +422,29 @@ def assign_block_role(
 
     # zone == "abstract_zone" → let existing logic handle
 
+    # ---- Page-1 frontmatter guard ----
+    _pg = block.get("page", 1) or 1
+    if _pg == 1 and raw_label in ("doc_title", "paragraph_title", "text"):
+        _tv = text
+        _lv = _tv.lower().strip().lstrip("*•·-–—")
+        block_bbox_local = block.get("block_bbox", [0, 0, 0, 0])
+        if _lv in _BACKMATTER_TITLE_DENY_LIST:
+            pass  # let existing paragraph_title or fallthrough handle it
+        elif raw_label == "doc_title" or (
+            raw_label != "text"
+            and len(block_bbox_local) >= 4 and block_bbox_local[1] < page_height * 0.25
+            and len(_tv) > 20
+            and "abstract" not in _lv[:15]
+            and "keywords" not in _lv[:15]
+            and "introduction" not in _lv[:15]
+        ):
+            if len(_tv) > 20 and not _seems_like_authors(_tv):
+                return RoleAssignment(
+                    role="paper_title",
+                    confidence=0.6,
+                    evidence=[f"page-1 frontmatter title guard: {_tv[:60]}"],
+                )
+
     # Paddle priors
     if raw_label == "paragraph_title":
         stripped = text.strip().lstrip("*•·-–—")
@@ -499,7 +530,7 @@ def assign_block_role(
             )
         # Author-like heading guard: prevent bylines from becoming headings
         _is_author_byline = (
-            re.search(r"&|,.*,", text)
+            (re.search(r"&|,.*,", text) or _seems_like_authors(text))
             and len(text.split()) <= 15
             and not _has_heading_numbering(text)
             and not any(text.lower().startswith(w) for w in ["abstract", "introduction", "methods", "results", "discussion", "conclusion", "references"])
