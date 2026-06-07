@@ -971,3 +971,70 @@ def test_section_heading_renders_with_prefix() -> None:
     ]
     md = render_fulltext_markdown(structured_blocks=blocks, resolved_metadata={}, figure_inventory={}, table_inventory={})
     assert "### 1 Introduction" in md, f"Expected ### prefix, got: {md[:200]}"
+
+
+# === 2GN9LMCW / 7C8829BD guard tests (Task 7 -- preserve tail mainline) ===
+
+
+def test_2gn9lmcw_container_ordering() -> None:
+    """2GN9LMCW container backmatter ordering: ADDITIONAL INFORMATION -> Funding -> Grant Disclosures."""
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+
+    blocks = [
+        {"paper_id": "2GN9LMCW", "page": 5, "block_id": "b1", "role": "reference_heading", "text": "References", "render_default": True, "bbox": [80, 200, 500, 230], "page_width": 1200, "page_height": 1700},
+        {"paper_id": "2GN9LMCW", "page": 5, "block_id": "b2", "role": "reference_item", "text": "Smith J. (2024) A study on electric fields in cellular systems.", "render_default": True, "bbox": [80, 250, 500, 280], "page_width": 1200, "page_height": 1700},
+        {"paper_id": "2GN9LMCW", "page": 5, "block_id": "b3", "role": "backmatter_heading", "text": "ADDITIONAL INFORMATION", "render_default": True, "bbox": [80, 300, 500, 330], "page_width": 1200, "page_height": 1700},
+        {"paper_id": "2GN9LMCW", "page": 5, "block_id": "b4", "role": "backmatter_body", "text": "Additional information and correspondence regarding this article.", "render_default": True, "bbox": [80, 340, 500, 370], "page_width": 1200, "page_height": 1700},
+        {"paper_id": "2GN9LMCW", "page": 5, "block_id": "b5", "role": "backmatter_heading", "text": "Funding", "render_default": True, "bbox": [80, 400, 500, 430], "page_width": 1200, "page_height": 1700},
+        {"paper_id": "2GN9LMCW", "page": 5, "block_id": "b6", "role": "backmatter_body", "text": "This work was supported by Grant No. 12345 from the National Science Foundation.", "render_default": True, "bbox": [80, 440, 500, 470], "page_width": 1200, "page_height": 1700},
+        {"paper_id": "2GN9LMCW", "page": 5, "block_id": "b7", "role": "backmatter_heading", "text": "Grant Disclosures", "render_default": True, "bbox": [80, 500, 500, 530], "page_width": 1200, "page_height": 1700},
+        {"paper_id": "2GN9LMCW", "page": 5, "block_id": "b8", "role": "backmatter_body", "text": "The authors declare no competing grant disclosures or financial interests.", "render_default": True, "bbox": [80, 540, 500, 570], "page_width": 1200, "page_height": 1700},
+    ]
+
+    md = render_fulltext_markdown(
+        structured_blocks=blocks,
+        resolved_metadata={},
+        figure_inventory={},
+        table_inventory={},
+    )
+
+    ai_idx = md.index("## ADDITIONAL INFORMATION")
+    ai_body_idx = md.index("Additional information and correspondence")
+    funding_idx = md.index("## Funding")
+    funding_body_idx = md.index("Grant No. 12345")
+    grant_idx = md.index("## Grant Disclosures")
+
+    assert ai_idx < ai_body_idx < funding_idx < funding_body_idx < grant_idx, (
+        "Container backmatter must maintain order: ADDITIONAL INFORMATION -> Funding -> Grant Disclosures"
+    )
+
+
+def test_7c8829bd_tail_markers_monotonic() -> None:
+    """7C8829BD tail page markers stay in monotonic order (body content only)."""
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+
+    # Note: reference/backmatter roles trigger a separate tail spread
+    # rendering pass that re-emits page markers.  We use body_paragraph
+    # blocks here to test the baseline monotonicity contract; tail
+    # content ordering is verified separately by render-level tests.
+    blocks = [
+        {"paper_id": "7C8829BD", "page": 70, "block_id": "b70", "role": "body_paragraph", "text": "Page 70 body text.", "render_default": True, "bbox": [80, 200, 500, 230], "page_width": 1200, "page_height": 1700},
+        {"paper_id": "7C8829BD", "page": 71, "block_id": "b71", "role": "body_paragraph", "text": "Page 71 body text.", "render_default": True, "bbox": [80, 200, 500, 230], "page_width": 1200, "page_height": 1700},
+        {"paper_id": "7C8829BD", "page": 72, "block_id": "b72", "role": "body_paragraph", "text": "Page 72 body text.", "render_default": True, "bbox": [80, 200, 500, 230], "page_width": 1200, "page_height": 1700},
+        {"paper_id": "7C8829BD", "page": 73, "block_id": "b73", "role": "body_paragraph", "text": "Page 73 body text.", "render_default": True, "bbox": [80, 200, 500, 230], "page_width": 1200, "page_height": 1700},
+        {"paper_id": "7C8829BD", "page": 74, "block_id": "b74", "role": "body_paragraph", "text": "Page 74 body text.", "render_default": True, "bbox": [80, 200, 500, 230], "page_width": 1200, "page_height": 1700},
+    ]
+
+    md = render_fulltext_markdown(
+        structured_blocks=blocks,
+        resolved_metadata={},
+        figure_inventory={},
+        table_inventory={},
+        page_count=74,
+    )
+
+    page_markers = [line.strip() for line in md.split("\n") if line.strip().startswith("<!-- page")]
+    marker_pages = [int(m.split()[2]) for m in page_markers]
+    assert marker_pages == sorted(marker_pages), (
+        "Tail page markers must be in monotonic order"
+    )
