@@ -708,7 +708,7 @@ def test_render_page_blocks_keeps_top_figure_before_body_and_keeps_author_et_al_
     assert body_lines[1].startswith("![[")
     assert body_lines[2] == "### 2.5 Electrical stimulation for tissue-engineered articular cartilage"
     assert body_lines[6].startswith("Kwon et al. demonstrated")
-    assert body_lines[7] == "### 3 Discussion"
+    assert body_lines[7] == "## 3 Discussion"
 
 
 def test_validate_block_order_preserves_full_width_blocks_between_columns() -> None:
@@ -869,12 +869,12 @@ def test_render_page_blocks_keeps_abstract_heading_before_abstract_body_on_first
     rendered = render_page_blocks(vault, 1, result, images_dir, page_cache_dir, pdf_doc=None)
     body_lines = [line for line in rendered if line and not line.startswith("<!-- page")]
 
-    abstract_idx = body_lines.index("### Abstract")
+    abstract_idx = body_lines.index("## Abstract")
     background_idx = body_lines.index("BACKGROUND: Background text.")
     methods_idx = body_lines.index("METHODS: Methods text.")
     conclusion_idx = body_lines.index("CONCLUSION: Conclusion text.")
     keywords_idx = body_lines.index("Keywords one two three")
-    intro_idx = body_lines.index("### 1 Introduction")
+    intro_idx = body_lines.index("## 1 Introduction")
 
     assert abstract_idx < background_idx < methods_idx < conclusion_idx < keywords_idx < intro_idx
 

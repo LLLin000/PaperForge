@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from html import unescape
 from pathlib import Path
 
 from paperforge.worker.ocr_document import (
@@ -25,6 +26,28 @@ def _is_bogus_heading(text: str) -> bool:
 
 def _has_tail_role(block: dict) -> bool:
     return block.get("role") in _TAIL_ROLES
+
+
+def _heading_number_depth_text(text: str) -> int:
+    match = re.match(r"^(\d+(?:\.\d+)*)", text.strip())
+    if not match:
+        return 0
+    return match.group(1).count(".") + 1
+
+
+def _table_html_to_lines(text: str) -> list[str]:
+    rows = re.findall(r"<tr[^>]*>(.*?)</tr>", text, flags=re.IGNORECASE | re.DOTALL)
+    lines: list[str] = []
+    for row in rows:
+        cells = [unescape(re.sub(r"<[^>]+>", "", cell)).strip() for cell in re.findall(r"<td[^>]*>(.*?)</td>", row, flags=re.IGNORECASE | re.DOTALL)]
+        cells = [cell for cell in cells if cell]
+        if not cells:
+            continue
+        if len(cells) == 1:
+            lines.append(cells[0])
+        else:
+            lines.append(" | ".join(cells))
+    return lines
 
 
 def _find_owning_heading(
@@ -676,6 +699,37 @@ def render_fulltext_markdown(
         unresolved_clusters_by_page.setdefault(page, []).append(cluster_id)
 
     emitted_pages: set[int] = set()
+    last_structured_insert_page: int | None = None
+    last_structured_insert_bbox: list[float] | None = None
+
+    # Compute heading levels from span metadata font sizes when available
+    _HEADING_ROLES = {"section_heading", "subsection_heading", "sub_subsection_heading"}
+    heading_font_sizes: dict[int, float] = {}
+    for i, block in enumerate(structured_blocks):
+        if block.get("role") not in _HEADING_ROLES:
+            continue
+        span = block.get("span_metadata") or {}
+        if isinstance(span, list):
+            for s in span:
+                sz = s.get("size")
+                if sz:
+                    heading_font_sizes[id(block)] = float(sz)
+                    break
+        elif isinstance(span, dict):
+            sz = span.get("size")
+            if sz:
+                heading_font_sizes[id(block)] = float(sz)
+    block_heading_prefix: dict[int, str] = {}
+    if heading_font_sizes:
+        size_groups: dict[float, list[int]] = {}
+        for bid, sz in heading_font_sizes.items():
+            bucket = round(sz * 2) / 2
+            size_groups.setdefault(bucket, []).append(bid)
+        sorted_sizes = sorted(size_groups.keys(), reverse=True)
+        for level_idx, bucket in enumerate(sorted_sizes):
+            prefix = "##" if level_idx == 0 else "###"
+            for bid in size_groups[bucket]:
+                block_heading_prefix[bid] = prefix
 
     # --- body with anchored figures/tables ---
     # Find the min and max page across ALL blocks (including suppressed)
@@ -724,6 +778,8 @@ def render_fulltext_markdown(
                 "sub_subsection_heading",
             })
             if old_role in _PROTECTED:
+                continue
+            if old_role == "body_paragraph" and new_role in {"structured_insert", "non_body_insert"}:
                 continue
             if old_role != new_role:
                 block["role"] = new_role
@@ -784,9 +840,11 @@ def render_fulltext_markdown(
         ordered_blocks = _order_tail_blocks(structured_blocks, style_profiles=style_profiles)
 
     for block in ordered_blocks:
-        if not block.get("render_default", True):
-            continue
         role = block.get("role", "")
+        if role == "structured_insert":
+            pass  # render as callout below
+        elif not block.get("render_default", True):
+            continue
         if role in CONSUMED_FRONTMATTER_ROLES and block.get("page") == 1:
             continue
         _SKIPPED_BODY_ROLES = {
@@ -800,7 +858,8 @@ def render_fulltext_markdown(
         if role in _SKIPPED_BODY_ROLES:
             continue
 
-        text = normalize_ocr_math_text(block.get("text", ""))
+        raw_text = block.get("text", "")
+        text = normalize_ocr_math_text(raw_text)
         text = re.sub(r"<table[^>]*>.*?</table>", "", text, flags=re.DOTALL | re.IGNORECASE)
         if text.strip().lower().startswith("<table"):
             continue
@@ -838,13 +897,21 @@ def render_fulltext_markdown(
             lines.append(f"<!-- page {block_page} -->")
             lines.append("")
             emitted_pages.add(block_page)
+            last_structured_insert_page = None
+            last_structured_insert_bbox = None
 
-        if not block.get("render_default", True):
+        if role == "structured_insert":
+            pass  # render as callout below
+        elif not block.get("render_default", True):
             continue
         if role == "backmatter_boundary_heading" or role == "backmatter_heading" or role == "reference_heading":
+            last_structured_insert_page = None
+            last_structured_insert_bbox = None
             lines.append(f"## {text}")
             lines.append("")
         elif role in ("subsection_heading", "sub_subsection_heading", "section_heading"):
+            last_structured_insert_page = None
+            last_structured_insert_bbox = None
             if role == "section_heading":
                 if text.strip().lower() in FRONTMATTER_NOISE:
                     continue
@@ -853,13 +920,67 @@ def render_fulltext_markdown(
                         lines.append(text)
                         lines.append("")
                     continue
-            lines.append(f"### {text}")
+                lines.append(f"## {text}")
+            else:
+                prefix = block_heading_prefix.get(id(block))
+                if prefix is None:
+                    depth = _heading_number_depth_text(text)
+                    prefix = "##" if depth <= 1 else "###"
+                lines.append(f"{prefix} {text}")
             lines.append("")
+        elif role == "structured_insert":
+            container_text = block.get("_container_text")
+            if container_text:
+                source_text = " ".join(container_text.replace("\n", " ").split())
+            else:
+                source_text = raw_text
+            callout_lines = _table_html_to_lines(source_text) if source_text.strip().lower().startswith("<table") else source_text.strip().split("\n")
+            callout_lines = [line for line in callout_lines if line.strip()]
+            if callout_lines:
+                bbox = block.get("bbox") or block.get("block_bbox") or [0, 0, 0, 0]
+                merge_with_previous = False
+                if (
+                    last_structured_insert_page == block_page
+                    and last_structured_insert_bbox is not None
+                    and len(bbox) >= 4
+                ):
+                    prev = last_structured_insert_bbox
+                    overlaps_x = bbox[0] <= prev[2] + 40 and bbox[2] >= prev[0] - 40
+                    gap_y = bbox[1] - prev[3]
+                    merge_with_previous = overlaps_x and gap_y <= 80
+                if merge_with_previous and lines and lines[-1] == "":
+                    lines.pop()
+                if (
+                    merge_with_previous
+                    and callout_lines
+                    and callout_lines[0].lstrip().startswith("•")
+                    and lines
+                    and lines[-1].startswith("> ")
+                    and "•" in lines[-1][2:]
+                    and not lines[-1].startswith("> •")
+                ):
+                    lines.pop()
+                if not merge_with_previous:
+                    lines.append("> [!NOTE]")
+                for cl in callout_lines:
+                    lines.append(f"> {cl}")
+                if not merge_with_previous:
+                    lines.append("")
+                last_structured_insert_page = block_page
+                last_structured_insert_bbox = bbox if len(bbox) >= 4 else None
         elif role in ("backmatter_body", "tail_candidate_body", "body_paragraph"):
+            if last_structured_insert_page is not None:
+                lines.append("")
+            last_structured_insert_page = None
+            last_structured_insert_bbox = None
             if text:
                 lines.append(text)
                 lines.append("")
         else:
+            if last_structured_insert_page is not None:
+                lines.append("")
+            last_structured_insert_page = None
+            last_structured_insert_bbox = None
             if text:
                 lines.append(text)
                 lines.append("")

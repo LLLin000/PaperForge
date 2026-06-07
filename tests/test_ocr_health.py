@@ -124,3 +124,20 @@ def test_layout_audit_health_surface() -> None:
     assert empty["layout_audit_status"] == "unknown"
     assert empty["layout_anomaly_pages"] == []
     assert empty["layout_anomaly_count"] == 0
+
+
+def test_ocr_health_includes_span_spine_and_layout_signals() -> None:
+    from paperforge.worker.ocr_health import build_ocr_health
+
+    blocks = [
+        {"role": "section_heading", "span_metadata": [{"font": "Body"}]},
+        {"role": "section_heading", "span_metadata": [{"font": "Body"}]},
+        {"role": "abstract_body", "span_metadata": [{"font": "Body"}]},
+        {"role": "reference_item", "span_metadata": [{"font": "Body"}]},
+    ]
+
+    health = build_ocr_health(page_count=2, raw_blocks_count=4, structured_blocks=blocks, figure_inventory={}, table_inventory={})
+
+    assert "span_coverage_quality" in health
+    assert "body_spine_quality" in health
+    assert "layout_audit_status" in health

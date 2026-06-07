@@ -1546,7 +1546,10 @@ def render_page_blocks(
                     append_reference_section(rendered, reference_blocks, reference_continuations)
                     references_emitted = True
                 references_section_active = False
-            rendered.append(f"### {title}")
+            if title.lower() == "abstract" or re.match(r"^\d+\s", title):
+                rendered.append(f"## {title}")
+            else:
+                rendered.append(f"### {title}")
             if title.lower() == "references":
                 references_heading_seen = True
                 references_section_active = True

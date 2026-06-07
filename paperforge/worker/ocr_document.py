@@ -84,6 +84,113 @@ class DocumentStructure:
     layout_audit: dict | None = None
 
 
+@dataclass
+class RegionPrepass:
+    block_regions: dict[int, str]
+    frontmatter_indices: set[int]
+    structured_insert_indices: set[int]
+    body_candidate_indices: set[int]
+    confidence_by_index: dict[int, float]
+
+
+def _block_text(block: dict) -> str:
+    return str(block.get("text") or block.get("block_content") or "")
+
+
+def _looks_like_box_anchor(text: str) -> bool:
+    return bool(re.match(r"^box\s*\.?\s*\d+\b", text.strip().lower()))
+
+
+def _build_region_prepass(blocks: list[dict]) -> RegionPrepass:
+    block_regions: dict[int, str] = {}
+    confidence_by_index: dict[int, float] = {}
+    frontmatter_indices: set[int] = set()
+    structured_insert_indices: set[int] = set()
+    body_candidate_indices: set[int] = set()
+
+    by_page: dict[int, list[tuple[int, dict]]] = {}
+    for idx, block in enumerate(blocks):
+        by_page.setdefault(int(block.get("page", 1) or 1), []).append((idx, block))
+
+    for page, page_items in by_page.items():
+        page_items.sort(key=lambda item: (item[1].get("bbox") or item[1].get("block_bbox") or [0, 0, 0, 0])[1])
+        last_insert_on_page = False
+        last_insert_anchor_kind = ""
+        for idx, block in page_items:
+            role = block.get("role", "")
+            text = _block_text(block).strip().lower()
+            bbox = block.get("bbox") or block.get("block_bbox") or [0, 0, 0, 0]
+            page_height = block.get("page_height") or 1700
+            page_width = block.get("page_width") or 1200
+            y_top = bbox[1] if len(bbox) >= 4 else 0
+
+            region = "body"
+            confidence = 0.5
+
+            in_container = block.get("_in_visual_container", False)
+            if in_container and len(bbox) >= 4:
+                cbox = block.get("_container_bbox", [])
+                within_container = False
+                if len(cbox) >= 4:
+                    margin_w = (bbox[2] - bbox[0]) * 0.1
+                    margin_h = (bbox[3] - bbox[1]) * 0.1
+                    within_container = (
+                        bbox[0] >= cbox[0] - margin_w
+                        and bbox[2] <= cbox[2] + margin_w
+                        and bbox[1] >= cbox[1] - margin_h
+                        and bbox[3] <= cbox[3] + margin_h
+                    )
+                if within_container:
+                    region = "structured_insert"
+                    confidence = 0.85
+                    last_insert_anchor_kind = "container"
+            elif (page <= 3 and ("key point" in text or text in {"sections", "highlights"})) or _looks_like_box_anchor(text):
+                region = "structured_insert"
+                confidence = 0.8
+                last_insert_anchor_kind = "box" if _looks_like_box_anchor(text) else "summary"
+            elif (
+                last_insert_on_page
+                and page <= 3
+                and len(text.split()) <= 18
+                and role not in {"section_heading", "subsection_heading", "sub_subsection_heading", "reference_heading", "backmatter_heading"}
+            ):
+                region = "structured_insert"
+                confidence = max(confidence, 0.7)
+            elif (
+                last_insert_on_page
+                and last_insert_anchor_kind == "box"
+                and len(bbox) >= 4
+                and bbox[0] < page_width * 0.25
+                and role in {"section_heading", "subsection_heading", "sub_subsection_heading", "body_paragraph"}
+            ):
+                region = "structured_insert"
+                confidence = max(confidence, 0.75)
+
+            elif page == 1 and (role in {"paper_title", "authors", "affiliation", "frontmatter_noise"} or y_top < page_height * 0.22):
+                region = "frontmatter"
+                confidence = 0.8
+            last_insert_on_page = region == "structured_insert"
+            if region != "structured_insert":
+                last_insert_anchor_kind = ""
+
+            block_regions[idx] = region
+            confidence_by_index[idx] = confidence
+            if region == "frontmatter":
+                frontmatter_indices.add(idx)
+            elif region == "structured_insert":
+                structured_insert_indices.add(idx)
+            else:
+                body_candidate_indices.add(idx)
+
+    return RegionPrepass(
+        block_regions=block_regions,
+        frontmatter_indices=frontmatter_indices,
+        structured_insert_indices=structured_insert_indices,
+        body_candidate_indices=body_candidate_indices,
+        confidence_by_index=confidence_by_index,
+    )
+
+
 def _compute_span_coverage(blocks: list[dict]) -> dict:
     """Compute span metadata coverage across the document.
 
@@ -1459,7 +1566,19 @@ def _select_body_anchor_pages(blocks: list[dict], doc: DocumentStructure | None 
     return fallback if fallback else []
 
 
-def _detect_body_spine(blocks: list[dict], doc: DocumentStructure | None = None) -> dict[int, dict]:
+def _is_body_spine_training_block(block: dict, idx: int, region_prepass: RegionPrepass | None) -> bool:
+    if block.get("role") != "body_paragraph":
+        return False
+    if region_prepass is None:
+        return True
+    return region_prepass.block_regions.get(idx, "body") == "body"
+
+
+def _detect_body_spine(
+    blocks: list[dict],
+    doc: DocumentStructure | None = None,
+    region_prepass: RegionPrepass | None = None,
+) -> dict[int, dict]:
     """Detect the main body column characteristics per page.
 
     Uses a two-pass approach:
@@ -1485,9 +1604,11 @@ def _detect_body_spine(blocks: list[dict], doc: DocumentStructure | None = None)
     import statistics
 
     by_page: dict[int, list[dict]] = {}
-    for block in blocks:
+    block_idx: dict[int, int] = {}
+    for idx, block in enumerate(blocks):
         page = block.get("page", 1)
         by_page.setdefault(page, []).append(block)
+        block_idx[id(block)] = idx
 
     all_pages = sorted(by_page.keys())
     if not all_pages:
@@ -1516,7 +1637,7 @@ def _detect_body_spine(blocks: list[dict], doc: DocumentStructure | None = None)
 
     for page in anchor_pages:
         for b in by_page.get(page, []):
-            if b.get("role") == "body_paragraph":
+            if _is_body_spine_training_block(b, block_idx.get(id(b), -1), region_prepass):
                 bbox = b.get("bbox", [0, 0, 0, 0])
                 w = bbox[2] - bbox[0]
                 if w >= 400:
@@ -1555,7 +1676,10 @@ def _detect_body_spine(blocks: list[dict], doc: DocumentStructure | None = None)
     per_page_spine: dict[int, dict | None] = {}
     for page in all_pages:
         page_blocks = by_page[page]
-        body_blocks = [b for b in page_blocks if b.get("role") == "body_paragraph"]
+        body_blocks = [
+            b for b in page_blocks
+            if _is_body_spine_training_block(b, block_idx.get(id(b), -1), region_prepass)
+        ]
 
         if body_blocks:
             widths = []
@@ -1837,7 +1961,7 @@ def _detect_non_body_insert_clusters(
         font_mismatch = bool(block_font and spine_fonts and block_font not in spine_fonts)
 
         if quality == "strong":
-            passes = is_narrow or font_mismatch
+            passes = is_narrow or (font_mismatch and block_width < 0.9 * median_width)
         elif quality == "moderate":
             passes = is_narrow and (font_mismatch or len(candidates_by_page.get(page, [])) >= 1)
         else:
@@ -2255,6 +2379,86 @@ def _detect_structured_insert_clusters(blocks: list[dict]) -> set[int]:
     return result
 
 
+def _expand_structured_insert_cluster_with_mixed_sidebar_blocks(
+    blocks: list[dict],
+    indices: set[int],
+) -> set[int]:
+    if not indices:
+        return indices
+
+    expanded = set(indices)
+    by_page: dict[int, list[int]] = {}
+    for idx in indices:
+        page = int(blocks[idx].get("page", 1) or 1)
+        by_page.setdefault(page, []).append(idx)
+
+    heading_roles = {"section_heading", "subsection_heading", "sub_subsection_heading", "reference_heading", "backmatter_heading"}
+    mixed_roles = {"media_asset", "table_html", "unknown_structural", "structured_insert_candidate"}
+
+    for page, page_indices in by_page.items():
+        changed = True
+        while changed:
+            changed = False
+            current_page_indices = [idx for idx in expanded if int(blocks[idx].get("page", 1) or 1) == page]
+            current_texts = [str(blocks[idx].get("text") or "") for idx in current_page_indices]
+            has_box_anchor = any(_looks_like_box_anchor(text) for text in current_texts)
+            bboxes = [blocks[idx].get("bbox") or blocks[idx].get("block_bbox") for idx in current_page_indices]
+            bboxes = [bb for bb in bboxes if bb and len(bb) >= 4]
+            if not bboxes:
+                break
+
+            cluster_min_x = min(bb[0] for bb in bboxes)
+            cluster_max_x = max(bb[2] for bb in bboxes)
+            cluster_min_y = min(bb[1] for bb in bboxes)
+            cluster_max_y = max(bb[3] for bb in bboxes)
+
+            next_heading_top = None
+            for i, block in enumerate(blocks):
+                if int(block.get("page", 1) or 1) != page or i in expanded:
+                    continue
+                role = block.get("role", "")
+                if role not in heading_roles:
+                    continue
+                bb = block.get("bbox") or block.get("block_bbox")
+                if not bb or len(bb) < 4:
+                    continue
+                block_x_center = (bb[0] + bb[2]) / 2
+                same_column = block_x_center < (cluster_min_x + cluster_max_x) / 2 + 200
+                if has_box_anchor and same_column and bb[0] <= cluster_max_x + 40 and bb[2] >= cluster_min_x - 40 and (bb[1] - cluster_max_y) <= 140:
+                    continue
+                if bb[1] > cluster_max_y and (next_heading_top is None or bb[1] < next_heading_top):
+                    next_heading_top = bb[1]
+
+            for i, block in enumerate(blocks):
+                if int(block.get("page", 1) or 1) != page or i in expanded:
+                    continue
+                role = block.get("role", "")
+                text = str(block.get("text") or "").strip()
+                bb = block.get("bbox") or block.get("block_bbox")
+                if not bb or len(bb) < 4:
+                    continue
+                if next_heading_top is not None and bb[1] >= next_heading_top:
+                    continue
+
+                page_width = max(block.get("page_width", 0) or 0, 1200)
+                cluster_x_center = (cluster_min_x + cluster_max_x) / 2
+                block_x_center = (bb[0] + bb[2]) / 2
+                same_column = (
+                    (cluster_x_center < page_width * 0.5 and block_x_center < page_width * 0.55)
+                    or (cluster_x_center >= page_width * 0.5 and block_x_center >= page_width * 0.45)
+                )
+                overlaps_x = bb[0] <= cluster_max_x + 40 and bb[2] >= cluster_min_x - 40
+                near_y = bb[1] <= cluster_max_y + 80 and bb[3] >= cluster_min_y - 20
+                bullet_like = text.startswith(("•", "-", "*"))
+                table_like = text.lower().startswith("<table")
+
+                if overlaps_x and near_y and same_column and (role in mixed_roles or bullet_like or table_like):
+                    expanded.add(i)
+                    changed = True
+
+    return expanded
+
+
 def _run_layout_audit(blocks: list[dict]) -> dict:
     """Check resolved structure for obvious geometric contradictions.
 
@@ -2371,8 +2575,40 @@ def normalize_document_structure(blocks: list[dict]) -> tuple[DocumentStructure,
     # Compute span coverage for degraded mode detection
     doc_structure.span_coverage = _compute_span_coverage(blocks)
 
+    # Build region prepass: classify frontmatter/structured_insert/body by geometry
+    region_prepass = _build_region_prepass(blocks)
+    doc_structure.region_prepass = region_prepass  # type: ignore[attr-defined]
+
+    # Mark prepass-identified structured insert blocks as candidates before spine
+    for idx in region_prepass.structured_insert_indices:
+        if idx < len(blocks):
+            role = blocks[idx].get("role", "")
+            if role in {"body_paragraph", "section_heading", "subsection_heading", "sub_subsection_heading"}:
+                blocks[idx]["role"] = "structured_insert_candidate"
+
+    # Detect structured insert clusters BEFORE body spine and non-body gates
+    structured_insert_indices = _detect_structured_insert_clusters(blocks)
+    for idx in structured_insert_indices:
+        if idx < len(blocks):
+            blocks[idx]["role"] = "structured_insert"
+
+    # Fallback: promote single structured_insert_candidate blocks that the
+    # region prepass independently identified as structured inserts, even
+    # when clustering could not form (only one candidate on the page).
+    for idx in region_prepass.structured_insert_indices:
+        if idx < len(blocks) and blocks[idx].get("role") == "structured_insert_candidate":
+            blocks[idx]["role"] = "structured_insert"
+
+    structured_insert_indices = {i for i, b in enumerate(blocks) if b.get("role") == "structured_insert"}
+    structured_insert_indices = _expand_structured_insert_cluster_with_mixed_sidebar_blocks(blocks, structured_insert_indices)
+    for idx in structured_insert_indices:
+        if idx < len(blocks):
+            blocks[idx]["role"] = "structured_insert"
+
+    # Detect body spine from region-approved body blocks only
+    body_spine = _detect_body_spine(blocks, doc_structure, region_prepass=region_prepass)
+
     # Detect non-body insert clusters on early pages (relative to body length)
-    body_spine = _detect_body_spine(blocks, doc_structure)
     pw = max((b.get("page_width", 0) or 0) for b in blocks) or 1200
     insert_indices = _detect_non_body_insert_clusters(
         blocks,
@@ -2391,12 +2627,6 @@ def normalize_document_structure(blocks: list[dict]) -> tuple[DocumentStructure,
 
     _mark_non_body_media(blocks)
     _resolve_ambiguous_candidates(blocks, doc_structure, page_layouts)
-
-    # Detect structured insert clusters (detached summary boxes, key points)
-    structured_insert_indices = _detect_structured_insert_clusters(blocks)
-    for idx in structured_insert_indices:
-        if idx < len(blocks):
-            blocks[idx]["role"] = "structured_insert"
 
     # Run layout audit after all resolution is done
     layout_audit = _run_layout_audit(blocks)

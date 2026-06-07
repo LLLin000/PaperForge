@@ -101,7 +101,10 @@ def run_derived_rebuild_for_keys(vault: Path, keys: list[str]) -> dict:
         from paperforge.worker.ocr_profiles import write_role_span_profiles
         write_role_span_profiles(structured, artifacts.blocks_structured.parent)
 
-        # Read source metadata
+        # Read source metadata. If legacy/old OCR papers are missing canonical
+        # bibliographic metadata, enrich source_metadata.json from the formal
+        # Literature-hub note frontmatter before resolving OCR metadata.
+        _enrich_meta_from_paper_note(vault, key, artifacts.source_metadata)
         source_meta = read_json(artifacts.source_metadata) if artifacts.source_metadata.exists() else {}
 
         # Rebuild resolved metadata
@@ -114,7 +117,8 @@ def run_derived_rebuild_for_keys(vault: Path, keys: list[str]) -> dict:
         metadata_dir = paper_root / "metadata"
         metadata_dir.mkdir(parents=True, exist_ok=True)
         frontmatter_candidates = extract_frontmatter_candidates(artifacts.blocks_structured)
-        resolved = resolve_metadata(source_meta, frontmatter_candidates)
+        page1_blocks = [block for block in structured if int(block.get("page", 0) or 0) == 1]
+        resolved = resolve_metadata(source_meta, frontmatter_candidates, page1_blocks=page1_blocks)
         write_resolved_metadata(metadata_dir / "resolved_metadata.json", resolved)
 
         # Rebuild figure inventory

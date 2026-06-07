@@ -533,6 +533,37 @@ def test_running_header_not_heading():
     assert result.role == "noise", f"Expected noise, got {result.role}"
 
 
+def test_page1_article_type_label_not_heading():
+    """Article-type label on page 1 is frontmatter furniture, not content heading."""
+    from paperforge.worker.ocr_roles import assign_block_role
+
+    block = {
+        "block_label": "paragraph_title",
+        "block_content": "Review article",
+        "block_bbox": [80, 180, 220, 205],
+        "page": 1,
+    }
+    page_blocks = [
+        block,
+        {
+            "block_label": "doc_title",
+            "block_content": "Metabolic regulation of skeletal cell fate and function in development and disease",
+            "block_bbox": [80, 240, 560, 310],
+            "page": 1,
+        },
+        {
+            "block_label": "paragraph_title",
+            "block_content": "Steve Stegen & Geert Carmeliet",
+            "block_bbox": [80, 340, 500, 365],
+            "page": 1,
+        },
+    ]
+    result = assign_block_role(block, page_blocks=page_blocks, page_width=600, page_height=1700)
+    assert result.role in {"frontmatter_noise", "noise"}, (
+        f"Page-1 article-type label should be frontmatter furniture, got {result.role}"
+    )
+
+
 def test_doc_title_not_body_paragraph() -> None:
     from paperforge.worker.ocr_roles import assign_block_role
 

@@ -33,5 +33,5 @@ def test_render_fulltext_uses_resolved_metadata_and_object_links(tmp_path) -> No
 
     assert "# Paper Title" in md
     assert "Authors:" in md
-    assert "## 1 Introduction" in md or "### 1 Introduction" in md
+    assert "## 1 Introduction" in md
     assert "![[figures/figure_001.md]]" in md or "![[render/figures/figure_001.md]]" in md

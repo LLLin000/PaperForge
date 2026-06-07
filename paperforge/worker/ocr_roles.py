@@ -493,6 +493,12 @@ def assign_block_role(
             "review article", "research article", "original article",
             "case report", "brief communication", "rapid communication",
         })
+        if lower in _RUNNING_HEADER_LABELS and (block.get("page") or 1) == 1:
+            return RoleAssignment(
+                role="frontmatter_noise",
+                confidence=0.8,
+                evidence=[f"page-1 article-type label: {lower}"],
+            )
         if lower in _RUNNING_HEADER_LABELS and (block.get("page") or 1) > 1:
             bbox = block.get("block_bbox") or [0, 0, 0, 0]
             _ph = block.get("page_height") or 1700
@@ -557,9 +563,9 @@ def assign_block_role(
         )
         if _is_author_byline and page_num == 1:
             return RoleAssignment(
-                role="frontmatter_noise",
-                confidence=0.5,
-                evidence=[f"author byline on page 1, not heading: {text[:60]}"],
+                role="authors",
+                confidence=0.6,
+                evidence=[f"author byline on page 1, assigned as authors: {text[:60]}"],
             )
 
         if re.search(r"(?:correspondence|orcid|@)", text.lower()) and len(text.split()) <= 20 and page_num == 1:
