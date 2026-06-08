@@ -5,6 +5,7 @@ import re
 from collections import namedtuple
 from dataclasses import dataclass, field
 
+from paperforge.worker.ocr_decisions import record_decision
 from paperforge.worker.ocr_roles import (
     _BACKMATTER_TITLE_DENY_LIST,
     _is_near_figure_media,
@@ -921,7 +922,10 @@ def _normalize_backmatter_roles_after_boundary(
         if backmatter_form == "container":
             if role in _BOUNDARY_ROLES:
                 if boundary_seen:
+                    old_role = block.get("role")
                     block["role"] = "backmatter_heading"
+                    if old_role != block["role"]:
+                        record_decision(block, stage="backmatter_role_normalization", old_role=old_role, new_role=block["role"], reason="duplicate boundary heading demoted to backmatter heading")
                 else:
                     boundary_seen = True
                 backmatter_started = True
@@ -935,7 +939,10 @@ def _normalize_backmatter_roles_after_boundary(
                 backmatter_started = True
                 block["_backmatter_regime"] = "flat"
                 if role in _BOUNDARY_ROLES:
+                    old_role = block.get("role")
                     block["role"] = "backmatter_heading"
+                    if old_role != block["role"]:
+                        record_decision(block, stage="backmatter_role_normalization", old_role=old_role, new_role=block["role"], reason="boundary role normalized to backmatter heading (flat form)")
                 continue
             if not backmatter_started:
                 continue
@@ -944,13 +951,19 @@ def _normalize_backmatter_roles_after_boundary(
             break
 
         if role in {"section_heading", "subsection_heading", "sub_subsection_heading"}:
+            old_role = block.get("role")
             block["role"] = "backmatter_heading"
+            if old_role != block["role"]:
+                record_decision(block, stage="backmatter_role_normalization", old_role=old_role, new_role=block["role"], reason="heading demoted to backmatter heading inside backmatter region")
             block["_backmatter_regime"] = backmatter_form
             block["render_default"] = True
             continue
 
         if role in {"body_paragraph", "frontmatter_noise"}:
+            old_role = block.get("role")
             block["role"] = "backmatter_body"
+            if old_role != block["role"]:
+                record_decision(block, stage="backmatter_role_normalization", old_role=old_role, new_role=block["role"], reason="body/noise block assigned backmatter body role inside backmatter region")
             block["_backmatter_regime"] = backmatter_form
             block["render_default"] = True
             block["index_default"] = True
@@ -1154,8 +1167,11 @@ def rescue_roles_with_document_context(
                     ni_match = compare_against_family(bp, ni_fam)
                     body_match = compare_against_family(bp, family_profiles["body_family"])
                     if body_match["match_score"] > max(ni_match["match_score"], 0.6) and body_match["size_compatible"]:
+                        old_role = block.get("role")
                         del block["_non_body_insert"]
                         block["role"] = "body_paragraph"
+                        if old_role != block["role"]:
+                            record_decision(block, stage="rescue_non_body_insert", old_role=old_role, new_role=block["role"], reason="non_body_insert validated as body paragraph via family comparison")
                         block.setdefault("evidence", []).append("rescue_family: non_body_insert → body_paragraph")
                         should_skip = False
             if should_skip:
@@ -1175,7 +1191,10 @@ def rescue_roles_with_document_context(
                     if "body_family" in family_profiles:
                         body_match = compare_against_family(bp, family_profiles["body_family"])
                         if body_match["size_compatible"] and body_match["match_score"] > 0.5:
+                            old_role = block.get("role")
                             block["role"] = "body_paragraph"
+                            if old_role != block["role"]:
+                                record_decision(block, stage="rescue_frontmatter_noise", old_role=old_role, new_role=block["role"], reason="frontmatter_noise rescued to body_paragraph via family profile match")
                             block["role_confidence"] = min(block.get("role_confidence", 0.5) + 0.1, 1.0)
                             block.setdefault("evidence", []).append("rescue_family: frontmatter_noise → body_paragraph")
                             family_rescued = True
@@ -1183,10 +1202,13 @@ def rescue_roles_with_document_context(
                         body_fam = role_profiles.get("body_paragraph", {})
                         if body_fam:
                             match = compare_against_role_family(bp, body_fam)
-                            if match["size_compatible"] and match["match_score"] > 0.5:
-                                block["role"] = "body_paragraph"
-                                block["role_confidence"] = min(block.get("role_confidence", 0.5) + 0.1, 1.0)
-                                block.setdefault("evidence", []).append("rescue: frontmatter_noise → body_paragraph")
+                        if match["size_compatible"] and match["match_score"] > 0.5:
+                            old_role = block.get("role")
+                            block["role"] = "body_paragraph"
+                            if old_role != block["role"]:
+                                record_decision(block, stage="rescue_frontmatter_noise", old_role=old_role, new_role=block["role"], reason="frontmatter_noise rescued to body_paragraph via role family match")
+                            block["role_confidence"] = min(block.get("role_confidence", 0.5) + 0.1, 1.0)
+                            block.setdefault("evidence", []).append("rescue: frontmatter_noise → body_paragraph")
 
         # --- Rule 2: body_paragraph → reference_item (refs section + ref font)
         role = block.get("role", "")
@@ -1234,7 +1256,10 @@ def rescue_roles_with_document_context(
                                 ref_match["size_compatible"]
                                 and ref_match["match_score"] > body_match_r["match_score"] + 0.1
                             ):
+                                old_role = block.get("role")
                                 block["role"] = "reference_item"
+                                if old_role != block["role"]:
+                                    record_decision(block, stage="rescue_reference", old_role=old_role, new_role=block["role"], reason="body_paragraph rescued to reference_item via family profile match")
                                 block["role_confidence"] = min(block.get("role_confidence", 0.5) + 0.2, 1.0)
                                 block.setdefault("evidence", []).append(
                                     "rescue_family: body_paragraph → reference_item"
@@ -1245,10 +1270,13 @@ def rescue_roles_with_document_context(
                         if ref_fam:
                             threshold = 0.7 if degraded_mode_active else 0.5
                             match = compare_against_role_family(bp, ref_fam)
-                            if match["size_compatible"] and match["match_score"] > threshold:
-                                block["role"] = "reference_item"
-                                block["role_confidence"] = min(block.get("role_confidence", 0.5) + 0.2, 1.0)
-                                block.setdefault("evidence", []).append("rescue: body_paragraph → reference_item")
+                        if match["size_compatible"] and match["match_score"] > threshold:
+                            old_role = block.get("role")
+                            block["role"] = "reference_item"
+                            if old_role != block["role"]:
+                                record_decision(block, stage="rescue_reference", old_role=old_role, new_role=block["role"], reason="body_paragraph rescued to reference_item via role family match")
+                            block["role_confidence"] = min(block.get("role_confidence", 0.5) + 0.2, 1.0)
+                            block.setdefault("evidence", []).append("rescue: body_paragraph → reference_item")
 
         # --- Rule 3: weak heading with body font → body_paragraph
         if degraded_mode_active:
@@ -1272,7 +1300,10 @@ def rescue_roles_with_document_context(
                             body_match_h["size_compatible"]
                             and body_match_h["match_score"] > heading_match["match_score"] + 0.1
                         ):
+                            old_role = block.get("role")
                             block["role"] = "body_paragraph"
+                            if old_role != block["role"]:
+                                record_decision(block, stage="rescue_heading", old_role=old_role, new_role=block["role"], reason="weak heading demoted to body_paragraph via family profile match")
                             block.setdefault("evidence", []).append("rescue_family: heading → body_paragraph")
                             heading_demoted = True
                 if not heading_demoted:
@@ -1280,7 +1311,10 @@ def rescue_roles_with_document_context(
                     if body_fam:
                         match = compare_against_role_family(bp, body_fam)
                         if match["size_compatible"] and match["match_score"] > 0.5:
+                            old_role = block.get("role")
                             block["role"] = "body_paragraph"
+                            if old_role != block["role"]:
+                                record_decision(block, stage="rescue_heading", old_role=old_role, new_role=block["role"], reason="weak heading demoted to body_paragraph via role family match")
                             block.setdefault("evidence", []).append("rescue: heading → body_paragraph")
 
     return result
@@ -1509,7 +1543,10 @@ def _promote_tail_body_candidates(
                     promote = True
 
             if promote:
+                old_role = block.get("role")
                 block["role"] = "tail_candidate_body"
+                if old_role != block["role"]:
+                    record_decision(block, stage="tail_candidate_promotion", old_role=old_role, new_role=block["role"], reason="promoted in tail spread from body_paragraph")
                 block["evidence"] = list(block.get("evidence") or []) + ["promoted in tail spread from body_paragraph"]
 
     return result
@@ -1529,7 +1566,17 @@ def _assign_tail_spread_ownership(
         spread_start, spread_end = 0, 0
 
     if not anchors:
-        return [{**b, "role": "body_paragraph"} if b.get("role") == "tail_candidate_body" else b for b in blocks]
+        result = []
+        for b in blocks:
+            if b.get("role") == "tail_candidate_body":
+                old_role = b.get("role")
+                new_block = {**b, "role": "body_paragraph"}
+                if old_role != new_block["role"]:
+                    record_decision(new_block, stage="tail_spread_ownership", old_role=old_role, new_role=new_block["role"], reason="no backmatter anchors, tail candidate demoted to body")
+                result.append(new_block)
+            else:
+                result.append(b)
+        return result
 
     result = list(blocks)
     for i, block in enumerate(result):
@@ -1539,19 +1586,27 @@ def _assign_tail_spread_ownership(
         block_page = block.get("page", 0) or 0
 
         if doc is not None and (block_page < spread_start or block_page > spread_end):
+            old_role = block.get("role")
             result[i] = dict(block)
             result[i]["role"] = "body_paragraph"
+            if old_role != result[i]["role"]:
+                record_decision(result[i], stage="tail_spread_ownership", old_role=old_role, new_role=result[i]["role"], reason="tail candidate outside spread, demoted to body")
             continue
 
         pw = block.get("page_width", 0) or 1200
         idx = _find_best_anchor(block, anchors, ref_heading, pw)
+        old_role = block.get("role")
         result[i] = dict(block)
         if idx is not None:
             anchor_page = anchors[idx].get("page", 0)
             result[i]["role"] = "backmatter_body"
+            if old_role != result[i]["role"]:
+                record_decision(result[i], stage="tail_spread_ownership", old_role=old_role, new_role=result[i]["role"], reason=f"tail candidate assigned to backmatter anchor on page {anchor_page}")
             result[i]["_spread_anchor"] = anchor_page
         else:
             result[i]["role"] = "body_paragraph"
+            if old_role != result[i]["role"]:
+                record_decision(result[i], stage="tail_spread_ownership", old_role=old_role, new_role=result[i]["role"], reason="no backmatter anchor found, tail candidate demoted to body")
     return result
 
 
@@ -2152,7 +2207,10 @@ def _resolve_ambiguous_candidates(
             # same page, only headings in a different column than the boundary
             # (multi-column layout with independent streams) are kept visible.
             if has_container_boundary and page < container_boundary_page:
+                old_role = block.get("role")
                 block["role"] = "body_paragraph"
+                if old_role != block["role"]:
+                    record_decision(block, stage="candidate_resolution", old_role=old_role, new_role=block["role"], reason="backmatter heading candidate before container boundary, demoted to body")
                 block["role_confidence"] = 0.5
                 continue
 
@@ -2174,28 +2232,43 @@ def _resolve_ambiguous_candidates(
                     else:
                         boundary_bottom = 0
                 if _same_column and bbox[1] < boundary_bottom:
+                    old_role = block.get("role")
                     block["role"] = "body_paragraph"
+                    if old_role != block["role"]:
+                        record_decision(block, stage="candidate_resolution", old_role=old_role, new_role=block["role"], reason="backmatter heading candidate in same column above boundary, demoted to body")
                     block["role_confidence"] = 0.5
                     continue
                 # Different column on boundary page → container child in
                 # multi-column layout (e.g. FUNDING left col, ADDITIONAL
                 # INFORMATION right col).  Promote to backmatter_heading.
+                old_role = block.get("role")
                 block["role"] = "backmatter_heading"
+                if old_role != block["role"]:
+                    record_decision(block, stage="candidate_resolution", old_role=old_role, new_role=block["role"], reason="backmatter heading candidate in different column, promoted to backmatter heading")
                 block["role_confidence"] = 0.5
                 continue
 
             if backmatter_start_page is None:
+                old_role = block.get("role")
                 block["role"] = "section_heading"
+                if old_role != block["role"]:
+                    record_decision(block, stage="candidate_resolution", old_role=old_role, new_role=block["role"], reason="backmatter heading candidate with no backmatter start, treated as section_heading")
                 block["role_confidence"] = 0.5
                 block["_suppressed_heading"] = True
                 continue
 
             if page < backmatter_start_page:
                 if has_container_boundary and page == container_boundary_page:
+                    old_role = block.get("role")
                     block["role"] = "backmatter_heading"
+                    if old_role != block["role"]:
+                        record_decision(block, stage="candidate_resolution", old_role=old_role, new_role=block["role"], reason="backmatter heading candidate on container boundary page, promoted to backmatter heading")
                     block["role_confidence"] = 0.5
                 else:
+                    old_role = block.get("role")
                     block["role"] = "section_heading"
+                    if old_role != block["role"]:
+                        record_decision(block, stage="candidate_resolution", old_role=old_role, new_role=block["role"], reason="backmatter heading candidate before backmatter start, treated as section_heading")
                     block["role_confidence"] = 0.5
                     block["_suppressed_heading"] = True
                 continue
@@ -2207,13 +2280,22 @@ def _resolve_ambiguous_candidates(
                     x_center = (bbox[0] + bbox[2]) / 2
                     col = _get_column_index_by_boundaries(x_center, boundaries)
                     if col == 0:
+                        old_role = block.get("role")
                         block["role"] = "section_heading"
+                        if old_role != block["role"]:
+                            record_decision(block, stage="candidate_resolution", old_role=old_role, new_role=block["role"], reason="backmatter heading candidate in left column of split backmatter page, treated as section_heading")
                         block["role_confidence"] = 0.5
                         continue
+                old_role = block.get("role")
                 block["role"] = "backmatter_heading"
+                if old_role != block["role"]:
+                    record_decision(block, stage="candidate_resolution", old_role=old_role, new_role=block["role"], reason="backmatter heading candidate on backmatter start page, promoted to backmatter heading")
                 continue
 
+            old_role = block.get("role")
             block["role"] = "backmatter_heading"
+            if old_role != block["role"]:
+                record_decision(block, stage="candidate_resolution", old_role=old_role, new_role=block["role"], reason="backmatter heading candidate in backmatter region, promoted to backmatter heading")
 
         # ---- 2.2 Resolve figure_caption_candidate ----
         if role == "figure_caption_candidate":
@@ -2231,15 +2313,24 @@ def _resolve_ambiguous_candidates(
             # Subfigure references (Fig. 26c) with narrative prose in body
             # spine are body mentions — hard reject regardless of style.
             if has_subfigure_letter and in_body_spine and is_prose:
+                old_role = block.get("role")
                 block["role"] = "body_paragraph"
+                if old_role != block["role"]:
+                    record_decision(block, stage="candidate_resolution", old_role=old_role, new_role=block["role"], reason="subfigure reference with narrative prose in body spine, demoted to body")
                 continue
 
             if near_media or caption_style or has_main_figure:
+                old_role = block.get("role")
                 block["role"] = "figure_caption"
+                if old_role != block["role"]:
+                    record_decision(block, stage="candidate_resolution", old_role=old_role, new_role=block["role"], reason="figure caption candidate resolved as figure caption")
                 continue
 
             if in_body_spine and is_prose:
+                old_role = block.get("role")
                 block["role"] = "body_paragraph"
+                if old_role != block["role"]:
+                    record_decision(block, stage="candidate_resolution", old_role=old_role, new_role=block["role"], reason="figure caption candidate resolved as body prose in body spine")
                 continue
 
     # ---- 3. Activation gates (inline) ----
@@ -2253,13 +2344,22 @@ def _resolve_ambiguous_candidates(
             and page < backmatter_start_page
             and backmatter_form != "container"
         ):
+            old_role = block.get("role")
             block["role"] = "body_paragraph"
+            if old_role != block["role"]:
+                record_decision(block, stage="candidate_resolution", old_role=old_role, new_role=block["role"], reason="backmatter block before backmatter start (non-container form), demoted to body")
 
         if role == "reference_item" and references_start_page is not None and page < references_start_page:
+            old_role = block.get("role")
             block["role"] = "body_paragraph"
+            if old_role != block["role"]:
+                record_decision(block, stage="candidate_resolution", old_role=old_role, new_role=block["role"], reason="reference item before references start, demoted to body")
 
         if role == "backmatter_heading_candidate" and body_end_page is not None and page <= body_end_page:
+            old_role = block.get("role")
             block["role"] = "body_paragraph"
+            if old_role != block["role"]:
+                record_decision(block, stage="candidate_resolution", old_role=old_role, new_role=block["role"], reason="backmatter heading candidate in body region, demoted to body")
 
 
 def _mark_non_body_media(blocks: list[dict]) -> None:
@@ -2628,26 +2728,38 @@ def normalize_document_structure(blocks: list[dict]) -> tuple[DocumentStructure,
         if idx < len(blocks):
             role = blocks[idx].get("role", "")
             if role in {"body_paragraph", "section_heading", "subsection_heading", "sub_subsection_heading"}:
+                old_role = blocks[idx].get("role")
                 blocks[idx]["role"] = "structured_insert_candidate"
+                if old_role != blocks[idx]["role"]:
+                    record_decision(blocks[idx], stage="structured_insert_promotion", old_role=old_role, new_role=blocks[idx]["role"], reason="region prepass identified as structured insert candidate")
 
     # Detect structured insert clusters BEFORE body spine and non-body gates
     structured_insert_indices = _detect_structured_insert_clusters(blocks)
     for idx in structured_insert_indices:
         if idx < len(blocks):
+            old_role = blocks[idx].get("role")
             blocks[idx]["role"] = "structured_insert"
+            if old_role != blocks[idx]["role"]:
+                record_decision(blocks[idx], stage="structured_insert_promotion", old_role=old_role, new_role=blocks[idx]["role"], reason="cluster detection promoted to structured insert")
 
     # Fallback: promote single structured_insert_candidate blocks that the
     # region prepass independently identified as structured inserts, even
     # when clustering could not form (only one candidate on the page).
     for idx in region_prepass.structured_insert_indices:
         if idx < len(blocks) and blocks[idx].get("role") == "structured_insert_candidate":
+            old_role = blocks[idx].get("role")
             blocks[idx]["role"] = "structured_insert"
+            if old_role != blocks[idx]["role"]:
+                record_decision(blocks[idx], stage="structured_insert_promotion", old_role=old_role, new_role=blocks[idx]["role"], reason="single candidate promoted to structured insert (fallback)")
 
     structured_insert_indices = {i for i, b in enumerate(blocks) if b.get("role") == "structured_insert"}
     structured_insert_indices = _expand_structured_insert_cluster_with_mixed_sidebar_blocks(blocks, structured_insert_indices)
     for idx in structured_insert_indices:
         if idx < len(blocks):
+            old_role = blocks[idx].get("role")
             blocks[idx]["role"] = "structured_insert"
+            if old_role != blocks[idx]["role"]:
+                record_decision(blocks[idx], stage="structured_insert_promotion", old_role=old_role, new_role=blocks[idx]["role"], reason="expanded cluster promoted to structured insert")
 
     # Detect body spine from region-approved body blocks only
     body_spine = _detect_body_spine(blocks, doc_structure, region_prepass=region_prepass)
@@ -2664,9 +2776,15 @@ def normalize_document_structure(blocks: list[dict]) -> tuple[DocumentStructure,
         if idx < len(blocks):
             b = blocks[idx]
             if b.get("page") == 1 and _is_page1_title(b.get("text", "")):
+                old_role = b.get("role")
                 b["role"] = "body_paragraph"
+                if old_role != b["role"]:
+                    record_decision(b, stage="non_body_insert_marking", old_role=old_role, new_role=b["role"], reason="page 1 title-like block, not a non-body insert")
                 continue
+            old_role = b.get("role")
             b["role"] = "non_body_insert"
+            if old_role != b["role"]:
+                record_decision(b, stage="non_body_insert_marking", old_role=old_role, new_role=b["role"], reason="marked as non-body insert cluster member")
             b["_non_body_insert"] = True
 
     _mark_non_body_media(blocks)

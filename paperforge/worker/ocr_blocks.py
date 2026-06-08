@@ -78,6 +78,17 @@ def build_structured_blocks(
                 "render_default": render_default,
                 "index_default": index_default,
             }
+            from paperforge.worker.ocr_decisions import record_decision
+
+            record_decision(
+                row,
+                stage="assign_block_role",
+                old_role=str(block.get("raw_label", "")),
+                new_role=row.get("role"),
+                reason="seed role assigned from raw OCR label and local heuristics",
+                confidence=row.get("role_confidence"),
+                evidence=row.get("evidence", []),
+            )
             rows.append(row)
 
     # Normalize document structure (backmatter boundary, role regime, tail promotion)
@@ -151,9 +162,11 @@ def _write_document_structure_json(doc_structure, output_dir: str | Path) -> Non
 
 
 def write_structured_blocks_jsonl(path: Path, rows: list[dict]) -> None:
+    from paperforge.worker.ocr_decisions import strip_decision_logs
+
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8") as f:
-        for row in rows:
+        for row in strip_decision_logs(rows):
             f.write(json.dumps(row, ensure_ascii=False) + "\n")
 
 

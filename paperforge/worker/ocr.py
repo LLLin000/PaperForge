@@ -1877,6 +1877,11 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
     write_ocr_health(ocr_root / "health", health_report)
     meta["ocr_health_overall"] = health_report["overall"]
 
+    # Persist decision log
+    from paperforge.worker.ocr_decisions import collect_decisions, write_decision_log
+
+    write_decision_log(ocr_root / "health" / "decision_log.jsonl", collect_decisions(structured))
+
     # --- Phase 5: role-based OCR index ---
     from paperforge.worker.ocr_index import build_role_indexes, write_role_index
 

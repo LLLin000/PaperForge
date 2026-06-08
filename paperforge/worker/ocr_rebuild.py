@@ -189,6 +189,11 @@ def run_derived_rebuild_for_keys(vault: Path, keys: list[str]) -> dict:
         )
         write_ocr_health(paper_root / "health", health_report)
 
+        # Persist decision log
+        from paperforge.worker.ocr_decisions import collect_decisions, write_decision_log
+
+        write_decision_log(paper_root / "health" / "decision_log.jsonl", collect_decisions(structured))
+
         # Rebuild role index
         from paperforge.worker.ocr_index import build_role_indexes, write_role_index
 

@@ -68,7 +68,12 @@ def build_ocr_health(
     spine = _detect_body_spine(structured_blocks, doc=doc_structure)
     layout = _run_layout_audit(structured_blocks)
 
-    return {
+    # Collect decision log summaries
+    from paperforge.worker.ocr_decisions import collect_decisions, summarize_decisions
+
+    decision_summary = summarize_decisions(collect_decisions(structured_blocks))
+
+    report = {
         "page_count": page_count,
         "blocks_count": raw_blocks_count,
         "section_heading_count": section_heading_count,
@@ -95,6 +100,8 @@ def build_ocr_health(
         "layout_anomaly_pages": layout.get("anomaly_pages", []),
         "layout_anomaly_count": layout.get("anomaly_count", 0),
     }
+    report.update(decision_summary)
+    return report
 
 
 def build_span_coverage_health(blocks: list[dict]) -> dict:
