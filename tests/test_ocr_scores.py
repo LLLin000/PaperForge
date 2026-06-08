@@ -22,6 +22,22 @@ def test_table_match_score_prefers_same_page_overlap() -> None:
     assert result["score"] >= 0.7
 
 
+def test_table_match_score_distinguishes_previous_page_assets() -> None:
+    from paperforge.worker.ocr_scores import score_table_match
+
+    caption = {"text": "Table 1. Baseline characteristics", "page": 2, "bbox": [100, 80, 700, 120]}
+    previous_page_asset = {"block_id": "t_prev", "page": 1, "bbox": [100, 900, 700, 1200]}
+    same_page_asset = {"block_id": "t_same", "page": 2, "bbox": [100, 160, 700, 500]}
+
+    previous_result = score_table_match(caption, previous_page_asset)
+    same_page_result = score_table_match(caption, same_page_asset)
+
+    assert "previous_page" in previous_result["evidence"]
+    assert "asset_below_caption" not in previous_result["evidence"]
+    assert previous_result["score"] < same_page_result["score"]
+    assert previous_result["score"] >= 0.4
+
+
 def test_tail_boundary_score_returns_reason_list() -> None:
     from paperforge.worker.ocr_scores import score_tail_boundary
 

@@ -427,6 +427,11 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
         fig_id = f"figure_{fig_num:03d}" if fig_num else f"unmatched_legend_{len(matched_figures):03d}"
 
         if not ambiguous:
+            match_score = region_match["match_score"] if region_match is not None else {
+                "score": 0.0,
+                "decision": "legend_only",
+                "evidence": ["no_asset_match"],
+            }
             entry = {
                 "figure_id": fig_id,
                 "legend_block_id": legend.get("block_id", ""),
@@ -440,7 +445,8 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
                     }
                     for a in matched_assets
                 ],
-                "confidence": 0.85 if region_match is not None else 0.4,
+                "confidence": match_score["score"],
+                "match_score": match_score,
                 "flags": [] if not is_legend_only else ["legend_only"],
                 "caption_score": caption_score,
             }

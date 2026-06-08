@@ -99,7 +99,12 @@ def build_ocr_health(
         if t.get("has_asset") and float(t.get("match_score", {}).get("score", 1.0)) < 0.4
     )
     low_tail_boundary_confidence = tail_score.get("score", 1.0) < 0.4
-    hard_rule_decision_count = 0
+    hard_rule_decision_count = (
+        int(decision_summary.get("structured_insert_decision_count", 0))
+        + int(decision_summary.get("tail_promotion_count", 0))
+        + int(decision_summary.get("candidate_resolution_count", 0))
+        + candidate_forced_count
+    )
 
     report = {
         "page_count": page_count,

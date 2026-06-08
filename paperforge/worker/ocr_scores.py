@@ -51,16 +51,31 @@ def score_table_match(caption: dict, asset: dict, *, is_continuation: bool = Fal
     asset_bbox = asset.get("bbox") or asset.get("block_bbox") or [0, 0, 0, 0]
     score = 0.0
     evidence: list[str] = []
-    same_page = caption.get("page") == asset.get("page")
+    caption_page = caption.get("page")
+    asset_page = asset.get("page")
+    same_page = caption_page == asset_page
     if same_page:
         score += 0.35
         evidence.append("same_page")
+    elif asset_page is not None and caption_page is not None and asset_page == caption_page - 1:
+        score += 0.2
+        evidence.append("previous_page")
     if _bbox_x_overlap_ratio(caption_bbox, asset_bbox) >= 0.5:
         score += 0.25
         evidence.append("x_overlap")
-    if len(caption_bbox) >= 4 and len(asset_bbox) >= 4 and asset_bbox[1] >= caption_bbox[3]:
-        score += 0.25
-        evidence.append("asset_below_caption")
+    if len(caption_bbox) >= 4 and len(asset_bbox) >= 4:
+        if same_page and asset_bbox[1] >= caption_bbox[3]:
+            score += 0.25
+            evidence.append("asset_below_caption")
+        elif asset_page is not None and caption_page is not None and asset_page == caption_page - 1:
+            caption_top = caption_bbox[1]
+            asset_bottom = asset_bbox[3]
+            if caption_top <= 160:
+                score += 0.1
+                evidence.append("caption_near_top")
+            if asset_bottom >= 900:
+                score += 0.1
+                evidence.append("asset_near_previous_page_bottom")
     if is_continuation and same_page:
         score += 0.15
         evidence.append("continuation_same_page")

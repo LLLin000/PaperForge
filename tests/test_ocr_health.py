@@ -357,3 +357,28 @@ def test_ocr_health_has_hard_rule_decision_count_key() -> None:
 
     assert "hard_rule_decision_count" in report
     assert isinstance(report["hard_rule_decision_count"], int)
+
+
+def test_ocr_health_hard_rule_decision_count_uses_real_signals() -> None:
+    from paperforge.worker.ocr_decisions import record_decision
+    from paperforge.worker.ocr_health import build_ocr_health
+
+    blocks = [
+        {"block_id": "a", "page": 1, "role": "structured_insert", "insert_score": {"score": 0.35}},
+        {"block_id": "b", "page": 1, "role": "abstract_body"},
+        {"block_id": "c", "page": 1, "role": "reference_item"},
+        {"block_id": "d", "page": 1, "role": "section_heading"},
+        {"block_id": "e", "page": 1, "role": "section_heading"},
+    ]
+    record_decision(blocks[0], stage="structured_insert_promotion", old_role="body_paragraph", new_role="structured_insert", reason="forced fallback")
+    record_decision(blocks[0], stage="tail_candidate_resolution", old_role="tail_candidate_body", new_role="reference_item", reason="tail ownership")
+
+    report = build_ocr_health(
+        page_count=1,
+        raw_blocks_count=len(blocks),
+        structured_blocks=blocks,
+        figure_inventory={},
+        table_inventory={},
+    )
+
+    assert report["hard_rule_decision_count"] >= 2
