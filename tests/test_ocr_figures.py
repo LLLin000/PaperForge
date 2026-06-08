@@ -1027,3 +1027,43 @@ def test_rejected_legend_caption_score_evidence() -> None:
     assert len(inventory["rejected_legends"]) == 1
     assert "caption_score" in inventory["rejected_legends"][0]
     assert inventory["rejected_legends"][0]["caption_score"]["decision"] == "rejected"
+
+
+def test_inline_figure_mention_is_rejected_as_formal_caption():
+    from paperforge.worker.ocr_figures import build_figure_inventory
+    blocks = [
+        {"block_id": "cap1", "role": "figure_caption_candidate", "page": 1,
+         "text": "Figure 2 shows that cells migrated significantly under electrical stimulation conditions.",
+         "bbox": [100, 100, 700, 130], "page_width": 1200, "page_height": 1700},
+        {"block_id": "asset1", "role": "figure_asset", "page": 1,
+         "bbox": [100, 200, 700, 500]},
+    ]
+    inventory = build_figure_inventory(blocks)
+    assert len(inventory["unmatched_legends"]) == 1
+    assert inventory["unmatched_legends"][0]["block_id"] == "cap1"
+
+
+def test_frontiers_caption_not_affected_by_inline_detector():
+    from paperforge.worker.ocr_figures import build_figure_inventory
+    blocks = [
+        {"block_id": "cap1", "role": "figure_caption", "page": 1,
+         "text": "FIGURE 1 | Expression of irisin is downregulated in OA cartilage",
+         "bbox": [100, 500, 700, 540], "page_width": 1200, "page_height": 1700},
+        {"block_id": "asset1", "role": "figure_asset", "page": 1,
+         "bbox": [100, 50, 700, 450]},
+    ]
+    inventory = build_figure_inventory(blocks)
+    assert len(inventory["matched_figures"]) >= 1
+
+
+def test_as_shown_in_figure_mention_rejected():
+    from paperforge.worker.ocr_figures import build_figure_inventory
+    blocks = [
+        {"block_id": "cap1", "role": "figure_caption_candidate", "page": 1,
+         "text": "As shown in Figure 3, the scaffold promotes cell attachment.",
+         "bbox": [100, 100, 700, 130], "page_width": 1200, "page_height": 1700},
+        {"block_id": "asset1", "role": "figure_asset", "page": 1,
+         "bbox": [100, 200, 700, 500]},
+    ]
+    inventory = build_figure_inventory(blocks)
+    assert len(inventory["unmatched_legends"]) == 1

@@ -2693,6 +2693,9 @@ def _run_layout_audit(
                     else:
                         severity = "info"
 
+                    if severity == "error" and page_layout_conf < 0.7:
+                        severity = "info"
+
                     anomalies.append({
                         "type": "heading_cross_column_ownership",
                         "severity": severity,
@@ -2726,6 +2729,9 @@ def _run_layout_audit(
                     if insert_score_val >= 0.7 and spine_quality in ("strong", "moderate") and overlap_ratio > 0.3 and is_body_real:  # noqa: E501
                         severity = "warning" if overlap_ratio < 0.6 else "error"
                     else:
+                        severity = "info"
+
+                    if severity == "error" and page_layout_conf < 0.7:
                         severity = "info"
 
                     anomalies.append({

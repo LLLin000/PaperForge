@@ -39,6 +39,36 @@ _BODY_MENTION_PATTERN = re.compile(
     flags=re.IGNORECASE,
 )
 
+_INLINE_FIGURE_MENTION_VERBS = (
+    "shows", "show", "shown", "illustrates", "illustrate",
+    "depicts", "demonstrates", "demonstrate", "presents", "present",
+    "indicates", "indicate", "reveals", "reveal", "suggests", "suggest",
+    "summarizes", "summarize", "compares", "compare",
+)
+
+
+def _looks_like_inline_figure_mention(text: str) -> bool:
+    t = " ".join(text.strip().split())
+    lower = t.lower()
+
+    if not re.search(r"\bfi(?:g(?:ure)?\.?\s*\d+)", lower):
+        return False
+
+    # Explicitly NOT inline: Frontiers format FIGURE N | ...
+    if re.match(r"^figure\s+\d+[a-z]?\s*\|", t, re.I):
+        return False
+
+    # "as shown in Figure X" / "shown in Figure X" / "see Figure X"
+    if re.search(r"\b(as shown in|shown in|see |according to|consistent with)\s+(fig(?:ure)?\.?\s*\d+)", lower):
+        return True
+
+    # Long sentence with a prose verb
+    words = t.split()
+    if len(words) >= 10 and any(re.search(rf"\b{v}\b", lower) for v in _INLINE_FIGURE_MENTION_VERBS):
+        return True
+
+    return False
+
 
 def _extract_figure_number(text: str) -> int | None:
     m = _FIGURE_NUMBER_PATTERN.search(text)
@@ -357,7 +387,8 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
                 continue
             if not _is_formal_legend(block.get("text", ""), block, page_width):
                 block["caption_score"] = score_figure_caption(
-                    block, nearby_media=False, caption_style_match=False
+                    block, nearby_media=False, caption_style_match=False,
+                    body_prose_likelihood=_looks_like_inline_figure_mention(block.get("text", "")),
                 )
                 rejected_legends.append(block)
             else:
@@ -380,10 +411,13 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
         legend_text = legend.get("text", "")
         fig_num = _extract_figure_number(legend_text)
 
+        body_prose_likelihood = _looks_like_inline_figure_mention(legend_text)
+
         caption_score = score_figure_caption(
             legend,
             nearby_media=any(a.get("page", 0) == legend_page for a in assets),
             caption_style_match=_caption_style_match(legend, structured_blocks),
+            body_prose_likelihood=body_prose_likelihood,
         )
 
         candidates = []
