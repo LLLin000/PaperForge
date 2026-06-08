@@ -135,7 +135,7 @@ def score_structured_insert(
     if block.get("_in_visual_container"):
         score += 0.3
         evidence.append("visual_container")
-    if re.match(r"^box\s*\.?\s*\d+\b", text) or "key point" in text or text in {"sections", "highlights"}:
+    if re.match(r"^box\s*\.?\s*\d+\b", text) or "key point" in text or text.startswith("highlights") or text.startswith("sections"):
         score += 0.3
         evidence.append("box_or_summary_keyword")
     if len(bbox) >= 4 and (bbox[2] - bbox[0]) < page_width * 0.45:

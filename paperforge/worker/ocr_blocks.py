@@ -91,6 +91,21 @@ def build_structured_blocks(
             )
             rows.append(row)
 
+    # Suppress entire pre-proof page: if page 1 contains a pre-proof noise marker,
+    # mark all page-1 blocks as frontmatter_noise so the cover page is skipped
+    from paperforge.worker.ocr_roles import is_preproof_marker
+    page1_has_preproof = any(
+        int(row.get("page", 0) or 0) == 1
+        and is_preproof_marker(str(row.get("text", "") or row.get("block_content", "") or ""))
+        for row in rows
+    )
+    if page1_has_preproof:
+        for row in rows:
+            if (row.get("page", 0) or 0) == 1:
+                row["role"] = "frontmatter_noise"
+                row["render_default"] = False
+                row["index_default"] = False
+
     # Normalize document structure (backmatter boundary, role regime, tail promotion)
     from paperforge.worker.ocr_document import normalize_document_structure
 
