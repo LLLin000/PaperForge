@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any
 
 from paperforge.core.io import write_json
+from paperforge.worker.ocr_scores import score_figure_caption
 
 _FIGURE_NUMBER_PATTERN = re.compile(
     r"(?:Figure|Fig\.?|Supplementary\s+Figure|Supplementary\s+Fig\.?|"
@@ -236,6 +237,31 @@ def _media_clusters(blocks: list[dict], page_width: float = 1200) -> list[list[d
     return clusters
 
 
+def _caption_style_match(block: dict, all_blocks: list[dict]) -> bool:
+    span = block.get("span_metadata") or {}
+    if isinstance(span, list):
+        span = span[0] if span else {}
+    block_size = span.get("size")
+    block_font = str(span.get("font", "") or "").lower()
+    if block_size is None and not block_font:
+        return False
+    for b in all_blocks:
+        if b is block:
+            continue
+        if b.get("role") != "figure_caption":
+            continue
+        s = b.get("span_metadata") or {}
+        if isinstance(s, list):
+            s = s[0] if s else {}
+        sz = s.get("size")
+        fn = str(s.get("font", "") or "").lower()
+        if block_size is not None and sz is not None and abs(block_size - sz) <= 1.0:
+            return True
+        if block_font and fn and block_font == fn:
+            return True
+    return False
+
+
 def _precaption_media_region(media_cluster: list[dict], caption_block: dict) -> bool:
     cluster_bottom = max(b.get("bbox", [0, 0, 0, 0])[3] for b in media_cluster)
     caption_top = caption_block.get("bbox", [0, 0, 0, 0])[1]
@@ -326,6 +352,9 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
             if role == "figure_caption_candidate" and _looks_like_figure_narrative_prose(block.get("text", "")):
                 continue
             if not _is_formal_legend(block.get("text", ""), block, page_width):
+                block["caption_score"] = score_figure_caption(
+                    block, nearby_media=False, caption_style_match=False
+                )
                 rejected_legends.append(block)
             else:
                 legends.append(block)
@@ -376,6 +405,13 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
         is_legend_only = len(matched_assets) == 0
 
         fig_id = f"figure_{fig_num:03d}" if fig_num else f"unmatched_legend_{len(matched_figures):03d}"
+
+        caption_score = score_figure_caption(
+            legend,
+            nearby_media=len(matched_assets) > 0,
+            caption_style_match=_caption_style_match(legend, structured_blocks),
+        )
+
         entry = {
             "figure_id": fig_id,
             "legend_block_id": legend.get("block_id", ""),
@@ -391,6 +427,7 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
             ],
             "confidence": 0.85 if region_match is not None else 0.4,
             "flags": [] if not is_legend_only else ["legend_only"],
+            "caption_score": caption_score,
         }
         if region_match is not None and len(matched_assets) > 1:
             entry["cluster_bbox"] = region_match["cluster_bbox"]
