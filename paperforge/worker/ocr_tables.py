@@ -34,30 +34,18 @@ def _extract_base_table_number(text: str) -> int | None:
     return _extract_table_number(cleaned)
 
 
-def _compute_asset_score(
-    asset: dict,
-    caption_bottom: float,
-) -> float:
-    asset_bbox = asset.get("bbox", [0, 0, 0, 0])
-    asset_top = asset_bbox[1] if len(asset_bbox) > 1 else 0
-    distance = caption_bottom - asset_top
-    if distance > 0:
-        return distance
-    return abs(distance) + 100000.0
-
-
-def _pick_best_asset(
+def _score_candidate_assets(
     page_assets: list[tuple[int, dict]],
-    caption_bottom: float,
-) -> tuple[int, dict] | None:
-    best = None
-    best_score = float("inf")
-    for i, asset in page_assets:
-        score = _compute_asset_score(asset, caption_bottom)
-        if score < best_score:
-            best_score = score
-            best = (i, asset)
-    return best
+    caption: dict,
+    *,
+    is_continuation: bool,
+) -> list[tuple[int, dict, dict]]:
+    scored = [
+        (i, asset, score_table_match(caption, asset, is_continuation=is_continuation))
+        for i, asset in page_assets
+    ]
+    scored.sort(key=lambda item: item[2].get("score", 0.0), reverse=True)
+    return scored
 
 
 def build_table_inventory(structured_blocks: list[dict]) -> dict[str, Any]:
@@ -85,12 +73,9 @@ def build_table_inventory(structured_blocks: list[dict]) -> dict[str, Any]:
         formal_table_number = _extract_base_table_number(caption_text)
         is_cont = _is_continuation_caption(caption_text)
 
-        candidate_pages = [caption_page] if is_cont else [caption_page, caption_page + 1]
+        candidate_pages = [caption_page - 1, caption_page, caption_page + 1]
 
-        caption_bbox = caption.get("bbox", [0, 0, 0, 0])
-        caption_bottom = caption_bbox[3] if len(caption_bbox) > 3 else 0
-
-        matched_asset = None
+        all_candidates: list[tuple[int, dict, dict]] = []
         for page in candidate_pages:
             if page < 1:
                 continue
@@ -99,14 +84,29 @@ def build_table_inventory(structured_blocks: list[dict]) -> dict[str, Any]:
                 for i, asset in enumerate(assets)
                 if i not in used_asset_indices and asset.get("page", 0) == page
             ]
-            if not page_assets:
-                continue
-            best = _pick_best_asset(page_assets, caption_bottom)
-            if best is not None:
-                best_idx, best_asset = best
-                matched_asset = best_asset
-                used_asset_indices.add(best_idx)
-                break
+            all_candidates.extend(_score_candidate_assets(page_assets, caption, is_continuation=is_cont))
+
+        all_candidates.sort(key=lambda item: item[2].get("score", 0.0), reverse=True)
+        match_status = "unmatched_caption"
+        candidate_assets = [
+            {"asset_block_id": asset.get("block_id", ""), "match_score": score}
+            for _, asset, score in all_candidates[:3]
+        ]
+
+        matched_asset = None
+        if all_candidates:
+            top_idx, top_asset, top_score = all_candidates[0]
+            second_score = all_candidates[1][2].get("score", 0.0) if len(all_candidates) > 1 else -1.0
+            if top_score.get("score", 0.0) < 0.4:
+                matched_asset = None
+                match_status = "unmatched_caption"
+            elif top_score.get("score", 0.0) - second_score < 0.15:
+                matched_asset = None
+                match_status = "ambiguous"
+            else:
+                matched_asset = top_asset
+                used_asset_indices.add(top_idx)
+                match_status = "matched" if top_score.get("score", 0.0) >= 0.6 else "matched_low_confidence"
 
         continuation_of = None
         if is_cont and formal_table_number is not None:
@@ -139,7 +139,13 @@ def build_table_inventory(structured_blocks: list[dict]) -> dict[str, Any]:
             "segments": segments,
             "is_continuation": is_cont,
             "continuation_of": continuation_of,
-            "match_score": score_table_match(caption, matched_asset, is_continuation=is_cont) if matched_asset else {"score": 0.0, "matched_asset_id": "", "decision": "ambiguous", "evidence": []},
+            "match_status": match_status,
+            "candidate_assets": candidate_assets,
+            "match_score": (
+                score_table_match(caption, matched_asset, is_continuation=is_cont)
+                if matched_asset
+                else (all_candidates[0][2] if all_candidates else {"score": 0.0, "matched_asset_id": "", "decision": "ambiguous", "evidence": []})
+            ),
         })
 
     cap_block_ids_with_asset = {

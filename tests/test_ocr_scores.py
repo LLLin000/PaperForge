@@ -29,3 +29,55 @@ def test_tail_boundary_score_returns_reason_list() -> None:
     assert result["score"] >= 0.7
     assert result["body_end_page"] == 8
     assert result["reason"]
+
+
+def test_figure_match_score_prefers_same_page_overlap() -> None:
+    from paperforge.worker.ocr_scores import score_figure_match
+
+    legend = {"block_id": "cap1", "page": 2, "bbox": [100, 500, 700, 540]}
+    asset = {"block_id": "fig1", "page": 2, "bbox": [120, 120, 680, 480]}
+
+    result = score_figure_match(legend, asset, caption_score={"score": 0.8})
+
+    assert result["decision"] == "matched"
+    assert result["matched_asset_id"] == "fig1"
+    assert result["score"] >= 0.6
+    assert "same_page" in result["evidence"]
+    assert "x_overlap" in result["evidence"]
+
+
+def test_figure_match_score_rejects_low_caption_score() -> None:
+    from paperforge.worker.ocr_scores import score_figure_match
+
+    legend = {"block_id": "cap1", "page": 2, "bbox": [100, 500, 700, 540]}
+    asset = {"block_id": "fig1", "page": 2, "bbox": [120, 120, 680, 480]}
+
+    result = score_figure_match(legend, asset, caption_score={"score": 0.2})
+
+    assert result["decision"] == "rejected"
+    assert result["score"] < 0.4
+    assert "low_caption_score" in result["evidence"]
+
+
+def test_structured_insert_score_uses_multiple_evidence_terms() -> None:
+    from paperforge.worker.ocr_scores import score_structured_insert
+
+    block = {"text": "Box 1. Key points", "role": "body_paragraph", "_in_visual_container": True, "bbox": [50, 100, 400, 180], "page_width": 1200}
+
+    result = score_structured_insert(block, body_spine_match=False, cluster_coherent=True)
+
+    assert result["decision"] == "structured_insert"
+    assert result["score"] >= 0.7
+    assert "visual_container" in result["evidence"]
+    assert "box_or_summary_keyword" in result["evidence"]
+
+
+def test_structured_insert_score_keeps_visual_container_alone_as_candidate() -> None:
+    from paperforge.worker.ocr_scores import score_structured_insert
+
+    block = {"text": "Ordinary paragraph text", "role": "body_paragraph", "_in_visual_container": True, "bbox": [100, 100, 900, 180], "page_width": 1200}
+
+    result = score_structured_insert(block, body_spine_match=True, cluster_coherent=False)
+
+    assert result["decision"] != "structured_insert"
+    assert result["score"] < 0.7

@@ -28,6 +28,22 @@ def _has_tail_role(block: dict) -> bool:
     return block.get("role") in _TAIL_ROLES
 
 
+def _can_apply_tail_segment_reorder(document_structure: DocumentStructure | None) -> bool:
+    if document_structure is None:
+        return False
+    if not document_structure.tail_reading_order or document_structure.spread_start is None:
+        return False
+    tail_score = getattr(document_structure, "tail_boundary_score", {}) or {}
+    if float(tail_score.get("score", 1.0)) < 0.4:
+        return False
+    page_layouts = getattr(document_structure, "page_layouts", None) or {}
+    for page in range(document_structure.spread_start, (document_structure.spread_end or document_structure.spread_start) + 1):
+        profile = page_layouts.get(page)
+        if profile is not None and float(getattr(profile, "confidence", 1.0)) < 0.4:
+            return False
+    return True
+
+
 def _heading_number_depth_text(text: str) -> int:
     match = re.match(r"^(\d+(?:\.\d+)*)", text.strip())
     if not match:
@@ -789,7 +805,7 @@ def render_fulltext_markdown(
 
     style_profiles = _build_heading_style_profiles(structured_blocks)
 
-    if document_structure and document_structure.tail_reading_order and document_structure.spread_start is not None:
+    if _can_apply_tail_segment_reorder(document_structure):
         col_indices = {seg.get("column_index", 0) for seg in document_structure.tail_reading_order}
         if len(col_indices) > 1:
             seg_priority: dict[int, int] = {}

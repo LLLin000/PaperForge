@@ -253,3 +253,107 @@ def test_health_report_includes_degraded_reasons() -> None:
 
     assert "degraded_reasons" in report
     assert len(report["degraded_reasons"]) > 0
+
+
+def test_ocr_health_reports_layout_confidence_distribution() -> None:
+    from paperforge.worker.ocr_document import DocumentStructure, PageLayoutProfile
+    from paperforge.worker.ocr_health import build_ocr_health
+
+    doc = DocumentStructure(page_layouts={
+        1: PageLayoutProfile(confidence=0.8),
+        2: PageLayoutProfile(confidence=0.5),
+        3: PageLayoutProfile(confidence=0.2),
+    })
+
+    report = build_ocr_health(
+        page_count=3,
+        raw_blocks_count=3,
+        structured_blocks=[{"role": "abstract_body"}, {"role": "reference_item"}, {"role": "section_heading"}, {"role": "section_heading"}],
+        figure_inventory={},
+        table_inventory={},
+        doc_structure=doc,
+    )
+
+    assert report["layout_confidence_distribution"] == {"high": 1, "medium": 1, "low": 1}
+
+
+def test_ocr_health_counts_low_confidence_insert_candidates() -> None:
+    from paperforge.worker.ocr_health import build_ocr_health
+
+    report = build_ocr_health(
+        page_count=1,
+        raw_blocks_count=2,
+        structured_blocks=[
+            {"role": "structured_insert_candidate", "insert_score": {"score": 0.45, "decision": "structured_insert_candidate"}},
+            {"role": "structured_insert", "insert_score": {"score": 0.35, "decision": "body"}},
+            {"role": "abstract_body"}, {"role": "reference_item"}, {"role": "section_heading"}, {"role": "section_heading"},
+        ],
+        figure_inventory={},
+        table_inventory={},
+    )
+
+    assert report["low_confidence_insert_candidate_count"] == 1
+    assert report["candidate_forced_count"] == 1
+
+
+def test_ocr_health_counts_ambiguous_and_low_confidence_tables() -> None:
+    from paperforge.worker.ocr_health import build_ocr_health
+
+    report = build_ocr_health(
+        page_count=1,
+        raw_blocks_count=1,
+        structured_blocks=[{"role": "abstract_body"}, {"role": "reference_item"}, {"role": "section_heading"}, {"role": "section_heading"}],
+        figure_inventory={},
+        table_inventory={"tables": [
+            {"has_asset": False, "is_continuation": False, "match_status": "ambiguous", "match_score": {"score": 0.5}},
+            {"has_asset": True, "is_continuation": False, "match_status": "matched_low_confidence", "match_score": {"score": 0.45}},
+        ]},
+    )
+
+    assert report["ambiguous_table_match_count"] == 1
+    assert report["low_confidence_table_match_count"] == 1
+
+
+def test_ocr_health_reports_hard_rule_and_uncertainty_summary() -> None:
+    from paperforge.worker.ocr_document import DocumentStructure, PageLayoutProfile
+    from paperforge.worker.ocr_health import build_ocr_health
+
+    doc = DocumentStructure(page_layouts={1: PageLayoutProfile(confidence=0.25)})
+    doc.tail_boundary_score = {"score": 0.35}
+
+    report = build_ocr_health(
+        page_count=1,
+        raw_blocks_count=6,
+        structured_blocks=[
+            {"role": "structured_insert", "insert_score": {"score": 0.35}},
+            {"role": "abstract_body"}, {"role": "reference_item"}, {"role": "section_heading"}, {"role": "section_heading"},
+        ],
+        figure_inventory={
+            "matched_figures": [{"caption_score": {"score": 0.3}}],
+            "ambiguous_figures": [{"legend_block_id": "cap1"}],
+            "unresolved_clusters": [{"cluster_id": "unresolved_cluster_001"}],
+        },
+        table_inventory={"tables": [{"match_status": "ambiguous", "match_score": {"score": 0.5}, "has_asset": False, "is_continuation": False}]},
+        doc_structure=doc,
+    )
+
+    assert report["low_score_but_matched_count"] >= 1
+    assert report["ambiguous_match_count"] >= 2
+    assert report["unresolved_cluster_count"] == 1
+    assert report["candidate_forced_count"] >= 1
+    assert report["low_tail_boundary_confidence"] is True
+
+
+def test_ocr_health_has_hard_rule_decision_count_key() -> None:
+    from paperforge.worker.ocr_health import build_ocr_health
+
+    report = build_ocr_health(
+        page_count=1,
+        raw_blocks_count=1,
+        structured_blocks=[{"role": "abstract_body"}, {"role": "reference_item"}, {"role": "section_heading"}, {"role": "section_heading"}],
+        figure_inventory={},
+        table_inventory={},
+    )
+
+    assert "hard_rule_decision_count" in report
+    assert isinstance(report["hard_rule_decision_count"], int)

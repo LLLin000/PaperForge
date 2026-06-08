@@ -367,9 +367,11 @@ def test_candidate_legend_geometry_match() -> None:
 
     inventory = build_figure_inventory(structured_blocks)
 
-    assert len(inventory["matched_figures"]) == 2
+    assert len(inventory["matched_figures"]) == 1
     match_texts = [m["text"] for m in inventory["matched_figures"]]
-    assert any("No figure prefix" in t for t in match_texts)
+    assert any("Figure 1. Formal legend" in t for t in match_texts)
+    assert len(inventory["unmatched_legends"]) == 1
+    assert "No figure prefix" in inventory["unmatched_legends"][0].get("text", "")
 
 
 def test_legend_only_figure_no_asset_match() -> None:
@@ -975,6 +977,36 @@ def test_figure_inventory_caption_score_evidence() -> None:
     assert "caption_score" in figure
     assert figure["caption_score"]["decision"] == "figure_caption"
     assert figure["caption_score"]["evidence"]
+
+
+def test_figure_inventory_marks_close_asset_candidates_ambiguous() -> None:
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    blocks = [
+        {"block_id": "cap1", "role": "figure_caption", "page": 1, "text": "Figure 1. Assay result", "bbox": [100, 500, 700, 540]},
+        {"block_id": "asset1", "role": "figure_asset", "page": 1, "bbox": [100, 100, 700, 470]},
+        {"block_id": "asset2", "role": "figure_asset", "page": 1, "bbox": [110, 560, 710, 900]},
+    ]
+
+    inventory = build_figure_inventory(blocks)
+
+    assert inventory["matched_figures"] == []
+    assert len(inventory.get("ambiguous_figures", [])) == 1
+    assert inventory["ambiguous_figures"][0]["legend_block_id"] == "cap1"
+
+
+def test_figure_inventory_does_not_confidently_match_low_caption_score() -> None:
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    blocks = [
+        {"block_id": "cap1", "role": "figure_caption_candidate", "page": 1, "text": "Experimental results demonstrating cellular response over time with treatment.", "bbox": [100, 500, 700, 540]},
+        {"block_id": "asset1", "role": "figure_asset", "page": 1, "bbox": [100, 100, 700, 470]},
+    ]
+
+    inventory = build_figure_inventory(blocks)
+
+    assert inventory["matched_figures"] == []
+    assert len(inventory["unmatched_legends"]) == 1
 
 
 def test_rejected_legend_caption_score_evidence() -> None:
