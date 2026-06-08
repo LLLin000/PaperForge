@@ -141,3 +141,14 @@ def test_ocr_health_includes_span_spine_and_layout_signals() -> None:
     assert "span_coverage_quality" in health
     assert "body_spine_quality" in health
     assert "layout_audit_status" in health
+
+
+def test_ocr_health_includes_decision_counts() -> None:
+    from paperforge.worker.ocr_decisions import record_decision
+    from paperforge.worker.ocr_health import build_ocr_health
+
+    blocks = [{"block_id": "a", "page": 1, "role": "body_paragraph", "bbox": [0, 0, 1, 1]}]
+    record_decision(blocks[0], stage="rescue", old_role="noise", new_role="body_paragraph", reason="body family")
+    report = build_ocr_health(page_count=1, raw_blocks_count=1, structured_blocks=blocks, figure_inventory={}, table_inventory={})
+    assert report["role_mutation_count"] == 1
+    assert report["role_rescue_count"] == 1
