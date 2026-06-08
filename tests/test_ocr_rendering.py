@@ -2089,3 +2089,32 @@ def test_unresolved_cluster_appears_in_fulltext() -> None:
     )
 
     assert "![[render/figures/cluster_001.md]]" in md
+
+
+def test_unresolved_cluster_without_id_does_not_emit_empty_wikilink() -> None:
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+
+    md = render_fulltext_markdown(
+        structured_blocks=[
+            {
+                "role": "body_paragraph",
+                "text": "Body text on page 1.",
+                "render_default": True,
+                "page": 1,
+            },
+        ],
+        resolved_metadata={},
+        figure_inventory={
+            "unresolved_clusters": [
+                {
+                    "cluster_id": "",
+                    "page": 1,
+                    "bbox": [0, 0, 100, 100],
+                    "media_block_ids": [1, 2],
+                }
+            ]
+        },
+        table_inventory={},
+    )
+
+    assert "![[render/figures/.md]]" not in md

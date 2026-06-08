@@ -583,6 +583,7 @@ def test_unresolved_clusters_in_inventory() -> None:
         "One unresolved cluster expected for six panels with rejected legend"
     )
     cluster = inventory["unresolved_clusters"][0]
+    assert cluster.get("cluster_id"), "unresolved cluster must include stable cluster_id"
     assert len(cluster["media_block_ids"]) == 6, (
         "Cluster must contain all six media block ids"
     )

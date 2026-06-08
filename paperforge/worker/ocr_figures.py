@@ -408,12 +408,14 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
     # with axis labels or informal captions)
     if rejected_legends and unmatched_assets:
         rejected_pages = {leg.get("page") for leg in rejected_legends if leg.get("page")}
-        for cluster in _media_clusters(unmatched_assets, page_width):
+        for cluster_idx, cluster in enumerate(_media_clusters(unmatched_assets, page_width), start=1):
             cluster_page = cluster[0].get("page", 0)
             if cluster_page not in rejected_pages:
                 continue
             cluster_ids = [b.get("block_id", "") for b in cluster]
+            cluster_suffix = re.sub(r"[^a-zA-Z0-9_-]+", "_", str(cluster_ids[0] or cluster_idx))
             unresolved_clusters.append({
+                "cluster_id": f"cluster_p{int(cluster_page):03d}_{cluster_suffix}",
                 "media_block_ids": cluster_ids,
                 "cluster_bbox": _cluster_bbox([b.get("bbox", [0, 0, 0, 0]) for b in cluster]),
                 "page": cluster_page,

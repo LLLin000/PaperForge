@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+"""Experimental compatibility module; not used in production OCR path."""
+
 
 def emit_page_markdown(
     page_index: int,

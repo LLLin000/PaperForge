@@ -1,17 +1,26 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 import pytest
 
 
-VAULT = Path(r"D:\L\OB\Literature-hub")
+def _parse_keys(raw: str) -> list[str]:
+    keys = [item.strip() for item in raw.replace(";", ",").split(",")]
+    return [k for k in keys if k]
+
+
+_VAULT_ENV = os.environ.get("PAPERFORGE_REAL_OCR_VAULT", "").strip()
+_KEYS_ENV = os.environ.get("PAPERFORGE_REAL_OCR_KEYS", "").strip()
+
+VAULT = Path(_VAULT_ENV) if _VAULT_ENV else Path("")
 OCR_ROOT = VAULT / "System" / "PaperForge" / "ocr"
 
 PROBLEM_KEYS = ["TSCKAVIS", "CAQNW9Q2", "A8E7SRVS", "K7R8PEKW"]
 CONTROL_KEYS = ["SAN9AYVR", "2GN9LMCW", "7C8829BD"]
-ALL_KEYS = PROBLEM_KEYS + CONTROL_KEYS
+ALL_KEYS = _parse_keys(_KEYS_ENV) or (PROBLEM_KEYS + CONTROL_KEYS)
 
 
 def _paper_root(key: str) -> Path:
@@ -43,6 +52,10 @@ def _read_jsonl(path: Path) -> list[dict]:
 
 
 def _require_artifacts(key: str) -> None:
+    if not _VAULT_ENV:
+        pytest.skip("PAPERFORGE_REAL_OCR_VAULT is not set")
+    if not _KEYS_ENV:
+        pytest.skip("PAPERFORGE_REAL_OCR_KEYS is not set")
     if not VAULT.exists():
         pytest.skip(f"Vault path not available: {VAULT}")
     missing = [
@@ -56,6 +69,10 @@ def _require_artifacts(key: str) -> None:
 
 @pytest.fixture(scope="session")
 def rebuilt_real_papers() -> dict:
+    if not _VAULT_ENV:
+        pytest.skip("PAPERFORGE_REAL_OCR_VAULT is not set")
+    if not _KEYS_ENV:
+        pytest.skip("PAPERFORGE_REAL_OCR_KEYS is not set")
     if not VAULT.exists():
         pytest.skip(f"Vault path not available: {VAULT}")
     from paperforge.worker.ocr_rebuild import run_derived_rebuild_for_keys
