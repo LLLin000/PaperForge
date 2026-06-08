@@ -281,3 +281,63 @@ def test_multiple_captions_match_correct_assets_in_order() -> None:
     assert inventory["official_table_count"] == 2
     assert inventory["tables"][0]["asset_block_id"] == "a5b"
     assert inventory["tables"][1]["asset_block_id"] == "a6b"
+
+
+def test_table_inventory_match_score_evidence() -> None:
+    from paperforge.worker.ocr_tables import build_table_inventory
+
+    structured_blocks = [
+        {
+            "paper_id": "KEY001",
+            "page": 5,
+            "block_id": "p5_a1",
+            "role": "table_asset",
+            "text": "table data",
+            "bbox": [100, 100, 600, 400],
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 5,
+            "block_id": "p5_c1",
+            "role": "table_caption",
+            "text": "Table 1. Main data",
+            "bbox": [100, 420, 600, 460],
+        },
+    ]
+
+    inventory = build_table_inventory(structured_blocks)
+    assert len(inventory["tables"]) == 1
+    table = inventory["tables"][0]
+    assert "match_score" in table
+    assert table["match_score"]["decision"] in {"matched", "continuation"}
+    assert table["match_score"]["evidence"]
+
+
+def test_table_continuation_match_score_evidence() -> None:
+    from paperforge.worker.ocr_tables import build_table_inventory
+
+    structured_blocks = [
+        {
+            "paper_id": "KEY001",
+            "page": 10,
+            "block_id": "p10_a1",
+            "role": "table_asset",
+            "text": "continued data",
+            "bbox": [100, 100, 600, 400],
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 10,
+            "block_id": "p10_c1",
+            "role": "table_caption",
+            "text": "Table 1 (Continued)",
+            "bbox": [100, 420, 600, 460],
+        },
+    ]
+
+    inventory = build_table_inventory(structured_blocks)
+    assert len(inventory["tables"]) == 1
+    t = inventory["tables"][0]
+    assert "match_score" in t
+    assert t["match_score"]["decision"] == "continuation"
+    assert "continuation_same_page" in t["match_score"]["evidence"]

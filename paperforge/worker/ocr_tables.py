@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any
 
 from paperforge.core.io import write_json
+from paperforge.worker.ocr_scores import score_table_match
 
 _TABLE_PREFIX_PATTERN = re.compile(
     r"^(?:Table|Supplementary\s+Table|Extended\s+Data\s+Table)\s+(\d+(?:\.\d+)?)",
@@ -138,6 +139,7 @@ def build_table_inventory(structured_blocks: list[dict]) -> dict[str, Any]:
             "segments": segments,
             "is_continuation": is_cont,
             "continuation_of": continuation_of,
+            "match_score": score_table_match(caption, matched_asset, is_continuation=is_cont) if matched_asset else {"score": 0.0, "matched_asset_id": "", "decision": "ambiguous", "evidence": []},
         })
 
     cap_block_ids_with_asset = {
