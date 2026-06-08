@@ -1136,6 +1136,17 @@ def rescue_roles_with_document_context(
 
     result = list(blocks)
 
+    # Precompute pre-proof pages so the rescue loop can skip them entirely
+    try:
+        from paperforge.worker.ocr_roles import is_preproof_marker
+        _preproof_pages = {
+            int(b.get("page", 0) or 0)
+            for b in result
+            if is_preproof_marker(str(b.get("text", "") or b.get("block_content", "") or ""))
+        }
+    except Exception:
+        _preproof_pages = set()
+
     for block in result:
         # --- Non-body insert cluster validation via family profiles ---
         if block.get("_non_body_insert"):
@@ -1180,9 +1191,8 @@ def rescue_roles_with_document_context(
 
         # --- Rule 1: frontmatter_noise → body_paragraph (body section + body font)
         if block.get("role") == "frontmatter_noise":
-            # Never rescue pre-proof markers — they are intentional page furniture suppression
-            from paperforge.worker.ocr_roles import is_preproof_marker
-            if is_preproof_marker(str(block.get("text", "") or block.get("block_content", "") or "")):
+            # Never rescue pre-proof page blocks — entire page is intentional suppression
+            if (block.get("page", 0) or 0) in _preproof_pages:
                 continue
             page = block.get("page", 1) or 1
             bbox = block.get("bbox") or block.get("block_bbox") or [0, 0, 0, 0]
