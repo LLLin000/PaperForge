@@ -945,3 +945,53 @@ def test_san9ayvr_fig26_fig27_remain_formal() -> None:
         assert len(m["matched_assets"]) == 1, (
             f"Figure {m['figure_number']} must retain its media asset"
         )
+
+
+def test_figure_inventory_caption_score_evidence() -> None:
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    structured_blocks = [
+        {
+            "paper_id": "K001",
+            "page": 1,
+            "block_id": "p1_b1",
+            "role": "figure_caption",
+            "text": "Figure 1. Cell migration assay under DC electric field.",
+            "bbox": [50, 420, 550, 460],
+        },
+        {
+            "paper_id": "K001",
+            "page": 1,
+            "block_id": "p1_b2",
+            "role": "figure_asset",
+            "text": "",
+            "bbox": [50, 50, 550, 400],
+        },
+    ]
+
+    inventory = build_figure_inventory(structured_blocks)
+    assert len(inventory["matched_figures"]) == 1
+    figure = inventory["matched_figures"][0]
+    assert "caption_score" in figure
+    assert figure["caption_score"]["decision"] == "figure_caption"
+    assert figure["caption_score"]["evidence"]
+
+
+def test_rejected_legend_caption_score_evidence() -> None:
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    structured_blocks = [
+        {
+            "paper_id": "K001",
+            "page": 1,
+            "block_id": "p1_b1",
+            "role": "figure_caption",
+            "text": "Total cells",
+            "bbox": [50, 700, 200, 720],
+        },
+    ]
+
+    inventory = build_figure_inventory(structured_blocks)
+    assert len(inventory["rejected_legends"]) == 1
+    assert "caption_score" in inventory["rejected_legends"][0]
+    assert inventory["rejected_legends"][0]["caption_score"]["decision"] == "rejected"
