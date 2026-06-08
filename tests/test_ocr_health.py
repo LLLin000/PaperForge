@@ -152,3 +152,33 @@ def test_ocr_health_includes_decision_counts() -> None:
     report = build_ocr_health(page_count=1, raw_blocks_count=1, structured_blocks=blocks, figure_inventory={}, table_inventory={})
     assert report["role_mutation_count"] == 1
     assert report["role_rescue_count"] == 1
+
+
+def test_ocr_health_includes_tail_boundary_confidence() -> None:
+    from paperforge.worker.ocr_health import build_ocr_health
+
+    structured_blocks = [
+        {"role": "section_heading", "text": "1 Introduction"},
+        {"role": "body_paragraph", "text": "Body"},
+        {"role": "reference_heading", "text": "References"},
+        {"role": "reference_item", "text": "1. Author."},
+    ]
+    figure_inventory = {
+        "matched_figures": [],
+        "unmatched_legends": [],
+        "unmatched_assets": [],
+    }
+    table_inventory = {
+        "tables": [],
+        "unmatched_captions": [],
+        "unmatched_assets": [],
+    }
+    report = build_ocr_health(
+        page_count=3,
+        raw_blocks_count=20,
+        structured_blocks=structured_blocks,
+        figure_inventory=figure_inventory,
+        table_inventory=table_inventory,
+    )
+    assert "tail_boundary_confidence" in report
+    assert isinstance(report["tail_boundary_confidence"], (int, float))

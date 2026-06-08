@@ -1982,6 +1982,22 @@ def test_document_structure_json_serialization() -> None:
     assert parsed["body_end_page"] == 70
     assert parsed["page_layouts"]["71"]["column_count"] == 2
     assert parsed["page_layouts"]["71"]["layout_type"] == "two_column"
+    assert "tail_boundary_score" in parsed
+
+
+def test_document_structure_has_tail_boundary_score() -> None:
+    from paperforge.worker.ocr_document import normalize_document_structure
+
+    blocks = [
+        {"page": 1, "role": "body_paragraph", "text": "Body text.", "bbox": [100, 100, 500, 130]},
+        {"page": 2, "role": "section_heading", "text": "Discussion", "bbox": [100, 100, 500, 130]},
+        {"page": 2, "role": "body_paragraph", "text": "More body.", "bbox": [100, 140, 500, 170]},
+        {"page": 10, "role": "reference_heading", "text": "References", "bbox": [100, 100, 500, 130]},
+        {"page": 10, "role": "reference_item", "text": "1. Author. Title. Journal.", "bbox": [100, 140, 500, 170]},
+    ]
+    doc, _ = normalize_document_structure(blocks)
+    assert doc.layout_audit is not None
+    assert doc.tail_boundary_score["score"] >= 0.0
 
 
 def test_figure_caption_candidate_demoted_in_body() -> None:
