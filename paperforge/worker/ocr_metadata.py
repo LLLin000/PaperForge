@@ -7,6 +7,39 @@ from typing import Any
 
 from paperforge.core.io import write_json
 
+_AUTHOR_SUPERSCRIPT_PATTERN = re.compile(r'\$\s*\^\{[^}]*\}')
+
+
+def _normalize_author_tokens(name: str) -> list[str]:
+    """Split author name into tokens, stripping superscripts and punctuation."""
+    cleaned = _AUTHOR_SUPERSCRIPT_PATTERN.sub('', name)
+    cleaned = re.sub(r'[•·*+†‡§¶#▲▼◄►◆◇○●□■△▽]', '', cleaned)
+    return [t.strip('. ,') for t in re.split(r'\s+', cleaned.strip()) if t.strip('. ,')]
+
+
+def _initials_match(short_name: str, full_name: str) -> bool:
+    """Check if 'A. Yoo' initials match 'Ami Yoo' or 'W. H. Marks' matches 'William H. Marks'."""
+    short = _normalize_author_tokens(short_name)
+    full = _normalize_author_tokens(full_name)
+    if not short or not full:
+        return False
+    short_last = short[-1].lower()
+    full_last = full[-1].lower()
+    if short_last != full_last:
+        return False
+    short_given = short[:-1]
+    full_given = full[:-1]
+    if not short_given or not full_given:
+        return True
+    if len(short_given) > len(full_given):
+        return False
+    for s, f in zip(short_given, full_given):
+        if not s or not f:
+            return False
+        if s[0].upper() != f[0].upper():
+            return False
+    return True
+
 
 def _normalize_author_name(name: str) -> str:
     """Normalize author name for fuzzy matching — strip special chars."""
@@ -86,6 +119,22 @@ def _name_likeness_score(text: str) -> int:
     if any(kw in text.lower() for kw in ["university", "department", "institute", "college", "school of"]):
         score -= 5
     return score
+
+
+def _get_ocr_author_names(structured_blocks: list[dict]) -> list[str]:
+    """Extract author names from the OCR authors block."""
+    for b in structured_blocks:
+        if b.get("role") == "authors":
+            text = str(b.get("text", "")).replace('\n', ' ')
+            names = []
+            for part in re.split(r'[,;]', text):
+                name = _AUTHOR_SUPERSCRIPT_PATTERN.sub('', part).strip()
+                name = re.sub(r'\s+', ' ', name)
+                if name and len(name) > 2:
+                    if not re.match(r'^[\d\s]+$', name):
+                        names.append(name)
+            return names
+    return []
 
 
 def extract_frontmatter_candidates(blocks_structured_path: Path) -> dict[str, Any]:
@@ -182,6 +231,7 @@ def resolve_metadata(
     source_metadata: dict[str, Any],
     frontmatter_candidates: dict[str, Any] | None = None,
     page1_blocks: list[dict] | None = None,
+    structured_blocks: list[dict] | None = None,
 ) -> dict[str, Any]:
     if frontmatter_candidates is None:
         frontmatter_candidates = {}
@@ -230,6 +280,8 @@ def resolve_metadata(
 
     # --- authors ---
     zotero_authors = source_metadata.get("authors", [])
+    authors_incomplete = source_metadata.get("authors_incomplete", False)
+    authors_source = source_metadata.get("authors_source", "")
     ocr_authors_text = frontmatter_candidates.get("authors_text", "")
 
     _INST_KEYWORDS = ["university", "department", "institute", "college", "school of"]
@@ -241,7 +293,7 @@ def resolve_metadata(
         [a.strip() for a in re.split(r",\s+(?=[A-Z])", ocr_authors_text) if a.strip()] if ocr_authors_text else []
     )
 
-    if isinstance(zotero_authors, list) and len(zotero_authors) > 0:
+    if isinstance(zotero_authors, list) and len(zotero_authors) > 0 and not authors_incomplete and authors_source != "paper_note.first_author_fallback" and len(zotero_authors) > 1:
         authors_entry: dict[str, Any] = {
             "value": zotero_authors,
             "source": "zotero",
@@ -254,25 +306,48 @@ def resolve_metadata(
                 "similarity": alignment["similarity"],
             }
         resolved["authors"] = authors_entry
+        resolved["authors_display"] = ", ".join(zotero_authors)
+    elif structured_blocks and source_metadata.get("first_author"):
+        ocr_author_names = _get_ocr_author_names(structured_blocks)
+        first_auth = str(source_metadata.get("first_author", ""))
+        if ocr_author_names:
+            matched = any(_initials_match(first_auth, oa) for oa in ocr_author_names)
+            if matched:
+                resolved["authors"] = {
+                    "value": ocr_author_names,
+                    "source": "ocr_blocks_verified_by_first_author",
+                    "confidence": 0.85,
+                }
+                resolved["authors_display"] = ", ".join(ocr_author_names)
+            else:
+                resolved["authors"] = {
+                    "value": [first_auth],
+                    "source": "paper_note.first_author_fallback",
+                    "confidence": 0.4,
+                }
+                resolved["authors_incomplete"] = True
+                resolved["authors_display"] = first_auth
+        else:
+            resolved["authors"] = {
+                "value": [first_auth],
+                "source": "paper_note.first_author_fallback",
+                "confidence": 0.4,
+            }
+            resolved["authors_incomplete"] = True
+            resolved["authors_display"] = first_auth
     elif ocr_author_list and not _is_affiliation_like(ocr_authors_text):
         resolved["authors"] = {
             "value": ocr_author_list,
             "source": "ocr_frontmatter",
             "confidence": 0.6,
         }
+        resolved["authors_display"] = _clean_author_display(ocr_authors_text)
     else:
         resolved["authors"] = {
             "value": [],
             "source": "unknown",
             "confidence": 0.3,
         }
-
-    # --- authors_display (cleaned string for UI) ---
-    if isinstance(zotero_authors, list) and len(zotero_authors) > 0:
-        resolved["authors_display"] = ", ".join(zotero_authors)
-    elif ocr_authors_text and not _is_affiliation_like(ocr_authors_text):
-        resolved["authors_display"] = _clean_author_display(ocr_authors_text)
-    else:
         resolved["authors_display"] = ""
 
     # --- frontmatter alignment (page-1 block anchoring) ---
