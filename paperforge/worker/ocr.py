@@ -59,6 +59,14 @@ from paperforge.worker.ocr_blocks import (
     write_raw_blocks_jsonl,
     write_structured_blocks_jsonl,
 )
+from paperforge.worker.ocr_errors import (
+    OCRAPISchemaError,
+    OCRArtifactIntegrityError,
+    OCRNetworkError,
+    OCRPDFResolveError,
+    OCRPostprocessError,
+    classify_ocr_error,
+)
 from paperforge.worker.ocr_figures import (
     build_figure_inventory,
     write_figure_inventory,
@@ -78,6 +86,19 @@ from paperforge.worker.sync import (
 )
 
 logger = logging.getLogger(__name__)
+
+OCR_QUEUE_STATUSES = {
+    "pending", "queued", "running", "done", "done_degraded",
+    "retryable_error", "fatal_error", "nopdf", "blocked",
+}
+
+
+def apply_ocr_error_state(row: dict, meta: dict, error_state: dict) -> None:
+    row["queue_status"] = error_state["status"]
+    meta["error_type"] = error_state["error_type"]
+    meta["error_stage"] = error_state["error_stage"]
+    meta["retryable"] = error_state["retryable"]
+    meta["last_error"] = error_state["last_error"]
 
 
 def ensure_ocr_meta(vault: Path, row: dict) -> dict:
@@ -2184,11 +2205,8 @@ def run_ocr(vault: Path, verbose: bool = False, no_progress: bool = False, selec
             try:
                 response = retry_with_meta(_do_poll, meta_path_poll, meta["ocr_job_id"], token)
             except Exception as e:
-                meta["ocr_status"] = "pending"
-                meta["error"] = str(e)
-                meta["last_error"] = str(e)
-                meta["retry_count"] = int(meta.get("retry_count", 0)) + 1
-                queue_row["queue_status"] = "pending"
+                error_state = classify_ocr_error(OCRNetworkError(str(e)), stage="poll")
+                apply_ocr_error_state(queue_row, meta, error_state)
                 write_json(paths["ocr"] / key / "meta.json", meta)
                 changed += 1
                 active_submitted = max(0, active_submitted - 1)
@@ -2197,13 +2215,17 @@ def run_ocr(vault: Path, verbose: bool = False, no_progress: bool = False, selec
                 payload = response.json()["data"]
                 state = payload["state"]
             except (json.JSONDecodeError, KeyError) as e:
-                meta["ocr_status"] = "pending"
-                meta["error"] = f"API schema mismatch during polling: {e}"
-                meta["last_error"] = meta["error"]
+                error_state = classify_ocr_error(
+                    OCRAPISchemaError(f"API schema mismatch during polling: {e}"), stage="poll"
+                )
+                apply_ocr_error_state(queue_row, meta, error_state)
                 meta["raw_response"] = response.text[:1000]
-                meta["retry_count"] = int(meta.get("retry_count", 0)) + 1
-                queue_row["queue_status"] = "pending"
                 write_json(paths["ocr"] / key / "meta.json", meta)
+                json_dir = paths["ocr"] / key / "json"
+                json_dir.mkdir(parents=True, exist_ok=True)
+                raw_error_dir = paths["ocr"] / key / "raw"
+                raw_error_dir.mkdir(parents=True, exist_ok=True)
+                write_json(raw_error_dir / "api_error_payload.json", {"raw_response": response.text[:5000]})
                 changed += 1
                 active_submitted = max(0, active_submitted - 1)
                 continue
@@ -2224,16 +2246,33 @@ def run_ocr(vault: Path, verbose: bool = False, no_progress: bool = False, selec
                     page_num, markdown_path, json_path, fulltext_md_path = postprocess_ocr_result(
                         vault, key, all_results
                     )
-                except Exception as e:
-                    meta["ocr_status"] = "pending"
-                    meta["error"] = str(e)
-                    meta["retry_count"] = int(meta.get("retry_count", 0)) + 1
-                    queue_row["queue_status"] = "pending"
+                except KeyboardInterrupt:
+                    raise
+                except SystemExit:
+                    raise
+                except BaseException:
+                    raise
+                except (OCRPDFResolveError, OCRArtifactIntegrityError, OCRPostprocessError) as exc:
+                    error_state = classify_ocr_error(exc, stage="postprocess")
+                    apply_ocr_error_state(queue_row, meta, error_state)
                     write_json(paths["ocr"] / key / "meta.json", meta)
                     changed += 1
                     active_submitted = max(0, active_submitted - 1)
                     continue
-                meta["ocr_status"] = "done"
+                except Exception as exc:
+                    error_state = classify_ocr_error(OCRPostprocessError(str(exc)), stage="postprocess")
+                    apply_ocr_error_state(queue_row, meta, error_state)
+                    write_json(paths["ocr"] / key / "meta.json", meta)
+                    changed += 1
+                    active_submitted = max(0, active_submitted - 1)
+                    continue
+                health_path_poll = paths["ocr"] / key / "health" / "ocr_health.json"
+                health_report_poll = read_json(health_path_poll) if health_path_poll.exists() else {}
+                if health_report_poll.get("degraded_reasons"):
+                    meta["ocr_status"] = "done_degraded"
+                    meta["degraded_reason"] = "; ".join(health_report_poll["degraded_reasons"])
+                else:
+                    meta["ocr_status"] = "done"
                 # Per D-01: auto_analyze_after_ocr opt-in workflow streamlining
                 cfg_path = vault / "paperforge.json"
                 if cfg_path.exists():
@@ -2435,7 +2474,13 @@ def run_ocr(vault: Path, verbose: bool = False, no_progress: bool = False, selec
                     page_num, md_path, json_path, fulltext_md_path = postprocess_ocr_result(vault, key, results)
                 except Exception:
                     continue
-                meta["ocr_status"] = "done"
+                health_path_loop = paths["ocr"] / key / "health" / "ocr_health.json"
+                health_report_loop = read_json(health_path_loop) if health_path_loop.exists() else {}
+                if health_report_loop.get("degraded_reasons"):
+                    meta["ocr_status"] = "done_degraded"
+                    meta["degraded_reason"] = "; ".join(health_report_loop["degraded_reasons"])
+                else:
+                    meta["ocr_status"] = "done"
                 meta["ocr_finished_at"] = datetime.now(timezone.utc).isoformat()
                 meta["page_count"] = page_num
                 meta["markdown_path"] = md_path

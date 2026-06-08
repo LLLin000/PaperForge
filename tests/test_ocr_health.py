@@ -238,3 +238,18 @@ def test_ocr_health_includes_confidence_distributions() -> None:
     assert tbl_dist["high"] == 1
     assert tbl_dist["medium"] == 1
     assert tbl_dist["low"] == 1
+
+
+def test_health_report_includes_degraded_reasons() -> None:
+    from paperforge.worker.ocr_health import build_ocr_health
+
+    report = build_ocr_health(
+        page_count=1,
+        raw_blocks_count=0,
+        structured_blocks=[],
+        figure_inventory={},
+        table_inventory={},
+    )
+
+    assert "degraded_reasons" in report
+    assert len(report["degraded_reasons"]) > 0

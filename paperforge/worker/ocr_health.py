@@ -107,6 +107,16 @@ def build_ocr_health(
     }
     report.update(decision_summary)
 
+    degraded_reasons = []
+    if span.get("coverage_quality", "weak") == "weak":
+        degraded_reasons.append(f"weak span coverage ({span.get('coverage_ratio', 0):.0%})")
+    if spine.get("_meta", {}).get("quality", "weak") == "weak":
+        degraded_reasons.append("weak body spine")
+    if layout.get("status", "unknown") == "fail":
+        degraded_reasons.append(f"layout audit failed ({layout.get('anomaly_count', 0)} anomalies)")
+
+    report["degraded_reasons"] = degraded_reasons
+
     def _score_distribution(scores: list[float]) -> dict:
         return {
             "high": sum(1 for s in scores if s >= 0.75),
