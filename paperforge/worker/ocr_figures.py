@@ -412,8 +412,10 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
             cluster_page = cluster[0].get("page", 0)
             if cluster_page not in rejected_pages:
                 continue
+            cluster_id = f"unresolved_cluster_{len(unresolved_clusters) + 1:03d}"
             cluster_ids = [b.get("block_id", "") for b in cluster]
             unresolved_clusters.append({
+                "cluster_id": cluster_id,
                 "media_block_ids": cluster_ids,
                 "cluster_bbox": _cluster_bbox([b.get("bbox", [0, 0, 0, 0]) for b in cluster]),
                 "page": cluster_page,
