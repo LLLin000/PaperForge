@@ -591,6 +591,9 @@ def test_unresolved_clusters_in_inventory() -> None:
     assert len(inventory["unmatched_assets"]) == 0, (
         "Six panels should be consumed by unresolved cluster, not left as individual unmatched assets"
     )
+    assert cluster["cluster_id"] == "unresolved_cluster_001"
+    assert cluster["page"] == 9
+    assert cluster["cluster_bbox"] == [363, 237, 1075, 1016]
 
 
 # === panel subcaption / formal legend precedence ===
