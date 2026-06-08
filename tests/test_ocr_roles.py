@@ -612,3 +612,49 @@ def test_backmatter_boundary_detects_on_early_page() -> None:
     }
     result = _is_backmatter_boundary_heading(block, 5, 10)
     assert result  # After fix: 5/10 = 50% in second half, has container words + bold
+
+
+def test_frontiers_figure_pipe_title_is_figure_caption():
+    from paperforge.worker.ocr_roles import assign_block_role
+    result = assign_block_role({"raw_label": "figure_title", "text": "FIGURE 1 | Expression of irisin is downregulated in OA cartilage.", "page": 2, "page_width": 1200, "page_height": 1700, "block_bbox": [100, 500, 700, 540]}, page_blocks=[])
+    assert result.role == "figure_caption"
+    assert result.confidence >= 0.9
+
+
+def test_frontiers_figure_pipe_text_is_figure_caption():
+    from paperforge.worker.ocr_roles import assign_block_role
+    result = assign_block_role({"raw_label": "text", "text": "FIGURE 2 | Treadmill exercise protocols.", "page": 2, "page_width": 1200, "page_height": 1700, "block_bbox": [100, 500, 700, 540]}, page_blocks=[])
+    assert result.role == "figure_caption"
+    assert result.confidence >= 0.9
+
+
+def test_single_letter_panel_label_not_figure_caption():
+    from paperforge.worker.ocr_roles import assign_block_role
+    result = assign_block_role({"raw_label": "text", "text": "A", "page": 2, "page_width": 1200, "page_height": 1700, "block_bbox": [100, 100, 110, 120]}, page_blocks=[])
+    assert result.role == "figure_inner_text"
+
+
+def test_parenthesized_panel_label_not_figure_caption():
+    from paperforge.worker.ocr_roles import assign_block_role
+    result = assign_block_role({"raw_label": "text", "text": "(B)", "page": 2, "page_width": 1200, "page_height": 1700, "block_bbox": [100, 100, 125, 120]}, page_blocks=[])
+    assert result.role == "figure_inner_text"
+
+
+def test_page1_roman_heading_outside_title_zone_becomes_section_heading():
+    from paperforge.worker.ocr_roles import assign_block_role
+    result = assign_block_role({"raw_label": "paragraph_title", "text": "I. INTRODUCTION", "page": 1, "page_width": 1200, "page_height": 1700, "block_bbox": [261, 967, 457, 988]}, page_blocks=[])
+    assert result.role == "section_heading"
+    assert result.confidence >= 0.8
+
+
+def test_page1_alpha_heading_outside_title_zone_becomes_subsection_heading():
+    from paperforge.worker.ocr_roles import assign_block_role
+    result = assign_block_role({"raw_label": "paragraph_title", "text": "A. Materials", "page": 1, "page_width": 1200, "page_height": 1700, "block_bbox": [624, 500, 742, 521]}, page_blocks=[])
+    assert result.role == "subsection_heading"
+    assert result.confidence >= 0.8
+
+
+def test_page1_top_title_not_misclassified_as_section_heading():
+    from paperforge.worker.ocr_roles import assign_block_role
+    result = assign_block_role({"raw_label": "paragraph_title", "text": "I. INTRODUCTION", "page": 1, "page_width": 1200, "page_height": 1700, "block_bbox": [261, 100, 457, 120]}, page_blocks=[])
+    assert result.role != "section_heading"

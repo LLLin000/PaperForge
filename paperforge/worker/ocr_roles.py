@@ -84,6 +84,29 @@ _REFERENCE_PATTERN = re.compile(
     r"^\s*(?:\d+\.\s|[A-Z][A-Za-z'’\-]+\s+et al\.\s*\(\d{4}[a-z]?\)|\([A-Z][A-Za-z'’\-]+\s+et al\.,\s*\d{4}[a-z]?\))",
 )
 
+_FRONTIERS_FIGURE_TITLE_PATTERN = re.compile(
+    r"^FIGURE\s+\d+[A-Za-z]?\s*\|\s+.+",
+    flags=re.IGNORECASE,
+)
+
+_PANEL_LABEL_PATTERN = re.compile(
+    r"^\(?[A-Z]\)?[\.:]?$",
+)
+
+_ROMAN_SECTION_PATTERN = re.compile(
+    r"^(?:[IVXLCDM]+)\.\s+[A-Z][A-Z0-9 ,;:\-/()]+$",
+    re.IGNORECASE,
+)
+
+_ALPHA_SUBSECTION_PATTERN = re.compile(
+    r"^[A-Z]\.\s+[A-Z][A-Za-z0-9 ,;:\-/()]+$",
+)
+
+_COMMON_SECTION_HEADINGS = {
+    "introduction", "materials and methods", "methods", "results",
+    "results and discussion", "discussion", "conclusion", "conclusions",
+}
+
 # citation line like "Masante B, Gabetti S, Silva JC, Putame G... and Massai D (2025)"
 _CITATION_LINE_PATTERN = re.compile(
     r"^[A-Z][a-z]+\'?[a-z]* [A-Z](?:\.[, ]|[A-Z]\.?,|[,\s])",
@@ -334,6 +357,18 @@ def _seems_like_authors(text: str) -> bool:
     return False
 
 
+def _explicit_scholarly_heading_role(text: str) -> str | None:
+    stripped = text.strip().lstrip("*•·-–—")
+    lower = stripped.lower()
+    if lower in _COMMON_SECTION_HEADINGS:
+        return "section_heading"
+    if _ROMAN_SECTION_PATTERN.match(stripped):
+        return "section_heading"
+    if _ALPHA_SUBSECTION_PATTERN.match(stripped):
+        return "subsection_heading"
+    return None
+
+
 def assign_block_role(
     block: dict,
     page_blocks: list[dict],
@@ -344,8 +379,31 @@ def assign_block_role(
 ) -> RoleAssignment:
     from paperforge.worker.ocr_document import _page_still_frontmatter
 
-    raw_label = str(block.get("block_label", "") or "").strip()
-    text = str(block.get("block_content", "") or "").strip()
+    raw_label = str(block.get("block_label") or block.get("raw_label") or "").strip()
+    text = str(block.get("block_content") or block.get("text") or "").strip()
+
+    # Panel label exclusion (single-letter figure labels like A, B, (C), A.)
+    if _PANEL_LABEL_PATTERN.match(text):
+        return RoleAssignment(
+            role="figure_inner_text",
+            confidence=0.9,
+            evidence=[f"panel label / figure inner text: {text}"],
+        )
+
+    # Frontiers figure title check (before general figure/table prefix)
+    if raw_label == "figure_title" and _FRONTIERS_FIGURE_TITLE_PATTERN.match(text):
+        return RoleAssignment(
+            role="figure_caption",
+            confidence=0.95,
+            evidence=[f"Frontiers figure title pattern: {text[:60]}"],
+        )
+
+    if _FRONTIERS_FIGURE_TITLE_PATTERN.match(text):
+        return RoleAssignment(
+            role="figure_caption",
+            confidence=0.9,
+            evidence=[f"Frontiers figure title pattern: {text[:60]}"],
+        )
 
     # Figure / table caption patterns override any prior
     if _has_figure_prefix(text):
@@ -582,6 +640,24 @@ def assign_block_role(
                 confidence=0.85,
                 evidence=[f"paragraph_title label with numbering: {text[:60]}"],
             )
+
+        # Page 1 explicit scholarly heading override (Roman numerals, alpha subsections)
+        explicit_heading_role = None
+        if raw_label == "paragraph_title":
+            explicit_heading_role = _explicit_scholarly_heading_role(text)
+
+        if explicit_heading_role:
+            page_num = int(block.get("page", 1))
+            bbox = block.get("block_bbox") or block.get("bbox") or [0, 0, 0, 0]
+            y_top = bbox[1] if len(bbox) >= 4 else 0
+            page_height = float(block.get("page_height") or 1700)
+            if page_num > 1 or y_top > page_height * 0.25:
+                return RoleAssignment(
+                    role=explicit_heading_role,
+                    confidence=0.9,
+                    evidence=[f"explicit scholarly heading: {text[:60]}"],
+                )
+
         bbox = block.get("block_bbox", [0, 0, 0, 0])
         page_num = block.get("page", 1) or 1
         if page_num <= 1:

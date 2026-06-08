@@ -253,6 +253,11 @@ def _enrich_meta_from_paper_note(vault: Path, key: str, meta_path: Path) -> None
                         if val:
                             meta[field] = val
                             changed = True
+                if ("authors" not in meta or not meta.get("authors")) and fm.get("first_author"):
+                    meta["authors"] = [str(fm["first_author"])]
+                    meta["authors_incomplete"] = True
+                    meta["authors_source"] = "paper_note.first_author_fallback"
+                    changed = True
                 if changed:
                     write_json(meta_path, meta)
     except Exception:

@@ -216,3 +216,10 @@ def test_mismatched_ocr_title_does_not_pollute_metadata() -> None:
     assert aligned["title"]["value"] == "Correct Zotero Title That Is Real"
     assert aligned["title"]["source"] == "zotero"
     assert aligned["title"].get("ocr_aligned", False) is False
+
+
+def test_normalize_author_name_strips_superscripts() -> None:
+    from paperforge.worker.ocr_metadata import _normalize_author_name
+
+    assert _normalize_author_name("Smith $^{1}") == "Smith"
+    assert _normalize_author_name("Ebrahim Esfandiari $^{1}$") == "Ebrahim Esfandiari"

@@ -8,6 +8,14 @@ from typing import Any
 from paperforge.core.io import write_json
 
 
+def _normalize_author_name(name: str) -> str:
+    """Normalize author name for fuzzy matching — strip special chars."""
+    name = re.sub(r'\$\s*\^\{[^}]*\}\$?', '', name)
+    name = re.sub(r'[•·∗*†‡§¶#▲▼◄►◆◇○●□■△▽]', '', name)
+    name = re.sub(r'\s+', ' ', name).strip()
+    return name
+
+
 def _clean_author_display(author_text: str) -> str:
     text = author_text
     text = re.sub(r"\$\s+\^", "$^", text)
@@ -26,7 +34,7 @@ def _match_author_block_to_source_authors(block_text: str, source_authors: list[
 
     Normalizes both sides and computes Jaccard similarity on tokenized names.
     """
-    normalized = block_text.lower()
+    normalized = _normalize_author_name(block_text).lower()
     normalized = re.sub(r"\$?\^?\{[^}]*\}\$?", "", normalized)
     normalized = re.sub(r"[^\w\s,]", "", normalized)
     block_names = set()

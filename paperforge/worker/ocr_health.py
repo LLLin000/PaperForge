@@ -77,7 +77,11 @@ def build_ocr_health(
 
     span = _compute_span_coverage(structured_blocks)
     spine = _detect_body_spine(structured_blocks, doc=doc_structure)
-    layout = _run_layout_audit(structured_blocks)
+    layout = _run_layout_audit(
+        structured_blocks,
+        body_spine=spine,
+        page_layouts=doc_structure.page_layouts if doc_structure else None,
+    )
 
     tail_score = {}
     if doc_structure is not None and hasattr(doc_structure, "tail_boundary_score"):
@@ -151,8 +155,8 @@ def build_ocr_health(
         degraded_reasons.append(f"weak span coverage ({span.get('coverage_ratio', 0):.0%})")
     if spine.get("_meta", {}).get("quality", "weak") == "weak":
         degraded_reasons.append("weak body spine")
-    if layout.get("status", "unknown") == "fail":
-        degraded_reasons.append(f"layout audit failed ({layout.get('anomaly_count', 0)} anomalies)")
+    if layout.get("error_count", 0) > 0:
+        degraded_reasons.append(f"layout audit errors ({layout.get('error_count', 0)} errors)")
 
     report["degraded_reasons"] = degraded_reasons
 
