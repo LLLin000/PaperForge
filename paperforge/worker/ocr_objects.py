@@ -246,7 +246,7 @@ def extract_and_write_objects(
 
     # Process unresolved figure clusters (multi-panel without reliable legend)
     for i, cluster in enumerate(figure_inventory.get("unresolved_clusters", [])):
-        cluster_id = cluster.get("cluster_id", f"cluster_{i + 1:03d}")
+        cluster_id = cluster.get("cluster_id") or f"unresolved_cluster_{i + 1:03d}"
         page = cluster.get("page", 0)
         bbox = cluster.get("cluster_bbox", [0, 0, 0, 0])
         page_width, page_height = _page_dims(page)
