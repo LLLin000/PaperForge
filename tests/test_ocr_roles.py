@@ -683,16 +683,16 @@ def test_preproof_marker_variants():
         assert result.role == "frontmatter_noise"
 
 
-def test_preproof_running_header_not_suppressed():
-    """Pre-proof text at extreme top (like a running header) should NOT be suppressed."""
+def test_preproof_running_header_is_suppressed():
+    """Pre-proof text at extreme top (running header) on any page is suppressed."""
     from paperforge.worker.ocr_roles import assign_block_role
     result = assign_block_role({
         "raw_label": "paragraph_title",
         "text": "Journal Pre-proof",
-        "page": 1, "page_width": 1224, "page_height": 1584,
-        "block_bbox": [190, 30, 475, 55],
+        "page": 4, "page_width": 1224, "page_height": 1584,
+        "block_bbox": [190, 1, 475, 20],
     }, page_blocks=[])
-    assert result.role != "frontmatter_noise"
+    assert result.role == "frontmatter_noise"
 
 
 def test_preproof_page2_not_suppressed():

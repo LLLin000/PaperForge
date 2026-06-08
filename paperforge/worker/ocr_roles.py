@@ -399,16 +399,19 @@ def assign_block_role(
         page_w = float(block.get("page_width") or page_width or 1200)
         block_width = (bbox[2] - bbox[0]) if len(bbox) >= 4 else 0
 
-        preproof_likely = (
-            page_num == 1
-            and y_top > page_h * 0.08
-            and raw_label == "paragraph_title"
-        )
+        # Running header on any page — pre-proof text at extreme top is page furniture
+        if y_top < page_h * 0.06:
+            return RoleAssignment(
+                role="frontmatter_noise",
+                confidence=0.98,
+                evidence=[
+                    "journal pre-proof running header suppressed: "
+                    f"p{page_num} y={y_top:.0f}/{page_h:.0f}"
+                ],
+            )
 
-        is_running_header = y_top < page_h * 0.06
-        is_footer = y_top > page_h * 0.94
-
-        if preproof_likely and not is_running_header and not is_footer:
+        # Page 1 cover-page pre-proof is also page furniture
+        if page_num == 1 and raw_label == "paragraph_title" and y_top > page_h * 0.08:
             return RoleAssignment(
                 role="frontmatter_noise",
                 confidence=0.98,
