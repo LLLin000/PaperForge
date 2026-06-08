@@ -1,17 +1,40 @@
 """
-Rebuild and verify Tasks 4-5 of the OCR final polish plan.
+Rebuild and verify OCR output quality for specified papers.
 
 Usage:
-    python _rebuild_verify.py
+    set PAPERFORGE_REAL_OCR_VAULT=D:\L\OB\Literature-hub
+    set PAPERFORGE_REAL_OCR_KEYS=SAN9AYVR,2GN9LMCW,7C8829BD
+    python scripts/dev/ocr_rebuild_verify.py
 
-Rebuilds SAN9AYVR, 2GN9LMCW, 7C8829BD and validates output quality.
+Environment Variables:
+    PAPERFORGE_REAL_OCR_VAULT - Path to the Obsidian vault (required)
+    PAPERFORGE_REAL_OCR_KEYS  - Comma-separated paper keys to verify (required)
 """
-from pathlib import Path
+import os
 import re
 import sys
+import json
+import io
+from pathlib import Path
 
-VAULT = Path(r"D:\L\OB\Literature-hub")
-KEYS = ["SAN9AYVR", "2GN9LMCW", "7C8829BD"]
+vault = Path(os.environ.get("PAPERFORGE_REAL_OCR_VAULT", ""))
+keys = os.environ.get("PAPERFORGE_REAL_OCR_KEYS", "").split(",")
+keys = [k.strip() for k in keys if k.strip()]
+
+if not vault or not vault.exists():
+    print("[!!] PAPERFORGE_REAL_OCR_VAULT is not set or does not exist.")
+    print("     Set it to a valid Obsidian vault root, e.g.:")
+    print('     set PAPERFORGE_REAL_OCR_VAULT=D:\\L\\OB\\Literature-hub')
+    sys.exit(1)
+
+if not keys:
+    print("[!!] PAPERFORGE_REAL_OCR_KEYS is not set or empty.")
+    print("     Set it to comma-separated paper keys, e.g.:")
+    print("     set PAPERFORGE_REAL_OCR_KEYS=SAN9AYVR,2GN9LMCW,7C8829BD")
+    sys.exit(1)
+
+VAULT = vault
+KEYS = keys
 
 # ---------- helpers ----------
 
@@ -39,7 +62,6 @@ MATH_SPACING_ANOMALY = re.compile(r'\$\s+[^$]+\s+\$')
 
 
 def check_author_bio_clean(fulltext: str, paper_key: str) -> list[str]:
-    """Check for residual author-biography prose in body text."""
     issues = []
     for pattern in BIOGRAPHY_PATTERNS:
         matches = re.finditer(pattern, fulltext, re.IGNORECASE)
@@ -52,7 +74,6 @@ def check_author_bio_clean(fulltext: str, paper_key: str) -> list[str]:
 
 
 def check_author_line(fulltext: str, paper_key: str) -> list[str]:
-    """Check that author lines don't leak into body."""
     issues = []
     for pattern in AUTHOR_LINE_PATTERNS:
         matches = list(re.finditer(pattern, fulltext, re.IGNORECASE))
@@ -62,7 +83,6 @@ def check_author_line(fulltext: str, paper_key: str) -> list[str]:
 
 
 def check_math_spacing(fulltext: str, paper_key: str) -> list[str]:
-    """Check for obvious $ ... $ delimiter spacing artifacts."""
     issues = []
     for m in MATH_SPACING_ANOMALY.finditer(fulltext):
         if len(m.group()) > 80:
@@ -75,11 +95,10 @@ def check_math_spacing(fulltext: str, paper_key: str) -> list[str]:
 
 
 def check_glued_math(fulltext: str, paper_key: str) -> list[str]:
-    """Check for prose/math boundary collapse (Class A)."""
     issues = []
     glued_patterns = [
-        re.compile(r'[a-z]\$[0-9\\]'),   # text$math
-        re.compile(r'\$[0-9\\][a-z]'),    # $math{text
+        re.compile(r'[a-z]\$[0-9\\]'),
+        re.compile(r'\$[0-9\\][a-z]'),
     ]
     for p in glued_patterns:
         for m in p.finditer(fulltext):
@@ -91,10 +110,8 @@ def check_glued_math(fulltext: str, paper_key: str) -> list[str]:
 
 
 def check_metadata_authors(meta_path: Path) -> list[str]:
-    """Check that resolved metadata authors look correct (not biography names)."""
     if not meta_path.exists():
         return ["  META MISSING: resolved_metadata.json not found"]
-    import json
     meta = json.loads(meta_path.read_text(encoding='utf-8'))
     authors = meta.get("authors", meta.get("author", []))
     if not authors:
@@ -109,7 +126,6 @@ def check_metadata_authors(meta_path: Path) -> list[str]:
 
 
 def verify_paper(key: str, issues: list[str]) -> int:
-    """Run all checks for one paper. Returns issue count."""
     paper_root = VAULT / "System" / "PaperForge" / "ocr" / key
     fulltext_path = paper_root / "fulltext.md"
     meta_path = paper_root / "metadata" / "resolved_metadata.json"
@@ -118,7 +134,6 @@ def verify_paper(key: str, issues: list[str]) -> int:
 
     count = 0
 
-    # fulltext.md
     if fulltext_path.exists():
         text = fulltext_path.read_text(encoding='utf-8', errors='replace')
 
@@ -137,18 +152,15 @@ def verify_paper(key: str, issues: list[str]) -> int:
         issues.append(f"  [!] fulltext.md not found for {key}")
         count += 1
 
-    # resolved_metadata.json
     meta_issues = check_metadata_authors(meta_path)
     issues.extend(meta_issues); count += len(meta_issues)
 
-    # Figure notes
     if figures_dir.exists():
         for fpath in sorted(figures_dir.glob("*.md")):
             text = fpath.read_text(encoding='utf-8', errors='replace')
             ms = check_math_spacing(text, f"{key}/{fpath.name}")
             issues.extend(ms); count += len(ms)
 
-    # Table notes
     if tables_dir.exists():
         for fpath in sorted(tables_dir.glob("*.md")):
             text = fpath.read_text(encoding='utf-8', errors='replace')
@@ -163,23 +175,18 @@ def summary_line(key: str, success: bool, details: str = "") -> str:
     return f"  {icon} {key}{': ' + details if details else ''}"
 
 
-# ---------- main ----------
-
 if __name__ == "__main__":
-    import json
-    import io
-
-    # Force UTF-8 for stdout to handle Unicode math symbols
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
 
     print("=" * 70)
-    print("  OCR FINAL POLISH - REBUILD AND VERIFY")
+    print("  OCR REBUILD AND VERIFY")
+    print(f"  Vault: {VAULT}")
+    print(f"  Keys:  {', '.join(KEYS)}")
     print("=" * 70)
 
     all_issues = {}
     all_pass = True
 
-    # Phase 1: Rebuild each paper
     from paperforge.worker.ocr_rebuild import run_derived_rebuild_for_keys
 
     for key in KEYS:
@@ -187,7 +194,6 @@ if __name__ == "__main__":
         result = run_derived_rebuild_for_keys(VAULT, [key])
         print(f"  Rebuild result: {json.dumps(result)}")
 
-    # Phase 2: Verify each paper
     for key in KEYS:
         print(f"\n--- Verifying {key} ---")
         issues = []
@@ -204,7 +210,6 @@ if __name__ == "__main__":
         if not paper_ok:
             all_pass = False
 
-    # Phase 3: Summary
     print("\n" + "=" * 70)
     print("  SUMMARY")
     print("=" * 70)
