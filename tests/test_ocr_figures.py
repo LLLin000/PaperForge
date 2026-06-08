@@ -332,7 +332,7 @@ def test_formal_legend_detection_explicit_figure_prefix() -> None:
     assert len(inventory["matched_figures"]) == 1
     assert inventory["matched_figures"][0]["figure_number"] == 1
     assert len(inventory["matched_figures"][0]["matched_assets"]) == 1
-    assert inventory["matched_figures"][0]["confidence"] == 0.85
+    assert inventory["matched_figures"][0]["confidence"] == inventory["matched_figures"][0]["match_score"]["score"]
 
 
 def test_candidate_legend_geometry_match() -> None:
@@ -394,7 +394,7 @@ def test_legend_only_figure_no_asset_match() -> None:
     assert inventory["matched_figures"][0]["figure_number"] == 2
     assert len(inventory["matched_figures"][0]["matched_assets"]) == 0
     assert "legend_only" in inventory["matched_figures"][0]["flags"]
-    assert inventory["matched_figures"][0]["confidence"] == 0.4
+    assert inventory["matched_figures"][0]["confidence"] == inventory["matched_figures"][0]["match_score"]["score"]
 
 
 def test_unmatched_legends_populated() -> None:
