@@ -2089,3 +2089,64 @@ def test_unresolved_cluster_appears_in_fulltext() -> None:
     )
 
     assert "![[render/figures/cluster_001.md]]" in md
+
+
+def test_unresolved_cluster_link_with_unresolved_cluster_id() -> None:
+    """Unresolved cluster with valid cluster_id produces correct wikilink."""
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+
+    md = render_fulltext_markdown(
+        structured_blocks=[
+            {
+                "role": "body_paragraph",
+                "text": "Body text on page 1.",
+                "render_default": True,
+                "page": 1,
+            },
+        ],
+        resolved_metadata={},
+        figure_inventory={
+            "unresolved_clusters": [
+                {
+                    "cluster_id": "unresolved_cluster_001",
+                    "page": 1,
+                    "cluster_bbox": [363, 237, 1075, 1016],
+                    "media_block_ids": [1, 2],
+                }
+            ]
+        },
+        table_inventory={},
+    )
+
+    assert "![[render/figures/unresolved_cluster_001.md]]" in md
+    assert "![[render/figures/.md]]" not in md
+
+
+def test_unresolved_cluster_link_with_missing_id_is_defensive() -> None:
+    """When cluster_id is omitted, no empty wikilink is emitted."""
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+
+    md = render_fulltext_markdown(
+        structured_blocks=[
+            {
+                "role": "body_paragraph",
+                "text": "Body text on page 1.",
+                "render_default": True,
+                "page": 1,
+            },
+        ],
+        resolved_metadata={},
+        figure_inventory={
+            "unresolved_clusters": [
+                {
+                    "page": 1,
+                    "cluster_bbox": [363, 237, 1075, 1016],
+                    "media_block_ids": [1, 2],
+                }
+            ]
+        },
+        table_inventory={},
+    )
+
+    assert "![[render/figures/.md]]" not in md
+    assert "![[render/figures/unresolved_cluster_001.md]]" in md

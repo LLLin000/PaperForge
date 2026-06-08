@@ -695,8 +695,8 @@ def render_fulltext_markdown(
             tables_by_page.setdefault(page, []).append(tbl_id)
 
     unresolved_clusters_by_page: dict[int, list[str]] = {}
-    for cluster in figure_inventory.get("unresolved_clusters", []):
-        cluster_id = cluster.get("cluster_id", "")
+    for idx, cluster in enumerate(figure_inventory.get("unresolved_clusters", [])):
+        cluster_id = cluster.get("cluster_id") or f"unresolved_cluster_{idx + 1:03d}"
         page = cluster.get("page", 0) or 1
         unresolved_clusters_by_page.setdefault(page, []).append(cluster_id)
 
