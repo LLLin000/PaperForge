@@ -182,3 +182,59 @@ def test_ocr_health_includes_tail_boundary_confidence() -> None:
     )
     assert "tail_boundary_confidence" in report
     assert isinstance(report["tail_boundary_confidence"], (int, float))
+
+
+def test_ocr_health_includes_confidence_distributions() -> None:
+    from paperforge.worker.ocr_health import build_ocr_health
+
+    structured_blocks = [
+        {"role": "section_heading", "text": "1 Introduction"},
+        {"role": "body_paragraph", "text": "Body"},
+    ]
+    figure_inventory = {
+        "matched_figures": [
+            {
+                "figure_id": "figure_001",
+                "caption_score": {"score": 0.9, "decision": "figure_caption", "evidence": ["figure_number"]},
+            },
+            {
+                "figure_id": "figure_002",
+                "caption_score": {"score": 0.5, "decision": "figure_caption_candidate", "evidence": []},
+            },
+            {
+                "figure_id": "figure_003",
+                "caption_score": {"score": 0.3, "decision": "rejected", "evidence": []},
+            },
+        ],
+        "unmatched_legends": [],
+        "unmatched_assets": [],
+    }
+    table_inventory = {
+        "tables": [
+            {"match_score": {"score": 0.85, "decision": "matched", "evidence": ["same_page"]}},
+            {"match_score": {"score": 0.40, "decision": "ambiguous", "evidence": []}},
+            {"match_score": {"score": 0.20, "decision": "ambiguous", "evidence": []}},
+        ],
+        "unmatched_captions": [],
+        "unmatched_assets": [],
+    }
+    report = build_ocr_health(
+        page_count=3,
+        raw_blocks_count=20,
+        structured_blocks=structured_blocks,
+        figure_inventory=figure_inventory,
+        table_inventory=table_inventory,
+    )
+    assert "figure_match_confidence_distribution" in report
+    assert "table_match_confidence_distribution" in report
+    assert "tail_boundary_confidence" in report
+
+    fig_dist = report["figure_match_confidence_distribution"]
+    assert fig_dist["high"] == 1
+    assert fig_dist["medium"] == 1
+    assert fig_dist["low"] == 1
+
+    tbl_dist = report["table_match_confidence_distribution"]
+    assert tbl_dist["high"] == 1
+    assert tbl_dist["medium"] == 1
+    assert tbl_dist["low"] == 1
