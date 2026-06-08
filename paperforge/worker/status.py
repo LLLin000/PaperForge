@@ -782,7 +782,7 @@ def run_doctor(vault: Path, verbose: bool = False, json_output: bool = False) ->
                 if not _ws_dir.exists():
                     _missing_workspace += 1
                     continue
-                if _e.get("ocr_status") == "done":
+                if _e.get("ocr_status") in ("done", "done_degraded"):
                     _ft = _ws_dir / "fulltext.md"
                     if not _ft.exists():
                         _missing_fulltext += 1
@@ -1018,7 +1018,7 @@ def run_status(vault: Path, verbose: bool = False, json_output: bool = False) ->
             ocr_failed += 1
             continue
         status = str(meta.get("ocr_status", "")).strip().lower()
-        if status == "done":
+        if status in ("done", "done_degraded"):
             ocr_done += 1
         elif status in ("queued", "running", "processing"):
             ocr_processing += 1
@@ -1038,7 +1038,7 @@ def run_status(vault: Path, verbose: bool = False, json_output: bool = False) ->
                 continue
             ocr_total += 1
             status = str(meta.get("ocr_status", "")).strip().lower()
-            if status == "done":
+            if status in ("done", "done_degraded"):
                 ocr_done += 1
             elif status in ("queued", "running", "processing"):
                 ocr_processing += 1
