@@ -658,3 +658,61 @@ def test_page1_top_title_not_misclassified_as_section_heading():
     from paperforge.worker.ocr_roles import assign_block_role
     result = assign_block_role({"raw_label": "paragraph_title", "text": "I. INTRODUCTION", "page": 1, "page_width": 1200, "page_height": 1700, "block_bbox": [261, 100, 457, 120]}, page_blocks=[])
     assert result.role != "section_heading"
+
+
+def test_preproof_marker_is_frontmatter_noise():
+    from paperforge.worker.ocr_roles import assign_block_role
+    result = assign_block_role({
+        "raw_label": "paragraph_title",
+        "text": "Journal Pre-proof",
+        "page": 1, "page_width": 1224, "page_height": 1584,
+        "block_bbox": [190, 206, 475, 246],
+    }, page_blocks=[])
+    assert result.role == "frontmatter_noise"
+    assert result.confidence >= 0.9
+
+
+def test_preproof_marker_variants():
+    from paperforge.worker.ocr_roles import assign_block_role
+    for text in ["Journal Pre-proof", "Pre-proof", "journal pre-proof"]:
+        result = assign_block_role({
+            "raw_label": "paragraph_title",
+            "text": text, "page": 1, "page_width": 1224, "page_height": 1584,
+            "block_bbox": [190, 206, 475, 246],
+        }, page_blocks=[])
+        assert result.role == "frontmatter_noise"
+
+
+def test_preproof_running_header_not_suppressed():
+    """Pre-proof text at extreme top (like a running header) should NOT be suppressed."""
+    from paperforge.worker.ocr_roles import assign_block_role
+    result = assign_block_role({
+        "raw_label": "paragraph_title",
+        "text": "Journal Pre-proof",
+        "page": 1, "page_width": 1224, "page_height": 1584,
+        "block_bbox": [190, 30, 475, 55],
+    }, page_blocks=[])
+    assert result.role != "frontmatter_noise"
+
+
+def test_preproof_page2_not_suppressed():
+    """Pre-proof text on page 2+ should NOT be suppressed."""
+    from paperforge.worker.ocr_roles import assign_block_role
+    result = assign_block_role({
+        "raw_label": "paragraph_title",
+        "text": "Journal Pre-proof",
+        "page": 2, "page_width": 1224, "page_height": 1584,
+        "block_bbox": [190, 206, 475, 246],
+    }, page_blocks=[])
+    assert result.role != "frontmatter_noise"
+
+
+def test_real_title_after_preproof_still_works():
+    from paperforge.worker.ocr_roles import assign_block_role
+    result = assign_block_role({
+        "raw_label": "paragraph_title",
+        "text": "Magnetoresponsive Stem Cell Spheroid-based Cartilage Recovery Platform",
+        "page": 1, "page_width": 1200, "page_height": 1700,
+        "block_bbox": [100, 200, 700, 230],
+    }, page_blocks=[], page_height=1700)
+    assert result.role == "paper_title"
