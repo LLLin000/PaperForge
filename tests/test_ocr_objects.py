@@ -163,7 +163,7 @@ def test_unresolved_cluster_object_emission(tmp_path: Path) -> None:
         "official_figure_count": 0,
         "unresolved_clusters": [
             {
-                "cluster_id": "cluster_001",
+                "cluster_id": "unresolved_cluster_001",
                 "page": 9,
                 "cluster_bbox": [363, 237, 1075, 1016],
                 "media_block_ids": ["p9_b2", "p9_b3", "p9_b4", "p9_b5", "p9_b6", "p9_b7"],
@@ -187,12 +187,14 @@ def test_unresolved_cluster_object_emission(tmp_path: Path) -> None:
     assert "# Figure 4" not in content, (
         "Cluster without a valid legend must not be titled with a figure number"
     )
-    assert "cluster_001" in render_files[0].stem, (
+    assert "unresolved_cluster_001" in render_files[0].stem, (
         "Object note should be identified by its cluster ID"
     )
-    assert "cluster_001.jpg" in content, (
+    assert "unresolved_cluster_001.jpg" in content, (
         "Markdown must reference the whole-cluster crop image, not individual panel crops"
     )
+    assert (render_root / "figures" / "unresolved_cluster_001.md").exists()
+    assert not (render_root / "figures" / "cluster_001.md").exists()
 
 
 def test_crop_asset_uses_ocr_page_coordinates_when_dimensions_provided(tmp_path: Path) -> None:
