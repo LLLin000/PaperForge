@@ -2269,7 +2269,6 @@ def _resolve_ambiguous_candidates(
                 if old_role != block["role"]:
                     record_decision(block, stage="candidate_resolution", old_role=old_role, new_role=block["role"], reason="backmatter heading candidate with no backmatter start, treated as section_heading")
                 block["role_confidence"] = 0.5
-                block["_suppressed_heading"] = True
                 continue
 
             if page < backmatter_start_page:
@@ -2285,7 +2284,6 @@ def _resolve_ambiguous_candidates(
                     if old_role != block["role"]:
                         record_decision(block, stage="candidate_resolution", old_role=old_role, new_role=block["role"], reason="backmatter heading candidate before backmatter start, treated as section_heading")
                     block["role_confidence"] = 0.5
-                    block["_suppressed_heading"] = True
                 continue
 
             if page == backmatter_start_page:

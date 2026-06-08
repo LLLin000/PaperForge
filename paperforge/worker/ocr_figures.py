@@ -404,6 +404,40 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
     unnumbered_legends = [leg for leg in legends if _extract_figure_number(leg.get("text", "")) is None]
     ordered_legends = numbered_legends + unnumbered_legends
 
+    # Deduplicate legends by figure number — keep the version on a page that
+    # has assets, otherwise keep the first occurrence
+    _dedup_map: dict[int, dict] = {}
+    for legend in ordered_legends:
+        fn = _extract_figure_number(legend.get("text", ""))
+        if fn is None:
+            continue
+        if fn not in _dedup_map:
+            _dedup_map[fn] = legend
+        else:
+            existing = _dedup_map[fn]
+            existing_has_asset = any(a.get("page") == existing.get("page") for a in assets)
+            current_has_asset = any(a.get("page") == legend.get("page") for a in assets)
+            if current_has_asset and not existing_has_asset:
+                _dedup_map[fn] = legend
+            elif not current_has_asset and not existing_has_asset:
+                # Both copies on pages without assets — keep the later one
+                # (figure compilations are always after the body)
+                if (legend.get("page", 0) or 0) > (existing.get("page", 0) or 0):
+                    _dedup_map[fn] = legend
+
+    seen_fig_nums: set[int] = set()
+    deduped_legends: list[dict] = []
+    for legend in ordered_legends:
+        fn = _extract_figure_number(legend.get("text", ""))
+        if fn is not None:
+            if fn in seen_fig_nums:
+                continue
+            seen_fig_nums.add(fn)
+            deduped_legends.append(_dedup_map[fn])
+        else:
+            deduped_legends.append(legend)
+    ordered_legends = deduped_legends
+
     used_asset_indices: set[int] = set()
     ambiguous_figures: list[dict] = []
     for legend in ordered_legends:
@@ -439,22 +473,63 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
             if top_score < 0.4:
                 matched_assets = []
             elif len(close) > 1:
-                ambiguous_figures.append({
-                    "legend_block_id": legend.get("block_id", ""),
-                    "page": legend_page,
-                    "caption_score": caption_score,
-                    "candidates": [
-                        {"asset_block_id": asset.get("block_id", ""), "match_score": score}
-                        for _, asset, score in close
-                    ],
-                })
-                ambiguous = True
-                matched_assets = []
+                # Secondary verification: pick the one in the correct column
+                legend_bb = legend.get("bbox") or legend.get("block_bbox") or [0,0,0,0]
+                lcx = (legend_bb[0] + legend_bb[2]) / 2 if len(legend_bb) >= 4 else 0
+                best = close[0]
+                best_col_match = False
+                for ci, ca, cs in close:
+                    ab = ca.get("bbox") or ca.get("block_bbox") or [0,0,0,0]
+                    acx = (ab[0] + ab[2]) / 2 if len(ab) >= 4 else 0
+                    ca_col_ok = abs(lcx - acx) < abs(lcx - (best[1].get("bbox",[0,0,0,0])[0] + best[1].get("bbox",[0,0,0,0])[2])/2)
+                    if ca_col_ok:
+                        best = (ci, ca, cs)
+                        best_col_match = True
+                        break
+                if best_col_match:
+                    best_idx, best_asset, best_score = best
+                    matched_assets = [best_asset]
+                    used_asset_indices.add(best_idx)
+                    region_match = {"media_blocks": [best_asset], "match_score": best_score}
+                else:
+                    ambiguous_figures.append({
+                        "legend_block_id": legend.get("block_id", ""),
+                        "page": legend_page,
+                        "caption_score": caption_score,
+                        "candidates": [
+                            {"asset_block_id": a.get("block_id", ""), "match_score": s}
+                            for _, a, s in close
+                        ],
+                    })
+                    ambiguous = True
+                    matched_assets = []
             else:
                 best_idx, best_asset, best_score = candidates[0]
                 matched_assets = [best_asset]
                 used_asset_indices.add(best_idx)
                 region_match = {"media_blocks": [best_asset], "match_score": best_score}
+
+        # Fallback: if no match found but legends == assets on the same page,
+        # assign sequentially by vertical position
+        if not matched_assets and fig_num is not None:
+            page_assets = [
+                (ai, a) for ai, a in enumerate(assets)
+                if ai not in used_asset_indices and a.get("page", 0) == legend_page
+            ]
+            page_legends = [
+                l for l in ordered_legends
+                if l is not legend and _extract_figure_number(l.get("text", "")) is not None
+                and l.get("page", 0) == legend_page
+            ]
+            if page_assets and len(page_assets) >= len(page_legends) + 1:
+                page_assets.sort(key=lambda item: (item[1].get("bbox",[0,0,0,0])[1] if len(item[1].get("bbox",[]))>=4 else 0))
+                # Count how many matched legends already consumed assets on this page
+                consumed_on_page = sum(1 for i in used_asset_indices if assets[i].get("page",0) == legend_page)
+                asset_idx = min(consumed_on_page, len(page_assets) - 1)
+                best_idx, best_asset = page_assets[asset_idx]
+                matched_assets = [best_asset]
+                used_asset_indices.add(best_idx)
+                region_match = {"media_blocks": [best_asset], "match_score": {"score": 0.5, "decision": "matched_fallback", "evidence": ["sequential_fallback"]}}
 
         is_legend_only = len(matched_assets) == 0
 
@@ -521,7 +596,7 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
             unmatched_assets = [a for a in unmatched_assets if a.get("block_id", "") not in consumed]
 
     return {
-        "figure_legends": legends,
+        "figure_legends": deduped_legends,
         "figure_assets": assets,
         "matched_figures": matched_figures,
         "ambiguous_figures": ambiguous_figures,
