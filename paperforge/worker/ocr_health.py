@@ -68,6 +68,10 @@ def build_ocr_health(
     spine = _detect_body_spine(structured_blocks, doc=doc_structure)
     layout = _run_layout_audit(structured_blocks)
 
+    tail_score = {}
+    if doc_structure is not None and hasattr(doc_structure, "tail_boundary_score"):
+        tail_score = doc_structure.tail_boundary_score or {}
+
     # Collect decision log summaries
     from paperforge.worker.ocr_decisions import collect_decisions, summarize_decisions
 
@@ -99,6 +103,7 @@ def build_ocr_health(
         "layout_audit_status": layout.get("status", "unknown"),
         "layout_anomaly_pages": layout.get("anomaly_pages", []),
         "layout_anomaly_count": layout.get("anomaly_count", 0),
+        "tail_boundary_confidence": tail_score.get("score", 0.0),
     }
     report.update(decision_summary)
     return report

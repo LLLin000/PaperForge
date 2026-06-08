@@ -83,6 +83,7 @@ class DocumentStructure:
     reference_zones: list[dict] | None = None
     span_coverage: dict | None = None
     layout_audit: dict | None = None
+    tail_boundary_score: dict = field(default_factory=dict)
 
 
 @dataclass
@@ -2793,6 +2794,15 @@ def normalize_document_structure(blocks: list[dict]) -> tuple[DocumentStructure,
     # Run layout audit after all resolution is done
     layout_audit = _run_layout_audit(blocks)
     doc_structure.layout_audit = layout_audit
+
+    # Compute tail boundary confidence score
+    from paperforge.worker.ocr_scores import score_tail_boundary
+
+    doc_structure.tail_boundary_score = score_tail_boundary(
+        forward_body_end=doc_structure.body_end_page,
+        backward_backmatter_start=doc_structure.backmatter_start.page if doc_structure.backmatter_start else None,
+        references_start={"page": doc_structure.references_start.page} if doc_structure.references_start else None,
+    )
 
     # Rebuild tail reading order after role normalization and block reassignment.
     # Without this, reading segment block_indices reference stale positions
