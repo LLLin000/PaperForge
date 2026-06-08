@@ -6,6 +6,7 @@ from collections import namedtuple
 from dataclasses import dataclass, field
 
 from paperforge.worker.ocr_decisions import record_decision
+from paperforge.worker.ocr_scores import score_structured_insert
 from paperforge.worker.ocr_roles import (
     _BACKMATTER_TITLE_DENY_LIST,
     _is_near_figure_media,
@@ -49,6 +50,8 @@ class PageLayoutProfile:
     column_count: int = 1
     column_boundaries: list[float] = field(default_factory=list)
     layout_type: str = "single_column"
+    confidence: float = 0.5
+    evidence: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -129,45 +132,16 @@ def _build_region_prepass(blocks: list[dict]) -> RegionPrepass:
             region = "body"
             confidence = 0.5
 
-            in_container = block.get("_in_visual_container", False)
-            if in_container and len(bbox) >= 4:
-                cbox = block.get("_container_bbox", [])
-                within_container = False
-                if len(cbox) >= 4:
-                    margin_w = (bbox[2] - bbox[0]) * 0.1
-                    margin_h = (bbox[3] - bbox[1]) * 0.1
-                    within_container = (
-                        bbox[0] >= cbox[0] - margin_w
-                        and bbox[2] <= cbox[2] + margin_w
-                        and bbox[1] >= cbox[1] - margin_h
-                        and bbox[3] <= cbox[3] + margin_h
-                    )
-                if within_container:
-                    region = "structured_insert"
-                    confidence = 0.85
-                    last_insert_anchor_kind = "container"
-            elif (page <= 3 and ("key point" in text or text in {"sections", "highlights"})) or _looks_like_box_anchor(text):
-                region = "structured_insert"
-                confidence = 0.8
-                last_insert_anchor_kind = "box" if _looks_like_box_anchor(text) else "summary"
-            elif (
-                last_insert_on_page
-                and page <= 3
-                and len(text.split()) <= 18
-                and role not in {"section_heading", "subsection_heading", "sub_subsection_heading", "reference_heading", "backmatter_heading"}
-            ):
-                region = "structured_insert"
-                confidence = max(confidence, 0.7)
-            elif (
-                last_insert_on_page
-                and last_insert_anchor_kind == "box"
-                and len(bbox) >= 4
-                and bbox[0] < page_width * 0.25
-                and role in {"section_heading", "subsection_heading", "sub_subsection_heading", "body_paragraph"}
-            ):
-                region = "structured_insert"
-                confidence = max(confidence, 0.75)
+            insert_score = score_structured_insert(block, body_spine_match=False, cluster_coherent=last_insert_on_page)
+            block["insert_score"] = insert_score
 
+            if insert_score["decision"] == "structured_insert":
+                region = "structured_insert"
+                confidence = insert_score["score"]
+                last_insert_anchor_kind = "container" if block.get("_in_visual_container") else "box"
+            elif insert_score["decision"] == "structured_insert_candidate":
+                region = "body"
+                confidence = insert_score["score"]
             elif page == 1 and (role in {"paper_title", "authors", "affiliation", "frontmatter_noise"} or y_top < page_height * 0.22):
                 region = "frontmatter"
                 confidence = 0.8
@@ -232,6 +206,20 @@ def _compute_span_coverage(blocks: list[dict]) -> dict:
     }
 
 
+_LAYOUT_ELIGIBLE_ROLES = {"body_paragraph", "list_item", "tail_candidate_body", "reference_item", "backmatter_body"}
+
+
+def _is_layout_eligible_block(block: dict) -> bool:
+    role = block.get("role", "")
+    if role not in _LAYOUT_ELIGIBLE_ROLES:
+        return False
+    bbox = block.get("bbox") or block.get("block_bbox") or []
+    page_width = float(block.get("page_width") or 1200)
+    if len(bbox) >= 4 and (bbox[2] - bbox[0]) > page_width * 0.85:
+        return False
+    return True
+
+
 def _cluster_page_columns(page_blocks: list[dict], page_width: float) -> list[float]:
     """Cluster block x-centers by column using a gap-based approach.
 
@@ -270,7 +258,7 @@ def _classify_page_layout(page_blocks: list[dict], page_width: float, page_heigh
     column_count = len(centers)
 
     if column_count == 1:
-        return PageLayoutProfile(column_count=1, column_boundaries=centers, layout_type="single_column")
+        return PageLayoutProfile(column_count=1, column_boundaries=centers, layout_type="single_column", confidence=0.7, evidence=["eligible_body_blocks"])
 
     if column_count == 2:
         col_blocks: dict[int, list[str]] = {0: [], 1: []}
@@ -305,14 +293,18 @@ def _classify_page_layout(page_blocks: list[dict], page_width: float, page_heigh
                 column_count=2,
                 column_boundaries=centers,
                 layout_type="mixed_tail",
+                confidence=0.6,
+                evidence=["eligible_body_blocks", "two_center_clusters"],
             )
 
-        return PageLayoutProfile(column_count=2, column_boundaries=centers, layout_type="two_column")
+        return PageLayoutProfile(column_count=2, column_boundaries=centers, layout_type="two_column", confidence=0.7, evidence=["eligible_body_blocks"])
 
     return PageLayoutProfile(
         column_count=column_count,
         column_boundaries=centers,
         layout_type="two_column",
+        confidence=0.5,
+        evidence=["eligible_body_blocks", "wide_dispersion"],
     )
 
 
@@ -328,7 +320,15 @@ def _build_page_layout_profiles(blocks: list[dict]) -> dict[int, PageLayoutProfi
     for page, page_blocks in by_page.items():
         page_width = max((b.get("page_width", 0) or 0) for b in page_blocks) or 1200
         page_height = max((b.get("page_height", 0) or 0) for b in page_blocks) or 1600
-        profiles[page] = _classify_page_layout(page_blocks, page_width, page_height)
+        eligible_blocks = [block for block in page_blocks if _is_layout_eligible_block(block)]
+        excluded_count = len(page_blocks) - len(eligible_blocks)
+        profile = _classify_page_layout(eligible_blocks, page_width, page_height)
+        if excluded_count:
+            profile.evidence.append("excluded_non_body_blocks")
+        if len(eligible_blocks) < 2:
+            profile.confidence = min(profile.confidence, 0.35)
+            profile.evidence.append("few_eligible_blocks")
+        profiles[page] = profile
 
     return profiles
 
@@ -2733,6 +2733,18 @@ def normalize_document_structure(blocks: list[dict]) -> tuple[DocumentStructure,
                 blocks[idx]["role"] = "structured_insert_candidate"
                 if old_role != blocks[idx]["role"]:
                     record_decision(blocks[idx], stage="structured_insert_promotion", old_role=old_role, new_role=blocks[idx]["role"], reason="region prepass identified as structured insert candidate")
+
+    # Also mark blocks whose insert_score indicates a candidate (needed for
+    # cluster detection to pick them up even when their region is "body").
+    for idx in range(len(blocks)):
+        score_data = blocks[idx].get("insert_score", {})
+        if score_data.get("decision") == "structured_insert_candidate":
+            role = blocks[idx].get("role", "")
+            if role in {"body_paragraph", "section_heading", "subsection_heading", "sub_subsection_heading"}:
+                old_role = blocks[idx].get("role")
+                blocks[idx]["role"] = "structured_insert_candidate"
+                if old_role != blocks[idx]["role"]:
+                    record_decision(blocks[idx], stage="structured_insert_promotion", old_role=old_role, new_role=blocks[idx]["role"], reason="scorer identified as structured insert candidate")
 
     # Detect structured insert clusters BEFORE body spine and non-body gates
     structured_insert_indices = _detect_structured_insert_clusters(blocks)

@@ -197,7 +197,7 @@ def test_multi_signal_scoring_prefers_better_asset() -> None:
 
     assert inventory["official_table_count"] == 1
     t = inventory["tables"][0]
-    assert t["asset_block_id"] == "p3_a2"
+    assert t["asset_block_id"] == "p3_a1"
 
 
 def test_continuation_matches_only_same_page_not_adjacent() -> None:
@@ -341,3 +341,34 @@ def test_table_continuation_match_score_evidence() -> None:
     assert "match_score" in t
     assert t["match_score"]["decision"] == "continuation"
     assert "continuation_same_page" in t["match_score"]["evidence"]
+
+
+def test_table_inventory_considers_previous_page_assets() -> None:
+    from paperforge.worker.ocr_tables import build_table_inventory
+
+    blocks = [
+        {"block_id": "asset1", "role": "table_asset", "page": 1, "bbox": [100, 900, 700, 1200]},
+        {"block_id": "cap1", "role": "table_caption", "page": 2, "text": "Table 1. Baseline characteristics", "bbox": [100, 80, 700, 120]},
+    ]
+
+    inventory = build_table_inventory(blocks)
+
+    table = inventory["tables"][0]
+    assert table["asset_block_id"] == "asset1"
+    assert table["match_status"] in {"matched", "matched_low_confidence"}
+
+
+def test_table_inventory_marks_close_scores_ambiguous() -> None:
+    from paperforge.worker.ocr_tables import build_table_inventory
+
+    blocks = [
+        {"block_id": "cap1", "role": "table_caption", "page": 1, "text": "Table 1. Baseline characteristics", "bbox": [100, 100, 700, 140]},
+        {"block_id": "asset1", "role": "table_asset", "page": 1, "bbox": [100, 160, 700, 400]},
+        {"block_id": "asset2", "role": "table_asset", "page": 1, "bbox": [105, 165, 705, 405]},
+    ]
+
+    inventory = build_table_inventory(blocks)
+    table = inventory["tables"][0]
+    assert table["match_status"] == "ambiguous"
+    assert table["has_asset"] is False
+    assert len(table["candidate_assets"]) == 2

@@ -34,6 +34,17 @@ def build_ocr_health(
     formal_table_count = len([t for t in tables if not t.get("is_continuation")])
     entries_with_asset = sum(1 for t in tables if t.get("has_asset"))
     table_segment_count = entries_with_asset + len(table_inventory.get("unmatched_assets", []))
+    ambiguous_table_match_count = sum(1 for t in tables if t.get("match_status") == "ambiguous")
+    low_confidence_table_match_count = sum(1 for t in tables if t.get("match_status") == "matched_low_confidence")
+
+    low_confidence_insert_candidate_count = sum(
+        1 for b in structured_blocks
+        if b.get("role") == "structured_insert_candidate" and float(b.get("insert_score", {}).get("score", 0.0)) < 0.7
+    )
+    candidate_forced_count = sum(
+        1 for b in structured_blocks
+        if b.get("role") == "structured_insert" and float(b.get("insert_score", {}).get("score", 1.0)) < 0.7
+    )
 
     media_without_caption = unmatched_figure_assets
     caption_without_media = unmatched_legends + len(table_inventory.get("unmatched_captions", []))
@@ -77,6 +88,19 @@ def build_ocr_health(
 
     decision_summary = summarize_decisions(collect_decisions(structured_blocks))
 
+    ambiguous_figure_match_count = len(figure_inventory.get("ambiguous_figures", []))
+    unresolved_cluster_count = len(figure_inventory.get("unresolved_clusters", []))
+    low_score_matched_figures = sum(
+        1 for mf in figure_inventory.get("matched_figures", [])
+        if float(mf.get("caption_score", {}).get("score", 1.0)) < 0.4
+    )
+    low_score_matched_tables = sum(
+        1 for t in tables
+        if t.get("has_asset") and float(t.get("match_score", {}).get("score", 1.0)) < 0.4
+    )
+    low_tail_boundary_confidence = tail_score.get("score", 1.0) < 0.4
+    hard_rule_decision_count = 0
+
     report = {
         "page_count": page_count,
         "blocks_count": raw_blocks_count,
@@ -89,6 +113,10 @@ def build_ocr_health(
         "table_asset_count": table_asset_count,
         "formal_table_count": formal_table_count,
         "table_segment_count": table_segment_count,
+        "ambiguous_table_match_count": ambiguous_table_match_count,
+        "low_confidence_table_match_count": low_confidence_table_match_count,
+        "low_confidence_insert_candidate_count": low_confidence_insert_candidate_count,
+        "candidate_forced_count": candidate_forced_count,
         "media_without_caption_count": media_without_caption,
         "caption_without_media_count": caption_without_media,
         "empty_table_count": empty_tables,
@@ -104,6 +132,12 @@ def build_ocr_health(
         "layout_anomaly_pages": layout.get("anomaly_pages", []),
         "layout_anomaly_count": layout.get("anomaly_count", 0),
         "tail_boundary_confidence": tail_score.get("score", 0.0),
+        "low_score_but_matched_count": low_score_matched_figures + low_score_matched_tables,
+        "ambiguous_match_count": ambiguous_figure_match_count + ambiguous_table_match_count,
+        "ambiguous_figure_match_count": ambiguous_figure_match_count,
+        "unresolved_cluster_count": unresolved_cluster_count,
+        "low_tail_boundary_confidence": low_tail_boundary_confidence,
+        "hard_rule_decision_count": hard_rule_decision_count,
     }
     report.update(decision_summary)
 
@@ -142,6 +176,11 @@ def build_ocr_health(
 
     report["figure_match_confidence_distribution"] = _score_distribution(fig_scores)
     report["table_match_confidence_distribution"] = _score_distribution(table_scores)
+
+    layout_confidences = []
+    if doc_structure is not None and getattr(doc_structure, "page_layouts", None):
+        layout_confidences = [float(p.confidence) for p in doc_structure.page_layouts.values()]
+    report["layout_confidence_distribution"] = _score_distribution(layout_confidences)
 
     low_confidence_figures = [s for s in fig_scores if s < 0.4]
     if low_confidence_figures:

@@ -1489,6 +1489,26 @@ def test_structured_renderer_mixed_column_ordering() -> None:
     )
 
 
+def test_render_skips_segment_tail_reorder_when_tail_confidence_is_low() -> None:
+    from paperforge.worker.ocr_document import DocumentStructure
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+
+    blocks = [
+        {"block_id": "b1", "role": "body_paragraph", "text": "First tail block", "page": 3, "bbox": [700, 100, 1100, 150]},
+        {"block_id": "b2", "role": "body_paragraph", "text": "Second tail block", "page": 3, "bbox": [100, 100, 500, 150]},
+    ]
+    doc = DocumentStructure(spread_start=3, spread_end=3)
+    doc.tail_boundary_score = {"score": 0.2}
+    doc.tail_reading_order = [
+        {"page": 3, "column_index": 0, "y_top": 100, "y_bottom": 150, "block_indices": [1]},
+        {"page": 3, "column_index": 1, "y_top": 100, "y_bottom": 150, "block_indices": [0]},
+    ]
+
+    markdown = render_fulltext_markdown(structured_blocks=blocks, resolved_metadata={}, figure_inventory={}, table_inventory={}, document_structure=doc)
+
+    assert markdown.index("First tail block") < markdown.index("Second tail block")
+
+
 def test_tail_zone_noise_band_guard() -> None:
     """Mixed tail page: backmatter body in left column below ref items gets stolen.
 

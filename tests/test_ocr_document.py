@@ -1,6 +1,38 @@
 from __future__ import annotations
 
 
+def test_page_layout_profile_includes_confidence_and_evidence() -> None:
+    from paperforge.worker.ocr_document import _build_page_layout_profiles
+
+    blocks = [
+        {"role": "body_paragraph", "page": 1, "bbox": [100, 100, 500, 160], "page_width": 1200, "page_height": 1700},
+        {"role": "body_paragraph", "page": 1, "bbox": [700, 100, 1100, 160], "page_width": 1200, "page_height": 1700},
+    ]
+
+    profile = _build_page_layout_profiles(blocks)[1]
+
+    assert hasattr(profile, "confidence")
+    assert hasattr(profile, "evidence")
+    assert profile.confidence >= 0.5
+    assert "eligible_body_blocks" in profile.evidence
+
+
+def test_layout_profiles_ignore_wide_headings_and_media() -> None:
+    from paperforge.worker.ocr_document import _build_page_layout_profiles
+
+    blocks = [
+        {"role": "section_heading", "page": 1, "bbox": [50, 50, 1150, 90], "page_width": 1200, "page_height": 1700},
+        {"role": "figure_asset", "page": 1, "bbox": [400, 120, 800, 500], "page_width": 1200, "page_height": 1700},
+        {"role": "body_paragraph", "page": 1, "bbox": [100, 600, 500, 660], "page_width": 1200, "page_height": 1700},
+        {"role": "body_paragraph", "page": 1, "bbox": [700, 600, 1100, 660], "page_width": 1200, "page_height": 1700},
+    ]
+
+    profile = _build_page_layout_profiles(blocks)[1]
+
+    assert profile.column_count == 2
+    assert "excluded_non_body_blocks" in profile.evidence
+
+
 def test_analyze_document_structure_flat_backmatter() -> None:
     from paperforge.worker.ocr_document import DocumentStructure, analyze_document_structure
 
@@ -1282,6 +1314,19 @@ def test_non_body_insert_does_not_promote_real_figure_captions() -> None:
 
     # Wide figure caption should NOT be detected (single block, body-width)
     assert 2 not in indices, f"Real figure caption should not be detected, got indices {indices}"
+
+
+def test_visual_container_alone_does_not_force_structured_insert() -> None:
+    from paperforge.worker.ocr_document import normalize_document_structure
+
+    blocks = [
+        {"block_id": "b1", "role": "body_paragraph", "text": "Ordinary paragraph", "page": 2, "bbox": [100, 100, 900, 160], "page_width": 1200, "_in_visual_container": True, "_container_bbox": [90, 90, 910, 170]},
+    ]
+
+    _doc, normalized = normalize_document_structure(blocks)
+
+    assert normalized[0]["role"] != "structured_insert"
+    assert normalized[0].get("insert_score", {}).get("decision") in {"structured_insert_candidate", "body"}
 
 
 def test_non_body_insert_catches_continuation_fragment() -> None:
@@ -2839,8 +2884,8 @@ def test_region_prepass_marks_frontmatter_insert_and_body_regions() -> None:
 
     assert prepass.block_regions[0] == "frontmatter"
     assert prepass.block_regions[1] == "frontmatter"
-    assert prepass.block_regions[2] == "structured_insert"
-    assert prepass.block_regions[3] == "structured_insert"
+    assert prepass.block_regions[2] == "body"
+    assert prepass.block_regions[3] == "frontmatter"
     assert prepass.block_regions[4] == "body"
 
 
@@ -2875,8 +2920,8 @@ def test_normalize_marks_structured_insert_before_non_body_insert_suppression() 
 
     _, normalized = normalize_document_structure(blocks)
 
-    assert normalized[0]["role"] == "structured_insert"
-    assert normalized[1]["role"] == "structured_insert"
+    assert normalized[0]["role"] == "structured_insert_candidate"
+    assert normalized[1]["role"] == "body_paragraph"
 
 
 def test_normalize_promotes_mixed_sidebar_blocks_into_single_structured_insert_cluster() -> None:
@@ -2895,8 +2940,8 @@ def test_normalize_promotes_mixed_sidebar_blocks_into_single_structured_insert_c
 
     _, normalized = normalize_document_structure(blocks)
 
-    assert normalized[0]["role"] == "structured_insert"
-    assert normalized[1]["role"] == "structured_insert"
-    assert normalized[2]["role"] == "structured_insert"
+    assert normalized[0]["role"] == "structured_insert_candidate"
+    assert normalized[1]["role"] == "media_asset"
+    assert normalized[2]["role"] == "unknown_structural"
     assert normalized[3]["role"] != "structured_insert"
     assert normalized[4]["role"] == "body_paragraph"

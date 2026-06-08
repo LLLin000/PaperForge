@@ -74,6 +74,75 @@ def score_table_match(caption: dict, asset: dict, *, is_continuation: bool = Fal
     return {"score": score, "matched_asset_id": asset.get("block_id", ""), "decision": decision, "evidence": evidence}
 
 
+def score_figure_match(legend: dict, asset: dict, *, caption_score: dict | None = None) -> dict:
+    legend_bbox = legend.get("bbox") or legend.get("block_bbox") or [0, 0, 0, 0]
+    asset_bbox = asset.get("bbox") or asset.get("block_bbox") or [0, 0, 0, 0]
+    score = 0.0
+    evidence: list[str] = []
+
+    caption_value = float((caption_score or {}).get("score", 0.0))
+    if caption_value < 0.4:
+        evidence.append("low_caption_score")
+        return {"score": caption_value, "matched_asset_id": asset.get("block_id", ""), "decision": "rejected", "evidence": evidence}
+
+    if legend.get("page") == asset.get("page"):
+        score += 0.3
+        evidence.append("same_page")
+    if _bbox_x_overlap_ratio(legend_bbox, asset_bbox) >= 0.4:
+        score += 0.25
+        evidence.append("x_overlap")
+    if len(legend_bbox) >= 4 and len(asset_bbox) >= 4:
+        vertical_gap = min(abs(legend_bbox[1] - asset_bbox[3]), abs(asset_bbox[1] - legend_bbox[3]))
+        if vertical_gap <= 300:
+            score += 0.2
+            evidence.append("nearby_y")
+        if asset_bbox[3] <= legend_bbox[1] or asset_bbox[1] >= legend_bbox[3]:
+            score += 0.1
+            evidence.append("caption_above_or_below")
+    score += min(0.15, caption_value * 0.15)
+    score = max(0.0, min(1.0, score))
+    decision = "matched" if score >= 0.6 else "ambiguous" if score >= 0.4 else "rejected"
+    return {"score": score, "matched_asset_id": asset.get("block_id", ""), "decision": decision, "evidence": evidence}
+
+
+def score_structured_insert(
+    block: dict,
+    *,
+    body_spine_match: bool = False,
+    cluster_coherent: bool = False,
+) -> dict:
+    text = str(block.get("text") or block.get("block_content") or "").strip().lower()
+    bbox = block.get("bbox") or block.get("block_bbox") or [0, 0, 0, 0]
+    page_width = float(block.get("page_width") or 1200)
+    score = 0.0
+    evidence: list[str] = []
+
+    if block.get("_in_visual_container"):
+        score += 0.3
+        evidence.append("visual_container")
+    if re.match(r"^box\s*\.?\s*\d+\b", text) or "key point" in text or text in {"sections", "highlights"}:
+        score += 0.3
+        evidence.append("box_or_summary_keyword")
+    if len(bbox) >= 4 and (bbox[2] - bbox[0]) < page_width * 0.45:
+        score += 0.15
+        evidence.append("narrow_width")
+    if cluster_coherent:
+        score += 0.15
+        evidence.append("cluster_coherent")
+    if body_spine_match:
+        score -= 0.25
+        evidence.append("body_spine_match")
+
+    score = max(0.0, min(1.0, score))
+    if score >= 0.7:
+        decision = "structured_insert"
+    elif score >= 0.4:
+        decision = "structured_insert_candidate"
+    else:
+        decision = "body"
+    return {"score": score, "decision": decision, "evidence": evidence}
+
+
 def score_tail_boundary(
     *,
     forward_body_end: int | None,
