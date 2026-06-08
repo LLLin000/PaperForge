@@ -580,6 +580,8 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
     if rejected_legends and unmatched_assets:
         rejected_pages = {leg.get("page") for leg in rejected_legends if leg.get("page")}
         for cluster in _media_clusters(unmatched_assets, page_width):
+            if len(cluster) < 2:
+                continue
             cluster_page = cluster[0].get("page", 0)
             if cluster_page not in rejected_pages:
                 continue
