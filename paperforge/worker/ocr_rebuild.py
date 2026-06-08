@@ -118,7 +118,7 @@ def run_derived_rebuild_for_keys(vault: Path, keys: list[str]) -> dict:
         metadata_dir.mkdir(parents=True, exist_ok=True)
         frontmatter_candidates = extract_frontmatter_candidates(artifacts.blocks_structured)
         page1_blocks = [block for block in structured if int(block.get("page", 0) or 0) == 1]
-        resolved = resolve_metadata(source_meta, frontmatter_candidates, page1_blocks=page1_blocks)
+        resolved = resolve_metadata(source_meta, frontmatter_candidates, page1_blocks=page1_blocks, structured_blocks=structured)
         write_resolved_metadata(metadata_dir / "resolved_metadata.json", resolved)
 
         # Rebuild figure inventory
@@ -247,14 +247,23 @@ def _enrich_meta_from_paper_note(vault: Path, key: str, meta_path: Path) -> None
                     return
                 meta = read_json(meta_path) if meta_path.exists() else {}
                 changed = False
+                # Always re-extract authors on rebuild — source_metadata may carry stale
+                # first-author-only entries from previous runs with no way to detect them
+                if meta.get("authors_source") != "zotero":
+                    meta.pop("authors", None)
+                    meta.pop("authors_incomplete", None)
+                    meta.pop("authors_source", None)
+                    meta.pop("first_author", None)
+                    changed = True
                 for field in ("title", "authors", "year", "journal", "doi"):
                     if field not in meta or not meta.get(field):
                         val = fm.get(field)
                         if val:
                             meta[field] = val
                             changed = True
-                if ("authors" not in meta or not meta.get("authors")) and fm.get("first_author"):
+                if (not meta.get("authors")) and fm.get("first_author"):
                     meta["authors"] = [str(fm["first_author"])]
+                    meta["first_author"] = str(fm["first_author"])
                     meta["authors_incomplete"] = True
                     meta["authors_source"] = "paper_note.first_author_fallback"
                     changed = True

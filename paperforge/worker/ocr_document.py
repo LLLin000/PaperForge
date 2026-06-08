@@ -1180,6 +1180,10 @@ def rescue_roles_with_document_context(
 
         # --- Rule 1: frontmatter_noise → body_paragraph (body section + body font)
         if block.get("role") == "frontmatter_noise":
+            # Never rescue pre-proof markers — they are intentional page furniture suppression
+            from paperforge.worker.ocr_roles import is_preproof_marker
+            if is_preproof_marker(str(block.get("text", "") or block.get("block_content", "") or "")):
+                continue
             page = block.get("page", 1) or 1
             bbox = block.get("bbox") or block.get("block_bbox") or [0, 0, 0, 0]
             page_h = block.get("page_height") or 1700

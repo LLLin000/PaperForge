@@ -26,6 +26,11 @@ _TABLE_PREFIX_PATTERN = re.compile(
     flags=re.IGNORECASE,
 )
 
+_PREPROOF_MARKER = re.compile(
+    r"^(?:journal\s+)?pre-?proof\b",
+    re.IGNORECASE,
+)
+
 _BACKMATTER_TITLE_DENY_LIST = {
     "generative ai statement",
     "acknowledgments",
@@ -126,6 +131,10 @@ def _heading_number_depth(text: str) -> int:
         return 0
     token = match.group(1).rstrip(".")
     return len([part for part in token.split(".") if part])
+
+
+def is_preproof_marker(text: str) -> bool:
+    return bool(_PREPROOF_MARKER.match(text.strip()))
 
 
 def _has_figure_prefix(text: str) -> bool:
@@ -382,6 +391,33 @@ def assign_block_role(
     raw_label = str(block.get("block_label") or block.get("raw_label") or "").strip()
     text = str(block.get("block_content") or block.get("text") or "").strip()
 
+    if _PREPROOF_MARKER.match(text):
+        bbox = block.get("block_bbox") or block.get("bbox") or [0, 0, 0, 0]
+        y_top = bbox[1] if len(bbox) >= 4 else 0
+        page_num = int(block.get("page", 0) or 0)
+        page_h = float(block.get("page_height") or page_height or 1700)
+        page_w = float(block.get("page_width") or page_width or 1200)
+        block_width = (bbox[2] - bbox[0]) if len(bbox) >= 4 else 0
+
+        preproof_likely = (
+            page_num == 1
+            and y_top > page_h * 0.08
+            and raw_label == "paragraph_title"
+        )
+
+        is_running_header = y_top < page_h * 0.06
+        is_footer = y_top > page_h * 0.94
+
+        if preproof_likely and not is_running_header and not is_footer:
+            return RoleAssignment(
+                role="frontmatter_noise",
+                confidence=0.98,
+                evidence=[
+                    "journal pre-proof marker: page 1, paragraph_title, "
+                    f"y={y_top:.0f}/{page_h:.0f}, width={block_width:.0f}/{page_w:.0f}"
+                ],
+            )
+
     # Panel label exclusion (single-letter figure labels like A, B, (C), A.)
     if _PANEL_LABEL_PATTERN.match(text):
         return RoleAssignment(
@@ -476,6 +512,24 @@ def assign_block_role(
                 confidence=0.8,
                 evidence=[f"page-1 zone title_zone: {text[:60]}"],
             )
+
+    # Fallback: page 1 after pre-proof marker — next substantial text block is the real title
+    if zone is None and page_num == 1 and raw_label in ("paragraph_title", "text"):
+        bbox = block.get("block_bbox") or block.get("bbox") or [0, 0, 0, 0]
+        y_top = bbox[1] if len(bbox) >= 4 else 0
+        ph = float(block.get("page_height") or page_height or 1700)
+        already_has_preproof = any(
+            str(b.get("text", "") or b.get("block_content", "") or "").strip().lower().startswith("journal pre")
+            for b in page_blocks if b is not block
+        )
+        if already_has_preproof and y_top < ph * 0.35 and len(text) > 40:
+            lower_noise = text.strip().lstrip("*•·-–—").lower()
+            if lower_noise not in _BACKMATTER_TITLE_DENY_LIST:
+                return RoleAssignment(
+                    role="paper_title",
+                    confidence=0.85,
+                    evidence=[f"page-1 title fallback after pre-proof: y={y_top:.0f}/{ph:.0f}"],
+                )
 
     if zone == "author_zone":
         return RoleAssignment(
