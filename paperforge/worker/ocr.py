@@ -94,7 +94,10 @@ OCR_QUEUE_STATUSES = {
 
 
 def apply_ocr_error_state(row: dict, meta: dict, error_state: dict) -> None:
-    row["queue_status"] = error_state["status"]
+    status = error_state["status"]
+    row["queue_status"] = status
+    meta["ocr_status"] = status
+    meta["error"] = error_state["last_error"]
     meta["error_type"] = error_state["error_type"]
     meta["error_stage"] = error_state["error_stage"]
     meta["retryable"] = error_state["retryable"]
@@ -2137,6 +2140,19 @@ def run_ocr(vault: Path, verbose: bool = False, no_progress: bool = False, selec
             meta["ocr_finished_at"] = ""
             meta["retry_count"] = 0
             write_json(paths["ocr"] / key / "meta.json", meta)
+        elif current == "retryable_error":
+            retry_count = int(meta.get("retry_count", 0)) + 1
+            meta["retry_count"] = retry_count
+            if retry_count > 3:
+                meta["ocr_status"] = "fatal_error"
+                meta["error"] = meta.get("last_error", "Max retries exceeded")
+            else:
+                meta["ocr_status"] = "pending"
+                meta["ocr_job_id"] = ""
+                meta["error"] = meta.get("last_error", "")
+            write_json(paths["ocr"] / key / "meta.json", meta)
+        elif current == "fatal_error":
+            pass
         elif current == "nopdf":
             meta["ocr_status"] = "pending"
             meta["error"] = ""
@@ -2246,11 +2262,7 @@ def run_ocr(vault: Path, verbose: bool = False, no_progress: bool = False, selec
                     page_num, markdown_path, json_path, fulltext_md_path = postprocess_ocr_result(
                         vault, key, all_results
                     )
-                except KeyboardInterrupt:
-                    raise
-                except SystemExit:
-                    raise
-                except BaseException:
+                except (KeyboardInterrupt, SystemExit):
                     raise
                 except (OCRPDFResolveError, OCRArtifactIntegrityError, OCRPostprocessError) as exc:
                     error_state = classify_ocr_error(exc, stage="postprocess")

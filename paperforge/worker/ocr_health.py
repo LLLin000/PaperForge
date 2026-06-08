@@ -143,6 +143,13 @@ def build_ocr_health(
     report["figure_match_confidence_distribution"] = _score_distribution(fig_scores)
     report["table_match_confidence_distribution"] = _score_distribution(table_scores)
 
+    low_confidence_figures = [s for s in fig_scores if s < 0.4]
+    if low_confidence_figures:
+        degraded_reasons.append(f"low figure caption confidence ({len(low_confidence_figures)} figures)")
+    low_confidence_tables = [s for s in table_scores if s < 0.4]
+    if low_confidence_tables:
+        degraded_reasons.append(f"low table match confidence ({len(low_confidence_tables)} tables)")
+
     return report
 
 
