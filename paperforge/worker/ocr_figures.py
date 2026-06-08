@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any
 
 from paperforge.core.io import write_json
+from paperforge.worker.ocr_roles import _PANEL_LABEL_PATTERN
 from paperforge.worker.ocr_scores import score_figure_caption, score_figure_match
 
 _FIGURE_NUMBER_PATTERN = re.compile(
@@ -345,6 +346,9 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
     for block in structured_blocks:
         role = block.get("role", "")
         if block.get("_non_body_media") or role == "non_body_insert":
+            continue
+        # Skip single-letter panel labels (A, B, (C), A.) in figure legends
+        if _PANEL_LABEL_PATTERN.match(str(block.get("text", "")).strip()):
             continue
         if role in ("figure_caption", "figure_caption_candidate"):
             if _is_body_mention(block):

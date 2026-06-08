@@ -6,13 +6,13 @@ from collections import namedtuple
 from dataclasses import dataclass, field
 
 from paperforge.worker.ocr_decisions import record_decision
-from paperforge.worker.ocr_scores import score_structured_insert
 from paperforge.worker.ocr_roles import (
     _BACKMATTER_TITLE_DENY_LIST,
     _is_near_figure_media,
     _looks_like_affiliation,
     _looks_like_author_list,
 )
+from paperforge.worker.ocr_scores import score_structured_insert
 
 _TAIL_ROLES = frozenset(
     {
@@ -2604,69 +2604,158 @@ def _expand_structured_insert_cluster_with_mixed_sidebar_blocks(
     return expanded
 
 
-def _run_layout_audit(blocks: list[dict]) -> dict:
+def _is_full_width_heading(block: dict, page_width: float) -> bool:
+    bbox = block.get("bbox") or block.get("block_bbox") or [0, 0, 0, 0]
+    return len(bbox) >= 4 and (bbox[2] - bbox[0]) > page_width * 0.55
+
+
+def _overlap_area_ratio(bbox_a: list[float], bbox_b: list[float]) -> float:
+    x_overlap = max(0, min(bbox_a[2], bbox_b[2]) - max(bbox_a[0], bbox_b[0]))
+    y_overlap = max(0, min(bbox_a[3], bbox_b[3]) - max(bbox_a[1], bbox_b[1]))
+    if x_overlap <= 0 or y_overlap <= 0:
+        return 0.0
+    overlap = x_overlap * y_overlap
+    area_a = max((bbox_a[2] - bbox_a[0]) * (bbox_a[3] - bbox_a[1]), 1)
+    area_b = max((bbox_b[2] - bbox_b[0]) * (bbox_b[3] - bbox_b[1]), 1)
+    return overlap / min(area_a, area_b)
+
+
+def _run_layout_audit(
+    blocks: list[dict],
+    body_spine: dict | None = None,
+    page_layouts: dict[int, PageLayoutProfile] | None = None,
+) -> dict:
     """Check resolved structure for obvious geometric contradictions.
 
-    Returns:
-        status: str "pass", "warn", or "fail"
-        page_warnings: dict[int, list[str]] per-page warnings
-        anomaly_count: int
-        anomaly_pages: list[int]
+    Returns dict with severity-gated anomalies:
+        status: str "pass", "warn" (warning_count>0), or "fail" (error_count>0)
+        info_count / warning_count / error_count: int
+        anomaly_count: int (total, backward compatible)
+        anomaly_pages: list[int] (error pages only)
+        anomalies: list[dict] with type/severity/page/reason/evidence
     """
-    page_warnings: dict[int, list[str]] = {}
+    anomalies: list[dict] = []
 
     by_page: dict[int, list[dict]] = {}
     for b in blocks:
         p = b.get("page", 1)
         by_page.setdefault(p, []).append(b)
 
-    for page, page_blocks in by_page.items():
-        warnings: list[str] = []
+    spine_quality = "weak"
+    if body_spine and isinstance(body_spine, dict):
+        meta = body_spine.get("_meta", {})
+        if isinstance(meta, dict):
+            spine_quality = meta.get("quality", "weak") or "weak"
 
-        # Check 1: heading owns body above it (cross-column)
+    for page, page_blocks in by_page.items():
+        page_width = max((b.get("page_width", 0) or 0) for b in page_blocks) or 1200
+        pw_mid = page_width / 2
+
+        page_layout_conf = 0.0
+        if page_layouts and page in page_layouts:
+            page_layout_conf = page_layouts[page].confidence
+
         headings = [b for b in page_blocks if b.get("role") in ("section_heading", "subsection_heading")]
         body_blocks = [b for b in page_blocks if b.get("role") == "body_paragraph"]
+
+        # Check 1: heading owns body above it (cross-column)
         for h in headings:
-            hb = h.get("bbox") or [0, 0, 0, 0]
+            hb = h.get("bbox") or h.get("block_bbox") or [0, 0, 0, 0]
+            if len(hb) < 4:
+                continue
             hx = (hb[0] + hb[2]) / 2
             hy = hb[1]
-            h_col = 0 if hx < 600 else 1
+            h_col = 0 if hx < pw_mid else 1
             for body in body_blocks:
-                bb = body.get("bbox") or [0, 0, 0, 0]
+                bb = body.get("bbox") or body.get("block_bbox") or [0, 0, 0, 0]
+                if len(bb) < 4:
+                    continue
                 bx = (bb[0] + bb[2]) / 2
                 by_ = bb[1]
-                b_col = 0 if bx < 600 else 1
+                b_col = 0 if bx < pw_mid else 1
                 if h_col != b_col and by_ < hy:
-                    warnings.append("heading owns body in different column above it")
+                    is_full_width = _is_full_width_heading(h, page_width)
+                    has_nearer_heading = False
+                    for h2 in headings:
+                        if h2 is h:
+                            continue
+                        h2b = h2.get("bbox") or h2.get("block_bbox") or [0, 0, 0, 0]
+                        if len(h2b) < 4:
+                            continue
+                        h2x = (h2b[0] + h2b[2]) / 2
+                        h2_col = 0 if h2x < pw_mid else 1
+                        if h2_col == b_col and h2b[3] <= by_:
+                            has_nearer_heading = True
+                            break
+
+                    if page_layout_conf >= 0.7 and not is_full_width and not has_nearer_heading:
+                        severity = "error"
+                    else:
+                        severity = "info"
+
+                    anomalies.append({
+                        "type": "heading_cross_column_ownership",
+                        "severity": severity,
+                        "page": page,
+                        "reason": f"heading on column {h_col} owns body in column {b_col} above it",
+                        "evidence": {},
+                    })
                     break
 
         # Check 2: structured_insert overlaps body region
         inserts = [b for b in page_blocks if b.get("role") in ("non_body_insert", "structured_insert")]
         body_blocks_p2 = [b for b in page_blocks if b.get("role") == "body_paragraph"]
         for ins in inserts:
-            ib = ins.get("bbox") or [0, 0, 0, 0]
+            ib = ins.get("bbox") or ins.get("block_bbox") or [0, 0, 0, 0]
+            if len(ib) < 4:
+                continue
             for body in body_blocks_p2:
-                bb = body.get("bbox") or [0, 0, 0, 0]
+                bb = body.get("bbox") or body.get("block_bbox") or [0, 0, 0, 0]
+                if len(bb) < 4:
+                    continue
                 if ib[0] < bb[2] and ib[2] > bb[0] and ib[1] < bb[3] and ib[3] > bb[1]:
-                    warnings.append("structured_insert overlaps body region")
+                    overlap_ratio = _overlap_area_ratio(ib, bb)
+                    insert_score_val = float(
+                        (ins.get("insert_score") or {}).get("score", 0.0)
+                        if isinstance(ins.get("insert_score"), dict)
+                        else 0.0
+                    )
+                    body_raw_label = (body.get("raw_label") or "").lower()
+                    is_body_real = body_raw_label not in ("figure", "table", "inner_text")
+
+                    if insert_score_val >= 0.7 and spine_quality in ("strong", "moderate") and overlap_ratio > 0.3 and is_body_real:  # noqa: E501
+                        severity = "warning" if overlap_ratio < 0.6 else "error"
+                    else:
+                        severity = "info"
+
+                    anomalies.append({
+                        "type": "structured_insert_body_overlap",
+                        "severity": severity,
+                        "page": page,
+                        "reason": f"{ins.get('role', 'insert')} overlaps body region",
+                        "evidence": {"overlap_area_ratio": overlap_ratio},
+                    })
                     break
 
-        if warnings:
-            page_warnings[page] = warnings
+    error_count = sum(1 for a in anomalies if a["severity"] == "error")
+    warning_count = sum(1 for a in anomalies if a["severity"] == "warning")
+    info_count = sum(1 for a in anomalies if a["severity"] == "info")
 
-    total_warnings = sum(len(w) for w in page_warnings.values())
-    if total_warnings == 0:
-        status = "pass"
-    elif total_warnings <= 3:
+    if error_count > 0:
+        status = "fail"
+    elif warning_count > 0:
         status = "warn"
     else:
-        status = "fail"
+        status = "pass"
 
     return {
         "status": status,
-        "page_warnings": {str(p): w for p, w in page_warnings.items()},
-        "anomaly_count": total_warnings,
-        "anomaly_pages": sorted(page_warnings.keys()),
+        "info_count": info_count,
+        "warning_count": warning_count,
+        "error_count": error_count,
+        "anomaly_count": len(anomalies),
+        "anomaly_pages": sorted({a["page"] for a in anomalies if a["severity"] == "error"}),
+        "anomalies": anomalies,
     }
 
 
@@ -2804,7 +2893,7 @@ def normalize_document_structure(blocks: list[dict]) -> tuple[DocumentStructure,
     _resolve_ambiguous_candidates(blocks, doc_structure, page_layouts)
 
     # Run layout audit after all resolution is done
-    layout_audit = _run_layout_audit(blocks)
+    layout_audit = _run_layout_audit(blocks, body_spine=body_spine, page_layouts=page_layouts)
     doc_structure.layout_audit = layout_audit
 
     # Compute tail boundary confidence score

@@ -91,3 +91,40 @@ doi: 10.1038/s41574-021-00588-4
     assert meta["year"] == 2022
     assert meta["journal"] == "Nature Reviews Endocrinology"
     assert meta["doi"] == "10.1038/s41574-021-00588-4"
+
+
+def test_enrich_meta_falls_back_to_first_author(monkeypatch, tmp_path) -> None:
+    from paperforge.worker import _utils
+    from paperforge.worker.ocr_rebuild import _enrich_meta_from_paper_note
+    from paperforge.core.io import read_json
+
+    vault = tmp_path / "vault"
+    lit_dir = vault / "literature"
+    note_dir = lit_dir / "Biology"
+    note_dir.mkdir(parents=True)
+    note_path = note_dir / "KEY001.md"
+    note_path.write_text(
+        """---
+zotero_key: KEY001
+title: A paper with only first author
+first_author: W. H. Marks
+year: 2023
+journal: Journal of Examples
+doi: 10.1000/example
+---
+""",
+        encoding="utf-8",
+    )
+
+    meta_path = vault / "ocr" / "KEY001" / "source_metadata.json"
+    meta_path.parent.mkdir(parents=True)
+    meta_path.write_text("{}", encoding="utf-8")
+
+    monkeypatch.setattr(_utils, "pipeline_paths", lambda _vault: {"literature": lit_dir, "ocr": vault / "ocr"})
+
+    _enrich_meta_from_paper_note(vault, "KEY001", meta_path)
+
+    meta = read_json(meta_path)
+    assert meta["authors"] == ["W. H. Marks"]
+    assert meta.get("authors_incomplete") is True
+    assert meta.get("authors_source") == "paper_note.first_author_fallback"

@@ -2837,7 +2837,7 @@ def test_title_not_swept_into_non_body_insert() -> None:
 
 
 def test_layout_audit_heading_owns_wrong_body() -> None:
-    """Heading in left column, body above it in right column -> audit flags."""
+    """Heading in left column, body above it in right column -> audit flags info when no layout confidence."""
     from paperforge.worker.ocr_document import _run_layout_audit
 
     blocks = [
@@ -2845,23 +2845,23 @@ def test_layout_audit_heading_owns_wrong_body() -> None:
         {"page": 1, "role": "section_heading", "bbox": [100, 200, 500, 230], "text": "Introduction"},
     ]
     result = _run_layout_audit(blocks)
-    assert result["status"] in ("warn", "fail"), f"Expected warn/fail, got {result['status']}"
-    assert "1" in result["page_warnings"], f"Page 1 should have warnings: {result['page_warnings']}"
+    assert result["status"] == "pass", f"Expected pass (info-only), got {result['status']}"
+    assert result["info_count"] >= 1, "Expected at least 1 info anomaly"
     assert result["anomaly_count"] >= 1
+    assert all(a["severity"] == "info" for a in result["anomalies"]), "All anomalies should be info severity without layout confidence"
 
 
 def test_layout_audit_reference_zone_overlaps_body() -> None:
-    """structured_insert region overlapping body region -> audit flags."""
+    """structured_insert overlapping body region -> info when no spine/insert_score."""
     from paperforge.worker.ocr_document import _run_layout_audit
 
     blocks = [
-        {"page": 1, "role": "body_paragraph", "bbox": [100, 100, 500, 300], "text": "Body text"},
+        {"page": 1, "role": "body_paragraph", "bbox": [100, 100, 500, 300], "text": "Body text", "raw_label": "text"},
         {"page": 1, "role": "structured_insert", "bbox": [200, 150, 400, 250], "text": "Insert overlapping body"},
     ]
     result = _run_layout_audit(blocks)
-    assert result["status"] in ("warn", "fail"), f"Expected warn/fail, got {result['status']}"
-    assert "1" in result["page_warnings"], f"Page 1 should have warnings: {result['page_warnings']}"
-    assert result["anomaly_count"] >= 1
+    assert result["status"] == "pass", f"Expected pass (info-only), got {result['status']}"
+    assert result["info_count"] >= 1, "Expected at least 1 info anomaly"
 
 
 # ---------------------------------------------------------------------------
@@ -2945,3 +2945,32 @@ def test_normalize_promotes_mixed_sidebar_blocks_into_single_structured_insert_c
     assert normalized[2]["role"] == "unknown_structural"
     assert normalized[3]["role"] != "structured_insert"
     assert normalized[4]["role"] == "body_paragraph"
+
+
+def test_full_width_heading_above_two_columns_is_not_anomaly() -> None:
+    """Full-width heading spanning >55% page width is NOT an error, even if it owns body in both columns."""
+    from paperforge.worker.ocr_document import _run_layout_audit
+
+    blocks = [
+        {"page": 1, "role": "section_heading", "bbox": [50, 200, 1150, 230], "text": "Introduction and Background", "page_width": 1200, "page_height": 1600},
+        {"page": 1, "role": "body_paragraph", "bbox": [620, 100, 1150, 160], "text": "Right column body above heading...", "page_width": 1200, "page_height": 1600},
+    ]
+    result = _run_layout_audit(blocks)
+    errors = [a for a in result.get("anomalies", []) if a.get("severity") == "error"]
+    assert len(errors) == 0, f"Expected no error anomalies, got {errors}"
+    assert result["status"] != "fail"
+
+
+def test_low_confidence_layout_audit_reports_info_not_fail() -> None:
+    """Low layout confidence results in info severity, not fail."""
+    from paperforge.worker.ocr_document import PageLayoutProfile, _run_layout_audit
+
+    page_layouts = {1: PageLayoutProfile(column_count=2, confidence=0.3, layout_type="two_column")}
+    blocks = [
+        {"page": 1, "role": "section_heading", "bbox": [100, 200, 500, 230], "text": "Introduction", "page_width": 1200, "page_height": 1600},
+        {"page": 1, "role": "body_paragraph", "bbox": [700, 100, 1100, 140], "text": "Body above heading", "page_width": 1200, "page_height": 1600},
+    ]
+    result = _run_layout_audit(blocks, page_layouts=page_layouts)
+    assert result["status"] != "fail", f"Expected status != 'fail', got {result['status']}"
+    assert result["info_count"] >= 1, "Expected at least 1 info anomaly"
+    assert result["error_count"] == 0, "Expected 0 errors"
