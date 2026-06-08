@@ -2974,3 +2974,18 @@ def test_low_confidence_layout_audit_reports_info_not_fail() -> None:
     assert result["status"] != "fail", f"Expected status != 'fail', got {result['status']}"
     assert result["info_count"] >= 1, "Expected at least 1 info anomaly"
     assert result["error_count"] == 0, "Expected 0 errors"
+
+
+def test_low_layout_confidence_never_audit_error_on_insert_overlap() -> None:
+    """Low layout confidence with strong insert overlap should produce info, not error."""
+    from paperforge.worker.ocr_document import PageLayoutProfile, _run_layout_audit
+
+    page_layouts = {1: PageLayoutProfile(column_count=2, confidence=0.3, layout_type="two_column")}
+    blocks = [
+        {"page": 1, "role": "body_paragraph", "bbox": [100, 100, 500, 300], "text": "Body text real", "raw_label": "text", "page_width": 1200, "page_height": 1600},
+        {"page": 1, "role": "structured_insert", "bbox": [200, 150, 400, 250], "text": "Insert overlapping body a lot", "insert_score": {"score": 0.9}},
+    ]
+    body_spine = {"_meta": {"quality": "strong"}}
+    result = _run_layout_audit(blocks, body_spine=body_spine, page_layouts=page_layouts)
+    assert result["error_count"] == 0, f"Expected 0 errors, got {result['error_count']}"
+    assert result["status"] != "fail", f"Expected no fail, got {result['status']}"
