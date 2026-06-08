@@ -102,3 +102,31 @@ paperforge runtime-health --json
 - [使用教程](getting-started.md)
 - [故障排除](troubleshooting.md)
 - [更新指南](update-upgrade.md)
+
+---
+
+## 测试
+
+### 合成 OCR 测试（CI 默认）
+
+```bash
+python -m pytest tests/test_ocr_synthetic_fixtures.py -q --tb=short
+```
+
+### 真实文献 OCR 回归测试（可选集成测试）
+
+需要设置环境变量指定 vault 路径和要测试的文献 key：
+
+**Unix/macOS:**
+
+```bash
+PAPERFORGE_REAL_OCR_VAULT="/path/to/Literature-hub" PAPERFORGE_REAL_OCR_KEYS="SAN9AYVR,2GN9LMCW" python -m pytest tests/test_ocr_real_paper_regressions.py -q
+```
+
+**PowerShell:**
+
+```powershell
+$env:PAPERFORGE_REAL_OCR_VAULT="D:\path\to\Literature-hub"; $env:PAPERFORGE_REAL_OCR_KEYS="SAN9AYVR,2GN9LMCW"; python -m pytest tests/test_ocr_real_paper_regressions.py -q
+```
+
+不设置环境变量时，真实文献测试自动 SKIP。
