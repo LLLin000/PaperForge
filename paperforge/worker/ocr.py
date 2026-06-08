@@ -91,6 +91,7 @@ OCR_QUEUE_STATUSES = {
     "pending", "queued", "running", "done", "done_degraded",
     "retryable_error", "fatal_error", "nopdf", "blocked",
 }
+OCR_SETTLED_STATUSES = {"done", "done_degraded", "fatal_error", "blocked"}
 
 
 def apply_ocr_error_state(row: dict, meta: dict, error_state: dict) -> None:
@@ -242,7 +243,7 @@ def sync_ocr_queue(paths: dict[str, Path], target_rows: list[dict]) -> list[dict
         meta_path = paths["ocr"] / key / "meta.json"
         meta = _read_meta_or_empty(meta_path)
         status = str(meta.get("ocr_status", "pending") or "pending").strip().lower()
-        if status in {"done", "blocked"}:
+        if status in OCR_SETTLED_STATUSES:
             continue
         if status == "nopdf":
             status = "pending"
@@ -264,7 +265,7 @@ def sync_ocr_queue(paths: dict[str, Path], target_rows: list[dict]) -> list[dict
         meta_path = paths["ocr"] / key / "meta.json"
         meta = _read_meta_or_empty(meta_path)
         status = str(meta.get("ocr_status", "pending") or "pending").strip().lower()
-        if status in {"done", "blocked"}:
+        if status in OCR_SETTLED_STATUSES:
             continue
         if status == "nopdf":
             status = "pending"
@@ -2347,7 +2348,7 @@ def run_ocr(vault: Path, verbose: bool = False, no_progress: bool = False, selec
     _failed_count = 0
     _token_warned = False
     for _cycle in range(max_poll_cycles):
-        remaining = [r for r in ocr_queue if r.get("queue_status", "") not in ("done", "nopdf", "blocked")]
+        remaining = [r for r in ocr_queue if r.get("queue_status", "") not in OCR_SETTLED_STATUSES]
         if not remaining:
             break
         available_slots = max(0, max_items - active_submitted)
@@ -2484,7 +2485,21 @@ def run_ocr(vault: Path, verbose: bool = False, no_progress: bool = False, selec
                     lines = [l.strip() for l in result_response.text.splitlines() if l.strip()]
                     results = [json.loads(l)["result"] for l in lines]
                     page_num, md_path, json_path, fulltext_md_path = postprocess_ocr_result(vault, key, results)
-                except Exception:
+                except (KeyboardInterrupt, SystemExit):
+                    raise
+                except (OCRPDFResolveError, OCRArtifactIntegrityError, OCRPostprocessError) as exc:
+                    error_state = classify_ocr_error(exc, stage="postprocess")
+                    apply_ocr_error_state(queue_row, meta, error_state)
+                    write_json(paths["ocr"] / key / "meta.json", meta)
+                    changed += 1
+                    active_submitted = max(0, active_submitted - 1)
+                    continue
+                except Exception as exc:
+                    error_state = classify_ocr_error(OCRPostprocessError(str(exc)), stage="postprocess")
+                    apply_ocr_error_state(queue_row, meta, error_state)
+                    write_json(paths["ocr"] / key / "meta.json", meta)
+                    changed += 1
+                    active_submitted = max(0, active_submitted - 1)
                     continue
                 health_path_loop = paths["ocr"] / key / "health" / "ocr_health.json"
                 health_report_loop = read_json(health_path_loop) if health_path_loop.exists() else {}
@@ -2525,7 +2540,7 @@ def run_ocr(vault: Path, verbose: bool = False, no_progress: bool = False, selec
         ocr_queue = [row for row in ocr_queue if str(row.get("queue_status", "")).lower() != "done"]
     write_ocr_queue(paths, ocr_queue)
     # Determine exit code: 0 = all settled, 1 = some items still pending
-    final_remaining = [r for r in ocr_queue if r.get("queue_status", "") not in ("done", "nopdf", "blocked", "error")]
+    final_remaining = [r for r in ocr_queue if r.get("queue_status", "") not in ("done", "done_degraded", "fatal_error", "nopdf", "blocked", "error")]
     pending_keys = [r["zotero_key"] for r in final_remaining]
     final_statuses = {r["zotero_key"]: r.get("queue_status", "?") for r in ocr_queue}
     done_count = sum(1 for s in final_statuses.values() if s == "done")
