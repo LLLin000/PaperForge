@@ -106,6 +106,33 @@ def build_ocr_health(
         "tail_boundary_confidence": tail_score.get("score", 0.0),
     }
     report.update(decision_summary)
+
+    def _score_distribution(scores: list[float]) -> dict:
+        return {
+            "high": sum(1 for s in scores if s >= 0.75),
+            "medium": sum(1 for s in scores if 0.4 <= s < 0.75),
+            "low": sum(1 for s in scores if s < 0.4),
+        }
+
+    fig_scores = []
+    for mf in figure_inventory.get("matched_figures", []):
+        cs = mf.get("caption_score", {})
+        if "score" in cs:
+            fig_scores.append(cs["score"])
+    for rl in figure_inventory.get("rejected_legends", []):
+        cs = rl.get("caption_score", {})
+        if "score" in cs:
+            fig_scores.append(cs["score"])
+
+    table_scores = []
+    for t in tables:
+        ms = t.get("match_score", {})
+        if "score" in ms:
+            table_scores.append(ms["score"])
+
+    report["figure_match_confidence_distribution"] = _score_distribution(fig_scores)
+    report["table_match_confidence_distribution"] = _score_distribution(table_scores)
+
     return report
 
 
