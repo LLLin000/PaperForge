@@ -81,6 +81,7 @@ class DocumentStructure:
     spread_start: int | None = None
     spread_end: int | None = None
     backmatter_form: str = "flat"
+    body_family_anchor: dict | None = None
     page_layouts: dict[int, PageLayoutProfile] | None = None
     tail_reading_order: list[dict] | None = None
     reference_zones: list[dict] | None = None
