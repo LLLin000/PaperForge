@@ -305,6 +305,27 @@ def test_normalize_document_structure_wires_style_family_artifacts_into_blocks()
     assert normalized_blocks[3]["style_family"] == "legend_like"
 
 
+def test_candidate_resolution_demotes_body_spine_narrative_figure_mentions() -> None:
+    from paperforge.worker.ocr_document import DocumentStructure, PageLayoutProfile, _resolve_ambiguous_candidates
+
+    blocks = [
+        {
+            "page": 4,
+            "bbox": [100, 500, 950, 620],
+            "text": "Figure 2 shows the control response over time in both cohorts.",
+            "role": "figure_caption_candidate",
+        }
+    ]
+    doc_structure = DocumentStructure(body_end_page=4)
+    page_layouts = {
+        4: PageLayoutProfile(column_count=1, column_boundaries=[], layout_type="single_column", confidence=1.0)
+    }
+
+    _resolve_ambiguous_candidates(blocks, doc_structure, page_layouts)
+
+    assert blocks[0]["role"] == "body_paragraph"
+
+
 def test_reference_zone_is_inferred_from_reference_family_anchor_not_preexisting_roles() -> None:
     from paperforge.worker.ocr_document import infer_zones
 

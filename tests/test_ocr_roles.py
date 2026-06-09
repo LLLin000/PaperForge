@@ -716,3 +716,301 @@ def test_real_title_after_preproof_still_works():
         "block_bbox": [100, 200, 700, 230],
     }, page_blocks=[], page_height=1700)
     assert result.role == "paper_title"
+
+
+def test_resolve_final_role_uses_zone_and_family_context_instead_of_default_body():
+    from paperforge.worker.ocr_roles import resolve_final_role
+
+    block = {
+        "block_id": "p4_b2",
+        "text": "Figure 2. A long legend that sits inside the body page.",
+        "role": "body_paragraph",
+        "zone": "body_zone",
+        "style_family": "legend_like",
+        "style_family_authority": "figure_marker",
+        "marker_signature": {"type": "figure_number", "number": 2},
+    }
+
+    resolved = resolve_final_role(
+        block,
+        anchors={"body_family_anchor": {"status": "ACCEPT"}},
+        families={},
+    )
+    assert resolved.role == "figure_caption_candidate"
+
+
+def test_resolve_final_role_uses_families_fallback_when_block_lacks_late_context() -> None:
+    from paperforge.worker.ocr_roles import resolve_final_role
+
+    block = {
+        "block_id": "p4_b2",
+        "text": "Figure 2. A long legend that sits inside the body page.",
+        "role": "body_paragraph",
+        "marker_signature": {"type": "figure_number", "number": 2},
+    }
+
+    resolved = resolve_final_role(
+        block,
+        anchors={"body_family_anchor": {"status": "ACCEPT"}},
+        families={
+            "p4_b2": {
+                "zone": "body_zone",
+                "style_family": "legend_like",
+                "style_family_authority": "figure_marker",
+            }
+        },
+    )
+    assert resolved.role == "figure_caption_candidate"
+    assert any("context_source=families" == evidence for evidence in resolved.evidence)
+
+
+def test_resolve_final_role_does_not_promote_without_late_context_gate() -> None:
+    from paperforge.worker.ocr_roles import resolve_final_role
+
+    block = {
+        "block_id": "p4_b2",
+        "text": "Figure 2. A long legend that sits inside the body page.",
+        "role": "body_paragraph",
+        "zone": "display_zone",
+        "style_family": "legend_like",
+        "marker_signature": {"type": "figure_number", "number": 2},
+        "role_confidence": 0.6,
+    }
+
+    resolved = resolve_final_role(
+        block,
+        anchors={"body_family_anchor": {"status": "HOLD"}},
+        families={},
+    )
+    assert resolved.role == "body_paragraph"
+
+
+def test_resolve_final_role_requires_strong_style_family_authority() -> None:
+    from paperforge.worker.ocr_roles import resolve_final_role
+
+    block = {
+        "block_id": "p4_b2",
+        "text": "Figure 2. A long legend that sits inside the body page.",
+        "role": "body_paragraph",
+        "zone": "body_zone",
+        "style_family": "legend_like",
+        "style_family_authority": "body_zone_candidate",
+        "marker_signature": {"type": "figure_number", "number": 2},
+    }
+
+    resolved = resolve_final_role(
+        block,
+        anchors={"body_family_anchor": {"status": "ACCEPT"}},
+        families={},
+    )
+    assert resolved.role == "body_paragraph"
+
+
+def test_resolve_final_role_does_not_promote_narrative_prose_even_with_strong_authority() -> None:
+    from paperforge.worker.ocr_roles import resolve_final_role
+
+    block = {
+        "block_id": "p4_b9",
+        "text": "Figure 2 shows the control response over time. In this study we compare both cohorts.",
+        "role": "body_paragraph",
+        "zone": "body_zone",
+        "style_family": "legend_like",
+        "style_family_authority": "figure_marker",
+        "marker_signature": {"type": "figure_number", "number": 2},
+        "role_confidence": 0.6,
+    }
+
+    resolved = resolve_final_role(
+        block,
+        anchors={"body_family_anchor": {"status": "ACCEPT"}},
+        families={},
+    )
+    assert resolved.role == "body_paragraph"
+
+
+def test_resolve_final_role_does_not_promote_single_sentence_narrative_prose_with_strong_authority() -> None:
+    from paperforge.worker.ocr_roles import resolve_final_role
+
+    block = {
+        "block_id": "p4_b10",
+        "text": "Figure 2 shows the control response over time in both cohorts.",
+        "role": "body_paragraph",
+        "zone": "body_zone",
+        "style_family": "legend_like",
+        "style_family_authority": "figure_marker",
+        "marker_signature": {"type": "figure_number", "number": 2},
+        "role_confidence": 0.6,
+    }
+
+    resolved = resolve_final_role(
+        block,
+        anchors={"body_family_anchor": {"status": "ACCEPT"}},
+        families={},
+    )
+    assert resolved.role == "body_paragraph"
+
+
+def test_resolve_final_role_leaves_table_handling_unchanged_in_task_7() -> None:
+    from paperforge.worker.ocr_roles import resolve_final_role
+
+    block = {
+        "block_id": "p5_b3",
+        "text": "Table 3. Outcomes across cohorts.",
+        "role": "body_paragraph",
+        "zone": "body_zone",
+        "style_family": "table_caption_like",
+        "marker_signature": {"type": "table_number", "number": 3},
+        "role_confidence": 0.6,
+    }
+
+    resolved = resolve_final_role(
+        block,
+        anchors={"body_family_anchor": {"status": "ACCEPT"}},
+        families={},
+    )
+    assert resolved.role == "body_paragraph"
+
+
+def test_build_structured_blocks_applies_late_role_resolution(monkeypatch) -> None:
+    from paperforge.worker import ocr_blocks
+
+    raw_blocks = [
+        {
+            "paper_id": "KEY001",
+            "page": 4,
+            "block_id": "p4_b2",
+            "raw_label": "text",
+            "raw_order": 1,
+            "bbox": [100, 500, 950, 620],
+            "text": "A long legend that sits inside the body page without an eager prefix cue.",
+            "page_width": 1200,
+            "page_height": 1600,
+            "span_metadata": {"size": 10, "flags": "normal"},
+        }
+    ]
+
+    def fake_build_block_signatures(block: dict) -> dict:
+        return {
+            "raw_observation": {"source": "test"},
+            "marker_signature": {"type": "figure_number", "number": 2},
+            "layout_signature": {"width": 850, "width_bucket": 850, "x_center": 525, "x_center_bucket": 525},
+            "span_signature": {"font_family_norm": "times", "font_size_median": 10, "font_size_bucket": 10},
+        }
+
+    def fake_normalize_document_structure(rows: list[dict]):
+        for row in rows:
+            row["zone"] = "body_zone"
+            row["style_family"] = "legend_like"
+            row["style_family_authority"] = "figure_marker"
+        return type(
+            "DocStructureStub",
+            (),
+            {
+                "body_family_anchor": {"status": "ACCEPT"},
+                "reference_family_anchor": None,
+                "body_end_page": 4,
+                "page_layouts": {},
+            },
+        )(), rows
+
+    monkeypatch.setattr(ocr_blocks, "build_block_signatures", fake_build_block_signatures)
+    monkeypatch.setattr(
+        ocr_blocks,
+        "discover_body_family_anchor",
+        lambda rows, page_count=None: {"status": "ACCEPT"},
+    )
+    monkeypatch.setattr("paperforge.worker.ocr_document.normalize_document_structure", fake_normalize_document_structure)
+    monkeypatch.setattr(
+        "paperforge.worker.ocr_document._resolve_ambiguous_candidates",
+        lambda blocks, doc_structure, page_layouts: None,
+    )
+
+    rows, _ = ocr_blocks.build_structured_blocks(raw_blocks)
+
+    assert rows[0]["role"] == "figure_caption_candidate"
+    assert rows[0]["marker_signature"]["type"] == "figure_number"
+    assert any(
+        decision.get("stage") == "resolve_final_role"
+        for decision in rows[0].get("_decision_log", [])
+    )
+
+
+def test_build_structured_blocks_does_not_promote_when_anchor_gate_is_closed(monkeypatch) -> None:
+    from paperforge.worker import ocr_blocks
+
+    raw_blocks = [
+        {
+            "paper_id": "KEY001",
+            "page": 4,
+            "block_id": "p4_b2",
+            "raw_label": "text",
+            "raw_order": 1,
+            "bbox": [100, 500, 950, 620],
+            "text": "A long legend that sits inside the body page without an eager prefix cue.",
+            "page_width": 1200,
+            "page_height": 1600,
+            "span_metadata": {"size": 10, "flags": "normal"},
+        }
+    ]
+
+    def fake_build_block_signatures(block: dict) -> dict:
+        return {
+            "raw_observation": {"source": "test"},
+            "marker_signature": {"type": "figure_number", "number": 2},
+            "layout_signature": {"width": 850, "width_bucket": 850, "x_center": 525, "x_center_bucket": 525},
+            "span_signature": {"font_family_norm": "times", "font_size_median": 10, "font_size_bucket": 10},
+        }
+
+    def fake_normalize_document_structure(rows: list[dict]):
+        for row in rows:
+            row["zone"] = "body_zone"
+            row["style_family"] = "legend_like"
+            row["style_family_authority"] = "figure_marker"
+        return type(
+            "DocStructureStub",
+            (),
+            {
+                "body_family_anchor": {"status": "HOLD"},
+                "reference_family_anchor": None,
+                "body_end_page": 4,
+                "page_layouts": {},
+            },
+        )(), rows
+
+    monkeypatch.setattr(ocr_blocks, "build_block_signatures", fake_build_block_signatures)
+    monkeypatch.setattr(
+        ocr_blocks,
+        "discover_body_family_anchor",
+        lambda rows, page_count=None: {"status": "HOLD"},
+    )
+    monkeypatch.setattr("paperforge.worker.ocr_document.normalize_document_structure", fake_normalize_document_structure)
+    monkeypatch.setattr(
+        "paperforge.worker.ocr_document._resolve_ambiguous_candidates",
+        lambda blocks, doc_structure, page_layouts: None,
+    )
+
+    rows, _ = ocr_blocks.build_structured_blocks(raw_blocks)
+
+    assert rows[0]["role"] == "body_paragraph"
+
+
+def test_resolve_final_role_does_not_promote_narrative_figure_mention_without_strong_authority() -> None:
+    from paperforge.worker.ocr_roles import resolve_final_role
+
+    block = {
+        "block_id": "p4_b9",
+        "text": "Figure 2 shows the control response over time in both cohorts.",
+        "role": "body_paragraph",
+        "zone": "body_zone",
+        "style_family": "legend_like",
+        "style_family_authority": "body_zone_candidate",
+        "marker_signature": {"type": "figure_number", "number": 2},
+        "role_confidence": 0.6,
+    }
+
+    resolved = resolve_final_role(
+        block,
+        anchors={"body_family_anchor": {"status": "ACCEPT"}},
+        families={},
+    )
+    assert resolved.role == "body_paragraph"

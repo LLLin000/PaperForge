@@ -2442,8 +2442,14 @@ def _looks_like_figure_narrative_prose(text: str) -> bool:
     sentence_count = text.count(". ") + text.count(".\n")
     if sentence_count >= 2:
         return True
+    lower = text.lower()
     prose_markers = ["we ", "our ", "this study", "here we", "in this"]
-    if any(m in text.lower() for m in prose_markers):
+    if any(m in lower for m in prose_markers):
+        return True
+    if re.search(
+        r"\b(?:figure|fig\.?)\s+\d+[a-z]?\s+(?:shows|show|shown|demonstrates|demonstrate|illustrates|illustrate|depicts|presents|reveals|indicates|compares|summarizes)\b",
+        lower,
+    ):
         return True
     return bool(re.search(r"\$?\^\{[^}]+\}\$?", text) and sentence_count >= 1)
 
@@ -2638,13 +2644,18 @@ def _resolve_ambiguous_candidates(
             has_main_figure = bool(re.search(r"(?:Figure|Fig\.?)\s+\d+(?:\.\d+)?(?![a-z0-9])", text))
             has_subfigure_letter = bool(re.search(r"(?:Figure|Fig\.?)\s+\d+[a-z]", text))
 
-            # Subfigure references (Fig. 26c) with narrative prose in body
-            # spine are body mentions — hard reject regardless of style.
-            if has_subfigure_letter and in_body_spine and is_prose:
+            # Narrative figure mentions inside the body spine are body prose,
+            # not captions, even if they start with a figure marker.
+            if in_body_spine and is_prose:
                 old_role = block.get("role")
                 block["role"] = "body_paragraph"
                 if old_role != block["role"]:
-                    record_decision(block, stage="candidate_resolution", old_role=old_role, new_role=block["role"], reason="subfigure reference with narrative prose in body spine, demoted to body")
+                    reason = (
+                        "subfigure reference with narrative prose in body spine, demoted to body"
+                        if has_subfigure_letter
+                        else "figure mention with narrative prose in body spine, demoted to body"
+                    )
+                    record_decision(block, stage="candidate_resolution", old_role=old_role, new_role=block["role"], reason=reason)
                 continue
 
             if near_media or caption_style or has_main_figure:
@@ -2653,14 +2664,6 @@ def _resolve_ambiguous_candidates(
                 if old_role != block["role"]:
                     record_decision(block, stage="candidate_resolution", old_role=old_role, new_role=block["role"], reason="figure caption candidate resolved as figure caption")
                 continue
-
-            if in_body_spine and is_prose:
-                old_role = block.get("role")
-                block["role"] = "body_paragraph"
-                if old_role != block["role"]:
-                    record_decision(block, stage="candidate_resolution", old_role=old_role, new_role=block["role"], reason="figure caption candidate resolved as body prose in body spine")
-                continue
-
     # ---- 3. Activation gates (inline) ----
     for block in blocks:
         role = block.get("role", "")
