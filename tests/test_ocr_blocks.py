@@ -81,6 +81,35 @@ def test_build_structured_blocks_carries_span_metadata() -> None:
     assert rows[0]["span_metadata"] == span_data
 
 
+def test_structured_block_includes_structural_signatures() -> None:
+    from paperforge.worker.ocr_blocks import build_structured_blocks
+
+    raw_blocks = [
+        {
+            "paper_id": "KEY001",
+            "page": 2,
+            "block_id": "p2_b14",
+            "raw_label": "paragraph_title",
+            "raw_order": 0,
+            "bbox": [207, 141, 504, 162],
+            "text": "III. RESULTS AND DISCUSSION",
+            "page_width": 1200,
+            "page_height": 1600,
+        }
+    ]
+
+    rows, _ = build_structured_blocks(raw_blocks)
+    row = rows[0]
+
+    assert "marker_signature" in row
+    assert "layout_signature" in row
+    assert "span_signature" in row
+    assert "raw_observation" in row
+    assert row["marker_signature"]["type"] == "heading_roman"
+    assert row["layout_signature"]["width"] == 297
+    assert row["raw_observation"]["bbox"] == [207, 141, 504, 162]
+
+
 def test_role_span_profiles_written_to_output() -> None:
     """Verify that role_span_profiles.json is written during rebuild."""
     import json
