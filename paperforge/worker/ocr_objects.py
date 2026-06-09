@@ -166,6 +166,9 @@ def extract_and_write_objects(
     page_dimensions_by_page: dict[int, tuple[int, int]] | None = None,
 ) -> None:
     """Extract figure/table asset crops from PDF and write object markdown."""
+    # Validation-first figure matching may retain held figures in inventory,
+    # but object emission remains limited to matched figures and unresolved
+    # media clusters until figure evidence is sufficient.
     figures_asset_dir = asset_root / "figures"
     tables_asset_dir = asset_root / "tables"
     orphans_asset_dir = asset_root / "orphans"

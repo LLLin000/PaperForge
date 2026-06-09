@@ -62,6 +62,43 @@ def test_figure_match_score_prefers_same_page_overlap() -> None:
     assert "x_overlap" in result["evidence"]
 
 
+def test_figure_match_score_allows_strong_same_page_geometry_without_x_overlap() -> None:
+    from paperforge.worker.ocr_scores import score_figure_match
+
+    legend = {"block_id": "cap1", "page": 2, "bbox": [100, 500, 700, 540]}
+    asset = {"block_id": "fig1", "page": 2, "bbox": [710, 120, 1110, 480]}
+
+    result = score_figure_match(
+        legend,
+        asset,
+        caption_score={"score": 0.8},
+        caption_text_supported=True,
+    )
+
+    assert result["decision"] == "matched"
+    assert result["matched_asset_id"] == "fig1"
+    assert result["score"] >= 0.6
+    assert "same_page" in result["evidence"]
+    assert "nearby_y" in result["evidence"]
+    assert "caption_above_or_below" in result["evidence"]
+    assert "caption_text_supported" in result["evidence"]
+
+
+def test_figure_match_score_keeps_short_caption_without_x_overlap_ambiguous() -> None:
+    from paperforge.worker.ocr_scores import score_figure_match
+
+    legend = {"block_id": "cap1", "page": 2, "bbox": [50, 500, 250, 530]}
+    asset = {"block_id": "fig1", "page": 2, "bbox": [700, 60, 1100, 420]}
+
+    result = score_figure_match(
+        legend,
+        asset,
+        caption_score={"score": 0.7},
+    )
+
+    assert result["decision"] == "ambiguous"
+
+
 def test_figure_match_score_rejects_low_caption_score() -> None:
     from paperforge.worker.ocr_scores import score_figure_match
 

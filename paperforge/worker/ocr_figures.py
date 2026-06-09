@@ -136,6 +136,66 @@ def _is_body_mention(block: dict) -> bool:
 
 
 _PANEL_SUBCAPTION_PATTERN = re.compile(r"^\s*[a-z][\.\)]\s")
+_TRUNCATED_LEGEND_ONLY_PATTERN = re.compile(
+    r"^(?:Figure|Fig\.?|Supplementary\s+Figure|Supplementary\s+Fig\.?|"
+    r"Extended\s+Data\s+Figure|Extended\s+Data\s+Fig\.?)\s+(?:S)?\d+(?:\.0+)?\.?$",
+    flags=re.IGNORECASE,
+)
+
+
+def _is_validation_first_legend_candidate(block: dict) -> bool:
+    role = str(block.get("role") or "")
+    marker_signature = block.get("marker_signature") or {}
+    marker_type = str(marker_signature.get("type") or "none")
+    zone = str(block.get("zone") or "")
+    style_family = str(block.get("style_family") or "")
+
+    return (
+        role not in {"figure_caption", "figure_caption_candidate"}
+        and
+        marker_type == "figure_number"
+        and zone in {"body_zone", "display_zone"}
+        and style_family == "legend_like"
+    )
+
+
+def _has_anchor_supported_legend_context(block: dict) -> bool:
+    marker_signature = block.get("marker_signature") or {}
+    marker_type = str(marker_signature.get("type") or "none")
+    style_family = str(block.get("style_family") or "")
+    style_family_authority = str(block.get("style_family_authority") or "")
+    return (
+        marker_type == "figure_number"
+        and style_family == "legend_like"
+        and style_family_authority in {"figure_marker", "figure_family_anchor"}
+    )
+
+
+def _is_insufficient_legend_evidence(block: dict) -> bool:
+    text = str(block.get("text") or "").strip()
+    marker_signature = block.get("marker_signature") or {}
+    marker_type = str(marker_signature.get("type") or "none")
+    style_family = str(block.get("style_family") or "")
+
+    if marker_type != "figure_number":
+        return False
+    if style_family != "legend_like":
+        return False
+    if not _TRUNCATED_LEGEND_ONLY_PATTERN.fullmatch(text):
+        return False
+
+    return True
+
+
+def _has_strong_explicit_caption_text(block: dict) -> bool:
+    text = str(block.get("text") or "").strip()
+    role = str(block.get("role") or "")
+    if role not in {"figure_caption", "figure_caption_candidate"} and not _is_validation_first_legend_candidate(block):
+        return False
+    if _is_insufficient_legend_evidence(block):
+        return False
+    words = [w for w in re.split(r"\s+", text) if w]
+    return len(words) >= 5 and len(text) >= 30
 
 
 def _is_formal_legend(text: str, block: dict | None = None, page_width: float = 1200) -> bool:
@@ -362,12 +422,14 @@ def is_embedded_figure_text(block: dict, all_blocks: list[dict], page_width: flo
 
 def build_figure_inventory(structured_blocks: list[dict], page_width: float = 1200) -> dict[str, Any]:
     legends: list[dict] = []
+    held_figures: list[dict] = []
     rejected_legends: list[dict] = []
     assets: list[dict] = []
     unmatched_legends: list[dict] = []
     unmatched_assets: list[dict] = []
     matched_figures: list[dict] = []
     unresolved_clusters: list[dict] = []
+    ambiguous_figures: list[dict] = []
 
     for block in structured_blocks:
         if block.get("page_width"):
@@ -380,7 +442,8 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
         # Skip single-letter panel labels (A, B, (C), A.) in figure legends
         if _PANEL_LABEL_PATTERN.match(str(block.get("text", "")).strip()):
             continue
-        if role in ("figure_caption", "figure_caption_candidate"):
+        is_validation_first_candidate = _is_validation_first_legend_candidate(block)
+        if role in ("figure_caption", "figure_caption_candidate") or is_validation_first_candidate:
             if _is_body_mention(block):
                 continue
             if role == "figure_caption_candidate" and _looks_like_figure_narrative_prose(block.get("text", "")):
@@ -439,11 +502,12 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
     ordered_legends = deduped_legends
 
     used_asset_indices: set[int] = set()
-    ambiguous_figures: list[dict] = []
     for legend in ordered_legends:
         legend_page = legend.get("page", 0)
         legend_text = legend.get("text", "")
         fig_num = _extract_figure_number(legend_text)
+        is_validation_first_candidate = _is_validation_first_legend_candidate(legend)
+        is_weak_truncated = _is_insufficient_legend_evidence(legend)
 
         body_prose_likelihood = _looks_like_inline_figure_mention(legend_text)
 
@@ -458,7 +522,24 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
         for ai, asset in enumerate(assets):
             if ai in used_asset_indices or asset.get("page", 0) != legend_page:
                 continue
-            match_score = score_figure_match(legend, asset, caption_score=caption_score)
+            family_supported = (
+                is_validation_first_candidate and str(legend.get("style_family") or "") == "legend_like"
+            )
+            zone_supported = (
+                is_validation_first_candidate and str(legend.get("zone") or "") in {"body_zone", "display_zone"}
+            )
+            caption_text_supported = _has_strong_explicit_caption_text(legend)
+            match_score = score_figure_match(
+                legend,
+                asset,
+                caption_score=caption_score,
+                anchor_supported=(
+                    _has_anchor_supported_legend_context(legend)
+                ),
+                caption_text_supported=caption_text_supported,
+                family_supported=family_supported,
+                zone_supported=zone_supported,
+            )
             if match_score["decision"] != "rejected":
                 candidates.append((ai, asset, match_score))
         candidates.sort(key=lambda item: item[2]["score"], reverse=True)
@@ -478,15 +559,19 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
                 lcx = (legend_bb[0] + legend_bb[2]) / 2 if len(legend_bb) >= 4 else 0
                 best = close[0]
                 best_col_match = False
+                best_delta = abs(
+                    lcx - ((best[1].get("bbox", [0, 0, 0, 0])[0] + best[1].get("bbox", [0, 0, 0, 0])[2]) / 2)
+                )
                 for ci, ca, cs in close:
                     ab = ca.get("bbox") or ca.get("block_bbox") or [0,0,0,0]
                     acx = (ab[0] + ab[2]) / 2 if len(ab) >= 4 else 0
-                    ca_col_ok = abs(lcx - acx) < abs(lcx - (best[1].get("bbox",[0,0,0,0])[0] + best[1].get("bbox",[0,0,0,0])[2])/2)
+                    delta = abs(lcx - acx)
+                    ca_col_ok = delta + 20 < best_delta
                     if ca_col_ok:
                         best = (ci, ca, cs)
+                        best_delta = delta
                         best_col_match = True
-                        break
-                if best_col_match:
+                if best_col_match and best[2].get("decision") == "matched":
                     best_idx, best_asset, best_score = best
                     matched_assets = [best_asset]
                     used_asset_indices.add(best_idx)
@@ -505,31 +590,20 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
                     matched_assets = []
             else:
                 best_idx, best_asset, best_score = candidates[0]
-                matched_assets = [best_asset]
-                used_asset_indices.add(best_idx)
-                region_match = {"media_blocks": [best_asset], "match_score": best_score}
-
-        # Fallback: if no match found but legends == assets on the same page,
-        # assign sequentially by vertical position
-        if not matched_assets and fig_num is not None:
-            page_assets = [
-                (ai, a) for ai, a in enumerate(assets)
-                if ai not in used_asset_indices and a.get("page", 0) == legend_page
-            ]
-            page_legends = [
-                l for l in ordered_legends
-                if l is not legend and _extract_figure_number(l.get("text", "")) is not None
-                and l.get("page", 0) == legend_page
-            ]
-            if page_assets and len(page_assets) >= len(page_legends) + 1:
-                page_assets.sort(key=lambda item: (item[1].get("bbox",[0,0,0,0])[1] if len(item[1].get("bbox",[]))>=4 else 0))
-                # Count how many matched legends already consumed assets on this page
-                consumed_on_page = sum(1 for i in used_asset_indices if assets[i].get("page",0) == legend_page)
-                asset_idx = min(consumed_on_page, len(page_assets) - 1)
-                best_idx, best_asset = page_assets[asset_idx]
-                matched_assets = [best_asset]
-                used_asset_indices.add(best_idx)
-                region_match = {"media_blocks": [best_asset], "match_score": {"score": 0.5, "decision": "matched_fallback", "evidence": ["sequential_fallback"]}}
+                if best_score["decision"] == "matched":
+                    matched_assets = [best_asset]
+                    used_asset_indices.add(best_idx)
+                    region_match = {"media_blocks": [best_asset], "match_score": best_score}
+                else:
+                    ambiguous_figures.append({
+                        "legend_block_id": legend.get("block_id", ""),
+                        "page": legend_page,
+                        "caption_score": caption_score,
+                        "candidates": [
+                            {"asset_block_id": best_asset.get("block_id", ""), "match_score": best_score}
+                        ],
+                    })
+                    ambiguous = True
 
         is_legend_only = len(matched_assets) == 0
 
@@ -537,38 +611,87 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
             unmatched_legends.append(legend)
             continue
 
-        fig_id = f"figure_{fig_num:03d}" if fig_num else f"unmatched_legend_{len(matched_figures):03d}"
+        if is_weak_truncated and is_validation_first_candidate:
+            held_figures.append(
+                {
+                    "figure_id": f"held_figure_{len(held_figures) + 1:03d}",
+                    "legend_block_id": legend.get("block_id", ""),
+                    "page": legend_page,
+                    "text": legend_text,
+                    "figure_number": fig_num,
+                    "hold_reason": "insufficient_legend_evidence",
+                    "zone": legend.get("zone"),
+                    "style_family": legend.get("style_family"),
+                    "marker_signature": legend.get("marker_signature") or {},
+                    "caption_score": caption_score,
+                }
+            )
+            unmatched_legends.append(legend)
+            continue
 
-        if not ambiguous:
-            match_score = region_match["match_score"] if region_match is not None else {
-                "score": 0.0,
-                "decision": "legend_only",
-                "evidence": ["no_asset_match"],
-            }
-            entry = {
-                "figure_id": fig_id,
+        if is_weak_truncated:
+            ambiguous_figures.append({
                 "legend_block_id": legend.get("block_id", ""),
                 "page": legend_page,
                 "text": legend_text,
                 "figure_number": fig_num,
-                "matched_assets": [
-                    {
-                        "block_id": a.get("block_id", ""),
-                        "bbox": a.get("bbox", [0, 0, 0, 0]),
-                    }
-                    for a in matched_assets
-                ],
-                "confidence": match_score["score"],
-                "match_score": match_score,
-                "flags": [] if not is_legend_only else ["legend_only"],
                 "caption_score": caption_score,
-            }
-            if region_match is not None and len(matched_assets) > 1:
-                entry["cluster_bbox"] = region_match["cluster_bbox"]
-            matched_figures.append(entry)
+                "candidates": [],
+                "hold_reason": "ambiguous_truncated_legend",
+                "zone": legend.get("zone"),
+                "style_family": legend.get("style_family"),
+                "marker_signature": legend.get("marker_signature") or {},
+            })
+            unmatched_legends.append(legend)
+            continue
 
         if is_legend_only:
+            weak_entry = {
+                "legend_block_id": legend.get("block_id", ""),
+                "page": legend_page,
+                "text": legend_text,
+                "figure_number": fig_num,
+                "caption_score": caption_score,
+                "candidates": [],
+                "hold_reason": (
+                    "ambiguous_truncated_legend" if is_weak_truncated else "no_asset_match"
+                ),
+                "zone": legend.get("zone"),
+                "style_family": legend.get("style_family"),
+                "marker_signature": legend.get("marker_signature") or {},
+            }
+            if not ambiguous:
+                ambiguous_figures.append(weak_entry)
             unmatched_legends.append(legend)
+            continue
+
+        fig_id = f"figure_{fig_num:03d}" if fig_num else f"unmatched_legend_{len(matched_figures):03d}"
+        match_score = region_match["match_score"] if region_match is not None else {
+            "score": 0.0,
+            "decision": "rejected",
+            "evidence": ["missing_region_match"],
+        }
+        entry = {
+            "figure_id": fig_id,
+            "legend_block_id": legend.get("block_id", ""),
+            "page": legend_page,
+            "text": legend_text,
+            "figure_number": fig_num,
+            "matched_assets": [
+                {
+                    "block_id": a.get("block_id", ""),
+                    "bbox": a.get("bbox", [0, 0, 0, 0]),
+                }
+                for a in matched_assets
+            ],
+            "confidence": match_score["score"],
+            "match_score": match_score,
+            "flags": [],
+            "caption_score": caption_score,
+        }
+        if region_match is not None and len(matched_assets) > 1:
+            entry["cluster_bbox"] = region_match["cluster_bbox"]
+        matched_figures.append(entry)
 
     for i, asset in enumerate(assets):
         if i not in used_asset_indices:
@@ -601,6 +724,7 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
         "figure_legends": deduped_legends,
         "figure_assets": assets,
         "matched_figures": matched_figures,
+        "held_figures": held_figures,
         "ambiguous_figures": ambiguous_figures,
         "unmatched_legends": unmatched_legends,
         "unmatched_assets": unmatched_assets,

@@ -236,6 +236,7 @@ def test_figure_inventory_includes_all_sections() -> None:
     assert "figure_legends" in inventory
     assert "figure_assets" in inventory
     assert "matched_figures" in inventory
+    assert "held_figures" in inventory
     assert "unmatched_legends" in inventory
     assert "unmatched_assets" in inventory
     assert "unresolved_clusters" in inventory
@@ -390,11 +391,10 @@ def test_legend_only_figure_no_asset_match() -> None:
 
     inventory = build_figure_inventory(structured_blocks)
 
-    assert len(inventory["matched_figures"]) == 1
-    assert inventory["matched_figures"][0]["figure_number"] == 2
-    assert len(inventory["matched_figures"][0]["matched_assets"]) == 0
-    assert "legend_only" in inventory["matched_figures"][0]["flags"]
-    assert inventory["matched_figures"][0]["confidence"] == inventory["matched_figures"][0]["match_score"]["score"]
+    assert inventory["matched_figures"] == []
+    assert len(inventory.get("ambiguous_figures", [])) == 1
+    assert inventory["ambiguous_figures"][0]["legend_block_id"] == "p2_b1"
+    assert inventory["ambiguous_figures"][0]["hold_reason"] == "no_asset_match"
 
 
 def test_unmatched_legends_populated() -> None:
@@ -481,9 +481,10 @@ def test_legend_does_not_steal_offpage_asset() -> None:
 
     inventory = build_figure_inventory(structured_blocks)
 
-    assert len(inventory["matched_figures"]) == 1
-    assert len(inventory["matched_figures"][0]["matched_assets"]) == 0
-    assert "legend_only" in inventory["matched_figures"][0]["flags"]
+    assert inventory["matched_figures"] == []
+    assert len(inventory.get("ambiguous_figures", [])) == 1
+    assert inventory["ambiguous_figures"][0]["legend_block_id"] == "p1_b1"
+    assert inventory["ambiguous_figures"][0]["hold_reason"] == "no_asset_match"
     assert len(inventory["unmatched_assets"]) == 1
     assert inventory["unmatched_assets"][0]["block_id"] == "p2_b1"
 
@@ -1007,6 +1008,373 @@ def test_figure_inventory_does_not_confidently_match_low_caption_score() -> None
 
     assert inventory["matched_figures"] == []
     assert len(inventory["unmatched_legends"]) == 1
+
+
+def test_figure_matching_can_hold_when_legend_is_ambiguous() -> None:
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    structured_blocks = [
+        {
+            "paper_id": "K001",
+            "page": 10,
+            "block_id": "p10_b1",
+            "zone": "body_zone",
+            "style_family": "legend_like",
+            "text": "Figure 1",
+            "marker_signature": {"type": "figure_number", "number": 1},
+            "bbox": [50, 50, 300, 90],
+            "page_width": 1200,
+            "page_height": 1600,
+        },
+        {
+            "paper_id": "K001",
+            "page": 10,
+            "block_id": "p10_b2",
+            "zone": "body_zone",
+            "style_family": "body_like",
+            "text": "Narrative prose",
+            "marker_signature": {"type": "none"},
+            "bbox": [50, 100, 900, 140],
+            "page_width": 1200,
+            "page_height": 1600,
+        },
+    ]
+
+    inv = build_figure_inventory(structured_blocks)
+
+    assert inv["matched_figures"] == []
+    assert "held_figures" in inv
+    assert len(inv["held_figures"]) == 1
+    assert inv["held_figures"][0]["legend_block_id"] == "p10_b1"
+    assert inv["held_figures"][0]["hold_reason"] == "insufficient_legend_evidence"
+    assert inv["held_figures"][0]["figure_number"] == 1
+
+
+def test_validation_first_truncated_legend_variants_are_held() -> None:
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    for legend_text in ("Figure 1.", "Fig. 1."):
+        structured_blocks = [
+            {
+                "paper_id": "K001",
+                "page": 10,
+                "block_id": "p10_b1",
+                "zone": "body_zone",
+                "style_family": "legend_like",
+                "text": legend_text,
+                "marker_signature": {"type": "figure_number", "number": 1},
+                "bbox": [50, 50, 300, 90],
+                "page_width": 1200,
+                "page_height": 1600,
+            },
+            {
+                "paper_id": "K001",
+                "page": 10,
+                "block_id": "p10_b2",
+                "zone": "body_zone",
+                "style_family": "body_like",
+                "text": "Narrative prose",
+                "marker_signature": {"type": "none"},
+                "bbox": [50, 100, 900, 140],
+                "page_width": 1200,
+                "page_height": 1600,
+            },
+        ]
+
+        inv = build_figure_inventory(structured_blocks)
+
+        assert inv["matched_figures"] == []
+        assert len(inv.get("held_figures", [])) == 1
+        assert inv["held_figures"][0]["legend_block_id"] == "p10_b1"
+
+
+def test_validation_first_truncated_legend_with_same_page_asset_still_holds() -> None:
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    structured_blocks = [
+        {
+            "paper_id": "K001",
+            "page": 10,
+            "block_id": "p10_b1",
+            "zone": "body_zone",
+            "style_family": "legend_like",
+            "text": "Figure 1.",
+            "marker_signature": {"type": "figure_number", "number": 1},
+            "bbox": [50, 420, 300, 460],
+            "page_width": 1200,
+            "page_height": 1600,
+        },
+        {
+            "paper_id": "K001",
+            "page": 10,
+            "block_id": "p10_b2",
+            "role": "figure_asset",
+            "text": "",
+            "bbox": [50, 60, 550, 390],
+            "page_width": 1200,
+            "page_height": 1600,
+        },
+    ]
+
+    inv = build_figure_inventory(structured_blocks)
+
+    assert inv["matched_figures"] == []
+    assert len(inv.get("held_figures", [])) == 1
+    assert inv["held_figures"][0]["legend_block_id"] == "p10_b1"
+
+
+def test_display_zone_validation_first_candidate_enters_figure_matching() -> None:
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    structured_blocks = [
+        {
+            "paper_id": "K001",
+            "page": 7,
+            "block_id": "p7_b1",
+            "zone": "display_zone",
+            "style_family": "legend_like",
+            "text": "Figure 3.",
+            "marker_signature": {"type": "figure_number", "number": 3},
+            "bbox": [100, 420, 360, 460],
+            "page_width": 1200,
+            "page_height": 1600,
+        },
+        {
+            "paper_id": "K001",
+            "page": 7,
+            "block_id": "p7_b2",
+            "role": "figure_asset",
+            "text": "",
+            "bbox": [80, 60, 620, 390],
+            "page_width": 1200,
+            "page_height": 1600,
+        },
+    ]
+
+    inv = build_figure_inventory(structured_blocks)
+
+    assert inv["matched_figures"] == []
+    assert len(inv.get("held_figures", [])) == 1
+    assert inv["held_figures"][0]["legend_block_id"] == "p7_b1"
+
+
+def test_display_zone_validation_first_full_caption_can_match() -> None:
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    structured_blocks = [
+        {
+            "paper_id": "K001",
+            "page": 7,
+            "block_id": "p7_b1",
+            "zone": "display_zone",
+            "style_family": "legend_like",
+            "style_family_authority": "figure_family_anchor",
+            "text": "Figure 3. Quantitative analysis of migration under stimulation.",
+            "marker_signature": {"type": "figure_number", "number": 3},
+            "bbox": [120, 420, 620, 470],
+            "page_width": 1200,
+            "page_height": 1600,
+        },
+        {
+            "paper_id": "K001",
+            "page": 7,
+            "block_id": "p7_b2",
+            "role": "figure_asset",
+            "text": "",
+            "bbox": [100, 60, 700, 390],
+            "page_width": 1200,
+            "page_height": 1600,
+        },
+    ]
+
+    inv = build_figure_inventory(structured_blocks)
+
+    assert len(inv["matched_figures"]) == 1
+    assert inv["matched_figures"][0]["legend_block_id"] == "p7_b1"
+    assert inv["matched_figures"][0]["matched_assets"][0]["block_id"] == "p7_b2"
+
+
+def test_truncated_legend_variant_from_existing_caption_role_is_still_held() -> None:
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    structured_blocks = [
+        {
+            "paper_id": "K001",
+            "page": 10,
+            "block_id": "p10_b1",
+            "role": "figure_caption",
+            "zone": "body_zone",
+            "style_family": "legend_like",
+            "text": "Figure 1.",
+            "marker_signature": {"type": "figure_number", "number": 1},
+            "bbox": [50, 50, 300, 90],
+            "page_width": 1200,
+            "page_height": 1600,
+        },
+        {
+            "paper_id": "K001",
+            "page": 10,
+            "block_id": "p10_b2",
+            "role": "body_paragraph",
+            "zone": "body_zone",
+            "style_family": "body_like",
+            "text": "Narrative prose",
+            "marker_signature": {"type": "none"},
+            "bbox": [50, 100, 900, 140],
+            "page_width": 1200,
+            "page_height": 1600,
+        },
+    ]
+
+    inv = build_figure_inventory(structured_blocks)
+
+    assert inv["matched_figures"] == []
+    assert inv.get("held_figures", []) == []
+    assert len(inv.get("ambiguous_figures", [])) == 1
+    assert inv["ambiguous_figures"][0]["legend_block_id"] == "p10_b1"
+
+
+def test_legitimate_offset_caption_asset_pair_can_still_match_with_overlap() -> None:
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    structured_blocks = [
+        {
+            "paper_id": "K001",
+            "page": 4,
+            "block_id": "cap1",
+            "role": "figure_caption",
+            "text": "Figure 2. Migration assay under stimulation.",
+            "bbox": [180, 420, 620, 470],
+            "page_width": 1200,
+            "page_height": 1600,
+        },
+        {
+            "paper_id": "K001",
+            "page": 4,
+            "block_id": "asset1",
+            "role": "figure_asset",
+            "text": "",
+            "bbox": [100, 60, 700, 390],
+            "page_width": 1200,
+            "page_height": 1600,
+        },
+    ]
+
+    inv = build_figure_inventory(structured_blocks)
+
+    assert len(inv["matched_figures"]) == 1
+    assert inv["matched_figures"][0]["legend_block_id"] == "cap1"
+    assert inv["matched_figures"][0]["matched_assets"][0]["block_id"] == "asset1"
+
+
+def test_explicit_figure_caption_role_is_not_diverted_into_hold() -> None:
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    structured_blocks = [
+        {
+            "paper_id": "K001",
+            "page": 10,
+            "block_id": "p10_b1",
+            "role": "figure_caption",
+            "zone": "body_zone",
+            "style_family": "legend_like",
+            "text": "Figure 1. Migration assay under electric field stimulation.",
+            "marker_signature": {"type": "figure_number", "number": 1},
+            "bbox": [50, 420, 550, 470],
+            "page_width": 1200,
+            "page_height": 1600,
+        },
+        {
+            "paper_id": "K001",
+            "page": 10,
+            "block_id": "p10_b2",
+            "role": "figure_asset",
+            "text": "",
+            "bbox": [50, 60, 550, 400],
+            "page_width": 1200,
+            "page_height": 1600,
+        },
+    ]
+
+    inv = build_figure_inventory(structured_blocks)
+
+    assert inv.get("held_figures", []) == []
+    assert len(inv["matched_figures"]) == 1
+    assert inv["matched_figures"][0]["legend_block_id"] == "p10_b1"
+
+
+def test_weak_single_candidate_match_is_not_forced_by_fallback() -> None:
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    structured_blocks = [
+        {
+            "paper_id": "K001",
+            "page": 4,
+            "block_id": "p4_b1",
+            "role": "figure_caption",
+            "text": "Figure 1. Brief caption.",
+            "bbox": [50, 500, 250, 530],
+            "page_width": 1200,
+            "page_height": 1600,
+        },
+        {
+            "paper_id": "K001",
+            "page": 4,
+            "block_id": "p4_b2",
+            "role": "figure_asset",
+            "text": "",
+            "bbox": [700, 60, 1100, 420],
+            "page_width": 1200,
+            "page_height": 1600,
+        },
+    ]
+
+    inv = build_figure_inventory(structured_blocks)
+
+    assert inv["matched_figures"] == []
+    assert len(inv.get("ambiguous_figures", [])) == 1
+    assert inv["ambiguous_figures"][0]["legend_block_id"] == "p4_b1"
+    assert len(inv["unmatched_assets"]) == 1
+    assert inv["unmatched_assets"][0]["block_id"] == "p4_b2"
+
+
+def test_no_candidate_sequential_fallback_no_longer_manufactures_match() -> None:
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    structured_blocks = [
+        {
+            "paper_id": "K001",
+            "page": 6,
+            "block_id": "p6_b1",
+            "role": "figure_caption",
+            "text": "Figure 1. A caption with no validated candidate geometry.",
+            "bbox": [50, 700, 550, 740],
+            "page_width": 1200,
+            "page_height": 1600,
+        },
+        {
+            "paper_id": "K001",
+            "page": 6,
+            "block_id": "p6_b2",
+            "role": "figure_asset",
+            "text": "",
+            "bbox": [700, 50, 1100, 300],
+            "page_width": 1200,
+            "page_height": 1600,
+        },
+    ]
+
+    inv = build_figure_inventory(structured_blocks)
+
+    assert inv["matched_figures"] == []
+    assert all(
+        figure.get("match_score", {}).get("decision") != "matched_fallback"
+        for figure in inv.get("matched_figures", [])
+    )
+    assert len(inv.get("ambiguous_figures", [])) == 1
+    assert inv["ambiguous_figures"][0]["legend_block_id"] == "p6_b1"
+    assert len(inv["unmatched_assets"]) == 1
+    assert inv["unmatched_assets"][0]["block_id"] == "p6_b2"
 
 
 def test_rejected_legend_caption_score_evidence() -> None:
