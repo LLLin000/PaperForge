@@ -5,6 +5,16 @@ from pathlib import Path
 from typing import Any
 
 
+DECISION_STATUSES = {
+    "ACCEPT",
+    "HOLD",
+    "REJECT",
+    "SOURCE_ONLY",
+    "OBSERVATION_ONLY",
+    "CONFLICT",
+}
+
+
 def record_decision(
     block: dict,
     *,

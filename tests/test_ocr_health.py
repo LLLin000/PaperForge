@@ -382,3 +382,50 @@ def test_ocr_health_hard_rule_decision_count_uses_real_signals() -> None:
     )
 
     assert report["hard_rule_decision_count"] >= 2
+
+
+def test_health_reports_anchor_zone_and_hold_statuses() -> None:
+    from paperforge.worker.ocr_health import build_ocr_health
+
+    report = build_ocr_health(
+        page_count=2,
+        raw_blocks_count=3,
+        structured_blocks=[],
+        figure_inventory={"matched_figures": [], "held_figures": [], "unmatched_legends": [], "unmatched_assets": []},
+        table_inventory={"tables": [], "held_tables": [], "unmatched_assets": [], "unmatched_captions": []},
+        doc_structure={
+            "anchor_summary": {"reference_family_anchor": "ACCEPT", "body_family_anchor": "ACCEPT"},
+            "zone_summary": {"reference_zone": "ACCEPT", "body_zone": "ACCEPT"},
+            "held_counts": {"families": 1, "matches": 0},
+        },
+    )
+
+    assert "anchor_summary" in report
+    assert "zone_summary" in report
+    assert "held_counts" in report
+
+
+def test_health_counts_held_figures_and_tables() -> None:
+    from paperforge.worker.ocr_health import build_ocr_health
+
+    report = build_ocr_health(
+        page_count=1,
+        raw_blocks_count=1,
+        structured_blocks=[{"role": "abstract_body"}, {"role": "reference_item"}, {"role": "section_heading"}, {"role": "section_heading"}],
+        figure_inventory={
+            "matched_figures": [],
+            "held_figures": [{"figure_id": "held_figure_001"}],
+            "unmatched_legends": [],
+            "unmatched_assets": [],
+        },
+        table_inventory={
+            "tables": [],
+            "held_tables": [{"table_id": "held_table_001"}],
+            "unmatched_assets": [],
+            "unmatched_captions": [],
+        },
+    )
+
+    assert report["held_figure_count"] == 1
+    assert report["held_table_count"] == 1
+    assert report["held_match_count"] == 2

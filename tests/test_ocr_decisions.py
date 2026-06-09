@@ -67,3 +67,16 @@ def test_write_structured_blocks_jsonl_strips_decision_log(tmp_path) -> None:
     with open(path, "r", encoding="utf-8") as f:
         data = json.loads(f.readline())
     assert "_decision_log" not in data
+
+
+def test_decision_status_vocabulary_is_exposed() -> None:
+    from paperforge.worker.ocr_decisions import DECISION_STATUSES
+
+    assert DECISION_STATUSES == {
+        "ACCEPT",
+        "HOLD",
+        "REJECT",
+        "SOURCE_ONLY",
+        "OBSERVATION_ONLY",
+        "CONFLICT",
+    }

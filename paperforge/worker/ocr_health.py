@@ -4,6 +4,51 @@ from pathlib import Path
 from typing import Any
 
 
+def _doc_attr(doc_structure: Any, name: str, default=None):
+    if doc_structure is None:
+        return default
+    if isinstance(doc_structure, dict):
+        return doc_structure.get(name, default)
+    return getattr(doc_structure, name, default)
+
+
+def _decision_status(value: Any) -> str:
+    if isinstance(value, dict):
+        status = value.get("status")
+        if isinstance(status, str) and status:
+            return status
+    if isinstance(value, str) and value:
+        return value
+    return "OBSERVATION_ONLY"
+
+
+def _build_anchor_summary(doc_structure: Any) -> dict[str, str]:
+    if isinstance(doc_structure, dict) and "anchor_summary" in doc_structure:
+        return dict(doc_structure.get("anchor_summary") or {})
+    return {
+        "body_family_anchor": _decision_status(_doc_attr(doc_structure, "body_family_anchor", {})),
+        "reference_family_anchor": _decision_status(_doc_attr(doc_structure, "reference_family_anchor", {})),
+    }
+
+
+def _build_zone_summary(doc_structure: Any) -> dict[str, str]:
+    if isinstance(doc_structure, dict) and "zone_summary" in doc_structure:
+        return dict(doc_structure.get("zone_summary") or {})
+    region_bus = _doc_attr(doc_structure, "region_bus", {}) or {}
+    return {zone_name: _decision_status(zone) for zone_name, zone in region_bus.items()}
+
+
+def _build_held_counts(doc_structure: Any, *, held_figure_count: int, held_table_count: int) -> dict[str, int]:
+    if isinstance(doc_structure, dict) and "held_counts" in doc_structure:
+        held = dict(doc_structure.get("held_counts") or {})
+        held.setdefault("matches", held_figure_count + held_table_count)
+        return held
+    return {
+        "families": 0,
+        "matches": held_figure_count + held_table_count,
+    }
+
+
 def build_ocr_health(
     *,
     page_count: int,
@@ -26,9 +71,11 @@ def build_ocr_health(
     table_caption_count = sum(1 for b in structured_blocks if b.get("role") == "table_caption")
 
     figure_asset_count = len(figure_inventory.get("matched_figures", []))
+    held_figure_count = len(figure_inventory.get("held_figures", []))
     unmatched_legends = len(figure_inventory.get("unmatched_legends", []))
     unmatched_figure_assets = len(figure_inventory.get("unmatched_assets", []))
     tables = table_inventory.get("tables", [])
+    held_table_count = len(table_inventory.get("held_tables", []))
     table_asset_count = sum(1 for t in tables if t.get("has_asset"))
     empty_tables = sum(1 for t in tables if not t.get("has_asset"))
     formal_table_count = len([t for t in tables if not t.get("is_continuation")])
@@ -80,12 +127,11 @@ def build_ocr_health(
     layout = _run_layout_audit(
         structured_blocks,
         body_spine=spine,
-        page_layouts=doc_structure.page_layouts if doc_structure else None,
+        page_layouts=_doc_attr(doc_structure, "page_layouts", None),
     )
 
     tail_score = {}
-    if doc_structure is not None and hasattr(doc_structure, "tail_boundary_score"):
-        tail_score = doc_structure.tail_boundary_score or {}
+    tail_score = _doc_attr(doc_structure, "tail_boundary_score", {}) or {}
 
     # Collect decision log summaries
     from paperforge.worker.ocr_decisions import collect_decisions, summarize_decisions
@@ -110,6 +156,14 @@ def build_ocr_health(
         + candidate_forced_count
     )
 
+    anchor_summary = _build_anchor_summary(doc_structure)
+    zone_summary = _build_zone_summary(doc_structure)
+    held_counts = _build_held_counts(
+        doc_structure,
+        held_figure_count=held_figure_count,
+        held_table_count=held_table_count,
+    )
+
     report = {
         "page_count": page_count,
         "blocks_count": raw_blocks_count,
@@ -118,8 +172,10 @@ def build_ocr_health(
         "references_found": references_found,
         "figure_caption_count": figure_caption_count,
         "figure_asset_count": figure_asset_count,
+        "held_figure_count": held_figure_count,
         "table_caption_count": table_caption_count,
         "table_asset_count": table_asset_count,
+        "held_table_count": held_table_count,
         "formal_table_count": formal_table_count,
         "table_segment_count": table_segment_count,
         "ambiguous_table_match_count": ambiguous_table_match_count,
@@ -145,8 +201,12 @@ def build_ocr_health(
         "ambiguous_match_count": ambiguous_figure_match_count + ambiguous_table_match_count,
         "ambiguous_figure_match_count": ambiguous_figure_match_count,
         "unresolved_cluster_count": unresolved_cluster_count,
+        "held_match_count": held_figure_count + held_table_count,
         "low_tail_boundary_confidence": low_tail_boundary_confidence,
         "hard_rule_decision_count": hard_rule_decision_count,
+        "anchor_summary": anchor_summary,
+        "zone_summary": zone_summary,
+        "held_counts": held_counts,
     }
     report.update(decision_summary)
 
@@ -187,8 +247,9 @@ def build_ocr_health(
     report["table_match_confidence_distribution"] = _score_distribution(table_scores)
 
     layout_confidences = []
-    if doc_structure is not None and getattr(doc_structure, "page_layouts", None):
-        layout_confidences = [float(p.confidence) for p in doc_structure.page_layouts.values()]
+    page_layouts = _doc_attr(doc_structure, "page_layouts", None)
+    if page_layouts:
+        layout_confidences = [float(p.confidence) for p in page_layouts.values()]
     report["layout_confidence_distribution"] = _score_distribution(layout_confidences)
 
     low_confidence_figures = [s for s in fig_scores if s < 0.4]
