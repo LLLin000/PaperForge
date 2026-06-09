@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 
@@ -65,3 +66,95 @@ def test_cleanup_ocr_cache_dry_run_does_not_delete(tmp_path: Path) -> None:
     assert len(report["pages_removed"]) == 1
     assert pages_dir.exists(), "dry run must not delete files"
     assert (pages_dir / "page_001.jpg").exists(), "dry run must not delete files"
+
+
+def test_document_structure_json_includes_compatibility_anchor_artifacts(tmp_path: Path) -> None:
+    from paperforge.worker.ocr_blocks import build_structured_blocks
+
+    raw_blocks = [
+        {
+            "paper_id": "KEY001",
+            "page": 1,
+            "block_id": "p1_b1",
+            "raw_label": "doc_title",
+            "raw_order": 0,
+            "bbox": [100, 60, 700, 120],
+            "text": "Canonical Title",
+            "page_width": 1200,
+            "page_height": 1600,
+            "span_metadata": [{"font": "Times-Bold", "size": 18.0, "flags": 16, "color": 0}],
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 3,
+            "block_id": "p3_b1",
+            "raw_label": "text",
+            "raw_order": 1,
+            "bbox": [110, 120, 370, 280],
+            "text": "Long body text A " * 8,
+            "page_width": 1200,
+            "page_height": 1600,
+            "span_metadata": [{"font": "Times-Roman", "size": 9.0, "flags": 0, "color": 0}] * 8,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 4,
+            "block_id": "p4_b1",
+            "raw_label": "text",
+            "raw_order": 2,
+            "bbox": [112, 120, 374, 280],
+            "text": "Long body text B " * 8,
+            "page_width": 1200,
+            "page_height": 1600,
+            "span_metadata": [{"font": "Times-Roman", "size": 9.0, "flags": 0, "color": 0}] * 8,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 8,
+            "block_id": "p8_b1",
+            "raw_label": "paragraph_title",
+            "raw_order": 3,
+            "bbox": [110, 120, 320, 160],
+            "text": "References",
+            "page_width": 1200,
+            "page_height": 1600,
+            "span_metadata": [{"font": "Times-Bold", "size": 10.0, "flags": 16, "color": 0}],
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 8,
+            "block_id": "p8_b2",
+            "raw_label": "text",
+            "raw_order": 4,
+            "bbox": [110, 180, 400, 260],
+            "text": "[1] Example reference entry with enough tokens to be reference-like.",
+            "page_width": 1200,
+            "page_height": 1600,
+            "span_metadata": [{"font": "Times-Roman", "size": 8.5, "flags": 0, "color": 0}] * 6,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 8,
+            "block_id": "p8_b3",
+            "raw_label": "text",
+            "raw_order": 5,
+            "bbox": [112, 270, 404, 350],
+            "text": "[2] Another reference entry with enough tokens to be reference-like.",
+            "page_width": 1200,
+            "page_height": 1600,
+            "span_metadata": [{"font": "Times-Roman", "size": 8.5, "flags": 0, "color": 0}] * 6,
+        },
+    ]
+
+    structure_dir = tmp_path / "structure"
+    structure_dir.mkdir()
+
+    build_structured_blocks(raw_blocks, structure_output_dir=structure_dir)
+
+    payload = json.loads((structure_dir / "document_structure.json").read_text(encoding="utf-8"))
+
+    assert payload["structural_signatures"]
+    assert payload["anchors"]["body_family_anchor"]["status"] == "ACCEPT"
+    assert payload["anchors"]["reference_family_anchor"]["status"] == "ACCEPT"
+    assert payload["zones"]["body_zone"]["status"] == "ACCEPT"
+    assert payload["zones"]["reference_zone"]["status"] == "ACCEPT"

@@ -2553,6 +2553,7 @@ def _resolve_ambiguous_candidates(
             if has_container_boundary and page == container_boundary_page:
                 layout = page_layouts.get(page)
                 _same_column = True  # single-column → same column
+                boundary_bottom = 0
                 if layout and layout.column_count > 1:
                     boundaries = layout.column_boundaries
                     x_center = (bbox[0] + bbox[2]) / 2

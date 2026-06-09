@@ -195,12 +195,12 @@ def build_structured_blocks(
 
     # Persist document structure artifact for downstream debugging
     if doc_structure and structure_output_dir:
-        _write_document_structure_json(doc_structure, structure_output_dir)
+        _write_document_structure_json(doc_structure, structure_output_dir, rows)
 
     return rows, doc_structure
 
 
-def _write_document_structure_json(doc_structure, output_dir: str | Path) -> None:
+def _write_document_structure_json(doc_structure, output_dir: str | Path, rows: list[dict] | None = None) -> None:
     """Serialize DocumentStructure to JSON for downstream inspection."""
     import dataclasses
 
@@ -216,6 +216,24 @@ def _write_document_structure_json(doc_structure, output_dir: str | Path) -> Non
             data[k] = v._asdict()
         elif dataclasses.is_dataclass(v):
             data[k] = dataclasses.asdict(v)
+    rows = rows or []
+    data["structural_signatures"] = [
+        {
+            "block_id": row.get("block_id"),
+            "page": row.get("page"),
+            "raw_observation": row.get("raw_observation"),
+            "marker_signature": row.get("marker_signature"),
+            "layout_signature": row.get("layout_signature"),
+            "span_signature": row.get("span_signature"),
+        }
+        for row in rows
+        if row.get("block_id")
+    ]
+    data["anchors"] = {
+        "body_family_anchor": data.get("body_family_anchor"),
+        "reference_family_anchor": data.get("reference_family_anchor"),
+    }
+    data["zones"] = data.get("region_bus") or {}
     output_path = Path(output_dir) / "document_structure.json"
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with open(output_path, "w", encoding="utf-8") as f:

@@ -199,3 +199,29 @@ def test_fixture_structured_renderer_has_headings_and_body() -> None:
     assert len(non_heading_text) >= 1, (
         f"expected at least one line of body text in rendered output:\n{output[:800]}"
     )
+
+
+def test_pipeline_emits_signatures_anchors_and_zones_before_final_role_switch(tmp_path: Path) -> None:
+    key = "2GN9LMCW"
+    json_path = _load_json_path(key)
+    if not json_path or not json_path.exists():
+        pytest.skip("fixture not available")
+
+    data = json.loads(json_path.read_text(encoding="utf-8"))
+
+    from paperforge.worker.ocr_blocks import build_raw_blocks_for_result_lines, build_structured_blocks
+
+    raw_blocks = build_raw_blocks_for_result_lines(key, data)
+    structure_dir = tmp_path / key / "structure"
+    structure_dir.mkdir(parents=True)
+
+    rows, doc_structure = build_structured_blocks(raw_blocks, structure_output_dir=structure_dir)
+    artifacts = json.loads((structure_dir / "document_structure.json").read_text(encoding="utf-8"))
+
+    assert doc_structure is not None
+    assert artifacts["structural_signatures"]
+    assert artifacts["anchors"]
+    assert artifacts["zones"]
+    assert any(row.get("marker_signature") for row in rows)
+    assert doc_structure.body_family_anchor is not None
+    assert doc_structure.region_bus is not None
