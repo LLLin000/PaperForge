@@ -179,6 +179,37 @@ def build_structured_blocks(
             if resolved.evidence:
                 row.setdefault("evidence", []).extend(resolved.evidence)
 
+    if doc_structure:
+        from paperforge.worker.ocr_document import _apply_zone_labels, infer_zones
+        from paperforge.worker.ocr_families import partition_zone_families
+
+        refreshed_anchors = {
+            "body_family_anchor": getattr(doc_structure, "body_family_anchor", None),
+            "reference_family_anchor": getattr(doc_structure, "reference_family_anchor", None),
+        }
+        refreshed_region_bus = infer_zones(rows, refreshed_anchors)
+        _apply_zone_labels(rows, refreshed_region_bus)
+        partition_zone_families(rows, refreshed_anchors)
+        doc_structure.region_bus = refreshed_region_bus
+
+        refreshed_reference_rows = [row for row in rows if row.get("zone") == "reference_zone"]
+        if refreshed_reference_rows:
+            reference_pages = sorted({int(row.get("page", 0) or 0) for row in refreshed_reference_rows if int(row.get("page", 0) or 0) > 0})
+            if reference_pages:
+                doc_structure.reference_zones = [
+                    {
+                        "page": page,
+                        "column_index": 0,
+                        "y_start": 0,
+                        "y_end": float(next((row.get("page_height", 0) or 0) for row in refreshed_reference_rows if int(row.get("page", 0) or 0) == page) or 0),
+                        "block_indices": [
+                            idx for idx, row in enumerate(rows)
+                            if row.get("zone") == "reference_zone" and int(row.get("page", 0) or 0) == page
+                        ],
+                    }
+                    for page in reference_pages
+                ]
+
     # Sync render_default/index_default after role normalizations
     for row in rows:
         role = row.get("role", "")

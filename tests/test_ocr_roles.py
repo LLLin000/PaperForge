@@ -256,6 +256,92 @@ def test_body_with_noise_phrase_below_backmatter_heading() -> None:
     )
 
 
+def test_pipeline_keeps_reference_zone_and_legend_family_out_of_default_body() -> None:
+    from paperforge.worker.ocr_blocks import build_structured_blocks
+
+    raw_blocks = [
+        {
+            "paper_id": "KEY010B",
+            "page": 2,
+            "block_id": "p2_b1",
+            "raw_label": "text",
+            "raw_order": 0,
+            "bbox": [110, 120, 470, 280],
+            "text": "Main body paragraph with stable narrative prose and enough repeated content to establish the body family anchor for the document. " * 2,
+            "page_width": 1200,
+            "page_height": 1600,
+            "span_metadata": {"size": 9.0, "font": "Times", "flags": ""},
+        },
+        {
+            "paper_id": "KEY010B",
+            "page": 3,
+            "block_id": "p3_b1",
+            "raw_label": "text",
+            "raw_order": 0,
+            "bbox": [112, 118, 472, 282],
+            "text": "Another core body paragraph repeating the same typography and width so the anchor-first body family remains dominant across the middle pages. " * 2,
+            "page_width": 1200,
+            "page_height": 1600,
+            "span_metadata": {"size": 9.0, "font": "Times", "flags": ""},
+        },
+        {
+            "paper_id": "KEY010B",
+            "page": 5,
+            "block_id": "p5_b1",
+            "raw_label": "paragraph_title",
+            "raw_order": 0,
+            "bbox": [100, 80, 350, 120],
+            "text": "References",
+            "page_width": 1200,
+            "page_height": 1600,
+            "span_metadata": {"size": 11.0, "font": "Times", "flags": "bold"},
+        },
+        {
+            "paper_id": "KEY010B",
+            "page": 5,
+            "block_id": "p5_b2",
+            "raw_label": "text",
+            "raw_order": 1,
+            "bbox": [110, 170, 500, 260],
+            "text": "[1] Example reference entry with journal and year details.",
+            "page_width": 1200,
+            "page_height": 1600,
+            "span_metadata": {"size": 8.5, "font": "Times", "flags": ""},
+        },
+        {
+            "paper_id": "KEY010B",
+            "page": 4,
+            "block_id": "p4_b9",
+            "raw_label": "text",
+            "raw_order": 2,
+            "bbox": [720, 780, 1030, 860],
+            "text": "Figure 1. Compact legend text for the nearby display panel.",
+            "page_width": 1200,
+            "page_height": 1600,
+            "span_metadata": {"size": 8.0, "font": "Times", "flags": ""},
+        },
+        {
+            "paper_id": "KEY010B",
+            "page": 4,
+            "block_id": "p4_b10",
+            "raw_label": "figure",
+            "raw_order": 3,
+            "bbox": [700, 420, 1040, 760],
+            "text": "",
+            "page_width": 1200,
+            "page_height": 1600,
+        },
+    ]
+
+    rows, _ = build_structured_blocks(raw_blocks)
+
+    assert any(row["role"] == "reference_item" for row in rows)
+    assert not any(
+        row["role"] == "body_paragraph" and row.get("style_family") == "legend_like"
+        for row in rows
+    )
+
+
 def test_style_aware_unnumbered_heading_detection() -> None:
     """Unnumbered headings with distinct visual style are detected as headings.
 

@@ -434,11 +434,34 @@ def resolve_final_role(
     current_role = str(block.get("role") or "body_paragraph")
     current_confidence = float(block.get("role_confidence") or 0.6)
     body_anchor = anchors.get("body_family_anchor") or {}
+    reference_anchor = anchors.get("reference_family_anchor") or {}
     body_anchor_accepted = str(body_anchor.get("status") or "").upper() == "ACCEPT"
+    reference_anchor_accepted = str(reference_anchor.get("status") or "").upper() == "ACCEPT"
     in_body_zone = zone == "body_zone"
     strong_legend_authority = style_family_authority in {"figure_marker", "figure_family_anchor"}
 
     if current_role == "body_paragraph":
+        if (
+            zone == "reference_zone"
+            and reference_anchor_accepted
+            and style_family == "reference_like"
+            and marker_type in {
+                "reference_numeric_bracket",
+                "reference_numeric_dot",
+                "reference_numeric_parenthesis",
+                "reference_pattern",
+                "citation_line",
+            }
+        ):
+            return RoleAssignment(
+                role="reference_item",
+                confidence=max(current_confidence, 0.82),
+                evidence=[
+                    "late role resolution: reference_like family + reference zone",
+                    f"style_family_authority={style_family_authority or 'none'}",
+                    f"context_source={context_source}",
+                ],
+            )
         if (
             in_body_zone
             and body_anchor_accepted
@@ -454,6 +477,22 @@ def resolve_final_role(
                     "late role resolution: legend_like family + figure_number marker",
                     f"zone={zone or 'unknown'}",
                     f"body_anchor={str(body_anchor.get('status') or 'none').lower()}",
+                    f"style_family_authority={style_family_authority or 'none'}",
+                    f"context_source={context_source}",
+                ],
+            )
+        if (
+            zone == "display_zone"
+            and strong_legend_authority
+            and style_family == "legend_like"
+            and marker_type == "figure_number"
+            and not _looks_like_late_figure_narrative_prose(str(block.get("text") or ""))
+        ):
+            return RoleAssignment(
+                role="figure_caption_candidate",
+                confidence=max(current_confidence, 0.8),
+                evidence=[
+                    "late role resolution: display-zone legend candidate from figure family",
                     f"style_family_authority={style_family_authority or 'none'}",
                     f"context_source={context_source}",
                 ],

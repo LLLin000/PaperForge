@@ -122,7 +122,11 @@ def _looks_like_figure_narrative_prose(text: str) -> bool:
 
 
 def _is_body_mention(block: dict) -> bool:
+    zone = str(block.get("zone") or "")
+    style_family = str(block.get("style_family") or "")
     raw_role = block.get("raw_role", block.get("role", ""))
+    if zone == "display_zone" and style_family == "legend_like":
+        return False
     if raw_role == "body_paragraph":
         return True
     if raw_role == "figure_caption_candidate":
