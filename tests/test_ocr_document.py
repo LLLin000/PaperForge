@@ -487,7 +487,7 @@ def test_reference_zone_is_inferred_from_reference_family_anchor_not_preexisting
     zones = infer_zones(blocks, anchors)
 
     assert zones["reference_zone"]["status"] == "ACCEPT"
-    assert "p8_b2" in zones["reference_zone"]["block_ids"]
+    assert "p8:p8_b2" in zones["reference_zone"]["block_ids"]
 
 
 def test_analyze_document_structure_persists_region_bus_in_dataclass_serialization() -> None:
@@ -548,8 +548,8 @@ def test_analyze_document_structure_persists_region_bus_in_dataclass_serializati
 
     assert "region_bus" in data
     assert data["region_bus"]["reference_zone"]["status"] == "ACCEPT"
-    assert "p6_b2" in data["region_bus"]["reference_zone"]["block_ids"]
-    assert "p6_b3" in data["region_bus"]["reference_zone"]["block_ids"]
+    assert "p6:p6_b2" in data["region_bus"]["reference_zone"]["block_ids"]
+    assert "p6:p6_b3" in data["region_bus"]["reference_zone"]["block_ids"]
 
 
 def test_infer_zones_keeps_pre_reference_tail_out_of_body_zone() -> None:
@@ -621,8 +621,8 @@ def test_infer_zones_keeps_pre_reference_tail_out_of_body_zone() -> None:
 
     zones = infer_zones(blocks, anchors, tail_spread=tail_spread)
 
-    assert "p7_b2" in zones["tail_nonref_hold_zone"]["block_ids"]
-    assert "p7_b2" not in zones["body_zone"]["block_ids"]
+    assert "p7:p7_b2" in zones["tail_nonref_hold_zone"]["block_ids"]
+    assert "p7:p7_b2" not in zones["body_zone"]["block_ids"]
 
 
 def test_infer_zones_inferrs_tail_nonref_hold_without_pre_labeled_tail_roles() -> None:
@@ -700,8 +700,8 @@ def test_infer_zones_inferrs_tail_nonref_hold_without_pre_labeled_tail_roles() -
 
     zones = infer_zones(blocks, anchors)
 
-    assert "p7_b2" in zones["tail_nonref_hold_zone"]["block_ids"]
-    assert "p7_b2" not in zones["body_zone"]["block_ids"]
+    assert "p7:p7_b2" in zones["tail_nonref_hold_zone"]["block_ids"]
+    assert "p7:p7_b2" not in zones["body_zone"]["block_ids"]
 
 
 def test_normalize_flat_backmatter_unifies_heading_family() -> None:
