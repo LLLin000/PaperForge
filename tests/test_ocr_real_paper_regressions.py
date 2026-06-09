@@ -185,3 +185,19 @@ def test_control_papers_keep_body_and_tail_stability(rebuilt_real_papers: dict, 
 
     assert roles.count("body_paragraph") >= CONTROL_MIN_BODY[key]
     assert any(w in fulltext for w in ["References", "references", "REFERENCE", "Bibliography"]), "Tail reference marker not found"
+
+
+@pytest.mark.parametrize("key", PROBLEM_KEYS)
+def test_problem_papers_keep_reference_roles_and_exclude_legend_family_from_body(
+    rebuilt_real_papers: dict,
+    _ocr_root: Path,
+    key: str,
+) -> None:
+    _require_artifacts(_ocr_root, key)
+    blocks = _read_jsonl(_structured_path(_ocr_root, key))
+
+    assert any(block.get("role") == "reference_item" for block in blocks)
+    assert not any(
+        block.get("role") == "body_paragraph" and block.get("style_family") in {"legend_like", "table_caption_like", "reference_like"}
+        for block in blocks
+    )

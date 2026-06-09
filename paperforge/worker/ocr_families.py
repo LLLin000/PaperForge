@@ -509,7 +509,7 @@ def _has_reference_heading_near_family(blocks: list[dict], family_pages: list[in
             continue
         marker_type = ((block.get("marker_signature") or {}).get("type") or "none")
         text = str(block.get("text") or block.get("block_content") or "").strip().lower()
-        if marker_type == "canonical_section_name" and text in _REFERENCE_HEADING_TEXTS:
+        if marker_type in {"canonical_section_name", "short_fragment", "none"} and text in _REFERENCE_HEADING_TEXTS:
             return True
     return False
 
@@ -527,7 +527,8 @@ def _build_reference_family_candidate(
     font_family, font_size_bucket, width_bucket, x_center_bucket = family_key
     strong_tail = tail_continuity >= 1.0
     strong_marker_family = item_count >= 2 and marker_count >= 2
-    can_accept = strong_marker_family and strong_tail
+    heading_supported_singleton = heading_present and item_count >= 1 and marker_count >= 1
+    can_accept = strong_tail and (strong_marker_family or heading_supported_singleton)
     reason = "reference_markers_with_tail_continuity"
     if heading_present:
         reason = f"{reason}_and_heading_binding"

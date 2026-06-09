@@ -388,9 +388,9 @@ def _canonical_section_text(block: dict) -> str:
 
 def _is_reference_heading_candidate(block: dict) -> bool:
     marker_type = ((block.get("marker_signature") or {}).get("type") or "none")
-    if marker_type != "canonical_section_name":
+    if _canonical_section_text(block) not in _REFERENCE_ZONE_HEADING_TEXTS:
         return False
-    return _canonical_section_text(block) in _REFERENCE_ZONE_HEADING_TEXTS
+    return marker_type in {"canonical_section_name", "short_fragment", "none"}
 
 
 def _is_reference_item_candidate(block: dict) -> bool:
@@ -3124,6 +3124,32 @@ def normalize_document_structure(blocks: list[dict]) -> tuple[DocumentStructure,
             "reference_family_anchor": reference_family_anchor,
         },
     )
+
+    from paperforge.worker.ocr_roles import resolve_final_role
+
+    family_context = {
+        str(block.get("block_id") or f"block_{idx}"): {
+            "zone": block.get("zone"),
+            "style_family": block.get("style_family"),
+            "style_family_authority": block.get("style_family_authority"),
+        }
+        for idx, block in enumerate(blocks)
+    }
+    anchor_context = {
+        "body_family_anchor": body_family_anchor,
+        "reference_family_anchor": reference_family_anchor,
+    }
+    for block in blocks:
+        resolved = resolve_final_role(block, anchors=anchor_context, families=family_context)
+        if resolved.role != block.get("role"):
+            block["role"] = resolved.role
+            block["role_confidence"] = resolved.confidence
+            if resolved.evidence:
+                block.setdefault("evidence", []).extend(resolved.evidence)
+
+    region_bus = infer_zones(blocks, anchor_context)
+    _apply_zone_labels(blocks, region_bus)
+    partition_zone_families(blocks, anchor_context)
 
     tail_spread = _reconcile_tail_spread(blocks, page_layouts)
     if tail_spread is not None:

@@ -62,6 +62,40 @@ def test_table_without_asset_is_tracked_as_unmatched_caption() -> None:
     assert len(inventory["unmatched_captions"]) == 1
 
 
+def test_validation_first_table_candidate_remains_stable_under_anchor_first_roles() -> None:
+    from paperforge.worker.ocr_tables import build_table_inventory
+
+    structured_blocks = [
+        {
+            "paper_id": "KEY010B",
+            "page": 6,
+            "block_id": "p6_a1",
+            "role": "table_asset",
+            "raw_label": "table",
+            "text": "parsed table image",
+            "bbox": [120, 140, 760, 520],
+        },
+        {
+            "paper_id": "KEY010B",
+            "page": 6,
+            "block_id": "p6_c1",
+            "role": "body_paragraph",
+            "raw_label": "text",
+            "text": "Table 4. Quantitative outcomes for anchor-first validation.",
+            "bbox": [120, 540, 760, 600],
+            "zone": "display_zone",
+            "style_family": "table_caption_like",
+            "marker_signature": {"type": "table_number", "number": 4},
+        },
+    ]
+
+    inventory = build_table_inventory(structured_blocks)
+
+    assert inventory["official_table_count"] == 1
+    assert inventory["tables"][0]["caption_block_id"] == "p6_c1"
+    assert inventory["tables"][0]["has_asset"] is True
+
+
 def test_continuation_table_matches_same_page_asset() -> None:
     from paperforge.worker.ocr_tables import build_table_inventory
 

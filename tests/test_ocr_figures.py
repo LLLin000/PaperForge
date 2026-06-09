@@ -228,6 +228,56 @@ def test_formal_figure_count_is_based_on_legends_not_raw_images() -> None:
     assert len(inventory["figure_legends"]) == 1
 
 
+def test_validation_first_legend_does_not_promote_body_figure_mention() -> None:
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    structured_blocks = [
+        {
+            "paper_id": "KEY010B",
+            "page": 3,
+            "block_id": "p3_b1",
+            "role": "body_paragraph",
+            "raw_role": "body_paragraph",
+            "raw_label": "text",
+            "text": "Figure 2 shows the comparative response over time and this sentence continues as narrative body prose for the main discussion section.",
+            "bbox": [90, 100, 530, 180],
+            "zone": "body_zone",
+            "style_family": "body_like",
+            "style_family_authority": "body_family_anchor",
+            "body_spine_member": True,
+            "marker_signature": {"type": "figure_number", "number": 2},
+        },
+        {
+            "paper_id": "KEY010B",
+            "page": 3,
+            "block_id": "p3_b2",
+            "role": "figure_asset",
+            "raw_label": "image",
+            "text": "",
+            "bbox": [620, 140, 1030, 520],
+        },
+        {
+            "paper_id": "KEY010B",
+            "page": 3,
+            "block_id": "p3_b3",
+            "role": "body_paragraph",
+            "raw_label": "text",
+            "text": "Figure 2. Formal caption with sufficient descriptive text to support validation-first legend matching near the media asset.",
+            "bbox": [620, 540, 1040, 620],
+            "zone": "display_zone",
+            "style_family": "legend_like",
+            "style_family_authority": "figure_family_anchor",
+            "marker_signature": {"type": "figure_number", "number": 2},
+        },
+    ]
+
+    inventory = build_figure_inventory(structured_blocks)
+
+    assert all(legend.get("legend_block_id", legend.get("block_id")) != "p3_b1" for legend in inventory["figure_legends"])
+    assert any(legend.get("legend_block_id", legend.get("block_id")) == "p3_b3" for legend in inventory["figure_legends"])
+    assert inventory["official_figure_count"] == 1
+
+
 def test_figure_inventory_includes_all_sections() -> None:
     from paperforge.worker.ocr_figures import build_figure_inventory
 

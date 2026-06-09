@@ -305,6 +305,56 @@ def test_normalize_document_structure_wires_style_family_artifacts_into_blocks()
     assert normalized_blocks[3]["style_family"] == "legend_like"
 
 
+def test_normalize_document_structure_preserves_reference_zone_integrity_from_anchor_flow() -> None:
+    from paperforge.worker.ocr_document import normalize_document_structure
+
+    blocks = [
+        {
+            "block_id": "p2_b1",
+            "page": 2,
+            "role": "body_paragraph",
+            "text": "Stable body paragraph with repeated typography and enough prose to form the body family anchor. " * 2,
+            "bbox": [100, 120, 460, 280],
+            "page_width": 1200,
+            "page_height": 1600,
+            "marker_signature": {"type": "none"},
+            "span_signature": {"font_size_median": 9.0, "font_size_bucket": 9.0, "font_family_norm": "Times"},
+            "layout_signature": {"width": 260, "width_bucket": 250, "x_center": 230, "x_center_bucket": 250},
+        },
+        {
+            "block_id": "p5_b1",
+            "page": 5,
+            "role": "reference_heading",
+            "text": "References",
+            "bbox": [100, 100, 340, 140],
+            "page_width": 1200,
+            "page_height": 1600,
+            "marker_signature": {"type": "canonical_section_name"},
+            "span_signature": {"font_size_median": 10.0, "font_family_norm": "Times"},
+            "layout_signature": {"width": 120, "x_center": 220},
+        },
+        {
+            "block_id": "p5_b2",
+            "page": 5,
+            "role": "body_paragraph",
+            "text": "[1] Example reference with authors and journal details.",
+            "bbox": [110, 180, 500, 260],
+            "page_width": 1200,
+            "page_height": 1600,
+            "marker_signature": {"type": "reference_numeric_bracket", "number": 1},
+            "span_signature": {"font_size_median": 8.5, "font_size_bucket": 8.5, "font_family_norm": "Times"},
+            "layout_signature": {"width": 250, "width_bucket": 250, "x_center": 240, "x_center_bucket": 250},
+        },
+    ]
+
+    doc, normalized_blocks = normalize_document_structure(blocks)
+
+    assert doc.reference_zones
+    ref_row = next(block for block in normalized_blocks if block["block_id"] == "p5_b2")
+    assert ref_row.get("zone") == "reference_zone"
+    assert ref_row.get("style_family") == "reference_like"
+
+
 def test_candidate_resolution_demotes_body_spine_narrative_figure_mentions() -> None:
     from paperforge.worker.ocr_document import DocumentStructure, PageLayoutProfile, _resolve_ambiguous_candidates
 

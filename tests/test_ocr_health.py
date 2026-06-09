@@ -154,6 +154,37 @@ def test_ocr_health_includes_decision_counts() -> None:
     assert report["role_rescue_count"] == 1
 
 
+def test_ocr_health_reports_anchor_first_authority_summaries() -> None:
+    from paperforge.worker.ocr_document import DocumentStructure
+    from paperforge.worker.ocr_health import build_ocr_health
+
+    doc = DocumentStructure(
+        body_family_anchor={"status": "ACCEPT"},
+        reference_family_anchor={"status": "ACCEPT"},
+        region_bus={
+            "body_zone": {"status": "ACCEPT", "block_ids": ["p2_b1"]},
+            "reference_zone": {"status": "ACCEPT", "block_ids": ["p5_b2"]},
+        },
+    )
+    blocks = [
+        {"block_id": "p2_b1", "role": "body_paragraph", "text": "Body", "page": 2, "bbox": [0, 0, 10, 10]},
+        {"block_id": "p5_b2", "role": "reference_item", "text": "[1] Ref", "page": 5, "bbox": [0, 0, 10, 10]},
+    ]
+
+    report = build_ocr_health(
+        page_count=5,
+        raw_blocks_count=2,
+        structured_blocks=blocks,
+        figure_inventory={},
+        table_inventory={},
+        doc_structure=doc,
+    )
+
+    assert report["anchor_summary"]["body_family_anchor"] == "ACCEPT"
+    assert report["anchor_summary"]["reference_family_anchor"] == "ACCEPT"
+    assert report["zone_summary"]["reference_zone"] == "ACCEPT"
+
+
 def test_ocr_health_includes_tail_boundary_confidence() -> None:
     from paperforge.worker.ocr_health import build_ocr_health
 
