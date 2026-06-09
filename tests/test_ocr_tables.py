@@ -388,6 +388,40 @@ def test_table_matching_can_hold_when_caption_and_asset_conflict() -> None:
     assert held["caption_block_id"] == "p12_b1"
 
 
+def test_weak_explicit_table_caption_does_not_auto_match_from_geometry() -> None:
+    from paperforge.worker.ocr_tables import build_table_inventory
+
+    structured_blocks = [
+        {
+            "paper_id": "K001",
+            "page": 9,
+            "block_id": "p9_c1",
+            "role": "table_caption",
+            "text": "Table 2.",
+            "bbox": [100, 100, 700, 140],
+        },
+        {
+            "paper_id": "K001",
+            "page": 9,
+            "block_id": "p9_a1",
+            "role": "table_asset",
+            "raw_label": "table",
+            "text": "",
+            "bbox": [100, 160, 700, 520],
+        },
+    ]
+
+    inv = build_table_inventory(structured_blocks)
+
+    assert inv["held_tables"] == []
+    assert len(inv["tables"]) == 1
+    table = inv["tables"][0]
+    assert table["match_status"] == "ambiguous"
+    assert table["has_asset"] is False
+    assert table["match_score"]["decision"] == "ambiguous"
+    assert "weak_explicit_caption" in table["match_score"]["evidence"]
+
+
 def test_validation_first_table_candidate_with_asset_can_still_match() -> None:
     from paperforge.worker.ocr_tables import build_table_inventory
 

@@ -53,6 +53,13 @@ def _is_insufficient_table_caption_evidence(block: dict) -> bool:
     return bool(_TRUNCATED_TABLE_ONLY_PATTERN.fullmatch(text))
 
 
+def _is_weak_explicit_table_caption(block: dict) -> bool:
+    role = str(block.get("role", "") or "")
+    if role not in {"table_caption", "table_caption_candidate"}:
+        return False
+    return _is_insufficient_table_caption_evidence(block)
+
+
 def _score_candidate_assets(
     page_assets: list[tuple[int, dict]],
     caption: dict,
@@ -94,6 +101,7 @@ def build_table_inventory(structured_blocks: list[dict]) -> dict[str, Any]:
         is_cont = _is_continuation_caption(caption_text)
         is_validation_first_candidate = _is_validation_first_table_candidate(caption)
         is_weak_truncated = _is_insufficient_table_caption_evidence(caption)
+        is_weak_explicit_caption = _is_weak_explicit_table_caption(caption)
 
         if is_validation_first_candidate and is_weak_truncated:
             held_tables.append({
@@ -107,6 +115,32 @@ def build_table_inventory(structured_blocks: list[dict]) -> dict[str, Any]:
                 "zone": caption.get("zone", ""),
                 "style_family": caption.get("style_family", ""),
                 "marker_signature": caption.get("marker_signature", {}),
+            })
+            continue
+        if is_weak_explicit_caption:
+            unmatched_captions.append(caption)
+            tables.append({
+                "caption_block_id": caption.get("block_id", ""),
+                "page": caption_page,
+                "caption_text": caption_text,
+                "table_number": table_num,
+                "formal_table_number": formal_table_number,
+                "asset_block_id": "",
+                "asset_bbox": [],
+                "assistive_text": "",
+                "truth_source": "image",
+                "has_asset": False,
+                "segments": [],
+                "is_continuation": is_cont,
+                "continuation_of": None,
+                "match_status": "ambiguous",
+                "candidate_assets": [],
+                "match_score": {
+                    "score": 0.0,
+                    "matched_asset_id": "",
+                    "decision": "ambiguous",
+                    "evidence": ["weak_explicit_caption"],
+                },
             })
             continue
 
@@ -190,7 +224,9 @@ def build_table_inventory(structured_blocks: list[dict]) -> dict[str, Any]:
     }
     for caption in captions:
         if caption.get("block_id", "") not in cap_block_ids_with_asset:
-            unmatched_captions.append(caption)
+            already_listed = any(c.get("block_id", "") == caption.get("block_id", "") for c in unmatched_captions)
+            if not already_listed:
+                unmatched_captions.append(caption)
 
     for i, asset in enumerate(assets):
         if i not in used_asset_indices:

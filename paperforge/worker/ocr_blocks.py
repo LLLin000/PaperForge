@@ -180,7 +180,7 @@ def build_structured_blocks(
                 row.setdefault("evidence", []).extend(resolved.evidence)
 
     if doc_structure:
-        from paperforge.worker.ocr_document import _apply_zone_labels, infer_zones
+        from paperforge.worker.ocr_document import _apply_zone_labels, _detect_reference_zones, infer_zones
         from paperforge.worker.ocr_families import partition_zone_families
 
         refreshed_anchors = {
@@ -191,24 +191,18 @@ def build_structured_blocks(
         _apply_zone_labels(rows, refreshed_region_bus)
         partition_zone_families(rows, refreshed_anchors)
         doc_structure.region_bus = refreshed_region_bus
-
-        refreshed_reference_rows = [row for row in rows if row.get("zone") == "reference_zone"]
-        if refreshed_reference_rows:
-            reference_pages = sorted({int(row.get("page", 0) or 0) for row in refreshed_reference_rows if int(row.get("page", 0) or 0) > 0})
-            if reference_pages:
-                doc_structure.reference_zones = [
-                    {
-                        "page": page,
-                        "column_index": 0,
-                        "y_start": 0,
-                        "y_end": float(next((row.get("page_height", 0) or 0) for row in refreshed_reference_rows if int(row.get("page", 0) or 0) == page) or 0),
-                        "block_indices": [
-                            idx for idx, row in enumerate(rows)
-                            if row.get("zone") == "reference_zone" and int(row.get("page", 0) or 0) == page
-                        ],
-                    }
-                    for page in reference_pages
-                ]
+        page_layouts = getattr(doc_structure, "page_layouts", None) or {}
+        refreshed_reference_zones = _detect_reference_zones(rows, page_layouts)
+        doc_structure.reference_zones = [
+            {
+                "page": zone.page,
+                "column_index": zone.column_index,
+                "y_start": zone.y_start,
+                "y_end": zone.y_end,
+                "block_indices": list(zone.block_indices),
+            }
+            for zone in refreshed_reference_zones
+        ] or None
 
     # Sync render_default/index_default after role normalizations
     for row in rows:
