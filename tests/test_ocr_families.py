@@ -247,3 +247,345 @@ def test_body_family_anchor_is_not_fragmented_by_line_or_length_buckets() -> Non
 
     assert anchor["status"] == "ACCEPT"
     assert anchor["sample_pages"] == [3, 4]
+
+
+def test_reference_family_anchor_comes_from_marker_and_family_evidence_not_final_role() -> None:
+    from paperforge.worker.ocr_families import discover_reference_family_anchor
+
+    blocks = [
+        {
+            "page": 8,
+            "text": "References",
+            "marker_signature": {"type": "canonical_section_name"},
+            "span_signature": {"font_size_median": 10.0},
+            "layout_signature": {"width": 120},
+            "role": "unassigned",
+        },
+        {
+            "page": 8,
+            "text": "[1] Example reference",
+            "marker_signature": {"type": "reference_numeric_bracket", "number": 1},
+            "span_signature": {"font_size_median": 8.5, "font_family_norm": "Times"},
+            "layout_signature": {"width": 250, "x_center": 240},
+            "role": "unassigned",
+        },
+        {
+            "page": 8,
+            "text": "[2] Another reference",
+            "marker_signature": {"type": "reference_numeric_bracket", "number": 2},
+            "span_signature": {"font_size_median": 8.5, "font_family_norm": "Times"},
+            "layout_signature": {"width": 252, "x_center": 242},
+            "role": "unassigned",
+        },
+    ]
+
+    anchor = discover_reference_family_anchor(blocks)
+
+    assert anchor["status"] == "ACCEPT"
+    assert anchor["family_name"] == "reference_family"
+    assert anchor["item_count"] == 2
+
+
+def test_reference_family_anchor_heading_is_binding_but_not_sufficient_alone() -> None:
+    from paperforge.worker.ocr_families import discover_reference_family_anchor
+
+    blocks = [
+        {
+            "page": 8,
+            "text": "Bibliography",
+            "marker_signature": {"type": "canonical_section_name"},
+            "span_signature": {"font_size_median": 10.0},
+            "layout_signature": {"width": 120},
+            "role": "unassigned",
+        },
+        {
+            "page": 8,
+            "text": "Closing remarks without numbered references",
+            "marker_signature": {"type": "none"},
+            "span_signature": {"font_size_median": 8.5, "font_family_norm": "Times"},
+            "layout_signature": {"width": 250, "x_center": 240},
+            "role": "unassigned",
+        },
+    ]
+
+    anchor = discover_reference_family_anchor(blocks)
+
+    assert anchor["status"] == "HOLD"
+    assert anchor["family_name"] == "reference_family"
+
+
+def test_reference_family_anchor_can_accept_without_heading_when_tail_family_is_strong() -> None:
+    from paperforge.worker.ocr_families import discover_reference_family_anchor
+
+    blocks = [
+        {
+            "page": 9,
+            "text": "[1] Example reference",
+            "marker_signature": {"type": "reference_numeric_bracket", "number": 1},
+            "span_signature": {"font_size_median": 8.5, "font_family_norm": "Times"},
+            "layout_signature": {"width": 250, "x_center": 240},
+            "role": "unassigned",
+        },
+        {
+            "page": 10,
+            "text": "[2] Another reference",
+            "marker_signature": {"type": "reference_numeric_bracket", "number": 2},
+            "span_signature": {"font_size_median": 8.5, "font_family_norm": "Times"},
+            "layout_signature": {"width": 250, "x_center": 240},
+            "role": "unassigned",
+        },
+        {
+            "page": 10,
+            "text": "[3] Third reference",
+            "marker_signature": {"type": "reference_numeric_bracket", "number": 3},
+            "span_signature": {"font_size_median": 8.5, "font_family_norm": "Times"},
+            "layout_signature": {"width": 252, "x_center": 242},
+            "role": "unassigned",
+        },
+    ]
+
+    anchor = discover_reference_family_anchor(blocks, page_count=10)
+
+    assert anchor["status"] == "ACCEPT"
+    assert anchor["family_name"] == "reference_family"
+
+
+def test_reference_family_anchor_scopes_marker_count_to_winning_family() -> None:
+    from paperforge.worker.ocr_families import discover_reference_family_anchor
+
+    blocks = [
+        {
+            "page": 10,
+            "text": "References",
+            "marker_signature": {"type": "canonical_section_name"},
+            "span_signature": {"font_size_median": 10.0},
+            "layout_signature": {"width": 120},
+            "role": "unassigned",
+        },
+        {
+            "page": 10,
+            "text": "[1] Example reference",
+            "marker_signature": {"type": "reference_numeric_bracket", "number": 1},
+            "span_signature": {"font_size_median": 8.5, "font_family_norm": "Times"},
+            "layout_signature": {"width": 250, "x_center": 240},
+            "role": "unassigned",
+        },
+        {
+            "page": 10,
+            "text": "[2] Another reference",
+            "marker_signature": {"type": "reference_numeric_bracket", "number": 2},
+            "span_signature": {"font_size_median": 8.5, "font_family_norm": "Times"},
+            "layout_signature": {"width": 252, "x_center": 242},
+            "role": "unassigned",
+        },
+        {
+            "page": 3,
+            "text": "[99] Unrelated inline note",
+            "marker_signature": {"type": "reference_numeric_bracket", "number": 99},
+            "span_signature": {"font_size_median": 7.0, "font_family_norm": "Arial"},
+            "layout_signature": {"width": 180, "x_center": 520},
+            "role": "unassigned",
+        },
+    ]
+
+    anchor = discover_reference_family_anchor(blocks, page_count=10)
+
+    assert anchor["status"] == "ACCEPT"
+    assert anchor["family_name"] == "reference_family"
+    assert anchor["marker_count"] == 2
+
+
+def test_reference_family_anchor_prefers_best_tail_family_over_bigger_non_tail_family() -> None:
+    from paperforge.worker.ocr_families import discover_reference_family_anchor
+
+    blocks = [
+        {
+            "page": 3,
+            "text": "[1] Early inline note",
+            "marker_signature": {"type": "reference_numeric_bracket", "number": 1},
+            "span_signature": {"font_size_median": 7.0, "font_family_norm": "Arial"},
+            "layout_signature": {"width": 180, "x_center": 520},
+            "role": "unassigned",
+        },
+        {
+            "page": 4,
+            "text": "[2] Another inline note",
+            "marker_signature": {"type": "reference_numeric_bracket", "number": 2},
+            "span_signature": {"font_size_median": 7.0, "font_family_norm": "Arial"},
+            "layout_signature": {"width": 182, "x_center": 518},
+            "role": "unassigned",
+        },
+        {
+            "page": 5,
+            "text": "[3] Third inline note",
+            "marker_signature": {"type": "reference_numeric_bracket", "number": 3},
+            "span_signature": {"font_size_median": 7.0, "font_family_norm": "Arial"},
+            "layout_signature": {"width": 181, "x_center": 521},
+            "role": "unassigned",
+        },
+        {
+            "page": 9,
+            "text": "References",
+            "marker_signature": {"type": "canonical_section_name"},
+            "span_signature": {"font_size_median": 10.0},
+            "layout_signature": {"width": 120},
+            "role": "unassigned",
+        },
+        {
+            "page": 9,
+            "text": "[10] Tail reference one",
+            "marker_signature": {"type": "reference_numeric_bracket", "number": 10},
+            "span_signature": {"font_size_median": 8.5, "font_family_norm": "Times"},
+            "layout_signature": {"width": 250, "x_center": 240},
+            "role": "unassigned",
+        },
+        {
+            "page": 10,
+            "text": "[11] Tail reference two",
+            "marker_signature": {"type": "reference_numeric_bracket", "number": 11},
+            "span_signature": {"font_size_median": 8.5, "font_family_norm": "Times"},
+            "layout_signature": {"width": 252, "x_center": 242},
+            "role": "unassigned",
+        },
+        {
+            "page": 10,
+            "text": "[12] Tail reference three",
+            "marker_signature": {"type": "reference_numeric_bracket", "number": 12},
+            "span_signature": {"font_size_median": 8.5, "font_family_norm": "Times"},
+            "layout_signature": {"width": 251, "x_center": 241},
+            "role": "unassigned",
+        },
+    ]
+
+    anchor = discover_reference_family_anchor(blocks, page_count=10)
+
+    assert anchor["status"] == "ACCEPT"
+    assert anchor["family_name"] == "reference_family"
+    assert anchor["font_family_norm"] == "Times"
+    assert anchor["sample_pages"] == [9, 10]
+
+
+def test_reference_family_anchor_rejects_fragmented_tail_family() -> None:
+    from paperforge.worker.ocr_families import discover_reference_family_anchor
+
+    blocks = [
+        {
+            "page": 8,
+            "text": "References",
+            "marker_signature": {"type": "canonical_section_name"},
+            "span_signature": {"font_size_median": 10.0},
+            "layout_signature": {"width": 120},
+            "role": "unassigned",
+        },
+        {
+            "page": 8,
+            "text": "[1] Fragmented reference one",
+            "marker_signature": {"type": "reference_numeric_bracket", "number": 1},
+            "span_signature": {"font_size_median": 8.5, "font_family_norm": "Times"},
+            "layout_signature": {"width": 250, "x_center": 240},
+            "role": "unassigned",
+        },
+        {
+            "page": 10,
+            "text": "[2] Fragmented reference two",
+            "marker_signature": {"type": "reference_numeric_bracket", "number": 2},
+            "span_signature": {"font_size_median": 8.5, "font_family_norm": "Times"},
+            "layout_signature": {"width": 252, "x_center": 242},
+            "role": "unassigned",
+        },
+    ]
+
+    anchor = discover_reference_family_anchor(blocks, page_count=10)
+
+    assert anchor["status"] == "HOLD"
+    assert anchor["family_name"] == "reference_family"
+
+
+def test_reference_family_anchor_accepts_near_terminal_tail_family_with_late_non_reference_page() -> None:
+    from paperforge.worker.ocr_families import discover_reference_family_anchor
+
+    blocks = [
+        {
+            "page": 8,
+            "text": "References",
+            "marker_signature": {"type": "canonical_section_name"},
+            "span_signature": {"font_size_median": 10.0},
+            "layout_signature": {"width": 120},
+            "role": "unassigned",
+        },
+        {
+            "page": 8,
+            "text": "[1] Tail reference one",
+            "marker_signature": {"type": "reference_numeric_bracket", "number": 1},
+            "span_signature": {"font_size_median": 8.5, "font_family_norm": "Times"},
+            "layout_signature": {"width": 250, "x_center": 240},
+            "role": "unassigned",
+        },
+        {
+            "page": 9,
+            "text": "[2] Tail reference two",
+            "marker_signature": {"type": "reference_numeric_bracket", "number": 2},
+            "span_signature": {"font_size_median": 8.5, "font_family_norm": "Times"},
+            "layout_signature": {"width": 252, "x_center": 242},
+            "role": "unassigned",
+        },
+        {
+            "page": 10,
+            "text": "Appendix A. Supplementary author notes",
+            "marker_signature": {"type": "none"},
+            "span_signature": {"font_size_median": 9.0, "font_family_norm": "Times"},
+            "layout_signature": {"width": 320, "x_center": 250},
+            "role": "unassigned",
+        },
+    ]
+
+    anchor = discover_reference_family_anchor(blocks, page_count=10)
+
+    assert anchor["status"] == "ACCEPT"
+    assert anchor["family_name"] == "reference_family"
+    assert anchor["sample_pages"] == [8, 9]
+
+
+def test_reference_family_anchor_accepts_single_page_penultimate_tail_family() -> None:
+    from paperforge.worker.ocr_families import discover_reference_family_anchor
+
+    blocks = [
+        {
+            "page": 9,
+            "text": "References",
+            "marker_signature": {"type": "canonical_section_name"},
+            "span_signature": {"font_size_median": 10.0},
+            "layout_signature": {"width": 120},
+            "role": "unassigned",
+        },
+        {
+            "page": 9,
+            "text": "[1] Tail reference one",
+            "marker_signature": {"type": "reference_numeric_bracket", "number": 1},
+            "span_signature": {"font_size_median": 8.5, "font_family_norm": "Times"},
+            "layout_signature": {"width": 250, "x_center": 240},
+            "role": "unassigned",
+        },
+        {
+            "page": 9,
+            "text": "[2] Tail reference two",
+            "marker_signature": {"type": "reference_numeric_bracket", "number": 2},
+            "span_signature": {"font_size_median": 8.5, "font_family_norm": "Times"},
+            "layout_signature": {"width": 252, "x_center": 242},
+            "role": "unassigned",
+        },
+        {
+            "page": 10,
+            "text": "Appendix A. Supplementary author notes",
+            "marker_signature": {"type": "none"},
+            "span_signature": {"font_size_median": 9.0, "font_family_norm": "Times"},
+            "layout_signature": {"width": 320, "x_center": 250},
+            "role": "unassigned",
+        },
+    ]
+
+    anchor = discover_reference_family_anchor(blocks, page_count=10)
+
+    assert anchor["status"] == "ACCEPT"
+    assert anchor["family_name"] == "reference_family"
+    assert anchor["sample_pages"] == [9]

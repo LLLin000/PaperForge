@@ -5,6 +5,7 @@ import re
 from collections import namedtuple
 from dataclasses import dataclass, field
 
+from paperforge.worker.ocr_families import discover_reference_family_anchor
 from paperforge.worker.ocr_decisions import record_decision
 from paperforge.worker.ocr_roles import (
     _BACKMATTER_TITLE_DENY_LIST,
@@ -82,6 +83,7 @@ class DocumentStructure:
     spread_end: int | None = None
     backmatter_form: str = "flat"
     body_family_anchor: dict | None = None
+    reference_family_anchor: dict | None = None
     page_layouts: dict[int, PageLayoutProfile] | None = None
     tail_reading_order: list[dict] | None = None
     reference_zones: list[dict] | None = None
@@ -1343,6 +1345,7 @@ def analyze_document_structure(blocks: list[dict]) -> DocumentStructure:
     etc. internally. Returns a DocumentStructure with all boundary info.
     """
     page_layouts = _build_page_layout_profiles(blocks)
+    reference_family_anchor = discover_reference_family_anchor(blocks)
     tail_spread = _reconcile_tail_spread(blocks, page_layouts)
     if tail_spread is not None:
         backmatter_form = _classify_backmatter_form(tail_spread, blocks)
@@ -1362,6 +1365,7 @@ def analyze_document_structure(blocks: list[dict]) -> DocumentStructure:
         spread_start=tail_spread.spread_start if tail_spread else None,
         spread_end=tail_spread.spread_end if tail_spread else None,
         backmatter_form=backmatter_form,
+        reference_family_anchor=reference_family_anchor,
         page_layouts=page_layouts,
     )
 
@@ -2789,6 +2793,7 @@ def normalize_document_structure(blocks: list[dict]) -> tuple[DocumentStructure,
     - tail spread ownership assignment
     """
     page_layouts = _build_page_layout_profiles(blocks)
+    reference_family_anchor = discover_reference_family_anchor(blocks)
 
     tail_spread = _reconcile_tail_spread(blocks, page_layouts)
     if tail_spread is not None:
@@ -2809,6 +2814,7 @@ def normalize_document_structure(blocks: list[dict]) -> tuple[DocumentStructure,
         spread_start=tail_spread.spread_start if tail_spread else None,
         spread_end=tail_spread.spread_end if tail_spread else None,
         backmatter_form=backmatter_form,
+        reference_family_anchor=reference_family_anchor,
         page_layouts=page_layouts,
     )
 

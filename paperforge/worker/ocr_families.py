@@ -19,6 +19,16 @@ _FRONTMATTER_MARKER_TYPES = {
     "preproof_marker",
 }
 
+_REFERENCE_MARKER_TYPES = {
+    "reference_numeric_bracket",
+    "reference_numeric_dot",
+    "reference_numeric_parenthesis",
+    "reference_pattern",
+    "citation_line",
+}
+
+_REFERENCE_HEADING_TEXTS = {"references", "bibliography"}
+
 
 def discover_body_family_anchor(blocks: list[dict], page_count: int | None = None) -> dict[str, Any]:
     """Discover a document-level body family anchor from middle-page evidence."""
@@ -75,6 +85,81 @@ def discover_body_family_anchor(blocks: list[dict], page_count: int | None = Non
         "font_size_bucket": font_size_bucket,
         "width_bucket": width_bucket,
         "x_center_bucket": x_center_bucket,
+    }
+
+
+def discover_reference_family_anchor(blocks: list[dict], page_count: int | None = None) -> dict[str, Any]:
+    """Discover a reference-family anchor from marker/style/tail evidence."""
+    resolved_page_count = max(page_count or 0, max((int(b.get("page", 0) or 0) for b in blocks), default=0))
+    reference_candidates = [block for block in blocks if _is_reference_family_candidate(block)]
+    if not reference_candidates:
+        return {
+            "status": "HOLD",
+            "family_name": "reference_family",
+            "reason": "no_reference_marker_candidates",
+            "item_count": 0,
+        }
+
+    family_counts: Counter[tuple[Any, ...]] = Counter()
+    family_pages: dict[tuple[Any, ...], set[int]] = defaultdict(set)
+    family_marker_counts: Counter[tuple[Any, ...]] = Counter()
+    for block in reference_candidates:
+        key = _reference_family_key(block)
+        if key is None:
+            continue
+        family_counts[key] += 1
+        family_pages[key].add(int(block.get("page", 0) or 0))
+        family_marker_counts[key] += 1
+
+    if not family_counts:
+        return {
+            "status": "HOLD",
+            "family_name": "reference_family",
+            "reason": "no_reference_family_signature",
+            "item_count": len(reference_candidates),
+            "marker_count": 0,
+        }
+
+    ranked_candidates = sorted(
+        family_counts.items(),
+        key=lambda item: (
+            -_reference_candidate_rank_score(
+                family_pages=sorted(family_pages[item[0]]),
+                item_count=item[1],
+                marker_count=family_marker_counts[item[0]],
+                page_count=resolved_page_count,
+            ),
+            -max(family_pages[item[0]]),
+            -len(family_pages[item[0]]),
+            -item[1],
+            str(item[0]),
+        ),
+    )
+
+    best_hold: dict[str, Any] | None = None
+    for family_key, item_count in ranked_candidates:
+        family_candidate = _build_reference_family_candidate(
+            blocks=blocks,
+            family_key=family_key,
+            item_count=item_count,
+            family_pages=sorted(family_pages[family_key]),
+            marker_count=family_marker_counts[family_key],
+            page_count=resolved_page_count,
+        )
+        if family_candidate["status"] == "ACCEPT":
+            return family_candidate
+        if best_hold is None:
+            best_hold = family_candidate
+
+    return best_hold or {
+        "status": "HOLD",
+        "family_name": "reference_family",
+        "reason": "insufficient_reference_family_evidence",
+        "item_count": 0,
+        "marker_count": 0,
+        "sample_pages": [],
+        "tail_continuity": 0.0,
+        "heading_binding": False,
     }
 
 
@@ -200,6 +285,148 @@ def _body_family_key(block: dict) -> tuple[Any, ...] | None:
 def _word_count(block: dict) -> int:
     text = str(block.get("text") or block.get("block_content") or "")
     return len([token for token in text.split() if token])
+
+
+def _is_reference_family_candidate(block: dict) -> bool:
+    marker_type = ((block.get("marker_signature") or {}).get("type") or "none")
+    if marker_type not in _REFERENCE_MARKER_TYPES:
+        return False
+    span_signature = block.get("span_signature") or {}
+    layout_signature = block.get("layout_signature") or {}
+    if span_signature.get("font_size_median") is None and span_signature.get("font_size_bucket") is None:
+        return False
+    if not layout_signature.get("width"):
+        return False
+    return True
+
+
+def _reference_family_key(block: dict) -> tuple[Any, ...] | None:
+    span_signature = block.get("span_signature") or {}
+    layout_signature = block.get("layout_signature") or {}
+    font_family = span_signature.get("font_family_norm") or "unknown"
+    font_size_bucket = span_signature.get("font_size_bucket")
+    if font_size_bucket is None:
+        font_size_bucket = _bucket_number(span_signature.get("font_size_median"), step=0.5)
+    width_bucket = layout_signature.get("width_bucket")
+    if width_bucket is None:
+        width_bucket = _bucket_number(layout_signature.get("width"), step=25)
+    x_center_bucket = layout_signature.get("x_center_bucket")
+    if x_center_bucket is None:
+        x_center_bucket = _bucket_number(layout_signature.get("x_center"), step=25)
+    if font_size_bucket is None or width_bucket is None or x_center_bucket is None:
+        return None
+    return (
+        font_family,
+        font_size_bucket,
+        width_bucket,
+        x_center_bucket,
+    )
+
+
+def _reference_tail_continuity_score(reference_pages: list[int], page_count: int) -> float:
+    if not reference_pages:
+        return 0.0
+    if page_count <= 0:
+        return 1.0
+    last_page = max(reference_pages)
+    tail_gap = max(0, page_count - last_page)
+    if tail_gap > 1:
+        return 0.0
+    if len(reference_pages) == 1:
+        return 1.0 if tail_gap <= 1 else 0.0
+    contiguous_span = 1
+    for idx in range(len(reference_pages) - 1, 0, -1):
+        if reference_pages[idx] - reference_pages[idx - 1] == 1:
+            contiguous_span += 1
+        else:
+            break
+    if contiguous_span != len(reference_pages):
+        return 0.0
+    expected_span = max(2, min(len(reference_pages), 3))
+    continuity = contiguous_span / expected_span
+    if tail_gap == 1:
+        continuity = min(continuity, 1.0)
+    return continuity
+
+
+def _reference_candidate_rank_score(
+    family_pages: list[int],
+    item_count: int,
+    marker_count: int,
+    page_count: int,
+) -> float:
+    tail_score = _reference_tail_continuity_score(family_pages, page_count)
+    last_page = max(family_pages) if family_pages else 0
+    return (
+        tail_score * 1000
+        + last_page * 10
+        + min(item_count, 10) * 3
+        + min(marker_count, 10)
+    )
+
+
+def _has_reference_heading_near_family(blocks: list[dict], family_pages: list[int]) -> bool:
+    if not family_pages:
+        return False
+    target_pages = set(family_pages)
+    target_pages.add(max(1, family_pages[0] - 1))
+    for block in blocks:
+        page = int(block.get("page", 0) or 0)
+        if page not in target_pages:
+            continue
+        marker_type = ((block.get("marker_signature") or {}).get("type") or "none")
+        text = str(block.get("text") or block.get("block_content") or "").strip().lower()
+        if marker_type == "canonical_section_name" and text in _REFERENCE_HEADING_TEXTS:
+            return True
+    return False
+
+
+def _build_reference_family_candidate(
+    blocks: list[dict],
+    family_key: tuple[Any, ...],
+    item_count: int,
+    family_pages: list[int],
+    marker_count: int,
+    page_count: int,
+) -> dict[str, Any]:
+    tail_continuity = _reference_tail_continuity_score(family_pages, page_count)
+    heading_present = _has_reference_heading_near_family(blocks, family_pages)
+    font_family, font_size_bucket, width_bucket, x_center_bucket = family_key
+    strong_tail = tail_continuity >= 1.0
+    strong_marker_family = item_count >= 2 and marker_count >= 2
+    can_accept = strong_marker_family and strong_tail
+    reason = "reference_markers_with_tail_continuity"
+    if heading_present:
+        reason = f"{reason}_and_heading_binding"
+    if can_accept:
+        return {
+            "status": "ACCEPT",
+            "family_name": "reference_family",
+            "reason": reason,
+            "item_count": item_count,
+            "marker_count": marker_count,
+            "sample_pages": family_pages,
+            "tail_continuity": tail_continuity,
+            "heading_binding": heading_present,
+            "font_family_norm": font_family,
+            "font_size_bucket": font_size_bucket,
+            "width_bucket": width_bucket,
+            "x_center_bucket": x_center_bucket,
+        }
+    return {
+        "status": "HOLD",
+        "family_name": "reference_family",
+        "reason": "insufficient_reference_family_evidence",
+        "item_count": item_count,
+        "marker_count": marker_count,
+        "sample_pages": family_pages,
+        "tail_continuity": tail_continuity,
+        "heading_binding": heading_present,
+        "font_family_norm": font_family,
+        "font_size_bucket": font_size_bucket,
+        "width_bucket": width_bucket,
+        "x_center_bucket": x_center_bucket,
+    }
 
 
 def _bucket_number(value: Any, step: float) -> float | None:
