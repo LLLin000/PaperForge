@@ -243,8 +243,6 @@ def _classify_style_family(
         return "reference_like", "reference_family_anchor"
     if marker_type in _REFERENCE_MARKER_TYPES:
         return "reference_like", "reference_marker"
-    if zone == "frontmatter_side_zone":
-        return "support_like", "frontmatter_side_zone"
     if marker_type == "table_number" or text_lower.startswith("table "):
         return "table_caption_like", "table_marker"
     if marker_type in {"figure_number", "panel_label"} or text_lower.startswith("figure "):
@@ -253,6 +251,8 @@ def _classify_style_family(
         return "heading_like", "heading_marker"
     if _anchor_matches_block(body_anchor, block, _body_family_key):
         return "body_like", "body_family_anchor"
+    if zone == "frontmatter_side_zone":
+        return "support_like", "frontmatter_side_zone"
     if body_anchor.get("status") == "ACCEPT" and zone == "body_zone" and _is_body_zone_body_like(block):
         return "body_like", "body_zone_with_anchor"
     if zone == "body_zone" and _is_body_family_candidate(block):

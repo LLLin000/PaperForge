@@ -489,6 +489,12 @@ def _page_band(start_page: int | None, end_page: int | None) -> dict[str, int] |
     return {"start_page": start_page, "end_page": end_page}
 
 
+def _zone_block_key(block: dict) -> str:
+    page = int(block.get("page", 0) or 0)
+    block_id = str(block.get("block_id") or "")
+    return f"p{page}:{block_id}"
+
+
 def _is_frontmatter_side_candidate(block: dict, body_anchor: dict | None = None) -> bool:
     page = int(block.get("page", 0) or 0)
     if page <= 0:
@@ -533,6 +539,10 @@ def _is_frontmatter_side_candidate(block: dict, body_anchor: dict | None = None)
     )
     if any(phrase in lower for phrase in furniture_phrases):
         if page == 1:
+            return True
+        if page <= 2 and top_half and any(
+            phrase in lower for phrase in ("correspondence", "corresponding author", "highlights")
+        ):
             return True
         return top_half and (narrow or side_column)
 
@@ -581,7 +591,7 @@ def infer_zones(
             first_reference_page = min(eligible_item_pages)
 
     reference_block_ids = [
-        str(block.get("block_id"))
+        _zone_block_key(block)
         for block in reference_item_blocks
         if first_reference_page is not None
         and int(block.get("page", 0) or 0) >= first_reference_page
@@ -594,14 +604,14 @@ def infer_zones(
     preproof_pages = sorted({int(block.get("page", 0) or 0) for block in preproof_blocks if int(block.get("page", 0) or 0) > 0})
 
     display_block_ids = [
-        str(block.get("block_id"))
+        _zone_block_key(block)
         for block in blocks
         if ((block.get("marker_signature") or {}).get("type") or "none") in {"figure_number", "table_number", "panel_label"}
         and block.get("block_id")
     ]
 
     frontmatter_main_ids = [
-        str(block.get("block_id"))
+        _zone_block_key(block)
         for block in blocks
         if int(block.get("page", 0) or 0) == 1
         and ((block.get("marker_signature") or {}).get("type") or "none") != "preproof_marker"
@@ -610,10 +620,10 @@ def infer_zones(
     ]
 
     frontmatter_side_ids = [
-        str(block.get("block_id"))
+        _zone_block_key(block)
         for block in blocks
         if _is_frontmatter_side_candidate(block, body_anchor=body_anchor)
-        and str(block.get("block_id")) not in frontmatter_main_ids
+        and _zone_block_key(block) not in frontmatter_main_ids
         and block.get("block_id")
     ]
     frontmatter_side_id_set = set(frontmatter_side_ids)
@@ -621,7 +631,7 @@ def infer_zones(
         {
             int(block.get("page", 0) or 0)
             for block in blocks
-            if str(block.get("block_id") or "") in frontmatter_side_id_set
+            if _zone_block_key(block) in frontmatter_side_id_set
             and int(block.get("page", 0) or 0) > 0
         }
     )
@@ -641,18 +651,18 @@ def infer_zones(
             body_end_page = candidate_body_end
 
     body_block_ids = [
-        str(block.get("block_id"))
+        _zone_block_key(block)
         for block in blocks
         if body_anchor_ok
         and int(block.get("page", 0) or 0) > 1
         and (body_end_page is None or int(block.get("page", 0) or 0) <= body_end_page)
         and not _is_reference_item_candidate(block)
-        and str(block.get("block_id") or "") not in frontmatter_side_id_set
+        and _zone_block_key(block) not in frontmatter_side_id_set
         and block.get("block_id")
     ]
 
     tail_nonref_hold_ids = [
-        str(block.get("block_id"))
+        _zone_block_key(block)
         for block in blocks
         if tail_hold_start is not None
         and tail_hold_end is not None
@@ -702,7 +712,7 @@ def infer_zones(
         ),
         "preproof_cover_zone": _make_zone(
             "ACCEPT" if preproof_pages else "HOLD",
-            [str(block.get("block_id")) for block in preproof_blocks if block.get("block_id")],
+            [_zone_block_key(block) for block in preproof_blocks if block.get("block_id")],
             boundary_band=_page_band(preproof_pages[0], preproof_pages[-1]) if preproof_pages else None,
         ),
     }
@@ -1554,6 +1564,18 @@ def rescue_roles_with_document_context(
             # Never rescue pre-proof page blocks — entire page is intentional suppression
             if (block.get("page", 0) or 0) in _preproof_pages:
                 continue
+            evidence_text = "\n".join(str(e) for e in block.get("evidence", []))
+            if any(
+                zone_hint in evidence_text
+                for zone_hint in (
+                    "journal_furniture_zone",
+                    "title_zone",
+                    "author_zone",
+                    "affiliation_zone",
+                    "abstract_zone",
+                )
+            ):
+                continue
             page = block.get("page", 1) or 1
             bbox = block.get("bbox") or block.get("block_bbox") or [0, 0, 0, 0]
             page_h = block.get("page_height") or 1700
@@ -1766,10 +1788,9 @@ def _apply_zone_labels(blocks: list[dict], region_bus: dict[str, dict] | None) -
             block_ids_to_zone[str(block_id)] = zone_name
 
     for block in blocks:
-        block_id = block.get("block_id")
-        if block_id is None:
+        if block.get("block_id") is None:
             continue
-        zone_name = block_ids_to_zone.get(str(block_id))
+        zone_name = block_ids_to_zone.get(_zone_block_key(block))
         if zone_name:
             block["zone"] = zone_name
 
