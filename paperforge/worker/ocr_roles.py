@@ -378,6 +378,94 @@ def _explicit_scholarly_heading_role(text: str) -> str | None:
     return None
 
 
+def _resolve_late_family_context(block: dict, families: dict | None) -> tuple[dict, str, str, str, str]:
+    block_id = str(block.get("block_id") or "")
+    family_ctx = {}
+    if isinstance(families, dict):
+        family_ctx = families.get(block_id) or {}
+
+    block_zone = str(block.get("zone") or "")
+    block_style_family = str(block.get("style_family") or "")
+    block_style_family_authority = str(block.get("style_family_authority") or "")
+    zone = block_zone or str(family_ctx.get("zone") or "")
+    style_family = block_style_family or str(family_ctx.get("style_family") or "")
+    style_family_authority = block_style_family_authority or str(
+        family_ctx.get("style_family_authority") or family_ctx.get("authority") or ""
+    )
+    context_source = "block"
+    if (not block_zone or not block_style_family or not block_style_family_authority) and family_ctx:
+        context_source = "families"
+    return family_ctx, zone, style_family, style_family_authority, context_source
+
+
+def _looks_like_late_figure_narrative_prose(text: str) -> bool:
+    if not text:
+        return False
+    sentence_count = text.count(". ") + text.count(".\n")
+    if sentence_count >= 2:
+        return True
+    lower = text.lower()
+    prose_markers = ["we ", "our ", "this study", "here we", "in this"]
+    if any(marker in lower for marker in prose_markers):
+        return True
+    if re.search(
+        r"\b(?:figure|fig\.?)\s+\d+[a-z]?\s+(?:shows|show|shown|demonstrates|demonstrate|illustrates|illustrate|depicts|presents|reveals|indicates|compares|summarizes)\b",
+        lower,
+    ):
+        return True
+    return bool(re.search(r"\$?\^\{[^}]+\}\$?", text) and sentence_count >= 1)
+
+
+def resolve_final_role(
+    block: dict,
+    anchors: dict | None = None,
+    families: dict | None = None,
+) -> RoleAssignment:
+    """Resolve a late-stage role using normalized zone/family context.
+
+    This is intentionally narrow for the current task: eager role assignment
+    remains the seed, but late structural context can override obviously wrong
+    body defaults.
+    """
+    anchors = anchors or {}
+    family_ctx, zone, style_family, style_family_authority, context_source = _resolve_late_family_context(block, families)
+    marker_signature = block.get("marker_signature") or {}
+    marker_type = str(marker_signature.get("type") or "none")
+    current_role = str(block.get("role") or "body_paragraph")
+    current_confidence = float(block.get("role_confidence") or 0.6)
+    body_anchor = anchors.get("body_family_anchor") or {}
+    body_anchor_accepted = str(body_anchor.get("status") or "").upper() == "ACCEPT"
+    in_body_zone = zone == "body_zone"
+    strong_legend_authority = style_family_authority in {"figure_marker", "figure_family_anchor"}
+
+    if current_role == "body_paragraph":
+        if (
+            in_body_zone
+            and body_anchor_accepted
+            and strong_legend_authority
+            and style_family == "legend_like"
+            and marker_type == "figure_number"
+            and not _looks_like_late_figure_narrative_prose(str(block.get("text") or ""))
+        ):
+            return RoleAssignment(
+                role="figure_caption_candidate",
+                confidence=max(current_confidence, 0.78),
+                evidence=[
+                    "late role resolution: legend_like family + figure_number marker",
+                    f"zone={zone or 'unknown'}",
+                    f"body_anchor={str(body_anchor.get('status') or 'none').lower()}",
+                    f"style_family_authority={style_family_authority or 'none'}",
+                    f"context_source={context_source}",
+                ],
+            )
+
+    return RoleAssignment(
+        role=current_role,
+        confidence=current_confidence,
+        evidence=[],
+    )
+
+
 def assign_block_role(
     block: dict,
     page_blocks: list[dict],

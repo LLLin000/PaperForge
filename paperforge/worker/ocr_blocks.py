@@ -7,7 +7,7 @@ from typing import Any
 from paperforge.worker.ocr_document import DocumentStructure
 from paperforge.worker.ocr_families import discover_body_family_anchor
 from paperforge.worker.ocr_signatures import build_block_signatures
-from paperforge.worker.ocr_roles import assign_block_role
+from paperforge.worker.ocr_roles import assign_block_role, resolve_final_role
 
 _CANDIDATE_ROLES = frozenset({
     "figure_caption_candidate",
@@ -146,6 +146,38 @@ def build_structured_blocks(
         )
 
         rows = rescue_roles_with_document_context(rows, paper_context["role_profiles"], doc_structure)
+
+    family_context = {
+        str(row.get("block_id") or ""): {
+            "zone": row.get("zone"),
+            "style_family": row.get("style_family"),
+            "style_family_authority": row.get("style_family_authority"),
+        }
+        for row in rows
+    }
+    anchor_context = {
+        "body_family_anchor": getattr(doc_structure, "body_family_anchor", None) if doc_structure else None,
+        "reference_family_anchor": getattr(doc_structure, "reference_family_anchor", None) if doc_structure else None,
+    }
+
+    for row in rows:
+        resolved = resolve_final_role(row, anchors=anchor_context, families=family_context)
+        if resolved.role != row.get("role"):
+            from paperforge.worker.ocr_decisions import record_decision
+
+            record_decision(
+                row,
+                stage="resolve_final_role",
+                old_role=row.get("role"),
+                new_role=resolved.role,
+                reason="late role resolution from normalized zone/family context",
+                confidence=resolved.confidence,
+                evidence=resolved.evidence,
+            )
+            row["role"] = resolved.role
+            row["role_confidence"] = resolved.confidence
+            if resolved.evidence:
+                row.setdefault("evidence", []).extend(resolved.evidence)
 
     # Sync render_default/index_default after role normalizations
     for row in rows:
