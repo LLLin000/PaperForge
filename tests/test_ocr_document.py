@@ -3638,7 +3638,7 @@ def test_frontmatter_side_candidates_are_not_left_as_body_paragraph_when_source_
         block = by_id[block_id]
         assert block.get("zone") == "frontmatter_side_zone"
         assert block.get("style_family") == "support_like"
-        assert block.get("role") != "body_paragraph"
+        assert block.get("role") == "frontmatter_noise"
 
 
 def test_full_width_heading_above_two_columns_is_not_anomaly() -> None:
