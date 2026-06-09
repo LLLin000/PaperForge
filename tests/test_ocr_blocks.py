@@ -125,3 +125,83 @@ def test_role_span_profiles_written_to_output() -> None:
     dumped = json.dumps(profiles)
     assert "section_heading" in dumped
     assert "body_paragraph" in dumped
+
+
+def test_build_structured_blocks_attaches_body_family_anchor() -> None:
+    from paperforge.worker.ocr_blocks import build_structured_blocks
+
+    raw_blocks = [
+        {
+            "paper_id": "KEY001",
+            "page": 3,
+            "block_id": "p3_b1",
+            "raw_label": "text",
+            "raw_order": 0,
+            "bbox": [110, 100, 370, 220],
+            "text": "Long body text A " * 8,
+            "page_width": 600,
+            "page_height": 800,
+            "span_metadata": [{"font": "Times", "size": 9.0, "flags": 0, "color": 0}] * 12,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 4,
+            "block_id": "p4_b1",
+            "raw_label": "text",
+            "raw_order": 0,
+            "bbox": [112, 100, 374, 220],
+            "text": "Long body text B " * 8,
+            "page_width": 600,
+            "page_height": 800,
+            "span_metadata": [{"font": "Times", "size": 9.0, "flags": 0, "color": 0}] * 12,
+        },
+    ]
+
+    _rows, doc_structure = build_structured_blocks(raw_blocks)
+
+    assert doc_structure is not None
+    assert doc_structure.body_family_anchor is not None
+    assert doc_structure.body_family_anchor["status"] == "ACCEPT"
+    assert doc_structure.body_family_anchor["family_name"] == "body_family"
+    assert doc_structure.body_family_anchor["sample_pages"] == [3, 4]
+
+
+def test_build_structured_blocks_discovers_body_family_before_normalization() -> None:
+    from unittest.mock import patch
+
+    from paperforge.worker.ocr_blocks import build_structured_blocks
+
+    raw_blocks = [
+        {
+            "paper_id": "KEY001",
+            "page": 3,
+            "block_id": "p3_b1",
+            "raw_label": "text",
+            "raw_order": 0,
+            "bbox": [110, 100, 370, 220],
+            "text": "Long body text A " * 8,
+            "page_width": 600,
+            "page_height": 800,
+            "span_metadata": [{"font": "Times", "size": 9.0, "flags": 0, "color": 0}] * 12,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 4,
+            "block_id": "p4_b1",
+            "raw_label": "text",
+            "raw_order": 0,
+            "bbox": [112, 100, 374, 220],
+            "text": "Long body text B " * 8,
+            "page_width": 600,
+            "page_height": 800,
+            "span_metadata": [{"font": "Times", "size": 9.0, "flags": 0, "color": 0}] * 12,
+        },
+    ]
+
+    with patch("paperforge.worker.ocr_document.normalize_document_structure", side_effect=RuntimeError("boom")):
+        _rows, doc_structure = build_structured_blocks(raw_blocks)
+
+    assert doc_structure is not None
+    assert doc_structure.body_family_anchor is not None
+    assert doc_structure.body_family_anchor["status"] == "ACCEPT"
+    assert doc_structure.body_family_anchor["sample_pages"] == [3, 4]

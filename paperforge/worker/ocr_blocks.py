@@ -4,6 +4,8 @@ import json
 from pathlib import Path
 from typing import Any
 
+from paperforge.worker.ocr_document import DocumentStructure
+from paperforge.worker.ocr_families import discover_body_family_anchor
 from paperforge.worker.ocr_signatures import build_block_signatures
 from paperforge.worker.ocr_roles import assign_block_role
 
@@ -115,12 +117,15 @@ def build_structured_blocks(
                 row["render_default"] = False
                 row["index_default"] = False
 
+    body_family_anchor = discover_body_family_anchor(rows, page_count=total_pages)
+    doc_structure = DocumentStructure(body_family_anchor=body_family_anchor)
+
     # Normalize document structure (backmatter boundary, role regime, tail promotion)
     from paperforge.worker.ocr_document import normalize_document_structure
 
-    doc_structure = None
     try:
         doc_structure, rows = normalize_document_structure(rows)
+        doc_structure.body_family_anchor = body_family_anchor
     except Exception as exc:
         import logging
         logging.getLogger(__name__).warning(
