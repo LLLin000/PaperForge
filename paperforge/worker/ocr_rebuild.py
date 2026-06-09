@@ -117,8 +117,10 @@ def run_derived_rebuild_for_keys(vault: Path, keys: list[str]) -> dict:
         metadata_dir = paper_root / "metadata"
         metadata_dir.mkdir(parents=True, exist_ok=True)
         frontmatter_candidates = extract_frontmatter_candidates(artifacts.blocks_structured)
-        page1_blocks = [block for block in structured if int(block.get("page", 0) or 0) == 1]
-        resolved = resolve_metadata(source_meta, frontmatter_candidates, page1_blocks=page1_blocks, structured_blocks=structured)
+        resolved = resolve_metadata(
+            source_meta, frontmatter_candidates,
+            page_blocks=all_raw_blocks, structured_blocks=structured,
+        )
         write_resolved_metadata(metadata_dir / "resolved_metadata.json", resolved)
 
         # Rebuild figure inventory

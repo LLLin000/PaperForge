@@ -223,3 +223,119 @@ def test_normalize_author_name_strips_superscripts() -> None:
 
     assert _normalize_author_name("Smith $^{1}") == "Smith"
     assert _normalize_author_name("Ebrahim Esfandiari $^{1}$") == "Ebrahim Esfandiari"
+
+
+def test_preproof_page_one_does_not_block_page_two_title_localization() -> None:
+    from paperforge.worker.ocr_metadata import _align_frontmatter_to_source_metadata
+
+    source_meta = {"title": "Canonical Title", "authors": ["A. Yoo"]}
+    page_blocks = [
+        {"block_id": "p1_b1", "block_label": "text", "block_content": "Journal Pre-proof", "page": 1},
+        {"block_id": "p2_b1", "block_label": "doc_title", "block_content": "Canonical Title", "page": 2},
+    ]
+
+    aligned = _align_frontmatter_to_source_metadata(source_meta, page_blocks)
+
+    assert aligned["title"]["source"] == "zotero"
+    assert aligned["title"]["value"] == "Canonical Title"
+    assert aligned["title"].get("ocr_aligned") is True
+    assert aligned["title"].get("ocr_block_id") == "p2_b1"
+
+
+def test_body_block_outside_frontmatter_window_not_anchored() -> None:
+    from paperforge.worker.ocr_metadata import _align_frontmatter_to_source_metadata
+
+    source_meta = {"title": "Cell Biology and Molecular Mechanisms"}
+    page_blocks = [
+        {"block_id": "p1_b1", "block_content": "Journal Pre-proof", "page": 1},
+        {"block_id": "p12_b20", "block_content": "Cell Biology and Molecular Mechanisms are fundamental to understanding", "page": 12},
+    ]
+
+    aligned = _align_frontmatter_to_source_metadata(source_meta, page_blocks)
+
+    assert aligned["title"]["value"] == "Cell Biology and Molecular Mechanisms"
+    assert aligned["title"]["source"] == "zotero"
+    assert aligned["title"].get("ocr_aligned") is not True
+
+
+def test_source_authors_remain_canonical_with_first_author_ocr() -> None:
+    from paperforge.worker.ocr_metadata import resolve_metadata
+
+    source = {
+        "authors": ["A. Yoo"],
+        "first_author": "A. Yoo",
+    }
+    ocr_blocks = [
+        {"block_id": "p1_b1", "role": "authors", "text": "Ami Yoo, Bob Smith, Carol Jones"},
+    ]
+
+    resolved = resolve_metadata(source, structured_blocks=ocr_blocks)
+
+    assert resolved["authors"]["value"] == ["A. Yoo"]
+    assert resolved["authors"]["source"] == "zotero"
+
+
+def test_author_localized_within_frontmatter_window() -> None:
+    from paperforge.worker.ocr_metadata import _align_frontmatter_to_source_metadata
+
+    source_meta = {"title": "Some Paper", "authors": ["Alice Smith", "Bob Jones"]}
+    page_blocks = [
+        {"block_id": "p1_b1", "block_content": "Journal Pre-proof", "page": 1},
+        {"block_id": "p2_b3", "block_content": "Alice Smith, Bob Jones", "page": 2},
+    ]
+
+    aligned = _align_frontmatter_to_source_metadata(source_meta, page_blocks)
+
+    assert aligned["authors"]["source"] == "zotero"
+    assert aligned["authors"]["value"] == ["Alice Smith", "Bob Jones"]
+    assert aligned["authors"].get("ocr_aligned") is True
+    assert aligned["authors"].get("ocr_block_id") == "p2_b3"
+
+
+def test_author_like_text_outside_window_not_anchored() -> None:
+    from paperforge.worker.ocr_metadata import _align_frontmatter_to_source_metadata
+
+    source_meta = {"title": "Some Paper", "authors": ["Alice Smith", "Bob Jones"]}
+    page_blocks = [
+        {"block_id": "p1_b1", "block_content": "Journal Pre-proof", "page": 1},
+        {"block_id": "p15_b42", "block_content": "Alice Smith, Bob Jones, and colleagues have shown that", "page": 15},
+    ]
+
+    aligned = _align_frontmatter_to_source_metadata(source_meta, page_blocks)
+
+    assert aligned["authors"]["source"] == "zotero"
+    assert aligned["authors"]["value"] == ["Alice Smith", "Bob Jones"]
+    assert aligned["authors"].get("ocr_aligned") is not True
+
+
+def test_live_and_rebuild_metadata_inputs_keep_first_author_fallback_parity() -> None:
+    from paperforge.worker.ocr_metadata import resolve_metadata
+
+    source_meta = {
+        "first_author": "A. Yoo",
+    }
+    frontmatter_candidates = {
+        "authors_text": None,
+    }
+    raw_blocks = [
+        {"block_id": "p2_b1", "block_content": "Ami Yoo, Bob Smith, Carol Jones", "page": 2},
+    ]
+    structured_blocks = [
+        {"block_id": "p2_b1", "role": "authors", "text": "Ami Yoo, Bob Smith, Carol Jones", "page": 2},
+    ]
+
+    live_like = resolve_metadata(
+        source_meta,
+        frontmatter_candidates,
+        page_blocks=raw_blocks,
+        structured_blocks=structured_blocks,
+    )
+    rebuild_like = resolve_metadata(
+        source_meta,
+        frontmatter_candidates,
+        page_blocks=raw_blocks,
+        structured_blocks=structured_blocks,
+    )
+
+    assert live_like["authors"] == rebuild_like["authors"]
+    assert live_like["authors"]["source"] == "ocr_blocks_verified_by_first_author"
