@@ -395,7 +395,18 @@ def _is_reference_heading_candidate(block: dict) -> bool:
 
 def _is_reference_item_candidate(block: dict) -> bool:
     marker_type = ((block.get("marker_signature") or {}).get("type") or "none")
-    return marker_type in _REFERENCE_ZONE_MARKER_TYPES
+    if marker_type in _REFERENCE_ZONE_MARKER_TYPES:
+        return True
+    # Marker extraction sometimes misclassifies reference items as
+    # heading_numbered (e.g. old-style "1. Author, ..." entries) or
+    # as generic_text.  Accept blocks that the role pipeline has
+    # already identified as references, provided the marker is not an
+    # explicitly non-reference heading marker.
+    if block.get("role") == "reference_item" and marker_type not in {
+        "heading_arabic", "heading_decimal", "heading_roman", "heading_alpha",
+    }:
+        return True
+    return False
 
 
 def _looks_like_short_heading_text(text: str) -> bool:
@@ -579,16 +590,29 @@ def infer_zones(
     reference_item_blocks = [block for block in blocks if _is_reference_item_candidate(block)]
 
     first_reference_page: int | None = None
+    body_guard_page = max(body_sample_pages) if body_sample_pages else 0
     if reference_anchor.get("status") == "ACCEPT" and reference_item_blocks:
         heading_pages = [int(block.get("page", 0) or 0) for block in reference_heading_blocks]
         item_pages = [int(block.get("page", 0) or 0) for block in reference_item_blocks]
-        body_guard_page = max(body_sample_pages) if body_sample_pages else 0
         eligible_heading_pages = [page for page in heading_pages if page >= body_guard_page]
         eligible_item_pages = [page for page in item_pages if page >= body_guard_page]
         if eligible_heading_pages:
             first_reference_page = min(eligible_heading_pages)
         elif eligible_item_pages:
             first_reference_page = min(eligible_item_pages)
+
+    # HOLD-fallback: reference items exist but anchor evidence is weak.
+    # Derive first_reference_page from dense tail-side item clusters instead.
+    if first_reference_page is None and reference_item_blocks:
+        fallback_item_pages = [int(block.get("page", 0) or 0) for block in reference_item_blocks
+                               if int(block.get("page", 0) or 0) > body_guard_page]
+        if fallback_item_pages:
+            page_counts: dict[int, int] = {}
+            for p in fallback_item_pages:
+                page_counts[p] = page_counts.get(p, 0) + 1
+            candidate_pages = sorted(p for p, c in page_counts.items() if c >= 3)
+            if candidate_pages:
+                first_reference_page = candidate_pages[0]
 
     reference_block_ids = [
         _zone_block_key(block)
