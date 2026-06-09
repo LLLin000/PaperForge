@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 
 from paperforge.worker.ocr_families import (
     discover_body_family_anchor,
+    partition_zone_families,
     discover_reference_family_anchor,
 )
 from paperforge.worker.ocr_decisions import record_decision
@@ -1627,6 +1628,14 @@ def analyze_document_structure(blocks: list[dict]) -> DocumentStructure:
             "reference_family_anchor": reference_family_anchor,
         },
     )
+    _apply_zone_labels(blocks, region_bus)
+    partition_zone_families(
+        blocks,
+        {
+            "body_family_anchor": body_family_anchor,
+            "reference_family_anchor": reference_family_anchor,
+        },
+    )
     tail_spread = _reconcile_tail_spread(blocks, page_layouts)
     if tail_spread is not None:
         backmatter_form = _classify_backmatter_form(tail_spread, blocks)
@@ -1662,6 +1671,24 @@ def analyze_document_structure(blocks: list[dict]) -> DocumentStructure:
     _detect_body_spine(blocks, ds)
 
     return ds
+
+
+def _apply_zone_labels(blocks: list[dict], region_bus: dict[str, dict] | None) -> None:
+    if not region_bus:
+        return
+
+    block_ids_to_zone: dict[str, str] = {}
+    for zone_name, zone in region_bus.items():
+        for block_id in zone.get("block_ids") or []:
+            block_ids_to_zone[str(block_id)] = zone_name
+
+    for block in blocks:
+        block_id = block.get("block_id")
+        if block_id is None:
+            continue
+        zone_name = block_ids_to_zone.get(str(block_id))
+        if zone_name:
+            block["zone"] = zone_name
 
 
 def _get_column(block: dict, page_width: float = 1200) -> int:
@@ -3079,6 +3106,14 @@ def normalize_document_structure(blocks: list[dict]) -> tuple[DocumentStructure,
     body_family_anchor = discover_body_family_anchor(blocks)
     reference_family_anchor = discover_reference_family_anchor(blocks)
     region_bus = infer_zones(
+        blocks,
+        {
+            "body_family_anchor": body_family_anchor,
+            "reference_family_anchor": reference_family_anchor,
+        },
+    )
+    _apply_zone_labels(blocks, region_bus)
+    partition_zone_families(
         blocks,
         {
             "body_family_anchor": body_family_anchor,

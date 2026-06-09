@@ -163,6 +163,55 @@ def test_analyze_document_structure_discovers_reference_family_anchor_before_tai
     assert blocks[4]["role"] == "body_paragraph"
 
 
+def test_analyze_document_structure_wires_style_family_artifacts_into_blocks() -> None:
+    from paperforge.worker.ocr_document import analyze_document_structure
+
+    blocks = [
+        {
+            "block_id": "p3_b1",
+            "page": 3,
+            "role": "body_paragraph",
+            "text": "Long narrative body paragraph with enough text to be treated as core body evidence across the main article flow and stable typography. " * 3,
+            "marker_signature": {"type": "none"},
+            "span_signature": {"font_size_median": 9.0, "font_size_bucket": 9.0, "font_family_norm": "Times"},
+            "layout_signature": {"width": 260, "width_bucket": 250, "x_center": 240, "x_center_bucket": 250},
+        },
+        {
+            "block_id": "p5_b1",
+            "page": 4,
+            "role": "body_paragraph",
+            "text": "Long narrative body paragraph continuing the main article flow with matching typography and substantial prose for body-anchor detection. " * 3,
+            "marker_signature": {"type": "none"},
+            "span_signature": {"font_size_median": 9.0, "font_size_bucket": 9.0, "font_family_norm": "Times"},
+            "layout_signature": {"width": 262, "width_bucket": 250, "x_center": 242, "x_center_bucket": 250},
+        },
+        {
+            "block_id": "p5_b1b",
+            "page": 5,
+            "role": "body_paragraph",
+            "text": "Long narrative body paragraph extending the article with the same body typography and enough tokens to remain a strong body candidate. " * 3,
+            "marker_signature": {"type": "none"},
+            "span_signature": {"font_size_median": 9.0, "font_size_bucket": 9.0, "font_family_norm": "Times"},
+            "layout_signature": {"width": 261, "width_bucket": 250, "x_center": 241, "x_center_bucket": 250},
+        },
+        {
+            "block_id": "p5_b2",
+            "page": 5,
+            "role": "body_paragraph",
+            "text": "Figure 2. Compact legend text",
+            "marker_signature": {"type": "figure_number", "number": 2},
+            "span_signature": {"font_size_median": 8.0, "font_family_norm": "Times"},
+            "layout_signature": {"width": 220, "x_center": 250},
+        },
+    ]
+
+    analyze_document_structure(blocks)
+
+    assert blocks[0]["style_family"] == "body_like"
+    assert blocks[0]["style_family_authority"] in {"body_family_anchor", "body_zone_with_anchor", "body_zone_candidate"}
+    assert blocks[3]["style_family"] == "legend_like"
+
+
 def test_normalize_document_structure_keeps_reference_family_anchor_anchor_first() -> None:
     from paperforge.worker.ocr_document import normalize_document_structure
 
@@ -201,6 +250,59 @@ def test_normalize_document_structure_keeps_reference_family_anchor_anchor_first
     assert doc.reference_family_anchor["status"] == "ACCEPT"
     assert normalized_blocks[3]["role"] == "body_paragraph"
     assert normalized_blocks[4]["role"] == "body_paragraph"
+
+
+def test_normalize_document_structure_wires_style_family_artifacts_into_blocks() -> None:
+    from paperforge.worker.ocr_document import normalize_document_structure
+
+    blocks = [
+        {
+            "block_id": "p3_b1",
+            "page": 3,
+            "role": "body_paragraph",
+            "text": "Long narrative body paragraph with enough text to be treated as core body evidence across the main article flow and stable typography. " * 3,
+            "marker_signature": {"type": "none"},
+            "span_signature": {"font_size_median": 9.0, "font_size_bucket": 9.0, "font_family_norm": "Times"},
+            "layout_signature": {"width": 260, "width_bucket": 250, "x_center": 240, "x_center_bucket": 250},
+        },
+        {
+            "block_id": "p4_b1",
+            "page": 4,
+            "role": "body_paragraph",
+            "text": "Long narrative body paragraph continuing the main article flow with matching typography and substantial prose for body-anchor detection. " * 3,
+            "marker_signature": {"type": "none"},
+            "span_signature": {"font_size_median": 9.0, "font_size_bucket": 9.0, "font_family_norm": "Times"},
+            "layout_signature": {"width": 262, "width_bucket": 250, "x_center": 242, "x_center_bucket": 250},
+        },
+        {
+            "block_id": "p5_b1",
+            "page": 5,
+            "role": "body_paragraph",
+            "text": "Long narrative body paragraph extending the article with the same body typography and enough tokens to remain a strong body candidate. " * 3,
+            "marker_signature": {"type": "none"},
+            "span_signature": {"font_size_median": 9.0, "font_size_bucket": 9.0, "font_family_norm": "Times"},
+            "layout_signature": {"width": 261, "width_bucket": 250, "x_center": 241, "x_center_bucket": 250},
+        },
+        {
+            "block_id": "p5_b2",
+            "page": 5,
+            "role": "body_paragraph",
+            "text": "Figure 2. Compact legend text",
+            "marker_signature": {"type": "figure_number", "number": 2},
+            "span_signature": {"font_size_median": 8.0, "font_family_norm": "Times"},
+            "layout_signature": {"width": 220, "x_center": 250},
+        },
+    ]
+
+    _, normalized_blocks = normalize_document_structure(blocks)
+
+    assert normalized_blocks[0]["style_family"] == "body_like"
+    assert normalized_blocks[0]["style_family_authority"] in {
+        "body_family_anchor",
+        "body_zone_with_anchor",
+        "body_zone_candidate",
+    }
+    assert normalized_blocks[3]["style_family"] == "legend_like"
 
 
 def test_reference_zone_is_inferred_from_reference_family_anchor_not_preexisting_roles() -> None:

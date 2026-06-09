@@ -214,3 +214,27 @@ def test_cross_validate_with_span_suggests_alternative() -> None:
     result = cross_validate_with_span(block, "body_paragraph", profiles)
     assert "section_heading" in result["suggested_roles"]
     assert result["adjustment"] < 0
+
+
+def test_build_family_profiles_prefers_style_family_partition_artifacts() -> None:
+    from paperforge.worker.ocr_profiles import build_family_profiles
+
+    blocks = [
+        {
+            "role": "body_paragraph",
+            "style_family": "body_like",
+            "span_metadata": {"size": 10.0, "font": "Times", "flags": "normal"},
+        },
+        {
+            "role": "body_paragraph",
+            "style_family": "legend_like",
+            "span_metadata": {"size": 8.0, "font": "Times", "flags": "normal"},
+        },
+    ]
+
+    families = build_family_profiles(blocks)
+
+    assert families["body_family"]["block_count"] == 1
+    assert families["body_family"]["mean_size"] == 10.0
+    assert families["legend_family"]["block_count"] == 1
+    assert families["legend_family"]["mean_size"] == 8.0
