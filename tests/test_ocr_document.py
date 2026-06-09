@@ -3568,6 +3568,79 @@ def test_normalize_promotes_mixed_sidebar_blocks_into_single_structured_insert_c
     assert normalized[4]["role"] == "body_paragraph"
 
 
+def test_frontmatter_side_candidates_are_not_left_as_body_paragraph_when_source_frontmatter_is_localized() -> None:
+    from paperforge.worker.ocr_document import normalize_document_structure
+
+    blocks = [
+        {
+            "block_id": "p1_title",
+            "page": 1,
+            "role": "paper_title",
+            "text": "Magnetoresponsive stem cell spheroid-based cartilage recovery platform",
+            "bbox": [120, 90, 980, 150],
+            "page_width": 1200,
+            "page_height": 1700,
+            "marker_signature": {"type": "none"},
+            "span_signature": {"font_family_norm": "Title", "font_size_median": 16.0, "font_size_bucket": 16.0},
+            "layout_signature": {"width": 860, "width_bucket": 850, "x_center": 550, "x_center_bucket": 550},
+        },
+        {
+            "block_id": "p2_corr",
+            "page": 2,
+            "role": "body_paragraph",
+            "text": "Correspondence: jia@example.org",
+            "bbox": [830, 180, 1110, 220],
+            "page_width": 1200,
+            "page_height": 1700,
+            "marker_signature": {"type": "none"},
+            "span_signature": {"font_family_norm": "Sidebar", "font_size_median": 8.0, "font_size_bucket": 8.0},
+            "layout_signature": {"width": 280, "width_bucket": 275, "x_center": 970, "x_center_bucket": 975},
+        },
+        {
+            "block_id": "p2_highlights",
+            "page": 2,
+            "role": "body_paragraph",
+            "text": "Highlights: electromagnetic fields improved cartilage repair outcomes.",
+            "bbox": [820, 250, 1115, 340],
+            "page_width": 1200,
+            "page_height": 1700,
+            "marker_signature": {"type": "none"},
+            "span_signature": {"font_family_norm": "Sidebar", "font_size_median": 8.0, "font_size_bucket": 8.0},
+            "layout_signature": {"width": 295, "width_bucket": 300, "x_center": 968, "x_center_bucket": 975},
+        },
+    ]
+
+    for page in range(3, 6):
+        for line in range(3):
+            blocks.append(
+                {
+                    "block_id": f"p{page}_body_{line}",
+                    "page": page,
+                    "role": "body_paragraph",
+                    "text": (
+                        "Stable body paragraph text with enough words to establish the "
+                        "main article family anchor across repeated middle pages. "
+                    )
+                    * 2,
+                    "bbox": [90, 180 + line * 90, 610, 245 + line * 90],
+                    "page_width": 1200,
+                    "page_height": 1700,
+                    "marker_signature": {"type": "none"},
+                    "span_signature": {"font_family_norm": "Body", "font_size_median": 9.0, "font_size_bucket": 9.0},
+                    "layout_signature": {"width": 520, "width_bucket": 525, "x_center": 350, "x_center_bucket": 350},
+                }
+            )
+
+    _, normalized = normalize_document_structure(blocks)
+    by_id = {str(block.get("block_id")): block for block in normalized}
+
+    for block_id in ("p2_corr", "p2_highlights"):
+        block = by_id[block_id]
+        assert block.get("zone") == "frontmatter_side_zone"
+        assert block.get("style_family") == "support_like"
+        assert block.get("role") != "body_paragraph"
+
+
 def test_full_width_heading_above_two_columns_is_not_anomaly() -> None:
     """Full-width heading spanning >55% page width is NOT an error, even if it owns body in both columns."""
     from paperforge.worker.ocr_document import _run_layout_audit

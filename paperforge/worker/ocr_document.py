@@ -489,6 +489,67 @@ def _page_band(start_page: int | None, end_page: int | None) -> dict[str, int] |
     return {"start_page": start_page, "end_page": end_page}
 
 
+def _is_frontmatter_side_candidate(block: dict, body_anchor: dict | None = None) -> bool:
+    page = int(block.get("page", 0) or 0)
+    if page <= 0:
+        return False
+
+    marker_type = ((block.get("marker_signature") or {}).get("type") or "none")
+    if marker_type == "preproof_marker" or _is_reference_item_candidate(block):
+        return False
+
+    text = str(block.get("text") or block.get("block_content") or "").strip()
+    if not text:
+        return False
+
+    lower = text.lower()
+    bbox = _block_bbox(block)
+    page_width = float(block.get("page_width") or 0)
+    page_height = float(block.get("page_height") or 0)
+    block_width = (bbox[2] - bbox[0]) if bbox else 0.0
+    x_center = ((bbox[0] + bbox[2]) / 2.0) if bbox else 0.0
+    narrow = page_width > 0 and block_width > 0 and block_width <= page_width * 0.38
+    side_column = page_width > 0 and bbox is not None and (x_center <= page_width * 0.28 or x_center >= page_width * 0.72)
+    top_half = page_height > 0 and bbox is not None and bbox[1] <= page_height * 0.55
+
+    furniture_phrases = (
+        "correspondence",
+        "corresponding author",
+        "highlights",
+        "received:",
+        "accepted:",
+        "published online",
+        "copyright",
+        "edited by",
+        "reviewed by",
+        "specialty section",
+        "citation:",
+        "how to cite",
+        "to cite this article",
+        "conflict of interest",
+        "equal contribution",
+        "these authors contributed equally",
+        "orcid",
+    )
+    if any(phrase in lower for phrase in furniture_phrases):
+        if page == 1:
+            return True
+        return top_half and (narrow or side_column)
+
+    body_anchor = body_anchor or {}
+    body_width = body_anchor.get("width_bucket")
+    body_font_family = body_anchor.get("font_family_norm")
+    span_signature = block.get("span_signature") or {}
+    block_font_family = span_signature.get("font_family_norm")
+    if page <= 2 and top_half and (narrow or side_column):
+        if body_width is not None and block_width and block_width <= float(body_width) - 100:
+            return True
+        if body_font_family and block_font_family and block_font_family != body_font_family:
+            return True
+
+    return False
+
+
 def infer_zones(
     blocks: list[dict],
     anchors: dict[str, dict] | None,
@@ -548,6 +609,23 @@ def infer_zones(
         and block.get("block_id")
     ]
 
+    frontmatter_side_ids = [
+        str(block.get("block_id"))
+        for block in blocks
+        if _is_frontmatter_side_candidate(block, body_anchor=body_anchor)
+        and str(block.get("block_id")) not in frontmatter_main_ids
+        and block.get("block_id")
+    ]
+    frontmatter_side_id_set = set(frontmatter_side_ids)
+    frontmatter_side_pages = sorted(
+        {
+            int(block.get("page", 0) or 0)
+            for block in blocks
+            if str(block.get("block_id") or "") in frontmatter_side_id_set
+            and int(block.get("page", 0) or 0) > 0
+        }
+    )
+
     tail_hold_start, tail_hold_end = _infer_tail_hold_band(
         blocks,
         body_sample_pages=body_sample_pages,
@@ -569,6 +647,7 @@ def infer_zones(
         and int(block.get("page", 0) or 0) > 1
         and (body_end_page is None or int(block.get("page", 0) or 0) <= body_end_page)
         and not _is_reference_item_candidate(block)
+        and str(block.get("block_id") or "") not in frontmatter_side_id_set
         and block.get("block_id")
     ]
 
@@ -594,7 +673,11 @@ def infer_zones(
             frontmatter_main_ids,
             boundary_band=_page_band(1, 1) if frontmatter_main_ids else None,
         ),
-        "frontmatter_side_zone": _make_zone("HOLD", [], boundary_band=None),
+        "frontmatter_side_zone": _make_zone(
+            "ACCEPT" if frontmatter_side_ids else "HOLD",
+            frontmatter_side_ids,
+            boundary_band=_page_band(frontmatter_side_pages[0], frontmatter_side_pages[-1]) if frontmatter_side_pages else None,
+        ),
         "body_zone": _make_zone(
             "ACCEPT" if body_block_ids else "HOLD",
             body_block_ids,
@@ -1689,6 +1772,27 @@ def _apply_zone_labels(blocks: list[dict], region_bus: dict[str, dict] | None) -
         zone_name = block_ids_to_zone.get(str(block_id))
         if zone_name:
             block["zone"] = zone_name
+
+
+def _exclude_frontmatter_side_from_body_flow(blocks: list[dict]) -> None:
+    for block in blocks:
+        if block.get("role") != "body_paragraph":
+            continue
+        if block.get("zone") != "frontmatter_side_zone":
+            continue
+        if block.get("style_family") != "support_like":
+            continue
+        old_role = block.get("role")
+        block["role"] = "frontmatter_noise"
+        if old_role != block["role"]:
+            record_decision(
+                block,
+                stage="frontmatter_side_exclusion",
+                old_role=old_role,
+                new_role=block["role"],
+                reason="frontmatter-side support block excluded from body flow",
+            )
+        block.setdefault("evidence", []).append("frontmatter_side_zone excluded from body flow")
 
 
 def _get_column(block: dict, page_width: float = 1200) -> int:
@@ -3124,6 +3228,7 @@ def normalize_document_structure(blocks: list[dict]) -> tuple[DocumentStructure,
             "reference_family_anchor": reference_family_anchor,
         },
     )
+    _exclude_frontmatter_side_from_body_flow(blocks)
 
     from paperforge.worker.ocr_roles import resolve_final_role
 
