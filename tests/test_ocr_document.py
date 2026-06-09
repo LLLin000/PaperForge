@@ -83,6 +83,126 @@ def test_analyze_document_structure_container_backmatter() -> None:
     assert doc.backmatter_form == "container"
 
 
+def test_analyze_document_structure_exposes_reference_family_anchor_before_final_reference_roles() -> None:
+    from paperforge.worker.ocr_document import DocumentStructure, analyze_document_structure
+
+    blocks = [
+        {"page": 1, "role": "body_paragraph", "text": "Intro text"},
+        {"page": 2, "role": "body_paragraph", "text": "Methods text"},
+        {
+            "page": 5,
+            "role": "reference_heading",
+            "text": "References",
+            "marker_signature": {"type": "canonical_section_name"},
+            "span_signature": {"font_size_median": 10.0},
+            "layout_signature": {"width": 120},
+        },
+        {
+            "page": 5,
+            "role": "body_paragraph",
+            "text": "[1] Example reference",
+            "marker_signature": {"type": "reference_numeric_bracket", "number": 1},
+            "span_signature": {"font_size_median": 8.5, "font_family_norm": "Times"},
+            "layout_signature": {"width": 250, "x_center": 240},
+        },
+        {
+            "page": 5,
+            "role": "body_paragraph",
+            "text": "[2] Another reference",
+            "marker_signature": {"type": "reference_numeric_bracket", "number": 2},
+            "span_signature": {"font_size_median": 8.5, "font_family_norm": "Times"},
+            "layout_signature": {"width": 252, "x_center": 242},
+        },
+    ]
+
+    doc = analyze_document_structure(blocks)
+
+    assert isinstance(doc, DocumentStructure)
+    assert doc.reference_family_anchor is not None
+    assert doc.reference_family_anchor["status"] == "ACCEPT"
+    assert doc.reference_family_anchor["item_count"] == 2
+
+
+def test_analyze_document_structure_discovers_reference_family_anchor_before_tail_role_normalization() -> None:
+    from paperforge.worker.ocr_document import analyze_document_structure
+
+    blocks = [
+        {"page": 1, "role": "body_paragraph", "text": "Intro text"},
+        {"page": 2, "role": "body_paragraph", "text": "Methods text"},
+        {
+            "page": 5,
+            "role": "reference_heading",
+            "text": "References",
+            "marker_signature": {"type": "canonical_section_name"},
+            "span_signature": {"font_size_median": 10.0},
+            "layout_signature": {"width": 120},
+        },
+        {
+            "page": 5,
+            "role": "body_paragraph",
+            "text": "[1] Example reference",
+            "marker_signature": {"type": "reference_numeric_bracket", "number": 1},
+            "span_signature": {"font_size_median": 8.5, "font_family_norm": "Times"},
+            "layout_signature": {"width": 250, "x_center": 240},
+        },
+        {
+            "page": 5,
+            "role": "body_paragraph",
+            "text": "[2] Another reference",
+            "marker_signature": {"type": "reference_numeric_bracket", "number": 2},
+            "span_signature": {"font_size_median": 8.5, "font_family_norm": "Times"},
+            "layout_signature": {"width": 252, "x_center": 242},
+        },
+    ]
+
+    doc = analyze_document_structure(blocks)
+
+    assert doc.reference_family_anchor is not None
+    assert doc.reference_family_anchor["status"] == "ACCEPT"
+    assert blocks[3]["role"] == "body_paragraph"
+    assert blocks[4]["role"] == "body_paragraph"
+
+
+def test_normalize_document_structure_keeps_reference_family_anchor_anchor_first() -> None:
+    from paperforge.worker.ocr_document import normalize_document_structure
+
+    blocks = [
+        {"page": 1, "role": "body_paragraph", "text": "Intro text"},
+        {"page": 2, "role": "body_paragraph", "text": "Methods text"},
+        {
+            "page": 5,
+            "role": "reference_heading",
+            "text": "References",
+            "marker_signature": {"type": "canonical_section_name"},
+            "span_signature": {"font_size_median": 10.0},
+            "layout_signature": {"width": 120},
+        },
+        {
+            "page": 5,
+            "role": "body_paragraph",
+            "text": "[1] Example reference",
+            "marker_signature": {"type": "reference_numeric_bracket", "number": 1},
+            "span_signature": {"font_size_median": 8.5, "font_family_norm": "Times"},
+            "layout_signature": {"width": 250, "x_center": 240},
+        },
+        {
+            "page": 5,
+            "role": "body_paragraph",
+            "text": "[2] Another reference",
+            "marker_signature": {"type": "reference_numeric_bracket", "number": 2},
+            "span_signature": {"font_size_median": 8.5, "font_family_norm": "Times"},
+            "layout_signature": {"width": 252, "x_center": 242},
+        },
+    ]
+
+    doc, normalized_blocks = normalize_document_structure(blocks)
+
+    assert doc.reference_family_anchor is not None
+    assert doc.reference_family_anchor["status"] == "ACCEPT"
+    assert normalized_blocks[3]["role"] == "body_paragraph"
+    assert normalized_blocks[4]["role"] == "body_paragraph"
+
+
 def test_normalize_flat_backmatter_unifies_heading_family() -> None:
     from paperforge.worker.ocr_document import (
         TailBoundary,
