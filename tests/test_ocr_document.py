@@ -355,6 +355,72 @@ def test_normalize_document_structure_preserves_reference_zone_integrity_from_an
     assert ref_row.get("style_family") == "reference_like"
 
 
+def test_reference_zones_remain_column_scoped_after_authority_refresh() -> None:
+    from paperforge.worker.ocr_blocks import build_structured_blocks
+
+    raw_blocks = [
+        {
+            "paper_id": "KEYREF01",
+            "page": 1,
+            "block_id": "p1_b1",
+            "raw_label": "doc_title",
+            "raw_order": 0,
+            "bbox": [80, 40, 700, 90],
+            "text": "Reference Zone Test",
+            "page_width": 1200,
+            "page_height": 1600,
+            "span_metadata": [{"font": "Times-Bold", "size": 18.0, "flags": 16, "color": 0}],
+        },
+        {
+            "paper_id": "KEYREF01",
+            "page": 4,
+            "block_id": "p4_b1",
+            "raw_label": "paragraph_title",
+            "raw_order": 1,
+            "bbox": [620, 120, 950, 160],
+            "text": "References",
+            "page_width": 1200,
+            "page_height": 1600,
+            "span_metadata": [{"font": "Times-Bold", "size": 10.0, "flags": 16, "color": 0}],
+        },
+        {
+            "paper_id": "KEYREF01",
+            "page": 4,
+            "block_id": "p4_b2",
+            "raw_label": "text",
+            "raw_order": 2,
+            "bbox": [620, 180, 960, 250],
+            "text": "[1] Example reference entry with enough tokens to be reference-like.",
+            "page_width": 1200,
+            "page_height": 1600,
+            "span_metadata": [{"font": "Times-Roman", "size": 8.5, "flags": 0, "color": 0}] * 6,
+        },
+        {
+            "paper_id": "KEYREF01",
+            "page": 4,
+            "block_id": "p4_b3",
+            "raw_label": "text",
+            "raw_order": 3,
+            "bbox": [80, 180, 420, 250],
+            "text": "Left-column body text that should not be part of the reference zone.",
+            "page_width": 1200,
+            "page_height": 1600,
+            "span_metadata": [{"font": "Times-Roman", "size": 9.0, "flags": 0, "color": 0}] * 6,
+        },
+    ]
+
+    rows, doc = build_structured_blocks(raw_blocks)
+
+    assert doc is not None
+    assert doc.reference_zones
+    zone = doc.reference_zones[0]
+    assert zone["column_index"] == 1
+    assert zone["y_start"] > 0
+    assert zone["y_end"] < 1600
+    left_body = next(row for row in rows if row["block_id"] == "p4_b3")
+    assert left_body.get("zone") != "reference_zone"
+
+
 def test_candidate_resolution_demotes_body_spine_narrative_figure_mentions() -> None:
     from paperforge.worker.ocr_document import DocumentStructure, PageLayoutProfile, _resolve_ambiguous_candidates
 
