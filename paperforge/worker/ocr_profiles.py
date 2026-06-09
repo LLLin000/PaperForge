@@ -245,6 +245,16 @@ FAMILY_DEFINITIONS: dict[str, list[str]] = {
     "caption_family": ["figure_caption", "table_caption"],
 }
 
+STYLE_FAMILY_TO_PROFILE_FAMILY: dict[str, str] = {
+    "body_like": "body_family",
+    "heading_like": "heading_family",
+    "legend_like": "legend_family",
+    "table_caption_like": "table_caption_family",
+    "reference_like": "reference_family",
+    "support_like": "support_family",
+    "unknown_like": "unknown_family",
+}
+
 
 def build_family_profiles(blocks: list[dict]) -> dict:
     """Derive family-level profiles from block role/span data.
@@ -259,7 +269,30 @@ def build_family_profiles(blocks: list[dict]) -> dict:
     """
     role_profiles = build_role_span_profiles(blocks)
     families: dict = {}
+
+    style_family_blocks: dict[str, list[dict]] = {}
+    for block in blocks:
+        style_family = block.get("style_family")
+        if not style_family:
+            continue
+        style_family_blocks.setdefault(str(style_family), []).append(block)
+
+    for style_family, family_name in STYLE_FAMILY_TO_PROFILE_FAMILY.items():
+        members = style_family_blocks.get(style_family, [])
+        if not members:
+            continue
+        profile = _build_profile_from_blocks(members)
+        if profile is None:
+            continue
+        families[family_name] = {
+            **profile,
+            "member_roles": sorted({str(block.get("role") or "") for block in members if block.get("role")}),
+            "source_style_family": style_family,
+        }
+
     for family_name, member_roles in FAMILY_DEFINITIONS.items():
+        if family_name in families:
+            continue
         available = {
             role: role_profiles[role]
             for role in member_roles
@@ -304,6 +337,46 @@ def build_family_profiles(blocks: list[dict]) -> dict:
             "member_roles": member_roles,
         }
     return families
+
+
+def _build_profile_from_blocks(blocks: list[dict]) -> dict | None:
+    profiles = [extract_block_span_profile(block) for block in blocks]
+    usable_profiles = [profile for profile in profiles if profile is not None]
+    if not usable_profiles:
+        return None
+
+    sizes: list[float] = []
+    font_families: set[str] = set()
+    bold_count = 0
+    italic_count = 0
+    colored_count = 0
+    for profile in usable_profiles:
+        sizes.extend([profile["mean_size"], profile["max_size"]])
+        font_families.update(profile["font_families"])
+        if profile["is_bold"]:
+            bold_count += 1
+        if profile["is_italic"]:
+            italic_count += 1
+        if profile["is_colored"]:
+            colored_count += 1
+
+    block_count = len(usable_profiles)
+    mean_size = sum(sizes) / len(sizes) if sizes else 0.0
+    max_size = max(sizes) if sizes else 0.0
+    min_size = min(sizes) if sizes else 0.0
+    dispersion = (max_size - min_size) / max_size if max_size > 0 else 0.0
+    return {
+        "block_count": block_count,
+        "mean_size": round(mean_size, 2),
+        "max_size": round(max_size, 2),
+        "min_size": round(min_size, 2),
+        "dispersion": round(dispersion, 4),
+        "quality": _profile_quality(block_count, dispersion),
+        "bold_ratio": round(bold_count / block_count, 2) if block_count else 0.0,
+        "italic_ratio": round(italic_count / block_count, 2) if block_count else 0.0,
+        "font_families": list(font_families),
+        "colored_ratio": round(colored_count / block_count, 2) if block_count else 0.0,
+    }
 
 
 def compare_against_family(

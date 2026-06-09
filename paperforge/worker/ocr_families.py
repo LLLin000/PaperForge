@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections import Counter, defaultdict
+import re
 from typing import Any
 
 
@@ -28,6 +29,8 @@ _REFERENCE_MARKER_TYPES = {
 }
 
 _REFERENCE_HEADING_TEXTS = {"references", "bibliography"}
+_HEADING_MARKER_TYPES = {"canonical_section_name"}
+_SUPPORT_ZONE_HINTS = ("support", "insert", "frontmatter", "margin", "sidebar")
 
 
 def discover_body_family_anchor(blocks: list[dict], page_count: int | None = None) -> dict[str, Any]:
@@ -163,6 +166,29 @@ def discover_reference_family_anchor(blocks: list[dict], page_count: int | None 
     }
 
 
+def partition_zone_families(
+    blocks: list[dict],
+    anchors: dict[str, dict[str, Any]] | None = None,
+) -> dict[str, dict[str, Any]]:
+    """Assign in-zone style/layout family artifacts without resolving final roles."""
+    anchors = anchors or {}
+    body_anchor = anchors.get("body_family_anchor") or {}
+    reference_anchor = anchors.get("reference_family_anchor") or {}
+
+    partitioned: dict[str, dict[str, Any]] = {}
+    for index, block in enumerate(blocks):
+        block_id = str(block.get("block_id") or f"block_{index}")
+        style_family, authority = _classify_style_family(block, body_anchor, reference_anchor)
+        block["style_family"] = style_family
+        block["style_family_authority"] = authority
+        partitioned[block_id] = {
+            "style_family": style_family,
+            "authority": authority,
+            "zone": block.get("zone"),
+        }
+    return partitioned
+
+
 def _select_middle_sample_pages(blocks: list[dict], page_count: int) -> set[int]:
     if page_count <= 0:
         return set()
@@ -201,6 +227,100 @@ def _select_middle_sample_pages(blocks: list[dict], page_count: int) -> set[int]
             continue
         stable_pages.add(page)
     return stable_pages
+
+
+def _classify_style_family(
+    block: dict,
+    body_anchor: dict[str, Any],
+    reference_anchor: dict[str, Any],
+) -> tuple[str, str]:
+    marker_type = ((block.get("marker_signature") or {}).get("type") or "none")
+    text = str(block.get("text") or block.get("block_content") or "").strip()
+    zone = str(block.get("zone") or "")
+    text_lower = text.lower()
+
+    if _reference_anchor_matches_block(reference_anchor, block):
+        return "reference_like", "reference_family_anchor"
+    if marker_type in _REFERENCE_MARKER_TYPES:
+        return "reference_like", "reference_marker"
+    if marker_type == "table_number" or text_lower.startswith("table "):
+        return "table_caption_like", "table_marker"
+    if marker_type in {"figure_number", "panel_label"} or text_lower.startswith("figure "):
+        return "legend_like", "figure_marker"
+    if marker_type in _HEADING_MARKER_TYPES:
+        return "heading_like", "heading_marker"
+    if _anchor_matches_block(body_anchor, block, _body_family_key):
+        return "body_like", "body_family_anchor"
+    if body_anchor.get("status") == "ACCEPT" and zone == "body_zone" and _is_body_zone_body_like(block):
+        return "body_like", "body_zone_with_anchor"
+    if zone == "body_zone" and _is_body_family_candidate(block):
+        return "body_like", "body_zone_candidate"
+    if any(hint in zone for hint in _SUPPORT_ZONE_HINTS):
+        return "support_like", "zone_context"
+    return "unknown_like", "fallback"
+
+
+def _anchor_matches_block(
+    anchor: dict[str, Any],
+    block: dict,
+    key_builder: Any,
+) -> bool:
+    if anchor.get("status") != "ACCEPT":
+        return False
+    anchor_key = (
+        anchor.get("font_family_norm"),
+        anchor.get("font_size_bucket"),
+        anchor.get("width_bucket"),
+        anchor.get("x_center_bucket"),
+    )
+    if any(value is not None for value in anchor_key):
+        return key_builder(block) == anchor_key
+    return False
+
+
+def _reference_anchor_matches_block(anchor: dict[str, Any], block: dict) -> bool:
+    if not _anchor_matches_block(anchor, block, _reference_family_key):
+        return False
+    marker_type = ((block.get("marker_signature") or {}).get("type") or "none")
+    if marker_type in _REFERENCE_MARKER_TYPES:
+        return True
+
+    zone = str(block.get("zone") or "")
+    if zone == "reference_zone":
+        return True
+    if zone == "body_zone":
+        return False
+    if _has_reference_text_structure(block):
+        return True
+    if zone:
+        return False
+
+    sample_pages = [int(page) for page in anchor.get("sample_pages") or [] if page is not None]
+    page = int(block.get("page", 0) or 0)
+    if sample_pages and page > 0:
+        if page >= min(sample_pages) - 1:
+            return _has_reference_text_structure(block)
+    return False
+
+
+def _has_reference_text_structure(block: dict) -> bool:
+    text = str(block.get("text") or block.get("block_content") or "").strip()
+    if not text:
+        return False
+
+    if re.match(r"^\[\d+\]", text):
+        return True
+    if re.match(r"^\d+[\.)]", text):
+        return True
+
+    citation_years = re.findall(r"\b(?:19|20)\d{2}[a-z]?\b", text)
+    if len(citation_years) >= 2:
+        return True
+
+    if text.count(";") >= 2 and text.count(",") >= 3:
+        return True
+
+    return False
 
 
 def _page_is_contaminated(page_blocks: list[dict]) -> bool:
@@ -257,6 +377,19 @@ def _is_body_family_candidate(block: dict) -> bool:
     if not layout_signature.get("width"):
         return False
     return True
+
+
+def _is_body_zone_body_like(block: dict) -> bool:
+    marker_type = ((block.get("marker_signature") or {}).get("type") or "none")
+    if marker_type in _STRONG_MARKER_TYPES | {"panel_label"}:
+        return False
+    span_signature = block.get("span_signature") or {}
+    layout_signature = block.get("layout_signature") or {}
+    return bool(
+        span_signature.get("font_family_norm")
+        and (span_signature.get("font_size_median") is not None or span_signature.get("font_size_bucket") is not None)
+        and layout_signature.get("width")
+    )
 
 
 def _body_family_key(block: dict) -> tuple[Any, ...] | None:

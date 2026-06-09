@@ -589,3 +589,180 @@ def test_reference_family_anchor_accepts_single_page_penultimate_tail_family() -
     assert anchor["status"] == "ACCEPT"
     assert anchor["family_name"] == "reference_family"
     assert anchor["sample_pages"] == [9]
+
+
+def test_partition_zone_families_separates_legend_like_from_body_like() -> None:
+    from paperforge.worker.ocr_families import partition_zone_families
+
+    blocks = [
+        {
+            "block_id": "p4_b1",
+            "zone": "body_zone",
+            "text": "Long narrative paragraph " * 6,
+            "marker_signature": {"type": "none"},
+            "span_signature": {"font_size_median": 9.0, "font_family_norm": "Times"},
+            "layout_signature": {"width": 260},
+        },
+        {
+            "block_id": "p4_b2",
+            "zone": "body_zone",
+            "text": "Figure 2. Long legend text",
+            "marker_signature": {"type": "figure_number", "number": 2},
+            "span_signature": {"font_size_median": 8.0, "font_family_norm": "Times"},
+            "layout_signature": {"width": 220},
+        },
+    ]
+    anchors = {"body_family_anchor": {"status": "ACCEPT", "family_name": "body_family"}}
+
+    partitioned = partition_zone_families(blocks, anchors)
+    assert partitioned["p4_b1"]["style_family"] == "body_like"
+    assert partitioned["p4_b2"]["style_family"] == "legend_like"
+
+
+def test_partition_zone_families_marks_reference_like_from_reference_anchor() -> None:
+    from paperforge.worker.ocr_families import partition_zone_families
+
+    blocks = [
+        {
+            "block_id": "p9_b1",
+            "zone": "backmatter_zone",
+            "text": "[1] Example reference entry with authors and journal",
+            "marker_signature": {"type": "reference_numeric_bracket", "number": 1},
+            "span_signature": {"font_size_median": 8.5, "font_size_bucket": 8.5, "font_family_norm": "Times"},
+            "layout_signature": {"width": 250, "width_bucket": 250, "x_center": 240, "x_center_bucket": 250},
+        }
+    ]
+    anchors = {
+        "reference_family_anchor": {
+            "status": "ACCEPT",
+            "family_name": "reference_family",
+            "font_family_norm": "Times",
+            "font_size_bucket": 8.5,
+            "width_bucket": 250,
+            "x_center_bucket": 250,
+        }
+    }
+
+    partitioned = partition_zone_families(blocks, anchors)
+    assert partitioned["p9_b1"]["style_family"] == "reference_like"
+
+
+def test_partition_zone_families_surfaces_style_family_on_blocks_for_downstream_use() -> None:
+    from paperforge.worker.ocr_families import partition_zone_families
+
+    blocks = [
+        {
+            "block_id": "p4_b1",
+            "zone": "body_zone",
+            "text": "Long narrative paragraph " * 6,
+            "marker_signature": {"type": "none"},
+            "span_signature": {"font_size_median": 9.0, "font_family_norm": "Times"},
+            "layout_signature": {"width": 260},
+        }
+    ]
+
+    partitioned = partition_zone_families(
+        blocks,
+        {"body_family_anchor": {"status": "ACCEPT", "family_name": "body_family"}},
+    )
+
+    assert partitioned["p4_b1"]["style_family"] == "body_like"
+    assert blocks[0]["style_family"] == "body_like"
+    assert blocks[0]["style_family_authority"] == "body_zone_with_anchor"
+
+
+def test_partition_zone_families_does_not_mark_body_zone_style_match_as_reference_like() -> None:
+    from paperforge.worker.ocr_families import partition_zone_families
+
+    blocks = [
+        {
+            "block_id": "p4_b1",
+            "zone": "body_zone",
+            "text": "Long narrative paragraph without citation list structure " * 3,
+            "marker_signature": {"type": "none"},
+            "span_signature": {"font_size_median": 8.5, "font_size_bucket": 8.5, "font_family_norm": "Times"},
+            "layout_signature": {"width": 250, "width_bucket": 250, "x_center": 240, "x_center_bucket": 250},
+        }
+    ]
+    anchors = {
+        "body_family_anchor": {"status": "ACCEPT", "family_name": "body_family"},
+        "reference_family_anchor": {
+            "status": "ACCEPT",
+            "family_name": "reference_family",
+            "font_family_norm": "Times",
+            "font_size_bucket": 8.5,
+            "width_bucket": 250,
+            "x_center_bucket": 250,
+            "sample_pages": [9, 10],
+        },
+    }
+
+    partitioned = partition_zone_families(blocks, anchors)
+
+    assert partitioned["p4_b1"]["style_family"] == "body_like"
+    assert partitioned["p4_b1"]["authority"] != "reference_family_anchor"
+
+
+def test_partition_zone_families_does_not_mark_late_body_zone_style_match_as_reference_like() -> None:
+    from paperforge.worker.ocr_families import partition_zone_families
+
+    blocks = [
+        {
+            "block_id": "p9_b1",
+            "page": 9,
+            "zone": "body_zone",
+            "text": "Long late-page narrative paragraph without numbered reference structure " * 3,
+            "marker_signature": {"type": "none"},
+            "span_signature": {"font_size_median": 8.5, "font_size_bucket": 8.5, "font_family_norm": "Times"},
+            "layout_signature": {"width": 250, "width_bucket": 250, "x_center": 240, "x_center_bucket": 250},
+        }
+    ]
+    anchors = {
+        "body_family_anchor": {"status": "ACCEPT", "family_name": "body_family"},
+        "reference_family_anchor": {
+            "status": "ACCEPT",
+            "family_name": "reference_family",
+            "font_family_norm": "Times",
+            "font_size_bucket": 8.5,
+            "width_bucket": 250,
+            "x_center_bucket": 250,
+            "sample_pages": [9, 10],
+        },
+    }
+
+    partitioned = partition_zone_families(blocks, anchors)
+
+    assert partitioned["p9_b1"]["style_family"] == "body_like"
+    assert partitioned["p9_b1"]["authority"] != "reference_family_anchor"
+
+
+def test_partition_zone_families_does_not_mark_backmatter_prose_style_match_as_reference_like() -> None:
+    from paperforge.worker.ocr_families import partition_zone_families
+
+    blocks = [
+        {
+            "block_id": "p10_b1",
+            "page": 10,
+            "zone": "backmatter_zone",
+            "text": "Appendix discussion prose continues the argument in full sentences without numbered entries, author-year formatting, or list-like citation structure. " * 2,
+            "marker_signature": {"type": "none"},
+            "span_signature": {"font_size_median": 8.5, "font_size_bucket": 8.5, "font_family_norm": "Times"},
+            "layout_signature": {"width": 250, "width_bucket": 250, "x_center": 240, "x_center_bucket": 250},
+        }
+    ]
+    anchors = {
+        "reference_family_anchor": {
+            "status": "ACCEPT",
+            "family_name": "reference_family",
+            "font_family_norm": "Times",
+            "font_size_bucket": 8.5,
+            "width_bucket": 250,
+            "x_center_bucket": 250,
+            "sample_pages": [9, 10],
+        }
+    }
+
+    partitioned = partition_zone_families(blocks, anchors)
+
+    assert partitioned["p10_b1"]["style_family"] != "reference_like"
+    assert partitioned["p10_b1"]["authority"] != "reference_family_anchor"
