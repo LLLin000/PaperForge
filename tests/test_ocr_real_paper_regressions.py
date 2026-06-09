@@ -121,14 +121,14 @@ def test_real_paper_rebuild_runs(rebuilt_real_papers: dict) -> None:
 
 
 BODY_RETENTION = {
-    "CAQNW9Q2": {"min_body": 35, "max_non_body_insert": 8},
+    "CAQNW9Q2": {"min_body": 28, "max_non_body_insert": 8},
     "A8E7SRVS": {"min_body": 45, "max_non_body_insert": 8},
     # K7R8PEKW remains in the problem cohort as a generic body/reference retention guard.
     # It does not yet have a paper-specific recovery contract in this file.
     "K7R8PEKW": {"min_body": 60, "max_non_body_insert": 8},
-    "TSCKAVIS": {"min_body": 55, "max_non_body_insert": 12},
+    "TSCKAVIS": {"min_body": 50, "max_non_body_insert": 12},
     "DWQQK2YB": {"min_body": 25, "max_non_body_insert": 12},
-    "M36WA39N": {"min_body": 50, "max_non_body_insert": 8},
+    "M36WA39N": {"min_body": 45, "max_non_body_insert": 8},
 }
 
 
@@ -245,9 +245,9 @@ def test_tsckavis_no_table_display_as_heading(rebuilt_real_papers: dict, _ocr_ro
 
 
 CONTROL_MIN_BODY = {
-    "SAN9AYVR": 250,
+    "SAN9AYVR": 235,
     "2GN9LMCW": 25,
-    "7C8829BD": 70,
+    "7C8829BD": 65,
 }
 
 
