@@ -1840,6 +1840,25 @@ def _exclude_frontmatter_side_from_body_flow(blocks: list[dict]) -> None:
         block.setdefault("evidence", []).append("frontmatter_side_zone excluded from body flow")
 
 
+def _exclude_tail_nonref_from_body_flow(blocks: list[dict]) -> None:
+    for block in blocks:
+        if block.get("role") != "body_paragraph":
+            continue
+        if block.get("zone") != "tail_nonref_hold_zone":
+            continue
+        old_role = block.get("role")
+        block["role"] = "backmatter_body"
+        if old_role != block["role"]:
+            record_decision(
+                block,
+                stage="tail_nonref_exclusion",
+                old_role=old_role,
+                new_role=block["role"],
+                reason="tail non-reference body block excluded from body flow",
+            )
+        block.setdefault("evidence", []).append("tail_nonref_hold_zone excluded from body flow")
+
+
 def _get_column(block: dict, page_width: float = 1200) -> int:
     bbox = block.get("bbox") or block.get("block_bbox")
     if bbox and len(bbox) >= 4:
@@ -3274,6 +3293,7 @@ def normalize_document_structure(blocks: list[dict]) -> tuple[DocumentStructure,
         },
     )
     _exclude_frontmatter_side_from_body_flow(blocks)
+    _exclude_tail_nonref_from_body_flow(blocks)
 
     from paperforge.worker.ocr_roles import resolve_final_role
 
