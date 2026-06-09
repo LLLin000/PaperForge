@@ -204,6 +204,10 @@ def build_structured_blocks(
             for zone in refreshed_reference_zones
         ] or None
 
+    from paperforge.worker.ocr_document import _exclude_tail_nonref_from_body_flow
+
+    _exclude_tail_nonref_from_body_flow(rows)
+
     # Sync render_default/index_default after role normalizations
     for row in rows:
         role = row.get("role", "")
