@@ -89,11 +89,21 @@ def score_table_match(caption: dict, asset: dict, *, is_continuation: bool = Fal
     return {"score": score, "matched_asset_id": asset.get("block_id", ""), "decision": decision, "evidence": evidence}
 
 
-def score_figure_match(legend: dict, asset: dict, *, caption_score: dict | None = None) -> dict:
+def score_figure_match(
+    legend: dict,
+    asset: dict,
+    *,
+    caption_score: dict | None = None,
+    anchor_supported: bool = False,
+    caption_text_supported: bool = False,
+    family_supported: bool = False,
+    zone_supported: bool = False,
+) -> dict:
     legend_bbox = legend.get("bbox") or legend.get("block_bbox") or [0, 0, 0, 0]
     asset_bbox = asset.get("bbox") or asset.get("block_bbox") or [0, 0, 0, 0]
     score = 0.0
     evidence: list[str] = []
+    has_x_overlap = False
 
     caption_value = float((caption_score or {}).get("score", 0.0))
     if caption_value < 0.4:
@@ -104,6 +114,7 @@ def score_figure_match(legend: dict, asset: dict, *, caption_score: dict | None 
         score += 0.3
         evidence.append("same_page")
     if _bbox_x_overlap_ratio(legend_bbox, asset_bbox) >= 0.4:
+        has_x_overlap = True
         score += 0.25
         evidence.append("x_overlap")
     if len(legend_bbox) >= 4 and len(asset_bbox) >= 4:
@@ -116,7 +127,27 @@ def score_figure_match(legend: dict, asset: dict, *, caption_score: dict | None 
             evidence.append("caption_above_or_below")
     score += min(0.15, caption_value * 0.15)
     score = max(0.0, min(1.0, score))
-    decision = "matched" if score >= 0.6 else "ambiguous" if score >= 0.4 else "rejected"
+    if anchor_supported:
+        score += 0.05
+        evidence.append("anchor_supported")
+    if caption_text_supported:
+        score += 0.05
+        evidence.append("caption_text_supported")
+    if family_supported:
+        score += 0.03
+        evidence.append("family_supported")
+    if zone_supported:
+        score += 0.02
+        evidence.append("zone_supported")
+    score = max(0.0, min(1.0, score))
+    strong_geometry = "same_page" in evidence and "nearby_y" in evidence and "caption_above_or_below" in evidence
+    contextual_support = anchor_supported or family_supported or zone_supported
+    if score >= 0.6 and (has_x_overlap or (strong_geometry and (contextual_support or caption_text_supported))):
+        decision = "matched"
+    elif score >= 0.4:
+        decision = "ambiguous"
+    else:
+        decision = "rejected"
     return {"score": score, "matched_asset_id": asset.get("block_id", ""), "decision": decision, "evidence": evidence}
 
 

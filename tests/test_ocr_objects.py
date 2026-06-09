@@ -197,6 +197,44 @@ def test_unresolved_cluster_object_emission(tmp_path: Path) -> None:
     assert not (render_root / "figures" / "cluster_001.md").exists()
 
 
+def test_held_figures_do_not_emit_object_notes(tmp_path: Path) -> None:
+    from paperforge.worker.ocr_objects import extract_and_write_objects
+
+    render_root = tmp_path / "render"
+    asset_root = tmp_path / "assets"
+
+    figure_inventory: dict[str, Any] = {
+        "matched_figures": [],
+        "held_figures": [
+            {
+                "figure_id": "held_figure_001",
+                "legend_block_id": "p10_b1",
+                "page": 10,
+                "text": "Figure 1",
+                "figure_number": 1,
+                "hold_reason": "insufficient_legend_evidence",
+            }
+        ],
+        "unmatched_assets": [],
+        "rejected_legends": [],
+        "figure_legends": [],
+        "figure_assets": [],
+        "official_figure_count": 0,
+        "unresolved_clusters": [],
+    }
+
+    extract_and_write_objects(
+        pdf_path=None,
+        figure_inventory=figure_inventory,
+        table_inventory={"tables": [], "unmatched_assets": []},
+        asset_root=asset_root,
+        render_root=render_root,
+    )
+
+    render_files = sorted((render_root / "figures").glob("*.md"))
+    assert render_files == []
+
+
 def test_crop_asset_uses_ocr_page_coordinates_when_dimensions_provided(tmp_path: Path) -> None:
     import fitz
     from PIL import Image
