@@ -1830,8 +1830,12 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
     metadata_dir = ocr_root / "metadata"
     metadata_dir.mkdir(parents=True, exist_ok=True)
     frontmatter_candidates = extract_frontmatter_candidates(artifacts.blocks_structured)
-    page1_raw = [b for b in all_raw_blocks if b.get("page") == 1] if all_raw_blocks else None
-    resolved = resolve_metadata(source_meta, frontmatter_candidates, page1_blocks=page1_raw)
+    resolved = resolve_metadata(
+        source_meta,
+        frontmatter_candidates,
+        page_blocks=all_raw_blocks,
+        structured_blocks=structured,
+    )
     write_resolved_metadata(metadata_dir / "resolved_metadata.json", resolved)
 
     # --- Phase 2: figure inventory ---

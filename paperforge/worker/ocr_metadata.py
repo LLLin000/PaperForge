@@ -196,16 +196,28 @@ def _token_overlap(a: str, b: str) -> float:
 
 def _align_frontmatter_to_source_metadata(
     source_meta: dict,
-    page1_blocks: list[dict],
+    page_blocks: list[dict],
+    frontmatter_window: int = 3,
 ) -> dict:
+    """Search blocks within the frontmatter window to localize title/authors.
+
+    Source metadata is canonical truth; OCR blocks provide alignment/localization
+    evidence only.  Blocks beyond *frontmatter_window* (default 3 pages) are
+    excluded to avoid matching running headers, body text, or reference entries.
+    """
+    window_blocks = [
+        b for b in page_blocks
+        if int(b.get("page", 0) or 0) <= frontmatter_window
+    ] if page_blocks else page_blocks
+
     result: dict[str, Any] = {}
 
     source_title = (source_meta.get("title") or "").strip()
     if source_title:
         result["title"] = {"source": "zotero", "value": source_title}
-        for b in page1_blocks:
+        for b in window_blocks:
             t = (b.get("text") or b.get("block_content") or "").strip()
-            if len(t) >= 20 and (
+            if len(t) >= 5 and (
                 t in source_title or source_title in t
                 or _token_overlap(t.lower(), source_title.lower()) > 0.6
             ):
@@ -216,7 +228,7 @@ def _align_frontmatter_to_source_metadata(
     source_authors = source_meta.get("authors") or []
     if source_authors:
         result["authors"] = {"source": "zotero", "value": source_authors}
-        for b in page1_blocks:
+        for b in window_blocks:
             t = (b.get("text") or b.get("block_content") or "").strip()
             match = _match_author_block_to_source_authors(t, source_authors)
             if match.get("matched"):
@@ -230,7 +242,7 @@ def _align_frontmatter_to_source_metadata(
 def resolve_metadata(
     source_metadata: dict[str, Any],
     frontmatter_candidates: dict[str, Any] | None = None,
-    page1_blocks: list[dict] | None = None,
+    page_blocks: list[dict] | None = None,
     structured_blocks: list[dict] | None = None,
 ) -> dict[str, Any]:
     if frontmatter_candidates is None:
@@ -293,7 +305,7 @@ def resolve_metadata(
         [a.strip() for a in re.split(r",\s+(?=[A-Z])", ocr_authors_text) if a.strip()] if ocr_authors_text else []
     )
 
-    if isinstance(zotero_authors, list) and len(zotero_authors) > 0 and not authors_incomplete and authors_source != "paper_note.first_author_fallback" and len(zotero_authors) > 1:
+    if isinstance(zotero_authors, list) and len(zotero_authors) > 0 and not authors_incomplete and authors_source != "paper_note.first_author_fallback":
         authors_entry: dict[str, Any] = {
             "value": zotero_authors,
             "source": "zotero",
@@ -350,9 +362,9 @@ def resolve_metadata(
         }
         resolved["authors_display"] = ""
 
-    # --- frontmatter alignment (page-1 block anchoring) ---
-    if page1_blocks:
-        alignment = _align_frontmatter_to_source_metadata(source_metadata, page1_blocks)
+    # --- frontmatter alignment (OCR localization across all frontmatter pages) ---
+    if page_blocks:
+        alignment = _align_frontmatter_to_source_metadata(source_metadata, page_blocks)
         if "title" in resolved and "title" in alignment and alignment["title"].get("ocr_aligned"):
             resolved["title"]["ocr_block_id"] = alignment["title"]["ocr_block_id"]
             resolved["title"]["ocr_aligned"] = True
