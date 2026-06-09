@@ -235,6 +235,41 @@ def test_held_figures_do_not_emit_object_notes(tmp_path: Path) -> None:
     assert render_files == []
 
 
+def test_held_tables_do_not_emit_object_notes(tmp_path: Path) -> None:
+    from paperforge.worker.ocr_objects import extract_and_write_objects
+
+    render_root = tmp_path / "render"
+    asset_root = tmp_path / "assets"
+
+    table_inventory: dict[str, Any] = {
+        "tables": [],
+        "held_tables": [
+            {
+                "table_id": "held_table_001",
+                "caption_block_id": "p12_b1",
+                "page": 12,
+                "caption_text": "Table 2.",
+                "table_number": 2,
+                "hold_reason": "insufficient_caption_evidence",
+            }
+        ],
+        "unmatched_captions": [],
+        "unmatched_assets": [],
+        "official_table_count": 0,
+    }
+
+    extract_and_write_objects(
+        pdf_path=None,
+        figure_inventory={"matched_figures": [], "unmatched_assets": [], "unresolved_clusters": []},
+        table_inventory=table_inventory,
+        asset_root=asset_root,
+        render_root=render_root,
+    )
+
+    render_files = sorted((render_root / "tables").glob("*.md"))
+    assert render_files == []
+
+
 def test_crop_asset_uses_ocr_page_coordinates_when_dimensions_provided(tmp_path: Path) -> None:
     import fitz
     from PIL import Image

@@ -13,6 +13,10 @@ _TABLE_PREFIX_PATTERN = re.compile(
 )
 
 _CONTINUATION_PATTERN = re.compile(r"\(cont(?:inued)?\.?\)", re.IGNORECASE)
+_TRUNCATED_TABLE_ONLY_PATTERN = re.compile(
+    r"^(?:Table|Supplementary\s+Table|Extended\s+Data\s+Table)\s+\d+(?:\.\d+)?\.?$",
+    re.IGNORECASE,
+)
 
 
 def _extract_table_number(text: str) -> int | None:
@@ -34,6 +38,21 @@ def _extract_base_table_number(text: str) -> int | None:
     return _extract_table_number(cleaned)
 
 
+def _is_validation_first_table_candidate(block: dict) -> bool:
+    role = str(block.get("role", "") or "")
+    if role in {"table_caption", "table_caption_candidate"}:
+        return False
+    marker_type = ((block.get("marker_signature") or {}).get("type") or "none")
+    zone = str(block.get("zone", "") or "")
+    style_family = str(block.get("style_family", "") or "")
+    return marker_type == "table_number" and zone == "display_zone" and style_family == "table_caption_like"
+
+
+def _is_insufficient_table_caption_evidence(block: dict) -> bool:
+    text = str(block.get("text", "") or "").strip()
+    return bool(_TRUNCATED_TABLE_ONLY_PATTERN.fullmatch(text))
+
+
 def _score_candidate_assets(
     page_assets: list[tuple[int, dict]],
     caption: dict,
@@ -52,13 +71,14 @@ def build_table_inventory(structured_blocks: list[dict]) -> dict[str, Any]:
     tables: list[dict] = []
     captions: list[dict] = []
     assets: list[dict] = []
+    held_tables: list[dict] = []
     unmatched_captions: list[dict] = []
     unmatched_assets: list[dict] = []
 
     for block in structured_blocks:
         role = block.get("role", "")
         raw_label = str(block.get("raw_label", "") or "").strip()
-        if role == "table_caption":
+        if role == "table_caption" or _is_validation_first_table_candidate(block):
             captions.append(block)
         elif role in ("table_asset", "media_asset"):
             if role == "media_asset" and raw_label not in ("table",):
@@ -72,6 +92,23 @@ def build_table_inventory(structured_blocks: list[dict]) -> dict[str, Any]:
         table_num = _extract_table_number(caption_text)
         formal_table_number = _extract_base_table_number(caption_text)
         is_cont = _is_continuation_caption(caption_text)
+        is_validation_first_candidate = _is_validation_first_table_candidate(caption)
+        is_weak_truncated = _is_insufficient_table_caption_evidence(caption)
+
+        if is_validation_first_candidate and is_weak_truncated:
+            held_tables.append({
+                "table_id": f"held_table_{len(held_tables) + 1:03d}",
+                "caption_block_id": caption.get("block_id", ""),
+                "page": caption_page,
+                "caption_text": caption_text,
+                "table_number": table_num,
+                "formal_table_number": formal_table_number,
+                "hold_reason": "insufficient_caption_evidence",
+                "zone": caption.get("zone", ""),
+                "style_family": caption.get("style_family", ""),
+                "marker_signature": caption.get("marker_signature", {}),
+            })
+            continue
 
         candidate_pages = [caption_page - 1, caption_page, caption_page + 1]
 
@@ -161,6 +198,7 @@ def build_table_inventory(structured_blocks: list[dict]) -> dict[str, Any]:
 
     return {
         "tables": tables,
+        "held_tables": held_tables,
         "unmatched_captions": unmatched_captions,
         "unmatched_assets": unmatched_assets,
         "official_table_count": len(
