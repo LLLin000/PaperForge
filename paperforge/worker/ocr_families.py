@@ -243,6 +243,8 @@ def _classify_style_family(
         return "reference_like", "reference_family_anchor"
     if marker_type in _REFERENCE_MARKER_TYPES:
         return "reference_like", "reference_marker"
+    if zone == "frontmatter_side_zone":
+        return "support_like", "frontmatter_side_zone"
     if marker_type == "table_number" or text_lower.startswith("table "):
         return "table_caption_like", "table_marker"
     if marker_type in {"figure_number", "panel_label"} or text_lower.startswith("figure "):
