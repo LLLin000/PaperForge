@@ -36,6 +36,7 @@ def test_table_inventory_includes_all_sections() -> None:
     inventory = build_table_inventory([])
 
     assert "tables" in inventory
+    assert "held_tables" in inventory
     assert "unmatched_captions" in inventory
     assert "unmatched_assets" in inventory
     assert "official_table_count" in inventory
@@ -311,6 +312,83 @@ def test_table_inventory_match_score_evidence() -> None:
     assert "match_score" in table
     assert table["match_score"]["decision"] in {"matched", "continuation"}
     assert table["match_score"]["evidence"]
+
+
+def test_table_matching_can_hold_when_caption_and_asset_conflict() -> None:
+    from paperforge.worker.ocr_tables import build_table_inventory
+
+    structured_blocks = [
+        {
+            "paper_id": "K001",
+            "page": 12,
+            "block_id": "p12_b1",
+            "zone": "display_zone",
+            "style_family": "table_caption_like",
+            "text": "Table 2.",
+            "marker_signature": {"type": "table_number", "number": 2},
+            "bbox": [50, 50, 300, 90],
+            "page_width": 1200,
+            "page_height": 1600,
+        },
+        {
+            "paper_id": "K001",
+            "page": 12,
+            "block_id": "p12_b2",
+            "zone": "display_zone",
+            "style_family": "unknown_like",
+            "text": "",
+            "marker_signature": {"type": "none"},
+            "raw_label": "table",
+            "bbox": [50, 120, 900, 500],
+            "page_width": 1200,
+            "page_height": 1600,
+        },
+    ]
+
+    inv = build_table_inventory(structured_blocks)
+
+    assert inv["held_tables"]
+    assert inv["tables"] == []
+    held = inv["held_tables"][0]
+    assert held["hold_reason"] == "insufficient_caption_evidence"
+    assert held["caption_block_id"] == "p12_b1"
+
+
+def test_validation_first_table_candidate_with_asset_can_still_match() -> None:
+    from paperforge.worker.ocr_tables import build_table_inventory
+
+    structured_blocks = [
+        {
+            "paper_id": "K001",
+            "page": 7,
+            "block_id": "p7_b1",
+            "zone": "display_zone",
+            "style_family": "table_caption_like",
+            "text": "Table 3. Cell counts across conditions",
+            "marker_signature": {"type": "table_number", "number": 3},
+            "bbox": [100, 100, 700, 140],
+            "page_width": 1200,
+            "page_height": 1600,
+        },
+        {
+            "paper_id": "K001",
+            "page": 7,
+            "block_id": "p7_b2",
+            "role": "table_asset",
+            "raw_label": "table",
+            "text": "",
+            "bbox": [100, 160, 700, 520],
+            "page_width": 1200,
+            "page_height": 1600,
+        },
+    ]
+
+    inv = build_table_inventory(structured_blocks)
+
+    assert inv["held_tables"] == []
+    assert len(inv["tables"]) == 1
+    assert inv["tables"][0]["has_asset"] is True
+    assert inv["tables"][0]["match_status"] == "matched"
 
 
 def test_table_continuation_match_score_evidence() -> None:
