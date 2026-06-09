@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+from paperforge.worker.ocr_signatures import build_block_signatures
 from paperforge.worker.ocr_roles import assign_block_role
 
 _CANDIDATE_ROLES = frozenset({
@@ -45,6 +46,9 @@ def build_structured_blocks(
                 }
             )
         for i, block in enumerate(raw_page_blocks):
+            # Structural signatures: observation-first, before any semantic role
+            sig_result = build_block_signatures(block)
+
             role_input = page_as_role_input[i]
             role = assign_block_role(
                 role_input,
@@ -72,6 +76,10 @@ def build_structured_blocks(
                 "role_confidence": role.confidence,
                 "evidence": role.evidence,
                 "span_metadata": block.get("span_metadata"),
+                "raw_observation": sig_result["raw_observation"],
+                "marker_signature": sig_result["marker_signature"],
+                "layout_signature": sig_result["layout_signature"],
+                "span_signature": sig_result["span_signature"],
                 "_in_visual_container": block.get("_in_visual_container", None),
                 "_container_bbox": block.get("_container_bbox", None),
                 "_container_text": block.get("_container_text", None),
@@ -89,6 +97,7 @@ def build_structured_blocks(
                 confidence=row.get("role_confidence"),
                 evidence=row.get("evidence", []),
             )
+
             rows.append(row)
 
     # Suppress entire pre-proof page: if page 1 contains a pre-proof noise marker,
