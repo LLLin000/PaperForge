@@ -5,7 +5,10 @@ import re
 from collections import namedtuple
 from dataclasses import dataclass, field
 
-from paperforge.worker.ocr_families import discover_reference_family_anchor
+from paperforge.worker.ocr_families import (
+    discover_body_family_anchor,
+    discover_reference_family_anchor,
+)
 from paperforge.worker.ocr_decisions import record_decision
 from paperforge.worker.ocr_roles import (
     _BACKMATTER_TITLE_DENY_LIST,
@@ -87,6 +90,7 @@ class DocumentStructure:
     page_layouts: dict[int, PageLayoutProfile] | None = None
     tail_reading_order: list[dict] | None = None
     reference_zones: list[dict] | None = None
+    region_bus: dict | None = None
     span_coverage: dict | None = None
     layout_audit: dict | None = None
     tail_boundary_score: dict = field(default_factory=dict)
@@ -349,6 +353,275 @@ def _block_y_top(block: dict) -> float:
 def _block_y_bottom(block: dict) -> float:
     bbox = _block_bbox(block)
     return bbox[3] if bbox else 0.0
+
+
+_REFERENCE_ZONE_MARKER_TYPES = {
+    "reference_numeric_bracket",
+    "reference_numeric_dot",
+    "reference_numeric_parenthesis",
+    "reference_pattern",
+    "citation_line",
+}
+
+_REFERENCE_ZONE_HEADING_TEXTS = {"references", "bibliography"}
+
+_TAIL_NONREF_HEADING_DENY_TYPES = {
+    "reference_numeric_bracket",
+    "reference_numeric_dot",
+    "reference_numeric_parenthesis",
+    "reference_pattern",
+    "citation_line",
+    "preproof_marker",
+}
+
+
+def _make_zone(status: str, block_ids: list[str], **extra: object) -> dict:
+    zone = {"status": status, "block_ids": block_ids}
+    zone.update(extra)
+    return zone
+
+
+def _canonical_section_text(block: dict) -> str:
+    return _block_text(block).strip().lower()
+
+
+def _is_reference_heading_candidate(block: dict) -> bool:
+    marker_type = ((block.get("marker_signature") or {}).get("type") or "none")
+    if marker_type != "canonical_section_name":
+        return False
+    return _canonical_section_text(block) in _REFERENCE_ZONE_HEADING_TEXTS
+
+
+def _is_reference_item_candidate(block: dict) -> bool:
+    marker_type = ((block.get("marker_signature") or {}).get("type") or "none")
+    return marker_type in _REFERENCE_ZONE_MARKER_TYPES
+
+
+def _looks_like_short_heading_text(text: str) -> bool:
+    if not text:
+        return False
+    words = [token for token in text.split() if token]
+    if not words or len(words) > 8:
+        return False
+    if len(text) > 80:
+        return False
+    return text[:1].isupper() or text.isupper()
+
+
+def _is_tail_nonref_heading_candidate(block: dict, body_anchor: dict | None = None) -> bool:
+    marker_type = ((block.get("marker_signature") or {}).get("type") or "none")
+    if marker_type in _TAIL_NONREF_HEADING_DENY_TYPES:
+        return False
+    text = _canonical_section_text(block)
+    if not text or text in _REFERENCE_ZONE_HEADING_TEXTS:
+        return False
+
+    score = 0
+    if marker_type == "canonical_section_name":
+        score += 2
+
+    if _looks_like_short_heading_text(_block_text(block).strip()):
+        score += 1
+
+    span_signature = block.get("span_signature") or {}
+    layout_signature = block.get("layout_signature") or {}
+    font_size = span_signature.get("font_size_median")
+    if font_size is not None and font_size >= 10.0:
+        score += 1
+    if span_signature.get("is_bold"):
+        score += 1
+
+    body_anchor = body_anchor or {}
+    body_font_size = body_anchor.get("font_size_bucket")
+    if body_font_size is not None and font_size is not None and font_size >= float(body_font_size) + 0.5:
+        score += 1
+
+    body_width = body_anchor.get("width_bucket")
+    block_width = layout_signature.get("width")
+    if body_width is not None and block_width is not None and block_width <= float(body_width) - 25:
+        score += 1
+
+    body_font_family = body_anchor.get("font_family_norm")
+    block_font_family = span_signature.get("font_family_norm")
+    if body_font_family and block_font_family and body_font_family != block_font_family:
+        score += 1
+
+    return score >= 2
+
+
+def _infer_tail_hold_band(
+    blocks: list[dict],
+    body_sample_pages: list[int],
+    first_reference_page: int | None,
+    tail_spread: TailBoundary | None,
+    body_anchor: dict | None = None,
+) -> tuple[int | None, int | None]:
+    if tail_spread is not None and tail_spread.spread_start is not None and tail_spread.spread_end is not None:
+        start_page = tail_spread.spread_start
+        end_page = tail_spread.spread_end
+        if first_reference_page is not None:
+            end_page = min(end_page, first_reference_page - 1)
+        if end_page < start_page:
+            return None, None
+        return start_page, end_page
+
+    if first_reference_page is None:
+        return None, None
+
+    body_guard_page = max(body_sample_pages) if body_sample_pages else 0
+    candidate_pages = sorted(
+        {
+            int(block.get("page", 0) or 0)
+            for block in blocks
+            if body_guard_page < int(block.get("page", 0) or 0) < first_reference_page
+            and _is_tail_nonref_heading_candidate(block, body_anchor=body_anchor)
+        }
+    )
+    if not candidate_pages:
+        return None, None
+    return candidate_pages[0], first_reference_page - 1
+
+
+def _page_band(start_page: int | None, end_page: int | None) -> dict[str, int] | None:
+    if start_page is None or end_page is None:
+        return None
+    return {"start_page": start_page, "end_page": end_page}
+
+
+def infer_zones(
+    blocks: list[dict],
+    anchors: dict[str, dict] | None,
+    tail_spread: TailBoundary | None = None,
+) -> dict[str, dict]:
+    """Infer an explicit zone bus from anchors and coarse boundary bands."""
+    anchors = anchors or {}
+    body_anchor = anchors.get("body_family_anchor") or {}
+    reference_anchor = anchors.get("reference_family_anchor") or {}
+    pages = sorted({int(block.get("page", 0) or 0) for block in blocks if int(block.get("page", 0) or 0) > 0})
+    max_page = pages[-1] if pages else None
+
+    body_sample_pages = sorted(int(page) for page in body_anchor.get("sample_pages") or [] if int(page) > 0)
+    body_anchor_ok = body_anchor.get("status") == "ACCEPT" and bool(body_sample_pages)
+
+    reference_heading_blocks = [block for block in blocks if _is_reference_heading_candidate(block)]
+    reference_item_blocks = [block for block in blocks if _is_reference_item_candidate(block)]
+
+    first_reference_page: int | None = None
+    if reference_anchor.get("status") == "ACCEPT" and reference_item_blocks:
+        heading_pages = [int(block.get("page", 0) or 0) for block in reference_heading_blocks]
+        item_pages = [int(block.get("page", 0) or 0) for block in reference_item_blocks]
+        body_guard_page = max(body_sample_pages) if body_sample_pages else 0
+        eligible_heading_pages = [page for page in heading_pages if page >= body_guard_page]
+        eligible_item_pages = [page for page in item_pages if page >= body_guard_page]
+        if eligible_heading_pages:
+            first_reference_page = min(eligible_heading_pages)
+        elif eligible_item_pages:
+            first_reference_page = min(eligible_item_pages)
+
+    reference_block_ids = [
+        str(block.get("block_id"))
+        for block in reference_item_blocks
+        if first_reference_page is not None
+        and int(block.get("page", 0) or 0) >= first_reference_page
+        and block.get("block_id")
+    ]
+
+    preproof_blocks = [
+        block for block in blocks if ((block.get("marker_signature") or {}).get("type") or "none") == "preproof_marker"
+    ]
+    preproof_pages = sorted({int(block.get("page", 0) or 0) for block in preproof_blocks if int(block.get("page", 0) or 0) > 0})
+
+    display_block_ids = [
+        str(block.get("block_id"))
+        for block in blocks
+        if ((block.get("marker_signature") or {}).get("type") or "none") in {"figure_number", "table_number", "panel_label"}
+        and block.get("block_id")
+    ]
+
+    frontmatter_main_ids = [
+        str(block.get("block_id"))
+        for block in blocks
+        if int(block.get("page", 0) or 0) == 1
+        and ((block.get("marker_signature") or {}).get("type") or "none") != "preproof_marker"
+        and not _is_reference_item_candidate(block)
+        and block.get("block_id")
+    ]
+
+    tail_hold_start, tail_hold_end = _infer_tail_hold_band(
+        blocks,
+        body_sample_pages=body_sample_pages,
+        first_reference_page=first_reference_page,
+        tail_spread=tail_spread,
+        body_anchor=body_anchor,
+    )
+
+    body_end_page = first_reference_page - 1 if first_reference_page is not None else max_page
+    if tail_hold_start is not None:
+        candidate_body_end = tail_hold_start - 1
+        if body_end_page is None or candidate_body_end < body_end_page:
+            body_end_page = candidate_body_end
+
+    body_block_ids = [
+        str(block.get("block_id"))
+        for block in blocks
+        if body_anchor_ok
+        and int(block.get("page", 0) or 0) > 1
+        and (body_end_page is None or int(block.get("page", 0) or 0) <= body_end_page)
+        and not _is_reference_item_candidate(block)
+        and block.get("block_id")
+    ]
+
+    tail_nonref_hold_ids = [
+        str(block.get("block_id"))
+        for block in blocks
+        if tail_hold_start is not None
+        and tail_hold_end is not None
+        and tail_hold_start <= int(block.get("page", 0) or 0) <= tail_hold_end
+        and not _is_reference_item_candidate(block)
+        and not _is_reference_heading_candidate(block)
+        and block.get("block_id")
+    ]
+
+    reference_end_page = max(
+        [int(block.get("page", 0) or 0) for block in reference_item_blocks if int(block.get("page", 0) or 0) > 0],
+        default=first_reference_page,
+    )
+
+    return {
+        "frontmatter_main_zone": _make_zone(
+            "ACCEPT" if frontmatter_main_ids else "HOLD",
+            frontmatter_main_ids,
+            boundary_band=_page_band(1, 1) if frontmatter_main_ids else None,
+        ),
+        "frontmatter_side_zone": _make_zone("HOLD", [], boundary_band=None),
+        "body_zone": _make_zone(
+            "ACCEPT" if body_block_ids else "HOLD",
+            body_block_ids,
+            anchor_family="body_family_anchor" if body_anchor_ok else None,
+            boundary_band=_page_band(min(body_sample_pages) if body_sample_pages else None, body_end_page),
+        ),
+        "reference_zone": _make_zone(
+            "ACCEPT" if reference_block_ids else ("HOLD" if reference_anchor.get("status") == "ACCEPT" else "REJECT"),
+            reference_block_ids,
+            anchor_family="reference_family_anchor" if reference_anchor.get("status") == "ACCEPT" else None,
+            boundary_band=_page_band(first_reference_page, reference_end_page),
+        ),
+        "display_zone": _make_zone(
+            "ACCEPT" if display_block_ids else "HOLD",
+            display_block_ids,
+            boundary_band=None,
+        ),
+        "tail_nonref_hold_zone": _make_zone(
+            "ACCEPT" if tail_nonref_hold_ids else "HOLD",
+            tail_nonref_hold_ids,
+            boundary_band=_page_band(tail_hold_start, tail_hold_end),
+        ),
+        "preproof_cover_zone": _make_zone(
+            "ACCEPT" if preproof_pages else "HOLD",
+            [str(block.get("block_id")) for block in preproof_blocks if block.get("block_id")],
+            boundary_band=_page_band(preproof_pages[0], preproof_pages[-1]) if preproof_pages else None,
+        ),
+    }
 
 
 def _classify_segment_hint(blocks: list[dict]) -> str:
@@ -1345,7 +1618,15 @@ def analyze_document_structure(blocks: list[dict]) -> DocumentStructure:
     etc. internally. Returns a DocumentStructure with all boundary info.
     """
     page_layouts = _build_page_layout_profiles(blocks)
+    body_family_anchor = discover_body_family_anchor(blocks)
     reference_family_anchor = discover_reference_family_anchor(blocks)
+    region_bus = infer_zones(
+        blocks,
+        {
+            "body_family_anchor": body_family_anchor,
+            "reference_family_anchor": reference_family_anchor,
+        },
+    )
     tail_spread = _reconcile_tail_spread(blocks, page_layouts)
     if tail_spread is not None:
         backmatter_form = _classify_backmatter_form(tail_spread, blocks)
@@ -1365,8 +1646,10 @@ def analyze_document_structure(blocks: list[dict]) -> DocumentStructure:
         spread_start=tail_spread.spread_start if tail_spread else None,
         spread_end=tail_spread.spread_end if tail_spread else None,
         backmatter_form=backmatter_form,
+        body_family_anchor=body_family_anchor,
         reference_family_anchor=reference_family_anchor,
         page_layouts=page_layouts,
+        region_bus=region_bus,
     )
 
     reading_segments = _build_tail_reading_order(blocks, page_layouts)
@@ -2793,7 +3076,15 @@ def normalize_document_structure(blocks: list[dict]) -> tuple[DocumentStructure,
     - tail spread ownership assignment
     """
     page_layouts = _build_page_layout_profiles(blocks)
+    body_family_anchor = discover_body_family_anchor(blocks)
     reference_family_anchor = discover_reference_family_anchor(blocks)
+    region_bus = infer_zones(
+        blocks,
+        {
+            "body_family_anchor": body_family_anchor,
+            "reference_family_anchor": reference_family_anchor,
+        },
+    )
 
     tail_spread = _reconcile_tail_spread(blocks, page_layouts)
     if tail_spread is not None:
@@ -2814,8 +3105,10 @@ def normalize_document_structure(blocks: list[dict]) -> tuple[DocumentStructure,
         spread_start=tail_spread.spread_start if tail_spread else None,
         spread_end=tail_spread.spread_end if tail_spread else None,
         backmatter_form=backmatter_form,
+        body_family_anchor=body_family_anchor,
         reference_family_anchor=reference_family_anchor,
         page_layouts=page_layouts,
+        region_bus=region_bus,
     )
 
     header_band, footer_band = _estimate_noise_bands(blocks)

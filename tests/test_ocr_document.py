@@ -203,6 +203,268 @@ def test_normalize_document_structure_keeps_reference_family_anchor_anchor_first
     assert normalized_blocks[4]["role"] == "body_paragraph"
 
 
+def test_reference_zone_is_inferred_from_reference_family_anchor_not_preexisting_roles() -> None:
+    from paperforge.worker.ocr_document import infer_zones
+
+    blocks = [
+        {
+            "block_id": "p1_b1",
+            "page": 1,
+            "text": "Abstract",
+            "marker_signature": {"type": "canonical_section_name"},
+            "span_signature": {"font_size_median": 10.0},
+            "layout_signature": {"width": 120},
+        },
+        {
+            "block_id": "p4_b1",
+            "page": 4,
+            "text": "Body text",
+            "marker_signature": {"type": "none"},
+            "span_signature": {"font_size_median": 9.0},
+            "layout_signature": {"width": 260},
+        },
+        {
+            "block_id": "p8_b1",
+            "page": 8,
+            "text": "References",
+            "marker_signature": {"type": "canonical_section_name"},
+            "span_signature": {"font_size_median": 10.0},
+            "layout_signature": {"width": 120},
+        },
+        {
+            "block_id": "p8_b2",
+            "page": 8,
+            "text": "[1] Example reference",
+            "marker_signature": {"type": "reference_numeric_bracket", "number": 1},
+            "span_signature": {"font_size_median": 8.5},
+            "layout_signature": {"width": 250},
+        },
+    ]
+    anchors = {
+        "body_family_anchor": {"status": "ACCEPT", "family_name": "body_family", "sample_pages": [4]},
+        "reference_family_anchor": {"status": "ACCEPT", "family_name": "reference_family", "item_count": 1},
+    }
+
+    zones = infer_zones(blocks, anchors)
+
+    assert zones["reference_zone"]["status"] == "ACCEPT"
+    assert "p8_b2" in zones["reference_zone"]["block_ids"]
+
+
+def test_analyze_document_structure_persists_region_bus_in_dataclass_serialization() -> None:
+    import dataclasses
+
+    from paperforge.worker.ocr_document import analyze_document_structure
+
+    blocks = [
+        {
+            "block_id": "p1_b1",
+            "page": 1,
+            "role": "body_paragraph",
+            "text": "Title",
+            "marker_signature": {"type": "none"},
+            "span_signature": {"font_size_median": 16.0},
+            "layout_signature": {"width": 420},
+        },
+        {
+            "block_id": "p3_b1",
+            "page": 3,
+            "role": "body_paragraph",
+            "text": "This is a sufficiently long body paragraph with enough tokens to behave like stable body content.",
+            "marker_signature": {"type": "none"},
+            "span_signature": {"font_size_median": 9.5, "font_family_norm": "Times"},
+            "layout_signature": {"width": 260, "x_center": 240},
+        },
+        {
+            "block_id": "p6_b1",
+            "page": 6,
+            "role": "reference_heading",
+            "text": "References",
+            "marker_signature": {"type": "canonical_section_name"},
+            "span_signature": {"font_size_median": 10.0},
+            "layout_signature": {"width": 120},
+        },
+        {
+            "block_id": "p6_b2",
+            "page": 6,
+            "role": "body_paragraph",
+            "text": "[1] Example reference",
+            "marker_signature": {"type": "reference_numeric_bracket", "number": 1},
+            "span_signature": {"font_size_median": 8.5, "font_family_norm": "Times"},
+            "layout_signature": {"width": 250, "x_center": 240},
+        },
+        {
+            "block_id": "p6_b3",
+            "page": 6,
+            "role": "body_paragraph",
+            "text": "[2] Another example reference",
+            "marker_signature": {"type": "reference_numeric_bracket", "number": 2},
+            "span_signature": {"font_size_median": 8.5, "font_family_norm": "Times"},
+            "layout_signature": {"width": 252, "x_center": 242},
+        },
+    ]
+
+    doc = analyze_document_structure(blocks)
+    data = dataclasses.asdict(doc)
+
+    assert "region_bus" in data
+    assert data["region_bus"]["reference_zone"]["status"] == "ACCEPT"
+    assert "p6_b2" in data["region_bus"]["reference_zone"]["block_ids"]
+    assert "p6_b3" in data["region_bus"]["reference_zone"]["block_ids"]
+
+
+def test_infer_zones_keeps_pre_reference_tail_out_of_body_zone() -> None:
+    from paperforge.worker.ocr_document import TailBoundary, infer_zones
+
+    blocks = [
+        {
+            "block_id": "p1_b1",
+            "page": 1,
+            "text": "Title",
+            "marker_signature": {"type": "none"},
+            "span_signature": {"font_size_median": 16.0},
+            "layout_signature": {"width": 420},
+        },
+        {
+            "block_id": "p4_b1",
+            "page": 4,
+            "text": "Body text",
+            "marker_signature": {"type": "none"},
+            "span_signature": {"font_size_median": 9.0},
+            "layout_signature": {"width": 260, "x_center": 240},
+        },
+        {
+            "block_id": "p7_b1",
+            "page": 7,
+            "text": "Acknowledgments",
+            "marker_signature": {"type": "canonical_section_name"},
+            "span_signature": {"font_size_median": 10.0},
+            "layout_signature": {"width": 180, "x_center": 240},
+        },
+        {
+            "block_id": "p7_b2",
+            "page": 7,
+            "text": "We thank the core facility.",
+            "marker_signature": {"type": "none"},
+            "span_signature": {"font_size_median": 8.8},
+            "layout_signature": {"width": 250, "x_center": 240},
+        },
+        {
+            "block_id": "p8_b1",
+            "page": 8,
+            "text": "References",
+            "marker_signature": {"type": "canonical_section_name"},
+            "span_signature": {"font_size_median": 10.0},
+            "layout_signature": {"width": 120, "x_center": 240},
+        },
+        {
+            "block_id": "p8_b2",
+            "page": 8,
+            "text": "[1] Example reference",
+            "marker_signature": {"type": "reference_numeric_bracket", "number": 1},
+            "span_signature": {"font_size_median": 8.5},
+            "layout_signature": {"width": 250, "x_center": 240},
+        },
+    ]
+    anchors = {
+        "body_family_anchor": {"status": "ACCEPT", "family_name": "body_family", "sample_pages": [4]},
+        "reference_family_anchor": {"status": "ACCEPT", "family_name": "reference_family", "item_count": 1},
+    }
+    tail_spread = TailBoundary(
+        body_end_page=4,
+        backmatter_start=7,
+        references_start=8,
+        spread_start=7,
+        spread_end=8,
+        is_clean_separated=True,
+        reason="test",
+    )
+
+    zones = infer_zones(blocks, anchors, tail_spread=tail_spread)
+
+    assert "p7_b2" in zones["tail_nonref_hold_zone"]["block_ids"]
+    assert "p7_b2" not in zones["body_zone"]["block_ids"]
+
+
+def test_infer_zones_inferrs_tail_nonref_hold_without_pre_labeled_tail_roles() -> None:
+    from paperforge.worker.ocr_document import infer_zones
+
+    blocks = [
+        {
+            "block_id": "p1_b1",
+            "page": 1,
+            "role": "body_paragraph",
+            "text": "Title",
+            "marker_signature": {"type": "none"},
+            "span_signature": {"font_size_median": 16.0},
+            "layout_signature": {"width": 420},
+        },
+        {
+            "block_id": "p4_b1",
+            "page": 4,
+            "role": "body_paragraph",
+            "text": "This is a sufficiently long body paragraph with enough tokens to establish body-family evidence.",
+            "marker_signature": {"type": "none"},
+            "span_signature": {"font_size_median": 9.0, "font_family_norm": "Times"},
+            "layout_signature": {"width": 260, "x_center": 240},
+        },
+        {
+            "block_id": "p7_b1",
+            "page": 7,
+            "role": "body_paragraph",
+            "text": "Acknowledgments",
+            "marker_signature": {"type": "none"},
+            "span_signature": {"font_size_median": 10.8, "font_family_norm": "Helvetica", "is_bold": True},
+            "layout_signature": {"width": 180, "x_center": 240},
+        },
+        {
+            "block_id": "p7_b2",
+            "page": 7,
+            "role": "body_paragraph",
+            "text": "We thank the core facility.",
+            "marker_signature": {"type": "none"},
+            "span_signature": {"font_size_median": 8.8, "font_family_norm": "Times"},
+            "layout_signature": {"width": 250, "x_center": 240},
+        },
+        {
+            "block_id": "p8_b1",
+            "page": 8,
+            "role": "body_paragraph",
+            "text": "References",
+            "marker_signature": {"type": "canonical_section_name"},
+            "span_signature": {"font_size_median": 10.0, "font_family_norm": "Helvetica", "is_bold": True},
+            "layout_signature": {"width": 120, "x_center": 240},
+        },
+        {
+            "block_id": "p8_b2",
+            "page": 8,
+            "role": "body_paragraph",
+            "text": "[1] Example reference",
+            "marker_signature": {"type": "reference_numeric_bracket", "number": 1},
+            "span_signature": {"font_size_median": 8.5, "font_family_norm": "Times"},
+            "layout_signature": {"width": 250, "x_center": 240},
+        },
+        {
+            "block_id": "p8_b3",
+            "page": 8,
+            "role": "body_paragraph",
+            "text": "[2] Another example reference",
+            "marker_signature": {"type": "reference_numeric_bracket", "number": 2},
+            "span_signature": {"font_size_median": 8.5, "font_family_norm": "Times"},
+            "layout_signature": {"width": 252, "x_center": 242},
+        },
+    ]
+    anchors = {
+        "body_family_anchor": {"status": "ACCEPT", "family_name": "body_family", "sample_pages": [4]},
+        "reference_family_anchor": {"status": "ACCEPT", "family_name": "reference_family", "item_count": 2},
+    }
+
+    zones = infer_zones(blocks, anchors)
+
+    assert "p7_b2" in zones["tail_nonref_hold_zone"]["block_ids"]
+    assert "p7_b2" not in zones["body_zone"]["block_ids"]
+
+
 def test_normalize_flat_backmatter_unifies_heading_family() -> None:
     from paperforge.worker.ocr_document import (
         TailBoundary,
