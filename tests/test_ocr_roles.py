@@ -1353,3 +1353,68 @@ def test_pipeline_does_not_commit_final_semantic_role_before_zone_and_family_par
     for row in rows:
         assert "seed_role" in row, f"block {row['block_id']} missing seed_role"
         assert row["seed_role"] != "unassigned", f"seed_role should never be 'unassigned', got {row['seed_role']}"
+
+
+def test_body_paragraph_overridden_to_reference_item_when_style_family_is_reference_like():
+    from paperforge.worker.ocr_roles import resolve_final_role
+
+    block = {
+        "role": "body_paragraph",
+        "role_confidence": 0.6,
+        "style_family": "reference_like",
+        "style_family_authority": "reference_marker",
+        "zone": "body_zone",
+        "marker_signature": {"type": "reference_pattern"},
+    }
+    result = resolve_final_role(block)
+    assert result.role == "reference_item"
+    assert result.confidence >= 0.78
+
+
+def test_body_paragraph_overridden_to_figure_caption_when_style_family_is_legend_like():
+    from paperforge.worker.ocr_roles import resolve_final_role
+
+    block = {
+        "role": "body_paragraph",
+        "role_confidence": 0.6,
+        "style_family": "legend_like",
+        "style_family_authority": "figure_marker",
+        "zone": "body_zone",
+        "marker_signature": {"type": "figure_number"},
+        "text": "Figure 3.",
+    }
+    result = resolve_final_role(block)
+    assert result.role == "figure_caption_candidate"
+    assert result.confidence >= 0.78
+
+
+def test_body_paragraph_overridden_to_table_caption_when_style_family_is_table_caption_like():
+    from paperforge.worker.ocr_roles import resolve_final_role
+
+    block = {
+        "role": "body_paragraph",
+        "role_confidence": 0.6,
+        "style_family": "table_caption_like",
+        "style_family_authority": "table_marker",
+        "zone": "body_zone",
+        "marker_signature": {"type": "table_number"},
+        "text": "Table 2.",
+    }
+    result = resolve_final_role(block)
+    assert result.role == "table_caption_candidate"
+    assert result.confidence >= 0.78
+
+
+def test_body_paragraph_survives_when_style_family_authority_is_weak():
+    from paperforge.worker.ocr_roles import resolve_final_role
+
+    block = {
+        "role": "body_paragraph",
+        "role_confidence": 0.6,
+        "style_family": "reference_like",
+        "style_family_authority": "fallback",
+        "zone": "body_zone",
+        "marker_signature": {"type": "none"},
+    }
+    result = resolve_final_role(block)
+    assert result.role == "body_paragraph"

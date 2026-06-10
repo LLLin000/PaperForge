@@ -248,8 +248,9 @@ def test_normalize_document_structure_keeps_reference_family_anchor_anchor_first
 
     assert doc.reference_family_anchor is not None
     assert doc.reference_family_anchor["status"] == "ACCEPT"
-    assert normalized_blocks[3]["role"] == "body_paragraph"
-    assert normalized_blocks[4]["role"] == "body_paragraph"
+    # Non-body family override: reference_like + reference_family_anchor → reference_item
+    assert normalized_blocks[3]["role"] == "reference_item"
+    assert normalized_blocks[4]["role"] == "reference_item"
 
 
 def test_normalize_document_structure_wires_style_family_artifacts_into_blocks() -> None:
