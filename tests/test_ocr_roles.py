@@ -1128,9 +1128,11 @@ def test_build_structured_blocks_applies_late_role_resolution(monkeypatch) -> No
 
     rows, _ = ocr_blocks.build_structured_blocks(raw_blocks)
 
-    assert rows[0]["role"] == "figure_caption_candidate"
+    # seed_role is set eagerly from assign_block_role; final role stays unassigned
+    # because resolve_final_role is deferred to normalize_document_structure.
+    assert rows[0]["seed_role"] == "body_paragraph"
+    assert rows[0]["role"] == "unassigned"
     assert rows[0]["marker_signature"]["type"] == "figure_number"
-    assert any(decision.get("stage") == "resolve_final_role" for decision in rows[0].get("_decision_log", []))
 
 
 def test_build_structured_blocks_does_not_promote_when_anchor_gate_is_closed(monkeypatch) -> None:
@@ -1191,7 +1193,9 @@ def test_build_structured_blocks_does_not_promote_when_anchor_gate_is_closed(mon
 
     rows, _ = ocr_blocks.build_structured_blocks(raw_blocks)
 
-    assert rows[0]["role"] == "body_paragraph"
+    # seed_role is set eagerly; final role stays unassigned (resolution deferred)
+    assert rows[0]["seed_role"] == "body_paragraph"
+    assert rows[0]["role"] == "unassigned"
 
 
 def test_resolve_final_role_treats_unassigned_as_seed_role_fallback() -> None:
