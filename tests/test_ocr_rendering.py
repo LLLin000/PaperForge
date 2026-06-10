@@ -2170,3 +2170,67 @@ def test_unresolved_cluster_link_with_missing_id_is_defensive() -> None:
 
     assert "![[render/figures/.md]]" not in md
     assert "![[render/figures/unresolved_cluster_001.md]]" in md
+
+
+def test_table_caption_in_display_zone_not_rendered_as_heading() -> None:
+    """Table captions in display_zone or with table_caption_like family should not
+    be rendered as ### headings."""
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+
+    structured_blocks = [
+        {
+            "role": "table_caption",
+            "text": "Table 1. Patient demographics.",
+            "render_default": True,
+            "page": 2,
+            "zone": "display_zone",
+            "style_family": "table_caption_like",
+        },
+        {
+            "role": "body_paragraph",
+            "text": "Body text after table.",
+            "render_default": True,
+            "page": 2,
+        },
+    ]
+
+    output = render_fulltext_markdown(
+        structured_blocks=structured_blocks,
+        resolved_metadata={},
+        figure_inventory={},
+        table_inventory={"tables": [{"table_id": "tbl_001", "has_asset": True}]},
+    )
+
+    assert "### Table 1" not in output
+    assert "> **Table 1. Patient demographics.**" in output
+
+
+def test_frontmatter_side_zone_not_rendered_as_heading() -> None:
+    """Blocks in frontmatter_side_zone should not appear in rendered output."""
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+
+    structured_blocks = [
+        {
+            "role": "frontmatter_noise",
+            "text": "Published online: January 1, 2025",
+            "render_default": True,
+            "page": 1,
+            "zone": "frontmatter_side_zone",
+        },
+        {
+            "role": "body_paragraph",
+            "text": "Body text.",
+            "render_default": True,
+            "page": 1,
+        },
+    ]
+
+    output = render_fulltext_markdown(
+        structured_blocks=structured_blocks,
+        resolved_metadata={},
+        figure_inventory={},
+        table_inventory={},
+    )
+
+    assert "Published online" not in output
+    assert "Body text." in output
