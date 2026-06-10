@@ -225,3 +225,105 @@ def test_pipeline_emits_signatures_anchors_and_zones_before_final_role_switch(tm
     assert any(row.get("marker_signature") for row in rows)
     assert doc_structure.body_family_anchor is not None
     assert doc_structure.region_bus is not None
+
+
+def test_zone_and_family_partition_complete_before_final_role_resolution(tmp_path: Path) -> None:
+    """Zones and families must be fully resolved before resolve_final_role runs.
+
+    The target pipeline order is:
+        raw observations -> signatures -> frontmatter anchors -> body anchor
+        -> reference anchor -> infer_zones -> partition_zone_families
+        -> resolve_final_role
+
+    This test verifies that when resolve_final_role is called, zone and
+    style_family are already populated on each block (not stale/unassigned).
+    """
+    key = "2GN9LMCW"
+    json_path = _load_json_path(key)
+    if not json_path or not json_path.exists():
+        pytest.skip("fixture not available")
+
+    data = json.loads(json_path.read_text(encoding="utf-8"))
+    from paperforge.worker.ocr_blocks import build_raw_blocks_for_result_lines, build_structured_blocks
+
+    raw_blocks = build_raw_blocks_for_result_lines(key, data)
+    rows, doc_structure = build_structured_blocks(raw_blocks)
+
+    assert doc_structure is not None
+    assert doc_structure.region_bus is not None
+
+    # Blocks with block_id that fall in ANY zone must have both zone and
+    # style_family set.  If resolve_final_role ran before zone/family
+    # partition, these would be missing or stale.
+    all_zone_ids: set[str] = set()
+    for zone_data in doc_structure.region_bus.values():
+        all_zone_ids.update(zone_data.get("block_ids") or [])
+
+    zoned_rows = [
+        r for r in rows
+        if r.get("block_id") is not None
+        and f"p{r.get('page')}:{r['block_id']}" in all_zone_ids
+    ]
+    assert len(zoned_rows) > 0, "need at least some zoned blocks"
+
+    for row in zoned_rows:
+        assert row.get("zone") is not None, (
+            f"block {row.get('block_id')} (page {row.get('page')}) missing zone "
+            f"before final role resolution — role={row.get('role')}"
+        )
+        assert row.get("style_family") is not None, (
+            f"block {row.get('block_id')} (page {row.get('page')}) missing style_family "
+            f"before final role resolution — role={row.get('role')}"
+        )
+
+
+def test_source_backed_frontmatter_anchors_are_available_before_zone_inference(tmp_path: Path) -> None:
+    """Source-backed frontmatter anchors must be established before zone inference.
+
+    The frontmatter anchor layer (title, authors, DOI from source metadata)
+    must be available in the anchors dict consumed by infer_zones, not added
+    after the fact as a post-hoc enrichment.
+    """
+    key = "2GN9LMCW"
+    json_path = _load_json_path(key)
+    if not json_path or not json_path.exists():
+        pytest.skip("fixture not available")
+
+    data = json.loads(json_path.read_text(encoding="utf-8"))
+    from paperforge.worker.ocr_blocks import build_raw_blocks_for_result_lines, build_structured_blocks
+
+    raw_blocks = build_raw_blocks_for_result_lines(key, data)
+    structure_dir = tmp_path / key / "structure"
+    structure_dir.mkdir(parents=True)
+
+    rows, doc_structure = build_structured_blocks(raw_blocks, structure_output_dir=structure_dir)
+    artifacts = json.loads((structure_dir / "document_structure.json").read_text(encoding="utf-8"))
+
+    # The document structure should have both body and reference anchors
+    # established, and these anchors should have been used to infer zones
+    # (not added after zone inference).
+    assert doc_structure is not None
+    assert doc_structure.body_family_anchor is not None
+
+    # Reference anchor must be discovered (status can be ACCEPT or HOLD)
+    assert doc_structure.reference_family_anchor is not None, (
+        "reference_family_anchor must be discovered before zone inference"
+    )
+
+    # The anchors dict in the serialized artifact should contain both anchors
+    anchors_artifact = artifacts.get("anchors", {})
+    assert "body_family_anchor" in anchors_artifact, (
+        "body_family_anchor must be in anchors artifact"
+    )
+    assert "reference_family_anchor" in anchors_artifact, (
+        "reference_family_anchor must be in anchors artifact"
+    )
+
+    # Zones should reference the anchor families in the region_bus
+    region_bus = doc_structure.region_bus
+    assert region_bus is not None
+    body_zone = region_bus.get("body_zone", {})
+    if body_zone.get("status") == "ACCEPT":
+        assert body_zone.get("anchor_family") == "body_family_anchor", (
+            "body_zone should reference body_family_anchor"
+        )

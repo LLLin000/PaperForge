@@ -5,12 +5,12 @@ import re
 from collections import namedtuple
 from dataclasses import dataclass, field
 
+from paperforge.worker.ocr_decisions import record_decision
 from paperforge.worker.ocr_families import (
     discover_body_family_anchor,
-    partition_zone_families,
     discover_reference_family_anchor,
+    partition_zone_families,
 )
-from paperforge.worker.ocr_decisions import record_decision
 from paperforge.worker.ocr_roles import (
     _BACKMATTER_TITLE_DENY_LIST,
     _is_near_figure_media,
@@ -3317,9 +3317,10 @@ def normalize_document_structure(blocks: list[dict]) -> tuple[DocumentStructure,
             if resolved.evidence:
                 block.setdefault("evidence", []).extend(resolved.evidence)
 
-    region_bus = infer_zones(blocks, anchor_context)
-    _apply_zone_labels(blocks, region_bus)
-    partition_zone_families(blocks, anchor_context)
+    # Recompute page layouts after role resolution — initial layout may have
+    # underestimated column count because raw OCR labels (text, paragraph_title)
+    # are not layout-eligible, whereas resolved roles (reference_item, body_paragraph) are.
+    page_layouts = _build_page_layout_profiles(blocks)
 
     tail_spread = _reconcile_tail_spread(blocks, page_layouts)
     if tail_spread is not None:
