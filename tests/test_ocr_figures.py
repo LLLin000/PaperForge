@@ -1652,11 +1652,11 @@ def test_completeness_mixed_outcomes_all_accounted() -> None:
             "role": "figure_asset", "text": "",
             "bbox": [50, 50, 550, 400],
         },
-        # Figure 2: no asset on same page -> ambiguous
+        # Figure 5: no asset on same page -> ambiguous
         {
             "paper_id": "K001", "page": 2, "block_id": "p2_b1",
             "role": "figure_caption",
-            "text": "Figure 2. Expression levels without asset.",
+            "text": "Figure 5. Expression levels without asset.",
             "bbox": [50, 700, 550, 750],
         },
         # Non-numbered caption (axis label) -> not counted by completeness
@@ -1714,6 +1714,66 @@ def test_compute_figure_legend_completeness_directly() -> None:
     statuses = {d["block_id"]: d["status"] for d in result["details"]}
     assert statuses["leg_A"] == "matched"
     assert statuses["leg_B"] == "gap"
+
+
+# === strict-layer sequence match promotion (Task 7) ===
+
+
+def test_strict_layer_promotes_contiguous_legends_with_ordered_assets() -> None:
+    """Ambiguous figures with figure numbers adjacent to matched figures
+    are promoted to sequence_match."""
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    blocks = [
+        # Fig 1: legend + asset on page 3 — direct match
+        {"block_id": 10, "role": "figure_caption",
+         "text": "Figure 1. Experimental setup for biomechanical testing.",
+         "page": 3, "bbox": [100, 700, 500, 720],
+         "marker_signature": {"type": "figure_number"},
+         "zone": "body_zone", "style_family": "legend_like"},
+        {"block_id": 11, "role": "figure_asset",
+         "page": 3, "bbox": [100, 400, 500, 680]},
+
+        # Fig 2: legend on page 4, no asset — ambiguous (no_asset_match)
+        {"block_id": 12, "role": "figure_caption",
+         "text": "Figure 2. Histological analysis of tissue sections.",
+         "page": 4, "bbox": [100, 300, 500, 320],
+         "marker_signature": {"type": "figure_number"},
+         "zone": "body_zone", "style_family": "legend_like"},
+
+        # Fig 3: legend + asset on page 5 — direct match
+        {"block_id": 13, "role": "figure_caption",
+         "text": "Figure 3. Gene expression analysis results.",
+         "page": 5, "bbox": [100, 300, 500, 320],
+         "marker_signature": {"type": "figure_number"},
+         "zone": "body_zone", "style_family": "legend_like"},
+        {"block_id": 14, "role": "figure_asset",
+         "page": 5, "bbox": [100, 50, 500, 280]},
+
+        # Body paragraph on page 3
+        {"block_id": 15, "role": "body_paragraph",
+         "text": "Body text here.",
+         "page": 3, "bbox": [100, 750, 500, 770]},
+    ]
+
+    inventory = build_figure_inventory(blocks)
+
+    matched = inventory.get("matched_figures", [])
+    fig_numbers = {mf.get("figure_number") for mf in matched}
+
+    # Fig 2 should be promoted via sequence match (2 is between 1 and 3)
+    assert 2 in fig_numbers, (
+        f"Fig 2 should be promoted to matched via sequence_match. "
+        f"Matched fig nums: {fig_numbers}"
+    )
+    assert 1 in fig_numbers
+    assert 3 in fig_numbers
+
+    # The promoted figure should have strict_status == "sequence_match"
+    fig2 = [mf for mf in matched if mf.get("figure_number") == 2][0]
+    assert fig2.get("strict_status") == "sequence_match", (
+        "Promoted Fig 2 must have strict_status 'sequence_match'"
+    )
 
 
 def test_compute_figure_legend_completeness_skips_body_mentions() -> None:

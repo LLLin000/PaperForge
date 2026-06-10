@@ -738,6 +738,8 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
         "official_figure_count": len(matched_figures),
     }
 
+    inventory = _promote_sequence_matches(inventory, structured_blocks)
+
     inventory["figure_legend_completeness"] = compute_figure_legend_completeness(
         structured_blocks, inventory,
     )
@@ -866,6 +868,77 @@ def compute_figure_legend_completeness(
         "gap_count": gap_count,
         "details": details,
     }
+
+
+def _promote_sequence_matches(figure_inventory: dict, blocks: list[dict]) -> dict:
+    """Promote eligible ambiguous figures to sequence_match when
+    contiguous figure numbers suggest reliable ordering.
+
+    An ambiguous figure with a figure number adjacent to an already-matched
+    figure number is promoted to ``matched_figures`` with
+    ``strict_status="sequence_match"``.  This is a strict-layer operation;
+    the reader layer projects the resulting status.
+
+    Promotion preconditions (spec):
+    1. Contiguous figure numbers (no gaps in numbered sequence)
+    2. Compatible cluster/media count per figure
+    3. Monotonic page/order alignment
+    4. No contradiction with existing exact matches
+
+    For this minimal implementation, the simple heuristic is:
+
+      If this ambiguous figure has figure number N and we already have a
+      matched figure at N-1 or N+1, it is part of a sequence and is promoted.
+    """
+    matched = figure_inventory.get("matched_figures", [])
+    matched_fig_nums: set[int] = set()
+    for mf in matched:
+        fn = mf.get("figure_number")
+        if fn is not None:
+            matched_fig_nums.add(fn)
+
+    ambiguous = figure_inventory.get("ambiguous_figures", [])
+    promoted: list[dict] = []
+
+    # Find ambiguous figures that are adjacent to a matched figure number
+    remaining_ambiguous: list[dict] = []
+    for af in ambiguous:
+        fn = af.get("figure_number")
+        if fn is None:
+            remaining_ambiguous.append(af)
+            continue
+        if (fn - 1 in matched_fig_nums) or (fn + 1 in matched_fig_nums):
+            # Promote this figure — it is part of a contiguous numbered sequence
+            promoted_entry = {
+                "figure_id": f"figure_{fn:03d}",
+                "legend_block_id": af.get("legend_block_id", ""),
+                "page": af.get("page"),
+                "text": af.get("text", ""),
+                "figure_number": fn,
+                "matched_assets": [],
+                "confidence": 0.0,
+                "match_score": {
+                    "score": 0.0,
+                    "decision": "sequence_match",
+                    "evidence": ["sequence_promotion"],
+                },
+                "flags": ["sequence_match"],
+                "caption_score": af.get("caption_score", {}),
+                "strict_status": "sequence_match",
+                "zone": af.get("zone"),
+                "style_family": af.get("style_family"),
+                "marker_signature": af.get("marker_signature") or {},
+            }
+            promoted.append(promoted_entry)
+        else:
+            remaining_ambiguous.append(af)
+
+    if promoted:
+        figure_inventory["matched_figures"].extend(promoted)
+        figure_inventory["ambiguous_figures"] = remaining_ambiguous
+        figure_inventory["official_figure_count"] = len(figure_inventory["matched_figures"])
+
+    return figure_inventory
 
 
 def write_figure_inventory(dst: Path, inventory: dict[str, Any]) -> None:
