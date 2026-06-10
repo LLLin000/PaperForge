@@ -61,6 +61,10 @@ def _health_path(ocr_root: Path, key: str) -> Path:
     return _paper_root(ocr_root, key) / "health" / "ocr_health.json"
 
 
+def _reader_figures_path(ocr_root: Path, key: str) -> Path:
+    return _paper_root(ocr_root, key) / "structure" / "reader_figures.json"
+
+
 def _metadata_path(ocr_root: Path, key: str) -> Path:
     return _paper_root(ocr_root, key) / "metadata" / "resolved_metadata.json"
 
@@ -486,3 +490,29 @@ def test_real_paper_legends_do_not_silently_disappear_from_object_inventory(
             f"Legends present in blocks but missing from fulltext: "
             f"{[lt for lt in legend_texts if lt.strip() and lt.strip() not in fulltext][:3]}"
         )
+
+
+def test_reader_figures_persist_after_rebuild(rebuilt_real_papers: dict, _ocr_root: Path) -> None:
+    for key in PROBLEM_KEYS + CONTROL_KEYS:
+        rfp = _reader_figures_path(_ocr_root, key)
+        assert rfp.exists(), f"reader_figures.json not found for {key}"
+
+
+def test_reader_coverage_metrics_in_health(rebuilt_real_papers: dict, _ocr_root: Path) -> None:
+    """Every real paper must have reader coverage metrics in ocr_health.json."""
+    for key in PROBLEM_KEYS + CONTROL_KEYS:
+        health = _read_json(_health_path(_ocr_root, key))
+        assert "figure_reader_coverage_total" in health, f"{key}: missing figure_reader_coverage_total"
+        assert "figure_reader_coverage_accounted" in health, f"{key}: missing figure_reader_coverage_accounted"
+        assert "figure_reader_coverage_ratio" in health, f"{key}: missing figure_reader_coverage_ratio"
+        assert health["figure_reader_coverage_total"] >= 0, f"{key}: negative reader coverage total"
+
+
+def test_fulltext_has_no_debug_artifact_names(rebuilt_real_papers: dict, _ocr_root: Path) -> None:
+    """Debug artifact names must never leak into user-facing fulltext.md."""
+    forbidden = ["unmatched_legend_", "unresolved_cluster_", "orphan_", "asset_block_id", "legend_block_id"]
+    for key in PROBLEM_KEYS + CONTROL_KEYS:
+        _require_artifacts(_ocr_root, key)
+        fulltext = _fulltext_path(_ocr_root, key).read_text(encoding="utf-8", errors="replace")
+        for token in forbidden:
+            assert token not in fulltext, f"{key}: debug artifact '{token}' leaked into fulltext"
