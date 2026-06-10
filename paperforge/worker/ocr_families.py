@@ -30,6 +30,16 @@ _REFERENCE_MARKER_TYPES = {
 _REFERENCE_HEADING_TEXTS = {"references", "bibliography"}
 _HEADING_MARKER_TYPES = {"canonical_section_name"}
 _SUPPORT_ZONE_HINTS = ("support", "insert", "frontmatter", "margin", "sidebar")
+_EDITORIAL_TAIL_PHRASES = (
+    "conflict of interest",
+    "publisher's note",
+    "publisher’s note",
+    "ethics statement",
+    "author contributions",
+    "the remaining authors declare",
+    "copyright",
+    "published online",
+)
 
 
 def discover_body_family_anchor(blocks: list[dict], page_count: int | None = None) -> dict[str, Any]:
@@ -237,6 +247,15 @@ def _classify_style_family(
     text = str(block.get("text") or block.get("block_content") or "").strip()
     zone = str(block.get("zone") or "")
     text_lower = text.lower()
+    raw_label = str(block.get("raw_label") or block.get("block_label") or "")
+    bbox = block.get("bbox") or block.get("block_bbox") or [0, 0, 0, 0]
+    page_width = float(block.get("page_width") or 1200)
+    block_width = (bbox[2] - bbox[0]) if len(bbox) >= 4 else 0.0
+    span_signature = block.get("span_signature") or {}
+    font_size_bucket = span_signature.get("font_size_bucket")
+
+    if any(phrase in text_lower for phrase in _EDITORIAL_TAIL_PHRASES):
+        return "support_like", "editorial_phrase"
 
     if _reference_anchor_matches_block(reference_anchor, block):
         return "reference_like", "reference_family_anchor"
@@ -244,10 +263,23 @@ def _classify_style_family(
         return "reference_like", "reference_marker"
     if marker_type == "table_number" or text_lower.startswith("table "):
         return "table_caption_like", "table_marker"
-    if marker_type in {"figure_number", "panel_label"} or text_lower.startswith("figure "):
+    if (
+        marker_type in {"figure_number", "panel_label"}
+        or text_lower.startswith("figure ")
+        or text_lower.startswith("fig. ")
+        or text_lower.startswith("fig ")
+        or (raw_label == "figure_title" and block_width >= page_width * 0.25)
+    ):
         return "legend_like", "figure_marker"
     if marker_type in _HEADING_MARKER_TYPES:
         return "heading_like", "heading_marker"
+    if (
+        raw_label == "paragraph_title"
+        and font_size_bucket is not None
+        and float(font_size_bucket or 0.0) >= 9.5
+        and block_width < page_width * 0.45
+    ):
+        return "heading_like", "heading_typography"
     if _anchor_matches_block(body_anchor, block, _body_family_key):
         return "body_like", "body_family_anchor"
     if zone == "frontmatter_side_zone":

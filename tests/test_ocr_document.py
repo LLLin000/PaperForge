@@ -3191,6 +3191,50 @@ def test_key_points_box_not_body_paragraph() -> None:
     assert 1 in indices
 
 
+def test_single_key_points_anchor_with_adjacent_mixed_blocks_forms_sidebar_cluster() -> None:
+    from paperforge.worker.ocr_document import (
+        _detect_structured_insert_clusters,
+        _expand_structured_insert_cluster_with_mixed_sidebar_blocks,
+    )
+
+    blocks = [
+        {
+            "page": 2,
+            "role": "structured_insert_candidate",
+            "text": "Key points",
+            "bbox": [80, 220, 180, 247],
+            "block_bbox": [80, 220, 180, 247],
+            "page_width": 1200,
+            "raw_label": "paragraph_title",
+        },
+        {
+            "page": 2,
+            "role": "media_asset",
+            "text": "<table><tr><td>• Point one</td></tr><tr><td>• Point two</td></tr></table>",
+            "bbox": [73, 270, 591, 738],
+            "block_bbox": [73, 270, 591, 738],
+            "page_width": 1200,
+            "raw_label": "table",
+        },
+        {
+            "page": 2,
+            "role": "unknown_structural",
+            "text": "• Point three",
+            "bbox": [74, 675, 566, 743],
+            "block_bbox": [74, 675, 566, 743],
+            "page_width": 1200,
+            "raw_label": "vision_footnote",
+        },
+    ]
+
+    base = _detect_structured_insert_clusters(blocks)
+    expanded = _expand_structured_insert_cluster_with_mixed_sidebar_blocks(blocks, base)
+
+    assert 0 in expanded
+    assert 1 in expanded
+    assert 2 in expanded
+
+
 def test_structured_insert_cluster_detected() -> None:
     """Multiple structured insert candidates on the same page with close geometry
     are detected as a cluster."""
@@ -3650,7 +3694,7 @@ def test_normalize_marks_structured_insert_before_non_body_insert_suppression() 
 
     _, normalized = normalize_document_structure(blocks)
 
-    assert normalized[0]["role"] == "structured_insert_candidate"
+    assert normalized[0]["role"] == "structured_insert"
     assert normalized[1]["role"] == "body_paragraph"
 
 
@@ -3670,9 +3714,9 @@ def test_normalize_promotes_mixed_sidebar_blocks_into_single_structured_insert_c
 
     _, normalized = normalize_document_structure(blocks)
 
-    assert normalized[0]["role"] == "structured_insert_candidate"
-    assert normalized[1]["role"] == "media_asset"
-    assert normalized[2]["role"] == "unknown_structural"
+    assert normalized[0]["role"] == "structured_insert"
+    assert normalized[1]["role"] == "structured_insert"
+    assert normalized[2]["role"] == "structured_insert"
     assert normalized[3]["role"] != "structured_insert"
     assert normalized[4]["role"] == "body_paragraph"
 

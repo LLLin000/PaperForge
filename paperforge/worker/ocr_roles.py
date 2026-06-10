@@ -455,6 +455,35 @@ def resolve_final_role(
     reference_anchor_accepted = str(reference_anchor.get("status") or "").upper() == "ACCEPT"
     in_body_zone = zone == "body_zone"
     strong_legend_authority = style_family_authority in {"figure_marker", "figure_family_anchor"}
+    strong_table_authority = style_family_authority == "table_marker"
+    raw_label = str(block.get("raw_label") or block.get("block_label") or "")
+    text = str(block.get("text") or "")
+    text_lower = text.lower()
+
+    editorial_tail_phrase = any(
+        phrase in text_lower
+        for phrase in (
+            "conflict of interest",
+            "publisher's note",
+            "publisher’s note",
+            "ethics statement",
+            "author contributions",
+            "the remaining authors declare",
+            "copyright",
+            "published online",
+        )
+    )
+
+    if current_role == "body_paragraph" and editorial_tail_phrase:
+        return RoleAssignment(
+            role="backmatter_body" if zone == "tail_nonref_hold_zone" else "frontmatter_noise",
+            confidence=max(current_confidence, 0.88),
+            evidence=[
+                "late role resolution: editorial phrase cross-validates non-body classification",
+                f"zone={zone or 'unknown'}",
+                f"style_family={style_family or 'unknown'}",
+            ],
+        )
 
     if current_role == "body_paragraph":
         if (
@@ -494,6 +523,39 @@ def resolve_final_role(
                     "late role resolution: legend_like family + figure_number marker",
                     f"zone={zone or 'unknown'}",
                     f"body_anchor={str(body_anchor.get('status') or 'none').lower()}",
+                    f"style_family_authority={style_family_authority or 'none'}",
+                    f"context_source={context_source}",
+                ],
+            )
+        if (
+            style_family == "legend_like"
+            and marker_type == "figure_number"
+            and not _looks_like_late_figure_narrative_prose(text)
+            and len(text.split()) >= 6
+            and (strong_legend_authority or raw_label == "figure_title")
+        ):
+            return RoleAssignment(
+                role="figure_caption_candidate",
+                confidence=max(current_confidence, 0.8),
+                evidence=[
+                    "late role resolution: cross-validated figure legend candidate",
+                    f"zone={zone or 'unknown'}",
+                    f"style_family_authority={style_family_authority or 'none'}",
+                    f"context_source={context_source}",
+                ],
+            )
+        if (
+            style_family == "table_caption_like"
+            and marker_type == "table_number"
+            and len(text.split()) >= 3
+            and (strong_table_authority or raw_label == "figure_title")
+        ):
+            return RoleAssignment(
+                role="table_caption_candidate",
+                confidence=max(current_confidence, 0.8),
+                evidence=[
+                    "late role resolution: cross-validated table caption candidate",
+                    f"zone={zone or 'unknown'}",
                     f"style_family_authority={style_family_authority or 'none'}",
                     f"context_source={context_source}",
                 ],
@@ -550,6 +612,48 @@ def resolve_final_role(
                             f"context_source={context_source}",
                         ],
                     )
+
+    if current_role == "body_paragraph" and style_family in {"legend_like", "table_caption_like", "reference_like", "support_like"}:
+        if zone == "reference_zone" and style_family == "reference_like":
+            return RoleAssignment(
+                role="reference_item",
+                confidence=max(current_confidence, 0.86),
+                evidence=[
+                    "late role resolution: reference zone + reference_like cannot remain body",
+                    f"style_family_authority={style_family_authority or 'none'}",
+                ],
+            )
+        if style_family == "legend_like" and raw_label == "figure_title" and not _looks_like_late_figure_narrative_prose(text):
+            return RoleAssignment(
+                role="figure_caption",
+                confidence=max(current_confidence, 0.9),
+                evidence=[
+                    "late role resolution: figure_title + legend_like + display context resolves to figure_caption",
+                    f"zone={zone or 'unknown'}",
+                ],
+            )
+        if (
+            style_family == "table_caption_like"
+            and marker_type == "table_number"
+            and (zone == "display_zone" or raw_label == "figure_title" or strong_table_authority)
+        ):
+            return RoleAssignment(
+                role="table_caption_candidate",
+                confidence=max(current_confidence, 0.84),
+                evidence=[
+                    "late role resolution: table_number + table_caption_like cannot remain body",
+                    f"zone={zone or 'unknown'}",
+                ],
+            )
+        if style_family == "support_like" and "published online" in text_lower:
+            return RoleAssignment(
+                role="frontmatter_noise",
+                confidence=max(current_confidence, 0.9),
+                evidence=[
+                    "late role resolution: published-online furniture cannot remain heading/body",
+                    f"zone={zone or 'unknown'}",
+                ],
+            )
 
     return RoleAssignment(
         role=current_role,
@@ -647,8 +751,8 @@ def assign_block_role(
             )
         if raw_label == "figure_title":
             return RoleAssignment(
-                role="figure_caption_candidate",
-                confidence=0.9,
+                role="figure_caption",
+                confidence=0.92,
                 evidence=[f"figure_title label: {text[:60]}"],
             )
         if _is_obviously_formal_figure_caption(text, block, page_blocks):

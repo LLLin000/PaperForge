@@ -649,6 +649,8 @@ def render_fulltext_markdown(
 ) -> str:
     lines: list[str] = []
 
+    emitted_figure_captions: set[str] = set()
+
     # --- title ---
     title = resolved_metadata.get("title", {}).get("value", "")
     if title:
@@ -697,11 +699,16 @@ def render_fulltext_markdown(
                     lines.append("")
 
     # Build per-page figure/table lookups
-    figures_by_page: dict[int, list[str]] = {}
+    figures_by_page: dict[int, list[dict]] = {}
     for i, fig in enumerate(figure_inventory.get("matched_figures", [])):
         fig_id = fig.get("figure_id") or f"figure_{i + 1:03d}"
         page = fig.get("page", 0) or 1
-        figures_by_page.setdefault(page, []).append(fig_id)
+        figures_by_page.setdefault(page, []).append(
+            {
+                "figure_id": fig_id,
+                "caption": str(fig.get("text") or ""),
+            }
+        )
 
     tables_by_page: dict[int, list[str]] = {}
     for i, tbl in enumerate(table_inventory.get("tables", [])):
@@ -868,7 +875,6 @@ def render_fulltext_markdown(
         _SKIPPED_BODY_ROLES = {
             "abstract_heading",
             "abstract_body",
-            "figure_caption",
             "frontmatter_noise",
             "table_html",
         }
@@ -885,8 +891,13 @@ def render_fulltext_markdown(
         if block_page is not None and block_page != current_page:
             # Emit objects for the page we just finished rendering
             if current_page is not None:
-                for fig_id in figures_by_page.get(current_page, []):
-                    lines.append(f"![[render/figures/{fig_id}.md]]")
+                for fig in figures_by_page.get(current_page, []):
+                    caption = str(fig.get("caption") or "").strip()
+                    if caption and caption not in emitted_figure_captions:
+                        lines.append(caption)
+                        lines.append("")
+                        emitted_figure_captions.add(caption)
+                    lines.append(f"![[render/figures/{fig['figure_id']}.md]]")
                     lines.append("")
                 for cluster_id in unresolved_clusters_by_page.get(current_page, []):
                     lines.append(f"![[render/figures/{cluster_id}.md]]")
@@ -900,8 +911,13 @@ def render_fulltext_markdown(
             for p in range(first_new_page, block_page):
                 lines.append(f"<!-- page {p} -->")
                 lines.append("")
-                for fig_id in figures_by_page.get(p, []):
-                    lines.append(f"![[render/figures/{fig_id}.md]]")
+                for fig in figures_by_page.get(p, []):
+                    caption = str(fig.get("caption") or "").strip()
+                    if caption and caption not in emitted_figure_captions:
+                        lines.append(caption)
+                        lines.append("")
+                        emitted_figure_captions.add(caption)
+                    lines.append(f"![[render/figures/{fig['figure_id']}.md]]")
                     lines.append("")
                 for cluster_id in unresolved_clusters_by_page.get(p, []):
                     lines.append(f"![[render/figures/{cluster_id}.md]]")
@@ -931,6 +947,8 @@ def render_fulltext_markdown(
             last_structured_insert_bbox = None
             if role == "section_heading":
                 if text.strip().lower() in FRONTMATTER_NOISE:
+                    continue
+                if "published online" in text.strip().lower():
                     continue
                 if _is_bogus_heading(text):
                     if text:
@@ -1001,6 +1019,10 @@ def render_fulltext_markdown(
                 tbl_id = tbl_ids_for_page.pop(0)
                 lines.append(f"![[render/tables/{tbl_id}.md]]")
                 lines.append("")
+        elif role == "figure_caption":
+            if text:
+                lines.append(text)
+                lines.append("")
         elif role in ("backmatter_body", "tail_candidate_body", "body_paragraph"):
             if last_structured_insert_page is not None:
                 lines.append("")
@@ -1020,8 +1042,13 @@ def render_fulltext_markdown(
 
     # Emit objects for the last rendered page
     if current_page is not None:
-        for fig_id in figures_by_page.get(current_page, []):
-            lines.append(f"![[render/figures/{fig_id}.md]]")
+        for fig in figures_by_page.get(current_page, []):
+            caption = str(fig.get("caption") or "").strip()
+            if caption and caption not in emitted_figure_captions:
+                lines.append(caption)
+                lines.append("")
+                emitted_figure_captions.add(caption)
+            lines.append(f"![[render/figures/{fig['figure_id']}.md]]")
             lines.append("")
         for cluster_id in unresolved_clusters_by_page.get(current_page, []):
             lines.append(f"![[render/figures/{cluster_id}.md]]")
@@ -1041,8 +1068,13 @@ def render_fulltext_markdown(
             if p > (current_page or 0):
                 lines.append(f"<!-- page {p} -->")
                 lines.append("")
-            for fig_id in figures_by_page.get(p, []):
-                lines.append(f"![[render/figures/{fig_id}.md]]")
+            for fig in figures_by_page.get(p, []):
+                caption = str(fig.get("caption") or "").strip()
+                if caption and caption not in emitted_figure_captions:
+                    lines.append(caption)
+                    lines.append("")
+                    emitted_figure_captions.add(caption)
+                lines.append(f"![[render/figures/{fig['figure_id']}.md]]")
                 lines.append("")
             for cluster_id in unresolved_clusters_by_page.get(p, []):
                 lines.append(f"![[render/figures/{cluster_id}.md]]")

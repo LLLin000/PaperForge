@@ -205,3 +205,44 @@ def test_build_structured_blocks_discovers_body_family_before_normalization() ->
     assert doc_structure.body_family_anchor is not None
     assert doc_structure.body_family_anchor["status"] == "ACCEPT"
     assert doc_structure.body_family_anchor["sample_pages"] == [3, 4]
+
+
+def test_build_structured_blocks_exposes_source_frontmatter_anchors() -> None:
+    from paperforge.worker.ocr_blocks import build_structured_blocks
+
+    raw_blocks = [
+        {
+            "paper_id": "KEY001",
+            "page": 1,
+            "block_id": "p1_b1",
+            "raw_label": "doc_title",
+            "raw_order": 0,
+            "bbox": [50, 100, 900, 150],
+            "text": "Correct Research Title That Is Long Enough",
+            "page_width": 1200,
+            "page_height": 1600,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 1,
+            "block_id": "p1_b2",
+            "raw_label": "text",
+            "raw_order": 1,
+            "bbox": [50, 170, 700, 210],
+            "text": "Alice Smith, Bob Jones",
+            "page_width": 1200,
+            "page_height": 1600,
+        },
+    ]
+
+    _rows, doc_structure = build_structured_blocks(
+        raw_blocks,
+        source_metadata={
+            "title": "Correct Research Title That Is Long Enough",
+            "authors": ["Alice Smith", "Bob Jones"],
+        },
+    )
+
+    anchors = getattr(doc_structure, "source_frontmatter_anchors", {})
+    assert anchors["title_source_anchor"]["status"] == "ACCEPT"
+    assert anchors["authors_source_anchor"]["status"] == "ACCEPT"

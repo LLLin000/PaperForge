@@ -275,6 +275,25 @@ def test_heading_numbered_still_works_for_real_headings():
     assert result["marker_signature"]["number"] == "2.3"
 
 
+def test_numbered_introduction_is_not_misclassified_as_reference():
+    from paperforge.worker.ocr_signatures import build_block_signatures
+
+    block = {
+        "block_id": "p2_b1",
+        "page": 2,
+        "raw_label": "paragraph_title",
+        "text": "1 INTRODUCTION",
+        "bbox": [80, 120, 360, 150],
+        "page_width": 1200,
+        "page_height": 1600,
+    }
+
+    result = build_block_signatures(block)
+
+    assert result["marker_signature"]["type"] == "heading_numbered"
+    assert result["marker_signature"]["kind"] == "heading"
+
+
 def test_block_signature_missing_bbox_returns_zero_layout_signature():
     from paperforge.worker.ocr_signatures import build_block_signatures
 

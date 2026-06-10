@@ -1819,6 +1819,7 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
 
     structured, doc_structure = build_structured_blocks(
         all_raw_blocks,
+        source_metadata=source_meta,
         structure_output_dir=artifacts.blocks_structured.parent,
     )
     write_structured_blocks_jsonl(artifacts.blocks_structured, structured)
