@@ -143,37 +143,90 @@ def _materialize_reader_figure(
     }
 
 
+def _passes_formal_legend_gate(item: dict) -> bool:
+    return (
+        item.get("marker_type") == "figure_number"
+        and not bool(item.get("inline_mention"))
+        and not bool(item.get("panel_label"))
+        and float(item.get("body_prose_likelihood", 0.0)) < 0.5
+        and not bool(item.get("strict_reject"))
+    )
+
+
+def _passes_salient_visual_group_gate(item: dict) -> bool:
+    zone = str(item.get("zone") or "")
+    if zone == "preproof_cover_zone":
+        return False
+    area_ratio = float(item.get("cluster_area_ratio", 0.0))
+    width_ratio = float(item.get("width_ratio", 0.0))
+    height_ratio = float(item.get("height_ratio", 0.0))
+    media_count = int(item.get("media_block_count", len(item.get("asset_block_ids", []))))
+    if area_ratio >= 0.03:
+        return True
+    if width_ratio >= 0.30 and height_ratio >= 0.08:
+        return True
+    return bool(media_count >= 2 and area_ratio >= 0.02)
+
+
+def _collect_reader_eligible_inputs(normalized: dict) -> list[dict]:
+    eligible: list[dict] = []
+    seen_legends: set[int | str] = set()
+
+    for source_name in ("matched_figures", "held_figures", "ambiguous_figures"):
+        for item in normalized.get(source_name, []):
+            legend_block_id = item.get("legend_block_id")
+            if legend_block_id is None or legend_block_id in seen_legends:
+                continue
+            if not _passes_formal_legend_gate(item):
+                continue
+            seen_legends.add(legend_block_id)
+            eligible.append({"kind": "legend", "source": source_name, "item": item})
+
+    for item in normalized.get("unmatched_legends", []):
+        legend_block_id = item.get("legend_block_id")
+        if legend_block_id is None or legend_block_id in seen_legends:
+            continue
+        if not _passes_formal_legend_gate(item):
+            continue
+        seen_legends.add(legend_block_id)
+        eligible.append({"kind": "legend", "source": "unmatched_legends", "item": item})
+
+    for item in normalized.get("unresolved_clusters", []):
+        if item.get("linked_legend_block_id") is not None:
+            continue
+        if not _passes_salient_visual_group_gate(item):
+            continue
+        eligible.append({"kind": "visual_group", "source": "unresolved_clusters", "item": item})
+
+    return eligible
+
+
 def synthesize_reader_figures(
     strict_inventory: dict,
     structured_blocks: list[dict],
     document_structure: object | None = None,
 ) -> dict:
     normalized = _normalize_strict_figure_inventory(strict_inventory, structured_blocks)
+    eligible_inputs = _collect_reader_eligible_inputs(normalized)
+
     reader_figures: list[dict] = []
     consumed_caption_ids: list[int | str] = []
     consumed_asset_ids: list[int | str] = []
 
-    ordinal = 0
-    for bucket_name in (
-        "matched_figures",
-        "held_figures",
-        "ambiguous_figures",
-        "unmatched_legends",
-        "unresolved_clusters",
-    ):
-        for item in normalized.get(bucket_name, []):
-            reader_figures.append(_materialize_reader_figure(item, bucket_name, ordinal))
-            legend_id = item.get("legend_block_id")
-            if legend_id is not None:
-                consumed_caption_ids.append(legend_id)
-            consumed_asset_ids.extend(item.get("asset_block_ids", []))
-            ordinal += 1
+    for ordinal, entry in enumerate(eligible_inputs):
+        item = entry["item"]
+        source_name = entry["source"]
+        reader_figures.append(_materialize_reader_figure(item, source_name, ordinal))
+        legend_id = item.get("legend_block_id")
+        if legend_id is not None:
+            consumed_caption_ids.append(legend_id)
+        consumed_asset_ids.extend(item.get("asset_block_ids", []))
 
-    total = len(reader_figures)
+    coverage_total = len(eligible_inputs)
     return {
         "normalized_inputs": normalized,
         "reader_figures": reader_figures,
-        "reader_coverage": ReaderCoverage(total=total, accounted=total, gap_count=0).as_dict(),
+        "reader_coverage": ReaderCoverage(total=coverage_total, accounted=coverage_total, gap_count=0).as_dict(),
         "consumed_caption_block_ids": consumed_caption_ids,
         "consumed_asset_block_ids": consumed_asset_ids,
     }
