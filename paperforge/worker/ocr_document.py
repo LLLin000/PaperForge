@@ -1821,7 +1821,10 @@ def _apply_zone_labels(blocks: list[dict], region_bus: dict[str, dict] | None) -
 
 def _exclude_frontmatter_side_from_body_flow(blocks: list[dict]) -> None:
     for block in blocks:
-        if block.get("role") != "body_paragraph":
+        effective_role = block.get("role")
+        if effective_role == "unassigned":
+            effective_role = block.get("seed_role")
+        if effective_role != "body_paragraph":
             continue
         if block.get("zone") != "frontmatter_side_zone":
             continue
@@ -1829,6 +1832,8 @@ def _exclude_frontmatter_side_from_body_flow(blocks: list[dict]) -> None:
             continue
         old_role = block.get("role")
         block["role"] = "frontmatter_noise"
+        if block.get("seed_role") == "body_paragraph":
+            block["seed_role"] = "frontmatter_noise"
         if old_role != block["role"]:
             record_decision(
                 block,
@@ -1842,12 +1847,17 @@ def _exclude_frontmatter_side_from_body_flow(blocks: list[dict]) -> None:
 
 def _exclude_tail_nonref_from_body_flow(blocks: list[dict]) -> None:
     for block in blocks:
-        if block.get("role") != "body_paragraph":
+        effective_role = block.get("role")
+        if effective_role == "unassigned":
+            effective_role = block.get("seed_role")
+        if effective_role != "body_paragraph":
             continue
         if block.get("zone") != "tail_nonref_hold_zone":
             continue
         old_role = block.get("role")
         block["role"] = "backmatter_body"
+        if block.get("seed_role") == "body_paragraph":
+            block["seed_role"] = "backmatter_body"
         if old_role != block["role"]:
             record_decision(
                 block,
