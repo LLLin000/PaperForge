@@ -57,6 +57,7 @@ def build_ocr_health(
     figure_inventory: dict,
     table_inventory: dict,
     doc_structure: Any = None,
+    reader_payload: dict | None = None,
 ) -> dict[str, Any]:
     section_heading_count = sum(1 for b in structured_blocks if b.get("role") == "section_heading")
     abstract_found = any(
@@ -224,6 +225,14 @@ def build_ocr_health(
             else 1.0
         ),
     }
+
+    if reader_payload is not None:
+        rc = reader_payload.get("reader_coverage", {})
+        report["figure_reader_coverage_total"] = rc.get("total", 0)
+        report["figure_reader_coverage_accounted"] = rc.get("accounted", 0)
+        report["figure_reader_coverage_gap_count"] = rc.get("gap_count", 0)
+        report["figure_reader_coverage_ratio"] = rc.get("ratio", 1.0)
+
     report.update(decision_summary)
 
     degraded_reasons = []
@@ -278,6 +287,8 @@ def build_ocr_health(
         degraded_reasons.append(
             f"figure legend completeness gap ({formal_legend_gaps} numbered legends unaccounted for)"
         )
+    if reader_payload is not None and reader_payload.get("reader_coverage", {}).get("gap_count", 0) > 0:
+        degraded_reasons.append("reader_figure_coverage_gap")
 
     return report
 

@@ -130,6 +130,14 @@ def run_derived_rebuild_for_keys(vault: Path, keys: list[str]) -> dict:
         figure_inventory = build_figure_inventory(structured)
         write_figure_inventory(artifacts.blocks_structured.parent / "figure_inventory.json", figure_inventory)
 
+        # Rebuild reader figures
+        from paperforge.worker.ocr_figure_reader import synthesize_reader_figures
+
+        reader_payload = synthesize_reader_figures(figure_inventory, structured_blocks=structured)
+        reader_figures_dir = paper_root / "structure"
+        reader_figures_dir.mkdir(parents=True, exist_ok=True)
+        write_json(reader_figures_dir / "reader_figures.json", reader_payload)
+
         # Rebuild table inventory
         from paperforge.worker.ocr_tables import build_table_inventory, write_table_inventory
 
@@ -189,6 +197,7 @@ def run_derived_rebuild_for_keys(vault: Path, keys: list[str]) -> dict:
             figure_inventory=figure_inventory,
             table_inventory=table_inventory,
             doc_structure=doc_structure,
+            reader_payload=reader_payload,
         )
         write_ocr_health(paper_root / "health", health_report)
 

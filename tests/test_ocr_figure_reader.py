@@ -202,3 +202,39 @@ def test_legend_only_consumes_caption_when_rendered() -> None:
 
     assert result["consumed_caption_block_ids"] == [21]
     assert result["reader_figures"][0]["reader_status"] == "LEGEND_ONLY"
+
+
+def test_reader_payload_coverage_accounted_matches_reader_figures() -> None:
+    from paperforge.worker.ocr_figure_reader import synthesize_reader_figures
+
+    strict_inventory = {
+        "matched_figures": [
+            {
+                "figure_number": 1,
+                "legend_block_id": 5,
+                "text": "Fig. 1 Overview of the system...",
+                "matched_assets": [{"block_id": 10, "bbox": [1, 2, 3, 4]}],
+                "match_score": 0.91,
+                "marker_type": "figure_number",
+            }
+        ],
+        "held_figures": [],
+        "ambiguous_figures": [],
+        "unmatched_legends": [
+            {
+                "figure_number": 2,
+                "legend_block_id": 21,
+                "text": "FIGURE 2 | Treadmill exercise protocols...",
+                "marker_type": "figure_number",
+            }
+        ],
+        "unresolved_clusters": [],
+    }
+
+    result = synthesize_reader_figures(strict_inventory, structured_blocks=[])
+
+    assert result["reader_coverage"]["total"] == 2
+    assert result["reader_coverage"]["accounted"] == 2
+    assert result["reader_coverage"]["gap_count"] == 0
+    assert result["reader_coverage"]["ratio"] == 1.0
+    assert set(result["consumed_caption_block_ids"]) == {5, 21}
