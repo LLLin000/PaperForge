@@ -670,7 +670,7 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
             unmatched_legends.append(legend)
             continue
 
-        fig_id = f"figure_{fig_num:03d}" if fig_num else f"unmatched_legend_{len(matched_figures):03d}"
+        fig_id = f"figure_{fig_num:03d}" if fig_num else f"figure_unknown_{len(matched_figures):03d}"
         match_score = region_match["match_score"] if region_match is not None else {
             "score": 0.0,
             "decision": "rejected",
