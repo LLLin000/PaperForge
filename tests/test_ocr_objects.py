@@ -347,3 +347,63 @@ def test_table_caption_math_normalized() -> None:
     })
     assert "$_{50}$" in md
     assert "$\\\\mu$M" in md
+
+
+# === figure legend completeness integration (Task 8) ===
+
+
+def test_figure_inventory_completeness_fields_present() -> None:
+    """Completeness metadata is present even for empty inventory."""
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    inventory = build_figure_inventory([])
+    c = inventory["figure_legend_completeness"]
+    assert "total" in c
+    assert "accounted_for" in c
+    assert "gap_count" in c
+    assert "details" in c
+
+
+def test_extract_and_write_objects_with_held_figures_and_completeness(tmp_path: Path) -> None:
+    """Completeness data coexists with held figures in object extraction."""
+    from paperforge.worker.ocr_objects import extract_and_write_objects
+
+    render_root = tmp_path / "render"
+    asset_root = tmp_path / "assets"
+
+    figure_inventory: dict[str, Any] = {
+        "matched_figures": [],
+        "held_figures": [
+            {
+                "figure_id": "held_figure_001",
+                "legend_block_id": "p10_b1",
+                "page": 10,
+                "text": "Figure 1",
+                "figure_number": 1,
+                "hold_reason": "insufficient_legend_evidence",
+            }
+        ],
+        "unmatched_assets": [],
+        "rejected_legends": [],
+        "figure_legends": [],
+        "figure_assets": [],
+        "official_figure_count": 0,
+        "unresolved_clusters": [],
+        "figure_legend_completeness": {
+            "total": 1,
+            "accounted_for": 1,
+            "gap_count": 0,
+            "details": [{"block_id": "p10_b1", "figure_number": 1, "status": "held", "page": 10}],
+        },
+    }
+
+    extract_and_write_objects(
+        pdf_path=None,
+        figure_inventory=figure_inventory,
+        table_inventory={"tables": [], "unmatched_assets": []},
+        asset_root=asset_root,
+        render_root=render_root,
+    )
+
+    render_files = sorted((render_root / "figures").glob("*.md"))
+    assert render_files == []

@@ -98,6 +98,12 @@ def build_ocr_health(
 
     frontmatter_quality = 1.0 if abstract_found and references_found else 0.5
 
+    # Figure legend completeness: every numbered formal legend must have an outcome
+    completeness = figure_inventory.get("figure_legend_completeness", {})
+    formal_legend_total = int(completeness.get("total", 0))
+    formal_legend_accounted = int(completeness.get("accounted_for", 0))
+    formal_legend_gaps = int(completeness.get("gap_count", 0))
+
     issues = 0
     if caption_without_media > 0:
         issues += 1
@@ -110,6 +116,8 @@ def build_ocr_health(
     if not references_found:
         issues += 1
     if section_heading_count < 2:
+        issues += 1
+    if formal_legend_gaps > 0:
         issues += 1
 
     if issues == 0 and frontmatter_quality >= 0.5:
@@ -207,6 +215,14 @@ def build_ocr_health(
         "anchor_summary": anchor_summary,
         "zone_summary": zone_summary,
         "held_counts": held_counts,
+        "figure_legend_completeness_total": formal_legend_total,
+        "figure_legend_completeness_accounted": formal_legend_accounted,
+        "figure_legend_completeness_gap_count": formal_legend_gaps,
+        "figure_legend_completeness_ratio": (
+            formal_legend_accounted / formal_legend_total
+            if formal_legend_total > 0
+            else 1.0
+        ),
     }
     report.update(decision_summary)
 
@@ -258,6 +274,10 @@ def build_ocr_health(
     low_confidence_tables = [s for s in table_scores if s < 0.4]
     if low_confidence_tables:
         degraded_reasons.append(f"low table match confidence ({len(low_confidence_tables)} tables)")
+    if formal_legend_gaps > 0:
+        degraded_reasons.append(
+            f"figure legend completeness gap ({formal_legend_gaps} numbered legends unaccounted for)"
+        )
 
     return report
 

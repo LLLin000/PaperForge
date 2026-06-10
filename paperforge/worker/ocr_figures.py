@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import re
 from pathlib import Path
 from typing import Any
@@ -724,7 +725,7 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
             consumed = {bid for uc in unresolved_clusters for bid in uc["media_block_ids"]}
             unmatched_assets = [a for a in unmatched_assets if a.get("block_id", "") not in consumed]
 
-    return {
+    inventory = {
         "figure_legends": deduped_legends,
         "figure_assets": assets,
         "matched_figures": matched_figures,
@@ -735,6 +736,135 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
         "rejected_legends": rejected_legends,
         "unresolved_clusters": unresolved_clusters,
         "official_figure_count": len(matched_figures),
+    }
+
+    inventory["figure_legend_completeness"] = compute_figure_legend_completeness(
+        structured_blocks, inventory,
+    )
+
+    return inventory
+
+
+def compute_figure_legend_completeness(
+    structured_blocks: list[dict],
+    inventory: dict[str, Any],
+) -> dict[str, Any]:
+    """Verify every numbered formal legend lands in an explicit outcome bucket.
+
+    Outcomes for each numbered formal legend:
+      - matched  (figure object emitted)
+      - held     (insufficient evidence, waiting)
+      - ambiguous (no asset or close-tie, unresolved)
+      - unmatched (low caption score, not a formal legend)
+      - gap      (no outcome assigned — legend was silently dropped)
+
+    Note: unresolved_cluster is a separate inventory bucket for panel groups
+    without legends; it is not a legend-level outcome.
+
+    Returns a dict with total, accounted_for, gap_count, and per-legend
+    details.  A gap_count > 0 means a formal legend was silently dropped.
+    """
+    figure_number_re = re.compile(
+        r"(?:Figure|Fig\.?|Supplementary\s+Figure|Supplementary\s+Fig\.?|"
+        r"Extended\s+Data\s+Figure|Extended\s+Data\s+Fig\.?)\s+"
+        r"(?:S)?(\d+(?:\.\d+)?)",
+        flags=re.IGNORECASE,
+    )
+
+    # Collect all legend block_ids that entered the pipeline
+    legend_ids_in_pipeline: set[str] = set()
+    for block in structured_blocks:
+        role = block.get("role", "")
+        if block.get("_non_body_media") or role == "non_body_insert":
+            continue
+        if _PANEL_LABEL_PATTERN.match(str(block.get("text", "")).strip()):
+            continue
+        is_vfc = _is_validation_first_legend_candidate(block)
+        if role in ("figure_caption", "figure_caption_candidate") or is_vfc:
+            bid = block.get("block_id", "")
+            if bid:
+                legend_ids_in_pipeline.add(bid)
+
+    # Build lookup sets for each outcome
+    matched_ids: set[str] = set()
+    for mf in inventory.get("matched_figures", []):
+        bid = mf.get("legend_block_id", "")
+        if bid:
+            matched_ids.add(bid)
+
+    held_ids: set[str] = set()
+    for hf in inventory.get("held_figures", []):
+        bid = hf.get("legend_block_id", "")
+        if bid:
+            held_ids.add(bid)
+
+    ambiguous_ids: set[str] = set()
+    for af in inventory.get("ambiguous_figures", []):
+        bid = af.get("legend_block_id", "")
+        if bid:
+            ambiguous_ids.add(bid)
+
+    unmatched_ids: set[str] = set()
+    for ul in inventory.get("unmatched_legends", []):
+        bid = ul.get("block_id", "")
+        if bid:
+            unmatched_ids.add(bid)
+
+    # Check every numbered legend in the pipeline
+    details: list[dict[str, Any]] = []
+    total = 0
+    accounted_for = 0
+    gap_count = 0
+
+    for block in structured_blocks:
+        role = block.get("role", "")
+        if block.get("_non_body_media") or role == "non_body_insert":
+            continue
+        if _PANEL_LABEL_PATTERN.match(str(block.get("text", "")).strip()):
+            continue
+        is_vfc = _is_validation_first_legend_candidate(block)
+        if role not in ("figure_caption", "figure_caption_candidate") and not is_vfc:
+            continue
+
+        text = block.get("text", "")
+        m = figure_number_re.search(text)
+        if m is None:
+            continue
+
+        total += 1
+        bid = block.get("block_id", "")
+        fig_num = None
+        with contextlib.suppress(ValueError):
+            fig_num = int(float(m.group(1)))
+
+        if bid in matched_ids:
+            status = "matched"
+        elif bid in held_ids:
+            status = "held"
+        elif bid in ambiguous_ids:
+            status = "ambiguous"
+        elif bid in unmatched_ids:
+            status = "unmatched"
+        else:
+            status = "gap"
+
+        if status != "gap":
+            accounted_for += 1
+        else:
+            gap_count += 1
+
+        details.append({
+            "block_id": bid,
+            "figure_number": fig_num,
+            "status": status,
+            "page": block.get("page"),
+        })
+
+    return {
+        "total": total,
+        "accounted_for": accounted_for,
+        "gap_count": gap_count,
+        "details": details,
     }
 
 
