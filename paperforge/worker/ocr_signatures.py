@@ -36,7 +36,7 @@ _REFERENCE_PATTERN = re.compile(
 )
 
 _REFERENCE_NUMERIC_BRACKET_PATTERN = re.compile(r"^\s*\[(\d+)\]")
-_REFERENCE_NUMERIC_DOT_PATTERN = re.compile(r"^\s*(\d+)\.\s")
+_REFERENCE_NUMERIC_DOT_PATTERN = re.compile(r"^\s*(\d+)\.?\s")
 _REFERENCE_NUMERIC_PAREN_PATTERN = re.compile(r"^\s*(?:\((\d+)\)|(\d+)\))\s")
 
 _PANEL_LABEL_PATTERN = re.compile(
@@ -77,6 +77,12 @@ def _detect_marker_type(text: str) -> str:
         return "panel_label"
     if _ROMAN_SECTION_PATTERN.match(stripped):
         return "heading_roman"
+    if _REFERENCE_NUMERIC_BRACKET_PATTERN.match(stripped):
+        return "reference_numeric_bracket"
+    if _REFERENCE_NUMERIC_DOT_PATTERN.match(stripped):
+        return "reference_numeric_dot"
+    if _REFERENCE_NUMERIC_PAREN_PATTERN.match(stripped):
+        return "reference_numeric_parenthesis"
     if _HEADING_NUMBER_PATTERN.match(stripped):
         return "heading_numbered"
     if _ALPHA_SUBSECTION_PATTERN.match(stripped):
@@ -87,12 +93,6 @@ def _detect_marker_type(text: str) -> str:
         return "figure_number"
     if _TABLE_PREFIX_PATTERN.match(stripped):
         return "table_number"
-    if _REFERENCE_NUMERIC_BRACKET_PATTERN.match(stripped):
-        return "reference_numeric_bracket"
-    if _REFERENCE_NUMERIC_DOT_PATTERN.match(stripped):
-        return "reference_numeric_dot"
-    if _REFERENCE_NUMERIC_PAREN_PATTERN.match(stripped):
-        return "reference_numeric_parenthesis"
     if _REFERENCE_PATTERN.match(stripped):
         return "reference_pattern"
     if _CITATION_LINE_PATTERN.match(stripped):
