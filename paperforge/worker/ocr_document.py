@@ -111,7 +111,11 @@ def _block_text(block: dict) -> str:
 
 
 def _looks_like_box_anchor(text: str) -> bool:
-    return bool(re.match(r"^box\s*\.?\s*\d+\b", text.strip().lower()))
+    normalized = text.strip().lower()
+    return bool(
+        re.match(r"^box\s*\.?\s*\d+\b", normalized)
+        or normalized in {"key points", "highlights", "summary", "take-home messages"}
+    )
 
 
 def _build_region_prepass(blocks: list[dict]) -> RegionPrepass:
@@ -2814,6 +2818,9 @@ def _resolve_ambiguous_candidates(
         if role == "figure_caption_candidate":
             text = block.get("text", "") or ""
             page_blocks = [b for b in blocks if b.get("page") == page]
+            zone = str(block.get("zone") or "")
+            style_family = str(block.get("style_family") or "")
+            raw_label = str(block.get("raw_label") or block.get("block_label") or "")
 
             near_media = _is_near_figure_media(block, page_blocks)
             caption_style = _check_caption_style_match(block, blocks)
@@ -2825,7 +2832,15 @@ def _resolve_ambiguous_candidates(
 
             # Narrative figure mentions inside the body spine are body prose,
             # not captions, even if they start with a figure marker.
-            if in_body_spine and is_prose:
+            if (
+                in_body_spine
+                and is_prose
+                and not (
+                    zone == "display_zone"
+                    and style_family == "legend_like"
+                    and raw_label == "figure_title"
+                )
+            ):
                 old_role = block.get("role")
                 block["role"] = "body_paragraph"
                 if old_role != block["role"]:
@@ -2835,6 +2850,13 @@ def _resolve_ambiguous_candidates(
                         else "figure mention with narrative prose in body spine, demoted to body"
                     )
                     record_decision(block, stage="candidate_resolution", old_role=old_role, new_role=block["role"], reason=reason)
+                continue
+
+            if zone == "display_zone" and style_family == "legend_like" and raw_label == "figure_title":
+                old_role = block.get("role")
+                block["role"] = "figure_caption"
+                if old_role != block["role"]:
+                    record_decision(block, stage="candidate_resolution", old_role=old_role, new_role=block["role"], reason="display-zone figure_title legend stays figure caption")
                 continue
 
             if near_media or caption_style or has_main_figure:
@@ -2847,6 +2869,7 @@ def _resolve_ambiguous_candidates(
     for block in blocks:
         role = block.get("role", "")
         page = block.get("page", 1)
+        text_lower = str(block.get("text") or "").strip().lower()
 
         if (
             role in ("backmatter_heading", "backmatter_body")
@@ -2870,6 +2893,12 @@ def _resolve_ambiguous_candidates(
             block["role"] = "body_paragraph"
             if old_role != block["role"]:
                 record_decision(block, stage="candidate_resolution", old_role=old_role, new_role=block["role"], reason="backmatter heading candidate in body region, demoted to body")
+
+        if role in {"section_heading", "subsection_heading", "sub_subsection_heading"} and "published online" in text_lower:
+            old_role = block.get("role")
+            block["role"] = "frontmatter_noise"
+            if old_role != block["role"]:
+                record_decision(block, stage="candidate_resolution", old_role=old_role, new_role=block["role"], reason="published-online furniture cannot survive as heading")
 
 
 def _mark_non_body_media(blocks: list[dict]) -> None:
@@ -2995,7 +3024,7 @@ def _detect_structured_insert_clusters(blocks: list[dict]) -> set[int]:
     Returns set of block indices to mark as structured_insert.
     """
     candidate_indices = {i for i, b in enumerate(blocks) if b.get("role") == "structured_insert_candidate"}
-    if len(candidate_indices) < 2:
+    if len(candidate_indices) < 1:
         return set()
 
     # Group by page
@@ -3014,6 +3043,24 @@ def _detect_structured_insert_clusters(blocks: list[dict]) -> set[int]:
         for idx in indices:
             bb = blocks[idx].get("bbox") or blocks[idx].get("block_bbox") or [0, 0, 0, 0]
             bboxes.append((idx, bb))
+
+        has_box_anchor = any(
+            _looks_like_box_anchor(str(blocks[idx].get("text") or blocks[idx].get("block_content") or ""))
+            for idx in indices
+        )
+        if has_box_anchor:
+            result.update(indices)
+            continue
+
+        # A single box anchor is enough to seed a sidebar cluster when adjacent
+        # mixed-role blocks exist on the same page; expansion will absorb the
+        # neighboring table/html/footnote payload.
+        if len(indices) == 1:
+            idx = indices[0]
+            text = str(blocks[idx].get("text") or blocks[idx].get("block_content") or "")
+            if _looks_like_box_anchor(text):
+                result.add(idx)
+                continue
 
         # Check if blocks are near each other (vertical gaps < 100px)
         bboxes.sort(key=lambda x: x[1][1])
@@ -3105,8 +3152,9 @@ def _expand_structured_insert_cluster_with_mixed_sidebar_blocks(
                 near_y = bb[1] <= cluster_max_y + 80 and bb[3] >= cluster_min_y - 20
                 bullet_like = text.startswith(("•", "-", "*"))
                 table_like = text.lower().startswith("<table")
+                vision_footnote_like = str(block.get("raw_label") or "") == "vision_footnote"
 
-                if overlaps_x and near_y and same_column and (role in mixed_roles or bullet_like or table_like):
+                if overlaps_x and near_y and same_column and (role in mixed_roles or bullet_like or table_like or vision_footnote_like):
                     expanded.add(i)
                     changed = True
 

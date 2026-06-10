@@ -60,6 +60,16 @@ _COMMON_SECTION_HEADINGS = {
     "conclusions",
 }
 
+_NUMBERED_HEADING_BODY_HINTS = {
+    "introduction",
+    "materials and methods",
+    "methods",
+    "results",
+    "discussion",
+    "conclusion",
+    "conclusions",
+}
+
 
 def _bucket_number(value: float | int | None, step: float = 1.0) -> float | None:
     if value is None:
@@ -79,6 +89,10 @@ def _detect_marker_type(text: str) -> str:
         return "heading_roman"
     if _REFERENCE_NUMERIC_BRACKET_PATTERN.match(stripped):
         return "reference_numeric_bracket"
+    if _HEADING_NUMBER_PATTERN.match(stripped):
+        lower_stripped = stripped.lower()
+        if any(hint in lower_stripped for hint in _NUMBERED_HEADING_BODY_HINTS):
+            return "heading_numbered"
     if _REFERENCE_NUMERIC_DOT_PATTERN.match(stripped):
         return "reference_numeric_dot"
     if _REFERENCE_NUMERIC_PAREN_PATTERN.match(stripped):

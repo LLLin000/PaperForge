@@ -20,6 +20,7 @@ _CANDIDATE_ROLES = frozenset(
 
 def build_structured_blocks(
     raw_blocks: list[dict],
+    source_metadata: dict | None = None,
     structure_output_dir: str | Path | None = None,
 ) -> tuple[list[dict], Any]:
     """Build structured blocks with role assignment, normalization, and rescue.
@@ -133,12 +134,27 @@ def build_structured_blocks(
     body_family_anchor = discover_body_family_anchor(rows, page_count=total_pages)
     doc_structure = DocumentStructure(body_family_anchor=body_family_anchor)
 
+    if source_metadata:
+        from paperforge.worker.ocr_metadata import build_source_backed_frontmatter_anchors
+
+        doc_structure.source_frontmatter_anchors = build_source_backed_frontmatter_anchors(
+            source_metadata,
+            raw_blocks,
+        )
+
     # Normalize document structure (backmatter boundary, role regime, tail promotion)
     from paperforge.worker.ocr_document import normalize_document_structure
 
     try:
         doc_structure, rows = normalize_document_structure(rows)
         doc_structure.body_family_anchor = body_family_anchor
+        if source_metadata:
+            from paperforge.worker.ocr_metadata import build_source_backed_frontmatter_anchors
+
+            doc_structure.source_frontmatter_anchors = build_source_backed_frontmatter_anchors(
+                source_metadata,
+                raw_blocks,
+            )
     except Exception as exc:
         import logging
 
@@ -152,7 +168,10 @@ def build_structured_blocks(
         paper_context["role_profiles"] = build_role_span_profiles(rows)
 
     # Third pass: section-aware role rescue with normalized profiles
-    if paper_context.get("role_profiles") and doc_structure:
+    source_anchors = getattr(doc_structure, "source_frontmatter_anchors", {}) if doc_structure else {}
+    legacy_rescue_enabled = not bool(source_anchors)
+
+    if paper_context.get("role_profiles") and doc_structure and legacy_rescue_enabled:
         from paperforge.worker.ocr_document import (
             rescue_roles_with_document_context,
         )

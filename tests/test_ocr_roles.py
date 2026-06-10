@@ -503,7 +503,7 @@ def test_backmatter_heading_candidate_on_late_page() -> None:
 
 
 def test_figure_title_label_becomes_candidate() -> None:
-    """raw label figure_title with Fig. 2 test → figure_caption_candidate."""
+    """raw label figure_title with Fig. 2 test resolves directly to figure_caption."""
     from paperforge.worker.ocr_roles import assign_block_role
 
     block = {
@@ -515,7 +515,7 @@ def test_figure_title_label_becomes_candidate() -> None:
 
     role = assign_block_role(block, page_blocks=[], page_width=1200, page_height=1600)
 
-    assert role.role == "figure_caption_candidate", f"figure_title label should produce candidate, got {role.role}"
+    assert role.role == "figure_caption", f"figure_title label should produce figure_caption, got {role.role}"
 
 
 def test_formal_figure_caption_still_direct() -> None:

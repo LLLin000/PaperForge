@@ -339,3 +339,24 @@ def test_live_and_rebuild_metadata_inputs_keep_first_author_fallback_parity() ->
 
     assert live_like["authors"] == rebuild_like["authors"]
     assert live_like["authors"]["source"] == "ocr_blocks_verified_by_first_author"
+
+
+def test_build_source_backed_frontmatter_anchors_reports_alignment() -> None:
+    from paperforge.worker.ocr_metadata import build_source_backed_frontmatter_anchors
+
+    source_meta = {
+        "title": "Canonical Title",
+        "authors": ["Alice Smith", "Bob Jones"],
+        "doi": "10.1000/test-doi",
+    }
+    page_blocks = [
+        {"block_id": "p1_b1", "block_label": "doc_title", "block_content": "Canonical Title", "page": 1},
+        {"block_id": "p1_b2", "block_label": "text", "block_content": "Alice Smith, Bob Jones", "page": 1},
+        {"block_id": "p1_b3", "block_label": "text", "block_content": "https://doi.org/10.1000/test-doi", "page": 1},
+    ]
+
+    anchors = build_source_backed_frontmatter_anchors(source_meta, page_blocks)
+
+    assert anchors["title_source_anchor"]["status"] == "ACCEPT"
+    assert anchors["authors_source_anchor"]["status"] == "ACCEPT"
+    assert anchors["doi_source_anchor"]["status"] == "ACCEPT"

@@ -89,23 +89,24 @@ def run_derived_rebuild_for_keys(vault: Path, keys: list[str]) -> dict:
             backfill_span_metadata_from_pdf(all_raw_blocks, source_pdf_path)
             write_raw_blocks_jsonl(artifacts.blocks_raw, all_raw_blocks)
 
+        # Read source metadata. If legacy/old OCR papers are missing canonical
+        # bibliographic metadata, enrich source_metadata.json from the formal
+        # Literature-hub note frontmatter before rebuilding OCR-derived layers.
+        _enrich_meta_from_paper_note(vault, key, artifacts.source_metadata)
+        source_meta = read_json(artifacts.source_metadata) if artifacts.source_metadata.exists() else {}
+
         # Rebuild structured blocks
         from paperforge.worker.ocr_blocks import build_structured_blocks, write_structured_blocks_jsonl
 
         structured, doc_structure = build_structured_blocks(
             all_raw_blocks,
+            source_metadata=source_meta,
             structure_output_dir=artifacts.blocks_structured.parent,
         )
         write_structured_blocks_jsonl(artifacts.blocks_structured, structured)
         # Write role-level span profiles
         from paperforge.worker.ocr_profiles import write_role_span_profiles
         write_role_span_profiles(structured, artifacts.blocks_structured.parent)
-
-        # Read source metadata. If legacy/old OCR papers are missing canonical
-        # bibliographic metadata, enrich source_metadata.json from the formal
-        # Literature-hub note frontmatter before resolving OCR metadata.
-        _enrich_meta_from_paper_note(vault, key, artifacts.source_metadata)
-        source_meta = read_json(artifacts.source_metadata) if artifacts.source_metadata.exists() else {}
 
         # Rebuild resolved metadata
         from paperforge.worker.ocr_metadata import (

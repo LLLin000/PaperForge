@@ -236,7 +236,47 @@ def _align_frontmatter_to_source_metadata(
                 result["authors"]["ocr_aligned"] = True
                 break
 
+    source_doi = (source_meta.get("doi") or "").strip()
+    if source_doi:
+        result["doi"] = {"source": "zotero", "value": source_doi}
+        normalized_source_doi = re.sub(r"^https?://(?:dx\.)?doi\.org/", "", source_doi, flags=re.IGNORECASE)
+        for b in window_blocks:
+            t = (b.get("text") or b.get("block_content") or "").strip()
+            normalized_block = re.sub(r"^https?://(?:dx\.)?doi\.org/", "", t, flags=re.IGNORECASE)
+            if normalized_block and normalized_source_doi and normalized_source_doi.lower() in normalized_block.lower():
+                result["doi"]["ocr_block_id"] = b.get("block_id")
+                result["doi"]["ocr_aligned"] = True
+                break
+
     return result
+
+
+def build_source_backed_frontmatter_anchors(
+    source_meta: dict,
+    page_blocks: list[dict],
+    frontmatter_window: int = 3,
+) -> dict[str, dict[str, Any]]:
+    """Build early source-backed OCR anchors for frontmatter localization."""
+    aligned = _align_frontmatter_to_source_metadata(
+        source_meta,
+        page_blocks,
+        frontmatter_window=frontmatter_window,
+    )
+
+    anchors: dict[str, dict[str, Any]] = {}
+    for field in ("title", "authors", "doi"):
+        entry = aligned.get(field)
+        if not isinstance(entry, dict):
+            continue
+        anchors[f"{field}_source_anchor"] = {
+            "status": "ACCEPT" if entry.get("ocr_aligned") else "SOURCE_ONLY",
+            "field": field,
+            "source": entry.get("source", "zotero"),
+            "value": entry.get("value"),
+            "ocr_block_id": entry.get("ocr_block_id"),
+            "frontmatter_window": frontmatter_window,
+        }
+    return anchors
 
 
 def resolve_metadata(
