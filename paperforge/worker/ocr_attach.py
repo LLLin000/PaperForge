@@ -4,7 +4,6 @@ from __future__ import annotations
 # Production OCR structure is owned by ocr_document.py, ocr_figures.py,
 # ocr_tables.py, ocr_render.py, and ocr_health.py.
 # Keep this module only for compatibility/experimental tests.
-
 from dataclasses import dataclass, field
 
 

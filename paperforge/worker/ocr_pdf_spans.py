@@ -118,7 +118,6 @@ def _extract_visual_container_rects(page: Any) -> list:
 
     Returns list of fitz.Rect objects for each detected container.
     """
-    import fitz
 
     rects: list = []
     try:

@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-from collections import Counter, defaultdict
 import re
+from collections import Counter, defaultdict
 from typing import Any
-
 
 _STRONG_MARKER_TYPES = {
     "figure_number",

@@ -4,7 +4,6 @@ import json
 from pathlib import Path
 from typing import Any
 
-
 DECISION_STATUSES = {
     "ACCEPT",
     "HOLD",
