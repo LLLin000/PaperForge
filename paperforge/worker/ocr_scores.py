@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import re
 
-
 _FIGURE_NUMBER = re.compile(r"\b(?:fig(?:ure)?\.?|extended data fig(?:ure)?\.?|supplementary fig(?:ure)?\.?)\s*\d+", re.I)
 
 

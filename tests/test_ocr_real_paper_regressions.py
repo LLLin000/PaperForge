@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from pathlib import Path
 
 import pytest
@@ -339,3 +340,137 @@ def test_caqnw9q2_heading_preservation_and_ref_classification(rebuilt_real_paper
         f"No reference items have reference_like style_family for {key} "
         f"(style families present: {set(b.get('style_family') for b in ref_items)})"
     )
+
+
+def test_tsckavis_key_points_render_as_callout(rebuilt_real_papers: dict, _ocr_root: Path) -> None:
+    """Key points sidebar must render as a callout block in fulltext, not be silently dropped."""
+    key = "TSCKAVIS"
+    _require_artifacts(_ocr_root, key)
+    blocks = _read_jsonl(_structured_path(_ocr_root, key))
+    fulltext = _fulltext_path(_ocr_root, key).read_text(encoding="utf-8", errors="replace")
+
+    kp_lower = fulltext.lower()
+    assert "key points" in kp_lower, (
+        "Key points heading not found in fulltext -- content was silently dropped"
+    )
+    assert "[!NOTE]" in fulltext, (
+        "Key points not rendered as a callout block ([!NOTE]) in fulltext"
+    )
+    assert "skeletal stem and progenitor cells display a high metabolic flexibility" in kp_lower, (
+        "Key points body content missing from fulltext"
+    )
+
+
+def test_tsckavis_table_display_does_not_render_as_body_heading(rebuilt_real_papers: dict, _ocr_root: Path) -> None:
+    """Table display content (Table 1 | ..., Table 1 (continued)) must not appear as
+    body headings -- neither in block roles nor rendered as markdown headings in fulltext."""
+    key = "TSCKAVIS"
+    _require_artifacts(_ocr_root, key)
+    blocks = _read_jsonl(_structured_path(_ocr_root, key))
+    fulltext = _fulltext_path(_ocr_root, key).read_text(encoding="utf-8", errors="replace")
+
+    heading_roles = ("section_heading", "subsection_heading", "sub_subsection_heading")
+    heading_texts = [str(b.get("text", "")).lower() for b in blocks if b.get("role") in heading_roles]
+
+    for ht in heading_texts:
+        assert "table 1" not in ht, (
+            f"Table display content leaked into heading role: '{ht[:80]}'"
+        )
+
+    heading_pattern = re.compile(r"^#{1,6}\s+.*table\s+1", re.MULTILINE | re.IGNORECASE)
+    heading_matches = heading_pattern.findall(fulltext)
+    assert len(heading_matches) == 0, (
+        f"Table display content rendered as markdown heading in fulltext: {heading_matches[:3]}"
+    )
+
+
+def test_caqnw9q2_old_style_references_gain_reference_like_family(
+    rebuilt_real_papers: dict, _ocr_root: Path
+) -> None:
+    """Old-style single-column paper references must gain reference_like style_family."""
+    key = "CAQNW9Q2"
+    _require_artifacts(_ocr_root, key)
+    blocks = _read_jsonl(_structured_path(_ocr_root, key))
+
+    ref_items = [b for b in blocks if b.get("role") == "reference_item"]
+    assert len(ref_items) >= 50, f"Expected many reference items for {key}, got {len(ref_items)}"
+
+    ref_like = [b for b in ref_items if b.get("style_family") == "reference_like"]
+    ref_ratio = len(ref_like) / max(len(ref_items), 1)
+    assert ref_ratio >= 0.8, (
+        f"Only {len(ref_like)}/{len(ref_items)} ({ref_ratio:.0%}) reference items have reference_like "
+        f"style_family for {key}. Style families present: "
+        f"{set(b.get('style_family') for b in ref_items)}"
+    )
+
+
+def test_m36wa39n_same_page_tail_nonref_and_references_split_correctly(
+    rebuilt_real_papers: dict, _ocr_root: Path
+) -> None:
+    """Tail non-reference items (Conflict of Interest, Publisher's Note, Copyright) must not
+    render as body_paragraph. References must own reference_zone."""
+    key = "M36WA39N"
+    _require_artifacts(_ocr_root, key)
+    blocks = _read_jsonl(_structured_path(_ocr_root, key))
+
+    tail_nonref_bodies = [
+        b
+        for b in blocks
+        if b.get("role") == "body_paragraph"
+        and any(
+            phrase in (b.get("text") or "").lower()
+            for phrase in [
+                "conflict of interest",
+                "publisher's note",
+                "copyright",
+                "the remaining authors declare",
+            ]
+        )
+    ]
+    assert len(tail_nonref_bodies) == 0, (
+        f"Tail non-reference content leaked into body_paragraph for {key}: "
+        f"block_ids={[b['block_id'] for b in tail_nonref_bodies]}"
+    )
+
+
+def test_real_paper_legends_do_not_silently_disappear_from_object_inventory(
+    rebuilt_real_papers: dict, _ocr_root: Path
+) -> None:
+    """Figure legends must be present in the block inventory AND rendered in fulltext
+    for all problem papers, not silently dropped during rebuild."""
+    legend_paper_counts = {
+        "TSCKAVIS": 2,
+        "CAQNW9Q2": 2,
+        "A8E7SRVS": 2,
+        "DWQQK2YB": 2,
+        "M36WA39N": 2,
+    }
+    for key, min_legends in legend_paper_counts.items():
+        _require_artifacts(_ocr_root, key)
+        blocks = _read_jsonl(_structured_path(_ocr_root, key))
+        fulltext = _fulltext_path(_ocr_root, key).read_text(encoding="utf-8", errors="replace")
+
+        legend_blocks = [
+            b
+            for b in blocks
+            if b.get("role") in ("figure_caption", "table_caption", "legend")
+            or b.get("style_family") in ("legend_like", "table_caption_like")
+        ]
+        assert len(legend_blocks) >= min_legends, (
+            f"{key}: expected at least {min_legends} legend/caption blocks, "
+            f"found {len(legend_blocks)} -- legends may be silently disappearing"
+        )
+
+        legend_texts = [
+            str(b.get("text", ""))[:60]
+            for b in legend_blocks
+            if b.get("text")
+        ]
+        rendered_count = sum(
+            1 for lt in legend_texts if lt.strip() and lt.strip() in fulltext
+        )
+        assert rendered_count >= min_legends, (
+            f"{key}: {rendered_count}/{len(legend_blocks)} legend blocks are rendered in fulltext. "
+            f"Legends present in blocks but missing from fulltext: "
+            f"{[lt for lt in legend_texts if lt.strip() and lt.strip() not in fulltext][:3]}"
+        )
