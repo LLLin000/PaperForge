@@ -986,9 +986,16 @@ def render_fulltext_markdown(
                 last_structured_insert_page = block_page
                 last_structured_insert_bbox = bbox if len(bbox) >= 4 else None
         elif role == "table_caption":
-            if text:
-                lines.append(f"### {text}")
-                lines.append("")
+            block_zone = str(block.get("zone") or "")
+            block_style_family = str(block.get("style_family") or "")
+            if block_zone == "display_zone" or block_style_family == "table_caption_like":
+                if text:
+                    lines.append(f"> **{text}**")
+                    lines.append("")
+            else:
+                if text:
+                    lines.append(f"### {text}")
+                    lines.append("")
             tbl_ids_for_page = tables_by_page.get(block_page, [])
             if tbl_ids_for_page:
                 tbl_id = tbl_ids_for_page.pop(0)
