@@ -1894,6 +1894,7 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
         table_inventory=table_inventory,
         page_count=page_num,
         document_structure=doc_structure,
+        reader_payload=reader_payload,
     )
     write_render_outputs(
         render_root=ocr_root / "render",

@@ -2234,3 +2234,85 @@ def test_frontmatter_side_zone_not_rendered_as_heading() -> None:
 
     assert "Published online" not in output
     assert "Body text." in output
+
+
+def test_render_fulltext_skips_consumed_caption_block() -> None:
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+
+    blocks = [
+        {"block_id": 21, "role": "figure_caption",
+         "text": "FIGURE 2 | Treadmill exercise protocols...",
+         "page": 1, "bbox": [0, 0, 100, 20]},
+        {"block_id": 22, "role": "body_paragraph",
+         "text": "The treadmill protocol was well tolerated by all subjects.",
+         "page": 1, "bbox": [0, 30, 500, 50]},
+    ]
+
+    reader_payload = {
+        "reader_figures": [
+            {"reader_figure_id": "figure_002_reader",
+             "reader_status": "LEGEND_ONLY",
+             "strict_status": "unmatched",
+             "figure_number": 2,
+             "caption_text": "FIGURE 2 | Treadmill exercise protocols...",
+             "caption_block_id": 21,
+             "visual_groups": [],
+             "consumed_caption_block_ids": [21],
+             "consumed_asset_block_ids": [],
+             "debug_refs": {}}
+        ],
+        "consumed_caption_block_ids": [21],
+        "consumed_asset_block_ids": [],
+    }
+
+    markdown = render_fulltext_markdown(
+        structured_blocks=blocks,
+        resolved_metadata={},
+        figure_inventory={},
+        table_inventory={},
+        page_count=1,
+        reader_payload=reader_payload,
+    )
+
+    assert "FIGURE 2 | Treadmill exercise protocols..." in markdown
+    assert "<!-- page 1 -->" in markdown
+
+
+def test_render_fulltext_hides_debug_artifacts() -> None:
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+
+    blocks = [
+        {"block_id": 1, "role": "body_paragraph",
+         "text": "Body text.",
+         "page": 1, "bbox": [0, 0, 100, 20]},
+    ]
+
+    reader_payload = {
+        "reader_figures": [
+            {"reader_figure_id": "figure_003_reader",
+             "reader_status": "LEGEND_ONLY",
+             "strict_status": "unmatched",
+             "figure_number": 3,
+             "caption_text": "FIGURE 3 | Histological evaluation...",
+             "caption_block_id": 30,
+             "visual_groups": [],
+             "consumed_caption_block_ids": [30],
+             "consumed_asset_block_ids": [],
+             "debug_refs": {"strict_name": "unmatched_legend_003"}}
+        ],
+        "consumed_caption_block_ids": [30],
+        "consumed_asset_block_ids": [],
+    }
+
+    markdown = render_fulltext_markdown(
+        structured_blocks=blocks,
+        resolved_metadata={},
+        figure_inventory={},
+        table_inventory={},
+        page_count=1,
+        reader_payload=reader_payload,
+    )
+
+    assert "unmatched_legend_" not in markdown
+    assert "unresolved_cluster_" not in markdown
+    assert "orphan_" not in markdown
