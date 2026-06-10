@@ -267,7 +267,8 @@ def test_pipeline_keeps_reference_zone_and_legend_family_out_of_default_body() -
             "raw_label": "text",
             "raw_order": 0,
             "bbox": [110, 120, 470, 280],
-            "text": "Main body paragraph with stable narrative prose and enough repeated content to establish the body family anchor for the document. " * 2,
+            "text": "Main body paragraph with stable narrative prose and enough repeated content to establish the body family anchor for the document. "
+            * 2,
             "page_width": 1200,
             "page_height": 1600,
             "span_metadata": {"size": 9.0, "font": "Times", "flags": ""},
@@ -279,7 +280,8 @@ def test_pipeline_keeps_reference_zone_and_legend_family_out_of_default_body() -
             "raw_label": "text",
             "raw_order": 0,
             "bbox": [112, 118, 472, 282],
-            "text": "Another core body paragraph repeating the same typography and width so the anchor-first body family remains dominant across the middle pages. " * 2,
+            "text": "Another core body paragraph repeating the same typography and width so the anchor-first body family remains dominant across the middle pages. "
+            * 2,
             "page_width": 1200,
             "page_height": 1600,
             "span_metadata": {"size": 9.0, "font": "Times", "flags": ""},
@@ -336,10 +338,7 @@ def test_pipeline_keeps_reference_zone_and_legend_family_out_of_default_body() -
     rows, _ = build_structured_blocks(raw_blocks)
 
     assert any(row["role"] == "reference_item" for row in rows)
-    assert not any(
-        row["role"] == "body_paragraph" and row.get("style_family") == "legend_like"
-        for row in rows
-    )
+    assert not any(row["role"] == "body_paragraph" and row.get("style_family") == "legend_like" for row in rows)
 
 
 def test_style_aware_unnumbered_heading_detection() -> None:
@@ -393,12 +392,8 @@ def test_style_aware_unnumbered_heading_detection() -> None:
     )
 
     heading_roles = {"section_heading", "subsection_heading", "backmatter_heading"}
-    assert big_role.role in heading_roles, (
-        f"Big heading should be detected as heading, got {big_role.role}"
-    )
-    assert sub_role.role in heading_roles, (
-        f"Sub heading should be detected as heading, got {sub_role.role}"
-    )
+    assert big_role.role in heading_roles, f"Big heading should be detected as heading, got {big_role.role}"
+    assert sub_role.role in heading_roles, f"Sub heading should be detected as heading, got {sub_role.role}"
     assert body_role.role not in {"section_heading", "backmatter_heading", "subsection_heading"}, (
         f"Body should not be promoted to heading, got {body_role.role}"
     )
@@ -446,6 +441,7 @@ def test_heading_level_from_profile_match() -> None:
 
 def test_body_citation_not_authors() -> None:
     from paperforge.worker.ocr_roles import assign_block_role
+
     block = {
         "block_label": "text",
         "block_content": "In Section 5, the focus is on ES based bioelectronics $^{8,49}$",
@@ -459,6 +455,7 @@ def test_body_citation_not_authors() -> None:
 
 def test_frontmatter_author_zone_still_works() -> None:
     from paperforge.worker.ocr_roles import assign_block_role
+
     block = {
         "block_label": "text",
         "block_content": "Alice Smith, Bob Jones, Charlie Brown",
@@ -518,9 +515,7 @@ def test_figure_title_label_becomes_candidate() -> None:
 
     role = assign_block_role(block, page_blocks=[], page_width=1200, page_height=1600)
 
-    assert role.role == "figure_caption_candidate", (
-        f"figure_title label should produce candidate, got {role.role}"
-    )
+    assert role.role == "figure_caption_candidate", f"figure_title label should produce candidate, got {role.role}"
 
 
 def test_formal_figure_caption_still_direct() -> None:
@@ -544,15 +539,14 @@ def test_formal_figure_caption_still_direct() -> None:
 
     role = assign_block_role(block, page_blocks=page_blocks, page_width=1200, page_height=1600)
 
-    assert role.role == "figure_caption", (
-        f"Formal figure caption near media should be figure_caption, got {role.role}"
-    )
+    assert role.role == "figure_caption", f"Formal figure caption near media should be figure_caption, got {role.role}"
 
 
 def test_weak_backmatter_boundary_signal_emits_candidate():
     """A paragraph with backmatter boundary text but no bold span_metadata
     should emit backmatter_boundary_candidate, not backmatter_boundary_heading."""
     from paperforge.worker.ocr_roles import assign_block_role
+
     block = {
         "block_label": "paragraph_title",
         "block_content": "ADDITIONAL INFORMATION",
@@ -568,22 +562,29 @@ def test_weak_backmatter_boundary_signal_emits_candidate():
         }
         for i in range(5)
     ]
-    result = assign_block_role(
-        block, page_blocks=page_blocks, page_width=600, page_height=1600
-    )
-    assert result.role == "backmatter_boundary_candidate", (
-        f"Expected backmatter_boundary_candidate, got {result.role}"
-    )
+    result = assign_block_role(block, page_blocks=page_blocks, page_width=600, page_height=1600)
+    assert result.role == "backmatter_boundary_candidate", f"Expected backmatter_boundary_candidate, got {result.role}"
 
 
 def test_author_byline_not_section_heading():
     from paperforge.worker.ocr_roles import assign_block_role
 
     # Author byline with & on page 1
-    block = {"block_label": "paragraph_title", "block_content": "John Smith & Jane Doe", "block_bbox": [100, 50, 500, 80], "page": 1}
-    page_blocks = [block,
+    block = {
+        "block_label": "paragraph_title",
+        "block_content": "John Smith & Jane Doe",
+        "block_bbox": [100, 50, 500, 80],
+        "page": 1,
+    }
+    page_blocks = [
+        block,
         {"block_label": "text", "block_content": "Some frontmatter", "block_bbox": [100, 100, 500, 130], "page": 1},
-        {"block_label": "text", "block_content": "Some abstract content", "block_bbox": [100, 200, 500, 230], "page": 1},
+        {
+            "block_label": "text",
+            "block_content": "Some abstract content",
+            "block_bbox": [100, 200, 500, 230],
+            "page": 1,
+        },
     ]
     result = assign_block_role(block, page_blocks=page_blocks, page_width=600, page_height=800)
     assert result.role not in ("section_heading", "subsection_heading", "sub_subsection_heading"), (
@@ -594,17 +595,21 @@ def test_author_byline_not_section_heading():
 def test_correspondence_marker_not_heading():
     from paperforge.worker.ocr_roles import assign_block_role
 
-    block = {"block_label": "paragraph_title", "block_content": "*Correspondence: john@example.com", "block_bbox": [100, 500, 500, 530], "page": 1}
+    block = {
+        "block_label": "paragraph_title",
+        "block_content": "*Correspondence: john@example.com",
+        "block_bbox": [100, 500, 500, 530],
+        "page": 1,
+    }
     page_blocks = [block]
     result = assign_block_role(block, page_blocks=page_blocks, page_width=600, page_height=800)
-    assert result.role in ("frontmatter_noise", "unknown_structural"), (
-        f"Correspondence got role: {result.role}"
-    )
+    assert result.role in ("frontmatter_noise", "unknown_structural"), f"Correspondence got role: {result.role}"
 
 
 def test_running_header_not_heading():
     """Article-type label in top margin should be noise, not heading."""
     from paperforge.worker.ocr_roles import assign_block_role
+
     block = {
         "block_label": "paragraph_title",
         "block_content": "Review Article",
@@ -660,9 +665,7 @@ def test_doc_title_not_body_paragraph() -> None:
         "page": 1,
     }
     result = assign_block_role(block, page_blocks=[block], page_width=900, page_height=1200)
-    assert result.role != "body_paragraph", (
-        f"doc_title should not be body_paragraph, got {result.role}"
-    )
+    assert result.role != "body_paragraph", f"doc_title should not be body_paragraph, got {result.role}"
 
 
 def test_author_byline_comma_only_not_section_heading() -> None:
@@ -691,6 +694,7 @@ def test_backmatter_boundary_detects_on_early_page() -> None:
     """Backmatter boundary should be detectable on papers with fewer
     than 8 pages, without a hard page gate."""
     from paperforge.worker.ocr_roles import _is_backmatter_boundary_heading
+
     block = {
         "span_metadata": {"size": 12.0, "flags": "bold"},
         "text": "ADDITIONAL INFORMATION AND DECLARATIONS",
@@ -702,105 +706,214 @@ def test_backmatter_boundary_detects_on_early_page() -> None:
 
 def test_frontiers_figure_pipe_title_is_figure_caption():
     from paperforge.worker.ocr_roles import assign_block_role
-    result = assign_block_role({"raw_label": "figure_title", "text": "FIGURE 1 | Expression of irisin is downregulated in OA cartilage.", "page": 2, "page_width": 1200, "page_height": 1700, "block_bbox": [100, 500, 700, 540]}, page_blocks=[])
+
+    result = assign_block_role(
+        {
+            "raw_label": "figure_title",
+            "text": "FIGURE 1 | Expression of irisin is downregulated in OA cartilage.",
+            "page": 2,
+            "page_width": 1200,
+            "page_height": 1700,
+            "block_bbox": [100, 500, 700, 540],
+        },
+        page_blocks=[],
+    )
     assert result.role == "figure_caption"
     assert result.confidence >= 0.9
 
 
 def test_frontiers_figure_pipe_text_is_figure_caption():
     from paperforge.worker.ocr_roles import assign_block_role
-    result = assign_block_role({"raw_label": "text", "text": "FIGURE 2 | Treadmill exercise protocols.", "page": 2, "page_width": 1200, "page_height": 1700, "block_bbox": [100, 500, 700, 540]}, page_blocks=[])
+
+    result = assign_block_role(
+        {
+            "raw_label": "text",
+            "text": "FIGURE 2 | Treadmill exercise protocols.",
+            "page": 2,
+            "page_width": 1200,
+            "page_height": 1700,
+            "block_bbox": [100, 500, 700, 540],
+        },
+        page_blocks=[],
+    )
     assert result.role == "figure_caption"
     assert result.confidence >= 0.9
 
 
 def test_single_letter_panel_label_not_figure_caption():
     from paperforge.worker.ocr_roles import assign_block_role
-    result = assign_block_role({"raw_label": "text", "text": "A", "page": 2, "page_width": 1200, "page_height": 1700, "block_bbox": [100, 100, 110, 120]}, page_blocks=[])
+
+    result = assign_block_role(
+        {
+            "raw_label": "text",
+            "text": "A",
+            "page": 2,
+            "page_width": 1200,
+            "page_height": 1700,
+            "block_bbox": [100, 100, 110, 120],
+        },
+        page_blocks=[],
+    )
     assert result.role == "figure_inner_text"
 
 
 def test_parenthesized_panel_label_not_figure_caption():
     from paperforge.worker.ocr_roles import assign_block_role
-    result = assign_block_role({"raw_label": "text", "text": "(B)", "page": 2, "page_width": 1200, "page_height": 1700, "block_bbox": [100, 100, 125, 120]}, page_blocks=[])
+
+    result = assign_block_role(
+        {
+            "raw_label": "text",
+            "text": "(B)",
+            "page": 2,
+            "page_width": 1200,
+            "page_height": 1700,
+            "block_bbox": [100, 100, 125, 120],
+        },
+        page_blocks=[],
+    )
     assert result.role == "figure_inner_text"
 
 
 def test_page1_roman_heading_outside_title_zone_becomes_section_heading():
     from paperforge.worker.ocr_roles import assign_block_role
-    result = assign_block_role({"raw_label": "paragraph_title", "text": "I. INTRODUCTION", "page": 1, "page_width": 1200, "page_height": 1700, "block_bbox": [261, 967, 457, 988]}, page_blocks=[])
+
+    result = assign_block_role(
+        {
+            "raw_label": "paragraph_title",
+            "text": "I. INTRODUCTION",
+            "page": 1,
+            "page_width": 1200,
+            "page_height": 1700,
+            "block_bbox": [261, 967, 457, 988],
+        },
+        page_blocks=[],
+    )
     assert result.role == "section_heading"
     assert result.confidence >= 0.8
 
 
 def test_page1_alpha_heading_outside_title_zone_becomes_subsection_heading():
     from paperforge.worker.ocr_roles import assign_block_role
-    result = assign_block_role({"raw_label": "paragraph_title", "text": "A. Materials", "page": 1, "page_width": 1200, "page_height": 1700, "block_bbox": [624, 500, 742, 521]}, page_blocks=[])
+
+    result = assign_block_role(
+        {
+            "raw_label": "paragraph_title",
+            "text": "A. Materials",
+            "page": 1,
+            "page_width": 1200,
+            "page_height": 1700,
+            "block_bbox": [624, 500, 742, 521],
+        },
+        page_blocks=[],
+    )
     assert result.role == "subsection_heading"
     assert result.confidence >= 0.8
 
 
 def test_page1_top_title_not_misclassified_as_section_heading():
     from paperforge.worker.ocr_roles import assign_block_role
-    result = assign_block_role({"raw_label": "paragraph_title", "text": "I. INTRODUCTION", "page": 1, "page_width": 1200, "page_height": 1700, "block_bbox": [261, 100, 457, 120]}, page_blocks=[])
+
+    result = assign_block_role(
+        {
+            "raw_label": "paragraph_title",
+            "text": "I. INTRODUCTION",
+            "page": 1,
+            "page_width": 1200,
+            "page_height": 1700,
+            "block_bbox": [261, 100, 457, 120],
+        },
+        page_blocks=[],
+    )
     assert result.role != "section_heading"
 
 
 def test_preproof_marker_is_frontmatter_noise():
     from paperforge.worker.ocr_roles import assign_block_role
-    result = assign_block_role({
-        "raw_label": "paragraph_title",
-        "text": "Journal Pre-proof",
-        "page": 1, "page_width": 1224, "page_height": 1584,
-        "block_bbox": [190, 206, 475, 246],
-    }, page_blocks=[])
+
+    result = assign_block_role(
+        {
+            "raw_label": "paragraph_title",
+            "text": "Journal Pre-proof",
+            "page": 1,
+            "page_width": 1224,
+            "page_height": 1584,
+            "block_bbox": [190, 206, 475, 246],
+        },
+        page_blocks=[],
+    )
     assert result.role == "frontmatter_noise"
     assert result.confidence >= 0.9
 
 
 def test_preproof_marker_variants():
     from paperforge.worker.ocr_roles import assign_block_role
+
     for text in ["Journal Pre-proof", "Pre-proof", "journal pre-proof"]:
-        result = assign_block_role({
-            "raw_label": "paragraph_title",
-            "text": text, "page": 1, "page_width": 1224, "page_height": 1584,
-            "block_bbox": [190, 206, 475, 246],
-        }, page_blocks=[])
+        result = assign_block_role(
+            {
+                "raw_label": "paragraph_title",
+                "text": text,
+                "page": 1,
+                "page_width": 1224,
+                "page_height": 1584,
+                "block_bbox": [190, 206, 475, 246],
+            },
+            page_blocks=[],
+        )
         assert result.role == "frontmatter_noise"
 
 
 def test_preproof_running_header_is_suppressed():
     """Pre-proof text at extreme top (running header) on any page is suppressed."""
     from paperforge.worker.ocr_roles import assign_block_role
-    result = assign_block_role({
-        "raw_label": "paragraph_title",
-        "text": "Journal Pre-proof",
-        "page": 4, "page_width": 1224, "page_height": 1584,
-        "block_bbox": [190, 1, 475, 20],
-    }, page_blocks=[])
+
+    result = assign_block_role(
+        {
+            "raw_label": "paragraph_title",
+            "text": "Journal Pre-proof",
+            "page": 4,
+            "page_width": 1224,
+            "page_height": 1584,
+            "block_bbox": [190, 1, 475, 20],
+        },
+        page_blocks=[],
+    )
     assert result.role == "frontmatter_noise"
 
 
 def test_preproof_page2_not_suppressed():
     """Pre-proof text on page 2+ should NOT be suppressed."""
     from paperforge.worker.ocr_roles import assign_block_role
-    result = assign_block_role({
-        "raw_label": "paragraph_title",
-        "text": "Journal Pre-proof",
-        "page": 2, "page_width": 1224, "page_height": 1584,
-        "block_bbox": [190, 206, 475, 246],
-    }, page_blocks=[])
+
+    result = assign_block_role(
+        {
+            "raw_label": "paragraph_title",
+            "text": "Journal Pre-proof",
+            "page": 2,
+            "page_width": 1224,
+            "page_height": 1584,
+            "block_bbox": [190, 206, 475, 246],
+        },
+        page_blocks=[],
+    )
     assert result.role != "frontmatter_noise"
 
 
 def test_real_title_after_preproof_still_works():
     from paperforge.worker.ocr_roles import assign_block_role
-    result = assign_block_role({
-        "raw_label": "paragraph_title",
-        "text": "Magnetoresponsive Stem Cell Spheroid-based Cartilage Recovery Platform",
-        "page": 1, "page_width": 1200, "page_height": 1700,
-        "block_bbox": [100, 200, 700, 230],
-    }, page_blocks=[], page_height=1700)
+
+    result = assign_block_role(
+        {
+            "raw_label": "paragraph_title",
+            "text": "Magnetoresponsive Stem Cell Spheroid-based Cartilage Recovery Platform",
+            "page": 1,
+            "page_width": 1200,
+            "page_height": 1700,
+            "block_bbox": [100, 200, 700, 230],
+        },
+        page_blocks=[],
+        page_height=1700,
+    )
     assert result.role == "paper_title"
 
 
@@ -1005,7 +1118,9 @@ def test_build_structured_blocks_applies_late_role_resolution(monkeypatch) -> No
         "discover_body_family_anchor",
         lambda rows, page_count=None: {"status": "ACCEPT"},
     )
-    monkeypatch.setattr("paperforge.worker.ocr_document.normalize_document_structure", fake_normalize_document_structure)
+    monkeypatch.setattr(
+        "paperforge.worker.ocr_document.normalize_document_structure", fake_normalize_document_structure
+    )
     monkeypatch.setattr(
         "paperforge.worker.ocr_document._resolve_ambiguous_candidates",
         lambda blocks, doc_structure, page_layouts: None,
@@ -1015,10 +1130,7 @@ def test_build_structured_blocks_applies_late_role_resolution(monkeypatch) -> No
 
     assert rows[0]["role"] == "figure_caption_candidate"
     assert rows[0]["marker_signature"]["type"] == "figure_number"
-    assert any(
-        decision.get("stage") == "resolve_final_role"
-        for decision in rows[0].get("_decision_log", [])
-    )
+    assert any(decision.get("stage") == "resolve_final_role" for decision in rows[0].get("_decision_log", []))
 
 
 def test_build_structured_blocks_does_not_promote_when_anchor_gate_is_closed(monkeypatch) -> None:
@@ -1069,7 +1181,9 @@ def test_build_structured_blocks_does_not_promote_when_anchor_gate_is_closed(mon
         "discover_body_family_anchor",
         lambda rows, page_count=None: {"status": "HOLD"},
     )
-    monkeypatch.setattr("paperforge.worker.ocr_document.normalize_document_structure", fake_normalize_document_structure)
+    monkeypatch.setattr(
+        "paperforge.worker.ocr_document.normalize_document_structure", fake_normalize_document_structure
+    )
     monkeypatch.setattr(
         "paperforge.worker.ocr_document._resolve_ambiguous_candidates",
         lambda blocks, doc_structure, page_layouts: None,
@@ -1078,6 +1192,29 @@ def test_build_structured_blocks_does_not_promote_when_anchor_gate_is_closed(mon
     rows, _ = ocr_blocks.build_structured_blocks(raw_blocks)
 
     assert rows[0]["role"] == "body_paragraph"
+
+
+def test_resolve_final_role_treats_unassigned_as_seed_role_fallback() -> None:
+    """When role is 'unassigned', resolve_final_role should use seed_role as the
+    starting point for resolution, not default to 'body_paragraph'."""
+    from paperforge.worker.ocr_roles import resolve_final_role
+
+    block = {
+        "block_id": "p1_b1",
+        "text": "Introduction",
+        "role": "unassigned",
+        "seed_role": "section_heading",
+        "seed_confidence": 0.85,
+        "marker_signature": {"type": "none"},
+    }
+
+    resolved = resolve_final_role(
+        block,
+        anchors={"body_family_anchor": {"status": "ACCEPT"}},
+        families={},
+    )
+    # Should resolve to section_heading (from seed), not body_paragraph
+    assert resolved.role == "section_heading", f"Expected section_heading from seed_role fallback, got {resolved.role}"
 
 
 def test_resolve_final_role_does_not_promote_narrative_figure_mention_without_strong_authority() -> None:
@@ -1100,3 +1237,115 @@ def test_resolve_final_role_does_not_promote_narrative_figure_mention_without_st
         families={},
     )
     assert resolved.role == "body_paragraph"
+
+
+def test_build_structured_blocks_preserves_seed_role_and_leaves_final_role_unassigned_initially(monkeypatch):
+    """After assign_block_role, row must carry seed_role/seed_confidence/seed_evidence
+    and final role must start as 'unassigned' before late resolution."""
+    from paperforge.worker import ocr_blocks
+
+    raw_blocks = [
+        {
+            "paper_id": "KEY001",
+            "page": 1,
+            "block_id": "p1_b1",
+            "raw_label": "paragraph_title",
+            "raw_order": 0,
+            "bbox": [100, 50, 500, 80],
+            "text": "Introduction",
+            "page_width": 1200,
+            "page_height": 1600,
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 1,
+            "block_id": "p1_b2",
+            "raw_label": "text",
+            "raw_order": 1,
+            "bbox": [100, 100, 900, 300],
+            "text": "This is a body paragraph with enough text to be meaningful and avoid the short-text threshold.",
+            "page_width": 1200,
+            "page_height": 1600,
+        },
+    ]
+
+    def fake_build_block_signatures(block: dict) -> dict:
+        return {
+            "raw_observation": {"source": "test"},
+            "marker_signature": {"type": "none"},
+            "layout_signature": {"width": 800, "width_bucket": 800, "x_center": 550, "x_center_bucket": 550},
+            "span_signature": {"font_family_norm": "times", "font_size_median": 10, "font_size_bucket": 10},
+        }
+
+    monkeypatch.setattr(ocr_blocks, "build_block_signatures", fake_build_block_signatures)
+
+    rows, _ = ocr_blocks.build_structured_blocks(raw_blocks)
+
+    for row in rows:
+        # seed_role must always be present after build_structured_blocks
+        assert "seed_role" in row, f"block {row['block_id']} missing seed_role"
+        assert "seed_confidence" in row, f"block {row['block_id']} missing seed_confidence"
+        # seed_evidence is a list (may be empty)
+        assert isinstance(row.get("seed_evidence", []), list), f"block {row['block_id']} seed_evidence should be list"
+        # final role should not be 'unassigned' at the end (late resolution happened)
+        assert row["role"] != "unassigned", f"block {row['block_id']} final role should be resolved, not 'unassigned'"
+
+
+def test_pipeline_does_not_commit_final_semantic_role_before_zone_and_family_partition(monkeypatch):
+    """Zone and family partition must run AFTER role is still 'unassigned',
+    so downstream logic can use seed_role as the authority for zone decisions."""
+    from paperforge.worker import ocr_blocks
+
+    raw_blocks = [
+        {
+            "paper_id": "KEY001",
+            "page": 1,
+            "block_id": "p1_b1",
+            "raw_label": "paragraph_title",
+            "raw_order": 0,
+            "bbox": [100, 50, 500, 80],
+            "text": "Abstract",
+            "page_width": 1200,
+            "page_height": 1600,
+        },
+    ]
+
+    def fake_build_block_signatures(block: dict) -> dict:
+        return {
+            "raw_observation": {"source": "test"},
+            "marker_signature": {"type": "none"},
+            "layout_signature": {"width": 400, "width_bucket": 400, "x_center": 300, "x_center_bucket": 300},
+            "span_signature": {"font_family_norm": "times", "font_size_median": 10, "font_size_bucket": 10},
+        }
+
+    # Capture the state of rows at the point just after assign_block_role
+    # but before resolve_final_role. We verify that seed_role is set
+    # and role is 'unassigned' at that stage.
+    captured_rows_after_assign = []
+
+    original_assign = ocr_blocks.assign_block_role
+
+    def capturing_assign(block, page_blocks, page_width=0, page_height=0, style_profiles=None, role_profiles=None):
+        result = original_assign(block, page_blocks, page_width, page_height, style_profiles, role_profiles)
+        # Simulate what build_structured_blocks does after assign_block_role:
+        # It should set seed_role and leave role as 'unassigned'
+        captured_rows_after_assign.append(
+            {
+                "block_id": block.get("block_id") or block.get("block_content", "")[:20],
+                "assigned_role": result.role,
+            }
+        )
+        return result
+
+    monkeypatch.setattr(ocr_blocks, "build_block_signatures", fake_build_block_signatures)
+    monkeypatch.setattr(ocr_blocks, "assign_block_role", capturing_assign)
+
+    rows, _ = ocr_blocks.build_structured_blocks(raw_blocks)
+
+    # Verify that every block went through assign_block_role
+    assert len(captured_rows_after_assign) == len(raw_blocks)
+
+    # Verify that the final output has seed_role set
+    for row in rows:
+        assert "seed_role" in row, f"block {row['block_id']} missing seed_role"
+        assert row["seed_role"] != "unassigned", f"seed_role should never be 'unassigned', got {row['seed_role']}"

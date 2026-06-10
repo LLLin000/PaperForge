@@ -108,8 +108,14 @@ _ALPHA_SUBSECTION_PATTERN = re.compile(
 )
 
 _COMMON_SECTION_HEADINGS = {
-    "introduction", "materials and methods", "methods", "results",
-    "results and discussion", "discussion", "conclusion", "conclusions",
+    "introduction",
+    "materials and methods",
+    "methods",
+    "results",
+    "results and discussion",
+    "discussion",
+    "conclusion",
+    "conclusions",
 }
 
 # citation line like "Masante B, Gabetti S, Silva JC, Putame G... and Massai D (2025)"
@@ -190,10 +196,7 @@ def _is_textual_table(text: str) -> bool:
     lines = [l.strip() for l in text.split("\n") if l.strip()]
     if len(lines) == 0:
         return False
-    bullet_count = sum(
-        1 for l in lines
-        if l.startswith(("\u2022", "-", "*")) or (l[0].isdigit() and ". " in l[:4])
-    )
+    bullet_count = sum(1 for l in lines if l.startswith(("\u2022", "-", "*")) or (l[0].isdigit() and ". " in l[:4]))
     return bullet_count >= 2
 
 
@@ -307,11 +310,13 @@ def _looks_like_affiliation(text: str) -> bool:
     has_number_prefix = bool(re.match(r"^[\$\s]*\^?\d+\s*", text))
     has_superscript_number = bool(re.search(r"\$?\^\d+\$?", text))
     has_curly_superscript = bool(re.search(r"\$?\^\{", text))
-    return (has_inst
-            or (has_city_country and has_number_prefix)
-            or has_superscript_number
-            or (has_curly_superscript and has_inst)
-            or (has_curly_superscript and has_city_country))
+    return (
+        has_inst
+        or (has_city_country and has_number_prefix)
+        or has_superscript_number
+        or (has_curly_superscript and has_inst)
+        or (has_curly_superscript and has_city_country)
+    )
 
 
 def _infer_heading_level(
@@ -428,11 +433,22 @@ def resolve_final_role(
     body defaults.
     """
     anchors = anchors or {}
-    family_ctx, zone, style_family, style_family_authority, context_source = _resolve_late_family_context(block, families)
+    family_ctx, zone, style_family, style_family_authority, context_source = _resolve_late_family_context(
+        block, families
+    )
     marker_signature = block.get("marker_signature") or {}
     marker_type = str(marker_signature.get("type") or "none")
     current_role = str(block.get("role") or "body_paragraph")
     current_confidence = float(block.get("role_confidence") or 0.6)
+
+    # When role is 'unassigned', fall back to seed_role (the eager assignment
+    # stored during assign_block_role).  This ensures late resolution sees a
+    # meaningful role rather than the bare sentinel.
+    if current_role == "unassigned":
+        seed_role = str(block.get("seed_role") or "")
+        if seed_role:
+            current_role = seed_role
+            current_confidence = float(block.get("seed_confidence") or current_confidence)
     body_anchor = anchors.get("body_family_anchor") or {}
     reference_anchor = anchors.get("reference_family_anchor") or {}
     body_anchor_accepted = str(body_anchor.get("status") or "").upper() == "ACCEPT"
@@ -445,7 +461,8 @@ def resolve_final_role(
             zone == "reference_zone"
             and reference_anchor_accepted
             and style_family == "reference_like"
-            and marker_type in {
+            and marker_type
+            in {
                 "reference_numeric_bracket",
                 "reference_numeric_dot",
                 "reference_numeric_parenthesis",
@@ -531,10 +548,7 @@ def assign_block_role(
             return RoleAssignment(
                 role="frontmatter_noise",
                 confidence=0.98,
-                evidence=[
-                    "journal pre-proof running header suppressed: "
-                    f"p{page_num} y={y_top:.0f}/{page_h:.0f}"
-                ],
+                evidence=[f"journal pre-proof running header suppressed: p{page_num} y={y_top:.0f}/{page_h:.0f}"],
             )
 
         # Page 1 cover-page pre-proof is also page furniture
@@ -650,7 +664,8 @@ def assign_block_role(
         ph = float(block.get("page_height") or page_height or 1700)
         already_has_preproof = any(
             str(b.get("text", "") or b.get("block_content", "") or "").strip().lower().startswith("journal pre")
-            for b in page_blocks if b is not block
+            for b in page_blocks
+            if b is not block
         )
         if already_has_preproof and y_top < ph * 0.35 and len(text) > 40:
             lower_noise = text.strip().lstrip("*•·-–—").lower()
@@ -694,7 +709,8 @@ def assign_block_role(
             pass  # let existing paragraph_title or fallthrough handle it
         elif raw_label == "doc_title" or (
             raw_label != "text"
-            and len(block_bbox_local) >= 4 and block_bbox_local[1] < page_height * 0.25
+            and len(block_bbox_local) >= 4
+            and block_bbox_local[1] < page_height * 0.25
             and len(_tv) > 20
             and "abstract" not in _lv[:15]
             and "keywords" not in _lv[:15]
@@ -731,10 +747,16 @@ def assign_block_role(
             )
         # Running header guard: article-type labels in running-header
         # position (page > 1, top margin zone) are not section headings.
-        _RUNNING_HEADER_LABELS = frozenset({
-            "review article", "research article", "original article",
-            "case report", "brief communication", "rapid communication",
-        })
+        _RUNNING_HEADER_LABELS = frozenset(
+            {
+                "review article",
+                "research article",
+                "original article",
+                "case report",
+                "brief communication",
+                "rapid communication",
+            }
+        )
         if lower in _RUNNING_HEADER_LABELS and (block.get("page") or 1) == 1:
             return RoleAssignment(
                 role="frontmatter_noise",
@@ -777,8 +799,7 @@ def assign_block_role(
             confidence = 0.7
             lower_txt = text.lower()
             has_container_words = any(
-                w in lower_txt
-                for w in ["additional information", "declaration", "supplementary"]
+                w in lower_txt for w in ["additional information", "declaration", "supplementary"]
             )
             span_meta = block.get("span_metadata", {}) or {}
             is_bold = False
@@ -801,7 +822,10 @@ def assign_block_role(
             (re.search(r"&|,.*,", text) or _seems_like_authors(text))
             and len(text.split()) <= 15
             and not _has_heading_numbering(text)
-            and not any(text.lower().startswith(w) for w in ["abstract", "introduction", "methods", "results", "discussion", "conclusion", "references"])
+            and not any(
+                text.lower().startswith(w)
+                for w in ["abstract", "introduction", "methods", "results", "discussion", "conclusion", "references"]
+            )
         )
         if _is_author_byline and page_num == 1:
             return RoleAssignment(
@@ -1116,8 +1140,7 @@ def assign_block_role(
             confidence = 0.7
             lower_txt = text.lower()
             has_container_words = any(
-                w in lower_txt
-                for w in ["additional information", "declaration", "supplementary"]
+                w in lower_txt for w in ["additional information", "declaration", "supplementary"]
             )
             span_meta = block.get("span_metadata", {}) or {}
             is_bold = False
