@@ -1485,3 +1485,258 @@ def test_as_shown_in_figure_mention_rejected():
     ]
     inventory = build_figure_inventory(blocks)
     assert len(inventory["unmatched_legends"]) == 1
+
+
+# === figure legend completeness (Task 8) ===
+
+
+def test_completeness_present_in_empty_inventory() -> None:
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    inventory = build_figure_inventory([])
+    assert "figure_legend_completeness" in inventory
+    c = inventory["figure_legend_completeness"]
+    assert c["total"] == 0
+    assert c["accounted_for"] == 0
+    assert c["gap_count"] == 0
+    assert c["details"] == []
+
+
+def test_completeness_all_legends_accounted_matched() -> None:
+    """Every numbered formal legend is matched to an asset."""
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    blocks = [
+        {
+            "paper_id": "K001", "page": 1, "block_id": "p1_b1",
+            "role": "figure_caption",
+            "text": "Figure 1. Migration under DC field.",
+            "bbox": [50, 420, 550, 460],
+        },
+        {
+            "paper_id": "K001", "page": 1, "block_id": "p1_b2",
+            "role": "figure_asset", "text": "",
+            "bbox": [50, 50, 550, 400],
+        },
+        {
+            "paper_id": "K001", "page": 2, "block_id": "p2_b1",
+            "role": "figure_caption",
+            "text": "Figure 2. Expression levels.",
+            "bbox": [50, 420, 550, 460],
+        },
+        {
+            "paper_id": "K001", "page": 2, "block_id": "p2_b2",
+            "role": "figure_asset", "text": "",
+            "bbox": [50, 50, 550, 400],
+        },
+    ]
+
+    inventory = build_figure_inventory(blocks)
+    c = inventory["figure_legend_completeness"]
+    assert c["total"] == 2
+    assert c["accounted_for"] == 2
+    assert c["gap_count"] == 0
+    for d in c["details"]:
+        assert d["status"] == "matched"
+
+
+def test_completeness_legend_only_no_asset_is_ambiguous() -> None:
+    """A numbered legend with no matching asset lands in ambiguous, not gap."""
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    blocks = [
+        {
+            "paper_id": "K001", "page": 3, "block_id": "p3_b1",
+            "role": "figure_caption",
+            "text": "Figure 5. Caption with no asset on this page.",
+            "bbox": [50, 700, 550, 750],
+        },
+    ]
+
+    inventory = build_figure_inventory(blocks)
+    c = inventory["figure_legend_completeness"]
+    assert c["total"] == 1
+    assert c["accounted_for"] == 1
+    assert c["gap_count"] == 0
+    assert c["details"][0]["status"] == "ambiguous"
+
+
+def test_completeness_held_legend_is_accounted() -> None:
+    """A held (truncated) legend is counted as held, not gap."""
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    blocks = [
+        {
+            "paper_id": "K001", "page": 10, "block_id": "p10_b1",
+            "zone": "body_zone", "style_family": "legend_like",
+            "text": "Figure 1",
+            "marker_signature": {"type": "figure_number", "number": 1},
+            "bbox": [50, 50, 300, 90],
+            "page_width": 1200, "page_height": 1600,
+        },
+        {
+            "paper_id": "K001", "page": 10, "block_id": "p10_b2",
+            "zone": "body_zone", "style_family": "body_like",
+            "text": "Narrative prose",
+            "marker_signature": {"type": "none"},
+            "bbox": [50, 100, 900, 140],
+            "page_width": 1200, "page_height": 1600,
+        },
+    ]
+
+    inventory = build_figure_inventory(blocks)
+    c = inventory["figure_legend_completeness"]
+    assert c["total"] == 1
+    assert c["accounted_for"] == 1
+    assert c["gap_count"] == 0
+    assert c["details"][0]["status"] == "held"
+
+
+def test_completeness_low_score_legend_is_unmatched_not_gap() -> None:
+    """A legend with low caption score goes to rejected_legends, not gap.
+    Note: 'Total cells' lacks a figure number so the completeness check
+    does not count it as a numbered formal legend -- correct behavior."""
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    blocks = [
+        {
+            "paper_id": "K001", "page": 1, "block_id": "p1_b1",
+            "role": "figure_caption",
+            "text": "Total cells",
+            "bbox": [50, 700, 200, 720],
+        },
+    ]
+
+    inventory = build_figure_inventory(blocks)
+    c = inventory["figure_legend_completeness"]
+    # "Total cells" has no figure number, so completeness check skips it
+    assert c["total"] == 0
+    assert c["gap_count"] == 0
+    # It IS in rejected_legends (pipeline rejects it as not formal)
+    assert len(inventory["rejected_legends"]) == 1
+
+
+def test_completeness_rejected_legend_not_in_count() -> None:
+    """Rejected legends (axis labels etc.) are not formal numbered legends."""
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    blocks = [
+        {
+            "paper_id": "K001", "page": 9, "block_id": "p9_b8",
+            "role": "figure_caption", "raw_label": "figure_title",
+            "text": "Days post culture in osteogenic differentiation supplemented medium",
+            "bbox": [374, 1046, 1143, 1077],
+        },
+    ]
+
+    inventory = build_figure_inventory(blocks)
+    c = inventory["figure_legend_completeness"]
+    assert c["total"] == 0
+    assert c["gap_count"] == 0
+
+
+def test_completeness_mixed_outcomes_all_accounted() -> None:
+    """Multiple numbered legends with different outcomes are all accounted for."""
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    blocks = [
+        # Figure 1: matched
+        {
+            "paper_id": "K001", "page": 1, "block_id": "p1_b1",
+            "role": "figure_caption",
+            "text": "Figure 1. Migration under DC field.",
+            "bbox": [50, 420, 550, 460],
+        },
+        {
+            "paper_id": "K001", "page": 1, "block_id": "p1_b2",
+            "role": "figure_asset", "text": "",
+            "bbox": [50, 50, 550, 400],
+        },
+        # Figure 2: no asset on same page -> ambiguous
+        {
+            "paper_id": "K001", "page": 2, "block_id": "p2_b1",
+            "role": "figure_caption",
+            "text": "Figure 2. Expression levels without asset.",
+            "bbox": [50, 700, 550, 750],
+        },
+        # Non-numbered caption (axis label) -> not counted by completeness
+        {
+            "paper_id": "K001", "page": 3, "block_id": "p3_b1",
+            "role": "figure_caption",
+            "text": "Days post culture",
+            "bbox": [50, 700, 200, 720],
+        },
+    ]
+
+    inventory = build_figure_inventory(blocks)
+    c = inventory["figure_legend_completeness"]
+    # Only Figure 1 and Figure 2 have figure numbers
+    assert c["total"] == 2
+    assert c["accounted_for"] == 2
+    assert c["gap_count"] == 0
+
+    statuses = {d["block_id"]: d["status"] for d in c["details"]}
+    assert statuses["p1_b1"] == "matched"
+    assert statuses["p2_b1"] == "ambiguous"
+
+
+def test_compute_figure_legend_completeness_directly() -> None:
+    """Test the completeness function independently with a synthetic gap."""
+    from paperforge.worker.ocr_figures import compute_figure_legend_completeness
+
+    structured_blocks = [
+        {
+            "paper_id": "K001", "page": 1, "block_id": "leg_A",
+            "role": "figure_caption",
+            "text": "Figure 1. Test.",
+            "bbox": [50, 420, 550, 460],
+        },
+        {
+            "paper_id": "K001", "page": 2, "block_id": "leg_B",
+            "role": "figure_caption",
+            "text": "Figure 2. Test.",
+            "bbox": [50, 420, 550, 460],
+        },
+    ]
+
+    # Inventory where leg_A is matched but leg_B is missing from all buckets
+    inventory = {
+        "matched_figures": [{"legend_block_id": "leg_A"}],
+        "held_figures": [],
+        "ambiguous_figures": [],
+        "unmatched_legends": [],
+    }
+
+    result = compute_figure_legend_completeness(structured_blocks, inventory)
+    assert result["total"] == 2
+    assert result["accounted_for"] == 1
+    assert result["gap_count"] == 1
+    statuses = {d["block_id"]: d["status"] for d in result["details"]}
+    assert statuses["leg_A"] == "matched"
+    assert statuses["leg_B"] == "gap"
+
+
+def test_compute_figure_legend_completeness_skips_body_mentions() -> None:
+    """Body-paragraph figure mentions are not counted as formal legends."""
+    from paperforge.worker.ocr_figures import compute_figure_legend_completeness
+
+    structured_blocks = [
+        {
+            "paper_id": "K001", "page": 1, "block_id": "body1",
+            "role": "body_paragraph", "raw_role": "body_paragraph",
+            "text": "Figure 2 shows the results.",
+            "bbox": [50, 100, 550, 140],
+            "marker_signature": {"type": "figure_number", "number": 2},
+        },
+    ]
+
+    inventory = {
+        "matched_figures": [],
+        "held_figures": [],
+        "ambiguous_figures": [],
+        "unmatched_legends": [],
+    }
+
+    result = compute_figure_legend_completeness(structured_blocks, inventory)
+    assert result["total"] == 0
+    assert result["gap_count"] == 0
