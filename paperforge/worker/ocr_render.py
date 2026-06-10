@@ -935,6 +935,8 @@ def render_fulltext_markdown(
             # Emit objects for the page we just finished rendering
             if current_page is not None:
                 for fig in figures_by_page.get(current_page, []):
+                    if str(fig['figure_id']).startswith("unmatched_legend_"):
+                        continue
                     caption = str(fig.get("caption") or "").strip()
                     if caption and caption not in emitted_figure_captions:
                         lines.append(caption)
@@ -943,6 +945,8 @@ def render_fulltext_markdown(
                     lines.append(f"![[render/figures/{fig['figure_id']}.md]]")
                     lines.append("")
                 for cluster_id in unresolved_clusters_by_page.get(current_page, []):
+                    if str(cluster_id).startswith("unresolved_cluster_"):
+                        continue
                     lines.append(f"![[render/figures/{cluster_id}.md]]")
                     lines.append("")
                 for tbl_id in tables_by_page.get(current_page, []):
@@ -961,6 +965,8 @@ def render_fulltext_markdown(
                 lines.append(f"<!-- page {p} -->")
                 lines.append("")
                 for fig in figures_by_page.get(p, []):
+                    if str(fig['figure_id']).startswith("unmatched_legend_"):
+                        continue
                     caption = str(fig.get("caption") or "").strip()
                     if caption and caption not in emitted_figure_captions:
                         lines.append(caption)
@@ -969,6 +975,8 @@ def render_fulltext_markdown(
                     lines.append(f"![[render/figures/{fig['figure_id']}.md]]")
                     lines.append("")
                 for cluster_id in unresolved_clusters_by_page.get(p, []):
+                    if str(cluster_id).startswith("unresolved_cluster_"):
+                        continue
                     lines.append(f"![[render/figures/{cluster_id}.md]]")
                     lines.append("")
                 for tbl_id in tables_by_page.get(p, []):
@@ -1101,6 +1109,8 @@ def render_fulltext_markdown(
     # Emit objects for the last rendered page
     if current_page is not None:
         for fig in figures_by_page.get(current_page, []):
+            if str(fig['figure_id']).startswith("unmatched_legend_"):
+                continue
             caption = str(fig.get("caption") or "").strip()
             if caption and caption not in emitted_figure_captions:
                 lines.append(caption)
@@ -1109,6 +1119,8 @@ def render_fulltext_markdown(
             lines.append(f"![[render/figures/{fig['figure_id']}.md]]")
             lines.append("")
         for cluster_id in unresolved_clusters_by_page.get(current_page, []):
+            if str(cluster_id).startswith("unresolved_cluster_"):
+                continue
             lines.append(f"![[render/figures/{cluster_id}.md]]")
             lines.append("")
         for tbl_id in tables_by_page.get(current_page, []):
@@ -1133,6 +1145,8 @@ def render_fulltext_markdown(
                 lines.append(f"<!-- page {p} -->")
                 lines.append("")
             for fig in figures_by_page.get(p, []):
+                if str(fig['figure_id']).startswith("unmatched_legend_"):
+                    continue
                 caption = str(fig.get("caption") or "").strip()
                 if caption and caption not in emitted_figure_captions:
                     lines.append(caption)
@@ -1141,6 +1155,8 @@ def render_fulltext_markdown(
                 lines.append(f"![[render/figures/{fig['figure_id']}.md]]")
                 lines.append("")
             for cluster_id in unresolved_clusters_by_page.get(p, []):
+                if str(cluster_id).startswith("unresolved_cluster_"):
+                    continue
                 lines.append(f"![[render/figures/{cluster_id}.md]]")
                 lines.append("")
             for tbl_id in tables_by_page.get(p, []):
