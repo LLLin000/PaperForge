@@ -139,3 +139,66 @@ def test_ambiguous_without_formal_legend_does_not_enter_reader_layer() -> None:
 
     assert result["reader_figures"] == []
     assert result["reader_coverage"]["total"] == 0
+
+
+def test_grouped_approximate_requires_visual_candidates() -> None:
+    from paperforge.worker.ocr_figure_reader import synthesize_reader_figures
+
+    strict_inventory = {
+        "matched_figures": [],
+        "held_figures": [],
+        "ambiguous_figures": [
+            {
+                "figure_number": 4,
+                "legend_block_id": 44,
+                "caption_text": "FIGURE 4 | Immunohistochemical staining...",
+                "candidate_asset_ids": [],
+                "marker_type": "figure_number",
+            }
+        ],
+        "unmatched_legends": [],
+        "unresolved_clusters": [],
+    }
+
+    result = synthesize_reader_figures(strict_inventory, structured_blocks=[])
+
+    assert result["reader_figures"][0]["reader_status"] != "GROUPED_APPROXIMATE"
+
+
+def test_reader_hold_does_not_default_to_caption_consumption() -> None:
+    from paperforge.worker.ocr_figure_reader import _materialize_hold_outcome
+
+    hold = _materialize_hold_outcome(
+        legend_block_id=80,
+        caption_text="weak fragment",
+        page=10,
+        candidate_asset_ids=[],
+        hold_visibility="audit_hold",
+    )
+
+    assert hold["consumed_caption_block_ids"] == []
+    assert hold["debug_refs"]["hold_visibility"] == "audit_hold"
+
+
+def test_legend_only_consumes_caption_when_rendered() -> None:
+    from paperforge.worker.ocr_figure_reader import synthesize_reader_figures
+
+    strict_inventory = {
+        "matched_figures": [],
+        "held_figures": [],
+        "ambiguous_figures": [],
+        "unmatched_legends": [
+            {
+                "figure_number": 2,
+                "legend_block_id": 21,
+                "caption_text": "FIGURE 2 | Treadmill exercise protocols...",
+                "marker_type": "figure_number",
+            }
+        ],
+        "unresolved_clusters": [],
+    }
+
+    result = synthesize_reader_figures(strict_inventory, structured_blocks=[])
+
+    assert result["consumed_caption_block_ids"] == [21]
+    assert result["reader_figures"][0]["reader_status"] == "LEGEND_ONLY"

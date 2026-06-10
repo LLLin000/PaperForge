@@ -47,6 +47,18 @@ def _asset_ids_from_item(item: dict) -> list[int | str]:
     return []
 
 
+def _candidate_asset_ids_from_item(item: dict) -> list[int | str]:
+    if "candidate_asset_ids" in item:
+        return list(item.get("candidate_asset_ids", []))
+    if "candidates" in item:
+        return [
+            asset.get("asset_block_id")
+            for asset in item.get("candidates", [])
+            if asset.get("asset_block_id") is not None
+        ]
+    return []
+
+
 def _normalize_bucket(
     items: list[dict],
     bucket_name: str,
@@ -63,7 +75,7 @@ def _normalize_bucket(
                 "legend_block_id": legend_block_id,
                 "caption_text": _caption_text(item),
                 "asset_block_ids": _asset_ids_from_item(item),
-                "candidate_asset_ids": (_asset_ids_from_item(item) if bucket_name in candidate_buckets else []),
+                "candidate_asset_ids": (_candidate_asset_ids_from_item(item) if bucket_name in candidate_buckets else []),
                 "marker_type": item.get("marker_type") or (block.get("marker_signature") or {}).get("type"),
                 "inline_mention": bool(item.get("inline_mention", False)),
                 "panel_label": bool(item.get("panel_label", False)),
@@ -86,11 +98,11 @@ def _build_bucket(
 
 
 _READER_STATUS_MAP = {
-    "matched_figures": "RESOLVED",
-    "held_figures": "DEFERRED",
+    "matched_figures": "EXACT_MATCH",
+    "held_figures": "HOLD",
     "ambiguous_figures": "GROUPED_APPROXIMATE",
-    "unmatched_legends": "CAPTION_ONLY",
-    "unresolved_clusters": "ORPHAN_ASSETS",
+    "unmatched_legends": "LEGEND_ONLY",
+    "unresolved_clusters": "ASSET_GROUP_ONLY",
 }
 
 
@@ -111,36 +123,165 @@ def _stable_reader_figure_id(
     return f"{base}{suffix}"
 
 
+def _materialize_hold_outcome(
+    *,
+    legend_block_id: int | str | None,
+    caption_text: str,
+    page: int | None,
+    candidate_asset_ids: list[int | str],
+    hold_visibility: str,
+) -> dict:
+    reader_visible = hold_visibility == "reader_hold"
+    return {
+        "reader_figure_id": _stable_reader_figure_id(None, page=page, ordinal=0, suffix="_hold"),
+        "figure_number": None,
+        "reader_status": "HOLD",
+        "strict_status": "held",
+        "strict_source": "held_figures",
+        "caption_block_id": legend_block_id,
+        "caption_text": caption_text,
+        "visual_groups": [],
+        "consumed_caption_block_ids": (
+            [legend_block_id] if reader_visible and legend_block_id is not None and caption_text else []
+        ),
+        "consumed_asset_block_ids": [],
+        "debug_refs": {"candidate_asset_ids": list(candidate_asset_ids), "hold_visibility": hold_visibility},
+    }
+
+
 def _materialize_reader_figure(
     normalized_item: dict,
     source_bucket: str,
     ordinal: int,
-) -> dict:
+) -> dict | None:
     figure_number = normalized_item.get("figure_number")
-    asset_ids = normalized_item.get("asset_block_ids", [])
-    first_asset = asset_ids[0] if asset_ids else None
-    rf_id = _stable_reader_figure_id(
-        figure_number,
-        page=normalized_item.get("zone"),
-        first_asset_block_id=first_asset,
-        ordinal=ordinal,
-    )
-    return {
-        "reader_figure_id": rf_id,
-        "figure_number": figure_number,
-        "reader_status": _READER_STATUS_MAP.get(source_bucket, "UNKNOWN"),
-        "strict_status": normalized_item.get("strict_status", source_bucket.removesuffix("s")),
-        "strict_source": source_bucket,
-        "caption_text": normalized_item.get("caption_text", ""),
-        "legend_block_id": normalized_item.get("legend_block_id"),
-        "asset_block_ids": normalized_item.get("asset_block_ids", []),
-        "candidate_asset_ids": normalized_item.get("candidate_asset_ids", []),
-        "marker_type": normalized_item.get("marker_type"),
-        "inline_mention": normalized_item.get("inline_mention", False),
-        "panel_label": normalized_item.get("panel_label", False),
-        "zone": normalized_item.get("zone"),
-        "style_family": normalized_item.get("style_family"),
-    }
+    caption_text = normalized_item.get("caption_text", "")
+    legend_block_id = normalized_item.get("legend_block_id")
+
+    if source_bucket == "matched_figures":
+        asset_ids = list(normalized_item.get("asset_block_ids", []))
+        return {
+            "reader_figure_id": _stable_reader_figure_id(
+                figure_number,
+                page=normalized_item.get("zone"),
+                first_asset_block_id=asset_ids[0] if asset_ids else None,
+                ordinal=ordinal,
+            ),
+            "figure_number": figure_number,
+            "reader_status": "EXACT_MATCH",
+            "strict_status": normalized_item.get("strict_status", "matched"),
+            "strict_source": source_bucket,
+            "caption_block_id": legend_block_id,
+            "caption_text": caption_text,
+            "visual_groups": [
+                {
+                    "page": normalized_item.get("zone"),
+                    "asset_block_ids": asset_ids,
+                    "group_status": "matched_group",
+                    "rendered_as_representative": True,
+                }
+            ],
+            "consumed_caption_block_ids": [legend_block_id] if legend_block_id is not None else [],
+            "consumed_asset_block_ids": asset_ids,
+            "debug_refs": {},
+        }
+
+    if source_bucket in {"held_figures", "ambiguous_figures"}:
+        candidate_asset_ids = list(normalized_item.get("candidate_asset_ids", []))
+        if candidate_asset_ids:
+            return {
+                "reader_figure_id": _stable_reader_figure_id(
+                    figure_number,
+                    page=normalized_item.get("zone"),
+                    first_asset_block_id=candidate_asset_ids[0] if candidate_asset_ids else None,
+                    ordinal=ordinal,
+                ),
+                "figure_number": figure_number,
+                "reader_status": "GROUPED_APPROXIMATE",
+                "strict_status": normalized_item.get("strict_status", "ambiguous"),
+                "strict_source": source_bucket,
+                "caption_block_id": legend_block_id,
+                "caption_text": caption_text,
+                "visual_groups": [
+                    {
+                        "page": normalized_item.get("zone"),
+                        "asset_block_ids": candidate_asset_ids,
+                        "group_status": "candidate_group",
+                        "rendered_as_representative": False,
+                    }
+                ],
+                "consumed_caption_block_ids": [legend_block_id] if legend_block_id is not None else [],
+                "consumed_asset_block_ids": [],
+                "debug_refs": {"candidate_asset_ids": candidate_asset_ids},
+            }
+        if caption_text:
+            return {
+                "reader_figure_id": _stable_reader_figure_id(
+                    figure_number,
+                    page=normalized_item.get("zone"),
+                    ordinal=ordinal,
+                ),
+                "figure_number": figure_number,
+                "reader_status": "LEGEND_ONLY",
+                "strict_status": normalized_item.get("strict_status", "held"),
+                "strict_source": source_bucket,
+                "caption_block_id": legend_block_id,
+                "caption_text": caption_text,
+                "visual_groups": [],
+                "consumed_caption_block_ids": [legend_block_id] if legend_block_id is not None else [],
+                "consumed_asset_block_ids": [],
+                "debug_refs": {},
+            }
+        return None
+
+    if source_bucket == "unmatched_legends":
+        return {
+            "reader_figure_id": _stable_reader_figure_id(
+                figure_number,
+                page=normalized_item.get("zone"),
+                ordinal=ordinal,
+            ),
+            "figure_number": figure_number,
+            "reader_status": "LEGEND_ONLY",
+            "strict_status": normalized_item.get("strict_status", "unmatched"),
+            "strict_source": source_bucket,
+            "caption_block_id": legend_block_id,
+            "caption_text": caption_text,
+            "visual_groups": [],
+            "consumed_caption_block_ids": [legend_block_id] if legend_block_id is not None else [],
+            "consumed_asset_block_ids": [],
+            "debug_refs": {},
+        }
+
+    if source_bucket == "unresolved_clusters":
+        asset_ids = list(normalized_item.get("asset_block_ids", []))
+        return {
+            "reader_figure_id": _stable_reader_figure_id(
+                None,
+                page=normalized_item.get("zone"),
+                first_asset_block_id=asset_ids[0] if asset_ids else None,
+                ordinal=ordinal,
+            ),
+            "figure_number": None,
+            "reader_status": "ASSET_GROUP_ONLY",
+            "strict_status": normalized_item.get("strict_status", "unresolved_cluster"),
+            "strict_source": source_bucket,
+            "caption_block_id": None,
+            "caption_text": "",
+            "visual_groups": [
+                {
+                    "page": normalized_item.get("zone"),
+                    "asset_block_ids": asset_ids,
+                    "group_status": "candidate_group",
+                    "rendered_as_representative": True,
+                }
+            ],
+            "consumed_caption_block_ids": [],
+            "consumed_asset_block_ids": asset_ids,
+            "debug_refs": {},
+        }
+
+    return None
 
 
 def _passes_formal_legend_gate(item: dict) -> bool:
@@ -216,17 +357,18 @@ def synthesize_reader_figures(
     for ordinal, entry in enumerate(eligible_inputs):
         item = entry["item"]
         source_name = entry["source"]
-        reader_figures.append(_materialize_reader_figure(item, source_name, ordinal))
-        legend_id = item.get("legend_block_id")
-        if legend_id is not None:
-            consumed_caption_ids.append(legend_id)
-        consumed_asset_ids.extend(item.get("asset_block_ids", []))
+        materialized = _materialize_reader_figure(item, source_name, ordinal)
+        if materialized is None:
+            continue
+        reader_figures.append(materialized)
+        consumed_caption_ids.extend(materialized.get("consumed_caption_block_ids", []))
+        consumed_asset_ids.extend(materialized.get("consumed_asset_block_ids", []))
 
     coverage_total = len(eligible_inputs)
     return {
         "normalized_inputs": normalized,
         "reader_figures": reader_figures,
-        "reader_coverage": ReaderCoverage(total=coverage_total, accounted=coverage_total, gap_count=0).as_dict(),
+        "reader_coverage": ReaderCoverage(total=coverage_total, accounted=len(reader_figures), gap_count=coverage_total - len(reader_figures)).as_dict(),
         "consumed_caption_block_ids": consumed_caption_ids,
         "consumed_asset_block_ids": consumed_asset_ids,
     }
