@@ -9,11 +9,13 @@ from paperforge.worker.ocr_families import discover_body_family_anchor
 from paperforge.worker.ocr_signatures import build_block_signatures
 from paperforge.worker.ocr_roles import assign_block_role, resolve_final_role
 
-_CANDIDATE_ROLES = frozenset({
-    "figure_caption_candidate",
-    "backmatter_heading_candidate",
-    "structured_insert_candidate",
-})
+_CANDIDATE_ROLES = frozenset(
+    {
+        "figure_caption_candidate",
+        "backmatter_heading_candidate",
+        "structured_insert_candidate",
+    }
+)
 
 
 def build_structured_blocks(
@@ -60,7 +62,14 @@ def build_structured_blocks(
             )
             render_default = role.role not in ({"noise", "unknown_structural"} | _CANDIDATE_ROLES)
             index_default = role.role not in _CANDIDATE_ROLES
-            if role.role in {"noise", "page_header", "page_footer", "frontmatter_noise", "non_body_insert", "structured_insert"}:
+            if role.role in {
+                "noise",
+                "page_header",
+                "page_footer",
+                "frontmatter_noise",
+                "non_body_insert",
+                "structured_insert",
+            }:
                 render_default = False
             if role.role in {"noise", "frontmatter_noise", "table_html", "non_body_insert", "structured_insert"}:
                 index_default = False
@@ -74,9 +83,12 @@ def build_structured_blocks(
                 "text": block.get("text", ""),
                 "page_width": block.get("page_width", 0),
                 "page_height": block.get("page_height", 0),
-                "role": role.role,
+                "role": "unassigned",
                 "role_confidence": role.confidence,
                 "evidence": role.evidence,
+                "seed_role": role.role,
+                "seed_confidence": role.confidence,
+                "seed_evidence": list(role.evidence),
                 "span_metadata": block.get("span_metadata"),
                 "raw_observation": sig_result["raw_observation"],
                 "marker_signature": sig_result["marker_signature"],
@@ -94,10 +106,10 @@ def build_structured_blocks(
                 row,
                 stage="assign_block_role",
                 old_role=str(block.get("raw_label", "")),
-                new_role=row.get("role"),
+                new_role=row.get("seed_role"),
                 reason="seed role assigned from raw OCR label and local heuristics",
-                confidence=row.get("role_confidence"),
-                evidence=row.get("evidence", []),
+                confidence=row.get("seed_confidence"),
+                evidence=row.get("seed_evidence", []),
             )
 
             rows.append(row)
@@ -105,6 +117,7 @@ def build_structured_blocks(
     # Suppress entire pre-proof page: if page 1 contains a pre-proof noise marker,
     # mark all page-1 blocks as frontmatter_noise so the cover page is skipped
     from paperforge.worker.ocr_roles import is_preproof_marker
+
     page1_has_preproof = any(
         int(row.get("page", 0) or 0) == 1
         and is_preproof_marker(str(row.get("text", "") or row.get("block_content", "") or ""))
@@ -128,9 +141,8 @@ def build_structured_blocks(
         doc_structure.body_family_anchor = body_family_anchor
     except Exception as exc:
         import logging
-        logging.getLogger(__name__).warning(
-            "Document structure normalization failed: %s", exc
-        )
+
+        logging.getLogger(__name__).warning("Document structure normalization failed: %s", exc)
 
     # Build role span profiles from normalized results
     paper_context: dict = {}
@@ -216,7 +228,14 @@ def build_structured_blocks(
             row["index_default"] = False
         else:
             row["render_default"] = role not in ({"noise", "unknown_structural"} | _CANDIDATE_ROLES)
-            if role in {"noise", "page_header", "page_footer", "frontmatter_noise", "non_body_insert", "structured_insert"}:
+            if role in {
+                "noise",
+                "page_header",
+                "page_footer",
+                "frontmatter_noise",
+                "non_body_insert",
+                "structured_insert",
+            }:
                 row["render_default"] = False
             row["index_default"] = role not in _CANDIDATE_ROLES
             if role in {"noise", "frontmatter_noise", "table_html", "non_body_insert", "structured_insert"}:
