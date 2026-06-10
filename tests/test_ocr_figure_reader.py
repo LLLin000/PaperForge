@@ -83,3 +83,59 @@ def test_reader_figure_id_uses_first_asset_id_for_visual_group_when_figure_numbe
     from paperforge.worker.ocr_figure_reader import _stable_reader_figure_id
 
     assert _stable_reader_figure_id(None, page=7, first_asset_block_id=31, ordinal=2) == "visual_group_7_31_reader"
+
+
+def test_coverage_total_counts_deduplicated_eligible_inputs() -> None:
+    from paperforge.worker.ocr_figure_reader import synthesize_reader_figures
+
+    strict_inventory = {
+        "ambiguous_figures": [
+            {
+                "figure_number": 2,
+                "legend_block_id": 21,
+                "caption_text": "FIGURE 2 | Treadmill exercise protocols...",
+                "candidate_asset_ids": [30, 31],
+                "marker_type": "figure_number",
+            }
+        ],
+        "unmatched_legends": [
+            {
+                "figure_number": 2,
+                "legend_block_id": 21,
+                "caption_text": "FIGURE 2 | Treadmill exercise protocols...",
+                "marker_type": "figure_number",
+            }
+        ],
+        "matched_figures": [],
+        "held_figures": [],
+        "unresolved_clusters": [],
+    }
+
+    result = synthesize_reader_figures(strict_inventory, structured_blocks=[])
+
+    assert result["reader_coverage"]["total"] == 1
+
+
+def test_ambiguous_without_formal_legend_does_not_enter_reader_layer() -> None:
+    from paperforge.worker.ocr_figure_reader import synthesize_reader_figures
+
+    strict_inventory = {
+        "matched_figures": [],
+        "held_figures": [],
+        "ambiguous_figures": [
+            {
+                "legend_block_id": 50,
+                "caption_text": "Figure 2 shows the progression...",
+                "candidate_asset_ids": [70],
+                "marker_type": "figure_number",
+                "inline_mention": True,
+            }
+        ],
+        "unmatched_legends": [],
+        "unresolved_clusters": [],
+    }
+
+    result = synthesize_reader_figures(strict_inventory, structured_blocks=[])
+
+    assert result["reader_figures"] == []
+    assert result["reader_coverage"]["total"] == 0
