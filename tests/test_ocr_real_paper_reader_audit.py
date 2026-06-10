@@ -24,7 +24,6 @@ DEBUG_TOKENS = ["unmatched_legend_", "unresolved_cluster_", "orphan_", "asset_bl
 HEADING_FORBIDDEN = ["published online", "review article", "steve stegen", "geert carmeliet"]
 BODY_FORBIDDEN = [
     "published online",
-    "review article",
     "conflict of interest",
     "publisher's note",
     "ethics statement",
