@@ -638,6 +638,20 @@ def _order_tail_blocks(blocks: list[dict], style_profiles: dict | None = None) -
     return non_ref + refs
 
 
+def _render_reader_figure_card(figure: dict) -> list[str]:
+    lines: list[str] = []
+    status = figure.get("reader_status", "")
+    caption_text = figure.get("caption_text", "")
+    fn = figure.get("figure_number")
+    if fn is not None:
+        lines.append(f"> **Figure {fn}** — {status}")
+    else:
+        lines.append(f"> **Figure (unmatched)** — {status}")
+    if caption_text:
+        lines.append(f"> {caption_text}")
+    return lines
+
+
 def render_fulltext_markdown(
     *,
     structured_blocks: list[dict],
@@ -646,10 +660,39 @@ def render_fulltext_markdown(
     table_inventory: dict,
     page_count: int | None = None,
     document_structure: DocumentStructure | None = None,
+    reader_payload: dict | None = None,
 ) -> str:
     lines: list[str] = []
 
     emitted_figure_captions: set[str] = set()
+
+    reader_figures = (reader_payload or {}).get("reader_figures", [])
+    consumed_caption_block_ids = set((reader_payload or {}).get("consumed_caption_block_ids", []))
+    rendered_reader_figure_ids: set[str] = set()
+
+    _block_page_map: dict[int, int] = {}
+    for block in structured_blocks:
+        bid = block.get("block_id")
+        bp = block.get("page")
+        if bid is not None and bp is not None:
+            _block_page_map[bid] = bp
+
+    reader_figures_by_page: dict[int, list[dict]] = {}
+    for rf in reader_figures:
+        rfid = rf.get("reader_figure_id")
+        if not rfid:
+            continue
+        cbid = rf.get("caption_block_id")
+        page = _block_page_map.get(cbid) if cbid is not None else None
+        if page is None:
+            for aid in rf.get("consumed_asset_block_ids", []):
+                p = _block_page_map.get(aid)
+                if p is not None:
+                    page = p
+                    break
+        if page is None:
+            page = 1
+        reader_figures_by_page.setdefault(page, []).append(rf)
 
     # --- title ---
     title = resolved_metadata.get("title", {}).get("value", "")
@@ -905,6 +948,12 @@ def render_fulltext_markdown(
                 for tbl_id in tables_by_page.get(current_page, []):
                     lines.append(f"![[render/tables/{tbl_id}.md]]")
                     lines.append("")
+                for rf in reader_figures_by_page.get(current_page, []):
+                    rfid = rf.get("reader_figure_id")
+                    if rfid and rfid not in rendered_reader_figure_ids:
+                        rendered_reader_figure_ids.add(rfid)
+                        lines.extend(_render_reader_figure_card(rf))
+                        lines.append("")
                 emitted_pages.add(current_page)
             # Fill in page markers for skipped pages (no renderable blocks)
             first_new_page = (current_page or 0) + 1
@@ -925,6 +974,12 @@ def render_fulltext_markdown(
                 for tbl_id in tables_by_page.get(p, []):
                     lines.append(f"![[render/tables/{tbl_id}.md]]")
                     lines.append("")
+                for rf in reader_figures_by_page.get(p, []):
+                    rfid = rf.get("reader_figure_id")
+                    if rfid and rfid not in rendered_reader_figure_ids:
+                        rendered_reader_figure_ids.add(rfid)
+                        lines.extend(_render_reader_figure_card(rf))
+                        lines.append("")
                 emitted_pages.add(p)
             current_page = block_page
             lines.append(f"<!-- page {block_page} -->")
@@ -1020,6 +1075,9 @@ def render_fulltext_markdown(
                 lines.append(f"![[render/tables/{tbl_id}.md]]")
                 lines.append("")
         elif role == "figure_caption":
+            block_id = block.get("block_id")
+            if block_id is not None and block_id in consumed_caption_block_ids:
+                continue
             if text:
                 lines.append(text)
                 lines.append("")
@@ -1056,6 +1114,12 @@ def render_fulltext_markdown(
         for tbl_id in tables_by_page.get(current_page, []):
             lines.append(f"![[render/tables/{tbl_id}.md]]")
             lines.append("")
+        for rf in reader_figures_by_page.get(current_page, []):
+            rfid = rf.get("reader_figure_id")
+            if rfid and rfid not in rendered_reader_figure_ids:
+                rendered_reader_figure_ids.add(rfid)
+                lines.extend(_render_reader_figure_card(rf))
+                lines.append("")
         emitted_pages.add(current_page)
 
     # Emit any remaining objects and markers for pages not covered by body transitions
@@ -1082,6 +1146,12 @@ def render_fulltext_markdown(
             for tbl_id in tables_by_page.get(p, []):
                 lines.append(f"![[render/tables/{tbl_id}.md]]")
                 lines.append("")
+            for rf in reader_figures_by_page.get(p, []):
+                rfid = rf.get("reader_figure_id")
+                if rfid and rfid not in rendered_reader_figure_ids:
+                    rendered_reader_figure_ids.add(rfid)
+                    lines.extend(_render_reader_figure_card(rf))
+                    lines.append("")
 
     return "\n".join(lines).strip() + "\n"
 

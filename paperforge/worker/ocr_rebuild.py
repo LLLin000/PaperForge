@@ -180,6 +180,7 @@ def run_derived_rebuild_for_keys(vault: Path, keys: list[str]) -> dict:
             table_inventory=table_inventory,
             page_count=rebuild_page_count,
             document_structure=doc_structure,
+            reader_payload=reader_payload,
         )
         write_render_outputs(
             render_root=paper_root / "render",
