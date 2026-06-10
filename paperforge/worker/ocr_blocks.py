@@ -6,8 +6,8 @@ from typing import Any
 
 from paperforge.worker.ocr_document import DocumentStructure
 from paperforge.worker.ocr_families import discover_body_family_anchor
+from paperforge.worker.ocr_roles import assign_block_role
 from paperforge.worker.ocr_signatures import build_block_signatures
-from paperforge.worker.ocr_roles import assign_block_role, resolve_final_role
 
 _CANDIDATE_ROLES = frozenset(
     {
@@ -158,63 +158,6 @@ def build_structured_blocks(
         )
 
         rows = rescue_roles_with_document_context(rows, paper_context["role_profiles"], doc_structure)
-
-    family_context = {
-        str(row.get("block_id") or ""): {
-            "zone": row.get("zone"),
-            "style_family": row.get("style_family"),
-            "style_family_authority": row.get("style_family_authority"),
-        }
-        for row in rows
-    }
-    anchor_context = {
-        "body_family_anchor": getattr(doc_structure, "body_family_anchor", None) if doc_structure else None,
-        "reference_family_anchor": getattr(doc_structure, "reference_family_anchor", None) if doc_structure else None,
-    }
-
-    for row in rows:
-        resolved = resolve_final_role(row, anchors=anchor_context, families=family_context)
-        if resolved.role != row.get("role"):
-            from paperforge.worker.ocr_decisions import record_decision
-
-            record_decision(
-                row,
-                stage="resolve_final_role",
-                old_role=row.get("role"),
-                new_role=resolved.role,
-                reason="late role resolution from normalized zone/family context",
-                confidence=resolved.confidence,
-                evidence=resolved.evidence,
-            )
-            row["role"] = resolved.role
-            row["role_confidence"] = resolved.confidence
-            if resolved.evidence:
-                row.setdefault("evidence", []).extend(resolved.evidence)
-
-    if doc_structure:
-        from paperforge.worker.ocr_document import _apply_zone_labels, _detect_reference_zones, infer_zones
-        from paperforge.worker.ocr_families import partition_zone_families
-
-        refreshed_anchors = {
-            "body_family_anchor": getattr(doc_structure, "body_family_anchor", None),
-            "reference_family_anchor": getattr(doc_structure, "reference_family_anchor", None),
-        }
-        refreshed_region_bus = infer_zones(rows, refreshed_anchors)
-        _apply_zone_labels(rows, refreshed_region_bus)
-        partition_zone_families(rows, refreshed_anchors)
-        doc_structure.region_bus = refreshed_region_bus
-        page_layouts = getattr(doc_structure, "page_layouts", None) or {}
-        refreshed_reference_zones = _detect_reference_zones(rows, page_layouts)
-        doc_structure.reference_zones = [
-            {
-                "page": zone.page,
-                "column_index": zone.column_index,
-                "y_start": zone.y_start,
-                "y_end": zone.y_end,
-                "block_indices": list(zone.block_indices),
-            }
-            for zone in refreshed_reference_zones
-        ] or None
 
     from paperforge.worker.ocr_document import _exclude_tail_nonref_from_body_flow
 

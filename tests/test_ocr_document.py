@@ -355,6 +355,114 @@ def test_normalize_document_structure_preserves_reference_zone_integrity_from_an
     assert ref_row.get("style_family") == "reference_like"
 
 
+def test_resolve_final_role_consumes_pre_resolved_zones_and_families() -> None:
+    """resolve_final_role must see zone and style_family computed by
+    infer_zones + partition_zone_families, not stale/unset values.
+
+    This catches the pipeline ordering bug where resolve_final_role ran
+    before zones/families were complete, causing blocks in the reference_zone
+    with reference_like style_family to keep body_paragraph instead of
+    being promoted to reference_item.
+    """
+    from paperforge.worker.ocr_blocks import build_structured_blocks
+
+    raw_blocks = [
+        {
+            "paper_id": "ORDER01",
+            "page": 1,
+            "block_id": "p1_b1",
+            "raw_label": "doc_title",
+            "raw_order": 0,
+            "bbox": [80, 40, 700, 90],
+            "text": "Pipeline Order Test",
+            "page_width": 1200,
+            "page_height": 1600,
+            "span_metadata": [{"font": "Times-Bold", "size": 18.0, "flags": 16, "color": 0}],
+        },
+        # Body paragraphs on pages 2-3 to establish body anchor
+        *[
+            {
+                "paper_id": "ORDER01",
+                "page": pg,
+                "block_id": f"p{pg}_b{i}",
+                "raw_label": "text",
+                "raw_order": 1 + (pg - 2) * 3 + i,
+                "bbox": [100, 100 + i * 100, 800, 160 + i * 100],
+                "text": f"Stable body paragraph on page {pg} with enough text to form the body anchor.",
+                "page_width": 1200,
+                "page_height": 1600,
+                "span_metadata": [{"font": "Times-Roman", "size": 9.0, "flags": 0, "color": 0}] * 6,
+            }
+            for pg in range(2, 4)
+            for i in range(3)
+        ],
+        # Reference heading on page 4
+        {
+            "paper_id": "ORDER01",
+            "page": 4,
+            "block_id": "p4_ref",
+            "raw_label": "paragraph_title",
+            "raw_order": 10,
+            "bbox": [100, 100, 340, 140],
+            "text": "References",
+            "page_width": 1200,
+            "page_height": 1600,
+            "span_metadata": [{"font": "Times-Bold", "size": 10.0, "flags": 16, "color": 0}],
+        },
+        # Reference items on page 4 — these are currently body_paragraph
+        # but should be promoted to reference_item by resolve_final_role
+        # when it sees reference_zone + reference_like style_family
+        {
+            "paper_id": "ORDER01",
+            "page": 4,
+            "block_id": "p4_r1",
+            "raw_label": "text",
+            "raw_order": 11,
+            "bbox": [100, 180, 500, 250],
+            "text": "[1] Example reference with authors and journal details.",
+            "page_width": 1200,
+            "page_height": 1600,
+            "span_metadata": [{"font": "Times-Roman", "size": 8.5, "flags": 0, "color": 0}] * 6,
+        },
+        {
+            "paper_id": "ORDER01",
+            "page": 4,
+            "block_id": "p4_r2",
+            "raw_label": "text",
+            "raw_order": 12,
+            "bbox": [100, 260, 500, 330],
+            "text": "[2] Another reference entry that should become reference_item.",
+            "page_width": 1200,
+            "page_height": 1600,
+            "span_metadata": [{"font": "Times-Roman", "size": 8.5, "flags": 0, "color": 0}] * 6,
+        },
+    ]
+
+    rows, doc = build_structured_blocks(raw_blocks)
+
+    assert doc is not None
+
+    # Find the reference items
+    ref_rows = [r for r in rows if r.get("block_id") in {"p4_r1", "p4_r2"}]
+    assert len(ref_rows) == 2, f"Expected 2 reference rows, got {len(ref_rows)}"
+
+    # These blocks should have been promoted to reference_item by resolve_final_role
+    # because they are in the reference_zone with reference_like style_family.
+    # If the pipeline ordering is wrong (resolve_final_role before zones/families),
+    # they would remain body_paragraph.
+    for row in ref_rows:
+        assert row.get("role") == "reference_item", (
+            f"block {row.get('block_id')} should be reference_item "
+            f"(in reference_zone with reference_like style), got role={row.get('role')}"
+        )
+        assert row.get("zone") is not None, (
+            f"block {row.get('block_id')} should have zone assigned before final role resolution"
+        )
+        assert row.get("style_family") is not None, (
+            f"block {row.get('block_id')} should have style_family before final role resolution"
+        )
+
+
 def test_reference_zones_remain_column_scoped_after_authority_refresh() -> None:
     from paperforge.worker.ocr_blocks import build_structured_blocks
 
