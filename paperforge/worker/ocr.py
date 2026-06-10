@@ -1846,6 +1846,14 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
         figure_inventory,
     )
 
+    # --- Phase 2a: reader figure synthesis ---
+    from paperforge.worker.ocr_figure_reader import synthesize_reader_figures
+
+    reader_payload = synthesize_reader_figures(figure_inventory, structured_blocks=structured)
+    reader_figures_dir = ocr_root / "structure"
+    reader_figures_dir.mkdir(parents=True, exist_ok=True)
+    write_json(reader_figures_dir / "reader_figures.json", reader_payload)
+
     # --- Phase 2: table inventory ---
     table_inventory = build_table_inventory(structured)
     write_table_inventory(
@@ -1903,6 +1911,7 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
         figure_inventory=figure_inventory,
         table_inventory=table_inventory,
         doc_structure=doc_structure,
+        reader_payload=reader_payload,
     )
     write_ocr_health(ocr_root / "health", health_report)
     meta["ocr_health_overall"] = health_report["overall"]
