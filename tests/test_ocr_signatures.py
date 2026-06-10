@@ -234,6 +234,47 @@ def test_block_signature_list_span_metadata_keeps_mean_size_and_family():
     assert span_sig["span_count"] == 2
 
 
+def test_old_style_numbered_reference_is_typed_as_reference_numeric_dot():
+    from paperforge.worker.ocr_signatures import build_block_signatures
+
+    block = {
+        "block_id": "p10_b1",
+        "page": 10,
+        "raw_label": "text",
+        "text": "1 Smith J, Jones B. Title of paper. Journal. 2020",
+        "bbox": [100, 120, 500, 150],
+        "page_width": 1200,
+        "page_height": 1600,
+    }
+
+    result = build_block_signatures(block)
+    marker = result["marker_signature"]
+
+    assert marker["type"] == "reference_numeric_dot"
+    assert marker["kind"] == "reference"
+    assert marker["number"] == 1
+
+
+def test_heading_numbered_still_works_for_real_headings():
+    from paperforge.worker.ocr_signatures import build_block_signatures
+
+    block = {
+        "block_id": "p3_b1",
+        "page": 3,
+        "raw_label": "paragraph_title",
+        "text": "2.3 Statistical Analysis",
+        "bbox": [100, 500, 800, 530],
+        "span_metadata": {"size": 12.0, "flags": "bold"},
+        "page_width": 1200,
+        "page_height": 1600,
+    }
+
+    result = build_block_signatures(block)
+
+    assert result["marker_signature"]["type"] == "heading_numbered"
+    assert result["marker_signature"]["number"] == "2.3"
+
+
 def test_block_signature_missing_bbox_returns_zero_layout_signature():
     from paperforge.worker.ocr_signatures import build_block_signatures
 
