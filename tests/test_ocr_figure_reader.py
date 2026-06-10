@@ -204,6 +204,40 @@ def test_legend_only_consumes_caption_when_rendered() -> None:
     assert result["reader_figures"][0]["reader_status"] == "LEGEND_ONLY"
 
 
+def test_reader_sequence_match_promoted_figure_gets_proper_status() -> None:
+    """A figure promoted via sequence_match must get SEQUENCE_MATCH reader_status."""
+    from paperforge.worker.ocr_figure_reader import synthesize_reader_figures
+
+    strict_inventory = {
+        "matched_figures": [
+            {
+                "figure_number": 2,
+                "legend_block_id": 12,
+                "text": "Figure 2. Histological analysis.",
+                "matched_assets": [],
+                "match_score": {"score": 0.0, "decision": "sequence_match", "evidence": ["sequence_promotion"]},
+                "flags": ["sequence_match"],
+                "strict_status": "sequence_match",
+                "marker_type": "figure_number",
+            }
+        ],
+        "held_figures": [],
+        "ambiguous_figures": [],
+        "unmatched_legends": [],
+        "unresolved_clusters": [],
+    }
+
+    result = synthesize_reader_figures(strict_inventory, structured_blocks=[])
+
+    assert len(result["reader_figures"]) == 1
+    rf = result["reader_figures"][0]
+    assert rf["reader_status"] == "SEQUENCE_MATCH", (
+        f"Expected SEQUENCE_MATCH, got {rf['reader_status']}"
+    )
+    assert rf["strict_status"] == "sequence_match"
+    assert rf["strict_source"] == "matched_figures"
+
+
 def test_reader_payload_coverage_accounted_matches_reader_figures() -> None:
     from paperforge.worker.ocr_figure_reader import synthesize_reader_figures
 

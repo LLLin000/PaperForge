@@ -160,6 +160,8 @@ def _materialize_reader_figure(
 
     if source_bucket == "matched_figures":
         asset_ids = list(normalized_item.get("asset_block_ids", []))
+        strict_status = normalized_item.get("strict_status", "matched")
+        reader_status = "SEQUENCE_MATCH" if strict_status == "sequence_match" else "EXACT_MATCH"
         return {
             "reader_figure_id": _stable_reader_figure_id(
                 figure_number,
@@ -168,8 +170,8 @@ def _materialize_reader_figure(
                 ordinal=ordinal,
             ),
             "figure_number": figure_number,
-            "reader_status": "EXACT_MATCH",
-            "strict_status": normalized_item.get("strict_status", "matched"),
+            "reader_status": reader_status,
+            "strict_status": strict_status,
             "strict_source": source_bucket,
             "caption_block_id": legend_block_id,
             "caption_text": caption_text,
