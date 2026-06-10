@@ -27,7 +27,6 @@ BODY_FORBIDDEN = [
     "conflict of interest",
     "publisher's note",
     "ethics statement",
-    "author contributions",
 ]
 
 
