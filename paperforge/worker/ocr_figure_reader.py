@@ -75,7 +75,11 @@ def _normalize_bucket(
                 "legend_block_id": legend_block_id,
                 "caption_text": _caption_text(item),
                 "asset_block_ids": _asset_ids_from_item(item),
-                "candidate_asset_ids": (_candidate_asset_ids_from_item(item) if bucket_name in candidate_buckets else []),
+                "candidate_asset_ids": (
+                    _candidate_asset_ids_from_item(item)
+                    if bucket_name in candidate_buckets
+                    else []
+                ),
                 "marker_type": item.get("marker_type") or (block.get("marker_signature") or {}).get("type"),
                 "inline_mention": bool(item.get("inline_mention", False)),
                 "panel_label": bool(item.get("panel_label", False)),
@@ -370,7 +374,11 @@ def synthesize_reader_figures(
     return {
         "normalized_inputs": normalized,
         "reader_figures": reader_figures,
-        "reader_coverage": ReaderCoverage(total=coverage_total, accounted=len(reader_figures), gap_count=coverage_total - len(reader_figures)).as_dict(),
+        "reader_coverage": ReaderCoverage(
+            total=coverage_total,
+            accounted=len(reader_figures),
+            gap_count=coverage_total - len(reader_figures),
+        ).as_dict(),
         "consumed_caption_block_ids": consumed_caption_ids,
         "consumed_asset_block_ids": consumed_asset_ids,
     }
