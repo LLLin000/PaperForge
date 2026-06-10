@@ -63,31 +63,51 @@ def _normalize_bucket(
     items: list[dict],
     bucket_name: str,
     block_index: dict[int | str, dict],
+    legends_index: dict[int | str, dict] | None = None,
 ) -> list[dict]:
     candidate_buckets = {"held_figures", "ambiguous_figures"}
     normalized = []
     for item in items:
-        legend_block_id = _legend_block_id(item)
+        source_item = item
+        legend_block_id = _legend_block_id(source_item)
         block = block_index.get(legend_block_id, {})
+        source_text = str(source_item.get("text", source_item.get("caption_text", "")) or "")
+        legend_data = (legends_index or {}).get(legend_block_id, {})
+        source_marker = (
+            legend_data.get("marker_signature")
+            or source_item.get("marker_signature")
+            or block.get("marker_signature")
+            or {}
+        )
+
         normalized.append(
             {
-                "figure_number": item.get("figure_number"),
+                "figure_number": source_item.get("figure_number") or source_marker.get("number"),
                 "legend_block_id": legend_block_id,
-                "caption_text": _caption_text(item),
-                "asset_block_ids": _asset_ids_from_item(item),
+                "caption_text": source_text,
+                "asset_block_ids": _asset_ids_from_item(source_item),
                 "candidate_asset_ids": (
-                    _candidate_asset_ids_from_item(item)
+                    _candidate_asset_ids_from_item(source_item)
                     if bucket_name in candidate_buckets
                     else []
                 ),
-                "marker_type": item.get("marker_type") or (block.get("marker_signature") or {}).get("type"),
-                "inline_mention": bool(item.get("inline_mention", False)),
-                "panel_label": bool(item.get("panel_label", False)),
-                "body_prose_likelihood": float(item.get("body_prose_likelihood", 0.0)),
-                "zone": item.get("zone") or block.get("zone"),
-                "style_family": item.get("style_family") or block.get("style_family"),
-                "strict_status": item.get("strict_status", bucket_name.removesuffix("s")),
-                "source_item": item,
+                "marker_type": source_marker.get("type"),
+                "inline_mention": bool(source_item.get("inline_mention", False)),
+                "panel_label": bool(source_item.get("panel_label", False)),
+                "body_prose_likelihood": float(source_item.get("body_prose_likelihood", 0.0)),
+                "page": source_item.get("page", block.get("page")),
+                "zone": (
+                    legend_data.get("zone")
+                    or source_item.get("zone")
+                    or block.get("zone")
+                ),
+                "style_family": (
+                    legend_data.get("style_family")
+                    or source_item.get("style_family")
+                    or block.get("style_family")
+                ),
+                "strict_status": source_item.get("strict_status", bucket_name.removesuffix("s")),
+                "source_item": source_item,
             }
         )
     return normalized
@@ -97,8 +117,9 @@ def _build_bucket(
     strict_inventory: dict,
     key: str,
     block_index: dict[int | str, dict],
+    legends_index: dict[int | str, dict] | None = None,
 ) -> list[dict]:
-    return _normalize_bucket(strict_inventory.get(key, []), key, block_index)
+    return _normalize_bucket(strict_inventory.get(key, []), key, block_index, legends_index)
 
 
 _READER_STATUS_MAP = {
@@ -169,7 +190,7 @@ def _materialize_reader_figure(
         return {
             "reader_figure_id": _stable_reader_figure_id(
                 figure_number,
-                page=normalized_item.get("zone"),
+                page=normalized_item.get("page"),
                 first_asset_block_id=asset_ids[0] if asset_ids else None,
                 ordinal=ordinal,
             ),
@@ -181,7 +202,7 @@ def _materialize_reader_figure(
             "caption_text": caption_text,
             "visual_groups": [
                 {
-                    "page": normalized_item.get("zone"),
+                    "page": normalized_item.get("page"),
                     "asset_block_ids": asset_ids,
                     "group_status": "matched_group",
                     "rendered_as_representative": True,
@@ -198,7 +219,7 @@ def _materialize_reader_figure(
             return {
                 "reader_figure_id": _stable_reader_figure_id(
                     figure_number,
-                    page=normalized_item.get("zone"),
+                    page=normalized_item.get("page"),
                     first_asset_block_id=candidate_asset_ids[0] if candidate_asset_ids else None,
                     ordinal=ordinal,
                 ),
@@ -210,7 +231,7 @@ def _materialize_reader_figure(
                 "caption_text": caption_text,
                 "visual_groups": [
                     {
-                        "page": normalized_item.get("zone"),
+                        "page": normalized_item.get("page"),
                         "asset_block_ids": candidate_asset_ids,
                         "group_status": "candidate_group",
                         "rendered_as_representative": False,
@@ -224,7 +245,7 @@ def _materialize_reader_figure(
             return {
                 "reader_figure_id": _stable_reader_figure_id(
                     figure_number,
-                    page=normalized_item.get("zone"),
+                    page=normalized_item.get("page"),
                     ordinal=ordinal,
                 ),
                 "figure_number": figure_number,
@@ -244,7 +265,7 @@ def _materialize_reader_figure(
         return {
             "reader_figure_id": _stable_reader_figure_id(
                 figure_number,
-                page=normalized_item.get("zone"),
+                page=normalized_item.get("page"),
                 ordinal=ordinal,
             ),
             "figure_number": figure_number,
@@ -264,7 +285,7 @@ def _materialize_reader_figure(
         return {
             "reader_figure_id": _stable_reader_figure_id(
                 None,
-                page=normalized_item.get("zone"),
+                page=normalized_item.get("page"),
                 first_asset_block_id=asset_ids[0] if asset_ids else None,
                 ordinal=ordinal,
             ),
@@ -276,7 +297,7 @@ def _materialize_reader_figure(
             "caption_text": "",
             "visual_groups": [
                 {
-                    "page": normalized_item.get("zone"),
+                    "page": normalized_item.get("page"),
                     "asset_block_ids": asset_ids,
                     "group_status": "candidate_group",
                     "rendered_as_representative": True,
@@ -389,11 +410,16 @@ def _normalize_strict_figure_inventory(
     structured_blocks: list[dict],
 ) -> dict:
     block_index = _index_structured_blocks(structured_blocks)
+    legends_index: dict[int | str, dict] = {
+        item.get("block_id"): item
+        for item in strict_inventory.get("figure_legends", [])
+        if item.get("block_id") is not None
+    }
     return {
-        "matched_figures": _build_bucket(strict_inventory, "matched_figures", block_index),
-        "held_figures": _build_bucket(strict_inventory, "held_figures", block_index),
-        "ambiguous_figures": _build_bucket(strict_inventory, "ambiguous_figures", block_index),
-        "unmatched_legends": _build_bucket(strict_inventory, "unmatched_legends", block_index),
-        "unresolved_clusters": _build_bucket(strict_inventory, "unresolved_clusters", block_index),
+        "matched_figures": _build_bucket(strict_inventory, "matched_figures", block_index, legends_index),
+        "held_figures": _build_bucket(strict_inventory, "held_figures", block_index, legends_index),
+        "ambiguous_figures": _build_bucket(strict_inventory, "ambiguous_figures", block_index, legends_index),
+        "unmatched_legends": _build_bucket(strict_inventory, "unmatched_legends", block_index, legends_index),
+        "unresolved_clusters": _build_bucket(strict_inventory, "unresolved_clusters", block_index, legends_index),
         "block_index": block_index,
     }
