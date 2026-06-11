@@ -647,7 +647,9 @@ def _render_reader_figure_card(figure: dict) -> list[str]:
         lines.append(f"> **Figure {fn}** — {status}")
     else:
         lines.append(f"> **Figure (unmatched)** — {status}")
-    if caption_text:
+    # Only emit caption text when there is no embedded figure asset to show it.
+    # EXACT_MATCH / SEQUENCE_MATCH already render the caption via figure_XXX.md.
+    if status not in ("EXACT_MATCH", "SEQUENCE_MATCH") and caption_text:
         lines.append(f"> {caption_text}")
     return lines
 
@@ -670,17 +672,16 @@ def _emit_page_objects(
     """
     has_reader = bool(reader_figures_by_page.get(page))
 
-    if not has_reader:
-        for fig in figures_by_page.get(page, []):
-            if str(fig['figure_id']).startswith("unmatched_legend_"):
-                continue
-            lines.append(f"![[render/figures/{fig['figure_id']}.md]]")
-            lines.append("")
-        for cluster_id in unresolved_clusters_by_page.get(page, []):
-            if str(cluster_id).startswith("unresolved_cluster_"):
-                continue
-            lines.append(f"![[render/figures/{cluster_id}.md]]")
-            lines.append("")
+    for fig in figures_by_page.get(page, []):
+        if str(fig['figure_id']).startswith("unmatched_legend_"):
+            continue
+        lines.append(f"![[render/figures/{fig['figure_id']}.md]]")
+        lines.append("")
+    for cluster_id in unresolved_clusters_by_page.get(page, []):
+        if str(cluster_id).startswith("unresolved_cluster_"):
+            continue
+        lines.append(f"![[render/figures/{cluster_id}.md]]")
+        lines.append("")
 
     for tbl_id in tables_by_page.get(page, []):
         lines.append(f"![[render/tables/{tbl_id}.md]]")
@@ -1030,18 +1031,18 @@ def render_fulltext_markdown(
         elif role in ("subsection_heading", "sub_subsection_heading", "section_heading"):
             last_structured_insert_page = None
             last_structured_insert_bbox = None
+            _BACKMATTER_HEADING_KEYWORDS = frozenset({
+                "author contributions", "data availability", "funding", "acknowledg",
+                "conflict of interest", "competing interests", "supplementary material",
+                "ethics statement", "publisher", "biographies",
+            })
+            _heading_lower = text.strip().lower()
+            if any(kw in _heading_lower for kw in _BACKMATTER_HEADING_KEYWORDS):
+                continue
             if role == "section_heading":
                 if text.strip().lower() in FRONTMATTER_NOISE:
                     continue
                 if "published online" in text.strip().lower():
-                    continue
-                _BACKMATTER_HEADING_KEYWORDS = frozenset({
-                    "author contributions", "data availability", "funding", "acknowledg",
-                    "conflict of interest", "competing interests", "supplementary material",
-                    "ethics statement", "publisher", "biographies",
-                })
-                _heading_lower = text.strip().lower()
-                if any(kw in _heading_lower for kw in _BACKMATTER_HEADING_KEYWORDS):
                     continue
                 if _is_bogus_heading(text):
                     if text:
