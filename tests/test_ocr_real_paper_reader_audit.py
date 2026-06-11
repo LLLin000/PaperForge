@@ -128,20 +128,16 @@ def _reader_figures(reader_payload: dict) -> list[dict]:
     return list(reader_payload.get("reader_figures", []))
 
 
-def _formal_legend_blocks(blocks: list[dict]) -> list[dict]:
-    legends = []
-    for block in blocks:
-        role = block.get("role")
-        if role == "table_caption":
-            continue
-        marker_type = str((block.get("marker_signature") or {}).get("type") or "")
-        style_family = str(block.get("style_family") or "")
-        if role in {"figure_caption", "legend"}:
-            legends.append(block)
-            continue
-        if marker_type == "figure_number" and style_family in {"legend_like"}:
-            legends.append(block)
-    return legends
+def _eligible_reader_legend_block_ids(reader_payload: dict) -> set:
+    ids = set()
+    normalized = reader_payload.get("normalized_inputs", {})
+    for source_name in ("matched_figures", "held_figures", "ambiguous_figures", "unmatched_legends"):
+        for item in normalized.get(source_name, []):
+            if item.get("marker_type") == "figure_number" and not item.get("inline_mention") and not item.get("panel_label"):
+                bid = item.get("legend_block_id")
+                if bid is not None:
+                    ids.add(bid)
+    return ids
 
 
 @pytest.fixture(scope="session")
@@ -207,7 +203,6 @@ def test_reader_audit_consumed_caption_integrity(rebuilt_reader_audit_papers: di
 
 @pytest.mark.parametrize("key", ALL_KEYS)
 def test_reader_audit_formal_legends_have_reader_outcomes(rebuilt_reader_audit_papers: dict, real_ocr_root: Path, key: str) -> None:
-    blocks = _read_jsonl(_structured_path(real_ocr_root, key))
     reader_payload = _read_json(_reader_figures_path(real_ocr_root, key))
     reader_caption_ids = set()
     for figure in _reader_figures(reader_payload):
@@ -215,9 +210,9 @@ def test_reader_audit_formal_legends_have_reader_outcomes(rebuilt_reader_audit_p
         if caption_id is not None:
             reader_caption_ids.add(caption_id)
 
-    legends = _formal_legend_blocks(blocks)
-    missing = [block.get("block_id") for block in legends if block.get("block_id") not in reader_caption_ids]
-    assert not missing, f"{key}: formal legend blocks missing reader outcomes: {missing[:10]}"
+    eligible_legend_ids = _eligible_reader_legend_block_ids(reader_payload)
+    missing = eligible_legend_ids - reader_caption_ids
+    assert not missing, f"{key}: eligible legend blocks missing reader outcomes: {sorted(missing)[:10]}"
 
 
 @pytest.mark.parametrize("key", ALL_KEYS)
@@ -270,10 +265,10 @@ def test_reader_audit_no_duplicate_caption_body_and_card(rebuilt_reader_audit_pa
 @pytest.mark.parametrize("key", ALL_KEYS)
 def test_reader_audit_reader_coverage_is_not_trivially_zero(rebuilt_reader_audit_papers: dict, real_ocr_root: Path, key: str) -> None:
     health = _read_json(_health_path(real_ocr_root, key))
-    blocks = _read_jsonl(_structured_path(real_ocr_root, key))
-    legends = _formal_legend_blocks(blocks)
-    if legends:
-        assert health.get("figure_reader_coverage_total", 0) > 0, f"{key}: reader coverage total is zero despite formal legends"
+    reader_payload = _read_json(_reader_figures_path(real_ocr_root, key))
+    eligible_legend_ids = _eligible_reader_legend_block_ids(reader_payload)
+    if eligible_legend_ids:
+        assert health.get("figure_reader_coverage_total", 0) > 0, f"{key}: reader coverage total is zero despite eligible legends"
 
 
 def test_reader_audit_normalized_matched_figures_keep_figure_semantics(
