@@ -232,6 +232,14 @@ def build_ocr_health(
         report["figure_reader_coverage_accounted"] = rc.get("accounted", 0)
         report["figure_reader_coverage_gap_count"] = rc.get("gap_count", 0)
         report["figure_reader_coverage_ratio"] = rc.get("ratio", 1.0)
+        reader_figures = reader_payload.get("reader_figures", [])
+        reader_count = sum(
+            1
+            for figure in reader_figures
+            if figure.get("reader_status") != "DEPRECATED"
+            and figure.get("visual_groups")
+        )
+        report["figure_reader_count"] = reader_count
 
     report.update(decision_summary)
 

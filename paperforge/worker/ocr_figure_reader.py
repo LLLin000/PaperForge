@@ -59,6 +59,23 @@ def _candidate_asset_ids_from_item(item: dict) -> list[int | str]:
     return []
 
 
+def _formal_legend_blocks(blocks: list[dict]) -> list[dict]:
+    """Return blocks that are formal figure legends, excluding table_caption."""
+    legends = []
+    for block in blocks:
+        role = block.get("role")
+        if role == "table_caption":
+            continue
+        marker_type = str((block.get("marker_signature") or {}).get("type") or "")
+        style_family = str(block.get("style_family") or "")
+        if role in {"figure_caption", "legend"}:
+            legends.append(block)
+            continue
+        if marker_type == "figure_number" and style_family in {"legend_like"}:
+            legends.append(block)
+    return legends
+
+
 def _normalize_bucket(
     items: list[dict],
     bucket_name: str,
@@ -398,6 +415,10 @@ def synthesize_reader_figures(
         consumed_asset_ids.extend(materialized.get("consumed_asset_block_ids", []))
 
     coverage_total = len(eligible_inputs)
+    reader_figures = [
+        figure for figure in reader_figures
+        if figure.get("visual_groups")
+    ]
     return {
         "normalized_inputs": normalized,
         "reader_figures": reader_figures,

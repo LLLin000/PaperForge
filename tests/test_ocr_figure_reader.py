@@ -162,7 +162,8 @@ def test_grouped_approximate_requires_visual_candidates() -> None:
 
     result = synthesize_reader_figures(strict_inventory, structured_blocks=[])
 
-    assert result["reader_figures"][0]["reader_status"] != "GROUPED_APPROXIMATE"
+    # No visual candidates means no visual_groups, so reader_figure is dropped
+    assert result["reader_figures"] == []
 
 
 def test_reader_hold_does_not_default_to_caption_consumption() -> None:
@@ -200,8 +201,8 @@ def test_legend_only_consumes_caption_when_rendered() -> None:
 
     result = synthesize_reader_figures(strict_inventory, structured_blocks=[])
 
-    assert result["consumed_caption_block_ids"] == [21]
-    assert result["reader_figures"][0]["reader_status"] == "LEGEND_ONLY"
+    # LEGEND_ONLY figures have empty visual_groups and are filtered out
+    assert result["reader_figures"] == []
 
 
 def test_reader_sequence_match_promoted_figure_gets_proper_status() -> None:
@@ -267,8 +268,10 @@ def test_reader_payload_coverage_accounted_matches_reader_figures() -> None:
 
     result = synthesize_reader_figures(strict_inventory, structured_blocks=[])
 
+    # Total counts eligible inputs before filtering; accounted counts
+    # reader_figures after visual_groups filter (LEGEND_ONLY is dropped)
     assert result["reader_coverage"]["total"] == 2
-    assert result["reader_coverage"]["accounted"] == 2
-    assert result["reader_coverage"]["gap_count"] == 0
-    assert result["reader_coverage"]["ratio"] == 1.0
+    assert result["reader_coverage"]["accounted"] == 1
+    assert result["reader_coverage"]["gap_count"] == 1
+    assert result["reader_coverage"]["ratio"] == 0.5
     assert set(result["consumed_caption_block_ids"]) == {5, 21}

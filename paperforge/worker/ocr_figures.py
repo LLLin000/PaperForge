@@ -908,7 +908,11 @@ def _promote_sequence_matches(figure_inventory: dict, blocks: list[dict]) -> dic
             remaining_ambiguous.append(af)
             continue
         if (fn - 1 in matched_fig_nums) or (fn + 1 in matched_fig_nums):
-            # Promote this figure — it is part of a contiguous numbered sequence
+            asset_block_ids = af.get("asset_block_ids", [])
+            if not asset_block_ids:
+                af["sequence_skip_empty_assets"] = True
+                remaining_ambiguous.append(af)
+                continue
             promoted_entry = {
                 "figure_id": f"figure_{fn:03d}",
                 "legend_block_id": af.get("legend_block_id", ""),
