@@ -652,6 +652,53 @@ def _render_reader_figure_card(figure: dict) -> list[str]:
     return lines
 
 
+def _emit_page_objects(
+    lines: list[str],
+    page: int,
+    *,
+    figures_by_page: dict[int, list[dict]],
+    unresolved_clusters_by_page: dict[int, list[str]],
+    tables_by_page: dict[int, list[str]],
+    reader_figures_by_page: dict[int, list[dict]],
+    rendered_reader_figure_ids: set[str],
+    emitted_figure_captions: set[str],
+) -> None:
+    """Emit figure/table/reader objects for a single page.
+
+    Reader figures are primary: when present, legacy matched_figures and
+    unresolved_clusters are skipped for that page.
+    """
+    has_reader = bool(reader_figures_by_page.get(page))
+
+    if not has_reader:
+        for fig in figures_by_page.get(page, []):
+            if str(fig['figure_id']).startswith("unmatched_legend_"):
+                continue
+            caption = str(fig.get("caption") or "").strip()
+            if caption and caption not in emitted_figure_captions:
+                lines.append(caption)
+                lines.append("")
+                emitted_figure_captions.add(caption)
+            lines.append(f"![[render/figures/{fig['figure_id']}.md]]")
+            lines.append("")
+        for cluster_id in unresolved_clusters_by_page.get(page, []):
+            if str(cluster_id).startswith("unresolved_cluster_"):
+                continue
+            lines.append(f"![[render/figures/{cluster_id}.md]]")
+            lines.append("")
+
+    for tbl_id in tables_by_page.get(page, []):
+        lines.append(f"![[render/tables/{tbl_id}.md]]")
+        lines.append("")
+
+    for rf in reader_figures_by_page.get(page, []):
+        rfid = rf.get("reader_figure_id")
+        if rfid and rfid not in rendered_reader_figure_ids:
+            rendered_reader_figure_ids.add(rfid)
+            lines.extend(_render_reader_figure_card(rf))
+            lines.append("")
+
+
 def render_fulltext_markdown(
     *,
     structured_blocks: list[dict],
@@ -924,6 +971,10 @@ def render_fulltext_markdown(
         if role in _SKIPPED_BODY_ROLES:
             continue
 
+        block_id = block.get("block_id")
+        if block_id is not None and block_id in consumed_caption_block_ids:
+            continue
+
         raw_text = block.get("text", "")
         text = normalize_ocr_math_text(raw_text)
         text = re.sub(r"<table[^>]*>.*?</table>", "", text, flags=re.DOTALL | re.IGNORECASE)
@@ -934,60 +985,30 @@ def render_fulltext_markdown(
         if block_page is not None and block_page != current_page:
             # Emit objects for the page we just finished rendering
             if current_page is not None:
-                for fig in figures_by_page.get(current_page, []):
-                    if str(fig['figure_id']).startswith("unmatched_legend_"):
-                        continue
-                    caption = str(fig.get("caption") or "").strip()
-                    if caption and caption not in emitted_figure_captions:
-                        lines.append(caption)
-                        lines.append("")
-                        emitted_figure_captions.add(caption)
-                    lines.append(f"![[render/figures/{fig['figure_id']}.md]]")
-                    lines.append("")
-                for cluster_id in unresolved_clusters_by_page.get(current_page, []):
-                    if str(cluster_id).startswith("unresolved_cluster_"):
-                        continue
-                    lines.append(f"![[render/figures/{cluster_id}.md]]")
-                    lines.append("")
-                for tbl_id in tables_by_page.get(current_page, []):
-                    lines.append(f"![[render/tables/{tbl_id}.md]]")
-                    lines.append("")
-                for rf in reader_figures_by_page.get(current_page, []):
-                    rfid = rf.get("reader_figure_id")
-                    if rfid and rfid not in rendered_reader_figure_ids:
-                        rendered_reader_figure_ids.add(rfid)
-                        lines.extend(_render_reader_figure_card(rf))
-                        lines.append("")
+                _emit_page_objects(
+                    lines, current_page,
+                    figures_by_page=figures_by_page,
+                    unresolved_clusters_by_page=unresolved_clusters_by_page,
+                    tables_by_page=tables_by_page,
+                    reader_figures_by_page=reader_figures_by_page,
+                    rendered_reader_figure_ids=rendered_reader_figure_ids,
+                    emitted_figure_captions=emitted_figure_captions,
+                )
                 emitted_pages.add(current_page)
             # Fill in page markers for skipped pages (no renderable blocks)
             first_new_page = (current_page or 0) + 1
             for p in range(first_new_page, block_page):
                 lines.append(f"<!-- page {p} -->")
                 lines.append("")
-                for fig in figures_by_page.get(p, []):
-                    if str(fig['figure_id']).startswith("unmatched_legend_"):
-                        continue
-                    caption = str(fig.get("caption") or "").strip()
-                    if caption and caption not in emitted_figure_captions:
-                        lines.append(caption)
-                        lines.append("")
-                        emitted_figure_captions.add(caption)
-                    lines.append(f"![[render/figures/{fig['figure_id']}.md]]")
-                    lines.append("")
-                for cluster_id in unresolved_clusters_by_page.get(p, []):
-                    if str(cluster_id).startswith("unresolved_cluster_"):
-                        continue
-                    lines.append(f"![[render/figures/{cluster_id}.md]]")
-                    lines.append("")
-                for tbl_id in tables_by_page.get(p, []):
-                    lines.append(f"![[render/tables/{tbl_id}.md]]")
-                    lines.append("")
-                for rf in reader_figures_by_page.get(p, []):
-                    rfid = rf.get("reader_figure_id")
-                    if rfid and rfid not in rendered_reader_figure_ids:
-                        rendered_reader_figure_ids.add(rfid)
-                        lines.extend(_render_reader_figure_card(rf))
-                        lines.append("")
+                _emit_page_objects(
+                    lines, p,
+                    figures_by_page=figures_by_page,
+                    unresolved_clusters_by_page=unresolved_clusters_by_page,
+                    tables_by_page=tables_by_page,
+                    reader_figures_by_page=reader_figures_by_page,
+                    rendered_reader_figure_ids=rendered_reader_figure_ids,
+                    emitted_figure_captions=emitted_figure_captions,
+                )
                 emitted_pages.add(p)
             current_page = block_page
             lines.append(f"<!-- page {block_page} -->")
@@ -1083,9 +1104,6 @@ def render_fulltext_markdown(
                 lines.append(f"![[render/tables/{tbl_id}.md]]")
                 lines.append("")
         elif role == "figure_caption":
-            block_id = block.get("block_id")
-            if block_id is not None and block_id in consumed_caption_block_ids:
-                continue
             if text:
                 lines.append(text)
                 lines.append("")
@@ -1108,30 +1126,15 @@ def render_fulltext_markdown(
 
     # Emit objects for the last rendered page
     if current_page is not None:
-        for fig in figures_by_page.get(current_page, []):
-            if str(fig['figure_id']).startswith("unmatched_legend_"):
-                continue
-            caption = str(fig.get("caption") or "").strip()
-            if caption and caption not in emitted_figure_captions:
-                lines.append(caption)
-                lines.append("")
-                emitted_figure_captions.add(caption)
-            lines.append(f"![[render/figures/{fig['figure_id']}.md]]")
-            lines.append("")
-        for cluster_id in unresolved_clusters_by_page.get(current_page, []):
-            if str(cluster_id).startswith("unresolved_cluster_"):
-                continue
-            lines.append(f"![[render/figures/{cluster_id}.md]]")
-            lines.append("")
-        for tbl_id in tables_by_page.get(current_page, []):
-            lines.append(f"![[render/tables/{tbl_id}.md]]")
-            lines.append("")
-        for rf in reader_figures_by_page.get(current_page, []):
-            rfid = rf.get("reader_figure_id")
-            if rfid and rfid not in rendered_reader_figure_ids:
-                rendered_reader_figure_ids.add(rfid)
-                lines.extend(_render_reader_figure_card(rf))
-                lines.append("")
+        _emit_page_objects(
+            lines, current_page,
+            figures_by_page=figures_by_page,
+            unresolved_clusters_by_page=unresolved_clusters_by_page,
+            tables_by_page=tables_by_page,
+            reader_figures_by_page=reader_figures_by_page,
+            rendered_reader_figure_ids=rendered_reader_figure_ids,
+            emitted_figure_captions=emitted_figure_captions,
+        )
         emitted_pages.add(current_page)
 
     # Emit any remaining objects and markers for pages not covered by body transitions
@@ -1144,30 +1147,15 @@ def render_fulltext_markdown(
             if p > (current_page or 0):
                 lines.append(f"<!-- page {p} -->")
                 lines.append("")
-            for fig in figures_by_page.get(p, []):
-                if str(fig['figure_id']).startswith("unmatched_legend_"):
-                    continue
-                caption = str(fig.get("caption") or "").strip()
-                if caption and caption not in emitted_figure_captions:
-                    lines.append(caption)
-                    lines.append("")
-                    emitted_figure_captions.add(caption)
-                lines.append(f"![[render/figures/{fig['figure_id']}.md]]")
-                lines.append("")
-            for cluster_id in unresolved_clusters_by_page.get(p, []):
-                if str(cluster_id).startswith("unresolved_cluster_"):
-                    continue
-                lines.append(f"![[render/figures/{cluster_id}.md]]")
-                lines.append("")
-            for tbl_id in tables_by_page.get(p, []):
-                lines.append(f"![[render/tables/{tbl_id}.md]]")
-                lines.append("")
-            for rf in reader_figures_by_page.get(p, []):
-                rfid = rf.get("reader_figure_id")
-                if rfid and rfid not in rendered_reader_figure_ids:
-                    rendered_reader_figure_ids.add(rfid)
-                    lines.extend(_render_reader_figure_card(rf))
-                    lines.append("")
+            _emit_page_objects(
+                lines, p,
+                figures_by_page=figures_by_page,
+                unresolved_clusters_by_page=unresolved_clusters_by_page,
+                tables_by_page=tables_by_page,
+                reader_figures_by_page=reader_figures_by_page,
+                rendered_reader_figure_ids=rendered_reader_figure_ids,
+                emitted_figure_captions=emitted_figure_captions,
+            )
 
     return "\n".join(lines).strip() + "\n"
 
