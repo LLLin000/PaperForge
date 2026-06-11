@@ -23,6 +23,14 @@ def _index_structured_blocks(structured_blocks: list[dict]) -> dict[int | str, d
     return {block.get("block_id"): block for block in structured_blocks if block.get("block_id") is not None}
 
 
+def _index_blocks_by_page_and_id(blocks: list[dict]) -> dict[tuple[int | str | None, int | str], dict]:
+    return {
+        (block.get("page"), block.get("block_id")): block
+        for block in blocks
+        if block.get("block_id") is not None
+    }
+
+
 def _legend_block_id(item: dict) -> int | str | None:
     return item.get("legend_block_id", item.get("block_id"))
 
@@ -81,18 +89,22 @@ def _normalize_bucket(
     bucket_name: str,
     block_index: dict[int | str, dict],
     legends_index: dict[int | str, dict] | None = None,
+    *,
+    page_block_index: dict | None = None,
+    page_legends_index: dict | None = None,
 ) -> list[dict]:
     candidate_buckets = {"held_figures", "ambiguous_figures"}
     normalized = []
     for item in items:
         source_item = item
         legend_block_id = _legend_block_id(source_item)
-        block = block_index.get(legend_block_id, {})
+        source_page = source_item.get("page")
+        block = (page_block_index or {}).get((source_page, legend_block_id), block_index.get(legend_block_id, {}))
         source_text = str(source_item.get("text", source_item.get("caption_text", "")) or "")
-        legend_data = (legends_index or {}).get(legend_block_id, {})
+        legend_data = (page_legends_index or {}).get((source_page, legend_block_id), (legends_index or {}).get(legend_block_id, {}))
         source_marker = (
-            legend_data.get("marker_signature")
-            or source_item.get("marker_signature")
+            source_item.get("marker_signature")
+            or legend_data.get("marker_signature")
             or block.get("marker_signature")
             or {}
         )
@@ -141,8 +153,11 @@ def _build_bucket(
     key: str,
     block_index: dict[int | str, dict],
     legends_index: dict[int | str, dict] | None = None,
+    *,
+    page_block_index: dict | None = None,
+    page_legends_index: dict | None = None,
 ) -> list[dict]:
-    return _normalize_bucket(strict_inventory.get(key, []), key, block_index, legends_index)
+    return _normalize_bucket(strict_inventory.get(key, []), key, block_index, legends_index, page_block_index=page_block_index, page_legends_index=page_legends_index)
 
 
 _READER_STATUS_MAP = {
@@ -433,16 +448,22 @@ def _normalize_strict_figure_inventory(
     structured_blocks: list[dict],
 ) -> dict:
     block_index = _index_structured_blocks(structured_blocks)
+    page_block_index = _index_blocks_by_page_and_id(structured_blocks)
     legends_index: dict[int | str, dict] = {
         item.get("block_id"): item
         for item in strict_inventory.get("figure_legends", [])
         if item.get("block_id") is not None
     }
+    page_legends_index: dict[tuple[int | str | None, int | str], dict] = {
+        (item.get("page"), item.get("block_id")): item
+        for item in strict_inventory.get("figure_legends", [])
+        if item.get("block_id") is not None
+    }
     return {
-        "matched_figures": _build_bucket(strict_inventory, "matched_figures", block_index, legends_index),
-        "held_figures": _build_bucket(strict_inventory, "held_figures", block_index, legends_index),
-        "ambiguous_figures": _build_bucket(strict_inventory, "ambiguous_figures", block_index, legends_index),
-        "unmatched_legends": _build_bucket(strict_inventory, "unmatched_legends", block_index, legends_index),
-        "unresolved_clusters": _build_bucket(strict_inventory, "unresolved_clusters", block_index, legends_index),
+        "matched_figures": _build_bucket(strict_inventory, "matched_figures", block_index, legends_index, page_block_index=page_block_index, page_legends_index=page_legends_index),
+        "held_figures": _build_bucket(strict_inventory, "held_figures", block_index, legends_index, page_block_index=page_block_index, page_legends_index=page_legends_index),
+        "ambiguous_figures": _build_bucket(strict_inventory, "ambiguous_figures", block_index, legends_index, page_block_index=page_block_index, page_legends_index=page_legends_index),
+        "unmatched_legends": _build_bucket(strict_inventory, "unmatched_legends", block_index, legends_index, page_block_index=page_block_index, page_legends_index=page_legends_index),
+        "unresolved_clusters": _build_bucket(strict_inventory, "unresolved_clusters", block_index, legends_index, page_block_index=page_block_index, page_legends_index=page_legends_index),
         "block_index": block_index,
     }

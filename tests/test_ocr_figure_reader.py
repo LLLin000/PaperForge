@@ -275,3 +275,40 @@ def test_reader_payload_coverage_accounted_matches_reader_figures() -> None:
     assert result["reader_coverage"]["gap_count"] == 1
     assert result["reader_coverage"]["ratio"] == 0.5
     assert set(result["consumed_caption_block_ids"]) == {5, 21}
+
+
+def test_reader_normalization_keeps_same_block_id_legends_separate_by_page() -> None:
+    from paperforge.worker.ocr_figure_reader import synthesize_reader_figures
+
+    structured_blocks = [
+        {
+            "page": 5,
+            "block_id": 5,
+            "role": "figure_caption",
+            "text": "Fig. 1 Critical shoulder angle.",
+            "marker_signature": {"type": "figure_number", "number": 1},
+            "style_family": "legend_like",
+            "zone": "display_zone",
+        },
+        {
+            "page": 6,
+            "block_id": 5,
+            "role": "figure_caption",
+            "text": "Fig. 5 Acromial index.",
+            "marker_signature": {"type": "figure_number", "number": 5},
+            "style_family": "legend_like",
+            "zone": "display_zone",
+        },
+    ]
+    strict_inventory = {
+        "figure_legends": structured_blocks,
+        "unmatched_legends": [structured_blocks[0], structured_blocks[1]],
+    }
+
+    payload = synthesize_reader_figures(strict_inventory, structured_blocks)
+
+    numbers = [item["figure_number"] for item in payload["normalized_inputs"]["unmatched_legends"]]
+    rendered_numbers = [item["figure_number"] for item in payload["reader_figures"]]
+
+    assert numbers == [1, 5]
+    assert rendered_numbers == [1, 5]
