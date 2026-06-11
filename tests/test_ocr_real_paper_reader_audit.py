@@ -128,12 +128,18 @@ def _reader_figures(reader_payload: dict) -> list[dict]:
     return list(reader_payload.get("reader_figures", []))
 
 
-def _eligible_reader_legend_block_ids(reader_payload: dict) -> set:
+def _eligible_reader_legend_block_ids(reader_payload: dict) -> set[int | str]:
     ids = set()
     normalized = reader_payload.get("normalized_inputs", {})
     for source_name in ("matched_figures", "held_figures", "ambiguous_figures", "unmatched_legends"):
         for item in normalized.get(source_name, []):
-            if item.get("marker_type") == "figure_number" and not item.get("inline_mention") and not item.get("panel_label"):
+            if (
+                item.get("marker_type") == "figure_number"
+                and not item.get("inline_mention")
+                and not item.get("panel_label")
+                and float(item.get("body_prose_likelihood", 0.0)) < 0.5
+                and not bool(item.get("strict_reject"))
+            ):
                 bid = item.get("legend_block_id")
                 if bid is not None:
                     ids.add(bid)
