@@ -190,7 +190,7 @@ def _materialize_hold_outcome(
         "caption_text": caption_text,
         "visual_groups": [],
         "consumed_caption_block_ids": (
-            [legend_block_id] if reader_visible and legend_block_id is not None and caption_text else []
+            [{"page": page, "block_id": legend_block_id}] if reader_visible and legend_block_id is not None and caption_text else []
         ),
         "consumed_asset_block_ids": [],
         "debug_refs": {"candidate_asset_ids": list(candidate_asset_ids), "hold_visibility": hold_visibility},
@@ -231,8 +231,8 @@ def _materialize_reader_figure(
                     "rendered_as_representative": True,
                 }
             ],
-            "consumed_caption_block_ids": [legend_block_id] if legend_block_id is not None else [],
-            "consumed_asset_block_ids": asset_ids,
+            "consumed_caption_block_ids": [{"page": normalized_item.get("page"), "block_id": legend_block_id}] if legend_block_id is not None else [],
+            "consumed_asset_block_ids": [{"page": normalized_item.get("page"), "block_id": aid} for aid in asset_ids],
             "debug_refs": {},
         }
 
@@ -260,7 +260,7 @@ def _materialize_reader_figure(
                         "rendered_as_representative": False,
                     }
                 ],
-                "consumed_caption_block_ids": [legend_block_id] if legend_block_id is not None else [],
+                "consumed_caption_block_ids": [{"page": normalized_item.get("page"), "block_id": legend_block_id}] if legend_block_id is not None else [],
                 "consumed_asset_block_ids": [],
                 "debug_refs": {"candidate_asset_ids": candidate_asset_ids},
             }
@@ -278,7 +278,7 @@ def _materialize_reader_figure(
                 "caption_block_id": legend_block_id,
                 "caption_text": caption_text,
                 "visual_groups": [],
-                "consumed_caption_block_ids": [legend_block_id] if legend_block_id is not None else [],
+                "consumed_caption_block_ids": [{"page": normalized_item.get("page"), "block_id": legend_block_id}] if legend_block_id is not None else [],
                 "consumed_asset_block_ids": [],
                 "debug_refs": {},
             }
@@ -298,7 +298,7 @@ def _materialize_reader_figure(
             "caption_block_id": legend_block_id,
             "caption_text": caption_text,
             "visual_groups": [],
-            "consumed_caption_block_ids": [legend_block_id] if legend_block_id is not None else [],
+            "consumed_caption_block_ids": [{"page": normalized_item.get("page"), "block_id": legend_block_id}] if legend_block_id is not None else [],
             "consumed_asset_block_ids": [],
             "debug_refs": {},
         }
@@ -327,7 +327,7 @@ def _materialize_reader_figure(
                 }
             ],
             "consumed_caption_block_ids": [],
-            "consumed_asset_block_ids": asset_ids,
+            "consumed_asset_block_ids": [{"page": normalized_item.get("page"), "block_id": aid} for aid in asset_ids],
             "debug_refs": {},
         }
 
@@ -361,25 +361,25 @@ def _passes_salient_visual_group_gate(item: dict) -> bool:
 
 def _collect_reader_eligible_inputs(normalized: dict) -> list[dict]:
     eligible: list[dict] = []
-    seen_legends: set[int | str] = set()
+    seen_legends: set[tuple[int | str | None, int | str | None]] = set()
 
     for source_name in ("matched_figures", "held_figures", "ambiguous_figures"):
         for item in normalized.get(source_name, []):
-            legend_block_id = item.get("legend_block_id")
-            if legend_block_id is None or legend_block_id in seen_legends:
+            legend_id = (item.get("page"), item.get("legend_block_id"))
+            if legend_id in seen_legends:
                 continue
             if not _passes_formal_legend_gate(item):
                 continue
-            seen_legends.add(legend_block_id)
+            seen_legends.add(legend_id)
             eligible.append({"kind": "legend", "source": source_name, "item": item})
 
     for item in normalized.get("unmatched_legends", []):
-        legend_block_id = item.get("legend_block_id")
-        if legend_block_id is None or legend_block_id in seen_legends:
+        legend_id = (item.get("page"), item.get("legend_block_id"))
+        if legend_id in seen_legends:
             continue
         if not _passes_formal_legend_gate(item):
             continue
-        seen_legends.add(legend_block_id)
+        seen_legends.add(legend_id)
         eligible.append({"kind": "legend", "source": "unmatched_legends", "item": item})
 
     for item in normalized.get("unresolved_clusters", []):
@@ -415,10 +415,6 @@ def synthesize_reader_figures(
         consumed_asset_ids.extend(materialized.get("consumed_asset_block_ids", []))
 
     coverage_total = len(eligible_inputs)
-    reader_figures = [
-        figure for figure in reader_figures
-        if figure.get("visual_groups")
-    ]
     return {
         "normalized_inputs": normalized,
         "reader_figures": reader_figures,
