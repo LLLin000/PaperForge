@@ -278,6 +278,106 @@ def test_reader_audit_reader_coverage_is_not_trivially_zero(rebuilt_reader_audit
         assert health.get("figure_reader_coverage_total", 0) > 0, f"{key}: reader coverage total is zero despite eligible legends"
 
 
+_BACKMATTER_KEYWORDS = [
+    "author contributions", "data availability", "funding", "acknowledg",
+    "conflict of interest", "competing interests", "supplementary material",
+    "ethics statement", "publisher", "biographies",
+]
+
+
+def _is_panel_label(text: str) -> bool:
+    return bool(re.match(r"^[A-H]\s*$", text.strip()))
+
+def _is_panel_lower(text: str) -> bool:
+    return bool(re.match(r"^[a-h]\s*$", text.strip()))
+
+
+@pytest.mark.parametrize("key", ALL_KEYS)
+def test_audit_fulltext_no_panel_letter_leaks(rebuilt_reader_audit_papers: dict, real_ocr_root: Path, key: str) -> None:
+    lines = _fulltext_lines(real_ocr_root, key)
+    leaks = []
+    for i, line in enumerate(lines):
+        s = line.strip()
+        if _is_panel_label(s):
+            if i > 0 and not lines[i - 1].strip().startswith(">") and not lines[i - 1].strip().startswith("!"):
+                leaks.append(f"L{i}:{s}")
+        elif _is_panel_lower(s):
+            if i > 0 and not lines[i - 1].strip().startswith("##"):
+                leaks.append(f"L{i}:{s}")
+    assert not leaks, f"{key}: {len(leaks)} panel labels leaked into fulltext: {leaks[:10]}"
+
+
+@pytest.mark.parametrize("key", ALL_KEYS)
+def test_audit_fulltext_no_backmatter_headings(rebuilt_reader_audit_papers: dict, real_ocr_root: Path, key: str) -> None:
+    lines = _fulltext_lines(real_ocr_root, key)
+    back_hds = []
+    for i, line in enumerate(lines):
+        s = line.strip().lower()
+        if s.startswith("## ") and any(kw in s for kw in _BACKMATTER_KEYWORDS):
+            back_hds.append(f"L{i}:{line.strip()[:80]}")
+    assert not back_hds, f"{key}: {len(back_hds)} backmatter headings rendered as body headings: {back_hds[:8]}"
+
+
+@pytest.mark.parametrize("key", ALL_KEYS)
+def test_audit_fulltext_no_figure_cards_after_refs(rebuilt_reader_audit_papers: dict, real_ocr_root: Path, key: str) -> None:
+    lines = _fulltext_lines(real_ocr_root, key)
+    ref_idx = next((i for i, l in enumerate(lines) if l.strip().lower() == "## references"), None)
+    if ref_idx is None:
+        return
+    fig_cards_after = sum(1 for i in range(ref_idx, len(lines)) if lines[i].strip().startswith("> **Figure"))
+    assert fig_cards_after == 0, f"{key}: {fig_cards_after} figure cards placed after REFERENCES section"
+
+
+@pytest.mark.parametrize("key", ALL_KEYS)
+def test_audit_fulltext_no_body_before_introduction(rebuilt_reader_audit_papers: dict, real_ocr_root: Path, key: str) -> None:
+    lines = _fulltext_lines(real_ocr_root, key)
+    first_h2 = next((i for i, l in enumerate(lines) if re.match(r"^## \d+\.", l.strip()) or l.strip().lower().startswith("## introduction")), None)
+    if first_h2 is None:
+        return
+    body_before = sum(
+        1 for i in range(first_h2)
+        if lines[i].strip()
+        and not lines[i].strip().startswith("#")
+        and not lines[i].strip().startswith("<!--")
+        and not lines[i].strip().startswith(">")
+        and not lines[i].strip().startswith("!")
+        and not lines[i].strip().startswith("*")
+        and len(lines[i].strip()) > 40
+    )
+    assert body_before <= 2, f"{key}: {body_before} body paragraphs appear before first structural heading"
+
+
+@pytest.mark.parametrize("key", ALL_KEYS)
+def test_audit_fulltext_no_orphan_figure_embeds(rebuilt_reader_audit_papers: dict, real_ocr_root: Path, key: str) -> None:
+    lines = _fulltext_lines(real_ocr_root, key)
+    orphans = []
+    for i, l in enumerate(lines):
+        if l.strip().startswith("![[render/figures/"):
+            nearby_hd = any(
+                lines[j].strip().startswith("## ") or lines[j].strip().startswith("> **Figure")
+                for j in range(max(0, i - 5), min(len(lines), i + 3))
+            )
+            if not nearby_hd:
+                orphans.append(f"L{i}")
+    assert not orphans, f"{key}: {len(orphans)} orphan figure embeds with no heading or reader card context"
+
+
+@pytest.mark.parametrize("key", ALL_KEYS)
+def test_audit_blocks_reference_items_in_reference_zone(rebuilt_reader_audit_papers: dict, real_ocr_root: Path, key: str) -> None:
+    blocks = _read_jsonl(_structured_path(real_ocr_root, key))
+    ref_outside = [
+        b.get("block_id")
+        for b in blocks
+        if b.get("role") == "reference_item"
+        and b.get("zone") not in ("reference_zone", "tail_nonref_hold_zone")
+    ]
+    if ref_outside:
+        total = sum(1 for b in blocks if b.get("role") == "reference_item")
+        assert len(ref_outside) <= max(5, total * 0.05), (
+            f"{key}: {len(ref_outside)}/{total} reference items outside reference_zone (max 5 or 5% of total)"
+        )
+
+
 def test_reader_audit_normalized_matched_figures_keep_figure_semantics(
     rebuilt_reader_audit_papers: dict,
     real_ocr_root: Path,
