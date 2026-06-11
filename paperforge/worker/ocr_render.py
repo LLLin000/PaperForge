@@ -724,11 +724,15 @@ def render_fulltext_markdown(
         rfid = rf.get("reader_figure_id")
         if not rfid:
             continue
-        cbid = rf.get("caption_block_id")
-        page = _block_page_map.get(cbid) if cbid is not None else None
+        page = None
+        for item in rf.get("consumed_caption_block_ids", []):
+            p = item.get("page") if isinstance(item, dict) else None
+            if p is not None:
+                page = p
+                break
         if page is None:
-            for aid in rf.get("consumed_asset_block_ids", []):
-                p = _block_page_map.get(aid)
+            for item in rf.get("consumed_asset_block_ids", []):
+                p = item.get("page") if isinstance(item, dict) else None
                 if p is not None:
                     page = p
                     break
@@ -963,6 +967,7 @@ def render_fulltext_markdown(
             "frontmatter_noise",
             "table_html",
             "figure_caption",
+            "figure_inner_text",
         }
         if role in _SKIPPED_BODY_ROLES:
             continue
@@ -1029,6 +1034,14 @@ def render_fulltext_markdown(
                 if text.strip().lower() in FRONTMATTER_NOISE:
                     continue
                 if "published online" in text.strip().lower():
+                    continue
+                _BACKMATTER_HEADING_KEYWORDS = frozenset({
+                    "author contributions", "data availability", "funding", "acknowledg",
+                    "conflict of interest", "competing interests", "supplementary material",
+                    "ethics statement", "publisher", "biographies",
+                })
+                _heading_lower = text.strip().lower()
+                if any(kw in _heading_lower for kw in _BACKMATTER_HEADING_KEYWORDS):
                     continue
                 if _is_bogus_heading(text):
                     if text:
