@@ -2316,3 +2316,72 @@ def test_render_fulltext_hides_debug_artifacts() -> None:
     assert "unmatched_legend_" not in markdown
     assert "unresolved_cluster_" not in markdown
     assert "orphan_" not in markdown
+
+
+def test_render_fulltext_skips_consumed_caption_block_even_when_role_is_body_paragraph() -> None:
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+
+    blocks = [
+        {"block_id": 21, "role": "body_paragraph", "text": "FIGURE 2 | Treadmill exercise protocols...", "page": 1, "bbox": [0, 0, 100, 20]},
+        {"block_id": 22, "role": "body_paragraph", "text": "The treadmill protocol was well tolerated.", "page": 1, "bbox": [0, 30, 500, 50]},
+    ]
+    reader_payload = {
+        "reader_figures": [{
+            "reader_figure_id": "figure_002_reader",
+            "reader_status": "LEGEND_ONLY",
+            "strict_status": "unmatched",
+            "figure_number": 2,
+            "caption_text": "FIGURE 2 | Treadmill exercise protocols...",
+            "caption_block_id": 21,
+            "visual_groups": [],
+            "consumed_caption_block_ids": [21],
+            "consumed_asset_block_ids": [],
+            "debug_refs": {},
+        }],
+        "consumed_caption_block_ids": [21],
+        "consumed_asset_block_ids": [],
+    }
+
+    markdown = render_fulltext_markdown(
+        structured_blocks=blocks,
+        resolved_metadata={},
+        figure_inventory={"matched_figures": []},
+        table_inventory={"tables": []},
+        page_count=1,
+        reader_payload=reader_payload,
+    )
+
+    assert markdown.count("FIGURE 2 | Treadmill exercise protocols...") == 1
+
+
+def test_render_fulltext_prefers_reader_figures_over_legacy_matched_figures() -> None:
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+
+    blocks = [{"block_id": 22, "role": "body_paragraph", "text": "Results body.", "page": 1, "bbox": [0, 30, 500, 50]}]
+    markdown = render_fulltext_markdown(
+        structured_blocks=blocks,
+        resolved_metadata={},
+        figure_inventory={"matched_figures": [{"figure_id": "figure_002", "page": 1, "text": "Figure 2 legacy caption"}]},
+        table_inventory={"tables": []},
+        page_count=1,
+        reader_payload={
+            "reader_figures": [{
+                "reader_figure_id": "figure_002_reader",
+                "reader_status": "LEGEND_ONLY",
+                "strict_status": "unmatched",
+                "strict_source": "unmatched_legends",
+                "figure_number": 2,
+                "caption_text": "FIGURE 2 | Reader caption",
+                "caption_block_id": 21,
+                "visual_groups": [],
+                "consumed_caption_block_ids": [21],
+                "consumed_asset_block_ids": [],
+                "debug_refs": {},
+            }],
+            "consumed_caption_block_ids": [21],
+            "consumed_asset_block_ids": [],
+        },
+    )
+
+    assert "![[render/figures/figure_002.md]]" not in markdown
+    assert "> **Figure 2**" in markdown
