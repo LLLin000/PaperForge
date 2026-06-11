@@ -132,12 +132,14 @@ def _formal_legend_blocks(blocks: list[dict]) -> list[dict]:
     legends = []
     for block in blocks:
         role = block.get("role")
+        if role == "table_caption":
+            continue
         marker_type = str((block.get("marker_signature") or {}).get("type") or "")
         style_family = str(block.get("style_family") or "")
-        if role in {"figure_caption", "table_caption", "legend"}:
+        if role in {"figure_caption", "legend"}:
             legends.append(block)
             continue
-        if marker_type == "figure_number" and style_family in {"legend_like", "table_caption_like"}:
+        if marker_type == "figure_number" and style_family in {"legend_like"}:
             legends.append(block)
     return legends
 

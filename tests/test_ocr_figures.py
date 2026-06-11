@@ -1721,7 +1721,7 @@ def test_compute_figure_legend_completeness_directly() -> None:
 
 def test_strict_layer_promotes_contiguous_legends_with_ordered_assets() -> None:
     """Ambiguous figures with figure numbers adjacent to matched figures
-    are promoted to sequence_match."""
+    are promoted to sequence_match — but only when they have asset_block_ids."""
     from paperforge.worker.ocr_figures import build_figure_inventory
 
     blocks = [
@@ -1761,19 +1761,14 @@ def test_strict_layer_promotes_contiguous_legends_with_ordered_assets() -> None:
     matched = inventory.get("matched_figures", [])
     fig_numbers = {mf.get("figure_number") for mf in matched}
 
-    # Fig 2 should be promoted via sequence match (2 is between 1 and 3)
-    assert 2 in fig_numbers, (
-        f"Fig 2 should be promoted to matched via sequence_match. "
+    # Fig 2 must NOT be promoted — it has no assets
+    assert 2 not in fig_numbers, (
+        f"Fig 2 must NOT be promoted to SEQUENCE_MATCH without assets. "
         f"Matched fig nums: {fig_numbers}"
     )
+    # Fig 1 and Fig 3 should still be matched directly
     assert 1 in fig_numbers
     assert 3 in fig_numbers
-
-    # The promoted figure should have strict_status == "sequence_match"
-    fig2 = [mf for mf in matched if mf.get("figure_number") == 2][0]
-    assert fig2.get("strict_status") == "sequence_match", (
-        "Promoted Fig 2 must have strict_status 'sequence_match'"
-    )
 
 
 def test_compute_figure_legend_completeness_skips_body_mentions() -> None:
@@ -1800,3 +1795,94 @@ def test_compute_figure_legend_completeness_skips_body_mentions() -> None:
     result = compute_figure_legend_completeness(structured_blocks, inventory)
     assert result["total"] == 0
     assert result["gap_count"] == 0
+
+
+# === strict-figure safety rules (Task 3) ===
+
+
+def test_sequence_match_requires_at_least_one_asset_block_id() -> None:
+    """A cluster with empty asset_block_ids must not be promoted to SEQUENCE_MATCH."""
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    blocks = [
+        # Fig 1: legend + asset on page 3 — direct match
+        {"block_id": 10, "role": "figure_caption",
+         "text": "Figure 1. Experimental setup for biomechanical testing.",
+         "page": 3, "bbox": [100, 700, 500, 720],
+         "marker_signature": {"type": "figure_number"},
+         "zone": "body_zone", "style_family": "legend_like"},
+        {"block_id": 11, "role": "figure_asset",
+         "page": 3, "bbox": [100, 400, 500, 680]},
+
+        # Fig 2: legend on page 4, no asset — ambiguous (no_asset_match)
+        {"block_id": 12, "role": "figure_caption",
+         "text": "Figure 2. Histological analysis of tissue sections.",
+         "page": 4, "bbox": [100, 300, 500, 320],
+         "marker_signature": {"type": "figure_number"},
+         "zone": "body_zone", "style_family": "legend_like"},
+
+        # Fig 3: legend + asset on page 5 — direct match
+        {"block_id": 13, "role": "figure_caption",
+         "text": "Figure 3. Gene expression analysis results.",
+         "page": 5, "bbox": [100, 300, 500, 320],
+         "marker_signature": {"type": "figure_number"},
+         "zone": "body_zone", "style_family": "legend_like"},
+        {"block_id": 14, "role": "figure_asset",
+         "page": 5, "bbox": [100, 50, 500, 280]},
+    ]
+
+    inventory = build_figure_inventory(blocks)
+
+    matched = inventory.get("matched_figures", [])
+    fig_numbers = {mf.get("figure_number") for mf in matched}
+
+    # Fig 2 should NOT be promoted — it has no assets
+    assert 2 not in fig_numbers, (
+        f"Fig 2 must NOT be promoted to SEQUENCE_MATCH without assets. "
+        f"Matched fig nums: {fig_numbers}"
+    )
+    # Fig 1 and Fig 3 should still be matched directly
+    assert 1 in fig_numbers
+    assert 3 in fig_numbers
+
+
+def test_reader_figures_never_include_empty_visual_groups() -> None:
+    """No reader figure may have an empty visual_groups list."""
+    from paperforge.worker.ocr_figure_reader import synthesize_reader_figures
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    blocks = [
+        # Fig 1: legend + asset — direct match
+        {"block_id": 10, "role": "figure_caption",
+         "text": "Figure 1. Experimental setup.",
+         "page": 3, "bbox": [100, 700, 500, 720],
+         "marker_signature": {"type": "figure_number"},
+         "zone": "body_zone", "style_family": "legend_like"},
+        {"block_id": 11, "role": "figure_asset",
+         "page": 3, "bbox": [100, 400, 500, 680]},
+
+        # Fig 2: legend only, no asset
+        {"block_id": 12, "role": "figure_caption",
+         "text": "Figure 2. Histological analysis.",
+         "page": 4, "bbox": [100, 300, 500, 320],
+         "marker_signature": {"type": "figure_number"},
+         "zone": "body_zone", "style_family": "legend_like"},
+
+        # Fig 3: legend + asset — direct match
+        {"block_id": 13, "role": "figure_caption",
+         "text": "Figure 3. Gene expression results.",
+         "page": 5, "bbox": [100, 300, 500, 320],
+         "marker_signature": {"type": "figure_number"},
+         "zone": "body_zone", "style_family": "legend_like"},
+        {"block_id": 14, "role": "figure_asset",
+         "page": 5, "bbox": [100, 50, 500, 280]},
+    ]
+
+    inventory = build_figure_inventory(blocks)
+    reader = synthesize_reader_figures(inventory, blocks)
+
+    for figure in reader.get("reader_figures", []):
+        vg = figure.get("visual_groups")
+        assert vg, (
+            f"Reader figure {figure.get('reader_figure_id')} has empty visual_groups: {figure}"
+        )
