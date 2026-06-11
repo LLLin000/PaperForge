@@ -198,13 +198,14 @@ def test_reader_audit_no_debug_tokens_in_fulltext(rebuilt_reader_audit_papers: d
 def test_reader_audit_consumed_caption_integrity(rebuilt_reader_audit_papers: dict, real_ocr_root: Path, key: str) -> None:
     blocks = _read_jsonl(_structured_path(real_ocr_root, key))
     reader_payload = _read_json(_reader_figures_path(real_ocr_root, key))
-    block_ids = {block.get("block_id") for block in blocks}
-    owners: dict[int | str, int] = defaultdict(int)
+    block_key_set = {(block.get("page"), block.get("block_id")) for block in blocks}
+    owners: dict[tuple, int] = defaultdict(int)
     for figure in _reader_figures(reader_payload):
-        for bid in figure.get("consumed_caption_block_ids", []):
-            assert bid in block_ids, f"{key}: consumed caption block id missing from structured blocks: {bid}"
-            owners[bid] += 1
-    assert all(count == 1 for count in owners.values()), f"{key}: consumed caption block owned more than once: {owners}"
+        for item in figure.get("consumed_caption_block_ids", []):
+            ckey = (item.get("page"), item.get("block_id"))
+            assert ckey in block_key_set, f"{key}: consumed caption ({ckey}) missing from structured blocks"
+            owners[ckey] += 1
+    assert all(count == 1 for count in owners.values()), f"{key}: consumed caption owned more than once: {dict(owners)}"
 
 
 @pytest.mark.parametrize("key", ALL_KEYS)

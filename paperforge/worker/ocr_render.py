@@ -674,11 +674,6 @@ def _emit_page_objects(
         for fig in figures_by_page.get(page, []):
             if str(fig['figure_id']).startswith("unmatched_legend_"):
                 continue
-            caption = str(fig.get("caption") or "").strip()
-            if caption and caption not in emitted_figure_captions:
-                lines.append(caption)
-                lines.append("")
-                emitted_figure_captions.add(caption)
             lines.append(f"![[render/figures/{fig['figure_id']}.md]]")
             lines.append("")
         for cluster_id in unresolved_clusters_by_page.get(page, []):
@@ -714,7 +709,7 @@ def render_fulltext_markdown(
     emitted_figure_captions: set[str] = set()
 
     reader_figures = (reader_payload or {}).get("reader_figures", [])
-    consumed_caption_block_ids = set((reader_payload or {}).get("consumed_caption_block_ids", []))
+    consumed_caption_keys = {(item.get("page"), item.get("block_id")) for item in (reader_payload or {}).get("consumed_caption_block_ids", []) if item.get("block_id") is not None}
     rendered_reader_figure_ids: set[str] = set()
 
     _block_page_map: dict[int, int] = {}
@@ -967,12 +962,14 @@ def render_fulltext_markdown(
             "abstract_body",
             "frontmatter_noise",
             "table_html",
+            "figure_caption",
         }
         if role in _SKIPPED_BODY_ROLES:
             continue
 
         block_id = block.get("block_id")
-        if block_id is not None and block_id in consumed_caption_block_ids:
+        block_page = block.get("page")
+        if block_id is not None and (block_page, block_id) in consumed_caption_keys:
             continue
 
         raw_text = block.get("text", "")
@@ -980,7 +977,6 @@ def render_fulltext_markdown(
         text = re.sub(r"<table[^>]*>.*?</table>", "", text, flags=re.DOTALL | re.IGNORECASE)
         if text.strip().lower().startswith("<table"):
             continue
-        block_page = block.get("page")
 
         if block_page is not None and block_page != current_page:
             # Emit objects for the page we just finished rendering
