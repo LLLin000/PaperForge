@@ -91,10 +91,16 @@ def _normalize_bucket(
                     if bucket_name in candidate_buckets
                     else []
                 ),
-                "marker_type": source_marker.get("type"),
+                "marker_type": source_item.get("marker_type") or source_marker.get("type"),
                 "inline_mention": bool(source_item.get("inline_mention", False)),
                 "panel_label": bool(source_item.get("panel_label", False)),
                 "body_prose_likelihood": float(source_item.get("body_prose_likelihood", 0.0)),
+                "strict_reject": bool(source_item.get("strict_reject", False)),
+                "linked_legend_block_id": source_item.get("linked_legend_block_id"),
+                "cluster_area_ratio": float(source_item.get("cluster_area_ratio", 0.0)),
+                "width_ratio": float(source_item.get("width_ratio", 0.0)),
+                "height_ratio": float(source_item.get("height_ratio", 0.0)),
+                "media_block_count": int(source_item.get("media_block_count", len(_asset_ids_from_item(source_item)))),
                 "page": source_item.get("page", block.get("page")),
                 "zone": (
                     legend_data.get("zone")
