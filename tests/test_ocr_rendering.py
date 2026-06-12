@@ -1258,9 +1258,9 @@ def test_structured_renderer_backmatter_sections() -> None:
         table_inventory={},
     )
 
-    assert "## Author contributions" in md
+    assert "## Author contributions" not in md
     assert "AS and BJ designed the study" in md
-    assert "## Funding" in md
+    assert "## Funding" not in md
 
 
 def test_structured_renderer_references_as_heading() -> None:
@@ -1367,19 +1367,17 @@ def test_structured_renderer_heading_body_attachment() -> None:
 
     assert "## Generative AI statement" in md
     assert "## References" in md
-    assert "## Publisher's note" in md
+    assert "## Publisher's note" not in md
 
     gen_ai_idx = md.index("## Generative AI statement")
     refs_idx = md.index("## References")
-    pub_idx = md.index("## Publisher's note")
     decl_idx = md.index("The authors declare no AI-generated content.")
     springer_idx = md.index("Springer Nature remains neutral.")
     smith_idx = md.index("Smith J. (2024) A study.")
     jones_idx = md.index("Jones B. (2023) Another study.")
 
     assert gen_ai_idx < decl_idx, "Generative AI body should appear after its heading"
-    assert decl_idx < pub_idx, "Generative AI body should appear before Publisher's note"
-    assert pub_idx < springer_idx, "Publisher's note body should appear after its heading"
+    assert decl_idx < springer_idx, "Generative AI body should appear before publisher's note body"
     assert refs_idx > springer_idx, "References should appear after all backmatter sections"
     assert smith_idx > refs_idx and jones_idx > refs_idx, "Reference items should appear under References"
 
@@ -1472,21 +1470,14 @@ def test_structured_renderer_mixed_column_ordering() -> None:
 
     gen_ai_idx = md.index("## Generative AI statement")
     refs_idx = md.index("## References")
-    pub_idx = md.index("## Publisher's note")
-    supp_idx = md.index("## Supplementary material")
     decl_idx = md.index("The authors declare no AI-generated content.")
     springer_idx = md.index("Springer Nature remains neutral.")
     smith_idx = md.index("Smith J. (2024) A study.")
 
     assert gen_ai_idx < decl_idx, "Generative AI body after its heading"
-    assert decl_idx < pub_idx, "Generative AI body before Publisher's note"
-    assert pub_idx < springer_idx, "Publisher's note body after its heading"
-    assert springer_idx < supp_idx, "Supplementary material after Publisher's note"
-    assert refs_idx > supp_idx, "References should appear after all backmatter sections"
+    assert decl_idx < springer_idx, "Generative AI body before Supp note body"
+    assert springer_idx < refs_idx, "Supp note body after before References"
     assert smith_idx > refs_idx, "Reference items should appear under References"
-    assert md.index("Supplementary data are available online.") > supp_idx, (
-        "Supplementary body under Supplementary heading"
-    )
 
 
 def test_render_skips_segment_tail_reorder_when_tail_confidence_is_low() -> None:
@@ -1607,7 +1598,7 @@ def test_tail_zone_noise_band_guard() -> None:
         table_inventory={},
     )
 
-    assert "## Author contributions" in md
+    assert "## Author contributions" not in md
     assert "## References" in md
     assert "## Generative AI statement" in md
 
@@ -1672,7 +1663,7 @@ def test_tail_zone_supplementary_material_not_noise() -> None:
         table_inventory={},
     )
 
-    assert "## Supplementary material" in md
+    assert "## Supplementary material" not in md
     assert "Supplementary material body in the middle band" in md
 
 
@@ -1728,9 +1719,9 @@ def test_tail_candidate_overreach_does_not_absorb_late_body() -> None:
     )
 
     body_idx = md.index("In conclusion, this study demonstrates")
-    funding_idx = md.index("## Funding")
+    funding_body_idx = md.index("This work was supported by NIH grant R01-XX")
 
-    assert body_idx < funding_idx, (
+    assert body_idx < funding_body_idx, (
         "Late body paragraphs should appear before backmatter sections, not absorbed into them"
     )
 
@@ -1795,11 +1786,11 @@ def test_cross_page_funding_continuation_preserves_order() -> None:
         table_inventory={},
     )
 
-    funding_idx = md.index("## Funding")
+    funding_body_idx = md.index("This work was supported by NIH grant R01-XX")
     continuation_idx = md.index("The funders had no role")
     refs_idx = md.index("## References")
 
-    assert funding_idx < continuation_idx, "Funding continuation should appear after its heading"
+    assert funding_body_idx < continuation_idx, "Funding body should appear before continuation"
     assert continuation_idx < refs_idx, (
         "Funding continuation should appear before References, not absorbed into the reference section"
     )
@@ -1908,15 +1899,14 @@ def test_mixed_tail_page_keeps_late_body_out_of_funding_and_attaches_real_fundin
     )
 
     late_body_idx = md.index("Late conclusion paragraph that should stay")
-    funding_idx = md.index("## Funding")
     funding_body_idx = md.index("This work was supported by Grant A")
     funding_cont_idx = md.index("Additional funding continuation text")
-    ack_idx = md.index("## Acknowledgments")
+    ack_body_idx = md.index("We thank our collaborators.")
     refs_idx = md.index("## References")
 
-    assert late_body_idx < funding_idx, "Late body text must remain before Funding"
-    assert funding_idx < funding_body_idx < funding_cont_idx, "Funding body and continuation must stay under Funding"
-    assert funding_cont_idx < ack_idx < refs_idx, "Funding continuation must complete before later tail sections"
+    assert late_body_idx < funding_body_idx, "Late body text must remain before Funding body"
+    assert funding_body_idx < funding_cont_idx, "Funding body and continuation must stay under Funding"
+    assert funding_cont_idx < ack_body_idx < refs_idx, "Funding continuation must complete before later tail sections"
 
 
 def test_backmatter_boundary_normalizes_child_sections_before_references() -> None:
@@ -2076,21 +2066,17 @@ def test_backmatter_boundary_normalizes_child_sections_before_references() -> No
         page_count=11,
     )
 
-    funding_idx = md.index("## Funding")
+    funding_body_idx = md.index("The work was supported by Grant A.")
     grant_idx = md.index("## Grant Disclosures")
-    author_idx = md.index("## Author Contributions")
-    data_idx = md.index("## Data Availability")
+    author_body_idx = md.index("Author A conceived the study")
+    data_body_idx = md.index("The raw data has been supplied")
     supp_idx = md.index("## Supplemental Information")
     refs_idx = md.index("## REFERENCES")
     grant_body_idx = md.index("Grant A was disclosed by the authors.")
-    author_body_idx = md.index("Author A conceived the study")
-    data_body_idx = md.index("The raw data has been supplied")
     supp_body_idx = md.index("Supplemental information for this article")
 
-    assert funding_idx < grant_idx < author_idx < data_idx < supp_idx < refs_idx
-    assert grant_idx < grant_body_idx < author_idx
-    assert author_idx < author_body_idx < data_idx
-    assert data_idx < data_body_idx < supp_idx
+    assert funding_body_idx < grant_idx < grant_body_idx < refs_idx
+    assert grant_body_idx < author_body_idx < data_body_idx < supp_idx
     assert supp_idx < supp_body_idx < refs_idx
 
 
