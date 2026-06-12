@@ -277,6 +277,23 @@ def test_reader_payload_coverage_accounted_matches_reader_figures() -> None:
     assert set(result["consumed_caption_block_ids"]) == {5, 21}
 
 
+def test_reader_figures_emit_from_matched_or_unresolved_object_inputs() -> None:
+    from paperforge.worker.ocr_figure_reader import synthesize_reader_figures
+
+    payload = synthesize_reader_figures(
+        {
+            "matched_figures": [{"figure_id": "figure_001", "page": 2, "legend_block_id": 21, "asset_block_ids": [90], "strict_status": "matched"}],
+            "held_figures": [],
+            "ambiguous_figures": [],
+            "unmatched_legends": [],
+            "unresolved_clusters": [],
+        },
+        structured_blocks=[{"block_id": 21, "page": 2, "role": "figure_caption_candidate", "text": "Fig. 1 Caption"}],
+    )
+
+    assert len(payload["reader_figures"]) >= 1
+
+
 def test_reader_normalization_keeps_same_block_id_legends_separate_by_page() -> None:
     from paperforge.worker.ocr_figure_reader import synthesize_reader_figures
 

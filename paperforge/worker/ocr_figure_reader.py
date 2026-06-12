@@ -1,6 +1,15 @@
 from __future__ import annotations
 
+import contextlib
+import re
 from dataclasses import dataclass
+
+_FIGURE_NUM_PATTERN = re.compile(
+    r"(?:Figure|Fig\.?|Supplementary\s+Figure|Supplementary\s+Fig\.?|"
+    r"Extended\s+Data\s+Figure|Extended\s+Data\s+Fig\.?)\s+"
+    r"(?:S)?(\d+(?:\.\d+)?)",
+    flags=re.IGNORECASE,
+)
 
 
 @dataclass(frozen=True)
@@ -100,7 +109,7 @@ def _normalize_bucket(
         legend_block_id = _legend_block_id(source_item)
         source_page = source_item.get("page")
         block = (page_block_index or {}).get((source_page, legend_block_id), block_index.get(legend_block_id, {}))
-        source_text = str(source_item.get("text", source_item.get("caption_text", "")) or "")
+        source_text = str(source_item.get("text", source_item.get("caption_text", block.get("text", ""))) or "")
         legend_data = (page_legends_index or {}).get((source_page, legend_block_id), (legends_index or {}).get(legend_block_id, {}))
         source_marker = (
             source_item.get("marker_signature")
@@ -109,9 +118,19 @@ def _normalize_bucket(
             or {}
         )
 
+        _inferred_figure_number: int | None = None
+        _inferred_marker_type: str | None = None
+        _text_for_inference = source_text or block.get("text", "")
+        if not source_item.get("marker_type") and not source_marker.get("type") and _text_for_inference:
+            _m = _FIGURE_NUM_PATTERN.search(_text_for_inference)
+            if _m:
+                _inferred_marker_type = "figure_number"
+                with contextlib.suppress(ValueError):
+                    _inferred_figure_number = int(float(_m.group(1)))
+
         normalized.append(
             {
-                "figure_number": source_item.get("figure_number") or source_marker.get("number"),
+                "figure_number": source_item.get("figure_number") or source_marker.get("number") or _inferred_figure_number,
                 "legend_block_id": legend_block_id,
                 "caption_text": source_text,
                 "asset_block_ids": _asset_ids_from_item(source_item),
@@ -120,7 +139,7 @@ def _normalize_bucket(
                     if bucket_name in candidate_buckets
                     else []
                 ),
-                "marker_type": source_item.get("marker_type") or source_marker.get("type"),
+                "marker_type": source_item.get("marker_type") or source_marker.get("type") or _inferred_marker_type,
                 "inline_mention": bool(source_item.get("inline_mention", False)),
                 "panel_label": bool(source_item.get("panel_label", False)),
                 "body_prose_likelihood": float(source_item.get("body_prose_likelihood", 0.0)),
