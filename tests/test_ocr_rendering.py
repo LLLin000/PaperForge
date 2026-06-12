@@ -2427,3 +2427,65 @@ def test_render_fulltext_prefers_reader_figures_over_legacy_matched_figures() ->
 
     assert "![[render/figures/figure_002.md]]" not in markdown
     assert "> **Figure 2**" in markdown
+
+
+def test_render_fulltext_uses_accepted_abstract_span_only() -> None:
+    from paperforge.worker.ocr_document import DocumentStructure
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+
+    doc = DocumentStructure()
+    doc.abstract_span = {"heading_block_id": "h", "body_block_ids": ["a"], "status": "ACCEPT"}
+
+    structured_blocks = [
+        {"block_id": "h", "page": 1, "role": "abstract_heading", "role_verification_status": "ACCEPT", "text": "Abstract", "render_default": True},
+        {"block_id": "a", "page": 1, "role": "abstract_body", "role_verification_status": "ACCEPT", "text": "Real abstract.", "render_default": True},
+        {"block_id": "bad", "page": 1, "role": "abstract_body", "role_verification_status": "HOLD", "text": "Mislabeled body.", "render_default": True},
+        {"block_id": "intro", "page": 1, "role": "section_heading", "role_verification_status": "ACCEPT", "text": "Introduction", "render_default": True},
+    ]
+
+    markdown = render_fulltext_markdown(
+        structured_blocks=structured_blocks,
+        resolved_metadata={},
+        figure_inventory={},
+        table_inventory={},
+        page_count=1,
+        document_structure=doc,
+        reader_payload={"reader_figures": []},
+    )
+
+    assert "Real abstract." in markdown
+    assert "Mislabeled body." not in markdown
+
+
+def test_render_fulltext_renders_all_reader_visible_statuses() -> None:
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+
+    statuses = ["EXACT_MATCH", "SEQUENCE_MATCH", "GROUPED_APPROXIMATE", "LEGEND_ONLY", "ASSET_GROUP_ONLY", "HOLD"]
+    reader_figures = [
+        {
+            "reader_figure_id": f"fig_reader_{i}",
+            "figure_number": i,
+            "block_id": f"fig_{i}",
+            "page": 1,
+            "page_coords": {"x": 100, "y": 100 + i * 100, "width": 400, "height": 300},
+            "reader_status": status,
+            "consumed_caption_block_ids": [],
+        }
+        for i, status in enumerate(statuses)
+    ]
+
+    structured_blocks = [
+        {"block_id": "a", "page": 1, "role": "body_paragraph", "text": "Some body text.", "render_default": True},
+    ]
+
+    markdown = render_fulltext_markdown(
+        structured_blocks=structured_blocks,
+        resolved_metadata={},
+        figure_inventory={},
+        table_inventory={},
+        page_count=1,
+        reader_payload={"reader_figures": reader_figures},
+    )
+
+    for status in statuses:
+        assert status in markdown
