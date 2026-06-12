@@ -1494,8 +1494,20 @@ def test_render_skips_segment_tail_reorder_when_tail_confidence_is_low() -> None
     from paperforge.worker.ocr_render import render_fulltext_markdown
 
     blocks = [
-        {"block_id": "b1", "role": "body_paragraph", "text": "First tail block", "page": 3, "bbox": [700, 100, 1100, 150]},
-        {"block_id": "b2", "role": "body_paragraph", "text": "Second tail block", "page": 3, "bbox": [100, 100, 500, 150]},
+        {
+            "block_id": "b1",
+            "role": "body_paragraph",
+            "text": "First tail block",
+            "page": 3,
+            "bbox": [700, 100, 1100, 150],
+        },
+        {
+            "block_id": "b2",
+            "role": "body_paragraph",
+            "text": "Second tail block",
+            "page": 3,
+            "bbox": [100, 100, 500, 150],
+        },
     ]
     doc = DocumentStructure(spread_start=3, spread_end=3)
     doc.tail_boundary_score = {"score": 0.2}
@@ -1504,7 +1516,9 @@ def test_render_skips_segment_tail_reorder_when_tail_confidence_is_low() -> None
         {"page": 3, "column_index": 1, "y_top": 100, "y_bottom": 150, "block_indices": [0]},
     ]
 
-    markdown = render_fulltext_markdown(structured_blocks=blocks, resolved_metadata={}, figure_inventory={}, table_inventory={}, document_structure=doc)
+    markdown = render_fulltext_markdown(
+        structured_blocks=blocks, resolved_metadata={}, figure_inventory={}, table_inventory={}, document_structure=doc
+    )
 
     assert markdown.index("First tail block") < markdown.index("Second tail block")
 
@@ -2240,26 +2254,36 @@ def test_render_fulltext_skips_consumed_caption_block() -> None:
     from paperforge.worker.ocr_render import render_fulltext_markdown
 
     blocks = [
-        {"block_id": 21, "role": "figure_caption",
-         "text": "FIGURE 2 | Treadmill exercise protocols...",
-         "page": 1, "bbox": [0, 0, 100, 20]},
-        {"block_id": 22, "role": "body_paragraph",
-         "text": "The treadmill protocol was well tolerated by all subjects.",
-         "page": 1, "bbox": [0, 30, 500, 50]},
+        {
+            "block_id": 21,
+            "role": "figure_caption",
+            "text": "FIGURE 2 | Treadmill exercise protocols...",
+            "page": 1,
+            "bbox": [0, 0, 100, 20],
+        },
+        {
+            "block_id": 22,
+            "role": "body_paragraph",
+            "text": "The treadmill protocol was well tolerated by all subjects.",
+            "page": 1,
+            "bbox": [0, 30, 500, 50],
+        },
     ]
 
     reader_payload = {
         "reader_figures": [
-            {"reader_figure_id": "figure_002_reader",
-             "reader_status": "LEGEND_ONLY",
-             "strict_status": "unmatched",
-             "figure_number": 2,
-             "caption_text": "FIGURE 2 | Treadmill exercise protocols...",
-             "caption_block_id": 21,
-             "visual_groups": [],
-             "consumed_caption_block_ids": [21],
-             "consumed_asset_block_ids": [],
-             "debug_refs": {}}
+            {
+                "reader_figure_id": "figure_002_reader",
+                "reader_status": "LEGEND_ONLY",
+                "strict_status": "unmatched",
+                "figure_number": 2,
+                "caption_text": "FIGURE 2 | Treadmill exercise protocols...",
+                "caption_block_id": 21,
+                "visual_groups": [],
+                "consumed_caption_block_ids": [21],
+                "consumed_asset_block_ids": [],
+                "debug_refs": {},
+            }
         ],
         "consumed_caption_block_ids": [21],
         "consumed_asset_block_ids": [],
@@ -2282,23 +2306,23 @@ def test_render_fulltext_hides_debug_artifacts() -> None:
     from paperforge.worker.ocr_render import render_fulltext_markdown
 
     blocks = [
-        {"block_id": 1, "role": "body_paragraph",
-         "text": "Body text.",
-         "page": 1, "bbox": [0, 0, 100, 20]},
+        {"block_id": 1, "role": "body_paragraph", "text": "Body text.", "page": 1, "bbox": [0, 0, 100, 20]},
     ]
 
     reader_payload = {
         "reader_figures": [
-            {"reader_figure_id": "figure_003_reader",
-             "reader_status": "LEGEND_ONLY",
-             "strict_status": "unmatched",
-             "figure_number": 3,
-             "caption_text": "FIGURE 3 | Histological evaluation...",
-             "caption_block_id": 30,
-             "visual_groups": [],
-             "consumed_caption_block_ids": [30],
-             "consumed_asset_block_ids": [],
-             "debug_refs": {"strict_name": "unmatched_legend_003"}}
+            {
+                "reader_figure_id": "figure_003_reader",
+                "reader_status": "LEGEND_ONLY",
+                "strict_status": "unmatched",
+                "figure_number": 3,
+                "caption_text": "FIGURE 3 | Histological evaluation...",
+                "caption_block_id": 30,
+                "visual_groups": [],
+                "consumed_caption_block_ids": [30],
+                "consumed_asset_block_ids": [],
+                "debug_refs": {"strict_name": "unmatched_legend_003"},
+            }
         ],
         "consumed_caption_block_ids": [30],
         "consumed_asset_block_ids": [],
@@ -2322,22 +2346,36 @@ def test_render_fulltext_skips_consumed_caption_block_even_when_role_is_body_par
     from paperforge.worker.ocr_render import render_fulltext_markdown
 
     blocks = [
-        {"block_id": 21, "role": "body_paragraph", "text": "FIGURE 2 | Treadmill exercise protocols...", "page": 1, "bbox": [0, 0, 100, 20]},
-        {"block_id": 22, "role": "body_paragraph", "text": "The treadmill protocol was well tolerated.", "page": 1, "bbox": [0, 30, 500, 50]},
+        {
+            "block_id": 21,
+            "role": "body_paragraph",
+            "text": "FIGURE 2 | Treadmill exercise protocols...",
+            "page": 1,
+            "bbox": [0, 0, 100, 20],
+        },
+        {
+            "block_id": 22,
+            "role": "body_paragraph",
+            "text": "The treadmill protocol was well tolerated.",
+            "page": 1,
+            "bbox": [0, 30, 500, 50],
+        },
     ]
     reader_payload = {
-        "reader_figures": [{
-            "reader_figure_id": "figure_002_reader",
-            "reader_status": "LEGEND_ONLY",
-            "strict_status": "unmatched",
-            "figure_number": 2,
-            "caption_text": "FIGURE 2 | Treadmill exercise protocols...",
-            "caption_block_id": 21,
-            "visual_groups": [],
-            "consumed_caption_block_ids": [21],
-            "consumed_asset_block_ids": [],
-            "debug_refs": {},
-        }],
+        "reader_figures": [
+            {
+                "reader_figure_id": "figure_002_reader",
+                "reader_status": "LEGEND_ONLY",
+                "strict_status": "unmatched",
+                "figure_number": 2,
+                "caption_text": "FIGURE 2 | Treadmill exercise protocols...",
+                "caption_block_id": 21,
+                "visual_groups": [],
+                "consumed_caption_block_ids": [21],
+                "consumed_asset_block_ids": [],
+                "debug_refs": {},
+            }
+        ],
         "consumed_caption_block_ids": [21],
         "consumed_asset_block_ids": [],
     }
@@ -2361,23 +2399,27 @@ def test_render_fulltext_prefers_reader_figures_over_legacy_matched_figures() ->
     markdown = render_fulltext_markdown(
         structured_blocks=blocks,
         resolved_metadata={},
-        figure_inventory={"matched_figures": [{"figure_id": "figure_002", "page": 1, "text": "Figure 2 legacy caption"}]},
+        figure_inventory={
+            "matched_figures": [{"figure_id": "figure_002", "page": 1, "text": "Figure 2 legacy caption"}]
+        },
         table_inventory={"tables": []},
         page_count=1,
         reader_payload={
-            "reader_figures": [{
-                "reader_figure_id": "figure_002_reader",
-                "reader_status": "LEGEND_ONLY",
-                "strict_status": "unmatched",
-                "strict_source": "unmatched_legends",
-                "figure_number": 2,
-                "caption_text": "FIGURE 2 | Reader caption",
-                "caption_block_id": 21,
-                "visual_groups": [],
-                "consumed_caption_block_ids": [21],
-                "consumed_asset_block_ids": [],
-                "debug_refs": {},
-            }],
+            "reader_figures": [
+                {
+                    "reader_figure_id": "figure_002_reader",
+                    "reader_status": "LEGEND_ONLY",
+                    "strict_status": "unmatched",
+                    "strict_source": "unmatched_legends",
+                    "figure_number": 2,
+                    "caption_text": "FIGURE 2 | Reader caption",
+                    "caption_block_id": 21,
+                    "visual_groups": [],
+                    "consumed_caption_block_ids": [21],
+                    "consumed_asset_block_ids": [],
+                    "debug_refs": {},
+                }
+            ],
             "consumed_caption_block_ids": [21],
             "consumed_asset_block_ids": [],
         },

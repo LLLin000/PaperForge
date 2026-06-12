@@ -86,11 +86,13 @@ def build_ocr_health(
     low_confidence_table_match_count = sum(1 for t in tables if t.get("match_status") == "matched_low_confidence")
 
     low_confidence_insert_candidate_count = sum(
-        1 for b in structured_blocks
+        1
+        for b in structured_blocks
         if b.get("role") == "structured_insert_candidate" and float(b.get("insert_score", {}).get("score", 0.0)) < 0.7
     )
     candidate_forced_count = sum(
-        1 for b in structured_blocks
+        1
+        for b in structured_blocks
         if b.get("role") == "structured_insert" and float(b.get("insert_score", {}).get("score", 1.0)) < 0.7
     )
 
@@ -150,12 +152,12 @@ def build_ocr_health(
     ambiguous_figure_match_count = len(figure_inventory.get("ambiguous_figures", []))
     unresolved_cluster_count = len(figure_inventory.get("unresolved_clusters", []))
     low_score_matched_figures = sum(
-        1 for mf in figure_inventory.get("matched_figures", [])
+        1
+        for mf in figure_inventory.get("matched_figures", [])
         if float(mf.get("caption_score", {}).get("score", 1.0)) < 0.4
     )
     low_score_matched_tables = sum(
-        1 for t in tables
-        if t.get("has_asset") and float(t.get("match_score", {}).get("score", 1.0)) < 0.4
+        1 for t in tables if t.get("has_asset") and float(t.get("match_score", {}).get("score", 1.0)) < 0.4
     )
     low_tail_boundary_confidence = tail_score.get("score", 1.0) < 0.4
     hard_rule_decision_count = (
@@ -220,9 +222,7 @@ def build_ocr_health(
         "figure_legend_completeness_accounted": formal_legend_accounted,
         "figure_legend_completeness_gap_count": formal_legend_gaps,
         "figure_legend_completeness_ratio": (
-            formal_legend_accounted / formal_legend_total
-            if formal_legend_total > 0
-            else 1.0
+            formal_legend_accounted / formal_legend_total if formal_legend_total > 0 else 1.0
         ),
     }
 
@@ -236,8 +236,7 @@ def build_ocr_health(
         reader_count = sum(
             1
             for figure in reader_figures
-            if figure.get("reader_status") != "DEPRECATED"
-            and figure.get("visual_groups")
+            if figure.get("reader_status") != "DEPRECATED" and figure.get("visual_groups")
         )
         report["figure_reader_count"] = reader_count
 

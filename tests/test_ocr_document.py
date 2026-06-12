@@ -171,7 +171,8 @@ def test_analyze_document_structure_wires_style_family_artifacts_into_blocks() -
             "block_id": "p3_b1",
             "page": 3,
             "role": "body_paragraph",
-            "text": "Long narrative body paragraph with enough text to be treated as core body evidence across the main article flow and stable typography. " * 3,
+            "text": "Long narrative body paragraph with enough text to be treated as core body evidence across the main article flow and stable typography. "
+            * 3,
             "marker_signature": {"type": "none"},
             "span_signature": {"font_size_median": 9.0, "font_size_bucket": 9.0, "font_family_norm": "Times"},
             "layout_signature": {"width": 260, "width_bucket": 250, "x_center": 240, "x_center_bucket": 250},
@@ -180,7 +181,8 @@ def test_analyze_document_structure_wires_style_family_artifacts_into_blocks() -
             "block_id": "p5_b1",
             "page": 4,
             "role": "body_paragraph",
-            "text": "Long narrative body paragraph continuing the main article flow with matching typography and substantial prose for body-anchor detection. " * 3,
+            "text": "Long narrative body paragraph continuing the main article flow with matching typography and substantial prose for body-anchor detection. "
+            * 3,
             "marker_signature": {"type": "none"},
             "span_signature": {"font_size_median": 9.0, "font_size_bucket": 9.0, "font_family_norm": "Times"},
             "layout_signature": {"width": 262, "width_bucket": 250, "x_center": 242, "x_center_bucket": 250},
@@ -189,7 +191,8 @@ def test_analyze_document_structure_wires_style_family_artifacts_into_blocks() -
             "block_id": "p5_b1b",
             "page": 5,
             "role": "body_paragraph",
-            "text": "Long narrative body paragraph extending the article with the same body typography and enough tokens to remain a strong body candidate. " * 3,
+            "text": "Long narrative body paragraph extending the article with the same body typography and enough tokens to remain a strong body candidate. "
+            * 3,
             "marker_signature": {"type": "none"},
             "span_signature": {"font_size_median": 9.0, "font_size_bucket": 9.0, "font_family_norm": "Times"},
             "layout_signature": {"width": 261, "width_bucket": 250, "x_center": 241, "x_center_bucket": 250},
@@ -261,7 +264,8 @@ def test_normalize_document_structure_wires_style_family_artifacts_into_blocks()
             "block_id": "p3_b1",
             "page": 3,
             "role": "body_paragraph",
-            "text": "Long narrative body paragraph with enough text to be treated as core body evidence across the main article flow and stable typography. " * 3,
+            "text": "Long narrative body paragraph with enough text to be treated as core body evidence across the main article flow and stable typography. "
+            * 3,
             "marker_signature": {"type": "none"},
             "span_signature": {"font_size_median": 9.0, "font_size_bucket": 9.0, "font_family_norm": "Times"},
             "layout_signature": {"width": 260, "width_bucket": 250, "x_center": 240, "x_center_bucket": 250},
@@ -270,7 +274,8 @@ def test_normalize_document_structure_wires_style_family_artifacts_into_blocks()
             "block_id": "p4_b1",
             "page": 4,
             "role": "body_paragraph",
-            "text": "Long narrative body paragraph continuing the main article flow with matching typography and substantial prose for body-anchor detection. " * 3,
+            "text": "Long narrative body paragraph continuing the main article flow with matching typography and substantial prose for body-anchor detection. "
+            * 3,
             "marker_signature": {"type": "none"},
             "span_signature": {"font_size_median": 9.0, "font_size_bucket": 9.0, "font_family_norm": "Times"},
             "layout_signature": {"width": 262, "width_bucket": 250, "x_center": 242, "x_center_bucket": 250},
@@ -279,7 +284,8 @@ def test_normalize_document_structure_wires_style_family_artifacts_into_blocks()
             "block_id": "p5_b1",
             "page": 5,
             "role": "body_paragraph",
-            "text": "Long narrative body paragraph extending the article with the same body typography and enough tokens to remain a strong body candidate. " * 3,
+            "text": "Long narrative body paragraph extending the article with the same body typography and enough tokens to remain a strong body candidate. "
+            * 3,
             "marker_signature": {"type": "none"},
             "span_signature": {"font_size_median": 9.0, "font_size_bucket": 9.0, "font_family_norm": "Times"},
             "layout_signature": {"width": 261, "width_bucket": 250, "x_center": 241, "x_center_bucket": 250},
@@ -314,7 +320,8 @@ def test_normalize_document_structure_preserves_reference_zone_integrity_from_an
             "block_id": "p2_b1",
             "page": 2,
             "role": "body_paragraph",
-            "text": "Stable body paragraph with repeated typography and enough prose to form the body family anchor. " * 2,
+            "text": "Stable body paragraph with repeated typography and enough prose to form the body family anchor. "
+            * 2,
             "bbox": [100, 120, 460, 280],
             "page_width": 1200,
             "page_height": 1600,
@@ -1482,9 +1489,16 @@ def test_detect_non_body_insert_marks_narrow_blocks() -> None:
 
     blocks = [
         # Pages 2-4: establish strong body spine
-        *[{"role": "body_paragraph", "bbox": [100, 100 + i * 100, 800, 140 + i * 100],
-           "page": pg, "span_metadata": [{"size": 10, "font": "Times"}]}
-          for pg in range(2, 5) for i in range(3)],
+        *[
+            {
+                "role": "body_paragraph",
+                "bbox": [100, 100 + i * 100, 800, 140 + i * 100],
+                "page": pg,
+                "span_metadata": [{"size": 10, "font": "Times"}],
+            }
+            for pg in range(2, 5)
+            for i in range(3)
+        ],
         # Two normal body paragraphs (wide)
         {"role": "body_paragraph", "bbox": [100, 400, 800, 440], "page": 1},
         {"role": "body_paragraph", "bbox": [100, 500, 810, 540], "page": 1},
@@ -1505,9 +1519,16 @@ def test_detect_non_body_insert_marks_narrow_body_paragraphs() -> None:
 
     blocks = [
         # Pages 2-4: establish strong body spine
-        *[{"role": "body_paragraph", "bbox": [100, 100 + i * 100, 800, 140 + i * 100],
-           "page": pg, "span_metadata": [{"size": 10, "font": "Times"}]}
-          for pg in range(2, 5) for i in range(3)],
+        *[
+            {
+                "role": "body_paragraph",
+                "bbox": [100, 100 + i * 100, 800, 140 + i * 100],
+                "page": pg,
+                "span_metadata": [{"size": 10, "font": "Times"}],
+            }
+            for pg in range(2, 5)
+            for i in range(3)
+        ],
         # wide body paragraphs on page 1
         {"role": "body_paragraph", "bbox": [100, 100, 800, 140], "page": 1},
         {"role": "body_paragraph", "bbox": [100, 200, 810, 240], "page": 1},
@@ -1564,15 +1585,23 @@ def test_non_body_insert_not_backfilled_to_body() -> None:
             "source": "ocr_raw",
         },
         # Pages 2-4: establish strong body spine
-        *[{
-            "paper_id": "TEST001", "page": pg,
-            "block_id": f"p{pg}_b{i}", "raw_label": "text",
-            "raw_order": 3 + (pg - 2) * 3 + i,
-            "bbox": [100, 100 + i * 100, 800, 140 + i * 100],
-            "text": f"Standard body paragraph on page {pg} providing enough textual content for processing.",
-            "page_width": 1200, "page_height": 1600, "source": "ocr_raw",
-            "span_metadata": {"size": 10, "font": "Times"},
-        } for pg in range(2, 5) for i in range(3)],
+        *[
+            {
+                "paper_id": "TEST001",
+                "page": pg,
+                "block_id": f"p{pg}_b{i}",
+                "raw_label": "text",
+                "raw_order": 3 + (pg - 2) * 3 + i,
+                "bbox": [100, 100 + i * 100, 800, 140 + i * 100],
+                "text": f"Standard body paragraph on page {pg} providing enough textual content for processing.",
+                "page_width": 1200,
+                "page_height": 1600,
+                "source": "ocr_raw",
+                "span_metadata": {"size": 10, "font": "Times"},
+            }
+            for pg in range(2, 5)
+            for i in range(3)
+        ],
     ]
     rows, _ = build_structured_blocks(raw_blocks)
     non_body = [r for r in rows if r.get("role") == "non_body_insert"]
@@ -2050,7 +2079,16 @@ def test_visual_container_alone_does_not_force_structured_insert() -> None:
     from paperforge.worker.ocr_document import normalize_document_structure
 
     blocks = [
-        {"block_id": "b1", "role": "body_paragraph", "text": "Ordinary paragraph", "page": 2, "bbox": [100, 100, 900, 160], "page_width": 1200, "_in_visual_container": True, "_container_bbox": [90, 90, 910, 170]},
+        {
+            "block_id": "b1",
+            "role": "body_paragraph",
+            "text": "Ordinary paragraph",
+            "page": 2,
+            "bbox": [100, 100, 900, 160],
+            "page_width": 1200,
+            "_in_visual_container": True,
+            "_container_bbox": [90, 90, 910, 170],
+        },
     ]
 
     _doc, normalized = normalize_document_structure(blocks)
@@ -2104,12 +2142,30 @@ def test_non_body_insert_catches_continuation_fragment() -> None:
     ]
     # Pages 3-5: establish strong body spine (3+ anchor pages)
     for pg in range(3, 6):
-        blocks.append({"role": "body_paragraph", "bbox": [100, 100, 800, 140], "page": pg,
-                        "span_metadata": {"font": "BodyFont", "size": 10}})
-        blocks.append({"role": "body_paragraph", "bbox": [100, 200, 810, 240], "page": pg,
-                        "span_metadata": {"font": "BodyFont", "size": 10}})
-        blocks.append({"role": "body_paragraph", "bbox": [100, 300, 800, 340], "page": pg,
-                        "span_metadata": {"font": "BodyFont", "size": 10}})
+        blocks.append(
+            {
+                "role": "body_paragraph",
+                "bbox": [100, 100, 800, 140],
+                "page": pg,
+                "span_metadata": {"font": "BodyFont", "size": 10},
+            }
+        )
+        blocks.append(
+            {
+                "role": "body_paragraph",
+                "bbox": [100, 200, 810, 240],
+                "page": pg,
+                "span_metadata": {"font": "BodyFont", "size": 10},
+            }
+        )
+        blocks.append(
+            {
+                "role": "body_paragraph",
+                "bbox": [100, 300, 800, 340],
+                "page": pg,
+                "span_metadata": {"font": "BodyFont", "size": 10},
+            }
+        )
 
     spine = _detect_body_spine(blocks)
     indices = _detect_non_body_insert_clusters(blocks, spine, body_end_page=8)
@@ -3451,41 +3507,49 @@ def test_non_body_insert_weak_spine_requires_font_mismatch() -> None:
     # Pages 2-3: 3 body paragraphs each → 2 anchor pages → moderate meta quality
     for pg in range(2, 4):
         for i in range(3):
-            blocks.append({
+            blocks.append(
+                {
+                    "role": "body_paragraph",
+                    "page": pg,
+                    "bbox": [80, 100 + i * 100, 590, 160 + i * 100],
+                    "span_metadata": [{"size": 10, "font": "Times"}],
+                    "page_width": 1200,
+                    "page_height": 1700,
+                }
+            )
+    # Page 1: 2 body paragraphs
+    for i in range(2):
+        blocks.append(
+            {
                 "role": "body_paragraph",
-                "page": pg,
+                "page": 1,
                 "bbox": [80, 100 + i * 100, 590, 160 + i * 100],
                 "span_metadata": [{"size": 10, "font": "Times"}],
                 "page_width": 1200,
                 "page_height": 1700,
-            })
-    # Page 1: 2 body paragraphs
-    for i in range(2):
-        blocks.append({
+            }
+        )
+    # Page 1: 2 narrow blocks with SAME font → should NOT be non_body_insert
+    blocks.append(
+        {
             "role": "body_paragraph",
             "page": 1,
-            "bbox": [80, 100 + i * 100, 590, 160 + i * 100],
+            "bbox": [50, 600, 300, 640],
             "span_metadata": [{"size": 10, "font": "Times"}],
             "page_width": 1200,
             "page_height": 1700,
-        })
-    # Page 1: 2 narrow blocks with SAME font → should NOT be non_body_insert
-    blocks.append({
-        "role": "body_paragraph",
-        "page": 1,
-        "bbox": [50, 600, 300, 640],
-        "span_metadata": [{"size": 10, "font": "Times"}],
-        "page_width": 1200,
-        "page_height": 1700,
-    })
-    blocks.append({
-        "role": "body_paragraph",
-        "page": 1,
-        "bbox": [50, 680, 310, 720],
-        "span_metadata": [{"size": 10, "font": "Times"}],
-        "page_width": 1200,
-        "page_height": 1700,
-    })
+        }
+    )
+    blocks.append(
+        {
+            "role": "body_paragraph",
+            "page": 1,
+            "bbox": [50, 680, 310, 720],
+            "span_metadata": [{"size": 10, "font": "Times"}],
+            "page_width": 1200,
+            "page_height": 1700,
+        }
+    )
 
     spine = _detect_body_spine(blocks)
     result = _detect_non_body_insert_clusters(blocks, spine, page_width=1200)
@@ -3500,31 +3564,37 @@ def test_non_body_insert_strong_spine_or_gate_ok() -> None:
     # Pages 2-6: 3 body paragraphs each → 5 anchor pages → strong meta quality
     for pg in range(2, 7):
         for i in range(3):
-            blocks.append({
-                "role": "body_paragraph",
-                "page": pg,
-                "bbox": [80, 100 + i * 100, 590, 160 + i * 100],
-                "span_metadata": [{"size": 10, "font": "Times"}],
-                "page_width": 1200,
-                "page_height": 1700,
-            })
+            blocks.append(
+                {
+                    "role": "body_paragraph",
+                    "page": pg,
+                    "bbox": [80, 100 + i * 100, 590, 160 + i * 100],
+                    "span_metadata": [{"size": 10, "font": "Times"}],
+                    "page_width": 1200,
+                    "page_height": 1700,
+                }
+            )
     # Page 1: 2 narrow blocks with SAME font → should be detected (strong spine trusts narrow alone)
-    blocks.append({
-        "role": "body_paragraph",
-        "page": 1,
-        "bbox": [50, 600, 300, 640],
-        "span_metadata": [{"size": 10, "font": "Times"}],
-        "page_width": 1200,
-        "page_height": 1700,
-    })
-    blocks.append({
-        "role": "body_paragraph",
-        "page": 1,
-        "bbox": [50, 680, 310, 720],
-        "span_metadata": [{"size": 10, "font": "Times"}],
-        "page_width": 1200,
-        "page_height": 1700,
-    })
+    blocks.append(
+        {
+            "role": "body_paragraph",
+            "page": 1,
+            "bbox": [50, 600, 300, 640],
+            "span_metadata": [{"size": 10, "font": "Times"}],
+            "page_width": 1200,
+            "page_height": 1700,
+        }
+    )
+    blocks.append(
+        {
+            "role": "body_paragraph",
+            "page": 1,
+            "bbox": [50, 680, 310, 720],
+            "span_metadata": [{"size": 10, "font": "Times"}],
+            "page_width": 1200,
+            "page_height": 1700,
+        }
+    )
 
     spine = _detect_body_spine(blocks)
     result = _detect_non_body_insert_clusters(blocks, spine, page_width=1200)
@@ -3535,23 +3605,26 @@ def test_non_body_insert_strong_spine_does_not_use_font_only_for_body_width_bloc
     """Strong spine should not classify body-width paragraphs by font mismatch alone."""
     from paperforge.worker.ocr_document import _detect_non_body_insert_clusters
 
-    blocks = [{
-        "role": "body_paragraph",
-        "page": 2,
-        "bbox": [80, 600, 590, 660],
-        "text": "This is real body text with a locally different OCR font family.",
-        "span_metadata": [{"size": 10, "font": "Helvetica"}],
-        "page_width": 1200,
-        "page_height": 1700,
-    }, {
-        "role": "body_paragraph",
-        "page": 2,
-        "bbox": [80, 700, 590, 760],
-        "text": "This continuation paragraph should remain body text as well.",
-        "span_metadata": [{"size": 10, "font": "Helvetica"}],
-        "page_width": 1200,
-        "page_height": 1700,
-    }]
+    blocks = [
+        {
+            "role": "body_paragraph",
+            "page": 2,
+            "bbox": [80, 600, 590, 660],
+            "text": "This is real body text with a locally different OCR font family.",
+            "span_metadata": [{"size": 10, "font": "Helvetica"}],
+            "page_width": 1200,
+            "page_height": 1700,
+        },
+        {
+            "role": "body_paragraph",
+            "page": 2,
+            "bbox": [80, 700, 590, 760],
+            "text": "This continuation paragraph should remain body text as well.",
+            "span_metadata": [{"size": 10, "font": "Helvetica"}],
+            "page_width": 1200,
+            "page_height": 1700,
+        },
+    ]
     body_spine = {
         2: {"median_width": 510, "all_fonts": {"times"}, "quality": "strong"},
         "_meta": {"quality": "strong"},
@@ -3569,34 +3642,40 @@ def test_title_not_swept_into_non_body_insert() -> None:
     # Pages 2-6: 3 body paragraphs each → strong meta quality
     for pg in range(2, 7):
         for i in range(3):
-            blocks.append({
-                "role": "body_paragraph",
-                "page": pg,
-                "bbox": [80, 100 + i * 100, 590, 160 + i * 100],
-                "span_metadata": [{"size": 10, "font": "Times"}],
-                "page_width": 1200,
-                "page_height": 1700,
-            })
+            blocks.append(
+                {
+                    "role": "body_paragraph",
+                    "page": pg,
+                    "bbox": [80, 100 + i * 100, 590, 160 + i * 100],
+                    "span_metadata": [{"size": 10, "font": "Times"}],
+                    "page_width": 1200,
+                    "page_height": 1700,
+                }
+            )
     # Page 1: title-like block (long text, narrow width, no bullets)
-    blocks.append({
-        "role": "body_paragraph",
-        "page": 1,
-        "bbox": [50, 100, 400, 140],  # width 350 < 357 → narrow
-        "text": "Metabolic regulation of skeletal cell fate and function in development and disease",
-        "span_metadata": [{"size": 14, "font": "Times"}],
-        "page_width": 1200,
-        "page_height": 1700,
-    })
+    blocks.append(
+        {
+            "role": "body_paragraph",
+            "page": 1,
+            "bbox": [50, 100, 400, 140],  # width 350 < 357 → narrow
+            "text": "Metabolic regulation of skeletal cell fate and function in development and disease",
+            "span_metadata": [{"size": 14, "font": "Times"}],
+            "page_width": 1200,
+            "page_height": 1700,
+        }
+    )
     # Page 1: companion narrow block (also narrow, same font)
-    blocks.append({
-        "role": "body_paragraph",
-        "page": 1,
-        "bbox": [50, 200, 400, 240],  # width 350 < 357 → narrow
-        "text": "Short narrow paragraph that is not a title",
-        "span_metadata": [{"size": 10, "font": "Times"}],
-        "page_width": 1200,
-        "page_height": 1700,
-    })
+    blocks.append(
+        {
+            "role": "body_paragraph",
+            "page": 1,
+            "bbox": [50, 200, 400, 240],  # width 350 < 357 → narrow
+            "text": "Short narrow paragraph that is not a title",
+            "span_metadata": [{"size": 10, "font": "Times"}],
+            "page_width": 1200,
+            "page_height": 1700,
+        }
+    )
 
     spine = _detect_body_spine(blocks)
     result = _detect_non_body_insert_clusters(blocks, spine, page_width=1200)
@@ -3622,7 +3701,9 @@ def test_layout_audit_heading_owns_wrong_body() -> None:
     assert result["status"] == "pass", f"Expected pass (info-only), got {result['status']}"
     assert result["info_count"] >= 1, "Expected at least 1 info anomaly"
     assert result["anomaly_count"] >= 1
-    assert all(a["severity"] == "info" for a in result["anomalies"]), "All anomalies should be info severity without layout confidence"
+    assert all(a["severity"] == "info" for a in result["anomalies"]), (
+        "All anomalies should be info severity without layout confidence"
+    )
 
 
 def test_layout_audit_reference_zone_overlaps_body() -> None:
@@ -3647,11 +3728,46 @@ def test_region_prepass_marks_frontmatter_insert_and_body_regions() -> None:
     from paperforge.worker.ocr_document import _build_region_prepass
 
     blocks = [
-        {"page": 1, "role": "paper_title", "text": "A Real Paper Title", "bbox": [80, 80, 700, 140], "page_width": 1200, "page_height": 1700},
-        {"page": 1, "role": "authors", "text": "Jane Author & John Writer", "bbox": [80, 160, 600, 200], "page_width": 1200, "page_height": 1700},
-        {"page": 1, "role": "body_paragraph", "text": "Key points", "bbox": [760, 280, 1050, 315], "page_width": 1200, "page_height": 1700},
-        {"page": 1, "role": "body_paragraph", "text": "Important short list item", "bbox": [760, 330, 1050, 370], "page_width": 1200, "page_height": 1700},
-        {"page": 2, "role": "body_paragraph", "text": "This is a real body paragraph with enough words to train the body spine.", "bbox": [80, 220, 640, 270], "page_width": 1200, "page_height": 1700},
+        {
+            "page": 1,
+            "role": "paper_title",
+            "text": "A Real Paper Title",
+            "bbox": [80, 80, 700, 140],
+            "page_width": 1200,
+            "page_height": 1700,
+        },
+        {
+            "page": 1,
+            "role": "authors",
+            "text": "Jane Author & John Writer",
+            "bbox": [80, 160, 600, 200],
+            "page_width": 1200,
+            "page_height": 1700,
+        },
+        {
+            "page": 1,
+            "role": "body_paragraph",
+            "text": "Key points",
+            "bbox": [760, 280, 1050, 315],
+            "page_width": 1200,
+            "page_height": 1700,
+        },
+        {
+            "page": 1,
+            "role": "body_paragraph",
+            "text": "Important short list item",
+            "bbox": [760, 330, 1050, 370],
+            "page_width": 1200,
+            "page_height": 1700,
+        },
+        {
+            "page": 2,
+            "role": "body_paragraph",
+            "text": "This is a real body paragraph with enough words to train the body spine.",
+            "bbox": [80, 220, 640, 270],
+            "page_width": 1200,
+            "page_height": 1700,
+        },
     ]
 
     prepass = _build_region_prepass(blocks)
@@ -3667,12 +3783,38 @@ def test_body_spine_ignores_region_frontmatter_and_structured_insert_blocks() ->
     from paperforge.worker.ocr_document import _build_region_prepass, _detect_body_spine
 
     blocks = [
-        {"page": 1, "role": "body_paragraph", "text": "Review article", "bbox": [80, 80, 240, 110], "page_width": 1200, "page_height": 1700, "span_metadata": [{"font": "Heading"}]},
-        {"page": 1, "role": "body_paragraph", "text": "Key points", "bbox": [760, 280, 1050, 315], "page_width": 1200, "page_height": 1700, "span_metadata": [{"font": "Box"}]},
+        {
+            "page": 1,
+            "role": "body_paragraph",
+            "text": "Review article",
+            "bbox": [80, 80, 240, 110],
+            "page_width": 1200,
+            "page_height": 1700,
+            "span_metadata": [{"font": "Heading"}],
+        },
+        {
+            "page": 1,
+            "role": "body_paragraph",
+            "text": "Key points",
+            "bbox": [760, 280, 1050, 315],
+            "page_width": 1200,
+            "page_height": 1700,
+            "span_metadata": [{"font": "Box"}],
+        },
     ]
     for page in range(2, 6):
         for line in range(3):
-            blocks.append({"page": page, "role": "body_paragraph", "text": "Real body paragraph text for spine training.", "bbox": [80, 200 + line * 80, 620, 250 + line * 80], "page_width": 1200, "page_height": 1700, "span_metadata": [{"font": "Body"}]})
+            blocks.append(
+                {
+                    "page": page,
+                    "role": "body_paragraph",
+                    "text": "Real body paragraph text for spine training.",
+                    "bbox": [80, 200 + line * 80, 620, 250 + line * 80],
+                    "page_width": 1200,
+                    "page_height": 1700,
+                    "span_metadata": [{"font": "Body"}],
+                }
+            )
 
     prepass = _build_region_prepass(blocks)
     spine = _detect_body_spine(blocks, region_prepass=prepass)
@@ -3685,12 +3827,36 @@ def test_normalize_marks_structured_insert_before_non_body_insert_suppression() 
     from paperforge.worker.ocr_document import normalize_document_structure
 
     blocks = [
-        {"page": 1, "role": "body_paragraph", "text": "Key points", "bbox": [760, 280, 1050, 315], "page_width": 1200, "page_height": 1700},
-        {"page": 1, "role": "body_paragraph", "text": "Short summary point", "bbox": [760, 330, 1050, 370], "page_width": 1200, "page_height": 1700},
+        {
+            "page": 1,
+            "role": "body_paragraph",
+            "text": "Key points",
+            "bbox": [760, 280, 1050, 315],
+            "page_width": 1200,
+            "page_height": 1700,
+        },
+        {
+            "page": 1,
+            "role": "body_paragraph",
+            "text": "Short summary point",
+            "bbox": [760, 330, 1050, 370],
+            "page_width": 1200,
+            "page_height": 1700,
+        },
     ]
     for page in range(2, 6):
         for line in range(3):
-            blocks.append({"page": page, "role": "body_paragraph", "text": "Real body paragraph text for training.", "bbox": [80, 200 + line * 80, 620, 250 + line * 80], "page_width": 1200, "page_height": 1700, "span_metadata": [{"font": "Body"}]})
+            blocks.append(
+                {
+                    "page": page,
+                    "role": "body_paragraph",
+                    "text": "Real body paragraph text for training.",
+                    "bbox": [80, 200 + line * 80, 620, 250 + line * 80],
+                    "page_width": 1200,
+                    "page_height": 1700,
+                    "span_metadata": [{"font": "Body"}],
+                }
+            )
 
     _, normalized = normalize_document_structure(blocks)
 
@@ -3703,14 +3869,60 @@ def test_normalize_promotes_mixed_sidebar_blocks_into_single_structured_insert_c
     from paperforge.worker.ocr_document import normalize_document_structure
 
     blocks = [
-        {"page": 2, "role": "body_paragraph", "text": "Key points", "bbox": [80, 220, 180, 247], "page_width": 1200, "page_height": 1700},
-        {"page": 2, "role": "media_asset", "raw_label": "table", "text": "<table><tr><td>• Point one</td></tr><tr><td>• Point two</td></tr></table>", "bbox": [73, 270, 591, 738], "page_width": 1200, "page_height": 1700},
-        {"page": 2, "role": "unknown_structural", "text": "• Point three continues below the detected table box.", "bbox": [74, 675, 566, 743], "page_width": 1200, "page_height": 1700},
-        {"page": 2, "role": "sub_subsection_heading", "text": "Introduction", "bbox": [76, 780, 210, 803], "page_width": 1200, "page_height": 1700},
-        {"page": 2, "role": "body_paragraph", "text": "The skeleton has been considered to be a metabolically active organ for decades.", "bbox": [73, 805, 593, 1192], "page_width": 1200, "page_height": 1700},
+        {
+            "page": 2,
+            "role": "body_paragraph",
+            "text": "Key points",
+            "bbox": [80, 220, 180, 247],
+            "page_width": 1200,
+            "page_height": 1700,
+        },
+        {
+            "page": 2,
+            "role": "media_asset",
+            "raw_label": "table",
+            "text": "<table><tr><td>• Point one</td></tr><tr><td>• Point two</td></tr></table>",
+            "bbox": [73, 270, 591, 738],
+            "page_width": 1200,
+            "page_height": 1700,
+        },
+        {
+            "page": 2,
+            "role": "unknown_structural",
+            "text": "• Point three continues below the detected table box.",
+            "bbox": [74, 675, 566, 743],
+            "page_width": 1200,
+            "page_height": 1700,
+        },
+        {
+            "page": 2,
+            "role": "sub_subsection_heading",
+            "text": "Introduction",
+            "bbox": [76, 780, 210, 803],
+            "page_width": 1200,
+            "page_height": 1700,
+        },
+        {
+            "page": 2,
+            "role": "body_paragraph",
+            "text": "The skeleton has been considered to be a metabolically active organ for decades.",
+            "bbox": [73, 805, 593, 1192],
+            "page_width": 1200,
+            "page_height": 1700,
+        },
     ]
     for i in range(3):
-        blocks.append({"page": 3 + i, "role": "body_paragraph", "text": "Real body paragraph text for training and normalization.", "bbox": [80, 200, 620, 260], "page_width": 1200, "page_height": 1700, "span_metadata": [{"font": "Body"}]})
+        blocks.append(
+            {
+                "page": 3 + i,
+                "role": "body_paragraph",
+                "text": "Real body paragraph text for training and normalization.",
+                "bbox": [80, 200, 620, 260],
+                "page_width": 1200,
+                "page_height": 1700,
+                "span_metadata": [{"font": "Body"}],
+            }
+        )
 
     _, normalized = normalize_document_structure(blocks)
 
@@ -3799,8 +4011,22 @@ def test_full_width_heading_above_two_columns_is_not_anomaly() -> None:
     from paperforge.worker.ocr_document import _run_layout_audit
 
     blocks = [
-        {"page": 1, "role": "section_heading", "bbox": [50, 200, 1150, 230], "text": "Introduction and Background", "page_width": 1200, "page_height": 1600},
-        {"page": 1, "role": "body_paragraph", "bbox": [620, 100, 1150, 160], "text": "Right column body above heading...", "page_width": 1200, "page_height": 1600},
+        {
+            "page": 1,
+            "role": "section_heading",
+            "bbox": [50, 200, 1150, 230],
+            "text": "Introduction and Background",
+            "page_width": 1200,
+            "page_height": 1600,
+        },
+        {
+            "page": 1,
+            "role": "body_paragraph",
+            "bbox": [620, 100, 1150, 160],
+            "text": "Right column body above heading...",
+            "page_width": 1200,
+            "page_height": 1600,
+        },
     ]
     result = _run_layout_audit(blocks)
     errors = [a for a in result.get("anomalies", []) if a.get("severity") == "error"]
@@ -3814,8 +4040,22 @@ def test_low_confidence_layout_audit_reports_info_not_fail() -> None:
 
     page_layouts = {1: PageLayoutProfile(column_count=2, confidence=0.3, layout_type="two_column")}
     blocks = [
-        {"page": 1, "role": "section_heading", "bbox": [100, 200, 500, 230], "text": "Introduction", "page_width": 1200, "page_height": 1600},
-        {"page": 1, "role": "body_paragraph", "bbox": [700, 100, 1100, 140], "text": "Body above heading", "page_width": 1200, "page_height": 1600},
+        {
+            "page": 1,
+            "role": "section_heading",
+            "bbox": [100, 200, 500, 230],
+            "text": "Introduction",
+            "page_width": 1200,
+            "page_height": 1600,
+        },
+        {
+            "page": 1,
+            "role": "body_paragraph",
+            "bbox": [700, 100, 1100, 140],
+            "text": "Body above heading",
+            "page_width": 1200,
+            "page_height": 1600,
+        },
     ]
     result = _run_layout_audit(blocks, page_layouts=page_layouts)
     assert result["status"] != "fail", f"Expected status != 'fail', got {result['status']}"
@@ -3829,8 +4069,22 @@ def test_low_layout_confidence_never_audit_error_on_insert_overlap() -> None:
 
     page_layouts = {1: PageLayoutProfile(column_count=2, confidence=0.3, layout_type="two_column")}
     blocks = [
-        {"page": 1, "role": "body_paragraph", "bbox": [100, 100, 500, 300], "text": "Body text real", "raw_label": "text", "page_width": 1200, "page_height": 1600},
-        {"page": 1, "role": "structured_insert", "bbox": [200, 150, 400, 250], "text": "Insert overlapping body a lot", "insert_score": {"score": 0.9}},
+        {
+            "page": 1,
+            "role": "body_paragraph",
+            "bbox": [100, 100, 500, 300],
+            "text": "Body text real",
+            "raw_label": "text",
+            "page_width": 1200,
+            "page_height": 1600,
+        },
+        {
+            "page": 1,
+            "role": "structured_insert",
+            "bbox": [200, 150, 400, 250],
+            "text": "Insert overlapping body a lot",
+            "insert_score": {"score": 0.9},
+        },
     ]
     body_spine = {"_meta": {"quality": "strong"}}
     result = _run_layout_audit(blocks, body_spine=body_spine, page_layouts=page_layouts)
@@ -3888,7 +4142,8 @@ def test_normalized_required_roles_have_accept_verification() -> None:
     _doc, normalized = normalize_document_structure(blocks)
 
     offenders = [
-        block for block in normalized
+        block
+        for block in normalized
         if block.get("role") in VERIFY_REQUIRED and block.get("role_verification_status") != "ACCEPT"
     ]
     assert offenders == []
@@ -3899,8 +4154,22 @@ def test_rejected_required_seed_can_fallback_to_safe_body_role_without_content_l
     from paperforge.worker.ocr_document import normalize_document_structure
 
     blocks = [
-        {"block_id": "intro", "role": "section_heading", "seed_role": "section_heading", "text": "Introduction", "page": 1, "render_default": True},
-        {"block_id": "bad", "role": "body_paragraph", "seed_role": "abstract_body", "text": "Body mislabeled as abstract.", "page": 1, "render_default": True},
+        {
+            "block_id": "intro",
+            "role": "section_heading",
+            "seed_role": "section_heading",
+            "text": "Introduction",
+            "page": 1,
+            "render_default": True,
+        },
+        {
+            "block_id": "bad",
+            "role": "body_paragraph",
+            "seed_role": "abstract_body",
+            "text": "Body mislabeled as abstract.",
+            "page": 1,
+            "render_default": True,
+        },
     ]
 
     _doc, normalized = normalize_document_structure(blocks)
@@ -3914,12 +4183,16 @@ def test_rejected_required_seed_can_fallback_to_safe_body_role_without_content_l
 
 def test_collect_unverified_required_roles_reports_offenders_without_raising() -> None:
     from paperforge.worker.ocr_document import _collect_unverified_required_roles, normalize_document_structure
-    from paperforge.worker.ocr_structural_gate import VERIFY_REQUIRED
 
     blocks = [
         {"block_id": "h", "role": "unassigned", "seed_role": "abstract_heading", "text": "Abstract"},
         {"block_id": "a1", "role": "unassigned", "seed_role": "abstract_body", "text": "Real abstract."},
-        {"block_id": "bad", "role": "unassigned", "seed_role": "reference_item", "text": "[1] Tail-like text outside reference zone."},
+        {
+            "block_id": "bad",
+            "role": "unassigned",
+            "seed_role": "reference_item",
+            "text": "[1] Tail-like text outside reference zone.",
+        },
     ]
     _doc, normalized = normalize_document_structure(blocks)
     offenders = _collect_unverified_required_roles(normalized)
@@ -3934,7 +4207,12 @@ def test_no_high_risk_role_assignment_after_gate_collector() -> None:
 
     blocks = [
         {"block_id": "1", "role": "unassigned", "seed_role": "body_paragraph", "text": "Body paragraph."},
-        {"block_id": "2", "role": "unassigned", "seed_role": "reference_item", "text": "[1] Tail-like text outside reference zone."},
+        {
+            "block_id": "2",
+            "role": "unassigned",
+            "seed_role": "reference_item",
+            "text": "[1] Tail-like text outside reference zone.",
+        },
     ]
     _doc, normalized = normalize_document_structure(blocks)
 

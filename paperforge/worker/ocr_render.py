@@ -37,7 +37,9 @@ def _can_apply_tail_segment_reorder(document_structure: DocumentStructure | None
     if float(tail_score.get("score", 1.0)) < 0.4:
         return False
     page_layouts = getattr(document_structure, "page_layouts", None) or {}
-    for page in range(document_structure.spread_start, (document_structure.spread_end or document_structure.spread_start) + 1):
+    for page in range(
+        document_structure.spread_start, (document_structure.spread_end or document_structure.spread_start) + 1
+    ):
         profile = page_layouts.get(page)
         if profile is not None and float(getattr(profile, "confidence", 1.0)) < 0.4:
             return False
@@ -55,7 +57,10 @@ def _table_html_to_lines(text: str) -> list[str]:
     rows = re.findall(r"<tr[^>]*>(.*?)</tr>", text, flags=re.IGNORECASE | re.DOTALL)
     lines: list[str] = []
     for row in rows:
-        cells = [unescape(re.sub(r"<[^>]+>", "", cell)).strip() for cell in re.findall(r"<td[^>]*>(.*?)</td>", row, flags=re.IGNORECASE | re.DOTALL)]
+        cells = [
+            unescape(re.sub(r"<[^>]+>", "", cell)).strip()
+            for cell in re.findall(r"<td[^>]*>(.*?)</td>", row, flags=re.IGNORECASE | re.DOTALL)
+        ]
         cells = [cell for cell in cells if cell]
         if not cells:
             continue
@@ -528,9 +533,6 @@ def _reorder_tail_run_fifo(
     return result, ref_section
 
 
-
-
-
 def _sort_blocks_by_column(blocks: list[dict], page_width: int) -> list[dict]:
     """Sort blocks on a page into natural reading order (left col then right
     col, top to bottom within each column), using bbox x/y positions.
@@ -549,7 +551,9 @@ def _sort_blocks_by_column(blocks: list[dict], page_width: int) -> list[dict]:
     return sorted(blocks, key=_column_key)
 
 
-def _order_tail_blocks(blocks: list[dict], style_profiles: dict | None = None, *, has_verified_reference_zone: bool = False) -> list[dict]:
+def _order_tail_blocks(
+    blocks: list[dict], style_profiles: dict | None = None, *, has_verified_reference_zone: bool = False
+) -> list[dict]:
     """Fix block reading order on tail pages with mixed-column layout.
 
     Two-column tail pages can have blocks in non-reading order (e.g.
@@ -676,7 +680,7 @@ def _emit_page_objects(
 
     if not has_reader:
         for fig in figures_by_page.get(page, []):
-            if str(fig['figure_id']).startswith("unmatched_legend_"):
+            if str(fig["figure_id"]).startswith("unmatched_legend_"):
                 continue
             lines.append(f"![[render/figures/{fig['figure_id']}.md]]")
             lines.append("")
@@ -790,13 +794,15 @@ def render_fulltext_markdown(
         span = document_structure.abstract_span
         block_by_id = {block.get("block_id"): block for block in structured_blocks}
         abstract_ids = [span.get("heading_block_id"), *span.get("body_block_ids", [])]
-        abstract_blocks = [block_by_id[bid] for bid in abstract_ids if bid in block_by_id and block_by_id[bid].get("render_default", True)]
+        abstract_blocks = [
+            block_by_id[bid]
+            for bid in abstract_ids
+            if bid in block_by_id and block_by_id[bid].get("render_default", True)
+        ]
     else:
         _ABSTRACT_ROLES_FALLBACK = frozenset({"abstract_heading", "abstract_body"})
         abstract_blocks = [
-            b
-            for b in structured_blocks
-            if b.get("role") in _ABSTRACT_ROLES_FALLBACK and b.get("render_default", True)
+            b for b in structured_blocks if b.get("role") in _ABSTRACT_ROLES_FALLBACK and b.get("render_default", True)
         ]
     if abstract_blocks:
         lines.append("## Abstract")
@@ -898,24 +904,26 @@ def render_fulltext_markdown(
             new_role = new_blocks[i].get("role") if i < len(new_blocks) else old_role
             # Never demote tail/candidate roles — those are explicit
             # test-level decisions, not normalization targets.
-            _PROTECTED = frozenset({
-                "backmatter_heading",
-                "backmatter_boundary_heading",
-                "backmatter_body",
-                "reference_heading",
-                "reference_item",
-                "figure_caption_candidate",
-                "backmatter_heading_candidate",
-                "backmatter_boundary_candidate",
-                "non_body_insert",
-                "structured_insert",
-                "subsection_heading",
-                "sub_subsection_heading",
-                "authors",
-                "paper_title",
-                "abstract_heading",
-                "abstract_body",
-            })
+            _PROTECTED = frozenset(
+                {
+                    "backmatter_heading",
+                    "backmatter_boundary_heading",
+                    "backmatter_body",
+                    "reference_heading",
+                    "reference_item",
+                    "figure_caption_candidate",
+                    "backmatter_heading_candidate",
+                    "backmatter_boundary_candidate",
+                    "non_body_insert",
+                    "structured_insert",
+                    "subsection_heading",
+                    "sub_subsection_heading",
+                    "authors",
+                    "paper_title",
+                    "abstract_heading",
+                    "abstract_body",
+                }
+            )
             if old_role in _PROTECTED:
                 continue
             if old_role == "body_paragraph" and new_role in {"structured_insert", "non_body_insert"}:
@@ -940,7 +948,9 @@ def render_fulltext_markdown(
                 block["_ordered_original_index"] = i
 
             has_ref_zone = bool(getattr(document_structure, "reference_zone", None))
-            ordered_blocks = _order_tail_blocks(structured_blocks, style_profiles=style_profiles, has_verified_reference_zone=has_ref_zone)
+            ordered_blocks = _order_tail_blocks(
+                structured_blocks, style_profiles=style_profiles, has_verified_reference_zone=has_ref_zone
+            )
 
             tail_spread_pages = set(range(document_structure.spread_start, document_structure.spread_end + 1))
             page_groups: dict[int, list[dict]] = {}
@@ -976,10 +986,14 @@ def render_fulltext_markdown(
             ordered_blocks = reordered
         else:
             has_ref_zone = bool(getattr(document_structure, "reference_zone", None))
-            ordered_blocks = _order_tail_blocks(structured_blocks, style_profiles=style_profiles, has_verified_reference_zone=has_ref_zone)
+            ordered_blocks = _order_tail_blocks(
+                structured_blocks, style_profiles=style_profiles, has_verified_reference_zone=has_ref_zone
+            )
     else:
         has_ref_zone = bool(getattr(document_structure, "reference_zone", None))
-        ordered_blocks = _order_tail_blocks(structured_blocks, style_profiles=style_profiles, has_verified_reference_zone=has_ref_zone)
+        ordered_blocks = _order_tail_blocks(
+            structured_blocks, style_profiles=style_profiles, has_verified_reference_zone=has_ref_zone
+        )
 
     for block in ordered_blocks:
         role = block.get("role", "")
@@ -1015,7 +1029,8 @@ def render_fulltext_markdown(
             # Emit objects for the page we just finished rendering
             if current_page is not None:
                 _emit_page_objects(
-                    lines, current_page,
+                    lines,
+                    current_page,
                     figures_by_page=figures_by_page,
                     unresolved_clusters_by_page=unresolved_clusters_by_page,
                     tables_by_page=tables_by_page,
@@ -1030,7 +1045,8 @@ def render_fulltext_markdown(
                 lines.append(f"<!-- page {p} -->")
                 lines.append("")
                 _emit_page_objects(
-                    lines, p,
+                    lines,
+                    p,
                     figures_by_page=figures_by_page,
                     unresolved_clusters_by_page=unresolved_clusters_by_page,
                     tables_by_page=tables_by_page,
@@ -1058,11 +1074,20 @@ def render_fulltext_markdown(
         elif role in ("subsection_heading", "sub_subsection_heading", "section_heading"):
             last_structured_insert_page = None
             last_structured_insert_bbox = None
-            _BACKMATTER_HEADING_KEYWORDS = frozenset({
-                "author contributions", "data availability", "funding", "acknowledg",
-                "conflict of interest", "competing interests", "supplementary material",
-                "ethics statement", "publisher", "biographies",
-            })
+            _BACKMATTER_HEADING_KEYWORDS = frozenset(
+                {
+                    "author contributions",
+                    "data availability",
+                    "funding",
+                    "acknowledg",
+                    "conflict of interest",
+                    "competing interests",
+                    "supplementary material",
+                    "ethics statement",
+                    "publisher",
+                    "biographies",
+                }
+            )
             _heading_lower = text.strip().lower()
             if any(kw in _heading_lower for kw in _BACKMATTER_HEADING_KEYWORDS):
                 continue
@@ -1090,7 +1115,11 @@ def render_fulltext_markdown(
                 source_text = " ".join(container_text.replace("\n", " ").split())
             else:
                 source_text = raw_text
-            callout_lines = _table_html_to_lines(source_text) if source_text.strip().lower().startswith("<table") else source_text.strip().split("\n")
+            callout_lines = (
+                _table_html_to_lines(source_text)
+                if source_text.strip().lower().startswith("<table")
+                else source_text.strip().split("\n")
+            )
             callout_lines = [line for line in callout_lines if line.strip()]
             if callout_lines:
                 bbox = block.get("bbox") or block.get("block_bbox") or [0, 0, 0, 0]
@@ -1164,7 +1193,8 @@ def render_fulltext_markdown(
     # Emit objects for the last rendered page
     if current_page is not None:
         _emit_page_objects(
-            lines, current_page,
+            lines,
+            current_page,
             figures_by_page=figures_by_page,
             unresolved_clusters_by_page=unresolved_clusters_by_page,
             tables_by_page=tables_by_page,
@@ -1185,7 +1215,8 @@ def render_fulltext_markdown(
                 lines.append(f"<!-- page {p} -->")
                 lines.append("")
             _emit_page_objects(
-                lines, p,
+                lines,
+                p,
                 figures_by_page=figures_by_page,
                 unresolved_clusters_by_page=unresolved_clusters_by_page,
                 tables_by_page=tables_by_page,
