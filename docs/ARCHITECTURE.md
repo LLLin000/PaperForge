@@ -642,6 +642,16 @@ The current implementation targets **OpenCode Agent** (`.opencode/skills/` and `
 
 ---
 
+### OCR-v2 Structural Role Gate
+
+OCR-v2 treats OCR labels and `assign_block_role()` output as observations, not semantic truth. `build_structured_blocks()` stores `seed_role`, `seed_confidence`, and `seed_evidence` while leaving final roles unassigned. `normalize_document_structure()` builds document-level anchors, zones, families, `abstract_span`, `reference_zone`, and figure/table reader evidence before assigning final high-risk roles.
+
+Any final role in `VERIFY_REQUIRED` must have `role_verification_status: ACCEPT`, `role_source`, and `role_evidence`. If a high-risk seed is not accepted by a verifier, production downgrades it to a safe non-final role or candidate and reports the correction in `role_gate_summary`; it does not silently pass the seed through. After the gate runs, role mutators may only write candidate fields, move before the gate, or re-run the gate.
+
+`render_fulltext_markdown()` consumes accepted artifacts: Abstract from `abstract_span`, References from `reference_zone`, figures from `reader_figures`, and tables from table reader/table inventory artifacts. It must not rebuild semantic sections by globally scanning bare role labels. OCR health includes `role_gate_summary`; corrected seeds are warning/info, while final unverified roles and seed passthrough degrade health.
+
+---
+
 ## Cross-References
 
 - User-facing guide: [`AGENTS.md`](../AGENTS.md)
