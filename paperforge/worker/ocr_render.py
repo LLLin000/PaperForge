@@ -549,7 +549,7 @@ def _sort_blocks_by_column(blocks: list[dict], page_width: int) -> list[dict]:
     return sorted(blocks, key=_column_key)
 
 
-def _order_tail_blocks(blocks: list[dict], style_profiles: dict | None = None) -> list[dict]:
+def _order_tail_blocks(blocks: list[dict], style_profiles: dict | None = None, *, has_verified_reference_zone: bool = False) -> list[dict]:
     """Fix block reading order on tail pages with mixed-column layout.
 
     Two-column tail pages can have blocks in non-reading order (e.g.
@@ -628,14 +628,16 @@ def _order_tail_blocks(blocks: list[dict], style_profiles: dict | None = None) -
         else:
             result.extend(page_blocks)
 
-    # Ensure all reference-section blocks come after backmatter
-    # sections regardless of page ordering.  Academic layout convention
-    # places backmatter (author contributions, acknowledgments, etc.)
-    # before the reference section, even when they occupy different pages.
-    ref_roles = frozenset({"reference_heading", "reference_item", "reference_body"})
-    non_ref = [b for b in result if b.get("role") not in ref_roles]
-    refs = [b for b in result if b.get("role") in ref_roles]
-    return non_ref + refs
+    # When a verified reference_zone artifact is available on
+    # the DocumentStructure, the caller handles reference ordering.
+    # Fall back to conventional non_ref + refs only when no such
+    # artifact exists (legacy callers without document structure).
+    if not has_verified_reference_zone:
+        ref_roles = frozenset({"reference_heading", "reference_item", "reference_body"})
+        non_ref = [b for b in result if b.get("role") not in ref_roles]
+        refs = [b for b in result if b.get("role") in ref_roles]
+        return non_ref + refs
+    return result
 
 
 def _render_reader_figure_card(figure: dict) -> list[str]:
@@ -672,16 +674,18 @@ def _emit_page_objects(
     """
     has_reader = bool(reader_figures_by_page.get(page))
 
-    for fig in figures_by_page.get(page, []):
-        if str(fig['figure_id']).startswith("unmatched_legend_"):
-            continue
-        lines.append(f"![[render/figures/{fig['figure_id']}.md]]")
-        lines.append("")
-    for cluster_id in unresolved_clusters_by_page.get(page, []):
-        if str(cluster_id).startswith("unresolved_cluster_"):
-            continue
-        lines.append(f"![[render/figures/{cluster_id}.md]]")
-        lines.append("")
+    if not has_reader:
+        for fig in figures_by_page.get(page, []):
+            if str(fig['figure_id']).startswith("unmatched_legend_"):
+                continue
+            lines.append(f"![[render/figures/{fig['figure_id']}.md]]")
+            lines.append("")
+    if not has_reader:
+        for cluster_id in unresolved_clusters_by_page.get(page, []):
+            if str(cluster_id).startswith("unresolved_cluster_"):
+                continue
+            lines.append(f"![[render/figures/{cluster_id}.md]]")
+            lines.append("")
 
     for tbl_id in tables_by_page.get(page, []):
         lines.append(f"![[render/tables/{tbl_id}.md]]")
@@ -783,15 +787,16 @@ def render_fulltext_markdown(
 
     # --- abstract ---
     if document_structure is not None and getattr(document_structure, "abstract_span", None):
-        span = document_structure["abstract_span"]
+        span = document_structure.abstract_span
         block_by_id = {block.get("block_id"): block for block in structured_blocks}
         abstract_ids = [span.get("heading_block_id"), *span.get("body_block_ids", [])]
         abstract_blocks = [block_by_id[bid] for bid in abstract_ids if bid in block_by_id and block_by_id[bid].get("render_default", True)]
     else:
+        _ABSTRACT_ROLES_FALLBACK = frozenset({"abstract_heading", "abstract_body"})
         abstract_blocks = [
             b
             for b in structured_blocks
-            if b.get("role") in ("abstract_heading", "abstract_body") and b.get("render_default", True)
+            if b.get("role") in _ABSTRACT_ROLES_FALLBACK and b.get("render_default", True)
         ]
     if abstract_blocks:
         lines.append("## Abstract")
@@ -934,7 +939,8 @@ def render_fulltext_markdown(
             for i, block in enumerate(structured_blocks):
                 block["_ordered_original_index"] = i
 
-            ordered_blocks = _order_tail_blocks(structured_blocks, style_profiles=style_profiles)
+            has_ref_zone = bool(getattr(document_structure, "reference_zone", None))
+            ordered_blocks = _order_tail_blocks(structured_blocks, style_profiles=style_profiles, has_verified_reference_zone=has_ref_zone)
 
             tail_spread_pages = set(range(document_structure.spread_start, document_structure.spread_end + 1))
             page_groups: dict[int, list[dict]] = {}
@@ -969,9 +975,11 @@ def render_fulltext_markdown(
 
             ordered_blocks = reordered
         else:
-            ordered_blocks = _order_tail_blocks(structured_blocks, style_profiles=style_profiles)
+            has_ref_zone = bool(getattr(document_structure, "reference_zone", None))
+            ordered_blocks = _order_tail_blocks(structured_blocks, style_profiles=style_profiles, has_verified_reference_zone=has_ref_zone)
     else:
-        ordered_blocks = _order_tail_blocks(structured_blocks, style_profiles=style_profiles)
+        has_ref_zone = bool(getattr(document_structure, "reference_zone", None))
+        ordered_blocks = _order_tail_blocks(structured_blocks, style_profiles=style_profiles, has_verified_reference_zone=has_ref_zone)
 
     for block in ordered_blocks:
         role = block.get("role", "")
