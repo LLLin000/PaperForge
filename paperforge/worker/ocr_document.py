@@ -3591,6 +3591,18 @@ def _collect_unverified_required_roles(blocks: list[dict]) -> list[dict]:
     ]
 
 
+def _assert_verified_required_roles(blocks: list[dict]) -> None:
+    from paperforge.worker.ocr_structural_gate import VERIFY_REQUIRED
+
+    offenders = [
+        block.get("block_id")
+        for block in blocks
+        if block.get("role") in VERIFY_REQUIRED and block.get("role_verification_status") != "ACCEPT"
+    ]
+    if offenders:
+        raise ValueError(f"Unverified structural roles after OCR gate: {offenders[:10]}")
+
+
 def _build_accepted_heading_block_ids(blocks: list[dict], doc_structure) -> set:
     heading_artifact = _doc_get(doc_structure, "accepted_heading_block_ids", set()) or set()
     return set(heading_artifact)

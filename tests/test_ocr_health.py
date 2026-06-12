@@ -528,3 +528,88 @@ def test_health_counts_held_figures_and_tables() -> None:
     assert report["held_figure_count"] == 1
     assert report["held_table_count"] == 1
     assert report["held_match_count"] == 2
+
+
+def test_role_gate_health_corrections_are_not_errors() -> None:
+    from paperforge.worker.ocr_document import DocumentStructure
+    from paperforge.worker.ocr_health import build_ocr_health
+
+    role_gate_summary = {
+        "status": "healthy",
+        "corrected_structural_seed_count": 3,
+        "held_structural_seed_count": 0,
+        "final_unverified_structural_role_count": 0,
+        "seed_role_passthrough_count": 0,
+        "abstract_body_outside_span_count": 0,
+        "reference_item_outside_reference_zone_count": 0,
+    }
+    doc = DocumentStructure()
+    doc.role_gate_summary = role_gate_summary
+
+    structured_blocks = [
+        {"role": "section_heading", "text": "Introduction"},
+        {"role": "section_heading", "text": "Methods"},
+        {"role": "abstract_body", "text": "Abstract."},
+        {"role": "reference_item", "text": "Ref."},
+    ]
+    health = build_ocr_health(
+        page_count=1,
+        raw_blocks_count=len(structured_blocks),
+        structured_blocks=structured_blocks,
+        figure_inventory={"matched_figures": [], "unmatched_legends": [], "unmatched_assets": []},
+        table_inventory={"tables": [], "unmatched_captions": [], "unmatched_assets": []},
+        doc_structure=doc,
+    )
+
+    assert "role_gate_summary" in health
+    assert health["role_gate_summary"]["corrected_structural_seed_count"] == 3
+    assert health["overall"] != "red"
+
+
+def test_role_gate_health_degrades_on_passthrough() -> None:
+    from paperforge.worker.ocr_health import build_ocr_health
+
+    role_gate_summary = {
+        "status": "degraded",
+        "corrected_structural_seed_count": 0,
+        "held_structural_seed_count": 2,
+        "final_unverified_structural_role_count": 2,
+        "seed_role_passthrough_count": 2,
+        "abstract_body_outside_span_count": 1,
+        "reference_item_outside_reference_zone_count": 1,
+    }
+    health = build_ocr_health(
+        page_count=1,
+        raw_blocks_count=0,
+        structured_blocks=[],
+        figure_inventory={},
+        table_inventory={},
+        doc_structure={"role_gate_summary": role_gate_summary},
+    )
+
+    assert "role_gate_summary" in health
+    assert health["role_gate_summary"]["status"] == "degraded"
+
+
+def test_ocr_health_role_gate_degraded_forces_overall_red() -> None:
+    from paperforge.worker.ocr_health import build_ocr_health
+
+    role_gate_summary = {
+        "status": "degraded",
+        "corrected_structural_seed_count": 0,
+        "held_structural_seed_count": 1,
+        "final_unverified_structural_role_count": 1,
+        "seed_role_passthrough_count": 1,
+        "abstract_body_outside_span_count": 0,
+        "reference_item_outside_reference_zone_count": 0,
+    }
+    health = build_ocr_health(
+        page_count=1,
+        raw_blocks_count=0,
+        structured_blocks=[],
+        figure_inventory={},
+        table_inventory={},
+        doc_structure={"role_gate_summary": role_gate_summary},
+    )
+
+    assert health["overall"] == "red"
