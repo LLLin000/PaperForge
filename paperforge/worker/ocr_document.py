@@ -3589,8 +3589,8 @@ def normalize_document_structure(blocks: list[dict]) -> tuple[DocumentStructure,
 
     fm_main_zone = region_bus.get("frontmatter_main_zone") if isinstance(region_bus, dict) else getattr(region_bus, "frontmatter_main_zone", None)
     fm_side_zone = region_bus.get("frontmatter_side_zone") if isinstance(region_bus, dict) else getattr(region_bus, "frontmatter_side_zone", None)
-    fm_main_ids = set(fm_main_zone.get("block_ids", []) if isinstance(fm_main_zone, dict) else [])
-    fm_support_ids = set(fm_side_zone.get("block_ids", []) if isinstance(fm_side_zone, dict) else [])
+    fm_main_ids = {str(zid).split(":", 1)[-1] for zid in (fm_main_zone.get("block_ids", []) if isinstance(fm_main_zone, dict) else [])}
+    fm_support_ids = {str(zid).split(":", 1)[-1] for zid in (fm_side_zone.get("block_ids", []) if isinstance(fm_side_zone, dict) else [])}
 
     # Find body_start_block_id from the first body-zone block
     body_start_block_id = None
@@ -3613,7 +3613,7 @@ def normalize_document_structure(blocks: list[dict]) -> tuple[DocumentStructure,
     from paperforge.worker.ocr_structural_gate import build_verified_reference_zone_from_artifacts
 
     ref_zone = region_bus.get("reference_zone") if isinstance(region_bus, dict) else getattr(region_bus, "reference_zone", None)
-    ref_zone_ids = set(ref_zone.get("block_ids", []) if isinstance(ref_zone, dict) else [])
+    ref_zone_ids = {str(zid).split(":", 1)[-1] for zid in (ref_zone.get("block_ids", []) if isinstance(ref_zone, dict) else [])}
     tail_spread_dict = None
     if tail_spread is not None:
         tail_spread_dict = {
