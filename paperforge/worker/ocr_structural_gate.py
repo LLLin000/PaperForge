@@ -200,6 +200,38 @@ def build_document_abstract_span(blocks: list[dict], context: dict) -> dict:
     excluded: list = []
     stop_reason = "document_end"
     accepted_inside_abstract = {"abstract_body", "body_paragraph", "section_heading", "subsection_heading"}
+    _EXCLUDED_FRONTMATTER_SEED_ROLES = frozenset(
+        {
+            "authors",
+            "email",
+            "affiliation",
+            "doi",
+            "correspondence",
+            "highlights",
+            "author_contribution",
+            "data_availability",
+        }
+    )
+    _STRUCTURED_ABSTRACT_HEADS = frozenset(
+        {
+            "background",
+            "objective",
+            "methods",
+            "results",
+            "conclusions",
+            "purpose",
+            "design",
+            "setting",
+            "patients",
+            "participants",
+            "intervention",
+            "measurements",
+            "main outcome measures",
+            "findings",
+            "interpretation",
+            "introduction",
+        }
+    )
     for block in blocks[heading_index + 1 :]:
         block_id = block.get("block_id")
         if block_id == body_start_id:
@@ -207,6 +239,10 @@ def build_document_abstract_span(blocks: list[dict], context: dict) -> dict:
             break
         text = str(block.get("text", "") or "").strip().lower()
         intro_text = text.lstrip("0123456789. ")
+        seed_role = block.get("seed_role", "")
+        if seed_role in _EXCLUDED_FRONTMATTER_SEED_ROLES:
+            excluded.append(block_id)
+            continue
         if block.get("seed_role") in {"section_heading", "subsection_heading"} and intro_text.startswith(
             "introduction"
         ):
@@ -214,6 +250,12 @@ def build_document_abstract_span(blocks: list[dict], context: dict) -> dict:
             break
         if text.startswith(("keywords", "key words")):
             stop_reason = "keywords"
+            break
+        if text.startswith("highlights"):
+            stop_reason = "highlights"
+            break
+        if any(text.startswith(h) for h in _STRUCTURED_ABSTRACT_HEADS):
+            stop_reason = "structured_abstract_head"
             break
         if block_id in support_ids:
             excluded.append(block_id)
