@@ -113,27 +113,15 @@ def resolve_verified_role(block: dict, context: RoleGateContext) -> VerifiedRole
             return accept_role(
                 "abstract_heading", seed_role, "abstract_span_heading", ["abstract heading matched span"]
             )
-        # Fallback: if abstract_span is missing, accept abstract_heading from seed
         if span.get("status") == "MISSING":
-            return accept_role(
-                "abstract_heading",
-                seed_role,
-                "abstract_span_missing_fallback",
-                ["abstract heading accepted (no span to reject)"],
-            )
+            return hold_role(seed_role, "abstract heading rejected (no abstract span)")
         return hold_role(seed_role, "abstract heading not in abstract_span")
     if proposal == "abstract_body" or seed_role == "abstract_body":
         span = context.abstract_span or {}
         if block_id in set(span.get("body_block_ids", [])):
             return accept_role("abstract_body", seed_role, "abstract_span_body", ["abstract body matched span"])
-        # Fallback: if abstract_span is missing, accept abstract_body from seed
         if span.get("status") == "MISSING":
-            return accept_role(
-                "abstract_body",
-                seed_role,
-                "abstract_span_missing_fallback",
-                ["abstract body accepted (no span to reject)"],
-            )
+            return hold_role(seed_role, "abstract body rejected (no abstract span)")
         # If block is already body-like, fallback to body_paragraph
         if current_role == "body_paragraph" or block.get("zone") == "body_zone":
             return VerifiedRoleDecision(
@@ -158,16 +146,8 @@ def resolve_verified_role(block: dict, context: RoleGateContext) -> VerifiedRole
         zone = context.reference_zone or {}
         if block_id in set(zone.get("item_block_ids", [])):
             return accept_role("reference_item", seed_role, "reference_zone_item", ["reference item matched zone"])
-        # Fallback: if zone has no item data at all (empty inference due to
-        # missing block_id or no region_bus), accept pre-resolved reference
-        # items from the pre-gate pipeline when anchor is ACCEPT.
         if current_role == "reference_item" and not zone.get("item_block_ids"):
-            return accept_role(
-                "reference_item",
-                seed_role,
-                "reference_zone_fallback",
-                ["reference item accepted (pre-gate resolution, empty zone)"],
-            )
+            return hold_role(seed_role, "reference item rejected (empty reference zone)")
         # Fallback: if block is body-like, fallback to body_paragraph
         if current_role == "body_paragraph" or block.get("zone") == "body_zone":
             return VerifiedRoleDecision(
@@ -184,14 +164,7 @@ def resolve_verified_role(block: dict, context: RoleGateContext) -> VerifiedRole
     if proposal in {"section_heading", "subsection_heading"} or seed_role in {"section_heading", "subsection_heading"}:
         if block_id in context.accepted_heading_block_ids:
             return accept_role(proposal, seed_role, "accepted_heading", ["heading verified by heading artifact"])
-        # Accept if not in VERIFY_REQUIRED set (section_heading and subsection_heading are in VERIFY_REQUIRED)
-        # but allow them through as they are structural but generally safe
-        return accept_role(
-            proposal,
-            seed_role,
-            "section_heading_fallback",
-            ["section heading accepted (no heading artifact to reject)"],
-        )
+        return hold_role(seed_role, f"{proposal} lacks heading artifact evidence")
 
     if proposal in VERIFY_REQUIRED or seed_role in VERIFY_REQUIRED:
         return hold_role(seed_role, f"{proposal} requires structural verifier")

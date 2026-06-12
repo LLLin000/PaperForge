@@ -215,6 +215,28 @@ def test_reference_zone_accepts_heading_when_region_ids_are_plain_block_ids() ->
     assert zone["item_block_ids"] == [11]
 
 
+def test_abstract_body_without_span_is_not_verified_accept() -> None:
+    from paperforge.worker.ocr_structural_gate import RoleGateContext, resolve_verified_role
+
+    decision = resolve_verified_role(
+        {"block_id": "a", "role": "unassigned", "seed_role": "abstract_body", "text": "Abstract sentence."},
+        RoleGateContext(abstract_span={"status": "MISSING"}),
+    )
+
+    assert decision.source != "abstract_span_missing_fallback"
+
+
+def test_section_heading_without_heading_artifact_is_not_verified_accept() -> None:
+    from paperforge.worker.ocr_structural_gate import RoleGateContext, resolve_verified_role
+
+    decision = resolve_verified_role(
+        {"block_id": "h1", "role": "unassigned", "seed_role": "section_heading", "text": "Methods"},
+        RoleGateContext(accepted_heading_block_ids=set()),
+    )
+
+    assert decision.source != "section_heading_fallback"
+
+
 def test_reference_zone_accepts_heading_when_region_ids_are_page_prefixed() -> None:
     from paperforge.worker.ocr_structural_gate import build_verified_reference_zone_from_artifacts
 
