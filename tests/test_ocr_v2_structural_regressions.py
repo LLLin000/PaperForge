@@ -8,10 +8,38 @@ def test_body_abstract_seed_does_not_render_as_abstract() -> None:
     from paperforge.worker.ocr_render import render_fulltext_markdown
 
     blocks = [
-        {"block_id": "h", "seed_role": "abstract_heading", "page": 1, "role": "unassigned", "text": "Abstract", "render_default": True},
-        {"block_id": "a", "seed_role": "abstract_body", "page": 1, "role": "unassigned", "text": "Real abstract.", "render_default": True},
-        {"block_id": "intro", "seed_role": "section_heading", "page": 1, "role": "unassigned", "text": "Introduction", "render_default": True},
-        {"block_id": "bad", "seed_role": "abstract_body", "page": 1, "role": "unassigned", "text": "Body mislabeled as abstract.", "render_default": True},
+        {
+            "block_id": "h",
+            "seed_role": "abstract_heading",
+            "page": 1,
+            "role": "unassigned",
+            "text": "Abstract",
+            "render_default": True,
+        },
+        {
+            "block_id": "a",
+            "seed_role": "abstract_body",
+            "page": 1,
+            "role": "unassigned",
+            "text": "Real abstract.",
+            "render_default": True,
+        },
+        {
+            "block_id": "intro",
+            "seed_role": "section_heading",
+            "page": 1,
+            "role": "unassigned",
+            "text": "Introduction",
+            "render_default": True,
+        },
+        {
+            "block_id": "bad",
+            "seed_role": "abstract_body",
+            "page": 1,
+            "role": "unassigned",
+            "text": "Body mislabeled as abstract.",
+            "render_default": True,
+        },
     ]
     doc, normalized = normalize_document_structure(blocks)
 
@@ -45,10 +73,31 @@ def test_yoo_like_tail_order_through_render_fulltext_markdown() -> None:
     from paperforge.worker.ocr_render import render_fulltext_markdown
 
     structured_blocks = [
-        {"block_id": "refs", "page": 35, "role": "reference_heading", "role_verification_status": "ACCEPT", "text": "References", "render_default": True},
-        {"block_id": "r1", "page": 35, "role": "reference_item", "role_verification_status": "ACCEPT", "text": "[1] Yoo H. Real reference.", "render_default": True},
+        {
+            "block_id": "refs",
+            "page": 35,
+            "role": "reference_heading",
+            "role_verification_status": "ACCEPT",
+            "text": "References",
+            "render_default": True,
+        },
+        {
+            "block_id": "r1",
+            "page": 35,
+            "role": "reference_item",
+            "role_verification_status": "ACCEPT",
+            "text": "[1] Yoo H. Real reference.",
+            "render_default": True,
+        },
         {"block_id": "bio", "page": 34, "role": "body_paragraph", "text": "Biography", "render_default": True},
-        {"block_id": "caps", "page": 35, "role": "section_heading", "role_verification_status": "ACCEPT", "text": "Table and Figure Captions", "render_default": True},
+        {
+            "block_id": "caps",
+            "page": 35,
+            "role": "section_heading",
+            "role_verification_status": "ACCEPT",
+            "text": "Table and Figure Captions",
+            "render_default": True,
+        },
     ]
     ds = DocumentStructure()
     ds.abstract_span = {"heading_block_id": None, "body_block_ids": [], "status": "MISSING"}
@@ -69,7 +118,6 @@ def test_yoo_like_tail_order_through_render_fulltext_markdown() -> None:
 
 
 def test_caffard_like_abstract_flow_through_normalize_document_structure() -> None:
-    from paperforge.worker.ocr_document import normalize_document_structure
     from paperforge.worker.ocr_structural_gate import build_document_abstract_span
 
     blocks = [

@@ -589,10 +589,7 @@ def resolve_final_role(
             "body_family_anchor",
         }
         if style_family in _NON_BODY_FAMILIES and style_family_authority in _STRONG_AUTHORITIES:
-            if (
-                style_family == "legend_like"
-                and _looks_like_late_figure_narrative_prose(str(block.get("text") or ""))
-            ):
+            if style_family == "legend_like" and _looks_like_late_figure_narrative_prose(str(block.get("text") or "")):
                 pass  # narrative prose stays body_paragraph
             else:
                 _FAMILY_ROLE_MAP = {
@@ -613,7 +610,12 @@ def resolve_final_role(
                         ],
                     )
 
-    if current_role == "body_paragraph" and style_family in {"legend_like", "table_caption_like", "reference_like", "support_like"}:
+    if current_role == "body_paragraph" and style_family in {
+        "legend_like",
+        "table_caption_like",
+        "reference_like",
+        "support_like",
+    }:
         if zone == "reference_zone" and style_family == "reference_like":
             return RoleAssignment(
                 role="reference_item",
@@ -623,7 +625,11 @@ def resolve_final_role(
                     f"style_family_authority={style_family_authority or 'none'}",
                 ],
             )
-        if style_family == "legend_like" and raw_label == "figure_title" and not _looks_like_late_figure_narrative_prose(text):
+        if (
+            style_family == "legend_like"
+            and raw_label == "figure_title"
+            and not _looks_like_late_figure_narrative_prose(text)
+        ):
             return RoleAssignment(
                 role="figure_caption",
                 confidence=max(current_confidence, 0.9),

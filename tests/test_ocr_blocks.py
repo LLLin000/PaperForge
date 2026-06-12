@@ -28,6 +28,7 @@ def test_build_structured_blocks_preserves_noise_and_confidence() -> None:
 def test_build_structured_blocks_preserves_seed_without_final_role(tmp_path=None) -> None:
     import tempfile
     from pathlib import Path
+
     from paperforge.worker.ocr_blocks import build_structured_blocks
 
     out_dir = tmp_path or Path(tempfile.mkdtemp())

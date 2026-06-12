@@ -36,20 +36,46 @@ def test_required_roles_cannot_finish_without_accept_verification() -> None:
     from paperforge.worker.ocr_structural_gate import VERIFY_REQUIRED
 
     blocks = [
-        {"block_id": "h", "role": "unassigned", "seed_role": "abstract_heading", "text": "Abstract", "render_default": True},
-        {"block_id": "a", "role": "unassigned", "seed_role": "abstract_body", "text": "Real abstract.", "render_default": True},
-        {"block_id": "intro", "role": "unassigned", "seed_role": "section_heading", "text": "Introduction", "render_default": True},
-        {"block_id": "bad_ref", "role": "unassigned", "seed_role": "reference_item", "text": "[1] body-zone parameter", "render_default": True},
+        {
+            "block_id": "h",
+            "role": "unassigned",
+            "seed_role": "abstract_heading",
+            "text": "Abstract",
+            "render_default": True,
+        },
+        {
+            "block_id": "a",
+            "role": "unassigned",
+            "seed_role": "abstract_body",
+            "text": "Real abstract.",
+            "render_default": True,
+        },
+        {
+            "block_id": "intro",
+            "role": "unassigned",
+            "seed_role": "section_heading",
+            "text": "Introduction",
+            "render_default": True,
+        },
+        {
+            "block_id": "bad_ref",
+            "role": "unassigned",
+            "seed_role": "reference_item",
+            "text": "[1] body-zone parameter",
+            "render_default": True,
+        },
     ]
 
     _doc, normalized = normalize_document_structure(blocks)
 
     offenders = [
-        block for block in normalized
+        block
+        for block in normalized
         if block.get("role") in VERIFY_REQUIRED and block.get("role_verification_status") != "ACCEPT"
     ]
     passthrough = [
-        block for block in normalized
+        block
+        for block in normalized
         if block.get("role") in VERIFY_REQUIRED and block.get("role_source") == "non_structural_seed"
     ]
     assert offenders == []

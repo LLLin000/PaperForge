@@ -136,7 +136,9 @@ def test_ocr_health_includes_span_spine_and_layout_signals() -> None:
         {"role": "reference_item", "span_metadata": [{"font": "Body"}]},
     ]
 
-    health = build_ocr_health(page_count=2, raw_blocks_count=4, structured_blocks=blocks, figure_inventory={}, table_inventory={})
+    health = build_ocr_health(
+        page_count=2, raw_blocks_count=4, structured_blocks=blocks, figure_inventory={}, table_inventory={}
+    )
 
     assert "span_coverage_quality" in health
     assert "body_spine_quality" in health
@@ -149,7 +151,9 @@ def test_ocr_health_includes_decision_counts() -> None:
 
     blocks = [{"block_id": "a", "page": 1, "role": "body_paragraph", "bbox": [0, 0, 1, 1]}]
     record_decision(blocks[0], stage="rescue", old_role="noise", new_role="body_paragraph", reason="body family")
-    report = build_ocr_health(page_count=1, raw_blocks_count=1, structured_blocks=blocks, figure_inventory={}, table_inventory={})
+    report = build_ocr_health(
+        page_count=1, raw_blocks_count=1, structured_blocks=blocks, figure_inventory={}, table_inventory={}
+    )
     assert report["role_mutation_count"] == 1
     assert report["role_rescue_count"] == 1
 
@@ -290,16 +294,23 @@ def test_ocr_health_reports_layout_confidence_distribution() -> None:
     from paperforge.worker.ocr_document import DocumentStructure, PageLayoutProfile
     from paperforge.worker.ocr_health import build_ocr_health
 
-    doc = DocumentStructure(page_layouts={
-        1: PageLayoutProfile(confidence=0.8),
-        2: PageLayoutProfile(confidence=0.5),
-        3: PageLayoutProfile(confidence=0.2),
-    })
+    doc = DocumentStructure(
+        page_layouts={
+            1: PageLayoutProfile(confidence=0.8),
+            2: PageLayoutProfile(confidence=0.5),
+            3: PageLayoutProfile(confidence=0.2),
+        }
+    )
 
     report = build_ocr_health(
         page_count=3,
         raw_blocks_count=3,
-        structured_blocks=[{"role": "abstract_body"}, {"role": "reference_item"}, {"role": "section_heading"}, {"role": "section_heading"}],
+        structured_blocks=[
+            {"role": "abstract_body"},
+            {"role": "reference_item"},
+            {"role": "section_heading"},
+            {"role": "section_heading"},
+        ],
         figure_inventory={},
         table_inventory={},
         doc_structure=doc,
@@ -315,9 +326,15 @@ def test_ocr_health_counts_low_confidence_insert_candidates() -> None:
         page_count=1,
         raw_blocks_count=2,
         structured_blocks=[
-            {"role": "structured_insert_candidate", "insert_score": {"score": 0.45, "decision": "structured_insert_candidate"}},
+            {
+                "role": "structured_insert_candidate",
+                "insert_score": {"score": 0.45, "decision": "structured_insert_candidate"},
+            },
             {"role": "structured_insert", "insert_score": {"score": 0.35, "decision": "body"}},
-            {"role": "abstract_body"}, {"role": "reference_item"}, {"role": "section_heading"}, {"role": "section_heading"},
+            {"role": "abstract_body"},
+            {"role": "reference_item"},
+            {"role": "section_heading"},
+            {"role": "section_heading"},
         ],
         figure_inventory={},
         table_inventory={},
@@ -333,12 +350,29 @@ def test_ocr_health_counts_ambiguous_and_low_confidence_tables() -> None:
     report = build_ocr_health(
         page_count=1,
         raw_blocks_count=1,
-        structured_blocks=[{"role": "abstract_body"}, {"role": "reference_item"}, {"role": "section_heading"}, {"role": "section_heading"}],
+        structured_blocks=[
+            {"role": "abstract_body"},
+            {"role": "reference_item"},
+            {"role": "section_heading"},
+            {"role": "section_heading"},
+        ],
         figure_inventory={},
-        table_inventory={"tables": [
-            {"has_asset": False, "is_continuation": False, "match_status": "ambiguous", "match_score": {"score": 0.5}},
-            {"has_asset": True, "is_continuation": False, "match_status": "matched_low_confidence", "match_score": {"score": 0.45}},
-        ]},
+        table_inventory={
+            "tables": [
+                {
+                    "has_asset": False,
+                    "is_continuation": False,
+                    "match_status": "ambiguous",
+                    "match_score": {"score": 0.5},
+                },
+                {
+                    "has_asset": True,
+                    "is_continuation": False,
+                    "match_status": "matched_low_confidence",
+                    "match_score": {"score": 0.45},
+                },
+            ]
+        },
     )
 
     assert report["ambiguous_table_match_count"] == 1
@@ -357,14 +391,26 @@ def test_ocr_health_reports_hard_rule_and_uncertainty_summary() -> None:
         raw_blocks_count=6,
         structured_blocks=[
             {"role": "structured_insert", "insert_score": {"score": 0.35}},
-            {"role": "abstract_body"}, {"role": "reference_item"}, {"role": "section_heading"}, {"role": "section_heading"},
+            {"role": "abstract_body"},
+            {"role": "reference_item"},
+            {"role": "section_heading"},
+            {"role": "section_heading"},
         ],
         figure_inventory={
             "matched_figures": [{"caption_score": {"score": 0.3}}],
             "ambiguous_figures": [{"legend_block_id": "cap1"}],
             "unresolved_clusters": [{"cluster_id": "unresolved_cluster_001"}],
         },
-        table_inventory={"tables": [{"match_status": "ambiguous", "match_score": {"score": 0.5}, "has_asset": False, "is_continuation": False}]},
+        table_inventory={
+            "tables": [
+                {
+                    "match_status": "ambiguous",
+                    "match_score": {"score": 0.5},
+                    "has_asset": False,
+                    "is_continuation": False,
+                }
+            ]
+        },
         doc_structure=doc,
     )
 
@@ -381,7 +427,12 @@ def test_ocr_health_has_hard_rule_decision_count_key() -> None:
     report = build_ocr_health(
         page_count=1,
         raw_blocks_count=1,
-        structured_blocks=[{"role": "abstract_body"}, {"role": "reference_item"}, {"role": "section_heading"}, {"role": "section_heading"}],
+        structured_blocks=[
+            {"role": "abstract_body"},
+            {"role": "reference_item"},
+            {"role": "section_heading"},
+            {"role": "section_heading"},
+        ],
         figure_inventory={},
         table_inventory={},
     )
@@ -401,8 +452,20 @@ def test_ocr_health_hard_rule_decision_count_uses_real_signals() -> None:
         {"block_id": "d", "page": 1, "role": "section_heading"},
         {"block_id": "e", "page": 1, "role": "section_heading"},
     ]
-    record_decision(blocks[0], stage="structured_insert_promotion", old_role="body_paragraph", new_role="structured_insert", reason="forced fallback")
-    record_decision(blocks[0], stage="tail_candidate_resolution", old_role="tail_candidate_body", new_role="reference_item", reason="tail ownership")
+    record_decision(
+        blocks[0],
+        stage="structured_insert_promotion",
+        old_role="body_paragraph",
+        new_role="structured_insert",
+        reason="forced fallback",
+    )
+    record_decision(
+        blocks[0],
+        stage="tail_candidate_resolution",
+        old_role="tail_candidate_body",
+        new_role="reference_item",
+        reason="tail ownership",
+    )
 
     report = build_ocr_health(
         page_count=1,
@@ -442,7 +505,12 @@ def test_health_counts_held_figures_and_tables() -> None:
     report = build_ocr_health(
         page_count=1,
         raw_blocks_count=1,
-        structured_blocks=[{"role": "abstract_body"}, {"role": "reference_item"}, {"role": "section_heading"}, {"role": "section_heading"}],
+        structured_blocks=[
+            {"role": "abstract_body"},
+            {"role": "reference_item"},
+            {"role": "section_heading"},
+            {"role": "section_heading"},
+        ],
         figure_inventory={
             "matched_figures": [],
             "held_figures": [{"figure_id": "held_figure_001"}],

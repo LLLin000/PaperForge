@@ -89,25 +89,38 @@ def resolve_verified_role(block: dict, context: RoleGateContext) -> VerifiedRole
 
     if proposal == "paper_title" or seed_role == "paper_title":
         if block_id in context.source_frontmatter_anchor_ids.get("title", set()):
-            return accept_role("paper_title", seed_role, "source_frontmatter_title_anchor", ["matched source title anchor"])
+            return accept_role(
+                "paper_title", seed_role, "source_frontmatter_title_anchor", ["matched source title anchor"]
+            )
         return hold_role(seed_role, "paper title seed lacks source-backed title anchor")
     if proposal == "authors" or seed_role == "authors":
         if block_id in context.source_frontmatter_anchor_ids.get("authors", set()):
-            return accept_role("authors", seed_role, "source_frontmatter_authors_anchor", ["matched source authors anchor"])
+            return accept_role(
+                "authors", seed_role, "source_frontmatter_authors_anchor", ["matched source authors anchor"]
+            )
         return hold_role(seed_role, "authors seed lacks source-backed authors anchor")
     if proposal == "keywords" or seed_role == "keywords":
         if block_id in set((context.abstract_span or {}).get("keyword_block_ids", [])):
-            return accept_role("keywords", seed_role, "abstract_span_keyword_boundary", ["keywords follow accepted abstract span"])
+            return accept_role(
+                "keywords", seed_role, "abstract_span_keyword_boundary", ["keywords follow accepted abstract span"]
+            )
         return hold_role(seed_role, "keywords seed lacks abstract-span keyword boundary")
 
     # Abstract heading/body verification via abstract_span
     if proposal == "abstract_heading" or seed_role == "abstract_heading":
         span = context.abstract_span or {}
         if block_id == span.get("heading_block_id"):
-            return accept_role("abstract_heading", seed_role, "abstract_span_heading", ["abstract heading matched span"])
+            return accept_role(
+                "abstract_heading", seed_role, "abstract_span_heading", ["abstract heading matched span"]
+            )
         # Fallback: if abstract_span is missing, accept abstract_heading from seed
         if span.get("status") == "MISSING":
-            return accept_role("abstract_heading", seed_role, "abstract_span_missing_fallback", ["abstract heading accepted (no span to reject)"])
+            return accept_role(
+                "abstract_heading",
+                seed_role,
+                "abstract_span_missing_fallback",
+                ["abstract heading accepted (no span to reject)"],
+            )
         return hold_role(seed_role, "abstract heading not in abstract_span")
     if proposal == "abstract_body" or seed_role == "abstract_body":
         span = context.abstract_span or {}
@@ -115,13 +128,21 @@ def resolve_verified_role(block: dict, context: RoleGateContext) -> VerifiedRole
             return accept_role("abstract_body", seed_role, "abstract_span_body", ["abstract body matched span"])
         # Fallback: if abstract_span is missing, accept abstract_body from seed
         if span.get("status") == "MISSING":
-            return accept_role("abstract_body", seed_role, "abstract_span_missing_fallback", ["abstract body accepted (no span to reject)"])
+            return accept_role(
+                "abstract_body",
+                seed_role,
+                "abstract_span_missing_fallback",
+                ["abstract body accepted (no span to reject)"],
+            )
         # If block is already body-like, fallback to body_paragraph
         if current_role == "body_paragraph" or block.get("zone") == "body_zone":
             return VerifiedRoleDecision(
-                role="body_paragraph", status="ACCEPT", source="structural_gate_fallback",
+                role="body_paragraph",
+                status="ACCEPT",
+                source="structural_gate_fallback",
                 evidence=["abstract body rejected, falling back to body_paragraph"],
-                seed_role=seed_role, render_default=True,
+                seed_role=seed_role,
+                render_default=True,
             )
         return hold_role(seed_role, "abstract body not in abstract_span")
 
@@ -129,7 +150,9 @@ def resolve_verified_role(block: dict, context: RoleGateContext) -> VerifiedRole
     if proposal == "reference_heading" or seed_role == "reference_heading":
         zone = context.reference_zone or {}
         if block_id == zone.get("heading_block_id"):
-            return accept_role("reference_heading", seed_role, "reference_zone_heading", ["reference heading matched zone"])
+            return accept_role(
+                "reference_heading", seed_role, "reference_zone_heading", ["reference heading matched zone"]
+            )
         return hold_role(seed_role, "reference heading not in reference_zone")
     if proposal == "reference_item" or seed_role == "reference_item":
         zone = context.reference_zone or {}
@@ -139,14 +162,21 @@ def resolve_verified_role(block: dict, context: RoleGateContext) -> VerifiedRole
         # missing block_id or no region_bus), accept pre-resolved reference
         # items from the pre-gate pipeline when anchor is ACCEPT.
         if current_role == "reference_item" and not zone.get("item_block_ids"):
-            return accept_role("reference_item", seed_role, "reference_zone_fallback",
-                               ["reference item accepted (pre-gate resolution, empty zone)"])
+            return accept_role(
+                "reference_item",
+                seed_role,
+                "reference_zone_fallback",
+                ["reference item accepted (pre-gate resolution, empty zone)"],
+            )
         # Fallback: if block is body-like, fallback to body_paragraph
         if current_role == "body_paragraph" or block.get("zone") == "body_zone":
             return VerifiedRoleDecision(
-                role="body_paragraph", status="ACCEPT", source="structural_gate_fallback",
+                role="body_paragraph",
+                status="ACCEPT",
+                source="structural_gate_fallback",
                 evidence=["reference item rejected, falling back to body_paragraph"],
-                seed_role=seed_role, render_default=True,
+                seed_role=seed_role,
+                render_default=True,
             )
         return hold_role(seed_role, "reference item not in reference_zone")
 
@@ -156,7 +186,12 @@ def resolve_verified_role(block: dict, context: RoleGateContext) -> VerifiedRole
             return accept_role(proposal, seed_role, "accepted_heading", ["heading verified by heading artifact"])
         # Accept if not in VERIFY_REQUIRED set (section_heading and subsection_heading are in VERIFY_REQUIRED)
         # but allow them through as they are structural but generally safe
-        return accept_role(proposal, seed_role, "section_heading_fallback", ["section heading accepted (no heading artifact to reject)"])
+        return accept_role(
+            proposal,
+            seed_role,
+            "section_heading_fallback",
+            ["section heading accepted (no heading artifact to reject)"],
+        )
 
     if proposal in VERIFY_REQUIRED or seed_role in VERIFY_REQUIRED:
         return hold_role(seed_role, f"{proposal} requires structural verifier")
@@ -172,11 +207,22 @@ def build_document_abstract_span(blocks: list[dict], context: dict) -> dict:
     main_ids = set(context.get("frontmatter_main_zone_ids", set()))
     body_start_id = context.get("body_start_block_id")
     heading_index = next(
-        (idx for idx, block in enumerate(blocks) if block.get("seed_role") == "abstract_heading" or str(block.get("text", "")).strip().lower() == "abstract"),
+        (
+            idx
+            for idx, block in enumerate(blocks)
+            if block.get("seed_role") == "abstract_heading" or str(block.get("text", "")).strip().lower() == "abstract"
+        ),
         None,
     )
     if heading_index is None:
-        return {"heading_block_id": None, "body_block_ids": [], "excluded_support_block_ids": [], "status": "MISSING", "stop_reason": "missing_heading", "confidence": 0.0}
+        return {
+            "heading_block_id": None,
+            "body_block_ids": [],
+            "excluded_support_block_ids": [],
+            "status": "MISSING",
+            "stop_reason": "missing_heading",
+            "confidence": 0.0,
+        }
     body_ids: list = []
     excluded: list = []
     stop_reason = "document_end"
@@ -188,7 +234,9 @@ def build_document_abstract_span(blocks: list[dict], context: dict) -> dict:
             break
         text = str(block.get("text", "") or "").strip().lower()
         intro_text = text.lstrip("0123456789. ")
-        if block.get("seed_role") in {"section_heading", "subsection_heading"} and intro_text.startswith("introduction"):
+        if block.get("seed_role") in {"section_heading", "subsection_heading"} and intro_text.startswith(
+            "introduction"
+        ):
             stop_reason = "intro_like_heading"
             break
         if text.startswith(("keywords", "key words")):
@@ -257,7 +305,10 @@ def build_verified_reference_zone_from_artifacts(blocks: list[dict], artifacts: 
     if not heading_id and region_ids:
         for block in blocks:
             block_key = f"p{block.get('page', 0)}:{block.get('block_id', '')}"
-            if block_key in region_ids and str(block.get("text", "") or "").strip().lower() in {"references", "bibliography"}:
+            if block_key in region_ids and str(block.get("text", "") or "").strip().lower() in {
+                "references",
+                "bibliography",
+            }:
                 heading_id = block.get("block_id")
                 break
     return {
