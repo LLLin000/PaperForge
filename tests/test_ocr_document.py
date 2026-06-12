@@ -3857,3 +3857,56 @@ def test_gate_context_adapters_do_not_accept_from_seed_roles_only() -> None:
     assert _build_accepted_heading_block_ids(blocks, None) == set()
     assert _build_accepted_caption_block_ids({}, {"reader_figures": []}, blocks) == set()
     assert _build_accepted_table_block_ids({}, blocks) == set()
+
+
+def test_gate_accepts_frontmatter_only_from_source_anchors() -> None:
+    from paperforge.worker.ocr_structural_gate import RoleGateContext, resolve_verified_role
+
+    context = RoleGateContext(source_frontmatter_anchor_ids={"title": {"t"}, "authors": {"a"}})
+
+    title = resolve_verified_role({"block_id": "t", "seed_role": "paper_title", "text": "Canonical Title"}, context)
+    authors = resolve_verified_role({"block_id": "a", "seed_role": "authors", "text": "Author One"}, context)
+    bad = resolve_verified_role({"block_id": "x", "seed_role": "authors", "text": "Author-like sidebar"}, context)
+
+    assert title.status == "ACCEPT"
+    assert title.source == "source_frontmatter_title_anchor"
+    assert authors.status == "ACCEPT"
+    assert authors.source == "source_frontmatter_authors_anchor"
+    assert bad.status == "HOLD"
+
+
+def test_normalized_required_roles_have_accept_verification() -> None:
+    from paperforge.worker.ocr_document import normalize_document_structure
+    from paperforge.worker.ocr_structural_gate import VERIFY_REQUIRED
+
+    blocks = [
+        {"block_id": "h", "role": "unassigned", "seed_role": "abstract_heading", "text": "Abstract"},
+        {"block_id": "a", "role": "unassigned", "seed_role": "abstract_body", "text": "Real abstract."},
+        {"block_id": "intro", "role": "unassigned", "seed_role": "section_heading", "text": "Introduction"},
+        {"block_id": "bad", "role": "unassigned", "seed_role": "authors", "text": "Author-like sidebar"},
+    ]
+    _doc, normalized = normalize_document_structure(blocks)
+
+    offenders = [
+        block for block in normalized
+        if block.get("role") in VERIFY_REQUIRED and block.get("role_verification_status") != "ACCEPT"
+    ]
+    assert offenders == []
+    assert next(block for block in normalized if block["block_id"] == "bad")["role"] != "authors"
+
+
+def test_rejected_required_seed_can_fallback_to_safe_body_role_without_content_loss() -> None:
+    from paperforge.worker.ocr_document import normalize_document_structure
+
+    blocks = [
+        {"block_id": "intro", "role": "section_heading", "seed_role": "section_heading", "text": "Introduction", "page": 1, "render_default": True},
+        {"block_id": "bad", "role": "body_paragraph", "seed_role": "abstract_body", "text": "Body mislabeled as abstract.", "page": 1, "render_default": True},
+    ]
+
+    _doc, normalized = normalize_document_structure(blocks)
+    repaired = next(block for block in normalized if block["block_id"] == "bad")
+
+    # body_paragraph is not VERIFY_REQUIRED, so gate preserves it as non_structural_normalized_role
+    assert repaired["role"] == "body_paragraph"
+    assert repaired["role_source"] == "non_structural_normalized_role"
+    assert repaired["render_default"] is True

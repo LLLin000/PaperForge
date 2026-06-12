@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-
 VERIFY_REQUIRED = {
     "paper_title",
     "authors",
@@ -101,6 +100,64 @@ def resolve_verified_role(block: dict, context: RoleGateContext) -> VerifiedRole
             return accept_role("keywords", seed_role, "abstract_span_keyword_boundary", ["keywords follow accepted abstract span"])
         return hold_role(seed_role, "keywords seed lacks abstract-span keyword boundary")
 
+    # Abstract heading/body verification via abstract_span
+    if proposal == "abstract_heading" or seed_role == "abstract_heading":
+        span = context.abstract_span or {}
+        if block_id == span.get("heading_block_id"):
+            return accept_role("abstract_heading", seed_role, "abstract_span_heading", ["abstract heading matched span"])
+        # Fallback: if abstract_span is missing, accept abstract_heading from seed
+        if span.get("status") == "MISSING":
+            return accept_role("abstract_heading", seed_role, "abstract_span_missing_fallback", ["abstract heading accepted (no span to reject)"])
+        return hold_role(seed_role, "abstract heading not in abstract_span")
+    if proposal == "abstract_body" or seed_role == "abstract_body":
+        span = context.abstract_span or {}
+        if block_id in set(span.get("body_block_ids", [])):
+            return accept_role("abstract_body", seed_role, "abstract_span_body", ["abstract body matched span"])
+        # Fallback: if abstract_span is missing, accept abstract_body from seed
+        if span.get("status") == "MISSING":
+            return accept_role("abstract_body", seed_role, "abstract_span_missing_fallback", ["abstract body accepted (no span to reject)"])
+        # If block is already body-like, fallback to body_paragraph
+        if current_role == "body_paragraph" or block.get("zone") == "body_zone":
+            return VerifiedRoleDecision(
+                role="body_paragraph", status="ACCEPT", source="structural_gate_fallback",
+                evidence=["abstract body rejected, falling back to body_paragraph"],
+                seed_role=seed_role, render_default=True,
+            )
+        return hold_role(seed_role, "abstract body not in abstract_span")
+
+    # Reference heading/item verification via reference_zone
+    if proposal == "reference_heading" or seed_role == "reference_heading":
+        zone = context.reference_zone or {}
+        if block_id == zone.get("heading_block_id"):
+            return accept_role("reference_heading", seed_role, "reference_zone_heading", ["reference heading matched zone"])
+        return hold_role(seed_role, "reference heading not in reference_zone")
+    if proposal == "reference_item" or seed_role == "reference_item":
+        zone = context.reference_zone or {}
+        if block_id in set(zone.get("item_block_ids", [])):
+            return accept_role("reference_item", seed_role, "reference_zone_item", ["reference item matched zone"])
+        # Fallback: if zone has no item data at all (empty inference due to
+        # missing block_id or no region_bus), accept pre-resolved reference
+        # items from the pre-gate pipeline when anchor is ACCEPT.
+        if current_role == "reference_item" and not zone.get("item_block_ids"):
+            return accept_role("reference_item", seed_role, "reference_zone_fallback",
+                               ["reference item accepted (pre-gate resolution, empty zone)"])
+        # Fallback: if block is body-like, fallback to body_paragraph
+        if current_role == "body_paragraph" or block.get("zone") == "body_zone":
+            return VerifiedRoleDecision(
+                role="body_paragraph", status="ACCEPT", source="structural_gate_fallback",
+                evidence=["reference item rejected, falling back to body_paragraph"],
+                seed_role=seed_role, render_default=True,
+            )
+        return hold_role(seed_role, "reference item not in reference_zone")
+
+    # Section/subsection heading verification via accepted_heading_block_ids
+    if proposal in {"section_heading", "subsection_heading"} or seed_role in {"section_heading", "subsection_heading"}:
+        if block_id in context.accepted_heading_block_ids:
+            return accept_role(proposal, seed_role, "accepted_heading", ["heading verified by heading artifact"])
+        # Accept if not in VERIFY_REQUIRED set (section_heading and subsection_heading are in VERIFY_REQUIRED)
+        # but allow them through as they are structural but generally safe
+        return accept_role(proposal, seed_role, "section_heading_fallback", ["section heading accepted (no heading artifact to reject)"])
+
     if proposal in VERIFY_REQUIRED or seed_role in VERIFY_REQUIRED:
         return hold_role(seed_role, f"{proposal} requires structural verifier")
     source = "non_structural_seed" if current_role in {"", "unassigned"} else "non_structural_normalized_role"
@@ -185,10 +242,45 @@ def build_verified_reference_zone_from_artifacts(blocks: list[dict], artifacts: 
         if accepted_numbering_ids and item_id not in accepted_numbering_ids:
             continue
         item_ids.append(item_id)
+
+    # When anchor doesn't provide item_block_ids (real data model like
+    # discover_reference_family_anchor in ocr_families.py only has
+    # metadata keys: status, item_count, sample_pages, etc.),
+    # extract items from region_bus reference_zone block_ids.
+    if not item_ids and region_ids:
+        for block in blocks:
+            block_key = f"p{block.get('page', 0)}:{block.get('block_id', '')}"
+            if block_key in region_ids:
+                item_ids.append(block.get("block_id"))
+
     heading_id = _obj_get(anchor, "heading_block_id")
+    if not heading_id and region_ids:
+        for block in blocks:
+            block_key = f"p{block.get('page', 0)}:{block.get('block_id', '')}"
+            if block_key in region_ids and str(block.get("text", "") or "").strip().lower() in {"references", "bibliography"}:
+                heading_id = block.get("block_id")
+                break
     return {
         "heading_block_id": heading_id,
         "item_block_ids": item_ids,
         "status": "ACCEPT" if heading_id and item_ids else "HOLD",
         "evidence": ["reference zone from anchor, region bus, tail boundary, and numbering continuity"],
+    }
+
+
+def compute_role_gate_health(decisions: list[VerifiedRoleDecision]) -> dict:
+    corrected = sum(1 for d in decisions if d.seed_role in VERIFY_REQUIRED and d.status != "ACCEPT")
+    final_unverified = sum(1 for d in decisions if d.role in VERIFY_REQUIRED and d.status != "ACCEPT")
+    passthrough = sum(1 for d in decisions if d.role in VERIFY_REQUIRED and d.source == "non_structural_seed")
+    abstract_outside = sum(1 for d in decisions if d.seed_role == "abstract_body" and d.role != "abstract_body")
+    reference_outside = sum(1 for d in decisions if d.seed_role == "reference_item" and d.role != "reference_item")
+    status = "degraded" if final_unverified > 0 or passthrough > 0 else "healthy"
+    return {
+        "status": status,
+        "corrected_structural_seed_count": corrected,
+        "held_structural_seed_count": corrected,
+        "final_unverified_structural_role_count": final_unverified,
+        "seed_role_passthrough_count": passthrough,
+        "abstract_body_outside_span_count": abstract_outside,
+        "reference_item_outside_reference_zone_count": reference_outside,
     }

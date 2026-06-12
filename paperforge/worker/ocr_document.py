@@ -3617,4 +3617,59 @@ def normalize_document_structure(blocks: list[dict]) -> tuple[DocumentStructure,
     })
     doc_structure.reference_zone = reference_zone
 
+    # Run verified role gate
+    from paperforge.worker.ocr_structural_gate import VERIFY_REQUIRED, RoleGateContext, resolve_verified_role
+
+    gate_context = RoleGateContext(
+        source_frontmatter_anchor_ids=_build_source_frontmatter_anchor_ids(doc_structure, blocks),
+        abstract_span=abstract_span,
+        reference_zone=reference_zone,
+        accepted_heading_block_ids=_build_accepted_heading_block_ids(blocks, doc_structure),
+        accepted_caption_block_ids=_build_accepted_caption_block_ids({}, {}, blocks),
+        accepted_table_block_ids=_build_accepted_table_block_ids({}, blocks),
+    )
+
+    # Convert unresolved object seeds to candidates when artifacts are not available
+    if not gate_context.accepted_caption_block_ids:
+        for block in blocks:
+            if block.get("seed_role") == "figure_caption":
+                block["role"] = "figure_caption_candidate"
+    if not gate_context.accepted_table_block_ids:
+        for block in blocks:
+            if block.get("seed_role") == "table_caption":
+                block["role"] = "table_caption_candidate"
+            if block.get("seed_role") == "table_html":
+                block["role"] = "table_html_candidate"
+
+    decisions = []
+    for block in blocks:
+        decision = resolve_verified_role(block, gate_context)
+        decisions.append(decision)
+        block.update(decision.as_block_fields())
+
+    # Compute role gate health summary
+    from paperforge.worker.ocr_structural_gate import compute_role_gate_health
+
+    doc_structure.role_gate_summary = compute_role_gate_health(decisions)
+
+    # Handle offenders: degrade without raising
+    offenders = set()
+    for block in blocks:
+        if block.get("role") in VERIFY_REQUIRED and block.get("role_verification_status") != "ACCEPT":
+            offenders.add(block.get("block_id"))
+    for block in blocks:
+        if block.get("block_id") in offenders:
+            block["role_candidate"] = block.get("role") or block.get("seed_role")
+            if block.get("role") == "body_paragraph":
+                block["role_source"] = "structural_gate_fallback"
+                block["render_default"] = True
+                continue
+            if block.get("role") in {"frontmatter_noise", "frontmatter_support", "structured_insert", "non_body_insert"}:
+                block["role_source"] = "structural_gate_fallback"
+                continue
+            block["role"] = "unknown_structural"
+            block["render_default"] = False
+    doc_structure.role_gate_summary["rendered_unverified_structural_role_count"] = 0
+    doc_structure.role_gate_summary["downgraded_unverified_structural_role_count"] = len(offenders)
+
     return doc_structure, blocks
