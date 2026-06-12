@@ -710,7 +710,16 @@ def render_fulltext_markdown(
     emitted_figure_captions: set[str] = set()
 
     reader_figures = (reader_payload or {}).get("reader_figures", [])
-    consumed_caption_keys = {(item.get("page"), item.get("block_id")) for item in (reader_payload or {}).get("consumed_caption_block_ids", []) if item.get("block_id") is not None}
+    consumed_caption_keys: set[tuple] = set()
+    for item in (reader_payload or {}).get("consumed_caption_block_ids", []):
+        if isinstance(item, dict):
+            page = item.get("page")
+            block_id = item.get("block_id")
+        else:
+            block_id = item
+            page = None
+        if block_id is not None:
+            consumed_caption_keys.add((page, block_id))
     rendered_reader_figure_ids: set[str] = set()
 
     _block_page_map: dict[int, int] = {}
@@ -773,11 +782,17 @@ def render_fulltext_markdown(
         lines.append("")
 
     # --- abstract ---
-    abstract_blocks = [
-        b
-        for b in structured_blocks
-        if b.get("role") in ("abstract_heading", "abstract_body") and b.get("render_default", True)
-    ]
+    if document_structure is not None and getattr(document_structure, "abstract_span", None):
+        span = document_structure["abstract_span"]
+        block_by_id = {block.get("block_id"): block for block in structured_blocks}
+        abstract_ids = [span.get("heading_block_id"), *span.get("body_block_ids", [])]
+        abstract_blocks = [block_by_id[bid] for bid in abstract_ids if bid in block_by_id and block_by_id[bid].get("render_default", True)]
+    else:
+        abstract_blocks = [
+            b
+            for b in structured_blocks
+            if b.get("role") in ("abstract_heading", "abstract_body") and b.get("render_default", True)
+        ]
     if abstract_blocks:
         lines.append("## Abstract")
         lines.append("")
@@ -891,6 +906,10 @@ def render_fulltext_markdown(
                 "structured_insert",
                 "subsection_heading",
                 "sub_subsection_heading",
+                "authors",
+                "paper_title",
+                "abstract_heading",
+                "abstract_body",
             })
             if old_role in _PROTECTED:
                 continue
