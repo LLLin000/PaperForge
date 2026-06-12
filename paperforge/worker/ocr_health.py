@@ -243,6 +243,10 @@ def build_ocr_health(
 
     report.update(decision_summary)
 
+    role_gate_summary = _doc_attr(doc_structure, "role_gate_summary", None) or {}
+    if role_gate_summary:
+        report["role_gate_summary"] = role_gate_summary
+
     degraded_reasons = []
     if span.get("coverage_quality", "weak") == "weak":
         degraded_reasons.append(f"weak span coverage ({span.get('coverage_ratio', 0):.0%})")
@@ -250,6 +254,9 @@ def build_ocr_health(
         degraded_reasons.append("weak body spine")
     if layout.get("error_count", 0) > 0:
         degraded_reasons.append(f"layout audit errors ({layout.get('error_count', 0)} errors)")
+
+    if role_gate_summary.get("status") == "degraded":
+        degraded_reasons.append("OCR structural role gate degraded")
 
     report["degraded_reasons"] = degraded_reasons
 
