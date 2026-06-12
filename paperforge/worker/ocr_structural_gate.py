@@ -259,6 +259,12 @@ def build_document_abstract_span(blocks: list[dict], context: dict) -> dict:
     }
 
 
+def _matches_zone_id(block: dict, zone_ids: set) -> bool:
+    bid = block.get("block_id")
+    page = block.get("page", 0)
+    return bid in zone_ids or f"p{page}:{bid}" in zone_ids
+
+
 def build_verified_reference_zone_from_artifacts(blocks: list[dict], artifacts: dict) -> dict:
     def _obj_get(obj, key, default=None):
         if obj is None:
@@ -284,7 +290,9 @@ def build_verified_reference_zone_from_artifacts(blocks: list[dict], artifacts: 
     item_ids = []
     for item_id in _obj_get(anchor, "item_block_ids", []):
         if region_ids and item_id not in region_ids:
-            continue
+            matching = [b for b in blocks if b.get("block_id") == item_id]
+            if not matching or not _matches_zone_id(matching[0], region_ids):
+                continue
         if before_tail and item_id not in before_tail:
             continue
         if accepted_numbering_ids and item_id not in accepted_numbering_ids:
@@ -297,20 +305,24 @@ def build_verified_reference_zone_from_artifacts(blocks: list[dict], artifacts: 
     # extract items from region_bus reference_zone block_ids.
     if not item_ids and region_ids:
         for block in blocks:
-            block_key = f"p{block.get('page', 0)}:{block.get('block_id', '')}"
-            if block_key in region_ids:
+            if _matches_zone_id(block, region_ids):
                 item_ids.append(block.get("block_id"))
 
     heading_id = _obj_get(anchor, "heading_block_id")
     if not heading_id and region_ids:
         for block in blocks:
-            block_key = f"p{block.get('page', 0)}:{block.get('block_id', '')}"
-            if block_key in region_ids and str(block.get("text", "") or "").strip().lower() in {
+            if _matches_zone_id(block, region_ids) and str(block.get("text", "") or "").strip().lower() in {
                 "references",
                 "bibliography",
             }:
                 heading_id = block.get("block_id")
                 break
+
+    # Avoid including the heading block among items when fallback extraction
+    # matched all region blocks (both heading and items).
+    if heading_id is not None and heading_id in item_ids:
+        item_ids.remove(heading_id)
+
     return {
         "heading_block_id": heading_id,
         "item_block_ids": item_ids,
