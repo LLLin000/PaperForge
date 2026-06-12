@@ -293,7 +293,11 @@ def test_problem_papers_keep_reference_roles_and_exclude_legend_family_from_body
         if style_family == "reference_like":
             leaked.append(block)
             continue
-        if style_family in {"legend_like", "table_caption_like"} and zone == "display_zone" and raw_label == "figure_title":
+        if (
+            style_family in {"legend_like", "table_caption_like"}
+            and zone == "display_zone"
+            and raw_label == "figure_title"
+        ):
             continue
         leaked.append(block)
 
@@ -367,12 +371,8 @@ def test_tsckavis_key_points_render_as_callout(rebuilt_real_papers: dict, _ocr_r
     fulltext = _fulltext_path(_ocr_root, key).read_text(encoding="utf-8", errors="replace")
 
     kp_lower = fulltext.lower()
-    assert "key points" in kp_lower, (
-        "Key points heading not found in fulltext -- content was silently dropped"
-    )
-    assert "[!NOTE]" in fulltext, (
-        "Key points not rendered as a callout block ([!NOTE]) in fulltext"
-    )
+    assert "key points" in kp_lower, "Key points heading not found in fulltext -- content was silently dropped"
+    assert "[!NOTE]" in fulltext, "Key points not rendered as a callout block ([!NOTE]) in fulltext"
     assert "skeletal stem and progenitor cells display a high metabolic flexibility" in kp_lower, (
         "Key points body content missing from fulltext"
     )
@@ -390,9 +390,7 @@ def test_tsckavis_table_display_does_not_render_as_body_heading(rebuilt_real_pap
     heading_texts = [str(b.get("text", "")).lower() for b in blocks if b.get("role") in heading_roles]
 
     for ht in heading_texts:
-        assert "table 1" not in ht, (
-            f"Table display content leaked into heading role: '{ht[:80]}'"
-        )
+        assert "table 1" not in ht, f"Table display content leaked into heading role: '{ht[:80]}'"
 
     heading_pattern = re.compile(r"^#{1,6}\s+.*table\s+1", re.MULTILINE | re.IGNORECASE)
     heading_matches = heading_pattern.findall(fulltext)
@@ -401,9 +399,7 @@ def test_tsckavis_table_display_does_not_render_as_body_heading(rebuilt_real_pap
     )
 
 
-def test_caqnw9q2_old_style_references_gain_reference_like_family(
-    rebuilt_real_papers: dict, _ocr_root: Path
-) -> None:
+def test_caqnw9q2_old_style_references_gain_reference_like_family(rebuilt_real_papers: dict, _ocr_root: Path) -> None:
     """Old-style single-column paper references must gain reference_like style_family."""
     key = "CAQNW9Q2"
     _require_artifacts(_ocr_root, key)
@@ -467,24 +463,14 @@ def test_real_paper_legends_do_not_silently_disappear_from_object_inventory(
         blocks = _read_jsonl(_structured_path(_ocr_root, key))
         fulltext = _fulltext_path(_ocr_root, key).read_text(encoding="utf-8", errors="replace")
 
-        legend_blocks = [
-            b
-            for b in blocks
-            if b.get("role") in ("figure_caption", "table_caption", "legend")
-        ]
+        legend_blocks = [b for b in blocks if b.get("role") in ("figure_caption", "table_caption", "legend")]
         assert len(legend_blocks) >= min_legends, (
             f"{key}: expected at least {min_legends} legend/caption blocks, "
             f"found {len(legend_blocks)} -- legends may be silently disappearing"
         )
 
-        legend_texts = [
-            str(b.get("text", ""))[:60]
-            for b in legend_blocks
-            if b.get("text")
-        ]
-        rendered_count = sum(
-            1 for lt in legend_texts if lt.strip() and lt.strip() in fulltext
-        )
+        legend_texts = [str(b.get("text", ""))[:60] for b in legend_blocks if b.get("text")]
+        rendered_count = sum(1 for lt in legend_texts if lt.strip() and lt.strip() in fulltext)
         assert rendered_count >= min_legends, (
             f"{key}: {rendered_count}/{len(legend_blocks)} legend blocks are rendered in fulltext. "
             f"Legends present in blocks but missing from fulltext: "

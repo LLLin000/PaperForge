@@ -3,11 +3,10 @@ from __future__ import annotations
 import json
 import os
 import re
-from collections import Counter, defaultdict
+from collections import defaultdict
 from pathlib import Path
 
 import pytest
-
 
 REAL_VAULT_ENV = "PAPERFORGE_REAL_OCR_VAULT"
 REAL_KEYS_ENV = "PAPERFORGE_REAL_OCR_KEYS"
@@ -17,7 +16,13 @@ CONTROL_KEYS = ["SAN9AYVR", "2GN9LMCW", "7C8829BD"]
 ALL_KEYS = PROBLEM_KEYS + CONTROL_KEYS
 
 BODY_ROLES = {"body_paragraph", "abstract_body"}
-HEADING_ROLES = {"section_heading", "subsection_heading", "sub_subsection_heading", "reference_heading", "backmatter_heading"}
+HEADING_ROLES = {
+    "section_heading",
+    "subsection_heading",
+    "sub_subsection_heading",
+    "reference_heading",
+    "backmatter_heading",
+}
 NON_READER_ROLES = {"noise", "frontmatter_noise"}
 
 DEBUG_TOKENS = ["unmatched_legend_", "unresolved_cluster_", "orphan_", "asset_block_id", "legend_block_id"]
@@ -121,7 +126,9 @@ def _fulltext_lines(ocr_root: Path, key: str) -> list[str]:
 
 
 def _block_texts(blocks: list[dict], roles: set[str]) -> list[str]:
-    return [str(block.get("text") or block.get("block_content") or "") for block in blocks if block.get("role") in roles]
+    return [
+        str(block.get("text") or block.get("block_content") or "") for block in blocks if block.get("role") in roles
+    ]
 
 
 def _reader_figures(reader_payload: dict) -> list[dict]:
@@ -176,7 +183,9 @@ def test_reader_audit_artifacts_exist(rebuilt_reader_audit_papers: dict, real_oc
 
 
 @pytest.mark.parametrize("key", ALL_KEYS)
-def test_reader_audit_health_has_reader_coverage(rebuilt_reader_audit_papers: dict, real_ocr_root: Path, key: str) -> None:
+def test_reader_audit_health_has_reader_coverage(
+    rebuilt_reader_audit_papers: dict, real_ocr_root: Path, key: str
+) -> None:
     health = _read_json(_health_path(real_ocr_root, key))
     for field in (
         "figure_reader_coverage_total",
@@ -188,14 +197,18 @@ def test_reader_audit_health_has_reader_coverage(rebuilt_reader_audit_papers: di
 
 
 @pytest.mark.parametrize("key", ALL_KEYS)
-def test_reader_audit_no_debug_tokens_in_fulltext(rebuilt_reader_audit_papers: dict, real_ocr_root: Path, key: str) -> None:
+def test_reader_audit_no_debug_tokens_in_fulltext(
+    rebuilt_reader_audit_papers: dict, real_ocr_root: Path, key: str
+) -> None:
     fulltext = _fulltext_path(real_ocr_root, key).read_text(encoding="utf-8", errors="replace")
     for token in DEBUG_TOKENS:
         assert token not in fulltext, f"{key}: debug token leaked into fulltext: {token}"
 
 
 @pytest.mark.parametrize("key", ALL_KEYS)
-def test_reader_audit_consumed_caption_integrity(rebuilt_reader_audit_papers: dict, real_ocr_root: Path, key: str) -> None:
+def test_reader_audit_consumed_caption_integrity(
+    rebuilt_reader_audit_papers: dict, real_ocr_root: Path, key: str
+) -> None:
     blocks = _read_jsonl(_structured_path(real_ocr_root, key))
     reader_payload = _read_json(_reader_figures_path(real_ocr_root, key))
     block_key_set = {(block.get("page"), block.get("block_id")) for block in blocks}
@@ -209,7 +222,9 @@ def test_reader_audit_consumed_caption_integrity(rebuilt_reader_audit_papers: di
 
 
 @pytest.mark.parametrize("key", ALL_KEYS)
-def test_reader_audit_formal_legends_have_reader_outcomes(rebuilt_reader_audit_papers: dict, real_ocr_root: Path, key: str) -> None:
+def test_reader_audit_formal_legends_have_reader_outcomes(
+    rebuilt_reader_audit_papers: dict, real_ocr_root: Path, key: str
+) -> None:
     reader_payload = _read_json(_reader_figures_path(real_ocr_root, key))
     reader_caption_ids = set()
     for figure in _reader_figures(reader_payload):
@@ -239,7 +254,9 @@ def test_reader_audit_body_hygiene(rebuilt_reader_audit_papers: dict, real_ocr_r
 
 
 @pytest.mark.parametrize("key", ALL_KEYS)
-def test_reader_audit_reader_statuses_are_whitelisted(rebuilt_reader_audit_papers: dict, real_ocr_root: Path, key: str) -> None:
+def test_reader_audit_reader_statuses_are_whitelisted(
+    rebuilt_reader_audit_papers: dict, real_ocr_root: Path, key: str
+) -> None:
     reader_payload = _read_json(_reader_figures_path(real_ocr_root, key))
     allowed = {"EXACT_MATCH", "SEQUENCE_MATCH", "GROUPED_APPROXIMATE", "LEGEND_ONLY", "ASSET_GROUP_ONLY", "HOLD"}
     statuses = {figure.get("reader_status") for figure in _reader_figures(reader_payload)}
@@ -247,7 +264,9 @@ def test_reader_audit_reader_statuses_are_whitelisted(rebuilt_reader_audit_paper
 
 
 @pytest.mark.parametrize("key", ALL_KEYS)
-def test_reader_audit_no_duplicate_caption_body_and_card(rebuilt_reader_audit_papers: dict, real_ocr_root: Path, key: str) -> None:
+def test_reader_audit_no_duplicate_caption_body_and_card(
+    rebuilt_reader_audit_papers: dict, real_ocr_root: Path, key: str
+) -> None:
     lines = _fulltext_lines(real_ocr_root, key)
     blocks = _read_jsonl(_structured_path(real_ocr_root, key))
     reader_payload = _read_json(_reader_figures_path(real_ocr_root, key))
@@ -270,23 +289,35 @@ def test_reader_audit_no_duplicate_caption_body_and_card(rebuilt_reader_audit_pa
 
 
 @pytest.mark.parametrize("key", ALL_KEYS)
-def test_reader_audit_reader_coverage_is_not_trivially_zero(rebuilt_reader_audit_papers: dict, real_ocr_root: Path, key: str) -> None:
+def test_reader_audit_reader_coverage_is_not_trivially_zero(
+    rebuilt_reader_audit_papers: dict, real_ocr_root: Path, key: str
+) -> None:
     health = _read_json(_health_path(real_ocr_root, key))
     reader_payload = _read_json(_reader_figures_path(real_ocr_root, key))
     eligible_legend_ids = _eligible_reader_legend_block_ids(reader_payload)
     if eligible_legend_ids:
-        assert health.get("figure_reader_coverage_total", 0) > 0, f"{key}: reader coverage total is zero despite eligible legends"
+        assert health.get("figure_reader_coverage_total", 0) > 0, (
+            f"{key}: reader coverage total is zero despite eligible legends"
+        )
 
 
 _BACKMATTER_KEYWORDS = [
-    "author contributions", "data availability", "funding", "acknowledg",
-    "conflict of interest", "competing interests", "supplementary material",
-    "ethics statement", "publisher", "biographies",
+    "author contributions",
+    "data availability",
+    "funding",
+    "acknowledg",
+    "conflict of interest",
+    "competing interests",
+    "supplementary material",
+    "ethics statement",
+    "publisher",
+    "biographies",
 ]
 
 
 def _is_panel_label(text: str) -> bool:
     return bool(re.match(r"^[A-H]\s*$", text.strip()))
+
 
 def _is_panel_lower(text: str) -> bool:
     return bool(re.match(r"^[a-h]\s*$", text.strip()))
@@ -308,7 +339,9 @@ def test_audit_fulltext_no_panel_letter_leaks(rebuilt_reader_audit_papers: dict,
 
 
 @pytest.mark.parametrize("key", ALL_KEYS)
-def test_audit_fulltext_no_backmatter_headings(rebuilt_reader_audit_papers: dict, real_ocr_root: Path, key: str) -> None:
+def test_audit_fulltext_no_backmatter_headings(
+    rebuilt_reader_audit_papers: dict, real_ocr_root: Path, key: str
+) -> None:
     lines = _fulltext_lines(real_ocr_root, key)
     back_hds = []
     for i, line in enumerate(lines):
@@ -319,7 +352,9 @@ def test_audit_fulltext_no_backmatter_headings(rebuilt_reader_audit_papers: dict
 
 
 @pytest.mark.parametrize("key", ALL_KEYS)
-def test_audit_fulltext_no_figure_cards_after_refs(rebuilt_reader_audit_papers: dict, real_ocr_root: Path, key: str) -> None:
+def test_audit_fulltext_no_figure_cards_after_refs(
+    rebuilt_reader_audit_papers: dict, real_ocr_root: Path, key: str
+) -> None:
     lines = _fulltext_lines(real_ocr_root, key)
     ref_idx = next((i for i, l in enumerate(lines) if l.strip().lower() == "## references"), None)
     if ref_idx is None:
@@ -329,13 +364,23 @@ def test_audit_fulltext_no_figure_cards_after_refs(rebuilt_reader_audit_papers: 
 
 
 @pytest.mark.parametrize("key", ALL_KEYS)
-def test_audit_fulltext_no_body_before_introduction(rebuilt_reader_audit_papers: dict, real_ocr_root: Path, key: str) -> None:
+def test_audit_fulltext_no_body_before_introduction(
+    rebuilt_reader_audit_papers: dict, real_ocr_root: Path, key: str
+) -> None:
     lines = _fulltext_lines(real_ocr_root, key)
-    first_h2 = next((i for i, l in enumerate(lines) if re.match(r"^## \d+\.", l.strip()) or l.strip().lower().startswith("## introduction")), None)
+    first_h2 = next(
+        (
+            i
+            for i, l in enumerate(lines)
+            if re.match(r"^## \d+\.", l.strip()) or l.strip().lower().startswith("## introduction")
+        ),
+        None,
+    )
     if first_h2 is None:
         return
     body_before = sum(
-        1 for i in range(first_h2)
+        1
+        for i in range(first_h2)
         if lines[i].strip()
         and not lines[i].strip().startswith("#")
         and not lines[i].strip().startswith("<!--")
@@ -348,7 +393,9 @@ def test_audit_fulltext_no_body_before_introduction(rebuilt_reader_audit_papers:
 
 
 @pytest.mark.parametrize("key", ALL_KEYS)
-def test_audit_fulltext_no_orphan_figure_embeds(rebuilt_reader_audit_papers: dict, real_ocr_root: Path, key: str) -> None:
+def test_audit_fulltext_no_orphan_figure_embeds(
+    rebuilt_reader_audit_papers: dict, real_ocr_root: Path, key: str
+) -> None:
     lines = _fulltext_lines(real_ocr_root, key)
     orphans = []
     for i, l in enumerate(lines):
@@ -363,13 +410,14 @@ def test_audit_fulltext_no_orphan_figure_embeds(rebuilt_reader_audit_papers: dic
 
 
 @pytest.mark.parametrize("key", ALL_KEYS)
-def test_audit_blocks_reference_items_in_reference_zone(rebuilt_reader_audit_papers: dict, real_ocr_root: Path, key: str) -> None:
+def test_audit_blocks_reference_items_in_reference_zone(
+    rebuilt_reader_audit_papers: dict, real_ocr_root: Path, key: str
+) -> None:
     blocks = _read_jsonl(_structured_path(real_ocr_root, key))
     ref_outside = [
         b.get("block_id")
         for b in blocks
-        if b.get("role") == "reference_item"
-        and b.get("zone") not in ("reference_zone", "tail_nonref_hold_zone")
+        if b.get("role") == "reference_item" and b.get("zone") not in ("reference_zone", "tail_nonref_hold_zone")
     ]
     if ref_outside:
         total = sum(1 for b in blocks if b.get("role") == "reference_item")
@@ -387,7 +435,8 @@ def test_reader_audit_normalized_matched_figures_keep_figure_semantics(
     matched = payload["normalized_inputs"]["matched_figures"]
     assert matched, "Expected matched figures in TSCKAVIS"
     bad = [
-        item for item in matched
+        item
+        for item in matched
         if item.get("marker_type") not in {"figure_number", None}
         or item.get("style_family") not in {"legend_like", None}
     ]
