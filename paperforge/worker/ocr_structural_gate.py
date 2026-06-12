@@ -152,3 +152,43 @@ def build_document_abstract_span(blocks: list[dict], context: dict) -> dict:
         "stop_reason": stop_reason,
         "confidence": 0.9 if body_ids else 0.2,
     }
+
+
+def build_verified_reference_zone_from_artifacts(blocks: list[dict], artifacts: dict) -> dict:
+    def _obj_get(obj, key, default=None):
+        if obj is None:
+            return default
+        if isinstance(obj, dict):
+            return obj.get(key, default)
+        return getattr(obj, key, default)
+
+    anchor = artifacts.get("reference_family_anchor") or {}
+    region_bus = artifacts.get("region_bus") or {}
+    tail_spread = artifacts.get("tail_spread") or {}
+    numbering = artifacts.get("reference_numbering_family") or {}
+    region_ids = set(_obj_get(region_bus, "reference_zone_ids", set()))
+    accepted_numbering_ids = set(_obj_get(numbering, "accepted_item_ids", set()))
+    end_before = _obj_get(tail_spread, "reference_end_before_block_id")
+    before_tail = set()
+    if end_before:
+        for block in blocks:
+            block_id = block.get("block_id")
+            if block_id == end_before:
+                break
+            before_tail.add(block_id)
+    item_ids = []
+    for item_id in _obj_get(anchor, "item_block_ids", []):
+        if region_ids and item_id not in region_ids:
+            continue
+        if before_tail and item_id not in before_tail:
+            continue
+        if accepted_numbering_ids and item_id not in accepted_numbering_ids:
+            continue
+        item_ids.append(item_id)
+    heading_id = _obj_get(anchor, "heading_block_id")
+    return {
+        "heading_block_id": heading_id,
+        "item_block_ids": item_ids,
+        "status": "ACCEPT" if heading_id and item_ids else "HOLD",
+        "evidence": ["reference zone from anchor, region bus, tail boundary, and numbering continuity"],
+    }

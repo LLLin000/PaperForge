@@ -127,3 +127,68 @@ def test_abstract_span_stops_at_intro_like_heading_without_body_start_id() -> No
 
     assert span["body_block_ids"] == ["a"]
     assert span["stop_reason"] == "intro_like_heading"
+
+
+def test_reference_zone_adapter_excludes_tail_after_boundary() -> None:
+    from paperforge.worker.ocr_structural_gate import build_verified_reference_zone_from_artifacts
+
+    blocks = [
+        {"block_id": "body", "seed_role": "reference_item", "text": "[1] body parameter"},
+        {"block_id": "refs", "seed_role": "reference_heading", "text": "References"},
+        {"block_id": "r1", "seed_role": "reference_item", "text": "[1] Smith J. 2020."},
+        {"block_id": "bio", "seed_role": "section_heading", "text": "Biography"},
+        {"block_id": "bad", "seed_role": "reference_item", "text": "Biography text mislabeled."},
+    ]
+    artifacts = {
+        "reference_family_anchor": {"heading_block_id": "refs", "item_block_ids": ["r1", "bad"]},
+        "region_bus": {"reference_zone_ids": {"refs", "r1"}},
+        "tail_spread": {"reference_end_before_block_id": "bio"},
+        "reference_numbering_family": {"accepted_item_ids": {"r1"}},
+    }
+
+    zone = build_verified_reference_zone_from_artifacts(blocks, artifacts)
+
+    assert zone["status"] == "ACCEPT"
+    assert zone["heading_block_id"] == "refs"
+    assert zone["item_block_ids"] == ["r1"]
+
+
+def test_reference_zone_adapter_keeps_multicolumn_reference_items_inside_region() -> None:
+    from paperforge.worker.ocr_structural_gate import build_verified_reference_zone_from_artifacts
+
+    blocks = [
+        {"block_id": "refs", "seed_role": "reference_heading", "text": "References", "column": 1},
+        {"block_id": "r1", "seed_role": "reference_item", "text": "[1] Left column reference.", "column": 1},
+        {"block_id": "r2", "seed_role": "reference_item", "text": "[2] Right column reference.", "column": 2},
+        {"block_id": "appendix", "seed_role": "section_heading", "text": "Appendix", "column": 1},
+    ]
+    artifacts = {
+        "reference_family_anchor": {"heading_block_id": "refs", "item_block_ids": ["r1", "r2"]},
+        "region_bus": {"reference_zone_ids": {"refs", "r1", "r2"}},
+        "tail_spread": {"reference_end_before_block_id": "appendix"},
+        "reference_numbering_family": {"accepted_item_ids": {"r1", "r2"}},
+    }
+
+    zone = build_verified_reference_zone_from_artifacts(blocks, artifacts)
+
+    assert zone["status"] == "ACCEPT"
+    assert zone["item_block_ids"] == ["r1", "r2"]
+
+
+def test_reference_zone_adapter_accepts_without_tail_end_boundary_when_region_is_present() -> None:
+    from paperforge.worker.ocr_structural_gate import build_verified_reference_zone_from_artifacts
+
+    blocks = [
+        {"block_id": "refs", "seed_role": "reference_heading", "text": "References"},
+        {"block_id": "r1", "seed_role": "reference_item", "text": "[1] Smith J. 2020."},
+    ]
+    artifacts = {
+        "reference_family_anchor": {"heading_block_id": "refs", "item_block_ids": ["r1"]},
+        "region_bus": {"reference_zone_ids": {"refs", "r1"}},
+        "tail_spread": {},
+    }
+
+    zone = build_verified_reference_zone_from_artifacts(blocks, artifacts)
+
+    assert zone["status"] == "ACCEPT"
+    assert zone["item_block_ids"] == ["r1"]
