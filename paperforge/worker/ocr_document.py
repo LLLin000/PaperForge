@@ -3554,4 +3554,22 @@ def normalize_document_structure(blocks: list[dict]) -> tuple[DocumentStructure,
     })
     doc_structure.abstract_span = abstract_span
 
+    # Build verified reference_zone from document-level artifacts
+    from paperforge.worker.ocr_structural_gate import build_verified_reference_zone_from_artifacts
+
+    ref_zone = region_bus.get("reference_zone") if isinstance(region_bus, dict) else getattr(region_bus, "reference_zone", None)
+    ref_zone_ids = set(ref_zone.get("block_ids", []) if isinstance(ref_zone, dict) else [])
+    tail_spread_dict = None
+    if tail_spread is not None:
+        tail_spread_dict = {
+            "reference_end_before_block_id": getattr(tail_spread, "backmatter_start", None),
+        }
+
+    reference_zone = build_verified_reference_zone_from_artifacts(blocks, {
+        "reference_family_anchor": reference_family_anchor,
+        "region_bus": {"reference_zone_ids": ref_zone_ids},
+        "tail_spread": tail_spread_dict or {},
+    })
+    doc_structure.reference_zone = reference_zone
+
     return doc_structure, blocks
