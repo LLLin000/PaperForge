@@ -192,3 +192,45 @@ def test_reference_zone_adapter_accepts_without_tail_end_boundary_when_region_is
 
     assert zone["status"] == "ACCEPT"
     assert zone["item_block_ids"] == ["r1"]
+
+
+def test_reference_zone_accepts_heading_when_region_ids_are_plain_block_ids() -> None:
+    from paperforge.worker.ocr_structural_gate import build_verified_reference_zone_from_artifacts
+
+    blocks = [
+        {"page": 13, "block_id": 10, "text": "References", "seed_role": "reference_heading"},
+        {"page": 13, "block_id": 11, "text": "[1] Ref item", "seed_role": "reference_item"},
+    ]
+    zone = build_verified_reference_zone_from_artifacts(
+        blocks,
+        {
+            "reference_family_anchor": {},
+            "region_bus": {"reference_zone_ids": {10, 11}},
+            "tail_spread": {},
+        },
+    )
+
+    assert zone["status"] == "ACCEPT"
+    assert zone["heading_block_id"] == 10
+    assert zone["item_block_ids"] == [11]
+
+
+def test_reference_zone_accepts_heading_when_region_ids_are_page_prefixed() -> None:
+    from paperforge.worker.ocr_structural_gate import build_verified_reference_zone_from_artifacts
+
+    blocks = [
+        {"page": 13, "block_id": 10, "text": "References", "seed_role": "reference_heading"},
+        {"page": 13, "block_id": 11, "text": "[1] Ref item", "seed_role": "reference_item"},
+    ]
+    zone = build_verified_reference_zone_from_artifacts(
+        blocks,
+        {
+            "reference_family_anchor": {},
+            "region_bus": {"reference_zone_ids": {"p13:10", "p13:11"}},
+            "tail_spread": {},
+        },
+    )
+
+    assert zone["status"] == "ACCEPT"
+    assert zone["heading_block_id"] == 10
+    assert zone["item_block_ids"] == [11]
