@@ -3529,4 +3529,29 @@ def normalize_document_structure(blocks: list[dict]) -> tuple[DocumentStructure,
     if tail_spread is not None and tail_spread.backmatter_start == tail_spread.references_start:
         doc_structure.tail_reading_order = None
 
+    # Build abstract_span from document-level zone artifacts
+    from paperforge.worker.ocr_structural_gate import build_document_abstract_span
+
+    fm_main_zone = region_bus.get("frontmatter_main_zone") if isinstance(region_bus, dict) else getattr(region_bus, "frontmatter_main_zone", None)
+    fm_side_zone = region_bus.get("frontmatter_side_zone") if isinstance(region_bus, dict) else getattr(region_bus, "frontmatter_side_zone", None)
+    fm_main_ids = set(fm_main_zone.get("block_ids", []) if isinstance(fm_main_zone, dict) else [])
+    fm_support_ids = set(fm_side_zone.get("block_ids", []) if isinstance(fm_side_zone, dict) else [])
+
+    # Find body_start_block_id from the first body-zone block
+    body_start_block_id = None
+    for block in blocks:
+        if block.get("zone") == "body_zone" and block.get("role") in {"body_paragraph", "section_heading", "subsection_heading"}:
+            body_start_block_id = block.get("block_id")
+            break
+
+    abstract_span = build_document_abstract_span(blocks, {
+        "body_start_block_id": body_start_block_id,
+        "frontmatter_main_zone_ids": fm_main_ids,
+        "frontmatter_support_zone_ids": fm_support_ids,
+        "publisher_sidebar_zone_ids": set(),
+        "correspondence_zone_ids": set(),
+        "affiliation_zone_ids": set(),
+    })
+    doc_structure.abstract_span = abstract_span
+
     return doc_structure, blocks

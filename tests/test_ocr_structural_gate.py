@@ -66,3 +66,64 @@ def test_gate_preserves_pre_normalized_safe_role_even_if_seed_is_required() -> N
 
     assert decision.role == "frontmatter_noise"
     assert decision.source == "non_structural_normalized_role"
+
+
+def test_document_abstract_span_includes_structured_subheadings_and_excludes_support() -> None:
+    from paperforge.worker.ocr_structural_gate import build_document_abstract_span
+
+    blocks = [
+        {"block_id": "h", "seed_role": "abstract_heading", "text": "Abstract"},
+        {"block_id": "q", "seed_role": "section_heading", "text": "Questions/purposes"},
+        {"block_id": "a1", "seed_role": "abstract_body", "text": "First abstract sentence."},
+        {"block_id": "authors", "seed_role": "authors", "text": "Author One Author Two"},
+        {"block_id": "m", "seed_role": "section_heading", "text": "Methods"},
+        {"block_id": "a2", "seed_role": "body_paragraph", "text": "Second abstract sentence."},
+        {"block_id": "intro", "seed_role": "section_heading", "text": "Introduction"},
+        {"block_id": "bad", "seed_role": "abstract_body", "text": "Mislabeled body."},
+    ]
+    context = {
+        "body_start_block_id": "intro",
+        "frontmatter_main_zone_ids": {"h", "q", "a1", "m", "a2"},
+        "frontmatter_support_zone_ids": {"authors"},
+        "publisher_sidebar_zone_ids": set(),
+        "correspondence_zone_ids": set(),
+        "affiliation_zone_ids": set(),
+    }
+
+    span = build_document_abstract_span(blocks, context)
+
+    assert span["status"] == "ACCEPT"
+    assert span["heading_block_id"] == "h"
+    assert span["body_block_ids"] == ["q", "a1", "m", "a2"]
+    assert span["excluded_support_block_ids"] == ["authors"]
+    assert span["stop_reason"] == "body_start"
+
+
+def test_abstract_span_stops_before_intro_even_when_later_block_has_abstract_seed() -> None:
+    from paperforge.worker.ocr_structural_gate import build_document_abstract_span
+
+    blocks = [
+        {"block_id": "h", "seed_role": "abstract_heading", "text": "Abstract"},
+        {"block_id": "a", "seed_role": "abstract_body", "text": "Actual abstract."},
+        {"block_id": "intro", "seed_role": "section_heading", "text": "Introduction"},
+        {"block_id": "bad", "seed_role": "abstract_body", "text": "Mislabeled body result."},
+    ]
+    span = build_document_abstract_span(blocks, {"body_start_block_id": "intro"})
+
+    assert span["body_block_ids"] == ["a"]
+    assert span["stop_reason"] == "body_start"
+
+
+def test_abstract_span_stops_at_intro_like_heading_without_body_start_id() -> None:
+    from paperforge.worker.ocr_structural_gate import build_document_abstract_span
+
+    blocks = [
+        {"block_id": "h", "seed_role": "abstract_heading", "text": "Abstract"},
+        {"block_id": "a", "seed_role": "abstract_body", "text": "Actual abstract."},
+        {"block_id": "intro", "seed_role": "section_heading", "text": "1. Introduction"},
+        {"block_id": "bad", "seed_role": "abstract_body", "text": "Mislabeled body result."},
+    ]
+    span = build_document_abstract_span(blocks, {})
+
+    assert span["body_block_ids"] == ["a"]
+    assert span["stop_reason"] == "intro_like_heading"

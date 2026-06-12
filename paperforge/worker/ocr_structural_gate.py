@@ -105,3 +105,50 @@ def resolve_verified_role(block: dict, context: RoleGateContext) -> VerifiedRole
         return hold_role(seed_role, f"{proposal} requires structural verifier")
     source = "non_structural_seed" if current_role in {"", "unassigned"} else "non_structural_normalized_role"
     return accept_role(proposal, seed_role, source, ["non-structural role accepted"])
+
+
+def build_document_abstract_span(blocks: list[dict], context: dict) -> dict:
+    support_ids = set(context.get("frontmatter_support_zone_ids", set()))
+    support_ids |= set(context.get("publisher_sidebar_zone_ids", set()))
+    support_ids |= set(context.get("correspondence_zone_ids", set()))
+    support_ids |= set(context.get("affiliation_zone_ids", set()))
+    main_ids = set(context.get("frontmatter_main_zone_ids", set()))
+    body_start_id = context.get("body_start_block_id")
+    heading_index = next(
+        (idx for idx, block in enumerate(blocks) if block.get("seed_role") == "abstract_heading" or str(block.get("text", "")).strip().lower() == "abstract"),
+        None,
+    )
+    if heading_index is None:
+        return {"heading_block_id": None, "body_block_ids": [], "excluded_support_block_ids": [], "status": "MISSING", "stop_reason": "missing_heading", "confidence": 0.0}
+    body_ids: list = []
+    excluded: list = []
+    stop_reason = "document_end"
+    accepted_inside_abstract = {"abstract_body", "body_paragraph", "section_heading", "subsection_heading"}
+    for block in blocks[heading_index + 1 :]:
+        block_id = block.get("block_id")
+        if block_id == body_start_id:
+            stop_reason = "body_start"
+            break
+        text = str(block.get("text", "") or "").strip().lower()
+        intro_text = text.lstrip("0123456789. ")
+        if block.get("seed_role") in {"section_heading", "subsection_heading"} and intro_text.startswith("introduction"):
+            stop_reason = "intro_like_heading"
+            break
+        if text.startswith(("keywords", "key words")):
+            stop_reason = "keywords"
+            break
+        if block_id in support_ids:
+            excluded.append(block_id)
+            continue
+        if main_ids and block_id not in main_ids:
+            continue
+        if block.get("seed_role") in accepted_inside_abstract:
+            body_ids.append(block_id)
+    return {
+        "heading_block_id": blocks[heading_index].get("block_id"),
+        "body_block_ids": body_ids,
+        "excluded_support_block_ids": excluded,
+        "status": "ACCEPT" if body_ids else "HOLD",
+        "stop_reason": stop_reason,
+        "confidence": 0.9 if body_ids else 0.2,
+    }
