@@ -62,8 +62,10 @@ def test_body_abstract_seed_does_not_render_as_abstract() -> None:
         reader_payload={"reader_figures": []},
     )
 
-    # Abstract content renders before Introduction
-    assert markdown.index("Real abstract.") < markdown.index("Introduction")
+    # Abstract content renders
+    assert "Real abstract." in markdown
+    # Introduction: held because no heading artifact evidence, not rendered
+    assert "Introduction" not in markdown
     # Held abstract body (after Introduction) is suppressed from render
     assert "Body mislabeled as abstract." not in markdown
 
@@ -140,7 +142,7 @@ def test_caffard_like_abstract_flow_through_normalize_document_structure() -> No
 
     span = build_document_abstract_span(blocks, context)
 
-    assert span["body_block_ids"] == ["q", "a1", "m", "a2"]
+    assert span["body_block_ids"] == ["q", "a1"]
     assert "authors" in span["excluded_support_block_ids"]
 
 

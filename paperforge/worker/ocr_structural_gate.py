@@ -160,10 +160,12 @@ def resolve_verified_role(block: dict, context: RoleGateContext) -> VerifiedRole
             )
         return hold_role(seed_role, "reference item not in reference_zone")
 
-    # Section/subsection heading verification via accepted_heading_block_ids
+    # Section/subsection heading verification via accepted_heading_block_ids or body zone evidence
     if proposal in {"section_heading", "subsection_heading"} or seed_role in {"section_heading", "subsection_heading"}:
         if block_id in context.accepted_heading_block_ids:
             return accept_role(proposal, seed_role, "accepted_heading", ["heading verified by heading artifact"])
+        if block.get("zone") in {"body_zone", "tail_body_zone"}:
+            return accept_role(proposal, seed_role, "body_zone_heading", ["heading accepted via body zone evidence"])
         return hold_role(seed_role, f"{proposal} lacks heading artifact evidence")
 
     if proposal in VERIFY_REQUIRED or seed_role in VERIFY_REQUIRED:
