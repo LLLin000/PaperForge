@@ -14,19 +14,6 @@ from paperforge.worker.ocr_document import (
 from paperforge.worker.ocr_math import normalize_ocr_math_text
 from paperforge.worker.ocr_roles import FRONTMATTER_NOISE
 
-_BACKMATTER_HEADING_KEYWORDS: frozenset[str] = frozenset({
-    "author contributions",
-    "data availability",
-    "funding",
-    "acknowledg",
-    "conflict of interest",
-    "competing interests",
-    "supplementary material",
-    "ethics statement",
-    "publisher",
-    "biographies",
-})
-
 
 def _is_bogus_heading(text: str) -> bool:
     t = text.strip()
@@ -699,7 +686,7 @@ def _emit_page_objects(
             lines.append("")
     if not has_reader:
         for cluster_id in unresolved_clusters_by_page.get(page, []):
-            if not cluster_id:
+            if str(cluster_id).startswith("unresolved_cluster_"):
                 continue
             lines.append(f"![[render/figures/{cluster_id}.md]]")
             lines.append("")
@@ -731,8 +718,7 @@ def render_fulltext_markdown(
     emitted_figure_captions: set[str] = set()
 
     reader_figures = (reader_payload or {}).get("reader_figures", [])
-    consumed_caption_keys: set[tuple[int | None, int | str]] = set()
-    consumed_caption_ids_unkeyed: set[int | str] = set()
+    consumed_caption_keys: set[tuple] = set()
     for item in (reader_payload or {}).get("consumed_caption_block_ids", []):
         if isinstance(item, dict):
             page = item.get("page")
@@ -742,8 +728,6 @@ def render_fulltext_markdown(
             page = None
         if block_id is not None:
             consumed_caption_keys.add((page, block_id))
-            if page is None:
-                consumed_caption_ids_unkeyed.add(block_id)
     rendered_reader_figure_ids: set[str] = set()
 
     _block_page_map: dict[int, int] = {}
@@ -1032,7 +1016,7 @@ def render_fulltext_markdown(
 
         block_id = block.get("block_id")
         block_page = block.get("page")
-        if block_id is not None and ((block_page, block_id) in consumed_caption_keys or block_id in consumed_caption_ids_unkeyed):
+        if block_id is not None and (block_page, block_id) in consumed_caption_keys:
             continue
 
         raw_text = block.get("text", "")
@@ -1085,14 +1069,25 @@ def render_fulltext_markdown(
         if role == "backmatter_boundary_heading" or role == "backmatter_heading" or role == "reference_heading":
             last_structured_insert_page = None
             last_structured_insert_bbox = None
-            _heading_lower = text.strip().lower()
-            if role != "reference_heading" and any(kw in _heading_lower for kw in _BACKMATTER_HEADING_KEYWORDS):
-                continue
             lines.append(f"## {text}")
             lines.append("")
         elif role in ("subsection_heading", "sub_subsection_heading", "section_heading"):
             last_structured_insert_page = None
             last_structured_insert_bbox = None
+            _BACKMATTER_HEADING_KEYWORDS = frozenset(
+                {
+                    "author contributions",
+                    "data availability",
+                    "funding",
+                    "acknowledg",
+                    "conflict of interest",
+                    "competing interests",
+                    "supplementary material",
+                    "ethics statement",
+                    "publisher",
+                    "biographies",
+                }
+            )
             _heading_lower = text.strip().lower()
             if any(kw in _heading_lower for kw in _BACKMATTER_HEADING_KEYWORDS):
                 continue

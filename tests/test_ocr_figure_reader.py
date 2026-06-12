@@ -19,7 +19,10 @@ def test_normalize_strict_inventory_maps_bucket_variants_to_common_fields() -> N
                 "figure_number": 3,
                 "legend_block_id": 9,
                 "text": "FIGURE 3 | Histological evaluation...",
-                "candidates": [{"asset_block_id": 10, "match_score": 0.51}, {"asset_block_id": 11, "match_score": 0.49}],
+                "candidates": [
+                    {"asset_block_id": 10, "match_score": 0.51},
+                    {"asset_block_id": 11, "match_score": 0.49},
+                ],
             }
         ],
         "unmatched_legends": [
@@ -38,7 +41,12 @@ def test_normalize_strict_inventory_maps_bucket_variants_to_common_fields() -> N
     }
 
     structured_blocks = [
-        {"block_id": 21, "marker_signature": {"type": "figure_number"}, "zone": "display_zone", "style_family": "legend_like"}
+        {
+            "block_id": 21,
+            "marker_signature": {"type": "figure_number"},
+            "zone": "display_zone",
+            "style_family": "legend_like",
+        }
     ]
 
     normalized = _normalize_strict_figure_inventory(strict_inventory, structured_blocks)
@@ -232,9 +240,7 @@ def test_reader_sequence_match_promoted_figure_gets_proper_status() -> None:
 
     assert len(result["reader_figures"]) == 1
     rf = result["reader_figures"][0]
-    assert rf["reader_status"] == "SEQUENCE_MATCH", (
-        f"Expected SEQUENCE_MATCH, got {rf['reader_status']}"
-    )
+    assert rf["reader_status"] == "SEQUENCE_MATCH", f"Expected SEQUENCE_MATCH, got {rf['reader_status']}"
     assert rf["strict_status"] == "sequence_match"
     assert rf["strict_source"] == "matched_figures"
 
@@ -282,7 +288,15 @@ def test_reader_figures_emit_from_matched_or_unresolved_object_inputs() -> None:
 
     payload = synthesize_reader_figures(
         {
-            "matched_figures": [{"figure_id": "figure_001", "page": 2, "legend_block_id": 21, "asset_block_ids": [90], "strict_status": "matched"}],
+            "matched_figures": [
+                {
+                    "figure_id": "figure_001",
+                    "page": 2,
+                    "legend_block_id": 21,
+                    "asset_block_ids": [90],
+                    "strict_status": "matched",
+                }
+            ],
             "held_figures": [],
             "ambiguous_figures": [],
             "unmatched_legends": [],

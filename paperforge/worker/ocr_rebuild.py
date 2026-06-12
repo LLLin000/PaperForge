@@ -86,6 +86,7 @@ def run_derived_rebuild_for_keys(vault: Path, keys: list[str]) -> dict:
         if source_pdf_path and source_pdf_path.exists():
             from paperforge.worker.ocr_blocks import write_raw_blocks_jsonl
             from paperforge.worker.ocr_pdf_spans import backfill_span_metadata_from_pdf
+
             backfill_span_metadata_from_pdf(all_raw_blocks, source_pdf_path)
             write_raw_blocks_jsonl(artifacts.blocks_raw, all_raw_blocks)
 
@@ -106,6 +107,7 @@ def run_derived_rebuild_for_keys(vault: Path, keys: list[str]) -> dict:
         write_structured_blocks_jsonl(artifacts.blocks_structured, structured)
         # Write role-level span profiles
         from paperforge.worker.ocr_profiles import write_role_span_profiles
+
         write_role_span_profiles(structured, artifacts.blocks_structured.parent)
 
         # Rebuild resolved metadata
@@ -119,8 +121,10 @@ def run_derived_rebuild_for_keys(vault: Path, keys: list[str]) -> dict:
         metadata_dir.mkdir(parents=True, exist_ok=True)
         frontmatter_candidates = extract_frontmatter_candidates(artifacts.blocks_structured)
         resolved = resolve_metadata(
-            source_meta, frontmatter_candidates,
-            page_blocks=all_raw_blocks, structured_blocks=structured,
+            source_meta,
+            frontmatter_candidates,
+            page_blocks=all_raw_blocks,
+            structured_blocks=structured,
         )
         write_resolved_metadata(metadata_dir / "resolved_metadata.json", resolved)
 

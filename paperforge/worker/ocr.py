@@ -88,8 +88,15 @@ from paperforge.worker.sync import (
 logger = logging.getLogger(__name__)
 
 OCR_QUEUE_STATUSES = {
-    "pending", "queued", "running", "done", "done_degraded",
-    "retryable_error", "fatal_error", "nopdf", "blocked",
+    "pending",
+    "queued",
+    "running",
+    "done",
+    "done_degraded",
+    "retryable_error",
+    "fatal_error",
+    "nopdf",
+    "blocked",
 }
 OCR_SETTLED_STATUSES = {"done", "done_degraded", "fatal_error", "blocked"}
 
@@ -717,7 +724,9 @@ def build_reference_section_lines(reference_blocks: list[dict], reference_contin
     return lines
 
 
-def append_reference_section(rendered: list[str], reference_blocks: list[dict], reference_continuations: list[dict]) -> None:
+def append_reference_section(
+    rendered: list[str], reference_blocks: list[dict], reference_continuations: list[dict]
+) -> None:
     rendered.extend(build_reference_section_lines(reference_blocks, reference_continuations))
 
 
@@ -1776,7 +1785,9 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
 
     # raw_meta.json
     source_pdf_path = Path(meta.get("source_pdf", "")) if meta.get("source_pdf") else None
-    pdf_fingerprint = compute_pdf_fingerprint(source_pdf_path) if source_pdf_path and source_pdf_path.exists() else "unknown"
+    pdf_fingerprint = (
+        compute_pdf_fingerprint(source_pdf_path) if source_pdf_path and source_pdf_path.exists() else "unknown"
+    )
     result_hash = compute_json_hash(all_results)
     now_iso = datetime.now(timezone.utc).isoformat()
     raw_meta = {
@@ -1814,6 +1825,7 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
     source_pdf_path = Path(meta.get("source_pdf", "")) if meta.get("source_pdf") else None
     if source_pdf_path and source_pdf_path.exists():
         from paperforge.worker.ocr_pdf_spans import backfill_span_metadata_from_pdf
+
         backfill_span_metadata_from_pdf(all_raw_blocks, source_pdf_path)
         write_raw_blocks_jsonl(artifacts.blocks_raw, all_raw_blocks)
 
@@ -1825,6 +1837,7 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
     write_structured_blocks_jsonl(artifacts.blocks_structured, structured)
     # Write role-level span profiles
     from paperforge.worker.ocr_profiles import write_role_span_profiles
+
     write_role_span_profiles(structured, artifacts.blocks_structured.parent)
 
     # --- Phase 2: metadata resolution ---
@@ -2092,7 +2105,9 @@ def ocr_redo_papers(vault: Path, dry_run: bool = False, verbose: bool = False, n
     return exit_code
 
 
-def run_ocr(vault: Path, verbose: bool = False, no_progress: bool = False, selected_keys: set[str] | None = None) -> int:
+def run_ocr(
+    vault: Path, verbose: bool = False, no_progress: bool = False, selected_keys: set[str] | None = None
+) -> int:
     from paperforge.pdf_resolver import resolve_pdf_path
 
     paths = pipeline_paths(vault)
@@ -2184,9 +2199,14 @@ def run_ocr(vault: Path, verbose: bool = False, no_progress: bool = False, selec
             meta["retry_count"] = 0
             write_json(paths["ocr"] / key / "meta.json", meta)
     ocr_queue = sync_ocr_queue(paths, target_rows)
-    print(f"DEBUG: target_keys count={len(target_keys)}, target_rows count={len(target_rows)}, queue count={len(ocr_queue)}", flush=True)
+    print(
+        f"DEBUG: target_keys count={len(target_keys)}, target_rows count={len(target_rows)}, queue count={len(ocr_queue)}",
+        flush=True,
+    )
     if ocr_queue:
-        print(f"DEBUG: first item={ocr_queue[0].get('zotero_key')} status={ocr_queue[0].get('queue_status')}", flush=True)
+        print(
+            f"DEBUG: first item={ocr_queue[0].get('zotero_key')} status={ocr_queue[0].get('queue_status')}", flush=True
+        )
     max_items_raw = os.environ.get("PADDLEOCR_MAX_ITEMS", "").strip()
     max_items = 3
     if max_items_raw:
@@ -2555,7 +2575,11 @@ def run_ocr(vault: Path, verbose: bool = False, no_progress: bool = False, selec
         ocr_queue = [row for row in ocr_queue if str(row.get("queue_status", "")).lower() != "done"]
     write_ocr_queue(paths, ocr_queue)
     # Determine exit code: 0 = all settled, 1 = some items still pending
-    final_remaining = [r for r in ocr_queue if r.get("queue_status", "") not in ("done", "done_degraded", "fatal_error", "nopdf", "blocked", "error")]
+    final_remaining = [
+        r
+        for r in ocr_queue
+        if r.get("queue_status", "") not in ("done", "done_degraded", "fatal_error", "nopdf", "blocked", "error")
+    ]
     pending_keys = [r["zotero_key"] for r in final_remaining]
     final_statuses = {r["zotero_key"]: r.get("queue_status", "?") for r in ocr_queue}
     done_count = sum(1 for s in final_statuses.values() if s == "done")

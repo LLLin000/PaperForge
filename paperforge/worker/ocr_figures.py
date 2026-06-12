@@ -41,10 +41,26 @@ _BODY_MENTION_PATTERN = re.compile(
 )
 
 _INLINE_FIGURE_MENTION_VERBS = (
-    "shows", "show", "shown", "illustrates", "illustrate",
-    "depicts", "demonstrates", "demonstrate", "presents", "present",
-    "indicates", "indicate", "reveals", "reveal", "suggests", "suggest",
-    "summarizes", "summarize", "compares", "compare",
+    "shows",
+    "show",
+    "shown",
+    "illustrates",
+    "illustrate",
+    "depicts",
+    "demonstrates",
+    "demonstrate",
+    "presents",
+    "present",
+    "indicates",
+    "indicate",
+    "reveals",
+    "reveal",
+    "suggests",
+    "suggest",
+    "summarizes",
+    "summarize",
+    "compares",
+    "compare",
 )
 
 
@@ -117,7 +133,7 @@ def _looks_like_figure_narrative_prose(text: str) -> bool:
     prose_markers = ["we ", "our ", "this study ", "here we ", "in this "]
     if any(m in text.lower() for m in prose_markers):
         return True
-    if re.search(r'\$?\^\{[^}]+\}\$?', text):
+    if re.search(r"\$?\^\{[^}]+\}\$?", text):
         return True
     return False
 
@@ -157,8 +173,7 @@ def _is_validation_first_legend_candidate(block: dict) -> bool:
 
     return (
         role not in {"figure_caption", "figure_caption_candidate"}
-        and
-        marker_type == "figure_number"
+        and marker_type == "figure_number"
         and zone in {"body_zone", "display_zone"}
         and style_family == "legend_like"
     )
@@ -455,7 +470,9 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
                 continue
             if not _is_formal_legend(block.get("text", ""), block, page_width):
                 block["caption_score"] = score_figure_caption(
-                    block, nearby_media=False, caption_style_match=False,
+                    block,
+                    nearby_media=False,
+                    caption_style_match=False,
                     body_prose_likelihood=_looks_like_inline_figure_mention(block.get("text", "")),
                 )
                 rejected_legends.append(block)
@@ -527,20 +544,17 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
         for ai, asset in enumerate(assets):
             if ai in used_asset_indices or asset.get("page", 0) != legend_page:
                 continue
-            family_supported = (
-                is_validation_first_candidate and str(legend.get("style_family") or "") == "legend_like"
-            )
-            zone_supported = (
-                is_validation_first_candidate and str(legend.get("zone") or "") in {"body_zone", "display_zone"}
-            )
+            family_supported = is_validation_first_candidate and str(legend.get("style_family") or "") == "legend_like"
+            zone_supported = is_validation_first_candidate and str(legend.get("zone") or "") in {
+                "body_zone",
+                "display_zone",
+            }
             caption_text_supported = _has_strong_explicit_caption_text(legend)
             match_score = score_figure_match(
                 legend,
                 asset,
                 caption_score=caption_score,
-                anchor_supported=(
-                    _has_anchor_supported_legend_context(legend)
-                ),
+                anchor_supported=(_has_anchor_supported_legend_context(legend)),
                 caption_text_supported=caption_text_supported,
                 family_supported=family_supported,
                 zone_supported=zone_supported,
@@ -560,7 +574,7 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
                 matched_assets = []
             elif len(close) > 1:
                 # Secondary verification: pick the one in the correct column
-                legend_bb = legend.get("bbox") or legend.get("block_bbox") or [0,0,0,0]
+                legend_bb = legend.get("bbox") or legend.get("block_bbox") or [0, 0, 0, 0]
                 lcx = (legend_bb[0] + legend_bb[2]) / 2 if len(legend_bb) >= 4 else 0
                 best = close[0]
                 best_col_match = False
@@ -568,7 +582,7 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
                     lcx - ((best[1].get("bbox", [0, 0, 0, 0])[0] + best[1].get("bbox", [0, 0, 0, 0])[2]) / 2)
                 )
                 for ci, ca, cs in close:
-                    ab = ca.get("bbox") or ca.get("block_bbox") or [0,0,0,0]
+                    ab = ca.get("bbox") or ca.get("block_bbox") or [0, 0, 0, 0]
                     acx = (ab[0] + ab[2]) / 2 if len(ab) >= 4 else 0
                     delta = abs(lcx - acx)
                     ca_col_ok = delta + 20 < best_delta
@@ -582,15 +596,16 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
                     used_asset_indices.add(best_idx)
                     region_match = {"media_blocks": [best_asset], "match_score": best_score}
                 else:
-                    ambiguous_figures.append({
-                        "legend_block_id": legend.get("block_id", ""),
-                        "page": legend_page,
-                        "caption_score": caption_score,
-                        "candidates": [
-                            {"asset_block_id": a.get("block_id", ""), "match_score": s}
-                            for _, a, s in close
-                        ],
-                    })
+                    ambiguous_figures.append(
+                        {
+                            "legend_block_id": legend.get("block_id", ""),
+                            "page": legend_page,
+                            "caption_score": caption_score,
+                            "candidates": [
+                                {"asset_block_id": a.get("block_id", ""), "match_score": s} for _, a, s in close
+                            ],
+                        }
+                    )
                     ambiguous = True
                     matched_assets = []
             else:
@@ -600,14 +615,16 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
                     used_asset_indices.add(best_idx)
                     region_match = {"media_blocks": [best_asset], "match_score": best_score}
                 else:
-                    ambiguous_figures.append({
-                        "legend_block_id": legend.get("block_id", ""),
-                        "page": legend_page,
-                        "caption_score": caption_score,
-                        "candidates": [
-                            {"asset_block_id": best_asset.get("block_id", ""), "match_score": best_score}
-                        ],
-                    })
+                    ambiguous_figures.append(
+                        {
+                            "legend_block_id": legend.get("block_id", ""),
+                            "page": legend_page,
+                            "caption_score": caption_score,
+                            "candidates": [
+                                {"asset_block_id": best_asset.get("block_id", ""), "match_score": best_score}
+                            ],
+                        }
+                    )
                     ambiguous = True
 
         is_legend_only = len(matched_assets) == 0
@@ -635,18 +652,20 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
             continue
 
         if is_weak_truncated:
-            ambiguous_figures.append({
-                "legend_block_id": legend.get("block_id", ""),
-                "page": legend_page,
-                "text": legend_text,
-                "figure_number": fig_num,
-                "caption_score": caption_score,
-                "candidates": [],
-                "hold_reason": "ambiguous_truncated_legend",
-                "zone": legend.get("zone"),
-                "style_family": legend.get("style_family"),
-                "marker_signature": legend.get("marker_signature") or {},
-            })
+            ambiguous_figures.append(
+                {
+                    "legend_block_id": legend.get("block_id", ""),
+                    "page": legend_page,
+                    "text": legend_text,
+                    "figure_number": fig_num,
+                    "caption_score": caption_score,
+                    "candidates": [],
+                    "hold_reason": "ambiguous_truncated_legend",
+                    "zone": legend.get("zone"),
+                    "style_family": legend.get("style_family"),
+                    "marker_signature": legend.get("marker_signature") or {},
+                }
+            )
             unmatched_legends.append(legend)
             continue
 
@@ -658,9 +677,7 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
                 "figure_number": fig_num,
                 "caption_score": caption_score,
                 "candidates": [],
-                "hold_reason": (
-                    "ambiguous_truncated_legend" if is_weak_truncated else "no_asset_match"
-                ),
+                "hold_reason": ("ambiguous_truncated_legend" if is_weak_truncated else "no_asset_match"),
                 "zone": legend.get("zone"),
                 "style_family": legend.get("style_family"),
                 "marker_signature": legend.get("marker_signature") or {},
@@ -671,11 +688,15 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
             continue
 
         fig_id = f"figure_{fig_num:03d}" if fig_num else f"figure_unknown_{len(matched_figures):03d}"
-        match_score = region_match["match_score"] if region_match is not None else {
-            "score": 0.0,
-            "decision": "rejected",
-            "evidence": ["missing_region_match"],
-        }
+        match_score = (
+            region_match["match_score"]
+            if region_match is not None
+            else {
+                "score": 0.0,
+                "decision": "rejected",
+                "evidence": ["missing_region_match"],
+            }
+        )
         entry = {
             "figure_id": fig_id,
             "legend_block_id": legend.get("block_id", ""),
@@ -715,12 +736,14 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
                 continue
             cluster_id = f"unresolved_cluster_{len(unresolved_clusters) + 1:03d}"
             cluster_ids = [b.get("block_id", "") for b in cluster]
-            unresolved_clusters.append({
-                "cluster_id": cluster_id,
-                "media_block_ids": cluster_ids,
-                "cluster_bbox": _cluster_bbox([b.get("bbox", [0, 0, 0, 0]) for b in cluster]),
-                "page": cluster_page,
-            })
+            unresolved_clusters.append(
+                {
+                    "cluster_id": cluster_id,
+                    "media_block_ids": cluster_ids,
+                    "cluster_bbox": _cluster_bbox([b.get("bbox", [0, 0, 0, 0]) for b in cluster]),
+                    "page": cluster_page,
+                }
+            )
         if unresolved_clusters:
             consumed = {bid for uc in unresolved_clusters for bid in uc["media_block_ids"]}
             unmatched_assets = [a for a in unmatched_assets if a.get("block_id", "") not in consumed]
@@ -741,7 +764,8 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
     inventory = _promote_sequence_matches(inventory, structured_blocks)
 
     inventory["figure_legend_completeness"] = compute_figure_legend_completeness(
-        structured_blocks, inventory,
+        structured_blocks,
+        inventory,
     )
 
     return inventory
@@ -855,12 +879,14 @@ def compute_figure_legend_completeness(
         else:
             gap_count += 1
 
-        details.append({
-            "block_id": bid,
-            "figure_number": fig_num,
-            "status": status,
-            "page": block.get("page"),
-        })
+        details.append(
+            {
+                "block_id": bid,
+                "figure_number": fig_num,
+                "status": status,
+                "page": block.get("page"),
+            }
+        )
 
     return {
         "total": total,

@@ -7,7 +7,6 @@ from pathlib import Path
 
 import pytest
 
-
 REAL_VAULT_ENV = "PAPERFORGE_REAL_OCR_VAULT"
 REAL_KEYS_ENV = "PAPERFORGE_REAL_OCR_KEYS"
 
@@ -55,13 +54,28 @@ def _read_json(path: Path) -> dict:
 
 
 _BODY_ROLES = {"body_paragraph", "abstract_body"}
-_HEADING_ROLES = {"section_heading", "subsection_heading", "sub_subsection_heading", "reference_heading", "backmatter_heading"}
+_HEADING_ROLES = {
+    "section_heading",
+    "subsection_heading",
+    "sub_subsection_heading",
+    "reference_heading",
+    "backmatter_heading",
+}
 _FORBIDDEN_BODY_PHRASES = [
-    "published online", "conflict of interest", "publisher's note", "ethics statement",
-    "reviewed by:", "edited by:", "specialty section:", "citation:",
+    "published online",
+    "conflict of interest",
+    "publisher's note",
+    "ethics statement",
+    "reviewed by:",
+    "edited by:",
+    "specialty section:",
+    "citation:",
 ]
 _FORBIDDEN_HEADING_PHRASES = [
-    "published online", "review article", "steve stegen", "geert carmeliet",
+    "published online",
+    "review article",
+    "steve stegen",
+    "geert carmeliet",
 ]
 
 
@@ -83,6 +97,7 @@ def _is_figure_caption_in_body(block: dict) -> bool:
 @pytest.fixture(scope="module")
 def rebuilt() -> dict:
     from paperforge.worker.ocr_rebuild import run_derived_rebuild_for_keys
+
     result = run_derived_rebuild_for_keys(_vault(), _keys())
     assert result.get("rebuild_count", 0) >= 1
     return result
@@ -174,7 +189,9 @@ _PAPER_CONTRACTS = {
 def test_body_paragraph_count(rebuilt: dict, key: str) -> None:
     blocks = _read_jsonl(_structured_path(key))
     body_count = sum(1 for b in blocks if b.get("role") in _BODY_ROLES)
-    assert body_count >= _PAPER_CONTRACTS[key]["min_body"], f"{key}: only {body_count} body paragraphs, expected >= {_PAPER_CONTRACTS[key]['min_body']}"
+    assert body_count >= _PAPER_CONTRACTS[key]["min_body"], (
+        f"{key}: only {body_count} body paragraphs, expected >= {_PAPER_CONTRACTS[key]['min_body']}"
+    )
 
 
 @pytest.mark.parametrize("key", sorted(_PAPER_CONTRACTS))
@@ -196,7 +213,12 @@ def test_fulltext_no_figure_caption_pollution(rebuilt: dict, key: str) -> None:
     body_lines = []
     for line in lines:
         stripped = line.strip()
-        if stripped.startswith("![[") or stripped.startswith(">") or stripped.startswith("#") or stripped.startswith("<!--"):
+        if (
+            stripped.startswith("![[")
+            or stripped.startswith(">")
+            or stripped.startswith("#")
+            or stripped.startswith("<!--")
+        ):
             continue
         body_lines.append(stripped)
     polluted = [line for line in body_lines if LEGEND_PREFIX.match(line)]
@@ -258,4 +280,4 @@ def test_reader_figure_cards_in_fulltext(rebuilt: dict, key: str) -> None:
         f"{key}: only {card_count} reader figure cards for {figure_count} reader figures. "
         f"Expected at least {figure_count * 0.5:.0f} cards in fulltext."
     )
-    assert embed_count > 0, (f"{key}: no figure embeds in fulltext despite {figure_count} reader figures")
+    assert embed_count > 0, f"{key}: no figure embeds in fulltext despite {figure_count} reader figures"
