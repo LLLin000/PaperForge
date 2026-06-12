@@ -3836,3 +3836,24 @@ def test_low_layout_confidence_never_audit_error_on_insert_overlap() -> None:
     result = _run_layout_audit(blocks, body_spine=body_spine, page_layouts=page_layouts)
     assert result["error_count"] == 0, f"Expected 0 errors, got {result['error_count']}"
     assert result["status"] != "fail", f"Expected no fail, got {result['status']}"
+
+
+def test_gate_context_adapters_do_not_accept_from_seed_roles_only() -> None:
+    from paperforge.worker.ocr_document import (
+        _build_accepted_caption_block_ids,
+        _build_accepted_heading_block_ids,
+        _build_accepted_table_block_ids,
+        _build_source_frontmatter_anchor_ids,
+    )
+
+    blocks = [
+        {"block_id": "t", "seed_role": "paper_title", "role": "paper_title"},
+        {"block_id": "h", "seed_role": "section_heading", "role": "section_heading"},
+        {"block_id": "c", "seed_role": "figure_caption", "role": "figure_caption"},
+        {"block_id": "tbl", "seed_role": "table_html", "role": "table_html"},
+    ]
+
+    assert _build_source_frontmatter_anchor_ids(None, blocks) == {"title": set(), "authors": set()}
+    assert _build_accepted_heading_block_ids(blocks, None) == set()
+    assert _build_accepted_caption_block_ids({}, {"reader_figures": []}, blocks) == set()
+    assert _build_accepted_table_block_ids({}, blocks) == set()

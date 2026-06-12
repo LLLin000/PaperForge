@@ -95,6 +95,9 @@ class DocumentStructure:
     span_coverage: dict | None = None
     layout_audit: dict | None = None
     tail_boundary_score: dict = field(default_factory=dict)
+    abstract_span: dict | None = None
+    reference_zone: dict | None = None
+    role_gate_summary: dict | None = None
 
 
 @dataclass
@@ -3320,6 +3323,48 @@ def _run_layout_audit(
         "anomaly_pages": sorted({a["page"] for a in anomalies if a["severity"] == "error"}),
         "anomalies": anomalies,
     }
+
+
+def _doc_get(obj, key, default=None):
+    if obj is None:
+        return default
+    if isinstance(obj, dict):
+        return obj.get(key, default)
+    return getattr(obj, key, default)
+
+
+def _build_source_frontmatter_anchor_ids(doc_structure, blocks: list[dict]) -> dict[str, set]:
+    anchors = _doc_get(doc_structure, "source_frontmatter_anchor_ids", {}) or {}
+    return {
+        "title": set(_doc_get(anchors, "title", set()) or set()),
+        "authors": set(_doc_get(anchors, "authors", set()) or set()),
+    }
+
+
+def _build_accepted_heading_block_ids(blocks: list[dict], doc_structure) -> set:
+    heading_artifact = _doc_get(doc_structure, "accepted_heading_block_ids", set()) or set()
+    return set(heading_artifact)
+
+
+def _build_accepted_caption_block_ids(figure_inventory: dict | None, reader_payload: dict | None, blocks: list[dict]) -> set:
+    accepted = set()
+    for figure in (reader_payload or {}).get("reader_figures", []):
+        for item in figure.get("consumed_caption_block_ids", []):
+            if isinstance(item, dict):
+                accepted.add(item.get("block_id"))
+            else:
+                accepted.add(item)
+    accepted.discard(None)
+    return accepted
+
+
+def _build_accepted_table_block_ids(table_inventory: dict | None, blocks: list[dict]) -> set:
+    accepted = set()
+    for table in (table_inventory or {}).get("matched_tables", []):
+        for key in ("block_id", "table_block_id", "html_block_id"):
+            if table.get(key) is not None:
+                accepted.add(table[key])
+    return accepted
 
 
 def normalize_document_structure(blocks: list[dict]) -> tuple[DocumentStructure, list[dict]]:
