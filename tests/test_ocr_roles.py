@@ -1,6 +1,16 @@
 from __future__ import annotations
 
 
+def test_assign_block_role_abstract_heading_seed_is_explicit() -> None:
+    from paperforge.worker.ocr_roles import assign_block_role
+
+    block = {"block_label": "paragraph_title", "block_content": "Abstract", "block_bbox": [90, 100, 220, 130]}
+
+    role = assign_block_role(block, page_blocks=[block], page_width=1200, page_height=1600)
+
+    assert role.role == "abstract_heading"
+
+
 def test_structured_block_has_render_default_for_body() -> None:
     from paperforge.worker.ocr_blocks import build_structured_blocks
 

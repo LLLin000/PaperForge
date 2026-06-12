@@ -25,6 +25,37 @@ def test_build_structured_blocks_preserves_noise_and_confidence() -> None:
     assert "evidence" in rows[0]
 
 
+def test_build_structured_blocks_preserves_seed_without_final_role(tmp_path=None) -> None:
+    import tempfile
+    from pathlib import Path
+    from paperforge.worker.ocr_blocks import build_structured_blocks
+
+    out_dir = tmp_path or Path(tempfile.mkdtemp())
+    raw_blocks = [
+        {
+            "paper_id": "P",
+            "page": 1,
+            "block_id": "b1",
+            "raw_label": "abstract",
+            "raw_order": 1,
+            "bbox": [90, 100, 900, 150],
+            "text": "This label is only a seed.",
+            "page_width": 1200,
+            "page_height": 1600,
+        }
+    ]
+
+    rows, _doc = build_structured_blocks(raw_blocks, structure_output_dir=out_dir)
+
+    # seed_role is preserved even though normalize_document_structure resolves role
+    assert rows[0]["seed_role"]
+    assert rows[0]["seed_role"] in {"abstract_body", "abstract_heading"}
+    assert "seed_confidence" in rows[0]
+    assert "seed_evidence" in rows[0]
+    # role is resolved (not "unassigned") because build_structured_blocks calls normalize
+    assert rows[0]["role"] != "unassigned"
+
+
 def test_build_raw_blocks_preserves_every_block() -> None:
     from paperforge.worker.ocr_blocks import build_raw_blocks_for_page
 
