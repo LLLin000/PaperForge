@@ -219,10 +219,11 @@ def test_normalize_document_structure_keeps_reference_family_anchor_anchor_first
     from paperforge.worker.ocr_document import normalize_document_structure
 
     blocks = [
-        {"page": 1, "role": "body_paragraph", "text": "Intro text"},
-        {"page": 2, "role": "body_paragraph", "text": "Methods text"},
+        {"page": 1, "block_id": "p1", "role": "body_paragraph", "text": "Intro text"},
+        {"page": 2, "block_id": "p2", "role": "body_paragraph", "text": "Methods text"},
         {
             "page": 5,
+            "block_id": "p5_h",
             "role": "reference_heading",
             "text": "References",
             "marker_signature": {"type": "canonical_section_name"},
@@ -231,6 +232,7 @@ def test_normalize_document_structure_keeps_reference_family_anchor_anchor_first
         },
         {
             "page": 5,
+            "block_id": "p5_r1",
             "role": "body_paragraph",
             "text": "[1] Example reference",
             "marker_signature": {"type": "reference_numeric_bracket", "number": 1},
@@ -239,6 +241,7 @@ def test_normalize_document_structure_keeps_reference_family_anchor_anchor_first
         },
         {
             "page": 5,
+            "block_id": "p5_r2",
             "role": "body_paragraph",
             "text": "[2] Another reference",
             "marker_signature": {"type": "reference_numeric_bracket", "number": 2},
@@ -251,9 +254,11 @@ def test_normalize_document_structure_keeps_reference_family_anchor_anchor_first
 
     assert doc.reference_family_anchor is not None
     assert doc.reference_family_anchor["status"] == "ACCEPT"
-    # Non-body family override: reference_like + reference_family_anchor → reference_item
-    assert normalized_blocks[3]["role"] == "reference_item"
-    assert normalized_blocks[4]["role"] == "reference_item"
+    # Family anchor + markers → reference_item (verified by reference zone)
+    idx_item1 = next(i for i, b in enumerate(normalized_blocks) if b.get("block_id") == "p5_r1")
+    idx_item2 = next(i for i, b in enumerate(normalized_blocks) if b.get("block_id") == "p5_r2")
+    assert normalized_blocks[idx_item1]["role"] == "reference_item"
+    assert normalized_blocks[idx_item2]["role"] == "reference_item"
 
 
 def test_normalize_document_structure_wires_style_family_artifacts_into_blocks() -> None:
