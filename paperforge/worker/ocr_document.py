@@ -3341,6 +3341,16 @@ def _build_source_frontmatter_anchor_ids(doc_structure, blocks: list[dict]) -> d
     }
 
 
+def _collect_unverified_required_roles(blocks: list[dict]) -> list[dict]:
+    from paperforge.worker.ocr_structural_gate import VERIFY_REQUIRED
+
+    return [
+        block
+        for block in blocks
+        if block.get("role") in VERIFY_REQUIRED and block.get("role_verification_status") != "ACCEPT"
+    ]
+
+
 def _build_accepted_heading_block_ids(blocks: list[dict], doc_structure) -> set:
     heading_artifact = _doc_get(doc_structure, "accepted_heading_block_ids", set()) or set()
     return set(heading_artifact)

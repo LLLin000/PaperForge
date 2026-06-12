@@ -3910,3 +3910,38 @@ def test_rejected_required_seed_can_fallback_to_safe_body_role_without_content_l
     assert repaired["role"] == "body_paragraph"
     assert repaired["role_source"] == "non_structural_normalized_role"
     assert repaired["render_default"] is True
+
+
+def test_collect_unverified_required_roles_reports_offenders_without_raising() -> None:
+    from paperforge.worker.ocr_document import _collect_unverified_required_roles, normalize_document_structure
+    from paperforge.worker.ocr_structural_gate import VERIFY_REQUIRED
+
+    blocks = [
+        {"block_id": "h", "role": "unassigned", "seed_role": "abstract_heading", "text": "Abstract"},
+        {"block_id": "a1", "role": "unassigned", "seed_role": "abstract_body", "text": "Real abstract."},
+        {"block_id": "bad", "role": "unassigned", "seed_role": "reference_item", "text": "[1] Tail-like text outside reference zone."},
+    ]
+    _doc, normalized = normalize_document_structure(blocks)
+    offenders = _collect_unverified_required_roles(normalized)
+    block_ids = {b.get("block_id") for b in offenders}
+    assert block_ids == set(), f"Expected no unverified required roles, got {block_ids}"
+    assert len(offenders) == 0
+
+
+def test_no_high_risk_role_assignment_after_gate_collector() -> None:
+    from paperforge.worker.ocr_document import _collect_unverified_required_roles, normalize_document_structure
+    from paperforge.worker.ocr_structural_gate import VERIFY_REQUIRED
+
+    blocks = [
+        {"block_id": "1", "role": "unassigned", "seed_role": "body_paragraph", "text": "Body paragraph."},
+        {"block_id": "2", "role": "unassigned", "seed_role": "reference_item", "text": "[1] Tail-like text outside reference zone."},
+    ]
+    _doc, normalized = normalize_document_structure(blocks)
+
+    offenders = _collect_unverified_required_roles(normalized)
+    assert offenders == []
+    for block in normalized:
+        if block.get("role") in VERIFY_REQUIRED:
+            assert block.get("role_verification_status") == "ACCEPT", (
+                f"Block {block.get('block_id')} role {block.get('role')} has status {block.get('role_verification_status')}"
+            )
