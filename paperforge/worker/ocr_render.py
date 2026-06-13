@@ -689,15 +689,13 @@ def _order_tail_blocks(
 
 def _render_reader_figure_card(figure: dict) -> list[str]:
     lines: list[str] = []
-    status = figure.get("reader_status", "")
     caption_text = figure.get("caption_text", "")
     fn = figure.get("figure_number")
-    if fn is not None:
-        lines.append(f"> **Figure {fn}** — {status}")
-    else:
-        lines.append(f"> **Figure (unmatched)** — {status}")
-    if caption_text:
-        lines.append(f"> {caption_text}")
+    if fn is not None and caption_text:
+        lines.append(f"> **Figure {fn}**")
+    if not caption_text:
+        return []
+    lines.append(f"> {caption_text}")
     return lines
 
 
