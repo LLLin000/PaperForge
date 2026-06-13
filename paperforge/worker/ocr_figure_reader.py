@@ -232,6 +232,21 @@ def _materialize_hold_outcome(
     }
 
 
+def _placeholder_visual_group(
+    *,
+    page: int | None,
+    status: str,
+    candidate_asset_ids: list[int | str] | None = None,
+    rendered_as_representative: bool = False,
+) -> dict:
+    return {
+        "page": page,
+        "asset_block_ids": list(candidate_asset_ids or []),
+        "group_status": status,
+        "rendered_as_representative": rendered_as_representative,
+    }
+
+
 def _materialize_reader_figure(
     normalized_item: dict,
     source_bucket: str,
@@ -316,7 +331,12 @@ def _materialize_reader_figure(
                 "strict_source": source_bucket,
                 "caption_block_id": legend_block_id,
                 "caption_text": caption_text,
-                "visual_groups": [],
+                "visual_groups": [
+                    _placeholder_visual_group(
+                        page=normalized_item.get("page"),
+                        status="legend_only_group",
+                    )
+                ],
                 "consumed_caption_block_ids": [{"page": normalized_item.get("page"), "block_id": legend_block_id}]
                 if legend_block_id is not None
                 else [],
@@ -338,7 +358,12 @@ def _materialize_reader_figure(
             "strict_source": source_bucket,
             "caption_block_id": legend_block_id,
             "caption_text": caption_text,
-            "visual_groups": [],
+            "visual_groups": [
+                _placeholder_visual_group(
+                    page=normalized_item.get("page"),
+                    status="legend_only_group",
+                )
+            ],
             "consumed_caption_block_ids": [{"page": normalized_item.get("page"), "block_id": legend_block_id}]
             if legend_block_id is not None
             else [],
@@ -399,6 +424,8 @@ def _passes_salient_visual_group_gate(item: dict) -> bool:
         return True
     if width_ratio >= 0.30 and height_ratio >= 0.08:
         return True
+    if media_count >= 3:
+        return True
     return bool(media_count >= 2 and area_ratio >= 0.02)
 
 
@@ -456,6 +483,13 @@ def synthesize_reader_figures(
         reader_figures.append(materialized)
         consumed_caption_ids.extend(materialized.get("consumed_caption_block_ids", []))
         consumed_asset_ids.extend(materialized.get("consumed_asset_block_ids", []))
+
+    deduped_legend_ids: list[dict] = strict_inventory.get("deduped_legend_ids", [])
+    for item in deduped_legend_ids:
+        page = item.get("page") if isinstance(item, dict) else None
+        block_id = item.get("block_id") if isinstance(item, dict) else item
+        if block_id is not None:
+            consumed_caption_ids.append({"page": page, "block_id": block_id})
 
     coverage_total = len(eligible_inputs)
     return {
