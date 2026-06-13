@@ -149,16 +149,20 @@ Representative failures:
 
 Add `A8E7SRVS` as a page-level supplemental fixture, not necessarily a full-paper primary fixture.
 
-Required page coverage:
+Required page coverage (these are mandatory assertions, not diagnostic observations):
 
 1. **Page 5**
-   - multi-figure ordering and reader-visible figure presence
+   - Fig.1/2/3/4 are reader-visible
+   - No raw image/caption block appears as loose body output after ownership
 2. **Page 6**
-   - caption continuation must remain legend/object-owned, not body-owned
+   - Fig.5 continuation sentence is consumed by figure object
+   - It must not render as body paragraph
 3. **Page 7**
-   - table caption, table asset, and table note must stay in one table object contract
+   - Table 3 caption + asset + note share one table ownership contract
+   - Table asset must not be separated from its caption by body paragraph blocks
 4. **Page 12**
-   - conclusion/reference ordering on mixed tail pages
+   - Conclusion segment precedes References segment in final markdown
+   - Reference zone must not be rendered before left-column body continuation is completed
 
 Reason:
 
@@ -333,11 +337,15 @@ Execution path:
 build_raw_blocks_for_result_lines()
 -> backfill_span_metadata_from_pdf() [optional in tests]
 -> build_structured_blocks()
--> normalize_document_structure()
+     - internally executes normalize_document_structure()
+     - returns (structured_blocks, document_structure)
 -> build_figure_inventory()
 -> synthesize_reader_figures()
 -> build_table_inventory()
--> extract_and_write_objects() [artifact assertions, no need to require image crop success]
+-> extract_and_write_objects()
+     [tests should monkeypatch crop/write operations;
+      assertions target object metadata and render references,
+      not physical JPEG crop success]
 -> render_fulltext_markdown()
 ```
 
@@ -377,6 +385,8 @@ They remain valuable because they validate more papers, but they must not be the
 Do not store full-document markdown snapshots as the primary expected output.
 
 Instead, each audited fixture should provide structured expectations at the page/document/object level.
+
+**Block id stability rule**: fixture import must normalize block ids into stable page-local ids such as `p{page}_b{block_order_or_fixture_index}`. Expectations must not depend on provider-random ids. The normalization step is required before any expectation assertions execute.
 
 ### 7.1 Structured expectation categories
 
@@ -489,6 +499,7 @@ Keep the original four contracts and add three missing ones.
 
 2. **`renderer is not a semantic rescue layer`**
    - renderer may format accepted artifacts, but must not re-decide semantic membership from raw text or seed roles
+   - test method: construct structured blocks where `raw_label`/`text` suggests figure or reference, but `role`/artifact ownership does not accept it; `render_fulltext_markdown()` must not promote that block based on raw text alone
 
 3. **`reading segments are authoritative`**
    - mixed body/reference tail pages must follow document-level reading segments, not raw page-local y/x rescue
@@ -612,12 +623,13 @@ The implementation plan should follow this order:
 
 This design is successful when all of the following are true:
 
-1. The primary regression suite executes the actual OCR-v2 production path.
-2. `CAQNW9Q2` and `DWQQK2YB` are locked as deterministic real-paper fixtures.
-3. `A8E7SRVS` page-level supplemental checks cover figure/table and mixed-tail cases not fully captured by the two main papers.
-4. Object ownership is asserted directly, not inferred indirectly from final markdown alone.
-5. Renderer duplicate suppression and region consumption are validated as artifact contracts, not left to heuristics.
-6. The codebase cannot drift back to rescue-first semantics without failing contract tests.
+1. The new real-paper regression tests must fail against the current known-bad behavior before repair, unless a failure has already been fixed by prior commits. Tests that pass against the unrepaired codebase are not providing meaningful regression coverage.
+2. The primary regression suite executes the actual OCR-v2 production path.
+3. `CAQNW9Q2` and `DWQQK2YB` are locked as deterministic real-paper fixtures.
+4. `A8E7SRVS` page-level supplemental checks cover figure/table and mixed-tail cases not fully captured by the two main papers.
+5. Object ownership is asserted directly, not inferred indirectly from final markdown alone.
+6. Renderer duplicate suppression and region consumption are validated as artifact contracts, not left to heuristics.
+7. The codebase cannot drift back to rescue-first semantics without failing contract tests.
 
 ---
 
