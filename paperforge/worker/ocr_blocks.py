@@ -17,6 +17,56 @@ _CANDIDATE_ROLES = frozenset(
     }
 )
 
+_HEADING_SEED_ROLES = frozenset({"section_heading", "subsection_heading", "sub_subsection_heading"})
+
+
+def _merge_adjacent_headings(rows: list[dict]) -> None:
+    """Merge consecutive heading blocks that were split by OCR line breaks.
+
+    Two adjacent blocks with the same heading seed_role on the same page
+    and in the same column are merged into the first block.
+    """
+    _COL_SPLIT_RATIO = 0.5
+
+    def _col(b):
+        bb = b.get("bbox") or [0, 0, 0, 0]
+        pw = float(b.get("page_width", 0) or 0)
+        if pw <= 0 or len(bb) < 4:
+            return 0
+        cx = (bb[0] + bb[2]) / 2
+        return 0 if cx < pw * _COL_SPLIT_RATIO else 1
+
+    i = 0
+    while i < len(rows) - 1:
+        cur = rows[i]
+        nxt = rows[i + 1]
+        if (
+            cur.get("seed_role") in _HEADING_SEED_ROLES
+            and cur.get("seed_role") == nxt.get("seed_role")
+            and cur.get("page") == nxt.get("page")
+            and _col(cur) == _col(nxt)
+            and not str(cur.get("text", "")).strip().endswith((".", "?", "!"))
+        ):
+            cur["text"] = (str(cur.get("text", "")) + " " + str(nxt.get("text", ""))).strip()
+            cur["bbox"] = _union_bbox(cur.get("bbox"), nxt.get("bbox"))
+            nxt["render_default"] = False
+            nxt["role"] = "body_paragraph"
+            nxt["seed_role"] = "body_paragraph"
+            i += 2
+        else:
+            i += 1
+
+
+def _union_bbox(bbox_a, bbox_b):
+    try:
+        a = list(bbox_a) if bbox_a else [0, 0, 0, 0]
+        b = list(bbox_b) if bbox_b else [0, 0, 0, 0]
+        if len(a) < 4 or len(b) < 4:
+            return a or b or [0, 0, 0, 0]
+        return [min(a[0], b[0]), min(a[1], b[1]), max(a[2], b[2]), max(a[3], b[3])]
+    except (TypeError, ValueError):
+        return bbox_a or bbox_b or [0, 0, 0, 0]
+
 
 def build_structured_blocks(
     raw_blocks: list[dict],
@@ -144,6 +194,9 @@ def build_structured_blocks(
 
     # Normalize document structure (backmatter boundary, role regime, tail promotion)
     from paperforge.worker.ocr_document import normalize_document_structure
+
+    # Merge adjacent heading blocks that were split by OCR line breaks
+    _merge_adjacent_headings(rows)
 
     try:
         doc_structure, rows = normalize_document_structure(rows)
