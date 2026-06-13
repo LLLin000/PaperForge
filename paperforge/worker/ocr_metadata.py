@@ -222,6 +222,7 @@ def _align_frontmatter_to_source_metadata(
                 or _token_overlap(t.lower(), source_title.lower()) > 0.6
             ):
                 result["title"]["ocr_block_id"] = b.get("block_id")
+                result["title"]["ocr_page"] = b.get("page")
                 result["title"]["ocr_aligned"] = True
                 break
 
@@ -233,6 +234,7 @@ def _align_frontmatter_to_source_metadata(
             match = _match_author_block_to_source_authors(t, source_authors)
             if match.get("matched"):
                 result["authors"]["ocr_block_id"] = b.get("block_id")
+                result["authors"]["ocr_page"] = b.get("page")
                 result["authors"]["ocr_aligned"] = True
                 break
 
@@ -274,6 +276,7 @@ def build_source_backed_frontmatter_anchors(
             "source": entry.get("source", "zotero"),
             "value": entry.get("value"),
             "ocr_block_id": entry.get("ocr_block_id"),
+            "ocr_page": entry.get("ocr_page"),
             "frontmatter_window": frontmatter_window,
         }
     return anchors
