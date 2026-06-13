@@ -1,0 +1,26 @@
+{
+  "document": {
+    "expected_reader_figure_count_min": 2,
+    "expected_reference_zone": true,
+    "expected_abstract_span": true
+  },
+  "pages": {
+    "1": {
+      "expected_roles": [
+        {"block_pattern": "Quantitative radiography", "role": "title_or_doc_title", "confidence": "medium"}
+      ],
+      "expected_non_body": [0, 1, 4, 5],
+      "expected_reference_rules": [
+        {"block_id_comment": "no block on page 1 should be reference_item"}
+      ]
+    },
+    "7": {
+      "expected_order_relations": [
+        {"before_text": "Conclusion", "after_text": "References", "layer": "render_order_markdown"}
+      ],
+      "expected_reference_rules": [
+        {"must_not_render_references_as_body": true}
+      ]
+    }
+  }
+}
