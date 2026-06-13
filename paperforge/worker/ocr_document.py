@@ -1390,10 +1390,6 @@ def _veto_tail_spread_body_continuation(boundary: TailBoundary, blocks: list[dic
     return boundary._replace(spread_start=spread)
 
 
-def _canonical_section_text(block: dict) -> str:
-    return str(block.get("text") or block.get("content") or "").strip().lower()
-
-
 def _reconcile_tail_spread(
     blocks: list[dict],
     page_layouts: dict[int, PageLayoutProfile] | None = None,
@@ -2208,6 +2204,8 @@ def _apply_content_zone_fallback(blocks: list[dict], region_bus: dict[str, dict]
         if block.get("zone"):
             continue
         role = block.get("role") or block.get("seed_role")
+        if role == "unassigned":
+            role = block.get("seed_role")
         page = int(block.get("page", 0) or 0)
 
         if role in {"noise", "frontmatter_noise", "media_asset", "figure_asset", "figure_inner_text"}:
