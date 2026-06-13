@@ -4165,7 +4165,7 @@ def test_gate_context_adapters_do_not_accept_from_seed_roles_only() -> None:
         {"block_id": "tbl", "seed_role": "table_html", "role": "table_html"},
     ]
 
-    assert _build_source_frontmatter_anchor_ids(None, blocks) == {"title": set(), "authors": set()}
+    assert _build_source_frontmatter_anchor_ids(None, blocks) == {"title": set(), "authors": set(), "doi": set()}
     assert _build_accepted_heading_block_ids(blocks, None) == set()
     assert _build_accepted_caption_block_ids({}, {"reader_figures": []}, blocks) == set()
     assert _build_accepted_table_block_ids({}, blocks) == set()
@@ -4185,6 +4185,37 @@ def test_gate_accepts_frontmatter_only_from_source_anchors() -> None:
     assert authors.status == "ACCEPT"
     assert authors.source == "source_frontmatter_authors_anchor"
     assert bad.status == "HOLD"
+
+
+def test_figure_caption_preserved_as_candidate_when_caption_artifacts_empty() -> None:
+    """RC2: figure_caption seed survives gate as figure_caption_candidate."""
+    from paperforge.worker.ocr_structural_gate import RoleGateContext, resolve_verified_role
+
+    context = RoleGateContext(accepted_caption_block_ids=set())
+
+    block = {"block_id": "fc1", "seed_role": "figure_caption", "role": "figure_caption_candidate",
+             "text": "Fig. 1. Principle idea"}
+    decision = resolve_verified_role(block, context)
+
+    assert decision.status == "CANDIDATE"
+    assert decision.role == "figure_caption_candidate"
+    assert decision.role_candidate == "figure_caption"
+    assert decision.render_default is False
+    assert decision.seed_role == "figure_caption"
+
+
+def test_figure_caption_accepted_when_in_accepted_caption_block_ids() -> None:
+    """RC2: figure_caption accepted when anchor matches."""
+    from paperforge.worker.ocr_structural_gate import RoleGateContext, resolve_verified_role
+
+    context = RoleGateContext(accepted_caption_block_ids={"fc1"})
+
+    block = {"block_id": "fc1", "seed_role": "figure_caption", "role": "figure_caption",
+             "text": "Fig. 1. Principle idea"}
+    decision = resolve_verified_role(block, context)
+
+    assert decision.status == "ACCEPT"
+    assert decision.role == "figure_caption"
 
 
 def test_normalized_required_roles_have_accept_verification() -> None:
