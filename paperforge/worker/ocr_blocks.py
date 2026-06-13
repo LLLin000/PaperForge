@@ -17,14 +17,10 @@ _CANDIDATE_ROLES = frozenset(
     }
 )
 
-_HEADING_SEED_ROLES = frozenset({"section_heading", "subsection_heading", "sub_subsection_heading"})
-
 
 def _merge_adjacent_headings(rows: list[dict]) -> None:
-    """Merge consecutive heading blocks that were split by OCR line breaks.
-
-    Two adjacent blocks with the same heading seed_role on the same page
-    and in the same column are merged into the first block.
+    """Merge consecutive heading-labeled raw blocks split by OCR line breaks.
+    Called BEFORE seed role assignment on raw_blocks, using raw_label only.
     """
     _COL_SPLIT_RATIO = 0.5
 
@@ -41,17 +37,16 @@ def _merge_adjacent_headings(rows: list[dict]) -> None:
         cur = rows[i]
         nxt = rows[i + 1]
         if (
-            cur.get("seed_role") in _HEADING_SEED_ROLES
-            and cur.get("seed_role") == nxt.get("seed_role")
+            cur.get("raw_label") == "paragraph_title"
+            and nxt.get("raw_label") == "paragraph_title"
             and cur.get("page") == nxt.get("page")
             and _col(cur) == _col(nxt)
             and not str(cur.get("text", "")).strip().endswith((".", "?", "!"))
         ):
             cur["text"] = (str(cur.get("text", "")) + " " + str(nxt.get("text", ""))).strip()
             cur["bbox"] = _union_bbox(cur.get("bbox"), nxt.get("bbox"))
-            nxt["render_default"] = False
-            nxt["role"] = "body_paragraph"
-            nxt["seed_role"] = "body_paragraph"
+            nxt["text"] = ""
+            nxt["raw_label"] = "footer"  # suppress from further processing
             i += 2
         else:
             i += 1
@@ -85,6 +80,10 @@ def build_structured_blocks(
         by_page.setdefault(page, []).append(block)
 
     total_pages = max(by_page.keys()) if by_page else 1  # noqa: F841 - reserved for future use
+
+    # Merge raw blocks: adjacent paragraph_title blocks split by OCR line breaks
+    for page in by_page:
+        _merge_adjacent_headings(by_page[page])
 
     # First pass: initial role assignment (no span profiles)
     rows: list[dict] = []
@@ -194,9 +193,6 @@ def build_structured_blocks(
 
     # Normalize document structure (backmatter boundary, role regime, tail promotion)
     from paperforge.worker.ocr_document import normalize_document_structure
-
-    # Merge adjacent heading blocks that were split by OCR line breaks
-    _merge_adjacent_headings(rows)
 
     try:
         doc_structure, rows = normalize_document_structure(rows)
