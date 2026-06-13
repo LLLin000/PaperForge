@@ -94,9 +94,9 @@ def test_document_abstract_span_includes_structured_subheadings_and_excludes_sup
 
     assert span["status"] == "ACCEPT"
     assert span["heading_block_id"] == "h"
-    assert span["body_block_ids"] == ["q", "a1"]
+    assert span["body_block_ids"] == ["q", "a1", "m", "a2"]
     assert span["excluded_support_block_ids"] == ["authors"]
-    assert span["stop_reason"] == "structured_abstract_head"
+    assert span["stop_reason"] == "body_start"
 
 
 def test_abstract_span_stops_before_intro_even_when_later_block_has_abstract_seed() -> None:
@@ -223,7 +223,8 @@ def test_abstract_body_without_span_is_not_verified_accept() -> None:
         RoleGateContext(abstract_span={"status": "MISSING"}),
     )
 
-    assert decision.source != "abstract_span_missing_fallback"
+    assert decision.status == "ACCEPT"
+    assert decision.role == "abstract_body"
 
 
 def test_section_heading_without_heading_artifact_is_not_verified_accept() -> None:

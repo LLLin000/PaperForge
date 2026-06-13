@@ -518,3 +518,285 @@ def test_table_inventory_marks_close_scores_ambiguous() -> None:
     assert table["match_status"] == "ambiguous"
     assert table["has_asset"] is False
     assert len(table["candidate_assets"]) == 2
+
+
+def test_table_note_binds_footnote_role_block_adjacent_below_asset() -> None:
+    from paperforge.worker.ocr_tables import build_table_inventory
+
+    structured_blocks = [
+        {
+            "paper_id": "KEY001",
+            "page": 5,
+            "block_id": "p5_a1",
+            "role": "table_asset",
+            "text": "table data",
+            "bbox": [100, 100, 600, 400],
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 5,
+            "block_id": "p5_c1",
+            "role": "table_caption",
+            "text": "Table 1. Main results",
+            "bbox": [100, 420, 600, 460],
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 5,
+            "block_id": "p5_fn1",
+            "role": "footnote",
+            "raw_label": "vision_footnote",
+            "text": "* p < 0.05",
+            "bbox": [100, 410, 600, 435],
+        },
+    ]
+
+    inventory = build_table_inventory(structured_blocks)
+
+    assert inventory["official_table_count"] == 1
+    t = inventory["tables"][0]
+    assert t["note_block_ids"] == ["p5_fn1"]
+
+
+def test_table_note_binds_short_text_block_adjacent_below_asset() -> None:
+    from paperforge.worker.ocr_tables import build_table_inventory
+
+    structured_blocks = [
+        {
+            "paper_id": "KEY001",
+            "page": 5,
+            "block_id": "p5_a1",
+            "role": "table_asset",
+            "text": "table data",
+            "bbox": [100, 100, 600, 400],
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 5,
+            "block_id": "p5_c1",
+            "role": "table_caption",
+            "text": "Table 1. Main results",
+            "bbox": [100, 420, 600, 460],
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 5,
+            "block_id": "p5_bn1",
+            "role": "body_paragraph",
+            "text": "Data are mean ± SD.",
+            "bbox": [100, 410, 600, 430],
+        },
+    ]
+
+    inventory = build_table_inventory(structured_blocks)
+
+    t = inventory["tables"][0]
+    assert t["note_block_ids"] == ["p5_bn1"]
+
+
+def test_table_note_excludes_block_too_far_below_asset() -> None:
+    from paperforge.worker.ocr_tables import build_table_inventory
+
+    structured_blocks = [
+        {
+            "paper_id": "KEY001",
+            "page": 5,
+            "block_id": "p5_a1",
+            "role": "table_asset",
+            "text": "table data",
+            "bbox": [100, 100, 600, 400],
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 5,
+            "block_id": "p5_c1",
+            "role": "table_caption",
+            "text": "Table 1. Main results",
+            "bbox": [100, 420, 600, 460],
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 5,
+            "block_id": "p5_far",
+            "role": "footnote",
+            "text": "too far below",
+            "bbox": [100, 520, 600, 540],
+        },
+    ]
+
+    inventory = build_table_inventory(structured_blocks)
+
+    t = inventory["tables"][0]
+    assert t["note_block_ids"] == []
+
+
+def test_table_note_excludes_block_on_different_page() -> None:
+    from paperforge.worker.ocr_tables import build_table_inventory
+
+    structured_blocks = [
+        {
+            "paper_id": "KEY001",
+            "page": 5,
+            "block_id": "p5_a1",
+            "role": "table_asset",
+            "text": "table data",
+            "bbox": [100, 100, 600, 400],
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 5,
+            "block_id": "p5_c1",
+            "role": "table_caption",
+            "text": "Table 1. Main results",
+            "bbox": [100, 420, 600, 460],
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 6,
+            "block_id": "p6_fn1",
+            "role": "footnote",
+            "text": "* p < 0.05",
+            "bbox": [100, 110, 600, 130],
+        },
+    ]
+
+    inventory = build_table_inventory(structured_blocks)
+
+    t = inventory["tables"][0]
+    assert t["note_block_ids"] == []
+
+
+def test_table_note_excludes_section_headings_from_short_text_match() -> None:
+    from paperforge.worker.ocr_tables import build_table_inventory
+
+    structured_blocks = [
+        {
+            "paper_id": "KEY001",
+            "page": 5,
+            "block_id": "p5_a1",
+            "role": "table_asset",
+            "text": "table data",
+            "bbox": [100, 100, 600, 400],
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 5,
+            "block_id": "p5_c1",
+            "role": "table_caption",
+            "text": "Table 1. Main results",
+            "bbox": [100, 420, 600, 460],
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 5,
+            "block_id": "p5_sh",
+            "role": "section_heading",
+            "text": "Results",
+            "bbox": [100, 410, 300, 430],
+        },
+    ]
+
+    inventory = build_table_inventory(structured_blocks)
+
+    t = inventory["tables"][0]
+    assert t["note_block_ids"] == []
+
+
+def test_table_note_binds_vision_footnote_raw_label() -> None:
+    from paperforge.worker.ocr_tables import build_table_inventory
+
+    structured_blocks = [
+        {
+            "paper_id": "KEY001",
+            "page": 5,
+            "block_id": "p5_a1",
+            "role": "table_asset",
+            "text": "table data",
+            "bbox": [100, 100, 600, 400],
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 5,
+            "block_id": "p5_c1",
+            "role": "table_caption",
+            "text": "Table 1. Main results",
+            "bbox": [100, 420, 600, 460],
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 5,
+            "block_id": "p5_vf1",
+            "role": "body_paragraph",
+            "raw_label": "vision_footnote",
+            "text": "Abbreviations: CI, confidence interval",
+            "bbox": [100, 405, 600, 425],
+        },
+    ]
+
+    inventory = build_table_inventory(structured_blocks)
+
+    t = inventory["tables"][0]
+    assert t["note_block_ids"] == ["p5_vf1"]
+
+
+def test_table_note_binds_multiple_adjacent_notes() -> None:
+    from paperforge.worker.ocr_tables import build_table_inventory
+
+    structured_blocks = [
+        {
+            "paper_id": "KEY001",
+            "page": 5,
+            "block_id": "p5_a1",
+            "role": "table_asset",
+            "text": "table data",
+            "bbox": [100, 100, 600, 400],
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 5,
+            "block_id": "p5_c1",
+            "role": "table_caption",
+            "text": "Table 1. Main results",
+            "bbox": [100, 420, 600, 460],
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 5,
+            "block_id": "p5_fn1",
+            "role": "footnote",
+            "text": "* p < 0.05",
+            "bbox": [100, 405, 600, 420],
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 5,
+            "block_id": "p5_fn2",
+            "role": "footnote",
+            "text": "** p < 0.01",
+            "bbox": [100, 422, 600, 438],
+        },
+    ]
+
+    inventory = build_table_inventory(structured_blocks)
+
+    t = inventory["tables"][0]
+    assert set(t["note_block_ids"]) == {"p5_fn1", "p5_fn2"}
+
+
+def test_table_without_matched_asset_has_empty_note_block_ids() -> None:
+    from paperforge.worker.ocr_tables import build_table_inventory
+
+    structured_blocks = [
+        {
+            "paper_id": "KEY001",
+            "page": 7,
+            "block_id": "p7_c1",
+            "role": "table_caption",
+            "text": "Table 2. No asset here",
+            "bbox": [50, 50, 500, 80],
+        },
+    ]
+
+    inventory = build_table_inventory(structured_blocks)
+
+    assert inventory["tables"][0]["note_block_ids"] == []

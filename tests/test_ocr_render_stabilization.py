@@ -514,7 +514,7 @@ def test_stabilize_reference_items_grouped_under_heading() -> None:
     )
 
     ref_idx = md.index("## References")
-    pub_idx = md.index("## Publisher's note")
+    pub_idx = md.index("**Publisher's note**")
     smith_idx = md.index("Smith J.")
     jones_idx = md.index("Jones B.")
 
@@ -634,9 +634,9 @@ def test_render_mixed_tail_page_ordering() -> None:
     )
 
     body_idx = md.index("Left column body continuation text.")
-    gen_ai_idx = md.index("## Generative AI statement")
+    gen_ai_idx = md.index("**Generative AI statement**")
     gen_ai_body_idx = md.index("No AI generated content was used.")
-    pub_idx = md.index("## Publisher's note")
+    pub_idx = md.index("**Publisher's note**")
     pub_body_idx = md.index("Springer Nature remains neutral.")
     ref_idx = md.index("## References")
     smith_idx = md.index("Smith J, Jones B.")
@@ -825,12 +825,12 @@ def test_stabilize_tail_zone_references_kept_separate() -> None:
     )
 
     assert "## References" in md
-    assert "## Generative AI statement" in md
-    assert "## Publisher's note" in md
+    assert "**Generative AI statement**" in md
+    assert "**Publisher's note**" in md
 
     refs_idx = md.index("## References")
-    gen_ai_idx = md.index("## Generative AI statement")
-    pub_idx = md.index("## Publisher's note")
+    gen_ai_idx = md.index("**Generative AI statement**")
+    pub_idx = md.index("**Publisher's note**")
     decl_idx = md.index("The authors declare no AI-generated content.")
     springer_idx = md.index("Springer Nature remains neutral.")
     smith_idx = md.index("Smith J.")
@@ -862,7 +862,7 @@ def test_fallback_preserves_tail_roles():
         table_inventory={},
     )
 
-    assert "## Funding" in md, "backmatter_heading should be preserved"
+    assert "**Funding**" in md, "backmatter_heading should be preserved"
     assert "This work was supported" in md, "backmatter_body should be preserved"
     assert "Smith J." in md, "reference_item should be preserved"
 
@@ -1107,11 +1107,11 @@ def test_2gn9lmcw_container_ordering() -> None:
         table_inventory={},
     )
 
-    ai_idx = md.index("## ADDITIONAL INFORMATION")
+    ai_idx = md.index("**ADDITIONAL INFORMATION**")
     ai_body_idx = md.index("Additional information and correspondence")
-    funding_idx = md.index("## Funding")
+    funding_idx = md.index("**Funding**")
     funding_body_idx = md.index("Grant No. 12345")
-    grant_idx = md.index("## Grant Disclosures")
+    grant_idx = md.index("**Grant Disclosures**")
 
     assert ai_idx < ai_body_idx < funding_idx < funding_body_idx < grant_idx, (
         "Container backmatter must maintain order: ADDITIONAL INFORMATION -> Funding -> Grant Disclosures"
@@ -1147,3 +1147,85 @@ def test_7c8829bd_tail_markers_monotonic() -> None:
     assert marker_pages == sorted(marker_pages), (
         "Tail page markers must be in monotonic order"
     )
+
+
+def test_render_fulltext_abstract_ids_do_not_consume_later_page_blocks_with_same_raw_id() -> None:
+    from paperforge.worker.ocr_document import DocumentStructure
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+
+    doc = DocumentStructure()
+    doc.abstract_span = {"heading_block_id": "p1:8", "body_block_ids": ["p1:9", "p1:10"], "status": "ACCEPT"}
+
+    blocks = [
+        {"paper_id": "KEY", "page": 1, "block_id": 8, "role": "abstract_heading", "text": "Abstract", "render_default": True, "bbox": [80, 100, 300, 130], "page_width": 1200, "page_height": 1700},
+        {"paper_id": "KEY", "page": 1, "block_id": 9, "role": "abstract_body", "text": "Abstract body line one.", "render_default": True, "bbox": [80, 140, 900, 200], "page_width": 1200, "page_height": 1700},
+        {"paper_id": "KEY", "page": 1, "block_id": 10, "role": "abstract_body", "text": "Abstract body line two.", "render_default": True, "bbox": [80, 210, 900, 270], "page_width": 1200, "page_height": 1700},
+        {"paper_id": "KEY", "page": 2, "block_id": 9, "role": "section_heading", "text": "Conclusion", "render_default": True, "bbox": [80, 100, 400, 130], "page_width": 1200, "page_height": 1700},
+        {"paper_id": "KEY", "page": 2, "block_id": 10, "role": "body_paragraph", "text": "Later-page body paragraph must survive duplicate raw block ids.", "render_default": True, "bbox": [80, 150, 950, 220], "page_width": 1200, "page_height": 1700},
+        {"paper_id": "KEY", "page": 2, "block_id": 8, "role": "reference_heading", "text": "References", "render_default": True, "bbox": [80, 260, 400, 290], "page_width": 1200, "page_height": 1700},
+    ]
+
+    md = render_fulltext_markdown(
+        structured_blocks=blocks,
+        resolved_metadata={},
+        figure_inventory={},
+        table_inventory={},
+        document_structure=doc,
+    )
+
+    assert "## Abstract" in md
+    assert "## Conclusion" in md
+    assert "Later-page body paragraph must survive" in md
+    assert "## References" in md
+
+
+def test_render_fulltext_backmatter_like_section_heading_renders_bold_instead_of_disappearing() -> None:
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+
+    blocks = [
+        {"paper_id": "KEY", "page": 5, "block_id": "h1", "role": "section_heading", "text": "AUTHOR CONTRIBUTIONS", "render_default": True, "bbox": [80, 100, 500, 130], "page_width": 1200, "page_height": 1700},
+        {"paper_id": "KEY", "page": 5, "block_id": "b1", "role": "body_paragraph", "text": "A.B. designed the study and wrote the first draft.", "render_default": True, "bbox": [80, 150, 1000, 210], "page_width": 1200, "page_height": 1700},
+    ]
+
+    md = render_fulltext_markdown(
+        structured_blocks=blocks,
+        resolved_metadata={},
+        figure_inventory={},
+        table_inventory={},
+    )
+
+    assert "**AUTHOR CONTRIBUTIONS**" in md
+    assert "A.B. designed the study" in md
+
+
+def test_tail_page_backmatter_headings_claim_same_column_body_paragraphs() -> None:
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+
+    blocks = [
+        {"paper_id": "KEY", "page": 14, "block_id": "e1", "role": "section_heading", "text": "ETHICS STATEMENT", "render_default": True, "bbox": [80, 100, 360, 130], "page_width": 1200, "page_height": 1700},
+        {"paper_id": "KEY", "page": 14, "block_id": "e2", "role": "body_paragraph", "text": "Ethics continuation from prior section.", "render_default": True, "bbox": [80, 140, 500, 200], "page_width": 1200, "page_height": 1700},
+        {"paper_id": "KEY", "page": 14, "block_id": "a1", "role": "section_heading", "text": "AUTHOR CONTRIBUTIONS", "render_default": True, "bbox": [80, 260, 420, 290], "page_width": 1200, "page_height": 1700},
+        {"paper_id": "KEY", "page": 14, "block_id": "a2", "role": "body_paragraph", "text": "A.B. performed the analysis.", "render_default": True, "bbox": [80, 310, 500, 360], "page_width": 1200, "page_height": 1700},
+        {"paper_id": "KEY", "page": 14, "block_id": "f1", "role": "backmatter_heading", "text": "FUNDING", "render_default": True, "bbox": [620, 110, 760, 140], "page_width": 1200, "page_height": 1700},
+        {"paper_id": "KEY", "page": 14, "block_id": "f2", "role": "body_paragraph", "text": "Supported by grant 123.", "render_default": True, "bbox": [620, 150, 1100, 210], "page_width": 1200, "page_height": 1700},
+        {"paper_id": "KEY", "page": 14, "block_id": "k1", "role": "backmatter_heading", "text": "ACKNOWLEDGMENTS", "render_default": True, "bbox": [620, 250, 900, 280], "page_width": 1200, "page_height": 1700},
+        {"paper_id": "KEY", "page": 14, "block_id": "k2", "role": "body_paragraph", "text": "We thank the lab members.", "render_default": True, "bbox": [620, 290, 1100, 350], "page_width": 1200, "page_height": 1700},
+        {"paper_id": "KEY", "page": 14, "block_id": "r1", "role": "reference_heading", "text": "REFERENCES", "render_default": True, "bbox": [80, 520, 300, 550], "page_width": 1200, "page_height": 1700},
+        {"paper_id": "KEY", "page": 14, "block_id": "r2", "role": "reference_item", "text": "Smith J. Reference item.", "render_default": True, "bbox": [80, 570, 500, 620], "page_width": 1200, "page_height": 1700},
+    ]
+
+    md = render_fulltext_markdown(
+        structured_blocks=blocks,
+        resolved_metadata={},
+        figure_inventory={},
+        table_inventory={},
+        page_count=14,
+    )
+
+    funding_idx = md.index("**FUNDING**")
+    funding_body_idx = md.index("Supported by grant 123.")
+    ack_idx = md.index("**ACKNOWLEDGMENTS**")
+    ack_body_idx = md.index("We thank the lab members.")
+    refs_idx = md.index("## REFERENCES")
+
+    assert funding_idx < funding_body_idx < ack_idx < ack_body_idx < refs_idx

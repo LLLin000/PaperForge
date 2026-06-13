@@ -178,9 +178,13 @@ def build_structured_blocks(
 
         rows = rescue_roles_with_document_context(rows, paper_context["role_profiles"], doc_structure)
 
-    from paperforge.worker.ocr_document import _exclude_tail_nonref_from_body_flow
+    from paperforge.worker.ocr_document import (
+        _exclude_tail_nonref_from_body_flow,
+        _restore_numbered_body_from_tail_hold,
+    )
 
     _exclude_tail_nonref_from_body_flow(rows)
+    _restore_numbered_body_from_tail_hold(rows)
 
     # Sync render_default/index_default after role normalizations
     for row in rows:
