@@ -935,7 +935,7 @@ def render_fulltext_markdown(
             if text:
                 for abstract_line in normalize_ocr_math_text(text).splitlines():
                     if abstract_line.strip():
-                        lines.append(f"> {abstract_line}")
+                        lines.append(abstract_line)
                 lines.append("")
 
     # Build per-page figure/table lookups
