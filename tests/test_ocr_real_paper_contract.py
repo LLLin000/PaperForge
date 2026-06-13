@@ -1,3 +1,14 @@
+"""Production-path contract audit for real OCR papers.
+
+Classification: secondary audit coverage.
+Primary regression gate is tests/test_ocr_real_paper_regressions.py
+(spec-contract + fixture-backed production-path replay).
+
+These tests validate broader real-paper drift but require
+PAPERFORGE_REAL_OCR_VAULT env; they are not the deterministic
+first-line gate.
+"""
+
 from __future__ import annotations
 
 import json

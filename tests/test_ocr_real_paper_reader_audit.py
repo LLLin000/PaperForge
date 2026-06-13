@@ -1,3 +1,10 @@
+"""Reader-figure audit for real OCR papers.
+
+Classification: secondary audit coverage.
+Primary regression gate is tests/test_ocr_real_paper_regressions.py.
+Requires PAPERFORGE_REAL_OCR_VAULT env.
+"""
+
 from __future__ import annotations
 
 import json

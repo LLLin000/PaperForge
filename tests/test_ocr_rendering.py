@@ -1,3 +1,11 @@
+"""Legacy page-local renderer tests.
+
+Classification: diagnostic only.
+render_page_blocks() is not the final fulltext truth for OCR-v2.
+Primary production path is render_fulltext_markdown() in ocr_render.py.
+These tests exist for backward compatibility and legacy trace interpretation.
+"""
+
 from __future__ import annotations
 
 from pathlib import Path
