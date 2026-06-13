@@ -1502,7 +1502,7 @@ def _reconcile_tail_spread(
         is_clean = forward_end < backward_start
         if is_clean:
             spread_start = forward_end + 1
-            spread_end = backward_start
+            spread_end = max(backward_start, references_start or 0)
         else:
             spread_start = backward_start
             spread_end = forward_end
