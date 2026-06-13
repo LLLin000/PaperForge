@@ -799,7 +799,7 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
             matched_figures.append({
                 "figure_id": fig_id,
                 "legend_block_id": cap.get("block_id", ""),
-                "page": cap.get("page", 0),
+                "page": asset.get("page", 0),
                 "text": cap.get("text", ""),
                 "figure_number": fn,
                 "matched_assets": [{
