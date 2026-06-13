@@ -236,6 +236,34 @@ def resolve_verified_role(block: dict, context: RoleGateContext) -> VerifiedRole
             return accept_role(proposal, seed_role, "body_zone_heading", ["heading accepted via body zone evidence"])
         return hold_role(seed_role, f"{proposal} lacks heading artifact evidence")
 
+    if proposal == "figure_caption" or seed_role == "figure_caption":
+        if _artifact_membership_contains(block, set(context.accepted_caption_block_ids)):
+            return accept_role(
+                "figure_caption",
+                seed_role,
+                "accepted_figure_caption_artifact",
+                ["figure caption matched accepted figure artifact"],
+            )
+        if current_role == "figure_caption_candidate":
+            return VerifiedRoleDecision(
+                role="figure_caption_candidate",
+                status="CANDIDATE",
+                source="pre_object_figure_caption_candidate",
+                evidence=["figure caption preserved for figure inventory synthesis"],
+                seed_role=seed_role,
+                role_candidate="figure_caption",
+                render_default=False,
+            )
+        return VerifiedRoleDecision(
+            role="figure_caption_candidate",
+            status="CANDIDATE",
+            source="pre_object_figure_caption_candidate",
+            evidence=["figure caption seed requires figure inventory verification"],
+            seed_role=seed_role,
+            role_candidate="figure_caption",
+            render_default=False,
+        )
+
     if proposal in VERIFY_REQUIRED or seed_role in VERIFY_REQUIRED:
         return hold_role(seed_role, f"{proposal} requires structural verifier")
     source = "non_structural_seed" if current_role in {"", "unassigned"} else "non_structural_normalized_role"
@@ -386,6 +414,46 @@ def _matches_zone_id(block: dict, zone_ids: set) -> bool:
     return bid in zone_ids or f"p{page}:{bid}" in zone_ids
 
 
+def _extend_reference_items_with_continuations(
+    blocks: list[dict],
+    item_ids: list,
+    heading_id: str | int | None,
+    duplicate_ids: set[str],
+) -> list:
+    """Extend reference item_ids with continuation lines following known items."""
+    item_id_set = set(item_ids)
+    active_ref: str | int | None = None
+    result = list(item_ids)
+
+    for block in blocks:
+        artifact_id = _artifact_block_id(block, duplicate_ids)
+        if artifact_id is None:
+            continue
+        if heading_id is not None and artifact_id == heading_id:
+            continue
+
+        if artifact_id in item_id_set:
+            active_ref = artifact_id
+            continue
+
+        if active_ref is None:
+            continue
+
+        role = block.get("role") or block.get("seed_role")
+        text = str(block.get("text") or "").strip()
+        if not text:
+            continue
+        if role in {"noise", "frontmatter_noise", "media_asset", "figure_asset"}:
+            continue
+        if role in {"section_heading", "subsection_heading", "backmatter_heading"}:
+            active_ref = None
+            continue
+
+        result.append(artifact_id)
+
+    return result
+
+
 def build_verified_reference_zone_from_artifacts(blocks: list[dict], artifacts: dict) -> dict:
     duplicate_ids = _duplicate_block_ids(blocks)
     def _obj_get(obj, key, default=None):
@@ -458,6 +526,12 @@ def build_verified_reference_zone_from_artifacts(blocks: list[dict], artifacts: 
     # matched all region blocks (both heading and items).
     if heading_id is not None and heading_id in item_ids:
         item_ids.remove(heading_id)
+
+    # Extend reference items with continuation lines following known items
+    if item_ids:
+        item_ids = _extend_reference_items_with_continuations(
+            blocks, item_ids, heading_id, duplicate_ids
+        )
 
     return {
         "heading_block_id": heading_id,
