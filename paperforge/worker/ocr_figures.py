@@ -170,12 +170,22 @@ def _is_validation_first_legend_candidate(block: dict) -> bool:
     marker_type = str(marker_signature.get("type") or "none")
     zone = str(block.get("zone") or "")
     style_family = str(block.get("style_family") or "")
+    seed_role = str(block.get("seed_role") or "")
+    raw_label = str(block.get("raw_label") or "")
+
+    if role in {"figure_caption", "figure_caption_candidate"}:
+        return False
+    if marker_type != "figure_number":
+        return False
 
     return (
-        role not in {"figure_caption", "figure_caption_candidate"}
-        and marker_type == "figure_number"
-        and zone in {"body_zone", "display_zone"}
+        zone in {"body_zone", "display_zone", "tail_nonref_hold_zone"}
         and style_family == "legend_like"
+    ) or (
+        role not in {"figure_caption", "figure_caption_candidate"}
+        and zone == "display_zone"
+        and raw_label == "figure_title"
+        and seed_role == "figure_caption"
     )
 
 
@@ -184,10 +194,18 @@ def _has_anchor_supported_legend_context(block: dict) -> bool:
     marker_type = str(marker_signature.get("type") or "none")
     style_family = str(block.get("style_family") or "")
     style_family_authority = str(block.get("style_family_authority") or "")
+    zone = str(block.get("zone") or "")
+    seed_role = str(block.get("seed_role") or "")
+    raw_label = str(block.get("raw_label") or "")
     return (
         marker_type == "figure_number"
         and style_family == "legend_like"
         and style_family_authority in {"figure_marker", "figure_family_anchor"}
+    ) or (
+        marker_type == "figure_number"
+        and zone == "display_zone"
+        and raw_label == "figure_title"
+        and seed_role == "figure_caption"
     )
 
 
@@ -410,6 +428,13 @@ def _compute_candidate_figure_regions(blocks: list[dict], page_width: float = 12
 
 
 def is_embedded_figure_text(block: dict, all_blocks: list[dict], page_width: float = 1200) -> bool:
+    role = block.get("role", "")
+    if role in ("figure_caption", "figure_caption_candidate"):
+        return False
+    text = block.get("text", "")
+    if text and _is_formal_legend(text, block, page_width):
+        return False
+
     block_bbox = block.get("bbox") or block.get("block_bbox")
     if not block_bbox or len(block_bbox) < 4:
         return False
@@ -466,7 +491,12 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
         if role in ("figure_caption", "figure_caption_candidate") or is_validation_first_candidate:
             if _is_body_mention(block):
                 continue
-            if role == "figure_caption_candidate" and _looks_like_figure_narrative_prose(block.get("text", "")):
+            if (
+                role == "figure_caption_candidate"
+                and str(block.get("zone") or "") != "display_zone"
+                and str(block.get("style_family") or "") != "legend_like"
+                and _looks_like_figure_narrative_prose(block.get("text", ""))
+            ):
                 continue
             if not _is_formal_legend(block.get("text", ""), block, page_width):
                 block["caption_score"] = score_figure_caption(
@@ -512,10 +542,15 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
 
     seen_fig_nums: set[int] = set()
     deduped_legends: list[dict] = []
+    deduped_legend_ids: list[dict] = []
     for legend in ordered_legends:
         fn = _extract_figure_number(legend.get("text", ""))
         if fn is not None:
             if fn in seen_fig_nums:
+                deduped_legend_ids.append({
+                    "page": legend.get("page"),
+                    "block_id": legend.get("block_id", ""),
+                })
                 continue
             seen_fig_nums.add(fn)
             deduped_legends.append(_dedup_map[fn])
@@ -758,6 +793,7 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
         "unmatched_assets": unmatched_assets,
         "rejected_legends": rejected_legends,
         "unresolved_clusters": unresolved_clusters,
+        "deduped_legend_ids": deduped_legend_ids,
         "official_figure_count": len(matched_figures),
     }
 
