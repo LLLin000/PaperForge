@@ -284,6 +284,23 @@ def _enrich_meta_from_paper_note(vault: Path, key: str, meta_path: Path) -> None
                     meta["authors_incomplete"] = True
                     meta["authors_source"] = "paper_note.first_author_fallback"
                     changed = True
+                # Fallback: if authors still incomplete, read from formal-library.json
+                if meta.get("authors_incomplete") or not meta.get("authors"):
+                    index_path = paths.get("index")
+                    if index_path and index_path.exists():
+                        try:
+                            idx_data = read_json(index_path)
+                            idx_entry = next(
+                                (e for e in (idx_data.get("items") or []) if e.get("zotero_key") == key),
+                                None,
+                            )
+                            if idx_entry and idx_entry.get("authors"):
+                                meta["authors"] = list(idx_entry["authors"])
+                                meta.pop("authors_incomplete", None)
+                                meta["authors_source"] = "formal_library"
+                                changed = True
+                        except Exception:
+                            pass
                 if changed:
                     write_json(meta_path, meta)
     except Exception:

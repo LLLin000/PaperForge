@@ -66,9 +66,20 @@ def _match_author_block_to_source_authors(block_text: str, source_authors: list[
     """Check if an OCR text block matches the source/Zotero author list.
 
     Normalizes both sides and computes Jaccard similarity on tokenized names.
+    For multiple authors, also supports initial matching (e.g., "A. Yoo" matches "Ami Yoo").
     """
-    normalized = _normalize_author_name(block_text).lower()
+    # Strip trailing labels that OCR sometimes merges into author blocks
+    _strip_labels = ("abstract", "keywords", "key words", "highlights", "summary")
+    clean_text = block_text
+    for label in _strip_labels:
+        idx = clean_text.lower().rfind(label)
+        if idx > 0:
+            clean_text = clean_text[:idx].strip()
+
+    normalized = _normalize_author_name(clean_text).lower()
     normalized = re.sub(r"\$?\^?\{[^}]*\}\$?", "", normalized)
+    # Normalize ampersand to "and" before stripping non-word chars
+    normalized = normalized.replace("&", " and ")
     normalized = re.sub(r"[^\w\s,]", "", normalized)
     block_names = set()
     for part in re.split(r",\s*|\s+and\s+", normalized):
@@ -93,10 +104,36 @@ def _match_author_block_to_source_authors(block_text: str, source_authors: list[
 
     intersection = block_names & source_names
     union = block_names | source_names
-    similarity = len(intersection) / len(union)
+    similarity = len(intersection) / len(union) if union else 0.0
+
+    # Accept if all source names appear in the block (source is subset of block)
+    source_subset_match = source_names.issubset(block_names)
+
+    # Initial matching: for each source name, check if any block name shares
+    # the same last name and first initial (e.g., "a yoo" matches "ami yoo")
+    def _initials_match(sn: str, bn: str) -> bool:
+        sn_parts = sn.split()
+        bn_parts = bn.split()
+        if len(sn_parts) < 2 or len(bn_parts) < 2:
+            return False
+        # Last name must match exactly
+        if sn_parts[-1] != bn_parts[-1]:
+            return False
+        # First initial: first char of first name
+        return sn_parts[0][0] == bn_parts[0][0]
+
+    initial_match_count = sum(
+        1 for sn in source_names
+        if any(_initials_match(sn, bn) for bn in block_names)
+    )
+    # Accept if all source names match OR at least 3 initial matches
+    # (OCR may truncate authors at end of block)
+    initial_match = len(source_names) > 0 and (
+        initial_match_count == len(source_names) or initial_match_count >= 3
+    )
 
     return {
-        "matched": similarity > 0.5,
+        "matched": similarity > 0.5 or source_subset_match or initial_match,
         "similarity": similarity,
         "block_names": sorted(block_names),
         "source_names": sorted(source_names),

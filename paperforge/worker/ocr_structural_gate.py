@@ -123,6 +123,7 @@ def resolve_verified_role(block: dict, context: RoleGateContext) -> VerifiedRole
         current_role not in {"", "unassigned", "unknown_structural"}
         and current_role not in VERIFY_REQUIRED
         and (seed_role not in VERIFY_REQUIRED or current_role in _SAFE_PRESERVED_ROLES)
+        and not (current_role in {"frontmatter_noise"} and seed_role in VERIFY_REQUIRED)
     ):
         return accept_role(
             current_role,
@@ -137,6 +138,17 @@ def resolve_verified_role(block: dict, context: RoleGateContext) -> VerifiedRole
                 "paper_title", seed_role, "source_frontmatter_title_anchor", ["matched source title anchor"]
             )
         return hold_role(seed_role, "paper title seed lacks source-backed title anchor")
+    # Source-anchor override: if block_id matches a source anchor, accept the
+    # anchored role regardless of seed_role (OCR may have missed the label).
+    for anchored_field in ("authors",):
+        anchor_ids = context.source_frontmatter_anchor_ids.get(anchored_field, set())
+        if block_id in anchor_ids and seed_role != anchored_field:
+            return accept_role(
+                anchored_field,
+                seed_role,
+                f"source_frontmatter_{anchored_field}_anchor_override",
+                [f"block matched source {anchored_field} anchor (OCR label override)"],
+            )
     if proposal == "authors" or seed_role == "authors":
         if block_id in context.source_frontmatter_anchor_ids.get("authors", set()):
             return accept_role(
@@ -261,6 +273,24 @@ def resolve_verified_role(block: dict, context: RoleGateContext) -> VerifiedRole
             evidence=["figure caption seed requires figure inventory verification"],
             seed_role=seed_role,
             role_candidate="figure_caption",
+            render_default=False,
+        )
+
+    if proposal == "table_caption" or seed_role == "table_caption":
+        if _artifact_membership_contains(block, set(context.accepted_table_block_ids)):
+            return accept_role(
+                "table_caption",
+                seed_role,
+                "accepted_table_caption_artifact",
+                ["table caption matched accepted table artifact"],
+            )
+        return VerifiedRoleDecision(
+            role="table_caption_candidate",
+            status="CANDIDATE",
+            source="pre_object_table_caption_candidate",
+            evidence=["table caption seed requires table inventory verification"],
+            seed_role=seed_role,
+            role_candidate="table_caption",
             render_default=False,
         )
 

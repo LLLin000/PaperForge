@@ -4074,7 +4074,10 @@ def _restore_numbered_body_from_tail_hold(blocks: list[dict]) -> None:
             block["role"] = "body_paragraph"
 
 
-def normalize_document_structure(blocks: list[dict]) -> tuple[DocumentStructure, list[dict]]:
+def normalize_document_structure(
+    blocks: list[dict],
+    source_frontmatter_anchors: dict | None = None,
+) -> tuple[DocumentStructure, list[dict]]:
     """Analyze document structure and normalize roles.
 
     Returns (document_structure, normalized_blocks).
@@ -4156,6 +4159,8 @@ def normalize_document_structure(blocks: list[dict]) -> tuple[DocumentStructure,
         page_layouts=page_layouts,
         region_bus=region_bus,
     )
+    if source_frontmatter_anchors:
+        doc_structure.source_frontmatter_anchors = source_frontmatter_anchors
 
     header_band, footer_band = _estimate_noise_bands(blocks)
 

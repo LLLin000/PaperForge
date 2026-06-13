@@ -18,6 +18,15 @@ _CANDIDATE_ROLES = frozenset(
 )
 
 
+def _vertical_gap(a, b) -> float:
+    """Distance from bottom of a to top of b (positive = gap, negative = overlap)."""
+    ba = a.get("bbox") or [0, 0, 0, 0]
+    bb = b.get("bbox") or [0, 0, 0, 0]
+    if len(ba) < 4 or len(bb) < 4:
+        return 999
+    return float(bb[1]) - float(ba[3])
+
+
 def _merge_adjacent_headings(rows: list[dict]) -> None:
     """Merge consecutive heading-labeled raw blocks split by OCR line breaks.
     Called BEFORE seed role assignment on raw_blocks, using raw_label only.
@@ -41,7 +50,7 @@ def _merge_adjacent_headings(rows: list[dict]) -> None:
             and nxt.get("raw_label") == "paragraph_title"
             and cur.get("page") == nxt.get("page")
             and _col(cur) == _col(nxt)
-            and not str(cur.get("text", "")).strip().endswith((".", "?", "!"))
+            and _vertical_gap(cur, nxt) <= 30  # OCR line-wrap within same heading
         ):
             cur["text"] = (str(cur.get("text", "")) + " " + str(nxt.get("text", ""))).strip()
             cur["bbox"] = _union_bbox(cur.get("bbox"), nxt.get("bbox"))
@@ -183,27 +192,26 @@ def build_structured_blocks(
     body_family_anchor = discover_body_family_anchor(rows, page_count=total_pages)
     doc_structure = DocumentStructure(body_family_anchor=body_family_anchor)
 
+    # Build source frontmatter anchors before normalization so the structural gate
+    # can verify paper_title and authors roles against source-backed block IDs.
+    _sfm_anchors = None
     if source_metadata:
         from paperforge.worker.ocr_metadata import build_source_backed_frontmatter_anchors
 
-        doc_structure.source_frontmatter_anchors = build_source_backed_frontmatter_anchors(
+        _sfm_anchors = build_source_backed_frontmatter_anchors(
             source_metadata,
             raw_blocks,
         )
+        doc_structure.source_frontmatter_anchors = _sfm_anchors
 
     # Normalize document structure (backmatter boundary, role regime, tail promotion)
     from paperforge.worker.ocr_document import normalize_document_structure
 
     try:
-        doc_structure, rows = normalize_document_structure(rows)
+        doc_structure, rows = normalize_document_structure(rows, source_frontmatter_anchors=_sfm_anchors)
         doc_structure.body_family_anchor = body_family_anchor
-        if source_metadata:
-            from paperforge.worker.ocr_metadata import build_source_backed_frontmatter_anchors
-
-            doc_structure.source_frontmatter_anchors = build_source_backed_frontmatter_anchors(
-                source_metadata,
-                raw_blocks,
-            )
+        if _sfm_anchors:
+            doc_structure.source_frontmatter_anchors = _sfm_anchors
     except Exception as exc:
         import logging
 
