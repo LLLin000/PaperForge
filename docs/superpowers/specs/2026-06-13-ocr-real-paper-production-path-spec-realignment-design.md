@@ -166,6 +166,155 @@ Reason:
 
 ---
 
+## 5.3 Confirmed failure families from five audited OCR-v2 samples
+
+The five desktop sample directories used in this investigation are OCR-v2 outputs, not master outputs. They are treated here as evidence of failure families, not as complete root-cause proofs.
+
+Important discipline rule:
+
+```text
+Observed sample symptom -> production-path artifact family -> candidate responsible module(s)
+```
+
+Not:
+
+```text
+Observed sample symptom -> forced single-module blame without artifact confirmation
+```
+
+### A. High-confidence, repeated failure families
+
+These failure families appear across multiple papers and map cleanly to OCR-v2 production-path stages.
+
+1. **Seed-role misclassification remains a top-level failure source**
+   - repeated patterns:
+     - frontmatter/support text leaking into body or heading flow
+     - long headings degrading into body prose
+     - ordinal body prose being treated as reference-like
+     - reference continuations falling back into body
+   - strongest affected samples:
+     - `CAQNW9Q2`
+     - `A8E7SRVS`
+     - `TSCKAVIS`
+     - `M36WA39N`
+   - high-confidence responsibility layer:
+     - `ocr_roles.py`
+   - downstream layers may amplify this, but this family consistently begins at the seed-role layer.
+
+2. **Document boundary enforcement is still unstable on mixed tail pages**
+   - repeated patterns:
+     - body continuation crossing into references
+     - references appearing before left-column body completion
+     - conclusion/backmatter/reference ordering drift
+     - abstract/frontmatter/support boundaries not staying isolated
+   - strongest affected samples:
+     - `CAQNW9Q2`
+     - `DWQQK2YB`
+     - `A8E7SRVS`
+     - `M36WA39N`
+   - high-confidence responsibility layer:
+     - `ocr_document.py`
+     - `ocr_structural_gate.py`
+   - rationale:
+     - these are boundary and segment-authority failures, not merely local block-label failures.
+
+3. **Object ownership is still not sufficiently exclusive**
+   - repeated patterns:
+     - figure summary pages and formal figure pages duplicating ownership
+     - continuation legends treated as fresh local figures
+     - table caption, asset, and note splitting into separate flows
+     - figure-local fragments reappearing outside accepted object ownership
+   - strongest affected samples:
+     - `DWQQK2YB`
+     - `A8E7SRVS`
+     - `TSCKAVIS`
+   - high-confidence responsibility layer:
+     - `ocr_figures.py`
+     - `ocr_figure_reader.py`
+     - `ocr_tables.py`
+
+4. **Final renderer still visibly amplifies upstream ownership/segment mistakes**
+   - repeated patterns:
+     - consumed object-like material reappearing as loose body/caption output
+     - tail sections surfacing in the wrong visible order
+     - reader-visible output reflecting mixed ownership instead of accepted artifact contracts
+   - strongest affected samples:
+     - all five, with different severity
+   - high-confidence responsibility layer:
+     - `ocr_render.py`
+   - caution:
+     - renderer is often the visible failure surface, but not always the originating root cause.
+
+### B. Medium-confidence module mappings
+
+These are plausible and useful for planning, but should remain framed as candidate mappings until confirmed by production-path replay fixtures and artifact assertions.
+
+1. `CAQNW9Q2`
+   - strong symptom set:
+     - reference contamination of body flow
+     - conclusion/reference ordering failure
+     - long heading degradation
+   - current best mapping:
+     - `ocr_roles.py`
+     - `ocr_document.py`
+     - `ocr_structural_gate.py`
+
+2. `DWQQK2YB`
+   - strong symptom set:
+     - preproof/frontmatter pollution
+     - abstract leakage across pages
+     - figure summary page vs formal figure page duplication
+   - current best mapping:
+     - `ocr_document.py`
+     - `ocr_structural_gate.py`
+     - `ocr_figures.py`
+     - `ocr_figure_reader.py`
+
+3. `M36WA39N`
+   - strong symptom set:
+     - frontmatter left rail leaking into body
+     - sustained double-column order drift
+     - figure-local text leaking into body
+   - current best mapping:
+     - `ocr_roles.py`
+     - `ocr_document.py`
+     - `ocr_render.py`
+
+4. `TSCKAVIS`
+   - strong symptom set:
+     - heading hygiene failure
+     - true subsection titles degrading into body
+     - legend/table support material not staying cleanly out of body flow
+   - current best mapping:
+     - `ocr_roles.py`
+     - `ocr_document.py`
+     - `ocr_tables.py`
+     - `ocr_render.py`
+
+5. `A8E7SRVS`
+   - strong symptom set:
+     - ordinal prose becoming `reference_item`
+     - reference continuation leaking into body
+     - table object adjacency/ownership instability
+   - current best mapping:
+     - `ocr_roles.py`
+     - `ocr_document.py`
+     - `ocr_structural_gate.py`
+     - `ocr_tables.py`
+
+### C. Explicit non-claims
+
+This design intentionally does **not** claim the following without further artifact-backed proof:
+
+1. that every per-paper symptom can already be localized to exactly one module
+2. that all renderer-visible failures originate inside `ocr_render.py`
+3. that all figure failures begin in `ocr_figures.py` rather than earlier document segmentation
+4. that page-local traces alone are sufficient to prove final production-path causality
+
+Where confidence is only medium, the implementation plan should add replay fixtures and artifact assertions before treating those mappings as root-cause truth.
+
+---
+
 ## 6. Test Entry Points
 
 The regression harness must distinguish the real OCR-v2 production path from legacy diagnostic helpers.
