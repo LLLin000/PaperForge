@@ -1316,12 +1316,18 @@ def _detect_backward_backmatter_start(
     if not pages:
         return None
 
+    best: int | None = None
     for page in pages:
         page_blocks = by_page[page]
         roles = {b.get("role") for b in page_blocks}
+        seed_roles = {b.get("seed_role") for b in page_blocks}
 
-        if "reference_heading" in roles or "backmatter_heading" in roles or "backmatter_boundary_heading" in roles:
-            return page
+        if any(r in roles for r in ("reference_heading", "backmatter_heading", "backmatter_boundary_heading")):
+            best = page
+            continue
+        if any(r in seed_roles for r in ("reference_heading", "backmatter_heading", "backmatter_heading_candidate", "backmatter_boundary_heading")):
+            best = page
+            continue
 
         if page_layouts and page in page_layouts:
             profile = page_layouts[page]
@@ -1329,10 +1335,17 @@ def _detect_backward_backmatter_start(
                 continue
 
         dense_refs = sum(1 for b in page_blocks if b.get("role") == "reference_item")
-        if dense_refs >= 4:
-            return page
+        if dense_refs < 4:
+            dense_refs += sum(1 for b in page_blocks if b.get("seed_role") == "reference_item")
+        has_ref_heading = (
+            "reference_heading" in roles
+            or "reference_heading" in seed_roles
+        )
+        if dense_refs >= 4 and has_ref_heading:
+            best = page
+            continue
 
-    return None
+    return best
 
 
 def _detect_references_start(
