@@ -933,6 +933,10 @@ def render_fulltext_markdown(
                 continue
             text = block.get("text", "")
             if text:
+                # Skip highlight bullet continuations incorrectly labeled as abstract
+                stripped = text.strip()
+                if stripped.startswith(("\u2022", "- ")):
+                    continue
                 for abstract_line in normalize_ocr_math_text(text).splitlines():
                     if abstract_line.strip():
                         lines.append(abstract_line)
