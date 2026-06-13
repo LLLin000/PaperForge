@@ -419,6 +419,22 @@ def _strip_inline_html(text: str) -> str:
     return re.sub(r"<[^>]+>", "", text or "")
 
 
+def _is_page1_body_start(block: dict, *, seen_title_or_author: bool) -> bool:
+    """Detect when page 1 frontmatter ends and body content begins."""
+    if not seen_title_or_author:
+        return False
+    role = block.get("role") or block.get("seed_role")
+    text = str(block.get("text") or "").strip()
+    words = text.split()
+    if role in {"section_heading", "subsection_heading"}:
+        return True
+    if role == "body_paragraph" and len(words) >= 20:
+        lower = text.lower()
+        if not lower.startswith(("correspondence", "received", "accepted", "published", "doi")):
+            return True
+    return False
+
+
 def _is_reference_heading_candidate(block: dict) -> bool:
     marker_type = (block.get("marker_signature") or {}).get("type") or "none"
     if _canonical_section_text(block) not in _REFERENCE_ZONE_HEADING_TEXTS:
@@ -721,6 +737,44 @@ def infer_zones(
         and block.get("block_id") is not None
     ]
 
+    _POST_REFERENCE_BACKMATTER_HEADINGS = {
+        "biographies", "table and figure captions", "figure captions",
+        "table captions", "graphical abstract",
+    }
+    post_ref_backmatter_start: int | None = None
+    post_ref_heading_ids: list[str | int] = []
+    if first_reference_page is not None:
+        for block in sorted(blocks, key=lambda b: (int(b.get("page", 0) or 0), (b.get("bbox") or [0, 0, 0, 0])[1])):
+            page = int(block.get("page", 0) or 0)
+            if page < first_reference_page:
+                continue
+            text = str(block.get("text") or "").strip().lower()
+            role = block.get("role") or block.get("seed_role")
+            if text in _POST_REFERENCE_BACKMATTER_HEADINGS and role in {
+                "section_heading", "subsection_heading", "sub_subsection_heading",
+                "backmatter_heading_candidate",
+            }:
+                post_ref_backmatter_start = page
+                bid = _artifact_block_id(block, duplicate_block_ids)
+                if bid is not None:
+                    post_ref_heading_ids.append(bid)
+                break
+    if post_ref_backmatter_start is not None:
+        reference_blocks = [
+            b for b in reference_blocks
+            if int(b.get("page", 0) or 0) < post_ref_backmatter_start
+        ]
+        reference_block_ids = [
+            _artifact_block_id(b, duplicate_block_ids) for b in reference_blocks
+        ]
+        reference_composite_ids = [
+            _zone_block_key(b) for b in reference_item_blocks
+            if first_reference_page is not None
+            and int(b.get("page", 0) or 0) >= first_reference_page
+            and int(b.get("page", 0) or 0) < post_ref_backmatter_start
+            and b.get("block_id") is not None
+        ]
+
     preproof_blocks = [
         block for block in blocks if ((block.get("marker_signature") or {}).get("type") or "none") == "preproof_marker"
     ]
@@ -738,14 +792,28 @@ def infer_zones(
     display_block_ids = [_artifact_block_id(block, duplicate_block_ids) for block in display_blocks]
     display_composite_ids = [_zone_block_key(block) for block in display_blocks]
 
-    frontmatter_main_blocks = [
-        block
-        for block in blocks
-        if int(block.get("page", 0) or 0) == 1
-        and ((block.get("marker_signature") or {}).get("type") or "none") != "preproof_marker"
-        and not _is_reference_item_candidate(block)
+    page1_candidates = [
+        b for b in blocks
+        if int(b.get("page", 0) or 0) == 1
+        and ((b.get("marker_signature") or {}).get("type") or "none") != "preproof_marker"
+        and not _is_reference_item_candidate(b)
         and block.get("block_id") is not None
     ]
+    page1_candidates.sort(key=lambda b: (
+        (b.get("bbox") or [0, 0, 0, 0])[1],
+        (b.get("bbox") or [0, 0, 0, 0])[0],
+    ))
+    frontmatter_main_blocks = []
+    seen_title_or_author = False
+    body_started = False
+    for block in page1_candidates:
+        role = block.get("role") or block.get("seed_role")
+        if role in {"paper_title", "authors", "frontmatter_support", "affiliation"}:
+            seen_title_or_author = True
+        if _is_page1_body_start(block, seen_title_or_author=seen_title_or_author):
+            body_started = True
+        if not body_started:
+            frontmatter_main_blocks.append(block)
     frontmatter_main_ids = [_artifact_block_id(block, duplicate_block_ids) for block in frontmatter_main_blocks]
     frontmatter_main_composite_ids = [_zone_block_key(block) for block in frontmatter_main_blocks]
 
@@ -853,6 +921,18 @@ def infer_zones(
             tail_nonref_hold_ids,
             composite_block_ids=tail_nonref_hold_composite_ids,
             boundary_band=_page_band(tail_hold_start, tail_hold_end),
+        ),
+        "post_reference_backmatter_zone": _make_zone(
+            "ACCEPT" if post_ref_backmatter_start is not None and post_ref_heading_ids else "HOLD",
+            post_ref_heading_ids,
+            composite_block_ids=[
+                _zone_block_key(b) for b in blocks
+                if post_ref_backmatter_start is not None
+                and int(b.get("page", 0) or 0) >= post_ref_backmatter_start
+                and not _is_reference_item_candidate(b)
+                and b.get("block_id") is not None
+            ],
+            boundary_band=_page_band(post_ref_backmatter_start, max_page) if post_ref_backmatter_start else None,
         ),
         "preproof_cover_zone": _make_zone(
             "ACCEPT" if preproof_pages else "HOLD",
@@ -1272,6 +1352,48 @@ def _detect_references_start(
     return None
 
 
+_BACKMATTER_TITLE_DENY_LIST = frozenset({
+    "generative ai statement", "acknowledgments", "acknowledgements",
+    "funding", "conflict of interest", "competing interests",
+    "data availability", "supplementary materials", "supplementary material",
+    "author contributions", "declaration of competing interest",
+    "credit authorship contribution statement", "ethical statement",
+    "ethics statement", "institutional review board",
+})
+
+
+def _page_has_strong_body_continuation(page_blocks: list[dict]) -> bool:
+    """Return True if page looks like body continuation, not tail/backmatter."""
+    body_like = [
+        b for b in page_blocks
+        if (b.get("seed_role") in {"body_paragraph", "section_heading", "subsection_heading"}
+            or b.get("role") in {"body_paragraph", "section_heading", "subsection_heading"})
+    ]
+    ref_like = [b for b in page_blocks if _is_reference_item_candidate(b)]
+    backmatter_heading = [
+        b for b in page_blocks
+        if _canonical_section_text(b) in _BACKMATTER_TITLE_DENY_LIST
+    ]
+    return len(body_like) >= 3 and len(ref_like) < 3 and not backmatter_heading
+
+
+def _veto_tail_spread_body_continuation(boundary: TailBoundary, blocks: list[dict]) -> TailBoundary:
+    """Push spread_start forward past pages with strong body continuation."""
+    by_page: dict[int, list[dict]] = {}
+    for b in blocks:
+        page = int(b.get("page", 0) or 0)
+        if page > 0:
+            by_page.setdefault(page, []).append(b)
+    spread = boundary.spread_start
+    while spread is not None and _page_has_strong_body_continuation(by_page.get(spread, [])):
+        spread += 1
+    return boundary._replace(spread_start=spread)
+
+
+def _canonical_section_text(block: dict) -> str:
+    return str(block.get("text") or block.get("content") or "").strip().lower()
+
+
 def _reconcile_tail_spread(
     blocks: list[dict],
     page_layouts: dict[int, PageLayoutProfile] | None = None,
@@ -1298,7 +1420,7 @@ def _reconcile_tail_spread(
                 ref_pages = sorted(by_page_refs.keys())
                 first_ref = ref_pages[0]
                 last_ref = ref_pages[-1]
-                return TailBoundary(
+                return _veto_tail_spread_body_continuation(TailBoundary(
                     body_end_page=max(1, first_ref - 1),
                     backmatter_start=first_ref,
                     references_start=first_ref,
@@ -1306,7 +1428,7 @@ def _reconcile_tail_spread(
                     spread_end=last_ref,
                     is_clean_separated=False,
                     reason=f"backward reference fallback: ref items on pages {first_ref}-{last_ref}",
-                )
+                ), blocks)
         return None
 
     max_page = 0
@@ -1322,7 +1444,7 @@ def _reconcile_tail_spread(
             f"at page {backward_start}, references start at page "
             f"{references_start or 'N/A'}"
         )
-        return TailBoundary(
+        return _veto_tail_spread_body_continuation(TailBoundary(
             body_end_page=None,
             backmatter_start=backward_start,
             references_start=references_start,
@@ -1330,7 +1452,7 @@ def _reconcile_tail_spread(
             spread_end=max_page,
             is_clean_separated=False,
             reason=reason,
-        )
+        ), blocks)
 
     if backward_start is None and forward_end is not None:
         if references_start is not None:
@@ -1340,7 +1462,7 @@ def _reconcile_tail_spread(
                     p = b.get("page")
                     if p and p > last_ref_page:
                         last_ref_page = p
-            return TailBoundary(
+            return _veto_tail_spread_body_continuation(TailBoundary(
                 body_end_page=forward_end,
                 backmatter_start=references_start,
                 references_start=references_start,
@@ -1348,7 +1470,7 @@ def _reconcile_tail_spread(
                 spread_end=last_ref_page,
                 is_clean_separated=False,
                 reason=f"backward backmatter not detected via layout, using references_start={references_start}, last_ref={last_ref_page}",
-            )
+            ), blocks)
         return None
 
     if forward_end is not None and backward_start is not None:
@@ -1364,7 +1486,7 @@ def _reconcile_tail_spread(
             f"backward backmatter start at page {backward_start}, "
             f"references start at page {references_start or 'N/A'}"
         )
-        return TailBoundary(
+        return _veto_tail_spread_body_continuation(TailBoundary(
             body_end_page=forward_end,
             backmatter_start=backward_start,
             references_start=references_start,
@@ -1372,7 +1494,7 @@ def _reconcile_tail_spread(
             spread_end=spread_end,
             is_clean_separated=is_clean,
             reason=reason,
-        )
+        ), blocks)
 
     return None
 
@@ -2071,6 +2193,40 @@ def _apply_zone_labels(blocks: list[dict], region_bus: dict[str, dict] | None) -
         zone_name = block_ids_to_zone.get(str(block.get("block_id"))) or block_ids_to_zone.get(_zone_block_key(block))
         if zone_name:
             block["zone"] = zone_name
+
+    _apply_content_zone_fallback(blocks, region_bus)
+
+
+def _apply_content_zone_fallback(blocks: list[dict], region_bus: dict[str, dict] | None) -> None:
+    """Fill zone for content blocks not matched by region_bus."""
+    ref_zone = region_bus.get("reference_zone", {}) if region_bus else {}
+    ref_band = ref_zone.get("boundary_band") or {}
+    ref_start = ref_band.get("start_page")
+    ref_end = ref_band.get("end_page")
+
+    for block in blocks:
+        if block.get("zone"):
+            continue
+        role = block.get("role") or block.get("seed_role")
+        page = int(block.get("page", 0) or 0)
+
+        if role in {"noise", "frontmatter_noise", "media_asset", "figure_asset", "figure_inner_text"}:
+            continue
+
+        if role in {"paper_title", "authors", "affiliation", "frontmatter_support"} and page <= 2:
+            block["zone"] = "frontmatter_main_zone"
+            continue
+
+        if role in {"reference_heading", "reference_item"}:
+            if ref_start is not None and page >= ref_start and (ref_end is None or page <= ref_end):
+                block["zone"] = "reference_zone"
+            continue
+
+        if role in {
+            "section_heading", "subsection_heading", "sub_subsection_heading", "body_paragraph",
+        }:
+            if ref_start is None or page < ref_start:
+                block["zone"] = "body_zone"
 
 
 def _exclude_frontmatter_side_from_body_flow(blocks: list[dict]) -> None:
@@ -3744,11 +3900,29 @@ def _doc_get(obj, key, default=None):
 
 
 def _build_source_frontmatter_anchor_ids(doc_structure, blocks: list[dict]) -> dict[str, set]:
-    anchors = _doc_get(doc_structure, "source_frontmatter_anchor_ids", {}) or {}
-    return {
-        "title": set(_doc_get(anchors, "title", set()) or set()),
-        "authors": set(_doc_get(anchors, "authors", set()) or set()),
-    }
+    result = {"title": set(), "authors": set(), "doi": set()}
+
+    # New / explicit shape
+    ids = _doc_get(doc_structure, "source_frontmatter_anchor_ids", {}) or {}
+    for field in ("title", "authors", "doi"):
+        vals = _doc_get(ids, field, set()) or set()
+        if isinstance(vals, (list, tuple, set)):
+            result[field].update(vals)
+        elif vals:
+            result[field].add(vals)
+
+    # Existing production shape (source_frontmatter_anchors with _source_anchor suffix keys)
+    anchors = _doc_get(doc_structure, "source_frontmatter_anchors", {}) or {}
+    for field in ("title", "authors", "doi"):
+        anchor = _doc_get(anchors, f"{field}_source_anchor", {}) or {}
+        bid = _doc_get(anchor, "ocr_block_id")
+        if bid is not None:
+            result[field].add(bid)
+            page = _doc_get(anchor, "ocr_page")
+            if page is not None:
+                result[field].add(f"p{page}:{bid}")
+
+    return result
 
 
 def _collect_unverified_required_roles(blocks: list[dict]) -> list[dict]:
