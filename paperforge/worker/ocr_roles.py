@@ -118,6 +118,16 @@ _COMMON_SECTION_HEADINGS = {
     "conclusions",
 }
 
+_BODY_ORDINAL_OPENINGS: frozenset[str] = frozenset({
+    "first", "second", "third", "fourth", "fifth",
+    "sixth", "seventh", "eighth", "ninth", "tenth",
+    "additionally", "historically", "metabolically", "clinically",
+    "conversely", "however", "interestingly", "surprisingly",
+    "importantly", "notably", "moreover", "furthermore",
+    "nevertheless", "nonetheless", "therefore", "thus",
+    "hence", "accordingly", "consequently",
+})
+
 # citation line like "Masante B, Gabetti S, Silva JC, Putame G... and Massai D (2025)"
 _CITATION_LINE_PATTERN = re.compile(
     r"^[A-Z][a-z]+\'?[a-z]* [A-Z](?:\.[, ]|[A-Z]\.?,|[,\s])",
@@ -1098,13 +1108,22 @@ def assign_block_role(
             evidence=[f"reference content label: {text[:60]}"],
         )
 
+    if raw_label in {"footnote", "vision_footnote"}:
+        return RoleAssignment(
+            role="footnote",
+            confidence=0.7,
+            evidence=[f"{raw_label} label: {text[:60]}"],
+        )
+
     # text with reference-like pattern
     if _looks_like_reference(text):
-        return RoleAssignment(
-            role="reference_item",
-            confidence=0.6,
-            evidence=[f"reference-like pattern: {text[:60]}"],
-        )
+        first_word = text.strip().split(",")[0].strip().lower()
+        if first_word not in _BODY_ORDINAL_OPENINGS:
+            return RoleAssignment(
+                role="reference_item",
+                confidence=0.6,
+                evidence=[f"reference-like pattern: {text[:60]}"],
+            )
 
     # text -> body paragraph by default, but with lower confidence
     if raw_label == "text":
