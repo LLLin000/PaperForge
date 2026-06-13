@@ -397,14 +397,26 @@ _TAIL_NONREF_HEADING_DENY_TYPES = {
 }
 
 
-def _make_zone(status: str, block_ids: list[str], **extra: object) -> dict:
+def _make_zone(
+    status: str,
+    block_ids: list[str | int],
+    *,
+    composite_block_ids: list[str] | None = None,
+    **extra: object,
+) -> dict:
     zone = {"status": status, "block_ids": block_ids}
+    if composite_block_ids is not None:
+        zone["composite_block_ids"] = composite_block_ids
     zone.update(extra)
     return zone
 
 
 def _canonical_section_text(block: dict) -> str:
     return _block_text(block).strip().lower()
+
+
+def _strip_inline_html(text: str) -> str:
+    return re.sub(r"<[^>]+>", "", text or "")
 
 
 def _is_reference_heading_candidate(block: dict) -> bool:
@@ -418,17 +430,28 @@ def _is_reference_item_candidate(block: dict) -> bool:
     marker_type = (block.get("marker_signature") or {}).get("type") or "none"
     if marker_type in _REFERENCE_ZONE_MARKER_TYPES:
         return True
-    # Marker extraction sometimes misclassifies reference items as
-    # heading_numbered (e.g. old-style "1. Author, ..." entries) or
-    # as generic_text.  Accept blocks that the role pipeline has
-    # already identified as references, provided the marker is not an
-    # explicitly non-reference heading marker.
-    if block.get("role") == "reference_item" and marker_type not in {
+    text = _block_text(block).strip()
+    if text and len(text) >= 40:
+        lower = text.lower()
+        if (
+            re.search(r"\((?:19|20)\d{2}[a-z]?\)|\b(?:19|20)\d{2}\.", text)
+            and (text.count(",") >= 2 or "et al." in lower or "doi:" in lower)
+        ):
+            return True
+    # Old-style references can miss explicit markers, but they should still
+    # carry reference-family evidence rather than relying on the pre-gate role
+    # alone. Without this guard, body citations can poison early pages and make
+    # reference_zone swallow the document.
+    if (
+        block.get("role") == "reference_item"
+        and str(block.get("style_family") or "") == "reference_like"
+        and marker_type not in {
         "heading_arabic",
         "heading_decimal",
         "heading_roman",
         "heading_alpha",
-    }:
+        }
+    ):
         return True
     return False
 
@@ -447,6 +470,8 @@ def _looks_like_short_heading_text(text: str) -> bool:
 def _is_tail_nonref_heading_candidate(block: dict, body_anchor: dict | None = None) -> bool:
     marker_type = (block.get("marker_signature") or {}).get("type") or "none"
     if marker_type in _TAIL_NONREF_HEADING_DENY_TYPES:
+        return False
+    if marker_type in {"heading_numbered", "heading_arabic", "heading_decimal", "heading_roman", "heading_alpha"}:
         return False
     text = _canonical_section_text(block)
     if not text or text in _REFERENCE_ZONE_HEADING_TEXTS:
@@ -530,6 +555,30 @@ def _zone_block_key(block: dict) -> str:
     return f"p{page}:{block_id}"
 
 
+def _canonical_block_id(block: dict) -> str | int | None:
+    return block.get("block_id")
+
+
+def _artifact_block_id(block: dict, duplicate_block_ids: set[str]) -> str | int | None:
+    block_id = _canonical_block_id(block)
+    if block_id is None:
+        return None
+    if str(block_id) in duplicate_block_ids:
+        return _zone_block_key(block)
+    return block_id
+
+
+def _duplicate_block_ids_from_blocks(blocks: list[dict]) -> set[str]:
+    counts: dict[str, int] = {}
+    for block in blocks:
+        block_id = _canonical_block_id(block)
+        if block_id is None:
+            continue
+        key = str(block_id)
+        counts[key] = counts.get(key, 0) + 1
+    return {key for key, count in counts.items() if count > 1}
+
+
 def _is_frontmatter_side_candidate(block: dict, body_anchor: dict | None = None) -> bool:
     page = int(block.get("page", 0) or 0)
     if page <= 0:
@@ -608,6 +657,14 @@ def infer_zones(
     anchors = anchors or {}
     body_anchor = anchors.get("body_family_anchor") or {}
     reference_anchor = anchors.get("reference_family_anchor") or {}
+    block_id_counts: dict[str, int] = {}
+    for block in blocks:
+        block_id = _canonical_block_id(block)
+        if block_id is None:
+            continue
+        key = str(block_id)
+        block_id_counts[key] = block_id_counts.get(key, 0) + 1
+    duplicate_block_ids = {key for key, count in block_id_counts.items() if count > 1}
     pages = sorted({int(block.get("page", 0) or 0) for block in blocks if int(block.get("page", 0) or 0) > 0})
     max_page = pages[-1] if pages else None
 
@@ -645,12 +702,23 @@ def infer_zones(
             if candidate_pages:
                 first_reference_page = candidate_pages[0]
 
+    reference_blocks = [
+        block
+        for block in reference_item_blocks
+        if first_reference_page is not None
+        and int(block.get("page", 0) or 0) >= first_reference_page
+        and block.get("block_id") is not None
+    ]
     reference_block_ids = [
+        _artifact_block_id(block, duplicate_block_ids)
+        for block in reference_blocks
+    ]
+    reference_composite_ids = [
         _zone_block_key(block)
         for block in reference_item_blocks
         if first_reference_page is not None
         and int(block.get("page", 0) or 0) >= first_reference_page
-        and block.get("block_id")
+        and block.get("block_id") is not None
     ]
 
     preproof_blocks = [
@@ -660,36 +728,43 @@ def infer_zones(
         {int(block.get("page", 0) or 0) for block in preproof_blocks if int(block.get("page", 0) or 0) > 0}
     )
 
-    display_block_ids = [
-        _zone_block_key(block)
+    display_blocks = [
+        block
         for block in blocks
         if ((block.get("marker_signature") or {}).get("type") or "none")
         in {"figure_number", "table_number", "panel_label"}
-        and block.get("block_id")
+        and block.get("block_id") is not None
     ]
+    display_block_ids = [_artifact_block_id(block, duplicate_block_ids) for block in display_blocks]
+    display_composite_ids = [_zone_block_key(block) for block in display_blocks]
 
-    frontmatter_main_ids = [
-        _zone_block_key(block)
+    frontmatter_main_blocks = [
+        block
         for block in blocks
         if int(block.get("page", 0) or 0) == 1
         and ((block.get("marker_signature") or {}).get("type") or "none") != "preproof_marker"
         and not _is_reference_item_candidate(block)
-        and block.get("block_id")
+        and block.get("block_id") is not None
     ]
+    frontmatter_main_ids = [_artifact_block_id(block, duplicate_block_ids) for block in frontmatter_main_blocks]
+    frontmatter_main_composite_ids = [_zone_block_key(block) for block in frontmatter_main_blocks]
 
-    frontmatter_side_ids = [
-        _zone_block_key(block)
+    frontmatter_main_id_set = set(frontmatter_main_ids)
+    frontmatter_side_blocks = [
+        block
         for block in blocks
         if _is_frontmatter_side_candidate(block, body_anchor=body_anchor)
-        and _zone_block_key(block) not in frontmatter_main_ids
-        and block.get("block_id")
+        and _artifact_block_id(block, duplicate_block_ids) not in frontmatter_main_id_set
+        and block.get("block_id") is not None
     ]
+    frontmatter_side_ids = [_artifact_block_id(block, duplicate_block_ids) for block in frontmatter_side_blocks]
+    frontmatter_side_composite_ids = [_zone_block_key(block) for block in frontmatter_side_blocks]
     frontmatter_side_id_set = set(frontmatter_side_ids)
     frontmatter_side_pages = sorted(
         {
             int(block.get("page", 0) or 0)
             for block in blocks
-            if _zone_block_key(block) in frontmatter_side_id_set and int(block.get("page", 0) or 0) > 0
+            if _artifact_block_id(block, duplicate_block_ids) in frontmatter_side_id_set and int(block.get("page", 0) or 0) > 0
         }
     )
 
@@ -707,27 +782,31 @@ def infer_zones(
         if body_end_page is None or candidate_body_end < body_end_page:
             body_end_page = candidate_body_end
 
-    body_block_ids = [
-        _zone_block_key(block)
+    body_blocks = [
+        block
         for block in blocks
         if body_anchor_ok
         and int(block.get("page", 0) or 0) > 1
         and (body_end_page is None or int(block.get("page", 0) or 0) <= body_end_page)
         and not _is_reference_item_candidate(block)
-        and _zone_block_key(block) not in frontmatter_side_id_set
-        and block.get("block_id")
+        and _artifact_block_id(block, duplicate_block_ids) not in frontmatter_side_id_set
+        and block.get("block_id") is not None
     ]
+    body_block_ids = [_artifact_block_id(block, duplicate_block_ids) for block in body_blocks]
+    body_composite_ids = [_zone_block_key(block) for block in body_blocks]
 
-    tail_nonref_hold_ids = [
-        _zone_block_key(block)
+    tail_nonref_hold_blocks = [
+        block
         for block in blocks
         if tail_hold_start is not None
         and tail_hold_end is not None
         and tail_hold_start <= int(block.get("page", 0) or 0) <= tail_hold_end
         and not _is_reference_item_candidate(block)
         and not _is_reference_heading_candidate(block)
-        and block.get("block_id")
+        and block.get("block_id") is not None
     ]
+    tail_nonref_hold_ids = [_artifact_block_id(block, duplicate_block_ids) for block in tail_nonref_hold_blocks]
+    tail_nonref_hold_composite_ids = [_zone_block_key(block) for block in tail_nonref_hold_blocks]
 
     reference_end_page = max(
         [int(block.get("page", 0) or 0) for block in reference_item_blocks if int(block.get("page", 0) or 0) > 0],
@@ -738,11 +817,13 @@ def infer_zones(
         "frontmatter_main_zone": _make_zone(
             "ACCEPT" if frontmatter_main_ids else "HOLD",
             frontmatter_main_ids,
+            composite_block_ids=frontmatter_main_composite_ids,
             boundary_band=_page_band(1, 1) if frontmatter_main_ids else None,
         ),
         "frontmatter_side_zone": _make_zone(
             "ACCEPT" if frontmatter_side_ids else "HOLD",
             frontmatter_side_ids,
+            composite_block_ids=frontmatter_side_composite_ids,
             boundary_band=_page_band(frontmatter_side_pages[0], frontmatter_side_pages[-1])
             if frontmatter_side_pages
             else None,
@@ -750,28 +831,33 @@ def infer_zones(
         "body_zone": _make_zone(
             "ACCEPT" if body_block_ids else "HOLD",
             body_block_ids,
+            composite_block_ids=body_composite_ids,
             anchor_family="body_family_anchor" if body_anchor_ok else None,
             boundary_band=_page_band(min(body_sample_pages) if body_sample_pages else None, body_end_page),
         ),
         "reference_zone": _make_zone(
             "ACCEPT" if reference_block_ids else ("HOLD" if reference_anchor.get("status") == "ACCEPT" else "REJECT"),
             reference_block_ids,
+            composite_block_ids=reference_composite_ids,
             anchor_family="reference_family_anchor" if reference_anchor.get("status") == "ACCEPT" else None,
             boundary_band=_page_band(first_reference_page, reference_end_page),
         ),
         "display_zone": _make_zone(
             "ACCEPT" if display_block_ids else "HOLD",
             display_block_ids,
+            composite_block_ids=display_composite_ids,
             boundary_band=None,
         ),
         "tail_nonref_hold_zone": _make_zone(
             "ACCEPT" if tail_nonref_hold_ids else "HOLD",
             tail_nonref_hold_ids,
+            composite_block_ids=tail_nonref_hold_composite_ids,
             boundary_band=_page_band(tail_hold_start, tail_hold_end),
         ),
         "preproof_cover_zone": _make_zone(
             "ACCEPT" if preproof_pages else "HOLD",
-            [_zone_block_key(block) for block in preproof_blocks if block.get("block_id")],
+            [_artifact_block_id(block, duplicate_block_ids) for block in preproof_blocks if block.get("block_id") is not None],
+            composite_block_ids=[_zone_block_key(block) for block in preproof_blocks if block.get("block_id") is not None],
             boundary_band=_page_band(preproof_pages[0], preproof_pages[-1]) if preproof_pages else None,
         ),
     }
@@ -900,6 +986,70 @@ def _build_tail_reading_order(
         page_segments = _build_page_reading_segments(page_blocks_only, profile, page_idx_offset)
         segments.extend(page_segments)
     return segments
+
+
+def _enforce_body_before_references_in_segments(
+    segments: list[ReadingSegment],
+    blocks: list[dict],
+    spread_start: int | None,
+    spread_end: int | None,
+) -> list[ReadingSegment]:
+    """Ensure body continuation completes before references on mixed pages.
+
+    When a spread page contains both body-continuation blocks AND
+    reference-zone blocks, body continuation must complete before
+    references begin in the output order.
+    """
+    if spread_start is None or spread_end is None:
+        return segments
+
+    body_continuation_roles = {"tail_candidate_body", "backmatter_body", "backmatter_heading", "backmatter_boundary_heading"}
+    ref_roles = {"reference_heading", "reference_item"}
+
+    by_page: dict[int, list[ReadingSegment]] = {}
+    for seg in segments:
+        by_page.setdefault(seg.page, []).append(seg)
+
+    result: list[ReadingSegment] = []
+    for page in sorted(by_page):
+        page_segs = by_page[page]
+        if spread_start <= page <= spread_end:
+            has_body = False
+            has_ref = False
+            for seg in page_segs:
+                for bi in seg.block_indices:
+                    if bi < len(blocks):
+                        r = blocks[bi].get("role", "")
+                        if r in body_continuation_roles:
+                            has_body = True
+                        if r in ref_roles:
+                            has_ref = True
+
+            if has_body and has_ref:
+                body_segs: list[ReadingSegment] = []
+                backmatter_segs: list[ReadingSegment] = []
+                ref_segs: list[ReadingSegment] = []
+                other_segs: list[ReadingSegment] = []
+                for seg in page_segs:
+                    roles_in_seg = {
+                        blocks[bi].get("role", "")
+                        for bi in seg.block_indices
+                        if bi < len(blocks)
+                    }
+                    if roles_in_seg & ref_roles:
+                        ref_segs.append(seg)
+                    elif roles_in_seg & body_continuation_roles:
+                        body_segs.append(seg)
+                    elif any("backmatter" in (blocks[bi].get("role", "") or "") for bi in seg.block_indices if bi < len(blocks)):
+                        backmatter_segs.append(seg)
+                    else:
+                        other_segs.append(seg)
+                result.extend(body_segs + backmatter_segs + ref_segs + other_segs)
+                continue
+
+        result.extend(page_segs)
+
+    return result
 
 
 def _detect_reference_zones(
@@ -1912,11 +2062,13 @@ def _apply_zone_labels(blocks: list[dict], region_bus: dict[str, dict] | None) -
     for zone_name, zone in region_bus.items():
         for block_id in zone.get("block_ids") or []:
             block_ids_to_zone[str(block_id)] = zone_name
+        for composite_id in zone.get("composite_block_ids") or []:
+            block_ids_to_zone[str(composite_id)] = zone_name
 
     for block in blocks:
         if block.get("block_id") is None:
             continue
-        zone_name = block_ids_to_zone.get(_zone_block_key(block))
+        zone_name = block_ids_to_zone.get(str(block.get("block_id"))) or block_ids_to_zone.get(_zone_block_key(block))
         if zone_name:
             block["zone"] = zone_name
 
@@ -2139,6 +2291,15 @@ def _promote_tail_body_candidates(
             if not _is_in_usable_content(block, header_band, footer_band):
                 continue
 
+            # Reference zone ownership is stronger than generic tail/body fallback.
+            # Blocks already identified as reference-zone members must not be
+            # re-promoted to tail_candidate_body during tail resolution.
+            if doc is not None and doc.reference_zones:
+                if any(
+                    idx in (z.get("block_indices") or []) for z in doc.reference_zones
+                ):
+                    continue
+
             bbox = block.get("bbox") or block.get("block_bbox")
             if not bbox or len(bbox) < 4:
                 continue
@@ -2220,6 +2381,15 @@ def _assign_tail_spread_ownership(
                     reason="tail candidate outside spread, demoted to body",
                 )
             continue
+
+        # Reference zone ownership is stronger than generic tail/body fallback.
+        # Blocks inside a reference zone must not be re-assigned to
+        # backmatter_body or re-demoted to body_paragraph.
+        if doc is not None and doc.reference_zones:
+            if any(
+                i in (z.get("block_indices") or []) for z in doc.reference_zones
+            ):
+                continue
 
         pw = block.get("page_width", 0) or 1200
         idx = _find_best_anchor(block, anchors, ref_heading, pw)
@@ -3605,7 +3775,14 @@ def _assert_verified_required_roles(blocks: list[dict]) -> None:
 
 def _build_accepted_heading_block_ids(blocks: list[dict], doc_structure) -> set:
     heading_artifact = _doc_get(doc_structure, "accepted_heading_block_ids", set()) or set()
-    return set(heading_artifact)
+    result = set(heading_artifact)
+    _HEADING_SEED_ROLES = {"section_heading", "subsection_heading", "sub_subsection_heading"}
+    for block in blocks:
+        if block.get("seed_role") in _HEADING_SEED_ROLES and block.get("zone") in {"body_zone", "tail_body_zone"}:
+            bid = block.get("block_id")
+            if bid is not None:
+                result.add(bid)
+    return result
 
 
 def _build_accepted_caption_block_ids(
@@ -3629,6 +3806,71 @@ def _build_accepted_table_block_ids(table_inventory: dict | None, blocks: list[d
             if table.get(key) is not None:
                 accepted.add(table[key])
     return accepted
+
+
+def _demote_early_frontmatter_body_leaks(blocks: list[dict]) -> None:
+    heading_seen_by_page: dict[int, bool] = {}
+    for block in blocks:
+        page = int(block.get("page", 0) or 0)
+        if block.get("role") in {"section_heading", "subsection_heading", "sub_subsection_heading"}:
+            heading_seen_by_page[page] = True
+            continue
+        if block.get("role") != "body_paragraph":
+            continue
+        if page <= 0 or page > 2:
+            continue
+        if heading_seen_by_page.get(page):
+            continue
+        if block.get("seed_role") == "abstract_body":
+            continue
+        text = _block_text(block).strip()
+        text_plain = _strip_inline_html(text)
+        lower = text.lower()
+        if not text:
+            continue
+        if (
+            _looks_like_author_list(text_plain)
+            or _looks_like_affiliation(text_plain)
+            or ("<sup>" in text and text.count(",") >= 2)
+            or (text_plain.count("Dr ") >= 2 or text_plain.count("Prof ") >= 2 or " dr med" in text_plain.lower())
+            or re.match(r"^[a-z]\.\s", text_plain.lower())
+        ):
+            block["role"] = "frontmatter_support"
+            block["render_default"] = False
+            continue
+        if lower.startswith(("pii:", "reference:", "to appear in:", "revised date:", "doi ", "doi:", "received:", "accepted date:")):
+            block["role"] = "frontmatter_noise"
+            block["render_default"] = False
+            continue
+
+
+def _restore_numbered_body_from_tail_hold(blocks: list[dict]) -> None:
+    active_numbered_body = False
+    for block in blocks:
+        role = block.get("role")
+        text = _canonical_section_text(block)
+        marker_type = str(((block.get("marker_signature") or {}).get("type")) or "none")
+
+        if role in {"reference_heading", "backmatter_heading", "backmatter_boundary_heading"}:
+            active_numbered_body = False
+            continue
+
+        if role in {"section_heading", "subsection_heading", "sub_subsection_heading"}:
+            active_numbered_body = (
+                (
+                    marker_type
+                    in {"heading_numbered", "heading_arabic", "heading_decimal", "heading_roman", "heading_alpha"}
+                    or (
+                        block.get("zone") == "tail_nonref_hold_zone"
+                        and str(block.get("style_family") or "") == "heading_like"
+                    )
+                )
+                and text not in _BACKMATTER_TITLE_DENY_LIST
+            )
+            continue
+
+        if role == "backmatter_body" and active_numbered_body:
+            block["role"] = "body_paragraph"
 
 
 def normalize_document_structure(blocks: list[dict]) -> tuple[DocumentStructure, list[dict]]:
@@ -3874,6 +4116,9 @@ def normalize_document_structure(blocks: list[dict]) -> tuple[DocumentStructure,
     # Without this, reading segment block_indices reference stale positions
     # from before _promote_tail_body_candidates reassigned the blocks list.
     final_segments = _build_tail_reading_order(blocks, page_layouts)
+    final_segments = _enforce_body_before_references_in_segments(
+        final_segments, blocks, doc_structure.spread_start, doc_structure.spread_end
+    )
     doc_structure.tail_reading_order = [dataclasses.asdict(seg) for seg in final_segments] if final_segments else None
     # When the fallback reference-only tail spread was detected (no backmatter),
     # clear tail reading order since it cannot help multi-column reordering.
@@ -3894,24 +4139,33 @@ def normalize_document_structure(blocks: list[dict]) -> tuple[DocumentStructure,
         else getattr(region_bus, "frontmatter_side_zone", None)
     )
     fm_main_ids = {
-        str(zid).split(":", 1)[-1]
+        zid
         for zid in (fm_main_zone.get("block_ids", []) if isinstance(fm_main_zone, dict) else [])
     }
     fm_support_ids = {
-        str(zid).split(":", 1)[-1]
+        zid
         for zid in (fm_side_zone.get("block_ids", []) if isinstance(fm_side_zone, dict) else [])
     }
+    duplicate_block_ids = _duplicate_block_ids_from_blocks(blocks)
 
     # Find body_start_block_id from the first body-zone block
     body_start_block_id = None
     for block in blocks:
-        if block.get("zone") == "body_zone" and block.get("role") in {
+        if block.get("role") in {
+            "section_heading",
+            "subsection_heading",
+        } and block.get("zone") != "frontmatter_main_zone":
+            body_start_block_id = _artifact_block_id(block, duplicate_block_ids)
+            break
+    if body_start_block_id is None:
+        for block in blocks:
+            if block.get("zone") == "body_zone" and block.get("role") in {
             "body_paragraph",
             "section_heading",
             "subsection_heading",
-        }:
-            body_start_block_id = block.get("block_id")
-            break
+            }:
+                body_start_block_id = _artifact_block_id(block, duplicate_block_ids)
+                break
 
     abstract_span = build_document_abstract_span(
         blocks,
@@ -3935,7 +4189,7 @@ def normalize_document_structure(blocks: list[dict]) -> tuple[DocumentStructure,
         else getattr(region_bus, "reference_zone", None)
     )
     ref_zone_ids = {
-        str(zid).split(":", 1)[-1] for zid in (ref_zone.get("block_ids", []) if isinstance(ref_zone, dict) else [])
+        zid for zid in (ref_zone.get("block_ids", []) if isinstance(ref_zone, dict) else [])
     }
     tail_spread_dict = None
     if tail_spread is not None:
@@ -4012,5 +4266,8 @@ def normalize_document_structure(blocks: list[dict]) -> tuple[DocumentStructure,
             block["render_default"] = False
     doc_structure.role_gate_summary["rendered_unverified_structural_role_count"] = 0
     doc_structure.role_gate_summary["downgraded_unverified_structural_role_count"] = len(offenders)
+
+    _demote_early_frontmatter_body_leaks(blocks)
+    _restore_numbered_body_from_tail_hold(blocks)
 
     return doc_structure, blocks

@@ -17,6 +17,15 @@ VERIFY_REQUIRED = {
     "table_html",
 }
 
+_SAFE_PRESERVED_ROLES = {
+    "frontmatter_noise",
+    "frontmatter_support",
+    "structured_insert",
+    "non_body_insert",
+    "backmatter_body",
+    "body_paragraph",
+}
+
 
 @dataclass
 class VerifiedRoleDecision:
@@ -53,8 +62,39 @@ class RoleGateContext:
     accepted_table_block_ids: set[str | int] = field(default_factory=set)
 
 
+def _duplicate_block_ids(blocks: list[dict]) -> set[str]:
+    counts: dict[str, int] = {}
+    for block in blocks:
+        block_id = block.get("block_id")
+        if block_id is None:
+            continue
+        key = str(block_id)
+        counts[key] = counts.get(key, 0) + 1
+    return {key for key, count in counts.items() if count > 1}
+
+
+def _artifact_block_id(block: dict, duplicate_ids: set[str]) -> str | int | None:
+    block_id = block.get("block_id")
+    if block_id is None:
+        return None
+    if str(block_id) in duplicate_ids:
+        return f"p{int(block.get('page', 0) or 0)}:{block_id}"
+    return block_id
+
+
 def _bid(block: dict) -> str | int | None:
     return block.get("block_id")
+
+
+def _page_bid(block: dict) -> str:
+    return f"p{int(block.get('page', 0) or 0)}:{block.get('block_id')}"
+
+
+def _artifact_membership_contains(block: dict, ids: set) -> bool:
+    block_id = _bid(block)
+    if block_id in ids:
+        return True
+    return _page_bid(block) in ids
 
 
 def accept_role(role: str, seed_role: str, source: str, evidence: list[str]) -> VerifiedRoleDecision:
@@ -79,7 +119,11 @@ def resolve_verified_role(block: dict, context: RoleGateContext) -> VerifiedRole
     proposal = seed_role if current_role in {"", "unassigned"} else current_role
     block_id = _bid(block)
 
-    if current_role not in {"", "unassigned"} and current_role not in VERIFY_REQUIRED:
+    if (
+        current_role not in {"", "unassigned", "unknown_structural"}
+        and current_role not in VERIFY_REQUIRED
+        and (seed_role not in VERIFY_REQUIRED or current_role in _SAFE_PRESERVED_ROLES)
+    ):
         return accept_role(
             current_role,
             seed_role,
@@ -100,7 +144,7 @@ def resolve_verified_role(block: dict, context: RoleGateContext) -> VerifiedRole
             )
         return hold_role(seed_role, "authors seed lacks source-backed authors anchor")
     if proposal == "keywords" or seed_role == "keywords":
-        if block_id in set((context.abstract_span or {}).get("keyword_block_ids", [])):
+        if _artifact_membership_contains(block, set((context.abstract_span or {}).get("keyword_block_ids", []))):
             return accept_role(
                 "keywords", seed_role, "abstract_span_keyword_boundary", ["keywords follow accepted abstract span"]
             )
@@ -109,19 +153,25 @@ def resolve_verified_role(block: dict, context: RoleGateContext) -> VerifiedRole
     # Abstract heading/body verification via abstract_span
     if proposal == "abstract_heading" or seed_role == "abstract_heading":
         span = context.abstract_span or {}
-        if block_id == span.get("heading_block_id"):
+        if span.get("heading_block_id") in {block_id, _page_bid(block)}:
             return accept_role(
                 "abstract_heading", seed_role, "abstract_span_heading", ["abstract heading matched span"]
             )
         if span.get("status") == "MISSING":
-            return hold_role(seed_role, "abstract heading rejected (no abstract span)")
+            return accept_role(
+                "abstract_heading", seed_role, "abstract_span_missing_fallback",
+                ["abstract heading accepted from seed (no span to verify)"],
+            )
         return hold_role(seed_role, "abstract heading not in abstract_span")
     if proposal == "abstract_body" or seed_role == "abstract_body":
         span = context.abstract_span or {}
-        if block_id in set(span.get("body_block_ids", [])):
+        if _artifact_membership_contains(block, set(span.get("body_block_ids", []))):
             return accept_role("abstract_body", seed_role, "abstract_span_body", ["abstract body matched span"])
         if span.get("status") == "MISSING":
-            return hold_role(seed_role, "abstract body rejected (no abstract span)")
+            return accept_role(
+                "abstract_body", seed_role, "abstract_span_missing_fallback",
+                ["abstract body accepted from seed (no span to verify)"],
+            )
         # If block is already body-like, fallback to body_paragraph
         if current_role == "body_paragraph" or block.get("zone") == "body_zone":
             return VerifiedRoleDecision(
@@ -137,17 +187,20 @@ def resolve_verified_role(block: dict, context: RoleGateContext) -> VerifiedRole
     # Reference heading/item verification via reference_zone
     if proposal == "reference_heading" or seed_role == "reference_heading":
         zone = context.reference_zone or {}
-        if block_id == zone.get("heading_block_id"):
+        if zone.get("heading_block_id") in {block_id, _page_bid(block)}:
             return accept_role(
                 "reference_heading", seed_role, "reference_zone_heading", ["reference heading matched zone"]
             )
         return hold_role(seed_role, "reference heading not in reference_zone")
     if proposal == "reference_item" or seed_role == "reference_item":
         zone = context.reference_zone or {}
-        if block_id in set(zone.get("item_block_ids", [])):
+        if _artifact_membership_contains(block, set(zone.get("item_block_ids", []))):
             return accept_role("reference_item", seed_role, "reference_zone_item", ["reference item matched zone"])
         if current_role == "reference_item" and not zone.get("item_block_ids"):
-            return hold_role(seed_role, "reference item rejected (empty reference zone)")
+            return accept_role(
+                "reference_item", seed_role, "reference_zone_fallback",
+                ["reference item accepted (pre-gate resolution, empty zone)"],
+            )
         # Fallback: if block is body-like, fallback to body_paragraph
         if current_role == "body_paragraph" or block.get("zone") == "body_zone":
             return VerifiedRoleDecision(
@@ -162,8 +215,23 @@ def resolve_verified_role(block: dict, context: RoleGateContext) -> VerifiedRole
 
     # Section/subsection heading verification via accepted_heading_block_ids or body zone evidence
     if proposal in {"section_heading", "subsection_heading"} or seed_role in {"section_heading", "subsection_heading"}:
-        if block_id in context.accepted_heading_block_ids:
+        marker_type = str(((block.get("marker_signature") or {}).get("type")) or "none")
+        if _artifact_membership_contains(block, set(context.accepted_heading_block_ids)):
             return accept_role(proposal, seed_role, "accepted_heading", ["heading verified by heading artifact"])
+        if marker_type in {
+            "canonical_section_name",
+            "heading_arabic",
+            "heading_decimal",
+            "heading_roman",
+            "heading_alpha",
+            "heading_numbered",
+        }:
+            return accept_role(
+                proposal,
+                seed_role,
+                "heading_marker_evidence",
+                [f"heading verified by marker evidence: {marker_type}"],
+            )
         if block.get("zone") in {"body_zone", "tail_body_zone"}:
             return accept_role(proposal, seed_role, "body_zone_heading", ["heading accepted via body zone evidence"])
         return hold_role(seed_role, f"{proposal} lacks heading artifact evidence")
@@ -175,6 +243,7 @@ def resolve_verified_role(block: dict, context: RoleGateContext) -> VerifiedRole
 
 
 def build_document_abstract_span(blocks: list[dict], context: dict) -> dict:
+    duplicate_ids = _duplicate_block_ids(blocks)
     support_ids = set(context.get("frontmatter_support_zone_ids", set()))
     support_ids |= set(context.get("publisher_sidebar_zone_ids", set()))
     support_ids |= set(context.get("correspondence_zone_ids", set()))
@@ -201,6 +270,23 @@ def build_document_abstract_span(blocks: list[dict], context: dict) -> dict:
     body_ids: list = []
     excluded: list = []
     stop_reason = "document_end"
+    heading_page = int(blocks[heading_index].get("page", 0) or 0)
+    leading_body_ids: list = []
+    for block in reversed(blocks[:heading_index]):
+        block_page = int(block.get("page", 0) or 0)
+        if block_page != heading_page:
+            break
+        block_id = _artifact_block_id(block, duplicate_ids)
+        seed_role = block.get("seed_role", "")
+        text = str(block.get("text", "") or "").strip().lower()
+        if block_id in support_ids:
+            excluded.insert(0, block_id)
+            continue
+        if seed_role in {"abstract_body", "body_paragraph"} and text and not text.startswith(("keywords", "key words", "highlights")):
+            leading_body_ids.insert(0, block_id)
+            continue
+        break
+    body_ids.extend(leading_body_ids)
     accepted_inside_abstract = {"abstract_body", "body_paragraph", "section_heading", "subsection_heading"}
     _EXCLUDED_FRONTMATTER_SEED_ROLES = frozenset(
         {
@@ -213,6 +299,17 @@ def build_document_abstract_span(blocks: list[dict], context: dict) -> dict:
             "author_contribution",
             "data_availability",
         }
+    )
+    _EXCLUDED_FRONTMATTER_PREFIXES = (
+        "doi",
+        "submitted",
+        "accepted",
+        "published",
+        "open access",
+        "distributed under",
+        "corresponding author",
+        "academic editor",
+        "subjects",
     )
     _STRUCTURED_ABSTRACT_HEADS = frozenset(
         {
@@ -235,14 +332,17 @@ def build_document_abstract_span(blocks: list[dict], context: dict) -> dict:
         }
     )
     for block in blocks[heading_index + 1 :]:
-        block_id = block.get("block_id")
-        if block_id == body_start_id:
+        block_id = _artifact_block_id(block, duplicate_ids)
+        if block_id == body_start_id or block.get("block_id") == body_start_id:
             stop_reason = "body_start"
             break
         text = str(block.get("text", "") or "").strip().lower()
         intro_text = text.lstrip("0123456789. ")
         seed_role = block.get("seed_role", "")
         if seed_role in _EXCLUDED_FRONTMATTER_SEED_ROLES:
+            excluded.append(block_id)
+            continue
+        if text.startswith(_EXCLUDED_FRONTMATTER_PREFIXES):
             excluded.append(block_id)
             continue
         if block.get("seed_role") in {"section_heading", "subsection_heading"} and intro_text.startswith(
@@ -256,18 +356,22 @@ def build_document_abstract_span(blocks: list[dict], context: dict) -> dict:
         if text.startswith("highlights"):
             stop_reason = "highlights"
             break
-        if any(text.startswith(h) for h in _STRUCTURED_ABSTRACT_HEADS):
-            stop_reason = "structured_abstract_head"
-            break
         if block_id in support_ids:
             excluded.append(block_id)
             continue
-        if main_ids and block_id not in main_ids:
+        if any(text.startswith(h) for h in _STRUCTURED_ABSTRACT_HEADS):
+            if block.get("seed_role") in {"section_heading", "subsection_heading", "abstract_body", "body_paragraph"}:
+                body_ids.append(block_id)
+                continue
+            stop_reason = "structured_abstract_head"
+            break
+        block_page = int(block.get("page", 0) or 0)
+        if main_ids and heading_page == 1 and block_page == heading_page and block_id not in main_ids:
             continue
         if block.get("seed_role") in accepted_inside_abstract:
             body_ids.append(block_id)
     return {
-        "heading_block_id": blocks[heading_index].get("block_id"),
+        "heading_block_id": _artifact_block_id(blocks[heading_index], duplicate_ids),
         "body_block_ids": body_ids,
         "excluded_support_block_ids": excluded,
         "status": "ACCEPT" if body_ids else "HOLD",
@@ -283,6 +387,7 @@ def _matches_zone_id(block: dict, zone_ids: set) -> bool:
 
 
 def build_verified_reference_zone_from_artifacts(blocks: list[dict], artifacts: dict) -> dict:
+    duplicate_ids = _duplicate_block_ids(blocks)
     def _obj_get(obj, key, default=None):
         if obj is None:
             return default
@@ -299,11 +404,17 @@ def build_verified_reference_zone_from_artifacts(blocks: list[dict], artifacts: 
     end_before = _obj_get(tail_spread, "reference_end_before_block_id")
     before_tail = set()
     if end_before:
-        for block in blocks:
-            block_id = block.get("block_id")
-            if block_id == end_before:
-                break
-            before_tail.add(block_id)
+        if isinstance(end_before, int):
+            for block in blocks:
+                if int(block.get("page", 0) or 0) < end_before:
+                    before_tail.add(_artifact_block_id(block, duplicate_ids))
+        else:
+            for block in blocks:
+                artifact_id = _artifact_block_id(block, duplicate_ids)
+                raw_block_id = block.get("block_id")
+                if artifact_id == end_before or raw_block_id == end_before:
+                    break
+                before_tail.add(artifact_id)
     item_ids = []
     for item_id in _obj_get(anchor, "item_block_ids", []):
         if region_ids and item_id not in region_ids:
@@ -314,7 +425,8 @@ def build_verified_reference_zone_from_artifacts(blocks: list[dict], artifacts: 
             continue
         if accepted_numbering_ids and item_id not in accepted_numbering_ids:
             continue
-        item_ids.append(item_id)
+        matched_block = next((b for b in blocks if b.get("block_id") == item_id), None)
+        item_ids.append(_artifact_block_id(matched_block, duplicate_ids) if matched_block is not None else item_id)
 
     # When anchor doesn't provide item_block_ids (real data model like
     # discover_reference_family_anchor in ocr_families.py only has
@@ -323,7 +435,9 @@ def build_verified_reference_zone_from_artifacts(blocks: list[dict], artifacts: 
     if not item_ids and region_ids:
         for block in blocks:
             if _matches_zone_id(block, region_ids):
-                item_ids.append(block.get("block_id"))
+                artifact_id = _artifact_block_id(block, duplicate_ids)
+                if artifact_id is not None:
+                    item_ids.append(artifact_id)
 
     heading_id = _obj_get(anchor, "heading_block_id")
     if not heading_id and region_ids:
@@ -332,7 +446,12 @@ def build_verified_reference_zone_from_artifacts(blocks: list[dict], artifacts: 
                 "references",
                 "bibliography",
             }:
-                heading_id = block.get("block_id")
+                heading_id = _artifact_block_id(block, duplicate_ids)
+                break
+    if not heading_id:
+        for block in blocks:
+            if block.get("seed_role") == "reference_heading":
+                heading_id = _artifact_block_id(block, duplicate_ids)
                 break
 
     # Avoid including the heading block among items when fallback extraction
