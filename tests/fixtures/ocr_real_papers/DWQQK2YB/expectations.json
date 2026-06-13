@@ -1,0 +1,22 @@
+{
+  "document": {
+    "expected_reader_figure_count_min": 3,
+    "expected_reference_zone": true,
+    "expected_abstract_span": true
+  },
+  "pages": {
+    "35": {
+      "expected_object_ownership": [
+        {
+          "object_type": "figure",
+          "figure_number": 1,
+          "must_render_as_object": true,
+          "must_not_render_caption_blocks_as_body": true
+        }
+      ]
+    }
+  },
+  "expected_render_invariants": [
+    {"type": "no_duplicate_caption", "caption_regex": "Fig\\.\\s*1"}
+  ]
+}

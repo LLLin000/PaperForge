@@ -1,0 +1,30 @@
+{
+  "pages": {
+    "5": {
+      "expected_object_ownership": [
+        {"object_type": "figure", "figure_number": 1, "must_render_as_object": true},
+        {"object_type": "figure", "figure_number": 2, "must_render_as_object": true},
+        {"object_type": "figure", "figure_number": 3, "must_render_as_object": true},
+        {"object_type": "figure", "figure_number": 4, "must_render_as_object": true}
+      ],
+      "expected_render_invariants": [
+        {"type": "not_in_body", "text_contains": "Fig. 1"}
+      ]
+    },
+    "6": {
+      "expected_consumption": [
+        {"block_id_comment": "Fig.5 continuation sentence", "consumed_by_kind": "figure", "consumed_by_number": 5, "must_not_render_as_body": true}
+      ]
+    },
+    "7": {
+      "expected_object_ownership": [
+        {"object_type": "table", "table_number": 3, "must_render_as_object": true, "must_not_split_by_body_blocks": true}
+      ]
+    },
+    "12": {
+      "expected_render_invariants": [
+        {"type": "before_text", "before": "Conclusion", "after": "References", "layer": "render_order_markdown"}
+      ]
+    }
+  }
+}
