@@ -30,6 +30,25 @@ _BACKMATTER_HEADING_KEYWORDS: frozenset[str] = frozenset(
 )
 
 
+def _should_suppress_frontmatter_heading(text: str) -> bool:
+    lower = text.strip().lower()
+    if not lower:
+        return True
+    if lower in FRONTMATTER_NOISE:
+        return True
+    if "published online" in lower:
+        return True
+    return False
+
+
+def _display_heading_text(block: dict, text: str) -> str:
+    marker_type = str(((block.get("marker_signature") or {}).get("type")) or "none")
+    match = re.match(r"^(\d+)\s+(.+)$", text.strip())
+    if marker_type == "heading_numbered" and match:
+        return f"{match.group(1)}. {match.group(2)}"
+    return text
+
+
 def _is_bogus_heading(text: str) -> bool:
     t = text.strip()
     if len(t) > 100:
@@ -385,6 +404,15 @@ def _reorder_tail_run(
                 body_pool.append(block)
             else:
                 non_tail_pass.append(block)
+        elif role == "body_paragraph":
+            if _is_in_usable_content(block, header_band, footer_band):
+                idx = _find_owning_heading(block, backmatter_sections, page_width) if backmatter_sections else None
+                if idx is not None:
+                    backmatter_sections[idx]["bodies"].append(block)
+                else:
+                    non_tail_pass.append(block)
+            else:
+                non_tail_pass.append(block)
         else:
             non_tail_pass.append(block)
 
@@ -668,11 +696,31 @@ def _render_reader_figure_card(figure: dict) -> list[str]:
         lines.append(f"> **Figure {fn}** — {status}")
     else:
         lines.append(f"> **Figure (unmatched)** — {status}")
-    # Only emit caption text when there is no embedded figure asset to show it.
-    # EXACT_MATCH / SEQUENCE_MATCH already render the caption via figure_XXX.md.
-    if status not in ("EXACT_MATCH", "SEQUENCE_MATCH") and caption_text:
+    if caption_text:
         lines.append(f"> {caption_text}")
     return lines
+
+
+def _reader_figure_embed_target(figure: dict) -> str | None:
+    status = str(figure.get("reader_status") or "")
+    figure_number = figure.get("figure_number")
+    if status not in {"EXACT_MATCH", "SEQUENCE_MATCH"}:
+        return None
+    if figure_number is None:
+        return None
+    return f"figure_{int(figure_number):03d}"
+
+
+def _page_block_key(block_or_page: dict | int | None, block_id: int | str | None = None) -> tuple[int | None, int | str] | None:
+    if isinstance(block_or_page, dict):
+        page = block_or_page.get("page")
+        bid = block_or_page.get("block_id")
+    else:
+        page = block_or_page
+        bid = block_id
+    if bid is None:
+        return None
+    return (page, bid)
 
 
 def _emit_page_objects(
@@ -715,6 +763,29 @@ def _emit_page_objects(
         if rfid and rfid not in rendered_reader_figure_ids:
             rendered_reader_figure_ids.add(rfid)
             lines.extend(_render_reader_figure_card(rf))
+            embed_target = _reader_figure_embed_target(rf)
+            if embed_target:
+                lines.append(f"![[render/figures/{embed_target}.md]]")
+            lines.append("")
+
+
+def _emit_reader_figures_before_references(
+    lines: list[str],
+    *,
+    start_page: int,
+    reader_figures_by_page: dict[int, list[dict]],
+    rendered_reader_figure_ids: set[str],
+) -> None:
+    for page in sorted(p for p in reader_figures_by_page if p >= start_page):
+        for rf in reader_figures_by_page.get(page, []):
+            rfid = rf.get("reader_figure_id")
+            if not rfid or rfid in rendered_reader_figure_ids:
+                continue
+            rendered_reader_figure_ids.add(rfid)
+            lines.extend(_render_reader_figure_card(rf))
+            embed_target = _reader_figure_embed_target(rf)
+            if embed_target:
+                lines.append(f"![[render/figures/{embed_target}.md]]")
             lines.append("")
 
 
@@ -776,6 +847,20 @@ def render_fulltext_markdown(
             page = 1
         reader_figures_by_page.setdefault(page, []).append(rf)
 
+    _block_text_by_bid: dict[str, str] = {}
+    for block in structured_blocks:
+        bid = block.get("block_id")
+        if bid is not None and block.get("text"):
+            _block_text_by_bid[str(bid)] = block.get("text", "")
+
+    for rf in reader_figures:
+        if not rf.get("caption_text"):
+            for cid in rf.get("consumed_caption_block_ids", []):
+                cid_str = str(cid)
+                if cid_str in _block_text_by_bid:
+                    rf["caption_text"] = _block_text_by_bid[cid_str]
+                    break
+
     # --- title ---
     title = resolved_metadata.get("title", {}).get("value", "")
     if title:
@@ -810,27 +895,50 @@ def render_fulltext_markdown(
     # --- abstract ---
     if document_structure is not None and getattr(document_structure, "abstract_span", None):
         span = document_structure.abstract_span
-        block_by_id = {block.get("block_id"): block for block in structured_blocks}
+        block_by_id = {}
+        for block in structured_blocks:
+            block_id = block.get("block_id")
+            if block_id is not None:
+                block_by_id[block_id] = block
+                block_by_id[f"p{int(block.get('page', 0) or 0)}:{block_id}"] = block
         abstract_ids = [span.get("heading_block_id"), *span.get("body_block_ids", [])]
         abstract_blocks = [
             block_by_id[bid]
             for bid in abstract_ids
-            if bid in block_by_id and block_by_id[bid].get("render_default", True)
+            if bid in block_by_id
         ]
     else:
         _ABSTRACT_ROLES_FALLBACK = frozenset({"abstract_heading", "abstract_body"})
         abstract_blocks = [
             b for b in structured_blocks if b.get("role") in _ABSTRACT_ROLES_FALLBACK and b.get("render_default", True)
         ]
+    abstract_member_keys = {
+        _page_block_key(block)
+        for block in abstract_blocks
+        if _page_block_key(block) is not None
+    }
+    abstract_member_ids_unkeyed = {
+        block.get("block_id")
+        for block in abstract_blocks
+        if block.get("block_id") is not None and block.get("page") is None
+    }
+    abstract_heading_block_id = (getattr(document_structure, "abstract_span", None) or {}).get("heading_block_id")
     if abstract_blocks:
         lines.append("## Abstract")
         lines.append("")
         for block in abstract_blocks:
-            if block.get("role") == "abstract_body":
-                text = block.get("text", "")
-                if text:
-                    lines.append(normalize_ocr_math_text(text))
-                    lines.append("")
+            block_key = _page_block_key(block)
+            page_qualified_id = None
+            if block.get("block_id") is not None and block.get("page") is not None:
+                page_qualified_id = f"p{int(block.get('page', 0) or 0)}:{block.get('block_id')}"
+            if block.get("block_id") == abstract_heading_block_id or page_qualified_id == abstract_heading_block_id:
+                continue
+            text = block.get("text", "")
+            if text:
+                for abstract_line in normalize_ocr_math_text(text).splitlines():
+                    if abstract_line.strip():
+                        lines.append(f"> {abstract_line}")
+                lines.append("")
 
     # Build per-page figure/table lookups
     figures_by_page: dict[int, list[dict]] = {}
@@ -860,6 +968,7 @@ def render_fulltext_markdown(
     emitted_pages: set[int] = set()
     last_structured_insert_page: int | None = None
     last_structured_insert_bbox: list[float] | None = None
+    pre_reference_reader_figures_emitted = False
 
     # Compute heading levels from span metadata font sizes when available
     _HEADING_ROLES = {"section_heading", "subsection_heading", "sub_subsection_heading"}
@@ -929,6 +1038,8 @@ def render_fulltext_markdown(
                     "backmatter_body",
                     "reference_heading",
                     "reference_item",
+                    "table_caption",
+                    "table_html",
                     "figure_caption_candidate",
                     "backmatter_heading_candidate",
                     "backmatter_boundary_candidate",
@@ -936,6 +1047,7 @@ def render_fulltext_markdown(
                     "structured_insert",
                     "subsection_heading",
                     "sub_subsection_heading",
+                    "section_heading",
                     "authors",
                     "paper_title",
                     "abstract_heading",
@@ -1015,38 +1127,9 @@ def render_fulltext_markdown(
 
     for block in ordered_blocks:
         role = block.get("role", "")
-        if role == "structured_insert":
-            pass  # render as callout below
-        elif not block.get("render_default", True):
-            continue
-        if role in CONSUMED_FRONTMATTER_ROLES and block.get("page") == 1:
-            continue
-        _SKIPPED_BODY_ROLES = {
-            "abstract_heading",
-            "abstract_body",
-            "frontmatter_noise",
-            "table_html",
-            "figure_caption",
-            "figure_inner_text",
-        }
-        if role in _SKIPPED_BODY_ROLES:
-            continue
-
-        block_id = block.get("block_id")
         block_page = block.get("page")
-        if block_id is not None and (
-            (block_page, block_id) in consumed_caption_keys or block_id in consumed_caption_ids_unkeyed
-        ):
-            continue
-
-        raw_text = block.get("text", "")
-        text = normalize_ocr_math_text(raw_text)
-        text = re.sub(r"<table[^>]*>.*?</table>", "", text, flags=re.DOTALL | re.IGNORECASE)
-        if text.strip().lower().startswith("<table"):
-            continue
 
         if block_page is not None and block_page != current_page:
-            # Emit objects for the page we just finished rendering
             if current_page is not None:
                 _emit_page_objects(
                     lines,
@@ -1059,7 +1142,6 @@ def render_fulltext_markdown(
                     emitted_figure_captions=emitted_figure_captions,
                 )
                 emitted_pages.add(current_page)
-            # Fill in page markers for skipped pages (no renderable blocks)
             first_new_page = (current_page or 0) + 1
             for p in range(first_new_page, block_page):
                 lines.append(f"<!-- page {p} -->")
@@ -1086,27 +1168,70 @@ def render_fulltext_markdown(
             pass  # render as callout below
         elif not block.get("render_default", True):
             continue
+        if role in CONSUMED_FRONTMATTER_ROLES and block.get("page") == 1:
+            continue
+        _SKIPPED_BODY_ROLES = {
+            "abstract_heading",
+            "abstract_body",
+            "frontmatter_noise",
+            "frontmatter_support",
+            "table_html",
+            "figure_caption",
+            "figure_inner_text",
+        }
+        if role in _SKIPPED_BODY_ROLES:
+            continue
+
+        block_id = block.get("block_id")
+        block_key = _page_block_key(block_page, block_id)
+        if block_id is not None and (
+            block_key in consumed_caption_keys or block_id in consumed_caption_ids_unkeyed
+        ):
+            continue
+        if block_key in abstract_member_keys or block_id in abstract_member_ids_unkeyed:
+            continue
+
+        raw_text = block.get("text", "")
+        text = normalize_ocr_math_text(raw_text)
+        text = re.sub(r"<table[^>]*>.*?</table>", "", text, flags=re.DOTALL | re.IGNORECASE)
+        if text.strip().lower().startswith("<table"):
+            continue
+
+        if role == "structured_insert":
+            pass  # render as callout below
+        elif not block.get("render_default", True):
+            continue
         if role == "backmatter_boundary_heading" or role == "backmatter_heading":
             last_structured_insert_page = None
             last_structured_insert_bbox = None
-            if text:
+            if text and not _should_suppress_frontmatter_heading(text):
                 lines.append(f"**{text}**")
                 lines.append("")
         elif role == "reference_heading":
             last_structured_insert_page = None
             last_structured_insert_bbox = None
+            if not pre_reference_reader_figures_emitted and block_page is not None:
+                _emit_reader_figures_before_references(
+                    lines,
+                    start_page=block_page,
+                    reader_figures_by_page=reader_figures_by_page,
+                    rendered_reader_figure_ids=rendered_reader_figure_ids,
+                )
+                pre_reference_reader_figures_emitted = True
             lines.append(f"## {text}")
             lines.append("")
         elif role in ("subsection_heading", "sub_subsection_heading", "section_heading"):
             last_structured_insert_page = None
             last_structured_insert_bbox = None
+            text = _display_heading_text(block, text)
             _heading_lower = text.strip().lower()
             if any(kw in _heading_lower for kw in _BACKMATTER_HEADING_KEYWORDS):
+                if text and not _should_suppress_frontmatter_heading(text):
+                    lines.append(f"**{text}**")
+                    lines.append("")
                 continue
             if role == "section_heading":
-                if text.strip().lower() in FRONTMATTER_NOISE:
-                    continue
-                if "published online" in text.strip().lower():
+                if _should_suppress_frontmatter_heading(text):
                     continue
                 if _is_bogus_heading(text):
                     if text:
