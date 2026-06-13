@@ -850,6 +850,16 @@ def infer_zones(
         body_anchor=body_anchor,
     )
 
+    # Veto tail start on pages with strong body continuation
+    if tail_hold_start is not None:
+        by_page: dict[int, list[dict]] = {}
+        for b in blocks:
+            page = int(b.get("page", 0) or 0)
+            if page > 0:
+                by_page.setdefault(page, []).append(b)
+        while tail_hold_start and _page_has_strong_body_continuation(by_page.get(tail_hold_start, [])):
+            tail_hold_start += 1
+
     body_end_page = first_reference_page - 1 if first_reference_page is not None else max_page
     if tail_hold_start is not None:
         candidate_body_end = tail_hold_start - 1
