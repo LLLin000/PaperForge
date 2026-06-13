@@ -445,6 +445,28 @@ Examples:
 }
 ```
 
+### 7.4 Required consumption fields
+
+Object ownership alone cannot verify that a consumed block stays consumed. Consumption assertions close this gap:
+
+```json
+{
+  "expected_consumption": [
+    {
+      "block_id": "p6_b5",
+      "consumed_by": "figure_005",
+      "must_not_render_as_body": true,
+      "must_not_render_as_loose_caption": true
+    },
+    {
+      "block_id": "p7_b4",
+      "consumed_by": "table_003",
+      "must_not_render_as_body": true
+    }
+  ]
+}
+```
+
 This keeps expectations stable while still checking the real contract that users care about.
 
 ---
