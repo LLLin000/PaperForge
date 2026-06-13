@@ -148,6 +148,8 @@ def _is_body_mention(block: dict) -> bool:
         return True
     if raw_role == "figure_caption_candidate":
         text = block.get("text", "")
+        if text and _FIGURE_NUMBER_PATTERN.search(text):
+            return False
         if text and _looks_like_figure_narrative_prose(text):
             return True
     if block.get("block_label", "") == "text":
@@ -496,6 +498,7 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
                 and str(block.get("zone") or "") != "display_zone"
                 and str(block.get("style_family") or "") != "legend_like"
                 and _looks_like_figure_narrative_prose(block.get("text", ""))
+                and _extract_figure_number(block.get("text", "")) is None
             ):
                 continue
             if not _is_formal_legend(block.get("text", ""), block, page_width):
@@ -757,6 +760,59 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
     for i, asset in enumerate(assets):
         if i not in used_asset_indices:
             unmatched_assets.append(asset)
+
+    # Sequential fallback: match unmatched captions to remaining assets in reading order.
+    # Captions and figures often appear on different pages — humans match them by
+    # sequential reading order, not spatial proximity. This is a necessary tradeoff.
+    # Run BEFORE cluster building so sequential matching gets first pick of assets.
+    if unmatched_legends and unmatched_assets:
+        sorted_caps = sorted(
+            unmatched_legends,
+            key=lambda b: (b.get("page", 0) or 0, (b.get("bbox") or [0, 0, 0, 0])[1]),
+        )
+        sorted_asts = sorted(
+            unmatched_assets,
+            key=lambda b: (b.get("page", 0) or 0, (b.get("bbox") or [0, 0, 0, 0])[1]),
+        )
+        ai = 0
+        seq_matched: list[dict] = []
+        for cap in sorted_caps:
+            fn = _extract_figure_number(cap.get("text", ""))
+            if fn is None:
+                continue
+            while ai < len(sorted_asts):
+                asset = sorted_asts[ai]
+                ap = asset.get("page", 0) or 0
+                cp = cap.get("page", 0) or 0
+                if ap >= cp:
+                    break
+                ai += 1
+            if ai >= len(sorted_asts):
+                break
+            asset = sorted_asts[ai]
+            ai += 1
+            fig_id = f"figure_{fn:03d}"
+            caption_score = score_figure_caption(
+                cap, nearby_media=True, caption_style_match=False, body_prose_likelihood=False
+            )
+            seq_matched.append(cap)
+            matched_figures.append({
+                "figure_id": fig_id,
+                "legend_block_id": cap.get("block_id", ""),
+                "page": cap.get("page", 0),
+                "text": cap.get("text", ""),
+                "figure_number": fn,
+                "matched_assets": [{
+                    "block_id": asset.get("block_id", ""),
+                    "bbox": asset.get("bbox", [0, 0, 0, 0]),
+                }],
+                "confidence": 0.35,
+                "match_score": {"score": 0.35, "decision": "matched", "evidence": ["sequential_fallback"]},
+                "flags": ["sequential_match"],
+                "caption_score": caption_score,
+            })
+        for cap in seq_matched:
+            unmatched_legends[:] = [l for l in unmatched_legends if l is not cap]
 
     # Build unresolved clusters: spatial clusters of unmatched assets on
     # pages where all candidate legends were rejected (multi-panel figures
