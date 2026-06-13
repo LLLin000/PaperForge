@@ -331,6 +331,8 @@ Input:
 2. source metadata
 3. optional source PDF or precomputed span metadata fallback
 
+If source PDF is unavailable or PDF-based span extraction is unstable in CI, the fixture may include precomputed `span_metadata` and skip PDF backfill. Do not let PyMuPDF or image crop instability block deterministic regression assertions.
+
 Execution path:
 
 ```text
@@ -378,9 +380,37 @@ They remain valuable because they validate more papers, but they must not be the
 2. not final fulltext truth
 3. not the main repair target for OCR-v2
 
+### 6.4 Required failure diagnostics
+
+When any production-path assertion fails, the test harness must dump a debug bundle to assist investigation without re-running the full pipeline:
+
+```text
+structured_blocks.failed.jsonl
+document_structure.failed.json
+figure_inventory.failed.json
+reader_figures.failed.json
+table_inventory.failed.json
+rendered.failed.md
+```
+
+These artifacts must be written alongside the test output so that post-mortem analysis does not require re-executing OCR.
+
 ---
 
 ## 7. Fixture Shape
+
+### 7.0 Required fixture directory layout
+
+Each paper fixture must follow this canonical layout:
+
+```text
+tests/fixtures/ocr_real_papers/<KEY>/ocr_payload.json
+tests/fixtures/ocr_real_papers/<KEY>/source_metadata.json
+tests/fixtures/ocr_real_papers/<KEY>/expectations.json
+tests/fixtures/ocr_real_papers/<KEY>/annotated_pages/*.png
+```
+
+`ocr_payload.json` must contain the minimal replayable PaddleOCR `all_results` payload. `source_metadata.json` must contain Zotero/BBT-derived metadata for frontmatter anchor localization. Do not invent additional fixture shapes without updating this spec.
 
 Do not store full-document markdown snapshots as the primary expected output.
 
@@ -455,6 +485,13 @@ Examples:
 }
 ```
 
+**Segment order comparison rule**: `before_text` / `after_text` invariants may target two layers independently:
+
+1. `segment_order_artifact` — compare first occurrence positions in `document_structure.tail_reading_order` reading segments
+2. `render_order_markdown` — compare first occurrence positions in final `fulltext.md`
+
+A fixture may assert either or both. This is required because artifacts can be correct while renderer order is wrong, or vice versa, and a single layer comparison hides the real fault.
+
 ### 7.4 Required consumption fields
 
 Object ownership alone cannot verify that a consumed block stays consumed. Consumption assertions close this gap:
@@ -464,18 +501,22 @@ Object ownership alone cannot verify that a consumed block stays consumed. Consu
   "expected_consumption": [
     {
       "block_id": "p6_b5",
-      "consumed_by": "figure_005",
+      "consumed_by_kind": "figure",
+      "consumed_by_number": 5,
       "must_not_render_as_body": true,
       "must_not_render_as_loose_caption": true
     },
     {
       "block_id": "p7_b4",
-      "consumed_by": "table_003",
+      "consumed_by_kind": "table",
+      "consumed_by_number": 3,
       "must_not_render_as_body": true
     }
   ]
 }
 ```
+
+`consumed_by_kind` + `consumed_by_number` are preferred over hardcoded object ids because reader figure/table ids may vary by id-scheme. The test harness resolves the actual object from the reader/table payload by matching kind + number at assertion time.
 
 This keeps expectations stable while still checking the real contract that users care about.
 
