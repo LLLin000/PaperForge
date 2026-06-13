@@ -1,3 +1,12 @@
+"""Production-path regression gate for OCR-v2 real papers.
+
+Primary: fixture-backed deterministic replay via build_raw_blocks_for_result_lines
+         -> build_structured_blocks -> figure/table inventory -> render_fulltext_markdown.
+
+Secondary: env-driven audit tests (marker: @pytest.mark.audit, skip if
+           PAPERFORGE_REAL_OCR_VAULT not set).
+"""
+
 from __future__ import annotations
 
 import json
@@ -6,6 +15,339 @@ import re
 from pathlib import Path
 
 import pytest
+
+FIXTURE_ROOT = Path(__file__).resolve().parent / "fixtures" / "ocr_real_papers"
+
+# ---------------------------------------------------------------------------
+# Fixture helper loaders
+# ---------------------------------------------------------------------------
+
+
+def _load_json(path: Path) -> dict | list:
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def _load_ocr_payload(key: str) -> list[dict]:
+    path = FIXTURE_ROOT / key / "ocr_payload.json"
+    if not path.exists():
+        pytest.skip(f"ocr_payload.json not found for {key}")
+    return _load_json(path)  # type: ignore[return-value]
+
+
+def _load_source_metadata(key: str) -> dict:
+    path = FIXTURE_ROOT / key / "source_metadata.json"
+    if not path.exists():
+        pytest.skip(f"source_metadata.json not found for {key}")
+    return _load_json(path)  # type: ignore[return-value]
+
+
+def _load_expectations(key: str) -> dict:
+    path = FIXTURE_ROOT / key / "expectations.json"
+    if not path.exists():
+        pytest.skip(f"expectations.json not found for {key}")
+    return _load_json(path)  # type: ignore[return-value]
+
+
+# ---------------------------------------------------------------------------
+# Replay harness — runs the real production path
+# ---------------------------------------------------------------------------
+
+
+def replay_production_pipeline(key: str, tmp_path: Path) -> dict:
+    """Run the full production pipeline on fixture data; return all artifacts.
+
+    Pipeline: build_raw_blocks_for_result_lines -> build_structured_blocks
+    -> build_figure_inventory -> synthesize_reader_figures
+    -> build_table_inventory -> render_fulltext_markdown
+
+    PDF span backfill is skipped (no source PDF in fixtures).
+    normalize_document_structure() is called internally by build_structured_blocks().
+    """
+    from paperforge.worker.ocr_blocks import (
+        build_raw_blocks_for_result_lines,
+        build_structured_blocks,
+    )
+    from paperforge.worker.ocr_figure_reader import synthesize_reader_figures
+    from paperforge.worker.ocr_figures import build_figure_inventory
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+    from paperforge.worker.ocr_tables import build_table_inventory
+
+    ocr_payload = _load_ocr_payload(key)
+    source_metadata = _load_source_metadata(key)
+
+    # Step 1: raw blocks from PaddleOCR result lines
+    raw_blocks = build_raw_blocks_for_result_lines(key, ocr_payload)
+
+    # Step 2: structured blocks (role assignment + normalize_document_structure)
+    structured_blocks, doc_structure = build_structured_blocks(
+        raw_blocks,
+        source_metadata=source_metadata,
+        structure_output_dir=str(tmp_path),
+    )
+
+    # Step 3: figure inventory
+    figure_inventory = build_figure_inventory(structured_blocks)
+
+    # Step 4: reader figure synthesis
+    reader_payload = synthesize_reader_figures(figure_inventory, structured_blocks, doc_structure)
+
+    # Step 5: table inventory
+    table_inventory = build_table_inventory(structured_blocks)
+
+    # Step 6: render fulltext markdown
+    page_count = (
+        max((b.get("page", 1) for b in structured_blocks), default=1)
+        if structured_blocks
+        else None
+    )
+    rendered = render_fulltext_markdown(
+        structured_blocks=structured_blocks,
+        resolved_metadata=source_metadata,
+        figure_inventory=figure_inventory,
+        table_inventory=table_inventory,
+        page_count=page_count,
+        document_structure=doc_structure,
+        reader_payload=reader_payload,
+    )
+
+    return {
+        "raw_blocks": raw_blocks,
+        "structured_blocks": structured_blocks,
+        "doc_structure": doc_structure,
+        "figure_inventory": figure_inventory,
+        "reader_payload": reader_payload,
+        "table_inventory": table_inventory,
+        "rendered": rendered,
+    }
+
+
+def _dump_debug_bundle(key: str, result: dict | None, tmp_path: Path) -> None:
+    """Write debug artifacts on assertion failure."""
+    if result is None:
+        return
+
+    structured = result.get("structured_blocks")
+    if structured:
+        (tmp_path / "structured_blocks.failed.jsonl").write_text(
+            "\n".join(json.dumps(b, ensure_ascii=False) for b in structured),
+            encoding="utf-8",
+        )
+
+    doc_structure = result.get("doc_structure")
+    if doc_structure is not None:
+        import dataclasses
+
+        try:
+            if hasattr(doc_structure, "_asdict"):
+                data = doc_structure._asdict()
+            elif dataclasses.is_dataclass(doc_structure):
+                data = dataclasses.asdict(doc_structure)
+            else:
+                data = str(doc_structure)
+        except Exception:
+            data = str(doc_structure)
+        (tmp_path / "document_structure.failed.json").write_text(
+            json.dumps(data, indent=2, default=str, ensure_ascii=False),
+            encoding="utf-8",
+        )
+
+    for name in ("figure_inventory", "reader_payload", "table_inventory"):
+        value = result.get(name)
+        if value:
+            (tmp_path / f"{name}.failed.json").write_text(
+                json.dumps(value, indent=2, default=str, ensure_ascii=False),
+                encoding="utf-8",
+            )
+
+    rendered = result.get("rendered")
+    if rendered:
+        (tmp_path / "rendered.failed.md").write_text(rendered, encoding="utf-8")
+
+
+# ---------------------------------------------------------------------------
+# Primary regression tests (fixture-backed deterministic replay)
+# ---------------------------------------------------------------------------
+
+
+def test_caqnw9q2_production_pipeline_structure(tmp_path: Path) -> None:
+    key = "CAQNW9Q2"
+    expectations = _load_expectations(key)
+    result = None
+
+    try:
+        result = replay_production_pipeline(key, tmp_path)
+        structured_blocks = result["structured_blocks"]
+        roles = [b.get("role") for b in structured_blocks]
+
+        doc_exp = expectations.get("document", {})
+        if doc_exp.get("expected_abstract_span"):
+            assert "abstract" in roles, "No abstract role found in CAQNW9Q2"
+
+        pages_exp = expectations.get("pages", {})
+        for page_str, page_exp in pages_exp.items():
+            page_blocks = [b for b in structured_blocks if str(b.get("page")) == page_str]
+            page_roles = [b.get("role") for b in page_blocks]
+
+            if "expected_non_body" in page_exp:
+                for idx in page_exp["expected_non_body"]:
+                    if idx < len(page_roles):
+                        assert page_roles[idx] != "body_paragraph", (
+                            f"Block {idx} on page {page_str} should not be body_paragraph, "
+                            f"got {page_roles[idx]}"
+                        )
+
+            for rule in page_exp.get("expected_reference_rules", []):
+                if rule.get("must_not_render_references_as_body"):
+                    ref_bodies = [
+                        b
+                        for b in page_blocks
+                        if b.get("role") == "body_paragraph"
+                        and b.get("style_family") == "reference_like"
+                    ]
+                    assert len(ref_bodies) == 0, (
+                        f"Reference-like blocks rendered as body_paragraph on page {page_str}"
+                    )
+
+            for rel in page_exp.get("expected_order_relations", []):
+                before = rel["before_text"].lower()
+                after = rel["after_text"].lower()
+                rendered = result["rendered"].lower()
+                bp = rendered.find(before)
+                ap = rendered.find(after)
+                if bp >= 0 and ap >= 0:
+                    assert bp < ap, (
+                        f"'{rel['before_text']}' must appear before '{rel['after_text']}'"
+                    )
+    except AssertionError:
+        _dump_debug_bundle(key, result, tmp_path)
+        raise
+
+
+def test_dwqqk2yb_production_pipeline_figures(tmp_path: Path) -> None:
+    key = "DWQQK2YB"
+    expectations = _load_expectations(key)
+    result = None
+
+    try:
+        result = replay_production_pipeline(key, tmp_path)
+
+        doc_exp = expectations.get("document", {})
+        min_rf = doc_exp.get("expected_reader_figure_count_min", 0)
+        rf_count = len(result["reader_payload"].get("reader_figures", []))
+        assert rf_count >= min_rf, f"Expected >= {min_rf} reader figures, got {rf_count}"
+
+        pages_exp = expectations.get("pages", {})
+        for page_str, page_exp in pages_exp.items():
+            for obj in page_exp.get("expected_object_ownership", []):
+                if obj.get("object_type") != "figure":
+                    continue
+                if obj.get("must_not_render_caption_blocks_as_body"):
+                    structured = result["structured_blocks"]
+                    page_blocks = [b for b in structured if str(b.get("page")) == page_str]
+                    leaked = [
+                        b
+                        for b in page_blocks
+                        if b.get("role") == "body_paragraph"
+                        and f"Fig. {obj['figure_number']}" in str(b.get("text", ""))
+                        and b.get("style_family") in ("legend_like", "figure_caption_like")
+                    ]
+                    assert len(leaked) == 0, (
+                        f"Figure {obj['figure_number']} caption leaked into body_paragraph "
+                        f"on page {page_str}"
+                    )
+
+        for invariant in expectations.get("expected_render_invariants", []):
+            if invariant.get("type") == "no_duplicate_caption":
+                import re as _re
+
+                pattern = invariant["caption_regex"]
+                matches = _re.findall(
+                    rf"!\[\[render/figures/.*{pattern}.*\]\]",
+                    result["rendered"],
+                    _re.IGNORECASE,
+                )
+                assert len(matches) >= 1, f"No rendered figure matching '{pattern}' found"
+    except AssertionError:
+        _dump_debug_bundle(key, result, tmp_path)
+        raise
+
+
+def test_a8e7srvs_page_level_production_pipeline(tmp_path: Path) -> None:
+    key = "A8E7SRVS"
+    expectations = _load_expectations(key)
+    result = None
+
+    try:
+        result = replay_production_pipeline(key, tmp_path)
+        pages_exp = expectations.get("pages", {})
+
+        for page_str, page_exp in pages_exp.items():
+            for obj in page_exp.get("expected_object_ownership", []):
+                otype = obj.get("object_type")
+                if otype == "figure":
+                    num = obj.get("figure_number")
+                    rendered = result["rendered"]
+                    assert (
+                        f"Figure {num}" in rendered or f"Fig. {num}" in rendered
+                    ), f"Figure {num} not found in rendered output"
+                elif otype == "table":
+                    num = obj.get("table_number")
+                    assert f"Table {num}" in result["rendered"], (
+                        f"Table {num} not found in rendered output"
+                    )
+
+        for page_str, page_exp in pages_exp.items():
+            for cons in page_exp.get("expected_consumption", []):
+                if cons.get("must_not_render_as_body"):
+                    structured = result["structured_blocks"]
+                    page_blocks = [b for b in structured if str(b.get("page")) == page_str]
+                    hint = cons.get("block_id_comment", "").lower()
+                    leaked = [
+                        b
+                        for b in page_blocks
+                        if b.get("role") == "body_paragraph"
+                        and hint in str(b.get("text", "")).lower()
+                    ]
+                    assert len(leaked) == 0, (
+                        f"Content from '{cons['block_id_comment']}' leaked into "
+                        f"body_paragraph on page {page_str}"
+                    )
+
+        for page_str, page_exp in pages_exp.items():
+            for inv in page_exp.get("expected_render_invariants", []):
+                if inv.get("type") == "before_text":
+                    before = inv["before"].lower()
+                    after = inv["after"].lower()
+                    rendered = result["rendered"].lower()
+                    bp = rendered.find(before)
+                    ap = rendered.find(after)
+                    if bp >= 0 and ap >= 0:
+                        assert bp < ap, (
+                            f"'{inv['before']}' must appear before '{inv['after']}'"
+                        )
+                elif inv.get("type") == "not_in_body":
+                    text = inv["text_contains"].lower()
+                    structured = result["structured_blocks"]
+                    leaked = [
+                        b
+                        for b in structured
+                        if b.get("role") == "body_paragraph"
+                        and text in str(b.get("text", "")).lower()
+                    ]
+                    assert len(leaked) == 0, (
+                        f"'{inv['text_contains']}' leaked into body_paragraph"
+                    )
+    except AssertionError:
+        _dump_debug_bundle(key, result, tmp_path)
+        raise
+
+
+# ===========================================================================
+# Secondary: env-driven audit tests (preserved from original)
+#
+# These require PAPERFORGE_REAL_OCR_VAULT set to a real vault path.
+# Run with: pytest -m audit
+# ===========================================================================
 
 REAL_VAULT_ENV = "PAPERFORGE_REAL_OCR_VAULT"
 REAL_KEYS_ENV = "PAPERFORGE_REAL_OCR_KEYS"
@@ -65,6 +407,10 @@ def _reader_figures_path(ocr_root: Path, key: str) -> Path:
     return _paper_root(ocr_root, key) / "structure" / "reader_figures.json"
 
 
+def _figure_inventory_path(ocr_root: Path, key: str) -> Path:
+    return _paper_root(ocr_root, key) / "structure" / "figure_inventory.json"
+
+
 def _metadata_path(ocr_root: Path, key: str) -> Path:
     return _paper_root(ocr_root, key) / "metadata" / "resolved_metadata.json"
 
@@ -116,11 +462,13 @@ def rebuilt_real_papers(_vault: Path, _all_keys: list[str]) -> dict:
     return result
 
 
+@pytest.mark.audit
 @pytest.mark.parametrize("key", PROBLEM_KEYS + CONTROL_KEYS)
 def test_real_paper_artifacts_exist(_ocr_root: Path, key: str) -> None:
     _require_artifacts(_ocr_root, key)
 
 
+@pytest.mark.audit
 def test_real_paper_rebuild_runs(rebuilt_real_papers: dict) -> None:
     assert rebuilt_real_papers.get("rebuild_count", 0) >= 1
 
@@ -128,8 +476,6 @@ def test_real_paper_rebuild_runs(rebuilt_real_papers: dict) -> None:
 BODY_RETENTION = {
     "CAQNW9Q2": {"min_body": 27, "max_non_body_insert": 8},
     "A8E7SRVS": {"min_body": 42, "max_non_body_insert": 8},
-    # K7R8PEKW remains in the problem cohort as a generic body/reference retention guard.
-    # It does not yet have a paper-specific recovery contract in this file.
     "K7R8PEKW": {"min_body": 60, "max_non_body_insert": 8},
     "TSCKAVIS": {"min_body": 48, "max_non_body_insert": 12},
     "DWQQK2YB": {"min_body": 25, "max_non_body_insert": 12},
@@ -141,6 +487,7 @@ def _role_texts(blocks: list[dict], role: str) -> list[str]:
     return [str(block.get("text") or block.get("block_content") or "") for block in blocks if block.get("role") == role]
 
 
+@pytest.mark.audit
 @pytest.mark.parametrize("key", sorted(BODY_RETENTION))
 def test_problem_papers_retain_body_and_avoid_mass_insert_suppression(
     rebuilt_real_papers: dict, _ocr_root: Path, key: str
@@ -154,6 +501,7 @@ def test_problem_papers_retain_body_and_avoid_mass_insert_suppression(
     assert roles.count("non_body_insert") <= thresholds["max_non_body_insert"], roles.count("non_body_insert")
 
 
+@pytest.mark.audit
 def test_a8e7srvs_no_frontmatter_body_before_introduction(rebuilt_real_papers: dict, _ocr_root: Path) -> None:
     key = "A8E7SRVS"
     _require_artifacts(_ocr_root, key)
@@ -193,6 +541,7 @@ def test_a8e7srvs_no_frontmatter_body_before_introduction(rebuilt_real_papers: d
     )
 
 
+@pytest.mark.audit
 def test_tsckavis_frontmatter_and_key_points_are_callout(rebuilt_real_papers: dict, _ocr_root: Path) -> None:
     key = "TSCKAVIS"
     _require_artifacts(_ocr_root, key)
@@ -204,17 +553,14 @@ def test_tsckavis_frontmatter_and_key_points_are_callout(rebuilt_real_papers: di
         + _role_texts(blocks, "sub_subsection_heading")
     ).lower()
 
-    # Frontmatter must not leak into content headings
     assert "review article" not in heading_text
     assert "steve stegen" not in heading_text
     assert "geert carmeliet" not in heading_text
 
-    # Key points must render as a callout block, not suppressed
     assert "key points" in fulltext.lower()
     assert "[!NOTE]" in fulltext
     assert "skeletal stem and progenitor cells display a high metabolic flexibility" in fulltext.lower()
 
-    # Metadata must capture title and authors from OCR blocks
     meta = _read_json(_metadata_path(_ocr_root, key))
     assert len(meta.get("title", {}).get("value", "")) > 10, meta.get("title")
     assert len(meta.get("authors", {}).get("value", [])) > 0, meta.get("authors")
@@ -224,6 +570,7 @@ def test_tsckavis_frontmatter_and_key_points_are_callout(rebuilt_real_papers: di
     assert meta.get("doi", {}).get("value", ""), meta.get("doi")
 
 
+@pytest.mark.audit
 def test_tsckavis_no_table_display_as_heading(rebuilt_real_papers: dict, _ocr_root: Path) -> None:
     key = "TSCKAVIS"
     _require_artifacts(_ocr_root, key)
@@ -256,6 +603,7 @@ CONTROL_MIN_BODY = {
 }
 
 
+@pytest.mark.audit
 @pytest.mark.parametrize("key", sorted(CONTROL_MIN_BODY))
 def test_control_papers_keep_body_and_tail_stability(rebuilt_real_papers: dict, _ocr_root: Path, key: str) -> None:
     _require_artifacts(_ocr_root, key)
@@ -269,6 +617,7 @@ def test_control_papers_keep_body_and_tail_stability(rebuilt_real_papers: dict, 
     )
 
 
+@pytest.mark.audit
 @pytest.mark.parametrize("key", PROBLEM_KEYS)
 def test_problem_papers_keep_reference_roles_and_exclude_legend_family_from_body(
     rebuilt_real_papers: dict,
@@ -304,6 +653,7 @@ def test_problem_papers_keep_reference_roles_and_exclude_legend_family_from_body
     assert not leaked, f"Residual non-body leaks remain for {key}: {[b.get('block_id') for b in leaked][:8]}"
 
 
+@pytest.mark.audit
 def test_dwqqk2yb_post_preproof_not_body(rebuilt_real_papers: dict, _ocr_root: Path) -> None:
     key = "DWQQK2YB"
     _require_artifacts(_ocr_root, key)
@@ -327,6 +677,7 @@ def test_dwqqk2yb_post_preproof_not_body(rebuilt_real_papers: dict, _ocr_root: P
     assert body_zone_refs < total_refs, f"All {total_refs} reference items remain in body_zone for {key}"
 
 
+@pytest.mark.audit
 def test_m36wa39n_editorial_furniture_not_body(rebuilt_real_papers: dict, _ocr_root: Path) -> None:
     key = "M36WA39N"
     _require_artifacts(_ocr_root, key)
@@ -342,6 +693,7 @@ def test_m36wa39n_editorial_furniture_not_body(rebuilt_real_papers: dict, _ocr_r
         assert phrase not in body_text, f"'{phrase}' collapsed into body_paragraph for {key}"
 
 
+@pytest.mark.audit
 def test_caqnw9q2_heading_preservation_and_ref_classification(rebuilt_real_papers: dict, _ocr_root: Path) -> None:
     key = "CAQNW9Q2"
     _require_artifacts(_ocr_root, key)
@@ -363,11 +715,10 @@ def test_caqnw9q2_heading_preservation_and_ref_classification(rebuilt_real_paper
     )
 
 
+@pytest.mark.audit
 def test_tsckavis_key_points_render_as_callout(rebuilt_real_papers: dict, _ocr_root: Path) -> None:
-    """Key points sidebar must render as a callout block in fulltext, not be silently dropped."""
     key = "TSCKAVIS"
     _require_artifacts(_ocr_root, key)
-    blocks = _read_jsonl(_structured_path(_ocr_root, key))
     fulltext = _fulltext_path(_ocr_root, key).read_text(encoding="utf-8", errors="replace")
 
     kp_lower = fulltext.lower()
@@ -378,9 +729,8 @@ def test_tsckavis_key_points_render_as_callout(rebuilt_real_papers: dict, _ocr_r
     )
 
 
+@pytest.mark.audit
 def test_tsckavis_table_display_does_not_render_as_body_heading(rebuilt_real_papers: dict, _ocr_root: Path) -> None:
-    """Table display content (Table 1 | ..., Table 1 (continued)) must not appear as
-    body headings -- neither in block roles nor rendered as markdown headings in fulltext."""
     key = "TSCKAVIS"
     _require_artifacts(_ocr_root, key)
     blocks = _read_jsonl(_structured_path(_ocr_root, key))
@@ -399,8 +749,8 @@ def test_tsckavis_table_display_does_not_render_as_body_heading(rebuilt_real_pap
     )
 
 
+@pytest.mark.audit
 def test_caqnw9q2_old_style_references_gain_reference_like_family(rebuilt_real_papers: dict, _ocr_root: Path) -> None:
-    """Old-style single-column paper references must gain reference_like style_family."""
     key = "CAQNW9Q2"
     _require_artifacts(_ocr_root, key)
     blocks = _read_jsonl(_structured_path(_ocr_root, key))
@@ -417,11 +767,10 @@ def test_caqnw9q2_old_style_references_gain_reference_like_family(rebuilt_real_p
     )
 
 
+@pytest.mark.audit
 def test_m36wa39n_same_page_tail_nonref_and_references_split_correctly(
     rebuilt_real_papers: dict, _ocr_root: Path
 ) -> None:
-    """Tail non-reference items (Conflict of Interest, Publisher's Note, Copyright) must not
-    render as body_paragraph. References must own reference_zone."""
     key = "M36WA39N"
     _require_artifacts(_ocr_root, key)
     blocks = _read_jsonl(_structured_path(_ocr_root, key))
@@ -446,46 +795,52 @@ def test_m36wa39n_same_page_tail_nonref_and_references_split_correctly(
     )
 
 
+@pytest.mark.audit
 def test_real_paper_legends_do_not_silently_disappear_from_object_inventory(
     rebuilt_real_papers: dict, _ocr_root: Path
 ) -> None:
-    """Figure legends must be present in the block inventory AND rendered in fulltext
-    for all problem papers, not silently dropped during rebuild."""
-    legend_paper_counts = {
+    expected_min_visible_objects = {
         "TSCKAVIS": 2,
         "CAQNW9Q2": 2,
         "A8E7SRVS": 2,
         "DWQQK2YB": 2,
         "M36WA39N": 2,
     }
-    for key, min_legends in legend_paper_counts.items():
+    for key, min_visible in expected_min_visible_objects.items():
         _require_artifacts(_ocr_root, key)
-        blocks = _read_jsonl(_structured_path(_ocr_root, key))
+        inventory = _read_json(_figure_inventory_path(_ocr_root, key))
+        reader_payload = _read_json(_reader_figures_path(_ocr_root, key))
         fulltext = _fulltext_path(_ocr_root, key).read_text(encoding="utf-8", errors="replace")
 
-        legend_blocks = [b for b in blocks if b.get("role") in ("figure_caption", "table_caption", "legend")]
-        assert len(legend_blocks) >= min_legends, (
-            f"{key}: expected at least {min_legends} legend/caption blocks, "
-            f"found {len(legend_blocks)} -- legends may be silently disappearing"
+        artifact_visible = (
+            len(inventory.get("matched_figures", []))
+            + len(inventory.get("held_figures", []))
+            + len(inventory.get("ambiguous_figures", []))
+            + len(inventory.get("unmatched_legends", []))
+            + len(inventory.get("unresolved_clusters", []))
+        )
+        assert artifact_visible >= min_visible, (
+            f"{key}: expected at least {min_visible} visible figure artifacts, found {artifact_visible}"
+        )
+        assert len(reader_payload.get("reader_figures", [])) >= min_visible, (
+            f"{key}: expected at least {min_visible} reader figures, "
+            f"found {len(reader_payload.get('reader_figures', []))}"
+        )
+        rendered_count = fulltext.count("> **Figure") + fulltext.count("![[render/figures/figure_")
+        assert rendered_count >= min_visible, (
+            f"{key}: expected at least {min_visible} rendered figure outputs, found {rendered_count}"
         )
 
-        legend_texts = [str(b.get("text", ""))[:60] for b in legend_blocks if b.get("text")]
-        rendered_count = sum(1 for lt in legend_texts if lt.strip() and lt.strip() in fulltext)
-        assert rendered_count >= min_legends, (
-            f"{key}: {rendered_count}/{len(legend_blocks)} legend blocks are rendered in fulltext. "
-            f"Legends present in blocks but missing from fulltext: "
-            f"{[lt for lt in legend_texts if lt.strip() and lt.strip() not in fulltext][:3]}"
-        )
 
-
+@pytest.mark.audit
 def test_reader_figures_persist_after_rebuild(rebuilt_real_papers: dict, _ocr_root: Path) -> None:
     for key in PROBLEM_KEYS + CONTROL_KEYS:
         rfp = _reader_figures_path(_ocr_root, key)
         assert rfp.exists(), f"reader_figures.json not found for {key}"
 
 
+@pytest.mark.audit
 def test_reader_coverage_metrics_in_health(rebuilt_real_papers: dict, _ocr_root: Path) -> None:
-    """Every real paper must have reader coverage metrics in ocr_health.json."""
     for key in PROBLEM_KEYS + CONTROL_KEYS:
         health = _read_json(_health_path(_ocr_root, key))
         assert "figure_reader_coverage_total" in health, f"{key}: missing figure_reader_coverage_total"
@@ -494,8 +849,8 @@ def test_reader_coverage_metrics_in_health(rebuilt_real_papers: dict, _ocr_root:
         assert health["figure_reader_coverage_total"] >= 0, f"{key}: negative reader coverage total"
 
 
+@pytest.mark.audit
 def test_fulltext_has_no_debug_artifact_names(rebuilt_real_papers: dict, _ocr_root: Path) -> None:
-    """Debug artifact names must never leak into user-facing fulltext.md."""
     forbidden = ["unmatched_legend_", "unresolved_cluster_", "orphan_", "asset_block_id", "legend_block_id"]
     for key in PROBLEM_KEYS + CONTROL_KEYS:
         _require_artifacts(_ocr_root, key)

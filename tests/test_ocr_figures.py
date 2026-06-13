@@ -1244,6 +1244,72 @@ def test_display_zone_validation_first_full_caption_can_match() -> None:
     assert inv["matched_figures"][0]["matched_assets"][0]["block_id"] == "p7_b2"
 
 
+def test_tail_nonref_hold_validation_first_legend_can_match_asset() -> None:
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    structured_blocks = [
+        {
+            "paper_id": "K001",
+            "page": 9,
+            "block_id": "p9_b1",
+            "role": "unknown_structural",
+            "seed_role": "figure_caption",
+            "raw_label": "figure_title",
+            "zone": "tail_nonref_hold_zone",
+            "style_family": "legend_like",
+            "style_family_authority": "figure_marker",
+            "text": "FIGURE 4 | Immunohistochemical staining in OA rats under different treadmill exercise protocols.",
+            "marker_signature": {"type": "figure_number", "number": 4},
+            "bbox": [70, 820, 1080, 930],
+            "page_width": 1200,
+            "page_height": 1600,
+        },
+        {
+            "paper_id": "K001",
+            "page": 9,
+            "block_id": "p9_b2",
+            "role": "figure_asset",
+            "text": "",
+            "bbox": [100, 60, 1040, 780],
+            "page_width": 1200,
+            "page_height": 1600,
+        },
+    ]
+
+    inv = build_figure_inventory(structured_blocks)
+
+    assert len(inv["matched_figures"]) == 1
+    assert inv["matched_figures"][0]["legend_block_id"] == "p9_b1"
+
+
+def test_display_zone_figure_title_seed_caption_support_like_enters_inventory() -> None:
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    structured_blocks = [
+        {
+            "paper_id": "K001",
+            "page": 8,
+            "block_id": "p8_b1",
+            "role": "unknown_structural",
+            "seed_role": "figure_caption",
+            "raw_label": "figure_title",
+            "zone": "display_zone",
+            "style_family": "support_like",
+            "style_family_authority": "editorial_phrase",
+            "text": "Fig. 4 Novel in vitro ES platforms to regulate cell behaviors. (a) A TENG-based platform for suppressing cancer cell migration.",
+            "marker_signature": {"type": "figure_number", "number": 4},
+            "bbox": [77, 878, 1113, 1100],
+            "page_width": 1200,
+            "page_height": 1600,
+        },
+    ]
+
+    inv = build_figure_inventory(structured_blocks)
+
+    assert len(inv["figure_legends"]) == 1
+    assert inv["unmatched_legends"][0]["block_id"] == "p8_b1"
+
+
 def test_truncated_legend_variant_from_existing_caption_role_is_still_held() -> None:
     from paperforge.worker.ocr_figures import build_figure_inventory
 

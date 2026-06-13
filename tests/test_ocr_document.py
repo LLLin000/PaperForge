@@ -608,7 +608,7 @@ def test_reference_zone_is_inferred_from_reference_family_anchor_not_preexisting
     zones = infer_zones(blocks, anchors)
 
     assert zones["reference_zone"]["status"] == "ACCEPT"
-    assert "p8:p8_b2" in zones["reference_zone"]["block_ids"]
+    assert "p8_b2" in zones["reference_zone"]["block_ids"]
 
 
 def test_analyze_document_structure_persists_region_bus_in_dataclass_serialization() -> None:
@@ -669,8 +669,8 @@ def test_analyze_document_structure_persists_region_bus_in_dataclass_serializati
 
     assert "region_bus" in data
     assert data["region_bus"]["reference_zone"]["status"] == "ACCEPT"
-    assert "p6:p6_b2" in data["region_bus"]["reference_zone"]["block_ids"]
-    assert "p6:p6_b3" in data["region_bus"]["reference_zone"]["block_ids"]
+    assert "p6_b2" in data["region_bus"]["reference_zone"]["block_ids"]
+    assert "p6_b3" in data["region_bus"]["reference_zone"]["block_ids"]
 
 
 def test_infer_zones_keeps_pre_reference_tail_out_of_body_zone() -> None:
@@ -742,8 +742,8 @@ def test_infer_zones_keeps_pre_reference_tail_out_of_body_zone() -> None:
 
     zones = infer_zones(blocks, anchors, tail_spread=tail_spread)
 
-    assert "p7:p7_b2" in zones["tail_nonref_hold_zone"]["block_ids"]
-    assert "p7:p7_b2" not in zones["body_zone"]["block_ids"]
+    assert "p7_b2" in zones["tail_nonref_hold_zone"]["block_ids"]
+    assert "p7_b2" not in zones["body_zone"]["block_ids"]
 
 
 def test_infer_zones_inferrs_tail_nonref_hold_without_pre_labeled_tail_roles() -> None:
@@ -821,8 +821,8 @@ def test_infer_zones_inferrs_tail_nonref_hold_without_pre_labeled_tail_roles() -
 
     zones = infer_zones(blocks, anchors)
 
-    assert "p7:p7_b2" in zones["tail_nonref_hold_zone"]["block_ids"]
-    assert "p7:p7_b2" not in zones["body_zone"]["block_ids"]
+    assert "p7_b2" in zones["tail_nonref_hold_zone"]["block_ids"]
+    assert "p7_b2" not in zones["body_zone"]["block_ids"]
 
 
 def test_normalize_flat_backmatter_unifies_heading_family() -> None:
@@ -1062,6 +1062,59 @@ def test_rescue_weak_heading_demoted_to_body() -> None:
 
     demoted = next(b for b in result if b["text"] == "Methods")
     assert demoted["role"] == "body_paragraph", f"Expected body_paragraph, got {demoted['role']}"
+
+
+def test_restore_tail_hold_body_after_heading_like_tail_section() -> None:
+    from paperforge.worker.ocr_document import _restore_numbered_body_from_tail_hold
+
+    blocks = [
+        {
+            "page": 10,
+            "block_id": "h1",
+            "role": "subsection_heading",
+            "zone": "tail_nonref_hold_zone",
+            "style_family": "heading_like",
+            "text": "Acromial Morphology and Retear Risk",
+            "marker_signature": {"type": "none"},
+        },
+        {
+            "page": 10,
+            "block_id": "b1",
+            "role": "backmatter_body",
+            "zone": "tail_nonref_hold_zone",
+            "style_family": "body_like",
+            "text": "We found that only acromial slope and distance were associated with higher retear risk.",
+        },
+        {
+            "page": 10,
+            "block_id": "cap",
+            "role": "unknown_structural",
+            "zone": "tail_nonref_hold_zone",
+            "style_family": "table_caption_like",
+            "text": "Table 7. Clinical and radiologic outcomes depending on the cutoff.",
+        },
+        {
+            "page": 11,
+            "block_id": "b2",
+            "role": "backmatter_body",
+            "zone": "tail_nonref_hold_zone",
+            "style_family": "body_like",
+            "text": "We found that glenoid orientation was not associated with radiologic outcomes after repair.",
+        },
+        {
+            "page": 12,
+            "block_id": "rh",
+            "role": "reference_heading",
+            "zone": "reference_zone",
+            "style_family": "heading_like",
+            "text": "References",
+        },
+    ]
+
+    _restore_numbered_body_from_tail_hold(blocks)
+
+    assert blocks[1]["role"] == "body_paragraph"
+    assert blocks[3]["role"] == "body_paragraph"
 
 
 def test_rescue_strong_numbered_heading_not_demoted() -> None:
