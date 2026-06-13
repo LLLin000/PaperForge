@@ -196,6 +196,38 @@ def build_table_inventory(structured_blocks: list[dict]) -> dict[str, Any]:
                 "is_continuation": is_cont,
             })
 
+        note_block_ids: list[str] = []
+        if matched_asset:
+            asset_page = matched_asset.get("page", 0)
+            asset_bbox = matched_asset.get("bbox", [0, 0, 0, 0])
+            asset_bottom = asset_bbox[3] if len(asset_bbox) >= 4 else 0
+            for block in structured_blocks:
+                bpage = block.get("page", 0)
+                if bpage != asset_page:
+                    continue
+                brole = str(block.get("role", "") or "")
+                braw_label = str(block.get("raw_label", "") or "").strip()
+                btext = str(block.get("text", "") or "").strip()
+                is_note = (
+                    brole == "footnote"
+                    or braw_label == "vision_footnote"
+                    or (0 < len(btext) < 120
+                        and brole not in (
+                            "table_caption", "table_caption_candidate",
+                            "table_asset", "media_asset",
+                            "figure_caption", "section_heading",
+                            "subsection_heading", "reference_heading",
+                        ))
+                )
+                if not is_note:
+                    continue
+                bbbox = block.get("bbox", [0, 0, 0, 0])
+                if len(bbbox) < 4:
+                    continue
+                note_top = bbbox[1]
+                if asset_bottom <= note_top <= asset_bottom + 80:
+                    note_block_ids.append(block.get("block_id", ""))
+
         tables.append({
             "caption_block_id": caption.get("block_id", ""),
             "page": caption_page,
@@ -208,6 +240,7 @@ def build_table_inventory(structured_blocks: list[dict]) -> dict[str, Any]:
             "truth_source": "image",
             "has_asset": matched_asset is not None,
             "segments": segments,
+            "note_block_ids": note_block_ids,
             "is_continuation": is_cont,
             "continuation_of": continuation_of,
             "match_status": match_status,
