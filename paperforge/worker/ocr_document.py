@@ -424,6 +424,8 @@ def _is_page1_body_start(block: dict, *, seen_title_or_author: bool) -> bool:
     if not seen_title_or_author:
         return False
     role = block.get("role") or block.get("seed_role")
+    if role == "unassigned":
+        role = block.get("seed_role")
     text = str(block.get("text") or "").strip()
     words = text.split()
     if role in {"section_heading", "subsection_heading"}:
@@ -750,6 +752,8 @@ def infer_zones(
                 continue
             text = str(block.get("text") or "").strip().lower()
             role = block.get("role") or block.get("seed_role")
+            if role == "unassigned":
+                role = block.get("seed_role")
             if text in _POST_REFERENCE_BACKMATTER_HEADINGS and role in {
                 "section_heading", "subsection_heading", "sub_subsection_heading",
                 "backmatter_heading_candidate",
@@ -808,6 +812,8 @@ def infer_zones(
     body_started = False
     for block in page1_candidates:
         role = block.get("role") or block.get("seed_role")
+        if role == "unassigned":
+            role = block.get("seed_role")
         if role in {"paper_title", "authors", "frontmatter_support", "affiliation"}:
             seen_title_or_author = True
         if _is_page1_body_start(block, seen_title_or_author=seen_title_or_author):
