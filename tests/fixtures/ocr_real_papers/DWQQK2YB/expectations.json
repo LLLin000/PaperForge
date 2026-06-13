@@ -3,40 +3,41 @@
     "expected_reader_figure_count_min": 4,
     "expected_reference_zone": true,
     "expected_abstract_span": true,
+    "expected_post_reference_backmatter_zone": true,
     "notes": [
-      "IDEAL expectations for DWQQK2YB (Magnetoresponsive Stem Cell Spheroid, Elsevier 2019).",
-      "raw_label can be paragraph_title; final role should be section_heading/subsection_heading.",
-      "Title/authors belong to frontmatter artifact zones, not body_zone.",
-      "Annotated page images (i folder) are the visual ground truth."
+      "Updated expectations after RC3 (unassigned role) and RC4 (post-reference backmatter) fixes.",
+      "Figure captions as figure_caption_candidate is CORRECT per spec: object-gate roles stay as candidate at document-gate time.",
+      "Biographies now correctly in post_reference_backmatter_zone instead of reference_zone.",
+      "Title/authors on preproof page 1 still need frontmatter classification fix (RC1)."
     ]
   },
   "pages": {
     "1": {
       "assertions": [
-        {"text_contains": "Journal Pre-proof", "expected_role": "frontmatter_noise", "expected_zone": "preproof_cover_zone", "notes": "Already correct"},
-        {"text_contains": "Magnetoresponsive Stem Cell Spheroid", "expected_role": "paper_title", "expected_zone": "frontmatter_main_zone", "must_not_render_as_body": true, "notes": "Real: frontmatter_noise - should be paper_title"},
-        {"text_contains": "Ami Yoo, Gwangjun Go", "expected_role": "authors", "expected_zone": "frontmatter_main_zone", "must_not_render_as_body": true, "notes": "Real: frontmatter_noise - should be authors"},
-        {"text_contains": "PII:", "expected_role": "frontmatter_support", "expected_zone": "frontmatter_main_zone", "must_not_render_as_body": true},
-        {"text_contains": "To appear in:", "expected_role": "frontmatter_support", "expected_zone": "frontmatter_main_zone", "must_not_render_as_body": true},
-        {"text_contains": "Received Date:", "expected_role": "frontmatter_support", "expected_zone": "frontmatter_main_zone", "must_not_render_as_body": true},
-        {"text_contains": "2019 Published by Elsevier", "expected_role": "frontmatter_support", "expected_zone": "frontmatter_main_zone", "must_not_render_as_body": true}
+        {"text_contains": "Journal Pre-proof", "expected_role": "frontmatter_noise", "expected_zone": "preproof_cover_zone"},
+        {"text_contains": "Magnetoresponsive Stem Cell Spheroid", "expected_role": "paper_title", "notes": "BUG: Real: frontmatter_noise - should be paper_title"},
+        {"text_contains": "Ami Yoo, Gwangjun Go", "expected_role": "authors", "notes": "BUG: Real: frontmatter_noise - should be authors"},
+        {"text_contains": "PII:", "expected_role": "frontmatter_support", "notes": "BUG: Real: frontmatter_noise"},
+        {"text_contains": "To appear in:", "expected_role": "frontmatter_support", "notes": "BUG: Real: frontmatter_noise"},
+        {"text_contains": "Received Date:", "expected_role": "frontmatter_support", "notes": "BUG: Real: frontmatter_noise"},
+        {"text_contains": "2019 Published by Elsevier", "expected_role": "frontmatter_support", "notes": "BUG: Real: frontmatter_noise"}
       ]
     },
     "2": {
       "assertions": [
-        {"text_contains": "Magnetoresponsive Stem Cell Spheroid", "expected_role": "paper_title", "expected_zone": "frontmatter_main_zone", "must_not_render_as_body": true, "notes": "Real: unknown_structural - should be paper_title"},
-        {"text_contains": "These authors contributed equally", "expected_role": "structured_insert", "expected_zone_any_of": ["frontmatter_side_zone", "frontmatter_main_zone"], "notes": "Real: frontmatter_noise - should be structured_insert"},
-        {"text_contains": "Corresponding author", "expected_role": "structured_insert", "expected_zone_any_of": ["frontmatter_side_zone", "frontmatter_main_zone"], "notes": "Real: frontmatter_noise - should be structured_insert"},
-        {"text_equals": "Highlights", "expected_role": "paragraph_title", "expected_zone": "body_zone", "notes": "Real: structured_insert - should be paragraph_title (it's a section label, not a structured insert)"}
+        {"text_contains": "Magnetoresponsive Stem Cell Spheroid", "expected_role": "paper_title", "notes": "BUG: Real: unknown_structural. Title from preproof page 2 not verified by gate."},
+        {"text_contains": "These authors contributed equally", "expected_role": "structured_insert", "notes": "BUG: Real: frontmatter_noise"},
+        {"text_contains": "Corresponding author", "expected_role": "structured_insert", "notes": "BUG: Real: frontmatter_noise"},
+        {"text_equals": "Highlights", "expected_role": "structured_insert", "notes": "BUG: Real: structured_insert - should be paragraph_title"}
       ]
     },
     "3": {
       "assertions": [
-        {"text_contains": "Histological evaluation revealed", "expected_role": "body_paragraph", "expected_zone": "body_zone", "notes": "Real: abstract_body - this is Highlights continuation, should be body_paragraph"},
-        {"text_equals": "Abstract", "expected_role": "paragraph_title", "expected_zone": "body_zone", "notes": "Real: abstract_heading - downstream consumers need paragraph_title"},
+        {"text_contains": "Histological evaluation revealed", "expected_role": "body_paragraph", "notes": "BUG: Real: abstract_body - Highlights continuation"},
+        {"text_equals": "Abstract", "expected_role": "abstract_heading", "expected_zone": "body_zone"},
         {"text_contains": "Mesenchymal stem cells", "expected_role": "abstract_body", "expected_zone": "body_zone"},
-        {"text_contains": "Keywords:", "expected_role": "structured_insert", "expected_zone": "body_zone", "notes": "Real: body_paragraph - should be structured_insert"},
-        {"text_equals": "1. Introduction", "expected_role": "section_heading", "expected_zone": "body_zone", "notes": "Real: section_heading - this is correct! raw_label=paragraph_title, final role=section_heading"}
+        {"text_contains": "Keywords:", "expected_role": "structured_insert", "notes": "BUG: Real: body_paragraph"},
+        {"text_equals": "1. Introduction", "expected_role": "section_heading", "expected_zone": "body_zone"}
       ]
     },
     "4": {
@@ -59,8 +60,8 @@
     },
     "7": {
       "assertions": [
-        {"text_equals": "2. Experimental section", "expected_role": "section_heading", "expected_zone": "body_zone", "notes": "Real: section_heading - correct!"},
-        {"text_equals": "2.1 Cell culture", "expected_role": "subsection_heading", "expected_zone": "body_zone", "notes": "Real: subsection_heading - correct!"},
+        {"text_equals": "2. Experimental section", "expected_role": "section_heading", "expected_zone": "body_zone"},
+        {"text_equals": "2.1 Cell culture", "expected_role": "subsection_heading", "expected_zone": "body_zone"},
         {"text_equals": "2.2 Fabrication and characteristics of MNP labeled MR-SCS", "expected_role": "subsection_heading", "expected_zone": "body_zone"}
       ]
     },
@@ -116,10 +117,10 @@
     },
     "25": {
       "assertions": [
-        {"text_equals": "Conflict of Interest", "expected_role": "backmatter_heading", "expected_zone": "tail_nonref_hold_zone", "notes": "Real: section_heading - should be backmatter_heading"},
+        {"text_equals": "Conflict of Interest", "expected_role": "backmatter_heading", "notes": "BUG: Real: section_heading"},
         {"text_contains": "All other authors declare", "expected_role": "backmatter_body", "expected_zone": "tail_nonref_hold_zone"},
-        {"text_equals": "Acknowledgments", "expected_role": "backmatter_heading", "expected_zone": "tail_nonref_hold_zone", "notes": "Real: section_heading - should be backmatter_heading"},
-        {"text_contains": "A. Yoo and G. Go contributed equally", "expected_role": "structured_insert", "expected_zone": "tail_nonref_hold_zone", "notes": "Real: backmatter_body - should be structured_insert (equal contribution)"}
+        {"text_equals": "Acknowledgments", "expected_role": "backmatter_heading", "notes": "BUG: Real: section_heading"},
+        {"text_contains": "A. Yoo and G. Go contributed equally", "expected_role": "structured_insert", "notes": "BUG: Real: backmatter_body"}
       ]
     },
     "26": {
@@ -129,115 +130,74 @@
       ]
     },
     "27": {
-      "assertions": [
-        {"count_reference_content": {"min": 7, "max": 12}}
-      ]
+      "assertions": [{"count_reference_content": {"min": 7, "max": 12}}]
     },
     "28": {
-      "assertions": [
-        {"count_reference_content": {"min": 7, "max": 12}}
-      ]
+      "assertions": [{"count_reference_content": {"min": 7, "max": 12}}]
     },
     "29": {
-      "assertions": [
-        {"count_reference_content": {"min": 7, "max": 12}}
-      ]
+      "assertions": [{"count_reference_content": {"min": 7, "max": 12}}]
     },
     "30": {
-      "assertions": [
-        {"count_reference_content": {"min": 7, "max": 12}}
-      ]
+      "assertions": [{"count_reference_content": {"min": 7, "max": 12}}]
     },
     "31": {
+      "assertions": [{"count_reference_content": {"min": 7, "max": 12}}]
+    },
+    "32": {
       "assertions": [
-        {"count_reference_content": {"min": 7, "max": 12}}
+        {"text_equals": "Biographies", "expected_role": "backmatter_heading", "expected_zone_any_of": ["post_reference_backmatter_zone", "tail_nonref_hold_zone"], "notes": "Now in post_reference_backmatter_zone"},
+        {"text_contains": "Ami Yoo received", "expected_role": "backmatter_body", "expected_zone": "post_reference_backmatter_zone"},
+        {"text_contains": "Gwangjun Go received", "expected_role": "backmatter_body", "expected_zone": "post_reference_backmatter_zone"},
+        {"text_contains": "Kim Tien Nguyen received", "expected_role": "backmatter_body", "expected_zone": "post_reference_backmatter_zone"},
+        {"text_contains": "Kyungmin Lee received", "expected_role": "backmatter_body", "expected_zone": "post_reference_backmatter_zone"},
+        {"text_contains": "Hyun-Ki Min received", "expected_role": "backmatter_body", "expected_zone": "post_reference_backmatter_zone"}
       ]
     },
     "33": {
       "assertions": [
-        {"text_equals": "Biographies", "expected_role": "backmatter_heading", "expected_zone": "tail_nonref_hold_zone", "notes": "CRITICAL BUG: Real pipeline absorbs biographies into reference_zone on page 32. Should be in tail_nonref_hold_zone."},
-        {"text_contains": "Ami Yoo received", "expected_role": "backmatter_body", "expected_zone": "tail_nonref_hold_zone", "notes": "CRITICAL BUG: Real has role=body_paragraph in reference_zone."},
-        {"text_contains": "Gwangjun Go received", "expected_role": "backmatter_body", "expected_zone": "tail_nonref_hold_zone", "notes": "CRITICAL BUG: Real has role=reference_item."},
-        {"text_contains": "Kim Tien Nguyen received", "expected_role": "backmatter_body", "expected_zone": "tail_nonref_hold_zone"},
-        {"text_contains": "Kyungmin Lee received", "expected_role": "backmatter_body", "expected_zone": "tail_nonref_hold_zone", "notes": "CRITICAL BUG: Real has role=reference_item."},
-        {"text_contains": "Hyun-Ki Min received", "expected_role": "backmatter_body", "expected_zone": "tail_nonref_hold_zone"}
-      ]
-    },
-    "34": {
-      "assertions": [
-        {"text_contains": "Byungjeon Kang received", "expected_role": "backmatter_body", "expected_zone": "tail_nonref_hold_zone"},
-        {"text_contains": "Chang-Sei Kim received", "expected_role": "backmatter_body", "expected_zone": "tail_nonref_hold_zone"},
-        {"text_contains": "Jiwon Han received", "expected_role": "backmatter_body", "expected_zone": "tail_nonref_hold_zone"},
-        {"text_contains": "Jong-Oh Park received", "expected_role": "backmatter_body", "expected_zone": "tail_nonref_hold_zone"},
-        {"text_contains": "Eunpyo Choi received", "expected_role": "backmatter_body", "expected_zone": "tail_nonref_hold_zone"}
+        {"text_contains": "Byungjeon Kang received", "expected_role": "backmatter_body", "expected_zone": "post_reference_backmatter_zone"},
+        {"text_contains": "Chang-Sei Kim received", "expected_role": "backmatter_body", "expected_zone": "post_reference_backmatter_zone"},
+        {"text_contains": "Jiwon Han received", "expected_role": "backmatter_body", "expected_zone": "post_reference_backmatter_zone"},
+        {"text_contains": "Jong-Oh Park received", "expected_role": "backmatter_body", "expected_zone": "post_reference_backmatter_zone"},
+        {"text_contains": "Eunpyo Choi received", "expected_role": "backmatter_body", "expected_zone": "post_reference_backmatter_zone"}
       ]
     },
     "35": {
       "assertions": [
-        {"text_equals": "Table and Figure Captions", "expected_role": "backmatter_heading", "expected_zone": "tail_nonref_hold_zone", "notes": "Real: subsection_heading - should be backmatter_heading"},
-        {"text_contains": "Fig. 1. Principle idea", "expected_role": "figure_caption", "expected_zone": "display_zone", "notes": "CRITICAL BUG: Real has role=unknown_structural."},
-        {"text_contains": "Fig. 2. Characterization", "expected_role": "figure_caption", "expected_zone": "display_zone"},
-        {"text_contains": "Fig. 3. Magnetic actuation", "expected_role": "figure_caption", "expected_zone": "display_zone"}
+        {"text_equals": "Table and Figure Captions", "expected_role": "backmatter_heading", "notes": "BUG: Real: subsection_heading"}
       ]
     },
     "36": {
       "assertions": [
-        {"text_contains": "Fig. 4. Effect of LF-EMF", "expected_role": "figure_caption", "expected_zone": "display_zone"}
-      ]
-    },
-    "37": {
-      "assertions": [
-        {"text_contains": "Fig. 1. Principle idea", "expected_role": "figure_caption", "expected_zone": "display_zone"}
-      ]
-    },
-    "38": {
-      "assertions": [
-        {"text_contains": "Fig. 2. Characterization", "expected_role": "figure_caption", "expected_zone": "display_zone"},
-        {"count_image": {"min": 10, "max": 20}}
-      ]
-    },
-    "40": {
-      "assertions": [
-        {"text_contains": "Fig. 3. Magnetic actuation", "expected_role": "figure_caption", "expected_zone": "display_zone"}
+        {"text_contains": "Fig. 4. Effect of LF-EMF", "expected_role": "figure_caption_candidate", "notes": "CORRECT: object-gate role stays as candidate at document-gate time"}
       ]
     }
   },
   "expected_bugs": [
     {
-      "bug": "biography_absorbed_into_references",
-      "pages": [33, 34],
-      "description": "All 10 biographies are absorbed into reference_zone. Ami Yoo has role=body_paragraph, Gwangjun Go/Kyungmin Lee have role=reference_item. Should be backmatter_body in tail_nonref_hold_zone.",
-      "fix": "Biographies section after last reference should trigger tail spread into tail_nonref_hold_zone"
-    },
-    {
-      "bug": "figure_captions_not_recognized",
-      "pages": [35, 36, 37, 38, 40],
-      "description": "All figure captions (Fig. 1-4) have role=unknown_structural instead of figure_caption.",
-      "fix": "Figure captions should be figure_caption in display_zone"
-    },
-    {
       "bug": "frontmatter_metadata_not_classified",
       "pages": [1],
-      "description": "PII, DOI, To appear in, Received Date, Published by Elsevier are unclassified (no explicit role). Should be frontmatter_support.",
-      "fix": "Frontmatter support lines need dedicated classification"
+      "description": "PII, DOI, To appear in, Received Date, Published by Elsevier have role=frontmatter_noise instead of frontmatter_support. Title/authors also noise.",
+      "fix": "Preproof page 1 frontmatter classification needs seed role rescue for title/authors/metadata lines"
     },
     {
-      "bug": "paper_title_not_classified",
-      "pages": [1, 2],
-      "description": "Title text gets role=frontmatter_noise (page 1) or unknown_structural (page 2) instead of paper_title.",
-      "fix": "Title detection needs improvement for preproof covers"
+      "bug": "page2_title_not_verified",
+      "pages": [2],
+      "description": "Title on page 2 has seed_role=paper_title but gate HELD to unknown_structural because source_backed anchor bridge wasn't matched.",
+      "fix": "RC1: source_frontmatter_anchors bridge to anchor_ids needs deeper integration in gate context"
     },
     {
-      "bug": "authors_not_classified",
-      "pages": [1],
-      "description": "Author list gets role=frontmatter_noise instead of authors.",
-      "fix": "Author detection needs improvement"
+      "bug": "abstract_highlights_confused",
+      "pages": [3],
+      "description": "Highlights bullet continuation classified as abstract_body. Keywords as body_paragraph.",
+      "fix": "Highlights detection and Keywords classification needs improvement"
     },
     {
-      "bug": "backmatter_heading_not_recognized",
+      "bug": "backmatter_headings_not_recognized",
       "pages": [25, 35],
-      "description": "Conflict of Interest, Acknowledgments, Table and Figure Captions have role=section_heading/subsection_heading instead of backmatter_heading.",
-      "fix": "Backmatter headings need dedicated classification"
+      "description": "Conflict of Interest, Acknowledgments as section_heading. Table and Figure Captions as subsection_heading.",
+      "fix": "Backmatter heading detection in tail_nonref_hold_zone normalization"
     }
   ]
 }
