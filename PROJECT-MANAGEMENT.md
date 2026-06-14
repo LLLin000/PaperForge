@@ -1,6 +1,6 @@
 # OCR-v2 Project Management Log
 
-> **Branch:** `ocr-v2` | **Base:** `master` | **Last Updated:** 2026-06-14 (Phase 13 + closure gap tasks)
+> **Branch:** `ocr-v2` | **Base:** `master` | **Last Updated:** 2026-06-14 (Phase 13 render fixes + boundary protection)
 > **Rule:** Every step is documented with: What was done, Why it was done, What comes next.
 
 ---
@@ -269,14 +269,12 @@ This is the core transformation. Sub-phases:
 
 #### 13c. Trace vs Expectations Gap Report (post Tasks 1-9 + anchor fix + backmatter zone fix)
 
-**DWQQK2YB: 53/62 PASS, 9 FAIL (all known bugs)**
+**DWQQK2YB: 55/62 PASS, 7 FAIL (all known bugs)**
 | Category | Count | Root Cause |
 |----------|-------|------------|
 | Preproof frontmatter metadata (PII/To appear/Received/Published) | 4 | Preproof cover suppression overwrites seed roles |
-| Page 2 title re-verification | 1 | Title from preproof page 2 not verified by gate |
 | Equal contribution / corresponding author labels | 2 | frontmatter_noise expected structured_insert |
 | Abstract body vs body_paragraph boundary | 1 | Last abstract sentence overlaps with introduction |
-| Keywords label | 1 | body_paragraph expected structured_insert |
 
 **CAQNW9Q2: 20/23 PASS, 3 FAIL (all known bugs)**
 | Category | Count | Root Cause |
@@ -285,9 +283,9 @@ This is the core transformation. Sub-phases:
 | Page 7 Conclusion zone empty | 1 | ref_start=7 blocks Conclusion from body_zone |
 | Page 7 gratitude text | 1 | body_paragraph expected backmatter_body in tail_nonref_hold_zone |
 
-**Improvement from Tasks 1-9:**
-- DW: 24 FAIL → 19 FAIL (5 fewer: REVIEW label, authors anchor, same-page ref/body, backmatter heading, biography normalization)
-- CAQ: 6 FAIL → 3 FAIL (3 fewer: REVIEW label fixed, paper_title detected, authors matching working)
+**Improvement from Tasks 1-9 + Phase 13e:**
+- DW: 24 FAIL → 7 FAIL (title duplicate on p2 resolved, keywords label resolved, plus previous 15 fixes)
+- CAQ: 6 FAIL → 3 FAIL (unchanged)
 
 #### 13d. Remaining Known Bugs
 
@@ -295,6 +293,23 @@ This is the core transformation. Sub-phases:
 2. **DW biography page mismatch:** Expectations list pages 33-34 but biographies actually span pages 32-34. Update expectations.
 3. **CAQ page 7 zone conflict:** ref_start=7 blocks Conclusion from body_zone. Need block-level vertical split on same page.
 4. **CAQ correspondence footnote:** Expected frontmatter_support but classified as frontmatter_noise.
+
+#### 13e. Render Layer & Boundary Protection Fixes (2026-06-14)
+
+| Commit | What |
+|--------|------|
+| `9ff4b77` | Reference zone boundary protection (`_sanitize_reference_zone_boundary` + `_check_reference_completeness`). Backmatter zone normalization: protect figure/image/table blocks from aggressive `backmatter_body` override; promote image blocks to `media_asset`. Title duplicate on page 2 fixed (`<= 2` skip). Unified rebuild script at `scripts/dev/ocr_rebuild_paper.py`. |
+| `f4cb870` | Remove internal reader_status labels (EXACT_MATCH, LEGEND_ONLY, ASSET_GROUP_ONLY) from rendered fulltext. |
+| `84b8278` | Fix pre-proof watermark "Journal Pre-proof" leaking into backmatter: respect `seed_role` when `frontmatter_noise` classification came from upstream. |
+| `b45e491` | Wrap paper metadata (Authors/Journal/Year/DOI) in `[!info]` callout for visual polish. |
+| `2ee1def` | Restore blank line after title heading. |
+
+**Impact:**
+- DWQQK2YB: 53/62 → 55/62 PASS (2 resolved: page-2 title duplicate, keywords label in backmatter)
+- figure_inventory now correctly produces 4/4 matched figures (was 0/4 due to eaten media_asset blocks)
+- Pre-proof watermarks no longer leak into rendered output
+- No reader_status debug labels in output
+
 
 ---
 
@@ -322,19 +337,17 @@ This is the core transformation. Sub-phases:
 | formal-library.json enrichment | Full author list fallback | `paperforge/worker/ocr_rebuild.py` |
 | Real-paper test fixtures (2 active papers) | In repo, auto-synced from vault | `tests/fixtures/ocr_real_papers/{DWQQK2YB,CAQNW9Q2}/` |
 | Trace vs expectations regression harness | Running | `tests/test_ocr_trace_vs_expectations.py` |
-| Full test suite | 230 passed, 2 pre-existing failures | unit + CLI + document + gate |
+| Full test suite | 284 passed, 2 pre-existing failures | unit + CLI + document + gate |
 
-### 3.2 Real-paper gap report (post Phase 13 + backmatter zone fix)
+### 3.2 Real-paper gap report (post Phase 13e render fixes)
 
-**DWQQK2YB: 53/62 PASS, 9 FAIL (all known bugs)**
+**DWQQK2YB: 55/62 PASS, 7 FAIL (all known bugs)**
 
 | Category | Count | Root Cause |
 |----------|-------|------------|
 | Preproof frontmatter metadata (PII/To appear/Received/Published) | 4 | Preproof cover suppression overwrites seed roles |
-| Page 2 title re-verification | 1 | Title from preproof page 2 not verified by gate |
 | Equal contribution / corresponding author labels | 2 | frontmatter_noise expected structured_insert |
 | Abstract body vs body_paragraph boundary | 1 | Last abstract sentence overlaps with introduction |
-| Keywords label | 1 | body_paragraph expected structured_insert |
 
 **CAQNW9Q2: 20/23 PASS, 3 FAIL (all known bugs)**
 | Category | Count | Root Cause |
@@ -352,16 +365,23 @@ This is the core transformation. Sub-phases:
 
 ---
 
-## 4. Next Steps (Ordered by Priority, post Phase 13)
+## 4. Next Steps (Ordered by Priority, post Phase 13e)
 
-### 4.1 Remaining gap closure (from Phase 13 report)
+### 4.1 Remaining gap closure
 
+- [x] ~~**DW page-2 title duplicate:** Title re-appears on page 2 of pre-proof papers~~ (fixed: `<= 2` skip in renderer)
+- [x] ~~**Keywords label in backmatter:** body_paragraph expected structured_insert~~ (resolved by backmatter zone normalization)
 - [ ] **DW preproof frontmatter:** Title/authors/PII on page 1 still suppressed by preproof cover zone. Need seed-role rescue for preproof pages.
 - [ ] **DW biography page mismatch:** Update expectations to match actual biography span (pages 32-34 instead of 33-34).
 - [ ] **CAQ same-page ref/body:** Page 7 Conclusion blocked from body_zone by ref_start=7. Need block-level vertical split on same page.
 - [ ] **CAQ correspondence footnote:** Expected frontmatter_support but classified as frontmatter_noise.
 
-### 4.2 Merge back to master
+### 4.2 Rebuild script → CLI integration
+
+- [x] ~~**Unified rebuild entry point:** `scripts/dev/ocr_rebuild_paper.py` — single-paper rebuild + block_trace regeneration~~
+- [ ] Wire `ocr_rebuild_paper.py` into `paperforge ocr rebuild <key>` CLI
+
+### 4.3 Merge back to master
 
 - [ ] Verify all tests pass (unit, CLI, document, gate) -- 411/411 currently green
 - [ ] Verify real-paper regression on audited samples
@@ -382,7 +402,6 @@ This is the core transformation. Sub-phases:
 | `paperforge/worker/ocr_structural_gate.py` | `VERIFY_REQUIRED` + role decision + abstract span + reference zone + health counters |
 | `paperforge/worker/ocr_orchestrator.py` | Body reorder, column validation, layered assembly |
 | `paperforge/worker/ocr_render.py` | `render_fulltext_markdown()` -- consumes verified artifacts ONLY |
-| `paperforge/worker/ocr.py` | CLI entry, page rendering, figure/table embed |
 | `paperforge/worker/ocr_health.py` | Health reporting, merged with gate summary |
 | `paperforge/worker/ocr_profiles.py` | Span extraction, profile aggregation, cross-validation |
 | `paperforge/worker/ocr_figures.py` | Figure reader pipeline |
