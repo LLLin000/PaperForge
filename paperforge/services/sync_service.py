@@ -318,6 +318,11 @@ class SyncService:
 
         selection_result: dict = {"new": 0, "updated": 0, "skipped": 0, "failed": 0, "errors": []}
         _prune_preview: list[dict] = []
+        ocr_runtime_summary: dict = {
+            "derived_rebuild_count": 0, "raw_upgrade_count": 0,
+            "derived_stale_keys": [], "raw_upgrade_keys": [],
+            "derived_rebuild_mode": "deferred",
+        }
 
         # ── Phase 1: Select ──
         if not index_only:
@@ -417,11 +422,6 @@ class SyncService:
                 print(f"index-refresh: {total} formal note(s) in literature")
 
             # ── Phase 5: OCR version scan ──
-            ocr_runtime_summary = {
-                "derived_rebuild_count": 0, "raw_upgrade_count": 0,
-                "derived_stale_keys": [], "raw_upgrade_keys": [],
-                "derived_rebuild_mode": "deferred",
-            }
             try:
                 from paperforge.core.io import read_json
                 from paperforge.worker._utils import pipeline_paths
