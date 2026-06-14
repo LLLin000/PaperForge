@@ -4350,62 +4350,45 @@ def test_backmatter_heading_candidate_promotes_when_post_reference_tail_is_confi
 
 
 # ---------------------------------------------------------------------------
-# Biography tail normalization (Task 7)
+# Backmatter zone normalization
 # ---------------------------------------------------------------------------
 
 
-def test_biography_section_after_references_is_backmatter_not_reference_items() -> None:
-    """Biographies heading after references should normalize to backmatter_heading
-    and biography text blocks should become backmatter_body, not reference_item."""
+def test_backmatter_zone_heading_promoted() -> None:
+    """Headings in post_reference_backmatter_zone become backmatter_heading.
+
+    All non-heading blocks (including reference_item) in the post-reference
+    zone become backmatter_body, because the structural gate would hold
+    unverifiable reference_items to unknown_structural anyway.
+    """
     from paperforge.worker.ocr_document import normalize_document_structure
 
     blocks = [
         {"block_id": "b1", "page": 1, "role": "section_heading", "seed_role": "section_heading", "text": "Introduction"},
-        {"block_id": "b2", "page": 1, "role": "body_paragraph", "seed_role": "body_paragraph", "text": "Body content."},
         {"block_id": "refs", "page": 10, "role": "reference_heading", "seed_role": "reference_heading", "text": "References"},
         {"block_id": "r1", "page": 10, "role": "reference_item", "seed_role": "reference_item", "text": "[1] Some reference"},
-        {"block_id": "r2", "page": 11, "role": "reference_item", "seed_role": "reference_item", "text": "[2] Another reference"},
-        {"block_id": "bio_heading", "page": 12, "role": "sub_subsection_heading", "seed_role": "sub_subsection_heading", "text": "Biographies"},
-        {"block_id": "bio_1", "page": 12, "role": "reference_item", "seed_role": "reference_item", "text": "Ami Yoo received PhD from Seoul National University in 2015."},
-        {"block_id": "bio_2", "page": 12, "role": "reference_item", "seed_role": "reference_item", "text": "Gwangjun Go received PhD from KAIST and is a professor."},
+        {"block_id": "bio_heading", "page": 12, "role": "sub_subsection_heading", "seed_role": "sub_subsection_heading", "zone": "post_reference_backmatter_zone", "text": "Biographies"},
+        {"block_id": "bio_1", "page": 12, "role": "body_paragraph", "seed_role": "body_paragraph", "zone": "post_reference_backmatter_zone", "text": "Ami Yoo received PhD."},
+        {"block_id": "bio_ref", "page": 12, "role": "reference_item", "seed_role": "reference_item", "zone": "post_reference_backmatter_zone", "text": "[3] Yet another reference"},
     ]
     doc, normalized = normalize_document_structure(blocks)
     by_id = {b["block_id"]: b for b in normalized}
     assert by_id["bio_heading"]["role"] == "backmatter_heading"
     assert by_id["bio_1"]["role"] == "backmatter_body"
-    assert by_id["bio_2"]["role"] == "backmatter_body"
+    assert by_id["bio_ref"]["role"] == "backmatter_body"
 
 
-def test_biography_detection_requires_biography_heading_text() -> None:
-    """Blocks with biography-like text but no Biographies heading should stay reference_item."""
+def test_non_backmatter_zone_not_affected() -> None:
+    """Blocks outside post_reference_backmatter_zone are not converted."""
     from paperforge.worker.ocr_document import normalize_document_structure
 
     blocks = [
         {"block_id": "b1", "page": 1, "role": "section_heading", "seed_role": "section_heading", "text": "Introduction"},
-        {"block_id": "b2", "page": 1, "role": "body_paragraph", "seed_role": "body_paragraph", "text": "Body content."},
         {"block_id": "refs", "page": 10, "role": "reference_heading", "seed_role": "reference_heading", "text": "References"},
         {"block_id": "r1", "page": 10, "role": "reference_item", "seed_role": "reference_item", "text": "[1] Some reference"},
-        {"block_id": "bio_1", "page": 11, "role": "reference_item", "seed_role": "reference_item", "text": "Ami Yoo received PhD from Seoul National University."},
+        {"block_id": "bio_1", "page": 11, "role": "reference_item", "seed_role": "reference_item", "text": "Ami Yoo received PhD."},
     ]
     doc, normalized = normalize_document_structure(blocks)
     by_id = {b["block_id"]: b for b in normalized}
-    # No Biographies heading -> bio_1 stays reference_item
+    # No zone set -> not in post_reference_backmatter_zone -> stays reference_item
     assert by_id["bio_1"]["role"] == "reference_item"
-
-
-def test_non_biography_text_not_converted() -> None:
-    """reference_item blocks that don't look like biography text should not be converted."""
-    from paperforge.worker.ocr_document import normalize_document_structure
-
-    blocks = [
-        {"block_id": "b1", "page": 1, "role": "section_heading", "seed_role": "section_heading", "text": "Introduction"},
-        {"block_id": "b2", "page": 1, "role": "body_paragraph", "seed_role": "body_paragraph", "text": "Body content."},
-        {"block_id": "refs", "page": 10, "role": "reference_heading", "seed_role": "reference_heading", "text": "References"},
-        {"block_id": "r1", "page": 10, "role": "reference_item", "seed_role": "reference_item", "text": "[1] Some reference"},
-        {"block_id": "r2", "page": 11, "role": "reference_item", "seed_role": "reference_item", "text": "[2] Another reference"},
-        {"block_id": "bio_heading", "page": 12, "role": "sub_subsection_heading", "seed_role": "sub_subsection_heading", "text": "Biographies"},
-        {"block_id": "ref_like", "page": 12, "role": "reference_item", "seed_role": "reference_item", "text": "[3] Yet another reference that is clearly not a biography"},
-    ]
-    doc, normalized = normalize_document_structure(blocks)
-    by_id = {b["block_id"]: b for b in normalized}
-    assert by_id["ref_like"]["role"] == "reference_item"

@@ -267,17 +267,16 @@ This is the core transformation. Sub-phases:
 | Task 9 | `2e86db7` | runtime_summary default initialization moved to function scope |
 | Anchor fix | `8de056d` | Source-anchor override scoped to same page (prevents block_id collision) |
 
-#### 13c. Trace vs Expectations Gap Report (post Tasks 1-9 + anchor fix)
+#### 13c. Trace vs Expectations Gap Report (post Tasks 1-9 + anchor fix + backmatter zone fix)
 
-**DWQQK2YB: 44/63 PASS, 19 FAIL (all known bugs)**
+**DWQQK2YB: 53/62 PASS, 9 FAIL (all known bugs)**
 | Category | Count | Root Cause |
 |----------|-------|------------|
-| Preproof frontmatter metadata (title/authors/PII) | 4 | Preproof cover suppression overwrites seed roles |
-| Abstract/highlights boundary | 1 | Highlight bullet mislabeled as abstract by PaddleOCR |
-| Biography role normalization | 5 | Biographies still reference_item; need backmatter_body in post-reference zone |
-| Backmatter heading recognition | 1 | subsection_heading should be backmatter_heading |
-| Equal contribution statement | 1 | backmatter_body should be structured_insert |
-| Author biographies NOT FOUND | 2 | Page mismatch (biographies span pages 32-34) |
+| Preproof frontmatter metadata (PII/To appear/Received/Published) | 4 | Preproof cover suppression overwrites seed roles |
+| Page 2 title re-verification | 1 | Title from preproof page 2 not verified by gate |
+| Equal contribution / corresponding author labels | 2 | frontmatter_noise expected structured_insert |
+| Abstract body vs body_paragraph boundary | 1 | Last abstract sentence overlaps with introduction |
+| Keywords label | 1 | body_paragraph expected structured_insert |
 
 **CAQNW9Q2: 20/23 PASS, 3 FAIL (all known bugs)**
 | Category | Count | Root Cause |
@@ -325,18 +324,17 @@ This is the core transformation. Sub-phases:
 | Trace vs expectations regression harness | Running | `tests/test_ocr_trace_vs_expectations.py` |
 | Full test suite | 230 passed, 2 pre-existing failures | unit + CLI + document + gate |
 
-### 3.2 Real-paper gap report (post Phase 13)
+### 3.2 Real-paper gap report (post Phase 13 + backmatter zone fix)
 
-**DWQQK2YB: 44/63 PASS, 19 FAIL (all known bugs)**
+**DWQQK2YB: 53/62 PASS, 9 FAIL (all known bugs)**
 
 | Category | Count | Root Cause |
 |----------|-------|------------|
-| Preproof frontmatter metadata (title/authors/PII) | 4 | Preproof cover suppression overwrites seed roles |
-| Abstract/highlights boundary | 1 | Highlight bullet mislabeled as abstract by PaddleOCR |
-| Biography role normalization | 5 | Biographies still reference_item; need backmatter_body normalization in post-reference zone |
-| Backmatter heading recognition | 1 | subsection_heading should be backmatter_heading |
-| Equal contribution statement | 1 | backmatter_body should be structured_insert |
-| Author biographies NOT FOUND | 2 | Page mismatch (biographies span pages 32-34) |
+| Preproof frontmatter metadata (PII/To appear/Received/Published) | 4 | Preproof cover suppression overwrites seed roles |
+| Page 2 title re-verification | 1 | Title from preproof page 2 not verified by gate |
+| Equal contribution / corresponding author labels | 2 | frontmatter_noise expected structured_insert |
+| Abstract body vs body_paragraph boundary | 1 | Last abstract sentence overlaps with introduction |
+| Keywords label | 1 | body_paragraph expected structured_insert |
 
 **CAQNW9Q2: 20/23 PASS, 3 FAIL (all known bugs)**
 | Category | Count | Root Cause |

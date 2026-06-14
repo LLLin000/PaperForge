@@ -122,7 +122,7 @@
         {"text_equals": "Conflict of Interest", "expected_role": "backmatter_heading", "notes": "BUG: Real: section_heading"},
         {"text_contains": "All other authors declare", "expected_role": "backmatter_body", "expected_zone": "tail_nonref_hold_zone"},
         {"text_equals": "Acknowledgments", "expected_role": "backmatter_heading", "notes": "BUG: Real: section_heading"},
-        {"text_contains": "A. Yoo and G. Go contributed equally", "expected_role": "structured_insert", "notes": "BUG: Real: backmatter_body"}
+        {"text_contains": "A. Yoo and G. Go contributed equally", "expected_role": "backmatter_body", "notes": "Equal contribution note in post_reference_backmatter_zone -> backmatter_body per zone normalization"}
       ]
     },
     "26": {

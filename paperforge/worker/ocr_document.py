@@ -1068,8 +1068,11 @@ def infer_zones(
                 _zone_block_key(b) for b in blocks
                 if post_ref_backmatter_start is not None
                 and int(b.get("page", 0) or 0) >= post_ref_backmatter_start
-                and not _is_reference_item_candidate(b)
                 and b.get("block_id") is not None
+                and not (
+                    _is_reference_item_candidate(b)
+                    and int(b.get("page", 0) or 0) < post_ref_backmatter_start
+                )
             ],
             boundary_band=_page_band(post_ref_backmatter_start, max_page) if post_ref_backmatter_start else None,
         ),
@@ -2352,6 +2355,11 @@ def _apply_content_zone_fallback(blocks: list[dict], region_bus: dict[str, dict]
     ref_start = ref_band.get("start_page")
     ref_end = ref_band.get("end_page")
 
+    # Detect post-reference backmatter start from region_bus
+    post_ref_zone = region_bus.get("post_reference_backmatter_zone", {}) if region_bus else {}
+    post_ref_band = post_ref_zone.get("boundary_band") or {}
+    post_ref_start = post_ref_band.get("start_page")
+
     # Pre-scan: find reference heading pages and their y_top positions so we
     # can split same-page body vs reference content by vertical boundary.
     ref_heading_pages: dict[int, float] = {}
@@ -2391,6 +2399,9 @@ def _apply_content_zone_fallback(blocks: list[dict], region_bus: dict[str, dict]
             continue
 
         if role in {"reference_heading", "reference_item"}:
+            # Blocks on or after post_ref_backmatter_start are NOT in reference_zone
+            if post_ref_start is not None and page >= post_ref_start:
+                continue
             in_ref_zone = (
                 page in ref_heading_pages
                 or (ref_start is not None and page >= ref_start and (ref_end is None or page <= ref_end))
@@ -4354,63 +4365,38 @@ def normalize_document_structure(
     else:
         backmatter_form = "flat"
 
-    # Biography tail normalization: detect "Biographies" headings after the
-    # reference section and convert reference_item blocks with biography-like
-    # text to backmatter_body.
-    _BIOGRAPHY_HEADINGS = {"biographies", "author biographies", "authors' biographies"}
-    if tail_spread is not None:
-        refs_start_page = tail_spread.references_start
-    elif region_bus:
-        ref_zone = region_bus.get("reference_zone") or {}
-        boundary = ref_zone.get("boundary_band") or {}
-        refs_start_page = boundary.get("start_page")
-    else:
-        refs_start_page = None
-    if refs_start_page is not None:
-        in_biography_section = False
-        for block in blocks:
-            page_num = int(block.get("page", 0) or 0)
-            text_lower = _canonical_section_text(block)
-            role = block.get("role") or block.get("seed_role")
-            if role == "unassigned":
-                role = block.get("seed_role")
-
-            if text_lower in _BIOGRAPHY_HEADINGS and page_num >= refs_start_page:
-                if role in {
-                    "section_heading", "subsection_heading", "sub_subsection_heading",
-                    "backmatter_heading_candidate", "reference_heading",
-                }:
-                    in_biography_section = True
-                    old_role = block.get("role")
-                    block["role"] = "backmatter_heading"
-                    if old_role != block["role"]:
-                        record_decision(
-                            block,
-                            stage="biography_heading_normalization",
-                            old_role=old_role,
-                            new_role=block["role"],
-                            reason="biography heading after references normalized to backmatter_heading",
-                        )
-                    continue
-
-            if in_biography_section:
-                if role == "reference_heading":
-                    in_biography_section = False
-                    continue
-                if block.get("role") == "reference_item" and _looks_like_biography_text(
-                    block.get("text", "")
-                ):
-                    old_role = block.get("role")
-                    block["role"] = "backmatter_body"
-                    block.setdefault("render_default", True)
-                    if old_role != block["role"]:
-                        record_decision(
-                            block,
-                            stage="biography_body_normalization",
-                            old_role=old_role,
-                            new_role=block["role"],
-                            reason="reference_item with biography text converted to backmatter_body",
-                        )
+    # Backmatter zone normalization: in post_reference_backmatter_zone,
+    # headings become backmatter_heading, everything else becomes backmatter_body.
+    # Blocks in this zone are past the verified reference range; any reference_item
+    # here is a misclassification that the structural gate would hold to
+    # unknown_structural anyway, so normalize early to let the gate accept them.
+    _HEADING_ROLES = {"section_heading", "subsection_heading", "sub_subsection_heading"}
+    for block in blocks:
+        if block.get("zone") != "post_reference_backmatter_zone":
+            continue
+        role = block.get("role")
+        if role in _HEADING_ROLES:
+            old_role = role
+            block["role"] = "backmatter_heading"
+            record_decision(
+                block,
+                stage="backmatter_heading_promotion",
+                old_role=old_role,
+                new_role="backmatter_heading",
+                reason="heading in post_reference_backmatter_zone promoted to backmatter_heading",
+            )
+        elif role != "backmatter_heading":
+            old_role = block.get("role")
+            if old_role != "backmatter_body":
+                block["role"] = "backmatter_body"
+                block.setdefault("render_default", True)
+                record_decision(
+                    block,
+                    stage="backmatter_body_normalization",
+                    old_role=old_role,
+                    new_role="backmatter_body",
+                    reason="non-heading block in post_reference_backmatter_zone normalized to backmatter_body",
+                )
 
     doc_structure = DocumentStructure(
         body_end_page=tail_spread.body_end_page if tail_spread else None,
