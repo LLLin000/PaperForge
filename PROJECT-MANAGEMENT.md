@@ -1,6 +1,6 @@
 # OCR-v2 Project Management Log
 
-> **Branch:** `ocr-v2` | **Base:** `master` | **Last Updated:** 2026-06-13
+> **Branch:** `ocr-v2` | **Base:** `master` | **Last Updated:** 2026-06-14 (Phase 13)
 > **Rule:** Every step is documented with: What was done, Why it was done, What comes next.
 
 ---
@@ -204,15 +204,83 @@ This is the core transformation. Sub-phases:
 - **Constraint:** Only ≤30px gap (same heading, different line). Does NOT merge separate headings at different y-positions. Column-aware to prevent cross-column merge.
 - **Impact:** CAQ "Increasing the accuracy and reproducibility in standard radiography" now single heading.
 
+### Phase 11: Structural Gate Anchor & Author Matching Fixes (2026-06-14)
+
+**Status:** Committed on `ocr-v2` branch. 5 files modified, 280 tests pass.
+
+#### 11a. Source Anchor Bridge to `normalize_document_structure`
+- **Files:** `ocr_blocks.py` (+18/-12), `ocr_document.py` (+5/-2)
+- **Root cause:** `source_frontmatter_anchors` built on OLD `DocumentStructure`, then `normalize_document_structure()` created a NEW one -- gate ran with empty anchors.
+- **Fix:** Build anchors BEFORE calling normalize, pass via `source_frontmatter_anchors` param.
+- **Impact:** TSCKAVIS `doc_title` -> `paper_title` ACCEPT, `authors` -> `authors` ACCEPT.
+
+#### 11b. Table Caption Gate Handler
+- **File:** `ocr_structural_gate.py` (+18 lines)
+- **Root cause:** `table_caption` in VERIFY_REQUIRED but no handler in `resolve_verified_role`.
+- **Fix:** Added `table_caption` handler mirroring `figure_caption`.
+
+#### 11c. Author Matching Overhaul
+- **File:** `ocr_metadata.py` (+43 lines)
+- **Root causes:** `&` in author text stripped to whitespace but not split; source metadata abbreviated names vs OCR full names; OCR merged trailing labels.
+- **Fix:** Strip trailing labels, normalize `&` to ` and `, subset check, initial matching, partial initial matches.
+
+#### 11d. Frontmatter Noise Override
+- **File:** `ocr_structural_gate.py` (+1 line)
+- **Root cause:** `frontmatter_noise` in `_SAFE_PRESERVED_ROLES` preserved it even when `seed_role=paper_title`.
+- **Fix:** Added override condition for frontmatter_noise when seed_role is VERIFY_REQUIRED.
+
+#### 11e. Source Anchor Override for Unlabeled Authors
+- **File:** `ocr_structural_gate.py` (+11 lines)
+- **Root cause:** CAQNW9Q2 author block had `seed_role=unknown_structural` (OCR missed label). Gate only checked author anchors when `seed_role == "authors"`.
+- **Fix:** Added source-anchor override loop for authors regardless of seed_role.
+
+#### 11f. formal-library.json Author Enrichment
+- **File:** `ocr_rebuild.py` (+17 lines)
+- **Root cause:** `source_metadata.json` only got first author from `meta.json`.
+- **Fix:** Fallback to `formal-library.json` index for full author lists.
+
+#### 11g. Heading Merge Vertical Gap Constraint
+- **File:** `ocr_blocks.py` (+10/-2 lines)
+- **Root cause:** `.endswith((".", "?", "!"))` too weak to prevent cross-heading merge.
+- **Fix:** Replaced with `_vertical_gap() <= 30` (30px = same heading, different OCR line).
+
+### Phase 13: Final Gap Closure Round (2026-06-14)
+
+**Status:** Traces regenerated, gap report updated.
+
+#### 13a. Real-Paper Trace Regeneration
+- Regenerated `block_trace.csv` for DWQQK2YB (287 blocks) and CAQNW9Q2 (153 blocks) from vault raw blocks.
+- Traces reflect full pipeline through Phase 11 fixes.
+
+#### 13b. Trace vs Expectations Gap Report
+
+**DWQQK2YB: 39/63 PASS, 24 FAIL**
+| Category | Count | Root Cause |
+|----------|-------|------------|
+| Preproof frontmatter metadata (title/authors/PII) | 9 | Preproof cover suppression overwrites seed roles |
+| Abstract/highlights boundary | 2 | Highlight bullet mislabeled as abstract by PaddleOCR |
+| Biography role normalization | 9 | Biographies still reference_item; need backmatter_body in post-reference zone |
+| Backmatter heading recognition (Biographies, Table Captions) | 2 | sub_subsection_heading should be backmatter_heading |
+| Equal contribution statement | 1 | backmatter_body should be structured_insert |
+| Author biographies NOT FOUND on expected pages | 2 | Page mismatch (biographies span pages 32-34) |
+
+**CAQNW9Q2: 17/23 PASS, 6 FAIL**
+| Category | Count | Root Cause |
+|----------|-------|------------|
+| Title/author unknown_structural | 3 | Author name format mismatch (J C vs J.C.) |
+| REVIEW label unknown_structural | 1 | Article type label not recognized |
+| Page 7 Conclusion zone empty | 1 | ref_start=7 blocks Conclusion from body_zone (same-page ref/body conflict) |
+| Page 7 gratitude text zone empty | 1 | body_paragraph not classified as backmatter_body |
+
 ---
 
-## 3. Current State (as of 2026-06-13, end of Phase 10)
+## 3. Current State (as of 2026-06-14, post Phase 13)
 
 ### 3.1 What is done
 
 | Component | Status | Key Files |
 |-----------|--------|-----------|
-| Structural gate | Installed + figure_caption candidate handler | `paperforge/worker/ocr_structural_gate.py` |
+| Structural gate | Installed + figure_caption + table_caption handlers + frontmatter_noise override + authors anchor override | `paperforge/worker/ocr_structural_gate.py` |
 | Role assignment (seed only) | Refactored | `paperforge/worker/ocr_roles.py` |
 | Zone inference + fallback | Fixed: unassigned role bug | `paperforge/worker/ocr_document.py` |
 | Page-1 frontmatter boundary | Working (after unassigned fix) | `paperforge/worker/ocr_document.py` |
@@ -225,11 +293,14 @@ This is the core transformation. Sub-phases:
 | Heading merge (OCR line-wrap) | Position-based (≤30px vertical gap) | `paperforge/worker/ocr_blocks.py` |
 | Backmatter boundary detection | Fixed: seed_role + min-page scan | `paperforge/worker/ocr_document.py` |
 | Abstract rendering | Clean: no blockquote, bullet lines excluded | `paperforge/worker/ocr_render.py` |
+| Source anchor bridge to normalize | Anchors passed into normalize before gate runs | `paperforge/worker/ocr_blocks.py` |
+| Author matching | `&` handling, initial matching, label stripping, subset check | `paperforge/worker/ocr_metadata.py` |
+| formal-library.json enrichment | Full author list fallback | `paperforge/worker/ocr_rebuild.py` |
 | Real-paper test fixtures (2 active papers) | In repo, auto-synced from vault | `tests/fixtures/ocr_real_papers/{DWQQK2YB,CAQNW9Q2}/` |
 | Trace vs expectations regression harness | Running | `tests/test_ocr_trace_vs_expectations.py` |
 | Full test suite | 411 passed, 0 failed | unit + CLI + document + gate |
 
-### 3.2 Real-paper gap report (post Phase 10)
+### 3.2 Real-paper gap report (post Phase 13)
 
 **DWQQK2YB: 39/63 PASS, 24 FAIL**
 
@@ -259,19 +330,21 @@ This is the core transformation. Sub-phases:
 
 ---
 
-## 4. Next Steps (Ordered by Priority, post Phase 10)
+## 4. Next Steps (Ordered by Priority, post Phase 13)
 
-### 4.1 Second repair cycle (remaining root causes)
+### 4.1 Remaining gap closure (from Phase 13 report)
 
-- [ ] **RC1 completion:** Fix author name matching (period/space normalization) in `_match_author_block_to_source_authors`. Fix DW preproof page 1 title/authors seed rescue.
-- [ ] **Biography role normalization:** Convert `reference_item` → `backmatter_body` in `post_reference_backmatter_zone` during `normalize_document_structure`.
-- [ ] **Backmatter heading promotion:** Promote `sub_subsection_heading` / `subsection_heading` before `backmatter_start` to `backmatter_heading`.
-- [ ] **Same-page ref/body zone:** Reference zone start on same page should not block body-zone assignment for pre-reference blocks.
-- [ ] **Update DW expectations for biography page mapping** (pages 32-34 instead of 33-34).
+- [ ] **DW preproof frontmatter:** Title/authors/PII on page 1 still suppressed by preproof cover zone. Need seed-role rescue for preproof pages.
+- [ ] **DW biography normalization:** 9 biography blocks still `reference_item` in `reference_zone`. Need `reference_item` -> `backmatter_body` conversion in post-reference zone.
+- [ ] **DW backmatter heading promotion:** `Biographies` and `Table and Figure Captions` still `sub_subsection_heading`. Promote to `backmatter_heading`.
+- [ ] **CAQ page-1 title/authors:** Author name format mismatch (J C vs J.C.) prevents matching. Need period/space normalization in `_match_author_block_to_source_authors`.
+- [ ] **CAQ page-1 REVIEW label:** Article type label not recognized as `frontmatter_noise`.
+- [ ] **CAQ same-page ref/body:** Page 7 Conclusion blocked from `body_zone` by `ref_start=7`. Need block-level vertical split on same page.
+- [ ] **Update DW expectations:** Biography page mapping (pages 32-34 instead of 33-34).
 
 ### 4.2 Merge back to master
 
-- [ ] Verify all tests pass (unit, CLI, document, gate) — 411/411 currently green
+- [ ] Verify all tests pass (unit, CLI, document, gate) -- 411/411 currently green
 - [ ] Verify real-paper regression on audited samples
 - [ ] Run lint (ruff)
 - [ ] Merge `ocr-v2` into `master`
@@ -331,6 +404,7 @@ This is the core transformation. Sub-phases:
 | `docs/superpowers/specs/README-ocr.md` | OCR design index |
 | `docs/superpowers/plans/2026-06-11-ocr-verified-structural-role-gate.md` | Role gate plan (1257 lines) |
 | `docs/superpowers/plans/2026-06-08-ocr-anchor-first-structured-parsing-plan.md` | Main implementation plan |
+| `docs/superpowers/plans/2026-06-14-ocr-v2-closure-gap-remediation.md` | Phase 13 closure gap remediation plan |
 | `docs/superpowers/plans/2026-06-10-ocr-figure-reader-contract-implementation.md` | Figure reader plan |
 
 ---
