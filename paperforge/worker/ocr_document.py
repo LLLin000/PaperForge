@@ -884,7 +884,7 @@ def infer_zones(
         if int(b.get("page", 0) or 0) == 1
         and ((b.get("marker_signature") or {}).get("type") or "none") != "preproof_marker"
         and not _is_reference_item_candidate(b)
-        and block.get("block_id") is not None
+        and b.get("block_id") is not None
     ]
     page1_candidates.sort(key=lambda b: (
         (b.get("bbox") or [0, 0, 0, 0])[1],

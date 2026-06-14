@@ -1222,6 +1222,18 @@ def render_fulltext_markdown(
                     rendered_reader_figure_ids=rendered_reader_figure_ids,
                 )
                 pre_reference_reader_figures_emitted = True
+            # Emit matched figures and tables on this page before references
+            if block_page is not None:
+                for fig in figures_by_page.get(block_page, []):
+                    if str(fig["figure_id"]).startswith("unmatched_legend_"):
+                        continue
+                    lines.append(f"![[render/figures/{fig['figure_id']}.md]]")
+                    lines.append("")
+                figures_by_page.pop(block_page, None)
+                for tbl_id in tables_by_page.get(block_page, []):
+                    lines.append(f"![[render/tables/{tbl_id}.md]]")
+                    lines.append("")
+                tables_by_page.pop(block_page, None)
             lines.append(f"## {text}")
             lines.append("")
         elif role in ("subsection_heading", "sub_subsection_heading", "section_heading"):
