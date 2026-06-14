@@ -3,13 +3,31 @@
 Rebuilds derived-layer artifacts (structured blocks, metadata, figures, render,
 and block trace) for one or more papers from stored raw blocks.
 
+The rebuild reads from the vault's PaperForge OCR storage, not from git:
+    D:/L/OB/Literature-hub/System/PaperForge/ocr/<KEY>/
+
+It re-runs: build_structured_blocks → resolve_metadata → build figures/tables →
+extract objects → render_fulltext_markdown → write render/ + compat fulltext.
+
 Usage:
     python scripts/dev/ocr_rebuild_paper.py DWQQK2YB
-    python scripts/dev/ocr_rebuild_paper.py DWQQK2YB CAQNW9Q2
-    python scripts/dev/ocr_rebuild_paper.py --trace DWQQK2YB
-    python scripts/dev/ocr_rebuild_paper.py --trace-only DWQQK2YB
+        # Full rebuild for a single paper
 
-This is the canonical entry point that will later be wired into the CLI.
+    python scripts/dev/ocr_rebuild_paper.py DWQQK2YB CAQNW9Q2
+        # Rebuild multiple papers sequentially
+
+    python scripts/dev/ocr_rebuild_paper.py --trace DWQQK2YB
+        # Rebuild + regenerate block_trace.csv (for test fixture comparison)
+
+    python scripts/dev/ocr_rebuild_paper.py --trace-only DWQQK2YB
+        # Regenerate block_trace.csv only, skip fulltext/figures rebuild
+
+This is the canonical entry point that will later be wired into the CLI:
+    paperforge ocr rebuild <KEY>
+
+Requires:
+    - blocks.raw.jsonl in <vault>/System/PaperForge/ocr/<KEY>/canonical/
+    - source_metadata.json in <vault>/System/PaperForge/ocr/<KEY>/raw/
 """
 from __future__ import annotations
 

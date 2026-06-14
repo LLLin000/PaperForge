@@ -1,6 +1,6 @@
 # OCR-v2 Project Management Log
 
-> **Branch:** `ocr-v2` | **Base:** `master` | **Last Updated:** 2026-06-14 (Phase 13e box merge + author detection + table fix)
+> **Branch:** `ocr-v2` | **Base:** `master` | **Last Updated:** 2026-06-14 (Phase 13e review fixes + table ordering)
 > **Rule:** Every step is documented with: What was done, Why it was done, What comes next.
 
 ---
@@ -304,17 +304,19 @@ This is the core transformation. Sub-phases:
 | `b45e491` | Wrap paper metadata (Authors/Journal/Year/DOI) in `[!info]` callout for visual polish. |
 | `2ee1def` | Restore blank line after title heading. |
 | `389001f` | Fix Box 1 structured_insert leak: add render_default check for structured_insert blocks (later reverted). Table inventory now collects `table_caption_candidate` as captions (was silently skipped). |
+| `0941633` | Robust author list detection: `has_many_name_pairs` — count 3+ "Firstname Lastname" patterns instead of superscript markers. Widen `has_two_name_pairs` regex for titles/superscripts. |
+| `b98cff3` | Content box merge (`_merge_box_content`): "Box N" / "Key insights" structured_insert headings consume following body blocks into `_container_text`. Handles cross-column boxes. |
+| `dd43144` | Apply `normalize_ocr_math_text` to structured_insert `_container_text` (LaTeX spacing fix). |
+| `5a9f5a9` | `page1_candidates` variable bug fix (`block` → `b`). Page 2 `doc_title` no longer unconditionally accepted as `paper_title` (requires source anchor). Same-page table/figure pre-emission before `## References` (fixes Table 10 after refs). |
 | `0941633` | Robust author list detection: add `has_many_name_pairs` — count 3+ "Firstname Lastname" patterns instead of relying on superscript markers. Widen `has_two_name_pairs` to allow non-comma characters (titles, superscripts) between names. |
 | `b98cff3` | Content box merge (`_merge_box_content`): detect "Box N" / "Key insights" structured_insert headings, merge following body-like blocks into `_container_text`, consumed blocks suppressed as `noise`. Handles cross-column boxes. |
 | `dd43144` | Apply `normalize_ocr_math_text` to structured_insert `_container_text` (fixes LaTeX spacing in box callouts). |
 
 **Impact:**
-- DWQQK2YB: 55/62 PASS, 7 FAIL (unchanged)
+- DWQQK2YB: 55/62 → 53/62 PASS (2 new FAILs from structural fixes: p1/p2 title seed → unknown_structural — expected, need expectation update)
 - CAQNW9Q2: 20/23 PASS, 3 FAIL (unchanged)
-- TSCKAVIS: Box 1 content merged into single callout; tables 2/2 extracted from `table_caption_candidate`
-- A8E7SRVS: "Dr med¹" author line no longer leaks into abstract (seed_role changed to `authors` via name-pair counting)
-- figure_inventory now correctly produces 4/4 matched figures (was 0/4 due to eaten media_asset blocks)
-- Pre-proof watermarks no longer leak into rendered output
+- A8E7SRVS: Table 10 no longer renders after References (same-page table pre-emission)
+- TSCKAVIS: Box 1 content merged into single callout; tables 2/2 extracted
 - No reader_status debug labels in output
 
 
@@ -344,10 +346,12 @@ This is the core transformation. Sub-phases:
 | Author list detection | `_looks_like_author_list` with `has_many_name_pairs` (3+ Firstname Lastname pairs) for German name titles (Dr med¹) | `paperforge/worker/ocr_roles.py` |
 | Table inventory | Fixed: `table_caption_candidate` blocks now collected as captions (was silently skipped) | `paperforge/worker/ocr_tables.py` |
 | Content box merge | `_merge_box_content`: Box N / Key insights headings consume following body blocks into `_container_text` | `paperforge/worker/ocr_document.py` |
+| Same-page table ordering | Pre-emit matched figures/tables before `## References` to prevent after-refs rendering | `paperforge/worker/ocr_render.py` |
 | formal-library.json enrichment | Full author list fallback | `paperforge/worker/ocr_rebuild.py` |
 | Real-paper test fixtures (2 active papers) | In repo, auto-synced from vault | `tests/fixtures/ocr_real_papers/{DWQQK2YB,CAQNW9Q2}/` |
 | Trace vs expectations regression harness | Running | `tests/test_ocr_trace_vs_expectations.py` |
 | Full test suite | 320+ passed, 2 pre-existing failures | unit + CLI + document + gate + render + tables + roles |
+| Rebuild script | Canonical entry point for single-paper rebuild + block_trace | `scripts/dev/ocr_rebuild_paper.py` |
 
 ### 3.2 Real-paper gap report (post Phase 13e render fixes)
 
@@ -396,7 +400,28 @@ This is the core transformation. Sub-phases:
 - [x] ~~**Unified rebuild entry point:** `scripts/dev/ocr_rebuild_paper.py` — single-paper rebuild + block_trace regeneration~~
 - [ ] Wire `ocr_rebuild_paper.py` into `paperforge ocr rebuild <key>` CLI
 
-### 4.3 Merge back to master
+### 4.3 Rebuild fulltext & block_trace (manual entry point)
+
+Before CLI integration, use `scripts/dev/ocr_rebuild_paper.py`:
+
+```bash
+# Full rebuild (structured blocks → metadata → figures → render → fulltext)
+python scripts/dev/ocr_rebuild_paper.py DWQQK2YB
+
+# Multiple papers
+python scripts/dev/ocr_rebuild_paper.py DWQQK2YB CAQNW9Q2
+
+# Full rebuild + regenerate block_trace.csv for test fixture comparison
+python scripts/dev/ocr_rebuild_paper.py --trace DWQQK2YB
+
+# Regenerate block_trace.csv only (skip full rebuild)
+python scripts/dev/ocr_rebuild_paper.py --trace-only DWQQK2YB
+```
+
+Reads from vault OCR storage: `D:/L/OB/Literature-hub/System/PaperForge/ocr/<KEY>/`
+Requires: `canonical/blocks.raw.jsonl`, `raw/source_metadata.json`
+
+### 4.4 Merge back to master
 
 - [ ] Verify all tests pass (unit, CLI, document, gate) -- 411/411 currently green
 - [ ] Verify real-paper regression on audited samples
