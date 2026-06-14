@@ -119,6 +119,16 @@ _ALPHA_SUBSECTION_PATTERN = re.compile(
     r"^[A-Z]\.\s+[A-Z][A-Za-z0-9 ,;:\-/()]+$",
 )
 
+_INITIAL_LASTNAME_PATTERN = re.compile(
+    r"^(?:[A-Z]\s*){1,3}[A-Z][A-Za-z'\u2019\-]+(?:\s+[A-Z][A-Za-z'\u2019\-]+)?$"
+)
+
+
+def _looks_like_initial_lastname_byline(text: str) -> bool:
+    compact = " ".join(text.split())
+    return bool(_INITIAL_LASTNAME_PATTERN.fullmatch(compact))
+
+
 _COMMON_SECTION_HEADINGS = {
     "introduction",
     "materials and methods",
@@ -1000,7 +1010,11 @@ def assign_block_role(
             )
         # Author-like heading guard: prevent bylines from becoming headings
         _is_author_byline = (
-            (re.search(r"&|,.*,", text) or _seems_like_authors(text))
+            (
+                re.search(r"&|,.*,", text)
+                or _seems_like_authors(text)
+                or _looks_like_initial_lastname_byline(text)
+            )
             and len(text.split()) <= 15
             and not _has_heading_numbering(text)
             and not any(
@@ -1132,6 +1146,26 @@ def assign_block_role(
             confidence=0.85,
             evidence=[f"reference content label: {text[:60]}"],
         )
+
+    # Page-1 correspondence footnotes → frontmatter_support
+    if raw_label in {"footnote", "vision_footnote"} and page_num == 1:
+        lower_txt = text.lower()
+        if lower_txt.startswith(("correspondence", "corresponding author", "address for correspondence")):
+            return RoleAssignment(
+                role="frontmatter_support",
+                confidence=0.75,
+                evidence=[f"page-1 correspondence footnote: {text[:60]}"],
+            )
+
+    # Page-1 DOI / received / accepted / published footnotes → frontmatter_noise
+    if raw_label in {"footnote", "vision_footnote"} and page_num == 1:
+        lower_txt = text.lower()
+        if lower_txt.startswith(("doi", "received", "accepted", "published", "copyright")):
+            return RoleAssignment(
+                role="frontmatter_noise",
+                confidence=0.75,
+                evidence=[f"page-1 DOI/date footnote: {text[:60]}"],
+            )
 
     if raw_label in {"footnote", "vision_footnote"}:
         return RoleAssignment(
@@ -1347,6 +1381,19 @@ def assign_block_role(
                 evidence=[
                     f"backmatter {'boundary heading' if role_name == 'backmatter_boundary_heading' else 'boundary candidate'} from text block: {text[:60]}"
                 ],
+            )
+
+        # Page-1 author byline with initial-lastname order (e.g. "J C Buckland-Wright")
+        if (
+            page_num == 1
+            and _looks_like_initial_lastname_byline(text)
+            and len(text.split()) <= 15
+            and not _has_heading_numbering(text)
+        ):
+            return RoleAssignment(
+                role="authors",
+                confidence=0.6,
+                evidence=[f"page-1 initial-lastname author byline: {text[:60]}"],
             )
 
         if len(text) < 20:
