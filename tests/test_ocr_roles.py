@@ -1428,3 +1428,54 @@ def test_body_paragraph_survives_when_style_family_authority_is_weak():
     }
     result = resolve_final_role(block)
     assert result.role == "body_paragraph"
+
+
+# --- Gap surface lock tests (expected to FAIL until Tasks 2-9 fix production code) ---
+
+
+def test_page1_review_article_label_stays_frontmatter_noise() -> None:
+    """CAQ page-1 'REVIEW' as paragraph_title should stay frontmatter_noise."""
+    from paperforge.worker.ocr_roles import assign_block_role
+
+    block = {
+        "page": 1,
+        "raw_label": "paragraph_title",
+        "text": "REVIEW",
+        "bbox": [120, 120, 420, 180],
+        "page_width": 1200,
+        "page_height": 1700,
+    }
+    role = assign_block_role(block, page_blocks=[block])
+    assert role.role == "frontmatter_noise"
+
+
+def test_page1_author_byline_with_initial_lastname_order_is_authors() -> None:
+    """Author byline 'J C Buckland-Wright' on page 1 should route to authors."""
+    from paperforge.worker.ocr_roles import assign_block_role
+
+    block = {
+        "page": 1,
+        "raw_label": "text",
+        "text": "J C Buckland-Wright",
+        "bbox": [120, 300, 640, 350],
+        "page_width": 1200,
+        "page_height": 1700,
+    }
+    role = assign_block_role(block, page_blocks=[block])
+    assert role.role == "authors"
+
+
+def test_page1_correspondence_footnote_routes_to_frontmatter_support() -> None:
+    """Correspondence footnote on page 1 should be frontmatter_support, not frontmatter_noise."""
+    from paperforge.worker.ocr_roles import assign_block_role
+
+    block = {
+        "page": 1,
+        "raw_label": "footnote",
+        "text": "Correspondence to: Dr J C Buckland-Wright",
+        "bbox": [80, 1320, 640, 1420],
+        "page_width": 1200,
+        "page_height": 1700,
+    }
+    role = assign_block_role(block, page_blocks=[block])
+    assert role.role == "frontmatter_support"

@@ -2525,3 +2525,43 @@ def test_render_fulltext_renders_all_reader_visible_statuses() -> None:
 
     for status in statuses:
         assert status in markdown
+
+
+# --- Gap surface lock tests (expected to FAIL until Tasks 2-9 fix production code) ---
+
+
+def test_render_fulltext_renders_abstract_body_without_document_structure() -> None:
+    """abstract_heading + abstract_body blocks should render as '## Abstract' section."""
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+
+    markdown = render_fulltext_markdown(
+        structured_blocks=[
+            {"role": "abstract_heading", "text": "", "render_default": True, "page": 1},
+            {"role": "abstract_body", "text": "This is the abstract body text.", "render_default": True, "page": 1},
+            {"role": "section_heading", "text": "1 Introduction", "render_default": True, "page": 1},
+        ],
+        resolved_metadata={},
+        figure_inventory={},
+        table_inventory={},
+    )
+    assert "## Abstract" in markdown
+    assert "This is the abstract body text." in markdown
+
+
+def test_reader_visible_statuses_are_emitted_in_markdown_contract() -> None:
+    """Reader figure statuses (e.g. EXACT_MATCH) should appear in the markdown output."""
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+
+    markdown = render_fulltext_markdown(
+        structured_blocks=[{"block_id": "a", "page": 1, "role": "body_paragraph", "text": "Some body text.", "render_default": True}],
+        resolved_metadata={},
+        figure_inventory={},
+        table_inventory={},
+        page_count=1,
+        reader_payload={
+            "reader_figures": [
+                {"reader_figure_id": "fig_reader_0", "figure_number": 0, "block_id": "fig_0", "page": 1, "page_coords": {"x": 0, "y": 0, "width": 10, "height": 10}, "reader_status": "EXACT_MATCH", "consumed_caption_block_ids": []},
+            ]
+        },
+    )
+    assert "EXACT_MATCH" in markdown

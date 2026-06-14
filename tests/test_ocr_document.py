@@ -4312,3 +4312,38 @@ def test_no_high_risk_role_assignment_after_gate_collector() -> None:
             assert block.get("role_verification_status") == "ACCEPT", (
                 f"Block {block.get('block_id')} role {block.get('role')} has status {block.get('role_verification_status')}"
             )
+
+
+# --- Gap surface lock tests (expected to FAIL until Tasks 2-9 fix production code) ---
+
+
+def test_same_page_conclusion_stays_in_body_zone_before_reference_tail() -> None:
+    """Conclusion heading + body on same page as References should keep body in body_zone."""
+    from paperforge.worker.ocr_document import normalize_document_structure
+
+    blocks = [
+        {"block_id": "c", "page": 7, "seed_role": "section_heading", "text": "Conclusion", "bbox": [80, 120, 420, 180]},
+        {"block_id": "g", "page": 7, "seed_role": "body_paragraph", "text": "I wish to express my gratitude", "bbox": [80, 220, 920, 320]},
+        {"block_id": "refs", "page": 7, "seed_role": "reference_heading", "text": "References", "bbox": [80, 1080, 360, 1140]},
+        {"block_id": "r1", "page": 7, "seed_role": "reference_item", "text": "1 Buckland-Wright JC...", "bbox": [80, 1180, 960, 1260]},
+    ]
+    doc, normalized = normalize_document_structure(blocks)
+    by_id = {b["block_id"]: b for b in normalized}
+    assert by_id["c"]["zone"] == "body_zone"
+    assert by_id["g"]["role"] == "backmatter_body"
+
+
+def test_backmatter_heading_candidate_promotes_when_post_reference_tail_is_confirmed() -> None:
+    """backmatter_heading_candidate after reference tail should promote to backmatter_heading."""
+    from paperforge.worker.ocr_document import normalize_document_structure
+
+    blocks = [
+        {"block_id": "refs", "page": 25, "seed_role": "reference_heading", "text": "References"},
+        {"block_id": "r1", "page": 25, "seed_role": "reference_item", "text": "[1] ref"},
+        {"block_id": "coi", "page": 25, "seed_role": "backmatter_heading_candidate", "text": "Conflict of Interest"},
+        {"block_id": "coi_body", "page": 25, "seed_role": "body_paragraph", "text": "All authors declare no conflict."},
+    ]
+    doc, normalized = normalize_document_structure(blocks)
+    by_id = {b["block_id"]: b for b in normalized}
+    assert by_id["coi"]["role"] == "backmatter_heading"
+    assert by_id["coi_body"]["role"] == "backmatter_body"
