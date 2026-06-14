@@ -158,6 +158,43 @@ def _looks_like_tail_body(block: dict) -> bool:
     return False
 
 
+_BIOGRAPHY_TEXT_SIGNALS = re.compile(
+    r"\b(?:received?\s+(?:her|his|their)\s+(?:PhD|Doctorate|doctoral|degree)|"
+    r"is\s+a\s+(?:professor|researcher|scientist|physician|postdoc|fellow)|"
+    r"currently\s+(?:a|an|at)|"
+    r"(?:Department|Laboratory|Institute|University|College|School|Center|Hospital)\s+of\b|"
+    r"earned?\s+(?:her|his|their)\s+(?:degree|PhD)|"
+    r"completed?\s+(?:her|his|their)\s+(?:PhD|doctoral|residency|fellowship)|"
+    r"works?\s+(?:in|at|on)\b|"
+    r"research(?:s|ing)?\s+(?:interests?|focus|areas?|includes?|encompasses?)|"
+    r"specializes?\s+in\b|"
+    r"focused?\s+(?:on|in)\b|"
+    r"authored?\s+(?:over|more than|\d+)|"
+    r"published?\s+(?:over|more than|\d+)|"
+    r"has\s+(?:published|authored|co-authored)|"
+    r"(?:MD|PhD|MSc|M\.D\.|Ph\.D\.)\b)",
+    re.IGNORECASE,
+)
+
+
+def _looks_like_biography_text(text: str) -> bool:
+    """Return True if the text looks like a biography sentence cluster.
+
+    Detects patterns like "X received PhD from...", "X is a professor at...",
+    "X, MD, PhD, is a researcher in...", etc.
+    """
+    if not text:
+        return False
+    words = text.split()
+    if len(words) > 80:
+        return False
+    if len(words) < 5:
+        return False
+    if _BIOGRAPHY_TEXT_SIGNALS.search(text):
+        return True
+    return False
+
+
 def _looks_like_box_anchor(text: str) -> bool:
     normalized = text.strip().lower()
     return bool(
@@ -801,7 +838,7 @@ def infer_zones(
                 role = block.get("seed_role")
             if text in _POST_REFERENCE_BACKMATTER_HEADINGS and role in {
                 "section_heading", "subsection_heading", "sub_subsection_heading",
-                "backmatter_heading_candidate",
+                "backmatter_heading_candidate", "reference_heading",
             }:
                 post_ref_backmatter_start = page
                 bid = _artifact_block_id(block, duplicate_block_ids)
@@ -4316,6 +4353,64 @@ def normalize_document_structure(
         _normalize_backmatter_roles_after_boundary(tail_spread, backmatter_form, blocks)
     else:
         backmatter_form = "flat"
+
+    # Biography tail normalization: detect "Biographies" headings after the
+    # reference section and convert reference_item blocks with biography-like
+    # text to backmatter_body.
+    _BIOGRAPHY_HEADINGS = {"biographies", "author biographies", "authors' biographies"}
+    if tail_spread is not None:
+        refs_start_page = tail_spread.references_start
+    elif region_bus:
+        ref_zone = region_bus.get("reference_zone") or {}
+        boundary = ref_zone.get("boundary_band") or {}
+        refs_start_page = boundary.get("start_page")
+    else:
+        refs_start_page = None
+    if refs_start_page is not None:
+        in_biography_section = False
+        for block in blocks:
+            page_num = int(block.get("page", 0) or 0)
+            text_lower = _canonical_section_text(block)
+            role = block.get("role") or block.get("seed_role")
+            if role == "unassigned":
+                role = block.get("seed_role")
+
+            if text_lower in _BIOGRAPHY_HEADINGS and page_num >= refs_start_page:
+                if role in {
+                    "section_heading", "subsection_heading", "sub_subsection_heading",
+                    "backmatter_heading_candidate", "reference_heading",
+                }:
+                    in_biography_section = True
+                    old_role = block.get("role")
+                    block["role"] = "backmatter_heading"
+                    if old_role != block["role"]:
+                        record_decision(
+                            block,
+                            stage="biography_heading_normalization",
+                            old_role=old_role,
+                            new_role=block["role"],
+                            reason="biography heading after references normalized to backmatter_heading",
+                        )
+                    continue
+
+            if in_biography_section:
+                if role == "reference_heading":
+                    in_biography_section = False
+                    continue
+                if block.get("role") == "reference_item" and _looks_like_biography_text(
+                    block.get("text", "")
+                ):
+                    old_role = block.get("role")
+                    block["role"] = "backmatter_body"
+                    block.setdefault("render_default", True)
+                    if old_role != block["role"]:
+                        record_decision(
+                            block,
+                            stage="biography_body_normalization",
+                            old_role=old_role,
+                            new_role=block["role"],
+                            reason="reference_item with biography text converted to backmatter_body",
+                        )
 
     doc_structure = DocumentStructure(
         body_end_page=tail_spread.body_end_page if tail_spread else None,
