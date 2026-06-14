@@ -1168,6 +1168,8 @@ def render_fulltext_markdown(
             last_structured_insert_bbox = None
 
         if role == "structured_insert":
+            if not block.get("render_default", True):
+                continue
             pass  # render as callout below
         elif not block.get("render_default", True):
             continue
@@ -1179,6 +1181,7 @@ def render_fulltext_markdown(
             "frontmatter_noise",
             "frontmatter_support",
             "table_html",
+            "table_caption_candidate",
             "figure_caption",
             "figure_inner_text",
         }

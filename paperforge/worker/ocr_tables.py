@@ -85,7 +85,7 @@ def build_table_inventory(structured_blocks: list[dict]) -> dict[str, Any]:
     for block in structured_blocks:
         role = block.get("role", "")
         raw_label = str(block.get("raw_label", "") or "").strip()
-        if role == "table_caption" or _is_validation_first_table_candidate(block):
+        if role in {"table_caption", "table_caption_candidate"} or _is_validation_first_table_candidate(block):
             captions.append(block)
         elif role in ("table_asset", "media_asset"):
             if role == "media_asset" and raw_label not in ("table",):
