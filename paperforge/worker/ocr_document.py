@@ -113,6 +113,51 @@ def _block_text(block: dict) -> str:
     return str(block.get("text") or block.get("block_content") or "")
 
 
+def _next_nonempty_block_same_page(blocks: list[dict], idx: int) -> dict | None:
+    """Return the next non-empty block on the same page after idx, or None."""
+    page = blocks[idx].get("page")
+    if page is None:
+        return None
+    for j in range(idx + 1, len(blocks)):
+        if blocks[j].get("page") != page:
+            return None
+        text = _block_text(blocks[j]).strip()
+        if text:
+            return blocks[j]
+    return None
+
+
+_BACKMATTER_BODY_SIGNALS = re.compile(
+    r"\b(?:declare|conflict|interest|funding|support|grant|author|contribut|"
+    r"acknowledge|thank|ethic|review|approv|consent|availab|data|material|"
+    r"competing|financial|disclos|report|none|no conflict|nothing to declare)\b",
+    re.IGNORECASE,
+)
+
+
+def _looks_like_tail_body(block: dict) -> bool:
+    """Return True if the block looks like short backmatter body text.
+
+    Heuristics: short paragraphs with backmatter-related vocabulary,
+    no section-heading formatting, and a word count below the body spine
+    threshold.
+    """
+    text = _block_text(block).strip()
+    if not text:
+        return False
+    words = text.split()
+    if len(words) > 80:
+        return False
+    role = block.get("role", "")
+    if role in {"section_heading", "subsection_heading", "sub_subsection_heading"}:
+        return False
+    if _BACKMATTER_BODY_SIGNALS.search(text):
+        return True
+    if len(words) <= 25:
+        return True
+    return False
+
+
 def _looks_like_box_anchor(text: str) -> bool:
     normalized = text.strip().lower()
     return bool(
@@ -4209,6 +4254,51 @@ def normalize_document_structure(
             block["role_confidence"] = resolved.confidence
             if resolved.evidence:
                 block.setdefault("evidence", []).extend(resolved.evidence)
+
+    # Backmatter heading candidate promotion: confirm candidates that are
+    # followed by body-like text on the same page.  This runs after role
+    # resolution (which may have reclassified the candidate via editorial
+    # phrase detection) and uses seed_role to recover the original intent.
+    for idx, block in enumerate(blocks):
+        is_candidate = (
+            block.get("role") == "backmatter_heading_candidate"
+            or block.get("seed_role") == "backmatter_heading_candidate"
+        )
+        if not is_candidate:
+            continue
+        if block.get("role") == "backmatter_heading":
+            continue
+        next_body = _next_nonempty_block_same_page(blocks, idx)
+        if next_body and next_body.get("role") in {"body_paragraph", "backmatter_body"}:
+            if _looks_like_tail_body(next_body):
+                old_role = block.get("role")
+                block["role"] = "backmatter_heading"
+                block.setdefault("role_confidence", 0.6)
+                if old_role != block["role"]:
+                    record_decision(
+                        block,
+                        stage="backmatter_candidate_promotion",
+                        old_role=old_role,
+                        new_role=block["role"],
+                        reason="backmatter heading candidate promoted: followed by tail-like body on same page",
+                    )
+                # Convert follower body paragraphs to backmatter_body
+                for j in range(idx + 1, len(blocks)):
+                    if blocks[j].get("page") != block.get("page"):
+                        break
+                    if blocks[j].get("role") == "body_paragraph":
+                        old_follower_role = blocks[j].get("role")
+                        blocks[j]["role"] = "backmatter_body"
+                        blocks[j].setdefault("role_confidence", 0.6)
+                        if old_follower_role != blocks[j]["role"]:
+                            record_decision(
+                                blocks[j],
+                                stage="backmatter_candidate_promotion",
+                                old_role=old_follower_role,
+                                new_role=blocks[j]["role"],
+                                reason="follower body converted to backmatter_body under confirmed heading",
+                            )
+                break  # only promote one candidate per pass
 
     # Re-run tail non-ref exclusion after role resolution so blocks that
     # were assigned tail_nonref_hold_zone get their role converted.
