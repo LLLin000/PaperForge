@@ -1253,7 +1253,7 @@ def render_fulltext_markdown(
         elif role == "structured_insert":
             container_text = block.get("_container_text")
             if container_text:
-                source_text = " ".join(container_text.replace("\n", " ").split())
+                source_text = normalize_ocr_math_text(" ".join(container_text.replace("\n", " ").split()))
             else:
                 source_text = raw_text
             callout_lines = (
