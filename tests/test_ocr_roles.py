@@ -1479,3 +1479,18 @@ def test_page1_correspondence_footnote_routes_to_frontmatter_support() -> None:
     }
     role = assign_block_role(block, page_blocks=[block])
     assert role.role == "frontmatter_support"
+
+
+def test_highlights_label_does_not_swallow_following_body_paragraphs() -> None:
+    from paperforge.worker.ocr_roles import assign_block_role
+
+    blocks = [
+        {"block_id": "h", "page": 2, "raw_label": "paragraph_title", "text": "Highlights"},
+        {"block_id": "b1", "page": 2, "raw_label": "text", "text": "Important point one."},
+        {"block_id": "b2", "page": 2, "raw_label": "text", "text": "Important point two."},
+    ]
+    roles = [assign_block_role(b, page_blocks=blocks) for b in blocks]
+    # b1/b2 should still be body_paragraph, not reclassified as headings
+    assert roles[0].role == "structured_insert_candidate"
+    assert roles[1].role == "body_paragraph"
+    assert roles[2].role == "body_paragraph"

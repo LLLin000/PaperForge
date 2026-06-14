@@ -963,6 +963,15 @@ def assign_block_role(
                     confidence=0.8,
                     evidence=[f"running header: {lower}"],
                 )
+        # Sidebar / structured-insert heading labels (exact matches only).
+        # Intentionally excluded: "box", "summary"
+        # Reason: too ambiguous, risks swallowing normal subsection headings.
+        if lower in {"highlights", "key points"} and page_num > 1:
+            return RoleAssignment(
+                role="structured_insert_candidate",
+                confidence=0.7,
+                evidence=[f"structured insert label: {lower}"],
+            )
         # Backmatter heading detection (tail-zone + text evidence)
         # Known backmatter phrases on tail pages (page > 1) are unambiguous -
         # full-width headings are common in real papers, so geometric checks
