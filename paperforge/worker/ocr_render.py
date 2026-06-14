@@ -1178,7 +1178,7 @@ def render_fulltext_markdown(
             pass  # render as callout below
         elif not block.get("render_default", True):
             continue
-        if role in CONSUMED_FRONTMATTER_ROLES and block.get("page") == 1:
+        if role in CONSUMED_FRONTMATTER_ROLES and int(block.get("page", 0) or 0) <= 2:
             continue
         _SKIPPED_BODY_ROLES = {
             "abstract_heading",

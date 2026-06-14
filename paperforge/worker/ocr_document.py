@@ -98,6 +98,7 @@ class DocumentStructure:
     abstract_span: dict | None = None
     reference_zone: dict | None = None
     role_gate_summary: dict | None = None
+    reference_completeness_report: dict | None = None
 
 
 @dataclass
@@ -2447,6 +2448,84 @@ def _apply_content_zone_fallback(blocks: list[dict], region_bus: dict[str, dict]
                 block["zone"] = "body_zone"
 
 
+def _sanitize_reference_zone_boundary(blocks: list[dict]) -> None:
+    """Defensive pass: ensure only reference_heading / reference_item live inside reference_zone.
+
+    By construction, ``_apply_content_zone_fallback`` only assigns ``reference_zone``
+    to blocks with these two roles.  This function acts as a belt-and-suspenders
+    guard that catches any edge-case leakage and strips the zone label from
+    non-reference blocks that ended up inside the reference zone.
+    """
+    _ALLOWED_ROLES = {"reference_heading", "reference_item"}
+    for block in blocks:
+        if block.get("zone") != "reference_zone":
+            continue
+        role = block.get("role")
+        seed_role = block.get("seed_role")
+        if role in _ALLOWED_ROLES or seed_role in _ALLOWED_ROLES:
+            continue
+        # Also allow blocks whose marker is a reference-zone marker type
+        marker_type = (block.get("marker_signature") or {}).get("type") or "none"
+        if marker_type in _REFERENCE_ZONE_MARKER_TYPES:
+            continue
+        # Non-reference role inside reference_zone — strip the zone
+        block["zone"] = ""
+        record_decision(
+            block,
+            stage="reference_zone_boundary",
+            old_role=role,
+            new_role=role,
+            reason=f"non-reference role '{role}' stripped from reference_zone",
+        )
+
+
+def _check_reference_completeness(blocks: list[dict]) -> dict:
+    """Validate sequential numbering of reference items inside reference_zone.
+
+    Returns a dict with ``status`` (``"OK"`` or ``"INCOMPLETE"``), ``expected_count``,
+    ``actual_count``, and ``missing_numbers`` (list of ints).
+    """
+    import re as _re
+
+    ref_items = [b for b in blocks if b.get("zone") == "reference_zone" and b.get("role") == "reference_item"]
+    if not ref_items:
+        return {"status": "OK", "expected_count": 0, "actual_count": 0, "missing_numbers": []}
+
+    numbers: list[int] = []
+    for block in ref_items:
+        text = (block.get("text") or "").strip()
+        # Try bracket pattern: [1]
+        m = _re.match(r"^\s*\[(\d+)\]", text)
+        if m:
+            numbers.append(int(m.group(1)))
+            continue
+        # Try dot pattern: 1. or 1)
+        m = _re.match(r"^\s*(\d+)[.\)]\s", text)
+        if m:
+            numbers.append(int(m.group(1)))
+            continue
+        # Try bare number at start: 1 followed by space
+        m = _re.match(r"^\s*(\d+)\s", text)
+        if m:
+            numbers.append(int(m.group(1)))
+            continue
+
+    if not numbers:
+        return {"status": "OK", "expected_count": len(ref_items), "actual_count": 0, "missing_numbers": []}
+
+    max_num = max(numbers)
+    expected = set(range(1, max_num + 1))
+    actual = set(numbers)
+    missing = sorted(expected - actual)
+
+    return {
+        "status": "OK" if not missing else "INCOMPLETE",
+        "expected_count": max_num,
+        "actual_count": len(numbers),
+        "missing_numbers": missing,
+    }
+
+
 def _exclude_frontmatter_side_from_body_flow(blocks: list[dict]) -> None:
     for block in blocks:
         effective_role = block.get("role")
@@ -4289,6 +4368,7 @@ def normalize_document_structure(
         },
     )
     _apply_zone_labels(blocks, region_bus)
+    _sanitize_reference_zone_boundary(blocks)
     partition_zone_families(
         blocks,
         {
@@ -4389,6 +4469,17 @@ def normalize_document_structure(
     # here is a misclassification that the structural gate would hold to
     # unknown_structural anyway, so normalize early to let the gate accept them.
     _HEADING_ROLES = {"section_heading", "subsection_heading", "sub_subsection_heading"}
+    _BACKMATTER_NON_BODY_ROLES = {
+        "backmatter_heading",
+        "figure_caption_candidate",
+        "figure_caption",
+        "figure_title",
+        "figure_asset",
+        "media_asset",
+        "table_caption",
+        "table_html",
+    }
+    _IMAGE_MEDIA_RAW_LABELS = {"image", "figure", "chart"}
     for block in blocks:
         if block.get("zone") != "post_reference_backmatter_zone":
             continue
@@ -4403,7 +4494,19 @@ def normalize_document_structure(
                 new_role="backmatter_heading",
                 reason="heading in post_reference_backmatter_zone promoted to backmatter_heading",
             )
-        elif role != "backmatter_heading":
+        elif block.get("raw_label") in _IMAGE_MEDIA_RAW_LABELS:
+            if role != "media_asset":
+                old_role = role
+                block["role"] = "media_asset"
+                block.setdefault("render_default", True)
+                record_decision(
+                    block,
+                    stage="backmatter_media_promotion",
+                    old_role=old_role,
+                    new_role="media_asset",
+                    reason="image/media block in post_reference_backmatter_zone promoted to media_asset",
+                )
+        elif role not in _BACKMATTER_NON_BODY_ROLES:
             old_role = block.get("role")
             if old_role != "backmatter_body":
                 block["role"] = "backmatter_body"
@@ -4415,6 +4518,8 @@ def normalize_document_structure(
                     new_role="backmatter_body",
                     reason="non-heading block in post_reference_backmatter_zone normalized to backmatter_body",
                 )
+
+    ref_completeness = _check_reference_completeness(blocks)
 
     doc_structure = DocumentStructure(
         body_end_page=tail_spread.body_end_page if tail_spread else None,
@@ -4431,6 +4536,7 @@ def normalize_document_structure(
         reference_family_anchor=reference_family_anchor,
         page_layouts=page_layouts,
         region_bus=region_bus,
+        reference_completeness_report=ref_completeness,
     )
     if source_frontmatter_anchors:
         doc_structure.source_frontmatter_anchors = source_frontmatter_anchors

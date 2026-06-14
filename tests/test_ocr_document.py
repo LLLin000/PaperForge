@@ -4392,3 +4392,94 @@ def test_non_backmatter_zone_not_affected() -> None:
     by_id = {b["block_id"]: b for b in normalized}
     # No zone set -> not in post_reference_backmatter_zone -> stays reference_item
     assert by_id["bio_1"]["role"] == "reference_item"
+
+
+def test_sanitize_reference_zone_boundary_strips_non_reference_roles() -> None:
+    """Non-reference roles inside reference_zone are stripped."""
+    from paperforge.worker.ocr_document import _sanitize_reference_zone_boundary
+
+    blocks = [
+        {"block_id": "r1", "zone": "reference_zone", "role": "reference_item", "text": "[1] Ref one"},
+        {"block_id": "r2", "zone": "reference_zone", "role": "body_paragraph", "text": "Stray content"},
+        {"block_id": "r3", "zone": "reference_zone", "role": "reference_heading", "text": "References"},
+        {"block_id": "r4", "zone": "reference_zone", "role": "frontmatter_noise", "text": "noise"},
+    ]
+    _sanitize_reference_zone_boundary(blocks)
+    by_id = {b["block_id"]: b for b in blocks}
+    assert by_id["r1"]["zone"] == "reference_zone"  # kept
+    assert by_id["r2"]["zone"] == ""  # stripped
+    assert by_id["r3"]["zone"] == "reference_zone"  # kept
+    assert by_id["r4"]["zone"] == ""  # stripped
+
+
+def test_check_reference_completeness_ok_sequential() -> None:
+    """Sequential [1] [2] [3] is complete."""
+    from paperforge.worker.ocr_document import _check_reference_completeness
+
+    blocks = [
+        {"block_id": "r1", "zone": "reference_zone", "role": "reference_item", "text": "[1] First ref"},
+        {"block_id": "r2", "zone": "reference_zone", "role": "reference_item", "text": "[2] Second ref"},
+        {"block_id": "r3", "zone": "reference_zone", "role": "reference_item", "text": "[3] Third ref"},
+    ]
+    result = _check_reference_completeness(blocks)
+    assert result["status"] == "OK"
+    assert result["expected_count"] == 3
+    assert result["actual_count"] == 3
+    assert result["missing_numbers"] == []
+
+
+def test_check_reference_completeness_incomplete() -> None:
+    """Missing [2] in [1] [3] [4] is INCOMPLETE."""
+    from paperforge.worker.ocr_document import _check_reference_completeness
+
+    blocks = [
+        {"block_id": "r1", "zone": "reference_zone", "role": "reference_item", "text": "[1] First ref"},
+        {"block_id": "r2", "zone": "reference_zone", "role": "reference_item", "text": "[3] Third ref"},
+        {"block_id": "r3", "zone": "reference_zone", "role": "reference_item", "text": "[4] Fourth ref"},
+    ]
+    result = _check_reference_completeness(blocks)
+    assert result["status"] == "INCOMPLETE"
+    assert result["expected_count"] == 4
+    assert result["actual_count"] == 3
+    assert result["missing_numbers"] == [2]
+
+
+def test_check_reference_completeness_dot_pattern() -> None:
+    """Dot-pattern numbering (1. 2. 3.) also detected."""
+    from paperforge.worker.ocr_document import _check_reference_completeness
+
+    blocks = [
+        {"block_id": "r1", "zone": "reference_zone", "role": "reference_item", "text": "1. First ref"},
+        {"block_id": "r2", "zone": "reference_zone", "role": "reference_item", "text": "2. Second ref"},
+    ]
+    result = _check_reference_completeness(blocks)
+    assert result["status"] == "OK"
+    assert result["expected_count"] == 2
+    assert result["actual_count"] == 2
+
+
+def test_check_reference_completeness_empty() -> None:
+    """No reference items returns OK."""
+    from paperforge.worker.ocr_document import _check_reference_completeness
+
+    result = _check_reference_completeness([])
+    assert result["status"] == "OK"
+    assert result["actual_count"] == 0
+
+
+def test_reference_zone_boundary_protection_via_normalize() -> None:
+    """End-to-end: non-reference block in reference_zone is stripped during normalization."""
+    from paperforge.worker.ocr_document import normalize_document_structure
+
+    blocks = [
+        {"block_id": "b1", "page": 1, "role": "section_heading", "seed_role": "section_heading", "text": "Introduction"},
+        {"block_id": "refs", "page": 10, "role": "reference_heading", "seed_role": "reference_heading", "text": "References"},
+        {"block_id": "r1", "page": 10, "role": "reference_item", "seed_role": "reference_item", "text": "[1] Some reference"},
+        {"block_id": "stray", "page": 10, "role": "body_paragraph", "seed_role": "body_paragraph", "text": "Stray content that somehow landed in ref zone"},
+    ]
+    doc, normalized = normalize_document_structure(blocks)
+    by_id = {b["block_id"]: b for b in normalized}
+    # The stray body_paragraph should have been stripped from reference_zone
+    assert by_id["stray"]["zone"] != "reference_zone"
+    # Reference items should remain
+    assert by_id["r1"]["zone"] == "reference_zone"
