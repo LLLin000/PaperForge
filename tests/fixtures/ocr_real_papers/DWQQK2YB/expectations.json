@@ -8,7 +8,9 @@
       "Updated expectations after RC3 (unassigned role) and RC4 (post-reference backmatter) fixes.",
       "Figure captions as figure_caption_candidate is CORRECT per spec: object-gate roles stay as candidate at document-gate time.",
       "Biographies now correctly in post_reference_backmatter_zone instead of reference_zone.",
-      "Title/authors on preproof page 1 still need frontmatter classification fix (RC1)."
+      "Title/authors on preproof page 1 still need frontmatter classification fix (RC1).",
+      "OCR reads 'Amr Yoo' instead of 'Ami Yoo' on page 32.",
+      "Eunpyo Choi biography not present in OCR output."
     ]
   },
   "pages": {
@@ -147,7 +149,7 @@
     "32": {
       "assertions": [
         {"text_equals": "Biographies", "expected_role": "backmatter_heading", "expected_zone_any_of": ["post_reference_backmatter_zone", "tail_nonref_hold_zone"], "notes": "Now in post_reference_backmatter_zone"},
-        {"text_contains": "Ami Yoo received", "expected_role": "backmatter_body", "expected_zone": "post_reference_backmatter_zone"},
+        {"text_contains": "Yoo received", "expected_role": "backmatter_body", "expected_zone": "post_reference_backmatter_zone", "notes": "OCR reads 'Amr Yoo' instead of 'Ami Yoo'"},
         {"text_contains": "Gwangjun Go received", "expected_role": "backmatter_body", "expected_zone": "post_reference_backmatter_zone"},
         {"text_contains": "Kim Tien Nguyen received", "expected_role": "backmatter_body", "expected_zone": "post_reference_backmatter_zone"},
         {"text_contains": "Kyungmin Lee received", "expected_role": "backmatter_body", "expected_zone": "post_reference_backmatter_zone"},
@@ -159,8 +161,7 @@
         {"text_contains": "Byungjeon Kang received", "expected_role": "backmatter_body", "expected_zone": "post_reference_backmatter_zone"},
         {"text_contains": "Chang-Sei Kim received", "expected_role": "backmatter_body", "expected_zone": "post_reference_backmatter_zone"},
         {"text_contains": "Jiwon Han received", "expected_role": "backmatter_body", "expected_zone": "post_reference_backmatter_zone"},
-        {"text_contains": "Jong-Oh Park received", "expected_role": "backmatter_body", "expected_zone": "post_reference_backmatter_zone"},
-        {"text_contains": "Eunpyo Choi received", "expected_role": "backmatter_body", "expected_zone": "post_reference_backmatter_zone"}
+        {"text_contains": "Jong-Oh Park received", "expected_role": "backmatter_body", "expected_zone": "post_reference_backmatter_zone"}
       ]
     },
     "35": {
