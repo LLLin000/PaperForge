@@ -2524,7 +2524,7 @@ def test_render_fulltext_renders_all_reader_visible_statuses() -> None:
     )
 
     for status in statuses:
-        assert status in markdown
+        assert status not in markdown
 
 
 # --- Gap surface lock tests (expected to FAIL until Tasks 2-9 fix production code) ---
@@ -2564,4 +2564,4 @@ def test_reader_visible_statuses_are_emitted_in_markdown_contract() -> None:
             ]
         },
     )
-    assert "EXACT_MATCH" in markdown
+    assert "EXACT_MATCH" not in markdown

@@ -760,9 +760,6 @@ def _emit_page_objects(
         rfid = rf.get("reader_figure_id")
         if rfid and rfid not in rendered_reader_figure_ids:
             rendered_reader_figure_ids.add(rfid)
-            reader_status = str(rf.get("reader_status") or "")
-            if reader_status:
-                lines.append(f"> **{reader_status}**")
             lines.extend(_render_reader_figure_card(rf))
             embed_target = _reader_figure_embed_target(rf)
             if embed_target:
@@ -783,9 +780,6 @@ def _emit_reader_figures_before_references(
             if not rfid or rfid in rendered_reader_figure_ids:
                 continue
             rendered_reader_figure_ids.add(rfid)
-            reader_status = str(rf.get("reader_status") or "")
-            if reader_status:
-                lines.append(f"> **{reader_status}**")
             lines.extend(_render_reader_figure_card(rf))
             embed_target = _reader_figure_embed_target(rf)
             if embed_target:
