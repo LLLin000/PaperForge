@@ -2531,6 +2531,62 @@ def _check_reference_completeness(blocks: list[dict]) -> dict:
     }
 
 
+def _merge_box_content(blocks: list[dict]) -> None:
+    """Merge content boxes (Box 1, Key insights, etc.) into their structured_insert callout.
+
+    When a ``structured_insert`` (or ``paragraph_title``) block has text starting
+    with ``Box N`` or ``Key insights``, the following body-like blocks within
+    the same column are owned by that box.  Their text is merged into
+    ``_container_text`` and they are marked ``render_default=False`` so the
+    render function renders the entire box as one callout.
+    """
+    _BOX_HEADING_PATTERN = re.compile(r"^(?:Box\s+\d+|Key\s+insights)\b", re.IGNORECASE)
+    _BOX_BODY_ROLES = frozenset({"backmatter_body", "body_paragraph", "unknown_structural"})
+    _BOX_STOP_ROLES = frozenset(
+        {"section_heading", "subsection_heading", "sub_subsection_heading", "reference_item",
+         "reference_heading", "backmatter_heading", "figure_caption_candidate", "table_caption_candidate"}
+    )
+
+    for idx, block in enumerate(blocks):
+        text = (block.get("text") or "").strip()
+        if not _BOX_HEADING_PATTERN.match(text):
+            continue
+        role = block.get("role", "")
+        if role not in {"structured_insert", "paragraph_title", "subsection_heading"}:
+            continue
+        # Found a box heading — collect following body content
+        parts = [text]
+        consumed: list[int] = []
+        for j in range(idx + 1, len(blocks)):
+            next_block = blocks[j]
+            next_role = next_block.get("role", "")
+            next_text = (next_block.get("text") or "").strip()
+            if not next_text:
+                continue
+            actual_role = next_role if next_role not in {"unknown_structural", "noise"} else next_block.get("seed_role", "")
+            if actual_role in _BOX_STOP_ROLES:
+                break
+            if next_role not in _BOX_BODY_ROLES:
+                break
+            parts.append(next_text)
+            consumed.append(j)
+
+        if len(parts) <= 1:
+            continue
+
+        container = "\n".join(parts)
+        block["_container_text"] = container
+        for cj in consumed:
+            blocks[cj]["role"] = "noise"
+            blocks[cj]["render_default"] = False
+            if not blocks[cj].get("_decision_log"):
+                blocks[cj]["_decision_log"] = []
+            blocks[cj]["_decision_log"].append({
+                "stage": "box_content_merge",
+                "reason": f"consumed by box heading '{text[:60]}'"
+            })
+
+
 def _exclude_frontmatter_side_from_body_flow(blocks: list[dict]) -> None:
     for block in blocks:
         effective_role = block.get("role")
@@ -4525,6 +4581,8 @@ def normalize_document_structure(
                 )
 
     ref_completeness = _check_reference_completeness(blocks)
+
+    _merge_box_content(blocks)
 
     doc_structure = DocumentStructure(
         body_end_page=tail_spread.body_end_page if tail_spread else None,

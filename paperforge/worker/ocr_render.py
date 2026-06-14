@@ -1168,8 +1168,6 @@ def render_fulltext_markdown(
             last_structured_insert_bbox = None
 
         if role == "structured_insert":
-            if not block.get("render_default", True):
-                continue
             pass  # render as callout below
         elif not block.get("render_default", True):
             continue
