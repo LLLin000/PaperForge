@@ -18,7 +18,7 @@
         {"text_contains": "Quantitative radiography of osteoarthritis", "expected_role": "paper_title", "notes": "BUG: Real: unknown_structural - author matching needed"},
         {"text_contains": "J C Buckland-Wright", "expected_role": "authors", "notes": "BUG: Real: unknown_structural - J C vs J.C. format mismatch"},
         {"text_contains": "Radiography is important", "expected_role": "body_paragraph", "expected_zone": "body_zone"},
-        {"text_contains": "Correspondence to:", "expected_role": "frontmatter_support", "notes": "BUG: Real: frontmatter_noise in frontmatter_side_zone"}
+        {"text_contains": "Correspondence to:", "expected_role": "frontmatter_support"}
       ]
     },
     "2": {
@@ -56,8 +56,8 @@
     "7": {
       "assertions": [
         {"text_equals": "Buckland-Wright", "expected_role_any_of": ["noise", "frontmatter_noise"], "must_not_render": true},
-        {"text_equals": "Conclusion", "expected_role_any_of": ["section_heading", "subsection_heading"], "expected_zone": "body_zone", "notes": "BUG: Real: zone empty. Page 7 ref_start=7 blocks conclusion from body_zone."},
-        {"text_contains": "I wish to express my gratitude", "expected_role": "backmatter_body", "expected_zone": "tail_nonref_hold_zone", "notes": "BUG: Real: body_paragraph with empty zone"}
+        {"text_equals": "Conclusion", "expected_role_any_of": ["section_heading", "subsection_heading"], "expected_zone": "body_zone"},
+        {"text_contains": "I wish to express my gratitude", "expected_role": "backmatter_body", "expected_zone": "tail_nonref_hold_zone"}
       ]
     },
     "8": {
@@ -79,12 +79,6 @@
       "pages": [6],
       "description": "Page 6 body text still in tail_nonref_hold_zone instead of body_zone. Tail detection boundary needs adjustment.",
       "fix": "Tail spread body-continuation veto (RC6) or adjust tail band logic for this paper"
-    },
-    {
-      "bug": "page7_conclusion_zone_empty",
-      "pages": [7],
-      "description": "Conclusion and gratitude text on page 7 have empty zone because ref_start=7 (same page as references start). Zone fallback can't distinguish pre-reference from post-reference on same page.",
-      "fix": "Reference zone should start after body sections on page 7, or zone fallback should use block-level ordering"
     }
   ]
 }

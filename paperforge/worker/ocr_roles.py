@@ -881,6 +881,16 @@ def assign_block_role(
             evidence=[f"page-1 zone affiliation_zone: {text[:60]}"],
         )
 
+    # Page-1 correspondence footnotes → frontmatter_support (must run before zone-based noise)
+    if raw_label in {"footnote", "vision_footnote"} and page_num == 1:
+        lower_txt = text.lower()
+        if lower_txt.startswith(("correspondence", "corresponding author", "address for correspondence")):
+            return RoleAssignment(
+                role="frontmatter_support",
+                confidence=0.75,
+                evidence=[f"page-1 correspondence footnote: {text[:60]}"],
+            )
+
     if zone == "journal_furniture_zone":
         return RoleAssignment(
             role="frontmatter_noise",
@@ -1155,16 +1165,6 @@ def assign_block_role(
             confidence=0.85,
             evidence=[f"reference content label: {text[:60]}"],
         )
-
-    # Page-1 correspondence footnotes → frontmatter_support
-    if raw_label in {"footnote", "vision_footnote"} and page_num == 1:
-        lower_txt = text.lower()
-        if lower_txt.startswith(("correspondence", "corresponding author", "address for correspondence")):
-            return RoleAssignment(
-                role="frontmatter_support",
-                confidence=0.75,
-                evidence=[f"page-1 correspondence footnote: {text[:60]}"],
-            )
 
     # Page-1 DOI / received / accepted / published footnotes → frontmatter_noise
     if raw_label in {"footnote", "vision_footnote"} and page_num == 1:

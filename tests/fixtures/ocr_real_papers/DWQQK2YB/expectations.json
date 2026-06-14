@@ -27,7 +27,7 @@
     },
     "2": {
       "assertions": [
-        {"text_contains": "Magnetoresponsive Stem Cell Spheroid", "expected_role": "paper_title", "notes": "BUG: Real: unknown_structural. Title from preproof page 2 not verified by gate."},
+        {"text_contains": "Magnetoresponsive Stem Cell Spheroid", "expected_role": "paper_title"},
         {"text_contains": "These authors contributed equally", "expected_role": "structured_insert", "notes": "BUG: Real: frontmatter_noise"},
         {"text_contains": "Corresponding author", "expected_role": "structured_insert", "notes": "BUG: Real: frontmatter_noise"},
         {"text_equals": "Highlights", "expected_role": "structured_insert", "notes": "BUG: Real: structured_insert - should be paragraph_title"}
@@ -38,7 +38,7 @@
         {"text_contains": "Histological evaluation revealed", "expected_role": "body_paragraph", "notes": "BUG: Real: abstract_body - Highlights continuation"},
         {"text_equals": "Abstract", "expected_role": "abstract_heading", "expected_zone": "body_zone"},
         {"text_contains": "Mesenchymal stem cells", "expected_role": "abstract_body", "expected_zone": "body_zone"},
-        {"text_contains": "Keywords:", "expected_role": "structured_insert", "notes": "BUG: Real: body_paragraph"},
+        {"text_contains": "Keywords:", "expected_role": "structured_insert"},
         {"text_equals": "1. Introduction", "expected_role": "section_heading", "expected_zone": "body_zone"}
       ]
     },
@@ -183,16 +183,10 @@
       "fix": "Preproof page 1 frontmatter classification needs seed role rescue for title/authors/metadata lines"
     },
     {
-      "bug": "page2_title_not_verified",
-      "pages": [2],
-      "description": "Title on page 2 has seed_role=paper_title but gate HELD to unknown_structural because source_backed anchor bridge wasn't matched.",
-      "fix": "RC1: source_frontmatter_anchors bridge to anchor_ids needs deeper integration in gate context"
-    },
-    {
       "bug": "abstract_highlights_confused",
       "pages": [3],
-      "description": "Highlights bullet continuation classified as abstract_body. Keywords as body_paragraph.",
-      "fix": "Highlights detection and Keywords classification needs improvement"
+      "description": "Highlights bullet continuation classified as abstract_body. Keywords now correctly classified as structured_insert.",
+      "fix": "Cross-page highlights continuation detection"
     },
     {
       "bug": "backmatter_headings_not_recognized",

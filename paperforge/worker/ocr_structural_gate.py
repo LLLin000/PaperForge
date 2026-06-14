@@ -138,6 +138,14 @@ def resolve_verified_role(block: dict, context: RoleGateContext) -> VerifiedRole
                 "paper_title", seed_role, "source_frontmatter_title_anchor", ["matched source title anchor"]
             )
         return hold_role(seed_role, "paper title seed lacks source-backed title anchor")
+    # Structural signal: raw_label=doc_title on page 2 → paper_title (title repeat)
+    if block.get("raw_label") == "doc_title" and (block.get("page") or 0) == 2:
+        return accept_role(
+            "paper_title",
+            seed_role,
+            "doc_title_label_page2_repeat",
+            ["doc_title labeled block on page 2 accepted as paper_title repeat"],
+        )
     # Source-anchor override: if block_id matches a source anchor, accept the
     # anchored role regardless of seed_role (OCR may have missed the label).
     # Must also match page to avoid block_id=2 on page 7 matching page-1 anchor.

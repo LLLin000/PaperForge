@@ -2365,10 +2365,26 @@ def _apply_content_zone_fallback(blocks: list[dict], region_bus: dict[str, dict]
     ref_heading_pages: dict[int, float] = {}
     for b in blocks:
         brole = b.get("role") or b.get("seed_role")
+        if brole == "unassigned":
+            brole = b.get("seed_role")
         if brole == "reference_heading":
             p = int(b.get("page", 0) or 0)
             if p > 0 and p not in ref_heading_pages:
                 ref_heading_pages[p] = _block_y_top(b)
+
+    # Fallback: pages with reference_item blocks but no reference_heading
+    # (refs start directly without a heading). Use first ref_item y_top per page.
+    if ref_start is not None:
+        seen_ref_pages: set[int] = set()
+        for b in blocks:
+            brole = b.get("role") or b.get("seed_role")
+            if brole == "unassigned":
+                brole = b.get("seed_role")
+            if brole == "reference_item":
+                p = int(b.get("page", 0) or 0)
+                if p > 0 and p not in ref_heading_pages and p >= ref_start and p not in seen_ref_pages:
+                    ref_heading_pages[p] = _block_y_top(b)
+                    seen_ref_pages.add(p)
 
     # Pre-scan: find the last body-section heading y_top on each page that
     # also has a reference heading.  Content below the last body heading but
@@ -2377,6 +2393,8 @@ def _apply_content_zone_fallback(blocks: list[dict], region_bus: dict[str, dict]
     last_body_heading_top: dict[int, float] = {}
     for b in blocks:
         brole = b.get("role") or b.get("seed_role")
+        if brole == "unassigned":
+            brole = b.get("seed_role")
         p = int(b.get("page", 0) or 0)
         if p in ref_heading_pages and brole in _BODY_HEADING_ROLES:
             yt = _block_y_top(b)
@@ -4640,6 +4658,29 @@ def normalize_document_structure(
         },
     )
     doc_structure.abstract_span = abstract_span
+
+    # When abstract span ends at a keywords block, tag it as structured_insert.
+    # The abstract span builder stops before the keywords block but doesn't assign a role.
+    if abstract_span.get("stop_reason") == "keywords" and abstract_span.get("body_block_ids"):
+        body_ids = abstract_span["body_block_ids"]
+        # Find the block immediately after the last abstract body block
+        last_body_idx = None
+        for i, b in enumerate(blocks):
+            if _artifact_block_id(b, duplicate_block_ids) in body_ids:
+                last_body_idx = i
+        if last_body_idx is not None and last_body_idx + 1 < len(blocks):
+            kw_block = blocks[last_body_idx + 1]
+            kw_text = str(kw_block.get("text") or "").strip().lower()
+            if kw_text.startswith(("keywords", "key words")) and kw_block.get("role") in {"body_paragraph", "unknown_structural", "frontmatter_noise"}:
+                old_role = kw_block.get("role")
+                kw_block["role"] = "structured_insert"
+                record_decision(
+                    kw_block,
+                    stage="abstract_span_keywords_boundary",
+                    old_role=old_role,
+                    new_role="structured_insert",
+                    reason="block after abstract body matches keywords stop_reason",
+                )
 
     # Build verified reference_zone from document-level artifacts
     from paperforge.worker.ocr_structural_gate import build_verified_reference_zone_from_artifacts
