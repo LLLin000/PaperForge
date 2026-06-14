@@ -863,7 +863,6 @@ def render_fulltext_markdown(
     title = resolved_metadata.get("title", {}).get("value", "")
     if title:
         lines.append(f"# {title}")
-        lines.append("")
 
     # --- authors ---
     authors_display = resolved_metadata.get("authors_display", "")
@@ -871,23 +870,22 @@ def render_fulltext_markdown(
         authors = resolved_metadata.get("authors", {}).get("value", [])
         if authors:
             authors_display = ", ".join(authors)
-    if authors_display:
-        lines.append(f"**Authors:** {authors_display}")
-        lines.append("")
 
     # --- metadata block ---
     journal = resolved_metadata.get("journal", {}).get("value", "")
     year = resolved_metadata.get("year", {}).get("value", 0)
     doi = resolved_metadata.get("doi", {}).get("value", "")
-    meta_parts: list[str] = []
-    if journal:
-        meta_parts.append(f"**Journal:** {journal}")
-    if year:
-        meta_parts.append(f"**Year:** {year}")
-    if doi:
-        meta_parts.append(f"**DOI:** {doi}")
-    if meta_parts:
-        lines.extend(meta_parts)
+
+    if authors_display or journal or year or doi:
+        lines.append("> [!info]- Paper Metadata")
+        if authors_display:
+            lines.append(f"> **Authors:** {authors_display}")
+        if journal:
+            lines.append(f"> **Journal:** {journal}")
+        if year:
+            lines.append(f"> **Year:** {year}")
+        if doi:
+            lines.append(f"> **DOI:** {doi}")
         lines.append("")
 
     # --- abstract ---
