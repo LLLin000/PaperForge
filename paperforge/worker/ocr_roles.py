@@ -298,9 +298,10 @@ def _looks_like_author_list(text: str) -> bool:
     has_name_comma = bool(re.search(r"[A-Z][a-z]+,\s+[A-Z]", text))
     has_and_name = bool(re.search(r"\band\b\s+[A-Z][a-z]+", text))
     has_author_marker = bool(re.search(r"[\*†‡§¶#]", text))
-    has_two_name_pairs = bool(re.search(r"[A-Z][a-z]+\s+[A-Z][a-z]+\s*[·•,;]\s*[A-Z][a-z]+", text))
+    has_two_name_pairs = bool(re.search(r"[A-Z][a-z]+\s+[A-Z][a-z]+[^,;]*[·•,;]\s*[A-Z][a-z]+", text))
+    has_many_name_pairs = len(re.findall(r"\b[A-Z][a-z]+\s+[A-Z][a-z]+\b", text)) >= 3
     has_et_al = "et al" in text.lower()
-    return (has_name_comma or has_and_name or has_author_marker or has_two_name_pairs or has_et_al) and len(text) < 500
+    return (has_name_comma or has_and_name or has_author_marker or has_two_name_pairs or has_many_name_pairs or has_et_al) and len(text) < 500
 
 
 def _looks_like_affiliation(text: str) -> bool:
