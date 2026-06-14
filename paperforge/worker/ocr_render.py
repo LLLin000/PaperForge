@@ -863,6 +863,7 @@ def render_fulltext_markdown(
     title = resolved_metadata.get("title", {}).get("value", "")
     if title:
         lines.append(f"# {title}")
+        lines.append("")
 
     # --- authors ---
     authors_display = resolved_metadata.get("authors_display", "")
