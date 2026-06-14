@@ -140,15 +140,27 @@ def resolve_verified_role(block: dict, context: RoleGateContext) -> VerifiedRole
         return hold_role(seed_role, "paper title seed lacks source-backed title anchor")
     # Source-anchor override: if block_id matches a source anchor, accept the
     # anchored role regardless of seed_role (OCR may have missed the label).
+    # Must also match page to avoid block_id=2 on page 7 matching page-1 anchor.
+    block_page = block.get("page")
     for anchored_field in ("authors",):
         anchor_ids = context.source_frontmatter_anchor_ids.get(anchored_field, set())
         if block_id in anchor_ids and seed_role != anchored_field:
-            return accept_role(
-                anchored_field,
-                seed_role,
-                f"source_frontmatter_{anchored_field}_anchor_override",
-                [f"block matched source {anchored_field} anchor (OCR label override)"],
-            )
+            # Determine anchor page from page-qualified IDs (e.g. "p1:2")
+            anchor_page = None
+            for aid in anchor_ids:
+                if isinstance(aid, str) and aid.startswith("p") and ":" in aid:
+                    try:
+                        anchor_page = int(aid.split(":")[0][1:])
+                    except (ValueError, IndexError):
+                        pass
+            # Only accept if no page info available OR block is on anchor's page
+            if anchor_page is None or block_page == anchor_page:
+                return accept_role(
+                    anchored_field,
+                    seed_role,
+                    f"source_frontmatter_{anchored_field}_anchor_override",
+                    [f"block matched source {anchored_field} anchor (OCR label override)"],
+                )
     if proposal == "authors" or seed_role == "authors":
         if block_id in context.source_frontmatter_anchor_ids.get("authors", set()):
             return accept_role(

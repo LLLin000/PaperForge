@@ -1,9 +1,9 @@
 ﻿page,block_id,raw_label,content_preview,bbox,role,role_confidence,evidence,seed_role,seed_confidence,zone,style_family,marker_type,render_default,index_default
 1,0,number,268,"[113, 68, 146, 87]",noise,0.9,page number label,noise,0.9,frontmatter_main_zone,support_like,short_fragment,False,False
 1,1,header,Annals of the Rheumatic Diseases 1994; 53: 268–275,"[740, 66, 1108, 88]",noise,0.9,header label,noise,0.9,frontmatter_main_zone,support_like,none,False,False
-1,2,paragraph_title,REVIEW,"[112, 135, 218, 162]",unknown_structural,0.7,unnumbered paragraph_title in title zone on page 1: REVIEW,paper_title,0.7,frontmatter_main_zone,heading_like,short_fragment,False,True
-1,3,doc_title,Quantitative radiography of osteoarthritis,"[315, 202, 963, 242]",unknown_structural,0.6,page-1 frontmatter title guard: Quantitative radiography of osteoarthritis,paper_title,0.6,frontmatter_main_zone,support_like,none,False,True
-1,4,text,J C Buckland-Wright,"[312, 289, 504, 315]",unknown_structural,0.3,"short text, uncertain role",unknown_structural,0.3,frontmatter_main_zone,support_like,short_fragment,False,True
+1,2,paragraph_title,REVIEW,"[112, 135, 218, 162]",frontmatter_noise,0.8,page-1 article-type label: review,frontmatter_noise,0.8,frontmatter_main_zone,heading_like,short_fragment,False,False
+1,3,doc_title,Quantitative radiography of osteoarthritis,"[315, 202, 963, 242]",paper_title,0.6,page-1 frontmatter title guard: Quantitative radiography of osteoarthritis,paper_title,0.6,frontmatter_main_zone,support_like,none,True,True
+1,4,text,J C Buckland-Wright,"[312, 289, 504, 315]",authors,0.6,page-1 initial-lastname author byline: J C Buckland-Wright,authors,0.6,frontmatter_main_zone,support_like,short_fragment,True,True
 1,5,footer,"Division of Anatomy and Cell Biology, United Medical and Dental Schools of Guy's and St Thomas's Hos","[112, 1346, 298, 1493]",noise,0.9,footer label,noise,0.9,,unknown_like,none,False,False
 1,6,text,Radiography is important in the diagnosis of osteoarthritis (OA) as the features described in the pa,"[313, 357, 706, 916]",body_paragraph,0.6,default body_paragraph for text label,body_paragraph,0.6,body_zone,body_like,none,True,True
 1,7,text,"Scoring systems, although an essential and widely used method for assessing disease progression, suf","[313, 916, 706, 1383]",body_paragraph,0.6,default body_paragraph for text label,body_paragraph,0.6,body_zone,body_like,none,True,True
