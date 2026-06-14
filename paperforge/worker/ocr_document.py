@@ -1831,7 +1831,7 @@ def _normalize_backmatter_roles_after_boundary(
             block["render_default"] = True
             continue
 
-        if role in {"body_paragraph", "frontmatter_noise"}:
+        if role == "body_paragraph":
             old_role = block.get("role")
             block["role"] = "backmatter_body"
             if old_role != block["role"]:
@@ -1840,11 +1840,16 @@ def _normalize_backmatter_roles_after_boundary(
                     stage="backmatter_role_normalization",
                     old_role=old_role,
                     new_role=block["role"],
-                    reason="body/noise block assigned backmatter body role inside backmatter region",
+                    reason="body block assigned backmatter body role inside backmatter region",
                 )
             block["_backmatter_regime"] = backmatter_form
             block["render_default"] = True
             block["index_default"] = True
+        elif role == "frontmatter_noise":
+            if block.get("seed_role") == "frontmatter_noise":
+                continue
+            block["role"] = "backmatter_body"
+            block["_backmatter_regime"] = backmatter_form
 
 
 def _detect_frontmatter_zone(
