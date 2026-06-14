@@ -68,6 +68,18 @@ _BACKMATTER_HEADINGS = {
     "publisher's note",
 }
 
+_PAGE1_ARTICLE_TYPE_LABELS = frozenset(
+    {
+        "review",
+        "review article",
+        "research article",
+        "original article",
+        "case report",
+        "brief communication",
+        "rapid communication",
+    }
+)
+
 FRONTMATTER_NOISE = {
     "open access",
     "copyright",
@@ -690,6 +702,19 @@ def assign_block_role(
 
     raw_label = str(block.get("block_label") or block.get("raw_label") or "").strip()
     text = str(block.get("block_content") or block.get("text") or "").strip()
+
+    # Page-1 article-type labels (e.g. "REVIEW", "Case Report") are frontmatter
+    # noise, not paper titles or section headings.
+    if (
+        raw_label == "paragraph_title"
+        and text.lower().strip() in _PAGE1_ARTICLE_TYPE_LABELS
+        and (block.get("page") or 1) == 1
+    ):
+        return RoleAssignment(
+            role="frontmatter_noise",
+            confidence=0.8,
+            evidence=[f"page-1 article-type label: {text.lower().strip()}"],
+        )
 
     if _PREPROOF_MARKER.match(text):
         bbox = block.get("block_bbox") or block.get("bbox") or [0, 0, 0, 0]
