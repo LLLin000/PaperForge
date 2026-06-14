@@ -1,6 +1,6 @@
 # OCR-v2 Project Management Log
 
-> **Branch:** `ocr-v2` | **Base:** `master` | **Last Updated:** 2026-06-14 (Phase 13 render fixes + boundary protection)
+> **Branch:** `ocr-v2` | **Base:** `master` | **Last Updated:** 2026-06-14 (Phase 13e box merge + author detection + table fix)
 > **Rule:** Every step is documented with: What was done, Why it was done, What comes next.
 
 ---
@@ -303,9 +303,16 @@ This is the core transformation. Sub-phases:
 | `84b8278` | Fix pre-proof watermark "Journal Pre-proof" leaking into backmatter: respect `seed_role` when `frontmatter_noise` classification came from upstream. |
 | `b45e491` | Wrap paper metadata (Authors/Journal/Year/DOI) in `[!info]` callout for visual polish. |
 | `2ee1def` | Restore blank line after title heading. |
+| `389001f` | Fix Box 1 structured_insert leak: add render_default check for structured_insert blocks (later reverted). Table inventory now collects `table_caption_candidate` as captions (was silently skipped). |
+| `0941633` | Robust author list detection: add `has_many_name_pairs` — count 3+ "Firstname Lastname" patterns instead of relying on superscript markers. Widen `has_two_name_pairs` to allow non-comma characters (titles, superscripts) between names. |
+| `b98cff3` | Content box merge (`_merge_box_content`): detect "Box N" / "Key insights" structured_insert headings, merge following body-like blocks into `_container_text`, consumed blocks suppressed as `noise`. Handles cross-column boxes. |
+| `dd43144` | Apply `normalize_ocr_math_text` to structured_insert `_container_text` (fixes LaTeX spacing in box callouts). |
 
 **Impact:**
-- DWQQK2YB: 53/62 → 55/62 PASS (2 resolved: page-2 title duplicate, keywords label in backmatter)
+- DWQQK2YB: 55/62 PASS, 7 FAIL (unchanged)
+- CAQNW9Q2: 20/23 PASS, 3 FAIL (unchanged)
+- TSCKAVIS: Box 1 content merged into single callout; tables 2/2 extracted from `table_caption_candidate`
+- A8E7SRVS: "Dr med¹" author line no longer leaks into abstract (seed_role changed to `authors` via name-pair counting)
 - figure_inventory now correctly produces 4/4 matched figures (was 0/4 due to eaten media_asset blocks)
 - Pre-proof watermarks no longer leak into rendered output
 - No reader_status debug labels in output
@@ -313,7 +320,7 @@ This is the core transformation. Sub-phases:
 
 ---
 
-## 3. Current State (as of 2026-06-14, post Phase 13)
+## 3. Current State (as of 2026-06-14, post Phase 13e)
 
 ### 3.1 What is done
 
@@ -334,10 +341,13 @@ This is the core transformation. Sub-phases:
 | Abstract rendering | Clean: no blockquote, bullet lines excluded, abstract fallback fixed | `paperforge/worker/ocr_render.py` |
 | Source anchor bridge to normalize | Anchors passed into normalize before gate runs | `paperforge/worker/ocr_blocks.py` |
 | Author matching | `&` handling, initial matching, label stripping, subset check | `paperforge/worker/ocr_metadata.py` |
+| Author list detection | `_looks_like_author_list` with `has_many_name_pairs` (3+ Firstname Lastname pairs) for German name titles (Dr med¹) | `paperforge/worker/ocr_roles.py` |
+| Table inventory | Fixed: `table_caption_candidate` blocks now collected as captions (was silently skipped) | `paperforge/worker/ocr_tables.py` |
+| Content box merge | `_merge_box_content`: Box N / Key insights headings consume following body blocks into `_container_text` | `paperforge/worker/ocr_document.py` |
 | formal-library.json enrichment | Full author list fallback | `paperforge/worker/ocr_rebuild.py` |
 | Real-paper test fixtures (2 active papers) | In repo, auto-synced from vault | `tests/fixtures/ocr_real_papers/{DWQQK2YB,CAQNW9Q2}/` |
 | Trace vs expectations regression harness | Running | `tests/test_ocr_trace_vs_expectations.py` |
-| Full test suite | 284 passed, 2 pre-existing failures | unit + CLI + document + gate |
+| Full test suite | 320+ passed, 2 pre-existing failures | unit + CLI + document + gate + render + tables + roles |
 
 ### 3.2 Real-paper gap report (post Phase 13e render fixes)
 
@@ -369,8 +379,13 @@ This is the core transformation. Sub-phases:
 
 ### 4.1 Remaining gap closure
 
-- [x] ~~**DW page-2 title duplicate:** Title re-appears on page 2 of pre-proof papers~~ (fixed: `<= 2` skip in renderer)
-- [x] ~~**Keywords label in backmatter:** body_paragraph expected structured_insert~~ (resolved by backmatter zone normalization)
+- [x] ~~**DW page-2 title duplicate:** Title re-appears on page 2 of pre-proof papers~~ (fixed)
+- [x] ~~**Keywords label in backmatter:** body_paragraph expected structured_insert~~ (resolved)
+- [x] ~~**Box 1 / Key insights box merge:** Content boxes now rendered as single callouts~~ (fixed by `_merge_box_content`)
+- [x] ~~**Author line with German titles:** "Thomas Caffard Dr med¹" incorrectly leaking into abstract~~ (fixed via `has_many_name_pairs`)
+- [x] ~~**Table inventory missing captions:** `table_caption_candidate` blocks not collected~~ (fixed in `build_table_inventory`)
+- [x] ~~**Reader status labels in output:** EXACT_MATCH/LEGEND_ONLY/ASSET_GROUP_ONLY~~ (removed)
+- [x] ~~**Pre-proof watermark leaking:** "Journal Pre-proof" appearing on page 26~~ (fixed: seed_role check)
 - [ ] **DW preproof frontmatter:** Title/authors/PII on page 1 still suppressed by preproof cover zone. Need seed-role rescue for preproof pages.
 - [ ] **DW biography page mismatch:** Update expectations to match actual biography span (pages 32-34 instead of 33-34).
 - [ ] **CAQ same-page ref/body:** Page 7 Conclusion blocked from body_zone by ref_start=7. Need block-level vertical split on same page.
