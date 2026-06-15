@@ -1952,3 +1952,32 @@ def test_reader_figures_never_include_empty_visual_groups() -> None:
         assert vg, (
             f"Reader figure {figure.get('reader_figure_id')} has empty visual_groups: {figure}"
         )
+
+
+# === group-first matching (Task 1: Red test) ===
+
+
+def test_group_first_matching_prefers_same_row_pair_over_single_asset() -> None:
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    blocks = [
+        {
+            "block_id": 1,
+            "role": "figure_caption",
+            "text": "Fig. 2 A and B, MRI and gross anatomic correlation.",
+            "page": 3,
+            "bbox": [80, 120, 420, 210],
+            "marker_signature": {"type": "figure_number", "number": 2},
+            "zone": "display_zone",
+            "style_family": "legend_like",
+        },
+        {"block_id": 2, "role": "media_asset", "raw_label": "image", "page": 3, "bbox": [450, 120, 780, 520]},
+        {"block_id": 3, "role": "media_asset", "raw_label": "image", "page": 3, "bbox": [805, 120, 1130, 520]},
+    ]
+
+    inventory = build_figure_inventory(blocks, page_width=1200)
+    matched = inventory["matched_figures"]
+
+    assert len(matched) == 1
+    assert matched[0]["figure_number"] == 2
+    assert [a["block_id"] for a in matched[0]["matched_assets"]] == [2, 3]
