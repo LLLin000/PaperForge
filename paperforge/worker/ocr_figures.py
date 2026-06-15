@@ -677,7 +677,7 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
     ordered_legends = deduped_legends
 
     candidate_groups = _build_candidate_figure_groups_from_assets(assets, page_width=page_width)
-    used_asset_block_ids: set[int | str] = set()
+    used_asset_page_ids: set[tuple] = set()
     for legend in ordered_legends:
         legend_page = legend.get("page", 0)
         legend_text = legend.get("text", "")
@@ -707,7 +707,9 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
             if group.get("page") != legend_page:
                 continue
             g_asset_block_ids = set(group.get("asset_block_ids", []))
-            if g_asset_block_ids & used_asset_block_ids:
+            g_page = group.get("page", 0)
+            g_qual = {(g_page, bid) for bid in g_asset_block_ids}
+            if g_qual & used_asset_page_ids:
                 continue
             match_score = _score_legend_to_group(
                 legend,
@@ -751,8 +753,14 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
                 if best[2].get("decision") == "matched":
                     best_gi, best_group, best_score = best
                     matched_assets = best_group.get("media_blocks", [])
-                    used_asset_block_ids.update(best_group.get("asset_block_ids", []))
-                    region_match = {"media_blocks": matched_assets, "match_score": best_score}
+                    g_page = best_group.get("page", 0)
+                    used_asset_page_ids.update({(g_page, bid) for bid in best_group.get("asset_block_ids", [])})
+                    region_match = {
+                        "media_blocks": matched_assets,
+                        "match_score": best_score,
+                        "group_type": best_group.get("group_type", ""),
+                        "group_evidence": best_group.get("group_evidence", []),
+                    }
                     if len(matched_assets) > 1:
                         region_match["cluster_bbox"] = best_group.get("cluster_bbox", [0, 0, 0, 0])
                 else:
@@ -777,8 +785,14 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
                 best_gi, best_group, best_score = candidates[0]
                 if best_score["decision"] == "matched":
                     matched_assets = best_group.get("media_blocks", [])
-                    used_asset_block_ids.update(best_group.get("asset_block_ids", []))
-                    region_match = {"media_blocks": matched_assets, "match_score": best_score}
+                    g_page = best_group.get("page", 0)
+                    used_asset_page_ids.update({(g_page, bid) for bid in best_group.get("asset_block_ids", [])})
+                    region_match = {
+                        "media_blocks": matched_assets,
+                        "match_score": best_score,
+                        "group_type": best_group.get("group_type", ""),
+                        "group_evidence": best_group.get("group_evidence", []),
+                    }
                     if len(matched_assets) > 1:
                         region_match["cluster_bbox"] = best_group.get("cluster_bbox", [0, 0, 0, 0])
                 else:
@@ -881,6 +895,8 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
                 }
                 for a in matched_assets
             ],
+            "group_type": region_match.get("group_type", "") if region_match is not None else "",
+            "group_evidence": region_match.get("group_evidence", []) if region_match is not None else [],
             "confidence": match_score["score"],
             "match_score": match_score,
             "flags": [],
@@ -891,7 +907,9 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
         matched_figures.append(entry)
 
     for _i, asset in enumerate(assets):
-        if asset.get("block_id", "") not in used_asset_block_ids:
+        asset_page = asset.get("page")
+        asset_bid = asset.get("block_id", "")
+        if not asset_bid or (asset_page, asset_bid) not in used_asset_page_ids:
             unmatched_assets.append(asset)
 
     # Sequential fallback: match unmatched captions to remaining assets in reading order.
@@ -924,7 +942,8 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
                 break
             asset = sorted_asts[ai]
             asset_bid = asset.get("block_id", "")
-            if asset_bid is not None and asset_bid in used_asset_block_ids:
+            asset_page = asset.get("page", 0)
+            if asset_bid is not None and (asset_page, asset_bid) in used_asset_page_ids:
                 ai += 1
                 continue
             ai += 1
@@ -943,13 +962,15 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
                     "block_id": asset.get("block_id", ""),
                     "bbox": asset.get("bbox", [0, 0, 0, 0]),
                 }],
+                "group_type": "",
+                "group_evidence": [],
                 "confidence": 0.35,
                 "match_score": {"score": 0.35, "decision": "matched", "evidence": ["sequential_fallback"]},
                 "flags": ["sequential_match"],
                 "caption_score": caption_score,
             })
             if asset_bid:
-                used_asset_block_ids.add(asset_bid)
+                used_asset_page_ids.add((asset_page, asset_bid))
         for cap in seq_matched:
             unmatched_legends[:] = [l for l in unmatched_legends if l is not cap]
 
@@ -1177,6 +1198,8 @@ def _promote_sequence_matches(figure_inventory: dict, blocks: list[dict]) -> dic
                 "text": af.get("text", ""),
                 "figure_number": fn,
                 "matched_assets": [],
+                "group_type": "",
+                "group_evidence": [],
                 "confidence": 0.0,
                 "match_score": {
                     "score": 0.0,
