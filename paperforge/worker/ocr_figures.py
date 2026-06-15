@@ -923,6 +923,10 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
             if ai >= len(sorted_asts):
                 break
             asset = sorted_asts[ai]
+            asset_bid = asset.get("block_id", "")
+            if asset_bid is not None and asset_bid in used_asset_block_ids:
+                ai += 1
+                continue
             ai += 1
             fig_id = f"figure_{fn:03d}"
             caption_score = score_figure_caption(
@@ -944,6 +948,8 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
                 "flags": ["sequential_match"],
                 "caption_score": caption_score,
             })
+            if asset_bid:
+                used_asset_block_ids.add(asset_bid)
         for cap in seq_matched:
             unmatched_legends[:] = [l for l in unmatched_legends if l is not cap]
 

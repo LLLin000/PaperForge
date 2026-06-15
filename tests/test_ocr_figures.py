@@ -1981,3 +1981,30 @@ def test_group_first_matching_prefers_same_row_pair_over_single_asset() -> None:
     assert len(matched) == 1
     assert matched[0]["figure_number"] == 2
     assert [a["block_id"] for a in matched[0]["matched_assets"]] == [2, 3]
+
+
+# === Task 4: Fallback guard ===
+
+
+def test_sequential_fallback_does_not_split_grouped_assets() -> None:
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    blocks = [
+        {"block_id": 1, "role": "figure_caption", "text": "Fig. 2 A and B, paired figure.", "page": 3, "bbox": [80, 120, 420, 210], "marker_signature": {"type": "figure_number"}, "zone": "display_zone", "style_family": "legend_like"},
+        {"block_id": 2, "role": "media_asset", "raw_label": "image", "page": 3, "bbox": [450, 120, 780, 520]},
+        {"block_id": 3, "role": "media_asset", "raw_label": "image", "page": 3, "bbox": [805, 120, 1130, 520]},
+        {"block_id": 4, "role": "figure_caption", "text": "Fig. 3 Single figure.", "page": 4, "bbox": [80, 120, 420, 210], "marker_signature": {"type": "figure_number"}, "zone": "display_zone", "style_family": "legend_like"},
+    ]
+
+    inventory = build_figure_inventory(blocks, page_width=1200)
+    matched = {item["figure_number"]: item for item in inventory["matched_figures"]}
+    assert [a["block_id"] for a in matched[2]["matched_assets"]] == [2, 3]
+    assert 3 not in matched
+    fig3_buckets = [
+        af["figure_number"]
+        for af in inventory.get("ambiguous_figures", [])
+        if af.get("figure_number") == 3
+    ]
+    assert fig3_buckets, (
+        "Fig 3 with no same-page asset should appear in ambiguous_figures"
+    )
