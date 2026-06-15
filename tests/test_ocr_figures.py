@@ -2008,3 +2008,27 @@ def test_sequential_fallback_does_not_split_grouped_assets() -> None:
     assert fig3_buckets, (
         "Fig 3 with no same-page asset should appear in ambiguous_figures"
     )
+
+
+# === Task 6: Health counters ===
+
+
+def test_grouped_figure_match_count() -> None:
+    from paperforge.worker.ocr_health import build_ocr_health
+
+    health = build_ocr_health(
+        page_count=1,
+        raw_blocks_count=5,
+        structured_blocks=[],
+        figure_inventory={
+            "matched_figures": [
+                {"matched_assets": [{"block_id": 1}, {"block_id": 2}]},
+                {"matched_assets": [{"block_id": 3}]},
+                {"matched_assets": [{"block_id": 4}, {"block_id": 5}]},
+            ],
+        },
+        table_inventory={},
+    )
+
+    assert health["grouped_figure_match_count"] == 2
+    assert health["single_asset_figure_match_count"] == 1

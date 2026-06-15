@@ -72,6 +72,12 @@ def build_ocr_health(
     table_caption_count = sum(1 for b in structured_blocks if b.get("role") == "table_caption")
 
     figure_asset_count = len(figure_inventory.get("matched_figures", []))
+    grouped_figure_match_count = sum(
+        1 for mf in figure_inventory.get("matched_figures", []) if len(mf.get("matched_assets", [])) > 1
+    )
+    single_asset_figure_match_count = sum(
+        1 for mf in figure_inventory.get("matched_figures", []) if len(mf.get("matched_assets", [])) == 1
+    )
     held_figure_count = len(figure_inventory.get("held_figures", []))
     unmatched_legends = len(figure_inventory.get("unmatched_legends", []))
     unmatched_figure_assets = len(figure_inventory.get("unmatched_assets", []))
@@ -183,6 +189,8 @@ def build_ocr_health(
         "references_found": references_found,
         "figure_caption_count": figure_caption_count,
         "figure_asset_count": figure_asset_count,
+        "grouped_figure_match_count": grouped_figure_match_count,
+        "single_asset_figure_match_count": single_asset_figure_match_count,
         "held_figure_count": held_figure_count,
         "table_caption_count": table_caption_count,
         "table_asset_count": table_asset_count,
