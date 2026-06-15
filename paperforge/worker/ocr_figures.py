@@ -368,6 +368,77 @@ def _media_clusters(blocks: list[dict], page_width: float = 1200) -> list[list[d
     return clusters
 
 
+def _bbox_width(bbox: list[float]) -> float:
+    return float(bbox[2] - bbox[0])
+
+
+def _bbox_height(bbox: list[float]) -> float:
+    return float(bbox[3] - bbox[1])
+
+
+def _bbox_center_y(bbox: list[float]) -> float:
+    return float(bbox[1] + bbox[3]) / 2.0
+
+
+def _candidate_group_entry(group_id: str, page: int, media_blocks: list[dict], group_type: str, evidence: list[str]) -> dict:
+    return {
+        "group_id": group_id,
+        "page": page,
+        "group_type": group_type,
+        "asset_block_ids": [b.get("block_id") for b in media_blocks if b.get("block_id") is not None],
+        "media_blocks": media_blocks,
+        "cluster_bbox": _cluster_bbox([b.get("bbox", [0, 0, 0, 0]) for b in media_blocks]),
+        "group_evidence": evidence,
+    }
+
+
+def _build_candidate_figure_groups_from_assets(assets: list[dict], page_width: float = 1200) -> list[dict]:
+    media = [
+        b for b in assets
+        if not b.get("_non_body_media")
+        and (b.get("role") == "figure_asset" or (b.get("role") == "media_asset" and b.get("raw_label", "") in {"image", "chart", "figure"}))
+    ]
+    media.sort(key=lambda b: (b.get("page", 0), (b.get("bbox") or [0, 0, 0, 0])[1], (b.get("bbox") or [0, 0, 0, 0])[0]))
+
+    groups: list[dict] = []
+    next_id = 1
+    by_page: dict[int, list[dict]] = {}
+    for block in media:
+        by_page.setdefault(int(block.get("page", 0) or 0), []).append(block)
+
+    for page, page_media in by_page.items():
+        for block in page_media:
+            groups.append(_candidate_group_entry(f"group_{next_id:03d}", page, [block], "single_asset", ["single_asset"]))
+            next_id += 1
+
+        for start in range(len(page_media)):
+            for size in (2, 3):
+                chunk = page_media[start:start + size]
+                if len(chunk) != size:
+                    continue
+                bboxes = [b.get("bbox", [0, 0, 0, 0]) for b in chunk]
+                heights = [_bbox_height(bb) for bb in bboxes]
+                centers_y = [_bbox_center_y(bb) for bb in bboxes]
+                if max(centers_y) - min(centers_y) > max(40.0, min(heights) * 0.35):
+                    continue
+                if max(heights) - min(heights) > max(40.0, min(heights) * 0.4):
+                    continue
+                gaps = []
+                ordered = sorted(chunk, key=lambda b: (b.get("bbox") or [0, 0, 0, 0])[0])
+                for left, right in zip(ordered, ordered[1:]):
+                    lb = left.get("bbox", [0, 0, 0, 0])
+                    rb = right.get("bbox", [0, 0, 0, 0])
+                    gaps.append(max(0.0, rb[0] - lb[2]))
+                if any(gap > page_width * 0.08 for gap in gaps):
+                    continue
+                group_type = "same_row_pair" if size == 2 else "same_row_triple"
+                evidence = ["same_page", "same_row_band", "size_similar", "tight_horizontal_gap"]
+                groups.append(_candidate_group_entry(f"group_{next_id:03d}", page, ordered, group_type, evidence))
+                next_id += 1
+
+    return groups
+
+
 def _caption_style_match(block: dict, all_blocks: list[dict]) -> bool:
     span = block.get("span_metadata") or {}
     if isinstance(span, list):
