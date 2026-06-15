@@ -355,3 +355,36 @@ def test_reader_normalization_keeps_same_block_id_legends_separate_by_page() -> 
 
     assert numbers == [1, 5]
     assert rendered_numbers == [1, 5]
+
+
+def test_reader_materializes_grouped_strict_match_as_single_visual_group() -> None:
+    from paperforge.worker.ocr_figure_reader import synthesize_reader_figures
+
+    strict_inventory = {
+        "figure_legends": [],
+        "matched_figures": [
+            {
+                "figure_number": 2,
+                "legend_block_id": 10,
+                "page": 3,
+                "text": "Fig. 2 A and B, paired figure.",
+                "matched_assets": [
+                    {"block_id": 20, "bbox": [100, 100, 300, 300]},
+                    {"block_id": 21, "bbox": [320, 100, 520, 300]},
+                ],
+                "match_score": {"score": 0.82, "decision": "matched", "evidence": ["same_row_pair"]},
+                "caption_score": {"score": 0.9},
+            }
+        ],
+        "held_figures": [],
+        "ambiguous_figures": [],
+        "unmatched_legends": [],
+        "unresolved_clusters": [],
+    }
+
+    payload = synthesize_reader_figures(strict_inventory, structured_blocks=[])
+    rf = payload["reader_figures"][0]
+    assert rf["figure_number"] == 2
+    assert len(rf["visual_groups"]) == 1
+    assert rf["visual_groups"][0]["asset_block_ids"] == [20, 21]
+    assert rf["visual_groups"][0]["group_status"] == "matched_group"
