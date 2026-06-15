@@ -439,6 +439,50 @@ def _build_candidate_figure_groups_from_assets(assets: list[dict], page_width: f
     return groups
 
 
+def _score_legend_to_group(
+    legend: dict,
+    group: dict,
+    *,
+    caption_score: dict,
+    page_width: float = 1200,
+    anchor_supported: bool = False,
+    caption_text_supported: bool = False,
+    family_supported: bool = False,
+    zone_supported: bool = False,
+) -> dict:
+    if group.get("group_type") == "single_asset":
+        asset = group["media_blocks"][0]
+        return score_figure_match(
+            legend,
+            asset,
+            caption_score=caption_score,
+            anchor_supported=anchor_supported,
+            caption_text_supported=caption_text_supported,
+            family_supported=family_supported,
+            zone_supported=zone_supported,
+        )
+
+    cluster_bbox = group.get("cluster_bbox", [0, 0, 0, 0])
+    match_score = score_figure_match(
+        legend,
+        {"bbox": cluster_bbox, "page": group.get("page", 0)},
+        caption_score=caption_score,
+        anchor_supported=anchor_supported,
+        caption_text_supported=caption_text_supported,
+        family_supported=family_supported,
+        zone_supported=zone_supported,
+    )
+    num_assets = len(group.get("media_blocks", []))
+    if num_assets > 1 and match_score.get("score", 0) > 0:
+        coherence_bonus = 0.05
+        match_score = dict(match_score)
+        match_score["score"] = min(1.0, match_score["score"] + coherence_bonus)
+        match_score.setdefault("evidence", []).append("multi_asset_coherence_bonus")
+        if match_score["score"] >= 0.6 and match_score.get("decision") == "ambiguous":
+            match_score["decision"] = "matched"
+    return match_score
+
+
 def _caption_style_match(block: dict, all_blocks: list[dict]) -> bool:
     span = block.get("span_metadata") or {}
     if isinstance(span, list):
@@ -632,7 +676,8 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
             deduped_legends.append(legend)
     ordered_legends = deduped_legends
 
-    used_asset_indices: set[int] = set()
+    candidate_groups = _build_candidate_figure_groups_from_assets(assets, page_width=page_width)
+    used_asset_block_ids: set[int | str] = set()
     for legend in ordered_legends:
         legend_page = legend.get("page", 0)
         legend_text = legend.get("text", "")
@@ -650,26 +695,32 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
         )
 
         candidates = []
-        for ai, asset in enumerate(assets):
-            if ai in used_asset_indices or asset.get("page", 0) != legend_page:
+        anchor_supported = _has_anchor_supported_legend_context(legend)
+        caption_text_supported = _has_strong_explicit_caption_text(legend)
+        family_supported = is_validation_first_candidate and str(legend.get("style_family") or "") == "legend_like"
+        zone_supported = is_validation_first_candidate and str(legend.get("zone") or "") in {
+            "body_zone",
+            "display_zone",
+        }
+
+        for gi, group in enumerate(candidate_groups):
+            if group.get("page") != legend_page:
                 continue
-            family_supported = is_validation_first_candidate and str(legend.get("style_family") or "") == "legend_like"
-            zone_supported = is_validation_first_candidate and str(legend.get("zone") or "") in {
-                "body_zone",
-                "display_zone",
-            }
-            caption_text_supported = _has_strong_explicit_caption_text(legend)
-            match_score = score_figure_match(
+            g_asset_block_ids = set(group.get("asset_block_ids", []))
+            if g_asset_block_ids & used_asset_block_ids:
+                continue
+            match_score = _score_legend_to_group(
                 legend,
-                asset,
+                group,
                 caption_score=caption_score,
-                anchor_supported=(_has_anchor_supported_legend_context(legend)),
+                page_width=page_width,
+                anchor_supported=anchor_supported,
                 caption_text_supported=caption_text_supported,
                 family_supported=family_supported,
                 zone_supported=zone_supported,
             )
             if match_score["decision"] != "rejected":
-                candidates.append((ai, asset, match_score))
+                candidates.append((gi, group, match_score))
         candidates.sort(key=lambda item: item[2]["score"], reverse=True)
 
         matched_assets = []
@@ -682,28 +733,28 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
             if top_score < 0.4:
                 matched_assets = []
             elif len(close) > 1:
-                # Secondary verification: pick the one in the correct column
                 legend_bb = legend.get("bbox") or legend.get("block_bbox") or [0, 0, 0, 0]
                 lcx = (legend_bb[0] + legend_bb[2]) / 2 if len(legend_bb) >= 4 else 0
                 best = close[0]
-                best_col_match = False
                 best_delta = abs(
-                    lcx - ((best[1].get("bbox", [0, 0, 0, 0])[0] + best[1].get("bbox", [0, 0, 0, 0])[2]) / 2)
+                    lcx - ((best[1].get("cluster_bbox", [0, 0, 0, 0])[0] + best[1].get("cluster_bbox", [0, 0, 0, 0])[2]) / 2)
                 )
-                for ci, ca, cs in close:
-                    ab = ca.get("bbox") or ca.get("block_bbox") or [0, 0, 0, 0]
-                    acx = (ab[0] + ab[2]) / 2 if len(ab) >= 4 else 0
+                best_orig_score = best[2]["score"]
+                for ci, cg, cs in close:
+                    cb = cg.get("cluster_bbox", [0, 0, 0, 0])
+                    acx = (cb[0] + cb[2]) / 2 if len(cb) >= 4 else 0
                     delta = abs(lcx - acx)
-                    ca_col_ok = delta + 20 < best_delta
+                    ca_col_ok = delta + 20 < best_delta and cs["score"] >= best_orig_score - 0.01
                     if ca_col_ok:
-                        best = (ci, ca, cs)
+                        best = (ci, cg, cs)
                         best_delta = delta
-                        best_col_match = True
-                if best_col_match and best[2].get("decision") == "matched":
-                    best_idx, best_asset, best_score = best
-                    matched_assets = [best_asset]
-                    used_asset_indices.add(best_idx)
-                    region_match = {"media_blocks": [best_asset], "match_score": best_score}
+                if best[2].get("decision") == "matched":
+                    best_gi, best_group, best_score = best
+                    matched_assets = best_group.get("media_blocks", [])
+                    used_asset_block_ids.update(best_group.get("asset_block_ids", []))
+                    region_match = {"media_blocks": matched_assets, "match_score": best_score}
+                    if len(matched_assets) > 1:
+                        region_match["cluster_bbox"] = best_group.get("cluster_bbox", [0, 0, 0, 0])
                 else:
                     ambiguous_figures.append(
                         {
@@ -711,18 +762,25 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
                             "page": legend_page,
                             "caption_score": caption_score,
                             "candidates": [
-                                {"asset_block_id": a.get("block_id", ""), "match_score": s} for _, a, s in close
+                                {
+                                    "asset_block_id": g.get("media_blocks", [{}])[0].get("block_id", ""),
+                                    "group_type": g.get("group_type", ""),
+                                    "match_score": s,
+                                }
+                                for _, g, s in close
                             ],
                         }
                     )
                     ambiguous = True
                     matched_assets = []
             else:
-                best_idx, best_asset, best_score = candidates[0]
+                best_gi, best_group, best_score = candidates[0]
                 if best_score["decision"] == "matched":
-                    matched_assets = [best_asset]
-                    used_asset_indices.add(best_idx)
-                    region_match = {"media_blocks": [best_asset], "match_score": best_score}
+                    matched_assets = best_group.get("media_blocks", [])
+                    used_asset_block_ids.update(best_group.get("asset_block_ids", []))
+                    region_match = {"media_blocks": matched_assets, "match_score": best_score}
+                    if len(matched_assets) > 1:
+                        region_match["cluster_bbox"] = best_group.get("cluster_bbox", [0, 0, 0, 0])
                 else:
                     ambiguous_figures.append(
                         {
@@ -730,7 +788,11 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
                             "page": legend_page,
                             "caption_score": caption_score,
                             "candidates": [
-                                {"asset_block_id": best_asset.get("block_id", ""), "match_score": best_score}
+                                {
+                                    "asset_block_id": best_group.get("media_blocks", [{}])[0].get("block_id", ""),
+                                    "group_type": best_group.get("group_type", ""),
+                                    "match_score": best_score,
+                                }
                             ],
                         }
                     )
@@ -828,8 +890,8 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
             entry["cluster_bbox"] = region_match["cluster_bbox"]
         matched_figures.append(entry)
 
-    for i, asset in enumerate(assets):
-        if i not in used_asset_indices:
+    for _i, asset in enumerate(assets):
+        if asset.get("block_id", "") not in used_asset_block_ids:
             unmatched_assets.append(asset)
 
     # Sequential fallback: match unmatched captions to remaining assets in reading order.
