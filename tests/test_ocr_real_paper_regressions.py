@@ -17,6 +17,7 @@ from pathlib import Path
 import pytest
 
 FIXTURE_ROOT = Path(__file__).resolve().parent / "fixtures" / "ocr_real_papers"
+MANIFEST_PATH = FIXTURE_ROOT / "coverage_manifest.json"
 
 # ---------------------------------------------------------------------------
 # Fixture helper loaders
@@ -25,6 +26,10 @@ FIXTURE_ROOT = Path(__file__).resolve().parent / "fixtures" / "ocr_real_papers"
 
 def _load_json(path: Path) -> dict | list:
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def _load_manifest() -> dict:
+    return json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
 
 
 def _load_ocr_payload(key: str) -> list[dict]:
@@ -45,6 +50,36 @@ def _load_expectations(key: str) -> dict:
     path = FIXTURE_ROOT / key / "expectations.json"
     if not path.exists():
         pytest.skip(f"expectations.json not found for {key}")
+    return _load_json(path)  # type: ignore[return-value]
+
+
+def _iter_expected_object_ownership(expectations: dict) -> list[tuple[str, dict]]:
+    rows: list[tuple[str, dict]] = []
+    for page_str, page_exp in expectations.get("pages", {}).items():
+        for obj in page_exp.get("expected_object_ownership", []):
+            rows.append((page_str, obj))
+    return rows
+
+
+def _reader_figure_index(reader_payload: dict) -> tuple[dict[int, dict], dict[int, dict]]:
+    normalized = reader_payload.get("normalized_inputs", {})
+    matched = {
+        int(item["figure_number"]): item
+        for item in normalized.get("matched_figures", [])
+        if item.get("figure_number") is not None
+    }
+    ambiguous = {
+        int(item["figure_number"]): item
+        for item in normalized.get("ambiguous_figures", [])
+        if item.get("figure_number") is not None
+    }
+    return matched, ambiguous
+
+
+def _load_reader_payload_from_vault(key: str) -> dict:
+    manifest = _load_manifest()
+    vault = Path(manifest["vault"])
+    path = vault / "System" / "PaperForge" / "ocr" / key / "structure" / "reader_figures.json"
     return _load_json(path)  # type: ignore[return-value]
 
 
@@ -340,6 +375,115 @@ def test_a8e7srvs_page_level_production_pipeline(tmp_path: Path) -> None:
     except AssertionError:
         _dump_debug_bundle(key, result, tmp_path)
         raise
+
+
+def test_gold_figure_merge_ownership_contracts(tmp_path: Path) -> None:
+    manifest = _load_manifest()
+    keys = [paper["paper_key"] for paper in manifest.get("gold_papers", [])]
+    failures: list[str] = []
+    for key in keys:
+        expectations = _load_expectations(key)
+        ownership_rules = [
+            obj
+            for _page_str, obj in _iter_expected_object_ownership(expectations)
+            if obj.get("object_type") == "figure"
+            and (
+                obj.get("asset_block_ids")
+                or obj.get("must_not_claim_asset_block_ids")
+            )
+        ]
+        if not ownership_rules:
+            continue
+
+        fixture_payload = FIXTURE_ROOT / key / "ocr_payload.json"
+        fixture_meta = FIXTURE_ROOT / key / "source_metadata.json"
+        if fixture_payload.exists() and fixture_meta.exists():
+            result = replay_production_pipeline(key, tmp_path / key)
+            reader_payload = result["reader_payload"]
+        else:
+            reader_payload = _load_reader_payload_from_vault(key)
+        matched, ambiguous = _reader_figure_index(reader_payload)
+
+        for obj in ownership_rules:
+            figure_number = int(obj["figure_number"])
+            expected_ids = set(obj.get("asset_block_ids", []))
+            forbidden_ids = set(obj.get("must_not_claim_asset_block_ids", []))
+
+            matched_item = matched.get(figure_number)
+            ambiguous_item = ambiguous.get(figure_number)
+
+            if expected_ids:
+                if matched_item is None:
+                    failures.append(
+                        f"{key}: Figure {figure_number} not present in matched_figures; "
+                        f"ambiguous={ambiguous_item is not None}"
+                    )
+                else:
+                    actual_ids = set(matched_item.get("asset_block_ids", []))
+                    if actual_ids != expected_ids:
+                        failures.append(
+                            f"{key}: Figure {figure_number} expected merged asset ids "
+                            f"{sorted(expected_ids)}, got {sorted(actual_ids)}"
+                        )
+
+            if forbidden_ids:
+                if matched_item is not None:
+                    actual_ids = set(matched_item.get("asset_block_ids", []))
+                    overlap = actual_ids.intersection(forbidden_ids)
+                    if overlap:
+                        failures.append(
+                            f"{key}: Figure {figure_number} incorrectly claimed forbidden asset ids "
+                            f"{sorted(overlap)}"
+                        )
+                if ambiguous_item is not None:
+                    candidate_ids = set(ambiguous_item.get("asset_block_ids", []))
+                    overlap = candidate_ids.intersection(forbidden_ids)
+                    if overlap:
+                        failures.append(
+                            f"{key}: Figure {figure_number} still ambiguous over forbidden asset ids "
+                            f"{sorted(overlap)}"
+                        )
+
+    if failures:
+        pytest.fail("\n" + "\n".join(failures))
+
+
+def test_6fgdbfqn_same_page_narrow_caption_ownership(tmp_path: Path) -> None:
+    key = "6FGDBFQN"
+    expectations = _load_expectations(key)
+
+    fixture_payload = FIXTURE_ROOT / key / "ocr_payload.json"
+    fixture_meta = FIXTURE_ROOT / key / "source_metadata.json"
+    if fixture_payload.exists() and fixture_meta.exists():
+        result = replay_production_pipeline(key, tmp_path)
+        reader_payload = result["reader_payload"]
+    else:
+        reader_payload = _load_reader_payload_from_vault(key)
+    matched, ambiguous = _reader_figure_index(reader_payload)
+
+    failures: list[str] = []
+    for _page_str, obj in _iter_expected_object_ownership(expectations):
+        if obj.get("object_type") != "figure":
+            continue
+        if not obj.get("asset_block_ids"):
+            continue
+        figure_number = int(obj["figure_number"])
+        expected_ids = set(obj["asset_block_ids"])
+        matched_item = matched.get(figure_number)
+        ambiguous_item = ambiguous.get(figure_number)
+        if matched_item is None:
+            failures.append(
+                f"{key}: Figure {figure_number} not matched; ambiguous={ambiguous_item is not None}"
+            )
+            continue
+        actual_ids = set(matched_item.get("asset_block_ids", []))
+        if actual_ids != expected_ids:
+            failures.append(
+                f"{key}: Figure {figure_number} expected {sorted(expected_ids)}, got {sorted(actual_ids)}"
+            )
+
+    if failures:
+        pytest.fail("\n" + "\n".join(failures))
 
 
 # ===========================================================================
