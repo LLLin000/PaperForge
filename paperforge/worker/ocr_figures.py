@@ -1118,7 +1118,7 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
                 if bid is not None:
                     sidecar_consumed_ids.add((ap, bid))
             fig_id = f"figure_{fig_num:03d}" if fig_num else f"figure_sidecar_{len(matched_figures) + len(sidecar_promoted):03d}"
-            sidecar_promoted.append({
+            sidecar_entry = {
                 "figure_id": fig_id,
                 "legend_block_id": cap.get("block_id", ""),
                 "page": sidecar_page,
@@ -1131,7 +1131,10 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
                 "match_score": {"score": 0.5, "decision": "matched", "evidence": ["sidecar_fallback"]},
                 "flags": ["sidecar_match"],
                 "caption_score": score_figure_caption(cap, nearby_media=True, caption_style_match=False, body_prose_likelihood=False),
-            })
+            }
+            if len(band_assets) > 1:
+                sidecar_entry["cluster_bbox"] = _cluster_bbox([a.get("bbox", [0, 0, 0, 0]) for a in band_assets])
+            sidecar_promoted.append(sidecar_entry)
         if not sidecar_promoted:
             continue
         matched_figures = [mf for mf in matched_figures if str(mf.get("legend_block_id", "")) not in nid_set]
