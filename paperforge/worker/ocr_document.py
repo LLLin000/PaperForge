@@ -913,7 +913,24 @@ def infer_zones(
         if _is_frontmatter_side_candidate(block, body_anchor=body_anchor)
         and _artifact_block_id(block, duplicate_block_ids) not in frontmatter_main_id_set
         and block.get("block_id") is not None
+        and not (
+            body_started
+            and int(block.get("page", 0) or 0) == 1
+        )
     ]
+    # Blocks on page 1 excluded from frontmatter_side_zone because body has
+    # started are real body content -- collect their ids so the zone fallback
+    # can assign body_zone directly without changing seed_role.
+    _body_started_excluded_ids: set[str] = set()
+    for block in blocks:
+        if (int(block.get("page", 0) or 0) == 1
+            and body_started
+            and block.get("block_id") is not None
+            and _artifact_block_id(block, duplicate_block_ids) not in frontmatter_main_id_set
+        ):
+            in_side = any(sb is block for sb in frontmatter_side_blocks)
+            if not in_side:
+                _body_started_excluded_ids.add(_artifact_block_id(block, duplicate_block_ids))
     frontmatter_side_ids = [_artifact_block_id(block, duplicate_block_ids) for block in frontmatter_side_blocks]
     frontmatter_side_composite_ids = [_zone_block_key(block) for block in frontmatter_side_blocks]
     frontmatter_side_id_set = set(frontmatter_side_ids)
@@ -1015,6 +1032,13 @@ def infer_zones(
             seen_tail_ids.add(bid)
     tail_nonref_hold_ids = [_artifact_block_id(block, duplicate_block_ids) for block in tail_nonref_hold_blocks]
     tail_nonref_hold_composite_ids = [_zone_block_key(block) for block in tail_nonref_hold_blocks]
+
+    # Inject page 1 body-started-excluded blocks into body_zone directly
+    # (they were excluded from frontmatter_side_zone after body_started,
+    #  but the zone fallback skips frontmatter_noise seed_role).
+    body_excluded_block_ids: set[str] = _body_started_excluded_ids - set(body_block_ids)
+    if body_excluded_block_ids:
+        body_block_ids = list(body_block_ids) + list(body_excluded_block_ids)
 
     reference_end_page = max(
         [int(block.get("page", 0) or 0) for block in reference_item_blocks if int(block.get("page", 0) or 0) > 0],
@@ -2018,6 +2042,9 @@ def rescue_roles_with_document_context(
 
     result = list(blocks)
 
+    # Split merged heading blocks before rescue
+    result = _split_merged_heading_blocks(result, role_profiles)
+
     # Precompute pre-proof pages so the rescue loop can skip them entirely
     try:
         from paperforge.worker.ocr_roles import is_preproof_marker
@@ -2613,8 +2640,82 @@ def _exclude_frontmatter_side_from_body_flow(blocks: list[dict]) -> None:
         block.setdefault("evidence", []).append("frontmatter_side_zone excluded from body flow")
 
 
-def _exclude_tail_nonref_from_body_flow(blocks: list[dict]) -> None:
+def _split_merged_heading_blocks(blocks: list[dict], role_profiles: dict | None = None) -> list[dict]:
+    """Split blocks that contain two heading numbers merged into one text.
+
+    e.g. "3. Composite biomaterials... 3.1. The materials nexus"
+    becomes two blocks: section_heading + subsection_heading.
+    """
+    import re
+    heading_num = re.compile(r"\b(\d+(?:\.\d+)*\.?\s+[A-Z])")
+
+    result = []
     for block in blocks:
+        text = str(block.get("text") or block.get("block_content") or "")
+        role = str(block.get("role") or "")
+
+        # Only check heading-like blocks with render_default=True
+        if role not in {"section_heading", "subsection_heading"}:
+            result.append(block)
+            continue
+        if not block.get("render_default", True):
+            result.append(block)
+            continue
+
+        matches = heading_num.findall(text)
+        if len(matches) < 2:
+            result.append(block)
+            continue
+
+        # Find the second heading start position
+        first_match = heading_num.search(text)
+        if not first_match:
+            result.append(block)
+            continue
+        after_first = first_match.end()
+        second_match = heading_num.search(text, after_first)
+        if not second_match:
+            result.append(block)
+            continue
+
+        split_pos = second_match.start()
+        first_text = text[:split_pos].strip()
+        second_text = text[split_pos:].strip()
+
+        if not first_text or not second_text:
+            result.append(block)
+            continue
+
+        # Determine second heading level
+        second_depth = len([p for p in second_text.split(". ")[0].split(".") if p.strip().isdigit()])
+
+        # Keep first block with first heading text
+        first_block = dict(block)
+        first_block["text"] = first_text
+        first_block["block_content"] = first_text
+        if first_block.get("evidence"):
+            first_block["evidence"] = list(first_block.get("evidence") or []) + [
+                f"split merged heading: kept '{first_text[:50]}...'"
+            ]
+
+        # Create second block
+        second_block = dict(block)
+        second_block["text"] = second_text
+        second_block["block_content"] = second_text
+        second_block["role"] = "subsection_heading" if second_depth >= 2 else "section_heading"
+        second_block.setdefault("evidence", [])
+        second_block["evidence"] = list(second_block.get("evidence") or []) + [
+            f"split from merged heading: extracted '{second_text[:50]}...'"
+        ]
+
+        result.append(first_block)
+        result.append(second_block)
+
+    return result
+
+
+def _exclude_tail_nonref_from_body_flow(blocks: list[dict]) -> None:
+    for i, block in enumerate(blocks):
         effective_role = block.get("role")
         if effective_role == "unassigned":
             effective_role = block.get("seed_role")
@@ -2622,6 +2723,20 @@ def _exclude_tail_nonref_from_body_flow(blocks: list[dict]) -> None:
             continue
         if block.get("zone") != "tail_nonref_hold_zone":
             continue
+
+        # Veto: body-like paragraph preceded by heading or containing substantial prose
+        text = str(block.get("text") or block.get("block_content") or "")
+        if i > 0:
+            prev = blocks[i - 1]
+            if str(prev.get("role") or "") in {"section_heading", "subsection_heading"}:
+                continue
+        if len(text) > 120 and ". " in text:
+            lower = text.lower()
+            bp = {"conflict of interest","declaration","publisher","author contributions",
+                  "funding","acknowledg","data availability","supplement"}
+            if not any(b in lower for b in bp):
+                continue
+
         old_role = block.get("role")
         block["role"] = "backmatter_body"
         if block.get("seed_role") == "body_paragraph":

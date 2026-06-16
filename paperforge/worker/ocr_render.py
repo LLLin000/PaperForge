@@ -890,6 +890,7 @@ def render_fulltext_markdown(
         lines.append("")
 
     # --- abstract ---
+    abstract_blocks: list[dict] = []
     if document_structure is not None and getattr(document_structure, "abstract_span", None):
         span = document_structure.abstract_span
         block_by_id = {}
@@ -899,12 +900,14 @@ def render_fulltext_markdown(
                 block_by_id[block_id] = block
                 block_by_id[f"p{int(block.get('page', 0) or 0)}:{block_id}"] = block
         abstract_ids = [span.get("heading_block_id"), *span.get("body_block_ids", [])]
-        abstract_blocks = [
-            block_by_id[bid]
-            for bid in abstract_ids
-            if bid in block_by_id
-        ]
-    else:
+        abstract_ids = [bid for bid in abstract_ids if bid]
+        if abstract_ids:
+            abstract_blocks = [
+                block_by_id[bid]
+                for bid in abstract_ids
+                if bid in block_by_id
+            ]
+    if not abstract_blocks:
         _ABSTRACT_ROLES_FALLBACK = frozenset({"abstract_heading", "abstract_body"})
         abstract_blocks = [
             b for b in structured_blocks if b.get("role") in _ABSTRACT_ROLES_FALLBACK and b.get("render_default", True)
@@ -992,6 +995,12 @@ def render_fulltext_markdown(
                 heading_font_sizes[id(block)] = float(sz)
     block_heading_prefix: dict[int, str] = {}
     if heading_font_sizes:
+        _ROLE_HEADING_PREFIX = {
+            "section_heading": "##",
+            "subsection_heading": "###",
+            "sub_subsection_heading": "####",
+        }
+        # Group by size for the fallback, but prefer role-based assignment
         size_groups: dict[float, list[int]] = {}
         for bid, sz in heading_font_sizes.items():
             bucket = round(sz * 2) / 2
@@ -1000,7 +1009,20 @@ def render_fulltext_markdown(
         for level_idx, bucket in enumerate(sorted_sizes):
             prefix = "##" if level_idx == 0 else "###"
             for bid in size_groups[bucket]:
-                block_heading_prefix[bid] = prefix
+                block_heading_prefix[bid] = prefix  # size-based fallback
+
+        # Override with role-based prefix where role is explicit
+        for bid in block_heading_prefix:
+            # Find the block with this id
+            b = None
+            for blk in structured_blocks:
+                if id(blk) == bid:
+                    b = blk
+                    break
+            if b:
+                role = str(b.get("role") or "")
+                if role in _ROLE_HEADING_PREFIX:
+                    block_heading_prefix[bid] = _ROLE_HEADING_PREFIX[role]
 
     # --- body with anchored figures/tables ---
     # Find the min and max page across ALL blocks (including suppressed)
