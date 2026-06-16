@@ -768,3 +768,25 @@ Removed `not text_ids` requirement in `compute_precaption_composite_regions`. Pr
 
 - Parked hard case: pages that contain two adjacent formal figure captions (for example, `Figure 2` and `Figure 3`) whose visual regions are close enough that auto-separation is risky. Current policy is conservative: do not cross caption ownership boundaries automatically; prefer unresolved over wrong merge. Requires a later dedicated partitioning design.
 - New scoped fallback family: same-page narrow-caption sidecar layouts. Trigger only after existing legend recognition succeeds and only when captions are narrow, same-column, and the normal match path is ambiguous. Do not use this path for full-width captions, backmatter figure compilations, or mixed table/figure pages.
+
+### 8.7 K7R8PEKW Tail Rendering Fix (2026-06-17)
+
+**Problem:** K7R8PEKW page 16 rendered fulltext had references out of numerical order, backmatter mixed with refs, and keywords content orphaned after refs.
+
+**Root cause:** Two issues compounded:
+1. **No reference heading block** — all ref items scattered through body_pool → orphan_blocks.
+2. **Forced backmatter section grouping** — `_normalize_backmatter_roles_after_boundary` and `_reorder_tail_run` converted section headings (Keywords → sub_subsection_heading) into backmatter sections, then grouped them by Y position. On two-column tail pages without a ref heading, this overrode the natural column-sorted reading order.
+
+**Fix:** 
+- `_reorder_tail_run`: Added `skip_section_grouping` param. Pages with `reference_item` but no `reference_heading` bypass the section-grouping Phase 1-5 logic entirely — blocks are emitted in column-sorted order with reference items grouped at the end.
+- `_order_tail_blocks`: Detection of per-page ref-item / ref-heading presence to set the flag.
+- `_normalize_backmatter_roles_after_boundary`: Removed forced `body_paragraph → backmatter_body` conversion (not needed — body paragraphs attach naturally via `_find_owning_heading` in Phase 1).
+- Synthetic ref section fix (Phase 2.5 in `_reorder_tail_run`) kept: creates `{"heading": None, "bodies": []}` when ref_items exist but no ref_heading to prevent scattering.
+
+**Result:** Page 16 now renders in correct column-sorted order:
+```
+body → Acknowledgements + funding → CI statement → #### Keywords → 
+bone tissue, cardiac tissue... → Revised → [1]...[24]
+```
+
+**Tests:** 80 figure tests pass, 7 pre-existing failures unchanged. K7 not in failure list.
