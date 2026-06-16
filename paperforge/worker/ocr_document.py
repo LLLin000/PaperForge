@@ -1840,36 +1840,7 @@ def _normalize_backmatter_roles_after_boundary(
         if role == "reference_heading":
             break
 
-        if role in {"section_heading", "subsection_heading", "sub_subsection_heading"}:
-            old_role = block.get("role")
-            block["role"] = "backmatter_heading"
-            if old_role != block["role"]:
-                record_decision(
-                    block,
-                    stage="backmatter_role_normalization",
-                    old_role=old_role,
-                    new_role=block["role"],
-                    reason="heading demoted to backmatter heading inside backmatter region",
-                )
-            block["_backmatter_regime"] = backmatter_form
-            block["render_default"] = True
-            continue
-
-        if role == "body_paragraph":
-            old_role = block.get("role")
-            block["role"] = "backmatter_body"
-            if old_role != block["role"]:
-                record_decision(
-                    block,
-                    stage="backmatter_role_normalization",
-                    old_role=old_role,
-                    new_role=block["role"],
-                    reason="body block assigned backmatter body role inside backmatter region",
-                )
-            block["_backmatter_regime"] = backmatter_form
-            block["render_default"] = True
-            block["index_default"] = True
-        elif role == "frontmatter_noise":
+        if role == "frontmatter_noise":
             if block.get("seed_role") == "frontmatter_noise":
                 continue
             block["role"] = "backmatter_body"

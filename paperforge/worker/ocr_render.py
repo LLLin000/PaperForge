@@ -352,6 +352,8 @@ def _reorder_tail_run(
     header_band: float | None = None,
     footer_band: float | None = None,
     page_width: float = 1200,
+    *,
+    skip_section_grouping: bool = False,
 ) -> tuple[list[dict], dict | None, dict | None]:
     """Group tail blocks using geometric ownership and reference zone.
 
@@ -362,11 +364,23 @@ def _reorder_tail_run(
     attached to the nearest backmatter heading above them in the same column,
     falling back to absolute proximity with a cross-column penalty.
 
+    When ``skip_section_grouping=True`` (pages without a reference heading),
+    backmatter section grouping is bypassed entirely — blocks are emitted
+    in column-sorted order with reference items grouped at the end.
+
     When blocks lack bbox data, falls back to FIFO matching for backward
     compatibility.
     """
     if not tail_blocks:
-        return tail_blocks, carried_ref
+        return tail_blocks, carried_ref, carried_backmatter
+
+    # Short-circuit: no section grouping for pages without reference heading.
+    # Column-sort is maintained; ref items are grouped at the end.
+    if skip_section_grouping:
+        ref_roles = frozenset({"reference_heading", "reference_item", "reference_body"})
+        non_ref = [b for b in tail_blocks if b.get("role") not in ref_roles]
+        refs = [b for b in tail_blocks if b.get("role") in ref_roles]
+        return non_ref + refs, carried_ref, carried_backmatter
 
     # Quick check: do blocks have bbox data?  If not, use FIFO fallback.
     has_geo = any(
@@ -424,6 +438,14 @@ def _reorder_tail_run(
         if rh_bbox and len(rh_bbox) >= 4:
             ref_bottom = rh_bbox[3]
 
+    # Phase 2.5 — create synthetic ref section when no reference heading
+    # exists but reference items are present.  This prevents ref items
+    # from scattering through body_pool → orphan_blocks on pages that
+    # lack an explicit "References" heading block.
+    _needs_synthetic_ref = not ref_heading and bool(ref_items)
+    if _needs_synthetic_ref:
+        ref_section = {"heading": None, "bodies": []}
+
     # Phase 3 — assign ref items to zone, backmatter bodies to body pool
     for block in ref_items:
         if ref_heading:
@@ -432,6 +454,8 @@ def _reorder_tail_run(
                 ref_section["bodies"].append(block)
             else:
                 body_pool.append(block)
+        elif _needs_synthetic_ref:
+            ref_section["bodies"].append(block)
         else:
             body_pool.append(block)
 
@@ -467,7 +491,7 @@ def _reorder_tail_run(
                 ):
                     carried_bodies.append(body)
                     continue
-        elif ref_section is not None:
+        elif ref_section is not None and not _needs_synthetic_ref:
             if ref_section is carried_ref:
                 ref_section["bodies"].append(body)
                 orphan_blocks.append(body)
@@ -496,7 +520,8 @@ def _reorder_tail_run(
         result.append(h)
         result.extend(sec["bodies"])
     if ref_section is not None and ref_section is not carried_ref:
-        result.append(ref_section["heading"])
+        if ref_section.get("heading"):
+            result.append(ref_section["heading"])
         result.extend(ref_section["bodies"])
     result.extend(orphan_blocks)
 
@@ -663,6 +688,8 @@ def _order_tail_blocks(
         if page in tail_pages:
             pw = page_widths.get(page, 1200)
             sorted_blocks = _sort_blocks_by_column(page_blocks, pw)
+            _page_has_ref_items = any(b.get("role") == "reference_item" for b in sorted_blocks)
+            _page_has_ref_heading = any(b.get("role") == "reference_heading" for b in sorted_blocks)
             ordered, carried_ref, carried_backmatter = _reorder_tail_run(
                 sorted_blocks,
                 carried_ref,
@@ -670,6 +697,7 @@ def _order_tail_blocks(
                 header_band=header_band,
                 footer_band=footer_band,
                 page_width=pw,
+                skip_section_grouping=_page_has_ref_items and not _page_has_ref_heading,
             )
             result.extend(ordered)
         else:
