@@ -167,6 +167,39 @@ python -m pytest tests/test_skill_graph_contracts.py tests/test_skill_graph_layo
 
 ---
 
+## 8. Ponytail 模式
+
+当用户说 "ponytail" / "节约" / "高效" / 或不指定约束时，切换到 ponytail 开发模式：
+
+```
+/ponytail lite|full|ultra
+```
+
+- **lite**: 跳过非必要的抽象层，单文件解决
+- **full**（默认）: 删体积不加功能，延迟必要校验到异常时
+- **ultra**: 只改最少行，用注释声明已知上限而非实现完整方案
+
+**使用场景：**
+- 修复 bug 时：用 full，跳过额外防护，精准修根因
+- 添加小功能时：用 lite，单文件 + 无依赖
+- 探索/原型时：用 ultra，最小可运行证明
+
+每条 ponytail 优化必须在 `@ponytail: {limit, upgrade_path}` 注释中标注已知上限和升级路径。
+
+---
+
+## 9. PROJECT-MANAGEMENT 实时更新规则
+
+每个开发会话结束时（或阶段性完成后），必须更新 `PROJECT-MANAGEMENT.md`。规则：
+
+1. **每完成一个 fix，立即记录**：不要攒到会话最后。每个 fix 完成后即追加条目。
+2. **记录格式**：`### N.M 标题 (YYYY-MM-DD)`，包含问题 → 根因 → 修复 → 结果 → 测试状态。
+3. **Remaining known issues 同步**：如果修复解决了某个已知 issue，从列表中删除或注明 resolved。
+4. **Parked Hard Case 同步**：如果发现新的边界情况无法在当前 fix 中处理，追加到 Parked Hard Case。
+5. **会话结束前提交**：PROJECT-MANAGEMENT 的更新必须随最后的 push 一起提交。
+
+---
+
 ## 文档地图
 
 | 受众 | 文件 |
