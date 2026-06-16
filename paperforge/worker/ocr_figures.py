@@ -669,18 +669,11 @@ def _caption_width_ratio(block: dict, page_width: float) -> float:
     return max(0.0, float(bbox[2] - bbox[0]) / float(page_width))
 
 
-_SIDECAR_LEGEND_START = re.compile(
-    r"^(?:Figure|Fig\.?|Supplementary\s+Figure|Supplementary\s+Fig\.?)\s+\d+",
-    flags=re.IGNORECASE,
-)
-
-
 def _same_page_narrow_caption_column(page_captions: list[dict], page_width: float) -> list[dict]:
     formal = [
         cap for cap in page_captions
         if _caption_width_ratio(cap, page_width) < 0.6
         and not _PANEL_LABEL_PATTERN.match(str(cap.get("text", "")).strip())
-        and _SIDECAR_LEGEND_START.match(str(cap.get("text", "")).strip())
     ]
     if len(formal) < 2:
         return []
@@ -784,6 +777,9 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
             current_has_asset = any(a.get("page") == legend.get("page") for a in assets)
             if current_has_asset and not existing_has_asset:
                 _dedup_map[fn] = legend
+            elif current_has_asset and existing_has_asset:
+                if (legend.get("page", 0) or 0) > (existing.get("page", 0) or 0):
+                    _dedup_map[fn] = legend
             elif not current_has_asset and not existing_has_asset:
                 # Both copies on pages without assets — keep the later one
                 # (figure compilations are always after the body)
@@ -1064,11 +1060,41 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
     # The normal spatial matcher cannot reliably assign assets to narrow
     # sidecar captions -- the visible image/caption pairing is column-based,
     # not gap/overlap based.
-    for sidecar_page, sidecar_caps in page_caption_index.items():
-        narrow_set = _same_page_narrow_caption_column(sidecar_caps, page_width)
+    # Uses the `deduped_legends` list (already filtered through the full multi-evidence
+    # legend recognition pipeline + figure-number dedup) instead of raw caption index.
+    _sidecar_by_page: dict[int, list[dict]] = {}
+    for leg in deduped_legends:
+        _sidecar_by_page.setdefault(int(leg.get("page", 0) or 0), []).append(leg)
+    for sidecar_page, sidecar_legends in _sidecar_by_page.items():
+        narrow_set = _same_page_narrow_caption_column(sidecar_legends, page_width)
         if len(narrow_set) < 2:
             continue
+        # Trigger sidecar when any narrow-caption legend is unresolved, or
+        # when the normal spatial matching violates vertical ordering (top
+        # caption should own top assets, bottom caption bottom assets).
         nid_set = {str(cap.get("block_id", "")) for cap in narrow_set}
+        page_unmatched = any(
+            str(l.get("block_id", "")) in nid_set for l in unmatched_legends
+        )
+        page_ambiguous = any(
+            str(af.get("legend_block_id", "")) in nid_set for af in ambiguous_figures
+        )
+        def _median_y(items: list[dict]) -> float:
+            ys = sorted((a.get("bbox") or [0, 0, 0, 0])[1] for a in items)
+            return float(ys[len(ys) // 2]) if ys else 0.0
+        page_narrow_matched = [
+            mf for mf in matched_figures if str(mf.get("legend_block_id", "")) in nid_set
+        ]
+        violation = len(page_narrow_matched) != len(narrow_set)
+        if not violation and len(page_narrow_matched) > 1:
+            ordered = sorted(page_narrow_matched, key=lambda mf: int(mf.get("figure_number", 0) or 0))
+            asset_ys = [_median_y(mf.get("matched_assets", [])) for mf in ordered]
+            for i in range(len(asset_ys) - 1):
+                if not (asset_ys[i] <= asset_ys[i + 1]):
+                    violation = True
+                    break
+        if not (page_unmatched or page_ambiguous or violation):
+            continue
         page_assets_list = [a for a in assets if a.get("page") == sidecar_page and not a.get("_non_body_media")]
         if not page_assets_list:
             continue
