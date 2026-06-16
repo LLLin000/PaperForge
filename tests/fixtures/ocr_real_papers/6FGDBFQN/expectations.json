@@ -45,7 +45,7 @@
         {"text_contains": "Location of cable was measured from medial enthesis", "expected_role": "figure_caption_candidate"}
       ],
       "expected_object_ownership": [
-        {"object_type": "figure", "figure_number": 1, "asset_block_ids": [13], "must_render_as_object": true}
+        {"object_type": "figure", "figure_number": 1, "asset_block_ids": [13, 14, 16], "must_render_as_object": true, "notes": "Figure 1 is a multi-panel figure with three same-row images on page 2."}
       ]
     },
     "3": {
@@ -63,9 +63,8 @@
         {"text_contains": "The rotator cable was initially described in the orthopedic literature", "expected_role": "body_paragraph"}
       ],
       "expected_object_ownership": [
-        {"object_type": "figure", "figure_number": 2, "asset_block_ids": [4], "must_render_as_object": true, "notes": "Current production reader output anchors Figure 2 to the left image block only."},
-        {"object_type": "figure", "figure_number": 3, "asset_block_ids": [3], "must_render_as_object": true, "notes": "Current production reader output anchors Figure 3 to the right image block only."},
-        {"object_type": "figure", "figure_number": 6, "asset_block_ids": [8], "must_render_as_object": true, "notes": "Figure 6 stays bound to its own image block on the same page."}
+        {"object_type": "figure", "figure_number": 2, "asset_block_ids": [3, 4], "must_render_as_object": true, "notes": "Figure 2 captures the top band of same-page images via sidecar partition."},
+        {"object_type": "figure", "figure_number": 3, "asset_block_ids": [11, 13], "must_render_as_object": true, "notes": "Figure 3 captures the bottom band of same-page images via sidecar partition."}
       ]
     },
     "4": {
@@ -80,9 +79,9 @@
         {"text_contains": "Sagittal oblique image from corresponding MRI shows similar band of tissue", "expected_role": "figure_caption_candidate", "notes": "BUG: Real: footnote. Figure 5 panel B continuation — should be figure_caption_candidate, not footnote leaking into body flow."}
       ],
       "expected_object_ownership": [
-        {"object_type": "figure", "figure_number": 4, "asset_block_ids": [7], "must_render_as_object": true, "notes": "Current production reader output anchors Figure 4 to the first histology image block."},
-        {"object_type": "figure", "figure_number": 5, "asset_block_ids": [8], "must_render_as_object": true, "notes": "Current production reader output anchors Figure 5 to the first arthroscopy image block."},
-        {"object_type": "figure", "figure_number": 6, "notes": "Figure 6 primary caption is on page 3; handled by sidecar routing."}
+        {"object_type": "figure", "figure_number": 4, "asset_block_ids": [7, 8], "must_render_as_object": true, "notes": "Figure 4 captures the top band of page 4 images via sidecar partition."},
+        {"object_type": "figure", "figure_number": 5, "asset_block_ids": [9, 10], "must_render_as_object": true, "notes": "Figure 5 captures the middle band of page 4 images via sidecar partition."},
+        {"object_type": "figure", "figure_number": 6, "asset_block_ids": [11, 13], "must_render_as_object": true, "notes": "Figure 6 captures the bottom band of page 4 images via sidecar partition."}
       ]
     },
     "5": {
