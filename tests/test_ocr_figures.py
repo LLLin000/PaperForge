@@ -2120,3 +2120,110 @@ def test_local_figure_expansion_does_not_cross_second_formal_caption_boundary() 
 
     assert {item["block_id"] for item in matched_by_num[2]["matched_assets"]} == {1, 2}
     assert {item["block_id"] for item in matched_by_num[3]["matched_assets"]} == {3, 4}
+
+
+# === Task 2: Sidecar layout routing unit tests ===
+
+
+def test_full_width_caption_does_not_enter_sidecar_partition() -> None:
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    blocks = [
+        {"paper_id": "FW", "page": 1, "block_id": 1, "role": "media_asset", "raw_label": "image", "bbox": [80, 80, 1080, 700], "page_width": 1200, "page_height": 1600},
+        {
+            "paper_id": "FW",
+            "page": 1,
+            "block_id": 2,
+            "role": "figure_caption_candidate",
+            "seed_role": "figure_caption",
+            "raw_label": "figure_title",
+            "text": "Figure 1. Composite scaffold characterization under mechanical loading.",
+            "bbox": [90, 730, 1110, 820],
+            "page_width": 1200,
+            "page_height": 1600,
+            "zone": "display_zone",
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 1},
+        },
+    ]
+
+    inventory = build_figure_inventory(blocks)
+    assert len(inventory["matched_figures"]) == 1
+    assert inventory["matched_figures"][0]["matched_assets"][0]["block_id"] == 1
+
+
+def test_narrow_same_column_captions_partition_same_page_figures() -> None:
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    blocks = [
+        {"paper_id": "SC", "page": 3, "block_id": 3, "role": "media_asset", "raw_label": "image", "bbox": [470, 80, 980, 360], "page_width": 1200, "page_height": 1600},
+        {"paper_id": "SC", "page": 3, "block_id": 4, "role": "media_asset", "raw_label": "image", "bbox": [470, 400, 980, 680], "page_width": 1200, "page_height": 1600},
+        {"paper_id": "SC", "page": 3, "block_id": 8, "role": "media_asset", "raw_label": "image", "bbox": [470, 720, 980, 1040], "page_width": 1200, "page_height": 1600},
+        {
+            "paper_id": "SC",
+            "page": 3,
+            "block_id": 10,
+            "role": "figure_caption_candidate",
+            "seed_role": "figure_caption",
+            "raw_label": "figure_title",
+            "text": "MRI-gross anatomic correlation in sagittal plane.",
+            "bbox": [70, 90, 360, 170],
+            "page_width": 1200,
+            "page_height": 1600,
+            "zone": "display_zone",
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 2},
+        },
+        {
+            "paper_id": "SC",
+            "page": 3,
+            "block_id": 11,
+            "role": "figure_caption_candidate",
+            "seed_role": "figure_caption",
+            "raw_label": "figure_title",
+            "text": "MRI-gross anatomic correlation in coronal plane.",
+            "bbox": [70, 420, 360, 500],
+            "page_width": 1200,
+            "page_height": 1600,
+            "zone": "display_zone",
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 3},
+        },
+        {
+            "paper_id": "SC",
+            "page": 3,
+            "block_id": 12,
+            "role": "figure_caption_candidate",
+            "seed_role": "figure_caption",
+            "raw_label": "figure_title",
+            "text": "Anterior insertion of cable on arthroscopy and MRI.",
+            "bbox": [70, 760, 360, 840],
+            "page_width": 1200,
+            "page_height": 1600,
+            "zone": "display_zone",
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 6},
+        },
+    ]
+
+    inventory = build_figure_inventory(blocks)
+    by_num = {item["figure_number"]: item for item in inventory["matched_figures"]}
+    assert {item["block_id"] for item in by_num[2]["matched_assets"]} == {3}
+    assert {item["block_id"] for item in by_num[3]["matched_assets"]} == {4}
+    assert {item["block_id"] for item in by_num[6]["matched_assets"]} == {8}
+
+
+def test_panel_labels_do_not_form_sidecar_caption_column() -> None:
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    blocks = [
+        {"paper_id": "PL", "page": 1, "block_id": 1, "role": "media_asset", "raw_label": "image", "bbox": [100, 80, 420, 320], "page_width": 1200, "page_height": 1600},
+        {"paper_id": "PL", "page": 1, "block_id": 2, "role": "media_asset", "raw_label": "image", "bbox": [460, 80, 780, 320], "page_width": 1200, "page_height": 1600},
+        {"paper_id": "PL", "page": 1, "block_id": 3, "role": "figure_caption_candidate", "seed_role": "figure_caption", "raw_label": "figure_title", "text": "a", "bbox": [95, 60, 120, 78], "page_width": 1200, "page_height": 1600, "zone": "body_zone", "style_family": "unknown_like", "marker_signature": {"type": "short_fragment"}},
+        {"paper_id": "PL", "page": 1, "block_id": 4, "role": "figure_caption_candidate", "seed_role": "figure_caption", "raw_label": "figure_title", "text": "b", "bbox": [455, 60, 480, 78], "page_width": 1200, "page_height": 1600, "zone": "body_zone", "style_family": "unknown_like", "marker_signature": {"type": "short_fragment"}},
+        {"paper_id": "PL", "page": 1, "block_id": 5, "role": "figure_caption_candidate", "seed_role": "figure_caption", "raw_label": "figure_title", "text": "Figure 1. Full caption.", "bbox": [120, 340, 760, 420], "page_width": 1200, "page_height": 1600, "zone": "display_zone", "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 1}},
+    ]
+
+    inventory = build_figure_inventory(blocks)
+    assert len(inventory["matched_figures"]) == 1
+    assert inventory["matched_figures"][0]["figure_number"] == 1
