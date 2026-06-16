@@ -1,0 +1,525 @@
+{
+  "document": {
+    "expected_reference_zone": true,
+    "expected_abstract_span": false,
+    "notes": [
+      "Comprehensive block-level gold expectations following CAQ/DWQQ pattern.",
+      "20-page multi-column materials science review. Every significant block on body pages is annotated.",
+      "BUG annotations mark current pipeline output mismatches.",
+      "Known issues: frontmatter footnote text in body flow, mid-sentence page breaks, merged headings (3. and 3.1 on one line), Table 1 caption in body text, figure caption fragments leaking into body, section 7 heading misclassified as unknown_structural."
+    ]
+  },
+  "pages": {
+    "1": {
+      "assertions": [
+        {
+          "text_contains": "REVIEW",
+          "expected_role_any_of": [
+            "noise",
+            "frontmatter_noise"
+          ],
+          "must_not_render": true
+        },
+        {
+          "text_contains": "ADVANCED HEALTHCARE MATERIALS",
+          "expected_role_any_of": [
+            "noise",
+            "frontmatter_noise"
+          ],
+          "must_not_render": true
+        },
+        {
+          "text_contains": "Extracellular Matrix-Surrogate Advanced Functional Composite Biomaterials",
+          "expected_role": "paper_title"
+        },
+        {
+          "text_contains": "Milad Vahidi, Amin S. Rizkalla",
+          "expected_role": "authors",
+          "notes": "BUG: Real: unknown_structural"
+        },
+        {
+          "text_contains": "kmequani@uwo.ca",
+          "expected_role_any_of": [
+            "footnote",
+            "frontmatter_support"
+          ],
+          "notes": "BUG: Real: footnote rendered as body text on page 1"
+        },
+        {
+          "text_contains": "Department of Chemical and Biochemical Engineering",
+          "expected_role_any_of": [
+            "affiliation",
+            "footnote"
+          ],
+          "notes": "BUG: Real: footnote. Affiliation footnote rendered in body flow."
+        },
+        {
+          "text_equals": "1. Introduction",
+          "expected_role": "section_heading"
+        },
+        {
+          "text_contains": "although similar in composition, exhibit distinct porosity",
+          "expected_role": "body_paragraph",
+          "notes": "BUG: Mid-sentence start. Body text begins with 'although...' — continuation from lost preceding paragraph."
+        },
+        {
+          "text_contains": "Similarly, articular cartilage showcases a complex organization",
+          "expected_role": "body_paragraph"
+        }
+      ]
+    },
+    "2": {
+      "assertions": [
+        {
+          "text_contains": "Figure 1. Anisotropic characteristics of natural tissues",
+          "expected_role": "figure_caption_candidate"
+        },
+        {
+          "text_contains": "and mechanical attributes of the aforementioned human tissues",
+          "expected_role": "body_paragraph",
+          "notes": "BUG: Starts mid-sentence 'and mechanical attributes...' — continuation from page 1"
+        }
+      ],
+      "expected_object_ownership": [
+        {
+          "object_type": "figure",
+          "figure_number": 1,
+          "asset_block_ids": [3, 4, 5, 6, 7, 8, 9, 10],
+          "must_render_as_object": true,
+          "notes": "Figure 1 is a single-caption multi-panel figure on page 2 and must claim the full local media stack, not only the lower anchor row."
+        }
+      ]
+    },
+    "3": {
+      "assertions": [
+        {
+          "text_contains": "Figure 2. A rationale for nature-inspired tissue-mimicking biomaterial design strategy.",
+          "expected_role": "figure_caption_candidate"
+        },
+        {
+          "text_contains": "and durability, coupled with the flexibility of polymers",
+          "expected_role": "body_paragraph",
+          "notes": "BUG: Mid-sentence start. Continuation of page 2 paragraph."
+        },
+        {
+          "text_contains": "This review provides a comprehensive discussion",
+          "expected_role": "body_paragraph"
+        },
+        {
+          "text_equals": "2. Native Tissue-mimicking Composite Biomaterials",
+          "expected_role": "section_heading"
+        },
+        {
+          "text_contains": "The quest to emulate the intricate composite nature",
+          "expected_role": "body_paragraph"
+        },
+        {
+          "text_contains": "Composite biomaterials are particularly significant",
+          "expected_role": "body_paragraph"
+        },
+        {
+          "text_contains": "In their versatility, composite biomaterials excel at adapting",
+          "expected_role": "body_paragraph"
+        }
+      ],
+      "expected_object_ownership": [
+        {
+          "object_type": "figure",
+          "figure_number": 2,
+          "asset_block_ids": [
+            2
+          ],
+          "must_render_as_object": true
+        }
+      ]
+    },
+    "4": {
+      "assertions": [
+        {
+          "text_contains": "responses to composite biomaterials also tend to be more favorable",
+          "expected_role": "body_paragraph",
+          "notes": "BUG: Mid-sentence. Continuation of page 3 paragraph."
+        },
+        {
+          "text_contains": "From the engineering standpoint, designing and manufacturing",
+          "expected_role": "body_paragraph"
+        },
+        {
+          "text_contains": "3. Composite biomaterials for bone repair and regeneration",
+          "expected_role": "section_heading",
+          "notes": "BUG: Two headings merged on one line: '3. Composite biomaterials for bone repair and regeneration 3.1. The materials nexus'. Section 3 heading and subsection 3.1 heading are joined."
+        },
+        {
+          "text_contains": "As a vascularized composite tissue, bone is subjected",
+          "expected_role": "body_paragraph"
+        },
+        {
+          "text_contains": "The mechanical strength, rigidity, and bonding",
+          "expected_role": "body_paragraph"
+        },
+        {
+          "text_contains": "Hydroxyapatite",
+          "expected_role": "body_paragraph"
+        },
+        {
+          "text_contains": "Mg/poly(Lactic acid) (PLA) composites can potentially replace",
+          "expected_role": "body_paragraph"
+        },
+        {
+          "text_contains": "The ease of surgical positioning and robust graft fixation",
+          "expected_role": "body_paragraph"
+        }
+      ]
+    },
+    "5": {
+      "assertions": [
+        {
+          "text_contains": "Figure 3. a) A sequence of images illustrating the process of compressing",
+          "expected_role": "figure_caption_candidate"
+        }
+      ],
+      "expected_object_ownership": [
+        {
+          "object_type": "figure",
+          "figure_number": 3,
+          "asset_block_ids": [3, 4, 6, 8, 9, 10, 11, 12, 14, 15, 16, 18, 19, 21, 22, 23, 24, 25, 26],
+          "must_render_as_object": true,
+          "notes": "Figure 3 must absorb the same-page local figure stack around the matched anchor row without crossing into a second formal caption."
+        }
+      ]
+    },
+    "6": {
+      "assertions": [
+        {
+          "text_contains": "tricalcium phosphate",
+          "expected_role": "body_paragraph",
+          "notes": "BUG: Mid-sentence start. 'tricalcium phosphate, [40,41] or bioactive glass.' — continuation from page 4."
+        },
+        {
+          "text_contains": "Composite biomaterials designed for non-load-bearing bone defects",
+          "expected_role": "body_paragraph"
+        },
+        {
+          "text_contains": "Conversely, cell-free scaffolds depend on tissue-resident cell migration",
+          "expected_role": "body_paragraph"
+        },
+        {
+          "text_contains": "Research revealed that the development of composite hydrogels containing GelMA",
+          "expected_role": "body_paragraph"
+        },
+        {
+          "text_equals": "3.2. The signaling nexus",
+          "expected_role": "subsection_heading"
+        },
+        {
+          "text_contains": "In tissue engineering, bioactivity entails the intentional",
+          "expected_role": "body_paragraph"
+        },
+        {
+          "text_contains": "Composite biomaterials could potentially be designed to interact",
+          "expected_role": "body_paragraph"
+        }
+      ]
+    },
+    "7": {
+      "assertions": [
+        {
+          "text_contains": "Table 1. Clinical needs, applications, and exemplary recent advances in bone tissue engineering.",
+          "expected_role": "table_caption_candidate",
+          "notes": "BUG: Table 1 caption rendered in body flow as prose instead of as table object."
+        },
+        {
+          "text_contains": "main mechanisms",
+          "expected_role": "body_paragraph",
+          "notes": "BUG: Mid-sentence. 'main mechanisms.[56]' — continuation from page 6 paragraph."
+        },
+        {
+          "text_contains": "Not surprisingly, addressing the multifaceted clinical needs",
+          "expected_role": "body_paragraph"
+        },
+        {
+          "text_equals": "4. Composite biomaterials for articular cartilage repair",
+          "expected_role": "section_heading"
+        },
+        {
+          "text_contains": "Osteoarthritis (OA) is a chronic condition",
+          "expected_role": "body_paragraph"
+        }
+      ]
+    },
+    "8": {
+      "assertions": [
+        {
+          "text_contains": "the potential of biodegradable alternatives",
+          "expected_role": "body_paragraph",
+          "notes": "BUG: Mid-sentence. Continuation from page 7."
+        },
+        {
+          "text_contains": "Biodegradable piezoelectric nanofibers like PLLA",
+          "expected_role": "body_paragraph"
+        },
+        {
+          "text_contains": "Innovatively, injectable hydrogels have drawn much attention",
+          "expected_role": "body_paragraph"
+        },
+        {
+          "text_contains": "Continuing with the theme of regenerative strategies",
+          "expected_role": "body_paragraph"
+        },
+        {
+          "text_contains": "Administering therapeutics via intra-articular injection",
+          "expected_role": "body_paragraph"
+        }
+      ]
+    },
+    "9": {
+      "assertions": [
+        {
+          "text_contains": "capacity to self-renew hydration layers",
+          "expected_role": "body_paragraph",
+          "notes": "BUG: Mid-sentence. Continuation from page 8."
+        },
+        {
+          "text_contains": "The aging population's increasing pain and disability",
+          "expected_role": "body_paragraph"
+        },
+        {
+          "text_equals": "5. Composite biomaterials for cardiac tissue repair",
+          "expected_role": "section_heading"
+        },
+        {
+          "text_contains": "The heart muscle is both elastic and strong",
+          "expected_role": "body_paragraph"
+        }
+      ]
+    },
+    "11": {
+      "assertions": [
+        {
+          "text_contains": "Figure 4. Conductive composite scaffolds for neural and cardiac tissue",
+          "expected_role": "figure_caption_candidate"
+        }
+      ],
+      "expected_object_ownership": [
+        {
+          "object_type": "figure",
+          "figure_number": 4,
+          "asset_block_ids": [3, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+          "must_render_as_object": true,
+          "notes": "Figure 4 must absorb the lower same-page local media stack while remaining caption-owned."
+        }
+      ]
+    },
+    "12": {
+      "assertions": [
+        {
+          "text_contains": "compression (right)",
+          "expected_role_any_of": [
+            "figure_caption_candidate",
+            "footnote"
+          ],
+          "notes": "BUG: Figure 4 caption panel fragment ('compression (right). i) Transplantation...') rendered in body flow as footnote. Belongs to Figure 4 caption, not body text."
+        },
+        {
+          "text_contains": "Immunostaining of cardiac-specific proteins",
+          "expected_role_any_of": [
+            "figure_caption_candidate",
+            "footnote"
+          ],
+          "notes": "BUG: Figure 4 caption continuation fragment leaking into body flow."
+        }
+      ]
+    },
+    "13": {
+      "assertions": [
+        {
+          "text_contains": "It is acknowledged that porous scaffolds",
+          "expected_role": "body_paragraph"
+        },
+        {
+          "text_equals": "6.2. Conductive composite 2D films",
+          "expected_role": "subsection_heading"
+        },
+        {
+          "text_contains": "Conductive composite films are made of conductive particles",
+          "expected_role": "body_paragraph"
+        }
+      ]
+    },
+    "14": {
+      "assertions": [
+        {
+          "text_contains": "been investigated",
+          "expected_role": "body_paragraph",
+          "notes": "BUG: Mid-sentence start. Continuation from page 13."
+        },
+        {
+          "text_equals": "6.3. Magnetic and composite biomaterials",
+          "expected_role": "subsection_heading"
+        },
+        {
+          "text_contains": "Magnetic nanoparticles (MNPs)",
+          "expected_role": "body_paragraph"
+        },
+        {
+          "text_contains": "7. Composite biomaterials for therapeutic drug delivery",
+          "expected_role": "section_heading",
+          "notes": "BUG: Real: unknown_structural in reference_zone. Section 7 heading misclassified — should be section_heading."
+        },
+        {
+          "text_contains": "Composite biomaterials possess key features",
+          "expected_role": "body_paragraph"
+        }
+      ]
+    },
+    "15": {
+      "assertions": [
+        {
+          "text_contains": "composite biomaterials in drug delivery and tissue engineering",
+          "expected_role": "body_paragraph",
+          "notes": "BUG: Mid-sentence. Continuation from page 14."
+        },
+        {
+          "text_equals": "8. Conclusions and Future Directions",
+          "expected_role": "section_heading"
+        },
+        {
+          "text_contains": "The field of composite biomaterials is continuously evolving",
+          "expected_role": "body_paragraph"
+        }
+      ]
+    },
+    "16": {
+      "assertions": [
+        {
+          "text_contains": "to the widespread clinical application",
+          "expected_role": "body_paragraph",
+          "notes": "BUG: Mid-sentence start. Continuation of conclusion from page 15."
+        },
+        {
+          "text_contains": "Keywords",
+          "expected_role_any_of": [
+            "backmatter_heading",
+            "sub_subsection_heading"
+          ],
+          "notes": "BUG: Real: sub_subsection_heading in body_zone. Keywords heading should be backmatter_heading, not a subsection."
+        },
+        {
+          "text_contains": "bone tissue, cardiac tissue, cartilage tissue, composite biomaterials",
+          "expected_role": "structured_insert",
+          "notes": "BUG: Real: body_paragraph. Keywords content should be structured_insert."
+        },
+        {
+          "text_contains": "The authors declare no conflict of interest",
+          "expected_role": "backmatter_body",
+          "notes": "BUG: Real: frontmatter_noise. Should be backmatter_body in tail_nonref_hold_zone."
+        },
+        {
+          "text_equals": "Acknowledgements",
+          "expected_role": "backmatter_heading"
+        },
+        {
+          "text_contains": "This research was funded by",
+          "expected_role": "backmatter_body",
+          "notes": " BUG: zone is empty."
+        },
+        {
+          "count_reference_content": {
+            "min": 15,
+            "max": 25
+          }
+        },
+        {
+          "text_contains": "Skorulska, P. Piszko, Z. Rybak",
+          "expected_role": "reference_item",
+          "expected_zone": "reference_zone"
+        }
+      ]
+    },
+    "17": {
+      "assertions": [
+        {
+          "text_contains": "Bhattacharjee, S. Bose",
+          "expected_role": "reference_item",
+          "expected_zone": "reference_zone"
+        }
+      ]
+    }
+  },
+  "expected_bugs": [
+    {
+      "bug": "page1_authors_unknown_structural",
+      "pages": [
+        1
+      ],
+      "description": "Author block has seed_role=authors but gate HELD to unknown_structural.",
+      "fix": "Author matching needs more robust normalization"
+    },
+    {
+      "bug": "page1_footnote_in_body",
+      "pages": [
+        1
+      ],
+      "description": "Affiliation footnote (M. Vahidi... / Department of Chemical...) rendered in body flow.",
+      "fix": "Frontmatter zone detection should suppress footnote blocks"
+    },
+    {
+      "bug": "body_text_midword_fragments",
+      "pages": [
+        1,
+        2,
+        3,
+        4,
+        6,
+        7,
+        8,
+        9,
+        14,
+        15,
+        16
+      ],
+      "description": "Multiple pages start with mid-sentence or mid-word body text fragments ('although...', 'and durability...', 'tricalcium phosphate', 'main mechanisms.', 'to the widespread clinical application'). Cross-page text flow is broken.",
+      "fix": "Cross-page text continuation detection or paragraph-level reassembly"
+    },
+    {
+      "bug": "merged_headings_page4",
+      "pages": [
+        4
+      ],
+      "description": "Section heading '3. Composite biomaterials for bone repair and regeneration' and subsection '3.1. The materials nexus' are merged into a single line.",
+      "fix": "Heading separation logic needs to detect multiple section numbers in one block"
+    },
+    {
+      "bug": "table1_caption_in_body",
+      "pages": [
+        7
+      ],
+      "description": "Table 1 caption appears as body text before the table embed in fulltext. Should render as table object caption.",
+      "fix": "Table caption attachment to table inventory"
+    },
+    {
+      "bug": "section7_heading_misclassified",
+      "pages": [
+        14
+      ],
+      "description": "Section heading '7. Composite biomaterials for therapeutic drug delivery' classified as unknown_structural in reference_zone instead of section_heading.",
+      "fix": "Section heading detection on pages with dense reference content"
+    },
+    {
+      "bug": "figure4_caption_fragments_in_body",
+      "pages": [
+        12
+      ],
+      "description": "Figure 4 panel captions ('compression (right). i) Transplantation...', '(α-actinin and CX-43) in RCMs cultured...') rendered as body text.",
+      "fix": "Figure caption span attachment for multi-panel figures"
+    },
+    {
+      "bug": "keywords_classified_as_subsection_heading",
+      "pages": [
+        16
+      ],
+      "description": "Keywords heading classified as sub_subsection_heading instead of backmatter_heading.",
+      "fix": "Backmatter heading detection for keywords block"
+    }
+  ]
+}
