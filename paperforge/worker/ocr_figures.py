@@ -661,6 +661,51 @@ def _formal_figure_caption_blocks(blocks: list[dict]) -> dict[int, list[dict]]:
     return by_page
 
 
+def _caption_width_ratio(block: dict, page_width: float) -> float:
+    bbox = block.get("bbox") or [0, 0, 0, 0]
+    if len(bbox) < 4 or page_width <= 0:
+        return 0.0
+    return max(0.0, float(bbox[2] - bbox[0]) / float(page_width))
+
+
+def _same_page_narrow_caption_column(page_captions: list[dict], page_width: float) -> list[dict]:
+    formal = [
+        cap for cap in page_captions
+        if _caption_width_ratio(cap, page_width) < 0.6
+        and not _PANEL_LABEL_PATTERN.match(str(cap.get("text", "")).strip())
+    ]
+    if len(formal) < 2:
+        return []
+    centers = [((cap.get("bbox") or [0, 0, 0, 0])[0] + (cap.get("bbox") or [0, 0, 0, 0])[2]) / 2 for cap in formal]
+    if max(centers) - min(centers) > page_width * 0.08:
+        return []
+    ordered = sorted(formal, key=lambda cap: (cap.get("bbox") or [0, 0, 0, 0])[1])
+    return ordered
+
+
+def _partition_assets_by_caption_bands(page_captions: list[dict], page_assets: list[dict], page_height: float) -> dict[str, list[dict]]:
+    if len(page_captions) < 2:
+        return {}
+
+    ordered = sorted(page_captions, key=lambda cap: (cap.get("bbox") or [0, 0, 0, 0])[1])
+    boundaries: list[float] = [0.0]
+    for upper, lower in zip(ordered, ordered[1:]):
+        ub = upper.get("bbox") or [0, 0, 0, 0]
+        lb = lower.get("bbox") or [0, 0, 0, 0]
+        boundaries.append(((ub[1] + ub[3]) / 2 + (lb[1] + lb[3]) / 2) / 2)
+    boundaries.append(float(page_height))
+
+    result: dict[str, list[dict]] = {str(cap.get("block_id", "")): [] for cap in ordered}
+    for asset in page_assets:
+        bbox = asset.get("bbox") or [0, 0, 0, 0]
+        cy = (bbox[1] + bbox[3]) / 2 if len(bbox) >= 4 else 0
+        for idx, cap in enumerate(ordered):
+            if boundaries[idx] <= cy < boundaries[idx + 1]:
+                result[str(cap.get("block_id", ""))].append(asset)
+                break
+    return result
+
+
 def build_figure_inventory(structured_blocks: list[dict], page_width: float = 1200) -> dict[str, Any]:
     legends: list[dict] = []
     held_figures: list[dict] = []
@@ -1005,6 +1050,58 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
         asset_bid = asset.get("block_id", "")
         if not asset_bid or (asset_page, asset_bid) not in used_asset_page_ids:
             unmatched_assets.append(asset)
+
+    # Sidecar fallback: for pages with narrow same-column formal captions that
+    # remain unmatched after normal spatial matching, partition same-page assets
+    # by caption bands. Only trigger when normal matching was insufficient and
+    # captions are narrow (sidecar layout signal).
+    _sidecar_promoted_ids: set[str] = set()
+    for sidecar_page, sidecar_caps in page_caption_index.items():
+        narrow_set = _same_page_narrow_caption_column(sidecar_caps, page_width)
+        if not narrow_set:
+            continue
+        if len(narrow_set) < 2:
+            continue
+        page_unmatched = [l for l in unmatched_legends if l.get("page") == sidecar_page]
+        if not page_unmatched:
+            continue
+        page_assets_still_free = [a for a in unmatched_assets if a.get("page") == sidecar_page]
+        if not page_assets_still_free:
+            continue
+        band_map = _partition_assets_by_caption_bands(
+            narrow_set, page_assets_still_free,
+            float(max((b.get("bbox") or [0, 0, 0, 0])[3] for b in structured_blocks if b.get("page") == sidecar_page) or 1600),
+        )
+        for legend in page_unmatched:
+            legend_text = str(legend.get("text") or "")
+            fig_num = _extract_figure_number(legend_text)
+            lid = str(legend.get("block_id", ""))
+            band_assets = band_map.get(lid, [])
+            if not band_assets:
+                continue
+            for ba in band_assets:
+                ap = ba.get("page", 0)
+                bid = ba.get("block_id", "")
+                if bid is not None:
+                    used_asset_page_ids.add((ap, bid))
+            unmatched_assets[:] = [ua for ua in unmatched_assets if ua.get("block_id", "") not in {ba.get("block_id", "") for ba in band_assets}]
+            fig_id = f"figure_{fig_num:03d}" if fig_num else f"figure_sidecar_{len(matched_figures):03d}"
+            matched_figures.append({
+                "figure_id": fig_id,
+                "legend_block_id": legend.get("block_id", ""),
+                "page": sidecar_page,
+                "text": legend_text,
+                "figure_number": fig_num,
+                "matched_assets": [{"block_id": a.get("block_id", ""), "bbox": a.get("bbox", [0, 0, 0, 0])} for a in band_assets],
+                "group_type": "sidecar_partition",
+                "group_evidence": ["same_page", "narrow_caption_column", "sidecar_fallback"],
+                "confidence": 0.5,
+                "match_score": {"score": 0.5, "decision": "matched", "evidence": ["sidecar_fallback"]},
+                "flags": ["sidecar_match"],
+                "caption_score": score_figure_caption(legend, nearby_media=True, caption_style_match=False, body_prose_likelihood=False),
+            })
+            _sidecar_promoted_ids.add(lid)
+    unmatched_legends[:] = [l for l in unmatched_legends if str(l.get("block_id", "")) not in _sidecar_promoted_ids]
 
     # Sequential fallback: match unmatched captions to remaining assets in reading order.
     # Captions and figures often appear on different pages — humans match them by
