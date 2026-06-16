@@ -27,7 +27,7 @@
     },
     "2": {
       "assertions": [
-        {"text_contains": "Magnetoresponsive Stem Cell Spheroid", "expected_role": "paper_title"},
+        {"text_contains": "Magnetoresponsive Stem Cell Spheroid", "expected_role": "paper_title", "notes": "BUG: Real: unknown_structural - should be paper_title"},
         {"text_contains": "These authors contributed equally", "expected_role": "structured_insert", "notes": "BUG: Real: frontmatter_noise"},
         {"text_contains": "Corresponding author", "expected_role": "structured_insert", "notes": "BUG: Real: frontmatter_noise"},
         {"text_equals": "Highlights", "expected_role": "structured_insert", "notes": "BUG: Real: structured_insert - should be paragraph_title"}
@@ -95,6 +95,16 @@
       "assertions": [
         {"text_equals": "3. Results", "expected_role": "section_heading", "expected_zone": "body_zone"},
         {"text_equals": "3.1 Morphology and cell viability of the MR-SCS", "expected_role": "subsection_heading", "expected_zone": "body_zone"}
+      ]
+    },
+    "13": {
+      "assertions": [
+        {"text_contains": "Prussian blue stain", "expected_role": "body_paragraph", "expected_zone": "body_zone"}
+      ]
+    },
+    "15": {
+      "assertions": [
+        {"text_contains": "linearly increased at fixed magnetic field", "expected_role": "body_paragraph", "expected_zone": "body_zone", "notes": "BUG: OCR raw label is abstract, but normalized role should remain body_paragraph on this Results page."}
       ]
     },
     "17": {
@@ -172,6 +182,25 @@
     "36": {
       "assertions": [
         {"text_contains": "Fig. 4. Effect of LF-EMF", "expected_role": "figure_caption_candidate", "notes": "CORRECT: object-gate role stays as candidate at document-gate time"}
+      ]
+    },
+    "37": {
+      "assertions": [
+        {"text_contains": "Fig. 1", "expected_role": "figure_caption_candidate"}
+      ],
+      "expected_object_ownership": [
+        {"object_type": "figure", "figure_number": 1, "asset_block_ids": [2], "must_render_as_object": true}
+      ]
+    },
+    "38": {
+      "expected_object_ownership": [
+        {"object_type": "figure", "figure_number": 2, "asset_block_ids": [14], "must_render_as_object": true}
+      ]
+    },
+    "41": {
+      "expected_object_ownership": [
+        {"object_type": "figure", "figure_number": 3, "asset_block_ids": [2], "must_render_as_object": true},
+        {"object_type": "figure", "figure_number": 4, "asset_block_ids": [8, 9], "must_render_as_object": true}
       ]
     }
   },

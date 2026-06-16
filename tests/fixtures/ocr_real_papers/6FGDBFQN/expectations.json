@@ -1,0 +1,85 @@
+{
+  "document": {
+    "expected_abstract_span": true,
+    "notes": [
+      "Expanded gold expectations after visual audit against corrected fitz overlays.",
+      "This paper is layout-complex: abstract-to-body handoff on page 1, multi-panel figures with split captions, mixed results/discussion on page 3, and conclusion plus references on page 5.",
+      "Several blocks that are semantically authors/frontmatter still emit as unknown_structural or body_paragraph in the current pipeline. Those are recorded as BUG expectations rather than silently accepting the current role."
+    ]
+  },
+  "pages": {
+    "1": {
+      "assertions": [
+        {"text_contains": "Rotator Cable: MRI Study of Its Appearance", "expected_role": "paper_title"},
+        {"text_contains": "Soterios Gyftopoulos", "expected_role": "authors", "notes": "BUG: Real: unknown_structural - author block is visually correct but not classified as authors"},
+        {"text_contains": "MATERIALS AND METHODS.", "expected_role": "abstract_body"},
+        {"text_contains": "RESULTS.", "expected_role": "abstract_body"},
+        {"text_contains": "CONCLUSION.", "expected_role": "abstract_body"},
+        {"text_contains": "The rotator cable was initially described by Clark and Harryman", "expected_role": "frontmatter_support", "notes": "BUG: Real: frontmatter_support followed by body continuation split across two blocks on page 1"},
+        {"text_contains": "In the initial descriptions of the cable", "expected_role": "body_paragraph"}
+      ]
+    },
+    "2": {
+      "assertions": [
+        {"text_contains": "There is no consensus in terms of the MRI appearance", "expected_role": "body_paragraph"},
+        {"text_equals": "Materials and Methods", "expected_role": "section_heading"},
+        {"text_equals": "Cadaveric Study", "expected_role": "subsection_heading"},
+        {"text_equals": "Clinical Study", "expected_role": "subsection_heading"},
+        {"text_contains": "Two shoulders from fresh-frozen cadavers", "expected_role": "body_paragraph"},
+        {"text_contains": "Seventy consecutive 1.5- and 3-T MRI studies", "expected_role": "body_paragraph"},
+        {"text_contains": "Fig. 1", "expected_role": "figure_caption_candidate"},
+        {"text_contains": "Location of cable was measured from medial enthesis", "expected_role": "figure_caption_candidate"}
+      ],
+      "expected_object_ownership": [
+        {"object_type": "figure", "figure_number": 1, "asset_block_ids": [13], "must_render_as_object": true}
+      ]
+    },
+    "3": {
+      "assertions": [
+        {"text_contains": "Fig. 2", "expected_role": "figure_caption_candidate"},
+        {"text_contains": "MRI-gross anatomic correlation in coronal plane", "expected_role": "figure_caption_candidate"},
+        {"text_equals": "Cadaveric Study Results", "expected_role": "subsection_heading"},
+        {"text_contains": "A linear band of hypointense signal intensity", "expected_role": "body_paragraph"},
+        {"text_contains": "Arthroscopic evaluation of cadaver 1 showed", "expected_role": "body_paragraph"},
+        {"text_contains": "don (Fig. 6). The posterior insertion was not clearly visualized", "expected_role": "figure_caption_candidate", "notes": "BUG: Real: caption continuation is split and starts mid-word, but should stay attached to figure-caption flow rather than body"},
+        {"text_equals": "Clinical Study", "expected_role": "subsection_heading"},
+        {"text_contains": "The rotator cable was seen in 74.3% of the MRI studies", "expected_role": "body_paragraph"},
+        {"text_equals": "Discussion", "expected_role": "section_heading"},
+        {"text_contains": "The rotator cable was initially described in the orthopedic literature", "expected_role": "body_paragraph"}
+      ],
+      "expected_object_ownership": [
+        {"object_type": "figure", "figure_number": 2, "asset_block_ids": [4], "must_render_as_object": true, "notes": "Current production reader output anchors Figure 2 to the left image block only."},
+        {"object_type": "figure", "figure_number": 3, "asset_block_ids": [3], "must_render_as_object": true, "notes": "Current production reader output anchors Figure 3 to the right image block only."},
+        {"object_type": "figure", "figure_number": 6, "notes": "Current production reader output anchors Figure 6 to the bottom-right image block."}
+      ]
+    },
+    "4": {
+      "assertions": [
+        {"text_contains": "coracohumeral ligament that plays a role in the stability", "expected_role": "body_paragraph"},
+        {"text_contains": "Using MRI, Sheah et al.", "expected_role": "body_paragraph"},
+        {"text_contains": "We were able to identify the rotator cable", "expected_role": "body_paragraph"},
+        {"text_contains": "Fig. 4", "expected_role": "figure_caption_candidate"},
+        {"text_contains": "Fig. 5", "expected_role": "figure_caption_candidate"},
+        {"text_contains": "Fig. 6", "expected_role": "figure_caption_candidate"},
+        {"text_contains": "Arthroscopic image obtained from posterior portal", "expected_role": "figure_caption_candidate"}
+      ],
+      "expected_object_ownership": [
+        {"object_type": "figure", "figure_number": 4, "asset_block_ids": [7], "must_render_as_object": true, "notes": "Current production reader output anchors Figure 4 to the first histology image block."},
+        {"object_type": "figure", "figure_number": 5, "asset_block_ids": [8], "must_render_as_object": true, "notes": "Current production reader output anchors Figure 5 to the first arthroscopy image block."},
+        {"object_type": "figure", "figure_number": 6, "asset_block_ids": [13], "must_render_as_object": true, "notes": "Current production reader output anchors Figure 6 to the bottom-right image block."}
+      ]
+    },
+    "5": {
+      "assertions": [
+        {"text_contains": "cadaver 1 showed the cable along the under-surface", "expected_role": "body_paragraph"},
+        {"text_contains": "We identified the rotator cable in 74.3% of the clinical MRI studies", "expected_role": "body_paragraph"},
+        {"text_contains": "The mean cable thickness in our study differed", "expected_role": "body_paragraph"},
+        {"text_contains": "Our study had several limitations", "expected_role": "body_paragraph"},
+        {"text_equals": "Conclusion", "expected_role": "section_heading"},
+        {"text_contains": "Our study has shown that the rotator cable is a structure", "expected_role": "backmatter_body"},
+        {"text_equals": "References", "expected_role": "reference_heading"},
+        {"count_reference_content": {"min": 10, "max": 10}}
+      ]
+    }
+  }
+}
