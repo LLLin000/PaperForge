@@ -68,6 +68,11 @@ def _looks_like_inline_figure_mention(text: str) -> bool:
     t = " ".join(text.strip().split())
     lower = t.lower()
 
+    # Text starting with "Figure N." / "Fig. N." is a self-identifying
+    # caption — never flag as body mention regardless of verb content.
+    if re.match(r"^(?:Figure|Fig\.?)\s+\d+\b", t, re.IGNORECASE):
+        return False
+
     if not re.search(r"\bfi(?:g(?:ure)?\.?\s*\d+)", lower):
         return False
 
@@ -483,6 +488,64 @@ def _score_legend_to_group(
     return match_score
 
 
+def _expand_matched_assets_locally(
+    legend: dict,
+    matched_assets: list[dict],
+    assets: list[dict],
+    used_asset_page_ids: set[tuple],
+    page_captions: list[dict],
+) -> list[dict]:
+    if not matched_assets:
+        return matched_assets
+
+    legend_bbox = legend.get("bbox") or [0, 0, 0, 0]
+    legend_top = legend_bbox[1] if len(legend_bbox) >= 4 else 0
+    current = list(matched_assets)
+    changed = True
+
+    while changed:
+        changed = False
+        cluster_bbox = _cluster_bbox([a.get("bbox", [0, 0, 0, 0]) for a in current])
+        cx1, cy1, cx2, cy2 = cluster_bbox
+
+        lower_caption_tops = [
+            (cap.get("bbox") or [0, 0, 0, 0])[1]
+            for cap in page_captions
+            if cap.get("block_id") != legend.get("block_id")
+            and (cap.get("bbox") or [0, 0, 0, 0])[1] > cy2
+        ]
+        next_caption_top = min(lower_caption_tops) if lower_caption_tops else None
+
+        for asset in assets:
+            ap = asset.get("page", 0)
+            aid = asset.get("block_id", "")
+            if not aid or (ap, aid) in used_asset_page_ids:
+                continue
+            if ap != legend.get("page", 0):
+                continue
+
+            bbox = asset.get("bbox") or [0, 0, 0, 0]
+            ax1, ay1, ax2, ay2 = bbox
+            if ay2 >= legend_top:
+                continue
+            if next_caption_top is not None and ay1 >= next_caption_top:
+                continue
+
+            vertical_gap = max(0.0, max(ay1 - cy2, cy1 - ay2))
+            horizontal_overlap = max(0.0, min(cx2, ax2) - max(cx1, ax1))
+            min_width = max(1.0, min(cx2 - cx1, ax2 - ax1))
+            wide_enough_overlap = horizontal_overlap >= min_width * 0.25
+            touches_stack = vertical_gap <= 30.0
+
+            if touches_stack and wide_enough_overlap:
+                current.append(asset)
+                used_asset_page_ids.add((ap, aid))
+                changed = True
+
+    current.sort(key=lambda a: ((a.get("bbox") or [0, 0, 0, 0])[1], (a.get("bbox") or [0, 0, 0, 0])[0]))
+    return current
+
+
 def _caption_style_match(block: dict, all_blocks: list[dict]) -> bool:
     span = block.get("span_metadata") or {}
     if isinstance(span, list):
@@ -582,6 +645,22 @@ def is_embedded_figure_text(block: dict, all_blocks: list[dict], page_width: flo
     return False
 
 
+def _formal_figure_caption_blocks(blocks: list[dict]) -> dict[int, list[dict]]:
+    by_page: dict[int, list[dict]] = {}
+    for block in blocks:
+        role = str(block.get("role") or "")
+        text = str(block.get("text") or "")
+        if role not in {"figure_caption", "figure_caption_candidate"}:
+            continue
+        if _extract_figure_number(text) is None:
+            continue
+        page = int(block.get("page", 0) or 0)
+        by_page.setdefault(page, []).append(block)
+    for page_blocks in by_page.values():
+        page_blocks.sort(key=lambda b: (b.get("bbox") or [0, 0, 0, 0])[1])
+    return by_page
+
+
 def build_figure_inventory(structured_blocks: list[dict], page_width: float = 1200) -> dict[str, Any]:
     legends: list[dict] = []
     held_figures: list[dict] = []
@@ -678,6 +757,7 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
 
     candidate_groups = _build_candidate_figure_groups_from_assets(assets, page_width=page_width)
     used_asset_page_ids: set[tuple] = set()
+    page_caption_index = _formal_figure_caption_blocks(structured_blocks)
     for legend in ordered_legends:
         legend_page = legend.get("page", 0)
         legend_text = legend.get("text", "")
@@ -755,6 +835,13 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
                     matched_assets = best_group.get("media_blocks", [])
                     g_page = best_group.get("page", 0)
                     used_asset_page_ids.update({(g_page, bid) for bid in best_group.get("asset_block_ids", [])})
+                    matched_assets = _expand_matched_assets_locally(
+                        legend,
+                        matched_assets,
+                        assets,
+                        used_asset_page_ids,
+                        page_caption_index.get(g_page, []),
+                    )
                     region_match = {
                         "media_blocks": matched_assets,
                         "match_score": best_score,
@@ -787,6 +874,13 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
                     matched_assets = best_group.get("media_blocks", [])
                     g_page = best_group.get("page", 0)
                     used_asset_page_ids.update({(g_page, bid) for bid in best_group.get("asset_block_ids", [])})
+                    matched_assets = _expand_matched_assets_locally(
+                        legend,
+                        matched_assets,
+                        assets,
+                        used_asset_page_ids,
+                        page_caption_index.get(g_page, []),
+                    )
                     region_match = {
                         "media_blocks": matched_assets,
                         "match_score": best_score,
