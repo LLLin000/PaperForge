@@ -767,3 +767,4 @@ Removed `not text_ids` requirement in `compute_precaption_composite_regions`. Pr
 ### 8.6 Parked Hard Case
 
 - Parked hard case: pages that contain two adjacent formal figure captions (for example, `Figure 2` and `Figure 3`) whose visual regions are close enough that auto-separation is risky. Current policy is conservative: do not cross caption ownership boundaries automatically; prefer unresolved over wrong merge. Requires a later dedicated partitioning design.
+- New scoped fallback family: same-page narrow-caption sidecar layouts. Trigger only after existing legend recognition succeeds and only when captions are narrow, same-column, and the normal match path is ambiguous. Do not use this path for full-width captions, backmatter figure compilations, or mixed table/figure pages.
