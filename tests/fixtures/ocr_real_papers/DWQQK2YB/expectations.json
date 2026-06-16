@@ -8,23 +8,12 @@
       "Updated expectations after RC3 (unassigned role) and RC4 (post-reference backmatter) fixes.",
       "Figure captions as figure_caption_candidate is CORRECT per spec: object-gate roles stay as candidate at document-gate time.",
       "Biographies now correctly in post_reference_backmatter_zone instead of reference_zone.",
-      "Title/authors on preproof page 1 still need frontmatter classification fix (RC1).",
+      "Page 1 (preproof cover) removed entirely from output.",
       "OCR reads 'Amr Yoo' instead of 'Ami Yoo' on page 32.",
       "Eunpyo Choi biography not present in OCR output."
     ]
   },
   "pages": {
-    "1": {
-      "assertions": [
-        {"text_contains": "Journal Pre-proof", "expected_role": "frontmatter_noise", "expected_zone": "preproof_cover_zone"},
-        {"text_contains": "Magnetoresponsive Stem Cell Spheroid", "expected_role": "paper_title", "notes": "BUG: Real: frontmatter_noise - should be paper_title"},
-        {"text_contains": "Ami Yoo, Gwangjun Go", "expected_role": "authors", "notes": "BUG: Real: frontmatter_noise - should be authors"},
-        {"text_contains": "PII:", "expected_role": "frontmatter_support", "notes": "BUG: Real: frontmatter_noise"},
-        {"text_contains": "To appear in:", "expected_role": "frontmatter_support", "notes": "BUG: Real: frontmatter_noise"},
-        {"text_contains": "Received Date:", "expected_role": "frontmatter_support", "notes": "BUG: Real: frontmatter_noise"},
-        {"text_contains": "2019 Published by Elsevier", "expected_role": "frontmatter_support", "notes": "BUG: Real: frontmatter_noise"}
-      ]
-    },
     "2": {
       "assertions": [
         {"text_contains": "Magnetoresponsive Stem Cell Spheroid", "expected_role": "paper_title", "notes": "BUG: Real: unknown_structural - should be paper_title"},
@@ -205,12 +194,6 @@
     }
   },
   "expected_bugs": [
-    {
-      "bug": "frontmatter_metadata_not_classified",
-      "pages": [1],
-      "description": "PII, DOI, To appear in, Received Date, Published by Elsevier have role=frontmatter_noise instead of frontmatter_support. Title/authors also noise.",
-      "fix": "Preproof page 1 frontmatter classification needs seed role rescue for title/authors/metadata lines"
-    },
     {
       "bug": "abstract_highlights_confused",
       "pages": [3],
