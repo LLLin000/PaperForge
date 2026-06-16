@@ -182,9 +182,9 @@
         {
           "object_type": "figure",
           "figure_number": 3,
-          "asset_block_ids": [3, 4, 6, 8, 9, 10, 11, 12, 14, 15, 16, 18, 19, 21, 22, 23, 24, 25, 26],
+          "asset_block_ids": [3, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 19, 21, 22, 23, 24, 25, 26],
           "must_render_as_object": true,
-          "notes": "Figure 3 must absorb the same-page local figure stack around the matched anchor row without crossing into a second formal caption."
+          "notes": "Figure 3 absorbs all same-page local figure stack panels. Blocks 7 and 13 are tightly packed panels in the multi-panel grid."
         }
       ]
     },
