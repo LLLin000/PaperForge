@@ -30,6 +30,13 @@ The order is storage first, then Zotero import, then CLI contracts, then verific
 3. Schema includes source/provenance, paper association, annotation content, position JSON, sync/read-only state, timestamps, and soft-delete fields.
 4. A regression test proves memory/index rebuild paths do not drop or mutate `annotations.db`.
 
+**Plans:** 3 plans
+
+Plans:
+- [ ] 61-01-PLAN.md - Annotation package and DB path/connection helpers [Wave 1]
+- [ ] 61-02-PLAN.md - Annotation schema lifecycle and schema tests [Wave 2]
+- [ ] 61-03-PLAN.md - Memory rebuild isolation regression and targeted verification [Wave 3]
+
 ### Phase 62: Zotero Probe and Safe Import
 
 **Goal:** Import Zotero PDF annotations safely from a read-only copied SQLite snapshot.
@@ -84,7 +91,7 @@ The order is storage first, then Zotero import, then CLI contracts, then verific
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 61. Annotation Storage Foundation | 0/TBD | Ready to plan | - |
+| 61. Annotation Storage Foundation | 0/3 | Ready to execute | - |
 | 62. Zotero Probe and Safe Import | 0/TBD | Not started | - |
 | 63. Annotation CLI JSON Contracts | 0/TBD | Not started | - |
 | 64. Annotation Verification Gate | 0/TBD | Not started | - |
