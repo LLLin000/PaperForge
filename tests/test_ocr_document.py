@@ -4371,6 +4371,23 @@ def test_same_page_post_reference_non_reference_block_enters_tail_hold_zone() ->
     assert by_id["ack"]["zone"] == "tail_nonref_hold_zone"
 
 
+def test_tail_nonref_exclusion_does_not_convert_plain_body_prose() -> None:
+    """Plain body prose above same-page References should stay body_paragraph, not backmatter_body."""
+    from paperforge.worker.ocr_document import normalize_document_structure
+
+    blocks = [
+        {"block_id": "h1", "page": 8, "seed_role": "section_heading", "text": "Discussion", "bbox": [80, 120, 320, 180]},
+        {"block_id": "p1", "page": 8, "seed_role": "body_paragraph", "text": "This study demonstrates a reproducible increase in migration after stimulation.", "bbox": [80, 220, 980, 320]},
+        {"block_id": "refs", "page": 8, "seed_role": "reference_heading", "text": "References", "bbox": [80, 1100, 320, 1160]},
+        {"block_id": "r1", "page": 8, "seed_role": "reference_item", "text": "[1] Ref one", "bbox": [80, 1220, 980, 1300]},
+    ]
+
+    _doc, normalized = normalize_document_structure(blocks)
+    by_id = {b["block_id"]: b for b in normalized}
+    assert by_id["p1"]["role"] == "body_paragraph"
+    assert by_id["p1"]["zone"] == "body_zone"
+
+
 # ---------------------------------------------------------------------------
 # Backmatter zone normalization
 # ---------------------------------------------------------------------------

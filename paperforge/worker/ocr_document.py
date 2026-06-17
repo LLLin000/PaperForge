@@ -1797,12 +1797,24 @@ def _normalize_backmatter_roles_after_boundary(
     if tail_boundary is None or tail_boundary.spread_start is None or tail_boundary.spread_end is None:
         return
 
+    _POST_REF_PRESERVE_ROLES = {
+        "figure_inner_text",
+        "figure_caption",
+        "figure_caption_candidate",
+        "table_caption",
+        "table_caption_candidate",
+        "media_asset",
+        "table_html",
+    }
+
     tail_start = _effective_tail_start(tail_boundary, blocks)
     boundary_seen = False
     backmatter_started = False
     for block in blocks:
         page = block.get("page")
         if page is None or page < tail_start or page > tail_boundary.spread_end:
+            continue
+        if block.get("role") in _POST_REF_PRESERVE_ROLES:
             continue
 
         role = block.get("role")
@@ -2676,6 +2688,22 @@ def _split_merged_heading_blocks(blocks: list[dict], role_profiles: dict | None 
     return result
 
 
+def _looks_like_backmatter_body_text(text: str) -> bool:
+    lower = text.lower()
+    markers = (
+        "conflict of interest",
+        "declaration",
+        "publisher",
+        "author contributions",
+        "funding",
+        "acknowledg",
+        "data availability",
+        "supplement",
+        "ethics",
+    )
+    return any(marker in lower for marker in markers)
+
+
 def _exclude_tail_nonref_from_body_flow(blocks: list[dict]) -> None:
     for i, block in enumerate(blocks):
         effective_role = block.get("role")
@@ -2686,18 +2714,13 @@ def _exclude_tail_nonref_from_body_flow(blocks: list[dict]) -> None:
         if block.get("zone") != "tail_nonref_hold_zone":
             continue
 
-        # Veto: body-like paragraph preceded by heading or containing substantial prose
+        # Only convert blocks that carry explicit backmatter evidence;
+        # preserve ordinary body continuation or body-like prose.
         text = str(block.get("text") or block.get("block_content") or "")
-        if i > 0:
-            prev = blocks[i - 1]
-            if str(prev.get("role") or "") in {"section_heading", "subsection_heading"}:
-                continue
-        if len(text) > 120 and ". " in text:
-            lower = text.lower()
-            bp = {"conflict of interest","declaration","publisher","author contributions",
-                  "funding","acknowledg","data availability","supplement"}
-            if not any(b in lower for b in bp):
-                continue
+        if len(text) > 120 and ". " in text and not _looks_like_backmatter_body_text(text):
+            continue
+        if not _looks_like_backmatter_body_text(text):
+            continue
 
         old_role = block.get("role")
         block["role"] = "backmatter_body"
