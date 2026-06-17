@@ -1001,3 +1001,28 @@ def test_fulltext_has_no_debug_artifact_names(rebuilt_real_papers: dict, _ocr_ro
         fulltext = _fulltext_path(_ocr_root, key).read_text(encoding="utf-8", errors="replace")
         for token in forbidden:
             assert token not in fulltext, f"{key}: debug artifact '{token}' leaked into fulltext"
+
+
+def test_caqnw9q2_page7_conclusion_survives_same_page_reference_boundary(tmp_path: Path) -> None:
+    result = replay_production_pipeline("CAQNW9Q2", tmp_path)
+    blocks = result["structured_blocks"]
+
+    conclusion_blocks = [
+        b for b in blocks
+        if b.get("page") == 7 and "conclusion" in str(b.get("text") or "").lower()
+    ]
+    assert conclusion_blocks, "Expected CAQNW9Q2 page-7 conclusion block"
+    assert all(b.get("zone") == "body_zone" for b in conclusion_blocks)
+    assert all(b.get("role") in {"section_heading", "body_paragraph"} for b in conclusion_blocks)
+
+
+def test_dwqqk2yb_page1_preproof_frontmatter_is_not_swallowed(tmp_path: Path) -> None:
+    result = replay_production_pipeline("DWQQK2YB", tmp_path)
+    blocks = result["structured_blocks"]
+
+    page1 = [b for b in blocks if b.get("page") == 1]
+    title_like = [b for b in page1 if b.get("role") == "paper_title"]
+    author_like = [b for b in page1 if b.get("role") == "authors"]
+
+    assert title_like, "Expected a page-1 paper_title block in DWQQK2YB"
+    assert author_like, "Expected a page-1 authors block in DWQQK2YB"

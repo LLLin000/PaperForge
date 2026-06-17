@@ -4329,8 +4329,11 @@ def test_same_page_conclusion_stays_in_body_zone_before_reference_tail() -> None
     ]
     doc, normalized = normalize_document_structure(blocks)
     by_id = {b["block_id"]: b for b in normalized}
+
     assert by_id["c"]["zone"] == "body_zone"
-    assert by_id["g"]["role"] == "backmatter_body"
+    assert by_id["g"]["zone"] == "body_zone"
+    assert by_id["g"]["role"] == "body_paragraph"
+    assert by_id["r1"]["zone"] == "reference_zone"
 
 
 def test_backmatter_heading_candidate_promotes_when_post_reference_tail_is_confirmed() -> None:
@@ -4347,6 +4350,25 @@ def test_backmatter_heading_candidate_promotes_when_post_reference_tail_is_confi
     by_id = {b["block_id"]: b for b in normalized}
     assert by_id["coi"]["role"] == "backmatter_heading"
     assert by_id["coi_body"]["role"] == "backmatter_body"
+
+
+def test_same_page_post_reference_non_reference_block_enters_tail_hold_zone() -> None:
+    """Non-reference block below same-page reference heading goes to tail_nonref_hold_zone."""
+    from paperforge.worker.ocr_document import normalize_document_structure
+
+    blocks = [
+        {"block_id": "intro", "page": 9, "seed_role": "body_paragraph", "text": "Closing discussion text.", "bbox": [80, 180, 960, 280]},
+        {"block_id": "refs", "page": 9, "seed_role": "reference_heading", "text": "References", "bbox": [80, 980, 340, 1040]},
+        {"block_id": "r1", "page": 9, "seed_role": "reference_item", "text": "[1] First ref", "bbox": [80, 1080, 960, 1160]},
+        {"block_id": "ack", "page": 9, "seed_role": "body_paragraph", "text": "Acknowledgments The authors thank the staff.", "bbox": [80, 1280, 960, 1360]},
+    ]
+
+    _doc, normalized = normalize_document_structure(blocks)
+    by_id = {b["block_id"]: b for b in normalized}
+
+    assert by_id["intro"]["zone"] == "body_zone"
+    assert by_id["r1"]["zone"] == "reference_zone"
+    assert by_id["ack"]["zone"] == "tail_nonref_hold_zone"
 
 
 # ---------------------------------------------------------------------------
