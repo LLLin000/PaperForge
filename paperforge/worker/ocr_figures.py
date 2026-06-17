@@ -1458,5 +1458,19 @@ def _promote_sequence_matches(figure_inventory: dict, blocks: list[dict]) -> dic
     return figure_inventory
 
 
+def write_back_figure_roles(inventory: dict, structured_blocks: list[dict]) -> None:
+    """Update structured block roles for matched figures from media_asset to figure_asset."""
+    for figure in inventory.get("matched_figures", []):
+        for asset in figure.get("matched_assets", []):
+            asset_bid = asset.get("block_id")
+            if not asset_bid:
+                continue
+            for block in structured_blocks:
+                if block.get("block_id") == asset_bid and block.get("page") == figure.get("page"):
+                    if block.get("role") in {"media_asset", "figure_asset"}:
+                        block["role"] = "figure_asset"
+                    break
+
+
 def write_figure_inventory(dst: Path, inventory: dict[str, Any]) -> None:
     write_json(dst, inventory)

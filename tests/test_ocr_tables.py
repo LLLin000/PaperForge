@@ -800,3 +800,36 @@ def test_table_without_matched_asset_has_empty_note_block_ids() -> None:
     inventory = build_table_inventory(structured_blocks)
 
     assert inventory["tables"][0]["note_block_ids"] == []
+
+
+def test_matched_table_asset_role_is_written_back() -> None:
+    from paperforge.worker.ocr_tables import build_table_inventory, write_back_table_roles
+
+    structured_blocks = [
+        {
+            "paper_id": "K001",
+            "page": 3,
+            "block_id": "p3_b1",
+            "role": "table_caption_candidate",
+            "text": "Table 1. Baseline characteristics.",
+            "bbox": [100, 460, 620, 520],
+            "page_width": 1200,
+            "page_height": 1600,
+            "raw_label": "text",
+        },
+        {
+            "paper_id": "K001",
+            "page": 3,
+            "block_id": "p3_b2",
+            "role": "media_asset",
+            "text": "",
+            "bbox": [100, 100, 640, 430],
+            "page_width": 1200,
+            "page_height": 1600,
+            "raw_label": "table",
+        },
+    ]
+    inv = build_table_inventory(structured_blocks)
+    write_back_table_roles(inv, structured_blocks)
+    asset = next(b for b in structured_blocks if b["block_id"] == "p3_b2")
+    assert asset["role"] == "table_html"

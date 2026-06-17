@@ -280,5 +280,18 @@ def build_table_inventory(structured_blocks: list[dict]) -> dict[str, Any]:
     }
 
 
+def write_back_table_roles(inventory: dict, structured_blocks: list[dict]) -> None:
+    """Update structured block roles for matched tables from media_asset to table_html."""
+    for table in inventory.get("tables", []):
+        asset_bid = table.get("asset_block_id")
+        if not asset_bid:
+            continue
+        for block in structured_blocks:
+            if block.get("block_id") == asset_bid and block.get("page") == table.get("page"):
+                if block.get("role") in {"media_asset", "table_asset"}:
+                    block["role"] = "table_html"
+                break
+
+
 def write_table_inventory(dst: Path, inventory: dict[str, Any]) -> None:
     write_json(dst, inventory)

@@ -69,6 +69,7 @@ from paperforge.worker.ocr_errors import (
 )
 from paperforge.worker.ocr_figures import (
     build_figure_inventory,
+    write_back_figure_roles,
     write_figure_inventory,
 )
 from paperforge.worker.ocr_metadata import (
@@ -78,6 +79,7 @@ from paperforge.worker.ocr_metadata import (
 )
 from paperforge.worker.ocr_tables import (
     build_table_inventory,
+    write_back_table_roles,
     write_table_inventory,
 )
 from paperforge.worker.sync import (
@@ -1823,8 +1825,8 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
     source_pdf_path = Path(meta.get("source_pdf", "")) if meta.get("source_pdf") else None
     if source_pdf_path and source_pdf_path.exists():
         from paperforge.worker.ocr_pdf_spans import (
-            backfill_span_metadata_from_pdf,
             backfill_missing_text_from_pdf,
+            backfill_span_metadata_from_pdf,
         )
 
         # Attach PDF-derived font/geometry evidence first
@@ -1860,6 +1862,7 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
 
     # --- Phase 2: figure inventory ---
     figure_inventory = build_figure_inventory(structured)
+    write_back_figure_roles(figure_inventory, structured)
     write_figure_inventory(
         artifacts.blocks_structured.parent / "figure_inventory.json",
         figure_inventory,
@@ -1875,6 +1878,7 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
 
     # --- Phase 2: table inventory ---
     table_inventory = build_table_inventory(structured)
+    write_back_table_roles(table_inventory, structured)
     write_table_inventory(
         artifacts.blocks_structured.parent / "table_inventory.json",
         table_inventory,
