@@ -339,6 +339,39 @@ def build_layout_audit_health(layout_audit: dict) -> dict:
     }
 
 
+def build_ocr_raw_integrity_health(raw_blocks: list[dict]) -> dict:
+    """Compute health stats for OCR raw text integrity.
+
+    Counts recovered, unrecovered, and no-text-layer blocks from the
+    _ocr_raw_status flags set by backfill_missing_text_from_pdf.
+    """
+    empty_candidates = 0
+    backfilled = 0
+    unrecovered = 0
+    no_layer = 0
+    mismatch = 0
+    for block in raw_blocks:
+        status = block.get("_ocr_raw_status", "")
+        if status == "missing_text_recovered":
+            empty_candidates += 1
+            backfilled += 1
+        elif status == "missing_text_unrecovered":
+            empty_candidates += 1
+            unrecovered += 1
+            if block.get("_ocr_raw_error_type") == "no_pdf_text_layer":
+                no_layer += 1
+            else:
+                mismatch += 1
+
+    return {
+        "empty_text_candidate_count": empty_candidates,
+        "pdf_text_backfilled_count": backfilled,
+        "unrecovered_empty_text_count": unrecovered,
+        "no_pdf_text_layer_count": no_layer,
+        "pdf_text_mismatch_count": mismatch,
+    }
+
+
 def write_ocr_health(health_root: Path, report: dict[str, Any]) -> None:
     from paperforge.core.io import write_json
 

@@ -1922,8 +1922,13 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
     )
 
     # --- Phase 3: OCR health report ---
-    from paperforge.worker.ocr_health import build_ocr_health, write_ocr_health
+    from paperforge.worker.ocr_health import (
+        build_ocr_health,
+        build_ocr_raw_integrity_health,
+        write_ocr_health,
+    )
 
+    ocr_raw_integrity = build_ocr_raw_integrity_health(all_raw_blocks)
     health_report = build_ocr_health(
         page_count=page_num,
         raw_blocks_count=len(all_raw_blocks),
@@ -1933,6 +1938,7 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
         doc_structure=doc_structure,
         reader_payload=reader_payload,
     )
+    health_report["ocr_raw_integrity"] = ocr_raw_integrity
     write_ocr_health(ocr_root / "health", health_report)
     meta["ocr_health_overall"] = health_report["overall"]
 
