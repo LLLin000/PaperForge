@@ -261,6 +261,31 @@ def _looks_like_figure_inner_label(text: str, block: dict, page_blocks: list[dic
     return False
 
 
+def _looks_like_edge_band_noise(block: dict, page_width: int, page_height: int) -> bool:
+    # ponytail: edge % thresholds (3%/10%/97%/90%) assume letter/A4 layout; upgrade to config if non-standard page sizes appear
+    # ponytail: 50% height and 3% width thresholds calibrated for publisher watermarks; upgrade to config when publisher-specific profiles are introduced
+    raw_label = str(block.get("block_label") or block.get("raw_label") or "")
+    if raw_label not in {"aside_text", "header_image"}:
+        return False
+    bbox = block.get("block_bbox") or block.get("bbox") or [0, 0, 0, 0]
+    if len(bbox) < 4 or page_width <= 0 or page_height <= 0:
+        return False
+    x0, y0, x1, y1 = bbox
+    width = x1 - x0
+    height = y1 - y0
+    if width <= 0 or height <= 0:
+        return False
+    at_left = x0 <= page_width * 0.03 and x1 <= page_width * 0.10
+    at_right = x1 >= page_width * 0.97 and x0 >= page_width * 0.90
+    if not (at_left or at_right):
+        return False
+    if height < page_height * 0.50:
+        return False
+    if width > page_width * 0.03:
+        return False
+    return True
+
+
 def _is_textual_table(text: str) -> bool:
     """Check if a table-formatted block is really a textual list/box.
 
@@ -1484,6 +1509,15 @@ def assign_block_role(
             role="body_paragraph",
             confidence=0.6,
             evidence=["default body_paragraph for text label"],
+        )
+
+    # Edge-band geometry noise: ultra-narrow/tall blocks pinned to page edges
+    # (aside_text, header_image) — must be caught before generic fallback.
+    if _looks_like_edge_band_noise(block, page_width, page_height):
+        return RoleAssignment(
+            role="noise",
+            confidence=0.98,
+            evidence=["extreme narrow/tall edge-band geometry; treated as structural noise"],
         )
 
     # fallback

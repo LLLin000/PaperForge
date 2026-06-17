@@ -1,6 +1,21 @@
 from __future__ import annotations
 
 
+def test_aside_text_edge_band_is_noise_not_body() -> None:
+    from paperforge.worker.ocr_roles import assign_block_role
+
+    page_blocks = [
+        {
+            "block_label": "aside_text",
+            "block_content": "Downloaded from http://journals.lww.com/example by user. For personal use only.",
+            "block_bbox": [0, 200, 18, 1550],
+            "page": 4,
+        }
+    ]
+    role = assign_block_role(page_blocks[0], page_blocks, page_width=1200, page_height=1600)
+    assert role.role == "noise"
+
+
 def test_lowercase_panel_label_is_figure_inner_text() -> None:
     from paperforge.worker.ocr_roles import assign_block_role
 
