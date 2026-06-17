@@ -215,6 +215,49 @@ def _is_near_figure_media(block: dict, page_blocks: list[dict], max_gap: int = 2
     return False
 
 
+def _looks_like_margin_band_noise(block: dict, page_width: int, page_height: int) -> bool:
+    bbox = block.get("block_bbox") or block.get("bbox") or [0, 0, 0, 0]
+    if len(bbox) < 4 or page_width <= 0 or page_height <= 0:
+        return False
+    x0, y0, x1, y1 = bbox
+    width = x1 - x0
+    height = y1 - y0
+    if width <= 0 or height <= 0:
+        return False
+    at_left_edge = x0 <= page_width * 0.03 and x1 <= page_width * 0.12
+    at_right_edge = x1 >= page_width * 0.97 and x0 >= page_width * 0.88
+    edge_band = at_left_edge or at_right_edge
+    very_tall = height >= page_height * 0.30
+    very_narrow = width <= page_width * 0.10
+    return edge_band and very_tall and very_narrow
+
+
+def _looks_like_figure_inner_label(text: str, block: dict, page_blocks: list[dict]) -> bool:
+    t = text.strip()
+    if not t or len(t) > 12:
+        return False
+    if not any(ch.isalpha() for ch in t):
+        return False
+    if _has_figure_prefix(t):
+        return False
+    bb = block.get("block_bbox") or block.get("bbox") or [0, 0, 0, 0]
+    if len(bb) < 4:
+        return False
+    for other in page_blocks:
+        if other is block:
+            continue
+        if str(other.get("block_label") or other.get("raw_label") or "") not in {"image", "chart"}:
+            continue
+        obb = other.get("block_bbox") or other.get("bbox") or [0, 0, 0, 0]
+        if len(obb) < 4:
+            continue
+        close_x = not (bb[2] < obb[0] - 80 or bb[0] > obb[2] + 80)
+        close_y = not (bb[3] < obb[1] - 80 or bb[1] > obb[3] + 80)
+        if close_x and close_y:
+            return True
+    return False
+
+
 def _is_textual_table(text: str) -> bool:
     """Check if a table-formatted block is really a textual list/box.
 
@@ -1412,6 +1455,20 @@ def assign_block_role(
                 role="authors",
                 confidence=0.6,
                 evidence=[f"page-1 initial-lastname author byline: {text[:60]}"],
+            )
+
+        if _looks_like_margin_band_noise(block, page_width, page_height):
+            return RoleAssignment(
+                role="noise",
+                confidence=0.95,
+                evidence=["extreme page-edge narrow/tall geometry; treated as margin-band noise"],
+            )
+
+        if _looks_like_figure_inner_label(text, block, page_blocks):
+            return RoleAssignment(
+                role="figure_inner_text",
+                confidence=0.88,
+                evidence=["short figure-adjacent label; treated as figure_inner_text"],
             )
 
         if len(text) < 20:
