@@ -1,6 +1,21 @@
 from __future__ import annotations
 
 
+def test_lowercase_panel_label_is_figure_inner_text() -> None:
+    from paperforge.worker.ocr_roles import assign_block_role
+
+    role = assign_block_role(
+        {
+            "block_label": "text",
+            "block_content": "(a)",
+            "block_bbox": [90, 90, 120, 120],
+            "page": 1,
+        },
+        page_blocks=[],
+    )
+    assert role.role == "figure_inner_text"
+
+
 def test_single_panel_label_is_figure_inner_text() -> None:
     from paperforge.worker.ocr_roles import assign_block_role
 

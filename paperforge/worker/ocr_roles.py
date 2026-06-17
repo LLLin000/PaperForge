@@ -107,7 +107,7 @@ _FRONTIERS_FIGURE_TITLE_PATTERN = re.compile(
 )
 
 _PANEL_LABEL_PATTERN = re.compile(
-    r"^\(?[A-Z]\)?[\.:]?$",
+    r"^\(?[A-Za-z]\)?[\.:]?$",
 )
 
 _ROMAN_SECTION_PATTERN = re.compile(

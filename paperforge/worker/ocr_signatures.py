@@ -40,7 +40,7 @@ _REFERENCE_NUMERIC_DOT_PATTERN = re.compile(r"^\s*(\d+)\.?\s")
 _REFERENCE_NUMERIC_PAREN_PATTERN = re.compile(r"^\s*(?:\((\d+)\)|(\d+)\))\s")
 
 _PANEL_LABEL_PATTERN = re.compile(
-    r"^\(?[A-Z]\)?[\.:]?$",
+    r"^\(?[A-Za-z]\)?[\.:]?$",
 )
 
 _CITATION_LINE_PATTERN = re.compile(
