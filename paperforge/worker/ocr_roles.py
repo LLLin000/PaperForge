@@ -1128,6 +1128,16 @@ def assign_block_role(
                 evidence=[f"author byline on page 1, assigned as authors: {text[:60]}"],
             )
 
+        # Explicit correspondence line → frontmatter_support (must run before generic noise rule)
+        if page_num == 1:
+            lower_txt = text.lower().strip()
+            if lower_txt.startswith(("correspondence", "corresponding author", "address for correspondence")):
+                return RoleAssignment(
+                    role="frontmatter_support",
+                    confidence=0.75,
+                    evidence=[f"page-1 correspondence support: {text[:60]}"],
+                )
+
         if re.search(r"(?:correspondence|orcid|@)", text.lower()) and len(text.split()) <= 20 and page_num == 1:
             return RoleAssignment(
                 role="frontmatter_noise",
@@ -1279,6 +1289,14 @@ def assign_block_role(
         lower_txt = stripped.lower()
         page_num = block.get("page", 1) or 1
         still_frontmatter = _page_still_frontmatter(page_blocks, page_num, page_height)
+
+        # Explicit page-1 correspondence line → frontmatter_support
+        if page_num == 1 and lower_txt.startswith(("correspondence", "corresponding author", "address for correspondence")):
+            return RoleAssignment(
+                role="frontmatter_support",
+                confidence=0.75,
+                evidence=[f"page-1 correspondence support: {text[:60]}"],
+            )
 
         # Check for inline table HTML
         if text.strip().lower().startswith("<table"):

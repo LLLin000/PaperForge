@@ -1026,3 +1026,15 @@ def test_dwqqk2yb_page1_preproof_frontmatter_is_not_swallowed(tmp_path: Path) ->
 
     assert title_like, "Expected a page-1 paper_title block in DWQQK2YB"
     assert author_like, "Expected a page-1 authors block in DWQQK2YB"
+
+
+def test_caqnw9q2_page1_correspondence_is_not_frontmatter_noise(tmp_path: Path) -> None:
+    result = replay_production_pipeline("CAQNW9Q2", tmp_path)
+    blocks = result["structured_blocks"]
+    candidates = [
+        b for b in blocks
+        if b.get("page") == 1 and "correspondence" in str(b.get("text") or "").lower()
+    ]
+    assert candidates, "Expected a correspondence-related block on CAQNW9Q2 page 1"
+    assert any(b.get("role") == "frontmatter_support" for b in candidates)
+    assert not all(b.get("role") == "frontmatter_noise" for b in candidates)

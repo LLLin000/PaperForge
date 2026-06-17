@@ -1494,3 +1494,18 @@ def test_highlights_label_does_not_swallow_following_body_paragraphs() -> None:
     assert roles[0].role == "structured_insert_candidate"
     assert roles[1].role == "body_paragraph"
     assert roles[2].role == "body_paragraph"
+
+
+def test_page1_explicit_correspondence_line_is_frontmatter_support() -> None:
+    from paperforge.worker.ocr_roles import assign_block_role
+
+    block = {
+        "page": 1,
+        "block_label": "text",
+        "block_content": "Correspondence: Prof. Smith, Department of Orthopedics, email@example.org",
+        "block_bbox": [100, 1380, 980, 1450],
+        "page_width": 1200,
+        "page_height": 1600,
+    }
+    result = assign_block_role(block, [block], page_width=1200, page_height=1600)
+    assert result.role == "frontmatter_support"
