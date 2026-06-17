@@ -129,9 +129,10 @@ def run_derived_rebuild_for_keys(vault: Path, keys: list[str]) -> dict:
         write_resolved_metadata(metadata_dir / "resolved_metadata.json", resolved)
 
         # Rebuild figure inventory
-        from paperforge.worker.ocr_figures import build_figure_inventory, write_figure_inventory
+        from paperforge.worker.ocr_figures import build_figure_inventory, write_figure_inventory, write_back_figure_roles
 
         figure_inventory = build_figure_inventory(structured)
+        write_back_figure_roles(figure_inventory, structured)
         write_figure_inventory(artifacts.blocks_structured.parent / "figure_inventory.json", figure_inventory)
 
         # Rebuild reader figures
@@ -143,10 +144,15 @@ def run_derived_rebuild_for_keys(vault: Path, keys: list[str]) -> dict:
         write_json(reader_figures_dir / "reader_figures.json", reader_payload)
 
         # Rebuild table inventory
-        from paperforge.worker.ocr_tables import build_table_inventory, write_table_inventory
+        from paperforge.worker.ocr_tables import build_table_inventory, write_table_inventory, write_back_table_roles
 
         table_inventory = build_table_inventory(structured)
+        write_back_table_roles(table_inventory, structured)
         write_table_inventory(artifacts.blocks_structured.parent / "table_inventory.json", table_inventory)
+
+        # Re-persist structured blocks with writeback roles (table_html, figure_asset)
+        # ponytail: writes entire list again; if throughput matters, write only changed blocks
+        write_structured_blocks_jsonl(artifacts.blocks_structured, structured)
 
         # Rebuild object artifacts
         from paperforge.worker.ocr_objects import extract_and_write_objects

@@ -1884,6 +1884,10 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
         table_inventory,
     )
 
+    # Re-persist structured blocks with writeback roles (table_html, figure_asset)
+    # ponytail: writes entire list again; if throughput matters, write only changed blocks
+    write_structured_blocks_jsonl(artifacts.blocks_structured, structured)
+
     # --- Phase 2: object artifacts ---
     from paperforge.worker.ocr_objects import extract_and_write_objects
 
