@@ -104,6 +104,7 @@ def replay_production_pipeline(key: str, tmp_path: Path) -> dict:
     )
     from paperforge.worker.ocr_figure_reader import synthesize_reader_figures
     from paperforge.worker.ocr_figures import build_figure_inventory
+    from paperforge.worker.ocr_metadata import resolve_metadata
     from paperforge.worker.ocr_render import render_fulltext_markdown
     from paperforge.worker.ocr_tables import build_table_inventory
 
@@ -129,6 +130,12 @@ def replay_production_pipeline(key: str, tmp_path: Path) -> dict:
     # Step 5: table inventory
     table_inventory = build_table_inventory(structured_blocks)
 
+    resolved_metadata = (
+        resolve_metadata(source_metadata, page_blocks=raw_blocks, structured_blocks=structured_blocks)
+        if isinstance(source_metadata.get("title"), str)
+        else source_metadata
+    )
+
     # Step 6: render fulltext markdown
     page_count = (
         max((b.get("page", 1) for b in structured_blocks), default=1)
@@ -137,7 +144,7 @@ def replay_production_pipeline(key: str, tmp_path: Path) -> dict:
     )
     rendered = render_fulltext_markdown(
         structured_blocks=structured_blocks,
-        resolved_metadata=source_metadata,
+        resolved_metadata=resolved_metadata,
         figure_inventory=figure_inventory,
         table_inventory=table_inventory,
         page_count=page_count,
