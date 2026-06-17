@@ -4426,6 +4426,18 @@ def _build_accepted_table_block_ids(table_inventory: dict | None, blocks: list[d
     return accepted
 
 
+def _should_keep_formal_caption_seed(block: dict) -> bool:
+    text = str(block.get("text") or "").strip()
+    marker = str(((block.get("marker_signature") or {}).get("type")) or "")
+    zone = str(block.get("zone") or "")
+    style = str(block.get("style_family") or "")
+    if not text:
+        return False
+    if marker in {"figure_number", "table_number"}:
+        return True
+    return zone == "display_zone" and style in {"legend_like", "support_like"} and text.lower().startswith(("fig", "figure", "table"))
+
+
 def _demote_early_frontmatter_body_leaks(blocks: list[dict]) -> None:
     heading_seen_by_page: dict[int, bool] = {}
     for block in blocks:
@@ -4979,11 +4991,11 @@ def normalize_document_structure(
     # Convert unresolved object seeds to candidates when artifacts are not available
     if not gate_context.accepted_caption_block_ids:
         for block in blocks:
-            if block.get("seed_role") == "figure_caption":
+            if block.get("seed_role") == "figure_caption" and not _should_keep_formal_caption_seed(block):
                 block["role"] = "figure_caption_candidate"
     if not gate_context.accepted_table_block_ids:
         for block in blocks:
-            if block.get("seed_role") == "table_caption":
+            if block.get("seed_role") == "table_caption" and not _should_keep_formal_caption_seed(block):
                 block["role"] = "table_caption_candidate"
             if block.get("seed_role") == "table_html":
                 block["role"] = "table_html_candidate"
