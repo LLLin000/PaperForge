@@ -807,18 +807,25 @@ bone tissue, cardiac tissue... → Revised → [1]...[24]
 - Rebuilt the 6 affected papers only: `6FGDBFQN`, `A8E7SRVS`, `CAQNW9Q2`, `K7R8PEKW`, `SAN9AYVR`, `TSCKAVIS`.
 - Re-ran `diff_audit.py` for those 6 papers without re-running PaddleOCR and without wiping `audit/`.
 
-**Result:**
-- Code paths are now covered by targeted regression tests and the new rules executed cleanly on rebuild.
-- Post-rebuild mismatch totals did **not** materially move in this pass: `figure_caption_candidate 129 -> 129`, `media_asset -> body_paragraph 42 -> 42`, `unknown_structural 53 -> 53`.
-- `CAQNW9Q2` remained at `8` mismatches total after rebuild. `2GN9LMCW` was intentionally left untouched in this phase.
+**Result (Round 1 — table + document gate fixes):**
+- Code paths are now covered by targeted regression tests. Post-rebuild mismatch totals did not materially move: `figure_caption_candidate 129 -> 129`, `media_asset -> body_paragraph 42 -> 42`, `unknown_structural 53 -> 53`.
+
+**Result (Round 2 — lowercase panel-label fix):**
+- Extended `_PANEL_LABEL_PATTERN` from `[A-Z]` to `[A-Za-z]` to catch lowercase sub-panel labels `(a)`, `(b)`, etc.
+- `figure_caption_candidate` mismatches: `129 -> 79` (‑50)
+- `figure_inner_text vs figure_caption_candidate`: `54 -> 7` (‑47, recovered by the pattern fix)
+- Remaining 7 are non-letter sub-panel content (concentration labels, named panels)
+- `SAN9AYVR` mismatches dropped `117 -> 91`; `DWQQK2YB` `38 -> 35`
 
 **Test status:**
 - Red/green proof: `pytest tests/test_ocr_layout_first_regressions.py -v --tb=short` initially failed on 2 tests, then passed after the patch.
-- Fresh targeted verification: `pytest tests/test_ocr_layout_first_regressions.py tests/test_ocr_tables.py tests/test_ocr_document.py::test_figure_caption_preserved_as_candidate_when_caption_artifacts_empty tests/test_ocr_document.py::test_figure_caption_accepted_when_in_accepted_caption_block_ids -v --tb=short` -> `31 passed`.
+- Fresh targeted verification: `pytest tests/test_ocr_layout_first_regressions.py tests/test_ocr_roles.py -v --tb=short` -> `72 passed`.
 - Broad note: `tests/test_ocr_document.py` still has a pre-existing unrelated failure at `test_normalize_flat_backmatter_unifies_heading_family` on this branch.
 
 **Remaining known issues:**
-- Layout-first Phase 1 code is now locked, but the audited mismatch totals show the remaining error mass is still in broader layout attribution and zone-boundary behavior.
+- `media_asset -> body_paragraph` (42 blocks) untouched — requires deeper zone/attribution fix.
+- `unknown_structural` (54 blocks) untouched — publisher watermark detection still insufficient.
+- 7 remaining `figure_inner_text` misclassifications are non-letter content inside figures (concentration labels etc.).
 - Frontmatter author footnotes still render as body text.
 - Body text fragmentation across pages remains accepted-but-unfixed.
 - Figure JPGs still need full OCR re-run to reflect composite region fix.

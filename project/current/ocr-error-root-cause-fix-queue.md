@@ -155,30 +155,38 @@ Zone exclusion is the single deepest architectural weakness. Body text ending up
 - Rebuilt papers: `6FGDBFQN`, `A8E7SRVS`, `CAQNW9Q2`, `K7R8PEKW`, `SAN9AYVR`, `TSCKAVIS`
 - Differential audit re-run on those 6 papers without re-running PaddleOCR
 
-Observed category totals after rebuild + diff-audit:
+Observed category totals after rebuild + diff-audit (Round 1 — table + document gate fixes):
 
-- `figure_caption_candidate` mismatches: `129 -> 129`
-- `media_asset -> body_paragraph` mismatches: `42 -> 42`
-- `unknown_structural` mismatches: `53 -> 53`
-- regression papers checked: `CAQNW9Q2` rebuilt and re-audited (`8` mismatches total, unchanged from prior snapshot); `2GN9LMCW` left untouched by design in this phase
+- `figure_caption_candidate` mismatches: `129 -> 129` (no change)
+- `figure_inner_text vs figure_caption_candidate`: `54 -> 54` (no change)
+- `media_asset -> body_paragraph` mismatches: `42 -> 42` (no change)
+- `unknown_structural` mismatches: `53 -> 53` (no change)
+
+### Round 2 — `_PANEL_LABEL_PATTERN` lowercase fix
+
+Extended pattern from `[A-Z]` to `[A-Za-z]` to catch lowercase sub-panel labels `(a)`, `(b)`, etc. Rebuilt all 8 papers and re-audited.
+
+Before → After:
+- `figure_caption_candidate` mismatches: `129 -> 79` (‑50)
+- `figure_inner_text vs figure_caption_candidate`: `54 -> 7` (‑47)
+- `media_asset -> body_paragraph`: `42 -> 42` (0)
+- `unknown_structural`: `53 -> 54` (+1, noise)
 
 Interpretation:
-
-- The branch already contained the panel-label and margin-side protections covered by the new regression tests.
-- The newly added table-admission and selective-caption-retention rules are correct and now tested, but they did not materially move the audited mismatch totals in this pass.
-- Remaining error mass is still dominated by broader layout attribution and zone-boundary behavior rather than the two newly patched code paths above.
+- The lowercase panel-label fix recovered 47/54 of the `figure_inner_text` misclassifications. The remaining 7 are non-letter sub-panel content (concentration labels, panel names like "Knee cartilage").
+- `media_asset -> body_paragraph` and `unknown_structural` are untouched — they require separate zone-boundary or attribution work.
 
 ---
 
-## Appendix: Paper-by-Paper Error Densities
+## Appendix: Paper-by-Paper Error Densities (final after all Phase 1 rounds)
 
 | Paper       | Total reviewed | Mismatches | Rate  | Top issue                           |
 | ----------- | -------------- | ---------- | ----- | ----------------------------------- |
-| SAN9AYVR    | 463            | 117        | 25.3% | figure_caption_candidate (67)       |
+| SAN9AYVR    | 463            | 91         | 19.7% | media_asset → body_paragraph (36)   |
 | A8E7SRVS    | 96             | 61         | 63.5% | media_asset → body_paragraph (tables)|
-| 6FGDBFQN    | 73             | 42         | 57.5% | figure_caption_candidate (17)       |
-| K7R8PEKW    | 158            | 42         | 26.6% | unknown_structural → noise (20)     |
-| DWQQK2YB    | 99             | 38         | 38.4% | media_asset → body_paragraph        |
-| TSCKAVIS    | 72             | 14         | 19.4% | figure_inner_text (6)               |
+| 6FGDBFQN    | 73             | 42         | 57.5% | figure_caption_candidate (10)       |
+| K7R8PEKW    | 158            | 42         | 26.6% | unknown_structural → noise (18)     |
+| DWQQK2YB    | 99             | 35         | 35.4% | figure_caption_candidate (10)       |
+| TSCKAVIS    | 72             | 14         | 19.4% | figure_caption_candidate (5)        |
+| 2GN9LMCW    | 60             | 9          | 15.0% | figure_caption_candidate (5)        |
 | CAQNW9Q2    | 76             | 8          | 10.5% | body_paragraph (4)                  |
-| 2GN9LMCW    | 60             | 7          | 11.7% | figure_caption_candidate (3)        |
