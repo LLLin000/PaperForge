@@ -53,6 +53,14 @@ Plans:
 4. Paper-scoped import only reconciles stale rows inside that paper scope.
 5. Zotero-sourced rows are marked read-only and no code path writes to Zotero SQLite.
 
+**Plans:** 4 plans
+
+Plans:
+- [ ] annotation-02-01-PLAN.md - Zotero snapshot/probe/errors and valid fixture helpers [Wave 1]
+- [ ] annotation-02-02-PLAN.md - Zotero annotation normalization [Wave 2, blocked on Wave 1]
+- [ ] annotation-02-03-PLAN.md - Scoped import reconciliation into `annotations.db` [Wave 3, blocked on Wave 2]
+- [ ] annotation-02-04-PLAN.md - End-to-end import flow verification [Wave 4, blocked on Wave 3]
+
 ### Annotation Phase 3: Annotation CLI JSON Contracts
 
 **Goal:** Expose annotation storage and import behavior through stable user-facing CLI commands.
@@ -92,7 +100,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | Annotation Phase 1. Annotation Storage Foundation | 3/3 | ✓ Complete | 2026-06-17 |
-| Annotation Phase 2. Zotero Probe and Safe Import | 0/TBD | Not started | - |
+| Annotation Phase 2. Zotero Probe and Safe Import | 0/4 | Planned | - |
 | Annotation Phase 3. Annotation CLI JSON Contracts | 0/TBD | Not started | - |
 | Annotation Phase 4. Annotation Verification Gate | 0/TBD | Not started | - |
 
