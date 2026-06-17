@@ -1016,16 +1016,10 @@ def test_caqnw9q2_page7_conclusion_survives_same_page_reference_boundary(tmp_pat
     assert all(b.get("role") in {"section_heading", "body_paragraph"} for b in conclusion_blocks)
 
 
-def test_dwqqk2yb_page1_preproof_frontmatter_is_not_swallowed(tmp_path: Path) -> None:
+def test_dwqqk2yb_preproof_page_one_is_absent_from_structured_blocks(tmp_path: Path) -> None:
     result = replay_production_pipeline("DWQQK2YB", tmp_path)
     blocks = result["structured_blocks"]
-
-    page1 = [b for b in blocks if b.get("page") == 1]
-    title_like = [b for b in page1 if b.get("role") == "paper_title"]
-    author_like = [b for b in page1 if b.get("role") == "authors"]
-
-    assert title_like, "Expected a page-1 paper_title block in DWQQK2YB"
-    assert author_like, "Expected a page-1 authors block in DWQQK2YB"
+    assert not any(int(b.get("page", 0) or 0) == 1 for b in blocks)
 
 
 def test_caqnw9q2_page1_correspondence_is_not_frontmatter_noise(tmp_path: Path) -> None:

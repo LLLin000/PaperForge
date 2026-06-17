@@ -368,6 +368,103 @@ def test_normalize_document_structure_preserves_reference_zone_integrity_from_an
     assert ref_row.get("style_family") == "reference_like"
 
 
+def test_preproof_cover_page_one_is_dropped_before_document_normalization() -> None:
+    from paperforge.worker.ocr_blocks import build_structured_blocks
+
+    raw_blocks = [
+        {
+            "paper_id": "DWTEST",
+            "block_id": "p1_preproof",
+            "page": 1,
+            "text": "Journal Pre-proof",
+            "block_content": "Journal Pre-proof",
+            "raw_label": "text",
+            "block_label": "text",
+            "marker_signature": {"type": "preproof_marker"},
+            "bbox": [80, 100, 600, 180],
+            "page_width": 1200,
+            "page_height": 1600,
+        },
+        {
+            "paper_id": "DWTEST",
+            "block_id": "p1_pii",
+            "page": 1,
+            "text": "PII: S1234-5678(26)00001-2",
+            "block_content": "PII: S1234-5678(26)00001-2",
+            "raw_label": "text",
+            "block_label": "text",
+            "marker_signature": {"type": "none"},
+            "bbox": [80, 240, 700, 300],
+            "page_width": 1200,
+            "page_height": 1600,
+        },
+        {
+            "paper_id": "DWTEST",
+            "block_id": "p2_title",
+            "page": 2,
+            "text": "Real Article Title",
+            "block_content": "Real Article Title",
+            "raw_label": "paragraph_title",
+            "block_label": "paragraph_title",
+            "marker_signature": {"type": "none"},
+            "bbox": [80, 120, 800, 190],
+            "page_width": 1200,
+            "page_height": 1600,
+        },
+    ]
+
+    structured, _doc = build_structured_blocks(raw_blocks, source_metadata={"title": "Real Article Title"})
+    pages = {int(b.get("page", 0) or 0) for b in structured}
+    assert 1 not in pages
+    assert 2 in pages
+
+
+def test_non_preproof_page_one_is_not_dropped() -> None:
+    from paperforge.worker.ocr_blocks import build_structured_blocks
+
+    raw_blocks = [
+        {
+            "paper_id": "OKTEST",
+            "block_id": "p1_title",
+            "page": 1,
+            "text": "A normal paper title",
+            "block_content": "A normal paper title",
+            "raw_label": "paragraph_title",
+            "block_label": "paragraph_title",
+            "marker_signature": {"type": "none"},
+            "bbox": [80, 120, 900, 200],
+            "page_width": 1200,
+            "page_height": 1600,
+        }
+    ]
+
+    structured, _doc = build_structured_blocks(raw_blocks, source_metadata={"title": "A normal paper title"})
+    pages = {int(b.get("page", 0) or 0) for b in structured}
+    assert 1 in pages
+
+
+def test_post_reference_plain_heading_stays_heading_not_backmatter_taxonomy_upgrade() -> None:
+    from paperforge.worker.ocr_document import normalize_document_structure
+
+    blocks = [
+        {"block_id": "refs", "page": 12, "seed_role": "reference_heading", "text": "References", "bbox": [80, 900, 340, 960]},
+        {"block_id": "r1", "page": 12, "seed_role": "reference_item", "text": "[1] First ref", "bbox": [80, 1000, 960, 1080]},
+        {"block_id": "bio_h", "page": 13, "seed_role": "subsection_heading", "text": "Biographies", "bbox": [80, 120, 380, 180]},
+        {
+            "block_id": "bio_b",
+            "page": 13,
+            "seed_role": "body_paragraph",
+            "text": "Author A received the PhD degree in 2015.",
+            "bbox": [80, 220, 980, 320],
+        },
+    ]
+
+    _doc, normalized = normalize_document_structure(blocks)
+    by_id = {b["block_id"]: b for b in normalized}
+    assert by_id["bio_h"]["role"] in {"subsection_heading", "backmatter_heading"}
+    assert by_id["bio_b"]["role"] != "unknown_structural"
+
+
 def test_resolve_final_role_consumes_pre_resolved_zones_and_families() -> None:
     """resolve_final_role must see zone and style_family computed by
     infer_zones + partition_zone_families, not stale/unset values.
