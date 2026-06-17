@@ -24,6 +24,7 @@ _SAFE_PRESERVED_ROLES = {
     "non_body_insert",
     "backmatter_body",
     "body_paragraph",
+    "ocr_raw_error",
 }
 
 

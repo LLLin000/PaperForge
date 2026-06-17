@@ -119,7 +119,7 @@ def build_structured_blocks(
                 page_width=block.get("page_width", 0),
                 page_height=block.get("page_height", 0),
             )
-            render_default = role.role not in ({"noise", "unknown_structural"} | _CANDIDATE_ROLES)
+            render_default = role.role not in ({"noise", "unknown_structural", "ocr_raw_error"} | _CANDIDATE_ROLES)
             index_default = role.role not in _CANDIDATE_ROLES
             if role.role in {
                 "noise",
@@ -128,9 +128,10 @@ def build_structured_blocks(
                 "frontmatter_noise",
                 "non_body_insert",
                 "structured_insert",
+                "ocr_raw_error",
             }:
                 render_default = False
-            if role.role in {"noise", "frontmatter_noise", "table_html", "non_body_insert", "structured_insert"}:
+            if role.role in {"noise", "frontmatter_noise", "table_html", "non_body_insert", "structured_insert", "ocr_raw_error"}:
                 index_default = False
             row = {
                 "paper_id": block["paper_id"],
@@ -246,7 +247,7 @@ def build_structured_blocks(
             row["render_default"] = False
             row["index_default"] = False
         else:
-            row["render_default"] = role not in ({"noise", "unknown_structural"} | _CANDIDATE_ROLES)
+            row["render_default"] = role not in ({"noise", "unknown_structural", "ocr_raw_error"} | _CANDIDATE_ROLES)
             if role in {
                 "noise",
                 "page_header",
@@ -254,10 +255,11 @@ def build_structured_blocks(
                 "frontmatter_noise",
                 "non_body_insert",
                 "structured_insert",
+                "ocr_raw_error",
             }:
                 row["render_default"] = False
             row["index_default"] = role not in _CANDIDATE_ROLES
-            if role in {"noise", "frontmatter_noise", "table_html", "non_body_insert", "structured_insert"}:
+            if role in {"noise", "frontmatter_noise", "table_html", "non_body_insert", "structured_insert", "ocr_raw_error"}:
                 row["index_default"] = False
 
     # Persist document structure artifact for downstream debugging

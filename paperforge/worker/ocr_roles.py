@@ -714,6 +714,14 @@ def assign_block_role(
     raw_label = str(block.get("block_label") or block.get("raw_label") or "").strip()
     text = str(block.get("block_content") or block.get("text") or "").strip()
 
+    # ocr_raw_error: unrecovered OCR extraction failure
+    if block.get("_ocr_raw_status") == "missing_text_unrecovered":
+        return RoleAssignment(
+            role="ocr_raw_error",
+            confidence=0.99,
+            evidence=[f"unrecovered empty text: {block.get('_ocr_raw_error_type', 'unknown')}"],
+        )
+
     # Page-1 article-type labels (e.g. "REVIEW", "Case Report") are frontmatter
     # noise, not paper titles or section headings.
     if (
