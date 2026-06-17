@@ -243,6 +243,13 @@ from paperforge.annotation.importer import import_zotero_annotations_for_paper
 from paperforge.annotation.zotero_probe import open_zotero_readonly, zotero_snapshot
 
 
+def _open_ann(ann_db_path: Path) -> sqlite3.Connection:
+    """Open annotations.db with Row factory for test assertions."""
+    conn = sqlite3.connect(str(ann_db_path))
+    conn.row_factory = sqlite3.Row
+    return conn
+
+
 def _do_import(
     zotero_path: Path,
     annotations_db: Path,
@@ -278,6 +285,12 @@ def _do_import(
 class TestInsertNew:
     """Inserting new Zotero annotations from scratch."""
 
+    def _open_ann(self, ann_db_path: Path) -> sqlite3.Connection:
+        """Open annotations.db with Row factory for test assertions."""
+        conn = _open_ann(ann_db_path)
+        conn.row_factory = sqlite3.Row
+        return conn
+
     def test_import_inserts_new_annotations(self, zotero_full_path: Path, ann_db_path: Path):
         """Importing from ATTACH01 should produce 2 rows in annotations."""
         result = _do_import(zotero_full_path, ann_db_path)
@@ -286,7 +299,7 @@ class TestInsertNew:
         assert result.unchanged == 0
         assert result.total == 2
 
-        conn = sqlite3.connect(str(ann_db_path))
+        conn = _open_ann(ann_db_path)
         rows = conn.execute(
             "SELECT id, paper_id, source, type, sort_index FROM annotations ORDER BY sort_index"
         ).fetchall()
@@ -301,7 +314,7 @@ class TestInsertNew:
         result = _do_import(zotero_full_path, ann_db_path)
         assert result.inserted == 2
 
-        conn = sqlite3.connect(str(ann_db_path))
+        conn = _open_ann(ann_db_path)
         rows = conn.execute(
             "SELECT id, source_library_id, source_annotation_key, "
             "source_attachment_key, source_parent_key, "
@@ -329,7 +342,7 @@ class TestInsertNew:
     def test_imported_rows_have_tags(self, zotero_full_path: Path, ann_db_path: Path):
         """Tags from the Zotero fixture should be preserved."""
         _do_import(zotero_full_path, ann_db_path)
-        conn = sqlite3.connect(str(ann_db_path))
+        conn = _open_ann(ann_db_path)
         row = conn.execute(
             "SELECT tags_json FROM annotations WHERE source_annotation_key = 'ANNT001'"
         ).fetchone()
@@ -354,7 +367,7 @@ class TestReimportUpdates:
         assert r2.unchanged == 2
         assert r2.total == 2
 
-        conn = sqlite3.connect(str(ann_db_path))
+        conn = _open_ann(ann_db_path)
         count = conn.execute("SELECT COUNT(*) FROM annotations").fetchone()[0]
         conn.close()
         assert count == 2
@@ -378,7 +391,7 @@ class TestReimportUpdates:
         assert r2.unchanged == 1
         assert r2.total == 2
 
-        conn = sqlite3.connect(str(ann_db_path))
+        conn = _open_ann(ann_db_path)
         row = conn.execute(
             "SELECT selected_text, comment FROM annotations WHERE source_annotation_key = 'ANNT001'"
         ).fetchone()
@@ -391,7 +404,7 @@ class TestReimportUpdates:
         r1 = _do_import(zotero_full_path, ann_db_path)
         assert r1.inserted == 2
 
-        conn = sqlite3.connect(str(ann_db_path))
+        conn = _open_ann(ann_db_path)
         row1 = conn.execute(
             "SELECT created_at, updated_at FROM annotations WHERE source_annotation_key = 'ANNT001'"
         ).fetchone()
@@ -411,7 +424,7 @@ class TestReimportUpdates:
         r2 = _do_import(zotero_full_path, ann_db_path)
         assert r2.updated == 1
 
-        conn = sqlite3.connect(str(ann_db_path))
+        conn = _open_ann(ann_db_path)
         row2 = conn.execute(
             "SELECT created_at, updated_at FROM annotations WHERE source_annotation_key = 'ANNT001'"
         ).fetchone()
@@ -436,7 +449,7 @@ class TestStaleMarking:
         assert r2.stale == 1
         assert r2.total == 2
 
-        conn = sqlite3.connect(str(ann_db_path))
+        conn = _open_ann(ann_db_path)
         stale_row = conn.execute(
             "SELECT id, deleted_at FROM annotations WHERE source_annotation_key = 'ANNT002'"
         ).fetchone()
@@ -460,10 +473,10 @@ class TestStaleMarking:
         assert r2.stale == 1
 
         r3 = _do_import(zotero_full_path, ann_db_path)
-        assert r3.inserted == 1  # ANNT002 is re-inserted
+        assert r3.updated == 1  # ANNT002 is restored (un-staled)
         assert r3.stale == 0
 
-        conn = sqlite3.connect(str(ann_db_path))
+        conn = _open_ann(ann_db_path)
         row = conn.execute(
             "SELECT deleted_at FROM annotations WHERE source_annotation_key = 'ANNT002'"
         ).fetchone()
@@ -489,7 +502,7 @@ class TestScopeIsolation:
             attachment_item_key="ATTACH03",
         )
 
-        conn = sqlite3.connect(str(ann_db_path))
+        conn = _open_ann(ann_db_path)
         paper1_rows = conn.execute(
             "SELECT COUNT(*) FROM annotations WHERE paper_id = 'paper001' AND deleted_at IS NULL"
         ).fetchone()[0]
@@ -505,7 +518,7 @@ class TestScopeIsolation:
         """Annotations from a different Zotero library must survive import."""
         _do_import(zotero_full_path, ann_db_path)
 
-        conn = sqlite3.connect(str(ann_db_path))
+        conn = _open_ann(ann_db_path)
         lib1_rows = conn.execute(
             "SELECT COUNT(*) FROM annotations WHERE source_library_id = '1'"
         ).fetchone()[0]
@@ -520,7 +533,7 @@ class TestScopeIsolation:
         """Annotations for other attachments must not be stale-marked."""
         _do_import(zotero_full_path, ann_db_path)  # imports ATTACH01 (2 annotations)
 
-        conn = sqlite3.connect(str(ann_db_path))
+        conn = _open_ann(ann_db_path)
         rows = conn.execute(
             "SELECT source_attachment_key, deleted_at FROM annotations ORDER BY sort_index"
         ).fetchall()
@@ -529,7 +542,7 @@ class TestScopeIsolation:
 
     def test_local_rows_untouched(self, zotero_full_path: Path, ann_db_path: Path):
         """Rows with source='paperforge' must never be stale-marked by Zotero imports."""
-        conn = sqlite3.connect(str(ann_db_path))
+        conn = _open_ann(ann_db_path)
         conn.execute(
             "INSERT INTO annotations (id, paper_id, source, type, created_at, updated_at) "
             "VALUES ('local:001', 'paper001', 'paperforge', 'highlight', '2024-01-01T00:00:00Z', '2024-01-01T00:00:00Z')"
@@ -539,7 +552,7 @@ class TestScopeIsolation:
 
         _do_import(zotero_full_path, ann_db_path)
 
-        conn = sqlite3.connect(str(ann_db_path))
+        conn = _open_ann(ann_db_path)
         row = conn.execute(
             "SELECT source, deleted_at FROM annotations WHERE id = 'local:001'"
         ).fetchone()
@@ -555,7 +568,7 @@ class TestReadOnly:
         """All imported rows must have is_readonly=1."""
         _do_import(zotero_full_path, ann_db_path)
 
-        conn = sqlite3.connect(str(ann_db_path))
+        conn = _open_ann(ann_db_path)
         rows = conn.execute(
             "SELECT is_readonly FROM annotations WHERE source = 'zotero'"
         ).fetchall()
