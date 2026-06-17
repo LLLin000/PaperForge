@@ -72,6 +72,29 @@ def _union_bbox(bbox_a, bbox_b):
         return bbox_a or bbox_b or [0, 0, 0, 0]
 
 
+def _has_preproof_cover_page_one(rows: list[dict]) -> bool:
+    from paperforge.worker.ocr_roles import is_preproof_marker
+
+    for row in rows:
+        if int(row.get("page", 0) or 0) != 1:
+            continue
+        marker_type = str((row.get("marker_signature") or {}).get("type") or "")
+        text = str(row.get("text", "") or row.get("block_content", "") or "")
+        if marker_type == "preproof_marker" or is_preproof_marker(text):
+            return True
+    return False
+
+
+def _annotate_preproof_cover_drop(rows: list[dict]) -> None:
+    for row in rows:
+        if int(row.get("page", 0) or 0) <= 1:
+            continue
+        evidence = row.setdefault("evidence", [])
+        if "page_1_preproof_cover_dropped_upstream" not in evidence:
+            evidence.append("page_1_preproof_cover_dropped_upstream")
+        return
+
+
 def build_structured_blocks(
     raw_blocks: list[dict],
     source_metadata: dict | None = None,
@@ -177,17 +200,9 @@ def build_structured_blocks(
 
             rows.append(row)
 
-    # Remove entire pre-proof page 1: if page 1 contains a pre-proof noise marker,
-    # filter out all page-1 blocks so the cover page is excluded from output entirely
-    from paperforge.worker.ocr_roles import is_preproof_marker
-
-    page1_has_preproof = any(
-        int(row.get("page", 0) or 0) == 1
-        and is_preproof_marker(str(row.get("text", "") or row.get("block_content", "") or ""))
-        for row in rows
-    )
-    if page1_has_preproof:
+    if _has_preproof_cover_page_one(rows):
         rows = [row for row in rows if (row.get("page", 0) or 0) != 1]
+        _annotate_preproof_cover_drop(rows)
 
     body_family_anchor = discover_body_family_anchor(rows, page_count=total_pages)
     doc_structure = DocumentStructure(body_family_anchor=body_family_anchor)
