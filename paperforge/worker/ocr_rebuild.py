@@ -193,7 +193,7 @@ def run_derived_rebuild_for_keys(vault: Path, keys: list[str]) -> dict:
         )
 
         # Rebuild health
-        from paperforge.worker.ocr_health import build_ocr_health, write_ocr_health
+        from paperforge.worker.ocr_health import build_ocr_health, build_ocr_raw_integrity_health, write_ocr_health
 
         health_report = build_ocr_health(
             page_count=ocr_meta.get("page_count", 0),
@@ -204,6 +204,7 @@ def run_derived_rebuild_for_keys(vault: Path, keys: list[str]) -> dict:
             doc_structure=doc_structure,
             reader_payload=reader_payload,
         )
+        health_report["ocr_raw_integrity"] = build_ocr_raw_integrity_health(all_raw_blocks)
         write_ocr_health(paper_root / "health", health_report)
 
         # Persist decision log
