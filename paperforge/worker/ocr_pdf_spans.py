@@ -284,3 +284,181 @@ def backfill_span_metadata_from_pdf(
         doc.close()
 
     return raw_blocks
+
+
+def _words_to_text(words: list[tuple]) -> str:
+    """Convert fitz word tuples to reading-order text with line breaks.
+
+    Each word tuple is (x0, y0, x1, y1, text, block_no, line_no, word_no).
+    Groups words by y-position into lines, sorts within lines by x.
+    """
+    if not words:
+        return ""
+
+    # Sort by y-bucket then x
+    words = sorted(words, key=lambda w: (round(w[1] / 3), w[0]))
+
+    lines: list[str] = []
+    current_words: list[tuple[float, str]] = []
+    current_y: float | None = None
+
+    for w in words:
+        x0, y0, x1, y1, text = w[0], w[1], w[2], w[3], str(w[4]).strip()
+        if not text:
+            continue
+
+        if current_y is None or abs(y0 - current_y) <= 3:
+            current_words.append((x0, text))
+            current_y = y0 if current_y is None else current_y
+        else:
+            if current_words:
+                lines.append(" ".join(t for _, t in sorted(current_words)))
+            current_words = [(x0, text)]
+            current_y = y0
+
+    if current_words:
+        lines.append(" ".join(t for _, t in sorted(current_words)))
+
+    return "\n".join(line.strip() for line in lines if line.strip()).strip()
+
+
+TEXT_LIKE_RAW_LABELS = frozenset({"text"})
+
+
+def backfill_missing_text_from_pdf(
+    raw_blocks: list[dict],
+    pdf_path: str | Path | None,
+) -> list[dict]:
+    """Fill empty-text blocks from source PDF embedded text layer.
+
+    Trigger: raw_label == "text" AND text/block_content empty
+             AND span_metadata has PDF-derived font evidence
+             AND page dimensions are available for bbox mapping.
+
+    Extracts text via words-level fitz API with clip-constrained bbox.
+    Does NOT use intersecting-blocks fallback (too coarse for multi-column).
+
+    Sets _ocr_raw_status and _ocr_raw_error_type on every processed block.
+    Returns mutated blocks list.
+    """
+    if not pdf_path:
+        return raw_blocks
+
+    pdf_path = Path(pdf_path)
+    if not pdf_path.exists():
+        return raw_blocks
+
+    import fitz
+
+    try:
+        doc = fitz.open(str(pdf_path))
+    except Exception:
+        return raw_blocks
+
+    try:
+        recovered = 0
+        unrecovered = 0
+        no_layer = 0
+
+        for block in raw_blocks:
+            raw_label = str(block.get("raw_label") or "")
+            if raw_label not in TEXT_LIKE_RAW_LABELS:
+                continue
+
+            current_text = str(
+                block.get("text")
+                or block.get("block_content")
+                or ""
+            ).strip()
+            if current_text:
+                continue
+
+            # Guard: must have span_metadata as PDF evidence
+            spans = block.get("span_metadata")
+            if not spans or not isinstance(spans, list) or len(spans) == 0:
+                continue
+
+            page_index = int(block.get("page", 1)) - 1
+            if page_index < 0 or page_index >= len(doc):
+                block["_ocr_raw_status"] = "missing_text_unrecovered"
+                block["_ocr_raw_error_type"] = "invalid_page_index"
+                unrecovered += 1
+                continue
+
+            bbox = block.get("bbox") or block.get("block_bbox")
+            if not bbox or len(bbox) < 4:
+                block["_ocr_raw_status"] = "missing_text_unrecovered"
+                block["_ocr_raw_error_type"] = "missing_bbox"
+                unrecovered += 1
+                continue
+
+            page_width = float(block.get("page_width") or 0)
+            page_height = float(block.get("page_height") or 0)
+            if page_width <= 0 or page_height <= 0:
+                block["_ocr_raw_status"] = "missing_text_unrecovered"
+                block["_ocr_raw_error_type"] = "missing_page_dimensions"
+                unrecovered += 1
+                continue
+
+            pdf_page = doc[page_index]
+
+            try:
+                rect = _map_ocr_bbox_to_pdf_rect(
+                    bbox, page_width, page_height, pdf_page
+                )
+            except Exception:
+                block["_ocr_raw_status"] = "missing_text_unrecovered"
+                block["_ocr_raw_error_type"] = "bbox_mapping_failed"
+                unrecovered += 1
+                continue
+
+            if rect.is_empty or rect.width <= 0 or rect.height <= 0:
+                block["_ocr_raw_status"] = "missing_text_unrecovered"
+                block["_ocr_raw_error_type"] = "empty_rect"
+                unrecovered += 1
+                continue
+
+            # Expand rect slightly to account for OCR-PDF alignment drift
+            pad_x = max(1.0, rect.width * 0.01)
+            pad_y = max(1.0, rect.height * 0.05)
+            expanded = fitz.Rect(
+                rect.x0 - pad_x,
+                rect.y0 - pad_y,
+                rect.x1 + pad_x,
+                rect.y1 + pad_y,
+            ) & pdf_page.rect
+
+            try:
+                words = pdf_page.get_text("words", clip=expanded)
+            except Exception:
+                words = []
+
+            text = _words_to_text(words)
+
+            if text:
+                block["_original_ocr_text"] = ""
+                block["text"] = text
+                block["block_content"] = text
+                block["_text_source"] = "pdf_text_layer_fallback"
+                block["_ocr_raw_status"] = "missing_text_recovered"
+                block["_ocr_raw_error_type"] = "empty_text_with_pdf_evidence"
+                recovered += 1
+            else:
+                try:
+                    page_text = pdf_page.get_text("text").strip()
+                except Exception:
+                    page_text = ""
+                if not page_text:
+                    block["_ocr_raw_status"] = "missing_text_unrecovered"
+                    block["_ocr_raw_error_type"] = "no_pdf_text_layer"
+                    no_layer += 1
+                else:
+                    block["_ocr_raw_status"] = "missing_text_unrecovered"
+                    block["_ocr_raw_error_type"] = "empty_text_with_pdf_evidence"
+                    block["_text_error"] = "pdf_words_empty"
+                unrecovered += 1
+
+    finally:
+        doc.close()
+
+    return raw_blocks
