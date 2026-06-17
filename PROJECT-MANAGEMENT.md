@@ -1,6 +1,6 @@
 # OCR-v2 Project Management Log
 
-> **Branch:** `ocr-v2` | **Base:** `master` | **Last Updated:** 2026-06-16 (gold expectations + pipeline fixes + figure rework handoff)
+> **Branch:** `ocr-v2` | **Base:** `master` | **Last Updated:** 2026-06-17 (boundary close-out pass complete)
 > **Rule:** Every step is documented with: What was done, Why it was done, What comes next.
 
 ---
@@ -425,34 +425,32 @@ Interpretation:
 
 ### 4.0 Immediate handoff target for next session
 
-**Do next:** execute the group-first figure inventory plan.
+**Do next:** execute the consolidated OCR-v2 close-out plan.
 
-- Plan file: `docs/superpowers/plans/2026-06-15-group-first-figure-inventory-plan.md`
-- Scope: generic architecture refactor only
+- Priority summary: `project/current/ocr-v2-closeout-priority.md`
+- Plan file: `docs/superpowers/plans/2026-06-17-ocr-v2-closeout-single-plan.md`
+- Scope: finish the remaining close-out work in the order justified by the June 17 audit baseline
 - Explicitly out of scope for this phase:
-  - AJR-specific side-caption recovery
+  - reopening the group-first figure refactor before zone authority stabilizes
   - journal/profile/template logic
-  - strengthening AJR gold ownership expectations
+  - new large artifact surfaces unrelated to close-out
 
 Core objective:
 
 ```text
-media assets -> deterministic candidate groups -> legend -> candidate group match
-```
-
-Instead of current:
-
-```text
-legend -> single asset match -> fallback -> unresolved cluster
+same-page mixed-layout pages -> deterministic body/reference/tail split
+-> smaller tail/backmatter normalization surface
+-> frontmatter cleanup
+-> re-audit and close-out
 ```
 
 Required acceptance boundary for the next session:
 
-1. Candidate groups become the strict inventory matching unit.
-2. `single_asset` remains a valid group candidate and preserves current behavior as much as possible.
-3. Fallback and `_promote_sequence_matches()` must not split or conflict with already claimed groups.
-4. `reader_figures` / render payload shape must remain compatible.
-5. Real-paper AJR improvements are observational only in this phase.
+1. Same-page body blocks above the first reference heading stay in `body_zone` and render as body.
+2. `tail_nonref_hold_zone` becomes a smaller, more truthful hold band instead of a catch-all.
+3. Residual page-1 frontmatter support/noise cases are fixed without broad new heuristics.
+4. Gold-paper re-audit updates only truth that is visually justified.
+5. `PROJECT-MANAGEMENT.md` and `project/current/` continue to point at one active thread.
 
 ### 4.1 Remaining gap closure
 
@@ -463,10 +461,10 @@ Required acceptance boundary for the next session:
 - [x] ~~**Table inventory missing captions:** `table_caption_candidate` blocks not collected~~ (fixed in `build_table_inventory`)
 - [x] ~~**Reader status labels in output:** EXACT_MATCH/LEGEND_ONLY/ASSET_GROUP_ONLY~~ (removed)
 - [x] ~~**Pre-proof watermark leaking:** "Journal Pre-proof" appearing on page 26~~ (fixed: seed_role check)
+- [x] ~~**CAQ same-page ref/body:** Page 7 Conclusion blocked from body_zone by ref_start=7. Need block-level vertical split on same page.~~ (fixed 2026-06-17)
+- [x] ~~**CAQ correspondence footnote:** Expected frontmatter_support but classified as frontmatter_noise.~~ (fixed 2026-06-17)
 - [ ] **DW preproof frontmatter:** Title/authors/PII on page 1 still suppressed by preproof cover zone. Need seed-role rescue for preproof pages.
 - [ ] **DW biography page mismatch:** Update expectations to match actual biography span (pages 32-34 instead of 33-34).
-- [ ] **CAQ same-page ref/body:** Page 7 Conclusion blocked from body_zone by ref_start=7. Need block-level vertical split on same page.
-- [ ] **CAQ correspondence footnote:** Expected frontmatter_support but classified as frontmatter_noise.
 
 ### 4.2 Rebuild script → CLI integration
 
@@ -503,14 +501,14 @@ Requires: `canonical/blocks.raw.jsonl`, `raw/source_metadata.json`
 
 ### 4.5 Group-first figure inventory refactor (new top architectural task)
 
-- [ ] Execute `docs/superpowers/plans/2026-06-15-group-first-figure-inventory-plan.md`
-- [ ] Add red test for group-first matching in `tests/test_ocr_figures.py`
-- [ ] Add deterministic candidate media groups in `paperforge/worker/ocr_figures.py`
-- [ ] Change strict matching from asset-first to group-first
-- [ ] Ensure fallback and `_promote_sequence_matches()` cannot steal or split claimed grouped assets
-- [ ] Verify reader synthesis still materializes multi-asset strict matches as one reader figure
-- [ ] Add grouped-vs-single figure health counters in `paperforge/worker/ocr_health.py`
-- [ ] Run deterministic gold verification and observational live-paper compare without tightening AJR expectations
+- [ ] Deferred behind `project/current/ocr-v2-closeout-priority.md`
+- [ ] Resume with `docs/superpowers/plans/2026-06-15-group-first-figure-inventory-plan.md` only after the current close-out pass reduces the zone-boundary residuals
+
+### 4.6 Single-thread close-out note (2026-06-17)
+
+- The authoritative next-step summary now lives in `project/current/ocr-v2-closeout-priority.md`.
+- The authoritative execution plan now lives in `docs/superpowers/plans/2026-06-17-ocr-v2-closeout-single-plan.md`.
+- `project/current/ocr-v2-generalization-boundary.md` remains valid as the broader architecture note, but it is not the execution queue.
 
 ---
 
@@ -829,3 +827,56 @@ bone tissue, cardiac tissue... → Revised → [1]...[24]
 - Frontmatter author footnotes still render as body text.
 - Body text fragmentation across pages remains accepted-but-unfixed.
 - Figure JPGs still need full OCR re-run to reflect composite region fix.
+
+---
+
+## 9. 2026-06-17: OCR-v2 Boundary Close-Out Pass
+
+> **Session:** Zone-boundary authority fixes + tail/backmatter shrink + correspondence routing.
+> **Plan:** `docs/superpowers/plans/2026-06-17-ocr-v2-closeout-single-plan.md`
+> **Status:** Tasks 1-4 complete (code + tests), Task 5 partial (docs updated, no fixture rebuild)
+
+### 9.1 What Changed
+
+| Area | Change | Files |
+|------|--------|-------|
+| Same-page boundary | `infer_zones()` body_blocks now uses `_is_above_same_page_reference_heading()` for block-level split by position, not `body_end_page` | `ocr_document.py` |
+| Zone fallback | `_apply_content_zone_fallback()` simplified: blocks above ref heading → `body_zone` regardless of body heading position | `ocr_document.py` |
+| Tail exclusion | `_exclude_tail_nonref_from_body_flow()` now only converts blocks with explicit backmatter evidence (`_looks_like_backmatter_body_text`) | `ocr_document.py` |
+| Backmatter normalization | Added `_POST_REF_PRESERVE_ROLES` guard for figure/table captions and media_asset | `ocr_document.py` |
+| Correspondence routing | Explicit page-1 "Correspondence: ..." → `frontmatter_support` (before the generic noise catch-all) | `ocr_roles.py` |
+
+### 9.2 Tests Added or Updated
+
+| Test | Type |
+|------|------|
+| `test_same_page_conclusion_stays_in_body_zone_before_reference_tail` | Updated unit test (body prose → `body_zone` + `body_paragraph`) |
+| `test_same_page_post_reference_non_reference_block_enters_tail_hold_zone` | New unit test |
+| `test_tail_nonref_exclusion_does_not_convert_plain_body_prose` | New unit test |
+| `test_page1_explicit_correspondence_line_is_frontmatter_support` | New unit test |
+| `test_caqnw9q2_page7_conclusion_survives_same_page_reference_boundary` | Production regression gate (skipped if no fixture) |
+| `test_dwqqk2yb_page1_preproof_frontmatter_is_not_swallowed` | Production regression gate |
+| `test_caqnw9q2_page1_correspondence_is_not_frontmatter_noise` | Production regression gate |
+
+### 9.3 Test Results
+
+```text
+193 passed, 2 failed (both pre-existing backmatter failures, unchanged)
+```
+
+### 9.4 Remaining Known Issues
+
+1. **DW preproof frontmatter:** Title/authors/PII on page 1 still suppressed by preproof cover zone
+2. **Backmatter heading normalization:** `subsection_heading` not promoted to `backmatter_heading` in flat form (pre-existing)
+3. **Figure ownership:** DWQQK2YB Figures 2/3/4 ownership gaps (pre-existing)
+4. **DW biography page mismatch:** Pages 32-34 vs expectations 33-34
+5. **Figure group-first refactor:** Still deferred; zone boundary now stable enough to revisit
+
+### 9.5 Commits
+
+| Commit | Message |
+|--------|---------|
+| `6f68bf2` | `test: lock OCR close-out boundary regressions` |
+| `b7d369e` | `fix: split same-page OCR boundaries by reference heading position` |
+| `c7a9c93` | `fix: reduce false OCR tail and backmatter conversions` |
+| `827a2cc` | `fix: preserve page-1 correspondence support in OCR routing` |

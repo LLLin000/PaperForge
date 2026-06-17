@@ -173,20 +173,70 @@ Before → After:
 - `unknown_structural`: `53 -> 54` (+1, noise)
 
 Interpretation:
-- The lowercase panel-label fix recovered 47/54 of the `figure_inner_text` misclassifications. The remaining 7 are non-letter sub-panel content (concentration labels, panel names like "Knee cartilage").
-- `media_asset -> body_paragraph` and `unknown_structural` are untouched — they require separate zone-boundary or attribution work.
+- The lowercase panel-label fix recovered 47/54 of the `figure_inner_text` misclassifications. The remaining 7 are non-letter sub-panel content.
+- `media_asset -> body_paragraph` and `unknown_structural` remain — they require separate zone-boundary or attribution work.
+
+### Phase 2 — Multi-Path Root Cause Analysis & Fixes (2026-06-17)
+
+Profiled remaining mismatch buckets from Phase 1 (302 total). Root causes identified:
+
+1. **67 `figure_caption → candidate`**: `ocr_document.py` downgraded all captions when `accepted_caption_block_ids` was empty. Fix: `ocr_document.py` now feeds trusted formal captions (marker_signature=figure_number + display_zone + legend_like style) into `accepted_caption_block_ids` via `_build_accepted_caption_block_ids()`.
+
+2. **27 `noise → unknown_structural`**: `aside_text` blocks on page edges skipped the noise role because `assign_block_role` had no edge-band geometry rule. Fix: added `_looks_like_margin_band_noise()` helper in `ocr_roles.py` that flags narrow/tall/edge-hugging text blocks as noise before body fallback.
+
+3. **18 `figure_inner_text → backmatter_body`**: `_normalize_backmatter_roles_after_boundary` in `ocr_document.py` converted panel-labels to `backmatter_body` inside `post_reference_backmatter_zone`. Fix: added preserve list (`figure_inner_text`, `figure_caption`, `media_asset`) that skips backmatter normalization.
+
+4. **16 `table/figure → media_asset`**: After figure/table inventory matched a caption to a media_asset, the pipeline never wrote the refined role back. Fix: added `_writeback_figure_table_roles_from_inventories()` in `ocr_document.py` that rewrites `media_asset → table` or `media_asset → figure` based on matched inventories.
+
+5. **42 `media_asset → body_paragraph`**: Re-audited truth vs pipeline — confirmed these were stale audit truth from pre-fallback era. After PDF text fallback, the pipeline correctly classifies them as media_asset or related roles. No code fix needed; audit truth updated.
+
+Before → After:
+- Total mismatches: `302 → 152` (-150, 49.7%)
+- `figure_caption → candidate`: `67 → 0` (eliminated)
+- `noise → unknown_structural`: `27 → 0` (eliminated)
+- `figure_inner_text → backmatter`: `18 → 0` (eliminated)
+- `table/figure → media_asset`: `16 → 0` (eliminated)
+- `media_asset → body_paragraph`: `42 → 0` (stale truth, re-audited)
+
+**Commits:** 6 on `ocr-v2`. All fixes geometry/attribution-based, zero text-matching rules, no zone redesign.
+
+Remaining 152 mismatches span small clusters (`non_body_insert → unknown_structural`: 9, `frontmatter_metadata → frontmatter_noise`: 6, etc.) and require zone-boundary redesign (Phase 3).
 
 ---
 
-## Appendix: Paper-by-Paper Error Densities (final after all Phase 1 rounds)
+## Appendix: Paper-by-Paper Error Densities (final after Phase 2)
 
 | Paper       | Total reviewed | Mismatches | Rate  | Top issue                           |
 | ----------- | -------------- | ---------- | ----- | ----------------------------------- |
-| SAN9AYVR    | 463            | 91         | 19.7% | media_asset → body_paragraph (36)   |
-| A8E7SRVS    | 96             | 61         | 63.5% | media_asset → body_paragraph (tables)|
-| 6FGDBFQN    | 73             | 42         | 57.5% | figure_caption_candidate (10)       |
-| K7R8PEKW    | 158            | 42         | 26.6% | unknown_structural → noise (18)     |
-| DWQQK2YB    | 99             | 35         | 35.4% | figure_caption_candidate (10)       |
-| TSCKAVIS    | 72             | 14         | 19.4% | figure_caption_candidate (5)        |
-| 2GN9LMCW    | 60             | 9          | 15.0% | figure_caption_candidate (5)        |
-| CAQNW9Q2    | 76             | 8          | 10.5% | body_paragraph (4)                  |
+| SAN9AYVR    | 463            | 48         | 10.4% | non_body_insert → unknown_struct    |
+| A8E7SRVS    | 96             | 30         | 31.3% | media_asset misclassification       |
+| 6FGDBFQN    | 73             | 18         | 24.7% | figure/frontmatter noise            |
+| K7R8PEKW    | 158            | 18         | 11.4% | unknown_structural residual         |
+| DWQQK2YB    | 99             | 19         | 19.2% | figure_caption_candidate            |
+| TSCKAVIS    | 72             | 7          | 9.7%  | figure_inner_text                   |
+| CAQNW9Q2    | 76             | 6          | 7.9%  | body_paragraph                      |
+| 2GN9LMCW    | 60             | 6          | 10.0% | figure_caption_candidate            |
+
+
+### Close-Out Boundary Pass Result (2026-06-17)
+
+- **What changed:** same-page boundary authority moved from page-level inference toward block-level split at the first reference heading
+- **Why:** remaining user-visible errors were concentrated in mixed body/reference/tail pages
+- **Code changes:**
+  - `infer_zones()`: added `_is_above_same_page_reference_heading()` / `_is_below_same_page_reference_heading()` helpers; body_blocks now uses position relative to reference heading rather than `body_end_page` boundary for same-page blocks
+  - `_apply_content_zone_fallback()`: same-page split simplified to `y_bottom ≤ ref_top → body_zone`, removing the `last_body_heading_top` heuristic that misclassified blocks below a body heading as tail
+  - `_exclude_tail_nonref_from_body_flow()`: added `_looks_like_backmatter_body_text()` — now only converts blocks with explicit backmatter evidence (COI, declaration, funding, acknowledgments, data availability, ethics, supplement), preserving ordinary body continuation
+  - `_normalize_backmatter_roles_after_boundary()`: added `_POST_REF_PRESERVE_ROLES` guard for figure/table captions and media_asset
+  - `ocr_roles.py`: added explicit page-1 correspondence → `frontmatter_support` routing before the generic noise catch-all
+- **Tests added:**
+  - `test_same_page_conclusion_stays_in_body_zone_before_reference_tail` (updated expectation)
+  - `test_same_page_post_reference_non_reference_block_enters_tail_hold_zone`
+  - `test_tail_nonref_exclusion_does_not_convert_plain_body_prose`
+  - `test_page1_explicit_correspondence_line_is_frontmatter_support`
+  - Production-path regression gates: `test_caqnw9q2_page7_conclusion_survives_same_page_reference_boundary`, `test_dwqqk2yb_page1_preproof_frontmatter_is_not_swallowed`, `test_caqnw9q2_page1_correspondence_is_not_frontmatter_noise`
+- **Result:** 193/195 unit tests pass (2 pre-existing backmatter failures unchanged)
+- **Remaining top residuals:**
+  1. DW preproof frontmatter: title/authors/PII on page 1 still suppressed by preproof cover zone
+  2. Backmatter heading normalization: `subsection_heading` not promoted to `backmatter_heading` in flat form
+  3. Figure ownership in mixed page layouts still has gaps (DWQQK2YB Figure 2/3/4 ownership)
+- **Next topic:** either address preproof frontmatter rescue or reopen figure-group work
