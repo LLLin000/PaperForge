@@ -230,9 +230,11 @@ def _looks_like_margin_band_noise(block: dict, page_width: int, page_height: int
     very_tall = height >= page_height * 0.30
     very_narrow = width <= page_width * 0.10
     return edge_band and very_tall and very_narrow
+    # ponytail: edge thresholds (3%/12%/88%/97%) and aspect ratios (30% tall, 10% narrow) are document-layout heuristics calibrated for common publisher watermarks on A4/Letter. Upgrade path: accept as config params when publisher-specific layout profiles are introduced.
 
 
 def _looks_like_figure_inner_label(text: str, block: dict, page_blocks: list[dict]) -> bool:
+    # ponytail: 12-char max and 80px proximity are layout heuristics for single-word panel labels. Upgrade path: derive from page-median block width and font size when span_metadata is available.
     t = text.strip()
     if not t or len(t) > 12:
         return False
@@ -251,6 +253,7 @@ def _looks_like_figure_inner_label(text: str, block: dict, page_blocks: list[dic
         obb = other.get("block_bbox") or other.get("bbox") or [0, 0, 0, 0]
         if len(obb) < 4:
             continue
+        # ponytail: identity comparison (other is block) assumes same dict objects, upgrade to block_id match if page_blocks is reconstructed
         close_x = not (bb[2] < obb[0] - 80 or bb[0] > obb[2] + 80)
         close_y = not (bb[3] < obb[1] - 80 or bb[1] > obb[3] + 80)
         if close_x and close_y:
