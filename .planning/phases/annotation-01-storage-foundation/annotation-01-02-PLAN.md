@@ -1,10 +1,10 @@
 ---
-phase: 61-annotation-storage-foundation
+phase: annotation-01-storage-foundation
 plan: 02
 type: execute
 wave: 2
 depends_on:
-  - 61-01
+  - annotation-01-01
 files_modified:
   - paperforge/annotation/schema.py
   - tests/unit/annotation/test_schema.py
@@ -40,7 +40,7 @@ must_haves:
 <objective>
 Define the independent annotation database schema and schema lifecycle functions.
 
-Purpose: Give Phase 62 a safe persistence layer for imported Zotero annotations while keeping schema evolution separate from `paperforge.db`.
+Purpose: Give Annotation Phase 2 a safe persistence layer for imported Zotero annotations while keeping schema evolution separate from `paperforge.db`.
 Output: `paperforge/annotation/schema.py` and schema tests.
 </objective>
 
@@ -53,16 +53,16 @@ Output: `paperforge/annotation/schema.py` and schema tests.
 @.planning/ROADMAP.md
 @.planning/REQUIREMENTS.md
 @.planning/STATE.md
-@.planning/phases/61-annotation-storage-foundation/61-CONTEXT.md
-@.planning/phases/61-annotation-storage-foundation/61-RESEARCH.md
-@.planning/phases/61-annotation-storage-foundation/61-PATTERNS.md
+@.planning/phases/annotation-01-storage-foundation/annotation-01-CONTEXT.md
+@.planning/phases/annotation-01-storage-foundation/annotation-01-RESEARCH.md
+@.planning/phases/annotation-01-storage-foundation/annotation-01-PATTERNS.md
 
 Current analogs:
 @paperforge/memory/schema.py
 @tests/unit/memory/test_schema.py
 
 Plan dependency:
-@.planning/phases/61-annotation-storage-foundation/61-01-PLAN.md
+@.planning/phases/annotation-01-storage-foundation/annotation-01-01-PLAN.md
 </context>
 
 <tasks>
@@ -113,7 +113,7 @@ Plan dependency:
     - Store source/library scope using generic names, not only Zotero names.
     - Keep `sync_queue` as a placeholder table for future write-back, but do not implement write-back behavior.
     - `ensure_schema` should insert `schema_version` into `meta` only when absent.
-    - Do not implement `drop_all_tables` for annotations in Phase 61.
+    - Do not implement `drop_all_tables` for annotations in Annotation Phase 1.
   </action>
   <verify>
     <automated>python -m pytest tests/unit/annotation/test_schema.py tests/unit/annotation/test_db.py -q</automated>
@@ -136,5 +136,5 @@ Plan dependency:
 </success_criteria>
 
 <output>
-After completion, create `.planning/phases/61-annotation-storage-foundation/61-02-SUMMARY.md`.
+After completion, create `.planning/phases/annotation-01-storage-foundation/annotation-01-02-SUMMARY.md`.
 </output>

@@ -1,4 +1,4 @@
-# Phase 61 Context: Annotation Storage Foundation
+# Annotation Phase 1 Context: Annotation Storage Foundation
 
 ## Phase Goal
 
@@ -15,8 +15,8 @@ Create the PaperForge-owned annotation database layer without coupling it to reb
 
 - D-01: `annotations.db` is independent from `paperforge.db`; it is user evidence data, not rebuildable memory.
 - D-02: Annotation path resolution must use `paperforge_paths(vault)` and colocate with `paperforge.db` under the configured `PaperForge/indexes` directory.
-- D-03: Phase 61 does not implement Zotero probing, import reconciliation, CLI commands, plugin overlay, local editing, or Zotero write-back.
-- D-04: The schema must include enough provenance for Phase 62 to safely identify Zotero-sourced rows by source and library scope.
+- D-03: Annotation Phase 1 does not implement Zotero probing, import reconciliation, CLI commands, plugin overlay, local editing, or Zotero write-back.
+- D-04: The schema must include enough provenance for Annotation Phase 2 to safely identify Zotero-sourced rows by source and library scope.
 - D-05: Rebuild isolation must be tested directly: creating/rebuilding memory must not delete or alter `annotations.db`.
 
 ## Existing Patterns To Follow
@@ -48,4 +48,4 @@ Out of scope:
 
 ## Known Baseline Risk
 
-The clean upstream worktree has unrelated baseline test failures around `ld_deep_script` vs `pf_deep_script` and missing `snapshot` fixture. Phase 61 verification should run targeted annotation/memory tests and record unrelated baseline failures separately.
+The clean upstream worktree has unrelated baseline test failures around `ld_deep_script` vs `pf_deep_script` and missing `snapshot` fixture. Annotation Phase 1 verification should run targeted annotation/memory tests and record unrelated baseline failures separately.

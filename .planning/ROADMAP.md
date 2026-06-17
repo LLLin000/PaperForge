@@ -8,14 +8,14 @@ The order is storage first, then Zotero import, then CLI contracts, then verific
 
 ## Phases
 
-- [ ] **Phase 61: Annotation Storage Foundation** - Independent `annotations.db`, schema metadata, source/provenance fields, and rebuild isolation.
-- [ ] **Phase 62: Zotero Probe and Safe Import** - Read-only Zotero SQLite probing, temp-copy access, scoped import reconciliation, and no write-back.
-- [ ] **Phase 63: Annotation CLI JSON Contracts** - `paperforge annotation import/list/status/export --json` with stable success/error output.
-- [ ] **Phase 64: Annotation Verification Gate** - Fixture SQLite, unit/integration/CLI regression tests, and baseline-failure documentation.
+- [ ] **Annotation Phase 1: Annotation Storage Foundation** - Independent `annotations.db`, schema metadata, source/provenance fields, and rebuild isolation.
+- [ ] **Annotation Phase 2: Zotero Probe and Safe Import** - Read-only Zotero SQLite probing, temp-copy access, scoped import reconciliation, and no write-back.
+- [ ] **Annotation Phase 3: Annotation CLI JSON Contracts** - `paperforge annotation import/list/status/export --json` with stable success/error output.
+- [ ] **Annotation Phase 4: Annotation Verification Gate** - Fixture SQLite, unit/integration/CLI regression tests, and baseline-failure documentation.
 
 ## Phase Details
 
-### Phase 61: Annotation Storage Foundation
+### Annotation Phase 1: Annotation Storage Foundation
 
 **Goal:** Create the PaperForge-owned annotation database layer without coupling it to rebuildable memory/index databases.
 
@@ -33,15 +33,15 @@ The order is storage first, then Zotero import, then CLI contracts, then verific
 **Plans:** 3 plans
 
 Plans:
-- [ ] 61-01-PLAN.md - Annotation package and DB path/connection helpers [Wave 1]
-- [ ] 61-02-PLAN.md - Annotation schema lifecycle and schema tests [Wave 2]
-- [ ] 61-03-PLAN.md - Memory rebuild isolation regression and targeted verification [Wave 3]
+- [ ] annotation-01-01-PLAN.md - Annotation package and DB path/connection helpers [Wave 1]
+- [ ] annotation-01-02-PLAN.md - Annotation schema lifecycle and schema tests [Wave 2]
+- [ ] annotation-01-03-PLAN.md - Memory rebuild isolation regression and targeted verification [Wave 3]
 
-### Phase 62: Zotero Probe and Safe Import
+### Annotation Phase 2: Zotero Probe and Safe Import
 
 **Goal:** Import Zotero PDF annotations safely from a read-only copied SQLite snapshot.
 
-**Depends on:** Phase 61
+**Depends on:** Annotation Phase 1
 
 **Requirements:** ZOT-01, ZOT-02, ZOT-03, ZOT-04, ZOT-05, SAFE-01, SAFE-02, SAFE-04
 
@@ -53,11 +53,11 @@ Plans:
 4. Paper-scoped import only reconciles stale rows inside that paper scope.
 5. Zotero-sourced rows are marked read-only and no code path writes to Zotero SQLite.
 
-### Phase 63: Annotation CLI JSON Contracts
+### Annotation Phase 3: Annotation CLI JSON Contracts
 
 **Goal:** Expose annotation storage and import behavior through stable user-facing CLI commands.
 
-**Depends on:** Phase 62
+**Depends on:** Annotation Phase 2
 
 **Requirements:** CLI-01, CLI-02, CLI-03, CLI-04, CLI-05, SAFE-03
 
@@ -69,11 +69,11 @@ Plans:
 4. `paperforge annotation export --json` exports paper-scoped annotations without requiring Obsidian.
 5. CLI failure output is stable and actionable for missing Zotero DB, missing config, unknown schema, invalid filters, and unreadable DB.
 
-### Phase 64: Annotation Verification Gate
+### Annotation Phase 4: Annotation Verification Gate
 
 **Goal:** Prove annotation v0.1 works and distinguish annotation regressions from unrelated upstream baseline failures.
 
-**Depends on:** Phase 63
+**Depends on:** Annotation Phase 3
 
 **Requirements:** TEST-01, TEST-02, TEST-03, TEST-04, TEST-05
 
@@ -87,14 +87,14 @@ Plans:
 
 ## Progress
 
-**Execution Order:** 61 -> 62 -> 63 -> 64
+**Execution Order:** Annotation Phase 1 -> Annotation Phase 2 -> Annotation Phase 3 -> Annotation Phase 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 61. Annotation Storage Foundation | 0/3 | Ready to execute | - |
-| 62. Zotero Probe and Safe Import | 0/TBD | Not started | - |
-| 63. Annotation CLI JSON Contracts | 0/TBD | Not started | - |
-| 64. Annotation Verification Gate | 0/TBD | Not started | - |
+| Annotation Phase 1. Annotation Storage Foundation | 0/3 | Ready to execute | - |
+| Annotation Phase 2. Zotero Probe and Safe Import | 0/TBD | Not started | - |
+| Annotation Phase 3. Annotation CLI JSON Contracts | 0/TBD | Not started | - |
+| Annotation Phase 4. Annotation Verification Gate | 0/TBD | Not started | - |
 
 ---
 *Roadmap created: 2026-06-17*

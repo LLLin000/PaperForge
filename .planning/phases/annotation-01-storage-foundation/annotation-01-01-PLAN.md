@@ -1,5 +1,5 @@
 ---
-phase: 61-annotation-storage-foundation
+phase: annotation-01-storage-foundation
 plan: 01
 type: execute
 wave: 1
@@ -59,9 +59,9 @@ Output: `paperforge/annotation/__init__.py`, `paperforge/annotation/db.py`, path
 @.planning/ROADMAP.md
 @.planning/REQUIREMENTS.md
 @.planning/STATE.md
-@.planning/phases/61-annotation-storage-foundation/61-CONTEXT.md
-@.planning/phases/61-annotation-storage-foundation/61-RESEARCH.md
-@.planning/phases/61-annotation-storage-foundation/61-PATTERNS.md
+@.planning/phases/annotation-01-storage-foundation/annotation-01-CONTEXT.md
+@.planning/phases/annotation-01-storage-foundation/annotation-01-RESEARCH.md
+@.planning/phases/annotation-01-storage-foundation/annotation-01-PATTERNS.md
 
 Current analogs:
 @paperforge/memory/db.py
@@ -140,5 +140,5 @@ Current analogs:
 </success_criteria>
 
 <output>
-After completion, create `.planning/phases/61-annotation-storage-foundation/61-01-SUMMARY.md`.
+After completion, create `.planning/phases/annotation-01-storage-foundation/annotation-01-01-SUMMARY.md`.
 </output>

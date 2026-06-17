@@ -8,14 +8,14 @@
 
 **Goal:** Build the safe backend foundation for PDF annotations on a current upstream/master base: read Zotero annotations without modifying Zotero, store them in an independent PaperForge `annotations.db`, and expose stable annotation CLI JSON commands.
 
-**Planned phases:** 4 phases (61-64)
+**Planned phases:** 4 annotation phases (1-4)
 
 | Phase | Name | Goal |
 |-------|------|------|
-| 61 | Annotation Storage Foundation | Independent `annotations.db`, schema metadata, source/provenance fields, and rebuild isolation |
-| 62 | Zotero Probe and Safe Import | Read-only Zotero SQLite probing, temp-copy access, scoped import reconciliation, and no write-back |
-| 63 | Annotation CLI JSON Contracts | `paperforge annotation import/list/status/export --json` |
-| 64 | Annotation Verification Gate | Fixture SQLite, regression tests, CLI tests, and baseline-failure documentation |
+| Annotation Phase 1 | Annotation Storage Foundation | Independent `annotations.db`, schema metadata, source/provenance fields, and rebuild isolation |
+| Annotation Phase 2 | Zotero Probe and Safe Import | Read-only Zotero SQLite probing, temp-copy access, scoped import reconciliation, and no write-back |
+| Annotation Phase 3 | Annotation CLI JSON Contracts | `paperforge annotation import/list/status/export --json` |
+| Annotation Phase 4 | Annotation Verification Gate | Fixture SQLite, regression tests, CLI tests, and baseline-failure documentation |
 
 **Key boundaries:**
 - The 88 commits missing from the old branch are included by using current upstream/master as the base.

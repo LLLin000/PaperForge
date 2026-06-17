@@ -1,10 +1,10 @@
 ---
-phase: 61-annotation-storage-foundation
+phase: annotation-01-storage-foundation
 plan: 03
 type: execute
 wave: 3
 depends_on:
-  - 61-02
+  - annotation-01-02
 files_modified:
   - tests/unit/annotation/test_rebuild_isolation.py
   - tests/unit/annotation/test_schema.py
@@ -22,8 +22,8 @@ must_haves:
   artifacts:
     - path: "tests/unit/annotation/test_rebuild_isolation.py"
       provides: "Regression test proving memory rebuild isolation"
-    - path: ".planning/phases/61-annotation-storage-foundation/61-VERIFICATION.md"
-      provides: "Planning/execution verification note once Phase 61 executes"
+    - path: ".planning/phases/annotation-01-storage-foundation/annotation-01-VERIFICATION.md"
+      provides: "Planning/execution verification note once Annotation Phase 1 executes"
   key_links:
     - from: "tests/unit/annotation/test_rebuild_isolation.py"
       to: "paperforge/memory/schema.py"
@@ -39,7 +39,7 @@ must_haves:
 Add regression coverage that proves `annotations.db` is independent from PaperForge memory rebuild behavior.
 
 Purpose: Prevent future refactors from treating annotation data as rebuildable machine memory. This protects user evidence.
-Output: isolation regression tests and final targeted verification commands for Phase 61.
+Output: isolation regression tests and final targeted verification commands for Annotation Phase 1.
 </objective>
 
 <execution_context>
@@ -51,9 +51,9 @@ Output: isolation regression tests and final targeted verification commands for 
 @.planning/ROADMAP.md
 @.planning/REQUIREMENTS.md
 @.planning/STATE.md
-@.planning/phases/61-annotation-storage-foundation/61-CONTEXT.md
-@.planning/phases/61-annotation-storage-foundation/61-RESEARCH.md
-@.planning/phases/61-annotation-storage-foundation/61-PATTERNS.md
+@.planning/phases/annotation-01-storage-foundation/annotation-01-CONTEXT.md
+@.planning/phases/annotation-01-storage-foundation/annotation-01-RESEARCH.md
+@.planning/phases/annotation-01-storage-foundation/annotation-01-PATTERNS.md
 
 Current rebuild code:
 @paperforge/memory/schema.py
@@ -61,8 +61,8 @@ Current rebuild code:
 @paperforge/memory/db.py
 
 Plan dependencies:
-@.planning/phases/61-annotation-storage-foundation/61-01-PLAN.md
-@.planning/phases/61-annotation-storage-foundation/61-02-PLAN.md
+@.planning/phases/annotation-01-storage-foundation/annotation-01-01-PLAN.md
+@.planning/phases/annotation-01-storage-foundation/annotation-01-02-PLAN.md
 </context>
 
 <tasks>
@@ -90,14 +90,14 @@ Plan dependencies:
 </task>
 
 <task type="auto">
-  <name>Task 2: Run targeted Phase 61 verification</name>
+  <name>Task 2: Run targeted Annotation Phase 1 verification</name>
   <files>
     tests/unit/annotation/test_db.py
     tests/unit/annotation/test_schema.py
     tests/unit/annotation/test_rebuild_isolation.py
   </files>
   <action>
-    Run the complete targeted Phase 61 test set:
+    Run the complete targeted Annotation Phase 1 test set:
 
     ```powershell
     python -m pytest tests/unit/annotation/test_db.py tests/unit/annotation/test_schema.py tests/unit/annotation/test_rebuild_isolation.py -q
@@ -114,7 +114,7 @@ Plan dependencies:
   <verify>
     <automated>python -m pytest tests/unit/annotation/test_db.py tests/unit/annotation/test_schema.py tests/unit/annotation/test_rebuild_isolation.py -q</automated>
   </verify>
-  <done>Targeted Phase 61 tests pass, or unrelated baseline failures are documented separately.</done>
+  <done>Targeted Annotation Phase 1 tests pass, or unrelated baseline failures are documented separately.</done>
 </task>
 
 </tasks>
@@ -133,5 +133,5 @@ Plan dependencies:
 </success_criteria>
 
 <output>
-After completion, create `.planning/phases/61-annotation-storage-foundation/61-03-SUMMARY.md`.
+After completion, create `.planning/phases/annotation-01-storage-foundation/annotation-01-03-SUMMARY.md`.
 </output>

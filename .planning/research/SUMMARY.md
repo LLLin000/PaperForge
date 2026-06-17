@@ -50,7 +50,7 @@ Defer:
 
 ## Recommended Roadmap Shape
 
-- Phase 61: Annotation database foundation
-- Phase 62: Zotero probe and safe import
-- Phase 63: CLI JSON contracts
-- Phase 64: Verification and acceptance gate
+- Annotation Phase 1: Annotation database foundation
+- Annotation Phase 2: Zotero probe and safe import
+- Annotation Phase 3: CLI JSON contracts
+- Annotation Phase 4: Verification and acceptance gate

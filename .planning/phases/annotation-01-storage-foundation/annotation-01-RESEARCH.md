@@ -1,4 +1,4 @@
-# Phase 61 Research: Annotation Storage Foundation
+# Annotation Phase 1 Research: Annotation Storage Foundation
 
 ## Research Result
 
@@ -10,7 +10,7 @@ Use the old annotation branch as design reference, but implement against the cur
   - `paperforge_paths(vault)` currently returns:
     - `index`: `<vault>/<system_dir>/PaperForge/indexes/formal-library.json`
     - `memory_db`: `<vault>/<system_dir>/PaperForge/indexes/paperforge.db`
-  - Phase 61 should either add an `annotations_db` key or derive it from `memory_db`/`index` in `paperforge.annotation.db`.
+  - Annotation Phase 1 should either add an `annotations_db` key or derive it from `memory_db`/`index` in `paperforge.annotation.db`.
 
 - `paperforge/memory/db.py`
   - Use as direct pattern for DB path and SQLite connection helper.
@@ -33,7 +33,7 @@ Useful files from old `feat/pdf-annotation-layer`:
 Do not copy blindly. Improve the schema to match annotation v0.1 requirements:
 
 - Include source library scope as first-class fields.
-- Use names that make Phase 62 identity safe:
+- Use names that make Annotation Phase 2 identity safe:
   - `source`
   - `source_library_id`
   - `source_annotation_key`
@@ -78,7 +78,7 @@ Support tables:
 
 ## Planning Implication
 
-Phase 61 should be three plans:
+Annotation Phase 1 should be three plans:
 
 1. Add annotation package/path helper.
 2. Add schema and schema tests.

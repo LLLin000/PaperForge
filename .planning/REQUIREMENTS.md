@@ -83,29 +83,29 @@ Requirements for annotation v0.1. Each maps to roadmap phases.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DATA-01 | Phase 61 | Pending |
-| DATA-02 | Phase 61 | Pending |
-| DATA-03 | Phase 61 | Pending |
-| DATA-04 | Phase 61 | Pending |
-| ZOT-01 | Phase 62 | Pending |
-| ZOT-02 | Phase 62 | Pending |
-| ZOT-03 | Phase 62 | Pending |
-| ZOT-04 | Phase 62 | Pending |
-| ZOT-05 | Phase 62 | Pending |
-| CLI-01 | Phase 63 | Pending |
-| CLI-02 | Phase 63 | Pending |
-| CLI-03 | Phase 63 | Pending |
-| CLI-04 | Phase 63 | Pending |
-| CLI-05 | Phase 63 | Pending |
-| SAFE-01 | Phase 62 | Pending |
-| SAFE-02 | Phase 62 | Pending |
-| SAFE-03 | Phase 63 | Pending |
-| SAFE-04 | Phase 62 | Pending |
-| TEST-01 | Phase 64 | Pending |
-| TEST-02 | Phase 64 | Pending |
-| TEST-03 | Phase 64 | Pending |
-| TEST-04 | Phase 64 | Pending |
-| TEST-05 | Phase 64 | Pending |
+| DATA-01 | Annotation Phase 1 | Pending |
+| DATA-02 | Annotation Phase 1 | Pending |
+| DATA-03 | Annotation Phase 1 | Pending |
+| DATA-04 | Annotation Phase 1 | Pending |
+| ZOT-01 | Annotation Phase 2 | Pending |
+| ZOT-02 | Annotation Phase 2 | Pending |
+| ZOT-03 | Annotation Phase 2 | Pending |
+| ZOT-04 | Annotation Phase 2 | Pending |
+| ZOT-05 | Annotation Phase 2 | Pending |
+| CLI-01 | Annotation Phase 3 | Pending |
+| CLI-02 | Annotation Phase 3 | Pending |
+| CLI-03 | Annotation Phase 3 | Pending |
+| CLI-04 | Annotation Phase 3 | Pending |
+| CLI-05 | Annotation Phase 3 | Pending |
+| SAFE-01 | Annotation Phase 2 | Pending |
+| SAFE-02 | Annotation Phase 2 | Pending |
+| SAFE-03 | Annotation Phase 3 | Pending |
+| SAFE-04 | Annotation Phase 2 | Pending |
+| TEST-01 | Annotation Phase 4 | Pending |
+| TEST-02 | Annotation Phase 4 | Pending |
+| TEST-03 | Annotation Phase 4 | Pending |
+| TEST-04 | Annotation Phase 4 | Pending |
+| TEST-05 | Annotation Phase 4 | Pending |
 
 **Coverage:**
 - annotation v0.1 requirements: 23 total

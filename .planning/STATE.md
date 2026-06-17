@@ -21,13 +21,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-17)
 
 **Core value:** Researchers always know what papers they have, what state those papers are in, and whether each paper is reliably usable by AI with traceable fulltext, figures, notes, and source links.
-**Current focus:** Phase 61 - Annotation Storage Foundation
+**Current focus:** Annotation Phase 1 - Annotation Storage Foundation
 
 ## Current Position
 
-Phase: 61 of 64 (Annotation Storage Foundation)
+Phase: Annotation Phase 1 of 4 (Annotation Storage Foundation)
 Plan: 0 of 3 in current phase
-Last activity: 2026-06-17 - Phase 61 plans created (3 plans, 3 waves)
+Last activity: 2026-06-17 - Annotation Phase 1 plans created (3 plans, 3 waves)
 
 ## Performance Metrics
 

@@ -1,4 +1,4 @@
-# Phase 61 Patterns
+# Annotation Phase 1 Patterns
 
 ## Pattern 1: Database Path Helpers
 
@@ -57,4 +57,4 @@ Tests should assert:
 
 ## Pattern 4: Baseline Failure Handling
 
-Targeted verification should avoid claiming the whole repository is green, because current upstream baseline already has unrelated failures. Phase 61 plans should run the smallest relevant test set first.
+Targeted verification should avoid claiming the whole repository is green, because current upstream baseline already has unrelated failures. Annotation Phase 1 plans should run the smallest relevant test set first.
