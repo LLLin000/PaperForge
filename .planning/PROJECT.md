@@ -4,20 +4,17 @@
 
 PaperForge is a local-first Obsidian + Zotero literature asset manager. It turns Zotero exports, PDFs, OCR fulltext, figures, notes, and AI outputs into a structured, traceable, reusable research library. v1.9 consolidated the fragmented tracking layers (library-records + formal notes) into a single per-workspace structure with slim frontmatter and paper-meta.json for internal state. v1.10 fixed cross-cutting dependency drift. v1.11 resolved all v1.9 ripple effects (index paths, library-records cleanup, TUI removal, module hardening, repair blind spots).
 
-## Current Milestone: v2.0 Testing Infrastructure — 6-Layer Quality Gates
+## Current Milestone: annotation v0.1 PDF Annotation Backend & CLI Foundation
 
-**Goal:** Establish a multi-layer testing infrastructure that covers version consistency, Python units, CLI contracts, plugin-backend integration, temp vault E2E workflows, user journey contracts, and destructive scenarios — with CI matrix, golden datasets, and snapshot testing.
+**Goal:** Build the safe backend foundation for PaperForge PDF annotations: read Zotero PDF annotations without modifying Zotero, store them in an independent PaperForge annotation database, and expose stable CLI JSON commands for later Obsidian and evidence workflows.
 
 **Target features:**
-- Level 0: Version/build consistency checking (check_version_sync.py)
-- Level 1: Python unit tests (config, BBT parser, PDF resolver, OCR state machine, etc.)
-- Level 2: CLI contract tests (--json schema stability)
-- Level 3: Plugin-backend integration tests (plugin runtime helpers)
-- Level 4: Temp vault E2E tests (automatic vault creation, mock OCR, full workflow)
-- Level 5: User journey tests (UX Contract doc + journey scripts)
-- Level 6: Destructive/abnormal scenario tests (chaos matrix)
-- Fixtures: Golden dataset (zotero/ JSON fixtures, PDF fixtures, expected snapshots)
-- CI: GitHub Actions matrix (win/mac/linux, py3.10-3.12, node 20)
+- Independent `annotations.db` that is never dropped by memory/index rebuilds
+- Read-only Zotero SQLite probing with temp-copy safety
+- Safe scoped import from Zotero annotations into PaperForge
+- Stable `paperforge annotation import/list/status/export --json` CLI commands
+- Regression coverage for schema, probe, import reconciliation, CLI contracts, and hardcoded paths
+- Explicit deferral of Obsidian PDF overlay, local PDF editing, Zotero write-back, and concept-card integration to later annotation milestones
 
 ## Completed Milestone: v1.10 Dependency Cleanup
 
@@ -308,6 +305,9 @@ Key gaps identified on feature branch:
 | Separate Base views (workflow batch ops) from Dashboard (derived state viz) | lifecycle/maturity/next_step already have rich visualization in the Obsidian plugin dashboard; duplicating them in Base views as empty columns adds noise. Base views focus on user-actionable workflow gates. | ✓ Implemented |
 | Per-workspace paper-meta.json for internal state | Frontmatter is the user-facing surface; internal pipeline data (OCR jobs, health details, debug fields) belongs in a machine-readable JSON file. Keeps formal notes clean while preserving all state for tools. | ✓ Implemented |
 | Unconditional workspace creation on first sync | Flat-note fallback created confusion and required separate migration step. Always creating workspace dirs simplifies the architecture and eliminates the flat-first-then-migrate path. | ✓ Implemented |
+| Build PDF annotation as a parallel feature line | The annotation branch is separate from `modify`: it uses current upstream/master as the base, absorbs the old branch's backend/CLI ideas selectively, and defers high-risk PDF overlay work. | Active for annotation v0.1 |
+| Keep Zotero as read-only source in annotation v0.1 | Directly writing Zotero SQLite is unsafe. v0.1 reads a copied SQLite snapshot and stores PaperForge-owned rows in `annotations.db`; future write-back must use a safer API-backed design. | Active for annotation v0.1 |
+| Scope stale annotation deletion to the current import scope | The old branch's importer could soft-delete unrelated annotations during a paper-scoped import. v0.1 must make import scope explicit before stale reconciliation. | Active for annotation v0.1 |
 
 ## Research Lock
 
@@ -346,4 +346,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state.
 
 ---
-*Last updated: 2026-05-08 after milestone v2.0 initiation*
+*Last updated: 2026-06-17 after annotation v0.1 initiation*

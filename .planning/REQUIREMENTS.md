@@ -1,139 +1,117 @@
-# Requirements: PaperForge v2.0
+# Requirements: PaperForge annotation v0.1
 
-**Defined:** 2026-05-08
+**Defined:** 2026-06-17
 **Core Value:** Researchers always know what papers they have, what state those papers are in, and whether each paper is reliably usable by AI with traceable fulltext, figures, notes, and source links.
 
-## v1 Requirements
+## v0.1 Requirements
 
-Requirements for this release. Each maps to roadmap phases.
+Requirements for annotation v0.1. Each maps to roadmap phases.
 
-### Version Consistency (VC)
+### Annotation Storage (DATA)
 
-- [ ] **VC-01**: Version sync checker script validates Python `__version__`, plugin manifest.json, versions.json, CHANGELOG — all 6+ declarations are consistent before any test runs
-- [ ] **VC-02**: CI version gate runs version check on every push
+- [ ] **DATA-01**: User has an independent `annotations.db` created under the configured PaperForge index/system location, separate from rebuildable memory databases.
+- [ ] **DATA-02**: Annotation schema stores source, library scope, parent paper key, attachment key, selected text, comment, color, page label/index, sort index, tags, position JSON, timestamps, and soft-delete state.
+- [ ] **DATA-03**: Annotation schema has explicit schema-version metadata and migration entry points so future annotation versions can evolve without touching `paperforge.db`.
+- [ ] **DATA-04**: Memory/index rebuild code does not drop, recreate, or mutate `annotations.db`.
 
-### Python Unit Tests (UNIT)
+### Zotero Read-Only Import (ZOT)
 
-- [ ] **UNIT-01**: Config tests cover reading, env var override, defaults, legacy migration, all path fields
-- [ ] **UNIT-02**: BBT parser tests cover all JSON variants — valid, empty, malformed, missing citationKey, missing title, missing DOI, empty attachments, storage: paths, absolute Windows paths, bare relative paths, CJK content, multiple PDFs, zero PDFs
-- [ ] **UNIT-03**: PDF resolver tests cover Zotero data dir unset/wrong, storage path missing, CJK filenames, filenames with parentheses, OneDrive paths, moved PDFs, multi-attachment main/supplementary identification
-- [ ] **UNIT-04**: OCR state machine tests cover pending → processing → done → failed transitions, retry/backoff, progress, auto_analyze_after_ocr, error recovery
-- [ ] **UNIT-05**: Note generation tests cover frontmatter field correctness, template rendering, field migration, CJK-safe output
-- [ ] **UNIT-06**: Base generation tests cover .base file structure, workflow-gate filters, config-aware paths, CJK-safe output
-- [ ] **UNIT-07**: Index generation tests cover canonical index format, versioned envelope, atomic writes, incremental refresh, rebuild
-- [ ] **UNIT-08**: Template checker tests cover asset state derivation (lifecycle/health/maturity/next_step), edge cases, null/incomplete inputs
+- [ ] **ZOT-01**: User can import Zotero PDF annotations from a read-only copied `zotero.sqlite` snapshot.
+- [ ] **ZOT-02**: User can run a paper-scoped import without deleting or mutating annotations from unrelated papers.
+- [ ] **ZOT-03**: Import identity uses source and library scope, not a bare Zotero key alone.
+- [ ] **ZOT-04**: Zotero schema probing detects missing/unknown annotation tables or columns and returns an actionable error.
+- [ ] **ZOT-05**: Imported Zotero-sourced annotations are marked read-only in v0.1.
 
-### CLI Contract Tests (CLI)
+### Annotation CLI (CLI)
 
-- [ ] **CLI-01**: All 7 CLI commands (status, sync, ocr, doctor, repair, context, setup) return stable `--json` schema
-- [ ] **CLI-02**: Error responses use standard JSON format with `ok`, `error_code`, `message`, `details`, `suggestions` fields
-- [ ] **CLI-03**: pytest-snapshot integration with shape-specific assertions (not whole-file) for CLI output contracts
+- [ ] **CLI-01**: User can run `paperforge annotation import --json` and receive stable machine-readable import results.
+- [ ] **CLI-02**: User can run `paperforge annotation list --json` for a paper and receive ordered annotations with source provenance.
+- [ ] **CLI-03**: User can run `paperforge annotation status --json` and see database health, schema version, total annotations, and source counts.
+- [ ] **CLI-04**: User can run `paperforge annotation export --json` for a paper without requiring the Obsidian plugin.
+- [ ] **CLI-05**: CLI supports dry-run and paper filtering where relevant, with clear output that distinguishes preview from applied import.
 
-### Plugin-Backend Integration (PLUG)
+### Safety and Configuration (SAFE)
 
-- [ ] **PLUG-01**: Plugin runtime helpers testable via Vitest — resolvePythonExecutable, getPluginVersion, checkRuntimeVersion
-- [ ] **PLUG-02**: Error classification covers all error patterns (Python missing, import failed, version mismatch, pip install failure, timeout)
-- [ ] **PLUG-03**: Command dispatch tests cover buildRuntimeInstallCommand, parseRuntimeStatus, subprocess orchestration
+- [ ] **SAFE-01**: Annotation paths are resolved through PaperForge configuration and do not hardcode vault-specific folders.
+- [ ] **SAFE-02**: Zotero DB access defaults to temp-copy mode and cleans up temporary files after import/probe.
+- [ ] **SAFE-03**: Error messages cover missing Zotero DB, locked/unreadable DB, missing PaperForge config, unknown Zotero schema, and invalid annotation payloads.
+- [ ] **SAFE-04**: v0.1 has no Zotero write-back path and no direct Zotero SQLite mutation.
 
-### Temp Vault E2E (E2E)
+### Verification (TEST)
 
-- [ ] **E2E-01**: Temp vault creation fixture produces disposable Vault with config, directories, mock Zotero data
-- [ ] **E2E-02**: Full sync workflow test — BBT JSON → formal notes → canonical index → Base views
-- [ ] **E2E-03**: Full OCR workflow with mock PaddleOCR backend via HTTP interception (responses library)
-- [ ] **E2E-04**: status/doctor/repair commands run correctly in temp vault with known state
-- [ ] **E2E-05**: Multi-domain sync test verifies multiple collections sync correctly and independently
+- [ ] **TEST-01**: Tests include a fixture Zotero SQLite database with at least one parent paper, one PDF attachment, and multiple annotation types.
+- [ ] **TEST-02**: Unit tests cover schema creation, probe normalization, import reconciliation, scoped stale deletion, and service listing/export.
+- [ ] **TEST-03**: CLI tests cover `import/list/status/export --json` success and representative failure cases.
+- [ ] **TEST-04**: Regression tests prove paper-scoped import does not soft-delete annotations outside the selected paper scope.
+- [ ] **TEST-05**: Verification documents any unrelated upstream baseline failures separately from annotation v0.1 failures.
 
-### User Journey Tests (JNY)
+## Future Requirements
 
-- [x] **JNY-01**: UX Contract document (docs/ux-contract.md) with verifiable rules for installation, sync, OCR, and dashboard
-- [x] **JNY-02**: New user onboarding journey test — install → sync → OCR → analyze → deep-read
-- [x] **JNY-03**: Daily workflow journey test — existing user adds paper, syncs, OCRs, reads
+### Obsidian PDF Overlay
 
-### Chaos / Destructive Tests (CHAOS)
+- **OVLY-01**: User can see imported annotations over the native Obsidian PDF viewer.
+- **OVLY-02**: User can open an annotation popover from the PDF overlay.
+- **OVLY-03**: Overlay degrades gracefully when Obsidian/PDF.js internals are unavailable.
 
-- [x] **CHAOS-01**: Corrupted input tests — malformed JSON, corrupt PDF, broken meta.json, missing frontmatter fields
-- [x] **CHAOS-02**: Network failure tests — OCR API timeout, HTTP 401, 500, DNS unreachable
-- [x] **CHAOS-03**: Filesystem error tests — permission denied, locked files, missing directories, path too long
-- [x] **CHAOS-04**: CHAOS_MATRIX.md documents all destructive scenarios with triggers, expected behavior, and safety contracts
+### Local Annotation Editing
 
-### Fixtures / Golden Datasets (FIX)
+- **EDIT-01**: User can create a local PaperForge annotation from the PDF UI.
+- **EDIT-02**: User can edit or delete local PaperForge annotations without modifying Zotero annotations.
 
-- [ ] **FIX-01**: Zotero JSON fixtures — 8+ variants covering valid, empty, malformed, missing keys, CJK content, multi-attachment, absolute/storage/bare paths
-- [ ] **FIX-02**: PDF fixture samples — minimal valid PDFs including CJK filenames and special characters
-- [ ] **FIX-03**: Mock OCR response fixtures — realistic PaddleOCR API responses for submit, poll, result, error, timeout
-- [ ] **FIX-04**: Expected output snapshots — formal note, Base file, canonical index expected outputs for golden dataset inputs
-- [ ] **FIX-05**: MANIFEST.json tracks all fixtures with `used_by`, `generated`, `desc` metadata
+### Evidence Integration
 
-### CI Infrastructure (CI)
+- **EVID-01**: User can link an annotation as an evidence anchor from deep-reading output.
+- **EVID-02**: Concept-card preview/apply can cite annotation anchors as source evidence.
 
-- [ ] **CI-01**: PR check workflow (ci-pr-checks.yml) — L0 + L1 on push, <2 minute target
-- [ ] **CI-02**: Full CI gate (ci.yml) — L0 through L4 on merge to main
-- [ ] **CI-03**: Plasma matrix — 3 OS (win/mac/linux) × 3 Python (3.10/3.11/3.12) for L1; narrower for higher layers
-- [ ] **CI-04**: Node 20 CI runner for plugin Vitest tests
-- [x] **CI-05**: Scheduled chaos workflow (ci-chaos.yml) — L6 weekly + manual trigger
+### Zotero Write-Back
+
+- **PUSH-01**: User can push selected PaperForge local annotations back to Zotero through a safe API-backed path.
+- **PUSH-02**: User can review conflicts before write-back.
 
 ## Out of Scope
 
-Explicitly excluded. Documented to prevent scope creep.
-
 | Feature | Reason |
 |---------|--------|
-| Real Obsidian E2E in CI | Requires running Obsidian process; 3+ min per test, flaky. Use obsidian-test-mocks for unit tests |
-| Load/performance testing | PaperForge is a local single-user tool; no performance requirements |
-| Cross-browser testing | Plugin runs inside Obsidian's Electron (Chromium only) — not applicable |
-| Full parallel 3×3×6 matrix | 54 CI jobs per PR for minimal added confidence. Plasma matrix is sufficient |
-| Automated visual regression | Screenshot-based plugin UI tests are fragile and high-maintenance |
-| Coverage percentage gates | Would incentivize superficial testing. Use targeted coverage instead |
-| Property-based testing (Hypothesis) | High complexity, low value for this project's domain |
+| Obsidian PDF overlay | High-risk plugin/PDF.js work; belongs in annotation v0.2 after backend is stable. |
+| Creating/editing/deleting annotations in PDF UI | Requires overlay and interaction model; belongs after read-only import/list works. |
+| Writing to Zotero SQLite | Unsafe; Zotero DB is an external source of truth and must not be mutated directly. |
+| Zotero Web API write-back | Requires credentials, rate limits, version/conflict handling; future milestone. |
+| Concept-card/deep-reading evidence integration | Useful, but annotation storage and CLI must stabilize first. |
+| EPUB/web annotations | Different selector model; not needed for PDF annotation MVP. |
 
 ## Traceability
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| VC-01 | Phase 51 | Pending |
-| VC-02 | Phase 51 | Pending |
-| UNIT-01 | Phase 51 | Pending |
-| UNIT-02 | Phase 51 | Pending |
-| UNIT-03 | Phase 51 | Pending |
-| UNIT-04 | Phase 51 | Pending |
-| UNIT-05 | Phase 51 | Pending |
-| UNIT-06 | Phase 51 | Pending |
-| UNIT-07 | Phase 51 | Pending |
-| UNIT-08 | Phase 51 | Pending |
-| CLI-01 | Phase 52 | Pending |
-| CLI-02 | Phase 52 | Pending |
-| CLI-03 | Phase 52 | Pending |
-| PLUG-01 | Phase 53 | Pending |
-| PLUG-02 | Phase 53 | Pending |
-| PLUG-03 | Phase 53 | Pending |
-| E2E-01 | Phase 53 | Pending |
-| E2E-02 | Phase 53 | Pending |
-| E2E-03 | Phase 53 | Pending |
-| E2E-04 | Phase 53 | Pending |
-| E2E-05 | Phase 53 | Pending |
-| JNY-01 | Phase 54 | Complete |
-| JNY-02 | Phase 54 | Complete |
-| JNY-03 | Phase 54 | Complete |
-| CHAOS-01 | Phase 54 | Complete |
-| CHAOS-02 | Phase 54 | Complete |
-| CHAOS-03 | Phase 54 | Complete |
-| CHAOS-04 | Phase 54 | Complete |
-| FIX-01 | Phase 52 | Pending |
-| FIX-02 | Phase 52 | Pending |
-| FIX-03 | Phase 52 | Pending |
-| FIX-04 | Phase 52 | Pending |
-| FIX-05 | Phase 52 | Pending |
-| CI-01 | Phase 51 | Pending |
-| CI-02 | Phase 55 | Pending |
-| CI-03 | Phase 55 | Pending |
-| CI-04 | Phase 53 | Pending |
-| CI-05 | Phase 54 | Complete |
+| DATA-01 | Phase 61 | Pending |
+| DATA-02 | Phase 61 | Pending |
+| DATA-03 | Phase 61 | Pending |
+| DATA-04 | Phase 61 | Pending |
+| ZOT-01 | Phase 62 | Pending |
+| ZOT-02 | Phase 62 | Pending |
+| ZOT-03 | Phase 62 | Pending |
+| ZOT-04 | Phase 62 | Pending |
+| ZOT-05 | Phase 62 | Pending |
+| CLI-01 | Phase 63 | Pending |
+| CLI-02 | Phase 63 | Pending |
+| CLI-03 | Phase 63 | Pending |
+| CLI-04 | Phase 63 | Pending |
+| CLI-05 | Phase 63 | Pending |
+| SAFE-01 | Phase 62 | Pending |
+| SAFE-02 | Phase 62 | Pending |
+| SAFE-03 | Phase 63 | Pending |
+| SAFE-04 | Phase 62 | Pending |
+| TEST-01 | Phase 64 | Pending |
+| TEST-02 | Phase 64 | Pending |
+| TEST-03 | Phase 64 | Pending |
+| TEST-04 | Phase 64 | Pending |
+| TEST-05 | Phase 64 | Pending |
 
 **Coverage:**
-- v2.0 requirements: 38 total
-- Mapped to phases: 38
-- Unmapped: 0 ✓
+- annotation v0.1 requirements: 23 total
+- Mapped to phases: 23
+- Unmapped: 0
 
 ---
-*Requirements defined: 2026-05-08*
-*Last updated: 2026-05-08 after initial definition*
+*Requirements defined: 2026-06-17*
+*Last updated: 2026-06-17 after annotation v0.1 initiation*

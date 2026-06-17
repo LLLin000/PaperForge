@@ -1,81 +1,47 @@
-# Technology Stack: v2.0 Testing Infrastructure
+# Research: annotation v0.1 Stack
 
-**Project:** PaperForge v2.0
-**Researched:** 2026-05-08
+**Date:** 2026-06-17
+**Milestone:** annotation v0.1 - PDF Annotation Backend & CLI Foundation
 
-## Recommended Stack
+## Recommendation
 
-### Core Test Framework
-| Technology | Version | Purpose | Why |
-|------------|---------|---------|-----|
-| pytest | >=8.0 | Python test framework | Already in use; industry standard for Python |
-| pytest-snapshot | >=0.9.0 | Snapshot/approval testing | CLI JSON output stability contracts; simpler than full approval-testing libs |
-| pytest-timeout | >=2.2.0 | Test timeout guards | Prevent runaway E2E/chaos tests from blocking CI |
-| pytest-mock | >=3.12.0 | Enhanced mocking | Built-in monkeypatch replacement; integrates with `unittest.mock` |
-| responses | >=0.25.0 | HTTP mock library | Intercept `requests` library calls at HTTP layer for mock OCR backend |
-| coverage | >=7.4.0 | Coverage measurement | Standard Python coverage tool; generates CI reports |
+Use the existing PaperForge Python stack only:
 
-### Plugin Test Framework
-| Technology | Version | Purpose | Why |
-|------------|---------|---------|-----|
-| Vitest | >=2.0 | JS test runner | Native ESM support (plugin uses `require` but can be wrapped); ~2x faster than Jest |
-| obsidian-test-mocks | >=0.12 | Obsidian API mocks | Comprehensive mock implementations of `obsidian.d.ts`; 100% code coverage maintained |
-| jsdom | >=24.0 | DOM environment | Required by Obsidian plugin tests (document, window access) |
-| Node.js | >=20.0 | JS runtime | Required by Vitest and obsidian-test-mocks |
+- Python standard library `sqlite3` for `annotations.db`
+- Existing config/path resolver for vault and system/index paths
+- Existing CLI dispatch in `paperforge/cli.py`
+- Existing pytest test stack
 
-### CI Infrastructure
-| Technology | Version | Purpose | Why |
-|------------|---------|---------|-----|
-| actions/setup-python | v5 | Python version management | Standard GitHub Action; supports cache, pre-release |
-| actions/setup-node | v4 | Node version management | Required for plugin tests |
-| actions/checkout | v4 | Source checkout | Latest stable checkout action |
-| re-actors/alls-green | v1 | CI gate aggregation | Simplifies "all jobs passed" check with branch protection |
+Do not add a new database dependency, PDF.js dependency, or Obsidian plugin overlay dependency in v0.1.
 
-### Supporting Scripts
-| Script | Language | Purpose |
-|--------|----------|---------|
-| `scripts/check_version_sync.py` | Python | Level 0: verify version consistency across 6+ files |
-| `scripts/run_all_tests.sh` | Bash | Sequential runner for local testing |
-| `scripts/run_chaos_tests.sh` | Bash | Chaos test runner with scenario selection |
-| `scripts/generate_fixtures.py` | Python | Regenerate golden datasets from canonical sources |
+## Source Inputs
 
-## Alternatives Considered
+- Remote branch `feat/pdf-annotation-layer`
+- Remote reports:
+  - `reports/00-executive-summary.md`
+  - `reports/03-paperforge-schema-design.md`
+  - `reports/05-mvp-implementation-plan.md`
+  - `reports/06-risk-and-license-review.md`
+- Current clean `upstream/master` worktree:
+  - `C:\Users\tan\Desktop\GaoLab-SYSUCC\9.code\PaperForge-feat-pdf-annotation-layer`
 
-| Category | Recommended | Alternative | Why Not |
-|----------|-------------|-------------|---------|
-| HTTP Mock | responses | pytest-httpx | responses is simpler and sufficient for `requests`-based OCR calls; httpx adds unnecessary dependency |
-| Plugin Test Mock | obsidian-test-mocks | Manual `__mocks__/obsidian.ts` | Manual obsidian mocking requires constant maintenance as API evolves; obsidian-test-mocks is community-maintained with 100% coverage |
-| JS Test Runner | Vitest | Jest | Jest requires transforms for ESM; Vitest is natively ESM-compatible and faster for watch mode |
-| Snapshot Testing | pytest-snapshot | syrupy | pytest-snapshot is simpler; syrupy's extra features (serializer plugins) not needed for JSON-only snapshots |
-| CI Orchestration | Native GitHub Actions | tox | tox adds complexity for simple package install; actions/setup-python + pip install is more transparent and debuggable |
-| Obsidian E2E Testing | Deferred to v2.1 | obsidian-e2e / obsidian-integration-testing | Both require a running Obsidian process, add 3+ min per test, and are flaky in CI. Not worth the cost for current milestone |
+## Stack Decisions
 
-## Installation
+| Area | Decision | Rationale |
+|------|----------|-----------|
+| Local storage | Independent `annotations.db` | Annotation data is user data and must not be dropped during memory/index rebuilds. |
+| Zotero source | Read-only SQLite probe | Offline, no API keys, enough for Zotero PDF annotations. |
+| SQLite access | Copy `zotero.sqlite` to temp by default | Avoid locks and inconsistent reads while Zotero is open. |
+| CLI output | Stable JSON contract | Plugin and future automation can consume it without parsing text. |
+| Plugin overlay | Deferred | The old branch's PDF overlay depends on Obsidian/PDF.js internals and should be isolated in v0.2. |
 
-```toml
-# pyproject.toml additions
-[project.optional-dependencies]
-test = [
-    "pytest>=7.4.0",
-    "pytest-snapshot>=0.9.0",
-    "pytest-timeout>=2.2.0",
-    "responses>=0.25.0",
-    "pytest-mock>=3.12.0",
-    "coverage>=7.4.0",
-    "ruff>=0.4.0",
-]
-```
+## Dependencies Not Added
 
-```bash
-# Plugin test dependencies (separate package.json in tests/plugin/)
-npm install --save-dev vitest obsidian-test-mocks jsdom
-```
+- No `sql.js`/WASM in v0.1
+- No Obsidian PDF monkey-patching in v0.1
+- No Zotero Web API client in v0.1
+- No write-back credentials or token storage in v0.1
 
-## Sources
+## Integration Notes
 
-- pytest documentation: https://pytest.org/ (HIGH confidence — official docs)
-- pytest-snapshot: https://pypi.org/project/pytest-snapshot/ (MEDIUM confidence — verified via search)
-- obsidian-test-mocks: https://www.npmjs.com/package/obsidian-test-mocks (MEDIUM confidence — verified via Exa search)
-- Vitest: https://vitest.dev/ (HIGH confidence — official docs)
-- GitHub Actions setup-python: https://github.com/actions/setup-python (HIGH confidence — official docs)
-- responses library: https://pypi.org/project/responses/ (HIGH confidence — official docs)
+The old annotation branch has useful backend modules, but the implementation should be ported selectively because the branch is behind current master and contains high-risk plugin changes. v0.1 should use current PaperForge path/config conventions and current CLI patterns rather than copying old branch assumptions.

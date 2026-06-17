@@ -1,5 +1,29 @@
 # Milestones: PaperForge Lite Release Hardening
 
+## annotation v0.1 PDF Annotation Backend & CLI Foundation (Initiated: 2026-06-17)
+
+**Status:** Planning
+**Roadmap:** `.planning/ROADMAP.md`
+**Requirements:** `.planning/REQUIREMENTS.md`
+
+**Goal:** Build the safe backend foundation for PDF annotations on a current upstream/master base: read Zotero annotations without modifying Zotero, store them in an independent PaperForge `annotations.db`, and expose stable annotation CLI JSON commands.
+
+**Planned phases:** 4 phases (61-64)
+
+| Phase | Name | Goal |
+|-------|------|------|
+| 61 | Annotation Storage Foundation | Independent `annotations.db`, schema metadata, source/provenance fields, and rebuild isolation |
+| 62 | Zotero Probe and Safe Import | Read-only Zotero SQLite probing, temp-copy access, scoped import reconciliation, and no write-back |
+| 63 | Annotation CLI JSON Contracts | `paperforge annotation import/list/status/export --json` |
+| 64 | Annotation Verification Gate | Fixture SQLite, regression tests, CLI tests, and baseline-failure documentation |
+
+**Key boundaries:**
+- The 88 commits missing from the old branch are included by using current upstream/master as the base.
+- The 69 old annotation commits are not merged wholesale; v0.1 selectively ports backend/CLI ideas and fixes known importer risks.
+- Obsidian PDF overlay, local PDF editing, Zotero write-back, and evidence-card integration are deferred.
+
+---
+
 ## v1.8 AI Discussion & Deep-Reading Dashboard (Shipped: 2026-05-07)
 
 **Phases completed:** 6 phases (31-36)
