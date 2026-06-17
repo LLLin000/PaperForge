@@ -218,16 +218,21 @@ def test_missing_table_raises_zotero_schema_error():
     try:
         conn = sqlite3.connect(str(db_path))
         conn.execute(
-            "CREATE TABLE items (itemID INTEGER PRIMARY KEY, key TEXT)"
+            "CREATE TABLE items ("
+            "  itemID INTEGER PRIMARY KEY, "
+            "  key TEXT, "
+            "  dateModified TEXT"
+            ")"
         )
         conn.commit()
         conn.close()
 
-        with pytest.raises(ZoteroSchemaError) as excinfo:
-            with zotero_snapshot(db_path) as snap:
-                conn2 = open_zotero_readonly(snap)
+        with zotero_snapshot(db_path) as snap:
+            conn2 = open_zotero_readonly(snap)
+            with pytest.raises(ZoteroSchemaError) as excinfo:
                 probe_zotero_annotation_schema(conn2)
-                conn2.close()
+            conn2.close()
+
         err_msg = str(excinfo.value)
         assert "itemAnnotations" in err_msg or "table" in err_msg.lower()
     finally:
@@ -243,12 +248,9 @@ def test_missing_column_raises_zotero_schema_error():
     db_path = Path(tmp.name)
     try:
         conn = sqlite3.connect(str(db_path))
-        # items table with all required columns
         conn.execute(
             "CREATE TABLE items ("
             "  itemID INTEGER PRIMARY KEY, "
-            "  itemTypeID INTEGER DEFAULT 1, "
-            "  libraryID INTEGER DEFAULT 1, "
             "  key TEXT, "
             "  dateModified TEXT"
             ")"
@@ -259,13 +261,12 @@ def test_missing_column_raises_zotero_schema_error():
             "  parentItemID INTEGER"
             ")"
         )
-        # itemAnnotations MISSING 'text' and 'comment' columns
+        # itemAnnotations MISSING 'comment' and other required columns
         conn.execute(
             "CREATE TABLE itemAnnotations ("
             "  itemID INTEGER PRIMARY KEY,"
             "  parentItemID INTEGER,"
             "  type TEXT"
-            "  -- missing: text, comment, color, pageLabel, sortIndex, position, dateModified"
             ")"
         )
         conn.execute(
@@ -277,13 +278,14 @@ def test_missing_column_raises_zotero_schema_error():
         conn.commit()
         conn.close()
 
-        with pytest.raises(ZoteroSchemaError) as excinfo:
-            with zotero_snapshot(db_path) as snap:
-                conn2 = open_zotero_readonly(snap)
+        with zotero_snapshot(db_path) as snap:
+            conn2 = open_zotero_readonly(snap)
+            with pytest.raises(ZoteroSchemaError) as excinfo:
                 probe_zotero_annotation_schema(conn2)
-                conn2.close()
+            conn2.close()
+
         err_msg = str(excinfo.value)
-        assert "text" in err_msg or "comment" in err_msg or "missing" in err_msg.lower()
+        assert "comment" in err_msg or "text" in err_msg or "missing" in err_msg.lower()
     finally:
         if db_path.exists():
             db_path.unlink()
