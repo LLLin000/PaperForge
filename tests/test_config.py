@@ -322,6 +322,8 @@ def test_paperforge_paths_returns_exact_keys(tmp_path: Path):
         # ── v2.2: canonical locations below paperforge/ ──
         "config",
         "index",
+        "memory_db",
+        "annotations_db",
     }
 
     actual_keys = set(paths.keys())

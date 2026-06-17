@@ -332,6 +332,7 @@ def paperforge_paths(
         "config": paperforge / "config" / "domain-collections.json",
         "index": paperforge / "indexes" / "formal-library.json",
         "memory_db": paperforge / "indexes" / "paperforge.db",
+        "annotations_db": paperforge / "indexes" / "annotations.db",
     }
 
 

@@ -8,7 +8,7 @@ The order is storage first, then Zotero import, then CLI contracts, then verific
 
 ## Phases
 
-- [ ] **Annotation Phase 1: Annotation Storage Foundation** - Independent `annotations.db`, schema metadata, source/provenance fields, and rebuild isolation.
+- [x] **Annotation Phase 1: Annotation Storage Foundation** - Independent `annotations.db`, schema metadata, source/provenance fields, and rebuild isolation.
 - [ ] **Annotation Phase 2: Zotero Probe and Safe Import** - Read-only Zotero SQLite probing, temp-copy access, scoped import reconciliation, and no write-back.
 - [ ] **Annotation Phase 3: Annotation CLI JSON Contracts** - `paperforge annotation import/list/status/export --json` with stable success/error output.
 - [ ] **Annotation Phase 4: Annotation Verification Gate** - Fixture SQLite, unit/integration/CLI regression tests, and baseline-failure documentation.
@@ -33,9 +33,9 @@ The order is storage first, then Zotero import, then CLI contracts, then verific
 **Plans:** 3 plans
 
 Plans:
-- [ ] annotation-01-01-PLAN.md - Annotation package and DB path/connection helpers [Wave 1]
-- [ ] annotation-01-02-PLAN.md - Annotation schema lifecycle and schema tests [Wave 2]
-- [ ] annotation-01-03-PLAN.md - Memory rebuild isolation regression and targeted verification [Wave 3]
+- [x] annotation-01-01-PLAN.md - Annotation package and DB path/connection helpers [Wave 1]
+- [x] annotation-01-02-PLAN.md - Annotation schema lifecycle and schema tests [Wave 2]
+- [x] annotation-01-03-PLAN.md - Memory rebuild isolation regression and targeted verification [Wave 3]
 
 ### Annotation Phase 2: Zotero Probe and Safe Import
 
@@ -91,7 +91,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| Annotation Phase 1. Annotation Storage Foundation | 0/3 | Ready to execute | - |
+| Annotation Phase 1. Annotation Storage Foundation | 3/3 | ✓ Complete | 2026-06-17 |
 | Annotation Phase 2. Zotero Probe and Safe Import | 0/TBD | Not started | - |
 | Annotation Phase 3. Annotation CLI JSON Contracts | 0/TBD | Not started | - |
 | Annotation Phase 4. Annotation Verification Gate | 0/TBD | Not started | - |
