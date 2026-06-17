@@ -749,6 +749,22 @@ def _is_frontmatter_side_candidate(block: dict, body_anchor: dict | None = None)
     return False
 
 
+def _is_above_same_page_reference_heading(block: dict, refs_start_page: int | None, ref_heading_top: float | None) -> bool:
+    if refs_start_page is None or ref_heading_top is None:
+        return False
+    if int(block.get("page", 0) or 0) != refs_start_page:
+        return False
+    return _block_y_bottom(block) <= ref_heading_top
+
+
+def _is_below_same_page_reference_heading(block: dict, refs_start_page: int | None, ref_heading_top: float | None) -> bool:
+    if refs_start_page is None or ref_heading_top is None:
+        return False
+    if int(block.get("page", 0) or 0) != refs_start_page:
+        return False
+    return _block_y_top(block) > ref_heading_top
+
+
 def infer_zones(
     blocks: list[dict],
     anchors: dict[str, dict] | None,
@@ -985,11 +1001,10 @@ def infer_zones(
         and int(block.get("page", 0) or 0) > 1
         and (
             (body_end_page is None or int(block.get("page", 0) or 0) <= body_end_page)
-            or (refs_start_page is not None and int(block.get("page", 0) or 0) == refs_start_page
-                and ref_heading_block is not None
-                and _block_y_bottom(block) <= ref_heading_top)
+            or _is_above_same_page_reference_heading(block, refs_start_page, ref_heading_top if ref_heading_block else None)
         )
         and not _is_reference_item_candidate(block)
+        and not _is_reference_heading_candidate(block)
         and _artifact_block_id(block, duplicate_block_ids) not in frontmatter_side_id_set
         and block.get("block_id") is not None
     ]
@@ -998,20 +1013,14 @@ def infer_zones(
 
     # Blocks below the reference heading on the same page that are NOT
     # reference items go into tail_nonref_hold_zone (gratitude text, etc.).
-    same_page_tail_blocks = []
-    if refs_start_page is not None and ref_heading_block is not None:
-        for block in blocks:
-            if int(block.get("page", 0) or 0) != refs_start_page:
-                continue
-            if _block_y_top(block) <= ref_heading_top:
-                continue
-            if _is_reference_item_candidate(block):
-                continue
-            if _is_reference_heading_candidate(block):
-                continue
-            if block.get("block_id") is None:
-                continue
-            same_page_tail_blocks.append(block)
+    same_page_tail_blocks = [
+        block
+        for block in blocks
+        if _is_below_same_page_reference_heading(block, refs_start_page, ref_heading_top if ref_heading_block else None)
+        and not _is_reference_item_candidate(block)
+        and not _is_reference_heading_candidate(block)
+        and block.get("block_id") is not None
+    ]
 
     tail_nonref_hold_blocks = [
         block
@@ -2390,21 +2399,6 @@ def _apply_content_zone_fallback(blocks: list[dict], region_bus: dict[str, dict]
                     ref_heading_pages[p] = _block_y_top(b)
                     seen_ref_pages.add(p)
 
-    # Pre-scan: find the last body-section heading y_top on each page that
-    # also has a reference heading.  Content below the last body heading but
-    # above the reference heading is tail content (gratitude, etc.).
-    _BODY_HEADING_ROLES = {"section_heading", "subsection_heading", "sub_subsection_heading"}
-    last_body_heading_top: dict[int, float] = {}
-    for b in blocks:
-        brole = b.get("role") or b.get("seed_role")
-        if brole == "unassigned":
-            brole = b.get("seed_role")
-        p = int(b.get("page", 0) or 0)
-        if p in ref_heading_pages and brole in _BODY_HEADING_ROLES:
-            yt = _block_y_top(b)
-            if p not in last_body_heading_top or yt > last_body_heading_top[p]:
-                last_body_heading_top[p] = yt
-
     for block in blocks:
         if block.get("zone"):
             continue
@@ -2437,14 +2431,11 @@ def _apply_content_zone_fallback(blocks: list[dict], region_bus: dict[str, dict]
         }:
             if page in ref_heading_pages:
                 # Same page as a reference heading: split by vertical position.
+                # Blocks above the reference heading → body_zone (regardless of body heading
+                # position); blocks below → tail_nonref_hold_zone.
                 ref_top = ref_heading_pages[page]
-                body_top = last_body_heading_top.get(page)
                 if _block_y_bottom(block) <= ref_top:
-                    # Above the reference heading — check if below last body heading
-                    if body_top is not None and _block_y_top(block) > body_top:
-                        block["zone"] = "tail_nonref_hold_zone"
-                    else:
-                        block["zone"] = "body_zone"
+                    block["zone"] = "body_zone"
                 else:
                     block["zone"] = "tail_nonref_hold_zone"
             elif ref_start is None or page < ref_start:
