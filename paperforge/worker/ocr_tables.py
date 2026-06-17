@@ -88,8 +88,12 @@ def build_table_inventory(structured_blocks: list[dict]) -> dict[str, Any]:
         if role in {"table_caption", "table_caption_candidate"} or _is_validation_first_table_candidate(block):
             captions.append(block)
         elif role in ("table_asset", "media_asset"):
-            if role == "media_asset" and raw_label not in ("table",):
-                continue
+            if role == "media_asset":
+                bbox = block.get("bbox") or block.get("block_bbox") or [0, 0, 0, 0]
+                width = (bbox[2] - bbox[0]) if len(bbox) >= 4 else 0
+                height = (bbox[3] - bbox[1]) if len(bbox) >= 4 else 0
+                if width < 120 or height < 60:
+                    continue
             assets.append(block)
 
     used_asset_indices: set[int] = set()
