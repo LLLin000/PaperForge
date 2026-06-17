@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: annotation v0.1
 milestone_name: PDF Annotation Backend & CLI Foundation
-status: Ready to execute
-stopped_at: Annotation Phase 2 planned - 4 plans ready
+status: Annotation Phase 3 discussed
+stopped_at: Annotation Phase 3 context gathered - ready for plan phase
 last_updated: "2026-06-18T00:00:00.000+08:00"
-last_activity: 2026-06-18 - Annotation Phase 2 planned: 4 waves for Zotero probe, normalization, scoped import, and verification
+last_activity: 2026-06-18 - Annotation Phase 3 discussed: CLI JSON namespace, preview/apply import, paper filters, PFResult output, stable errors
 progress:
   total_phases: 4
   completed_phases: 1
@@ -21,13 +21,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-17)
 
 **Core value:** Researchers always know what papers they have, what state those papers are in, and whether each paper is reliably usable by AI with traceable fulltext, figures, notes, and source links.
-**Current focus:** Annotation Phase 2 - Zotero Probe and Safe Import
+**Current focus:** Annotation Phase 3 - Annotation CLI JSON Contracts
 
 ## Current Position
 
-Phase: Annotation Phase 2 of 4 (Zotero Probe and Safe Import) - planned, ready to execute
-Plan: 0 of 4 complete
-Last activity: 2026-06-18 - Annotation Phase 2 plans created
+Phase: Annotation Phase 3 of 4 (Annotation CLI JSON Contracts) - discussed, ready to plan
+Plan: not planned yet
+Last activity: 2026-06-18 - Annotation Phase 3 context created
 
 ## Performance Metrics
 
@@ -72,6 +72,9 @@ Recent decisions affecting current work:
 - [annotation v0.1]: Annotation Phase 2 prioritizes paper-scoped Zotero import first; lower-level code may stay extensible for full-library import later.
 - [annotation v0.1]: Zotero reads default to temp-copy mode and treat imported Zotero rows as read-only PaperForge source rows.
 - [annotation v0.1]: Zotero annotation identity must include source, library scope, parent item, attachment, and annotation key.
+- [annotation v0.1]: Annotation CLI commands use a dedicated `paperforge annotation ...` namespace.
+- [annotation v0.1]: Annotation import defaults to preview mode; writes require explicit `--apply`.
+- [annotation v0.1]: Annotation JSON commands use the existing PFResult-style envelope with stable error codes for `--json` failures.
 
 ### Pending Todos
 
@@ -86,5 +89,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-06-18
-Stopped at: Annotation Phase 2 planned - ready for execute phase
-Resume file: Next up: `gsd-execute-phase annotation phase 2`
+Stopped at: Annotation Phase 3 discussion complete - ready for plan phase
+Resume file: Next up: `gsd-plan-phase annotation phase 3`
