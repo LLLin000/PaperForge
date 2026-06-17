@@ -4414,6 +4414,23 @@ def _build_accepted_caption_block_ids(
             else:
                 accepted.add(item)
     accepted.discard(None)
+
+    # ponytail: assumes display_zone + legend_like/support_like + figure_number marker is sufficient;
+    # upgrade to accept partial evidence if FP rate rises
+    for block in blocks:
+        marker_type = str(((block.get("marker_signature") or {}).get("type")) or "")
+        if marker_type != "figure_number":
+            continue
+        zone = str(block.get("zone") or "")
+        if zone != "display_zone":
+            continue
+        style = str(block.get("style_family") or "")
+        if style not in {"legend_like", "support_like"}:
+            continue
+        bid = block.get("block_id")
+        if bid:
+            accepted.add(bid)
+
     return accepted
 
 

@@ -106,6 +106,32 @@ def test_media_asset_can_match_table_caption_even_without_raw_table_label() -> N
     assert inventory["tables"][0]["asset_block_id"] == "p3_b2"
 
 
+def test_trusted_formal_caption_is_accepted_by_block_evidence() -> None:
+    from paperforge.worker.ocr_document import _build_accepted_caption_block_ids
+
+    blocks = [
+        {
+            "block_id": "p4_b2",
+            "role": "figure_caption",
+            "seed_role": "figure_caption",
+            "zone": "display_zone",
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 1},
+            "text": "Figure 1. Setup for delivering direct current electrical stimulation.",
+        },
+        {
+            "block_id": "p4_b3",
+            "role": "media_asset",
+            "zone": "display_zone",
+            "style_family": "body_like",
+            "marker_signature": {"type": "none"},
+            "text": "",
+        },
+    ]
+    accepted = _build_accepted_caption_block_ids({}, {}, blocks)
+    assert "p4_b2" in accepted
+
+
 def test_keep_formal_caption_seed_for_numbered_display_legend() -> None:
     from paperforge.worker.ocr_document import _should_keep_formal_caption_seed
 
