@@ -1816,6 +1816,8 @@ def _normalize_backmatter_roles_after_boundary(
             continue
         if block.get("role") in _POST_REF_PRESERVE_ROLES:
             continue
+        if block.get("role") in {"section_heading", "subsection_heading", "sub_subsection_heading"}:
+            continue
 
         role = block.get("role")
         if backmatter_form == "container":
@@ -2717,8 +2719,6 @@ def _exclude_tail_nonref_from_body_flow(blocks: list[dict]) -> None:
         # Only convert blocks that carry explicit backmatter evidence;
         # preserve ordinary body continuation or body-like prose.
         text = str(block.get("text") or block.get("block_content") or "")
-        if len(text) > 120 and ". " in text and not _looks_like_backmatter_body_text(text):
-            continue
         if not _looks_like_backmatter_body_text(text):
             continue
 
@@ -4659,6 +4659,15 @@ def normalize_document_structure(
     # here is a misclassification that the structural gate would hold to
     # unknown_structural anyway, so normalize early to let the gate accept them.
     _HEADING_ROLES = {"section_heading", "subsection_heading", "sub_subsection_heading"}
+    _POST_REF_PRESERVE_ROLES = {
+        "figure_inner_text",
+        "figure_caption",
+        "figure_caption_candidate",
+        "table_caption",
+        "table_caption_candidate",
+        "media_asset",
+        "table_html",
+    }
     _BACKMATTER_NON_BODY_ROLES = {
         "backmatter_heading",
         "figure_caption_candidate",
@@ -4674,16 +4683,14 @@ def normalize_document_structure(
         if block.get("zone") != "post_reference_backmatter_zone":
             continue
         role = block.get("role")
+        seed_role = block.get("seed_role")
+        if role in _POST_REF_PRESERVE_ROLES:
+            continue
         if role in _HEADING_ROLES:
-            old_role = role
-            block["role"] = "backmatter_heading"
-            record_decision(
-                block,
-                stage="backmatter_heading_promotion",
-                old_role=old_role,
-                new_role="backmatter_heading",
-                reason="heading in post_reference_backmatter_zone promoted to backmatter_heading",
-            )
+            continue
+        if seed_role in _HEADING_ROLES:
+            block["role"] = seed_role
+            continue
         elif block.get("raw_label") in _IMAGE_MEDIA_RAW_LABELS:
             if role != "media_asset":
                 old_role = role
@@ -5075,5 +5082,15 @@ def normalize_document_structure(
 
     _demote_early_frontmatter_body_leaks(blocks)
     _restore_numbered_body_from_tail_hold(blocks)
+    if tail_spread is not None:
+        restore_seed_heading_after_page = tail_spread.references_start or tail_spread.backmatter_start or 0
+        for block in blocks:
+            if block.get("role") != "body_paragraph":
+                continue
+            if (block.get("page") or 0) <= restore_seed_heading_after_page:
+                continue
+            seed_role = block.get("seed_role")
+            if seed_role in {"section_heading", "subsection_heading", "sub_subsection_heading"}:
+                block["role"] = seed_role
 
     return doc_structure, blocks

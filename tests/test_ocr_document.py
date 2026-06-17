@@ -952,9 +952,8 @@ def test_normalize_flat_backmatter_unifies_heading_family() -> None:
 
     _normalize_backmatter_roles_after_boundary(tail, "flat", blocks)
 
-    assert blocks[3]["role"] == "backmatter_heading"
-    assert blocks[4]["role"] == "backmatter_body"
-    assert blocks[4]["render_default"] is True
+    assert blocks[3]["role"] == "subsection_heading"
+    assert blocks[4]["role"] == "body_paragraph"
     assert blocks[7]["role"] == "reference_heading"
 
 
@@ -4490,13 +4489,8 @@ def test_tail_nonref_exclusion_does_not_convert_plain_body_prose() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_backmatter_zone_heading_promoted() -> None:
-    """Headings in post_reference_backmatter_zone become backmatter_heading.
-
-    All non-heading blocks (including reference_item) in the post-reference
-    zone become backmatter_body, because the structural gate would hold
-    unverifiable reference_items to unknown_structural anyway.
-    """
+def test_backmatter_zone_preserves_supported_heading_roles() -> None:
+    """Supported heading roles in post_reference_backmatter_zone stay intact."""
     from paperforge.worker.ocr_document import normalize_document_structure
 
     blocks = [
@@ -4509,9 +4503,41 @@ def test_backmatter_zone_heading_promoted() -> None:
     ]
     doc, normalized = normalize_document_structure(blocks)
     by_id = {b["block_id"]: b for b in normalized}
-    assert by_id["bio_heading"]["role"] == "backmatter_heading"
+    assert by_id["bio_heading"]["role"] == "sub_subsection_heading"
     assert by_id["bio_1"]["role"] == "backmatter_body"
     assert by_id["bio_ref"]["role"] == "backmatter_body"
+
+
+def test_backmatter_zone_preserves_figure_adjacent_roles() -> None:
+    """Figure-adjacent roles in post_reference_backmatter_zone are not flattened."""
+    from paperforge.worker.ocr_document import normalize_document_structure
+
+    blocks = [
+        {"block_id": "refs", "page": 10, "role": "reference_heading", "seed_role": "reference_heading", "text": "References"},
+        {"block_id": "r1", "page": 10, "role": "reference_item", "seed_role": "reference_item", "text": "[1] Some reference"},
+        {
+            "block_id": "cap",
+            "page": 12,
+            "role": "figure_caption",
+            "seed_role": "figure_caption",
+            "zone": "post_reference_backmatter_zone",
+            "text": "Figure 7. Author portrait.",
+        },
+        {
+            "block_id": "inner",
+            "page": 12,
+            "role": "figure_inner_text",
+            "seed_role": "figure_inner_text",
+            "zone": "post_reference_backmatter_zone",
+            "text": "(a)",
+        },
+    ]
+
+    _doc, normalized = normalize_document_structure(blocks)
+    by_id = {b["block_id"]: b for b in normalized}
+
+    assert by_id["cap"]["role"] in {"figure_caption", "figure_caption_candidate"}
+    assert by_id["inner"]["role"] == "figure_inner_text"
 
 
 def test_non_backmatter_zone_not_affected() -> None:
