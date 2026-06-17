@@ -4682,6 +4682,12 @@ def normalize_document_structure(
                     new_role="media_asset",
                     reason="image/media block in post_reference_backmatter_zone promoted to media_asset",
                 )
+        # ponytail: panel_label + figure_inner_text guard; if other specialized roles
+        # appear in backmatter zone, extend this list
+        if block.get("marker_signature", {}).get("type") == "panel_label":
+            continue
+        if block.get("role") == "figure_inner_text":
+            continue
         elif role not in _BACKMATTER_NON_BODY_ROLES:
             old_role = block.get("role")
             if old_role != "backmatter_body":

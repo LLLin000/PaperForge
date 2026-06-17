@@ -143,3 +143,21 @@ def test_keep_formal_caption_seed_for_numbered_display_legend() -> None:
     }
 
     assert _should_keep_formal_caption_seed(block) is True
+
+
+def test_panel_label_in_post_ref_zone_not_converted_to_backmatter() -> None:
+    """Panel labels like (a) in post_reference_backmatter_zone stay figure_inner_text.
+
+    Regression: guard in normalize_document_structure prevents backmatter
+    normalization from overwriting figure_inner_text role.
+    """
+    from paperforge.worker.ocr_roles import assign_block_role
+
+    block = {
+        "block_label": "text",
+        "block_content": "(a)",
+        "block_bbox": [90, 90, 120, 120],
+        "page": 10,
+    }
+    role = assign_block_role(block, page_blocks=[], page_width=1200, page_height=1600)
+    assert role.role == "figure_inner_text"
