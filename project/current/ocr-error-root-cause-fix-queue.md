@@ -1,0 +1,184 @@
+# OCR Error Root Cause Analysis & Fix Queue
+
+**Date:** 2026-06-17
+**Baseline:** After PDF text fallback fix (empty-text blocks recovered)
+**Data:** 1,097 audited blocks across 8 papers
+
+---
+
+## Executive Summary
+
+The PDF text fallback eliminated all OCR extraction failures (106 empty-text blocks across 6 papers, 100% recovered from PDF text layer). After this fix, **329 of 1,097 reviewed blocks (30%)** still have pipeline roles that differ from human visual truth.
+
+Of these 329, **143 (44%)** are `_candidate` suffix naming conventions — the pipeline uses `figure_caption_candidate` instead of committing to `figure_caption`. Removing these reduces substantive errors to **186 blocks (17%)**.
+
+Four error clusters account for 93% of remaining issues. All have identifiable root causes in the pipeline code.
+
+---
+
+## Error Clusters (ranked by block count)
+
+### #1: Caption Naming & Sub-Figure Label Confusion (143 blocks)
+
+| Truth role               | Pipeline role               | Count |
+| ------------------------ | --------------------------- | ----- |
+| `figure_caption`           | `figure_caption_candidate`    | 67    |
+| `figure_inner_text`        | `figure_caption_candidate`    | 54    |
+| `table_caption`            | `table_caption_candidate`     | 13    |
+| Other                      | `*_candidate`                | 9     |
+
+**Root cause A — `_candidate` suffix never drops (80 blocks)**:
+`ocr_document.py:4979-4989` converts all figure/table captions to `_candidate` when `gate_context.accepted_caption_block_ids` or `accepted_table_block_ids` is empty. If the caption-to-asset matching in `ocr_figures.py` / `ocr_tables.py` fails, the inventory stays empty → every caption gets the suffix permanently.
+
+**Root cause B — sub-figure labels classified as captions (54 blocks)**:
+`ocr_roles.py` classifies blocks with labels like "A", "B", "C" (sub-figure panel labels) as `figure_caption_candidate` instead of `figure_inner_text` or `noise`. The role classifier's `_FIGURE_PREFIX_PATTERN` regex checks for "Figure N" prefix but doesn't handle standalone single-letter labels adjacent to figures.
+
+**Root cause C — figure_caption_candidate in structural gate**:
+`figure_caption` is in `VERIFY_REQUIRED` (structural_gate.py:15). When verification fails, it becomes `figure_caption_candidate` or worse. But the naming convention (`_candidate`) creates a false distance from the correct role.
+
+**Fix**:
+1. Commit `figure_caption_candidate` / `table_caption_candidate` to final roles when:
+   - The block's `marker_signature.type == "canonical_section_name"` and text starts with "Fig" / "Table"
+   - OR the block has adjacent media_asset within the same page column
+2. Add sub-figure label detection: single-letter or "Panel N" blocks near figures → `figure_inner_text`
+3. Alternatively, simply remove the `_candidate` suffix convention entirely — all captions are captions
+
+---
+
+### #2: `body_paragraph` as Default Catch-All (67 blocks)
+
+| Truth role          | Pipeline role   | Count |
+| ------------------- | --------------- | ----- |
+| `media_asset`         | `body_paragraph`  | 42    |
+| `noise` / `structural_noise` | `body_paragraph`  | 13    |
+| `unknown_structural`   | `body_paragraph`  | 7     |
+| `backmatter_body` / other | `body_paragraph` | 5     |
+
+**Root cause A — media asset misclassification (42 blocks)**:
+`ocr_roles.py:1484-1488` assigns `body_paragraph` as the default for text blocks when no specific pattern matches. Tables and figures whose PaddleOCR `raw_label` is not "table" or "image" fall through to this default. Meanwhile, `ocr_tables.py:90-92` filters media_asset by `raw_label not in ("table",)` — if PaddleOCR didn't label it "table", the table inventory never sees it, and the block stays `body_paragraph`.
+
+**Root cause B — noise/structural blocks default to body (13 blocks)**:
+Block text content that looks like prose (publisher watermarks, download notices, page markers) passes the `body_paragraph` confidence >0.5 threshold in the role classifier. The `style_family` classifier in `ocr_families.py` sometimes fails to identify these as `support_like` → they escape zone exclusion.
+
+**Root cause C — unknown_structural fallback (7 blocks)**:
+The structural gate holds the role → if the hold result falls through to the safe-preserved path, body_paragraph is the catch-all in `ocr_document.py:5010-5013` ("structural_gate_fallback").
+
+**Fix**:
+1. Add `media_asset` recognizer based on bbox proximity to known figure/table captions, not just `raw_label`
+2. Improve noise classification: blocks matching "Downloaded from", copyright, ISSN, publisher URLs → `noise` or `frontmatter_noise`
+3. Reduce body_paragraph default confidence from 0.6 to 0.3 when block width < 50% of page width (sidebar content)
+
+---
+
+### #3: `unknown_structural` Residual (53 blocks)
+
+| Truth role        | Count |
+| ----------------- | ----- |
+| `noise`             | 26    |
+| `non_body_insert`    | 9     |
+| `structural_noise`   | 5     |
+| `body_paragraph`     | 5     |
+| Other               | 8     |
+
+**Root cause A — structural gate HOLD on non-verified roles (26 noise blocks)**:
+`ocr_structural_gate.py:104-113` returns `hold_role()` with `role="unknown_structural"` when a `VERIFY_REQUIRED` role can't be verified. After the gate, `ocr_document.py:5022` sets `block["role"] = "unknown_structural"` for any offender not in the safe-list. Publisher watermarks, sidebar download notices, and journal headers carry text but don't match any verified role → they get held.
+
+**Root cause B — `never_override` prevents recovery (OCR roles)**:
+`ocr_roles.py:1541-1554` lists `unknown_structural` in `never_override` — once assigned, the second-pass cross-validation can't fix it. This is correct for safety but means the gate's misclassifications are permanent.
+
+**Root cause C — sidebar watermark recognition**:
+Wiley journals (K7R8PEKW: 20 blocks) and Nature Reviews (TSCKAVIS) have publisher watermarks with URLs/download notices that carry full text sentences. The pipeline treats these as potential body content rather than structural noise. `_is_frontmatter_side_candidate` catches some but not all — especially when the text is long enough to pass the body_paragraph threshold.
+
+**Fix**:
+1. Add publisher watermark pattern matching: "Downloaded from", "For personal use only", copyright + URL patterns → `noise` or `structural_noise`
+2. This should run BEFORE the structural gate, not after — blocks already classified as noise won't enter the gate
+3. Add `text_len > 0` check alongside `raw_label` in the `unknown_structural` classifier path
+
+---
+
+### #4: Table/Figure vs `media_asset` Confusion (22 blocks)
+
+| Truth role | Pipeline role | Count |
+| ---------- | ------------- | ----- |
+| `table`      | `media_asset`   | 10    |
+| `figure`     | `media_asset`   | 6     |
+| `figure_inner_text` | `media_asset` | 6     |
+
+**Root cause**:
+`ocr_tables.py:90-92` gates on `raw_label not in ("table",)` — only PaddleOCR blocks explicitly labeled "table" by the engine enter the table inventory. Blocks labeled "image" or "text" that are visually tables never reach the table caption matching step. Same for figures: `media_asset` has no downstream refinement unless the figure inventory captures it.
+
+**Fix**:
+1. Relax the table inventory gate: accept `media_asset` blocks regardless of `raw_label`, use bbox proximity + caption text pattern matching to filter
+2. Add a `distinguish_media_asset_type()` step after figure/table caption assignment: if a media_asset block is closer to a table_caption than a figure_caption → `table`, else `figure`
+
+---
+
+## Error Categories Not Addressed by This Document
+
+The following error categories from the original audit are **not** primarily role-classification problems and require separate architectural fixes:
+
+| Category                 | Count (original) | Root Cause                                    | Requires                |
+| ------------------------ | ---------------- | --------------------------------------------- | ----------------------- |
+| Zone exclusion           | 61               | `first_reference_page` inference + zone logic | Zone boundary redesign  |
+| Reference span error     | 1                | Reference boundary detection                  | Minor                   |
+| Audit truth gap          | 6                | Prep heuristic inaccuracy                     | Audit tool improvement  |
+
+Zone exclusion is the single deepest architectural weakness. Body text ending up in `frontmatter_side_zone` or `tail_nonref_hold_zone` is caused by `first_reference_page` inference accuracy + `_exclude_*_from_body_flow()` guards that are too aggressive. This requires a focused redesign of zone boundary logic, not just role tuning.
+
+---
+
+## Fix Queue (ordered by impact/effort)
+
+| Priority | Fix                                                | Blocks fixed | Effort | Files                                     |
+| -------- | -------------------------------------------------- | ------------ | ------ | ----------------------------------------- |
+| **P0**   | Commit `_candidate` suffix to final role           | ~80          | Low    | `ocr_document.py:4979-4989`               |
+| **P0**   | Add publisher watermark → noise classifier         | ~26          | Low    | `ocr_roles.py` (new rule)                 |
+| **P1**   | Sub-figure label detection (A/B/C → figure_inner_text) | ~54       | Medium  | `ocr_roles.py`, `ocr_figures.py`          |
+| **P1**   | Table/figure recognizer beyond raw_label           | ~22          | Medium  | `ocr_tables.py:90-92`, `ocr_figures.py`   |
+| **P1**   | Reduce body_paragraph default confidence on sidebars | ~42        | Low    | `ocr_roles.py:1484-1488`                  |
+| **P2**   | Zone boundary redesign                              | ~61          | High    | `ocr_document.py` (zone infer + exclude)  |
+| **P2**   | Reduce structural gate unknown_structural churn    | ~27          | Medium  | `ocr_structural_gate.py`, `ocr_document.py`|
+
+**P0 alone**: ~106 blocks fixed, ~32% of remaining errors. Total code change: ~30 lines, 2 files.
+**P0 + P1**: ~224 blocks fixed, ~68% of remaining errors. Total code change: ~80 lines, 5 files.
+**All but P2**: ~268 blocks fixed. Zone redesign deferred to separate project.
+
+---
+
+## Phase 1 Results
+
+- Date: 2026-06-17
+- Code changes applied:
+  - `ocr_tables.py`: allow plausibly large `media_asset` blocks into table matching even when `raw_label != "table"`
+  - `ocr_document.py`: keep strong numbered display legends/formal caption seeds from being blanket-downgraded to `_candidate`
+  - `tests/test_ocr_layout_first_regressions.py`: lock the layout-first regressions for panel labels, margin notices, media-asset table matching, and selective caption-seed retention
+- Rebuilt papers: `6FGDBFQN`, `A8E7SRVS`, `CAQNW9Q2`, `K7R8PEKW`, `SAN9AYVR`, `TSCKAVIS`
+- Differential audit re-run on those 6 papers without re-running PaddleOCR
+
+Observed category totals after rebuild + diff-audit:
+
+- `figure_caption_candidate` mismatches: `129 -> 129`
+- `media_asset -> body_paragraph` mismatches: `42 -> 42`
+- `unknown_structural` mismatches: `53 -> 53`
+- regression papers checked: `CAQNW9Q2` rebuilt and re-audited (`8` mismatches total, unchanged from prior snapshot); `2GN9LMCW` left untouched by design in this phase
+
+Interpretation:
+
+- The branch already contained the panel-label and margin-side protections covered by the new regression tests.
+- The newly added table-admission and selective-caption-retention rules are correct and now tested, but they did not materially move the audited mismatch totals in this pass.
+- Remaining error mass is still dominated by broader layout attribution and zone-boundary behavior rather than the two newly patched code paths above.
+
+---
+
+## Appendix: Paper-by-Paper Error Densities
+
+| Paper       | Total reviewed | Mismatches | Rate  | Top issue                           |
+| ----------- | -------------- | ---------- | ----- | ----------------------------------- |
+| SAN9AYVR    | 463            | 117        | 25.3% | figure_caption_candidate (67)       |
+| A8E7SRVS    | 96             | 61         | 63.5% | media_asset → body_paragraph (tables)|
+| 6FGDBFQN    | 73             | 42         | 57.5% | figure_caption_candidate (17)       |
+| K7R8PEKW    | 158            | 42         | 26.6% | unknown_structural → noise (20)     |
+| DWQQK2YB    | 99             | 38         | 38.4% | media_asset → body_paragraph        |
+| TSCKAVIS    | 72             | 14         | 19.4% | figure_inner_text (6)               |
+| CAQNW9Q2    | 76             | 8          | 10.5% | body_paragraph (4)                  |
+| 2GN9LMCW    | 60             | 7          | 11.7% | figure_caption_candidate (3)        |

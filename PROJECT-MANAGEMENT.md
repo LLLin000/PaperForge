@@ -790,3 +790,35 @@ bone tissue, cardiac tissue... → Revised → [1]...[24]
 ```
 
 **Tests:** 80 figure tests pass, 7 pre-existing failures unchanged. K7 not in failure list.
+
+### 8.8 Layout-First OCR Phase 1 Pass (2026-06-17)
+
+**Problem:** The next OCR cleanup phase needed to be layout-first and low-regression after the PDF text fallback work. The specific Phase 1 targets were: stop dropping plausible table assets too early, stop blanket-downgrading strong formal captions to `_candidate`, and lock regression coverage around those behaviors.
+
+**Root cause:**
+- `paperforge/worker/ocr_tables.py` only let `media_asset` enter table matching when `raw_label == "table"`, so plausible table images labeled as generic media never even reached caption matching.
+- `paperforge/worker/ocr_document.py` blanket-downgraded figure/table caption seeds whenever accepted artifact ids were empty, even for strong numbered display legends.
+- The branch already had working panel-label and margin-side protections, but there was no dedicated regression file proving those layout-first behaviors stay intact.
+
+**Fix:**
+- Added `tests/test_ocr_layout_first_regressions.py` with focused checks for panel labels, margin-side notices, table admission from `media_asset`, and selective caption-seed retention.
+- Relaxed the table inventory gate so large enough `media_asset` blocks can participate in table matching.
+- Added `_should_keep_formal_caption_seed()` and used it to avoid blanket `_candidate` downgrade for strong numbered display legends.
+- Rebuilt the 6 affected papers only: `6FGDBFQN`, `A8E7SRVS`, `CAQNW9Q2`, `K7R8PEKW`, `SAN9AYVR`, `TSCKAVIS`.
+- Re-ran `diff_audit.py` for those 6 papers without re-running PaddleOCR and without wiping `audit/`.
+
+**Result:**
+- Code paths are now covered by targeted regression tests and the new rules executed cleanly on rebuild.
+- Post-rebuild mismatch totals did **not** materially move in this pass: `figure_caption_candidate 129 -> 129`, `media_asset -> body_paragraph 42 -> 42`, `unknown_structural 53 -> 53`.
+- `CAQNW9Q2` remained at `8` mismatches total after rebuild. `2GN9LMCW` was intentionally left untouched in this phase.
+
+**Test status:**
+- Red/green proof: `pytest tests/test_ocr_layout_first_regressions.py -v --tb=short` initially failed on 2 tests, then passed after the patch.
+- Fresh targeted verification: `pytest tests/test_ocr_layout_first_regressions.py tests/test_ocr_tables.py tests/test_ocr_document.py::test_figure_caption_preserved_as_candidate_when_caption_artifacts_empty tests/test_ocr_document.py::test_figure_caption_accepted_when_in_accepted_caption_block_ids -v --tb=short` -> `31 passed`.
+- Broad note: `tests/test_ocr_document.py` still has a pre-existing unrelated failure at `test_normalize_flat_backmatter_unifies_heading_family` on this branch.
+
+**Remaining known issues:**
+- Layout-first Phase 1 code is now locked, but the audited mismatch totals show the remaining error mass is still in broader layout attribution and zone-boundary behavior.
+- Frontmatter author footnotes still render as body text.
+- Body text fragmentation across pages remains accepted-but-unfixed.
+- Figure JPGs still need full OCR re-run to reflect composite region fix.
