@@ -131,7 +131,10 @@ def build_structured_blocks(
                 "ocr_raw_error",
             }:
                 render_default = False
-            if role.role in {"noise", "frontmatter_noise", "table_html", "non_body_insert", "structured_insert", "ocr_raw_error"}:
+            if role.role in {
+                "noise", "frontmatter_noise", "table_html",
+                "non_body_insert", "structured_insert", "ocr_raw_error",
+            }:
                 index_default = False
             row = {
                 "paper_id": block["paper_id"],
@@ -259,7 +262,10 @@ def build_structured_blocks(
             }:
                 row["render_default"] = False
             row["index_default"] = role not in _CANDIDATE_ROLES
-            if role in {"noise", "frontmatter_noise", "table_html", "non_body_insert", "structured_insert", "ocr_raw_error"}:
+            if role in {
+                "noise", "frontmatter_noise", "table_html",
+                "non_body_insert", "structured_insert", "ocr_raw_error",
+            }:
                 row["index_default"] = False
 
     # Persist document structure artifact for downstream debugging

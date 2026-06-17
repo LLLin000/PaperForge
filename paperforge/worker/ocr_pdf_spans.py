@@ -303,7 +303,7 @@ def _words_to_text(words: list[tuple]) -> str:
     current_y: float | None = None
 
     for w in words:
-        x0, y0, x1, y1, text = w[0], w[1], w[2], w[3], str(w[4]).strip()
+        x0, y0, text = w[0], w[1], str(w[4]).strip()
         if not text:
             continue
 
