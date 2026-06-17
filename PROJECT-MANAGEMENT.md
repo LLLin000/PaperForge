@@ -1,6 +1,6 @@
 # OCR-v2 Project Management Log
 
-> **Branch:** `ocr-v2` | **Base:** `master` | **Last Updated:** 2026-06-17 (boundary close-out pass complete)
+> **Branch:** `ocr-v2` | **Base:** `master` | **Last Updated:** 2026-06-18 (unified close-out pass Tasks 1-5 complete)
 > **Rule:** Every step is documented with: What was done, Why it was done, What comes next.
 
 ---
@@ -463,7 +463,7 @@ Required acceptance boundary for the next session:
 - [x] ~~**Pre-proof watermark leaking:** "Journal Pre-proof" appearing on page 26~~ (fixed: seed_role check)
 - [x] ~~**CAQ same-page ref/body:** Page 7 Conclusion blocked from body_zone by ref_start=7. Need block-level vertical split on same page.~~ (fixed 2026-06-17)
 - [x] ~~**CAQ correspondence footnote:** Expected frontmatter_support but classified as frontmatter_noise.~~ (fixed 2026-06-17)
-- [ ] **DW preproof frontmatter:** Title/authors/PII on page 1 still suppressed by preproof cover zone. Need seed-role rescue for preproof pages.
+- [x] ~~**DW preproof frontmatter:** Title/authors/PII on page 1 still suppressed by preproof cover zone. Need seed-role rescue for preproof pages.~~ (Resolved via preproof cover page-1 drop — page 1 removed entirely at structured-block layer. Plan: `docs/superpowers/plans/2026-06-17-ocr-v2-closeout-single-plan.md` Task 2)
 - [ ] **DW biography page mismatch:** Update expectations to match actual biography span (pages 32-34 instead of 33-34).
 
 ### 4.2 Rebuild script → CLI integration
@@ -820,13 +820,24 @@ bone tissue, cardiac tissue... → Revised → [1]...[24]
 - Fresh targeted verification: `pytest tests/test_ocr_layout_first_regressions.py tests/test_ocr_roles.py -v --tb=short` -> `72 passed`.
 - Broad note: `tests/test_ocr_document.py` still has a pre-existing unrelated failure at `test_normalize_flat_backmatter_unifies_heading_family` on this branch.
 
-**Remaining known issues:**
-- `media_asset -> body_paragraph` (42 blocks) untouched — requires deeper zone/attribution fix.
-- `unknown_structural` (54 blocks) untouched — publisher watermark detection still insufficient.
-- 7 remaining `figure_inner_text` misclassifications are non-letter content inside figures (concentration labels etc.).
-- Frontmatter author footnotes still render as body text.
-- Body text fragmentation across pages remains accepted-but-unfixed.
-- Figure JPGs still need full OCR re-run to reflect composite region fix.
+**Remaining known issues (post unified close-out pass 2026-06-18):**
+
+Resolved:
+- [x] ~~**DW preproof frontmatter page-1:**~~ Dropped entirely at structured-block layer (Task 2)
+- [x] ~~**CAQ same-page ref/body:**~~ Fixed — block-level vertical split by reference heading (Task 3)
+- [x] ~~**CAQ correspondence footnote:**~~ Fixed — explicit page-1 correspondence routes to frontmatter_support (Task 3)
+- [x] ~~**Tail exclusion overreach:**~~ Tightened — only explicit backmatter evidence triggers conversion (Task 3)
+
+Still open:
+- `media_asset -> body_paragraph` (42 blocks) — requires deeper zone/attribution fix
+- `unknown_structural` (54 blocks) — publisher watermark detection still insufficient
+- 7 remaining `figure_inner_text` misclassifications are non-letter content inside figures (concentration labels etc.)
+- Frontmatter author footnotes still render as body text
+- Body text fragmentation across pages remains accepted-but-unfixed
+- Figure JPGs still need full OCR re-run to reflect composite region fix
+- DW biography page mismatch (pages 32-34 vs expectations 33-34)
+- Backmatter heading normalization: `subsection_heading` not promoted to `backmatter_heading`
+- Figure ownership: DWQQK2YB Figures 2/3/4 ownership gaps
 
 ---
 
@@ -834,7 +845,7 @@ bone tissue, cardiac tissue... → Revised → [1]...[24]
 
 > **Session:** Zone-boundary authority fixes + tail/backmatter shrink + correspondence routing.
 > **Plan:** `docs/superpowers/plans/2026-06-17-ocr-v2-closeout-single-plan.md`
-> **Status:** Tasks 1-4 complete (code + tests), Task 5 partial (docs updated, no fixture rebuild)
+> **Status:** Tasks 1-5 complete. Regression suite: 202P/1F/43S (sole failure = pre-existing figure ownership). Diff audit + coverage verification: PASS. Project trackers updated.
 
 ### 9.1 What Changed
 
@@ -861,16 +872,21 @@ bone tissue, cardiac tissue... → Revised → [1]...[24]
 ### 9.3 Test Results
 
 ```text
-193 passed, 2 failed (both pre-existing backmatter failures, unchanged)
+202 passed, 1 failed, 43 skipped (2026-06-18 full regression suite)
 ```
+- Sole failure: `test_gold_figure_merge_ownership_contracts` — pre-existing DWQQK2YB Figures 2/3/4 ownership gaps (not caused by this pass)
+- `test_dwqqk2yb_preproof_page_one_is_absent_from_structured_blocks`: PASS (cover page dropped)
+- All tail/post-reference cleanup tests: PASS
+- All document structure tests: PASS
 
-### 9.4 Remaining Known Issues
+### 9.4 Remaining Known Issues (post unified close-out pass)
 
-1. **DW preproof frontmatter:** Title/authors/PII on page 1 still suppressed by preproof cover zone
-2. **Backmatter heading normalization:** `subsection_heading` not promoted to `backmatter_heading` in flat form (pre-existing)
-3. **Figure ownership:** DWQQK2YB Figures 2/3/4 ownership gaps (pre-existing)
-4. **DW biography page mismatch:** Pages 32-34 vs expectations 33-34
-5. **Figure group-first refactor:** Still deferred; zone boundary now stable enough to revisit
+1. **Backmatter heading normalization:** `subsection_heading` not promoted to `backmatter_heading` in flat form (pre-existing, unchanged)
+2. **Figure ownership:** DWQQK2YB Figures 2/3/4 ownership gaps (pre-existing, unchanged)
+3. **DW biography page mismatch:** Pages 32-34 vs expectations 33-34
+4. **`media_asset -> body_paragraph`** (42 blocks) — requires deeper zone/attribution fix
+5. **`unknown_structural`** (54 blocks) — publisher watermark detection still insufficient
+6. **Figure group-first refactor:** Still deferred; zone boundary now stable enough to revisit
 
 ### 9.5 Commits
 
@@ -880,3 +896,20 @@ bone tissue, cardiac tissue... → Revised → [1]...[24]
 | `b7d369e` | `fix: split same-page OCR boundaries by reference heading position` |
 | `c7a9c93` | `fix: reduce false OCR tail and backmatter conversions` |
 | `827a2cc` | `fix: preserve page-1 correspondence support in OCR routing` |
+
+### 9.6 Task 5 — Regressions, Truth Updates, Residual Rewrite (2026-06-18)
+
+**What:**
+- Ran deterministic regression suite: 202 passed, 1 failed (pre-existing figure ownership), 43 skipped
+- Ran diff_audit.py on DWQQK2YB (99 reviewed, 56 verified, 43 still wrong) and CAQNW9Q2 (76 reviewed, 67 verified, 9 still wrong)
+- Ran verify_review_coverage.py on DWQQK2YB and CAQNW9Q2 — both PASS (coverage_ratio: 1.0)
+- DWQQK2YB expectations already reflected preproof page-1 drop (no update needed)
+- Updated `project/current/ocr-error-root-cause-fix-queue.md` and `PROJECT-MANAGEMENT.md`
+
+**Resolved in this pass:**
+- Preproof cover page 1 dropped at structured-block layer (DW page-1 gone)
+- Tail/post-reference cleanup tightened (only explicit backmatter evidence triggers conversion)
+- CAQ same-page body/reference boundary fixed (block-level vertical split)
+- CAQ page-1 correspondence routes to frontmatter_support
+
+**Commit:** See Task 5 commit below.

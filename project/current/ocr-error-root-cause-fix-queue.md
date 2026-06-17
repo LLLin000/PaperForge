@@ -240,3 +240,22 @@ Remaining 152 mismatches span small clusters (`non_body_insert → unknown_struc
   2. Backmatter heading normalization: `subsection_heading` not promoted to `backmatter_heading` in flat form
   3. Figure ownership in mixed page layouts still has gaps (DWQQK2YB Figure 2/3/4 ownership)
 - **Next topic:** either address preproof frontmatter rescue or reopen figure-group work
+
+### Unified Close-Out Pass Result (2026-06-18)
+
+- **What changed:** Preproof cover page 1 is dropped before document normalization at the structured-block layer; tail/post-reference cleanup tightened (only explicit backmatter evidence triggers conversion); same-page body/reference boundary uses block-level vertical split by reference heading position; CAQ page-1 correspondence routes to frontmatter_support; backmatter normalization preserves figure/table caption and media_asset roles.
+- **Verification scope:** 8 gold papers + diff audit on DWQQK2YB and CAQNW9Q2
+- **Test result:** 202 passed, 1 failed, 43 skipped (sole failure = pre-existing figure ownership)
+- **Diff audit (DWQQK2YB):** 99 reviewed, 56 verified (57%), 43 still wrong
+- **Diff audit (CAQNW9Q2):** 76 reviewed, 67 verified (88%), 9 still wrong
+- **Coverage verification:** Both PASS (coverage_ratio: 1.0)
+- **DW page 1:** Gone entirely (preproof cover dropped, `test_dwqqk2yb_preproof_page_one_is_absent_from_structured_blocks` PASS)
+- **CAQ same-page boundary:** Fixed (Conclusion stays in body_zone before ref heading on page 7)
+- **CAQ correspondence:** Fixed (page-1 "Corresponding author:" → frontmatter_support)
+- **Remaining document-structure residuals:**
+  - Backmatter heading normalization: `subsection_heading` not promoted to `backmatter_heading` (pre-existing)
+  - Figure ownership: DWQQK2YB Figures 2/3/4 ownership gaps (pre-existing)
+  - `media_asset -> body_paragraph` (42 blocks across papers)
+  - `unknown_structural` (54 blocks across papers)
+  - DW biography page mismatch (pages 32-34 vs expectations 33-34)
+- **Decision:** Figure-group refactor remains deferred pending further zone boundary and figure ownership stabilization.
