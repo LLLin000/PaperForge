@@ -9,7 +9,7 @@ The order is storage first, then Zotero import, then CLI contracts, then verific
 ## Phases
 
 - [x] **Annotation Phase 1: Annotation Storage Foundation** - Independent `annotations.db`, schema metadata, source/provenance fields, and rebuild isolation.
-- [ ] **Annotation Phase 2: Zotero Probe and Safe Import** - Read-only Zotero SQLite probing, temp-copy access, scoped import reconciliation, and no write-back.
+- [x] **Annotation Phase 2: Zotero Probe and Safe Import** - Read-only Zotero SQLite probing, temp-copy access, scoped import reconciliation, and no write-back.
 - [ ] **Annotation Phase 3: Annotation CLI JSON Contracts** - `paperforge annotation import/list/status/export --json` with stable success/error output.
 - [ ] **Annotation Phase 4: Annotation Verification Gate** - Fixture SQLite, unit/integration/CLI regression tests, and baseline-failure documentation.
 
@@ -56,10 +56,10 @@ Plans:
 **Plans:** 4 plans
 
 Plans:
-- [ ] annotation-02-01-PLAN.md - Zotero snapshot/probe/errors and valid fixture helpers [Wave 1]
-- [ ] annotation-02-02-PLAN.md - Zotero annotation normalization [Wave 2, blocked on Wave 1]
-- [ ] annotation-02-03-PLAN.md - Scoped import reconciliation into `annotations.db` [Wave 3, blocked on Wave 2]
-- [ ] annotation-02-04-PLAN.md - End-to-end import flow verification [Wave 4, blocked on Wave 3]
+- [x] annotation-02-01-PLAN.md - Zotero snapshot/probe/errors and valid fixture helpers [Wave 1]
+- [x] annotation-02-02-PLAN.md - Zotero annotation normalization [Wave 2, blocked on Wave 1]
+- [x] annotation-02-03-PLAN.md - Scoped import reconciliation into `annotations.db` [Wave 3, blocked on Wave 2]
+- [x] annotation-02-04-PLAN.md - End-to-end import flow verification [Wave 4, blocked on Wave 3]
 
 ### Annotation Phase 3: Annotation CLI JSON Contracts
 
@@ -76,6 +76,14 @@ Plans:
 3. `paperforge annotation status --json` returns schema version, DB path, total counts, source counts, and health checks.
 4. `paperforge annotation export --json` exports paper-scoped annotations without requiring Obsidian.
 5. CLI failure output is stable and actionable for missing Zotero DB, missing config, unknown schema, invalid filters, and unreadable DB.
+
+**Plans:** 4 plans
+
+Plans:
+- [ ] annotation-03-01-PLAN.md - Annotation command namespace, parser, PFResult/error scaffold [Wave 1]
+- [ ] annotation-03-02-PLAN.md - `annotation import --json` preview/apply contract [Wave 2, blocked on Wave 1]
+- [ ] annotation-03-03-PLAN.md - `annotation list/status/export --json` read-only contracts [Wave 3, blocked on Wave 2]
+- [ ] annotation-03-04-PLAN.md - CLI success/error contract verification [Wave 4, blocked on Wave 3]
 
 ### Annotation Phase 4: Annotation Verification Gate
 
@@ -100,8 +108,8 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | Annotation Phase 1. Annotation Storage Foundation | 3/3 | ✓ Complete | 2026-06-17 |
-| Annotation Phase 2. Zotero Probe and Safe Import | 0/4 | Planned | - |
-| Annotation Phase 3. Annotation CLI JSON Contracts | 0/TBD | Not started | - |
+| Annotation Phase 2. Zotero Probe and Safe Import | 4/4 | ✓ Complete | 2026-06-18 |
+| Annotation Phase 3. Annotation CLI JSON Contracts | 0/4 | Planned | - |
 | Annotation Phase 4. Annotation Verification Gate | 0/TBD | Not started | - |
 
 ---

@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: annotation v0.1
 milestone_name: PDF Annotation Backend & CLI Foundation
-status: Annotation Phase 3 discussed
-stopped_at: Annotation Phase 3 context gathered - ready for plan phase
-last_updated: "2026-06-18T00:00:00.000+08:00"
-last_activity: 2026-06-18 - Annotation Phase 3 discussed: CLI JSON namespace, preview/apply import, paper filters, PFResult output, stable errors
+status: Ready to execute
+stopped_at: Annotation Phase 3 planned - 4 plans ready
+last_updated: "2026-06-18T18:30:00.000+08:00"
+last_activity: 2026-06-18 - Annotation Phase 3 planned: 4 waves for CLI namespace, import JSON, read-only JSON commands, and contract verification
 progress:
   total_phases: 4
-  completed_phases: 1
-  total_plans: 7
-  completed_plans: 3
-  percent: 25
+  completed_phases: 2
+  total_plans: 15
+  completed_plans: 7
+  percent: 50
 ---
 
 # Project State
@@ -25,30 +25,32 @@ See: .planning/PROJECT.md (updated 2026-06-17)
 
 ## Current Position
 
-Phase: Annotation Phase 3 of 4 (Annotation CLI JSON Contracts) - discussed, ready to plan
-Plan: not planned yet
-Last activity: 2026-06-18 - Annotation Phase 3 context created
+Phase: Annotation Phase 3 of 4 (Annotation CLI JSON Contracts) - planned, ready to execute
+Plan: 0 of 4 complete
+Last activity: 2026-06-18 - Annotation Phase 3 plans created
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 3
-- Total plans planned: 7
-- Average duration: ~3.5 min
-- Total execution time: ~10.5 min
+- Total plans completed: 7
+- Total plans planned: 15
+- Average duration: ~5.5 min
+- Total execution time: ~37 min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | Annotation Phase 1 | 3/3 | 100% | ~3.5 min |
-| Annotation Phase 2 | 0/4 | 0% | - |
+| Annotation Phase 2 | 4/4 | 100% | ~5.5 min |
+| Annotation Phase 3 | 0/4 | 0% | - |
 
 **Recent Trend:**
 
 - Annotation Phase 1: 3/3 plans completed, 18 tests + 1 skipped pass.
-- Annotation Phase 2: 4 plans created, ready for execute phase.
+- Annotation Phase 2: 4/4 plans completed, 71 annotation tests pass (47 Phase 2-specific + 18 Phase 1 + 6 flow). Zotero probe, normalization, importer, and E2E verification all built.
+- Annotation Phase 3: 4 plans created, ready for execute phase.
 
 *Updated after each plan completion*
 
@@ -89,5 +91,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-06-18
-Stopped at: Annotation Phase 3 discussion complete - ready for plan phase
-Resume file: Next up: `gsd-plan-phase annotation phase 3`
+Stopped at: Annotation Phase 3 planned - ready for execute phase
+Resume file: Next up: `gsd-execute-phase annotation phase 3`
