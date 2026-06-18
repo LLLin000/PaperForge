@@ -2227,3 +2227,22 @@ def test_panel_labels_do_not_form_sidecar_caption_column() -> None:
     inventory = build_figure_inventory(blocks)
     assert len(inventory["matched_figures"]) == 1
     assert inventory["matched_figures"][0]["figure_number"] == 1
+
+
+def test_partition_assets_by_caption_bands_keeps_assets_local_to_caption_band() -> None:
+    from paperforge.worker.ocr_figures import _partition_assets_by_caption_bands
+
+    captions = [
+        {"block_id": 101, "bbox": [700, 900, 1050, 960]},
+        {"block_id": 102, "bbox": [700, 1250, 1050, 1310]},
+    ]
+    assets = [
+        {"block_id": 1, "bbox": [650, 200, 1050, 520]},
+        {"block_id": 2, "bbox": [650, 560, 1050, 820]},
+        {"block_id": 3, "bbox": [650, 980, 1050, 1180]},
+    ]
+
+    parts = _partition_assets_by_caption_bands(captions, assets, page_height=1600)
+
+    assert [a["block_id"] for a in parts["101"]] == [1, 2]
+    assert [a["block_id"] for a in parts["102"]] == [3]

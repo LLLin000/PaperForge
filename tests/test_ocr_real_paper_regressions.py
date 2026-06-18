@@ -455,6 +455,21 @@ def test_gold_figure_merge_ownership_contracts(tmp_path: Path) -> None:
         pytest.fail("\n" + "\n".join(failures))
 
 
+def test_dwqqk2yb_ownership_no_longer_mega_merges_same_page_assets(tmp_path: Path) -> None:
+    result = replay_production_pipeline("DWQQK2YB", tmp_path)
+    reader_payload = result["reader_payload"]
+    matched, ambiguous = _reader_figure_index(reader_payload)
+
+    fig2 = matched.get(2)
+    fig4 = matched.get(4)
+
+    assert fig2 is not None
+    assert len(fig2.get("asset_block_ids", [])) <= 3
+    assert fig4 is not None
+    assert len(fig4.get("asset_block_ids", [])) <= 3
+    assert 3 in matched or 3 in ambiguous
+
+
 def test_6fgdbfqn_same_page_narrow_caption_ownership(tmp_path: Path) -> None:
     key = "6FGDBFQN"
     expectations = _load_expectations(key)
