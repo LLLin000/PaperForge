@@ -31,16 +31,11 @@ The unified close-out plan has been executed, and P0-P2 layout close-out is reco
 - DW diff audit: 57% verified; CAQ diff audit: 88% verified
 
 ## Remaining blockers before merge:
-- DWQQK2YB frontmatter support/equal-contribution routing on the first surviving page
-- DWQQK2YB figure ownership on mixed post-reference figure pages
-- derived artifact rebuild after ownership/support repairs
+- DWQQK2YB figure ownership on mixed post-reference figure pages (group-first refactor deferred)
 - completeness-check layer implementation (next slice)
 
 ## Next Work
-1. Repair DWQQK2YB frontmatter support routing
-2. Repair DWQQK2YB figure ownership
-3. Rebuild derived artifacts
-4. Plan completeness-check layer implementation
+1. Implement fuzzy OCR completeness-check layer (described in `docs/superpowers/specs/2026-06-18-ocr-completeness-check-design.md`)
 
 ## Authoritative Reference
 This file is the tie-breaker. If another document disagrees about what to do next, this file wins until it is archived.

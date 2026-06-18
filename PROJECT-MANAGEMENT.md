@@ -954,6 +954,7 @@ Still open:
   - [x] ~~**Preproof frontmatter page-1 title/authors retention** — `_first_surviving_page()` dispatches frontmatter zones on the first surviving page
   - [x] ~~**Margin-band publisher watermark noise** — `_has_confirmatory_watermark_text()` catches "Downloaded from" / "For personal use only" patterns at any width
   - [x] ~~**Figure inner label misclassification** — `_looks_like_figure_inner_label()` now accepts compact mixed-alnum labels (max 2 tokens)
+  - [x] ~~**DWQQK2YB first-surviving-page support routing** — `_looks_like_frontmatter_support_text()` catches equal-contribution and correspondence lines on the first surviving page before zone-based noise/body fallback
 - Still open:
   - `media_asset -> body_paragraph` (42 blocks) — requires deeper zone/attribution fix
   - 7 remaining `figure_inner_text` misclassifications are non-letter content inside figures (concentration labels etc.)
@@ -962,7 +963,7 @@ Still open:
   - Figure JPGs still need full OCR re-run to reflect composite region fix
   - DW biography page mismatch (pages 32-34 vs expectations 33-34)
   - Backmatter heading normalization: `subsection_heading` not promoted to `backmatter_heading`
-  - Figure ownership: DWQQK2YB Figures 2/3/4 ownership gaps
+  - Figure ownership: DWQQK2YB Figures 2/3/4 ownership gaps (group-first figure inventory refactor deferred)
 
 ### 9.8 Task 1 — Active OCR Truth-File Cleanup (2026-06-18)
 
@@ -973,4 +974,24 @@ Still open:
 **Fix:** Rewrote the active close-out priority and remaining-issues files so only real unresolved DWQQK2YB support-routing and ownership issues remain active; completeness-check stays as the next planned slice.
 
 **Result:** Later implementation steps no longer inherit already-fixed P0-P2 failures as active blockers.
+
+### 9.9 Task 2 — DWQQK2YB Support + Ownership Repair And Rebuild (2026-06-18)
+
+**Problem:** After 9.7, DWQQK2YB still had one real frontmatter-support routing gap and one real same-page figure ownership gap; derived assets also lagged behind the repaired code path.
+
+**Root cause:** early support routing still leaned on page-1/text-special-case logic, and same-page figure claiming treated broad page media clusters as one ownership pool.
+
+**Fix:** promoted first-surviving-page frontmatter support lines using bounded support-text confirmation; constrained figure claiming with expansion bound in `_expand_matched_assets_locally`; rebuilt DWQQK2YB derived artifacts with `scripts/dev/ocr_rebuild_paper.py`.
+
+**Result:** DW support blocks remain in frontmatter support flow (`frontmatter_support: 2` in rebuild role distribution); figure ownership regression now verifies correct page assignments.
+
+**Test status:**
+```
+python -m pytest tests/test_ocr_roles.py -k first_surviving_page -v
+  → 2 passed
+python -m pytest tests/test_ocr_real_paper_regressions.py -k "DWQQK2YB" -v
+  → 5 passed, 4 skipped
+python scripts/dev/ocr_rebuild_paper.py --trace DWQQK2YB
+  → OK, block_trace: 273 blocks, role distribution confirms frontmatter_support
+```
 
