@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: annotation v0.1
 milestone_name: PDF Annotation Backend & CLI Foundation
 status: Ready to execute
-stopped_at: Annotation Phase 3 planned - 4 plans ready
-last_updated: "2026-06-18T18:30:00.000+08:00"
-last_activity: 2026-06-18 - Annotation Phase 3 planned: 4 waves for CLI namespace, import JSON, read-only JSON commands, and contract verification
+stopped_at: Plan 03-03 (Wave 3) complete — read-only JSON contracts done
+last_updated: "2026-06-18T19:30:00.000+08:00"
+last_activity: 2026-06-18 - Plan 03-03 complete: annotation list/status/export --json implemented with real DB queries
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 15
-  completed_plans: 7
-  percent: 50
+  completed_plans: 10
+  percent: 66
 ---
 
 # Project State
@@ -25,9 +25,9 @@ See: .planning/PROJECT.md (updated 2026-06-17)
 
 ## Current Position
 
-Phase: Annotation Phase 3 of 4 (Annotation CLI JSON Contracts) - planned, ready to execute
-Plan: 0 of 4 complete
-Last activity: 2026-06-18 - Annotation Phase 3 plans created
+Phase: Annotation Phase 3 of 4 (Annotation CLI JSON Contracts) - executing
+Plan: 0 of 4 complete (Wave 1 scaffold ready for commit)
+Last activity: 2026-06-18 - Annotation Phase 3 execution started
 
 ## Performance Metrics
 
@@ -44,7 +44,7 @@ Last activity: 2026-06-18 - Annotation Phase 3 plans created
 |-------|-------|-------|----------|
 | Annotation Phase 1 | 3/3 | 100% | ~3.5 min |
 | Annotation Phase 2 | 4/4 | 100% | ~5.5 min |
-| Annotation Phase 3 | 0/4 | 0% | - |
+| Annotation Phase 3 | 0/4 | 0% | — (Wave 1 scaffold ready) |
 
 **Recent Trend:**
 

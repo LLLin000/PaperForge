@@ -80,9 +80,9 @@ Plans:
 **Plans:** 4 plans
 
 Plans:
-- [ ] annotation-03-01-PLAN.md - Annotation command namespace, parser, PFResult/error scaffold [Wave 1]
-- [ ] annotation-03-02-PLAN.md - `annotation import --json` preview/apply contract [Wave 2, blocked on Wave 1]
-- [ ] annotation-03-03-PLAN.md - `annotation list/status/export --json` read-only contracts [Wave 3, blocked on Wave 2]
+- [x] annotation-03-01-PLAN.md - Annotation command namespace, parser, PFResult/error scaffold [Wave 1]
+- [x] annotation-03-02-PLAN.md - `annotation import --json` preview/apply contract [Wave 2]
+- [x] annotation-03-03-PLAN.md - `annotation list/status/export --json` read-only contracts [Wave 3, blocked on Wave 2]
 - [ ] annotation-03-04-PLAN.md - CLI success/error contract verification [Wave 4, blocked on Wave 3]
 
 ### Annotation Phase 4: Annotation Verification Gate
@@ -109,7 +109,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | Annotation Phase 1. Annotation Storage Foundation | 3/3 | ✓ Complete | 2026-06-17 |
 | Annotation Phase 2. Zotero Probe and Safe Import | 4/4 | ✓ Complete | 2026-06-18 |
-| Annotation Phase 3. Annotation CLI JSON Contracts | 0/4 | Planned | - |
+| Annotation Phase 3. Annotation CLI JSON Contracts | 3/4 | Executing | - |
 | Annotation Phase 4. Annotation Verification Gate | 0/TBD | Not started | - |
 
 ---

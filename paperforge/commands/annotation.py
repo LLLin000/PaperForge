@@ -425,77 +425,345 @@ def _cmd_import(args: argparse.Namespace) -> int:
         return 1
 
 
+# ---------------------------------------------------------------------------
+# DB helpers for read-only commands
+# ---------------------------------------------------------------------------
+
+
+def _open_annotations_db(args: argparse.Namespace) -> sqlite3.Connection | None:
+    """Open annotations.db in read-only mode, or None if unavailable."""
+    vault = getattr(args, "vault_path", None)
+    if not vault:
+        return None
+    try:
+        db_path = get_annotations_db_path(vault)
+        from paperforge.annotation.db import get_annotations_connection
+
+        return get_annotations_connection(db_path, read_only=True)
+    except (FileNotFoundError, sqlite3.OperationalError):
+        return None
+
+
+def _require_paper(args: argparse.Namespace, command: str) -> int | None:
+    """Validate --paper is provided. Returns exit code if error, None if OK."""
+    json_output = getattr(args, "json", False)
+    paper = getattr(args, "paper", None)
+    if not paper:
+        if json_output:
+            result = _error(
+                command=command,
+                code=ErrorCode.VALIDATION_ERROR,
+                message="缺少 --paper 参数",
+                details={"missing": "--paper"},
+                suggestions=["使用 --paper KEY 指定文献键值"],
+            )
+            print(result.to_json())
+            return 1
+        print(f"Error: --paper is required for {command}")
+        return 1
+    return None
+
+
+def _rows_to_list(rows: list[sqlite3.Row]) -> list[dict]:
+    """Convert annotation rows to lightweight list format."""
+    result = []
+    for row in rows:
+        result.append({
+            "id": row["id"],
+            "type": row["type"],
+            "page": row["page_index"],
+            "page_label": row["page_label"],
+            "selected_text": row["selected_text"],
+            "comment": row["comment"],
+            "color": row["color"],
+            "source": row["source"],
+            "is_readonly": bool(row["is_readonly"]),
+        })
+    return result
+
+
+def _rows_to_export(rows: list[sqlite3.Row]) -> list[dict]:
+    """Convert annotation rows to full export format."""
+    result = []
+    for row in rows:
+        result.append({
+            "id": row["id"],
+            "paper_id": row["paper_id"],
+            "source": row["source"],
+            "source_library_id": row["source_library_id"],
+            "source_annotation_key": row["source_annotation_key"],
+            "source_attachment_key": row["source_attachment_key"],
+            "source_parent_key": row["source_parent_key"],
+            "source_modified_at": row["source_modified_at"],
+            "type": row["type"],
+            "page_index": row["page_index"],
+            "page_label": row["page_label"],
+            "selected_text": row["selected_text"],
+            "comment": row["comment"],
+            "color": row["color"],
+            "sort_index": row["sort_index"],
+            "tags_json": row["tags_json"],
+            "position_json": row["position_json"],
+            "selector_json": row["selector_json"],
+            "sync_state": row["sync_state"],
+            "is_readonly": bool(row["is_readonly"]),
+            "created_at": row["created_at"],
+            "updated_at": row["updated_at"],
+            "deleted_at": row["deleted_at"],
+        })
+    return result
+
+
+# ---------------------------------------------------------------------------
+# Subcommand handlers
+# ---------------------------------------------------------------------------
+
+
 def _cmd_list(args: argparse.Namespace) -> int:
     """Handle ``paperforge annotation list``."""
     json_output = getattr(args, "json", False)
-    if json_output:
+    command = "annotation.list"
+
+    try:
+        # Require --paper
+        error = _require_paper(args, command)
+        if error is not None:
+            return error
+
+        paper_key = getattr(args, "paper", None)
+        conn = _open_annotations_db(args)
+
+        if conn is None:
+            if json_output:
+                result = _success(
+                    command=command,
+                    data={
+                        "paper": paper_key,
+                        "annotations": [],
+                        "total": 0,
+                    },
+                )
+                print(result.to_json())
+                return 0
+            print(f"No annotations for '{paper_key}' (annotations.db not available)")
+            return 0
+
         try:
-            result = _success(
-                command="annotation.list",
-                data={
-                    "paper": getattr(args, "paper", None),
-                    "annotations": [],
-                    "total": 0,
-                },
+            rows = conn.execute(
+                """SELECT * FROM annotations
+                   WHERE paper_id = ? AND deleted_at IS NULL
+                   ORDER BY page_index, sort_index, id""",
+                (paper_key,),
+            ).fetchall()
+
+            if json_output:
+                result = _success(
+                    command=command,
+                    data={
+                        "paper": paper_key,
+                        "annotations": _rows_to_list(rows),
+                        "total": len(rows),
+                    },
+                )
+                print(result.to_json())
+                return 0
+
+            print(f"Annotations for '{paper_key}': {len(rows)} found")
+            return 0
+        finally:
+            conn.close()
+
+    except Exception as exc:
+        logger.exception("Error in annotation list")
+        if json_output:
+            result = _error(
+                command=command,
+                code=ErrorCode.INTERNAL_ERROR,
+                message=f"列出注释时出错: {exc}",
             )
             print(result.to_json())
-            return 0
-        except AnnotationImportError as exc:
-            result = _map_annotation_error("annotation.list", exc)
-            print(result.to_json())
             return 1
-
-    print("Annotation list (placeholder — Wave 3)")
-    return 0
+        print(f"Error: {exc}", file=__import__("sys").stderr)
+        return 1
 
 
 def _cmd_status(args: argparse.Namespace) -> int:
     """Handle ``paperforge annotation status``."""
     json_output = getattr(args, "json", False)
-    if json_output:
+    command = "annotation.status"
+
+    try:
+        vault = getattr(args, "vault_path", None)
+        conn = _open_annotations_db(args)
+
+        if conn is None:
+            if json_output:
+                result = _success(
+                    command=command,
+                    data={
+                        "db_path": None,
+                        "schema_version": 0,
+                        "total_annotations": 0,
+                        "source_counts": {},
+                        "readonly_count": 0,
+                        "deleted_count": 0,
+                        "db_available": False,
+                        "total_papers_with_annotations": 0,
+                    },
+                )
+                print(result.to_json())
+                return 0
+            print("Annotation system status: annotations.db not available")
+            return 0
+
         try:
-            result = _success(
-                command="annotation.status",
-                data={
-                    "db_configured": False,
-                    "total_annotations": 0,
-                    "total_papers_with_annotations": 0,
-                    "zotero_import_available": True,
-                },
+            # Schema version
+            from paperforge.annotation.schema import get_schema_version
+
+            sv = get_schema_version(conn)
+
+            # Total annotations (including deleted)
+            total = conn.execute(
+                "SELECT COUNT(*) as c FROM annotations"
+            ).fetchone()["c"]
+
+            # Source counts
+            source_rows = conn.execute(
+                "SELECT source, COUNT(*) as c FROM annotations GROUP BY source"
+            ).fetchall()
+            source_counts = {r["source"]: r["c"] for r in source_rows}
+
+            # Read-only count
+            ro = conn.execute(
+                "SELECT COUNT(*) as c FROM annotations WHERE is_readonly = 1"
+            ).fetchone()["c"]
+
+            # Deleted count
+            deleted = conn.execute(
+                "SELECT COUNT(*) as c FROM annotations WHERE deleted_at IS NOT NULL"
+            ).fetchone()["c"]
+
+            # Papers with annotations
+            papers = conn.execute(
+                "SELECT COUNT(DISTINCT paper_id) as c FROM annotations"
+            ).fetchone()["c"]
+
+            # DB path
+            db_path = None
+            if vault:
+                try:
+                    db_path = str(get_annotations_db_path(vault))
+                except (FileNotFoundError, KeyError):
+                    pass
+
+            if json_output:
+                result = _success(
+                    command=command,
+                    data={
+                        "db_path": db_path,
+                        "schema_version": sv,
+                        "total_annotations": total,
+                        "source_counts": source_counts,
+                        "readonly_count": ro,
+                        "deleted_count": deleted,
+                        "db_available": True,
+                        "total_papers_with_annotations": papers,
+                    },
+                )
+                print(result.to_json())
+                return 0
+
+            print(
+                f"Annotation DB: {db_path or 'unknown'}, "
+                f"schema v{sv}, {total} annotations, "
+                f"{papers} papers"
+            )
+            return 0
+        finally:
+            conn.close()
+
+    except Exception as exc:
+        logger.exception("Error in annotation status")
+        if json_output:
+            result = _error(
+                command=command,
+                code=ErrorCode.INTERNAL_ERROR,
+                message=f"获取注释状态时出错: {exc}",
             )
             print(result.to_json())
-            return 0
-        except AnnotationImportError as exc:
-            result = _map_annotation_error("annotation.status", exc)
-            print(result.to_json())
             return 1
-
-    print("Annotation system status (placeholder — Wave 3)")
-    return 0
+        print(f"Error: {exc}", file=__import__("sys").stderr)
+        return 1
 
 
 def _cmd_export(args: argparse.Namespace) -> int:
     """Handle ``paperforge annotation export``."""
     json_output = getattr(args, "json", False)
-    if json_output:
+    command = "annotation.export"
+
+    try:
+        # Require --paper
+        error = _require_paper(args, command)
+        if error is not None:
+            return error
+
+        paper_key = getattr(args, "paper", None)
+        conn = _open_annotations_db(args)
+
+        if conn is None:
+            if json_output:
+                result = _success(
+                    command=command,
+                    data={
+                        "paper": paper_key,
+                        "annotations": [],
+                        "total": 0,
+                        "format_version": "1.0",
+                    },
+                )
+                print(result.to_json())
+                return 0
+            print(f"No export for '{paper_key}' (annotations.db not available)")
+            return 0
+
         try:
-            result = _success(
-                command="annotation.export",
-                data={
-                    "paper": getattr(args, "paper", None),
-                    "annotations": [],
-                    "total": 0,
-                },
+            rows = conn.execute(
+                """SELECT * FROM annotations
+                   WHERE paper_id = ?
+                   ORDER BY page_index, sort_index, id""",
+                (paper_key,),
+            ).fetchall()
+
+            if json_output:
+                result = _success(
+                    command=command,
+                    data={
+                        "paper": paper_key,
+                        "annotations": _rows_to_export(rows),
+                        "total": len(rows),
+                        "format_version": "1.0",
+                    },
+                )
+                print(result.to_json())
+                return 0
+
+            print(f"Export for '{paper_key}': {len(rows)} annotations")
+            return 0
+        finally:
+            conn.close()
+
+    except Exception as exc:
+        logger.exception("Error in annotation export")
+        if json_output:
+            result = _error(
+                command=command,
+                code=ErrorCode.INTERNAL_ERROR,
+                message=f"导出注释时出错: {exc}",
             )
             print(result.to_json())
-            return 0
-        except AnnotationImportError as exc:
-            result = _map_annotation_error("annotation.export", exc)
-            print(result.to_json())
             return 1
-
-    print("Annotation export (placeholder — Wave 3)")
-    return 0
+        print(f"Error: {exc}", file=__import__("sys").stderr)
+        return 1
 
 
 # ---------------------------------------------------------------------------
