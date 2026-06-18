@@ -1,44 +1,43 @@
 ---
 gsd_state_version: 1.0
-milestone: annotation v0.1
-milestone_name: PDF Annotation Backend & CLI Foundation
-status: Complete
-stopped_at: Annotation v0.1 complete — all 4 phases delivered
-last_updated: "2026-06-18T22:30:00.000+08:00"
-last_activity: 2026-06-18 - Annotation Phase 4 complete: verification gate passed
+milestone: annotation v0.2
+milestone_name: Obsidian PDF Annotation Display Layer
+status: Ready to discuss
+last_updated: "2026-06-18T22:45:00.000+08:00"
+last_activity: 2026-06-18 - annotation v0.2 roadmap created
 progress:
-  total_phases: 4
-  completed_phases: 4
-  total_plans: 18
-  completed_plans: 17
-  percent: 94
+  total_phases: 5
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-06-17)
+See: .planning/PROJECT.md (updated 2026-06-18)
 
 **Core value:** Researchers always know what papers they have, what state those papers are in, and whether each paper is reliably usable by AI with traceable fulltext, figures, notes, and source links.
-**Current focus:** Annotation Phase 4 - Annotation Verification Gate ✅ Complete
+**Current focus:** annotation v0.2 - Obsidian PDF Annotation Display Layer
 
 ## Current Position
 
-Phase: Annotation Phase 4 of 4 (Annotation Verification Gate) - complete
-Plans: 3/3
-Last activity: 2026-06-18 - Annotation Phase 4 complete: verification gate passed
+Phase: Annotation Phase 5 of 9 (Plugin Annotation Data Bridge) - not started
+Plan: -
+Status: Ready to discuss/plan
+Last activity: 2026-06-18 - annotation v0.2 roadmap created
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 17
-- Total plans planned: 18
-- Average duration: ~6 min
-- Total execution time: ~108 min
+- Total plans completed before v0.2: 17
+- Total plans planned before v0.2: 18
+- v0.2 planned phases: 5
 
-**By Phase:**
+**Previous Annotation Milestone:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
@@ -49,8 +48,9 @@ Last activity: 2026-06-18 - Annotation Phase 4 complete: verification gate passe
 
 **Recent Trend:**
 
-- Annotation Phase 4 complete: 140 tests passing (88 unit + 52 CLI), safety audit confirms zero Zotero write-back, verification report with full failure classification.
-- Annotation v0.1 milestone complete: PDF annotation backend & CLI foundation delivered across 4 phases / 18 plans.
+- Annotation v0.1 complete: backend and CLI foundation delivered across Annotation Phases 1-4.
+- Annotation Phase 4 verification recorded 140 tests passing (88 unit + 52 CLI), safety audit confirms zero Zotero write-back, and known unrelated baseline failures are separated from annotation status.
+- Annotation v0.2 initialized: Obsidian display layer with plugin data bridge, annotation sidebar/list, PDF jump navigation, risk-gated overlay, and verification gate.
 
 *Updated after each plan completion*
 
@@ -77,6 +77,9 @@ Recent decisions affecting current work:
 - [annotation v0.1]: Annotation CLI commands use a dedicated `paperforge annotation ...` namespace.
 - [annotation v0.1]: Annotation import defaults to preview mode; writes require explicit `--apply`.
 - [annotation v0.1]: Annotation JSON commands use the existing PFResult-style envelope with stable error codes for `--json` failures.
+- [annotation v0.2]: Continue annotation phase numbering after Phase 4; v0.2 starts at Annotation Phase 5.
+- [annotation v0.2]: Prioritize Obsidian display/navigation/overlay before local editing or concept-card evidence integration.
+- [annotation v0.2]: PDF overlay is risk-gated; the sidebar/list remains the safe fallback.
 
 ### Pending Todos
 
@@ -91,5 +94,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-06-18
-Stopped at: Annotation v0.1 complete — milestone delivered
-Resume file: Annotation milestone complete. Next milestone planning possible.
+Stopped at: annotation v0.2 initialized - ready for Annotation Phase 5 discussion
+Resume file: Next up: `gsd-discuss-phase annotation phase 5`

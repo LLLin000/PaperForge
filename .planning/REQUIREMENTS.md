@@ -1,67 +1,63 @@
-# Requirements: PaperForge annotation v0.1
+# Requirements: PaperForge annotation v0.2
 
-**Defined:** 2026-06-17
+**Defined:** 2026-06-18
 **Core Value:** Researchers always know what papers they have, what state those papers are in, and whether each paper is reliably usable by AI with traceable fulltext, figures, notes, and source links.
 
-## v0.1 Requirements
+## v0.2 Requirements
 
-Requirements for annotation v0.1. Each maps to roadmap phases.
+annotation v0.2 turns the verified annotation backend/CLI from v0.1 into an Obsidian-facing reading surface. The milestone continues after Annotation Phase 4, so the roadmap starts at Annotation Phase 5.
 
-### Annotation Storage (DATA)
+### Plugin Data Bridge (BRDG)
 
-- [ ] **DATA-01**: User has an independent `annotations.db` created under the configured PaperForge index/system location, separate from rebuildable memory databases.
-- [ ] **DATA-02**: Annotation schema stores source, library scope, parent paper key, attachment key, selected text, comment, color, page label/index, sort index, tags, position JSON, timestamps, and soft-delete state.
-- [ ] **DATA-03**: Annotation schema has explicit schema-version metadata and migration entry points so future annotation versions can evolve without touching `paperforge.db`.
-- [ ] **DATA-04**: Memory/index rebuild code does not drop, recreate, or mutate `annotations.db`.
+- [ ] **BRDG-01**: User can load annotation data for the active paper in Obsidian through the existing PaperForge plugin without manually running shell commands.
+- [ ] **BRDG-02**: Plugin calls the v0.1 annotation CLI/contracts as the source of truth rather than reimplementing annotation database queries in TypeScript.
+- [ ] **BRDG-03**: Plugin handles missing `annotations.db`, missing paper identity, empty annotations, and CLI failure states with clear user-facing messages.
+- [ ] **BRDG-04**: Annotation rows preserve provenance fields needed for display: page, selected text, comment, color, type, read-only state, source, and source attachment identity.
 
-### Zotero Read-Only Import (ZOT)
+### Annotation Sidebar/List (LIST)
 
-- [ ] **ZOT-01**: User can import Zotero PDF annotations from a read-only copied `zotero.sqlite` snapshot.
-- [ ] **ZOT-02**: User can run a paper-scoped import without deleting or mutating annotations from unrelated papers.
-- [ ] **ZOT-03**: Import identity uses source and library scope, not a bare Zotero key alone.
-- [ ] **ZOT-04**: Zotero schema probing detects missing/unknown annotation tables or columns and returns an actionable error.
-- [ ] **ZOT-05**: Imported Zotero-sourced annotations are marked read-only in v0.1.
+- [ ] **LIST-01**: User can view a paper-scoped annotation list in the PaperForge Obsidian UI.
+- [ ] **LIST-02**: User can scan annotations by page, color, type, selected text, and comment without opening raw JSON.
+- [ ] **LIST-03**: User can filter or group annotations by at least page and type/color.
+- [ ] **LIST-04**: User can refresh the annotation list after importing annotations without restarting Obsidian.
+- [ ] **LIST-05**: List UI degrades gracefully for empty papers, missing PDFs, and unsupported annotation fields.
 
-### Annotation CLI (CLI)
+### PDF Navigation and Overlay (OVLY)
 
-- [ ] **CLI-01**: User can run `paperforge annotation import --json` and receive stable machine-readable import results.
-- [ ] **CLI-02**: User can run `paperforge annotation list --json` for a paper and receive ordered annotations with source provenance.
-- [ ] **CLI-03**: User can run `paperforge annotation status --json` and see database health, schema version, total annotations, and source counts.
-- [ ] **CLI-04**: User can run `paperforge annotation export --json` for a paper without requiring the Obsidian plugin.
-- [ ] **CLI-05**: CLI supports dry-run and paper filtering where relevant, with clear output that distinguishes preview from applied import.
+- [ ] **OVLY-01**: User can jump from an annotation list item to the corresponding PDF and page when the source PDF is available.
+- [ ] **OVLY-02**: User can see imported annotations as highlights or marks over the native Obsidian PDF viewer when viewer internals are available.
+- [ ] **OVLY-03**: Overlay positioning uses stored annotation position/page data and remains scoped to the active PDF/paper.
+- [ ] **OVLY-04**: User can inspect annotation text/comment from the overlay through a lightweight popover or selection detail.
+- [ ] **OVLY-05**: Overlay degrades safely when Obsidian PDF.js internals change or are unavailable, falling back to the sidebar/list without breaking the plugin.
 
-### Safety and Configuration (SAFE)
+### Safety and Scope (SAFE)
 
-- [ ] **SAFE-01**: Annotation paths are resolved through PaperForge configuration and do not hardcode vault-specific folders.
-- [ ] **SAFE-02**: Zotero DB access defaults to temp-copy mode and cleans up temporary files after import/probe.
-- [ ] **SAFE-03**: Error messages cover missing Zotero DB, locked/unreadable DB, missing PaperForge config, unknown Zotero schema, and invalid annotation payloads.
-- [ ] **SAFE-04**: v0.1 has no Zotero write-back path and no direct Zotero SQLite mutation.
+- [ ] **SAFE-01**: v0.2 remains read-only for Zotero-sourced annotations; it does not add Zotero write-back.
+- [ ] **SAFE-02**: v0.2 does not make local annotation creation/editing/deletion a primary workflow.
+- [ ] **SAFE-03**: Plugin display code does not mutate `annotations.db` except through existing explicit import/apply commands if surfaced later.
+- [ ] **SAFE-04**: Errors never expose raw Python tracebacks or shell noise in the Obsidian UI.
 
 ### Verification (TEST)
 
-- [ ] **TEST-01**: Tests include a fixture Zotero SQLite database with at least one parent paper, one PDF attachment, and multiple annotation types.
-- [ ] **TEST-02**: Unit tests cover schema creation, probe normalization, import reconciliation, scoped stale deletion, and service listing/export.
-- [ ] **TEST-03**: CLI tests cover `import/list/status/export --json` success and representative failure cases.
-- [ ] **TEST-04**: Regression tests prove paper-scoped import does not soft-delete annotations outside the selected paper scope.
-- [ ] **TEST-05**: Verification documents any unrelated upstream baseline failures separately from annotation v0.1 failures.
+- [ ] **TEST-01**: Tests cover plugin-side parsing of annotation CLI JSON success and failure payloads.
+- [ ] **TEST-02**: Tests cover annotation list rendering states: loaded rows, empty rows, missing DB, missing paper, and command failure.
+- [ ] **TEST-03**: Tests or a documented manual harness cover jump-to-PDF/page behavior.
+- [ ] **TEST-04**: Overlay work includes a risk-gated verification path that proves either the overlay renders correctly or the fallback list remains usable.
+- [ ] **TEST-05**: Final verification distinguishes v0.2 failures from known unrelated baseline failures inherited from v0.1.
 
 ## Future Requirements
-
-### Obsidian PDF Overlay
-
-- **OVLY-01**: User can see imported annotations over the native Obsidian PDF viewer.
-- **OVLY-02**: User can open an annotation popover from the PDF overlay.
-- **OVLY-03**: Overlay degrades gracefully when Obsidian/PDF.js internals are unavailable.
 
 ### Local Annotation Editing
 
 - **EDIT-01**: User can create a local PaperForge annotation from the PDF UI.
 - **EDIT-02**: User can edit or delete local PaperForge annotations without modifying Zotero annotations.
+- **EDIT-03**: User can review conflicts between local annotations and imported Zotero annotations.
 
 ### Evidence Integration
 
 - **EVID-01**: User can link an annotation as an evidence anchor from deep-reading output.
 - **EVID-02**: Concept-card preview/apply can cite annotation anchors as source evidence.
+- **EVID-03**: Annotation anchors can be used as evidence candidates during merge/review flows.
 
 ### Zotero Write-Back
 
@@ -72,46 +68,45 @@ Requirements for annotation v0.1. Each maps to roadmap phases.
 
 | Feature | Reason |
 |---------|--------|
-| Obsidian PDF overlay | High-risk plugin/PDF.js work; belongs in annotation v0.2 after backend is stable. |
-| Creating/editing/deleting annotations in PDF UI | Requires overlay and interaction model; belongs after read-only import/list works. |
-| Writing to Zotero SQLite | Unsafe; Zotero DB is an external source of truth and must not be mutated directly. |
-| Zotero Web API write-back | Requires credentials, rate limits, version/conflict handling; future milestone. |
-| Concept-card/deep-reading evidence integration | Useful, but annotation storage and CLI must stabilize first. |
-| EPUB/web annotations | Different selector model; not needed for PDF annotation MVP. |
+| Direct Zotero SQLite mutation | Unsafe; Zotero remains an external source of truth. |
+| Zotero Web API write-back | Requires credentials, versioning, conflict handling, and a separate safety design. |
+| Full local annotation editor | v0.2 focuses on display/navigation/overlay; editing belongs after display is stable. |
+| Concept-card evidence integration | Valuable, but v0.2 first proves annotation visibility and PDF grounding inside Obsidian. |
+| EPUB/web annotations | Different selector model; PDF annotations remain the target. |
 
 ## Traceability
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DATA-01 | Annotation Phase 1 | Pending |
-| DATA-02 | Annotation Phase 1 | Pending |
-| DATA-03 | Annotation Phase 1 | Pending |
-| DATA-04 | Annotation Phase 1 | Pending |
-| ZOT-01 | Annotation Phase 2 | Pending |
-| ZOT-02 | Annotation Phase 2 | Pending |
-| ZOT-03 | Annotation Phase 2 | Pending |
-| ZOT-04 | Annotation Phase 2 | Pending |
-| ZOT-05 | Annotation Phase 2 | Pending |
-| CLI-01 | Annotation Phase 3 | Pending |
-| CLI-02 | Annotation Phase 3 | Pending |
-| CLI-03 | Annotation Phase 3 | Pending |
-| CLI-04 | Annotation Phase 3 | Pending |
-| CLI-05 | Annotation Phase 3 | Pending |
-| SAFE-01 | Annotation Phase 2 | Pending |
-| SAFE-02 | Annotation Phase 2 | Pending |
-| SAFE-03 | Annotation Phase 3 | Pending |
-| SAFE-04 | Annotation Phase 2 | Pending |
-| TEST-01 | Annotation Phase 4 | Pending |
-| TEST-02 | Annotation Phase 4 | Pending |
-| TEST-03 | Annotation Phase 4 | Pending |
-| TEST-04 | Annotation Phase 4 | Pending |
-| TEST-05 | Annotation Phase 4 | Pending |
+| BRDG-01 | Annotation Phase 5 | Pending |
+| BRDG-02 | Annotation Phase 5 | Pending |
+| BRDG-03 | Annotation Phase 5 | Pending |
+| BRDG-04 | Annotation Phase 5 | Pending |
+| LIST-01 | Annotation Phase 6 | Pending |
+| LIST-02 | Annotation Phase 6 | Pending |
+| LIST-03 | Annotation Phase 6 | Pending |
+| LIST-04 | Annotation Phase 6 | Pending |
+| LIST-05 | Annotation Phase 6 | Pending |
+| OVLY-01 | Annotation Phase 7 | Pending |
+| OVLY-02 | Annotation Phase 8 | Pending |
+| OVLY-03 | Annotation Phase 8 | Pending |
+| OVLY-04 | Annotation Phase 8 | Pending |
+| OVLY-05 | Annotation Phase 8 | Pending |
+| SAFE-01 | Annotation Phase 9 | Pending |
+| SAFE-02 | Annotation Phase 9 | Pending |
+| SAFE-03 | Annotation Phase 9 | Pending |
+| SAFE-04 | Annotation Phase 9 | Pending |
+| TEST-01 | Annotation Phase 9 | Pending |
+| TEST-02 | Annotation Phase 9 | Pending |
+| TEST-03 | Annotation Phase 9 | Pending |
+| TEST-04 | Annotation Phase 9 | Pending |
+| TEST-05 | Annotation Phase 9 | Pending |
 
 **Coverage:**
-- annotation v0.1 requirements: 23 total
+- annotation v0.2 requirements: 23 total
 - Mapped to phases: 23
 - Unmapped: 0
 
 ---
-*Requirements defined: 2026-06-17*
-*Last updated: 2026-06-17 after annotation v0.1 initiation*
+*Requirements defined: 2026-06-18*
+*Last updated: 2026-06-18 after annotation v0.2 initiation*

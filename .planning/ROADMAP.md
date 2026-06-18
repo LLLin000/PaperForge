@@ -1,123 +1,120 @@
-# Roadmap: PaperForge annotation v0.1 - PDF Annotation Backend & CLI Foundation
+# Roadmap: PaperForge annotation v0.2 - Obsidian PDF Annotation Display Layer
 
 ## Overview
 
-annotation v0.1 creates the backend foundation for PaperForge PDF annotations on top of the current upstream/master base. The milestone intentionally absorbs only the stable backend/CLI ideas from the old `feat/pdf-annotation-layer` branch. It does not merge the high-risk Obsidian PDF overlay work.
+annotation v0.2 builds on the completed annotation v0.1 backend and CLI foundation. v0.1 proved PaperForge can safely import Zotero PDF annotations into `annotations.db` and expose them through stable `paperforge annotation import/list/status/export --json` commands.
 
-The order is storage first, then Zotero import, then CLI contracts, then verification.
+v0.2 makes those annotations visible and useful inside Obsidian. The milestone starts with a plugin data bridge and sidebar/list view, then adds PDF navigation and overlay support. The overlay is intentionally risk-gated because Obsidian PDF viewer internals can change.
 
 ## Phases
 
-- [x] **Annotation Phase 1: Annotation Storage Foundation** - Independent `annotations.db`, schema metadata, source/provenance fields, and rebuild isolation.
-- [x] **Annotation Phase 2: Zotero Probe and Safe Import** - Read-only Zotero SQLite probing, temp-copy access, scoped import reconciliation, and no write-back.
-- [ ] **Annotation Phase 3: Annotation CLI JSON Contracts** - `paperforge annotation import/list/status/export --json` with stable success/error output.
-- [ ] **Annotation Phase 4: Annotation Verification Gate** - Fixture SQLite, unit/integration/CLI regression tests, and baseline-failure documentation.
+- [ ] **Annotation Phase 5: Plugin Annotation Data Bridge** - Connect the Obsidian plugin to v0.1 annotation CLI JSON and normalize UI-ready state.
+- [ ] **Annotation Phase 6: Annotation Sidebar and List View** - Display paper-scoped annotations in Obsidian with scanning, filtering, refresh, and empty/error states.
+- [ ] **Annotation Phase 7: PDF Jump Navigation** - Jump from an annotation row to the source PDF/page using existing paper/PDF path resolution.
+- [ ] **Annotation Phase 8: PDF Overlay Rendering Spike and Implementation** - Render imported annotations over the native PDF viewer when available, with graceful fallback.
+- [ ] **Annotation Phase 9: Display Layer Verification Gate** - Verify plugin parsing/rendering/navigation/overlay fallback and document known baseline failures separately.
 
 ## Phase Details
 
-### Annotation Phase 1: Annotation Storage Foundation
+### Annotation Phase 5: Plugin Annotation Data Bridge
 
-**Goal:** Create the PaperForge-owned annotation database layer without coupling it to rebuildable memory/index databases.
+**Goal:** Let the Obsidian plugin load annotation data through the v0.1 CLI contracts without reimplementing annotation storage in TypeScript.
 
-**Depends on:** None
+**Depends on:** Annotation Phase 4
 
-**Requirements:** DATA-01, DATA-02, DATA-03, DATA-04
-
-**Success Criteria:**
-
-1. `paperforge/annotation/` exists with database and schema modules.
-2. `annotations.db` initializes in the configured PaperForge index/system location.
-3. Schema includes source/provenance, paper association, annotation content, position JSON, sync/read-only state, timestamps, and soft-delete fields.
-4. A regression test proves memory/index rebuild paths do not drop or mutate `annotations.db`.
-
-**Plans:** 3 plans
-
-Plans:
-- [x] annotation-01-01-PLAN.md - Annotation package and DB path/connection helpers [Wave 1]
-- [x] annotation-01-02-PLAN.md - Annotation schema lifecycle and schema tests [Wave 2]
-- [x] annotation-01-03-PLAN.md - Memory rebuild isolation regression and targeted verification [Wave 3]
-
-### Annotation Phase 2: Zotero Probe and Safe Import
-
-**Goal:** Import Zotero PDF annotations safely from a read-only copied SQLite snapshot.
-
-**Depends on:** Annotation Phase 1
-
-**Requirements:** ZOT-01, ZOT-02, ZOT-03, ZOT-04, ZOT-05, SAFE-01, SAFE-02, SAFE-04
+**Requirements:** BRDG-01, BRDG-02, BRDG-03, BRDG-04
 
 **Success Criteria:**
 
-1. Probe code reads Zotero annotation tables from a copied `zotero.sqlite` snapshot by default.
-2. Normalized annotations preserve selected text, comment, color, page, sort index, tags, position JSON, and source modified time.
-3. Imported identity includes source and library scope rather than a bare Zotero key alone.
-4. Paper-scoped import only reconciles stale rows inside that paper scope.
-5. Zotero-sourced rows are marked read-only and no code path writes to Zotero SQLite.
+1. Plugin has a single annotation data-loading path that calls or reuses `paperforge annotation list/export --json`.
+2. CLI JSON parsing preserves page, selected text, comment, color, type, source, read-only state, and attachment identity.
+3. Missing DB, missing paper identity, empty annotation list, and command failures produce structured UI states.
+4. The bridge is covered by tests using representative PFResult success/error fixtures.
 
-**Plans:** 4 plans
+**Plans:** TBD
 
-Plans:
-- [x] annotation-02-01-PLAN.md - Zotero snapshot/probe/errors and valid fixture helpers [Wave 1]
-- [x] annotation-02-02-PLAN.md - Zotero annotation normalization [Wave 2, blocked on Wave 1]
-- [x] annotation-02-03-PLAN.md - Scoped import reconciliation into `annotations.db` [Wave 3, blocked on Wave 2]
-- [x] annotation-02-04-PLAN.md - End-to-end import flow verification [Wave 4, blocked on Wave 3]
+### Annotation Phase 6: Annotation Sidebar and List View
 
-### Annotation Phase 3: Annotation CLI JSON Contracts
+**Goal:** Show paper-scoped annotations in an Obsidian UI surface that is useful even before overlay rendering is stable.
 
-**Goal:** Expose annotation storage and import behavior through stable user-facing CLI commands.
+**Depends on:** Annotation Phase 5
 
-**Depends on:** Annotation Phase 2
-
-**Requirements:** CLI-01, CLI-02, CLI-03, CLI-04, CLI-05, SAFE-03
+**Requirements:** LIST-01, LIST-02, LIST-03, LIST-04, LIST-05
 
 **Success Criteria:**
 
-1. `paperforge annotation import --json` reports imported/updated/deleted/skipped counts and whether the run was a dry-run.
-2. `paperforge annotation list --json` returns ordered annotations for a paper with source provenance and read-only state.
-3. `paperforge annotation status --json` returns schema version, DB path, total counts, source counts, and health checks.
-4. `paperforge annotation export --json` exports paper-scoped annotations without requiring Obsidian.
-5. CLI failure output is stable and actionable for missing Zotero DB, missing config, unknown schema, invalid filters, and unreadable DB.
+1. User can open a paper annotation list from the PaperForge plugin UI.
+2. Rows show page, type/color, selected text, comment, source, and read-only status in a compact readable layout.
+3. User can filter or group by page and type/color.
+4. User can refresh annotation data after import without restarting Obsidian.
+5. Empty, missing PDF, missing DB, and unsupported field states are visible and non-crashing.
 
-**Plans:** 4 plans
+**Plans:** TBD
 
-Plans:
-- [x] annotation-03-01-PLAN.md - Annotation command namespace, parser, PFResult/error scaffold [Wave 1]
-- [x] annotation-03-02-PLAN.md - `annotation import --json` preview/apply contract [Wave 2]
-- [x] annotation-03-03-PLAN.md - `annotation list/status/export --json` read-only contracts [Wave 3, blocked on Wave 2]
-- [x] annotation-03-04-PLAN.md - CLI success/error contract verification [Wave 4, blocked on Wave 3]
+### Annotation Phase 7: PDF Jump Navigation
 
-### Annotation Phase 4: Annotation Verification Gate
+**Goal:** Let the user jump from a list item to the corresponding PDF and page.
 
-**Goal:** Prove annotation v0.1 works and distinguish annotation regressions from unrelated upstream baseline failures.
+**Depends on:** Annotation Phase 6
 
-**Depends on:** Annotation Phase 3
-
-**Requirements:** TEST-01, TEST-02, TEST-03, TEST-04, TEST-05
+**Requirements:** OVLY-01
 
 **Success Criteria:**
 
-1. Test fixtures include a minimal Zotero SQLite database with parent paper, PDF attachment, and multiple annotation rows.
-2. Unit tests cover schema creation, probe normalization, importer reconciliation, and service list/export behavior.
-3. CLI tests cover success and failure JSON for import/list/status/export.
-4. A regression test proves importing one paper does not soft-delete annotations for another paper.
-5. Verification notes call out unrelated upstream baseline failures separately from annotation v0.1 status.
+1. Annotation list rows expose a jump/open action.
+2. Jump action resolves the correct paper/PDF path using existing PaperForge metadata/path conventions.
+3. Jump action opens the PDF and lands on or near the annotation page where Obsidian supports page fragments or viewer commands.
+4. Unsupported jump cases show a clear fallback message and keep the annotation list usable.
 
-**Plans:** 3 plans
+**Plans:** TBD
 
-Plans:
-- [x] annotation-04-01-PLAN.md - Generated fixture and service verification foundation [Wave 1]
-- [x] annotation-04-02-PLAN.md - Final annotation CLI/regression gate [Wave 2, blocked on Wave 1]
-- [x] annotation-04-03-PLAN.md - Verification report, safety audit, and closeout [Wave 3, blocked on Wave 2]
+### Annotation Phase 8: PDF Overlay Rendering Spike and Implementation
+
+**Goal:** Render imported annotations over the native Obsidian PDF viewer when viewer internals are available, while falling back safely to the sidebar/list when they are not.
+
+**Depends on:** Annotation Phase 7
+
+**Requirements:** OVLY-02, OVLY-03, OVLY-04, OVLY-05
+
+**Success Criteria:**
+
+1. A spike identifies the current Obsidian PDF viewer hooks/DOM structure used for overlay attachment.
+2. Overlay marks are scoped to the active PDF/paper and use stored page/position data.
+3. User can inspect selected text/comment from an overlay mark through a lightweight popover or detail surface.
+4. Overlay teardown and refresh do not leave stale marks when switching files or panes.
+5. If PDF viewer internals are unavailable, the plugin disables overlay and preserves the annotation list workflow.
+
+**Plans:** TBD
+
+### Annotation Phase 9: Display Layer Verification Gate
+
+**Goal:** Prove annotation v0.2 works as an Obsidian-facing display layer and distinguish display-layer regressions from unrelated baseline failures.
+
+**Depends on:** Annotation Phase 8
+
+**Requirements:** SAFE-01, SAFE-02, SAFE-03, SAFE-04, TEST-01, TEST-02, TEST-03, TEST-04, TEST-05
+
+**Success Criteria:**
+
+1. Tests cover plugin parsing of annotation PFResult success/error payloads.
+2. Tests cover list rendering states: loaded, empty, missing DB, missing paper, and command failure.
+3. Jump-to-PDF/page behavior is verified through tests or a documented manual harness.
+4. Overlay verification proves either correct rendering or safe fallback.
+5. Final notes confirm v0.2 does not add Zotero write-back or local editing as a primary workflow.
+
+**Plans:** TBD
 
 ## Progress
 
-**Execution Order:** Annotation Phase 1 -> Annotation Phase 2 -> Annotation Phase 3 -> Annotation Phase 4
+**Execution Order:** Annotation Phase 5 -> Annotation Phase 6 -> Annotation Phase 7 -> Annotation Phase 8 -> Annotation Phase 9
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| Annotation Phase 1. Annotation Storage Foundation | 3/3 | ✓ Complete | 2026-06-17 |
-| Annotation Phase 2. Zotero Probe and Safe Import | 4/4 | ✓ Complete | 2026-06-18 |
-| Annotation Phase 3. Annotation CLI JSON Contracts | 4/4 | ✓ Complete | 2026-06-18 |
-| Annotation Phase 4. Annotation Verification Gate | 3/3 | ✓ Complete | 2026-06-18 |
+| Annotation Phase 5. Plugin Annotation Data Bridge | 0/TBD | Not started | - |
+| Annotation Phase 6. Annotation Sidebar and List View | 0/TBD | Not started | - |
+| Annotation Phase 7. PDF Jump Navigation | 0/TBD | Not started | - |
+| Annotation Phase 8. PDF Overlay Rendering Spike and Implementation | 0/TBD | Not started | - |
+| Annotation Phase 9. Display Layer Verification Gate | 0/TBD | Not started | - |
 
 ---
-*Roadmap created: 2026-06-17*
+*Roadmap created: 2026-06-18*

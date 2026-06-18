@@ -4,17 +4,29 @@
 
 PaperForge is a local-first Obsidian + Zotero literature asset manager. It turns Zotero exports, PDFs, OCR fulltext, figures, notes, and AI outputs into a structured, traceable, reusable research library. v1.9 consolidated the fragmented tracking layers (library-records + formal notes) into a single per-workspace structure with slim frontmatter and paper-meta.json for internal state. v1.10 fixed cross-cutting dependency drift. v1.11 resolved all v1.9 ripple effects (index paths, library-records cleanup, TUI removal, module hardening, repair blind spots).
 
-## Current Milestone: annotation v0.1 PDF Annotation Backend & CLI Foundation
+## Current Milestone: annotation v0.2 Obsidian PDF Annotation Display Layer
 
-**Goal:** Build the safe backend foundation for PaperForge PDF annotations: read Zotero PDF annotations without modifying Zotero, store them in an independent PaperForge annotation database, and expose stable CLI JSON commands for later Obsidian and evidence workflows.
+**Goal:** Make the verified annotation backend visible and useful inside Obsidian through a sidebar/list surface, PDF jump navigation, and a risk-gated PDF overlay.
 
 **Target features:**
+- Obsidian plugin bridge to `paperforge annotation list/export --json`
+- Paper-scoped annotation sidebar/list with page, color/type, selected text, comment, source, and read-only state
+- Refresh and empty/error states for missing DB, missing paper identity, missing PDF, and command failures
+- Jump from annotation list items to the source PDF/page where Obsidian supports it
+- PDF overlay rendering over the native Obsidian PDF viewer when viewer internals are available
+- Safe overlay fallback to the sidebar/list when Obsidian PDF internals are unavailable
+
+## Completed Milestone: annotation v0.1 PDF Annotation Backend & CLI Foundation
+
+**Status:** COMPLETE (2026-06-18)
+
+**Delivered:**
 - Independent `annotations.db` that is never dropped by memory/index rebuilds
 - Read-only Zotero SQLite probing with temp-copy safety
 - Safe scoped import from Zotero annotations into PaperForge
 - Stable `paperforge annotation import/list/status/export --json` CLI commands
-- Regression coverage for schema, probe, import reconciliation, CLI contracts, and hardcoded paths
-- Explicit deferral of Obsidian PDF overlay, local PDF editing, Zotero write-back, and concept-card integration to later annotation milestones
+- Regression coverage for schema, probe, import reconciliation, service contracts, CLI contracts, and scoped stale deletion
+- Verification gate with 140 annotation tests recorded (88 unit + 52 CLI), compile checks, no Zotero write-back path, and baseline-failure separation
 
 ## Completed Milestone: v1.10 Dependency Cleanup
 
@@ -307,7 +319,10 @@ Key gaps identified on feature branch:
 | Unconditional workspace creation on first sync | Flat-note fallback created confusion and required separate migration step. Always creating workspace dirs simplifies the architecture and eliminates the flat-first-then-migrate path. | ✓ Implemented |
 | Build PDF annotation as a parallel feature line | The annotation branch is separate from `modify`: it uses current upstream/master as the base, absorbs the old branch's backend/CLI ideas selectively, and defers high-risk PDF overlay work. | Active for annotation v0.1 |
 | Keep Zotero as read-only source in annotation v0.1 | Directly writing Zotero SQLite is unsafe. v0.1 reads a copied SQLite snapshot and stores PaperForge-owned rows in `annotations.db`; future write-back must use a safer API-backed design. | Active for annotation v0.1 |
-| Scope stale annotation deletion to the current import scope | The old branch's importer could soft-delete unrelated annotations during a paper-scoped import. v0.1 must make import scope explicit before stale reconciliation. | Active for annotation v0.1 |
+| Scope stale annotation deletion to the current import scope | The old branch's importer could soft-delete unrelated annotations during a paper-scoped import. v0.1 must make import scope explicit before stale reconciliation. | Implemented in annotation v0.1 |
+| Continue annotation v0.2 phase numbering after Phase 4 | The annotation feature line is continuous: v0.1 built backend/CLI, v0.2 builds Obsidian display/overlay. Continuing at Phase 5 preserves that lineage. | Active for annotation v0.2 |
+| v0.2 prioritizes display before editing/evidence | Users first need to see and navigate imported annotations in Obsidian before local editing or concept-card evidence integration becomes useful. | Active for annotation v0.2 |
+| Overlay is risk-gated behind sidebar/list fallback | Obsidian PDF viewer internals may change; v0.2 must remain useful through the annotation list even if overlay hooks fail. | Active for annotation v0.2 |
 
 ## Research Lock
 
@@ -346,4 +361,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state.
 
 ---
-*Last updated: 2026-06-17 after annotation v0.1 initiation*
+*Last updated: 2026-06-18 after annotation v0.2 initiation*

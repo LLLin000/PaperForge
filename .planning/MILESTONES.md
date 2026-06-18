@@ -1,14 +1,39 @@
 # Milestones: PaperForge Lite Release Hardening
 
-## annotation v0.1 PDF Annotation Backend & CLI Foundation (Initiated: 2026-06-17)
+## annotation v0.2 Obsidian PDF Annotation Display Layer (Initiated: 2026-06-18)
 
 **Status:** Planning
 **Roadmap:** `.planning/ROADMAP.md`
 **Requirements:** `.planning/REQUIREMENTS.md`
 
+**Goal:** Make imported PDF annotations visible and navigable inside Obsidian by bridging the plugin to v0.1 annotation CLI JSON, building a paper-scoped annotation sidebar/list, adding PDF jump navigation, and risk-gating PDF overlay rendering behind a safe fallback.
+
+**Planned phases:** 5 annotation phases (5-9)
+
+| Phase | Name | Goal |
+|-------|------|------|
+| Annotation Phase 5 | Plugin Annotation Data Bridge | Connect Obsidian plugin to v0.1 annotation CLI JSON and normalize UI-ready state |
+| Annotation Phase 6 | Annotation Sidebar and List View | Display paper-scoped annotations with scanning, filtering, refresh, and empty/error states |
+| Annotation Phase 7 | PDF Jump Navigation | Jump from annotation rows to the source PDF/page |
+| Annotation Phase 8 | PDF Overlay Rendering Spike and Implementation | Render imported annotations over the native PDF viewer when available, with graceful fallback |
+| Annotation Phase 9 | Display Layer Verification Gate | Verify plugin parsing/rendering/navigation/overlay fallback and document baseline failures separately |
+
+**Key boundaries:**
+- v0.2 does not add Zotero write-back.
+- v0.2 does not make local annotation creation/editing/deletion the primary workflow.
+- Concept-card/evidence integration is deferred until the Obsidian display layer is stable.
+
+---
+
+## annotation v0.1 PDF Annotation Backend & CLI Foundation (Shipped: 2026-06-18)
+
+**Status:** Complete
+**Roadmap:** `.planning/ROADMAP.md`
+**Requirements:** `.planning/REQUIREMENTS.md`
+
 **Goal:** Build the safe backend foundation for PDF annotations on a current upstream/master base: read Zotero annotations without modifying Zotero, store them in an independent PaperForge `annotations.db`, and expose stable annotation CLI JSON commands.
 
-**Planned phases:** 4 annotation phases (1-4)
+**Completed phases:** 4 annotation phases (1-4)
 
 | Phase | Name | Goal |
 |-------|------|------|
@@ -21,6 +46,8 @@
 - The 88 commits missing from the old branch are included by using current upstream/master as the base.
 - The 69 old annotation commits are not merged wholesale; v0.1 selectively ports backend/CLI ideas and fixes known importer risks.
 - Obsidian PDF overlay, local PDF editing, Zotero write-back, and evidence-card integration are deferred.
+
+**Verification:** Annotation Phase 4 records 88 unit tests + 52 CLI tests passing, clean compile checks, no Zotero write-back path, and known unrelated baseline failures separated from annotation status.
 
 ---
 
