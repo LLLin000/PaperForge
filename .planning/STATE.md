@@ -2,7 +2,7 @@
 gsd_state_version: 1.0
 milestone: annotation v0.1
 milestone_name: PDF Annotation Backend & CLI Foundation
-status: Ready to execute
+status: Phase 3 complete, Phase 4 ready to execute
 stopped_at: Annotation Phase 3 complete
 last_updated: "2026-06-18T20:00:00.000+08:00"
 last_activity: 2026-06-18 - Annotation Phase 3 complete: all 4 plans executed, 52 CLI + 71 unit tests pass
@@ -21,22 +21,22 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-17)
 
 **Core value:** Researchers always know what papers they have, what state those papers are in, and whether each paper is reliably usable by AI with traceable fulltext, figures, notes, and source links.
-**Current focus:** Annotation Phase 3 - Annotation CLI JSON Contracts
+**Current focus:** Annotation Phase 4 - Annotation Verification Gate
 
 ## Current Position
 
-Phase: Annotation Phase 3 of 4 (Annotation CLI JSON Contracts) - executing
-Plan: 0 of 4 complete (Wave 1 scaffold ready for commit)
-Last activity: 2026-06-18 - Annotation Phase 3 execution started
+Phase: Annotation Phase 4 of 4 (Annotation Verification Gate) - not started
+Plans: 0/TBD
+Last activity: 2026-06-18 - Annotation Phase 3 complete (52 CLI + 71 unit tests pass)
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 7
+- Total plans completed: 14
 - Total plans planned: 15
 - Average duration: ~5.5 min
-- Total execution time: ~37 min
+- Total execution time: ~77 min
 
 **By Phase:**
 
@@ -44,13 +44,11 @@ Last activity: 2026-06-18 - Annotation Phase 3 execution started
 |-------|-------|-------|----------|
 | Annotation Phase 1 | 3/3 | 100% | ~3.5 min |
 | Annotation Phase 2 | 4/4 | 100% | ~5.5 min |
-| Annotation Phase 3 | 0/4 | 0% | — (Wave 1 scaffold ready) |
+| Annotation Phase 3 | 4/4 | 100% | ~10 min |
 
 **Recent Trend:**
 
-- Annotation Phase 1: 3/3 plans completed, 18 tests + 1 skipped pass.
-- Annotation Phase 2: 4/4 plans completed, 71 annotation tests pass (47 Phase 2-specific + 18 Phase 1 + 6 flow). Zotero probe, normalization, importer, and E2E verification all built.
-- Annotation Phase 3: 4 plans created, ready for execute phase.
+- Annotation Phase 3: 4/4 plans completed, 52 CLI tests + 71 unit tests = 123 total annotation tests pass. All four CLI JSON contracts (import/list/status/export) implemented with PFResult envelope, stable error codes, and read-only Zotero access.
 
 *Updated after each plan completion*
 
@@ -91,5 +89,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-06-18
-Stopped at: Annotation Phase 3 planned - ready for execute phase
-Resume file: Next up: `gsd-execute-phase annotation phase 3`
+Stopped at: Annotation Phase 3 complete — ready for Phase 4 (Verification Gate)
+Resume file: Next up: `gsd-execute-phase annotation phase 4`
