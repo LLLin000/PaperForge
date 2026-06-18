@@ -215,6 +215,21 @@ def _is_near_figure_media(block: dict, page_blocks: list[dict], max_gap: int = 2
     return False
 
 
+def _looks_like_frontmatter_support_text(text: str) -> bool:
+    lower = text.lower().strip()
+    return (
+        "corresponding author" in lower
+        or lower.startswith("correspondence")
+        or "contributed equally" in lower
+        or "share first authorship" in lower
+    )
+
+
+def _has_confirmatory_watermark_text(text: str) -> bool:
+    lower = text.lower()
+    return "downloaded from" in lower or "for personal use only" in lower
+
+
 def _looks_like_margin_band_noise(block: dict, page_width: int, page_height: int) -> bool:
     bbox = block.get("block_bbox") or block.get("bbox") or [0, 0, 0, 0]
     if len(bbox) < 4 or page_width <= 0 or page_height <= 0:
@@ -228,9 +243,10 @@ def _looks_like_margin_band_noise(block: dict, page_width: int, page_height: int
     at_right_edge = x1 >= page_width * 0.97 and x0 >= page_width * 0.88
     edge_band = at_left_edge or at_right_edge
     very_tall = height >= page_height * 0.30
-    very_narrow = width <= page_width * 0.10
-    return edge_band and very_tall and very_narrow
-    # ponytail: edge thresholds (3%/12%/88%/97%) and aspect ratios (30% tall, 10% narrow) are document-layout heuristics calibrated for common publisher watermarks on A4/Letter. Upgrade path: accept as config params when publisher-specific layout profiles are introduced.
+    very_narrow = width <= page_width * 0.12
+    text = str(block.get("text") or block.get("block_content") or "")
+    return edge_band and very_tall and (very_narrow or _has_confirmatory_watermark_text(text))
+    # ponytail: edge thresholds (3%/12%/88%/97%) and aspect ratios (30% tall, 12% narrow) are document-layout heuristics calibrated for common publisher watermarks on A4/Letter. Upgrade path: accept as config params when publisher-specific layout profiles are introduced.
 
 
 def _looks_like_figure_inner_label(text: str, block: dict, page_blocks: list[dict]) -> bool:
@@ -238,9 +254,13 @@ def _looks_like_figure_inner_label(text: str, block: dict, page_blocks: list[dic
     t = text.strip()
     if not t or len(t) > 12:
         return False
-    if not any(ch.isalpha() for ch in t):
-        return False
     if _has_figure_prefix(t):
+        return False
+    token_count = len(t.split())
+    if token_count > 2:
+        return False
+    has_alnum = any(ch.isalnum() for ch in t)
+    if not has_alnum:
         return False
     bb = block.get("block_bbox") or block.get("bbox") or [0, 0, 0, 0]
     if len(bb) < 4:
@@ -905,10 +925,10 @@ def assign_block_role(
             evidence=[f"table prefix matched: {text[:60]}"],
         )
 
-    # --- Page-1 frontmatter zone pre-filter ---
+    # --- First-surviving-page frontmatter zone pre-filter ---
     page_num = block.get("page", 1) or 1
     zone = None
-    if page_num == 1 and raw_label in ("paragraph_title", "text", "footnote"):
+    if page_num in (1, 2) and raw_label in ("paragraph_title", "doc_title", "text", "footnote"):
         from paperforge.worker.ocr_document import _detect_frontmatter_zone
 
         zone = _detect_frontmatter_zone(
@@ -928,8 +948,8 @@ def assign_block_role(
                 evidence=[f"page-1 zone title_zone: {text[:60]}"],
             )
 
-    # Fallback: page 1 after pre-proof marker — next substantial text block is the real title
-    if zone is None and page_num == 1 and raw_label in ("paragraph_title", "text"):
+    # Fallback: first surviving page after pre-proof marker — next substantial text block is the real title
+    if zone is None and page_num in (1, 2) and raw_label in ("paragraph_title", "doc_title", "text"):
         bbox = block.get("block_bbox") or block.get("bbox") or [0, 0, 0, 0]
         y_top = bbox[1] if len(bbox) >= 4 else 0
         ph = float(block.get("page_height") or page_height or 1700)
@@ -971,6 +991,17 @@ def assign_block_role(
                 evidence=[f"page-1 correspondence footnote: {text[:60]}"],
             )
 
+    # First-surviving-page support text: catch support-like lines before
+    # zone-based noise or generic body fallback
+    bbox = block.get("block_bbox") or block.get("bbox") or [0, 0, 0, 0]
+    topish = len(bbox) >= 4 and bbox[1] <= page_height * 0.65
+    if page_num in (1, 2) and topish and _looks_like_frontmatter_support_text(text):
+        return RoleAssignment(
+            role="frontmatter_support",
+            confidence=0.78,
+            evidence=[f"first-surviving-page support text: {text[:60]}"],
+        )
+
     if zone == "journal_furniture_zone":
         return RoleAssignment(
             role="frontmatter_noise",
@@ -980,9 +1011,9 @@ def assign_block_role(
 
     # zone == "abstract_zone" → let existing logic handle
 
-    # ---- Page-1 frontmatter guard ----
+    # ---- First-surviving-page frontmatter guard ----
     _pg = block.get("page", 1) or 1
-    if _pg == 1 and raw_label in ("doc_title", "paragraph_title", "text"):
+    if _pg in (1, 2) and raw_label in ("doc_title", "paragraph_title", "text"):
         _tv = text
         _lv = _tv.lower().strip().lstrip("*•·-–—")
         block_bbox_local = block.get("block_bbox", [0, 0, 0, 0])
@@ -1527,6 +1558,15 @@ def assign_block_role(
             role="body_paragraph",
             confidence=0.6,
             evidence=["default body_paragraph for text label"],
+        )
+
+    # Margin-band geometry noise: tall narrow strips pinned to page edges.
+    # Checked before edge_band_noise (which is stricter) as a broader net.
+    if _looks_like_margin_band_noise(block, page_width, page_height):
+        return RoleAssignment(
+            role="noise",
+            confidence=0.95,
+            evidence=["margin-band narrow/tall geometry; treated as noise"],
         )
 
     # Edge-band geometry noise: ultra-narrow/tall blocks pinned to page edges
