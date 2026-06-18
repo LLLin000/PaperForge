@@ -18,6 +18,32 @@ _CANDIDATE_ROLES = frozenset(
 )
 
 
+def _summarize_page_text_coverage(*, ocr_text: str, pdf_text: str) -> dict:
+    ocr_chars = len((ocr_text or "").strip())
+    pdf_chars = len((pdf_text or "").strip())
+    if pdf_chars == 0:
+        return {"page_text_coverage_status": "missing_pdf_text", "page_text_coverage_ratio_chars": 1.0}
+    ratio = ocr_chars / max(pdf_chars, 1)
+    return {
+        "page_text_coverage_status": "low" if ratio < 0.6 else "ok",
+        "page_text_coverage_ratio_chars": ratio,
+    }
+
+
+def _classify_region_text_completeness(*, ocr_text: str, pdf_region_text: str) -> dict:
+    ocr = (ocr_text or "").strip()
+    pdf = (pdf_region_text or "").strip()
+    if not pdf:
+        return {"text_completeness_status": "pdf_unavailable", "text_completeness_confidence": 0.0}
+    if not ocr:
+        return {"text_completeness_status": "empty_vs_pdf", "text_completeness_confidence": 0.95}
+    if len(ocr) < len(pdf) * 0.45:
+        return {"text_completeness_status": "short_vs_pdf", "text_completeness_confidence": 0.8}
+    if pdf.startswith(ocr) and len(pdf) > len(ocr) + 24:
+        return {"text_completeness_status": "likely_missing_tail", "text_completeness_confidence": 0.85}
+    return {"text_completeness_status": "complete", "text_completeness_confidence": 0.7}
+
+
 def _vertical_gap(a, b) -> float:
     """Distance from bottom of a to top of b (positive = gap, negative = overlap)."""
     ba = a.get("bbox") or [0, 0, 0, 0]

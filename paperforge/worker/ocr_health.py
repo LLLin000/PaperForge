@@ -4,6 +4,14 @@ from pathlib import Path
 from typing import Any
 
 
+def audit_rendered_text_coverage(*, rendered_markdown: str, pdf_segments: list[str]) -> dict:
+    missing = [segment for segment in pdf_segments if segment and segment not in rendered_markdown]
+    return {
+        "rendered_text_gap_count": len(missing),
+        "rendered_text_gap_examples": missing[:3],
+    }
+
+
 def _doc_attr(doc_structure: Any, name: str, default=None):
     if doc_structure is None:
         return default

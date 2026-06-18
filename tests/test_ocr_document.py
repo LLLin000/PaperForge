@@ -922,6 +922,148 @@ def test_infer_zones_inferrs_tail_nonref_hold_without_pre_labeled_tail_roles() -
     assert "p7_b2" not in zones["body_zone"]["block_ids"]
 
 
+def test_infer_zones_treats_first_surviving_page_as_frontmatter_origin() -> None:
+    from paperforge.worker.ocr_document import infer_zones
+
+    blocks = [
+        {
+            "block_id": "p2_title",
+            "page": 2,
+            "text": "Real Article Title",
+            "seed_role": "paper_title",
+            "role": "paper_title",
+            "bbox": [80, 120, 900, 180],
+            "page_width": 1200,
+            "page_height": 1600,
+            "marker_signature": {"type": "none"},
+        },
+        {
+            "block_id": "p2_authors",
+            "page": 2,
+            "text": "A. Author, B. Author",
+            "seed_role": "authors",
+            "role": "authors",
+            "bbox": [80, 220, 920, 280],
+            "page_width": 1200,
+            "page_height": 1600,
+            "marker_signature": {"type": "none"},
+        },
+        {
+            "block_id": "p2_body",
+            "page": 2,
+            "text": "This is the first real body paragraph with enough words to trigger body flow on the first surviving page here.",
+            "seed_role": "body_paragraph",
+            "role": "body_paragraph",
+            "bbox": [80, 520, 1030, 650],
+            "page_width": 1200,
+            "page_height": 1600,
+            "marker_signature": {"type": "none"},
+        },
+    ]
+
+    zones = infer_zones(blocks, {"body_family_anchor": {"status": "ACCEPT"}, "reference_family_anchor": {"status": "HOLD"}})
+
+    assert "p2_title" in zones["frontmatter_main_zone"]["block_ids"]
+    assert "p2_authors" in zones["frontmatter_main_zone"]["block_ids"]
+    assert "p2_body" in zones["body_zone"]["block_ids"]
+
+
+def test_infer_zones_allows_body_blocks_on_first_surviving_page() -> None:
+    from paperforge.worker.ocr_document import infer_zones
+
+    blocks = [
+        {
+            "block_id": "p2_title",
+            "page": 2,
+            "text": "Real Article Title",
+            "seed_role": "paper_title",
+            "role": "paper_title",
+            "bbox": [80, 120, 900, 180],
+            "page_width": 1200,
+            "page_height": 1600,
+            "marker_signature": {"type": "none"},
+        },
+        {
+            "block_id": "p2_heading",
+            "page": 2,
+            "text": "Highlights",
+            "seed_role": "structured_insert",
+            "role": "structured_insert",
+            "bbox": [80, 980, 260, 1020],
+            "page_width": 1200,
+            "page_height": 1600,
+            "marker_signature": {"type": "short_fragment"},
+        },
+        {
+            "block_id": "p2_b1",
+            "page": 2,
+            "text": "Body continuation should remain eligible for body_zone when it begins on the first surviving page rather than literal page one.",
+            "seed_role": "body_paragraph",
+            "role": "body_paragraph",
+            "bbox": [100, 1060, 1020, 1180],
+            "page_width": 1200,
+            "page_height": 1600,
+            "marker_signature": {"type": "none"},
+        },
+    ]
+
+    zones = infer_zones(blocks, {"body_family_anchor": {"status": "ACCEPT"}, "reference_family_anchor": {"status": "HOLD"}})
+
+    assert "p2_b1" in zones["body_zone"]["block_ids"]
+    assert "p2_b1" not in zones["frontmatter_main_zone"]["block_ids"]
+
+
+def test_assign_block_role_marks_margin_band_as_noise() -> None:
+    from paperforge.worker.ocr_roles import assign_block_role
+
+    block = {
+        "page": 4,
+        "block_id": "wm",
+        "raw_label": "aside_text",
+        "block_label": "aside_text",
+        "text": "Downloaded from https://advanced.onlinelibrary.wiley.com by Example Library. For personal use only.",
+        "bbox": [1155, 30, 1210, 1535],
+        "block_bbox": [1155, 30, 1210, 1535],
+        "page_width": 1224,
+        "page_height": 1584,
+    }
+
+    assignment = assign_block_role(block, page_blocks=[block], page_width=1224, page_height=1584)
+
+    assert assignment.role == "noise"
+    assert assignment.confidence >= 0.95
+
+
+def test_assign_block_role_marks_short_figure_adjacent_label_as_inner_text() -> None:
+    from paperforge.worker.ocr_roles import assign_block_role
+
+    image_block = {
+        "page": 1,
+        "block_id": "img1",
+        "raw_label": "image",
+        "block_label": "image",
+        "bbox": [300, 300, 800, 900],
+        "block_bbox": [300, 300, 800, 900],
+        "page_width": 1200,
+        "page_height": 1600,
+    }
+    label_block = {
+        "page": 1,
+        "block_id": "lab1",
+        "raw_label": "text",
+        "block_label": "text",
+        "text": "Day 7",
+        "bbox": [320, 320, 410, 360],
+        "block_bbox": [320, 320, 410, 360],
+        "page_width": 1200,
+        "page_height": 1600,
+    }
+
+    assignment = assign_block_role(label_block, page_blocks=[image_block, label_block])
+
+    assert assignment.role == "figure_inner_text"
+
+
 def test_normalize_flat_backmatter_unifies_heading_family() -> None:
     from paperforge.worker.ocr_document import (
         TailBoundary,
@@ -4645,3 +4787,37 @@ def test_reference_zone_boundary_protection_via_normalize() -> None:
     assert by_id["stray"]["zone"] != "reference_zone"
     # Reference items should remain
     assert by_id["r1"]["zone"] == "reference_zone"
+
+
+def test_page_text_coverage_flags_low_ratio_when_pdf_text_dominates() -> None:
+    from paperforge.worker.ocr_blocks import _summarize_page_text_coverage
+
+    result = _summarize_page_text_coverage(
+        ocr_text="short text",
+        pdf_text="short text plus a much longer native PDF segment that should dominate coverage",
+    )
+
+    assert result["page_text_coverage_status"] == "low"
+    assert result["page_text_coverage_ratio_chars"] < 0.5
+
+
+def test_region_text_completeness_marks_empty_vs_pdf() -> None:
+    from paperforge.worker.ocr_blocks import _classify_region_text_completeness
+
+    result = _classify_region_text_completeness(
+        ocr_text="",
+        pdf_region_text="A complete sentence present in the PDF native text layer.",
+    )
+
+    assert result["text_completeness_status"] == "empty_vs_pdf"
+
+
+def test_rendered_text_coverage_flags_missing_pdf_segment() -> None:
+    from paperforge.worker.ocr_health import audit_rendered_text_coverage
+
+    result = audit_rendered_text_coverage(
+        rendered_markdown="Only the introduction survived.",
+        pdf_segments=["Only the introduction survived.", "A long methods segment that is missing from render."],
+    )
+
+    assert result["rendered_text_gap_count"] == 1
