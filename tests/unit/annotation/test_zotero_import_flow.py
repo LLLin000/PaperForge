@@ -21,237 +21,40 @@ Coverage (from PLAN.md):
 from __future__ import annotations
 
 import json
-import sqlite3
-import tempfile
 from pathlib import Path
 
 import pytest
 
 from paperforge.annotation.errors import (
-    AnnotationImportError,
     ZoteroSchemaError,
 )
 from paperforge.annotation.importer import (
     import_zotero_annotations_for_paper,
 )
-from paperforge.annotation.schema import ensure_schema
-from paperforge.annotation.zotero_normalize import NormalizedAnnotation
 from paperforge.annotation.zotero_probe import (
     open_zotero_readonly,
     probe_zotero_annotation_schema,
     zotero_snapshot,
 )
 
-
-# ---------------------------------------------------------------------------
-# Fixture builders: minimal Zotero-style SQLite databases
-# ---------------------------------------------------------------------------
-
-# Shared item IDs for cross-test reference:
-#   Paper A: libraryID=1, parent_key="PAPER_A", attachment_key="ATTACH_A1"
-#   Paper B: libraryID=2, parent_key="PAPER_B", attachment_key="ATTACH_B1"
-
-_PAPER_A_LIBRARY = 1
-_PAPER_A_PARENT_KEY = "PAPER_A"
-_PAPER_A_ATTACH_KEY = "ATTACH_A1"
-_PAPER_A_PARENT_ITEM_ID = 1
-_PAPER_A_ATTACH_ITEM_ID = 2
-_ANNOT_A1_KEY = "ANNOT_A1"
-_ANNOT_A2_KEY = "ANNOT_A2"
-
-_PAPER_B_LIBRARY = 2
-_PAPER_B_PARENT_KEY = "PAPER_B"
-_PAPER_B_ATTACH_KEY = "ATTACH_B1"
-_PAPER_B_PARENT_ITEM_ID = 10
-_PAPER_B_ATTACH_ITEM_ID = 11
-_ANNOT_B1_KEY = "ANNOT_B1"
-
-
-def _build_zotero_two_paper(db_path: Path) -> None:
-    """Create a minimal Zotero-style SQLite with two papers.
-
-    Paper A (libraryID=1):
-      parent item (itemID=1, key=PAPER_A)
-      └── attachment (itemID=2, key=ATTACH_A1)
-            ├── annotation (itemID=3, key=ANNOT_A1) — highlight, page 1, tagged
-            └── annotation (itemID=4, key=ANNOT_A2) — note, page 2
-
-    Paper B (libraryID=2):
-      parent item (itemID=10, key=PAPER_B)
-      └── attachment (itemID=11, key=ATTACH_B1)
-            └── annotation (itemID=12, key=ANNOT_B1) — underline, page 3
-    """
-    conn = sqlite3.connect(str(db_path))
-    conn.row_factory = sqlite3.Row
-    try:
-        conn.executescript("""
-            CREATE TABLE items (
-                itemID INTEGER PRIMARY KEY,
-                key TEXT NOT NULL,
-                libraryID INTEGER NOT NULL DEFAULT 1,
-                dateModified TEXT
-            );
-            CREATE TABLE itemAttachments (
-                itemID INTEGER PRIMARY KEY,
-                parentItemID INTEGER NOT NULL,
-                path TEXT,
-                contentType TEXT
-            );
-            CREATE TABLE itemAnnotations (
-                itemID INTEGER PRIMARY KEY,
-                parentItemID INTEGER NOT NULL,
-                type TEXT, text TEXT, comment TEXT, color TEXT,
-                pageLabel TEXT, sortIndex INTEGER, position TEXT,
-                dateModified TEXT
-            );
-            CREATE TABLE tags (
-                tagID INTEGER PRIMARY KEY,
-                name TEXT NOT NULL
-            );
-            CREATE TABLE itemTags (
-                itemID INTEGER NOT NULL,
-                tagID INTEGER NOT NULL
-            );
-
-            -- Paper A: parent, attachment, annotations
-            INSERT INTO items (itemID, key, libraryID, dateModified)
-            VALUES (1, 'PAPER_A', 1, '2024-07-01');
-            INSERT INTO items (itemID, key, libraryID, dateModified)
-            VALUES (2, 'ATTACH_A1', 1, '2024-07-01');
-            INSERT INTO items (itemID, key, libraryID, dateModified)
-            VALUES (3, 'ANNOT_A1', 1, '2024-07-01T10:00:00Z');
-            INSERT INTO items (itemID, key, libraryID, dateModified)
-            VALUES (4, 'ANNOT_A2', 1, '2024-07-01T11:00:00Z');
-
-            -- Paper B: parent, attachment, annotation
-            INSERT INTO items (itemID, key, libraryID, dateModified)
-            VALUES (10, 'PAPER_B', 2, '2024-07-02');
-            INSERT INTO items (itemID, key, libraryID, dateModified)
-            VALUES (11, 'ATTACH_B1', 2, '2024-07-02');
-            INSERT INTO items (itemID, key, libraryID, dateModified)
-            VALUES (12, 'ANNOT_B1', 2, '2024-07-02T12:00:00Z');
-
-            -- Attachments
-            INSERT INTO itemAttachments (itemID, parentItemID, path, contentType)
-            VALUES (2, 1, 'storage:ATTACH_A1/file.pdf', 'application/pdf');
-            INSERT INTO itemAttachments (itemID, parentItemID, path, contentType)
-            VALUES (11, 10, 'storage:ATTACH_B1/file.pdf', 'application/pdf');
-
-            -- Annotations for Paper A / ATTACH_A1
-            INSERT INTO itemAnnotations
-                (itemID, parentItemID, type, text, comment, color,
-                 pageLabel, sortIndex, position, dateModified)
-            VALUES (3, 2, 'highlight',
-                    'first significant result',
-                    'this is the key finding',
-                    '#ffd400',
-                    '1', 0,
-                    '{"x":0.1,"y":0.2,"w":0.8,"h":0.05}',
-                    '2024-07-01T10:00:00Z');
-
-            INSERT INTO itemAnnotations
-                (itemID, parentItemID, type, text, comment, color,
-                 pageLabel, sortIndex, position, dateModified)
-            VALUES (4, 2, 'note',
-                    'another observation',
-                    'supplementary note',
-                    '#ff6666',
-                    '2', 1,
-                    '{"x":0.3,"y":0.4,"w":0.5,"h":0.1}',
-                    '2024-07-01T11:00:00Z');
-
-            -- Annotation for Paper B / ATTACH_B1
-            INSERT INTO itemAnnotations
-                (itemID, parentItemID, type, text, comment, color,
-                 pageLabel, sortIndex, position, dateModified)
-            VALUES (12, 11, 'underline',
-                    'methodology detail',
-                    'check this method',
-                    '#00ff00',
-                    '3', 0,
-                    '{"x":0.5,"y":0.6,"w":0.3,"h":0.02}',
-                    '2024-07-02T12:00:00Z');
-
-            -- Tags: ANNOT_A1 gets "important" tag
-            INSERT INTO tags (tagID, name) VALUES (1, 'important');
-            INSERT INTO tags (tagID, name) VALUES (2, 'methodology');
-            INSERT INTO itemTags (itemID, tagID) VALUES (3, 1);
-        """)
-        conn.commit()
-    finally:
-        conn.close()
-
-
-def _build_zotero_unknown_schema(db_path: Path) -> None:
-    """Create a SQLite file that exists but has no Zotero annotation tables.
-
-    This simulates a database with an unknown/unsupported schema version.
-    """
-    conn = sqlite3.connect(str(db_path))
-    try:
-        conn.execute(
-            "CREATE TABLE some_other_table (id INTEGER PRIMARY KEY, val TEXT)"
-        )
-        conn.commit()
-    finally:
-        conn.close()
-
-
-# ---------------------------------------------------------------------------
-# Fixtures
-# ---------------------------------------------------------------------------
-
-
-@pytest.fixture
-def zotero_two_paper_path() -> Path:
-    """Create a Zotero-style SQLite with two papers."""
-    tmp = tempfile.NamedTemporaryFile(suffix=".sqlite", delete=False)
-    tmp.close()
-    db_path = Path(tmp.name)
-    _build_zotero_two_paper(db_path)
-    yield db_path
-    if db_path.exists():
-        db_path.unlink()
-
-
-@pytest.fixture
-def zotero_unknown_schema_path() -> Path:
-    """Create a SQLite file with no Zotero annotation tables."""
-    tmp = tempfile.NamedTemporaryFile(suffix=".sqlite", delete=False)
-    tmp.close()
-    db_path = Path(tmp.name)
-    _build_zotero_unknown_schema(db_path)
-    yield db_path
-    if db_path.exists():
-        db_path.unlink()
-
-
-@pytest.fixture
-def ann_db_path() -> Path:
-    """Create an empty annotations.db with schema applied."""
-    tmp = tempfile.NamedTemporaryFile(suffix=".annotations.db", delete=False)
-    tmp.close()
-    db_path = Path(tmp.name)
-    conn = sqlite3.connect(str(db_path))
-    try:
-        ensure_schema(conn)
-    finally:
-        conn.close()
-    yield db_path
-    if db_path.exists():
-        db_path.unlink()
+from .conftest import (
+    PAPER_A_LIBRARY,
+    PAPER_A_PARENT_KEY,
+    PAPER_A_ATTACH_KEY,
+    PAPER_A_PARENT_ITEM_ID,
+    PAPER_A_ATTACH_ITEM_ID,
+    PAPER_B_LIBRARY,
+    PAPER_B_PARENT_KEY,
+    PAPER_B_ATTACH_KEY,
+    PAPER_B_PARENT_ITEM_ID,
+    PAPER_B_ATTACH_ITEM_ID,
+    open_ann,
+)
 
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-
-
-def _open_ann(db_path: Path) -> sqlite3.Connection:
-    """Open annotations.db with Row factory."""
-    conn = sqlite3.connect(str(db_path))
-    conn.row_factory = sqlite3.Row
-    return conn
 
 
 def _import_paper_a(zotero_path: Path, ann_db: Path) -> None:
@@ -262,11 +65,11 @@ def _import_paper_a(zotero_path: Path, ann_db: Path) -> None:
             zotero_conn=zconn,
             annotations_db_path=ann_db,
             paper_id="paper_a",
-            library_id=_PAPER_A_LIBRARY,
-            parent_item_id=_PAPER_A_PARENT_ITEM_ID,
-            parent_item_key=_PAPER_A_PARENT_KEY,
-            attachment_item_id=_PAPER_A_ATTACH_ITEM_ID,
-            attachment_item_key=_PAPER_A_ATTACH_KEY,
+            library_id=PAPER_A_LIBRARY,
+            parent_item_id=PAPER_A_PARENT_ITEM_ID,
+            parent_item_key=PAPER_A_PARENT_KEY,
+            attachment_item_id=PAPER_A_ATTACH_ITEM_ID,
+            attachment_item_key=PAPER_A_ATTACH_KEY,
         )
         zconn.close()
 
@@ -279,11 +82,11 @@ def _import_paper_b(zotero_path: Path, ann_db: Path) -> None:
             zotero_conn=zconn,
             annotations_db_path=ann_db,
             paper_id="paper_b",
-            library_id=_PAPER_B_LIBRARY,
-            parent_item_id=_PAPER_B_PARENT_ITEM_ID,
-            parent_item_key=_PAPER_B_PARENT_KEY,
-            attachment_item_id=_PAPER_B_ATTACH_ITEM_ID,
-            attachment_item_key=_PAPER_B_ATTACH_KEY,
+            library_id=PAPER_B_LIBRARY,
+            parent_item_id=PAPER_B_PARENT_ITEM_ID,
+            parent_item_key=PAPER_B_PARENT_KEY,
+            attachment_item_id=PAPER_B_ATTACH_ITEM_ID,
+            attachment_item_key=PAPER_B_ATTACH_KEY,
         )
         zconn.close()
 
@@ -328,7 +131,7 @@ def test_flow_full_import_creates_rows(zotero_two_paper_path: Path, ann_db_path:
     into annotations.db for Paper A."""
     _import_paper_a(zotero_two_paper_path, ann_db_path)
 
-    conn = _open_ann(ann_db_path)
+    conn = open_ann(ann_db_path)
     rows = conn.execute(
         "SELECT id, paper_id, source FROM annotations ORDER BY sort_index"
     ).fetchall()
@@ -352,7 +155,7 @@ def test_flow_content_fields_preserved(zotero_two_paper_path: Path, ann_db_path:
     source modified time must survive probe→normalize→import."""
     _import_paper_a(zotero_two_paper_path, ann_db_path)
 
-    conn = _open_ann(ann_db_path)
+    conn = open_ann(ann_db_path)
 
     # --- ANNOT_A1 (highlight, page 1, tagged "important") ---
     row = conn.execute(
@@ -421,7 +224,7 @@ def test_flow_reimport_does_not_stale_other_paper(
     _import_paper_a(zotero_two_paper_path, ann_db_path)
     _import_paper_b(zotero_two_paper_path, ann_db_path)
 
-    conn = _open_ann(ann_db_path)
+    conn = open_ann(ann_db_path)
 
     # Verify both papers have rows
     a_rows = conn.execute(
@@ -467,7 +270,7 @@ def test_flow_unknown_schema_fails_before_mutation(
     Zotero schema is unknown.
     """
     # Record baseline annotation count
-    conn = _open_ann(ann_db_path)
+    conn = open_ann(ann_db_path)
     count_before = conn.execute(
         "SELECT COUNT(*) FROM annotations"
     ).fetchone()[0]
@@ -489,7 +292,7 @@ def test_flow_unknown_schema_fails_before_mutation(
     # Phase 2: Verify NO annotation data rows were written.
     # (ensure_schema may have created empty tables — that is idempotent
     # structural setup, not annotation data mutation.)
-    conn2 = _open_ann(ann_db_path)
+    conn2 = open_ann(ann_db_path)
     count_after = conn2.execute(
         "SELECT COUNT(*) FROM annotations"
     ).fetchone()[0]
@@ -518,11 +321,11 @@ def test_flow_snapshot_cleanup(zotero_two_paper_path: Path, ann_db_path: Path):
             zotero_conn=zconn,
             annotations_db_path=ann_db_path,
             paper_id="paper_a",
-            library_id=_PAPER_A_LIBRARY,
-            parent_item_id=_PAPER_A_PARENT_ITEM_ID,
-            parent_item_key=_PAPER_A_PARENT_KEY,
-            attachment_item_id=_PAPER_A_ATTACH_ITEM_ID,
-            attachment_item_key=_PAPER_A_ATTACH_KEY,
+            library_id=PAPER_A_LIBRARY,
+            parent_item_id=PAPER_A_PARENT_ITEM_ID,
+            parent_item_key=PAPER_A_PARENT_KEY,
+            attachment_item_id=PAPER_A_ATTACH_ITEM_ID,
+            attachment_item_key=PAPER_A_ATTACH_KEY,
         )
         zconn.close()
 

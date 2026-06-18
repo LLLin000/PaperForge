@@ -14,240 +14,17 @@ Tests verify:
 from __future__ import annotations
 
 import sqlite3
-import tempfile
 from pathlib import Path
 
-import pytest
+from paperforge.annotation.importer import import_zotero_annotations_for_paper
+from paperforge.annotation.zotero_probe import open_zotero_readonly, zotero_snapshot
 
-from paperforge.annotation.schema import ensure_schema
-
-
-# ---------------------------------------------------------------------------
-# Zotero fixture helpers
-# ---------------------------------------------------------------------------
-
-def _create_zotero_fixture_full(db_path: Path) -> None:
-    """Create a Zotero-style SQLite with sample rows for all test scenarios.
-
-    Layout:
-      PAPER001 (itemID=1, libraryID=1)
-        └── ATTACH01 (itemID=2, parentItemID=1)
-              ├── ANNT001 (itemID=3) – highlight, page 1, tagged "important"
-              └── ANNT002 (itemID=4) – note,      page 2
-        └── ATTACH02 (itemID=5, parentItemID=1) – different attachment
-              └── ANNT003 (itemID=6) – highlight, page 1
-      PAPER002 (itemID=7, libraryID=2) – different library
-        └── ATTACH03 (itemID=8, parentItemID=7)
-              └── ANNT004 (itemID=9) – highlight, page 1
-    """
-    conn = sqlite3.connect(str(db_path))
-    conn.row_factory = sqlite3.Row
-    try:
-        conn.executescript("""
-            CREATE TABLE items (
-                itemID INTEGER PRIMARY KEY,
-                key TEXT NOT NULL,
-                libraryID INTEGER NOT NULL DEFAULT 1,
-                dateModified TEXT
-            );
-            CREATE TABLE itemAttachments (
-                itemID INTEGER PRIMARY KEY,
-                parentItemID INTEGER NOT NULL
-            );
-            CREATE TABLE itemAnnotations (
-                itemID INTEGER PRIMARY KEY,
-                parentItemID INTEGER NOT NULL,
-                type TEXT, text TEXT, comment TEXT, color TEXT,
-                pageLabel TEXT, sortIndex INTEGER, position TEXT, dateModified TEXT
-            );
-            CREATE TABLE tags (tagID INTEGER PRIMARY KEY, name TEXT);
-            CREATE TABLE itemTags (itemID INTEGER NOT NULL, tagID INTEGER NOT NULL);
-
-            -- paper items
-            INSERT INTO items (itemID, key, libraryID, dateModified) VALUES (1, 'PAPER001', 1, '2024-06-01');
-            INSERT INTO items (itemID, key, libraryID, dateModified) VALUES (7, 'PAPER002', 2, '2024-06-01');
-
-            -- attachment items
-            INSERT INTO items (itemID, key, libraryID, dateModified) VALUES (2, 'ATTACH01', 1, '2024-06-01');
-            INSERT INTO items (itemID, key, libraryID, dateModified) VALUES (5, 'ATTACH02', 1, '2024-06-01');
-            INSERT INTO items (itemID, key, libraryID, dateModified) VALUES (8, 'ATTACH03', 2, '2024-06-01');
-
-            -- annotation items
-            INSERT INTO items (itemID, key, libraryID, dateModified) VALUES (3, 'ANNT001', 1, '2024-06-01');
-            INSERT INTO items (itemID, key, libraryID, dateModified) VALUES (4, 'ANNT002', 1, '2024-06-01');
-            INSERT INTO items (itemID, key, libraryID, dateModified) VALUES (6, 'ANNT003', 1, '2024-06-01');
-            INSERT INTO items (itemID, key, libraryID, dateModified) VALUES (9, 'ANNT004', 2, '2024-06-01');
-
-            -- attachments
-            INSERT INTO itemAttachments (itemID, parentItemID) VALUES (2, 1);
-            INSERT INTO itemAttachments (itemID, parentItemID) VALUES (5, 1);
-            INSERT INTO itemAttachments (itemID, parentItemID) VALUES (8, 7);
-
-            -- annotations on ATTACH01 (paper1)
-            INSERT INTO itemAnnotations
-                (itemID, parentItemID, type, text, comment, color,
-                 pageLabel, sortIndex, position, dateModified)
-            VALUES (3, 2, 'highlight', 'significant result', 'my comment', '#ffd400',
-                    '1', 0, '{"x":0.1}', '2024-06-01');
-
-            INSERT INTO itemAnnotations
-                (itemID, parentItemID, type, text, comment, color,
-                 pageLabel, sortIndex, position, dateModified)
-            VALUES (4, 2, 'note', 'another observation', 'note content', '#ff6666',
-                    '2', 1, '{"x":0.2}', '2024-06-01');
-
-            -- annotation on ATTACH02 (paper1, different attachment)
-            INSERT INTO itemAnnotations
-                (itemID, parentItemID, type, text, comment, color,
-                 pageLabel, sortIndex, position, dateModified)
-            VALUES (6, 5, 'highlight', 'different attachment', 'diff comment', '#ffd400',
-                    '1', 0, '{}', '2024-06-01');
-
-            -- annotation on ATTACH03 (paper2, different library)
-            INSERT INTO itemAnnotations
-                (itemID, parentItemID, type, text, comment, color,
-                 pageLabel, sortIndex, position, dateModified)
-            VALUES (9, 8, 'highlight', 'library 2 annotation', 'lib2 comment', '#00ff00',
-                    '1', 0, '{}', '2024-06-01');
-
-            -- tags
-            INSERT INTO tags (tagID, name) VALUES (1, 'important');
-            INSERT INTO itemTags (itemID, tagID) VALUES (3, 1);
-        """)
-        conn.commit()
-    finally:
-        conn.close()
-
-
-def _create_zotero_fixture_reduced(db_path: Path) -> None:
-    """Like _create_zotero_fixture_full but missing ANNT002 (itemID=4).
-
-    This variant is used to trigger stale detection: after importing from
-    the full fixture, re-importing from the reduced fixture should mark
-    ANNT002 as stale.
-    """
-    conn = sqlite3.connect(str(db_path))
-    conn.row_factory = sqlite3.Row
-    try:
-        conn.executescript("""
-            CREATE TABLE items (
-                itemID INTEGER PRIMARY KEY,
-                key TEXT NOT NULL,
-                libraryID INTEGER NOT NULL DEFAULT 1,
-                dateModified TEXT
-            );
-            CREATE TABLE itemAttachments (
-                itemID INTEGER PRIMARY KEY,
-                parentItemID INTEGER NOT NULL
-            );
-            CREATE TABLE itemAnnotations (
-                itemID INTEGER PRIMARY KEY,
-                parentItemID INTEGER NOT NULL,
-                type TEXT, text TEXT, comment TEXT, color TEXT,
-                pageLabel TEXT, sortIndex INTEGER, position TEXT, dateModified TEXT
-            );
-            CREATE TABLE tags (tagID INTEGER PRIMARY KEY, name TEXT);
-            CREATE TABLE itemTags (itemID INTEGER NOT NULL, tagID INTEGER NOT NULL);
-
-            INSERT INTO items (itemID, key, libraryID, dateModified) VALUES (1, 'PAPER001', 1, '2024-06-01');
-            INSERT INTO items (itemID, key, libraryID, dateModified) VALUES (7, 'PAPER002', 2, '2024-06-01');
-            INSERT INTO items (itemID, key, libraryID, dateModified) VALUES (2, 'ATTACH01', 1, '2024-06-01');
-            INSERT INTO items (itemID, key, libraryID, dateModified) VALUES (5, 'ATTACH02', 1, '2024-06-01');
-            INSERT INTO items (itemID, key, libraryID, dateModified) VALUES (8, 'ATTACH03', 2, '2024-06-01');
-            -- ANNT001 present, ANNT002 is MISSING
-            INSERT INTO items (itemID, key, libraryID, dateModified) VALUES (3, 'ANNT001', 1, '2024-06-01');
-            INSERT INTO items (itemID, key, libraryID, dateModified) VALUES (6, 'ANNT003', 1, '2024-06-01');
-            INSERT INTO items (itemID, key, libraryID, dateModified) VALUES (9, 'ANNT004', 2, '2024-06-01');
-
-            INSERT INTO itemAttachments (itemID, parentItemID) VALUES (2, 1);
-            INSERT INTO itemAttachments (itemID, parentItemID) VALUES (5, 1);
-            INSERT INTO itemAttachments (itemID, parentItemID) VALUES (8, 7);
-
-            -- Only ANNT001 on ATTACH01 (ANNT002 is absent)
-            INSERT INTO itemAnnotations
-                (itemID, parentItemID, type, text, comment, color,
-                 pageLabel, sortIndex, position, dateModified)
-            VALUES (3, 2, 'highlight', 'significant result', 'my comment', '#ffd400',
-                    '1', 0, '{"x":0.1}', '2024-06-01');
-
-            INSERT INTO itemAnnotations
-                (itemID, parentItemID, type, text, comment, color,
-                 pageLabel, sortIndex, position, dateModified)
-            VALUES (6, 5, 'highlight', 'different attachment', 'diff comment', '#ffd400',
-                    '1', 0, '{}', '2024-06-01');
-
-            INSERT INTO itemAnnotations
-                (itemID, parentItemID, type, text, comment, color,
-                 pageLabel, sortIndex, position, dateModified)
-            VALUES (9, 8, 'highlight', 'library 2 annotation', 'lib2 comment', '#00ff00',
-                    '1', 0, '{}', '2024-06-01');
-
-            INSERT INTO tags (tagID, name) VALUES (1, 'important');
-            INSERT INTO itemTags (itemID, tagID) VALUES (3, 1);
-        """)
-        conn.commit()
-    finally:
-        conn.close()
-
-
-# ---------------------------------------------------------------------------
-# Fixtures
-# ---------------------------------------------------------------------------
-
-
-@pytest.fixture
-def zotero_full_path() -> Path:
-    """Create a full Zotero fixture database path."""
-    tmp = tempfile.NamedTemporaryFile(suffix=".sqlite", delete=False)
-    tmp.close()
-    db_path = Path(tmp.name)
-    _create_zotero_fixture_full(db_path)
-    yield db_path
-    if db_path.exists():
-        db_path.unlink()
-
-
-@pytest.fixture
-def zotero_reduced_path() -> Path:
-    """Create a reduced Zotero fixture (missing ANNT002)."""
-    tmp = tempfile.NamedTemporaryFile(suffix=".sqlite", delete=False)
-    tmp.close()
-    db_path = Path(tmp.name)
-    _create_zotero_fixture_reduced(db_path)
-    yield db_path
-    if db_path.exists():
-        db_path.unlink()
-
-
-@pytest.fixture
-def ann_db_path() -> Path:
-    """Create an empty annotations.db with schema applied."""
-    tmp = tempfile.NamedTemporaryFile(suffix=".annotations.db", delete=False)
-    tmp.close()
-    db_path = Path(tmp.name)
-    conn = sqlite3.connect(str(db_path))
-    try:
-        ensure_schema(conn)
-    finally:
-        conn.close()
-    yield db_path
-    if db_path.exists():
-        db_path.unlink()
+from .conftest import open_ann
 
 
 # ---------------------------------------------------------------------------
 # Import helper (wraps the target function for test ergonomics)
 # ---------------------------------------------------------------------------
-
-from paperforge.annotation.importer import import_zotero_annotations_for_paper
-from paperforge.annotation.zotero_probe import open_zotero_readonly, zotero_snapshot
-
-
-def _open_ann(ann_db_path: Path) -> sqlite3.Connection:
-    """Open annotations.db with Row factory for test assertions."""
-    conn = sqlite3.connect(str(ann_db_path))
-    conn.row_factory = sqlite3.Row
-    return conn
 
 
 def _do_import(
@@ -285,12 +62,6 @@ def _do_import(
 class TestInsertNew:
     """Inserting new Zotero annotations from scratch."""
 
-    def _open_ann(self, ann_db_path: Path) -> sqlite3.Connection:
-        """Open annotations.db with Row factory for test assertions."""
-        conn = _open_ann(ann_db_path)
-        conn.row_factory = sqlite3.Row
-        return conn
-
     def test_import_inserts_new_annotations(self, zotero_full_path: Path, ann_db_path: Path):
         """Importing from ATTACH01 should produce 2 rows in annotations."""
         result = _do_import(zotero_full_path, ann_db_path)
@@ -299,7 +70,7 @@ class TestInsertNew:
         assert result.unchanged == 0
         assert result.total == 2
 
-        conn = _open_ann(ann_db_path)
+        conn = open_ann(ann_db_path)
         rows = conn.execute(
             "SELECT id, paper_id, source, type, sort_index FROM annotations ORDER BY sort_index"
         ).fetchall()
@@ -314,7 +85,7 @@ class TestInsertNew:
         result = _do_import(zotero_full_path, ann_db_path)
         assert result.inserted == 2
 
-        conn = _open_ann(ann_db_path)
+        conn = open_ann(ann_db_path)
         rows = conn.execute(
             "SELECT id, source_library_id, source_annotation_key, "
             "source_attachment_key, source_parent_key, "
@@ -342,7 +113,7 @@ class TestInsertNew:
     def test_imported_rows_have_tags(self, zotero_full_path: Path, ann_db_path: Path):
         """Tags from the Zotero fixture should be preserved."""
         _do_import(zotero_full_path, ann_db_path)
-        conn = _open_ann(ann_db_path)
+        conn = open_ann(ann_db_path)
         row = conn.execute(
             "SELECT tags_json FROM annotations WHERE source_annotation_key = 'ANNT001'"
         ).fetchone()
@@ -367,7 +138,7 @@ class TestReimportUpdates:
         assert r2.unchanged == 2
         assert r2.total == 2
 
-        conn = _open_ann(ann_db_path)
+        conn = open_ann(ann_db_path)
         count = conn.execute("SELECT COUNT(*) FROM annotations").fetchone()[0]
         conn.close()
         assert count == 2
@@ -391,7 +162,7 @@ class TestReimportUpdates:
         assert r2.unchanged == 1
         assert r2.total == 2
 
-        conn = _open_ann(ann_db_path)
+        conn = open_ann(ann_db_path)
         row = conn.execute(
             "SELECT selected_text, comment FROM annotations WHERE source_annotation_key = 'ANNT001'"
         ).fetchone()
@@ -404,7 +175,7 @@ class TestReimportUpdates:
         r1 = _do_import(zotero_full_path, ann_db_path)
         assert r1.inserted == 2
 
-        conn = _open_ann(ann_db_path)
+        conn = open_ann(ann_db_path)
         row1 = conn.execute(
             "SELECT created_at, updated_at FROM annotations WHERE source_annotation_key = 'ANNT001'"
         ).fetchone()
@@ -420,11 +191,10 @@ class TestReimportUpdates:
         mod_conn.commit()
         mod_conn.close()
 
-        # Small delay to ensure timestamp changes
         r2 = _do_import(zotero_full_path, ann_db_path)
         assert r2.updated == 1
 
-        conn = _open_ann(ann_db_path)
+        conn = open_ann(ann_db_path)
         row2 = conn.execute(
             "SELECT created_at, updated_at FROM annotations WHERE source_annotation_key = 'ANNT001'"
         ).fetchone()
@@ -449,7 +219,7 @@ class TestStaleMarking:
         assert r2.stale == 1
         assert r2.total == 2
 
-        conn = _open_ann(ann_db_path)
+        conn = open_ann(ann_db_path)
         stale_row = conn.execute(
             "SELECT id, deleted_at FROM annotations WHERE source_annotation_key = 'ANNT002'"
         ).fetchone()
@@ -476,7 +246,7 @@ class TestStaleMarking:
         assert r3.updated == 1  # ANNT002 is restored (un-staled)
         assert r3.stale == 0
 
-        conn = _open_ann(ann_db_path)
+        conn = open_ann(ann_db_path)
         row = conn.execute(
             "SELECT deleted_at FROM annotations WHERE source_annotation_key = 'ANNT002'"
         ).fetchone()
@@ -489,9 +259,7 @@ class TestScopeIsolation:
 
     def test_other_paper_untouched(self, zotero_full_path: Path, ann_db_path: Path):
         """Annotations for a different paper_id must not be stale-marked."""
-        # Import for paper1
         _do_import(zotero_full_path, ann_db_path, paper_id="paper001")
-        # Import for paper2 (different parent, different library)
         _do_import(
             zotero_full_path, ann_db_path,
             paper_id="paper002",
@@ -502,7 +270,7 @@ class TestScopeIsolation:
             attachment_item_key="ATTACH03",
         )
 
-        conn = _open_ann(ann_db_path)
+        conn = open_ann(ann_db_path)
         paper1_rows = conn.execute(
             "SELECT COUNT(*) FROM annotations WHERE paper_id = 'paper001' AND deleted_at IS NULL"
         ).fetchone()[0]
@@ -518,22 +286,18 @@ class TestScopeIsolation:
         """Annotations from a different Zotero library must survive import."""
         _do_import(zotero_full_path, ann_db_path)
 
-        conn = _open_ann(ann_db_path)
+        conn = open_ann(ann_db_path)
         lib1_rows = conn.execute(
             "SELECT COUNT(*) FROM annotations WHERE source_library_id = '1'"
         ).fetchone()[0]
         conn.close()
         assert lib1_rows == 2
 
-        # Other library rows should not exist yet — they haven't been imported.
-        # But the point is: importing for library=1 did not create stale rows
-        # for library=2 annotations that don't exist yet.
-
     def test_other_attachment_untouched(self, zotero_full_path: Path, ann_db_path: Path):
         """Annotations for other attachments must not be stale-marked."""
-        _do_import(zotero_full_path, ann_db_path)  # imports ATTACH01 (2 annotations)
+        _do_import(zotero_full_path, ann_db_path)
 
-        conn = _open_ann(ann_db_path)
+        conn = open_ann(ann_db_path)
         rows = conn.execute(
             "SELECT source_attachment_key, deleted_at FROM annotations ORDER BY sort_index"
         ).fetchall()
@@ -542,7 +306,7 @@ class TestScopeIsolation:
 
     def test_local_rows_untouched(self, zotero_full_path: Path, ann_db_path: Path):
         """Rows with source='paperforge' must never be stale-marked by Zotero imports."""
-        conn = _open_ann(ann_db_path)
+        conn = open_ann(ann_db_path)
         conn.execute(
             "INSERT INTO annotations (id, paper_id, source, type, created_at, updated_at) "
             "VALUES ('local:001', 'paper001', 'paperforge', 'highlight', '2024-01-01T00:00:00Z', '2024-01-01T00:00:00Z')"
@@ -552,7 +316,7 @@ class TestScopeIsolation:
 
         _do_import(zotero_full_path, ann_db_path)
 
-        conn = _open_ann(ann_db_path)
+        conn = open_ann(ann_db_path)
         row = conn.execute(
             "SELECT source, deleted_at FROM annotations WHERE id = 'local:001'"
         ).fetchone()
@@ -568,7 +332,7 @@ class TestReadOnly:
         """All imported rows must have is_readonly=1."""
         _do_import(zotero_full_path, ann_db_path)
 
-        conn = _open_ann(ann_db_path)
+        conn = open_ann(ann_db_path)
         rows = conn.execute(
             "SELECT is_readonly FROM annotations WHERE source = 'zotero'"
         ).fetchall()
