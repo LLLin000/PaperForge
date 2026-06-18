@@ -33,3 +33,11 @@ def test_layout_class_manifest_has_named_representatives() -> None:
     assert by_tag["same_page_ref_body_split"]
     assert by_tag["post_reference_biography"]
     assert by_tag["review_callout"] or by_tag["special_structure"]
+
+
+def test_every_audit_paper_has_at_least_one_layout_tag() -> None:
+    manifest = _load_manifest()
+
+    missing = [paper["paper_key"] for paper in manifest["papers"] if not paper.get("layout_tags")]
+
+    assert missing == []

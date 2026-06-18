@@ -2246,3 +2246,29 @@ def test_partition_assets_by_caption_bands_keeps_assets_local_to_caption_band() 
 
     assert [a["block_id"] for a in parts["101"]] == [1, 2]
     assert [a["block_id"] for a in parts["102"]] == [3]
+
+
+def test_sequential_fallback_can_match_previous_page_asset_for_next_page_caption() -> None:
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    blocks = [
+        {"block_id": "a1", "page": 39, "role": "media_asset", "raw_label": "image", "bbox": [220, 1153, 556, 1443]},
+        {
+            "block_id": "cap3",
+            "page": 40,
+            "role": "figure_caption",
+            "text": "Fig. 3. Magnetic actuation characterization of MR-SCS.",
+            "bbox": [73, 99, 1032, 548],
+            "zone": "post_reference_backmatter_zone",
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 3},
+        },
+    ]
+
+    inventory = build_figure_inventory(blocks)
+    matched = [m for m in inventory["matched_figures"] if m.get("figure_number") == 3]
+    ambiguous = [a for a in inventory["ambiguous_figures"] if a.get("figure_number") == 3]
+
+    assert len(matched) == 1
+    assert matched[0]["matched_assets"][0]["block_id"] == "a1"
+    assert ambiguous == []

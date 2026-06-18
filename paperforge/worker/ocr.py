@@ -1945,6 +1945,7 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
         table_inventory=table_inventory,
         doc_structure=doc_structure,
         reader_payload=reader_payload,
+        rendered_markdown=markdown,
     )
     health_report["ocr_raw_integrity"] = ocr_raw_integrity
     write_ocr_health(ocr_root / "health", health_report)

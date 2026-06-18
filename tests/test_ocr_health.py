@@ -613,3 +613,84 @@ def test_ocr_health_role_gate_degraded_forces_overall_red() -> None:
     )
 
     assert health["overall"] == "red"
+
+
+def test_ocr_health_exposes_completeness_signals_for_runtime_blocks() -> None:
+    from paperforge.worker.ocr_health import build_ocr_health
+
+    report = build_ocr_health(
+        page_count=1,
+        raw_blocks_count=2,
+        structured_blocks=[
+            {
+                "role": "body_paragraph",
+                "text": "short text",
+                "page": 1,
+                "pdf_text": "short text plus a much longer native PDF segment that should dominate coverage",
+                "pdf_region_text": "short text plus a much longer native PDF segment that should dominate coverage",
+            },
+            {"role": "section_heading", "text": "Intro"},
+            {"role": "section_heading", "text": "Methods"},
+            {"role": "reference_item", "text": "[1] Ref"},
+            {"role": "abstract_body", "text": "Abstract."},
+        ],
+        figure_inventory={},
+        table_inventory={},
+    )
+
+    assert report["page_text_coverage"][1]["page_text_coverage_status"] == "low"
+    assert report["text_completeness_summary"]["short_vs_pdf"] == 1
+
+
+def test_ocr_health_marks_missing_pdf_baseline_without_perfect_ratio() -> None:
+    from paperforge.worker.ocr_health import build_ocr_health
+
+    report = build_ocr_health(
+        page_count=1,
+        raw_blocks_count=1,
+        structured_blocks=[
+            {"role": "body_paragraph", "text": "Body text", "page": 1, "pdf_text": ""},
+            {"role": "section_heading", "text": "Intro"},
+            {"role": "section_heading", "text": "Methods"},
+            {"role": "reference_item", "text": "[1] Ref"},
+            {"role": "abstract_body", "text": "Abstract."},
+        ],
+        figure_inventory={},
+        table_inventory={},
+    )
+
+    coverage = report["page_text_coverage"][1]
+    assert coverage["page_text_coverage_status"] == "missing_pdf_text"
+    assert coverage["page_text_coverage_ratio_chars"] is None
+
+
+def test_rendered_text_coverage_normalizes_whitespace_and_case() -> None:
+    from paperforge.worker.ocr_health import audit_rendered_text_coverage
+
+    result = audit_rendered_text_coverage(
+        rendered_markdown="In  Vivo methods are summarized here.",
+        pdf_segments=["in vivo methods are summarized here."],
+    )
+
+    assert result["rendered_text_gap_count"] == 0
+
+
+def test_ocr_health_reports_rendered_gap_count_when_markdown_is_provided() -> None:
+    from paperforge.worker.ocr_health import build_ocr_health
+
+    report = build_ocr_health(
+        page_count=1,
+        raw_blocks_count=1,
+        structured_blocks=[
+            {"role": "body_paragraph", "text": "Short OCR body.", "page": 1, "pdf_region_text": "A long methods segment that is missing from render."},
+            {"role": "section_heading", "text": "Intro"},
+            {"role": "section_heading", "text": "Methods"},
+            {"role": "reference_item", "text": "[1] Ref"},
+            {"role": "abstract_body", "text": "Abstract."},
+        ],
+        figure_inventory={},
+        table_inventory={},
+        rendered_markdown="Only the introduction survived.",
+    )
+
+    assert report["rendered_text_gap_count"] == 1

@@ -1,15 +1,62 @@
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from typing import Any
 
 
+def _normalize_gap_text(text: str) -> str:
+    return re.sub(r"\s+", " ", text or "").strip().lower()
+
+
 def audit_rendered_text_coverage(*, rendered_markdown: str, pdf_segments: list[str]) -> dict:
-    missing = [segment for segment in pdf_segments if segment and segment not in rendered_markdown]
+    normalized_markdown = _normalize_gap_text(rendered_markdown)
+    missing = [segment for segment in pdf_segments if segment and _normalize_gap_text(segment) not in normalized_markdown]
     return {
         "rendered_text_gap_count": len(missing),
         "rendered_text_gap_examples": missing[:3],
     }
+
+
+def _build_page_text_coverage(structured_blocks: list[dict]) -> dict[int, dict[str, Any]]:
+    from paperforge.worker.ocr_blocks import _summarize_page_text_coverage
+
+    page_texts: dict[int, dict[str, list[str]]] = {}
+    for block in structured_blocks:
+        page = int(block.get("page", 0) or 0)
+        if page <= 0:
+            continue
+        if "pdf_text" not in block:
+            continue
+        pdf_text = str(block.get("pdf_text") or "").strip()
+        entry = page_texts.setdefault(page, {"ocr": [], "pdf": []})
+        entry["ocr"].append(str(block.get("text") or "").strip())
+        entry["pdf"].append(pdf_text)
+
+    coverage: dict[int, dict[str, Any]] = {}
+    for page, parts in page_texts.items():
+        coverage[page] = _summarize_page_text_coverage(
+            ocr_text=" ".join(t for t in parts["ocr"] if t),
+            pdf_text=" ".join(t for t in parts["pdf"] if t),
+        )
+    return coverage
+
+
+def _build_text_completeness_summary(structured_blocks: list[dict]) -> dict[str, int]:
+    from paperforge.worker.ocr_blocks import _classify_region_text_completeness
+
+    summary: dict[str, int] = {}
+    for block in structured_blocks:
+        pdf_region_text = str(block.get("pdf_region_text") or "").strip()
+        if not pdf_region_text:
+            continue
+        result = _classify_region_text_completeness(
+            ocr_text=str(block.get("text") or ""),
+            pdf_region_text=pdf_region_text,
+        )
+        status = str(result.get("text_completeness_status") or "pdf_unavailable")
+        summary[status] = summary.get(status, 0) + 1
+    return summary
 
 
 def _doc_attr(doc_structure: Any, name: str, default=None):
@@ -66,6 +113,7 @@ def build_ocr_health(
     table_inventory: dict,
     doc_structure: Any = None,
     reader_payload: dict | None = None,
+    rendered_markdown: str | None = None,
 ) -> dict[str, Any]:
     section_heading_count = sum(1 for b in structured_blocks if b.get("role") == "section_heading")
     abstract_found = any(
@@ -188,6 +236,17 @@ def build_ocr_health(
         held_figure_count=held_figure_count,
         held_table_count=held_table_count,
     )
+    page_text_coverage = _build_page_text_coverage(structured_blocks)
+    text_completeness_summary = _build_text_completeness_summary(structured_blocks)
+    pdf_segments = [
+        str(block.get("pdf_region_text") or "").strip()
+        for block in structured_blocks
+        if str(block.get("pdf_region_text") or "").strip()
+    ]
+    rendered_gap = audit_rendered_text_coverage(
+        rendered_markdown=rendered_markdown or "",
+        pdf_segments=pdf_segments,
+    )
 
     report = {
         "page_count": page_count,
@@ -234,6 +293,10 @@ def build_ocr_health(
         "anchor_summary": anchor_summary,
         "zone_summary": zone_summary,
         "held_counts": held_counts,
+        "page_text_coverage": page_text_coverage,
+        "text_completeness_summary": text_completeness_summary,
+        "rendered_text_gap_count": rendered_gap["rendered_text_gap_count"],
+        "rendered_text_gap_examples": rendered_gap["rendered_text_gap_examples"],
         "figure_legend_completeness_total": formal_legend_total,
         "figure_legend_completeness_accounted": formal_legend_accounted,
         "figure_legend_completeness_gap_count": formal_legend_gaps,

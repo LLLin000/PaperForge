@@ -209,6 +209,7 @@ def run_derived_rebuild_for_keys(vault: Path, keys: list[str]) -> dict:
             table_inventory=table_inventory,
             doc_structure=doc_structure,
             reader_payload=reader_payload,
+            rendered_markdown=markdown,
         )
         health_report["ocr_raw_integrity"] = build_ocr_raw_integrity_health(all_raw_blocks)
         write_ocr_health(paper_root / "health", health_report)

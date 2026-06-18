@@ -138,9 +138,19 @@ def resolve_verified_role(block: dict, context: RoleGateContext) -> VerifiedRole
             return accept_role(
                 "paper_title", seed_role, "source_frontmatter_title_anchor", ["matched source title anchor"]
             )
+        # Zone-based fallback: title-like block on the first-surviving page's
+        # frontmatter_main_zone with title-appropriate raw_label is accepted
+        # even without source anchor — handles preproof-drop papers where the
+        # real title appears on page 2.
+        raw_label = str(block.get("raw_label") or "")
+        if block.get("zone") == "frontmatter_main_zone" and raw_label in {"doc_title", "paragraph_title"}:
+            return accept_role(
+                "paper_title", seed_role, "frontmatter_zone_title",
+                [f"title accepted via frontmatter_main_zone + {raw_label} label"],
+            )
         return hold_role(seed_role, "paper title seed lacks source-backed title anchor")
     # Structural signal: raw_label=doc_title on page 2 → paper_title (title repeat)
-    # Only accept if confirmed by source anchor; otherwise hold.
+    # Accept if confirmed by source anchor or by frontmatter_main_zone context.
     if block.get("raw_label") == "doc_title" and (block.get("page") or 0) == 2:
         block_id = _artifact_block_id(block, context._duplicate_block_ids) if hasattr(context, "_duplicate_block_ids") else block.get("block_id")
         if block_id and block_id in context.source_frontmatter_anchor_ids.get("title", set()):
@@ -149,6 +159,13 @@ def resolve_verified_role(block: dict, context: RoleGateContext) -> VerifiedRole
                 seed_role,
                 "doc_title_label_page2_repeat",
                 ["doc_title labeled block on page 2 matches source title anchor"],
+            )
+        if block.get("zone") == "frontmatter_main_zone":
+            return accept_role(
+                "paper_title",
+                seed_role,
+                "doc_title_label_page2_zone",
+                ["doc_title labeled block on page 2 accepted via frontmatter_main_zone"],
             )
         return hold_role(
             seed_role,
@@ -181,6 +198,13 @@ def resolve_verified_role(block: dict, context: RoleGateContext) -> VerifiedRole
         if block_id in context.source_frontmatter_anchor_ids.get("authors", set()):
             return accept_role(
                 "authors", seed_role, "source_frontmatter_authors_anchor", ["matched source authors anchor"]
+            )
+        # Zone-based fallback: author block in frontmatter_main_zone on first
+        # surviving page — handles preproof-drop papers.
+        if block.get("zone") == "frontmatter_main_zone" and block.get("raw_label") == "text":
+            return accept_role(
+                "authors", seed_role, "frontmatter_zone_authors",
+                ["authors accepted via frontmatter_main_zone + text label"],
             )
         return hold_role(seed_role, "authors seed lacks source-backed authors anchor")
     if proposal == "keywords" or seed_role == "keywords":
@@ -311,6 +335,18 @@ def resolve_verified_role(block: dict, context: RoleGateContext) -> VerifiedRole
                 seed_role,
                 "accepted_table_caption_artifact",
                 ["table caption matched accepted table artifact"],
+            )
+        _marker = str(((block.get("marker_signature") or {}).get("type")) or "")
+        _zone = str(block.get("zone") or "")
+        _text = str(block.get("text") or "").strip()
+        if _marker in {"figure_number", "table_number"} or (
+            _zone == "display_zone" and _text.lower().startswith(("fig", "figure", "table"))
+        ):
+            return accept_role(
+                "table_caption",
+                seed_role,
+                "text_evidence_table_caption",
+                ["table caption accepted via text-prefix + marker/zone evidence"],
             )
         return VerifiedRoleDecision(
             role="table_caption_candidate",

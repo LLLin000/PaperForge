@@ -1,7 +1,7 @@
 # OCR-v2 Close-Out Priority
 
 > Status: active authoritative readiness queue
-> Last updated: 2026-06-18 (Gates 1,3,4 implementation complete)
+> Last updated: 2026-06-18 (broader readiness sweep re-green after Gate 2 fallback tightening)
 > Owner file for next work: `docs/superpowers/plans/2026-06-18-ocr-v2-readiness-master-plan.md`
 
 ## Why This File Exists
@@ -37,15 +37,15 @@ That pass is no longer the active execution thread. The branch has now moved int
 | Gate | Status | Notes |
 |------|--------|-------|
 | Gate 1: completeness-check layer | **DONE** | Page-level + region-level coverage signals, rendered-gap audit |
-| Gate 2: figure ownership generalization | **PARTIAL** | Same-row group-first matching implemented; DW Fig 3 ambiguous match remains (xfail) |
+| Gate 2: figure ownership generalization | **DONE** | DW Fig 3 strict regression passes; previous-page fallback narrowed with layout cross-checks; figure suite re-green |
 | Gate 3: ordering/boundary authority | **DONE** | `_enforce_reference_boundary_from_structure` upstream in normalize path |
 | Gate 4: layout-coverage formalization | **DONE** | Taxonomy normalized to approved readiness-class set; contract tests enforce named representatives |
 | Gate 5: unseen-paper blind audit | **NEXT** | Entry criteria defined; not started |
 
 ## Next Work
-1. Resolve Gate 2 DW Fig 3 remaining ambiguous match (xfail test)
-2. Run full verification suite
-3. Prepare Gate 5 blind audit entry criteria for next cycle
+1. Decide whether to run the full readiness sweep including broader env-gated real-paper coverage and repo-wide lint debt review before Gate 5
+2. Prepare the bounded unseen-paper blind audit sample and execution rules for Gate 5
+3. Keep project truth files aligned if any pre-blind-audit fixes land
 
 ## Authoritative Reference
 This file is the tie-breaker for the active readiness queue. `project/current/ocr-v2-generalization-boundary.md` remains the broader architecture note, and `docs/superpowers/specs/2026-06-18-ocr-v2-readiness-gates-design.md` defines the readiness model the queue is following.

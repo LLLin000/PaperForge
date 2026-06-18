@@ -4802,6 +4802,8 @@ def test_same_page_reference_boundary_is_resolved_upstream_not_in_renderer() -> 
     by_id = {b["block_id"]: b for b in normalized}
     assert by_id["body_1"]["role"] == "body_paragraph"
     assert by_id["ref_1"]["role"] == "reference_item"
+    assert by_id["body_1"].get("zone") != "reference_zone"
+    assert by_id["ref_1"].get("zone") == "reference_zone"
 
 
 def test_page_text_coverage_flags_low_ratio_when_pdf_text_dominates() -> None:

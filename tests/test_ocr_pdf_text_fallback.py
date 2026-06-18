@@ -2,7 +2,6 @@
 from pathlib import Path
 
 import fitz
-import pytest
 
 from paperforge.worker.ocr_pdf_spans import (
     _words_to_text,

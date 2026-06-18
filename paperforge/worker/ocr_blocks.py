@@ -22,7 +22,7 @@ def _summarize_page_text_coverage(*, ocr_text: str, pdf_text: str) -> dict:
     ocr_chars = len((ocr_text or "").strip())
     pdf_chars = len((pdf_text or "").strip())
     if pdf_chars == 0:
-        return {"page_text_coverage_status": "missing_pdf_text", "page_text_coverage_ratio_chars": 1.0}
+        return {"page_text_coverage_status": "missing_pdf_text", "page_text_coverage_ratio_chars": None}
     ratio = ocr_chars / max(pdf_chars, 1)
     return {
         "page_text_coverage_status": "low" if ratio < 0.6 else "ok",

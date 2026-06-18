@@ -1105,3 +1105,99 @@ Updated `project/current/ocr-v2-remaining-issues-2026-06-18.md` with formal Gate
 - **Gate 2 DW Fig 3:** `test_dwqqk2yb_figure3_is_fully_owned_not_merely_captured` is xfail — needs group-first scoring refinement for mixed-layout pages
 - DWQQK2YB Figures 2/3/4 ownership gaps (pre-existing, unchanged)
 - 6 pre-existing figure test failures (pre-existing, unchanged)
+
+### 10.9 Task 7 — Readiness Review Hole Closure (2026-06-18)
+
+**Problem:** Post-implementation review found that Gate 1 completeness helpers were only unit-tested seams, not runtime health inputs; missing-PDF baseline semantics were misleading; and two audited papers had no readiness-class tags.
+
+**Root cause:** The readiness pass added helper functions and taxonomy scaffolding, but did not finish the production-health wiring or the full audit-ledger classification pass.
+
+**Fix:** wired completeness summaries into `build_ocr_health()` so the runtime health path now emits page coverage, region-completeness summary, and rendered-gap counts when PDF-side hints are present; normalized rendered-gap comparison for whitespace/case drift; changed missing-PDF coverage ratio to `None` instead of fake `1.0`; added a stronger audit contract requiring every audited paper to carry at least one layout tag; tagged `K7R8PEKW` and `SAN9AYVR` in `audit/coverage_ledger.json`; strengthened the Gate 3 boundary test with explicit zone assertions.
+
+**Result:** The two review-critical holes are closed at the code/test level, and Gate 4 no longer leaves 25% of the audit corpus unclassified. Remaining readiness work still centers on Gate 2 figure ownership refinement.
+
+**Test status:**
+```
+python -m pytest tests/test_ocr_health.py -v
+  → 26 passed
+python -m pytest tests/test_ocr_real_paper_audit_contracts.py -v
+  → 3 passed
+python -m pytest tests/test_ocr_document.py -k "reference_boundary or same_page_reference_boundary_is_resolved_upstream" -v
+  → 1 passed
+python -m pytest tests/test_ocr_real_paper_regressions.py -k "DWQQK2YB or CAQNW9Q2" -v
+  → 5 passed, 12 skipped, 1 xfailed
+```
+
+**Next topic:** finish Gate 2 by refining group-first figure scoring for DW Figure 3 and then rerun the readiness verification sweep.
+
+### 10.10 Task 8 — Gate 2 DW Figure 3 Ownership Closure (2026-06-18)
+
+**Problem:** Gate 2 still failed the strict DW Figure 3 regression because the caption lived on page 40 while its owned media lived on page 39, and the inventory path only tolerated that case as ambiguous/unresolved.
+
+**Root cause:** `build_figure_inventory()` had no usable previous-page sequential fallback for a strong next-page caption, and when a later fallback did claim the asset, the stale ambiguous entry for the same legend was left behind.
+
+**Fix:** added a focused figure unit test for previous-page sequential fallback, taught the sequential fallback to claim the nearest unclaimed asset from the immediately previous page when the numbered caption starts the next page, and removed stale `ambiguous_figures` entries when that fallback successfully matches the legend. Then promoted the DW strict regression from `xfail` to a normal passing test.
+
+**Result:** DW Figure 3 is now strictly matched instead of "captured but ambiguous," closing the remaining Gate 2 readiness gap on the tracked hard case.
+
+**Test status:**
+```
+python -m pytest tests/test_ocr_figures.py -k "previous_page_asset_for_next_page_caption or partition_assets_by_caption_bands" -v
+  → 2 passed
+python -m pytest tests/test_ocr_real_paper_regressions.py -k "dwqqk2yb_figure3_is_fully_owned_not_merely_captured or DWQQK2YB" -v
+  → 6 passed, 4 skipped
+```
+
+**Next topic:** rerun the broader readiness verification sweep and update the queue/docs from "Gate 2 partial" to the new all-current-gates-green state if the wider suites stay stable.
+
+### 10.11 Task 9 — Broader Readiness Sweep After Gate 2 Closure (2026-06-18)
+
+**Problem:** The targeted Gate 2 DW Figure 3 fix needed to be tested against the broader readiness sweep before the branch could claim all current gates were green.
+
+**Root cause:** The Gate 2 patch introduced a broader previous-page sequential fallback rule. While it fixed the tracked DW regression, that rule also widened generic matching behavior beyond the older figure-suite assumptions.
+
+**Fix:** Ran the broader readiness sweep across health, document, figure, real-paper regression, audit-contract, CLI/unit, and lint surfaces. Wrote the result back into project truth files instead of prematurely promoting Gate 2 to DONE.
+
+**Result:** Gates 1, 3, and 4 remained green on the verified suites. Targeted DW Gate 2 regression initially turned green, but the first broader figure sweep exposed 7 matcher regressions, proving the new fallback rule was too broad.
+
+**Test status:**
+```
+python -m pytest tests/test_ocr_health.py -v
+  → 26 passed
+python -m pytest tests/test_ocr_document.py -v
+  → 131 passed
+python -m pytest tests/test_ocr_figures.py -v
+  → 82 passed, 7 failed
+python -m pytest tests/test_ocr_real_paper_regressions.py -v
+  → 6 passed, 46 skipped
+python -m pytest tests/test_ocr_real_paper_audit_contracts.py -v
+  → 3 passed
+python -m pytest tests/cli/ tests/unit/ -v --tb=short
+  → 283 passed
+ruff check paperforge/ tests/
+  → 260 findings, pre-existing repo-wide lint debt remains
+```
+
+**Next topic:** tighten the previous-page sequential fallback in `build_figure_inventory()` so it stays narrow enough to preserve the older generic figure tests while keeping DW Figure 3 matched.
+
+### 10.12 Task 10 — Gate 2 Fallback Tightening With Layout Cross-Check (2026-06-18)
+
+**Problem:** The first Gate 2 closure patch solved DW Figure 3 but made the generic figure matcher too permissive: sidecar fallback overreached, inline mentions were treated as formal legends, and same-page weak candidates were being forced through the sequential path.
+
+**Root cause:** The new previous-page fallback lacked enough local layout cross-checks, and several existing generic matcher branches were still missing disambiguation guards (unnumbered sidecar legends, above-vs-below candidate ties, inline mention rejection, and caption-before-assets vs caption-after-assets partitioning).
+
+**Fix:** tightened `build_figure_inventory()` in four places: (1) previous-page sequential fallback now requires a strong numbered next-page caption plus post-reference and page-edge geometry evidence, (2) same-page weak sequential fallback is no longer allowed to manufacture matches, (3) sidecar partition now uses a local layout-orientation cross-check to choose between caption-before-assets and caption-after-assets mapping, and (4) inline figure mentions plus close above/below asset ties are explicitly rejected/held instead of forced into matches.
+
+**Result:** DW Figure 3 stays strictly matched, and the generic figure suite is green again. This closes Gate 2 on the currently tracked readiness suites instead of just on the one DW hard case.
+
+**Test status:**
+```
+python -m pytest tests/test_ocr_figures.py -v
+  → 89 passed
+python -m pytest tests/test_ocr_real_paper_regressions.py -k "DWQQK2YB or CAQNW9Q2" -v
+  → 6 passed, 12 skipped
+python -m pytest tests/test_ocr_health.py tests/test_ocr_document.py tests/test_ocr_figures.py tests/test_ocr_real_paper_audit_contracts.py -q
+  → 249 passed
+```
+
+**Next topic:** decide whether to run one last broader readiness sweep boundary before Gate 5 or move directly to preparing the bounded unseen-paper blind audit sample.

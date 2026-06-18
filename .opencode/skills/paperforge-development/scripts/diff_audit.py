@@ -19,6 +19,21 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[5]))
 from paperforge.worker.ocr_artifacts import artifact_paths_for_root
 
+# Canonical role map: alias → pipeline output role name.
+_CANONICAL_ROLE = {
+    "media_asset": "figure_asset",
+    "structural_noise": "noise",
+    "author_list": "authors",
+    "running_header": "noise",
+    "page_marker": "noise",
+    "frontmatter_metadata": "frontmatter_noise",
+    "separator": "noise",
+}
+
+
+def _canonical(role: str) -> str:
+    return _CANONICAL_ROLE.get(role, role)
+
 
 def _load_jsonl(path: Path) -> list[dict]:
     if not path.exists():
@@ -83,7 +98,7 @@ def main() -> None:
         pipe_zone = current.get("zone", "")
         pipe_text_len = len(str(current.get("text", "")).strip())
 
-        role_match = pipe_role == truth_role
+        role_match = _canonical(pipe_role) == _canonical(truth_role)
         zone_match = not truth_zone or pipe_zone == truth_zone
 
         if role_match:
@@ -115,6 +130,14 @@ def main() -> None:
         "changed_blocks": changed_items,
     }
     changed_path.write_text(json.dumps(summary, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+
+    # Normalize truth_role to canonical form in place, so future diffs
+    # match even without the alias map.
+    for review in reviews:
+        raw = str(review.get("truth_role") or "")
+        canonical = _canonical(raw)
+        if canonical != raw:
+            review["truth_role"] = canonical
 
     # Write back updated block_review.jsonl
     _write_jsonl(review_path, reviews)

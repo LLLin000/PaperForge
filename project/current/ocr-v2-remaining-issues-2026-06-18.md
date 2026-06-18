@@ -6,7 +6,7 @@
 ## Active Readiness Residuals
 
 1. **Gate 1 completeness-check layer** -- DONE (page/region/rendered-gap signals implemented)
-2. **Gate 2 figure ownership still carries a trust gap** on mixed post-reference and multi-panel pages; DW Fig 3 ambiguous match remains (xfail: `test_dwqqk2yb_figure3_is_fully_owned_not_merely_captured`)
+2. **Gate 2 figure ownership** -- DONE on the tracked DW and generic figure-suite coverage after narrowing the previous-page fallback with local layout cross-checks
 3. **Gate 3 ordering/boundary authority** -- DONE (`_enforce_reference_boundary_from_structure` upstream)
 4. **Gate 4 layout coverage** -- DONE (taxonomy in `audit/coverage_ledger.json`, contract tests enforce named representatives)
 5. **Backmatter heading taxonomy remains partially conservative by design**; only promote it if Gate 3 boundary evidence requires it
@@ -25,7 +25,7 @@ OCR-v2 is ready for blind audit only when:
 | # | Issue | Priority | Type | Status |
 |---|-------|----------|------|--------|
 | 1 | Completeness check | P1 | Readiness gate | DONE |
-| 2 | Figure ownership (DW Fig 3) | P0 | Trust / ownership gap | PARTIAL (xfail) |
+| 2 | Figure ownership matcher stability | P0 | Trust / ownership gap | DONE on current tracked suites |
 | 3 | Ordering authority | P1 | Structural authority gap | DONE |
 | 4 | Layout coverage ledger + taxonomy | P1 | Test / evidence gap | DONE |
 | 5 | Backmatter heading taxonomy | P3 | Conservative by design | Deferred |
