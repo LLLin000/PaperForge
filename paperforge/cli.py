@@ -358,6 +358,28 @@ def build_parser() -> argparse.ArgumentParser:
     # update
     sub.add_parser("update", help="Update PaperForge to the latest version")
 
+    # annotation commands
+    p_annot = sub.add_parser("annotation", help="PDF annotation operations (import, list, status, export)")
+    annot_sub = p_annot.add_subparsers(dest="annotation_command", required=True)
+
+    p_annot_import = annot_sub.add_parser("import", help="Import annotations from Zotero (default: preview)")
+    p_annot_import.add_argument("--paper", metavar="KEY", help="Zotero citation key for paper-scoped import")
+    p_annot_import.add_argument("--zotero-db", metavar="PATH", help="Path to Zotero SQLite database")
+    p_annot_import.add_argument("--attachment-key", metavar="KEY", help="Zotero attachment key for multi-PDF disambiguation")
+    p_annot_import.add_argument("--apply", action="store_true", help="Apply import (default is preview)")
+    p_annot_import.add_argument("--json", action="store_true", help="Output as PFResult JSON")
+
+    p_annot_list = annot_sub.add_parser("list", help="List annotations for a paper")
+    p_annot_list.add_argument("--paper", metavar="KEY", help="Zotero citation key")
+    p_annot_list.add_argument("--json", action="store_true", help="Output as PFResult JSON")
+
+    p_annot_status = annot_sub.add_parser("status", help="Check annotation system status")
+    p_annot_status.add_argument("--json", action="store_true", help="Output as PFResult JSON")
+
+    p_annot_export = annot_sub.add_parser("export", help="Export annotations for a paper")
+    p_annot_export.add_argument("--paper", metavar="KEY", help="Zotero citation key")
+    p_annot_export.add_argument("--json", action="store_true", help="Output as PFResult JSON")
+
     # setup wizard
     p_setup = sub.add_parser("setup", help="Set up PaperForge in a vault (use --headless for non-interactive)")
     p_setup.add_argument(
@@ -558,6 +580,11 @@ def main(argv: list[str] | None = None) -> int:
         from paperforge.commands.memory import run
 
         return run(args)
+
+    if args.command == "annotation":
+        from paperforge.commands import annotation
+
+        return annotation.run(args)
 
     if args.command == "embed":
         from paperforge.commands.embed import run
