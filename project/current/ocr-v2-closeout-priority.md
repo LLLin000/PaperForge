@@ -1,7 +1,7 @@
 # OCR-v2 Close-Out Priority
 
 > Status: active authoritative readiness queue
-> Last updated: 2026-06-18
+> Last updated: 2026-06-18 (Gates 1,3,4 implementation complete)
 > Owner file for next work: `docs/superpowers/plans/2026-06-18-ocr-v2-readiness-master-plan.md`
 
 ## Why This File Exists
@@ -32,16 +32,20 @@ The unified close-out plan has been executed, and P0-P2 layout close-out is reco
 
 That pass is no longer the active execution thread. The branch has now moved into readiness-gate work: finish the first four gates required for "state healthy," then run unseen-paper blind audit as the next-stage gate.
 
-## Remaining readiness blockers before "state healthy"
-- Gate 1: completeness-check layer implementation
-- Gate 2: figure ownership generalization on mixed post-reference and multi-panel pages
-- Gate 3: ordering/boundary authority still partly depends on renderer-side repair
-- Gate 4: audit-paper taxonomy and coverage ledger are not yet formal enough for generalization claims
+## Readiness Gate Status
+
+| Gate | Status | Notes |
+|------|--------|-------|
+| Gate 1: completeness-check layer | **DONE** | Page-level + region-level coverage signals, rendered-gap audit |
+| Gate 2: figure ownership generalization | **PARTIAL** | Same-row group-first matching implemented; DW Fig 3 ambiguous match remains (xfail) |
+| Gate 3: ordering/boundary authority | **DONE** | `_enforce_reference_boundary_from_structure` upstream in normalize path |
+| Gate 4: layout-coverage formalization | **DONE** | Taxonomy normalized to approved readiness-class set; contract tests enforce named representatives |
+| Gate 5: unseen-paper blind audit | **NEXT** | Entry criteria defined; not started |
 
 ## Next Work
-1. Execute `docs/superpowers/plans/2026-06-18-ocr-v2-readiness-master-plan.md`
-2. Implement Gate 1 first: fuzzy OCR completeness-check layer (`docs/superpowers/specs/2026-06-18-ocr-completeness-check-design.md`)
-3. Keep Gate 5 (unseen-paper blind audit) out of the current cycle; use it only after Gates 1-4 are complete
+1. Resolve Gate 2 DW Fig 3 remaining ambiguous match (xfail test)
+2. Run full verification suite
+3. Prepare Gate 5 blind audit entry criteria for next cycle
 
 ## Authoritative Reference
 This file is the tie-breaker for the active readiness queue. `project/current/ocr-v2-generalization-boundary.md` remains the broader architecture note, and `docs/superpowers/specs/2026-06-18-ocr-v2-readiness-gates-design.md` defines the readiness model the queue is following.
