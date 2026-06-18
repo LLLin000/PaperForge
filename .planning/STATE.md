@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: annotation v0.1
 milestone_name: PDF Annotation Backend & CLI Foundation
-status: Ready to execute
-stopped_at: Annotation Phase 4 planned - 3 plans ready
-last_updated: "2026-06-18T20:30:00.000+08:00"
-last_activity: 2026-06-18 - Annotation Phase 4 planned: 3 verification-gate plans ready
+status: Complete
+stopped_at: Annotation v0.1 complete — all 4 phases delivered
+last_updated: "2026-06-18T22:30:00.000+08:00"
+last_activity: 2026-06-18 - Annotation Phase 4 complete: verification gate passed
 progress:
   total_phases: 4
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 18
-  completed_plans: 14
-  percent: 78
+  completed_plans: 17
+  percent: 94
 ---
 
 # Project State
@@ -21,22 +21,22 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-17)
 
 **Core value:** Researchers always know what papers they have, what state those papers are in, and whether each paper is reliably usable by AI with traceable fulltext, figures, notes, and source links.
-**Current focus:** Annotation Phase 4 - Annotation Verification Gate
+**Current focus:** Annotation Phase 4 - Annotation Verification Gate ✅ Complete
 
 ## Current Position
 
-Phase: Annotation Phase 4 of 4 (Annotation Verification Gate) - planned, ready to execute
-Plans: 0/3
-Last activity: 2026-06-18 - Annotation Phase 4 planned (3 verification-gate plans ready)
+Phase: Annotation Phase 4 of 4 (Annotation Verification Gate) - complete
+Plans: 3/3
+Last activity: 2026-06-18 - Annotation Phase 4 complete: verification gate passed
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 14
+- Total plans completed: 17
 - Total plans planned: 18
-- Average duration: ~5.5 min
-- Total execution time: ~77 min
+- Average duration: ~6 min
+- Total execution time: ~108 min
 
 **By Phase:**
 
@@ -45,11 +45,12 @@ Last activity: 2026-06-18 - Annotation Phase 4 planned (3 verification-gate plan
 | Annotation Phase 1 | 3/3 | 100% | ~3.5 min |
 | Annotation Phase 2 | 4/4 | 100% | ~5.5 min |
 | Annotation Phase 3 | 4/4 | 100% | ~10 min |
-| Annotation Phase 4 | 0/3 | 0% | - |
+| Annotation Phase 4 | 3/3 | 100% | ~8 min |
 
 **Recent Trend:**
 
-- Annotation Phase 4: 3 plans created for generated Zotero fixtures, final annotation CLI/regression gate, and release verification report with safety/baseline-failure classification.
+- Annotation Phase 4 complete: 140 tests passing (88 unit + 52 CLI), safety audit confirms zero Zotero write-back, verification report with full failure classification.
+- Annotation v0.1 milestone complete: PDF annotation backend & CLI foundation delivered across 4 phases / 18 plans.
 
 *Updated after each plan completion*
 
@@ -90,5 +91,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-06-18
-Stopped at: Annotation Phase 4 planned — ready for execution
-Resume file: Next up: `gsd-execute-phase annotation phase 4`
+Stopped at: Annotation v0.1 complete — milestone delivered
+Resume file: Annotation milestone complete. Next milestone planning possible.

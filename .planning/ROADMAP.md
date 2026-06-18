@@ -104,9 +104,9 @@ Plans:
 **Plans:** 3 plans
 
 Plans:
-- [ ] annotation-04-01-PLAN.md - Generated fixture and service verification foundation [Wave 1]
-- [ ] annotation-04-02-PLAN.md - Final annotation CLI/regression gate [Wave 2, blocked on Wave 1]
-- [ ] annotation-04-03-PLAN.md - Verification report, safety audit, and closeout [Wave 3, blocked on Wave 2]
+- [x] annotation-04-01-PLAN.md - Generated fixture and service verification foundation [Wave 1]
+- [x] annotation-04-02-PLAN.md - Final annotation CLI/regression gate [Wave 2, blocked on Wave 1]
+- [x] annotation-04-03-PLAN.md - Verification report, safety audit, and closeout [Wave 3, blocked on Wave 2]
 
 ## Progress
 
@@ -117,7 +117,7 @@ Plans:
 | Annotation Phase 1. Annotation Storage Foundation | 3/3 | ✓ Complete | 2026-06-17 |
 | Annotation Phase 2. Zotero Probe and Safe Import | 4/4 | ✓ Complete | 2026-06-18 |
 | Annotation Phase 3. Annotation CLI JSON Contracts | 4/4 | ✓ Complete | 2026-06-18 |
-| Annotation Phase 4. Annotation Verification Gate | 0/3 | Planned | - |
+| Annotation Phase 4. Annotation Verification Gate | 3/3 | ✓ Complete | 2026-06-18 |
 
 ---
 *Roadmap created: 2026-06-17*
