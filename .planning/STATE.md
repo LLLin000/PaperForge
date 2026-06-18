@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: annotation v0.1
 milestone_name: PDF Annotation Backend & CLI Foundation
-status: Phase 3 complete, Phase 4 ready to execute
-stopped_at: Annotation Phase 3 complete
-last_updated: "2026-06-18T20:00:00.000+08:00"
-last_activity: 2026-06-18 - Annotation Phase 3 complete: all 4 plans executed, 52 CLI + 71 unit tests pass
+status: Ready to execute
+stopped_at: Annotation Phase 4 planned - 3 plans ready
+last_updated: "2026-06-18T20:30:00.000+08:00"
+last_activity: 2026-06-18 - Annotation Phase 4 planned: 3 verification-gate plans ready
 progress:
   total_phases: 4
   completed_phases: 3
-  total_plans: 15
+  total_plans: 18
   completed_plans: 14
-  percent: 93
+  percent: 78
 ---
 
 # Project State
@@ -25,16 +25,16 @@ See: .planning/PROJECT.md (updated 2026-06-17)
 
 ## Current Position
 
-Phase: Annotation Phase 4 of 4 (Annotation Verification Gate) - not started
-Plans: 0/TBD
-Last activity: 2026-06-18 - Annotation Phase 3 complete (52 CLI + 71 unit tests pass)
+Phase: Annotation Phase 4 of 4 (Annotation Verification Gate) - planned, ready to execute
+Plans: 0/3
+Last activity: 2026-06-18 - Annotation Phase 4 planned (3 verification-gate plans ready)
 
 ## Performance Metrics
 
 **Velocity:**
 
 - Total plans completed: 14
-- Total plans planned: 15
+- Total plans planned: 18
 - Average duration: ~5.5 min
 - Total execution time: ~77 min
 
@@ -45,10 +45,11 @@ Last activity: 2026-06-18 - Annotation Phase 3 complete (52 CLI + 71 unit tests 
 | Annotation Phase 1 | 3/3 | 100% | ~3.5 min |
 | Annotation Phase 2 | 4/4 | 100% | ~5.5 min |
 | Annotation Phase 3 | 4/4 | 100% | ~10 min |
+| Annotation Phase 4 | 0/3 | 0% | - |
 
 **Recent Trend:**
 
-- Annotation Phase 3: 4/4 plans completed, 52 CLI tests + 71 unit tests = 123 total annotation tests pass. All four CLI JSON contracts (import/list/status/export) implemented with PFResult envelope, stable error codes, and read-only Zotero access.
+- Annotation Phase 4: 3 plans created for generated Zotero fixtures, final annotation CLI/regression gate, and release verification report with safety/baseline-failure classification.
 
 *Updated after each plan completion*
 
@@ -89,5 +90,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-06-18
-Stopped at: Annotation Phase 3 complete — ready for Phase 4 (Verification Gate)
+Stopped at: Annotation Phase 4 planned — ready for execution
 Resume file: Next up: `gsd-execute-phase annotation phase 4`
