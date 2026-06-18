@@ -1,0 +1,13 @@
+{
+  "audit_root": "audit",
+  "papers": [
+    {"paper_key": "2GN9LMCW", "layout_tags": ["single_column", "special_structure"], "risk_tags": ["special_structure"]},
+    {"paper_key": "6FGDBFQN", "layout_tags": ["multi_column", "side_caption"], "risk_tags": ["figure_heavy"]},
+    {"paper_key": "A8E7SRVS", "layout_tags": ["multi_column"], "risk_tags": ["table_heavy"]},
+    {"paper_key": "CAQNW9Q2", "layout_tags": ["multi_column", "same_page_ref_body_split"], "risk_tags": ["reference_boundary_sensitive", "frontmatter_sensitive"]},
+    {"paper_key": "DWQQK2YB", "layout_tags": ["multi_column", "preproof_frontmatter", "post_reference_biography"], "risk_tags": ["frontmatter_sensitive", "figure_heavy", "cross_page_caption"]},
+    {"paper_key": "K7R8PEKW", "layout_tags": ["single_column"], "risk_tags": ["frontmatter_sensitive"]},
+    {"paper_key": "SAN9AYVR", "layout_tags": ["multi_column"], "risk_tags": ["special_structure"]},
+    {"paper_key": "TSCKAVIS", "layout_tags": ["single_column", "review_callout"], "risk_tags": ["special_structure", "table_heavy"]}
+  ]
+}

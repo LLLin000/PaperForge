@@ -17,7 +17,8 @@ from pathlib import Path
 import pytest
 
 FIXTURE_ROOT = Path(__file__).resolve().parent / "fixtures" / "ocr_real_papers"
-MANIFEST_PATH = FIXTURE_ROOT / "coverage_manifest.json"
+LEDGER_PATH = Path(__file__).resolve().parents[1] / "audit" / "coverage_ledger.json"
+MANIFEST_PATH = LEDGER_PATH
 
 # ---------------------------------------------------------------------------
 # Fixture helper loaders
@@ -77,8 +78,9 @@ def _reader_figure_index(reader_payload: dict) -> tuple[dict[int, dict], dict[in
 
 
 def _load_reader_payload_from_vault(key: str) -> dict:
-    manifest = _load_manifest()
-    vault = Path(manifest["vault"])
+    vault = _real_ocr_vault()
+    if vault is None:
+        pytest.skip("PAPERFORGE_REAL_OCR_VAULT not set for vault fallback read")
     path = vault / "System" / "PaperForge" / "ocr" / key / "structure" / "reader_figures.json"
     return _load_json(path)  # type: ignore[return-value]
 
@@ -386,7 +388,7 @@ def test_a8e7srvs_page_level_production_pipeline(tmp_path: Path) -> None:
 
 def test_gold_figure_merge_ownership_contracts(tmp_path: Path) -> None:
     manifest = _load_manifest()
-    keys = [paper["paper_key"] for paper in manifest.get("gold_papers", [])]
+    keys = [paper["paper_key"] for paper in manifest.get("papers", [])]
     failures: list[str] = []
     for key in keys:
         expectations = _load_expectations(key)
@@ -470,6 +472,16 @@ def test_dwqqk2yb_ownership_no_longer_mega_merges_same_page_assets(tmp_path: Pat
     # Fig 3 should at least be captured (ambiguous is acceptable for now;
     # the group-first figure inventory refactor will resolve its ownership)
     assert 3 in matched or 3 in ambiguous, "Fig 3 should be captured"
+
+
+def test_dwqqk2yb_figure3_is_fully_owned_not_merely_captured(tmp_path: Path) -> None:
+    """Gate 2 red regression: DW Figure 3 must be strictly matched, not left ambiguous."""
+    result = replay_production_pipeline("DWQQK2YB", tmp_path)
+    reader_payload = result["reader_payload"]
+    matched, ambiguous = _reader_figure_index(reader_payload)
+
+    assert 3 in matched, "Fig 3 should be matched, not left ambiguous"
+    assert 3 not in ambiguous, "Fig 3 ambiguity is no longer acceptable after Gate 2"
 
 
 def test_6fgdbfqn_same_page_narrow_caption_ownership(tmp_path: Path) -> None:

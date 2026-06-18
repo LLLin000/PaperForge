@@ -1,8 +1,8 @@
 # OCR-v2 Close-Out Priority
 
-> Status: active authoritative execution topic
-> Last updated: 2026-06-17
-> Owner file for next work: `docs/superpowers/plans/2026-06-17-ocr-v2-closeout-single-plan.md`
+> Status: active authoritative readiness queue
+> Last updated: 2026-06-18
+> Owner file for next work: `docs/superpowers/plans/2026-06-18-ocr-v2-readiness-master-plan.md`
 
 ## Why This File Exists
 
@@ -30,12 +30,18 @@ The unified close-out plan has been executed, and P0-P2 layout close-out is reco
 - Regression suite: 202P / 1F / 43S
 - DW diff audit: 57% verified; CAQ diff audit: 88% verified
 
-## Remaining blockers before merge:
-- DWQQK2YB figure ownership on mixed post-reference figure pages (group-first refactor deferred)
-- completeness-check layer implementation (next slice)
+That pass is no longer the active execution thread. The branch has now moved into readiness-gate work: finish the first four gates required for "state healthy," then run unseen-paper blind audit as the next-stage gate.
+
+## Remaining readiness blockers before "state healthy"
+- Gate 1: completeness-check layer implementation
+- Gate 2: figure ownership generalization on mixed post-reference and multi-panel pages
+- Gate 3: ordering/boundary authority still partly depends on renderer-side repair
+- Gate 4: audit-paper taxonomy and coverage ledger are not yet formal enough for generalization claims
 
 ## Next Work
-1. Implement fuzzy OCR completeness-check layer (described in `docs/superpowers/specs/2026-06-18-ocr-completeness-check-design.md`)
+1. Execute `docs/superpowers/plans/2026-06-18-ocr-v2-readiness-master-plan.md`
+2. Implement Gate 1 first: fuzzy OCR completeness-check layer (`docs/superpowers/specs/2026-06-18-ocr-completeness-check-design.md`)
+3. Keep Gate 5 (unseen-paper blind audit) out of the current cycle; use it only after Gates 1-4 are complete
 
 ## Authoritative Reference
-This file is the tie-breaker. If another document disagrees about what to do next, this file wins until it is archived.
+This file is the tie-breaker for the active readiness queue. `project/current/ocr-v2-generalization-boundary.md` remains the broader architecture note, and `docs/superpowers/specs/2026-06-18-ocr-v2-readiness-gates-design.md` defines the readiness model the queue is following.
