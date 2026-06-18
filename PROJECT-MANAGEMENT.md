@@ -995,3 +995,5 @@ python scripts/dev/ocr_rebuild_paper.py --trace DWQQK2YB
   → OK, block_trace: 273 blocks, role distribution confirms frontmatter_support
 ```
 
+**Next topic:** implement the fuzzy OCR completeness-check layer described in `docs/superpowers/specs/2026-06-18-ocr-completeness-check-design.md` after the DW repairs settle.
+
