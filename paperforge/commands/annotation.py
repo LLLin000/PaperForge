@@ -431,7 +431,11 @@ def _cmd_import(args: argparse.Namespace) -> int:
 
 
 def _open_annotations_db(args: argparse.Namespace) -> sqlite3.Connection | None:
-    """Open annotations.db in read-only mode, or None if unavailable."""
+    """Open annotations.db in read-only mode, or None if unavailable.
+
+    Returns None when the DB file is missing, corrupt, or has an
+    incompatible schema — callers handle the graceful empty state.
+    """
     vault = getattr(args, "vault_path", None)
     if not vault:
         return None
@@ -439,8 +443,11 @@ def _open_annotations_db(args: argparse.Namespace) -> sqlite3.Connection | None:
         db_path = get_annotations_db_path(vault)
         from paperforge.annotation.db import get_annotations_connection
 
-        return get_annotations_connection(db_path, read_only=True)
-    except (FileNotFoundError, sqlite3.OperationalError):
+        conn = get_annotations_connection(db_path, read_only=True)
+        # Probe: verify the connection is usable and has the annotations table
+        conn.execute("SELECT 1 FROM annotations LIMIT 1").fetchone()
+        return conn
+    except (FileNotFoundError, sqlite3.OperationalError, sqlite3.DatabaseError):
         return None
 
 
