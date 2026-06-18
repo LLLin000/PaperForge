@@ -1,6 +1,6 @@
 # OCR-v2 Project Management Log
 
-> **Branch:** `ocr-v2` | **Base:** `master` | **Last Updated:** 2026-06-18 (unified close-out pass Tasks 1-5 complete)
+> **Branch:** `ocr-v2` | **Base:** `master` | **Last Updated:** 2026-06-18 (P0-P2 layout close-out complete)
 > **Rule:** Every step is documented with: What was done, Why it was done, What comes next.
 
 ---
@@ -913,3 +913,64 @@ Still open:
 - CAQ page-1 correspondence routes to frontmatter_support
 
 **Commit:** See Task 5 commit below.
+
+### 9.7 Task 6 — P0-P2 Layout Close-Out: Preproof Frontmatter + Margin-Band Noise + Figure Inner Labels (2026-06-18)
+
+**Problem:** Three P0-P2 layout gaps remained after boundary close-out:
+1. **P0:** Preproof page-1 drop removed all frontmatter blocks — `infer_zones()` and `assign_block_role()` used hardcoded `page_num == 1`, so title/authors on the first surviving page (page 2 of source, page 1 of blocks) were treated as body blocks or dropped
+2. **P1:** Margin-band publisher blocks ("Downloaded from ...", "For personal use only") with width ≥ 10% slipped through `_looks_like_margin_band_noise()` — no confirmatory watermark text fallback existed
+3. **P2:** Figure inner labels adjacent to figures were not identified when they contained mixed alphanumeric content (e.g., "Table 1." as inner text)
+
+**Root cause:**
+- `_first_surviving_page()` didn't exist; all zone/role dispatch hardcoded `page_num == 1`
+- `_looks_like_margin_band_noise` width threshold was 10% with no text-based alternative; some publisher blocks are intentionally wider
+- `_looks_like_figure_inner_label()` required purely alphabetical tokens; "Table 1" / "Figure 2" caption-adjacent labels with alnum mixed tokens were missed
+
+**Fix:**
+- Added `_first_surviving_page()` helper and `_is_first_page_body_start()` — `infer_zones()` uses first-surviving-page as frontmatter origin; body-block eligibility checks it; boundary bands scope to it
+- Updated `_detect_frontmatter_zone()` to remove page-num guard (caller decides which pages to check)
+- Added `_has_confirmatory_watermark_text()` — checks "downloaded from" / "for personal use only" — used as alternative gate in `_looks_like_margin_band_noise()`
+- Extended `_looks_like_figure_inner_label()` to accept compact mixed-alnum labels (max 2 tokens)
+- Added `doc_title` to frontmatter zone gate and pre-proof title fallback paths
+- Extended structural_gate zone-based fallback for `paper_title` and `authors` in `frontmatter_main_zone`
+
+**Result:**
+- DWQQK2YB preproof page-1 keeps title and authors (now part of frontmatter_main_zone → frontmatter heading/support)
+- Margin-band publisher blocks assigned `noise` role via confirmatory watermark text
+- Short figure-adjacent labels assigned `figure_inner_text` instead of generic fallback roles
+
+**Tests added (6):**
+- `test_infer_zones_treats_first_surviving_page_as_frontmatter_origin`
+- `test_infer_zones_allows_body_blocks_on_first_surviving_page`
+- `test_assign_block_role_marks_margin_band_as_noise`
+- `test_assign_block_role_marks_short_figure_adjacent_label_as_inner_text`
+- `test_dwqqk2yb_first_surviving_page_keeps_title_and_authors`
+- `test_k7r8pekw_margin_band_publishers_stay_noise` (skipped: no OCR payload fixture)
+
+**Test status:** 130 passed, 44 skipped (env-dependent audit), 2 pre-existing fixture failures. No regressions.
+
+**Remaining known issues update:**
+- Resolved:
+  - [x] ~~**Preproof frontmatter page-1 title/authors retention** — `_first_surviving_page()` dispatches frontmatter zones on the first surviving page
+  - [x] ~~**Margin-band publisher watermark noise** — `_has_confirmatory_watermark_text()` catches "Downloaded from" / "For personal use only" patterns at any width
+  - [x] ~~**Figure inner label misclassification** — `_looks_like_figure_inner_label()` now accepts compact mixed-alnum labels (max 2 tokens)
+- Still open:
+  - `media_asset -> body_paragraph` (42 blocks) — requires deeper zone/attribution fix
+  - 7 remaining `figure_inner_text` misclassifications are non-letter content inside figures (concentration labels etc.)
+  - Frontmatter author footnotes still render as body text
+  - Body text fragmentation across pages remains accepted-but-unfixed
+  - Figure JPGs still need full OCR re-run to reflect composite region fix
+  - DW biography page mismatch (pages 32-34 vs expectations 33-34)
+  - Backmatter heading normalization: `subsection_heading` not promoted to `backmatter_heading`
+  - Figure ownership: DWQQK2YB Figures 2/3/4 ownership gaps
+
+### 9.8 Task 1 — Active OCR Truth-File Cleanup (2026-06-18)
+
+**Problem:** Active current-priority files still inherited stale pre-9.7 issue narratives, causing the next phase to start from wrong blockers.
+
+**Root cause:** `project/current/` and `PROJECT-MANAGEMENT.md` were not fully reconciled after the P0-P2 close-out session.
+
+**Fix:** Rewrote the active close-out priority and remaining-issues files so only real unresolved DWQQK2YB support-routing and ownership issues remain active; completeness-check stays as the next planned slice.
+
+**Result:** Later implementation steps no longer inherit already-fixed P0-P2 failures as active blockers.
+
