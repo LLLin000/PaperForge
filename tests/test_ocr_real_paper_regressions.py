@@ -1029,6 +1029,45 @@ def test_dwqqk2yb_preproof_page_one_is_absent_from_structured_blocks(tmp_path: P
     assert not any(int(b.get("page", 0) or 0) == 1 for b in blocks)
 
 
+def test_k7r8pekw_margin_band_publishers_stay_noise(tmp_path: Path) -> None:
+    result = replay_production_pipeline("K7R8PEKW", tmp_path)
+    watermark_blocks = [
+        b for b in result["structured_blocks"]
+        if "Downloaded from" in str(b.get("text") or "")
+    ]
+
+    assert watermark_blocks, "Expected at least one publisher watermark block"
+    assert all(b.get("role") == "noise" for b in watermark_blocks)
+
+
+def test_dwqqk2yb_first_surviving_page_keeps_title_and_authors(tmp_path: Path) -> None:
+    result = replay_production_pipeline("DWQQK2YB", tmp_path)
+    page2_blocks = [b for b in result["structured_blocks"] if int(b.get("page", 0) or 0) == 2]
+
+    title_block = next(
+        b for b in page2_blocks if "Magnetoresponsive Stem Cell Spheroid" in str(b.get("text") or "")
+    )
+    authors_block = next(
+        b for b in page2_blocks if "Ami Yoo" in str(b.get("text") or "") or "Ami Yoo" in str(b.get("block_content") or "")
+    )
+
+    assert title_block.get("role") == "paper_title"
+    assert authors_block.get("role") in {"authors", "frontmatter_support"}
+    assert title_block.get("zone") == "frontmatter_main_zone"
+    assert authors_block.get("zone") == "frontmatter_main_zone"
+
+
+def test_dwqqk2yb_first_surviving_page_support_blocks_stay_frontmatter_support(tmp_path: Path) -> None:
+    result = replay_production_pipeline("DWQQK2YB", tmp_path)
+    page2_blocks = [b for b in result["structured_blocks"] if int(b.get("page", 0) or 0) == 2]
+
+    equal_block = next(b for b in page2_blocks if "contributed equally" in str(b.get("text") or "").lower())
+    corr_block = next(b for b in page2_blocks if "corresponding author" in str(b.get("text") or "").lower())
+
+    assert equal_block.get("role") == "frontmatter_support"
+    assert corr_block.get("role") == "frontmatter_support"
+
+
 def test_caqnw9q2_page1_correspondence_is_not_frontmatter_noise(tmp_path: Path) -> None:
     result = replay_production_pipeline("CAQNW9Q2", tmp_path)
     blocks = result["structured_blocks"]

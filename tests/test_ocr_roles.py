@@ -1509,3 +1509,61 @@ def test_page1_explicit_correspondence_line_is_frontmatter_support() -> None:
     }
     result = assign_block_role(block, [block], page_width=1200, page_height=1600)
     assert result.role == "frontmatter_support"
+
+
+def test_first_surviving_page_equal_contribution_text_routes_to_frontmatter_support() -> None:
+    from paperforge.worker.ocr_roles import assign_block_role
+
+    title = {
+        "page": 2,
+        "block_label": "text",
+        "raw_label": "text",
+        "block_content": "Real Article Title",
+        "text": "Real Article Title",
+        "block_bbox": [80, 140, 900, 190],
+        "page_width": 1200,
+        "page_height": 1600,
+    }
+    support = {
+        "page": 2,
+        "block_label": "text",
+        "raw_label": "text",
+        "block_content": "These authors contributed equally to this work.",
+        "text": "These authors contributed equally to this work.",
+        "block_bbox": [90, 760, 560, 805],
+        "page_width": 1200,
+        "page_height": 1600,
+    }
+
+    result = assign_block_role(support, page_blocks=[title, support], page_width=1200, page_height=1600)
+
+    assert result.role == "frontmatter_support"
+
+
+def test_first_surviving_page_correspondence_text_routes_to_frontmatter_support() -> None:
+    from paperforge.worker.ocr_roles import assign_block_role
+
+    title = {
+        "page": 2,
+        "block_label": "text",
+        "raw_label": "text",
+        "block_content": "Real Article Title",
+        "text": "Real Article Title",
+        "block_bbox": [80, 140, 900, 190],
+        "page_width": 1200,
+        "page_height": 1600,
+    }
+    support = {
+        "page": 2,
+        "block_label": "text",
+        "raw_label": "text",
+        "block_content": "Corresponding author: person@example.edu",
+        "text": "Corresponding author: person@example.edu",
+        "block_bbox": [90, 820, 980, 900],
+        "page_width": 1200,
+        "page_height": 1600,
+    }
+
+    result = assign_block_role(support, page_blocks=[title, support], page_width=1200, page_height=1600)
+
+    assert result.role == "frontmatter_support"
