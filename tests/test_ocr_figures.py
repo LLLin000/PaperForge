@@ -2234,12 +2234,12 @@ def test_partition_assets_by_caption_bands_keeps_assets_local_to_caption_band() 
 
     captions = [
         {"block_id": 101, "bbox": [700, 900, 1050, 960]},
-        {"block_id": 102, "bbox": [700, 1250, 1050, 1310]},
+        {"block_id": 102, "bbox": [700, 1200, 1050, 1260]},
     ]
     assets = [
-        {"block_id": 1, "bbox": [650, 200, 1050, 520]},
-        {"block_id": 2, "bbox": [650, 560, 1050, 820]},
-        {"block_id": 3, "bbox": [650, 980, 1050, 1180]},
+        {"block_id": 1, "bbox": [650, 200, 1050, 400]},
+        {"block_id": 2, "bbox": [650, 600, 1050, 800]},
+        {"block_id": 3, "bbox": [650, 1100, 1050, 1200]},
     ]
 
     parts = _partition_assets_by_caption_bands(captions, assets, page_height=1600)
