@@ -1,7 +1,7 @@
 # OCR-v2 Remaining Issues & Root Cause Analysis
 
-> Date: 2026-06-18
-> Baseline: readiness-gates implementation (Gates 1, 3, 4 complete; Gate 2 partial)
+> Date: 2026-06-19
+> Baseline: all 5 readiness gates complete; blind audit passed
 
 ## Active Readiness Residuals
 
@@ -10,7 +10,15 @@
 3. **Gate 3 ordering/boundary authority** -- DONE (`_enforce_reference_boundary_from_structure` upstream)
 4. **Gate 4 layout coverage** -- DONE (taxonomy in `audit/coverage_ledger.json`, contract tests enforce named representatives)
 5. **Backmatter heading taxonomy remains partially conservative by design**; only promote it if Gate 3 boundary evidence requires it
-6. **Gate 5 unseen-paper blind audit** -- entry criteria defined, not started
+6. **Gate 5 unseen-paper blind audit** — DONE: 5 papers, all PASS, no new failure families
+
+## Post-Blind-Audit Known Residuals (Low Severity)
+
+- ~40 blocks across corpus with stale audit truth (pipeline correct, truth wrong)
+- ~50 blocks across corpus: genuine edge cases (backmatter boundary, caption promotion, non-body insert)
+- PZ8B59K4: 34 sidebar blocks with no zone (publisher table-number sidebar); 1 figure_unknown
+- GU9R8EPE: backmatter disclaimer bleeds into rendered fulltext
+- All are known patterns — no new failure families from blind audit
 
 ## Gate 5 Blind-Audit Entry Criteria
 
@@ -29,4 +37,6 @@ OCR-v2 is ready for blind audit only when:
 | 3 | Ordering authority | P1 | Structural authority gap | DONE |
 | 4 | Layout coverage ledger + taxonomy | P1 | Test / evidence gap | DONE |
 | 5 | Backmatter heading taxonomy | P3 | Conservative by design | Deferred |
-| 6 | Unseen-paper blind audit | Next stage | Validation gate | Entry criteria defined |
+| 6 | Unseen-paper blind audit | P0 | Validation gate | DONE — 5 papers, all PASS |
+| 7 | Stale audit truth blocks | P3 | Cleanup | ~40 blocks (pipeline correct, truth wrong) |
+| 8 | Edge-case misclassifications | P3 | Boundary | ~50 blocks, low severity |

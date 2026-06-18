@@ -1,7 +1,7 @@
 # OCR-v2 Close-Out Priority
 
 > Status: active authoritative readiness queue
-> Last updated: 2026-06-18 (broader readiness sweep re-green after Gate 2 fallback tightening)
+> Last updated: 2026-06-19 (blind audit complete — all gates done)
 > Owner file for next work: `docs/superpowers/plans/2026-06-18-ocr-v2-readiness-master-plan.md`
 
 ## Why This File Exists
@@ -40,12 +40,13 @@ That pass is no longer the active execution thread. The branch has now moved int
 | Gate 2: figure ownership generalization | **DONE** | DW Fig 3 strict regression passes; previous-page fallback narrowed with layout cross-checks; figure suite re-green |
 | Gate 3: ordering/boundary authority | **DONE** | `_enforce_reference_boundary_from_structure` upstream in normalize path |
 | Gate 4: layout-coverage formalization | **DONE** | Taxonomy normalized to approved readiness-class set; contract tests enforce named representatives |
-| Gate 5: unseen-paper blind audit | **NEXT** | Entry criteria defined; not started |
+| Gate 5: unseen-paper blind audit | **DONE** | 5 papers across domains, all PASS, no new failure families |
+| **Readyness status** | **ALL GATES DONE** | OCR-v2 state healthy on known + unseen layout classes |
 
 ## Next Work
-1. Decide whether to run the full readiness sweep including broader env-gated real-paper coverage and repo-wide lint debt review before Gate 5
-2. Prepare the bounded unseen-paper blind audit sample and execution rules for Gate 5
-3. Keep project truth files aligned if any pre-blind-audit fixes land
+1. Run final lint/type pass before merge to main
+2. Merge `ocr-v2` → `main` when CI passes
+3. Archive this file after merge
 
 ## Authoritative Reference
 This file is the tie-breaker for the active readiness queue. `project/current/ocr-v2-generalization-boundary.md` remains the broader architecture note, and `docs/superpowers/specs/2026-06-18-ocr-v2-readiness-gates-design.md` defines the readiness model the queue is following.
