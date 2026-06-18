@@ -997,3 +997,111 @@ python scripts/dev/ocr_rebuild_paper.py --trace DWQQK2YB
 
 **Next topic:** implement the fuzzy OCR completeness-check layer described in `docs/superpowers/specs/2026-06-18-ocr-completeness-check-design.md` after the DW repairs settle.
 
+### 9.10 Task 3 — OCR-v2 Readiness-Gates Realignment (2026-06-18)
+
+**Problem:** The branch no longer lacked a local close-out fix; it lacked one explicit readiness model. Active project truth files still mixed completed close-out language, deferred figure work, and broader generalization concerns without one formal execution thread.
+
+**Root cause:** `project/current/` and `PROJECT-MANAGEMENT.md` were updated incrementally across close-out sessions, but they were not yet rewritten around the approved readiness-gates framing.
+
+**Fix:** wrote `docs/superpowers/specs/2026-06-18-ocr-v2-readiness-gates-design.md` and realigned the active project truth files so the branch now has one queue: Gate 1 completeness, Gate 2 figure ownership, Gate 3 ordering/boundary authority, Gate 4 layout coverage, then Gate 5 blind audit as the next-stage validation gate. Also removed the stale assumption that Gate 4 should be driven by a fixture-side `coverage_manifest.json`; the real-paper readiness ledger now needs to be defined against the live `audit/` corpus.
+
+**Result:** "state healthy" now has an explicit definition. The active queue is no longer described mainly as close-out or zone-boundary cleanup; it is described as a readiness-gates program with one authoritative next plan.
+
+**Test status:**
+```
+Planning/docs only in this step.
+No runtime verification claimed.
+```
+
+**Next topic:** write and execute `docs/superpowers/plans/2026-06-18-ocr-v2-readiness-master-plan.md`.
+
+---
+
+## 10. 2026-06-18: OCR-v2 Readiness-Gates Implementation
+
+> **Session:** Execute readiness-gates master plan (Gates 1-4 implementation, Gate 5 entry criteria).
+> **Plan:** `docs/superpowers/plans/2026-06-18-ocr-v2-readiness-master-plan.md`
+> **Status:** Gates 1, 3, 4 complete; Gate 2 partial (DW Fig 3 xfail); Gate 5 entry criteria recorded.
+
+### 10.1 Task 1 — Lock Baseline + Migrate to Audit-Side Ledger
+
+**Problem:** `coverage_manifest.json` in test fixtures was stale. The new readiness model requires an audit-side ledger.
+
+**Fix:**
+- Created `audit/coverage_ledger.json` with readiness-class layout tags and paper entries
+- Migrated `test_ocr_real_paper_audit_contracts.py` from fixture manifest to coverage ledger
+- Updated `test_ocr_real_paper_regressions.py` to use the new ledger path
+- Added `test_dwqqk2yb_figure3_is_fully_owned_not_merely_captured` (strict Gate 2 test)
+- Cleaned stale `coverage_manifest.json` references in `ocr_render_annotated_pages.py`
+
+**Commit:** `9329843` — "test: lock OCR readiness baseline and restore coverage ledger"
+
+### 10.2 Task 2 — Gate 1: Completeness Signals
+
+**Problem:** OCR pipeline had no coverage signals to detect silent text-loss.
+
+**Fix:**
+- Added `_summarize_page_text_coverage()` and `_classify_region_text_completeness()` to `ocr_blocks.py`
+- Added `audit_rendered_text_coverage()` to `ocr_health.py`
+- Added 3 unit tests (red-green) for page, region, and rendered-gap coverage
+
+**Test status:** 131/131 pass in `test_ocr_document.py`
+**Commit:** `77b727b` — "feat: add OCR completeness coverage signals"
+
+### 10.3 Task 3 — Gate 2: Figure Ownership Generalization
+
+**Problem:** Group-first matching infrastructure already existed but DWQQK2YB Fig 3 on mixed-layout page remained ambiguous.
+
+**Result:**
+- Existing group-first unit tests pass (infrastructure already in place)
+- Added `test_dwqqk2yb_figure3_is_fully_owned_not_merely_captured` as xfail with strict=True
+- Grouped-vs-single counters already present in health output
+
+**Remaining:** DW Fig 3 ambiguous match needs scoring refinement in `build_figure_inventory`
+**Commit:** `84ab3e3` — "test: add Gate 2 DW Figure 3 strict ownership test (xfail)"
+
+### 10.4 Task 4 — Gate 3: Ordering/Boundary Authority
+
+**Problem:** `normalize_document_structure` didn't use seed_role to enforce reference zone boundary on same-page mixed layouts.
+
+**Fix:**
+- Added `_same_page_reference_boundary_y()` helper and `_enforce_reference_boundary_from_structure()` driver
+- Integrated call after `_sanitize_reference_zone_boundary()` in normalize flow
+- Added unit test for same-page body/reference boundary resolution
+
+**Test status:** 131/131 pass in `test_ocr_document.py`; production-path regressions stable (5P/12S/1X)
+**Commit:** `0669c9d` — "refactor: move OCR ordering authority upstream"
+
+### 10.5 Task 5 — Gate 4: Layout-Coverage Formalization
+
+**Problem:** Layout tags used generic labels (`multi_column`, `single_column`) instead of readiness-class taxonomy.
+
+**Fix:**
+- Normalized `audit/coverage_ledger.json` to only use approved readiness-class tags (`multi_panel`, `side_caption`, `same_page_ref_body_split`, `post_reference_biography`, `preproof_frontmatter`, `review_callout`, `special_structure`)
+- Contract tests enforce named representatives per class
+- Project truth files updated to reflect tracked capability surface
+
+**Test status:** 2/2 pass in `test_ocr_real_paper_audit_contracts.py`
+**Commit:** `785c49a` — "test: formalize OCR layout coverage readiness classes"
+
+### 10.6 Task 6 — Gate 5: Blind-Audit Entry Criteria
+
+Updated `project/current/ocr-v2-remaining-issues-2026-06-18.md` with formal Gate 5 entry criteria checklist.
+**Commit:** `a2e6b48` — "docs: record OCR blind-audit entry gate"
+
+### 10.7 Build & Lint Status
+
+| Suite | Result |
+|-------|--------|
+| `tests/test_ocr_document.py` | **131/131 PASS** |
+| `tests/test_ocr_figures.py` | **82/88 PASS** (6 pre-existing failures) |
+| `tests/test_ocr_real_paper_regressions.py` | **5 PASS / 46 SKIP / 1 XFAIL** |
+| `tests/test_ocr_real_paper_audit_contracts.py` | **2/2 PASS** |
+| `tests/cli/` + `tests/unit/` | **283/283 PASS** |
+| `ruff check paperforge/ tests/` | 259 pre-existing errors (none introduced) |
+
+### 10.8 Remaining Issues
+
+- **Gate 2 DW Fig 3:** `test_dwqqk2yb_figure3_is_fully_owned_not_merely_captured` is xfail — needs group-first scoring refinement for mixed-layout pages
+- DWQQK2YB Figures 2/3/4 ownership gaps (pre-existing, unchanged)
+- 6 pre-existing figure test failures (pre-existing, unchanged)
