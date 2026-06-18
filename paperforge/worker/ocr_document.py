@@ -502,6 +502,11 @@ def _strip_inline_html(text: str) -> str:
     return re.sub(r"<[^>]+>", "", text or "")
 
 
+def _first_surviving_page(blocks: list[dict]) -> int | None:
+    pages = sorted({int(block.get("page", 0) or 0) for block in blocks if int(block.get("page", 0) or 0) > 0})
+    return pages[0] if pages else None
+
+
 def _is_page1_body_start(block: dict, *, seen_title_or_author: bool) -> bool:
     """Detect when page 1 frontmatter ends and body content begins."""
     if not seen_title_or_author:
@@ -512,6 +517,26 @@ def _is_page1_body_start(block: dict, *, seen_title_or_author: bool) -> bool:
     text = str(block.get("text") or "").strip()
     words = text.split()
     if role in {"section_heading", "subsection_heading"}:
+        return True
+    if role == "body_paragraph" and len(words) >= 20:
+        lower = text.lower()
+        if not lower.startswith(("correspondence", "received", "accepted", "published", "doi")):
+            return True
+    return False
+
+
+def _is_first_page_body_start(block: dict, *, seen_title_or_author: bool) -> bool:
+    if not seen_title_or_author:
+        return False
+    role = block.get("role") or block.get("seed_role")
+    if role == "unassigned":
+        role = block.get("seed_role")
+    text = str(block.get("text") or "").strip()
+    words = text.split()
+    marker_type = ((block.get("marker_signature") or {}).get("type") or "none")
+    if marker_type == "preproof_marker":
+        return False
+    if role in {"section_heading", "subsection_heading", "structured_insert", "structured_insert_candidate"}:
         return True
     if role == "body_paragraph" and len(words) >= 20:
         lower = text.lower()
@@ -895,9 +920,17 @@ def infer_zones(
     display_block_ids = [_artifact_block_id(block, duplicate_block_ids) for block in display_blocks]
     display_composite_ids = [_zone_block_key(block) for block in display_blocks]
 
+    first_surviving_page = _first_surviving_page(blocks)
+    # Frontmatter anchor page: only use the first surviving page for
+    # frontmatter detection when it's page 1 or 2 (preproof-drop scenario).
+    # For blocksets starting on page 3+, the old page-1 logic applies
+    # because those aren't preproof papers.
+    anchor_page = first_surviving_page if first_surviving_page is not None and first_surviving_page <= 2 else 1
+
     page1_candidates = [
         b for b in blocks
-        if int(b.get("page", 0) or 0) == 1
+        if anchor_page is not None
+        and int(b.get("page", 0) or 0) == anchor_page
         and ((b.get("marker_signature") or {}).get("type") or "none") != "preproof_marker"
         and not _is_reference_item_candidate(b)
         and b.get("block_id") is not None
@@ -915,7 +948,7 @@ def infer_zones(
             role = block.get("seed_role")
         if role in {"paper_title", "authors", "frontmatter_support", "affiliation"}:
             seen_title_or_author = True
-        if _is_page1_body_start(block, seen_title_or_author=seen_title_or_author):
+        if _is_first_page_body_start(block, seen_title_or_author=seen_title_or_author):
             body_started = True
         if not body_started:
             frontmatter_main_blocks.append(block)
@@ -931,15 +964,17 @@ def infer_zones(
         and block.get("block_id") is not None
         and not (
             body_started
-            and int(block.get("page", 0) or 0) == 1
+            and first_surviving_page is not None
+            and int(block.get("page", 0) or 0) == first_surviving_page
         )
     ]
-    # Blocks on page 1 excluded from frontmatter_side_zone because body has
-    # started are real body content -- collect their ids so the zone fallback
-    # can assign body_zone directly without changing seed_role.
+    # Blocks on the first surviving page excluded from frontmatter_side_zone
+    # because body has started are real body content -- collect their ids so
+    # the zone fallback can assign body_zone directly without changing seed_role.
     _body_started_excluded_ids: set[str] = set()
     for block in blocks:
-        if (int(block.get("page", 0) or 0) == 1
+        if (first_surviving_page is not None
+            and int(block.get("page", 0) or 0) == first_surviving_page
             and body_started
             and block.get("block_id") is not None
             and _artifact_block_id(block, duplicate_block_ids) not in frontmatter_main_id_set
@@ -998,7 +1033,15 @@ def infer_zones(
         block
         for block in blocks
         if body_anchor_ok
-        and int(block.get("page", 0) or 0) > 1
+        and first_surviving_page is not None
+        and (
+            int(block.get("page", 0) or 0) > first_surviving_page
+            or (
+                int(block.get("page", 0) or 0) == first_surviving_page
+                and _artifact_block_id(block, duplicate_block_ids) not in frontmatter_main_id_set
+                and _artifact_block_id(block, duplicate_block_ids) not in frontmatter_side_id_set
+            )
+        )
         and (
             (body_end_page is None or int(block.get("page", 0) or 0) <= body_end_page)
             or _is_above_same_page_reference_heading(block, refs_start_page, ref_heading_top if ref_heading_block else None)
@@ -1055,12 +1098,12 @@ def infer_zones(
     )
 
     return {
-        "frontmatter_main_zone": _make_zone(
-            "ACCEPT" if frontmatter_main_ids else "HOLD",
-            frontmatter_main_ids,
-            composite_block_ids=frontmatter_main_composite_ids,
-            boundary_band=_page_band(1, 1) if frontmatter_main_ids else None,
-        ),
+            "frontmatter_main_zone": _make_zone(
+                "ACCEPT" if frontmatter_main_ids else "HOLD",
+                frontmatter_main_ids,
+                composite_block_ids=frontmatter_main_composite_ids,
+                boundary_band=_page_band(first_surviving_page, first_surviving_page) if frontmatter_main_ids else None,
+            ),
         "frontmatter_side_zone": _make_zone(
             "ACCEPT" if frontmatter_side_ids else "HOLD",
             frontmatter_side_ids,
@@ -1877,14 +1920,11 @@ def _detect_frontmatter_zone(
     page_width: float,
     style_profiles: dict | None = None,
 ) -> str | None:
-    """Detect frontmatter zone for a block on page 1.
+    """Detect frontmatter zone for a block on the first surviving page.
 
     Returns one of: ``title_zone``, ``author_zone``, ``affiliation_zone``,
     ``journal_furniture_zone``, ``abstract_zone``, or ``None``.
     """
-    page_num = block.get("page", 1) or 1
-    if page_num > 1:
-        return None
 
     bbox = block.get("block_bbox", [0, 0, 0, 0])
     if len(bbox) < 4:
@@ -1945,11 +1985,14 @@ def _detect_frontmatter_zone(
     if page_height > 0 and y1 < page_height * 0.2:
         block_width = x2 - x1
         is_wide_enough = page_width <= 0 or block_width > page_width * 0.4
-        if is_wide_enough and lower_txt not in _BACKMATTER_TITLE_DENY_LIST and not _looks_like_author_list(text):
-            if raw_label in ("paragraph_title", "doc_title"):
+        if is_wide_enough and lower_txt not in _BACKMATTER_TITLE_DENY_LIST:
+            if raw_label == "doc_title":
                 return "title_zone"
-            if raw_label == "text" and len(text) < 80:
-                return "title_zone"
+            if not _looks_like_author_list(text):
+                if raw_label in ("paragraph_title"):
+                    return "title_zone"
+                if raw_label == "text" and len(text) < 80:
+                    return "title_zone"
 
     if (
         page_height > 0
@@ -2485,6 +2528,42 @@ def _sanitize_reference_zone_boundary(blocks: list[dict]) -> None:
             new_role=role,
             reason=f"non-reference role '{role}' stripped from reference_zone",
         )
+
+
+def _same_page_reference_boundary_y(page_blocks: list[dict]) -> float | None:
+    headings = [b for b in page_blocks if b.get("seed_role") == "reference_heading"]
+    if not headings:
+        return None
+    return min((b.get("bbox") or [0, 0, 0, 0])[1] for b in headings)
+
+
+def _enforce_reference_boundary_from_structure(blocks: list[dict]) -> None:
+    by_page: dict[int, list[dict]] = {}
+    for b in blocks:
+        by_page.setdefault(int(b.get("page", 0)), []).append(b)
+    for page, page_blocks in by_page.items():
+        boundary_y = _same_page_reference_boundary_y(page_blocks)
+        if boundary_y is None:
+            continue
+        for b in page_blocks:
+            bbox = b.get("bbox") or [0, 0, 0, 0]
+            if len(bbox) < 4:
+                continue
+            block_bottom = float(bbox[3])
+            seed = b.get("seed_role")
+            if block_bottom >= boundary_y and seed in ("reference_item", "reference_heading"):
+                b["zone"] = "reference_zone"
+                if not b.get("role") or str(b.get("role")) in ("body_paragraph", "unassigned"):
+                    b["role"] = seed
+            elif block_bottom < boundary_y and b.get("zone") == "reference_zone":
+                b["zone"] = ""
+                record_decision(
+                    b,
+                    stage="reference_boundary_enforcement",
+                    old_role=b.get("role", ""),
+                    new_role=b.get("role", ""),
+                    reason="block above reference heading boundary stripped from reference_zone",
+                )
 
 
 def _check_reference_completeness(blocks: list[dict]) -> dict:
@@ -4559,6 +4638,7 @@ def normalize_document_structure(
     )
     _apply_zone_labels(blocks, region_bus)
     _sanitize_reference_zone_boundary(blocks)
+    _enforce_reference_boundary_from_structure(blocks)
     partition_zone_families(
         blocks,
         {

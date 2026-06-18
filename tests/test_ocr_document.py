@@ -4789,6 +4789,21 @@ def test_reference_zone_boundary_protection_via_normalize() -> None:
     assert by_id["r1"]["zone"] == "reference_zone"
 
 
+def test_same_page_reference_boundary_is_resolved_upstream_not_in_renderer() -> None:
+    from paperforge.worker.ocr_document import normalize_document_structure
+
+    blocks = [
+        {"block_id": "body_1", "page": 7, "seed_role": "body_paragraph", "text": "Conclusion text above refs.", "bbox": [80, 420, 980, 510]},
+        {"block_id": "refs_h", "page": 7, "seed_role": "reference_heading", "text": "References", "bbox": [80, 900, 320, 960]},
+        {"block_id": "ref_1", "page": 7, "seed_role": "reference_item", "text": "[1] First ref", "bbox": [80, 980, 980, 1060]},
+    ]
+
+    _doc, normalized = normalize_document_structure(blocks)
+    by_id = {b["block_id"]: b for b in normalized}
+    assert by_id["body_1"]["role"] == "body_paragraph"
+    assert by_id["ref_1"]["role"] == "reference_item"
+
+
 def test_page_text_coverage_flags_low_ratio_when_pdf_text_dominates() -> None:
     from paperforge.worker.ocr_blocks import _summarize_page_text_coverage
 
