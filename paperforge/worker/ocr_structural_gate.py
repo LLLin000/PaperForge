@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 
 VERIFY_REQUIRED = {
@@ -376,7 +377,7 @@ def build_document_abstract_span(blocks: list[dict], context: dict) -> dict:
         (
             idx
             for idx, block in enumerate(blocks)
-            if block.get("seed_role") == "abstract_heading" or str(block.get("text", "")).strip().lower() == "abstract"
+            if block.get("seed_role") == "abstract_heading" or re.sub(r"\s+", "", str(block.get("text", "")).strip().lower()) == "abstract"
         ),
         None,
     )

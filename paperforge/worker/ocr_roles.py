@@ -31,40 +31,9 @@ _PREPROOF_MARKER = re.compile(
     re.IGNORECASE,
 )
 
-_BACKMATTER_TITLE_DENY_LIST = {
-    "generative ai statement",
-    "acknowledgments",
-    "acknowledgements",
-    "funding",
-    "conflict of interest",
-    "competing interests",
-    "data availability",
-    "supplementary materials",
-    "supplementary material",
-    "author contributions",
-    "declaration of competing interest",
-    "credit authorship contribution statement",
-    "ethical statement",
-    "ethics statement",
-    "institutional review board",
-}
+_BACKMATTER_TITLE_DENY_LIST: set[str] = set()
 
 _BACKMATTER_HEADINGS = {
-    "author contributions",
-    "funding",
-    "acknowledgments",
-    "acknowledgements",
-    "conflict of interest",
-    "competing interests",
-    "data availability",
-    "supplementary materials",
-    "supplementary material",
-    "generative ai statement",
-    "declaration of competing interest",
-    "ethical statement",
-    "ethics statement",
-    "institutional review board",
-    "credit authorship contribution statement",
     "publisher's note",
 }
 
@@ -588,10 +557,7 @@ def resolve_final_role(
         phrase in text_lower
         for phrase in (
             "conflict of interest",
-            "publisher's note",
-            "publisher’s note",
-            "ethics statement",
-            "author contributions",
+            "publisher\u2019s note",
             "the remaining authors declare",
             "copyright",
             "published online",

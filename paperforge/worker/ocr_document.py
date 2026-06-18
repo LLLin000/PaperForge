@@ -154,8 +154,6 @@ def _looks_like_tail_body(block: dict) -> bool:
         return False
     if _BACKMATTER_BODY_SIGNALS.search(text):
         return True
-    if len(words) <= 25:
-        return True
     return False
 
 
@@ -495,7 +493,10 @@ def _make_zone(
 
 
 def _canonical_section_text(block: dict) -> str:
-    return _block_text(block).strip().lower()
+    text = _block_text(block).strip().lower()
+    if re.match(r"^(?:\w\s)+\w$", text):
+        text = re.sub(r"\s+", "", text)
+    return text
 
 
 def _strip_inline_html(text: str) -> str:
@@ -1584,14 +1585,7 @@ def _detect_references_start(
     return None
 
 
-_BACKMATTER_TITLE_DENY_LIST = frozenset({
-    "generative ai statement", "acknowledgments", "acknowledgements",
-    "funding", "conflict of interest", "competing interests",
-    "data availability", "supplementary materials", "supplementary material",
-    "author contributions", "declaration of competing interest",
-    "credit authorship contribution statement", "ethical statement",
-    "ethics statement", "institutional review board",
-})
+_BACKMATTER_TITLE_DENY_LIST: frozenset[str] = frozenset()
 
 
 def _page_has_strong_body_continuation(page_blocks: list[dict]) -> bool:
@@ -2465,6 +2459,10 @@ def _apply_content_zone_fallback(blocks: list[dict], region_bus: dict[str, dict]
         page = int(block.get("page", 0) or 0)
 
         if role in {"noise", "frontmatter_noise", "media_asset", "figure_asset", "figure_inner_text"}:
+            if page <= 2 and role in {"noise", "frontmatter_noise"}:
+                block["zone"] = "frontmatter_main_zone"
+            elif page <= 2 and role in {"media_asset", "figure_asset", "figure_inner_text"}:
+                block["zone"] = "display_zone"
             continue
 
         if role in {"paper_title", "authors", "affiliation", "frontmatter_support"} and page <= 2:
@@ -2775,12 +2773,7 @@ def _looks_like_backmatter_body_text(text: str) -> bool:
         "conflict of interest",
         "declaration",
         "publisher",
-        "author contributions",
-        "funding",
-        "acknowledg",
-        "data availability",
-        "supplement",
-        "ethics",
+        "copyright",
     )
     return any(marker in lower for marker in markers)
 

@@ -183,31 +183,10 @@ def test_stabilize_frontmatter_noise_not_section_heading() -> None:
         assert assignment.role not in ("section_heading", "subsection_heading"), f"{noise} should not be a heading"
 
 
-def test_backmatter_heading_not_paper_title() -> None:
+def test_pre_ref_headings_classified_as_section_headings() -> None:
     from paperforge.worker.ocr_roles import assign_block_role
 
-    for text in ["Generative AI statement", "Acknowledgments", "Funding", "Conflict of interest"]:
-        block = {
-            "block_label": "paragraph_title",
-            "block_content": text,
-            "page": 1,
-            "block_bbox": [100, 50, 500, 80],
-        }
-        assignment = assign_block_role(block, page_blocks=[], page_height=1000)
-        assert assignment.role != "paper_title", f"'{text}' should not be paper_title"
-
-
-def test_backmatter_heading_gets_backmatter_role() -> None:
-    from paperforge.worker.ocr_roles import assign_block_role
-
-    backmatter_phrases = [
-        "Author contributions",
-        "Funding",
-        "Acknowledgments",
-        "Conflict of interest",
-        "Generative AI statement",
-    ]
-    for text in backmatter_phrases:
+    for text in ["Author contributions", "Funding", "Acknowledgments", "Conflict of interest", "Generative AI statement"]:
         block = {
             "block_label": "paragraph_title",
             "block_content": text,
@@ -215,7 +194,9 @@ def test_backmatter_heading_gets_backmatter_role() -> None:
             "block_bbox": [100, 600, 500, 630],
         }
         assignment = assign_block_role(block, page_blocks=[], page_height=1000)
-        assert assignment.role.startswith("backmatter_"), f"'{text}' should get backmatter_ role, got {assignment.role}"
+        assert assignment.role in {"section_heading", "subsection_heading", "sub_subsection_heading"}, (
+            f"'{text}' on page 20 should get a normal heading role, got {assignment.role}"
+        )
 
 
 def test_references_heading_gets_reference_role() -> None:
@@ -494,8 +475,8 @@ def test_figure_caption_candidate_for_narrative_body() -> None:
     )
 
 
-def test_backmatter_heading_candidate_on_late_page() -> None:
-    """Funding on page 10 → backmatter_heading_candidate."""
+def test_pre_ref_heading_on_late_page_is_normal_heading() -> None:
+    """Funding on page 10 → normal heading role (no longer backmatter-specific)."""
     from paperforge.worker.ocr_roles import assign_block_role
 
     block = {
@@ -507,8 +488,8 @@ def test_backmatter_heading_candidate_on_late_page() -> None:
 
     role = assign_block_role(block, page_blocks=[], page_height=1000)
 
-    assert role.role == "backmatter_heading_candidate", (
-        f"Funding on page 10 should be backmatter_heading_candidate, got {role.role}"
+    assert role.role in {"section_heading", "subsection_heading", "sub_subsection_heading"}, (
+        f"Funding on page 10 should be a normal heading, got {role.role}"
     )
 
 
