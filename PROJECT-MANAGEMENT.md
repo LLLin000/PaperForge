@@ -1,6 +1,6 @@
 # OCR-v2 Project Management Log
 
-> **Branch:** `ocr-v2` | **Base:** `master` | **Last Updated:** 2026-06-19 (blind audit complete — all gates done)
+> **Branch:** `ocr-v2` | **Base:** `master` | **Last Updated:** 2026-06-19 (full rebuild audit — 452 papers, 18 dimensions)
 > **Rule:** Every step is documented with: What was done, Why it was done, What comes next.
 
 ---
@@ -18,6 +18,19 @@
 ### 0.2 What ocr-v2 is
 
 A structural redesign of PaperForge's OCR pipeline. The original pipeline committed to semantic roles too early (raw OCR labels -> guess -> rescue -> render). **ocr-v2 replaces this with anchor-first parsing:** structural signatures -> stable anchors -> zone inference -> late role resolution -> figure/table validation -> render.
+
+### 0.3 Truth-Surface Handoff
+
+OCR-v2 readiness-gate work is complete.
+Post-readiness rebuild hardening is now the active queue.
+
+Execution authority:
+- Active queue: `project/current/ocr-v2-active-queue.md`
+- Evidence source: `project/current/ocr_rebuild_audit.md`
+- Broader architecture note: `project/current/ocr-v2-generalization-boundary.md`
+- Historical readiness residuals: `project/current/ocr-v2-remaining-issues-2026-06-18.md`
+
+`PROJECT-MANAGEMENT.md` records the handoff but does not override the active queue.
 
 ---
 
@@ -1285,3 +1298,45 @@ For each paper: rebuilt pipeline, generated annotated pages, performed visual bl
 **Design spec:** `docs/superpowers/specs/2026-06-19-ocr-maintenance-ux-design.md`
 
 **Implementation plan:** `docs/superpowers/plans/2026-06-19-ocr-maintenance-ux-implementation.md`
+
+### 11.1 OCR Rebuild Full Audit (2026-06-19)
+
+**Problem:** 452 rebuild papers showed 5% green / 61% yellow / 34% red health scores. Needed comprehensive analysis of all failure modes before attempting fixes.
+
+**Audit scope:** 18 dimensions across all 452 rebuild papers:
+- Health color distribution and issue combinations
+- Figure matching (76% match rate, 6 root causes)
+- Table matching (71% match rate, truncated caption issue)
+- Orphan explosion (6021 orphans, 93% papers affected)
+- Heading counting bug (only counts `section_heading`, ignores subsections)
+- Footnote rendering (100% inline, 0 as footnote refs)
+- Reference ordering (19% misorder from column sort)
+- Table notes (0/190 linked, `note_block_ids` dead field)
+- Supplementary figure namespace collision
+- `figure_asset_count` misnomer (actually matched figure count)
+- `references_found` too weak (raw_label check)
+- `page_assets` group risk (can consume entire page assets)
+- Table caption blockquote rendering
+- Layout audit 91% fail signal
+- unknown_structural content loss (27/1217 blocks, 0.3%)
+- Noise classification (correct header/footer/page number)
+- Body-to-supp caption distinction (structural heuristic)
+- Health binary threshold problem (7 binary gates, no ratio)
+
+**Root causes confirmed at code level:**
+- `ocr_health.py:118`: heading count ignores subsection/sub_subsection
+- `ocr_render.py:1226`: `_SKIPPED_BODY_ROLES` missing `"footnote"`
+- `ocr_render.py:1359`: table_caption rendered as blockquote
+- `ocr_tables.py:251`: `note_block_ids` written but never consumed
+- `ocr_health.py:130`: `figure_asset_count` = `len(matched_figures)`
+- `ocr_health.py:123-125`: `references_found` triggered by single raw_label
+- `ocr_render.py:604`: column sort swaps adjacent refs via x_left tiebreaker
+- `ocr_tables.py:16`: `_TRUNCATED_TABLE_ONLY_PATTERN` rejects `"Table N"` format
+
+**Recommended fix priority (two batches):**
+- **Batch 1 (P0/P1)**: footnote removal + table note consumption, table caption no blockquote, heading count fix, Table N geometry matching, supplementary namespace split, page_assets gate
+- **Batch 2 (P2)**: reference numbering + sort, figure/table asset arbitration, health ratio/weighted, completeness 7-bucket outcome, references_found zone check
+
+**Artifacts:** `project/current/ocr_rebuild_audit.md`
+
+**Test status:** Existing 131 tests pass with partial code changes applied. `page_assets` changes not yet merged pending gate review.

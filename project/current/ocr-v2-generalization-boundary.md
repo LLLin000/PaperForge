@@ -1,8 +1,8 @@
 # OCR-v2 Generalization Boundary
 
-> Status: active broader architecture note
-> Last updated: 2026-06-18
-> Source discussion: current OCR-v2 review thread
+> Status: broader architecture note
+> Readiness status: complete
+> Active execution queue: `project/current/ocr-v2-active-queue.md`
 
 ## Problem Statement
 

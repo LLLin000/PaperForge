@@ -1,7 +1,12 @@
 # OCR-v2 Remaining Issues & Root Cause Analysis
 
 > Date: 2026-06-19
-> Baseline: all 5 readiness gates complete; blind audit passed
+> Status: historical readiness-cycle residuals
+> Readiness gates: complete
+> Active queue: `project/current/ocr-v2-active-queue.md`
+
+This file records the residual state at the end of the readiness-gate cycle.
+It is not the active rebuild-hardening queue.
 
 ## Active Readiness Residuals
 
