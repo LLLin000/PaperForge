@@ -588,6 +588,264 @@ async function loadAnnotationsForPaper(options) {
     });
 }
 
+// ── Annotation list view-model helpers (Phase 6, Plan 02) ──
+
+/**
+ * Create a fresh, session-local annotation list UI state.
+ * @returns {{ query: string, groupMode: string, typeColorFilter: string, expandedIds: string[] }}
+ */
+function createDefaultAnnotationListUiState() {
+    return { query: '', groupMode: 'none', typeColorFilter: 'all', expandedIds: [] };
+}
+
+/**
+ * Compute a stable, unique identity string for a normalized annotation row.
+ */
+function getAnnotationIdentity(row) {
+    if (!row) return '';
+    var p = row.provenance || {};
+    var loc = row.pdfLocation || {};
+    var d = row.display || {};
+    if (p.sourceAnnotationKey) return String(p.sourceAnnotationKey);
+    if (loc.rowId) return String(loc.rowId);
+    if (p.source) return p.source + '|' + (p.sourceAttachmentKey || '') + '|' + (d.page != null ? d.page : '') + '|' + (loc.sortIndex != null ? loc.sortIndex : 0);
+    return 'row|' + (d.page != null ? d.page : '') + '|' + (loc.sortIndex != null ? loc.sortIndex : 0);
+}
+
+/**
+ * Sort normalized annotation rows in PDF reading order.
+ * Does NOT mutate the input array.
+ */
+function sortAnnotationsForReadingOrder(rows) {
+    if (!Array.isArray(rows)) return [];
+    var copy = rows.slice();
+    copy.sort(function (a, b) {
+        var locA = (a && a.pdfLocation) || {};
+        var locB = (b && b.pdfLocation) || {};
+        var pageA = locA.pageIndex != null ? locA.pageIndex : Number.MAX_SAFE_INTEGER;
+        var pageB = locB.pageIndex != null ? locB.pageIndex : Number.MAX_SAFE_INTEGER;
+        if (pageA !== pageB) return pageA - pageB;
+        var sortA = locA.sortIndex != null ? locA.sortIndex : Number.MAX_SAFE_INTEGER;
+        var sortB = locB.sortIndex != null ? locB.sortIndex : Number.MAX_SAFE_INTEGER;
+        if (sortA !== sortB) return sortA - sortB;
+        var idA = getAnnotationIdentity(a);
+        var idB = getAnnotationIdentity(b);
+        if (idA < idB) return -1;
+        if (idA > idB) return 1;
+        return 0;
+    });
+    return copy;
+}
+
+/**
+ * Group annotation rows by the specified mode: "none", "page", "type-color".
+ */
+function groupAnnotationRows(rows, groupMode) {
+    var sorted = sortAnnotationsForReadingOrder(rows);
+    if (groupMode === 'none' || !groupMode) {
+        return { mode: 'none', groups: [{ key: 'all', label: 'All annotations', rows: sorted }] };
+    }
+    if (groupMode === 'page') {
+        var pageMap = {};
+        for (var pi = 0; pi < sorted.length; pi++) {
+            var prow = sorted[pi];
+            var ploc = (prow && prow.pdfLocation) || {};
+            var ppage = ploc.pageIndex != null ? ploc.pageIndex : -1;
+            var ppageLabel = ploc.pageLabel || String(ppage);
+            var pkey = 'page-' + ppage;
+            if (!pageMap[pkey]) pageMap[pkey] = { key: pkey, label: 'Page ' + ppageLabel, rows: [] };
+            pageMap[pkey].rows.push(prow);
+        }
+        var pgroups = [];
+        for (var pk in pageMap) { if (pageMap.hasOwnProperty(pk)) pgroups.push(pageMap[pk]); }
+        pgroups.sort(function (a, b) {
+            return parseInt(a.key.replace('page-', ''), 10) - parseInt(b.key.replace('page-', ''), 10);
+        });
+        return { mode: 'page', groups: pgroups };
+    }
+    if (groupMode === 'type-color') {
+        var tcMap = {};
+        for (var ti = 0; ti < sorted.length; ti++) {
+            var trow = sorted[ti];
+            var td = (trow && trow.display) || {};
+            var ttype = td.type || 'unknown';
+            var tcolor = td.color != null ? td.color : 'null';
+            var tkey = 'type-color-' + ttype + '-' + tcolor;
+            if (!tcMap[tkey]) {
+                var tlabel = tcolor !== 'null' ? ttype + ' [' + tcolor + ']' : ttype;
+                tcMap[tkey] = { key: tkey, label: tlabel, rows: [] };
+            }
+            tcMap[tkey].rows.push(trow);
+        }
+        var tgroups = [];
+        for (var tk in tcMap) { if (tcMap.hasOwnProperty(tk)) tgroups.push(tcMap[tk]); }
+        tgroups.sort(function (a, b) {
+            var aType = a.key.split('-').slice(2, -1).join('-') || '';
+            var bType = b.key.split('-').slice(2, -1).join('-') || '';
+            if (aType !== bType) return aType < bType ? -1 : 1;
+            var aColor = a.key.split('-').pop() || '';
+            var bColor = b.key.split('-').pop() || '';
+            return aColor < bColor ? -1 : (aColor > bColor ? 1 : 0);
+        });
+        return { mode: 'type-color', groups: tgroups };
+    }
+    return { mode: 'none', groups: [{ key: 'all', label: 'All annotations', rows: sorted }] };
+}
+
+/**
+ * Build a list of unique type/color filter options from the given rows.
+ */
+function buildAnnotationFilterOptions(rows) {
+    if (!Array.isArray(rows) || rows.length === 0) return [];
+    var seen = {};
+    var options = [];
+    for (var i = 0; i < rows.length; i++) {
+        var d = (rows[i] && rows[i].display) || {};
+        var type = d.type || 'unknown';
+        var color = d.color != null ? d.color : null;
+        var key = type + '|' + (color !== null ? color : 'null');
+        if (!seen[key]) {
+            seen[key] = true;
+            var label = color !== null ? type + ' [' + color + ']' : type;
+            options.push({ type: type, color: color, label: label });
+        }
+    }
+    return options;
+}
+
+/**
+ * Check whether a normalized annotation row's display text matches a search query.
+ * Matches against selectedText and comment ONLY.
+ */
+function matchesAnnotationSearch(row, query) {
+    if (!query || typeof query !== 'string' || query.trim() === '') return true;
+    var q = query.toLowerCase().trim();
+    var d = (row && row.display) || {};
+    var selectedText = (d.selectedText || '').toLowerCase();
+    var comment = (d.comment || '').toLowerCase();
+    return selectedText.indexOf(q) !== -1 || comment.indexOf(q) !== -1;
+}
+
+/**
+ * Check if a row matches a type/color filter value.
+ */
+function matchesAnnotationTypeColorFilter(row, filter) {
+    if (!filter || filter === 'all' || filter === '') return true;
+    var d = (row && row.display) || {};
+    var rowType = d.type || 'unknown';
+    var rowColor = d.color != null ? d.color : 'null';
+    var parts = filter.split('|');
+    var filterType = parts[0];
+    var filterColor = parts.length > 1 ? parts[1] : null;
+    if (rowType !== filterType) return false;
+    if (filterColor !== null && rowColor !== filterColor) return false;
+    return true;
+}
+
+/**
+ * Compute preview metadata for a text content block.
+ * "selected-text" gets ~140 char preview, "comment" gets ~70 char preview.
+ */
+function getAnnotationPreview(text, kind) {
+    var safeText = (text != null ? String(text) : '');
+    var limit = kind === 'selected-text' ? 140 : 70;
+    if (safeText.length <= limit) {
+        return { text: safeText, kind: kind, truncated: false, expandable: false };
+    }
+    var truncated = safeText.substring(0, limit) + '\u2026';
+    return { text: truncated, kind: kind, truncated: true, expandable: true };
+}
+
+/**
+ * Toggle a row ID in the expansion set. Returns a new uiState object.
+ */
+function toggleAnnotationExpansion(uiState, rowId) {
+    var currentExpanded = uiState.expandedIds || [];
+    var index = currentExpanded.indexOf(rowId);
+    var newExpanded;
+    if (index === -1) {
+        newExpanded = currentExpanded.concat([rowId]);
+    } else {
+        newExpanded = currentExpanded.slice(0, index).concat(currentExpanded.slice(index + 1));
+    }
+    return {
+        query: uiState.query || '',
+        groupMode: uiState.groupMode || 'none',
+        typeColorFilter: uiState.typeColorFilter || 'all',
+        expandedIds: newExpanded,
+    };
+}
+
+/**
+ * Build a complete annotation list view-model from the bridge annotation state
+ * and current session-local UI state.
+ */
+function buildAnnotationListViewModel(annotationState, uiState) {
+    var aState = annotationState || { state: 'idle', annotations: [] };
+    var ui = uiState || createDefaultAnnotationListUiState();
+    var rows = Array.isArray(aState.annotations) ? aState.annotations : [];
+    var total = rows.length;
+    var state = aState.state || 'idle';
+
+    if (state === 'loading') {
+        return { state: 'loading', rows: [], total: 0, banner: aState.message || 'Loading annotations\u2026', filterOptions: [], groups: undefined, uiState: ui };
+    }
+    if (state === 'idle') {
+        return { state: 'idle', rows: [], total: 0, filterOptions: [], groups: undefined, uiState: ui };
+    }
+    if (state === 'empty') {
+        return { state: 'empty', rows: [], total: 0, emptyMessage: aState.message || 'This paper has no annotations yet. Import annotations from Zotero first.', filterOptions: [], groups: undefined, uiState: ui, stale: aState.stale || false };
+    }
+    if (state === 'missing-db') {
+        return { state: 'missing-db', rows: [], total: 0, errorMessage: aState.message || 'The annotation database is not yet available. Initialize or repair annotation data first.', filterOptions: [], groups: undefined, uiState: ui, stale: aState.stale || false };
+    }
+    if (state === 'missing-paper') {
+        return { state: 'missing-paper', rows: [], total: 0, errorMessage: aState.message || 'No paper is currently active. Open a recognized paper note or PDF to view its annotations.', filterOptions: [], groups: undefined, uiState: ui, stale: aState.stale || false };
+    }
+    if (state === 'cli-error') {
+        return { state: 'cli-error', rows: [], total: 0, errorMessage: aState.message || 'Failed to load annotations. Retry or check PaperForge annotation status.', filterOptions: [], groups: undefined, uiState: ui, stale: aState.stale || false };
+    }
+    if (state === 'invalid-json') {
+        return { state: 'invalid-json', rows: [], total: 0, errorMessage: aState.message || 'Could not read annotation data. Check the local CLI output for details.', filterOptions: [], groups: undefined, uiState: ui, stale: aState.stale || false };
+    }
+    if (state === 'ready') {
+        var visibleRows = sortAnnotationsForReadingOrder(rows);
+        if (ui.typeColorFilter && ui.typeColorFilter !== 'all') {
+            visibleRows = visibleRows.filter(function (r) { return matchesAnnotationTypeColorFilter(r, ui.typeColorFilter); });
+        }
+        if (ui.query && ui.query.trim() !== '') {
+            visibleRows = visibleRows.filter(function (r) { return matchesAnnotationSearch(r, ui.query); });
+        }
+        var groups;
+        if (ui.groupMode && ui.groupMode !== 'none') {
+            groups = groupAnnotationRows(visibleRows, ui.groupMode);
+        }
+        var filterOptions = buildAnnotationFilterOptions(rows);
+        return { state: 'ready', rows: visibleRows, total: total, filterOptions: filterOptions, groups: groups, uiState: ui, stale: aState.stale || false };
+    }
+    return { state: 'idle', rows: [], total: 0, filterOptions: [], groups: undefined, uiState: ui };
+}
+
+/**
+ * Merge a refresh result with the previous renderable annotation state.
+ * Preserves previous state with stale=true when refresh fails after success.
+ */
+function mergeAnnotationRefreshResult(previousRenderable, nextState) {
+    if (nextState.state === 'ready' || nextState.state === 'empty') {
+        return nextState;
+    }
+    if (previousRenderable) {
+        var prevState = previousRenderable.state || '';
+        if (prevState === 'ready' || prevState === 'empty') {
+            var merged = JSON.parse(JSON.stringify(previousRenderable));
+            merged.stale = true;
+            merged.message = (nextState.message || 'Refresh failed.') + ' \u2014 Showing previously loaded (stale) data.';
+            return merged;
+        }
+    }
+    return nextState;
+}
+
 // ── Cross-platform Python and BBT detection (macOS/Linux) ──
 
 let _gitDir = null;
@@ -1142,6 +1400,8 @@ class PaperForgeStatusView extends ItemView {
         this._ocrPrivacyShown = false;  // DASH-03: once-per-session privacy flag
         this._annotationState = makeAnnotationState(ANNOTATION_LOAD_STATES.IDLE); // BRDG
         this._annotationLoadSeq = 0;    // monotonic stale-result guard (D-22, T-annotation-05-06)
+        this._annotationUiState = createDefaultAnnotationListUiState(); // UI-only session state (D-17)
+        this._lastRenderableAnnotationState = null; // last renderable state for stale merge (D-20)
     }
 
     getViewType() { return VIEW_TYPE_PAPERFORGE; }
@@ -2118,6 +2378,9 @@ class PaperForgeStatusView extends ItemView {
         // ── Paper Overview ──
         this._renderPaperOverviewCard(view, entry);
 
+        // ── Annotation Section (Phase 6, Plan 03) ──
+        this._renderAnnotationSection(view, this.getAnnotationState(), entry);
+
         // ── Complete state or Next Step ──
         if (entry.next_step === 'ready' && entry.deep_reading_status === 'done') {
             const complete = view.createEl('div', { cls: 'paperforge-complete-row' });
@@ -2132,6 +2395,299 @@ class PaperForgeStatusView extends ItemView {
 
         // ── Technical Details (disclosure) ──
         this._renderPaperTechnicalDetails(view, entry);
+    }
+
+    /* ── Annotation Section: List of imported annotations (Phase 6, Plan 03) ── */
+
+    /**
+     * Render the annotation section for the current paper.
+     * Inserts after paper overview and before Next Step/complete.
+     */
+    _renderAnnotationSection(container, annotationState, entry) {
+        var section = container.createEl('div', { cls: 'paperforge-annotations-section' });
+        this._annotationSectionEl = section;
+
+        // Track last renderable state for stale-merging
+        if (annotationState && (annotationState.state === 'ready' || annotationState.state === 'empty')) {
+            this._lastRenderableAnnotationState = annotationState;
+        }
+
+        // Build view-model
+        var vm = buildAnnotationListViewModel(annotationState, this._annotationUiState);
+
+        // ── Header with title, count, refresh button ──
+        var header = section.createEl('div', { cls: 'paperforge-annotations-header' });
+        var titleEl = header.createEl('span', { cls: 'paperforge-annotations-title', text: 'Annotations' });
+        if (vm.state === 'ready' && vm.total > 0) {
+            header.createEl('span', { cls: 'paperforge-annotations-count', text: '(' + vm.total + ')' });
+        }
+        var refreshBtn = header.createEl('button', { cls: 'paperforge-annotations-refresh-btn clickable-icon' });
+        refreshBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>';
+        refreshBtn.setAttribute('title', 'Refresh annotations');
+        refreshBtn.addEventListener('click', this._handleAnnotationRefresh.bind(this));
+
+        // ── Controls (search, grouping, filter) — only for ready state ──
+        if (vm.state === 'ready') {
+            this._renderAnnotationControls(section, vm);
+        }
+
+        // ── Content area ──
+        var contentArea = section.createEl('div', { cls: 'paperforge-annotations-content' });
+
+        // Stale-data banner
+        if (vm.stale) {
+            var staleBanner = contentArea.createEl('div', { cls: 'paperforge-annotations-stale-banner' });
+            staleBanner.createEl('span', { text: '\u26A0\uFE0F ' });
+            staleBanner.createEl('span', { text: 'Showing previously loaded data (refresh failed).' });
+        }
+
+        switch (vm.state) {
+            case 'loading':
+                contentArea.createEl('div', { cls: 'paperforge-annotations-status', text: vm.banner || 'Loading annotations\u2026' });
+                break;
+            case 'ready':
+                this._renderAnnotationRows(contentArea, vm);
+                break;
+            case 'empty':
+                contentArea.createEl('div', { cls: 'paperforge-annotations-empty', text: vm.emptyMessage || 'No annotations found.' });
+                break;
+            case 'missing-db':
+            case 'missing-paper':
+            case 'cli-error':
+            case 'invalid-json':
+                contentArea.createEl('div', { cls: 'paperforge-annotations-error', text: vm.errorMessage || 'Annotation data unavailable.' });
+                break;
+            default:
+                break;
+        }
+    }
+
+    /**
+     * Render annotation controls (search, grouping, type/color filter).
+     */
+    _renderAnnotationControls(section, viewModel) {
+        var controls = section.createEl('div', { cls: 'paperforge-annotation-controls' });
+
+        // Search control
+        var searchInput = controls.createEl('input', {
+            cls: 'paperforge-annotation-search',
+            attr: { type: 'text', placeholder: 'Search annotations\u2026' },
+        });
+        searchInput.value = this._annotationUiState.query || '';
+        searchInput.addEventListener('input', function (e) {
+            this._annotationUiState.query = e.target.value;
+            this._rerenderAnnotationSection();
+        }.bind(this));
+
+        // Grouping control
+        var groupSelect = controls.createEl('select', { cls: 'paperforge-annotation-group-select' });
+        var groupOptions = [
+            { value: 'none', label: 'No grouping' },
+            { value: 'page', label: 'By page' },
+            { value: 'type-color', label: 'By type/color' },
+        ];
+        for (var gi = 0; gi < groupOptions.length; gi++) {
+            var go = groupOptions[gi];
+            groupSelect.createEl('option', { value: go.value, text: go.label });
+        }
+        groupSelect.value = this._annotationUiState.groupMode || 'none';
+        groupSelect.addEventListener('change', function (e) {
+            this._annotationUiState.groupMode = e.target.value;
+            this._rerenderAnnotationSection();
+        }.bind(this));
+
+        // Type/color filter
+        if (viewModel.filterOptions && viewModel.filterOptions.length > 0) {
+            var filterSelect = controls.createEl('select', { cls: 'paperforge-annotation-filter-select' });
+            filterSelect.createEl('option', { value: 'all', text: 'All types' });
+            for (var fi = 0; fi < viewModel.filterOptions.length; fi++) {
+                var fo = viewModel.filterOptions[fi];
+                filterSelect.createEl('option', { value: fo.type + '|' + (fo.color !== null ? fo.color : 'null'), text: fo.label });
+            }
+            filterSelect.value = this._annotationUiState.typeColorFilter || 'all';
+            filterSelect.addEventListener('change', function (e) {
+                this._annotationUiState.typeColorFilter = e.target.value;
+                this._rerenderAnnotationSection();
+            }.bind(this));
+        }
+    }
+
+    /**
+     * Render annotation rows inside the list container.
+     */
+    _renderAnnotationRows(listEl, viewModel) {
+        var listContainer = listEl.createEl('div', { cls: 'paperforge-annotations-list' });
+
+        var rows = viewModel.rows || [];
+        for (var ri = 0; ri < rows.length; ri++) {
+            var row = rows[ri];
+            var display = (row && row.display) || {};
+            var provenance = (row && row.provenance) || {};
+            var identity = getAnnotationIdentity(row);
+            var isExpanded = this._annotationUiState.expandedIds.indexOf(identity) !== -1;
+
+            // Row container
+            var rowEl = listContainer.createEl('div', { cls: 'paperforge-annotation-row' });
+            if (isExpanded) rowEl.addClass('expanded');
+
+            // Page badge
+            var pageBadge = rowEl.createEl('span', { cls: 'paperforge-annotation-page-badge', text: String(display.pageLabel || display.page || '?') });
+
+            // Color swatch
+            var swatch = rowEl.createEl('span', { cls: 'paperforge-annotation-swatch' });
+            if (display.color) {
+                swatch.style.backgroundColor = display.color;
+            } else {
+                swatch.addClass('no-color');
+            }
+
+            // Type label
+            rowEl.createEl('span', { cls: 'paperforge-annotation-type-label', text: display.type || 'annotation' });
+
+            // Selected text preview (textContent, never innerHTML per T-annotation-06-06)
+            var selPreview = getAnnotationPreview(display.selectedText, 'selected-text');
+            var selEl = rowEl.createEl('span', { cls: 'paperforge-annotation-selected-text' });
+            selEl.setText(selPreview.text);
+            if (selPreview.truncated) selEl.addClass('truncated');
+
+            // Comment preview or icon
+            var commentPreview = getAnnotationPreview(display.comment, 'comment');
+            var commentEl = rowEl.createEl('span', { cls: 'paperforge-annotation-comment' });
+            if (display.comment) {
+                commentEl.setText(commentPreview.text);
+                if (commentPreview.truncated) commentEl.addClass('truncated');
+            } else {
+                commentEl.setText('\u2014');
+            }
+
+            // Expand/collapse for details
+            var expandBtn = rowEl.createEl('button', { cls: 'paperforge-annotation-expand-btn clickable-icon' });
+            expandBtn.innerHTML = isExpanded
+                ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"></polyline></svg>'
+                : '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>';
+            expandBtn.addEventListener('click', function (id) {
+                return function () {
+                    this._annotationUiState = toggleAnnotationExpansion(this._annotationUiState, id);
+                    this._rerenderAnnotationSection();
+                };
+            }(identity).bind(this));
+
+            // Expanded details section (provenance, read-only, source, timestamps)
+            if (isExpanded) {
+                var details = rowEl.createEl('div', { cls: 'paperforge-annotation-details' });
+                var detailLines = [
+                    provenance.source ? 'Source: ' + provenance.source : null,
+                    provenance.isReadonly ? 'Read-only' : null,
+                    provenance.sourceAttachmentKey ? 'Attachment: ' + provenance.sourceAttachmentKey : null,
+                    provenance.sourceAnnotationKey ? 'Annotation Key: ' + provenance.sourceAnnotationKey : null,
+                    provenance.createdAt ? 'Created: ' + provenance.createdAt : null,
+                    provenance.updatedAt ? 'Updated: ' + provenance.updatedAt : null,
+                    provenance.syncState ? 'Sync: ' + provenance.syncState : null,
+                ];
+                for (var di = 0; di < detailLines.length; di++) {
+                    if (detailLines[di]) {
+                        details.createEl('div', { cls: 'paperforge-annotation-detail-line', text: detailLines[di] });
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Re-render only the annotation section (section-local refresh).
+     * Clears the existing section content and rebuilds in-place.
+     */
+    _rerenderAnnotationSection() {
+        if (!this._annotationSectionEl) return;
+        // Clear current content, keep the section wrapper
+        this._annotationSectionEl.empty();
+        var annotationState = this.getAnnotationState();
+
+        // Track last renderable state for stale-merging
+        if (annotationState && (annotationState.state === 'ready' || annotationState.state === 'empty')) {
+            this._lastRenderableAnnotationState = annotationState;
+        }
+
+        // Build view-model
+        var vm = buildAnnotationListViewModel(annotationState, this._annotationUiState);
+
+        // ── Header ──
+        var header = this._annotationSectionEl.createEl('div', { cls: 'paperforge-annotations-header' });
+        var titleEl = header.createEl('span', { cls: 'paperforge-annotations-title', text: 'Annotations' });
+        if (vm.state === 'ready' && vm.total > 0) {
+            header.createEl('span', { cls: 'paperforge-annotations-count', text: '(' + vm.total + ')' });
+        }
+        var refreshBtn = header.createEl('button', { cls: 'paperforge-annotations-refresh-btn clickable-icon' });
+        refreshBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>';
+        refreshBtn.setAttribute('title', 'Refresh annotations');
+        refreshBtn.addEventListener('click', this._handleAnnotationRefresh.bind(this));
+
+        // ── Controls ──
+        if (vm.state === 'ready') {
+            this._renderAnnotationControls(this._annotationSectionEl, vm);
+        }
+
+        // ── Content area ──
+        var contentArea = this._annotationSectionEl.createEl('div', { cls: 'paperforge-annotations-content' });
+        if (vm.stale) {
+            var staleBanner = contentArea.createEl('div', { cls: 'paperforge-annotations-stale-banner' });
+            staleBanner.createEl('span', { text: '\u26A0\uFE0F ' });
+            staleBanner.createEl('span', { text: 'Showing previously loaded data (refresh failed).' });
+        }
+        switch (vm.state) {
+            case 'loading':
+                contentArea.createEl('div', { cls: 'paperforge-annotations-status', text: vm.banner || 'Loading annotations\u2026' });
+                break;
+            case 'ready':
+                this._renderAnnotationRows(contentArea, vm);
+                break;
+            case 'empty':
+                contentArea.createEl('div', { cls: 'paperforge-annotations-empty', text: vm.emptyMessage || 'No annotations found.' });
+                break;
+            case 'missing-db':
+            case 'missing-paper':
+            case 'cli-error':
+            case 'invalid-json':
+                contentArea.createEl('div', { cls: 'paperforge-annotations-error', text: vm.errorMessage || 'Annotation data unavailable.' });
+                break;
+            default:
+                break;
+        }
+    }
+
+    /**
+     * Handle manual annotation refresh button click.
+     */
+    _handleAnnotationRefresh() {
+        // Show section-local loading
+        if (this._annotationSectionEl) {
+            var loadingMsg = this._annotationSectionEl.querySelector('.paperforge-annotations-status');
+            if (loadingMsg) {
+                loadingMsg.setText('Refreshing\u2026');
+            } else {
+                var contentArea = this._annotationSectionEl.querySelector('.paperforge-annotations-content');
+                if (contentArea) {
+                    contentArea.empty();
+                    contentArea.createEl('div', { cls: 'paperforge-annotations-status', text: 'Refreshing\u2026' });
+                }
+            }
+        }
+
+        this.loadAnnotationsForCurrentPaper('manual').then(function (newState) {
+            if (!newState) return;
+            // Merge with last renderable state for stale preservation
+            var merged = mergeAnnotationRefreshResult(this._lastRenderableAnnotationState, newState);
+            this._annotationState = merged;
+            if (merged.state === 'ready' || merged.state === 'empty') {
+                this._lastRenderableAnnotationState = merged;
+            }
+            this._rerenderAnnotationSection();
+        }.bind(this)).catch(function () {
+            // If loader throws, try to keep current state
+            if (this._annotationSectionEl) {
+                this._rerenderAnnotationSection();
+            }
+        }.bind(this));
     }
 
     /* ── Paper Overview Card: read from formal note body ── */
