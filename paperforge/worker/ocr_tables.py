@@ -8,7 +8,7 @@ from paperforge.core.io import write_json
 from paperforge.worker.ocr_scores import score_table_match
 
 _TABLE_PREFIX_PATTERN = re.compile(
-    r"^(?:Table|Supplementary\s+Table|Extended\s+Data\s+Table)\s+(\d+(?:\.\d+)?)",
+    r"^(?:Table|Supplementary\s+Table|Extended\s+Data\s+Table)\s+(?:S\.?\s*)?(\d+(?:\.\d+)?)",
     flags=re.IGNORECASE,
 )
 
@@ -94,6 +94,10 @@ def build_table_inventory(structured_blocks: list[dict]) -> dict[str, Any]:
                 height = (bbox[3] - bbox[1]) if len(bbox) >= 4 else 0
                 if width < 120 or height < 60:
                     continue
+                if raw_label not in ("table", "table_image"):
+                    aspect = width / max(height, 1)
+                    if aspect < 1.5:
+                        continue
             assets.append(block)
 
     used_asset_indices: set[int] = set()
@@ -201,6 +205,7 @@ def build_table_inventory(structured_blocks: list[dict]) -> dict[str, Any]:
             })
 
         note_block_ids: list[str] = []
+        note_texts: list[str] = []
         if matched_asset:
             asset_page = matched_asset.get("page", 0)
             asset_bbox = matched_asset.get("bbox", [0, 0, 0, 0])
@@ -231,6 +236,14 @@ def build_table_inventory(structured_blocks: list[dict]) -> dict[str, Any]:
                 note_top = bbbox[1]
                 if asset_bottom <= note_top <= asset_bottom + 80:
                     note_block_ids.append(block.get("block_id", ""))
+                    if btext:
+                        note_texts.append(btext)
+
+        consumed_block_ids = [caption.get("block_id", "")]
+        if matched_asset:
+            consumed_block_ids.append(matched_asset.get("block_id", ""))
+        consumed_block_ids.extend(note_block_ids)
+        consumed_block_ids = [bid for bid in consumed_block_ids if bid]
 
         tables.append({
             "caption_block_id": caption.get("block_id", ""),
@@ -245,6 +258,8 @@ def build_table_inventory(structured_blocks: list[dict]) -> dict[str, Any]:
             "has_asset": matched_asset is not None,
             "segments": segments,
             "note_block_ids": note_block_ids,
+            "note_texts": note_texts,
+            "consumed_block_ids": consumed_block_ids,
             "is_continuation": is_cont,
             "continuation_of": continuation_of,
             "match_status": match_status,

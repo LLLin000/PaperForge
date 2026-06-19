@@ -802,6 +802,23 @@ def test_table_without_matched_asset_has_empty_note_block_ids() -> None:
     assert inventory["tables"][0]["note_block_ids"] == []
 
 
+def test_table_inventory_emits_note_payload_and_consumed_block_ids() -> None:
+    from paperforge.worker.ocr_tables import build_table_inventory
+
+    structured_blocks = [
+        {"page": 5, "block_id": "p5_a1", "role": "table_asset", "text": "table data", "bbox": [100, 100, 600, 400]},
+        {"page": 5, "block_id": "p5_c1", "role": "table_caption", "text": "Table 1. Main results", "bbox": [100, 420, 600, 460]},
+        {"page": 5, "block_id": "p5_n1", "role": "footnote", "raw_label": "vision_footnote", "text": "* p < 0.05", "bbox": [100, 405, 600, 425]},
+    ]
+
+    inventory = build_table_inventory(structured_blocks)
+    table = inventory["tables"][0]
+
+    assert table["note_block_ids"] == ["p5_n1"]
+    assert table["note_texts"] == ["* p < 0.05"]
+    assert set(table["consumed_block_ids"]) == {"p5_a1", "p5_c1", "p5_n1"}
+
+
 def test_matched_table_asset_role_is_written_back() -> None:
     from paperforge.worker.ocr_tables import build_table_inventory, write_back_table_roles
 

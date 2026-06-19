@@ -57,6 +57,11 @@ def render_table_object_markdown(table: dict[str, Any]) -> str:
     if caption:
         parts.append("## Caption")
         parts.append(normalize_ocr_math_text(caption))
+    note_texts = [normalize_ocr_math_text(t) for t in table.get("note_texts", []) if t]
+    if note_texts:
+        parts.append("")
+        parts.append("## Notes")
+        parts.extend(note_texts)
     if table.get("page"):
         parts.append("")
         parts.append(f"*Page {table['page']}*")

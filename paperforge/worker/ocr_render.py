@@ -832,6 +832,11 @@ def render_fulltext_markdown(
     reader_figures = (reader_payload or {}).get("reader_figures", [])
     consumed_caption_keys: set[tuple[int | None, int | str]] = set()
     consumed_caption_ids_unkeyed: set[int | str] = set()
+    consumed_table_block_ids: set[str | int] = set()
+    for table in table_inventory.get("tables", []):
+        for block_id in table.get("consumed_block_ids", []):
+            if block_id:
+                consumed_table_block_ids.add(block_id)
     for item in (reader_payload or {}).get("consumed_caption_block_ids", []):
         if isinstance(item, dict):
             page = item.get("page")
@@ -1241,6 +1246,8 @@ def render_fulltext_markdown(
         if block_id is not None and (
             block_key in consumed_caption_keys or block_id in consumed_caption_ids_unkeyed
         ):
+            continue
+        if block_id is not None and block_id in consumed_table_block_ids:
             continue
         if block_key in abstract_member_keys or block_id in abstract_member_ids_unkeyed:
             continue

@@ -2565,3 +2565,29 @@ def test_reader_visible_statuses_are_emitted_in_markdown_contract() -> None:
         },
     )
     assert "EXACT_MATCH" not in markdown
+
+
+def test_fulltext_skips_table_note_blocks_consumed_by_inventory() -> None:
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+
+    structured_blocks = [
+        {"page": 5, "block_id": "p5_c1", "role": "table_caption", "text": "Table 1. Main results", "bbox": [100, 420, 600, 460], "zone": "display_zone", "style_family": "table_caption_like"},
+        {"page": 5, "block_id": "p5_n1", "role": "footnote", "text": "* p < 0.05", "bbox": [100, 405, 600, 425]},
+    ]
+    table_inventory = {
+        "tables": [{
+            "table_id": "table_001", "page": 5, "caption_block_id": "p5_c1",
+            "caption_text": "Table 1. Main results", "asset_block_id": "p5_a1",
+            "note_block_ids": ["p5_n1"], "note_texts": ["* p < 0.05"],
+            "consumed_block_ids": ["p5_a1", "p5_c1", "p5_n1"],
+        }]
+    }
+
+    md = render_fulltext_markdown(
+        structured_blocks=structured_blocks, resolved_metadata={},
+        figure_inventory={"matched_figures": []},
+        table_inventory=table_inventory, page_count=5,
+        document_structure=None, reader_payload={"figures": []},
+    )
+
+    assert "* p < 0.05" not in md
