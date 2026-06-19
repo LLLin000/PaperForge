@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: annotation v0.2
 milestone_name: milestone
 status: executing
-stopped_at: Annotation Phase 5 Plan 02 executed; Annotation Phase 6 planned
-last_updated: "2026-06-20T00:30:00.018Z"
-last_activity: 2026-06-20 - Annotation Phase 6 Plan 02 executed (list view-model helpers)
+stopped_at: Annotation Phase 6 Plan 02 completed (annotation list view-model helpers)
+last_updated: "2026-06-19T16:46:45.333Z"
+last_activity: 2026-06-20 - Annotation Phase 6 Plan 02 executed (annotation list view-model helpers with 78 tests)
 progress:
   total_phases: 68
   completed_phases: 49
   total_plans: 125
-  completed_plans: 112
-  percent: 73
+  completed_plans: 113
+  percent: 72
 ---
 
 # Project State
@@ -59,6 +59,7 @@ Last activity: 2026-06-20 - Annotation Phase 6 Plan 02 executed (annotation list
 *Updated after each plan completion*
 | Phase annotation-06 P01 | 2min | 2 tasks | 0 files |
 | Phase annotation-06 P02 | 15min | 2 tasks | 2 files |
+| Phase annotation-06-annotation-sidebar-and-list-view P03 | 22min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -90,6 +91,10 @@ Recent decisions affecting current work:
 - [annotation v0.2 Plan 02]: Type/color filter uses `type|color` pipeline syntax; null color is `"null"` in composite key.
 - [annotation v0.2 Plan 02]: Preview limits: 140 chars (selected-text, ~2 lines) and 70 chars (comment, ~1 line) — generous for CJK.
 - [annotation v0.2 Plan 02]: View-model passes through annotation state `message` when available, with action-suggesting fallbacks.
+- [Phase annotation-06-03]: Inlined Plan 02 view-model helpers directly in main.js instead of importing from a shared module to avoid Node-only test module dependencies in the Obsidian bundle — Helpers are pure functions with no DOM/Node dependencies, safe to compile into plugin bundle
+- [Phase annotation-06-03]: Used section.empty() + full rebuild for rerender to preserve DOM ordering guarantees — Annotation section is leaf-level with no child state to preserve; clearing and rebuilding is simpler and more reliable than DOM replacement
+- [Phase annotation-06-03]: Session-only _annotationUiState with query, groupMode, typeColorFilter, expandedIds fields — never persisted — Annotation list UI state is ephemeral and resets with the view instance; no settings, localStorage, or file writes
+- [Phase annotation-06-03]: Recursive createEl in test DOM mocks so createEl returns elements that also have createEl — Obsidian's real createEl API is recursive; test mocks must match this behavior to avoid view.createEl is not a function failures
 
 ### Pending Todos
 
@@ -104,6 +109,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-06-20T00:30:00Z
+Last session: 2026-06-19T16:46:45.325Z
 Stopped at: Annotation Phase 6 Plan 02 completed (annotation list view-model helpers)
 Resume file: .planning/phases/annotation-06-annotation-sidebar-and-list-view/annotation-06-03-PLAN.md

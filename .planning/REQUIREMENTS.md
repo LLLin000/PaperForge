@@ -16,11 +16,11 @@ annotation v0.2 turns the verified annotation backend/CLI from v0.1 into an Obsi
 
 ### Annotation Sidebar/List (LIST)
 
-- [ ] **LIST-01**: User can view a paper-scoped annotation list in the PaperForge Obsidian UI.
-- [ ] **LIST-02**: User can scan annotations by page, color, type, selected text, and comment without opening raw JSON.
-- [ ] **LIST-03**: User can filter or group annotations by at least page and type/color.
-- [ ] **LIST-04**: User can refresh the annotation list after importing annotations without restarting Obsidian.
-- [ ] **LIST-05**: List UI degrades gracefully for empty papers, missing PDFs, and unsupported annotation fields.
+- [x] **LIST-01**: User can view a paper-scoped annotation list in the PaperForge Obsidian UI.
+- [x] **LIST-02**: User can scan annotations by page, color, type, selected text, and comment without opening raw JSON.
+- [x] **LIST-03**: User can filter or group annotations by at least page and type/color.
+- [x] **LIST-04**: User can refresh the annotation list after importing annotations without restarting Obsidian.
+- [x] **LIST-05**: List UI degrades gracefully for empty papers, missing PDFs, and unsupported annotation fields.
 
 ### PDF Navigation and Overlay (OVLY)
 
@@ -82,11 +82,11 @@ annotation v0.2 turns the verified annotation backend/CLI from v0.1 into an Obsi
 | BRDG-02 | Annotation Phase 5 | Pending |
 | BRDG-03 | Annotation Phase 5 | Pending |
 | BRDG-04 | Annotation Phase 5 | Pending |
-| LIST-01 | Annotation Phase 6 | Pending |
-| LIST-02 | Annotation Phase 6 | Pending |
-| LIST-03 | Annotation Phase 6 | Pending |
-| LIST-04 | Annotation Phase 6 | Pending |
-| LIST-05 | Annotation Phase 6 | Pending |
+| LIST-01 | Annotation Phase 6 | Complete |
+| LIST-02 | Annotation Phase 6 | Complete |
+| LIST-03 | Annotation Phase 6 | Complete |
+| LIST-04 | Annotation Phase 6 | Complete |
+| LIST-05 | Annotation Phase 6 | Complete |
 | OVLY-01 | Annotation Phase 7 | Pending |
 | OVLY-02 | Annotation Phase 8 | Pending |
 | OVLY-03 | Annotation Phase 8 | Pending |
@@ -103,6 +103,7 @@ annotation v0.2 turns the verified annotation backend/CLI from v0.1 into an Obsi
 | TEST-05 | Annotation Phase 9 | Pending |
 
 **Coverage:**
+
 - annotation v0.2 requirements: 23 total
 - Mapped to phases: 23
 - Unmapped: 0
