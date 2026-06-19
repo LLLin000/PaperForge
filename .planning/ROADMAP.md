@@ -52,7 +52,12 @@ v0.2 makes those annotations visible and useful inside Obsidian. The milestone s
 4. User can refresh annotation data after import without restarting Obsidian.
 5. Empty, missing PDF, missing DB, and unsupported field states are visible and non-crashing.
 
-**Plans:** TBD
+**Plans:**
+
+- `annotation-06-01-PLAN.md` - Phase 5 bridge hard preflight and dependency gate (Wave 1).
+- `annotation-06-02-PLAN.md` - Pure annotation list view-model helpers and tests (Wave 2, depends on Wave 1).
+- `annotation-06-03-PLAN.md` - Paper-mode annotation section runtime integration (Wave 3, depends on Wave 2).
+- `annotation-06-04-PLAN.md` - Bounded compact styling and DOM/regression coverage (Wave 4, depends on Wave 3).
 
 ### Annotation Phase 7: PDF Jump Navigation
 
@@ -114,7 +119,7 @@ v0.2 makes those annotations visible and useful inside Obsidian. The milestone s
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | Annotation Phase 5. Plugin Annotation Data Bridge | 0/2 | Planned | - |
-| Annotation Phase 6. Annotation Sidebar and List View | 0/TBD | Not started | - |
+| Annotation Phase 6. Annotation Sidebar and List View | 0/4 | Planned | - |
 | Annotation Phase 7. PDF Jump Navigation | 0/TBD | Not started | - |
 | Annotation Phase 8. PDF Overlay Rendering Spike and Implementation | 0/TBD | Not started | - |
 | Annotation Phase 9. Display Layer Verification Gate | 0/TBD | Not started | - |

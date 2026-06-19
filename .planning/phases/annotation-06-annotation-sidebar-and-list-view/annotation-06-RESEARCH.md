@@ -359,19 +359,19 @@ Known threat patterns:
 | A3 | A `module.exports.__test` hook is acceptable for runtime tests. | If release packaging forbids this, planner needs an alternate side-effect-free export strategy. |
 | A4 | Text-node rendering is sufficient to mitigate annotation text injection in this UI. | If later rich annotation markup is supported, sanitizer policy must be added before rendering markup. |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Has Annotation Phase 5 actually been executed and stabilized in this branch?**
    - What we know: Phase 5 plans specify bridge helpers/runtime methods; initial baseline reads did not show them, while later working-tree status showed uncommitted Phase 5 helper artifacts. [VERIFIED: codebase rg/narrow read] [VERIFIED: git status]
-   - Recommendation: Treat Phase 5 as a hard prerequisite and add a preflight gate.
+   - Resolution: Treat Phase 5 as a hard prerequisite. `annotation-06-01-PLAN.md` is the dependency/preflight plan and must stop Phase 6 execution if the Phase 5 bridge helpers or runtime methods are absent or incomplete.
 
 2. **Will Phase 6 add a dedicated Vitest jsdom config or per-file environment annotation?**
    - What we know: `jsdom` is declared but not installed locally; no config file was inspected. [VERIFIED: package.json] [VERIFIED: environment probe]
-   - Recommendation: Keep it per-file or add minimal plugin test config if multiple DOM tests are added.
+   - Resolution: Use the smallest test-environment change needed by the Phase 6 DOM/runtime tests. Prefer per-file jsdom annotations or the existing plugin Vitest config; do not add a new package.
 
 3. **Should labels be English-only for now?**
    - What we know: Phase 6 context permits concise English labels until broader localization. [VERIFIED: annotation-06-CONTEXT.md]
-   - Recommendation: Use concise English and avoid adding corrupted strings; defer i18n expansion unless planner explicitly includes it.
+   - Resolution: Use concise, non-corrupted labels consistent with the current plugin surface. Full localization is out of scope for Phase 6 unless the executor can reuse existing i18n keys without expanding scope.
 
 ### Ready for Planning
 Research complete. Planner can create Phase 6 plans with a preflight dependency gate, pure helper plan, runtime integration plan, and styling/regression plan.
