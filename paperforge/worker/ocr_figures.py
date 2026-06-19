@@ -398,6 +398,30 @@ def _grow_region_from_seed(seed: dict, others: list[dict], page_width: float) ->
     }
 
 
+def _validate_grown_region(group: dict, assets: list[dict], competing_caption_bboxes: list[list[float]] | None = None) -> dict:
+    competing_caption_bboxes = competing_caption_bboxes or []
+    asset_map = {str(a.get("block_id", "")): a for a in assets}
+    group_assets = [asset_map[bid] for bid in group.get("asset_block_ids", []) if bid in asset_map]
+    if len(group_assets) <= 1:
+        return {"validation_status": "strict_match_ok", "validation_reason": "single_asset"}
+
+    ordered = sorted(group_assets, key=lambda a: (a.get("bbox") or [0, 0, 0, 0])[0])
+    max_gap = 0.0
+    for left, right in zip(ordered, ordered[1:], strict=False):
+        lb = left.get("bbox") or [0, 0, 0, 0]
+        rb = right.get("bbox") or [0, 0, 0, 0]
+        max_gap = max(max_gap, max(0.0, rb[0] - lb[2]))
+    if max_gap > 250.0:
+        return {"validation_status": "split_required", "validation_reason": "gap_too_large"}
+
+    gb = group.get("group_bbox") or [0, 0, 0, 0]
+    for cb in competing_caption_bboxes:
+        if len(gb) >= 4 and len(cb) >= 4 and cb[0] < gb[2] and gb[0] < cb[2]:
+            return {"validation_status": "grouped_evidence_only", "validation_reason": "crosses_competing_caption_zone"}
+
+    return {"validation_status": "strict_match_ok", "validation_reason": "local_growth_validated"}
+
+
 def _media_clusters(blocks: list[dict], page_width: float = 1200) -> list[list[dict]]:
     media = [
         b

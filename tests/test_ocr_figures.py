@@ -2336,3 +2336,41 @@ def test_region_growth_absorbs_adjacent_below_neighbor() -> None:
 
     assert group["asset_block_ids"] == ["a1", "a2"]
     assert any(step["reason"] == "adjacent_below" for step in group["growth_steps"])
+
+
+# === Task 2: Post-growth validation ===
+
+
+def test_region_growth_validation_rejects_large_gap_without_support() -> None:
+    from paperforge.worker.ocr_figures import _validate_grown_region
+
+    group = {
+        "asset_block_ids": ["a1", "a2"],
+        "group_bbox": [100, 100, 800, 260],
+        "growth_steps": [{"added_block_id": "a2", "reason": "adjacent_right"}],
+    }
+    assets = [
+        {"block_id": "a1", "bbox": [100, 100, 260, 260], "page": 5},
+        {"block_id": "a2", "bbox": [620, 100, 800, 260], "page": 5},
+    ]
+
+    verdict = _validate_grown_region(group, assets)
+    assert verdict["validation_status"] == "split_required"
+
+
+def test_region_growth_validation_demotes_group_when_crossing_other_caption_zone() -> None:
+    from paperforge.worker.ocr_figures import _validate_grown_region
+
+    group = {
+        "asset_block_ids": ["a1", "a2"],
+        "group_bbox": [100, 100, 520, 260],
+        "growth_steps": [{"added_block_id": "a2", "reason": "adjacent_right"}],
+    }
+    assets = [
+        {"block_id": "a1", "bbox": [100, 100, 300, 260], "page": 5},
+        {"block_id": "a2", "bbox": [320, 100, 520, 260], "page": 5},
+    ]
+    other_caption_bbox = [340, 270, 520, 300]
+
+    verdict = _validate_grown_region(group, assets, competing_caption_bboxes=[other_caption_bbox])
+    assert verdict["validation_status"] == "grouped_evidence_only"
