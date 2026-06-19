@@ -4,14 +4,14 @@ milestone: annotation v0.2
 milestone_name: milestone
 status: executing
 stopped_at: Annotation Phase 5 Plan 02 executed; Annotation Phase 6 planned
-last_updated: "2026-06-19T16:23:30.018Z"
-last_activity: 2026-06-19 - Annotation Phase 5 Plan 02 executed; Annotation Phase 6 remains planned
+last_updated: "2026-06-20T00:30:00.018Z"
+last_activity: 2026-06-20 - Annotation Phase 6 Plan 02 executed (list view-model helpers)
 progress:
   total_phases: 68
   completed_phases: 49
   total_plans: 125
-  completed_plans: 111
-  percent: 72
+  completed_plans: 112
+  percent: 73
 ---
 
 # Project State
@@ -26,9 +26,9 @@ See: .planning/PROJECT.md (updated 2026-06-18)
 ## Current Position
 
 Phase: Annotation Phase 6 of 9 (Annotation Sidebar and List View) - executing
-Plan: annotation-06-01-PLAN.md ✅ completed — next: annotation-06-02-PLAN.md
+Plan: annotation-06-02-PLAN.md ✅ completed — next: annotation-06-03-PLAN.md
 Status: Executing
-Last activity: 2026-06-20 - Annotation Phase 6 Plan 01 executed (Phase 5 bridge preflight)
+Last activity: 2026-06-20 - Annotation Phase 6 Plan 02 executed (annotation list view-model helpers with 78 tests)
 
 ## Performance Metrics
 
@@ -54,9 +54,11 @@ Last activity: 2026-06-20 - Annotation Phase 6 Plan 01 executed (Phase 5 bridge 
 - Annotation v0.2 initialized: Obsidian display layer with plugin data bridge, annotation sidebar/list, PDF jump navigation, risk-gated overlay, and verification gate.
 - Annotation Phase 5 executed: plugin runtime now stores active-paper annotation bridge state for Phase 6 UI consumption.
 - Annotation Phase 6 Plan 01 executed: Phase 5 bridge hard preflight passed — all required exports confirmed, plugin test environment ready.
+- Annotation Phase 6 Plan 02 executed: 11 pure annotation list view-model helpers with 78 Vitest tests.
 
 *Updated after each plan completion*
 | Phase annotation-06 P01 | 2min | 2 tasks | 0 files |
+| Phase annotation-06 P02 | 15min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -84,6 +86,10 @@ Recent decisions affecting current work:
 - [annotation v0.2]: Continue annotation phase numbering after Phase 4; v0.2 starts at Annotation Phase 5.
 - [annotation v0.2]: Prioritize Obsidian display/navigation/overlay before local editing or concept-card evidence integration.
 - [annotation v0.2]: PDF overlay is risk-gated; the sidebar/list remains the safe fallback.
+- [annotation v0.2 Plan 02]: Sorting uses pageIndex (numerical), not pageLabel — null/missing pages sort last.
+- [annotation v0.2 Plan 02]: Type/color filter uses `type|color` pipeline syntax; null color is `"null"` in composite key.
+- [annotation v0.2 Plan 02]: Preview limits: 140 chars (selected-text, ~2 lines) and 70 chars (comment, ~1 line) — generous for CJK.
+- [annotation v0.2 Plan 02]: View-model passes through annotation state `message` when available, with action-suggesting fallbacks.
 
 ### Pending Todos
 
@@ -98,6 +104,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-06-20T00:21:41Z
-Stopped at: Annotation Phase 6 Plan 01 completed (Phase 5 bridge hard preflight)
-Resume file: .planning/phases/annotation-06-annotation-sidebar-and-list-view/annotation-06-02-PLAN.md
+Last session: 2026-06-20T00:30:00Z
+Stopped at: Annotation Phase 6 Plan 02 completed (annotation list view-model helpers)
+Resume file: .planning/phases/annotation-06-annotation-sidebar-and-list-view/annotation-06-03-PLAN.md
