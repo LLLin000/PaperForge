@@ -2272,3 +2272,38 @@ def test_sequential_fallback_can_match_previous_page_asset_for_next_page_caption
     assert len(matched) == 1
     assert matched[0]["matched_assets"][0]["block_id"] == "a1"
     assert ambiguous == []
+
+
+# === Task 4: Figure namespace + page assets gate ===
+
+
+def test_main_and_supplementary_figures_do_not_dedup_into_one_number() -> None:
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    structured_blocks = [
+        {"page": 3, "block_id": "p3_c1", "role": "figure_caption", "text": "Figure 1. Migration assay under DC electric field stimulation over 48 hours.", "bbox": [100, 420, 600, 460]},
+        {"page": 3, "block_id": "p3_a1", "role": "figure_asset", "bbox": [100, 100, 600, 400], "text": ""},
+        {"page": 4, "block_id": "p4_c1", "role": "figure_caption", "text": "Supplementary Figure 1. Gene expression analysis under supplemental treatment conditions.", "bbox": [100, 420, 600, 460]},
+        {"page": 4, "block_id": "p4_a1", "role": "figure_asset", "bbox": [100, 100, 600, 400], "text": ""},
+    ]
+    inventory = build_figure_inventory(structured_blocks)
+    figure_ids = {fig["figure_id"] for fig in inventory["matched_figures"]}
+    assert "figure_001" in figure_ids
+    assert "figure_s001" in figure_ids
+
+
+def test_page_assets_does_not_strict_match_when_page_has_competing_captions() -> None:
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    structured_blocks = [
+        {"page": 5, "block_id": "p5_a1", "role": "figure_asset", "raw_label": "image", "bbox": [100, 100, 300, 260], "text": ""},
+        {"page": 5, "block_id": "p5_a2", "role": "figure_asset", "raw_label": "image", "bbox": [320, 100, 520, 260], "text": ""},
+        {"page": 5, "block_id": "p5_a3", "role": "figure_asset", "raw_label": "image", "bbox": [540, 100, 740, 260], "text": ""},
+        {"page": 5, "block_id": "p5_c1", "role": "figure_caption", "text": "Figure 1. Left.", "bbox": [100, 280, 320, 320], "zone": "display_zone", "style_family": "legend_like"},
+        {"page": 5, "block_id": "p5_c2", "role": "figure_caption", "text": "Figure 2. Right.", "bbox": [420, 280, 740, 320], "zone": "display_zone", "style_family": "legend_like"},
+    ]
+    inventory = build_figure_inventory(structured_blocks)
+    for fig in inventory["matched_figures"]:
+        for asset_info in fig.get("matched_assets", []):
+            evidence = asset_info.get("evidence", [])
+            assert all("page_assets" not in e for e in evidence)
