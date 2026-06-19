@@ -9,7 +9,7 @@ v0.2 makes those annotations visible and useful inside Obsidian. The milestone s
 ## Phases
 
 - [x] **Annotation Phase 5: Plugin Annotation Data Bridge** - Connect the Obsidian plugin to v0.1 annotation CLI JSON and normalize UI-ready state.
-- [ ] **Annotation Phase 6: Annotation Sidebar and List View** - Display paper-scoped annotations in Obsidian with scanning, filtering, refresh, and empty/error states.
+- [x] **Annotation Phase 6: Annotation Sidebar and List View** - Display paper-scoped annotations in Obsidian with scanning, filtering, refresh, and empty/error states. (completed 2026-06-19)
 - [ ] **Annotation Phase 7: PDF Jump Navigation** - Jump from an annotation row to the source PDF/page using existing paper/PDF path resolution.
 - [ ] **Annotation Phase 8: PDF Overlay Rendering Spike and Implementation** - Render imported annotations over the native PDF viewer when available, with graceful fallback.
 - [ ] **Annotation Phase 9: Display Layer Verification Gate** - Verify plugin parsing/rendering/navigation/overlay fallback and document known baseline failures separately.
