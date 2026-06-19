@@ -227,6 +227,79 @@ def _run_ocr_redo(vault: Path, dry_run: bool = False, verbose: bool = False, no_
     return ocr_redo_papers(vault, dry_run=dry_run, verbose=verbose, no_progress=no_progress)
 
 
+def _run_ocr_list(vault: Path, json_output: bool = False, output_file: str | None = None) -> int:
+    """List all papers with OCR maintenance status."""
+    from paperforge.worker.ocr_maintenance import collect_maintenance_rows
+
+    rows = collect_maintenance_rows(vault)
+    if json_output:
+        import json as _json
+
+        payload = _json.dumps([r.to_dict() for r in rows], ensure_ascii=False, default=str)
+        if output_file:
+            Path(output_file).write_text(payload, encoding="utf-8")
+            print(f"Wrote {len(rows)} rows to {output_file}")
+        else:
+            print(payload)
+        return 0
+
+    if not rows:
+        print("No OCR papers found.")
+        return 0
+
+    header = f"{'Key':12s} {'Title':42s} {'Status':8s} {'Health':6s} {'Ver':4s} {'Time':11s} {'Pg':>3s} {'Blk':>4s} {'Act'}"
+    print(header)
+    print("-" * len(header))
+    for r in rows:
+        act = r.recommended_action or "-"
+        print(
+            f"{r.key:12s} {r.title:42s} {r.status:8s} {r.health:6s} "
+            f"{r.version:4s} {r.finished_at:11s} {r.pages:>3d} {r.blocks:>4d} {act}"
+        )
+    return 0
+
+
+def _run_ocr_rebuild(
+    vault: Path,
+    keys: list[str] | None = None,
+    all_papers: bool = False,
+    status_filter: str | None = None,
+    dry_run: bool = False,
+) -> int:
+    """Rebuild OCR-derived artifacts from existing raw blocks."""
+    from paperforge.worker.ocr_maintenance import collect_maintenance_rows
+    from paperforge.worker.ocr_rebuild import run_derived_rebuild_for_keys
+
+    rows = collect_maintenance_rows(vault)
+
+    if all_papers:
+        keys = [r.key for r in rows if r.can_rebuild]
+    elif status_filter:
+        keys = [r.key for r in rows if r.status == status_filter and r.can_rebuild]
+    elif keys:
+        valid = {r.key for r in rows}
+        keys = [k for k in keys if k in valid]
+    else:
+        print("Specify paper keys, --all, or --status")
+        return 1
+
+    if not keys:
+        print("No papers matched for rebuild.")
+        return 0
+
+    if dry_run:
+        print(f"Would rebuild {len(keys)} paper(s):")
+        for k in keys:
+            print(f"  - {k}")
+        return 0
+
+    print(f"Rebuilding {len(keys)} paper(s)...")
+    result = run_derived_rebuild_for_keys(vault, keys)
+    count = result.get("rebuild_count", 0)
+    print(f"Done. Rebuilt {count} paper(s).")
+    return 0
+
+
 def run(args: argparse.Namespace) -> int:
     """Run OCR command.
 
@@ -260,6 +333,22 @@ def run(args: argparse.Namespace) -> int:
             no_progress=getattr(args, "no_progress", False),
         )
         return rc
+
+    if ocr_action == "list":
+        return _run_ocr_list(
+            vault,
+            json_output=json_output,
+            output_file=getattr(args, "output", None),
+        )
+
+    if ocr_action == "rebuild":
+        return _run_ocr_rebuild(
+            vault,
+            keys=getattr(args, "keys", None) or None,
+            all_papers=getattr(args, "all", False),
+            status_filter=getattr(args, "status", None),
+            dry_run=getattr(args, "dry_run", False),
+        )
 
     if key:
         logger.info("Processing specific key: %s", key)

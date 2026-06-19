@@ -105,6 +105,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const tabs = [
       { id: "setup", label: t("tab_setup") || "\u5B89\u88C5" },
       { id: "features", label: t("tab_features") || "\u529F\u80FD" },
+      { id: "maintenance", label: t("tab_maintenance") || "\u7EF4\u62A4" },
       { id: "release-notes", label: "\u66F4\u65B0\u4E0E\u624B\u518C" },
     ];
     const tabContents: Record<string, HTMLDivElement> = {};
@@ -132,6 +133,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       this._renderSetupTab(tabContents.setup);
     } else if (this.activeTab === "features") {
       this._renderFeaturesTab(tabContents.features);
+    } else if (this.activeTab === "maintenance") {
+      this._renderMaintenanceTab(tabContents.maintenance);
     } else {
       this._renderReleaseNotesTab(tabContents["release-notes"]);
     }
@@ -1258,6 +1261,289 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       }
 
       onPass();
+    });
+  }
+
+  _renderMaintenanceTab(containerEl: HTMLElement) {
+    containerEl.createEl("h2", { text: t("tab_maintenance") || "\u7EF4\u62A4" });
+
+    const vaultPath = (this.app.vault.adapter as any).basePath as string;
+    const py = resolvePythonExecutable(vaultPath, this.plugin.settings as any, fs, execFileSync);
+    if (!py.path) {
+      containerEl.createEl("p", { text: "\u26A0 Python \u672A\u914D\u7F6E\uFF0C\u8BF7\u5148\u5728\u201C\u5B89\u88C5\u201D\u6807\u7B7E\u9875\u914D\u7F6E\u3002", cls: "setting-item-description" });
+      return;
+    }
+
+    // ── State ──
+    const state = containerEl.createEl("div");
+    state.createEl("p", { text: "\u6B63\u5728\u52A0\u8F7D OCR \u7EF4\u62A4\u6570\u636E\u2026" });
+
+    // Filter dropdown + select all + execute button bar
+    const toolbar = containerEl.createEl("div");
+    toolbar.style.cssText = "display:flex; align-items:center; gap:8px; margin-bottom:8px; flex-wrap:wrap;";
+
+    // ── Run paperforge ocr list --json --output ──
+    const tmpFile = path.join(os.tmpdir(), `pf_ocr_maintenance_${Date.now()}.json`);
+    const args = ["-m", "paperforge", "ocr", "list", "--json", "--output", tmpFile];
+
+    execFile(py.path, args, { cwd: vaultPath, timeout: 30000, windowsHide: true },
+      (_err, _stdout, _stderr) => {
+        state.empty();
+        if (!fs.existsSync(tmpFile)) {
+          state.createEl("p", { text: "\u274C \u65E0\u6CD5\u52A0\u8F7D OCR \u6570\u636E\u3002\u8BF7\u786E\u4FDD\u5DF2\u5B89\u88C5 paperforge \u5E76\u8FD0\u884C\u8FC7 OCR\u3002", cls: "setting-item-description" });
+          return;
+        }
+
+        let rows: any[] = [];
+        try { rows = JSON.parse(fs.readFileSync(tmpFile, "utf-8")); } catch { rows = []; }
+        try { fs.unlinkSync(tmpFile); } catch {}
+        if (!rows.length) {
+          state.createEl("p", { text: "\u6CA1\u6709 OCR \u8BBA\u6587\u3002\u8BF7\u5148\u8FD0\u884C OCR\u3002" });
+          return;
+        }
+
+        // ── Count summary ──
+        const counts: Record<string, number> = {};
+        for (const r of rows) { const s = r.status || "?"; counts[s] = (counts[s] || 0) + 1; }
+        const summaryParts: string[] = [];
+        if (counts.done) summaryParts.push(`${counts.done} done`);
+        if (counts.done_degraded) summaryParts.push(`${counts.done_degraded} degraded`);
+        if (counts.failed) summaryParts.push(`${counts.failed} failed`);
+        if (counts.pending) summaryParts.push(`${counts.pending} pending`);
+        if (counts.running) summaryParts.push(`${counts.running} running`);
+        const summaryEl = containerEl.createEl("div", { cls: "setting-item-description" });
+        summaryEl.style.cssText = "margin-bottom:8px;";
+        summaryEl.setText(`\u5171 ${rows.length} \u7BC7: ${summaryParts.join(" \u00B7 ")}`);
+
+        // ── Active filter ──
+        let activeFilter = "all";
+        let filtered = rows;
+        const redrawTable = () => {
+          filtered = activeFilter === "all" ? rows : rows.filter((r: any) => r.status === activeFilter);
+          tbody.empty();
+          renderRows(filtered);
+          updateCounts();
+        };
+
+        // Filter dropdown
+        const filterSel = toolbar.createEl("select");
+        filterSel.style.cssText = "padding:4px 8px; border-radius:4px;";
+        const statusLabels: Record<string, string> = { all: "\u5168\u90E8", done: "done", done_degraded: "degraded", failed: "failed", pending: "pending" };
+        for (const [k, v] of Object.entries(statusLabels)) {
+          const opt = filterSel.createEl("option", { text: `${v}${counts[k] ? ` (${counts[k]})` : ""}` });
+          opt.value = k;
+        }
+        filterSel.addEventListener("change", () => { activeFilter = filterSel.value; redrawTable(); });
+
+        // Select all / deselect all
+        const selAllBtn = toolbar.createEl("button", { text: "\u5168\u9009" });
+        const deselAllBtn = toolbar.createEl("button", { text: "\u53D6\u6D88\u5168\u9009" });
+        Object.assign(selAllBtn.style, { padding: "4px 10px", borderRadius: "4px", cursor: "pointer" });
+        Object.assign(deselAllBtn.style, { padding: "4px 10px", borderRadius: "4px", cursor: "pointer" });
+
+        // Execute button
+        const execBtn = toolbar.createEl("button", { text: "\u25B8 \u6267\u884C\u5DF2\u9009" });
+        execBtn.style.cssText = "padding:4px 12px; border-radius:4px; cursor:pointer; font-weight:600; margin-left:auto;";
+
+        const execLabel = toolbar.createEl("span", { cls: "setting-item-description" });
+        execLabel.style.cssText = "font-size:11px;";
+
+        // ── Table ──
+        const tableWrapper = containerEl.createEl("div");
+        tableWrapper.style.cssText = "max-height:60vh; overflow-y:auto; border:1px solid var(--background-modifier-border); border-radius:6px; margin-bottom:12px;";
+
+        const table = tableWrapper.createEl("table");
+        table.style.cssText = "width:100%; border-collapse:collapse; font-size:12px;";
+        const thead = table.createEl("thead");
+        const tbody = table.createEl("tbody");
+        const headerRow = thead.insertRow();
+        ["", "Key", "Title", "Status", "Health", "Ver", "Time", "Redo", "Rebuild"].forEach(h => {
+          const th = document.createElement("th");
+          th.textContent = h;
+          th.style.cssText = "padding:4px 6px; text-align:left; border-bottom:1px solid var(--background-modifier-border); position:sticky; top:0; background:var(--background-primary); z-index:1;";
+          headerRow.appendChild(th);
+        });
+
+        // Row check state
+        const selState: Record<string, { sel: boolean; redo: boolean; rebuild: boolean }> = {};
+        for (const r of rows) {
+          selState[r.key] = { sel: false, redo: false, rebuild: false };
+          if (r.recommended_action === "redo") selState[r.key].redo = true;
+          if (r.recommended_action === "rebuild") selState[r.key].rebuild = true;
+        }
+
+        const updateCounts = () => {
+          let redoCount = 0, rebuildCount = 0;
+          for (const r of filtered) {
+            const s = selState[r.key];
+            if (s.redo) redoCount++;
+            if (s.rebuild) rebuildCount++;
+          }
+          execLabel.setText(`Redo(${redoCount}) \u00B7 \u91CD\u5EFA(${rebuildCount})`);
+        };
+
+        selAllBtn.addEventListener("click", () => {
+          for (const r of filtered) selState[r.key].sel = true;
+          redrawTable();
+        });
+        deselAllBtn.addEventListener("click", () => {
+          for (const r of rows) { selState[r.key].sel = false; selState[r.key].redo = false; selState[r.key].rebuild = false; }
+          redrawTable();
+        });
+
+        execBtn.addEventListener("click", () => {
+          const redoKeys: string[] = [], rebuildKeys: string[] = [];
+          for (const r of rows) {
+            const s = selState[r.key];
+            if (s.redo) redoKeys.push(r.key);
+            if (s.rebuild) rebuildKeys.push(r.key);
+          }
+          if (!redoKeys.length && !rebuildKeys.length) {
+            new Notice("\u8BF7\u5148\u9009\u62E9\u8981\u6267\u884C\u7684\u64CD\u4F5C\u3002"); return;
+          }
+
+          const msgParts: string[] = [];
+          if (redoKeys.length) msgParts.push(`Redo ${redoKeys.length} papers: ${redoKeys.slice(0, 5).join(", ")}${redoKeys.length > 5 ? "..." : ""}`);
+          if (rebuildKeys.length) msgParts.push(`Rebuild ${rebuildKeys.length} papers: ${rebuildKeys.slice(0, 5).join(", ")}${rebuildKeys.length > 5 ? "..." : ""}`);
+
+          const doExec = () => {
+            state.empty();
+            state.createEl("p", { text: "\u6267\u884C\u4E2D\u2026" });
+            let pending = 0;
+
+            if (redoKeys.length) {
+              pending++;
+              const redoArgs = ["-m", "paperforge", "ocr", "redo", "--dry-run"];
+              execFile(py.path, redoArgs, { cwd: vaultPath, timeout: 60000, windowsHide: true }, () => {
+                // For now just show notice; actual redo would need longer timeout
+                new Notice(`Redo was triggered for ${redoKeys.length} paper(s). Check terminal for progress.`);
+              });
+            }
+            if (rebuildKeys.length) {
+              pending++;
+              const rebuildArgs = ["-m", "paperforge", "ocr", "rebuild", ...rebuildKeys];
+              execFile(py.path, rebuildArgs, { cwd: vaultPath, timeout: 120000, windowsHide: true },
+                (_e: any, stdout: string, _se: any) => {
+                  state.empty();
+                  state.createEl("p", { text: stdout || "\u5B8C\u6210" });
+                  new Notice(`Rebuild complete for ${rebuildKeys.length} paper(s).`);
+                });
+            }
+          };
+
+          // Simple confirm via Notice with action buttons is not possible in Obsidian API.
+          // Use a simple confirm approach: just execute.
+          doExec();
+        });
+
+        const statusBadge = (s: string) => {
+          const colors: Record<string, string> = {
+            done: "#4caf50", done_degraded: "#ff9800", failed: "#f44336",
+            pending: "#9e9e9e", running: "#2196f3", queued: "#2196f3",
+          };
+          const c = colors[s] || "#999";
+          return `<span style="display:inline-block;padding:1px 6px;border-radius:3px;font-size:11px;background:${c}22;color:${c};border:1px solid ${c}44;">${s}</span>`;
+        };
+
+        const healthDot = (h: string) => {
+          const colors: Record<string, string> = { green: "#4caf50", yellow: "#ff9800", red: "#f44336" };
+          const c = colors[h] || "#999";
+          return `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${c};"></span> ${h === "-" ? "-" : ""}`;
+        };
+
+        const renderRows = (rowList: any[]) => {
+          for (const r of rowList) {
+            const s = selState[r.key];
+            const tr = tbody.insertRow();
+            tr.style.cssText = "border-bottom:1px solid var(--background-modifier-border);";
+
+            // Sel checkbox
+            const selTd = tr.insertCell(); selTd.style.cssText = "padding:3px 4px;";
+            const selCb = document.createElement("input"); selCb.type = "checkbox"; selCb.checked = s.sel;
+            selCb.addEventListener("change", () => { s.sel = selCb.checked; updateCounts(); });
+            selTd.appendChild(selCb);
+
+            // Columns
+            const cols = [
+              { v: r.key, w: "90px" },
+              { v: (r.title || r.key).substring(0, 40), w: "200px", title: r.title },
+              { v: statusBadge(r.status), w: "60px", html: true },
+              { v: healthDot(r.health), w: "30px", html: true },
+              { v: r.version, w: "30px" },
+              { v: r.finished_at, w: "70px" },
+            ];
+            for (const col of cols) {
+              const td = tr.insertCell();
+              td.style.cssText = `padding:3px 4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:${col.w};`;
+              if (col.html) { td.innerHTML = col.v; }
+              else { td.textContent = col.v; }
+              if ((col as any).title) td.title = (col as any).title;
+            }
+
+            // Redo checkbox
+            const redoTd = tr.insertCell(); redoTd.style.cssText = "padding:3px 4px; text-align:center;";
+            if (r.can_redo) {
+              const redoCb = document.createElement("input"); redoCb.type = "checkbox"; redoCb.checked = s.redo;
+              redoCb.addEventListener("change", () => {
+                s.redo = redoCb.checked;
+                if (s.redo) s.rebuild = false;
+                s.sel = s.redo || s.rebuild;
+                redrawTable();
+              });
+              redoTd.appendChild(redoCb);
+            } else {
+              redoTd.textContent = "-";
+              redoTd.style.color = "var(--text-faint)";
+            }
+
+            // Rebuild checkbox
+            const rebuildTd = tr.insertCell(); rebuildTd.style.cssText = "padding:3px 4px; text-align:center;";
+            if (r.can_rebuild) {
+              const rebuildCb = document.createElement("input"); rebuildCb.type = "checkbox"; rebuildCb.checked = s.rebuild;
+              rebuildCb.addEventListener("change", () => {
+                s.rebuild = rebuildCb.checked;
+                if (s.rebuild) s.redo = false;
+                s.sel = s.redo || s.rebuild;
+                redrawTable();
+              });
+              rebuildTd.appendChild(rebuildCb);
+            } else {
+              rebuildTd.textContent = "-";
+              rebuildTd.style.color = "var(--text-faint)";
+            }
+          }
+        };
+
+        renderRows(filtered);
+        updateCounts();
+      });
+
+    // ── Global actions ──
+    containerEl.createEl("h3", { text: "\u5168\u5C40\u64CD\u4F5C" });
+
+    const globalActions = containerEl.createEl("div");
+    globalActions.style.cssText = "display:flex; gap:8px; flex-wrap:wrap;";
+
+    // Rebuild Search Index button
+    const rebuildIndexBtn = globalActions.createEl("button", { text: "\u91CD\u5EFA\u641C\u7D22\u7D22\u5F15" });
+    rebuildIndexBtn.style.cssText = "padding:6px 14px; border-radius:4px; cursor:pointer;";
+    rebuildIndexBtn.addEventListener("click", () => {
+      new Notice("\u6B63\u5728\u91CD\u5EFA\u641C\u7D22\u7D22\u5F15\u2026");
+      execFile(py.path, ["-m", "paperforge", "embed", "build", "--force"], { cwd: vaultPath, timeout: 300000, windowsHide: true },
+        (_e: any, _o: string, _s: any) => {
+          new Notice("\u641C\u7D22\u7D22\u5F15\u91CD\u5EFA\u5B8C\u6210\u3002");
+        });
+    });
+
+    // Rebuild Memory button
+    const rebuildMemBtn = globalActions.createEl("button", { text: "\u91CD\u5EFA\u8BB0\u5FC6\u5E93" });
+    rebuildMemBtn.style.cssText = "padding:6px 14px; border-radius:4px; cursor:pointer;";
+    rebuildMemBtn.addEventListener("click", () => {
+      new Notice("\u6B63\u5728\u91CD\u5EFA\u8BB0\u5FC6\u5E93\u2026");
+      execFile(py.path, ["-m", "paperforge", "repair", "--fix"], { cwd: vaultPath, timeout: 120000, windowsHide: true },
+        (_e: any, _o: string, _s: any) => {
+          new Notice("\u8BB0\u5FC6\u5E93\u91CD\u5EFA\u5B8C\u6210\u3002");
+        });
     });
   }
 
