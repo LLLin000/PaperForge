@@ -1,6 +1,6 @@
 # OCR-v2 Project Management Log
 
-> **Branch:** `ocr-v2` | **Base:** `master` | **Last Updated:** 2026-06-19 (full rebuild audit — 452 papers, 18 dimensions)
+> **Branch:** `ocr-v2` | **Base:** `master` | **Last Updated:** 2026-06-20 (rebuild hardening batch executed; next slice scoped)
 > **Rule:** Every step is documented with: What was done, Why it was done, What comes next.
 
 ---
@@ -31,6 +31,16 @@ Execution authority:
 - Historical readiness residuals: `project/current/ocr-v2-remaining-issues-2026-06-18.md`
 
 `PROJECT-MANAGEMENT.md` records the handoff but does not override the active queue.
+
+### 0.4 Current OCR Slice
+
+The first post-readiness rebuild-hardening batch is complete.
+The current slice is now split into two new design threads:
+
+- `docs/superpowers/specs/2026-06-20-table-note-stabilization-design.md`
+- `docs/superpowers/specs/2026-06-20-region-growing-figure-merge-design.md`
+
+These are intentionally separate so table-local ownership and figure-group growth can be verified independently.
 
 ---
 
@@ -1354,3 +1364,15 @@ For each paper: rebuilt pipeline, generated annotated pages, performed visual bl
 **Design spec:** `docs/superpowers/specs/2026-06-19-ocr-rebuild-audit-remediation-design.md`
 
 **Execution plan:** `docs/superpowers/plans/2026-06-19-ocr-rebuild-audit-remediation-implementation.md`
+
+### 11.4 Table Note Stabilization + Table Ambiguity Slice (2026-06-20)
+
+**Problem:** Table notes still risked confusion with page footnotes and body text, while bare `Table N` captions still stayed overly ambiguous after the first rebuild-hardening pass.
+
+**Root cause:** The table surface lacked a page-footnote prior, grouped note-band ownership, and stronger layout tie-breaks among already-accepted table candidates.
+
+**Fix:** Added page-footnote priors, table-below note-band grouping, body exclusion, explicit note-band contract fields, and stronger same-page / continuation tie-breaks for bare `Table N`.
+
+**Result:** Table-note ownership is more stable, page-bottom footer notes are less likely to be absorbed, and table ambiguity is reduced through geometry rather than freer caption admission.
+
+**Validation:** Rebuilt 7 residual and unseen papers after the change; no new failure family introduced.
