@@ -630,6 +630,501 @@ function createAnnotationLifecycleController(opts) {
     };
 }
 
+// ── Annotation list view-model helpers (Phase 6, Plan 02) ──
+
+/**
+ * Create a fresh, session-local annotation list UI state.
+ *
+ * @returns {{ query: string, groupMode: string, typeColorFilter: string, expandedIds: string[] }}
+ */
+function createDefaultAnnotationListUiState() {
+    return {
+        query: '',
+        groupMode: 'none',
+        typeColorFilter: 'all',
+        expandedIds: [],
+    };
+}
+
+/**
+ * Compute a stable, unique identity string for a normalized annotation row.
+ *
+ * Uses the source annotation key when available, then falls back to
+ * pdfLocation rowId, then to a composite of display + pdfLocation fields.
+ *
+ * @param {object} row - A normalized annotation row ({ display, provenance, pdfLocation }).
+ * @returns {string}
+ */
+function getAnnotationIdentity(row) {
+    if (!row) return '';
+    const p = row.provenance || {};
+    const loc = row.pdfLocation || {};
+    const d = row.display || {};
+
+    if (p.sourceAnnotationKey) return String(p.sourceAnnotationKey);
+    if (loc.rowId) return String(loc.rowId);
+    if (p.source) return p.source + '|' + (p.sourceAttachmentKey || '') + '|' + (d.page != null ? d.page : '') + '|' + (loc.sortIndex != null ? loc.sortIndex : 0);
+    return 'row|' + (d.page != null ? d.page : '') + '|' + (loc.sortIndex != null ? loc.sortIndex : 0);
+}
+
+/**
+ * Sort normalized annotation rows in PDF reading order:
+ *   1. Page index ascending (missing pages sort last).
+ *   2. sortIndex ascending within the same page.
+ *   3. Stable identity tiebreaker for deterministic ordering.
+ *
+ * Does NOT mutate the input array.
+ *
+ * @param {Array<object>} rows - Normalized annotation rows.
+ * @returns {Array<object>} New array sorted in reading order.
+ */
+function sortAnnotationsForReadingOrder(rows) {
+    if (!Array.isArray(rows)) return [];
+    const copy = rows.slice();
+    copy.sort((a, b) => {
+        const locA = a && a.pdfLocation || {};
+        const locB = b && b.pdfLocation || {};
+
+        // Page index (null/missing sorts last)
+        const pageA = locA.pageIndex != null ? locA.pageIndex : Number.MAX_SAFE_INTEGER;
+        const pageB = locB.pageIndex != null ? locB.pageIndex : Number.MAX_SAFE_INTEGER;
+        if (pageA !== pageB) return pageA - pageB;
+
+        // sortIndex within page
+        const sortA = locA.sortIndex != null ? locA.sortIndex : Number.MAX_SAFE_INTEGER;
+        const sortB = locB.sortIndex != null ? locB.sortIndex : Number.MAX_SAFE_INTEGER;
+        if (sortA !== sortB) return sortA - sortB;
+
+        // Stable identity tiebreaker
+        const idA = getAnnotationIdentity(a);
+        const idB = getAnnotationIdentity(b);
+        if (idA < idB) return -1;
+        if (idA > idB) return 1;
+        return 0;
+    });
+    return copy;
+}
+
+/**
+ * Group annotation rows by the specified mode.
+ *
+ * Modes:
+ *   "none"       — single group containing all rows.
+ *   "page"       — groups by pageIndex, sorted by page ascending.
+ *   "type-color" — groups by type + color combination, sorted by type then color.
+ *
+ * Within each group, rows preserve reading-order sort.
+ *
+ * @param {Array<object>} rows - Normalized annotation rows.
+ * @param {string} groupMode - One of "none", "page", "type-color".
+ * @returns {{ mode: string, groups: Array<{ key: string, label: string, rows: object[] }> }}
+ */
+function groupAnnotationRows(rows, groupMode) {
+    const sorted = sortAnnotationsForReadingOrder(rows);
+
+    if (groupMode === 'none' || !groupMode) {
+        return {
+            mode: 'none',
+            groups: [{ key: 'all', label: 'All annotations', rows: sorted }],
+        };
+    }
+
+    if (groupMode === 'page') {
+        const pageMap = new Map();
+        for (const row of sorted) {
+            const loc = row && row.pdfLocation || {};
+            const page = loc.pageIndex != null ? loc.pageIndex : -1;
+            const pageLabel = loc.pageLabel || String(page);
+            const key = 'page-' + page;
+            if (!pageMap.has(key)) {
+                pageMap.set(key, { key, label: 'Page ' + pageLabel, rows: [] });
+            }
+            pageMap.get(key).rows.push(row);
+        }
+        // Sort groups by page
+        const groups = Array.from(pageMap.values());
+        groups.sort((a, b) => {
+            const pA = parseInt(a.key.replace('page-', ''), 10);
+            const pB = parseInt(b.key.replace('page-', ''), 10);
+            return pA - pB;
+        });
+        return { mode: 'page', groups };
+    }
+
+    if (groupMode === 'type-color') {
+        const tcMap = new Map();
+        for (const row of sorted) {
+            const d = row && row.display || {};
+            const type = d.type || 'unknown';
+            const color = d.color != null ? d.color : 'null';
+            const key = 'type-color-' + type + '-' + color;
+            if (!tcMap.has(key)) {
+                const label = color !== 'null'
+                    ? type + ' [' + color + ']'
+                    : type;
+                tcMap.set(key, { key, label, rows: [] });
+            }
+            tcMap.get(key).rows.push(row);
+        }
+        // Sort groups by type then color
+        const groups = Array.from(tcMap.values());
+        groups.sort((a, b) => {
+            const aType = (a.key.split('-').slice(2, -1).join('-') || '');
+            const bType = (b.key.split('-').slice(2, -1).join('-') || '');
+            if (aType !== bType) return aType < bType ? -1 : 1;
+            const aColor = a.key.split('-').pop() || '';
+            const bColor = b.key.split('-').pop() || '';
+            return aColor < bColor ? -1 : (aColor > bColor ? 1 : 0);
+        });
+        return { mode: 'type-color', groups };
+    }
+
+    // Unknown mode → treat as none
+    return {
+        mode: 'none',
+        groups: [{ key: 'all', label: 'All annotations', rows: sorted }],
+    };
+}
+
+/**
+ * Build a list of unique type/color filter options from the given rows.
+ *
+ * Each option has { type, color, label }.
+ *
+ * @param {Array<object>} rows - Normalized annotation rows.
+ * @returns {Array<{ type: string, color: string|null, label: string }>}
+ */
+function buildAnnotationFilterOptions(rows) {
+    if (!Array.isArray(rows) || rows.length === 0) return [];
+
+    const seen = new Set();
+    const options = [];
+    for (const row of rows) {
+        const d = row && row.display || {};
+        const type = d.type || 'unknown';
+        const color = d.color != null ? d.color : null;
+        const key = type + '|' + (color !== null ? color : 'null');
+        if (!seen.has(key)) {
+            seen.add(key);
+            const label = color !== null
+                ? type + ' [' + color + ']'
+                : type;
+            options.push({ type, color, label });
+        }
+    }
+    return options;
+}
+
+/**
+ * Check whether a normalized annotation row's display text matches a search query.
+ *
+ * Matches against `selectedText` and `comment` ONLY.
+ * Does NOT match raw, provenance, source, attachment, annotation key, timestamps,
+ * or any debug fields.
+ *
+ * Empty/null/undefined query matches everything.
+ *
+ * @param {object} row - Normalized annotation row.
+ * @param {string|null|undefined} query - Search string.
+ * @returns {boolean}
+ */
+function matchesAnnotationSearch(row, query) {
+    if (!query || typeof query !== 'string' || query.trim() === '') return true;
+    const q = query.toLowerCase().trim();
+    const d = row && row.display || {};
+    const selectedText = (d.selectedText || '').toLowerCase();
+    const comment = (d.comment || '').toLowerCase();
+    return selectedText.includes(q) || comment.includes(q);
+}
+
+/**
+ * Check if a row matches a type/color filter value.
+ *
+ * Filter values:
+ *   "all"               — matches everything
+ *   "highlight"         — matches type only
+ *   "highlight|#ffd400" — matches type + color
+ *   "" / null / undefined — matches everything
+ *
+ * @param {object} row - Normalized annotation row.
+ * @param {string|null|undefined} filter - Filter value.
+ * @returns {boolean}
+ */
+function matchesAnnotationTypeColorFilter(row, filter) {
+    if (!filter || filter === 'all' || filter === '') return true;
+    const d = row && row.display || {};
+    const rowType = d.type || 'unknown';
+    const rowColor = d.color != null ? d.color : 'null';
+
+    // Support both "type" and "type|color" formats
+    const parts = filter.split('|');
+    const filterType = parts[0];
+    const filterColor = parts.length > 1 ? parts[1] : null;
+
+    if (rowType !== filterType) return false;
+    if (filterColor !== null && rowColor !== filterColor) return false;
+    return true;
+}
+
+// ── Preview and expansion helpers ──
+
+/**
+ * Compute preview metadata for a text content block.
+ *
+ * "selected-text" text gets two-line preview (~140 chars),
+ * "comment" text gets one-line preview (~70 chars).
+ *
+ * Returns { text, kind, truncated, expandable } without DOM measurement.
+ *
+ * @param {string|null|undefined} text - The content to preview.
+ * @param {"selected-text"|"comment"} kind - The kind of content.
+ * @returns {{ text: string, kind: string, truncated: boolean, expandable: boolean }}
+ */
+function getAnnotationPreview(text, kind) {
+    const safeText = (text != null ? String(text) : '');
+    const limit = kind === 'selected-text' ? 140 : 70;
+
+    if (safeText.length <= limit) {
+        return { text: safeText, kind, truncated: false, expandable: false };
+    }
+
+    const truncated = safeText.substring(0, limit) + '…';
+    return { text: truncated, kind, truncated: true, expandable: true };
+}
+
+/**
+ * Toggle a row ID in the expansion set.
+ *
+ * Returns a NEW uiState object (immutable update) with the ID added
+ * if absent or removed if present. Does not mutate the input.
+ *
+ * @param {{ query, groupMode, typeColorFilter, expandedIds }} uiState - Current UI state.
+ * @param {string} rowId - Stable annotation identity to toggle.
+ * @returns {{ query, groupMode, typeColorFilter, expandedIds }}
+ */
+function toggleAnnotationExpansion(uiState, rowId) {
+    const currentExpanded = uiState.expandedIds || [];
+    const index = currentExpanded.indexOf(rowId);
+    let newExpanded;
+    if (index === -1) {
+        newExpanded = currentExpanded.concat([rowId]);
+    } else {
+        newExpanded = currentExpanded.slice(0, index).concat(currentExpanded.slice(index + 1));
+    }
+    return {
+        query: uiState.query || '',
+        groupMode: uiState.groupMode || 'none',
+        typeColorFilter: uiState.typeColorFilter || 'all',
+        expandedIds: newExpanded,
+    };
+}
+
+// ── View-model builder ──
+
+/**
+ * Build a complete annotation list view-model from the bridge annotation state
+ * and the current session-local UI state.
+ *
+ * The view-model centralizes everything the Phase 6 UI needs:
+ *   state, rows (filtered, sorted), total (unfiltered), groups, banner,
+ *   emptyMessage, errorMessage, filterOptions, and current uiState.
+ *
+ * State mapping:
+ *   idle        → { state: 'idle', rows: [] }
+ *   loading     → { state: 'loading', rows: [], banner: 'Loading…' }
+ *   ready       → { state: 'ready', rows: [filtered+sorted], groups: …, total: N }
+ *   empty       → { state: 'empty', rows: [], emptyMessage: '…' }
+ *   missing-db  → { state: 'missing-db', rows: [], errorMessage: '…' }
+ *   missing-paper → { state: 'missing-paper', rows: [], errorMessage: '…' }
+ *   cli-error   → { state: 'cli-error', rows: [], errorMessage: '…' }
+ *   invalid-json → { state: 'invalid-json', rows: [], errorMessage: '…' }
+ *
+ * @param {{ state, paperKey, annotations, message, errorCode, raw, stale }} annotationState
+ * @param {{ query, groupMode, typeColorFilter, expandedIds }} uiState
+ * @returns {object}
+ */
+function buildAnnotationListViewModel(annotationState, uiState) {
+    const aState = annotationState || { state: 'idle', annotations: [] };
+    const ui = uiState || createDefaultAnnotationListUiState();
+    const rows = Array.isArray(aState.annotations) ? aState.annotations : [];
+
+    // Total before filtering
+    const total = rows.length;
+    const state = aState.state || 'idle';
+
+    // ── Banner-only states (no rows) ──
+    if (state === 'loading') {
+        return {
+            state: 'loading',
+            rows: [],
+            total: 0,
+            banner: aState.message || 'Loading annotations…',
+            filterOptions: [],
+            groups: undefined,
+            uiState: ui,
+        };
+    }
+
+    if (state === 'idle') {
+        return {
+            state: 'idle',
+            rows: [],
+            total: 0,
+            filterOptions: [],
+            groups: undefined,
+            uiState: ui,
+        };
+    }
+
+    // ── Error/empty states (no rows, but with messages) ──
+    if (state === 'empty') {
+        return {
+            state: 'empty',
+            rows: [],
+            total: 0,
+            emptyMessage: aState.message || 'This paper has no annotations yet. Import annotations from Zotero first.',
+            filterOptions: [],
+            groups: undefined,
+            uiState: ui,
+            stale: aState.stale || false,
+        };
+    }
+
+    if (state === 'missing-db') {
+        return {
+            state: 'missing-db',
+            rows: [],
+            total: 0,
+            errorMessage: aState.message || 'The annotation database is not yet available. Initialize or repair annotation data first.',
+            filterOptions: [],
+            groups: undefined,
+            uiState: ui,
+            stale: aState.stale || false,
+        };
+    }
+
+    if (state === 'missing-paper') {
+        return {
+            state: 'missing-paper',
+            rows: [],
+            total: 0,
+            errorMessage: aState.message || 'No paper is currently active. Open a recognized paper note or PDF to view its annotations.',
+            filterOptions: [],
+            groups: undefined,
+            uiState: ui,
+            stale: aState.stale || false,
+        };
+    }
+
+    if (state === 'cli-error') {
+        return {
+            state: 'cli-error',
+            rows: [],
+            total: 0,
+            errorMessage: aState.message || 'Failed to load annotations. Retry or check PaperForge annotation status.',
+            filterOptions: [],
+            groups: undefined,
+            uiState: ui,
+            stale: aState.stale || false,
+        };
+    }
+
+    if (state === 'invalid-json') {
+        return {
+            state: 'invalid-json',
+            rows: [],
+            total: 0,
+            errorMessage: aState.message || 'Could not read annotation data. Check the local CLI output for details.',
+            filterOptions: [],
+            groups: undefined,
+            uiState: ui,
+            stale: aState.stale || false,
+        };
+    }
+
+    // ── Ready state with rows ──
+    if (state === 'ready') {
+        // Sort first
+        let visibleRows = sortAnnotationsForReadingOrder(rows);
+
+        // Apply type/color filter
+        if (ui.typeColorFilter && ui.typeColorFilter !== 'all') {
+            visibleRows = visibleRows.filter(r => matchesAnnotationTypeColorFilter(r, ui.typeColorFilter));
+        }
+
+        // Apply search filter
+        if (ui.query && ui.query.trim() !== '') {
+            visibleRows = visibleRows.filter(r => matchesAnnotationSearch(r, ui.query));
+        }
+
+        // Build groups if needed
+        let groups;
+        if (ui.groupMode && ui.groupMode !== 'none') {
+            groups = groupAnnotationRows(visibleRows, ui.groupMode);
+        }
+
+        // Build filter options from ALL annotations (not just filtered)
+        const filterOptions = buildAnnotationFilterOptions(rows);
+
+        return {
+            state: 'ready',
+            rows: visibleRows,
+            total,
+            filterOptions,
+            groups: groups,
+            uiState: ui,
+            stale: aState.stale || false,
+        };
+    }
+
+    // Unknown state → fallback
+    return {
+        state: 'idle',
+        rows: [],
+        total: 0,
+        filterOptions: [],
+        groups: undefined,
+        uiState: ui,
+    };
+}
+
+/**
+ * Merge a refresh result with the previous renderable annotation state.
+ *
+ * When a refresh fails after a previous successful (ready/empty) state,
+ * the previous state is preserved and marked `stale: true` with an
+ * updated message indicating the failure and that the data is stale.
+ *
+ * When refresh succeeds, the new state is returned as-is.
+ * When there is no previous success, the new state is returned as-is
+ * (no stale data to preserve).
+ *
+ * @param {object|null} previousRenderable - Previous annotation state (or null).
+ * @param {object} nextState - New annotation state from refresh.
+ * @returns {object} The merged annotation state (never null).
+ */
+function mergeAnnotationRefreshResult(previousRenderable, nextState) {
+    // If refresh succeeded (ready/empty), return new state directly
+    if (nextState.state === 'ready' || nextState.state === 'empty') {
+        return nextState;
+    }
+
+    // Refresh failed — check if we have a previous successful state
+    if (previousRenderable) {
+        const prevState = previousRenderable.state || '';
+        if (prevState === 'ready' || prevState === 'empty') {
+            // Preserve previous state but mark as stale
+            const merged = JSON.parse(JSON.stringify(previousRenderable));
+            merged.stale = true;
+            merged.message = (nextState.message || 'Refresh failed.') + ' — Showing previously loaded (stale) data.';
+            return merged;
+        }
+    }
+
+    // No previous success to fall back to
+    return nextState;
+}
+
 module.exports = {
     resolvePythonExecutable,
     getPluginVersion,
@@ -650,4 +1145,16 @@ module.exports = {
     loadAnnotationsForPaper,
     // Lifecycle controller
     createAnnotationLifecycleController,
+    // Annotation list view-model helpers (Phase 6, Plan 02)
+    createDefaultAnnotationListUiState,
+    getAnnotationIdentity,
+    sortAnnotationsForReadingOrder,
+    groupAnnotationRows,
+    buildAnnotationFilterOptions,
+    matchesAnnotationSearch,
+    matchesAnnotationTypeColorFilter,
+    getAnnotationPreview,
+    toggleAnnotationExpansion,
+    buildAnnotationListViewModel,
+    mergeAnnotationRefreshResult,
 };
