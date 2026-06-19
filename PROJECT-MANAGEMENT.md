@@ -1376,3 +1376,15 @@ For each paper: rebuilt pipeline, generated annotated pages, performed visual bl
 **Result:** Table-note ownership is more stable, page-bottom footer notes are less likely to be absorbed, and table ambiguity is reduced through geometry rather than freer caption admission.
 
 **Validation:** Rebuilt 7 residual and unseen papers after the change; no new failure family introduced.
+
+### 11.5 Region-Growing Figure Merge Slice (2026-06-20)
+
+**Problem:** Row-first pair/triple grouping had become safe after `page_assets` gating, but still under-modeled irregular multi-panel figures and left figure ownership recall on the table.
+
+**Root cause:** Candidate groups were still built around neat-layout assumptions and lacked a seed-growth model plus post-growth validation.
+
+**Fix:** Added seed-based local region growth, retained merge evidence per absorbed asset, validated grown groups before strict ownership, and demoted or split suspicious merges rather than forcing them.
+
+**Result:** Figure grouping is less dependent on tidy layouts while preserving the no-page-swallow guardrail.
+
+**Validation:** Rebuilt residual and unseen figure-heavy papers after the change; no new failure family introduced.
