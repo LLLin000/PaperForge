@@ -1,6 +1,6 @@
 # [SUPERSEDED] OCR Error Root Cause Analysis & Fix Queue
 
-> **This file is superseded.** The issues documented here were resolved in Phase 2 / unified close-out (June 17–18). All 5 readiness gates are now DONE. See `ocr-v2-closeout-priority.md` for the active queue and `ocr-v2-remaining-issues-2026-06-18.md` for remaining low-severity residuals.
+> **This file is superseded.** The issues documented here were resolved in Phase 2 / unified close-out (June 17–18). All 5 readiness gates are now DONE. See `ocr-v2-active-queue.md` for the active queue and `ocr-v2-remaining-issues-2026-06-18.md` for remaining low-severity residuals.
 
 **Date:** 2026-06-17
 **Baseline:** After PDF text fallback fix (empty-text blocks recovered)

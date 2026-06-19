@@ -70,7 +70,7 @@ The audit corpus is formalized via `audit/coverage_ledger.json` using the approv
 
 ## Agreed Direction
 
-Execution priority is currently governed by `project/current/ocr-v2-closeout-priority.md`.
+Execution priority is currently governed by `project/current/ocr-v2-active-queue.md`.
 This file remains the broader architectural boundary note, not the day-to-day execution queue.
 
 ### Priority 1: Figure ownership generalization
@@ -121,7 +121,7 @@ Expand fixture classification deliberately, not randomly:
 
 ## Next Actions
 
-1. Keep `PROJECT-MANAGEMENT.md` and `project/current/ocr-v2-closeout-priority.md` aligned.
+1. Keep `PROJECT-MANAGEMENT.md` and `project/current/ocr-v2-active-queue.md` aligned.
 2. Use `docs/superpowers/specs/2026-06-18-ocr-v2-readiness-gates-design.md` as the definition of "state healthy."
 3. Execute `docs/superpowers/plans/2026-06-18-ocr-v2-readiness-master-plan.md` as the active queue.
 4. Implement Gate 1 completeness before reopening Gate 2 figure-group work.
