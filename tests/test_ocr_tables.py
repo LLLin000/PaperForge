@@ -1,4 +1,5 @@
 """Task 5 tests for hardened table matching."""
+
 from __future__ import annotations
 
 
@@ -492,7 +493,13 @@ def test_table_inventory_considers_previous_page_assets() -> None:
 
     blocks = [
         {"block_id": "asset1", "role": "table_asset", "page": 1, "bbox": [100, 900, 700, 1200]},
-        {"block_id": "cap1", "role": "table_caption", "page": 2, "text": "Table 1. Baseline characteristics", "bbox": [100, 80, 700, 120]},
+        {
+            "block_id": "cap1",
+            "role": "table_caption",
+            "page": 2,
+            "text": "Table 1. Baseline characteristics",
+            "bbox": [100, 80, 700, 120],
+        },
     ]
 
     inventory = build_table_inventory(blocks)
@@ -506,7 +513,13 @@ def test_table_inventory_marks_close_scores_ambiguous() -> None:
     from paperforge.worker.ocr_tables import build_table_inventory
 
     blocks = [
-        {"block_id": "cap1", "role": "table_caption", "page": 1, "text": "Table 1. Baseline characteristics", "bbox": [100, 100, 700, 140]},
+        {
+            "block_id": "cap1",
+            "role": "table_caption",
+            "page": 1,
+            "text": "Table 1. Baseline characteristics",
+            "bbox": [100, 100, 700, 140],
+        },
         {"block_id": "asset1", "role": "table_asset", "page": 1, "bbox": [100, 160, 700, 400]},
         {"block_id": "asset2", "role": "table_asset", "page": 1, "bbox": [105, 165, 705, 405]},
     ]
@@ -805,8 +818,21 @@ def test_table_inventory_emits_note_payload_and_consumed_block_ids() -> None:
 
     structured_blocks = [
         {"page": 5, "block_id": "p5_a1", "role": "table_asset", "text": "table data", "bbox": [100, 100, 600, 400]},
-        {"page": 5, "block_id": "p5_c1", "role": "table_caption", "text": "Table 1. Main results", "bbox": [100, 420, 600, 460]},
-        {"page": 5, "block_id": "p5_n1", "role": "footnote", "raw_label": "table_footnote", "text": "* p < 0.05", "bbox": [100, 405, 600, 425]},
+        {
+            "page": 5,
+            "block_id": "p5_c1",
+            "role": "table_caption",
+            "text": "Table 1. Main results",
+            "bbox": [100, 420, 600, 460],
+        },
+        {
+            "page": 5,
+            "block_id": "p5_n1",
+            "role": "footnote",
+            "raw_label": "table_footnote",
+            "text": "* p < 0.05",
+            "bbox": [100, 405, 600, 425],
+        },
     ]
 
     inventory = build_table_inventory(structured_blocks)
@@ -852,9 +878,17 @@ def test_matched_table_asset_role_is_written_back() -> None:
 
 def test_bare_table_number_matches_when_geometry_and_table_evidence_are_strong() -> None:
     from paperforge.worker.ocr_tables import build_table_inventory
+
     structured_blocks = [
         {"page": 5, "block_id": "p5_c1", "role": "table_caption", "text": "Table 1", "bbox": [100, 100, 600, 140]},
-        {"page": 5, "block_id": "p5_a1", "role": "table_asset", "raw_label": "table", "bbox": [100, 160, 600, 400], "text": ""},
+        {
+            "page": 5,
+            "block_id": "p5_a1",
+            "role": "table_asset",
+            "raw_label": "table",
+            "bbox": [100, 160, 600, 400],
+            "text": "",
+        },
     ]
     inventory = build_table_inventory(structured_blocks)
     assert len(inventory["tables"]) == 1
@@ -867,11 +901,45 @@ def test_page_footnote_prior_prevents_table_at_page_bottom_from_absorbing_footer
     from paperforge.worker.ocr_tables import build_table_inventory
 
     structured_blocks = [
-        {"page": 4, "block_id": "p4_a1", "role": "table_asset", "raw_label": "table", "bbox": [80, 980, 760, 1280], "text": ""},
-        {"page": 4, "block_id": "p4_c1", "role": "table_caption", "text": "Table 2. Results", "bbox": [80, 1295, 760, 1330]},
-        {"page": 4, "block_id": "p4_fn1", "role": "footnote", "raw_label": "vision_footnote", "text": "* Correspondence footnote", "bbox": [80, 1365, 760, 1390]},
-        {"page": 2, "block_id": "p2_fn1", "role": "footnote", "raw_label": "vision_footnote", "text": "* prior footer", "bbox": [70, 1360, 750, 1388]},
-        {"page": 3, "block_id": "p3_fn1", "role": "footnote", "raw_label": "vision_footnote", "text": "* prior footer", "bbox": [72, 1362, 748, 1389]},
+        {
+            "page": 4,
+            "block_id": "p4_a1",
+            "role": "table_asset",
+            "raw_label": "table",
+            "bbox": [80, 980, 760, 1280],
+            "text": "",
+        },
+        {
+            "page": 4,
+            "block_id": "p4_c1",
+            "role": "table_caption",
+            "text": "Table 2. Results",
+            "bbox": [80, 1295, 760, 1330],
+        },
+        {
+            "page": 4,
+            "block_id": "p4_fn1",
+            "role": "footnote",
+            "raw_label": "vision_footnote",
+            "text": "* Correspondence footnote",
+            "bbox": [80, 1365, 760, 1390],
+        },
+        {
+            "page": 2,
+            "block_id": "p2_fn1",
+            "role": "footnote",
+            "raw_label": "vision_footnote",
+            "text": "* prior footer",
+            "bbox": [70, 1360, 750, 1388],
+        },
+        {
+            "page": 3,
+            "block_id": "p3_fn1",
+            "role": "footnote",
+            "raw_label": "vision_footnote",
+            "text": "* prior footer",
+            "bbox": [72, 1362, 748, 1389],
+        },
     ]
 
     inventory = build_table_inventory(structured_blocks)
@@ -888,10 +956,37 @@ def test_table_note_blocks_group_into_single_note_band() -> None:
     from paperforge.worker.ocr_tables import build_table_inventory
 
     structured_blocks = [
-        {"page": 5, "block_id": "p5_a1", "role": "table_asset", "raw_label": "table", "bbox": [100, 100, 640, 430], "text": ""},
-        {"page": 5, "block_id": "p5_c1", "role": "table_caption", "text": "Table 1. Main results", "bbox": [100, 445, 640, 475]},
-        {"page": 5, "block_id": "p5_n1", "role": "footnote", "raw_label": "table_footnote", "text": "* p < 0.05", "bbox": [110, 440, 520, 458]},
-        {"page": 5, "block_id": "p5_n2", "role": "footnote", "raw_label": "table_footnote", "text": "Data are mean ± SD.", "bbox": [110, 460, 560, 480]},
+        {
+            "page": 5,
+            "block_id": "p5_a1",
+            "role": "table_asset",
+            "raw_label": "table",
+            "bbox": [100, 100, 640, 430],
+            "text": "",
+        },
+        {
+            "page": 5,
+            "block_id": "p5_c1",
+            "role": "table_caption",
+            "text": "Table 1. Main results",
+            "bbox": [100, 445, 640, 475],
+        },
+        {
+            "page": 5,
+            "block_id": "p5_n1",
+            "role": "footnote",
+            "raw_label": "table_footnote",
+            "text": "* p < 0.05",
+            "bbox": [110, 440, 520, 458],
+        },
+        {
+            "page": 5,
+            "block_id": "p5_n2",
+            "role": "footnote",
+            "raw_label": "table_footnote",
+            "text": "Data are mean ± SD.",
+            "bbox": [110, 460, 560, 480],
+        },
     ]
 
     inventory = build_table_inventory(structured_blocks)
@@ -907,12 +1002,79 @@ def test_table_note_blocks_group_into_single_note_band() -> None:
 
 def test_bare_table_number_stays_ambiguous_when_competing_assets_are_close() -> None:
     from paperforge.worker.ocr_tables import build_table_inventory
+
     structured_blocks = [
-        {"page": 5, "block_id": "p5_a1", "role": "table_asset", "raw_label": "table", "bbox": [100, 100, 430, 400], "text": ""},
-        {"page": 5, "block_id": "p5_a2", "role": "table_asset", "raw_label": "table", "bbox": [450, 100, 780, 400], "text": ""},
+        {
+            "page": 5,
+            "block_id": "p5_a1",
+            "role": "table_asset",
+            "raw_label": "table",
+            "bbox": [100, 100, 430, 400],
+            "text": "",
+        },
+        {
+            "page": 5,
+            "block_id": "p5_a2",
+            "role": "table_asset",
+            "raw_label": "table",
+            "bbox": [450, 100, 780, 400],
+            "text": "",
+        },
         {"page": 5, "block_id": "p5_c1", "role": "table_caption", "text": "Table 1", "bbox": [100, 420, 780, 450]},
     ]
     inventory = build_table_inventory(structured_blocks)
     table = inventory["tables"][0]
     assert table["has_asset"] is False
     assert table["match_status"] == "ambiguous"
+
+
+def test_bare_table_number_prefers_candidate_with_better_x_overlap_and_shorter_vertical_gap() -> None:
+    from paperforge.worker.ocr_tables import build_table_inventory
+
+    structured_blocks = [
+        {
+            "page": 6,
+            "block_id": "p6_a1",
+            "role": "table_asset",
+            "raw_label": "table",
+            "bbox": [100, 200, 600, 500],
+            "text": "",
+        },
+        {
+            "page": 6,
+            "block_id": "p6_a2",
+            "role": "table_asset",
+            "raw_label": "table",
+            "bbox": [620, 120, 980, 520],
+            "text": "",
+        },
+        {"page": 6, "block_id": "p6_c1", "role": "table_caption", "text": "Table 3", "bbox": [100, 520, 600, 545]},
+    ]
+
+    inventory = build_table_inventory(structured_blocks)
+    table = inventory["tables"][0]
+
+    assert table["asset_block_id"] == "p6_a1"
+    assert table["match_status"] in {"matched", "matched_low_confidence"}
+
+
+def test_bare_table_number_can_match_previous_page_continuation_under_strong_geometry() -> None:
+    from paperforge.worker.ocr_tables import build_table_inventory
+
+    structured_blocks = [
+        {
+            "page": 7,
+            "block_id": "p7_a1",
+            "role": "table_asset",
+            "raw_label": "table",
+            "bbox": [100, 120, 640, 1000],
+            "text": "",
+        },
+        {"page": 8, "block_id": "p8_c1", "role": "table_caption", "text": "Table 4", "bbox": [100, 90, 640, 120]},
+    ]
+
+    inventory = build_table_inventory(structured_blocks)
+    table = inventory["tables"][0]
+
+    assert table["match_status"] in {"matched_low_confidence", "matched"}
+    assert table["asset_block_id"] == "p7_a1"

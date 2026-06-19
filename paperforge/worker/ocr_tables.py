@@ -70,6 +70,14 @@ def _has_strong_spatial_evidence_for_bare_table(caption: dict, top_candidate_sco
     return spatial_markers.issubset(set(evidence))
 
 
+def _bare_table_tie_break(score: dict, caption: dict, asset: dict) -> tuple[float, float, float]:
+    cb = caption.get("bbox") or [0, 0, 0, 0]
+    ab = asset.get("bbox") or [0, 0, 0, 0]
+    x_overlap = min(cb[2], ab[2]) - max(cb[0], ab[0]) if len(cb) >= 4 and len(ab) >= 4 else 0.0
+    vertical_gap = max(0.0, cb[1] - ab[3]) if len(cb) >= 4 and len(ab) >= 4 else 9999.0
+    return (float(score.get("score", 0.0)), float(x_overlap), -float(vertical_gap))
+
+
 def _score_candidate_assets(
     page_assets: list[tuple[int, dict]],
     caption: dict,
@@ -154,6 +162,14 @@ def build_table_inventory(structured_blocks: list[dict]) -> dict[str, Any]:
 
     used_asset_indices: set[int] = set()
     page_footnote_prior = _collect_page_footnote_prior(structured_blocks)
+
+    _page_max_y: dict[int, float] = {}
+    for block in structured_blocks:
+        bbox = block.get("bbox") or [0, 0, 0, 0]
+        if len(bbox) >= 4:
+            page = int(block.get("page", 0) or 0)
+            _page_max_y[page] = max(_page_max_y.get(page, 0.0), float(bbox[3]))
+
     for caption in captions:
         caption_page = caption.get("page", 0)
         caption_text = caption.get("text", "")
@@ -181,7 +197,6 @@ def build_table_inventory(structured_blocks: list[dict]) -> dict[str, Any]:
             )
             continue
         if is_weak_explicit_caption:
-            # Check if spatial evidence is strong enough to override bare caption weakness
             candidate_pages = [caption_page - 1, caption_page, caption_page + 1]
             pre_candidates: list[tuple[int, dict, dict]] = []
             for page in candidate_pages:
@@ -193,41 +208,42 @@ def build_table_inventory(structured_blocks: list[dict]) -> dict[str, Any]:
                     if i not in used_asset_indices and asset.get("page", 0) == page
                 ]
                 pre_candidates.extend(_score_candidate_assets(page_assets_list, caption, is_continuation=is_cont))
-            pre_candidates.sort(key=lambda item: item[2].get("score", 0.0), reverse=True)
 
-            if pre_candidates and _has_strong_spatial_evidence_for_bare_table(caption, pre_candidates[0][2]):
-                second_score = pre_candidates[1][2].get("score", 0.0) if len(pre_candidates) > 1 else -1.0
-                score = pre_candidates[0][2].get("score", 0.0)
-                if score - second_score >= 0.2:
-                    pass  # strong spatial evidence, proceed to normal matching
-                else:
-                    unmatched_captions.append(caption)
-                    tables.append(
-                        {
-                            "caption_block_id": caption.get("block_id", ""),
-                            "page": caption_page,
-                            "caption_text": caption_text,
-                            "table_number": table_num,
-                            "formal_table_number": formal_table_number,
-                            "asset_block_id": "",
-                            "asset_bbox": [],
-                            "assistive_text": "",
-                            "truth_source": "image",
-                            "has_asset": False,
-                            "segments": [],
-                            "is_continuation": is_cont,
-                            "continuation_of": None,
-                            "match_status": "ambiguous",
-                            "candidate_assets": [],
-                            "match_score": {
-                                "score": 0.0,
-                                "matched_asset_id": "",
-                                "decision": "ambiguous",
-                                "evidence": ["weak_explicit_caption"],
-                            },
-                        }
-                    )
-                    continue
+            # Continuation geometry elevation for cross-page candidates
+            for item in pre_candidates:
+                _i, asset, score_dict = item
+                a_page = int(asset.get("page", 0) or 0)
+                if a_page and a_page == caption_page - 1:
+                    ab = asset.get("bbox") or [0, 0, 0, 0]
+                    cb = caption.get("bbox") or [0, 0, 0, 0]
+                    if len(ab) >= 4 and len(cb) >= 4:
+                        x_ratio = (min(cb[2], ab[2]) - max(cb[0], ab[0])) / max(1.0, min(cb[2] - cb[0], ab[2] - ab[0]))
+                        page_h = max(_page_max_y.values()) if _page_max_y else 1.0
+                        if x_ratio >= 0.5 and float(ab[3]) >= page_h * 0.85 and float(cb[1]) <= page_h * 0.15:
+                            score_dict["score"] = min(score_dict.get("score", 0.0) + 0.15, 1.0)
+                            score_dict.setdefault("evidence", []).append("continuation_geometry_elevation")
+
+            # Tie-break re-sort
+            pre_candidates.sort(
+                key=lambda item: _bare_table_tie_break(item[2], caption, item[1]),
+                reverse=True,
+            )
+
+            should_proceed = False
+            if pre_candidates:
+                top_score = pre_candidates[0][2].get("score", 0.0)
+                second_score_pre = pre_candidates[1][2].get("score", 0.0) if len(pre_candidates) > 1 else -1.0
+                score_gap = top_score - second_score_pre
+                top_evidence = pre_candidates[0][2].get("evidence", [])
+                has_strong_spatial = _has_strong_spatial_evidence_for_bare_table(caption, pre_candidates[0][2])
+                is_cont_match = "continuation_geometry_elevation" in top_evidence
+                is_tie_break_winner = top_score >= 0.5 and score_gap >= 0.2
+
+                if (has_strong_spatial and score_gap >= 0.2) or is_cont_match or is_tie_break_winner:
+                    should_proceed = True
+
+            if should_proceed:
+                pass
             else:
                 unmatched_captions.append(caption)
                 tables.append(
