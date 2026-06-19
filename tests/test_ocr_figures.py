@@ -2307,3 +2307,32 @@ def test_page_assets_does_not_strict_match_when_page_has_competing_captions() ->
         for asset_info in fig.get("matched_assets", []):
             evidence = asset_info.get("evidence", [])
             assert all("page_assets" not in e for e in evidence)
+
+
+def test_region_growth_absorbs_adjacent_right_neighbor() -> None:
+    from paperforge.worker.ocr_figures import _grow_region_from_seed
+
+    seed = {"block_id": "a1", "bbox": [100, 100, 300, 260], "page": 5}
+    others = [
+        {"block_id": "a2", "bbox": [315, 105, 520, 258], "page": 5},
+        {"block_id": "a3", "bbox": [700, 100, 920, 260], "page": 5},
+    ]
+
+    group = _grow_region_from_seed(seed, others, page_width=1000)
+
+    assert group["asset_block_ids"] == ["a1", "a2"]
+    assert any(step["reason"] == "adjacent_right" for step in group["growth_steps"])
+
+
+def test_region_growth_absorbs_adjacent_below_neighbor() -> None:
+    from paperforge.worker.ocr_figures import _grow_region_from_seed
+
+    seed = {"block_id": "a1", "bbox": [100, 100, 320, 250], "page": 6}
+    others = [
+        {"block_id": "a2", "bbox": [98, 265, 325, 420], "page": 6},
+    ]
+
+    group = _grow_region_from_seed(seed, others, page_width=1000)
+
+    assert group["asset_block_ids"] == ["a1", "a2"]
+    assert any(step["reason"] == "adjacent_below" for step in group["growth_steps"])

@@ -212,10 +212,7 @@ def _is_validation_first_legend_candidate(block: dict) -> bool:
     if marker_type != "figure_number":
         return False
 
-    return (
-        zone in {"body_zone", "display_zone", "tail_nonref_hold_zone"}
-        and style_family == "legend_like"
-    ) or (
+    return (zone in {"body_zone", "display_zone", "tail_nonref_hold_zone"} and style_family == "legend_like") or (
         role not in {"figure_caption", "figure_caption_candidate"}
         and zone == "display_zone"
         and raw_label == "figure_title"
@@ -358,6 +355,49 @@ def _cluster_bbox(bboxes: list[list[float]]) -> list[float]:
     return [x1, y1, x2, y2]
 
 
+def _asset_gap_right(a: dict, b: dict) -> float:
+    ab = a.get("bbox") or [0, 0, 0, 0]
+    bb = b.get("bbox") or [0, 0, 0, 0]
+    return max(0.0, bb[0] - ab[2])
+
+
+def _asset_gap_below(a: dict, b: dict) -> float:
+    ab = a.get("bbox") or [0, 0, 0, 0]
+    bb = b.get("bbox") or [0, 0, 0, 0]
+    return max(0.0, bb[1] - ab[3])
+
+
+def _grow_region_from_seed(seed: dict, others: list[dict], page_width: float) -> dict:
+    group = [seed]
+    growth_steps: list[dict] = []
+    remaining = list(others)
+    changed = True
+    while changed:
+        changed = False
+        group_bbox = _cluster_bbox([g.get("bbox", [0, 0, 0, 0]) for g in group])
+        next_remaining = []
+        for candidate in remaining:
+            reason = None
+            cb = candidate.get("bbox") or [0, 0, 0, 0]
+            if cb[0] >= group_bbox[2] and _asset_gap_right({"bbox": group_bbox}, candidate) <= page_width * 0.03:
+                reason = "adjacent_right"
+            elif cb[1] >= group_bbox[3] and _asset_gap_below({"bbox": group_bbox}, candidate) <= page_width * 0.03:
+                reason = "adjacent_below"
+            if reason:
+                group.append(candidate)
+                growth_steps.append({"added_block_id": candidate.get("block_id", ""), "reason": reason})
+                changed = True
+            else:
+                next_remaining.append(candidate)
+        remaining = next_remaining
+    return {
+        "seed_asset_block_id": seed.get("block_id", ""),
+        "asset_block_ids": [g.get("block_id", "") for g in group if g.get("block_id")],
+        "growth_steps": growth_steps,
+        "group_bbox": _cluster_bbox([g.get("bbox", [0, 0, 0, 0]) for g in group]),
+    }
+
+
 def _media_clusters(blocks: list[dict], page_width: float = 1200) -> list[list[dict]]:
     media = [
         b
@@ -412,7 +452,9 @@ def _bbox_center_y(bbox: list[float]) -> float:
     return float(bbox[1] + bbox[3]) / 2.0
 
 
-def _candidate_group_entry(group_id: str, page: int, media_blocks: list[dict], group_type: str, evidence: list[str]) -> dict:
+def _candidate_group_entry(
+    group_id: str, page: int, media_blocks: list[dict], group_type: str, evidence: list[str]
+) -> dict:
     return {
         "group_id": group_id,
         "page": page,
@@ -426,7 +468,8 @@ def _candidate_group_entry(group_id: str, page: int, media_blocks: list[dict], g
 
 def _build_candidate_figure_groups_from_assets(assets: list[dict], page_width: float = 1200) -> list[dict]:
     media = [
-        b for b in assets
+        b
+        for b in assets
         if not b.get("_non_body_media")
         and (
             b.get("role") == "figure_asset"
@@ -446,17 +489,23 @@ def _build_candidate_figure_groups_from_assets(assets: list[dict], page_width: f
 
     for page, page_media in by_page.items():
         for block in page_media:
-            groups.append(_candidate_group_entry(f"group_{next_id:03d}", page, [block], "single_asset", ["single_asset"]))
+            groups.append(
+                _candidate_group_entry(f"group_{next_id:03d}", page, [block], "single_asset", ["single_asset"])
+            )
             next_id += 1
 
         # ponytail: page-level group for multi-panel figures with irregular layouts
         if len(page_media) >= 3:
-            groups.append(_candidate_group_entry(f"group_{next_id:03d}", page, list(page_media), "page_assets", ["same_page", "all_assets"]))
+            groups.append(
+                _candidate_group_entry(
+                    f"group_{next_id:03d}", page, list(page_media), "page_assets", ["same_page", "all_assets"]
+                )
+            )
             next_id += 1
 
         for start in range(len(page_media)):
             for size in (2, 3):
-                chunk = page_media[start:start + size]
+                chunk = page_media[start : start + size]
                 if len(chunk) != size:
                     continue
                 bboxes = [b.get("bbox", [0, 0, 0, 0]) for b in chunk]
@@ -562,8 +611,7 @@ def _expand_matched_assets_locally(
         lower_caption_tops = [
             (cap.get("bbox") or [0, 0, 0, 0])[1]
             for cap in page_captions
-            if cap.get("block_id") != legend.get("block_id")
-            and (cap.get("bbox") or [0, 0, 0, 0])[1] > cy2
+            if cap.get("block_id") != legend.get("block_id") and (cap.get("bbox") or [0, 0, 0, 0])[1] > cy2
         ]
         next_caption_top = min(lower_caption_tops) if lower_caption_tops else None
 
@@ -586,7 +634,9 @@ def _expand_matched_assets_locally(
             horizontal_overlap = max(0.0, min(cx2, ax2) - max(cx1, ax1))
             horizontal_gap = max(0.0, ax1 - cx2, cx1 - ax2)
             min_width = max(1.0, min(cx2 - cx1, ax2 - ax1))
-            wide_enough_overlap = horizontal_overlap >= min_width * 0.25 or (horizontal_gap <= 30.0 and horizontal_gap < min_width * 0.1)
+            wide_enough_overlap = horizontal_overlap >= min_width * 0.25 or (
+                horizontal_gap <= 30.0 and horizontal_gap < min_width * 0.1
+            )
             touches_stack = vertical_gap <= 30.0
 
             if touches_stack and wide_enough_overlap:
@@ -722,7 +772,8 @@ def _caption_width_ratio(block: dict, page_width: float) -> float:
 
 def _same_page_narrow_caption_column(page_captions: list[dict], page_width: float) -> list[dict]:
     formal = [
-        cap for cap in page_captions
+        cap
+        for cap in page_captions
         if _extract_figure_number(str(cap.get("text", ""))) is not None
         if _caption_width_ratio(cap, page_width) < 0.6
         and not _PANEL_LABEL_PATTERN.match(str(cap.get("text", "")).strip())
@@ -769,17 +820,28 @@ def _allow_previous_page_sequential_match(cap: dict, asset: dict) -> bool:
     prior_asset_near_bottom = asset_bottom >= page_height * 0.7
     wide_caption = cap_width >= page_width * 0.6
     substantial_asset = asset_width >= page_width * 0.2
-    return strong_numbered_caption and post_reference_layout and starts_page and prior_asset_near_bottom and wide_caption and substantial_asset
+    return (
+        strong_numbered_caption
+        and post_reference_layout
+        and starts_page
+        and prior_asset_near_bottom
+        and wide_caption
+        and substantial_asset
+    )
 
 
-def _partition_assets_by_caption_bands(page_captions: list[dict], page_assets: list[dict], page_height: float) -> dict[str, list[dict]]:
+def _partition_assets_by_caption_bands(
+    page_captions: list[dict], page_assets: list[dict], page_height: float
+) -> dict[str, list[dict]]:
     if len(page_captions) < 2:
         return {}
 
     ordered = sorted(page_captions, key=lambda cap: (cap.get("bbox") or [0, 0, 0, 0])[1])
     result: dict[str, list[dict]] = {str(cap.get("block_id", "")): [] for cap in ordered}
     caption_tops = [((cap.get("bbox") or [0, 0, 0, 0])[1]) for cap in ordered]
-    asset_centers = [(((asset.get("bbox") or [0, 0, 0, 0])[1] + (asset.get("bbox") or [0, 0, 0, 0])[3]) / 2) for asset in page_assets]
+    asset_centers = [
+        (((asset.get("bbox") or [0, 0, 0, 0])[1] + (asset.get("bbox") or [0, 0, 0, 0])[3]) / 2) for asset in page_assets
+    ]
     captions_precede_assets = bool(asset_centers) and min(caption_tops) <= min(asset_centers)
 
     boundaries: list[float] = [0.0]
@@ -899,10 +961,12 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
             ns = _extract_figure_namespace(text)
             key = (ns, fn)
             if key in seen_fig_keys:
-                deduped_legend_ids.append({
-                    "page": legend.get("page"),
-                    "block_id": legend.get("block_id", ""),
-                })
+                deduped_legend_ids.append(
+                    {
+                        "page": legend.get("page"),
+                        "block_id": legend.get("block_id", ""),
+                    }
+                )
                 continue
             seen_fig_keys.add(key)
             deduped_legends.append(_dedup_map[key])
@@ -921,7 +985,8 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
             _page_captions_for_gate.setdefault(block.get("page", 0), set()).add(block["block_id"])
     _competing_caption_pages = {p for p, ids in _page_captions_for_gate.items() if len(ids) > 1}
     candidate_groups = [
-        g for g in candidate_groups
+        g
+        for g in candidate_groups
         if not (g.get("group_type") == "page_assets" and g.get("page") in _competing_caption_pages)
     ]
 
@@ -1013,7 +1078,14 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
                     lcx = (legend_bb[0] + legend_bb[2]) / 2 if len(legend_bb) >= 4 else 0
                     best = close[0]
                     best_delta = abs(
-                        lcx - ((best[1].get("cluster_bbox", [0, 0, 0, 0])[0] + best[1].get("cluster_bbox", [0, 0, 0, 0])[2]) / 2)
+                        lcx
+                        - (
+                            (
+                                best[1].get("cluster_bbox", [0, 0, 0, 0])[0]
+                                + best[1].get("cluster_bbox", [0, 0, 0, 0])[2]
+                            )
+                            / 2
+                        )
                     )
                     best_orig_score = best[2]["score"]
                     for ci, cg, cs in close:
@@ -1219,18 +1291,14 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
         # when the normal spatial matching violates vertical ordering (top
         # caption should own top assets, bottom caption bottom assets).
         nid_set = {str(cap.get("block_id", "")) for cap in narrow_set}
-        page_unmatched = any(
-            str(l.get("block_id", "")) in nid_set for l in unmatched_legends
-        )
-        page_ambiguous = any(
-            str(af.get("legend_block_id", "")) in nid_set for af in ambiguous_figures
-        )
+        page_unmatched = any(str(l.get("block_id", "")) in nid_set for l in unmatched_legends)
+        page_ambiguous = any(str(af.get("legend_block_id", "")) in nid_set for af in ambiguous_figures)
+
         def _median_y(items: list[dict]) -> float:
             ys = sorted((a.get("bbox") or [0, 0, 0, 0])[1] for a in items)
             return float(ys[len(ys) // 2]) if ys else 0.0
-        page_narrow_matched = [
-            mf for mf in matched_figures if str(mf.get("legend_block_id", "")) in nid_set
-        ]
+
+        page_narrow_matched = [mf for mf in matched_figures if str(mf.get("legend_block_id", "")) in nid_set]
         violation = len(page_narrow_matched) != len(narrow_set)
         if not violation and len(page_narrow_matched) > 1:
             ordered = sorted(page_narrow_matched, key=lambda mf: int(mf.get("figure_number", 0) or 0))
@@ -1244,10 +1312,9 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
         page_assets_list = [a for a in assets if a.get("page") == sidecar_page and not a.get("_non_body_media")]
         if not page_assets_list:
             continue
-        sidecar_page_height = float(max(
-            (b.get("bbox") or [0, 0, 0, 0])[3]
-            for b in structured_blocks if b.get("page") == sidecar_page
-        ) or 1600)
+        sidecar_page_height = float(
+            max((b.get("bbox") or [0, 0, 0, 0])[3] for b in structured_blocks if b.get("page") == sidecar_page) or 1600
+        )
         band_map = _partition_assets_by_caption_bands(narrow_set, page_assets_list, sidecar_page_height)
         sidecar_promoted: list[dict] = []
         sidecar_consumed_ids: set[tuple] = set()
@@ -1264,20 +1331,28 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
                 bid = ba.get("block_id", "")
                 if bid is not None:
                     sidecar_consumed_ids.add((ap, bid))
-            fig_id = _format_figure_id(cap_ns, fig_num) if fig_num else f"figure_sidecar_{len(matched_figures) + len(sidecar_promoted):03d}"
+            fig_id = (
+                _format_figure_id(cap_ns, fig_num)
+                if fig_num
+                else f"figure_sidecar_{len(matched_figures) + len(sidecar_promoted):03d}"
+            )
             sidecar_entry = {
                 "figure_id": fig_id,
                 "legend_block_id": cap.get("block_id", ""),
                 "page": sidecar_page,
                 "text": cap_text,
                 "figure_number": fig_num,
-                "matched_assets": [{"block_id": a.get("block_id", ""), "bbox": a.get("bbox", [0, 0, 0, 0])} for a in band_assets],
+                "matched_assets": [
+                    {"block_id": a.get("block_id", ""), "bbox": a.get("bbox", [0, 0, 0, 0])} for a in band_assets
+                ],
                 "group_type": "sidecar_partition",
                 "group_evidence": ["same_page", "narrow_caption_column", "sidecar_fallback"],
                 "confidence": 0.5,
                 "match_score": {"score": 0.5, "decision": "matched", "evidence": ["sidecar_fallback"]},
                 "flags": ["sidecar_match"],
-                "caption_score": score_figure_caption(cap, nearby_media=True, caption_style_match=False, body_prose_likelihood=False),
+                "caption_score": score_figure_caption(
+                    cap, nearby_media=True, caption_style_match=False, body_prose_likelihood=False
+                ),
             }
             if len(band_assets) > 1:
                 sidecar_entry["cluster_bbox"] = _cluster_bbox([a.get("bbox", [0, 0, 0, 0]) for a in band_assets])
@@ -1287,8 +1362,14 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
         matched_figures = [mf for mf in matched_figures if str(mf.get("legend_block_id", "")) not in nid_set]
         for legend in list(legends):
             if str(legend.get("block_id", "")) in nid_set:
-                ambiguous_figures[:] = [af for af in ambiguous_figures if str(af.get("legend_block_id", "")) != str(legend.get("block_id", ""))]
-                unmatched_legends[:] = [ul for ul in unmatched_legends if str(ul.get("block_id", "")) != str(legend.get("block_id", ""))]
+                ambiguous_figures[:] = [
+                    af
+                    for af in ambiguous_figures
+                    if str(af.get("legend_block_id", "")) != str(legend.get("block_id", ""))
+                ]
+                unmatched_legends[:] = [
+                    ul for ul in unmatched_legends if str(ul.get("block_id", "")) != str(legend.get("block_id", ""))
+                ]
         matched_figures.extend(sidecar_promoted)
         used_asset_page_ids.update(sidecar_consumed_ids)
 
@@ -1339,7 +1420,11 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
                 scan_index += 1
 
             asset = None
-            if asset is None and previous_page_asset is not None and _allow_previous_page_sequential_match(cap, previous_page_asset):
+            if (
+                asset is None
+                and previous_page_asset is not None
+                and _allow_previous_page_sequential_match(cap, previous_page_asset)
+            ):
                 asset = previous_page_asset
             if asset is None and future_page_asset is not None:
                 asset = future_page_asset
@@ -1360,24 +1445,28 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
                 cap, nearby_media=True, caption_style_match=False, body_prose_likelihood=False
             )
             seq_matched.append((cap, asset))
-            matched_figures.append({
-                "figure_id": fig_id,
-                "figure_namespace": cap_ns,
-                "legend_block_id": cap.get("block_id", ""),
-                "page": asset.get("page", 0),
-                "text": cap.get("text", ""),
-                "figure_number": fn,
-                "matched_assets": [{
-                    "block_id": asset.get("block_id", ""),
-                    "bbox": asset.get("bbox", [0, 0, 0, 0]),
-                }],
-                "group_type": "",
-                "group_evidence": [],
-                "confidence": 0.35,
-                "match_score": {"score": 0.35, "decision": "matched", "evidence": ["sequential_fallback"]},
-                "flags": ["sequential_match"],
-                "caption_score": caption_score,
-            })
+            matched_figures.append(
+                {
+                    "figure_id": fig_id,
+                    "figure_namespace": cap_ns,
+                    "legend_block_id": cap.get("block_id", ""),
+                    "page": asset.get("page", 0),
+                    "text": cap.get("text", ""),
+                    "figure_number": fn,
+                    "matched_assets": [
+                        {
+                            "block_id": asset.get("block_id", ""),
+                            "bbox": asset.get("bbox", [0, 0, 0, 0]),
+                        }
+                    ],
+                    "group_type": "",
+                    "group_evidence": [],
+                    "confidence": 0.35,
+                    "match_score": {"score": 0.35, "decision": "matched", "evidence": ["sequential_fallback"]},
+                    "flags": ["sequential_match"],
+                    "caption_score": caption_score,
+                }
+            )
             if asset_bid:
                 used_asset_page_ids.add((asset_page, asset_bid))
         for cap, asset in seq_matched:
@@ -1458,7 +1547,7 @@ def compute_figure_legend_completeness(
     figure_number_re = re.compile(
         r"(?:Figure|Fig\.?|Supplementary\s+Figure|Supplementary\s+Fig\.?|"
         r"Extended\s+Data\s+Figure|Extended\s+Data\s+Fig\.?)\s+"
-    r"(?:S\.?\s*)?(\d+(?:\.\d+)?)",
+        r"(?:S\.?\s*)?(\d+(?:\.\d+)?)",
         flags=re.IGNORECASE,
     )
 
