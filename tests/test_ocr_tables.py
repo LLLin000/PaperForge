@@ -543,7 +543,7 @@ def test_table_note_binds_footnote_role_block_adjacent_below_asset() -> None:
             "page": 5,
             "block_id": "p5_fn1",
             "role": "footnote",
-            "raw_label": "vision_footnote",
+            "raw_label": "table_footnote",
             "text": "* p < 0.05",
             "bbox": [100, 410, 600, 435],
         },
@@ -806,7 +806,7 @@ def test_table_inventory_emits_note_payload_and_consumed_block_ids() -> None:
     structured_blocks = [
         {"page": 5, "block_id": "p5_a1", "role": "table_asset", "text": "table data", "bbox": [100, 100, 600, 400]},
         {"page": 5, "block_id": "p5_c1", "role": "table_caption", "text": "Table 1. Main results", "bbox": [100, 420, 600, 460]},
-        {"page": 5, "block_id": "p5_n1", "role": "footnote", "raw_label": "vision_footnote", "text": "* p < 0.05", "bbox": [100, 405, 600, 425]},
+        {"page": 5, "block_id": "p5_n1", "role": "footnote", "raw_label": "table_footnote", "text": "* p < 0.05", "bbox": [100, 405, 600, 425]},
     ]
 
     inventory = build_table_inventory(structured_blocks)
@@ -861,6 +861,48 @@ def test_bare_table_number_matches_when_geometry_and_table_evidence_are_strong()
     table = inventory["tables"][0]
     assert table["has_asset"] is True
     assert table["asset_block_id"] == "p5_a1"
+
+
+def test_page_footnote_prior_prevents_table_at_page_bottom_from_absorbing_footer_note() -> None:
+    from paperforge.worker.ocr_tables import build_table_inventory
+
+    structured_blocks = [
+        {"page": 4, "block_id": "p4_a1", "role": "table_asset", "raw_label": "table", "bbox": [80, 980, 760, 1280], "text": ""},
+        {"page": 4, "block_id": "p4_c1", "role": "table_caption", "text": "Table 2. Results", "bbox": [80, 1295, 760, 1330]},
+        {"page": 4, "block_id": "p4_fn1", "role": "footnote", "raw_label": "vision_footnote", "text": "* Correspondence footnote", "bbox": [80, 1365, 760, 1390]},
+        {"page": 2, "block_id": "p2_fn1", "role": "footnote", "raw_label": "vision_footnote", "text": "* prior footer", "bbox": [70, 1360, 750, 1388]},
+        {"page": 3, "block_id": "p3_fn1", "role": "footnote", "raw_label": "vision_footnote", "text": "* prior footer", "bbox": [72, 1362, 748, 1389]},
+    ]
+
+    inventory = build_table_inventory(structured_blocks)
+    table = inventory["tables"][0]
+
+    assert table["note_block_ids"] == []
+    assert table["note_bboxes"] == []
+    assert table["note_band_bbox"] == []
+    assert table["note_confidence"] == 0.0
+    assert table["note_match_reason"] == "page_footnote_prior_rejected"
+
+
+def test_table_note_blocks_group_into_single_note_band() -> None:
+    from paperforge.worker.ocr_tables import build_table_inventory
+
+    structured_blocks = [
+        {"page": 5, "block_id": "p5_a1", "role": "table_asset", "raw_label": "table", "bbox": [100, 100, 640, 430], "text": ""},
+        {"page": 5, "block_id": "p5_c1", "role": "table_caption", "text": "Table 1. Main results", "bbox": [100, 445, 640, 475]},
+        {"page": 5, "block_id": "p5_n1", "role": "footnote", "raw_label": "table_footnote", "text": "* p < 0.05", "bbox": [110, 440, 520, 458]},
+        {"page": 5, "block_id": "p5_n2", "role": "footnote", "raw_label": "table_footnote", "text": "Data are mean ± SD.", "bbox": [110, 460, 560, 480]},
+    ]
+
+    inventory = build_table_inventory(structured_blocks)
+    table = inventory["tables"][0]
+
+    assert table["note_block_ids"] == ["p5_n1", "p5_n2"]
+    assert table["note_texts"] == ["* p < 0.05", "Data are mean ± SD."]
+    assert table["note_bboxes"] == [[110, 440, 520, 458], [110, 460, 560, 480]]
+    assert table["note_band_bbox"] == [110, 440, 560, 480]
+    assert table["note_confidence"] == 0.85
+    assert table["note_match_reason"] == "note_band_geometry_match"
 
 
 def test_bare_table_number_stays_ambiguous_when_competing_assets_are_close() -> None:

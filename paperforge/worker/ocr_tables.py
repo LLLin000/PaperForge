@@ -83,6 +83,39 @@ def _score_candidate_assets(
     return scored
 
 
+def _collect_page_footnote_prior(structured_blocks: list[dict]) -> dict[int, float]:
+    by_page: dict[int, list[float]] = {}
+    for block in structured_blocks:
+        if not (
+            str(block.get("role", "") or "") == "footnote"
+            and str(block.get("raw_label", "") or "") == "vision_footnote"
+        ):
+            continue
+        bbox = block.get("bbox") or [0, 0, 0, 0]
+        if len(bbox) < 4:
+            continue
+        page = int(block.get("page", 0) or 0)
+        if page:
+            by_page.setdefault(page, []).append(float(bbox[1]))
+    if not by_page:
+        return {}
+    all_tops_flat = [t for tops in by_page.values() for t in tops]
+    global_min = min(all_tops_flat) if all_tops_flat else 0.0
+    result: dict[int, float] = {}
+    for page in by_page:
+        other_tops = [t for p, tops2 in by_page.items() if p != page for t in tops2]
+        result[page] = min(other_tops) if other_tops else global_min
+    return result
+
+
+def _table_note_falls_into_page_footnote_prior(
+    note_bbox: list[float], page: int, prior_by_page: dict[int, float]
+) -> bool:
+    if page not in prior_by_page or len(note_bbox) < 4:
+        return False
+    return float(note_bbox[1]) >= float(prior_by_page[page])
+
+
 def build_table_inventory(structured_blocks: list[dict]) -> dict[str, Any]:
     tables: list[dict] = []
     captions: list[dict] = []
@@ -110,6 +143,7 @@ def build_table_inventory(structured_blocks: list[dict]) -> dict[str, Any]:
             assets.append(block)
 
     used_asset_indices: set[int] = set()
+    page_footnote_prior = _collect_page_footnote_prior(structured_blocks)
     for caption in captions:
         caption_page = caption.get("page", 0)
         caption_text = caption.get("text", "")
@@ -269,10 +303,16 @@ def build_table_inventory(structured_blocks: list[dict]) -> dict[str, Any]:
 
         note_block_ids: list[str] = []
         note_texts: list[str] = []
+        note_bboxes: list[list[float]] = []
+        note_band_bbox: list[float] = []
+        note_match_reason = ""
+        note_confidence = 0.0
+
         if matched_asset:
             asset_page = matched_asset.get("page", 0)
             asset_bbox = matched_asset.get("bbox", [0, 0, 0, 0])
             asset_bottom = asset_bbox[3] if len(asset_bbox) >= 4 else 0
+            candidates: list[dict] = []
             for block in structured_blocks:
                 bpage = block.get("page", 0)
                 if bpage != asset_page:
@@ -300,14 +340,36 @@ def build_table_inventory(structured_blocks: list[dict]) -> dict[str, Any]:
                 )
                 if not is_note:
                     continue
-                bbbox = block.get("bbox", [0, 0, 0, 0])
+                bbbox = block.get("bbox") or [0, 0, 0, 0]
                 if len(bbbox) < 4:
+                    note_match_reason = "invalid_bbox"
                     continue
-                note_top = bbbox[1]
-                if asset_bottom <= note_top <= asset_bottom + 80:
-                    note_block_ids.append(block.get("block_id", ""))
-                    if btext:
-                        note_texts.append(btext)
+                if bbbox[1] < asset_bottom or bbbox[1] > asset_bottom + 100:
+                    note_match_reason = "outside_vertical_range"
+                    continue
+                if _table_note_falls_into_page_footnote_prior(bbbox, int(asset_page or 0), page_footnote_prior):
+                    note_match_reason = "page_footnote_prior_rejected"
+                    continue
+                candidates.append(block)
+
+            if not candidates and not note_match_reason:
+                note_match_reason = "no_footnote_role"
+
+            if candidates:
+                candidates.sort(key=lambda b: (b.get("bbox") or [0, 0, 0, 0])[1])
+                note_block_ids = [str(b.get("block_id", "")) for b in candidates if b.get("block_id")]
+                note_texts = [
+                    str(b.get("text", "") or "").strip() for b in candidates if str(b.get("text", "") or "").strip()
+                ]
+                note_bboxes = [b.get("bbox", [0, 0, 0, 0]) for b in candidates]
+                note_band_bbox = [
+                    min(bb[0] for bb in note_bboxes),
+                    min(bb[1] for bb in note_bboxes),
+                    max(bb[2] for bb in note_bboxes),
+                    max(bb[3] for bb in note_bboxes),
+                ]
+                note_match_reason = "note_band_geometry_match"
+                note_confidence = 0.85
 
         consumed_block_ids = [caption.get("block_id", "")]
         if matched_asset:
@@ -330,6 +392,10 @@ def build_table_inventory(structured_blocks: list[dict]) -> dict[str, Any]:
                 "segments": segments,
                 "note_block_ids": note_block_ids,
                 "note_texts": note_texts,
+                "note_bboxes": note_bboxes,
+                "note_band_bbox": note_band_bbox,
+                "note_match_reason": note_match_reason,
+                "note_confidence": note_confidence,
                 "consumed_block_ids": consumed_block_ids,
                 "is_continuation": is_cont,
                 "continuation_of": continuation_of,
