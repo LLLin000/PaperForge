@@ -1342,8 +1342,14 @@ export class PaperForgeSettingTab extends PluginSettingTab {
             card.createEl("p", { text: item.ui.reason, cls: "setting-item-description" });
             const btn = card.createEl("button", { text: item.ui.primaryAction === "rebuild" ? t("ocr_maint_rebuild_btn") : t("ocr_maint_redo_btn") });
             btn.style.cssText = "padding:4px 10px; border-radius:4px; cursor:pointer; font-size:12px;";
-            btn.dataset.action = item.ui.primaryAction || "";
-            btn.dataset.key = item.row.key;
+            btn.addEventListener("click", () => {
+              const keys = [item.row.key];
+              if (item.ui.primaryAction === "rebuild") {
+                execFile(py.path, ["-m", "paperforge", "ocr", "rebuild", ...keys], { cwd: vaultPath, timeout: 120000, windowsHide: true }, () => { new Notice(t("ocr_maint_rebuild_btn") + " — " + item.row.key); });
+              } else if (item.ui.primaryAction === "redo") {
+                execFile(py.path, ["-m", "paperforge", "ocr", "redo", ...keys], { cwd: vaultPath, timeout: 300000, windowsHide: true }, () => { new Notice(t("ocr_maint_redo_btn") + " — " + item.row.key); });
+              }
+            });
           }
         }
 
