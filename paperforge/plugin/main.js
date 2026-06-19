@@ -1162,75 +1162,11 @@ class PaperForgeStatusView extends ItemView {
         this._modeSubscribers = [];     // event handler refs for cleanup
         this._leafChangeTimer = null;   // debounce timer for active-leaf-change
         this._ocrPrivacyShown = false;  // DASH-03: once-per-session privacy flag
-        // Annotation bridge state (Phase 5)
-        this._annotationState = makeAnnotationState(ANNOTATION_LOAD_STATES.IDLE);
-        this._annotationLoadSeq = 0;    // monotonic guard for stale-result protection
     }
 
     getViewType() { return VIEW_TYPE_PAPERFORGE; }
     getDisplayText() { return 'PaperForge'; }
     getIcon() { return PF_ICON_ID; }
-
-    /* ── Annotation Bridge ── */
-
-    /**
-     * Return the current stored annotation state.
-     * Phase 6 UI consumers call this to render list, empty, and error states
-     * without reparsing raw CLI output.
-     */
-    getAnnotationState() {
-        return this._annotationState;
-    }
-
-    /**
-     * Load annotations for the current active paper and update stored state.
-     * Uses _currentPaperKey as the only paper identity input.
-     * Implements stale-result protection via _annotationLoadSeq.
-     *
-     * @param {string} [reason='auto'] - 'auto' for lifecycle-driven loads, 'manual' for explicit refresh.
-     */
-    async loadAnnotationsForCurrentPaper(reason) {
-        if (reason === undefined) reason = 'auto';
-        const seq = ++this._annotationLoadSeq;
-        const paperKey = this._currentPaperKey;
-
-        // Missing paper guard: set missing-paper, do not call CLI/subprocess (D-07)
-        if (!paperKey) {
-            this._annotationState = makeAnnotationState(ANNOTATION_LOAD_STATES.MISSING_PAPER, {
-                paperKey: null,
-                message: 'No paper is currently active. Open a paper note or PDF to view its annotations.',
-            });
-            return this._annotationState;
-        }
-
-        // Set loading state
-        this._annotationState = makeAnnotationState(ANNOTATION_LOAD_STATES.LOADING, {
-            paperKey,
-            message: reason === 'manual' ? 'Refreshing annotations...' : 'Loading annotations...',
-        });
-
-        // Resolve Python and vault path for subprocess calls
-        const vp = this.app.vault.adapter.basePath;
-        const plugin = this.app.plugins.plugins['paperforge'];
-        const { path: pythonExe, extraArgs = [] } = resolvePythonExecutable(vp, plugin?.settings);
-
-        // Perform the actual load via the bridge helper
-        const result = await loadAnnotationsForPaper({
-            paperKey,
-            pythonExe,
-            pythonExtraArgs: extraArgs,
-            cwd: vp,
-            timeout: 30000,
-        });
-
-        // Stale-result guard: only accept if no newer load started (T-annotation-05-06)
-        if (seq !== this._annotationLoadSeq) {
-            return this._annotationState;
-        }
-
-        this._annotationState = result;
-        return result;
-    }
 
     async onOpen() {
         this._buildPanel();
@@ -1849,10 +1785,6 @@ class PaperForgeStatusView extends ItemView {
         this._currentPaperEntry = resolved.key ? this._findEntry(resolved.key) : null;
 
         this._switchMode(resolved.mode, resolved.filePath);
-
-        // Fire annotation load for current active paper (D-20)
-        // Non-blocking: mode switch renders UI first, annotation loads in background
-        this.loadAnnotationsForCurrentPaper('auto');
     }
 
     /* ── Mode Switching (D-05, D-06) ── */
@@ -2606,8 +2538,6 @@ class PaperForgeStatusView extends ItemView {
                 if (this._contentEl) this._contentEl.removeClass('switching');
             }, 50);
         }
-        // Refresh annotation state for current paper on index change (D-20)
-        this.loadAnnotationsForCurrentPaper('auto');
     }
 
     /* ── Run Action ── */
@@ -5251,9 +5181,4 @@ module.exports = class PaperForgePlugin extends Plugin {
     }
 };
 
-// Test hook for runtime integration tests (vitest annotation-main-runtime.test.mjs)
-// Exposes PaperForgeStatusView by reference so the test harness can instantiate
-// with Object.create(PaperForgeStatusView.prototype) and mock only the fields
-// needed for the annotation loader path.
-module.exports.__test = { PaperForgeStatusView };
 
