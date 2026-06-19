@@ -388,7 +388,7 @@ def test_table_matching_can_hold_when_caption_and_asset_conflict() -> None:
     assert held["caption_block_id"] == "p12_b1"
 
 
-def test_weak_explicit_table_caption_does_not_auto_match_from_geometry() -> None:
+def test_weak_explicit_table_caption_matches_with_strong_geometry() -> None:
     from paperforge.worker.ocr_tables import build_table_inventory
 
     structured_blocks = [
@@ -416,10 +416,8 @@ def test_weak_explicit_table_caption_does_not_auto_match_from_geometry() -> None
     assert inv["held_tables"] == []
     assert len(inv["tables"]) == 1
     table = inv["tables"][0]
-    assert table["match_status"] == "ambiguous"
-    assert table["has_asset"] is False
-    assert table["match_score"]["decision"] == "ambiguous"
-    assert "weak_explicit_caption" in table["match_score"]["evidence"]
+    assert table["has_asset"] is True
+    assert table["asset_block_id"] == "p9_a1"
 
 
 def test_validation_first_table_candidate_with_asset_can_still_match() -> None:
@@ -850,3 +848,29 @@ def test_matched_table_asset_role_is_written_back() -> None:
     write_back_table_roles(inv, structured_blocks)
     asset = next(b for b in structured_blocks if b["block_id"] == "p3_b2")
     assert asset["role"] == "table_html"
+
+
+def test_bare_table_number_matches_when_geometry_and_table_evidence_are_strong() -> None:
+    from paperforge.worker.ocr_tables import build_table_inventory
+    structured_blocks = [
+        {"page": 5, "block_id": "p5_c1", "role": "table_caption", "text": "Table 1", "bbox": [100, 100, 600, 140]},
+        {"page": 5, "block_id": "p5_a1", "role": "table_asset", "raw_label": "table", "bbox": [100, 160, 600, 400], "text": ""},
+    ]
+    inventory = build_table_inventory(structured_blocks)
+    assert len(inventory["tables"]) == 1
+    table = inventory["tables"][0]
+    assert table["has_asset"] is True
+    assert table["asset_block_id"] == "p5_a1"
+
+
+def test_bare_table_number_stays_ambiguous_when_competing_assets_are_close() -> None:
+    from paperforge.worker.ocr_tables import build_table_inventory
+    structured_blocks = [
+        {"page": 5, "block_id": "p5_a1", "role": "table_asset", "raw_label": "table", "bbox": [100, 100, 430, 400], "text": ""},
+        {"page": 5, "block_id": "p5_a2", "role": "table_asset", "raw_label": "table", "bbox": [450, 100, 780, 400], "text": ""},
+        {"page": 5, "block_id": "p5_c1", "role": "table_caption", "text": "Table 1", "bbox": [100, 420, 780, 450]},
+    ]
+    inventory = build_table_inventory(structured_blocks)
+    table = inventory["tables"][0]
+    assert table["has_asset"] is False
+    assert table["match_status"] == "ambiguous"

@@ -42,7 +42,7 @@ def _is_validation_first_table_candidate(block: dict) -> bool:
     role = str(block.get("role", "") or "")
     if role in {"table_caption", "table_caption_candidate"}:
         return False
-    marker_type = ((block.get("marker_signature") or {}).get("type") or "none")
+    marker_type = (block.get("marker_signature") or {}).get("type") or "none"
     zone = str(block.get("zone", "") or "")
     style_family = str(block.get("style_family", "") or "")
     return marker_type == "table_number" and zone == "display_zone" and style_family == "table_caption_like"
@@ -60,6 +60,16 @@ def _is_weak_explicit_table_caption(block: dict) -> bool:
     return _is_insufficient_table_caption_evidence(block)
 
 
+def _has_strong_spatial_evidence_for_bare_table(caption: dict, top_candidate_score: dict | None) -> bool:
+    if top_candidate_score is None:
+        return False
+    if top_candidate_score.get("score", 0.0) < 0.75:
+        return False
+    evidence = top_candidate_score.get("evidence", [])
+    spatial_markers = {"x_overlap", "asset_below_caption", "same_page"}
+    return spatial_markers.issubset(set(evidence))
+
+
 def _score_candidate_assets(
     page_assets: list[tuple[int, dict]],
     caption: dict,
@@ -67,8 +77,7 @@ def _score_candidate_assets(
     is_continuation: bool,
 ) -> list[tuple[int, dict, dict]]:
     scored = [
-        (i, asset, score_table_match(caption, asset, is_continuation=is_continuation))
-        for i, asset in page_assets
+        (i, asset, score_table_match(caption, asset, is_continuation=is_continuation)) for i, asset in page_assets
     ]
     scored.sort(key=lambda item: item[2].get("score", 0.0), reverse=True)
     return scored
@@ -112,45 +121,97 @@ def build_table_inventory(structured_blocks: list[dict]) -> dict[str, Any]:
         is_weak_explicit_caption = _is_weak_explicit_table_caption(caption)
 
         if is_validation_first_candidate and is_weak_truncated:
-            held_tables.append({
-                "table_id": f"held_table_{len(held_tables) + 1:03d}",
-                "caption_block_id": caption.get("block_id", ""),
-                "page": caption_page,
-                "caption_text": caption_text,
-                "table_number": table_num,
-                "formal_table_number": formal_table_number,
-                "hold_reason": "insufficient_caption_evidence",
-                "zone": caption.get("zone", ""),
-                "style_family": caption.get("style_family", ""),
-                "marker_signature": caption.get("marker_signature", {}),
-            })
+            held_tables.append(
+                {
+                    "table_id": f"held_table_{len(held_tables) + 1:03d}",
+                    "caption_block_id": caption.get("block_id", ""),
+                    "page": caption_page,
+                    "caption_text": caption_text,
+                    "table_number": table_num,
+                    "formal_table_number": formal_table_number,
+                    "hold_reason": "insufficient_caption_evidence",
+                    "zone": caption.get("zone", ""),
+                    "style_family": caption.get("style_family", ""),
+                    "marker_signature": caption.get("marker_signature", {}),
+                }
+            )
             continue
         if is_weak_explicit_caption:
-            unmatched_captions.append(caption)
-            tables.append({
-                "caption_block_id": caption.get("block_id", ""),
-                "page": caption_page,
-                "caption_text": caption_text,
-                "table_number": table_num,
-                "formal_table_number": formal_table_number,
-                "asset_block_id": "",
-                "asset_bbox": [],
-                "assistive_text": "",
-                "truth_source": "image",
-                "has_asset": False,
-                "segments": [],
-                "is_continuation": is_cont,
-                "continuation_of": None,
-                "match_status": "ambiguous",
-                "candidate_assets": [],
-                "match_score": {
-                    "score": 0.0,
-                    "matched_asset_id": "",
-                    "decision": "ambiguous",
-                    "evidence": ["weak_explicit_caption"],
-                },
-            })
-            continue
+            # Check if spatial evidence is strong enough to override bare caption weakness
+            candidate_pages = [caption_page - 1, caption_page, caption_page + 1]
+            pre_candidates: list[tuple[int, dict, dict]] = []
+            for page in candidate_pages:
+                if page < 1:
+                    continue
+                page_assets_list = [
+                    (i, asset)
+                    for i, asset in enumerate(assets)
+                    if i not in used_asset_indices and asset.get("page", 0) == page
+                ]
+                pre_candidates.extend(_score_candidate_assets(page_assets_list, caption, is_continuation=is_cont))
+            pre_candidates.sort(key=lambda item: item[2].get("score", 0.0), reverse=True)
+
+            if pre_candidates and _has_strong_spatial_evidence_for_bare_table(caption, pre_candidates[0][2]):
+                second_score = pre_candidates[1][2].get("score", 0.0) if len(pre_candidates) > 1 else -1.0
+                score = pre_candidates[0][2].get("score", 0.0)
+                if score - second_score >= 0.2:
+                    pass  # strong spatial evidence, proceed to normal matching
+                else:
+                    unmatched_captions.append(caption)
+                    tables.append(
+                        {
+                            "caption_block_id": caption.get("block_id", ""),
+                            "page": caption_page,
+                            "caption_text": caption_text,
+                            "table_number": table_num,
+                            "formal_table_number": formal_table_number,
+                            "asset_block_id": "",
+                            "asset_bbox": [],
+                            "assistive_text": "",
+                            "truth_source": "image",
+                            "has_asset": False,
+                            "segments": [],
+                            "is_continuation": is_cont,
+                            "continuation_of": None,
+                            "match_status": "ambiguous",
+                            "candidate_assets": [],
+                            "match_score": {
+                                "score": 0.0,
+                                "matched_asset_id": "",
+                                "decision": "ambiguous",
+                                "evidence": ["weak_explicit_caption"],
+                            },
+                        }
+                    )
+                    continue
+            else:
+                unmatched_captions.append(caption)
+                tables.append(
+                    {
+                        "caption_block_id": caption.get("block_id", ""),
+                        "page": caption_page,
+                        "caption_text": caption_text,
+                        "table_number": table_num,
+                        "formal_table_number": formal_table_number,
+                        "asset_block_id": "",
+                        "asset_bbox": [],
+                        "assistive_text": "",
+                        "truth_source": "image",
+                        "has_asset": False,
+                        "segments": [],
+                        "is_continuation": is_cont,
+                        "continuation_of": None,
+                        "match_status": "ambiguous",
+                        "candidate_assets": [],
+                        "match_score": {
+                            "score": 0.0,
+                            "matched_asset_id": "",
+                            "decision": "ambiguous",
+                            "evidence": ["weak_explicit_caption"],
+                        },
+                    }
+                )
+                continue
 
         candidate_pages = [caption_page - 1, caption_page, caption_page + 1]
 
@@ -197,12 +258,14 @@ def build_table_inventory(structured_blocks: list[dict]) -> dict[str, Any]:
 
         segments: list[dict] = []
         if matched_asset:
-            segments.append({
-                "page": matched_asset.get("page", 0),
-                "asset_block_id": matched_asset.get("block_id", ""),
-                "asset_bbox": matched_asset.get("bbox", [0, 0, 0, 0]),
-                "is_continuation": is_cont,
-            })
+            segments.append(
+                {
+                    "page": matched_asset.get("page", 0),
+                    "asset_block_id": matched_asset.get("block_id", ""),
+                    "asset_bbox": matched_asset.get("bbox", [0, 0, 0, 0]),
+                    "is_continuation": is_cont,
+                }
+            )
 
         note_block_ids: list[str] = []
         note_texts: list[str] = []
@@ -220,13 +283,20 @@ def build_table_inventory(structured_blocks: list[dict]) -> dict[str, Any]:
                 is_note = (
                     brole == "footnote"
                     or braw_label == "vision_footnote"
-                    or (0 < len(btext) < 120
-                        and brole not in (
-                            "table_caption", "table_caption_candidate",
-                            "table_asset", "media_asset",
-                            "figure_caption", "section_heading",
-                            "subsection_heading", "reference_heading",
-                        ))
+                    or (
+                        0 < len(btext) < 120
+                        and brole
+                        not in (
+                            "table_caption",
+                            "table_caption_candidate",
+                            "table_asset",
+                            "media_asset",
+                            "figure_caption",
+                            "section_heading",
+                            "subsection_heading",
+                            "reference_heading",
+                        )
+                    )
                 )
                 if not is_note:
                     continue
@@ -245,35 +315,39 @@ def build_table_inventory(structured_blocks: list[dict]) -> dict[str, Any]:
         consumed_block_ids.extend(note_block_ids)
         consumed_block_ids = [bid for bid in consumed_block_ids if bid]
 
-        tables.append({
-            "caption_block_id": caption.get("block_id", ""),
-            "page": caption_page,
-            "caption_text": caption_text,
-            "table_number": table_num,
-            "formal_table_number": formal_table_number,
-            "asset_block_id": matched_asset.get("block_id", "") if matched_asset else "",
-            "asset_bbox": matched_asset.get("bbox", [0, 0, 0, 0]) if matched_asset else [],
-            "assistive_text": (matched_asset.get("text", "") or "") if matched_asset else "",
-            "truth_source": "image",
-            "has_asset": matched_asset is not None,
-            "segments": segments,
-            "note_block_ids": note_block_ids,
-            "note_texts": note_texts,
-            "consumed_block_ids": consumed_block_ids,
-            "is_continuation": is_cont,
-            "continuation_of": continuation_of,
-            "match_status": match_status,
-            "candidate_assets": candidate_assets,
-            "match_score": (
-                score_table_match(caption, matched_asset, is_continuation=is_cont)
-                if matched_asset
-                else (all_candidates[0][2] if all_candidates else {"score": 0.0, "matched_asset_id": "", "decision": "ambiguous", "evidence": []})
-            ),
-        })
+        tables.append(
+            {
+                "caption_block_id": caption.get("block_id", ""),
+                "page": caption_page,
+                "caption_text": caption_text,
+                "table_number": table_num,
+                "formal_table_number": formal_table_number,
+                "asset_block_id": matched_asset.get("block_id", "") if matched_asset else "",
+                "asset_bbox": matched_asset.get("bbox", [0, 0, 0, 0]) if matched_asset else [],
+                "assistive_text": (matched_asset.get("text", "") or "") if matched_asset else "",
+                "truth_source": "image",
+                "has_asset": matched_asset is not None,
+                "segments": segments,
+                "note_block_ids": note_block_ids,
+                "note_texts": note_texts,
+                "consumed_block_ids": consumed_block_ids,
+                "is_continuation": is_cont,
+                "continuation_of": continuation_of,
+                "match_status": match_status,
+                "candidate_assets": candidate_assets,
+                "match_score": (
+                    score_table_match(caption, matched_asset, is_continuation=is_cont)
+                    if matched_asset
+                    else (
+                        all_candidates[0][2]
+                        if all_candidates
+                        else {"score": 0.0, "matched_asset_id": "", "decision": "ambiguous", "evidence": []}
+                    )
+                ),
+            }
+        )
 
-    cap_block_ids_with_asset = {
-        t["caption_block_id"] for t in tables if t["has_asset"]
-    }
+    cap_block_ids_with_asset = {t["caption_block_id"] for t in tables if t["has_asset"]}
     for caption in captions:
         if caption.get("block_id", "") not in cap_block_ids_with_asset:
             already_listed = any(c.get("block_id", "") == caption.get("block_id", "") for c in unmatched_captions)
@@ -289,9 +363,7 @@ def build_table_inventory(structured_blocks: list[dict]) -> dict[str, Any]:
         "held_tables": held_tables,
         "unmatched_captions": unmatched_captions,
         "unmatched_assets": unmatched_assets,
-        "official_table_count": len(
-            [t for t in tables if t["has_asset"] and not t["is_continuation"]]
-        ),
+        "official_table_count": len([t for t in tables if t["has_asset"] and not t["is_continuation"]]),
     }
 
 
