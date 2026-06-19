@@ -41,6 +41,7 @@ paperforge/plugin/node_modules/
 
 # Temp files
 .opencode/tmp/
+.ai-bridge/
 
 # Audit page screenshots (keep structured JSON/CSV)
 audit/*/annotated_pages/
