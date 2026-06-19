@@ -31,7 +31,10 @@ v0.2 makes those annotations visible and useful inside Obsidian. The milestone s
 3. Missing DB, missing paper identity, empty annotation list, and command failures produce structured UI states.
 4. The bridge is covered by tests using representative PFResult success/error fixtures.
 
-**Plans:** TBD
+**Plans:**
+
+- `annotation-05-01-PLAN.md` - Testable annotation bridge helpers and state normalization (Wave 1).
+- `annotation-05-02-PLAN.md` - Obsidian runtime integration with active-paper annotation state (Wave 2, depends on Wave 1).
 
 ### Annotation Phase 6: Annotation Sidebar and List View
 
@@ -110,7 +113,7 @@ v0.2 makes those annotations visible and useful inside Obsidian. The milestone s
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| Annotation Phase 5. Plugin Annotation Data Bridge | 0/TBD | Not started | - |
+| Annotation Phase 5. Plugin Annotation Data Bridge | 0/2 | Planned | - |
 | Annotation Phase 6. Annotation Sidebar and List View | 0/TBD | Not started | - |
 | Annotation Phase 7. PDF Jump Navigation | 0/TBD | Not started | - |
 | Annotation Phase 8. PDF Overlay Rendering Spike and Implementation | 0/TBD | Not started | - |
