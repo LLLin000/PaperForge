@@ -5,13 +5,13 @@ milestone_name: Obsidian PDF Annotation Display Layer
 status: Ready to execute
 stopped_at: Annotation Phase 6 planned
 last_updated: "2026-06-19T00:00:00+08:00"
-last_activity: 2026-06-19 - Annotation Phase 6 planned
+last_activity: 2026-06-19 - Annotation Phase 5 Plan 02 executed; Annotation Phase 6 remains planned
 progress:
   total_phases: 5
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 6
-  completed_plans: 0
-  percent: 0
+  completed_plans: 2
+  percent: 33
 ---
 
 # Project State
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-06-18)
 Phase: Annotation Phase 6 of 9 (Annotation Sidebar and List View) - planned
 Plan: annotation-06-01-PLAN.md, annotation-06-02-PLAN.md, annotation-06-03-PLAN.md, annotation-06-04-PLAN.md
 Status: Ready to execute
-Last activity: 2026-06-19 - Annotation Phase 6 planned
+Last activity: 2026-06-19 - Annotation Phase 5 Plan 02 executed; Annotation Phase 6 remains planned
 
 ## Performance Metrics
 
@@ -52,6 +52,7 @@ Last activity: 2026-06-19 - Annotation Phase 6 planned
 - Annotation v0.1 complete: backend and CLI foundation delivered across Annotation Phases 1-4.
 - Annotation Phase 4 verification recorded 140 tests passing (88 unit + 52 CLI), safety audit confirms zero Zotero write-back, and known unrelated baseline failures are separated from annotation status.
 - Annotation v0.2 initialized: Obsidian display layer with plugin data bridge, annotation sidebar/list, PDF jump navigation, risk-gated overlay, and verification gate.
+- Annotation Phase 5 executed: plugin runtime now stores active-paper annotation bridge state for Phase 6 UI consumption.
 
 *Updated after each plan completion*
 
@@ -91,9 +92,10 @@ None yet.
 - **`test_config.py` Windows tmp_path failures**: 4 config tests fail with `PermissionError` on Windows when using the `tmp_path` pytest fixture. These are pre-existing and unrelated to annotation code; they affect all tests that create vault subdirectories in temp dirs. Not a blocker for annotation work.
 - **`test_paperforge_paths_returns_exact_keys` key mismatch**: Test expects `ld_deep_script` but config returns `pf_deep_script`. Pre-existing baseline mismatch unrelated to annotation.
 - **Missing `filelock` dependency**: `paperforge/memory/builder.py` transitively imports `filelock` via `worker/asset_index.py`. The `build_from_index` integration test in plan 03 is skipped due to this missing package. Direct `drop_all_tables` regression provides equivalent coverage.
+- **Plugin baseline Vitest failures**: full `paperforge/plugin` suite currently has 3 known unrelated failures outside annotation runtime wiring: 2 `buildRuntimeInstallCommand` expectations in `tests/errors.test.mjs`, and 1 Windows `resolvePythonExecutable` `py -3` expectation in `tests/runtime.test.mjs`. Annotation-specific bridge/lifecycle/runtime tests pass.
 
 ## Session Continuity
 
 Last session: 2026-06-19T00:00:00+08:00
-Stopped at: Annotation Phase 6 planned
+Stopped at: Annotation Phase 5 Plan 02 executed; Annotation Phase 6 planned
 Resume file: .planning/phases/annotation-06-annotation-sidebar-and-list-view/annotation-06-01-PLAN.md
