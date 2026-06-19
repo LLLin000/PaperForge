@@ -7,7 +7,7 @@
 
 ### Key Findings
 - The correct Phase 6 insertion point is `PaperForgeStatusView._renderPaperMode()` immediately after `this._renderPaperOverviewCard(view, entry)` and before the complete/Next Step branch. [VERIFIED: codebase rg/narrow read]
-- `paperforge/plugin/src/testable.js` currently has no annotation bridge/list helpers; Phase 5 plans describe the intended `getAnnotationState()` / `loadAnnotationsForCurrentPaper()` runtime surface, but the files inspected do not show that implementation yet. [VERIFIED: codebase rg/narrow read] [VERIFIED: annotation-05 plans]
+- The initial HEAD baseline inspection showed no committed annotation bridge/list helpers in `paperforge/plugin/src/testable.js`; later working-tree status showed uncommitted Phase 5 helper artifacts. Planner must preflight the actual available Phase 5 bridge before implementing Phase 6. [VERIFIED: codebase rg/narrow read] [VERIFIED: git status] [VERIFIED: annotation-05 plans]
 - Pure list behavior belongs in `src/testable.js`: filtering, search, grouping, reading-order sort, preview truncation decisions, expansion state transitions, available filter options, and render-state decisions. [VERIFIED: phase context] [ASSUMED: implementation recommendation]
 - Runtime tests must exercise the real `PaperForgeStatusView` path in `main.js`; helper-only tests are insufficient because `main.js` currently exports only the plugin class and has no test hook for the view. [VERIFIED: codebase rg/narrow read]
 - Phase 6 must stay read-only and non-navigating: no PDF jump, overlay, editing, writeback, database mutation, or concept evidence wiring. [VERIFIED: annotation-06-CONTEXT.md] [VERIFIED: REQUIREMENTS.md]
@@ -91,7 +91,7 @@ Runtime methods should be minimal:
 Do not add a second paper resolver; consume `_currentPaperKey` and Phase 5 state only. [VERIFIED: annotation-05 plans]
 
 ### Phase 5 Dependency Check
-The inspected `main.js` does not currently contain `loadAnnotationsForCurrentPaper` or `getAnnotationState`, and `src/testable.js` does not currently contain annotation helpers. [VERIFIED: codebase rg/narrow read]
+The inspected `main.js` baseline does not contain `loadAnnotationsForCurrentPaper` or `getAnnotationState`. The initial `src/testable.js` baseline also lacked annotation helpers, but the working tree later showed uncommitted Phase 5 helper changes. [VERIFIED: codebase rg/narrow read] [VERIFIED: git status]
 
 Planner should add a Wave 0/preflight checkpoint before Phase 6 implementation:
 - Confirm Phase 5 Plan 01/02 has been executed.
@@ -361,8 +361,8 @@ Known threat patterns:
 
 ## Open Questions
 
-1. **Has Annotation Phase 5 actually been executed in this branch?**
-   - What we know: Phase 5 plans specify bridge helpers/runtime methods, but inspected files do not contain them. [VERIFIED: codebase rg/narrow read]
+1. **Has Annotation Phase 5 actually been executed and stabilized in this branch?**
+   - What we know: Phase 5 plans specify bridge helpers/runtime methods; initial baseline reads did not show them, while later working-tree status showed uncommitted Phase 5 helper artifacts. [VERIFIED: codebase rg/narrow read] [VERIFIED: git status]
    - Recommendation: Treat Phase 5 as a hard prerequisite and add a preflight gate.
 
 2. **Will Phase 6 add a dedicated Vitest jsdom config or per-file environment annotation?**
