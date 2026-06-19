@@ -737,7 +737,9 @@ def _reader_figure_embed_target(figure: dict) -> str | None:
     return f"figure_{int(figure_number):03d}"
 
 
-def _page_block_key(block_or_page: dict | int | None, block_id: int | str | None = None) -> tuple[int | None, int | str] | None:
+def _page_block_key(
+    block_or_page: dict | int | None, block_id: int | str | None = None
+) -> tuple[int | None, int | str] | None:
     if isinstance(block_or_page, dict):
         page = block_or_page.get("page")
         bid = block_or_page.get("block_id")
@@ -935,21 +937,13 @@ def render_fulltext_markdown(
         abstract_ids = [span.get("heading_block_id"), *span.get("body_block_ids", [])]
         abstract_ids = [bid for bid in abstract_ids if bid]
         if abstract_ids:
-            abstract_blocks = [
-                block_by_id[bid]
-                for bid in abstract_ids
-                if bid in block_by_id
-            ]
+            abstract_blocks = [block_by_id[bid] for bid in abstract_ids if bid in block_by_id]
     if not abstract_blocks:
         _ABSTRACT_ROLES_FALLBACK = frozenset({"abstract_heading", "abstract_body"})
         abstract_blocks = [
             b for b in structured_blocks if b.get("role") in _ABSTRACT_ROLES_FALLBACK and b.get("render_default", True)
         ]
-    abstract_member_keys = {
-        _page_block_key(block)
-        for block in abstract_blocks
-        if _page_block_key(block) is not None
-    }
+    abstract_member_keys = {_page_block_key(block) for block in abstract_blocks if _page_block_key(block) is not None}
     abstract_member_ids_unkeyed = {
         block.get("block_id")
         for block in abstract_blocks
@@ -1243,9 +1237,7 @@ def render_fulltext_markdown(
 
         block_id = block.get("block_id")
         block_key = _page_block_key(block_page, block_id)
-        if block_id is not None and (
-            block_key in consumed_caption_keys or block_id in consumed_caption_ids_unkeyed
-        ):
+        if block_id is not None and (block_key in consumed_caption_keys or block_id in consumed_caption_ids_unkeyed):
             continue
         if block_id is not None and block_id in consumed_table_block_ids:
             continue
@@ -1364,20 +1356,13 @@ def render_fulltext_markdown(
                 last_structured_insert_page = block_page
                 last_structured_insert_bbox = bbox if len(bbox) >= 4 else None
         elif role == "table_caption":
-            block_zone = str(block.get("zone") or "")
-            block_style_family = str(block.get("style_family") or "")
-            if block_zone == "display_zone" or block_style_family == "table_caption_like":
-                if text:
-                    lines.append(f"> **{text}**")
-                    lines.append("")
-            else:
-                if text:
-                    lines.append(f"### {text}")
-                    lines.append("")
             tbl_ids_for_page = tables_by_page.get(block_page, [])
             if tbl_ids_for_page:
                 tbl_id = tbl_ids_for_page.pop(0)
                 lines.append(f"![[render/tables/{tbl_id}.md]]")
+                lines.append("")
+            elif text:
+                lines.append(f"### {text}")
                 lines.append("")
         elif role == "figure_caption":
             if text:

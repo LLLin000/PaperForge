@@ -1,6 +1,25 @@
 from __future__ import annotations
 
 
+def test_health_counts_all_heading_tiers_and_requires_stronger_reference_evidence() -> None:
+    from paperforge.worker.ocr_health import build_ocr_health
+    structured_blocks = [
+        {"role": "section_heading", "text": "Intro"},
+        {"role": "subsection_heading", "text": "Methods"},
+        {"role": "sub_subsection_heading", "text": "2.1 Setup"},
+        {"role": "body_paragraph", "raw_label": "reference_content", "text": "[1] weak raw label"},
+    ]
+    health = build_ocr_health(
+        page_count=1, raw_blocks_count=4,
+        structured_blocks=structured_blocks,
+        figure_inventory={"matched_figures": [], "held_figures": [], "unmatched_legends": [], "unmatched_assets": [], "figure_legend_completeness": {}},
+        table_inventory={"tables": [], "held_tables": [], "unmatched_captions": [], "unmatched_assets": []},
+        reader_payload=None, rendered_markdown=None,
+    )
+    assert health["section_heading_count"] == 3
+    assert health["references_found"] is False
+
+
 def test_health_report_is_independent_from_ocr_status() -> None:
     from paperforge.worker.ocr_health import build_ocr_health
 

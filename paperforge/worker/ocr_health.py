@@ -11,7 +11,9 @@ def _normalize_gap_text(text: str) -> str:
 
 def audit_rendered_text_coverage(*, rendered_markdown: str, pdf_segments: list[str]) -> dict:
     normalized_markdown = _normalize_gap_text(rendered_markdown)
-    missing = [segment for segment in pdf_segments if segment and _normalize_gap_text(segment) not in normalized_markdown]
+    missing = [
+        segment for segment in pdf_segments if segment and _normalize_gap_text(segment) not in normalized_markdown
+    ]
     return {
         "rendered_text_gap_count": len(missing),
         "rendered_text_gap_examples": missing[:3],
@@ -115,15 +117,16 @@ def build_ocr_health(
     reader_payload: dict | None = None,
     rendered_markdown: str | None = None,
 ) -> dict[str, Any]:
-    section_heading_count = sum(1 for b in structured_blocks if b.get("role") == "section_heading")
+    heading_roles = {"section_heading", "subsection_heading", "sub_subsection_heading"}
+    section_heading_count = sum(1 for b in structured_blocks if b.get("role") in heading_roles)
     abstract_found = any(
         b.get("role") in ("abstract_heading", "abstract_body") or b.get("raw_label") == "abstract"
         for b in structured_blocks
     )
-    references_found = any(
-        b.get("role") in ("reference_heading", "reference_item") or b.get("raw_label") == "reference_content"
-        for b in structured_blocks
-    )
+    reference_zone = (doc_structure or {}).get("reference_zone", {}) if isinstance(doc_structure, dict) else {}
+    reference_zone_status = str(reference_zone.get("status") or "")
+    reference_item_count = sum(1 for b in structured_blocks if b.get("role") == "reference_item")
+    references_found = reference_zone_status == "ACCEPT" or reference_item_count > 0
     figure_caption_count = sum(1 for b in structured_blocks if b.get("role") == "figure_caption")
     table_caption_count = sum(1 for b in structured_blocks if b.get("role") == "table_caption")
 

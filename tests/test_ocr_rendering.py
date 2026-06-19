@@ -986,6 +986,28 @@ def test_embedded_figure_text_keeps_narrow_in_figure_note() -> None:
 # --- Structured renderer regression tests ---
 
 
+def test_display_zone_table_caption_only_emits_embed_not_blockquote() -> None:
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+    structured_blocks = [
+        {"page": 5, "role": "table_caption", "text": "Table 1. Main results",
+         "bbox": [100, 420, 600, 460], "zone": "display_zone", "style_family": "table_caption_like"},
+    ]
+    table_inventory = {
+        "tables": [{
+            "table_id": "table_001", "page": 5,
+            "has_asset": True,
+        }]
+    }
+    md = render_fulltext_markdown(
+        structured_blocks=structured_blocks, resolved_metadata={},
+        figure_inventory={"matched_figures": []},
+        table_inventory=table_inventory, page_count=5,
+        document_structure=None, reader_payload={"figures": []},
+    )
+    assert "> **Table 1. Main results**" not in md
+    assert "![[render/tables/table_001.md]]" in md
+
+
 def test_structured_renderer_abstract_before_introduction() -> None:
     from paperforge.worker.ocr_render import render_fulltext_markdown
 
@@ -2196,7 +2218,7 @@ def test_unresolved_cluster_link_with_missing_id_is_defensive() -> None:
 
 def test_table_caption_in_display_zone_not_rendered_as_heading() -> None:
     """Table captions in display_zone or with table_caption_like family should not
-    be rendered as ### headings."""
+    duplicate caption text — only the embed should appear."""
     from paperforge.worker.ocr_render import render_fulltext_markdown
 
     structured_blocks = [
@@ -2220,11 +2242,12 @@ def test_table_caption_in_display_zone_not_rendered_as_heading() -> None:
         structured_blocks=structured_blocks,
         resolved_metadata={},
         figure_inventory={},
-        table_inventory={"tables": [{"table_id": "tbl_001", "has_asset": True}]},
+        table_inventory={"tables": [{"table_id": "tbl_001", "has_asset": True, "page": 2}]},
     )
 
+    assert "> **Table 1. Patient demographics.**" not in output
     assert "### Table 1" not in output
-    assert "> **Table 1. Patient demographics.**" in output
+    assert "![[render/tables/tbl_001.md]]" in output
 
 
 def test_frontmatter_side_zone_not_rendered_as_heading() -> None:
