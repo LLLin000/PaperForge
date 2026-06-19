@@ -337,7 +337,277 @@ function runSubprocess(pythonExe, args, cwd, timeout, _spawn, env) {
                 exitCode: -1, elapsed: Date.now() - startTime });
         });
     });
+}
 
+// ── Annotation bridge helpers (inlined from src/testable.js) ──
+
+/**
+ * Stable state names for the annotation load state machine.
+ */
+const ANNOTATION_LOAD_STATES = Object.freeze({
+    IDLE: 'idle',
+    LOADING: 'loading',
+    READY: 'ready',
+    EMPTY: 'empty',
+    MISSING_PAPER: 'missing-paper',
+    MISSING_DB: 'missing-db',
+    CLI_ERROR: 'cli-error',
+    INVALID_JSON: 'invalid-json',
+});
+
+/**
+ * Normalize a single annotation export row into UI-ready sections.
+ */
+function normalizeAnnotationExportRow(row) {
+    const display = {
+        page: row.page_index,
+        pageLabel: row.page_label,
+        type: row.type,
+        color: row.color,
+        selectedText: row.selected_text,
+        comment: row.comment,
+    };
+
+    const provenance = {
+        source: row.source,
+        isReadonly: Boolean(row.is_readonly),
+        sourceLibraryId: row.source_library_id,
+        sourceParentKey: row.source_parent_key,
+        sourceAttachmentKey: row.source_attachment_key,
+        sourceAnnotationKey: row.source_annotation_key,
+        syncState: row.sync_state,
+        sourceModifiedAt: row.source_modified_at != null ? row.source_modified_at : null,
+        createdAt: row.created_at != null ? row.created_at : null,
+        updatedAt: row.updated_at != null ? row.updated_at : null,
+        deletedAt: row.deleted_at != null ? row.deleted_at : null,
+    };
+
+    const pdfLocation = {
+        pageIndex: row.page_index,
+        pageLabel: row.page_label,
+        sourceAttachmentKey: row.source_attachment_key,
+        positionJson: row.position_json,
+        selectorJson: row.selector_json,
+        sortIndex: row.sort_index,
+        rowId: row.id,
+    };
+
+    return { display, provenance, pdfLocation, raw: row };
+}
+
+/**
+ * Construct a complete annotation load state object.
+ */
+function makeAnnotationState(stateName, opts) {
+    const o = opts || {};
+    return {
+        state: stateName,
+        paperKey: o.paperKey != null ? o.paperKey : null,
+        annotations: Array.isArray(o.annotations) ? o.annotations : [],
+        message: typeof o.message === 'string' ? o.message : '',
+        errorCode: o.errorCode != null ? o.errorCode : null,
+        raw: o.raw !== undefined ? o.raw : null,
+    };
+}
+
+/**
+ * Build CLI arguments for `paperforge annotation status --json`.
+ */
+function buildAnnotationStatusArgs(extraArgs) {
+    const base = ['-m', 'paperforge', 'annotation', 'status', '--json'];
+    if (Array.isArray(extraArgs) && extraArgs.length > 0) {
+        return base.concat(extraArgs);
+    }
+    return base;
+}
+
+/**
+ * Build CLI arguments for `paperforge annotation export --paper KEY --json`.
+ */
+function buildAnnotationExportArgs(paperKey, extraArgs) {
+    const base = ['-m', 'paperforge', 'annotation', 'export', '--paper', paperKey, '--json'];
+    if (Array.isArray(extraArgs) && extraArgs.length > 0) {
+        return base.concat(extraArgs);
+    }
+    return base;
+}
+
+/**
+ * Load annotations for a paper through the PaperForge CLI.
+ *
+ * Two-step process:
+ *   1. `paperforge annotation status --json` — checks whether annotations.db is available.
+ *   2. `paperforge annotation export --paper KEY --json` — fetches annotations when DB is ready.
+ *
+ * Returns a complete load state so callers can render list, empty, and error states
+ * without reparsing raw CLI output.
+ */
+async function loadAnnotationsForPaper(options) {
+    const {
+        paperKey,
+        pythonExe = 'python',
+        pythonExtraArgs = [],
+        cwd,
+        timeout = 30000,
+        runSubprocessFn,
+        env,
+    } = options || {};
+
+    // Early exit: no paper key → missing-paper
+    if (!paperKey) {
+        return makeAnnotationState(ANNOTATION_LOAD_STATES.MISSING_PAPER, {
+            paperKey: null,
+            message: 'No paper is currently active. Open a paper note or PDF to view its annotations.',
+        });
+    }
+
+    // The subprocess runner: use injected fn or the default runSubprocess
+    const exec = typeof runSubprocessFn === 'function'
+        ? runSubprocessFn
+        : (py, args, cwdArg, to) => runSubprocess(py, args, cwdArg, to, undefined, env);
+
+    /**
+     * Parse a subprocess result into { pfResult, errorState }.
+     */
+    function parseSubprocessResult(subprocessResult, commandName) {
+        if (subprocessResult instanceof Error) {
+            return {
+                pfResult: null,
+                errorState: makeAnnotationState(ANNOTATION_LOAD_STATES.CLI_ERROR, {
+                    paperKey,
+                    message: commandName === 'status'
+                        ? 'Failed to check annotation database status.'
+                        : 'Could not load annotations for this paper.',
+                    errorCode: 'SUBPROCESS_ERROR',
+                    raw: { error: subprocessResult.message, command: commandName },
+                }),
+            };
+        }
+
+        let parsed;
+        try {
+            parsed = JSON.parse(subprocessResult.stdout);
+        } catch {
+            if (subprocessResult.exitCode !== 0) {
+                return {
+                    pfResult: null,
+                    errorState: makeAnnotationState(ANNOTATION_LOAD_STATES.CLI_ERROR, {
+                        paperKey,
+                        message: commandName === 'status'
+                            ? 'Failed to check annotation database status.'
+                            : 'Failed to load annotations from the CLI.',
+                        errorCode: 'CLI_ERROR',
+                        raw: {
+                            stdout: subprocessResult.stdout,
+                            stderr: subprocessResult.stderr,
+                            exitCode: subprocessResult.exitCode,
+                            command: commandName,
+                        },
+                    }),
+                };
+            }
+            return {
+                pfResult: null,
+                errorState: makeAnnotationState(ANNOTATION_LOAD_STATES.INVALID_JSON, {
+                    paperKey,
+                    message: commandName === 'status'
+                        ? 'Could not read the annotation system status.'
+                        : 'Could not read the annotation data for this paper.',
+                    errorCode: null,
+                    raw: {
+                        stdout: subprocessResult.stdout,
+                        stderr: subprocessResult.stderr,
+                        exitCode: subprocessResult.exitCode,
+                        command: commandName,
+                    },
+                }),
+            };
+        }
+
+        if (parsed && parsed.ok === false) {
+            const errCode = parsed.error && parsed.error.code
+                ? parsed.error.code
+                : 'CLI_ERROR';
+            return {
+                pfResult: null,
+                errorState: makeAnnotationState(ANNOTATION_LOAD_STATES.CLI_ERROR, {
+                    paperKey,
+                    message: commandName === 'status'
+                        ? 'Failed to check annotation database status.'
+                        : 'Failed to load annotations from the CLI.',
+                    errorCode: errCode,
+                    raw: { pfResult: parsed, command: commandName },
+                }),
+            };
+        }
+
+        return { pfResult: parsed, errorState: null };
+    }
+
+    // Step 1: status — is annotations.db available?
+    const statusArgs = buildAnnotationStatusArgs(pythonExtraArgs);
+    let statusSubprocessResult;
+    try {
+        statusSubprocessResult = await exec(pythonExe, statusArgs, cwd, timeout);
+    } catch (subprocessErr) {
+        statusSubprocessResult = subprocessErr;
+    }
+
+    const statusParsed = parseSubprocessResult(statusSubprocessResult, 'status');
+    if (statusParsed.errorState) {
+        return statusParsed.errorState;
+    }
+    const statusPfResult = statusParsed.pfResult;
+
+    const dbAvailable = statusPfResult &&
+        statusPfResult.data &&
+        statusPfResult.data.db_available === true;
+
+    if (!dbAvailable) {
+        return makeAnnotationState(ANNOTATION_LOAD_STATES.MISSING_DB, {
+            paperKey,
+            message: 'The annotation database is not yet available. Sync your library first.',
+            errorCode: null,
+            raw: { statusPfResult },
+        });
+    }
+
+    // Step 2: export — get annotations for the specific paper
+    const exportArgs = buildAnnotationExportArgs(paperKey, pythonExtraArgs);
+    let exportSubprocessResult;
+    try {
+        exportSubprocessResult = await exec(pythonExe, exportArgs, cwd, timeout);
+    } catch (subprocessErr) {
+        exportSubprocessResult = subprocessErr;
+    }
+
+    const exportParsed = parseSubprocessResult(exportSubprocessResult, 'export');
+    if (exportParsed.errorState) {
+        return exportParsed.errorState;
+    }
+    const exportPfResult = exportParsed.pfResult;
+
+    const rawAnnotations = (exportPfResult.data && exportPfResult.data.annotations) || [];
+    const total = (exportPfResult.data && exportPfResult.data.total) || 0;
+
+    if (total === 0 || rawAnnotations.length === 0) {
+        return makeAnnotationState(ANNOTATION_LOAD_STATES.EMPTY, {
+            paperKey,
+            message: 'This paper has no annotations yet. Add annotations in Zotero and re-sync.',
+            errorCode: null,
+            raw: { exportPfResult, statusPfResult },
+        });
+    }
+
+    const normalizedAnnotations = rawAnnotations.map(normalizeAnnotationExportRow);
+
+    return makeAnnotationState(ANNOTATION_LOAD_STATES.READY, {
+        paperKey,
+        annotations: normalizedAnnotations,
+        message: normalizedAnnotations.length + ' annotation(s) loaded.',
+        errorCode: null,
+        raw: { exportPfResult, statusPfResult },
+    });
 }
 
 // ── Cross-platform Python and BBT detection (macOS/Linux) ──
