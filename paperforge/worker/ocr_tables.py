@@ -108,6 +108,16 @@ def _collect_page_footnote_prior(structured_blocks: list[dict]) -> dict[int, flo
     return result
 
 
+def _looks_like_body_text_below_table(block: dict, table_bbox: list[float]) -> bool:
+    bbox = block.get("bbox") or [0, 0, 0, 0]
+    if len(bbox) < 4 or len(table_bbox) < 4:
+        return False
+    block_width = bbox[2] - bbox[0]
+    table_width = table_bbox[2] - table_bbox[0]
+    text = str(block.get("text", "") or "").strip()
+    return block_width >= table_width * 0.9 and len(text.split()) >= 12
+
+
 def _table_note_falls_into_page_footnote_prior(
     note_bbox: list[float], page: int, prior_by_page: dict[int, float]
 ) -> bool:
@@ -349,6 +359,9 @@ def build_table_inventory(structured_blocks: list[dict]) -> dict[str, Any]:
                     continue
                 if _table_note_falls_into_page_footnote_prior(bbbox, int(asset_page or 0), page_footnote_prior):
                     note_match_reason = "page_footnote_prior_rejected"
+                    continue
+                if _looks_like_body_text_below_table(block, asset_bbox):
+                    note_match_reason = "body_text_like_excluded"
                     continue
                 candidates.append(block)
 

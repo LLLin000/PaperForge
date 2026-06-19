@@ -352,6 +352,25 @@ def test_table_object_markdown_renders_owned_notes() -> None:
     assert "Data are mean \u00b1 SD." in md
 
 
+def test_table_object_markdown_renders_note_band_texts_in_notes_section() -> None:
+    from paperforge.worker.ocr_objects import render_table_object_markdown
+
+    md = render_table_object_markdown(
+        {
+            "table_id": "table_001",
+            "page": 5,
+            "caption": "Table 1. Results.",
+            "image_relpath": "assets/tables/table_001.jpg",
+            "note_texts": ["* p < 0.05", "Data are mean \u00b1 SD."],
+            "note_match_reason": "note_band_geometry_match",
+        }
+    )
+
+    assert "## Notes" in md
+    assert "* p < 0.05" in md
+    assert "Data are mean \u00b1 SD." in md
+
+
 def test_table_caption_math_normalized() -> None:
     from paperforge.worker.ocr_objects import render_table_object_markdown
     md = render_table_object_markdown({

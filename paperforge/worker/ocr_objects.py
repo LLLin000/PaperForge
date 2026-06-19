@@ -221,21 +221,30 @@ def extract_and_write_objects(
         cluster_bbox = match.get("cluster_bbox")
         if cluster_bbox and all(v > 0 for v in cluster_bbox):
             was_cropped = _crop_asset_from_pdf(
-                pdf_path, page, cluster_bbox, asset_path_abs,
-                page_width=page_width, page_height=page_height,
+                pdf_path,
+                page,
+                cluster_bbox,
+                asset_path_abs,
+                page_width=page_width,
+                page_height=page_height,
                 page_cache_dir=page_cache_dir,
             )
         if not was_cropped:
             for asset_info in match.get("matched_assets", []):
                 bbox = asset_info.get("bbox", [0, 0, 0, 0])
-                if pdf_path and bbox and all(v > 0 for v in bbox) and _crop_asset_from_pdf(
-                    pdf_path,
-                    page,
-                    bbox,
-                    asset_path_abs,
-                    page_width=page_width,
-                    page_height=page_height,
-                    page_cache_dir=page_cache_dir,
+                if (
+                    pdf_path
+                    and bbox
+                    and all(v > 0 for v in bbox)
+                    and _crop_asset_from_pdf(
+                        pdf_path,
+                        page,
+                        bbox,
+                        asset_path_abs,
+                        page_width=page_width,
+                        page_height=page_height,
+                        page_cache_dir=page_cache_dir,
+                    )
                 ):
                     was_cropped = True
                     break
@@ -346,6 +355,8 @@ def extract_and_write_objects(
                 "image_relpath": asset_path_rel,
                 "confidence": 0.85 if was_cropped else 0.4,
                 "formal_table_number": table.get("formal_table_number") or table.get("table_number"),
+                "note_texts": table.get("note_texts", []),
+                "note_match_reason": table.get("note_match_reason", ""),
             }
         )
         _write_object_markdown(md, tables_render_dir / f"{tbl_id}.md")
