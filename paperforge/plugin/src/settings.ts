@@ -1279,10 +1279,6 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const state = containerEl.createEl("div");
     state.createEl("p", { text: "\u6B63\u5728\u52A0\u8F7D OCR \u7EF4\u62A4\u6570\u636E\u2026" });
 
-    // Filter dropdown + select all + execute button bar
-    const toolbar = containerEl.createEl("div");
-    toolbar.style.cssText = "display:flex; align-items:center; gap:8px; margin-bottom:8px; flex-wrap:wrap;";
-
     // ── Run paperforge ocr list --json --output ──
     const tmpFile = path.join(os.tmpdir(), `pf_ocr_maintenance_${Date.now()}.json`);
     const args = ["-m", "paperforge", "ocr", "list", "--json", "--output", tmpFile];
