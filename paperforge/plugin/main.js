@@ -1140,11 +1140,74 @@ class PaperForgeStatusView extends ItemView {
         this._modeSubscribers = [];     // event handler refs for cleanup
         this._leafChangeTimer = null;   // debounce timer for active-leaf-change
         this._ocrPrivacyShown = false;  // DASH-03: once-per-session privacy flag
+        this._annotationState = makeAnnotationState(ANNOTATION_LOAD_STATES.IDLE); // BRDG
+        this._annotationLoadSeq = 0;    // monotonic stale-result guard (D-22, T-annotation-05-06)
     }
 
     getViewType() { return VIEW_TYPE_PAPERFORGE; }
     getDisplayText() { return 'PaperForge'; }
     getIcon() { return PF_ICON_ID; }
+
+    /** BRDG: Get the current annotation load state. */
+    getAnnotationState() {
+        return this._annotationState;
+    }
+
+    /**
+     * BRDG: Load annotations for the current paper via the CLI bridge.
+     *
+     * Reusable method that Phase 6 UI can call for explicit manual refresh (D-22).
+     * Uses _annotationLoadSeq for stale-result guard (T-annotation-05-06).
+     *
+     * @param {string} [reason='auto'] - Reason tag for observability.
+     * @returns {Promise<object>|null} Promise of load state, or null if no key.
+     */
+    async loadAnnotationsForCurrentPaper(reason) {
+        const r = reason || 'auto';
+
+        // Missing paper → skip subprocess (D-07)
+        if (!this._currentPaperKey) {
+            this._annotationState = makeAnnotationState(ANNOTATION_LOAD_STATES.MISSING_PAPER, {
+                paperKey: null,
+                message: 'No paper is currently active. Open a paper note or PDF to view its annotations.',
+            });
+            return null;
+        }
+
+        // Mark loading
+        this._annotationState = makeAnnotationState(ANNOTATION_LOAD_STATES.LOADING, {
+            paperKey: this._currentPaperKey,
+            message: 'Loading annotations...',
+        });
+
+        const capturedSeq = ++this._annotationLoadSeq;
+        const capturedKey = this._currentPaperKey;
+
+        // Resolve Python executable with vault path
+        const vp = this.app.vault.adapter.basePath;
+        const plugin = this.app.plugins.plugins['paperforge'];
+        const { path: pythonExe, extraArgs = [] } = resolvePythonExecutable(vp, plugin?.settings);
+
+        const annotationLoader = this._annotationLoader || loadAnnotationsForPaper;
+
+        // Call the bridge loader
+        const result = await annotationLoader({
+            paperKey: capturedKey,
+            pythonExe: pythonExe,
+            pythonExtraArgs: extraArgs,
+            cwd: vp,
+            timeout: 30000,
+        });
+
+        // Stale-result guard: discard if paper key changed during load
+        if (this._currentPaperKey !== capturedKey || this._annotationLoadSeq !== capturedSeq) {
+            return this._annotationState;
+        }
+
+        result.paperKey = capturedKey;
+        this._annotationState = result;
+        return result;
+    }
 
     async onOpen() {
         this._buildPanel();
@@ -1763,6 +1826,9 @@ class PaperForgeStatusView extends ItemView {
         this._currentPaperEntry = resolved.key ? this._findEntry(resolved.key) : null;
 
         this._switchMode(resolved.mode, resolved.filePath);
+
+        // BRDG: Fire annotation load when active paper changes (D-20)
+        this.loadAnnotationsForCurrentPaper('auto');
     }
 
     /* ── Mode Switching (D-05, D-06) ── */
@@ -2516,6 +2582,9 @@ class PaperForgeStatusView extends ItemView {
                 if (this._contentEl) this._contentEl.removeClass('switching');
             }, 50);
         }
+
+        // BRDG: Refresh annotation state when mode is refreshed (D-20)
+        this.loadAnnotationsForCurrentPaper('auto');
     }
 
     /* ── Run Action ── */
@@ -5158,5 +5227,10 @@ module.exports = class PaperForgePlugin extends Plugin {
         await this.saveData(dataToSave);
     }
 };
+
+// BRDG: Test hook for integration tests (non-rendering, side-effect free)
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports.__test = { PaperForgeStatusView };
+}
 
 
