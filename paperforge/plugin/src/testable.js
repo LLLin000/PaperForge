@@ -525,6 +525,111 @@ async function loadAnnotationsForPaper(options) {
     });
 }
 
+/**
+ * Create a lifecycle controller for active-paper annotation refresh decisions.
+ *
+ * Models Obsidian plugin active-paper transitions without importing any
+ * Obsidian API, so tests can prove missing-paper skipping, key transitions,
+ * and stale-result guarding in a pure Node environment.
+ *
+ * @param {object} [opts]
+ * @param {Function} [opts.loader] - Async function(key, reason) that returns
+ *   a load state (one of ANNOTATION_LOAD_STATES). Default no-op.
+ * @returns {LifecycleController}
+ */
+function createAnnotationLifecycleController(opts) {
+    const o = opts || {};
+    const loadFn = typeof o.loader === 'function'
+        ? o.loader
+        : async () => makeAnnotationState(ANNOTATION_LOAD_STATES.IDLE);
+
+    let _currentPaperKey = null;
+    let _annotationState = makeAnnotationState(ANNOTATION_LOAD_STATES.IDLE);
+    let _loadSeq = 0;
+
+    /** Return the current stored annotation state. */
+    function getAnnotationState() {
+        return _annotationState;
+    }
+
+    /** Return the current paper key. */
+    function getCurrentPaperKey() {
+        return _currentPaperKey;
+    }
+
+    /**
+     * Set the current paper key and begin a load if key is non-null/empty.
+     * Returns the promise of the load (for testing).
+     *
+     * @param {string|null} key
+     * @param {string} [reason='auto']
+     * @returns {Promise<object>|null} Load promise, or null if missing-paper.
+     */
+    function setCurrentPaperKey(key, reason) {
+        const r = reason || 'auto';
+        _currentPaperKey = key != null ? key : null;
+
+        // Missing paper → set state and skip loader
+        if (!_currentPaperKey) {
+            _annotationState = makeAnnotationState(ANNOTATION_LOAD_STATES.MISSING_PAPER, {
+                paperKey: null,
+                message: 'No paper is currently active. Open a paper note or PDF to view its annotations.',
+            });
+            return null;
+        }
+
+        // Key is set — start a load
+        return loadAnnotationsForCurrentPaper(r);
+    }
+
+    /**
+     * Load annotations for the current paper key.
+     * Includes stale-result guard via monotonic loadSeq.
+     *
+     * @param {string} [reason='auto']
+     * @returns {Promise<object>|null} Promise of load state, or null if no key.
+     */
+    function loadAnnotationsForCurrentPaper(reason) {
+        const r = reason || 'auto';
+
+        if (!_currentPaperKey) {
+            _annotationState = makeAnnotationState(ANNOTATION_LOAD_STATES.MISSING_PAPER, {
+                paperKey: null,
+                message: 'No paper is currently active. Open a paper note or PDF to view its annotations.',
+            });
+            return null;
+        }
+
+        // Mark loading
+        _annotationState = makeAnnotationState(ANNOTATION_LOAD_STATES.LOADING, {
+            paperKey: _currentPaperKey,
+            message: 'Loading annotations...',
+        });
+
+        const capturedSeq = ++_loadSeq;
+        const capturedKey = _currentPaperKey;
+
+        return loadFn(capturedKey, r).then((result) => {
+            // Stale-result guard: discard if paper key changed during load
+            if (_currentPaperKey !== capturedKey || _loadSeq !== capturedSeq) {
+                return _annotationState;
+            }
+
+            // Ensure the result has the correct paperKey
+            result.paperKey = capturedKey;
+            _annotationState = result;
+            return result;
+        });
+    }
+
+    return {
+        getAnnotationState,
+        getCurrentPaperKey,
+        setCurrentPaperKey,
+        loadAnnotationsForCurrentPaper,
+    };
+}
+
 module.exports = {
     resolvePythonExecutable,
     getPluginVersion,
@@ -543,4 +648,6 @@ module.exports = {
     buildAnnotationStatusArgs,
     buildAnnotationExportArgs,
     loadAnnotationsForPaper,
+    // Lifecycle controller
+    createAnnotationLifecycleController,
 };
