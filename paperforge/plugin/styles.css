@@ -2589,3 +2589,104 @@
     gap: 8px;
     justify-content: flex-end;
 }
+
+/* ── OCR Maintenance UX (actionability-first) ── */
+
+.pf-maint-hero {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.pf-maint-counts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 10px;
+}
+
+.pf-maint-stat {
+    background: var(--background-primary);
+    border: 1px solid var(--pf-border);
+    border-radius: var(--pf-radius);
+    padding: 10px;
+    text-align: center;
+}
+
+.pf-maint-stat strong {
+    display: block;
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.pf-maint-stat span {
+    display: block;
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+
+.pf-maint-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.pf-maint-card {
+    background: var(--pf-surface);
+    border: 1px solid var(--pf-border);
+    border-radius: var(--pf-radius);
+    padding: 12px;
+}
+
+.pf-maint-card p {
+    margin: 4px 0 8px;
+}
+
+.pf-maint-chip {
+    display: inline-flex;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    vertical-align: middle;
+}
+
+.pf-maint-chip--ok {
+    background: color-mix(in srgb, var(--text-success) 12%, transparent);
+    color: var(--text-success);
+}
+
+.pf-maint-chip--rebuild {
+    background: color-mix(in srgb, var(--interactive-accent) 12%, transparent);
+    color: var(--interactive-accent);
+}
+
+.pf-maint-chip--failed {
+    background: color-mix(in srgb, var(--text-error) 14%, transparent);
+    color: var(--text-error);
+}
+
+.pf-maint-chip--limited {
+    background: color-mix(in srgb, var(--text-warning) 14%, transparent);
+    color: var(--text-warning);
+}
+
+.pf-maint-advanced {
+    margin-top: 12px;
+    border: 1px solid var(--pf-border);
+    border-radius: var(--pf-radius);
+    padding: 8px;
+}
+
+.pf-maint-advanced summary {
+    cursor: pointer;
+    color: var(--text-muted);
+    font-size: 13px;
+    font-weight: 600;
+    user-select: none;
+}
+
+.pf-maint-advanced summary:hover {
+    color: var(--text-normal);
+}
