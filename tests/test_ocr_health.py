@@ -713,3 +713,18 @@ def test_ocr_health_reports_rendered_gap_count_when_markdown_is_provided() -> No
     )
 
     assert report["rendered_text_gap_count"] == 1
+
+
+def test_health_emits_additive_v2_fields_without_replacing_overall() -> None:
+    from paperforge.worker.ocr_health import build_ocr_health
+    health = build_ocr_health(
+        page_count=1, raw_blocks_count=0,
+        structured_blocks=[{"role": "section_heading", "text": "Intro"}],
+        figure_inventory={"matched_figures": [], "held_figures": [], "unmatched_legends": [], "unmatched_assets": [], "figure_legend_completeness": {}},
+        table_inventory={"tables": [], "held_tables": [], "unmatched_captions": [], "unmatched_assets": []},
+        reader_payload=None, rendered_markdown=None,
+    )
+    assert "overall" in health
+    assert "heading_total_v2" in health
+    assert "matched_figure_count_v2" in health
+    assert "issue_breakdown_v2" in health

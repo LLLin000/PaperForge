@@ -308,6 +308,20 @@ def build_ocr_health(
         ),
     }
 
+    # v2 additive fields — backward compatible
+    issue_breakdown_v2 = {
+        "caption_without_media": caption_without_media,
+        "media_without_caption": media_without_caption,
+        "empty_tables": empty_tables,
+        "abstract_found": abstract_found,
+        "references_found": references_found if isinstance(references_found, bool) else bool(references_found),
+        "heading_total": section_heading_count,
+        "formal_legend_gaps": formal_legend_gaps,
+    }
+    report["heading_total_v2"] = section_heading_count
+    report["matched_figure_count_v2"] = len(figure_inventory.get("matched_figures", []))
+    report["issue_breakdown_v2"] = issue_breakdown_v2
+
     if reader_payload is not None:
         rc = reader_payload.get("reader_coverage", {})
         report["figure_reader_coverage_total"] = rc.get("total", 0)

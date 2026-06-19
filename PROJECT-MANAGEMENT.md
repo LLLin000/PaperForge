@@ -1340,3 +1340,17 @@ For each paper: rebuilt pipeline, generated annotated pages, performed visual bl
 **Artifacts:** `project/current/ocr_rebuild_audit.md`
 
 **Test status:** Existing 131 tests pass with partial code changes applied. `page_assets` changes not yet merged pending gate review.
+
+### 11.2 Rebuild Audit Remediation Batches 1-5 (2026-06-19)
+
+**What was done:** Executed the 5-task remediation plan for rebuild-output hardening.
+
+- Task 1: Carried owned table notes through inventory → object markdown → fulltext skip
+- Task 2: Removed display-zone table-caption blockquote duplication; fixed heading count and reference evidence in health
+- Task 3: Allowed bare `Table N` matching under strong spatial evidence only
+- Task 4: Split figure namespace (main/supplementary/extended_data) from outcome; gated `page_assets` strict matching
+- Task 5: Added additive health-v2 fields
+
+**Design spec:** `docs/superpowers/specs/2026-06-19-ocr-rebuild-audit-remediation-design.md`
+
+**Execution plan:** `docs/superpowers/plans/2026-06-19-ocr-rebuild-audit-remediation-implementation.md`
