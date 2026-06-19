@@ -525,98 +525,6 @@ async function loadAnnotationsForPaper(options) {
     });
 }
 
-/**
- * Create an annotation lifecycle controller that models active-paper refresh decisions.
- *
- * This is a testable helper that mirrors the lifecycle logic PaperForgeStatusView
- * will implement, without importing Obsidian APIs. It encapsulates:
- *   - current paper key tracking
- *   - annotation state storage
- *   - monotonic load sequence guard for stale-result protection
- *   - missing-paper guard (no subprocess call when key is null)
- *   - getAnnotationState() accessor
- *   - loadAnnotationsForCurrentPaper(reason, options) loader
- *
- * @param {object} [initialState] - Initial state overrides.
- * @returns {{
- *   _currentPaperKey: string|null,
- *   _annotationState: object,
- *   _annotationLoadSeq: number,
- *   getAnnotationState: () => object,
- *   setCurrentPaperKey: (key: string|null) => void,
- *   loadAnnotationsForCurrentPaper: (reason: string, options: object) => Promise<object>,
- * }}
- */
-function createAnnotationLifecycleController(initialState) {
-    const ctrl = {
-        _currentPaperKey: (initialState && initialState.currentPaperKey) || null,
-        _annotationState: makeAnnotationState(ANNOTATION_LOAD_STATES.IDLE, {
-            paperKey: (initialState && initialState.currentPaperKey) || null,
-            message: (initialState && initialState.message) || '',
-        }),
-        _annotationLoadSeq: 0,
-    };
-
-    /**
-     * Return the current stored annotation state.
-     */
-    ctrl.getAnnotationState = function getAnnotationState() {
-        return ctrl._annotationState;
-    };
-
-    /**
-     * Set the current paper key (e.g. on mode switch).
-     * If the key changes, the controller is ready for a new load.
-     */
-    ctrl.setCurrentPaperKey = function setCurrentPaperKey(key) {
-        ctrl._currentPaperKey = key || null;
-    };
-
-    /**
-     * Load annotations for the current paper, with stale-result protection.
-     *
-     * @param {string} [reason='auto'] - Reason for the load ('auto' | 'manual').
-     * @param {object} [options] - Options passed through to loadAnnotationsForPaper.
-     *   Must include `runSubprocessFn` in test scenarios.
-     * @returns {Promise<object>} The annotation state after loading.
-     */
-    ctrl.loadAnnotationsForCurrentPaper = async function loadAnnotationsForCurrentPaper(reason, options) {
-        const seq = ++ctrl._annotationLoadSeq;
-        const paperKey = ctrl._currentPaperKey;
-
-        // Missing paper guard: set missing-paper, do not call CLI/subprocess
-        if (!paperKey) {
-            const state = makeAnnotationState(ANNOTATION_LOAD_STATES.MISSING_PAPER, {
-                paperKey: null,
-                message: 'No paper is currently active. Open a paper note or PDF to view its annotations.',
-            });
-            ctrl._annotationState = state;
-            return state;
-        }
-
-        // Set loading state
-        ctrl._annotationState = makeAnnotationState(ANNOTATION_LOAD_STATES.LOADING, {
-            paperKey,
-            message: reason === 'manual' ? 'Refreshing annotations...' : 'Loading annotations...',
-        });
-
-        // Perform the actual load
-        const loadOptions = Object.assign({}, options, { paperKey });
-        const result = await loadAnnotationsForPaper(loadOptions);
-
-        // Stale-result guard: only accept if no newer load started
-        if (seq !== ctrl._annotationLoadSeq) {
-            // A newer load was started; discard this stale result
-            return ctrl._annotationState;
-        }
-
-        ctrl._annotationState = result;
-        return result;
-    };
-
-    return ctrl;
-}
-
 module.exports = {
     resolvePythonExecutable,
     getPluginVersion,
@@ -635,6 +543,4 @@ module.exports = {
     buildAnnotationStatusArgs,
     buildAnnotationExportArgs,
     loadAnnotationsForPaper,
-    // Lifecycle controller
-    createAnnotationLifecycleController,
 };
