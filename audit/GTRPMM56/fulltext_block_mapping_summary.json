@@ -1,0 +1,4147 @@
+{
+  "mappable_block_count": 414,
+  "found_count": 381,
+  "missing_count": 33,
+  "rows": [
+    {
+      "block_id": "p1:0",
+      "page": 1,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "nature reviews rheumatology",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:1",
+      "page": 1,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "https://doi.org/10.1038/s41584-025-01236-7",
+      "found_in_fulltext": true,
+      "fulltext_offset": 104708
+    },
+    {
+      "block_id": "p1:2",
+      "page": 1,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "Check for updates",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:3",
+      "page": 1,
+      "role": "unknown_structural",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "Review article",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:4",
+      "page": 1,
+      "role": "paper_title",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "Restoring articular cartilage: insights from structure, composition and developm",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:5",
+      "page": 1,
+      "role": "unknown_structural",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "Alba Pueyo Moliner ☎ 1,2, Keita Ito 2,3, Frank Zaucke ☎ 4, Daniel J. Kelly 5, My",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:8",
+      "page": 1,
+      "role": "media_asset",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "<table><tr><td>Sections</td></tr><tr><td>Introduction</td></tr><tr><td>The aniso",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:9",
+      "page": 1,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "A full list of affiliations appears at the end of the paper. ☒e-mail: J.Malda@um",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:10",
+      "page": 1,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "Nature Reviews Rheumatology",
+      "found_in_fulltext": true,
+      "fulltext_offset": 233
+    },
+    {
+      "block_id": "p2:0",
+      "page": 2,
+      "role": "noise",
+      "zone": "frontmatter_side_zone",
+      "render_default": false,
+      "snippet": "Review article",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:1",
+      "page": 2,
+      "role": "structured_insert",
+      "zone": "frontmatter_side_zone",
+      "render_default": false,
+      "snippet": "Key points",
+      "found_in_fulltext": true,
+      "fulltext_offset": 1943
+    },
+    {
+      "block_id": "p2:2",
+      "page": 2,
+      "role": "structured_insert",
+      "zone": "frontmatter_side_zone",
+      "render_default": false,
+      "snippet": "<table><tr><td>• Articular cartilage is a highly anisotropic tissue that is char",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:3",
+      "page": 2,
+      "role": "structured_insert",
+      "zone": "frontmatter_side_zone",
+      "render_default": false,
+      "snippet": "• Insights gained from cartilage development and its anisotropic organization co",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2889
+    },
+    {
+      "block_id": "p2:4",
+      "page": 2,
+      "role": "section_heading",
+      "zone": "frontmatter_side_zone",
+      "render_default": true,
+      "snippet": "Introduction",
+      "found_in_fulltext": true,
+      "fulltext_offset": 3049
+    },
+    {
+      "block_id": "p2:5",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Articular cartilage is a highly specialized connective tissue located in the syn",
+      "found_in_fulltext": true,
+      "fulltext_offset": 3062
+    },
+    {
+      "block_id": "p2:6",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The extracellular matrix (ECM) provides exceptional biomechanical support throug",
+      "found_in_fulltext": true,
+      "fulltext_offset": 3827
+    },
+    {
+      "block_id": "p2:8",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The regenerative capacity of articular cartilage is limited owing to it being av",
+      "found_in_fulltext": true,
+      "fulltext_offset": 5193
+    },
+    {
+      "block_id": "p2:10",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In this Review, we explore the basic composition, structure and development of a",
+      "found_in_fulltext": true,
+      "fulltext_offset": 5750
+    },
+    {
+      "block_id": "p2:11",
+      "page": 2,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The anisotropic nature of articular cartilage",
+      "found_in_fulltext": true,
+      "fulltext_offset": 6371
+    },
+    {
+      "block_id": "p2:12",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Articular cartilage is a highly anisotropic tissue; at birth, the ECM is homogen",
+      "found_in_fulltext": true,
+      "fulltext_offset": 6417
+    },
+    {
+      "block_id": "p2:13",
+      "page": 2,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Collagen and proteoglycans in articular cartilage",
+      "found_in_fulltext": true,
+      "fulltext_offset": 6768
+    },
+    {
+      "block_id": "p2:14",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "On the basis of the orientation of collagen fibres, the zones of articular carti",
+      "found_in_fulltext": true,
+      "fulltext_offset": 6818
+    },
+    {
+      "block_id": "p2:15",
+      "page": 2,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Nature Reviews Rheumatology",
+      "found_in_fulltext": true,
+      "fulltext_offset": 233
+    },
+    {
+      "block_id": "p3:0",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Review article",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:3",
+      "page": 3,
+      "role": "figure_caption_candidate",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "self-renewing chondroprogenitors $ ^{26,56,67,94} $. d, After maturation, the ti",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:4",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "with the maximum tensile stresses experienced by the joint surface during motion",
+      "found_in_fulltext": true,
+      "fulltext_offset": 7573
+    },
+    {
+      "block_id": "p3:5",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The superficial zone is rich in lubricin (also known as proteoglycan-4), a prote",
+      "found_in_fulltext": true,
+      "fulltext_offset": 8094
+    },
+    {
+      "block_id": "p3:6",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In the middle zone, the orientation of collagen fibres is random, whereas in the",
+      "found_in_fulltext": true,
+      "fulltext_offset": 9021
+    },
+    {
+      "block_id": "p3:8",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The ECM is divided into three regions on the basis of chondrocyte proximity: the",
+      "found_in_fulltext": true,
+      "fulltext_offset": 9775
+    },
+    {
+      "block_id": "p3:9",
+      "page": 3,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The bottom-up development of articular cartilage",
+      "found_in_fulltext": true,
+      "fulltext_offset": 10868
+    },
+    {
+      "block_id": "p3:10",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "During embryonic development, articular cartilage formation begins with the esta",
+      "found_in_fulltext": true,
+      "fulltext_offset": 10917
+    },
+    {
+      "block_id": "p3:11",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Nature Reviews Rheumatology",
+      "found_in_fulltext": true,
+      "fulltext_offset": 233
+    },
+    {
+      "block_id": "p4:0",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Review article",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:1",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "cartilage and other joint structures (such as the ligament and the meniscus). Se",
+      "found_in_fulltext": true,
+      "fulltext_offset": 11695
+    },
+    {
+      "block_id": "p4:2",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Chondroprogenitor cells that are present at the surface of the nascent joint con",
+      "found_in_fulltext": true,
+      "fulltext_offset": 12521
+    },
+    {
+      "block_id": "p4:3",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Some daughter cells will halt hypertrophy as they migrate downwards and retain a",
+      "found_in_fulltext": true,
+      "fulltext_offset": 13266
+    },
+    {
+      "block_id": "p4:4",
+      "page": 4,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Collagen type II fibres in the articular cartilage matrix",
+      "found_in_fulltext": true,
+      "fulltext_offset": 14015
+    },
+    {
+      "block_id": "p4:5",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Collagen is present in the articular ECM in the form of heterotypic fibres; typi",
+      "found_in_fulltext": true,
+      "fulltext_offset": 14073
+    },
+    {
+      "block_id": "p4:6",
+      "page": 4,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Collagen biosynthesis",
+      "found_in_fulltext": true,
+      "fulltext_offset": 14645
+    },
+    {
+      "block_id": "p4:7",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Collagen type II biosynthesis begins with the transcription of the COL2A1 gene i",
+      "found_in_fulltext": true,
+      "fulltext_offset": 15020
+    },
+    {
+      "block_id": "p4:9",
+      "page": 4,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Fibrillogenesis and self-assembly",
+      "found_in_fulltext": true,
+      "fulltext_offset": 16656
+    },
+    {
+      "block_id": "p4:10",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Fibrillogenesis is a step-by-step process that begins when chondrocytes release ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 16690
+    },
+    {
+      "block_id": "p4:11",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Collagen fibre diameter increases with growth and cartilage depth $ ^{84} $ (Fig",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:12",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Nature Reviews Rheumatology",
+      "found_in_fulltext": true,
+      "fulltext_offset": 233
+    },
+    {
+      "block_id": "p5:0",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Review article",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:3",
+      "page": 5,
+      "role": "figure_caption_candidate",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "collagen type XI (red) and fibril-associated collagens (such as collagen type IX",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:4",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Cartilage collagen is further interconnected by crosslinking, which is mostly fa",
+      "found_in_fulltext": true,
+      "fulltext_offset": 19596
+    },
+    {
+      "block_id": "p5:6",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Nature Reviews Rheumatology",
+      "found_in_fulltext": true,
+      "fulltext_offset": 233
+    },
+    {
+      "block_id": "p6:0",
+      "page": 6,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Review article",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:1",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "is also essential for shaping the collagen network. Chondrocytes produce matrix ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20225
+    },
+    {
+      "block_id": "p6:2",
+      "page": 6,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Postnatal collagen structure reorganization",
+      "found_in_fulltext": true,
+      "fulltext_offset": 21311
+    },
+    {
+      "block_id": "p6:3",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Considering the composition, structure, postnatal development and poroelastic be",
+      "found_in_fulltext": true,
+      "fulltext_offset": 21355
+    },
+    {
+      "block_id": "p6:4",
+      "page": 6,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Collagen network formation in the deep zone",
+      "found_in_fulltext": true,
+      "fulltext_offset": 23301
+    },
+    {
+      "block_id": "p6:5",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "For fibrous tissues, such as tendons, fibroblasts align with the principal stres",
+      "found_in_fulltext": true,
+      "fulltext_offset": 23345
+    },
+    {
+      "block_id": "p6:7",
+      "page": 6,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Collagen network formation in the superficial zone",
+      "found_in_fulltext": true,
+      "fulltext_offset": 25261
+    },
+    {
+      "block_id": "p6:8",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "I tightly packed, tangentially oriented collagen fibres provide crucial support ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 25312
+    },
+    {
+      "block_id": "p6:9",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Overall, newly synthesized collagen fibrils are dispersed in the surrounding ECM",
+      "found_in_fulltext": true,
+      "fulltext_offset": 27256
+    },
+    {
+      "block_id": "p6:10",
+      "page": 6,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Nature Reviews Rheumatology",
+      "found_in_fulltext": true,
+      "fulltext_offset": 233
+    },
+    {
+      "block_id": "p7:0",
+      "page": 7,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Review article",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:3",
+      "page": 7,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Additionally, increasing mechanical load promotes the alignment of collagen fibr",
+      "found_in_fulltext": true,
+      "fulltext_offset": 28349
+    },
+    {
+      "block_id": "p7:4",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "tangential strains that could potentially pull the collagen fibres parallel to i",
+      "found_in_fulltext": true,
+      "fulltext_offset": 28826
+    },
+    {
+      "block_id": "p7:5",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Taken together, these observations point towards a biomechanically driven hypoth",
+      "found_in_fulltext": true,
+      "fulltext_offset": 28935
+    },
+    {
+      "block_id": "p7:6",
+      "page": 7,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Proteoglycans in the articular cartilage matrix",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29490
+    },
+    {
+      "block_id": "p7:7",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Alongside fibrillogenesis, self-assembly and postnatal reorganization of collage",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29538
+    },
+    {
+      "block_id": "p7:9",
+      "page": 7,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Aggrecan biosynthesis and deposition",
+      "found_in_fulltext": true,
+      "fulltext_offset": 31870
+    },
+    {
+      "block_id": "p7:10",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Aggrecan is composed of a core protein that is covalently bound to sulphated GAG",
+      "found_in_fulltext": true,
+      "fulltext_offset": 31907
+    },
+    {
+      "block_id": "p7:11",
+      "page": 7,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Nature Reviews Rheumatology",
+      "found_in_fulltext": true,
+      "fulltext_offset": 233
+    },
+    {
+      "block_id": "p8:0",
+      "page": 8,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Review article",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:3",
+      "page": 8,
+      "role": "figure_caption_candidate",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "to form the negatively charged GAGs keratan sulphate (KS) and chondroitin sulpha",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:4",
+      "page": 8,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "is found in aggregates in the articular ECM; hence, the name of this proteoglyca",
+      "found_in_fulltext": true,
+      "fulltext_offset": 32888
+    },
+    {
+      "block_id": "p8:5",
+      "page": 8,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Aggrecan structure and distribution",
+      "found_in_fulltext": true,
+      "fulltext_offset": 33319
+    },
+    {
+      "block_id": "p8:6",
+      "page": 8,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "As previously mentioned, collagen fibres in the articular cartilage exhibit an a",
+      "found_in_fulltext": true,
+      "fulltext_offset": 33355
+    },
+    {
+      "block_id": "p8:7",
+      "page": 8,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Other proteoglycans and glycoproteins in cartilage",
+      "found_in_fulltext": true,
+      "fulltext_offset": 34944
+    },
+    {
+      "block_id": "p8:8",
+      "page": 8,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The interaction between collagen type II and large proteoglycans, such as aggrec",
+      "found_in_fulltext": true,
+      "fulltext_offset": 34995
+    },
+    {
+      "block_id": "p8:9",
+      "page": 8,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Attempts to restore cartilage mechanical function",
+      "found_in_fulltext": true,
+      "fulltext_offset": 35790
+    },
+    {
+      "block_id": "p8:10",
+      "page": 8,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Attempts to restore carriage�h.ruction Once skeletal maturity occurs, the collag",
+      "found_in_fulltext": true,
+      "fulltext_offset": 35840
+    },
+    {
+      "block_id": "p8:11",
+      "page": 8,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Nature Reviews Rheumatology",
+      "found_in_fulltext": true,
+      "fulltext_offset": 233
+    },
+    {
+      "block_id": "p9:0",
+      "page": 9,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Review article",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:1",
+      "page": 9,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "therefore an urgent need for more durable approaches to articular cartilage rest",
+      "found_in_fulltext": true,
+      "fulltext_offset": 37077
+    },
+    {
+      "block_id": "p9:2",
+      "page": 9,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Novel clinical approaches, such as cell-based therapies, which involve the use o",
+      "found_in_fulltext": true,
+      "fulltext_offset": 37166
+    },
+    {
+      "block_id": "p9:3",
+      "page": 9,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "All of these therapeutic strategies for the restoration of articular cartilage i",
+      "found_in_fulltext": true,
+      "fulltext_offset": 38532
+    },
+    {
+      "block_id": "p9:5",
+      "page": 9,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "To overcome this challenge, hydrogel-based bioprinting has been combined with ot",
+      "found_in_fulltext": true,
+      "fulltext_offset": 39966
+    },
+    {
+      "block_id": "p9:8",
+      "page": 9,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Nature Reviews Rheumatology",
+      "found_in_fulltext": true,
+      "fulltext_offset": 233
+    },
+    {
+      "block_id": "p10:0",
+      "page": 10,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Review article",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:3",
+      "page": 10,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Nature Reviews Rheumatology",
+      "found_in_fulltext": true,
+      "fulltext_offset": 233
+    },
+    {
+      "block_id": "p11:0",
+      "page": 11,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Review article",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:3",
+      "page": 11,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Indicates small leucine-rich proteoglycans. BMP, bone morphogenetic protein; COM",
+      "found_in_fulltext": true,
+      "fulltext_offset": 40842
+    },
+    {
+      "block_id": "p11:4",
+      "page": 11,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "cartilage and can remain stable in vivo, as demonstrated in horses, in which imp",
+      "found_in_fulltext": true,
+      "fulltext_offset": 41190
+    },
+    {
+      "block_id": "p11:5",
+      "page": 11,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Attempts to incorporate collagen architecture",
+      "found_in_fulltext": true,
+      "fulltext_offset": 41789
+    },
+    {
+      "block_id": "p11:6",
+      "page": 11,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The anisotropic organization of the ECM, particularly the alignment of collagen ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 41835
+    },
+    {
+      "block_id": "p11:7",
+      "page": 11,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Approaches to inducing collagen alignment",
+      "found_in_fulltext": true,
+      "fulltext_offset": 43411
+    },
+    {
+      "block_id": "p11:8",
+      "page": 11,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "For collagen type I, alignment can be achieved with fluid flow-induced shear for",
+      "found_in_fulltext": true,
+      "fulltext_offset": 43453
+    },
+    {
+      "block_id": "p11:10",
+      "page": 11,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The application of these alignment techniques has not yet been explored for coll",
+      "found_in_fulltext": true,
+      "fulltext_offset": 45566
+    },
+    {
+      "block_id": "p11:11",
+      "page": 11,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Nature Reviews Rheumatology",
+      "found_in_fulltext": true,
+      "fulltext_offset": 233
+    },
+    {
+      "block_id": "p12:0",
+      "page": 12,
+      "role": "noise",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "Review article",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:1",
+      "page": 12,
+      "role": "footnote",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "a Traditional clinical approaches",
+      "found_in_fulltext": true,
+      "fulltext_offset": 46119
+    },
+    {
+      "block_id": "p12:3",
+      "page": 12,
+      "role": "footnote",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Autograft or allograft transplantation",
+      "found_in_fulltext": true,
+      "fulltext_offset": 46153
+    },
+    {
+      "block_id": "p12:5",
+      "page": 12,
+      "role": "footnote",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Autologous chondrocyte transplantation",
+      "found_in_fulltext": true,
+      "fulltext_offset": 46192
+    },
+    {
+      "block_id": "p12:7",
+      "page": 12,
+      "role": "footnote",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Hydrogel-based therapies",
+      "found_in_fulltext": true,
+      "fulltext_offset": 46231
+    },
+    {
+      "block_id": "p12:8",
+      "page": 12,
+      "role": "footnote",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "b Biofabrication of biomechanically competent implants",
+      "found_in_fulltext": true,
+      "fulltext_offset": 46256
+    },
+    {
+      "block_id": "p12:11",
+      "page": 12,
+      "role": "footnote",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "C Novel approaches to long-term mechanical function restoration",
+      "found_in_fulltext": true,
+      "fulltext_offset": 46311
+    },
+    {
+      "block_id": "p12:13",
+      "page": 12,
+      "role": "figure_caption_candidate",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "Fig. 6 Strategies for guiding collagen in articular cartilage restoration and bi",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:14",
+      "page": 12,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "a, Traditional approaches to articular cartilage restoration include autograft $",
+      "found_in_fulltext": true,
+      "fulltext_offset": 46375
+    },
+    {
+      "block_id": "p12:15",
+      "page": 12,
+      "role": "noise",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "Nature Reviews Rheumatology",
+      "found_in_fulltext": true,
+      "fulltext_offset": 233
+    },
+    {
+      "block_id": "p13:0",
+      "page": 13,
+      "role": "noise",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "Review article",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p13:1",
+      "page": 13,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "is governed by liquid crystallinity properties at high concentrations, and the c",
+      "found_in_fulltext": true,
+      "fulltext_offset": 47935
+    },
+    {
+      "block_id": "p13:2",
+      "page": 13,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Mechanical loading could serve as a potential stimulus for aligning collagen typ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 48608
+    },
+    {
+      "block_id": "p13:3",
+      "page": 13,
+      "role": "unknown_structural",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "Novel techniques for collagen guidance cartilage",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p13:4",
+      "page": 13,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Novel fabrication approaches have helped to advance the guidance of collagen typ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 50672
+    },
+    {
+      "block_id": "p13:5",
+      "page": 13,
+      "role": "sub_subsection_heading",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Glossary",
+      "found_in_fulltext": true,
+      "fulltext_offset": 51890
+    },
+    {
+      "block_id": "p13:6",
+      "page": 13,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Anisotropic Having direction-dependent properties.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 51899
+    },
+    {
+      "block_id": "p13:7",
+      "page": 13,
+      "role": "subsection_heading",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Arcade-like structure",
+      "found_in_fulltext": true,
+      "fulltext_offset": 51954
+    },
+    {
+      "block_id": "p13:8",
+      "page": 13,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "A collagen fibre arrangement in articular cartilage whereby fibres curve from th",
+      "found_in_fulltext": true,
+      "fulltext_offset": 51976
+    },
+    {
+      "block_id": "p13:9",
+      "page": 13,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Beaded microfibrillar network A structural arrangement of thin, bead-like fibril",
+      "found_in_fulltext": true,
+      "fulltext_offset": 52119
+    },
+    {
+      "block_id": "p13:10",
+      "page": 13,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Fibrillogenesis The process of collagen fibril formation.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 52225
+    },
+    {
+      "block_id": "p13:11",
+      "page": 13,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Heterotypic fibres Collagen fibres composed of more than one type of collagen mo",
+      "found_in_fulltext": true,
+      "fulltext_offset": 52283
+    },
+    {
+      "block_id": "p13:12",
+      "page": 13,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Hypertrophy The process by which cells undergo significant enlargement owing to ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 52371
+    },
+    {
+      "block_id": "p13:13",
+      "page": 13,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Isotropic Having uniform properties in all directions.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 52517
+    },
+    {
+      "block_id": "p13:14",
+      "page": 13,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Joint cavitation The formation of the joint cavity during embryonic development,",
+      "found_in_fulltext": true,
+      "fulltext_offset": 52572
+    },
+    {
+      "block_id": "p13:15",
+      "page": 13,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Liquid crystallinity A state of matter with properties between those of a liquid",
+      "found_in_fulltext": true,
+      "fulltext_offset": 52703
+    },
+    {
+      "block_id": "p13:16",
+      "page": 13,
+      "role": "unknown_structural",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "Molecular crowding",
+      "found_in_fulltext": true,
+      "fulltext_offset": 75293
+    },
+    {
+      "block_id": "p13:17",
+      "page": 13,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "A high concentration of macromolecules in a confined space that influences molec",
+      "found_in_fulltext": true,
+      "fulltext_offset": 52851
+    },
+    {
+      "block_id": "p13:19",
+      "page": 13,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Non-reducible crosslinks A non-reversible chemical bond that permanently stabili",
+      "found_in_fulltext": true,
+      "fulltext_offset": 52997
+    },
+    {
+      "block_id": "p13:20",
+      "page": 13,
+      "role": "sub_subsection_heading",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Nucleator",
+      "found_in_fulltext": true,
+      "fulltext_offset": 53104
+    },
+    {
+      "block_id": "p13:21",
+      "page": 13,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "A molecule or structure that promotes the initiation of fibrillogenesis.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 53114
+    },
+    {
+      "block_id": "p13:22",
+      "page": 13,
+      "role": "sub_subsection_heading",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Procollagen",
+      "found_in_fulltext": true,
+      "fulltext_offset": 16177
+    },
+    {
+      "block_id": "p13:23",
+      "page": 13,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "The precursor molecule of collagen that undergoes enzymatic processing to form t",
+      "found_in_fulltext": true,
+      "fulltext_offset": 53204
+    },
+    {
+      "block_id": "p13:24",
+      "page": 13,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Reducible crosslinks A reversible chemical bond that stabilizes collagen fibrils",
+      "found_in_fulltext": true,
+      "fulltext_offset": 53298
+    },
+    {
+      "block_id": "p13:25",
+      "page": 13,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Resistance to the positive principal strain The ability of a material to withsta",
+      "found_in_fulltext": true,
+      "fulltext_offset": 53380
+    },
+    {
+      "block_id": "p13:26",
+      "page": 13,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Split-line orientation pattern A pattern observed on the surface of cartilage th",
+      "found_in_fulltext": true,
+      "fulltext_offset": 53531
+    },
+    {
+      "block_id": "p13:27",
+      "page": 13,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Suprafibrillar assemblies Higher-order structures formed by the organization of ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 53664
+    },
+    {
+      "block_id": "p13:28",
+      "page": 13,
+      "role": "sub_subsection_heading",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Tidemark",
+      "found_in_fulltext": true,
+      "fulltext_offset": 53780
+    },
+    {
+      "block_id": "p13:29",
+      "page": 13,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Boundary between the calcified and non-calcified zones of articular cartilage.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 53789
+    },
+    {
+      "block_id": "p13:30",
+      "page": 13,
+      "role": "sub_subsection_heading",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Tropocollagen",
+      "found_in_fulltext": true,
+      "fulltext_offset": 53873
+    },
+    {
+      "block_id": "p13:31",
+      "page": 13,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "The basic triple-helical collagen molecule that assembles into fibrils.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 53887
+    },
+    {
+      "block_id": "p13:32",
+      "page": 13,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "important proof that guiding collagen towards its native structure is feasible a",
+      "found_in_fulltext": true,
+      "fulltext_offset": 53959
+    },
+    {
+      "block_id": "p13:33",
+      "page": 13,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Besides MEW, the introduction of the filamented light (FLight) biofabrication te",
+      "found_in_fulltext": true,
+      "fulltext_offset": 54170
+    },
+    {
+      "block_id": "p13:34",
+      "page": 13,
+      "role": "noise",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "Nature Reviews Rheumatology",
+      "found_in_fulltext": true,
+      "fulltext_offset": 233
+    },
+    {
+      "block_id": "p14:0",
+      "page": 14,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Review article",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p14:1",
+      "page": 14,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "mechanical properties (Fig. 6). Similarly, aligned rod-shaped microgels have bee",
+      "found_in_fulltext": true,
+      "fulltext_offset": 54599
+    },
+    {
+      "block_id": "p14:2",
+      "page": 14,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Challenges and considerations",
+      "found_in_fulltext": true,
+      "fulltext_offset": 55486
+    },
+    {
+      "block_id": "p14:3",
+      "page": 14,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "This Review explores the basic biology of articular cartilage, from its cellular",
+      "found_in_fulltext": true,
+      "fulltext_offset": 55516
+    },
+    {
+      "block_id": "p14:4",
+      "page": 14,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Several knowledge gaps remain. Current literature focuses mainly on inducing cho",
+      "found_in_fulltext": true,
+      "fulltext_offset": 57059
+    },
+    {
+      "block_id": "p14:6",
+      "page": 14,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Although this Review focused mainly on structural aspects, it is also important ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 58791
+    },
+    {
+      "block_id": "p14:7",
+      "page": 14,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Conclusion",
+      "found_in_fulltext": true,
+      "fulltext_offset": 59573
+    },
+    {
+      "block_id": "p14:8",
+      "page": 14,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "As the field of tissue engineering advances, new approaches to chondral implants",
+      "found_in_fulltext": true,
+      "fulltext_offset": 59584
+    },
+    {
+      "block_id": "p14:11",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "1. Shepherd, D. E. T. & Seedhom, B. B. Thickness of human articular cartilage in",
+      "found_in_fulltext": true,
+      "fulltext_offset": 60573
+    },
+    {
+      "block_id": "p14:12",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "2. Eckstein, F. et al. Correlation and sex differences between ankle and knee ca",
+      "found_in_fulltext": true,
+      "fulltext_offset": 60715
+    },
+    {
+      "block_id": "p14:13",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "3. Kurz, B., Lange, T., Voelker, M., Hart, M. L. & Rolaufs, B. Articular cartila",
+      "found_in_fulltext": true,
+      "fulltext_offset": 60908
+    },
+    {
+      "block_id": "p14:14",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "4. Lawless, B. M. et al. Viscoelasticity of articular cartilage: analysing the e",
+      "found_in_fulltext": true,
+      "fulltext_offset": 61176
+    },
+    {
+      "block_id": "p14:15",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "5. Malda, J. et al. Comparative study of depth-dependent characteristics of equi",
+      "found_in_fulltext": true,
+      "fulltext_offset": 61383
+    },
+    {
+      "block_id": "p14:16",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "6. Alcaide-Ruggiero, L., Molina-Hernández, V., Granados, M. M. & Domínguez, J. M",
+      "found_in_fulltext": true,
+      "fulltext_offset": 61590
+    },
+    {
+      "block_id": "p14:17",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "7. Holmes, D. F. & Kadler, K. E. The 10+4 microfibril structure of thin cartilag",
+      "found_in_fulltext": true,
+      "fulltext_offset": 61841
+    },
+    {
+      "block_id": "p14:18",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "8. Hagg, R., Bruckner, P. & Hedbom, E. Cartilage fibrils of mammals are biochemi",
+      "found_in_fulltext": true,
+      "fulltext_offset": 61983
+    },
+    {
+      "block_id": "p14:19",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "9. Benninghoff, V. A. Form und Bau der Gelenkknorpel in ihren Beziehungen zur Fu",
+      "found_in_fulltext": true,
+      "fulltext_offset": 62173
+    },
+    {
+      "block_id": "p14:20",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "10. Watanabe, H., Yamada, Y. & Kimata, K. Roles of aggrecan, a large chondroitin",
+      "found_in_fulltext": true,
+      "fulltext_offset": 62305
+    },
+    {
+      "block_id": "p14:21",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "11. Kiani, C., Chen, L., Wu, Y. J., Yee, A. J. & Yang, B. B. Structure and funct",
+      "found_in_fulltext": true,
+      "fulltext_offset": 62478
+    },
+    {
+      "block_id": "p14:22",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "12. Askew, M. J. & Mow, V. C. The biomechanical function of the collagen fibril ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 62603
+    },
+    {
+      "block_id": "p14:23",
+      "page": 14,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Nature Reviews Rheumatology",
+      "found_in_fulltext": true,
+      "fulltext_offset": 233
+    },
+    {
+      "block_id": "p15:0",
+      "page": 15,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Review article",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p15:1",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "13. Wang, Y., Wei, L., Zeng, L., He, D. & Wei, X. Nutrition and degeneration of ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 62777
+    },
+    {
+      "block_id": "p15:2",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "14. Fox, A. J. S., Bedi, A. & Rodeo, S. A. The basic science of articular cartil",
+      "found_in_fulltext": true,
+      "fulltext_offset": 62939
+    },
+    {
+      "block_id": "p15:3",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "15. Quinn, T. M., Häuselmann, H. J., Shintani, N. & Hunziker, E. B. Cell and mat",
+      "found_in_fulltext": true,
+      "fulltext_offset": 63095
+    },
+    {
+      "block_id": "p15:4",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "16. Loeser, R. F. Aging processes and the development of osteoarthritis. Curr. O",
+      "found_in_fulltext": true,
+      "fulltext_offset": 63376
+    },
+    {
+      "block_id": "p15:5",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "17. Maroudas, A., Palla, G. & Gilav, E. Racemization of aspartic acid in human a",
+      "found_in_fulltext": true,
+      "fulltext_offset": 63492
+    },
+    {
+      "block_id": "p15:6",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "18. Silver, F. H. & Glasgow, A. I. Cartilage wound healing: an overview. Otolary",
+      "found_in_fulltext": true,
+      "fulltext_offset": 63633
+    },
+    {
+      "block_id": "p15:7",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "19. Nuelle, C. W., Laprade, C. M. & Sherman, S. L. in Advances in Knee Ligament ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 63756
+    },
+    {
+      "block_id": "p15:8",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "20. Minas, T., Ogura, T. & Bryant, T. Autologous chondrocyte implantation. JBJS ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 63918
+    },
+    {
+      "block_id": "p15:9",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "21. Wasyeczko, M., Sikorska, W. & Chwojnowski, A. Review of synthetic and hybrid",
+      "found_in_fulltext": true,
+      "fulltext_offset": 64034
+    },
+    {
+      "block_id": "p15:10",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "22. Wu, Z., Korntner, S. H., Mullen, A. M. & Zeugolis, D. I. Collagen type II: f",
+      "found_in_fulltext": true,
+      "fulltext_offset": 64185
+    },
+    {
+      "block_id": "p15:11",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "23. Liu, G. et al. 3D printed osteochondral scaffolds: design strategies, presen",
+      "found_in_fulltext": true,
+      "fulltext_offset": 64371
+    },
+    {
+      "block_id": "p15:12",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "24. Groen, W. M., Diloksumpan, P., van Weeren, P. R., Levato, R. & Malda, J. Fro",
+      "found_in_fulltext": true,
+      "fulltext_offset": 64538
+    },
+    {
+      "block_id": "p15:13",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "25. Malda, J., Groll, J. & van Weeren, P. R. Rethinking articular cartilage rege",
+      "found_in_fulltext": true,
+      "fulltext_offset": 64722
+    },
+    {
+      "block_id": "p15:14",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "26. Decker, R. S. Articular cartilage and joint development from embryogenesis t",
+      "found_in_fulltext": true,
+      "fulltext_offset": 64887
+    },
+    {
+      "block_id": "p15:15",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "27. Mancini, I. A. D. et al. Effects of body mass on microstructural features of",
+      "found_in_fulltext": true,
+      "fulltext_offset": 65021
+    },
+    {
+      "block_id": "p15:16",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "28. Mansfield, J. C., Bell, J. S. & Winlove, C. P. The micromechanics of the sup",
+      "found_in_fulltext": true,
+      "fulltext_offset": 65200
+    },
+    {
+      "block_id": "p15:17",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "29. Hossain, M. J. et al. Anisotropic properties of articular cartilage in an ac",
+      "found_in_fulltext": true,
+      "fulltext_offset": 65365
+    },
+    {
+      "block_id": "p15:18",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "30. Below, S., Arnoczky, S. P., Dodds, J., Kooima, C. & Walter, N. The split-lin",
+      "found_in_fulltext": true,
+      "fulltext_offset": 65526
+    },
+    {
+      "block_id": "p15:19",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "31. Qiu, C. Coefficients of friction of human joints. The Physics Factbook (ed. ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 65736
+    },
+    {
+      "block_id": "p15:20",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "32. Li, L. et al. Superficial cells are self-renewing chondrocyte progenitors, w",
+      "found_in_fulltext": true,
+      "fulltext_offset": 65903
+    },
+    {
+      "block_id": "p15:21",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "33. Decker, R. S. et al. Cell origin, volume and arrangement are drivers of arti",
+      "found_in_fulltext": true,
+      "fulltext_offset": 66066
+    },
+    {
+      "block_id": "p15:22",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "34. Kozhemyakina, E. et al. Identification of a Prg4-expressing articular cartil",
+      "found_in_fulltext": true,
+      "fulltext_offset": 66256
+    },
+    {
+      "block_id": "p15:23",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "35. Levato, R. et al. The bio in the ink: cartilage regeneration with bioprintab",
+      "found_in_fulltext": true,
+      "fulltext_offset": 66419
+    },
+    {
+      "block_id": "p15:24",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "36. Ustunel, I. et al. The immunohistochemical localization of notch receptors a",
+      "found_in_fulltext": true,
+      "fulltext_offset": 66592
+    },
+    {
+      "block_id": "p15:25",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "37. Williams, R. et al. Identification and clonal characterisation of a progenit",
+      "found_in_fulltext": true,
+      "fulltext_offset": 66839
+    },
+    {
+      "block_id": "p15:26",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "38. Dowthwaite, G. P. et al. The surface of articular cartilage contains a proge",
+      "found_in_fulltext": true,
+      "fulltext_offset": 67006
+    },
+    {
+      "block_id": "p15:27",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "39. Rikkers, M., Korpershoek, J. V., Levato, R., Malda, J. & Vonk, L. A. The cli",
+      "found_in_fulltext": true,
+      "fulltext_offset": 67143
+    },
+    {
+      "block_id": "p15:28",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "40. Seol, D. et al. Chondrogenic progenitor cells respond to cartilage injury. A",
+      "found_in_fulltext": true,
+      "fulltext_offset": 67341
+    },
+    {
+      "block_id": "p15:29",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "41. Melero Martin, J. M., Smith, M. & Al-Rubeai, M. Cryopreservation and in vitr",
+      "found_in_fulltext": true,
+      "fulltext_offset": 67459
+    },
+    {
+      "block_id": "p15:30",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "42. Melero-Martin, J. M., Dowling, M. A., Smith, M. & Al-Rubeai, M. Expansion of",
+      "found_in_fulltext": true,
+      "fulltext_offset": 67675
+    },
+    {
+      "block_id": "p15:31",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "43. Melero-Martin, J. M., Dowling, M. A., Smith, M. & Al-Rubeai, M. Optimal in-v",
+      "found_in_fulltext": true,
+      "fulltext_offset": 67897
+    },
+    {
+      "block_id": "p15:32",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "44. Poole, C. A., Flint, M. H. & Beaumont, B. W. Chondrons in cartilage: ultrast",
+      "found_in_fulltext": true,
+      "fulltext_offset": 68081
+    },
+    {
+      "block_id": "p15:33",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "45. Gottardi, R. et al. Supramolecular organization of collagen fibrils in healt",
+      "found_in_fulltext": true,
+      "fulltext_offset": 68288
+    },
+    {
+      "block_id": "p15:34",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "46. Wang, F. et al. Histomorphometric analysis of adult articular calcified cart",
+      "found_in_fulltext": true,
+      "fulltext_offset": 68456
+    },
+    {
+      "block_id": "p15:35",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "47. Mark, V. Der et al. Type X collagen, a natural component of mouse articular ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 68586
+    },
+    {
+      "block_id": "p15:36",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "48. Malda, J. et al. Of mice, men and elephants: the relation between articular ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 68716
+    },
+    {
+      "block_id": "p15:37",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "49. Mancini, I. A. D. et al. Microstructural differences in the osteochondral un",
+      "found_in_fulltext": true,
+      "fulltext_offset": 68858
+    },
+    {
+      "block_id": "p15:38",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "50. Zhang, Z. Chondrons and the pericellular matrix of chondrocytes. Tissue Eng.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 69002
+    },
+    {
+      "block_id": "p15:39",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "51. Wilusz, R. E., DeFrate, L. E. & Guilak, F. A biomechanical role for perlecan",
+      "found_in_fulltext": true,
+      "fulltext_offset": 69116
+    },
+    {
+      "block_id": "p15:40",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "52. Zelenski, N. A. et al. Collagen VI regulates pericellular matrix properties,",
+      "found_in_fulltext": true,
+      "fulltext_offset": 69281
+    },
+    {
+      "block_id": "p15:41",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "53. Glant, T. T., Hadházy, C., Mikecz, K. & Sipos, A. Appearance and persistence",
+      "found_in_fulltext": true,
+      "fulltext_offset": 69475
+    },
+    {
+      "block_id": "p15:42",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "54. Loeser, R. F. Integrins and chondrocyte-matrix interactions in articular car",
+      "found_in_fulltext": true,
+      "fulltext_offset": 69680
+    },
+    {
+      "block_id": "p15:43",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "55. Mansfield, J. C., Mandalia, V., Toms, A., Peter Winlove, C. & Brasselet, S. ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 69799
+    },
+    {
+      "block_id": "p15:44",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "56. Decker, R. S., Koyama, E. & Pacifici, M. Genesis and morphogenesis of limb s",
+      "found_in_fulltext": true,
+      "fulltext_offset": 70043
+    },
+    {
+      "block_id": "p15:45",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "57. Bian, Q. et al. A single cell transcriptional atlas of early synovial joint ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 70193
+    },
+    {
+      "block_id": "p15:46",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "58. Chijimatsu, R. & Saito, T. Mechanisms of synovial joint and articular cartil",
+      "found_in_fulltext": true,
+      "fulltext_offset": 70321
+    },
+    {
+      "block_id": "p15:47",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "59. Shwartz, Y., Viukov, S., Krief, S. & Zelzer, E. Joint development involves a",
+      "found_in_fulltext": true,
+      "fulltext_offset": 70460
+    },
+    {
+      "block_id": "p15:48",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "60. Chen, H. et al. Heads, shoulders, elbows, knees, and toes: modular Gdf5 enha",
+      "found_in_fulltext": true,
+      "fulltext_offset": 70615
+    },
+    {
+      "block_id": "p15:49",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "61. Sun, K., Guo, J., Yao, X., Guo, Z. & Guo, F. Growth differentiation factor 5",
+      "found_in_fulltext": true,
+      "fulltext_offset": 70787
+    },
+    {
+      "block_id": "p15:50",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "62. Pitsillides, A. A., Archer, C. W., Prehm, P., Bayliss, M. T. & Edwards, J. C",
+      "found_in_fulltext": true,
+      "fulltext_offset": 70967
+    },
+    {
+      "block_id": "p15:51",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "63. Drachman, D. B. & Sokoloff, L. The role of movement in embryonic joint devel",
+      "found_in_fulltext": true,
+      "fulltext_offset": 71168
+    },
+    {
+      "block_id": "p15:52",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "64. Pacifici, M., Koyama, E. & Iwamoto, M. Mechanisms of synovial joint and arti",
+      "found_in_fulltext": true,
+      "fulltext_offset": 71287
+    },
+    {
+      "block_id": "p15:53",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "65. Ignatyeva, N., Gavrilov, N., Timashev, P. S. & Medvedeva, E. V. Prg4-express",
+      "found_in_fulltext": true,
+      "fulltext_offset": 71496
+    },
+    {
+      "block_id": "p15:54",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "66. Yang, L., Tsang, K. Y., Tang, H. C., Chan, D. & Cheah, K. S. E. Hypertrophic",
+      "found_in_fulltext": true,
+      "fulltext_offset": 71687
+    },
+    {
+      "block_id": "p15:55",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "67. Li, J. & Dong, S. The signaling pathways involved in chondrocyte differentia",
+      "found_in_fulltext": true,
+      "fulltext_offset": 71902
+    },
+    {
+      "block_id": "p15:56",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "68. Wu, M., Wu, S., Chen, W. & Li, Y. P. The roles and regulatory mechanisms of ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 72055
+    },
+    {
+      "block_id": "p15:57",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "69. Hoemann, C. D., Lafantaisie-Favreau, C.-H., Lascau-Coman, V., Chen, G. & Guz",
+      "found_in_fulltext": true,
+      "fulltext_offset": 72254
+    },
+    {
+      "block_id": "p15:58",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "70. Luo, Y. et al. The minor collagens in articular cartilage. Protein Cell 8, 5",
+      "found_in_fulltext": true,
+      "fulltext_offset": 72412
+    },
+    {
+      "block_id": "p15:59",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "71. Ni, G. X., Li, Z. & Zhou, Y. Z. The role of small leucine-rich proteoglycans",
+      "found_in_fulltext": true,
+      "fulltext_offset": 72507
+    },
+    {
+      "block_id": "p15:60",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "72. Responte, D. J., Natoli, R. M. & Athanasiou, K. A. Collagens of articular ca",
+      "found_in_fulltext": true,
+      "fulltext_offset": 72665
+    },
+    {
+      "block_id": "p15:61",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "73. Perrier-Grout, E. et al. Presence of type IIB procollagen in mouse articular",
+      "found_in_fulltext": true,
+      "fulltext_offset": 72857
+    },
+    {
+      "block_id": "p15:62",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "74. Mcalinden, A. Alternative splicing of type II procollagen: IIB or not IIB? C",
+      "found_in_fulltext": true,
+      "fulltext_offset": 73074
+    },
+    {
+      "block_id": "p15:63",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "75. Shoulders, M. D. & Raines, R. T. Modulating collagen triple-helix stability ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 73194
+    },
+    {
+      "block_id": "p15:64",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "76. Canty, E. G. & Kadler, K. E. Procollagen trafficking, processing and fibrill",
+      "found_in_fulltext": true,
+      "fulltext_offset": 73363
+    },
+    {
+      "block_id": "p15:65",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "78. Kadler, K. E., Hill, A. & Canty-Laird, E. G. Collagen fibrillogenesis: fibro",
+      "found_in_fulltext": true,
+      "fulltext_offset": 73489
+    },
+    {
+      "block_id": "p15:66",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "79. Wu, J. J., Woods, P. E. & Eyre, D. R. Identification of cross-linking sites ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 73681
+    },
+    {
+      "block_id": "p15:67",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "80. Chen, C. H. et al. Interactions between collagen IX and biglycan measured by",
+      "found_in_fulltext": true,
+      "fulltext_offset": 73933
+    },
+    {
+      "block_id": "p15:68",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "81. Parsons, P. et al. Type IX collagen interacts with fibronectin providing an ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 74091
+    },
+    {
+      "block_id": "p15:69",
+      "page": 15,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Nature Reviews Rheumatology",
+      "found_in_fulltext": true,
+      "fulltext_offset": 233
+    },
+    {
+      "block_id": "p16:0",
+      "page": 16,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Review article",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p16:1",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "82. Vasios, G. et al. Cartilage type IX collagen-proteoglycan contains a large a",
+      "found_in_fulltext": true,
+      "fulltext_offset": 74279
+    },
+    {
+      "block_id": "p16:2",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "83. Mendler, M., Eich-Bender, S. G., Vaughan, L., Winterhalter, K. H. & Bruckner",
+      "found_in_fulltext": true,
+      "fulltext_offset": 74454
+    },
+    {
+      "block_id": "p16:3",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "84. Gannon, A. R., Nagel, T., Bell, A. P., Avery, N. C. & Kelly, D. J. Postnatal",
+      "found_in_fulltext": true,
+      "fulltext_offset": 74641
+    },
+    {
+      "block_id": "p16:4",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "85. Douglas, T., Heinemann, S., Bierbaum, S., Scharnweber, D. & Worch, H. Fibril",
+      "found_in_fulltext": true,
+      "fulltext_offset": 74872
+    },
+    {
+      "block_id": "p16:5",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "86. Wiberg, C. et al. Complexes of matrilin-1 and biglycan or decorin connect co",
+      "found_in_fulltext": true,
+      "fulltext_offset": 75094
+    },
+    {
+      "block_id": "p16:6",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "87. Saeidi, N. et al. Molecular crowding of collagen: a pathway to produce highl",
+      "found_in_fulltext": true,
+      "fulltext_offset": 75271
+    },
+    {
+      "block_id": "p16:7",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "88. Siegel, R. C. Collagen cross-linking. Synthesis of collagen cross-links in v",
+      "found_in_fulltext": true,
+      "fulltext_offset": 75422
+    },
+    {
+      "block_id": "p16:8",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "89. Eyre, D. R., Weis, M. A. & Wu, J. J. Maturation of collagen ketoimine cross-",
+      "found_in_fulltext": true,
+      "fulltext_offset": 75581
+    },
+    {
+      "block_id": "p16:9",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "90. Eyre, D. R., Dickson, I. R. & Van Ness, K. Collagen cross-linking in human b",
+      "found_in_fulltext": true,
+      "fulltext_offset": 75775
+    },
+    {
+      "block_id": "p16:10",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "91. Ito, K. & Tepic, S. in Osteoarthritis (eds Grifka, J. & Ogilvie-Harris, D. J",
+      "found_in_fulltext": true,
+      "fulltext_offset": 75990
+    },
+    {
+      "block_id": "p16:11",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "92. Van Turnhout, M. C. et al. Postnatal development of depth-dependent collagen",
+      "found_in_fulltext": true,
+      "fulltext_offset": 76097
+    },
+    {
+      "block_id": "p16:12",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "93. Van Turnhout, M. C. et al. Quantitative description of collagen structure in",
+      "found_in_fulltext": true,
+      "fulltext_offset": 76248
+    },
+    {
+      "block_id": "p16:13",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "94. Hunziker, E. B., Kapfinger, E. & Geiss, J. The structural architecture of ad",
+      "found_in_fulltext": true,
+      "fulltext_offset": 76434
+    },
+    {
+      "block_id": "p16:14",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "95. Morrison, E. H., Ferguson, M. W., Bayliss, M. T. & Archer, C. W. The develop",
+      "found_in_fulltext": true,
+      "fulltext_offset": 76695
+    },
+    {
+      "block_id": "p16:15",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "96. Archer, C. W., Morrison, E. H., Bayliss, M. T. & Ferguson, M. W. J. The deve",
+      "found_in_fulltext": true,
+      "fulltext_offset": 76887
+    },
+    {
+      "block_id": "p16:16",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "97. Jia, Y. et al. Double-edged role of mechanical stimuli and underlying mechan",
+      "found_in_fulltext": true,
+      "fulltext_offset": 77122
+    },
+    {
+      "block_id": "p16:17",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "98. Canty, E. G. et al. Coalignment of plasma membrane channels and protrusions ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 77287
+    },
+    {
+      "block_id": "p16:18",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "99. Cui, P. et al. Advanced review on type II collagen and peptide: preparation,",
+      "found_in_fulltext": true,
+      "fulltext_offset": 77455
+    },
+    {
+      "block_id": "p16:19",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "100. Peters, J. R. et al. Tissue growth as a mechanism for collagen fiber alignm",
+      "found_in_fulltext": true,
+      "fulltext_offset": 77639
+    },
+    {
+      "block_id": "p16:20",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "101. Hayes, A. J., Hall, A., Brown, L., Tubo, R. & Caterson, B. Macromolecular o",
+      "found_in_fulltext": true,
+      "fulltext_offset": 77774
+    },
+    {
+      "block_id": "p16:21",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "102. Castilho, M., Mouser, V., Chen, M., Malda, J. & Ito, K. Bi-layered micro-fi",
+      "found_in_fulltext": true,
+      "fulltext_offset": 77984
+    },
+    {
+      "block_id": "p16:22",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "103. Lecocq, M. et al. Cartilage matrix changes in the developing epiphysis: ear",
+      "found_in_fulltext": true,
+      "fulltext_offset": 78162
+    },
+    {
+      "block_id": "p16:23",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "104. Nesic, D. et al. Cartilage tissue engineering for degenerative joint diseas",
+      "found_in_fulltext": true,
+      "fulltext_offset": 78329
+    },
+    {
+      "block_id": "p16:24",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "105. De Rooij, P. P., Siebrecht, M. A. N., Tägil, M. & Aspenberg, P. The fate of",
+      "found_in_fulltext": true,
+      "fulltext_offset": 78454
+    },
+    {
+      "block_id": "p16:25",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "106. Arokoski, J. P. A., Jurvelin, J. S., Väätäinen, U. & Helminen, H. J. Normal",
+      "found_in_fulltext": true,
+      "fulltext_offset": 78626
+    },
+    {
+      "block_id": "p16:26",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "107. Visser, J. D. Pediatric Orthopedics: Symptoms, Differential Diagnosis, Supp",
+      "found_in_fulltext": true,
+      "fulltext_offset": 78824
+    },
+    {
+      "block_id": "p16:27",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "108. Nowlan, N. C., Chandaria, V. & Sharpe, J. Immobilized chicks as a model sys",
+      "found_in_fulltext": true,
+      "fulltext_offset": 78957
+    },
+    {
+      "block_id": "p16:28",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "109. Brunt, L. H. et al. Differential effects of altered patterns of movement an",
+      "found_in_fulltext": true,
+      "fulltext_offset": 79133
+    },
+    {
+      "block_id": "p16:29",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "110. Ford, C. A., Nowlan, N. C., Thomopoulos, S. & Killian, M. L. Effects of imb",
+      "found_in_fulltext": true,
+      "fulltext_offset": 79321
+    },
+    {
+      "block_id": "p16:30",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "111. Felsenthal, N. & Zelzer, E. Mechanical regulation of musculoskeletal system",
+      "found_in_fulltext": true,
+      "fulltext_offset": 79503
+    },
+    {
+      "block_id": "p16:31",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "112. Khoshgoftar, M., van Donkelaar, C. C. & Ito, K. Mechanical stimulation to s",
+      "found_in_fulltext": true,
+      "fulltext_offset": 79632
+    },
+    {
+      "block_id": "p16:32",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "113. Wilson, W., Huyghe, J. M. & van Donkelaar, C. C. A composition-based cartil",
+      "found_in_fulltext": true,
+      "fulltext_offset": 79881
+    },
+    {
+      "block_id": "p16:33",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "114. Driessen, N. J. B., Boerboom, R. A., Huyghe, J. M., Bouten, C. V. C. & Baai",
+      "found_in_fulltext": true,
+      "fulltext_offset": 80100
+    },
+    {
+      "block_id": "p16:34",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "115. Iijima, H. et al. Immature articular cartilage and subchondral bone covered",
+      "found_in_fulltext": true,
+      "fulltext_offset": 80333
+    },
+    {
+      "block_id": "p16:35",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "116. O'Connor, P., Bland, C. & Gardner, D. L. Fine structure of artificial split",
+      "found_in_fulltext": true,
+      "fulltext_offset": 80517
+    },
+    {
+      "block_id": "p16:36",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "117. Kelly, T. A. N., Ng, K. W., Wang, C. C. B., Ateshian, G. A. & Hung, C. T. S",
+      "found_in_fulltext": true,
+      "fulltext_offset": 80712
+    },
+    {
+      "block_id": "p16:37",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "118. Tepic, S. Dynamics of and Entropy Production in the Cartilage Layers of the",
+      "found_in_fulltext": true,
+      "fulltext_offset": 80949
+    },
+    {
+      "block_id": "p16:38",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "119. Rieppo, J. et al. Changes in spatial collagen content and collagen network ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 81066
+    },
+    {
+      "block_id": "p16:39",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "120. Brama, P. A. J., Tekoppele, J. M., Bank, R. A., Barneveld, A. & Van Weeren,",
+      "found_in_fulltext": true,
+      "fulltext_offset": 81265
+    },
+    {
+      "block_id": "p16:40",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "121. Hyttinen, M. M. et al. Changes in collagen fibril network organization and ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 81514
+    },
+    {
+      "block_id": "p16:41",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "122. Julkunen, P. et al. Maturation of collagen fibril network structure in tibi",
+      "found_in_fulltext": true,
+      "fulltext_offset": 81710
+    },
+    {
+      "block_id": "p16:42",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "123. Torzilli, P. A., Dethmers, D. A., Rose, D. E. & Schryuer, H. F. Movement of",
+      "found_in_fulltext": true,
+      "fulltext_offset": 81872
+    },
+    {
+      "block_id": "p16:43",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "124. Mow, V. C. et al. The influence of link protein stabilization on the viscom",
+      "found_in_fulltext": true,
+      "fulltext_offset": 82040
+    },
+    {
+      "block_id": "p16:44",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "125. Chahine, N. O., Wang, C. C. B., Hung, C. T. & Ateshian, G. A. Anisotropic s",
+      "found_in_fulltext": true,
+      "fulltext_offset": 82218
+    },
+    {
+      "block_id": "p16:45",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "126. Inamdar, S. R., Prévost, S., Terrill, N. J., Knight, M. M. & Gupta, H. S. R",
+      "found_in_fulltext": true,
+      "fulltext_offset": 82453
+    },
+    {
+      "block_id": "p16:46",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "127. Inamdar, S. R., Barbieri, E., Terrill, N. J., Knight, M. M. & Gupta, H. S. ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 82683
+    },
+    {
+      "block_id": "p16:47",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "128. Amuasi, H. E. Multiscale Structure and Mechanics of Collagen. Thesis, Techn",
+      "found_in_fulltext": true,
+      "fulltext_offset": 82923
+    },
+    {
+      "block_id": "p16:48",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "129. Rojas, F. P. et al. Molecular adhesion between cartilage extracellular matr",
+      "found_in_fulltext": true,
+      "fulltext_offset": 83040
+    },
+    {
+      "block_id": "p16:49",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "130. Paulsson, M. et al. Extended and globular protein domains in cartilage prot",
+      "found_in_fulltext": true,
+      "fulltext_offset": 83177
+    },
+    {
+      "block_id": "p16:50",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "131. Wiedemann, H., Paulsson, M., Timpl, R., Engel, J. & Heinegård, D. Domain st",
+      "found_in_fulltext": true,
+      "fulltext_offset": 83301
+    },
+    {
+      "block_id": "p16:51",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "132. Wei, Q., Zhang, X., Zhou, C., Ren, Q. & Zhang, Y. Roles of large aggregatin",
+      "found_in_fulltext": true,
+      "fulltext_offset": 83514
+    },
+    {
+      "block_id": "p16:52",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "133. Vynios, D. H. Metabolism of cartilage proteoglycans in health and disease. ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 83694
+    },
+    {
+      "block_id": "p16:53",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "134. Plaas, A. H. K., Moran, M. M., Sandy, J. D. & Hascall, V. C. Aggrecan and h",
+      "found_in_fulltext": true,
+      "fulltext_offset": 83813
+    },
+    {
+      "block_id": "p16:54",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "135. Alcaide-Ruggiero, L., Cugat, R. & Dominguez, J. M. Proteoglycans in articul",
+      "found_in_fulltext": true,
+      "fulltext_offset": 83998
+    },
+    {
+      "block_id": "p16:55",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "136. Paganini, C., Costantini, R., Superti-Furga, A. & Rossi, A. Bone and connec",
+      "found_in_fulltext": true,
+      "fulltext_offset": 84192
+    },
+    {
+      "block_id": "p16:56",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "137. Vanderploeg, E. J., Wilson, C. G., Levenston, M. E. & Woodruff, G. W. Artic",
+      "found_in_fulltext": true,
+      "fulltext_offset": 84396
+    },
+    {
+      "block_id": "p16:57",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "138. Aydelotte, M. B. & Kuettner, K. E. Differences between sub-populations of c",
+      "found_in_fulltext": true,
+      "fulltext_offset": 84640
+    },
+    {
+      "block_id": "p16:58",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "139. Lee, H. Y., Han, L., Roughley, P. J. & Grodzinsky, A. J. & Ortiz, C. Age-re",
+      "found_in_fulltext": true,
+      "fulltext_offset": 84847
+    },
+    {
+      "block_id": "p16:59",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "140. Wang, C., Kahle, E. R., Li, Q. & Han, L. Nanomechanics of aggrecan: a new p",
+      "found_in_fulltext": true,
+      "fulltext_offset": 85098
+    },
+    {
+      "block_id": "p16:60",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "141. Plaas, A. H. K., West, L. A., Wong-Palms, S. & Nelson, F. R. T. Glycosamino",
+      "found_in_fulltext": true,
+      "fulltext_offset": 85283
+    },
+    {
+      "block_id": "p16:61",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "142. Zaucke, F. Cartilage Glycoproteins. Cartilage: Volume 1: Physiology and Dev",
+      "found_in_fulltext": true,
+      "fulltext_offset": 85538
+    },
+    {
+      "block_id": "p16:62",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "143. Hildebrand, A. et al. Interaction of the small interstitial proteoglycans b",
+      "found_in_fulltext": true,
+      "fulltext_offset": 85645
+    },
+    {
+      "block_id": "p16:63",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "144. Heinemeier, K. M. et al. Radiocarbon dating reveals minimal collagen turnov",
+      "found_in_fulltext": true,
+      "fulltext_offset": 85833
+    },
+    {
+      "block_id": "p16:64",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "145. Wagner, K. R. et al. Osteochondral allograft transplantation for focal cart",
+      "found_in_fulltext": true,
+      "fulltext_offset": 86005
+    },
+    {
+      "block_id": "p16:65",
+      "page": 16,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Nature Reviews Rheumatology",
+      "found_in_fulltext": true,
+      "fulltext_offset": 233
+    },
+    {
+      "block_id": "p17:0",
+      "page": 17,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Review article",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p17:1",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "146. Makris, E. A., Gomoll, A. H., Malizos, K. N., Hu, J. C. & Athanasiou, K. A.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 86188
+    },
+    {
+      "block_id": "p17:2",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "147. Ekser, B. et al. Clinical xenotransplantation: the next medical revolution?",
+      "found_in_fulltext": true,
+      "fulltext_offset": 86374
+    },
+    {
+      "block_id": "p17:3",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "148. Merrild, N. G. et al. Local depletion of proteoglycans mediates cartilage t",
+      "found_in_fulltext": true,
+      "fulltext_offset": 86483
+    },
+    {
+      "block_id": "p17:4",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "149. Hulme, C. H. et al. Cell therapy for cartilage repair. Emerg. Top Life Sci.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 86645
+    },
+    {
+      "block_id": "p17:5",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "150. Dunkin, B. S. & Lattermann, C. New and emerging techniques in cartilage rep",
+      "found_in_fulltext": true,
+      "fulltext_offset": 86732
+    },
+    {
+      "block_id": "p17:6",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "151. Zhao, X. et al. Applications of biocompatible scaffold materials in stem ce",
+      "found_in_fulltext": true,
+      "fulltext_offset": 86863
+    },
+    {
+      "block_id": "p17:7",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "152. Hafezi, M., Khorasani, S. N., Zare, M., Neisiany, R. E. & Davoodi, P. Advan",
+      "found_in_fulltext": true,
+      "fulltext_offset": 87027
+    },
+    {
+      "block_id": "p17:8",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "153. Gao, Y. et al. Injectable and self-crosslinkable hydrogels based on collage",
+      "found_in_fulltext": true,
+      "fulltext_offset": 87220
+    },
+    {
+      "block_id": "p17:9",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "154. Chen, W. C., Wei, Y. H., Chu, I. M. & Yao, C. L. Effect of chondroitin sulp",
+      "found_in_fulltext": true,
+      "fulltext_offset": 87410
+    },
+    {
+      "block_id": "p17:10",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "155. Hsu, S. H. et al. Evaluation of biodegradable polyesters modified by type I",
+      "found_in_fulltext": true,
+      "fulltext_offset": 87655
+    },
+    {
+      "block_id": "p17:11",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "156. Groll, J. et al. A definition of bioinks and their distinction from biomate",
+      "found_in_fulltext": true,
+      "fulltext_offset": 87866
+    },
+    {
+      "block_id": "p17:12",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "157. Malda, J. et al. 25th anniversary article: Engineering hydrogels for biofab",
+      "found_in_fulltext": true,
+      "fulltext_offset": 87991
+    },
+    {
+      "block_id": "p17:13",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "158. Sbirkov, Y., Redzheb, M., Forraz, N., McGuckin, C. & Sarafian, V. High hope",
+      "found_in_fulltext": true,
+      "fulltext_offset": 88115
+    },
+    {
+      "block_id": "p17:14",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "159. Mouser, V. H. M. et al. Three-dimensional bioprinting and its potential in ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 88345
+    },
+    {
+      "block_id": "p17:15",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "160. Levato, R. et al. From shape to function: the next step in bioprinting. Adv",
+      "found_in_fulltext": true,
+      "fulltext_offset": 88497
+    },
+    {
+      "block_id": "p17:16",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "161. Visser, J. et al. Biofabrication of multi-material anatomically shaped tiss",
+      "found_in_fulltext": true,
+      "fulltext_offset": 88606
+    },
+    {
+      "block_id": "p17:17",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "162. 3D extrusion bioprinting. Nat. Rev. Methods Primers 1, 76 (2021).",
+      "found_in_fulltext": true,
+      "fulltext_offset": 88734
+    },
+    {
+      "block_id": "p17:18",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "163. Gibney, R. & Ferraris, E. Bioprinting of collagen type I and II via aerosol",
+      "found_in_fulltext": true,
+      "fulltext_offset": 88805
+    },
+    {
+      "block_id": "p17:19",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "164. Prendergast, M. E. et al. Hybrid printing of mechanically and biologically ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 88994
+    },
+    {
+      "block_id": "p17:20",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "165. Nuñez Bernal, P. et al. Volumetric bioprinting of complex living-tissue con",
+      "found_in_fulltext": true,
+      "fulltext_offset": 89174
+    },
+    {
+      "block_id": "p17:21",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "166. Murphy, S. V., Skardal, A. & Atala, A. Evaluation of hydrogels for bio-prin",
+      "found_in_fulltext": true,
+      "fulltext_offset": 89310
+    },
+    {
+      "block_id": "p17:22",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "167. de Ruijter, M. et al. Orthotopic equine study confirms the pivotal importan",
+      "found_in_fulltext": true,
+      "fulltext_offset": 89455
+    },
+    {
+      "block_id": "p17:23",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "168. Dalton, P. D. Melt electrowriting with additive manufacturing principles. C",
+      "found_in_fulltext": true,
+      "fulltext_offset": 89649
+    },
+    {
+      "block_id": "p17:24",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "169. Ainsworth, M. J. et al. Convergence of melt electrowriting and extrusion-ba",
+      "found_in_fulltext": true,
+      "fulltext_offset": 89770
+    },
+    {
+      "block_id": "p17:25",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "170. Dufour, A. et al. Integrating melt electrowriting and inkjet bioprinting fo",
+      "found_in_fulltext": true,
+      "fulltext_offset": 89951
+    },
+    {
+      "block_id": "p17:26",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "171. Größbacher, G. et al. Volumetric printing across melt electrowritten scaffo",
+      "found_in_fulltext": true,
+      "fulltext_offset": 90122
+    },
+    {
+      "block_id": "p17:27",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "172. Haigh, J. N., Dargaville, T. R. & Dalton, P. D. Additive manufacturing with",
+      "found_in_fulltext": true,
+      "fulltext_offset": 90323
+    },
+    {
+      "block_id": "p17:28",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "173. Arden, N. & Nevitt, M. C. Osteoarthritis: epidemiology. Best. Pract. Res. C",
+      "found_in_fulltext": true,
+      "fulltext_offset": 90470
+    },
+    {
+      "block_id": "p17:29",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "174. Katz, J. N. Lumbar disc disorders and low-back pain: socioeconomic factors ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 90583
+    },
+    {
+      "block_id": "p17:30",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "175. Ruberti, J. W. & Zieske, J. D. Prelude to corneal tissue engineering — gain",
+      "found_in_fulltext": true,
+      "fulltext_offset": 90717
+    },
+    {
+      "block_id": "p17:31",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "176. Engelmayr, G. C. et al. Accordion-like honeycombs for tissue engineering of",
+      "found_in_fulltext": true,
+      "fulltext_offset": 90877
+    },
+    {
+      "block_id": "p17:32",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "177. Kim, Y. T., Haftel, V. K., Kumar, S. & Bellamkonda, R. V. The role of align",
+      "found_in_fulltext": true,
+      "fulltext_offset": 91011
+    },
+    {
+      "block_id": "p17:33",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "178. Jia, S. et al. Oriented cartilage extracellular matrix-derived scaffold for",
+      "found_in_fulltext": true,
+      "fulltext_offset": 91207
+    },
+    {
+      "block_id": "p17:34",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "179. Yang, S. et al. Oriented collagen fiber membranes formed through counter-ro",
+      "found_in_fulltext": true,
+      "fulltext_offset": 91358
+    },
+    {
+      "block_id": "p17:35",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "180. Lee, P., Lin, R., Moon, J. & Lee, L. P. Microfluidic alignment of collagen ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 91532
+    },
+    {
+      "block_id": "p17:36",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "181. Torbet, J. et al. Orthogonal scaffold of magnetically aligned collagen lame",
+      "found_in_fulltext": true,
+      "fulltext_offset": 91684
+    },
+    {
+      "block_id": "p17:37",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "182. Hoogenkamp, H. R. et al. Directing collagen fibers using counter-rotating c",
+      "found_in_fulltext": true,
+      "fulltext_offset": 91839
+    },
+    {
+      "block_id": "p17:38",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "183. Lai, E. S., Anderson, C. M. & Fuller, G. G. Designing a tubular matrix of o",
+      "found_in_fulltext": true,
+      "fulltext_offset": 91969
+    },
+    {
+      "block_id": "p17:39",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "184. Saeidi, N., Sander, E. A., Zareian, R. & Ruberti, J. W. Production of highl",
+      "found_in_fulltext": true,
+      "fulltext_offset": 92134
+    },
+    {
+      "block_id": "p17:40",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "185. Saeidi, N., Sander, E. A. & Ruberti, J. W. Dynamic shear-influenced collage",
+      "found_in_fulltext": true,
+      "fulltext_offset": 92330
+    },
+    {
+      "block_id": "p17:41",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "186. Lanfer, B. et al. Aligned fibrillar collagen matrices obtained by shear flo",
+      "found_in_fulltext": true,
+      "fulltext_offset": 92462
+    },
+    {
+      "block_id": "p17:42",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "187. Voge, C. M., Kariolis, M., Macdonald, R. A. & Stegemann, J. P. Directional ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 92591
+    },
+    {
+      "block_id": "p17:43",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "188. Vader, D., Kabla, A., Weitz, D. & Mahadevan, L. Strain-induced alignment in",
+      "found_in_fulltext": true,
+      "fulltext_offset": 92817
+    },
+    {
+      "block_id": "p17:44",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "189. Wilson, D. L. et al. Surface organization and nanopatterning of collagen by",
+      "found_in_fulltext": true,
+      "fulltext_offset": 92938
+    },
+    {
+      "block_id": "p17:45",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "190. Lin, J. et al. Mechanical roles in formation of oriented collagen fibers. T",
+      "found_in_fulltext": true,
+      "fulltext_offset": 93088
+    },
+    {
+      "block_id": "p17:46",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "191. Wakuda, Y., Nishimoto, S., Suye, S. I. & Fujita, S. Native collagen hydroge",
+      "found_in_fulltext": true,
+      "fulltext_offset": 93211
+    },
+    {
+      "block_id": "p17:47",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "192. Matthews, J. A., Wnek, G. E., Simpson, D. G. & Bowlin, G. L. Electrospinnin",
+      "found_in_fulltext": true,
+      "fulltext_offset": 93391
+    },
+    {
+      "block_id": "p17:48",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "193. Caves, J. M. et al. Fibrillogenesis in continuously spun synthetic collagen",
+      "found_in_fulltext": true,
+      "fulltext_offset": 93534
+    },
+    {
+      "block_id": "p17:49",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "194. Betsch, M. et al. Incorporating 4D into bioprinting: real-time magnetically",
+      "found_in_fulltext": true,
+      "fulltext_offset": 93681
+    },
+    {
+      "block_id": "p17:50",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "195. Cheng, X. et al. An electrochemical fabrication process for the assembly of",
+      "found_in_fulltext": true,
+      "fulltext_offset": 93881
+    },
+    {
+      "block_id": "p17:51",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "196. Denis, F. A., Pallandre, A., Nysten, B., Jonas, A. M. & Dupont-Gillain, C. ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 94040
+    },
+    {
+      "block_id": "p17:52",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "197. Puetzer, J. L., Ma, T., Sallent, I., Gelmi, A. & Stevens, M. M. Driving hie",
+      "found_in_fulltext": true,
+      "fulltext_offset": 94248
+    },
+    {
+      "block_id": "p17:53",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "198. Bates, M. E., Troop, L., Brown, M. E. & Puetzer, J. L. Temporal application",
+      "found_in_fulltext": true,
+      "fulltext_offset": 94455
+    },
+    {
+      "block_id": "p17:54",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "199. Gonzalez-Leon, E. A., Bielajew, B. J., Hu, J. C. & Athanasiou, K. A. Engine",
+      "found_in_fulltext": true,
+      "fulltext_offset": 94674
+    },
+    {
+      "block_id": "p17:55",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "200. Blaschke, U. K., Eikenberry, E. F., Hulmes, D. J. S., Galla, H. J. & Bruckn",
+      "found_in_fulltext": true,
+      "fulltext_offset": 94891
+    },
+    {
+      "block_id": "p17:56",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "201. Ciferri, A. On collagen II fibrillogenesis. Liq. Cryst. 34, 693–696 (2007).",
+      "found_in_fulltext": true,
+      "fulltext_offset": 95102
+    },
+    {
+      "block_id": "p17:57",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "202. Kock, L., van Donkelaar, C. C. & Ito, K. Tissue engineering of functional a",
+      "found_in_fulltext": true,
+      "fulltext_offset": 95183
+    },
+    {
+      "block_id": "p17:58",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "203. Elder, B. D. & Athanasiou, K. A. Effects of confinement on the mechanical p",
+      "found_in_fulltext": true,
+      "fulltext_offset": 95341
+    },
+    {
+      "block_id": "p17:59",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "204. Kock, L. M. et al. Tuning the differentiation of periosteum-derived cartila",
+      "found_in_fulltext": true,
+      "fulltext_offset": 95572
+    },
+    {
+      "block_id": "p17:60",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "205. Lee, J. K. et al. Tension stimulation drives tissue formation in scaffold-f",
+      "found_in_fulltext": true,
+      "fulltext_offset": 95749
+    },
+    {
+      "block_id": "p17:61",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "206. Visser, J. et al. Reinforcement of hydrogels using three-dimensionally prin",
+      "found_in_fulltext": true,
+      "fulltext_offset": 95874
+    },
+    {
+      "block_id": "p17:62",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "207. Pilipchuk, S. P. et al. Integration of 3D printed and micropatterned polyca",
+      "found_in_fulltext": true,
+      "fulltext_offset": 96000
+    },
+    {
+      "block_id": "p17:63",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "208. Daly, A. C. & Kelly, D. J. Biofabrication of spatially organised tissues by",
+      "found_in_fulltext": true,
+      "fulltext_offset": 96204
+    },
+    {
+      "block_id": "p17:64",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "209. Liu, H. et al. Filamented light (FLight) biofabrication of highly aligned t",
+      "found_in_fulltext": true,
+      "fulltext_offset": 96405
+    },
+    {
+      "block_id": "p17:65",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "210. Puiggali-Jou, A. et al. FLight biofabrication supports maturation of articu",
+      "found_in_fulltext": true,
+      "fulltext_offset": 96547
+    },
+    {
+      "block_id": "p17:66",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "211. Braunmiller, D. L. et al. Pre-programmed rod-shaped microgels to create mul",
+      "found_in_fulltext": true,
+      "fulltext_offset": 96711
+    },
+    {
+      "block_id": "p17:67",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "212. Wang, B., Chariyev-Prinz, F., Burdis, R., Eichholz, K. & Kelly, D. J. Addit",
+      "found_in_fulltext": true,
+      "fulltext_offset": 96882
+    },
+    {
+      "block_id": "p17:68",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "213. Browe, D. C. et al. Bilayered extracellular matrix derived scaffolds with a",
+      "found_in_fulltext": true,
+      "fulltext_offset": 97095
+    },
+    {
+      "block_id": "p17:69",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "214. Nordberg, R. C. et al. Recent advancements in cartilage tissue engineering ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 97302
+    },
+    {
+      "block_id": "p17:70",
+      "page": 17,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Nature Reviews Rheumatology",
+      "found_in_fulltext": true,
+      "fulltext_offset": 233
+    },
+    {
+      "block_id": "p18:0",
+      "page": 18,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Review article",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p18:1",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "215. Zhang, Y., Pizzute, T. & Pei, M. Anti-inflammatory strategies in cartilage ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 97468
+    },
+    {
+      "block_id": "p18:2",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "216. Goldring, M. B., Otero, M., Tsuchimochi, K., Ijiri, K. & Li, Y. Defining th",
+      "found_in_fulltext": true,
+      "fulltext_offset": 97601
+    },
+    {
+      "block_id": "p18:3",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "217. Chen, D. et al. Versican binds collagen via its G3 domain and regulates the",
+      "found_in_fulltext": true,
+      "fulltext_offset": 97794
+    },
+    {
+      "block_id": "p18:4",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "218. Choocheep, K. et al. Versican facilitates chondrocyte differentiation and r",
+      "found_in_fulltext": true,
+      "fulltext_offset": 97962
+    },
+    {
+      "block_id": "p18:5",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "219. Peng, Z. et al. The regulation of cartilage extracellular matrix homeostasi",
+      "found_in_fulltext": true,
+      "fulltext_offset": 98106
+    },
+    {
+      "block_id": "p18:6",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "220. Guilak, F., Hayes, A. J. & Melrose, J. Perlecan in pericellular mechanosens",
+      "found_in_fulltext": true,
+      "fulltext_offset": 98271
+    },
+    {
+      "block_id": "p18:7",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "221. Xu, X., Li, Z., Leng, Y., Neu, C. P. & Calve, S. Knockdown of the pericellu",
+      "found_in_fulltext": true,
+      "fulltext_offset": 98510
+    },
+    {
+      "block_id": "p18:8",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "222. Flowers, S. A. et al. Lubricin binds cartilage proteins, cartilage oligomer",
+      "found_in_fulltext": true,
+      "fulltext_offset": 98717
+    },
+    {
+      "block_id": "p18:9",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "223. Jay, G. D. & Waller, K. A. The biology of lubricin: near frictionless joint",
+      "found_in_fulltext": true,
+      "fulltext_offset": 98895
+    },
+    {
+      "block_id": "p18:10",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "224. Zappone, B., Ruths, M., Greene, G. W., Jay, G. D. & Israelachvili, J. N. Ad",
+      "found_in_fulltext": true,
+      "fulltext_offset": 99015
+    },
+    {
+      "block_id": "p18:11",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "225. Rhee, D. K. et al. The secreted glycoprotein lubricin protects cartilage su",
+      "found_in_fulltext": true,
+      "fulltext_offset": 99239
+    },
+    {
+      "block_id": "p18:12",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "226. Kalamajski, S., Bihan, D., Bonna, A., Rubin, K. & Farndale, R. W. Fibromodu",
+      "found_in_fulltext": true,
+      "fulltext_offset": 99403
+    },
+    {
+      "block_id": "p18:13",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "227. Li, C. et al. Fibromodulin — a new target of osteoarthritis management? Fro",
+      "found_in_fulltext": true,
+      "fulltext_offset": 99598
+    },
+    {
+      "block_id": "p18:14",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "228. Barreto, G. et al. Lumican is upregulated in osteoarthritis and contributes",
+      "found_in_fulltext": true,
+      "fulltext_offset": 99712
+    },
+    {
+      "block_id": "p18:15",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "229. Kafienah, W. et al. Lumican inhibits collagen deposition in tissue engineer",
+      "found_in_fulltext": true,
+      "fulltext_offset": 99935
+    },
+    {
+      "block_id": "p18:16",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "230. Haglund, L. et al. Identification and characterization of the integrin alph",
+      "found_in_fulltext": true,
+      "fulltext_offset": 100062
+    },
+    {
+      "block_id": "p18:17",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "231. Hessle, L. et al. The skeletal phenotype of chondroadherin deficient mice. ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 100247
+    },
+    {
+      "block_id": "p18:18",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "232. Bengtsson, E. et al. The leucine-rich repeat protein PRELP binds perlecan a",
+      "found_in_fulltext": true,
+      "fulltext_offset": 100353
+    },
+    {
+      "block_id": "p18:19",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "233. Klatt, A. R., Becker, A. K. A., Neacsu, C. D., Paulsson, M. & Wagener, R. T",
+      "found_in_fulltext": true,
+      "fulltext_offset": 100534
+    },
+    {
+      "block_id": "p18:20",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "234. Calabro, N. E. et al. Thrombospondin-2 regulates extracellular matrix produ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 100721
+    },
+    {
+      "block_id": "p18:21",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "235. Halász, K., Kassner, A., Mörgelin, M. & Heinegård, D. COMP acts as a cataly",
+      "found_in_fulltext": true,
+      "fulltext_offset": 100896
+    },
+    {
+      "block_id": "p18:22",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "236. Rosenberg, K., Olsson, H., Mörgelin, M. & Heinegård, D. Cartilage oligomeri",
+      "found_in_fulltext": true,
+      "fulltext_offset": 101048
+    },
+    {
+      "block_id": "p18:23",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "237. Danalache, M., Erler, A. L., Wolfgart, J. M., Schwitalle, M. & Hofmann, U. ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 101262
+    },
+    {
+      "block_id": "p18:24",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "238. Yu, J. & Urban, J. P. G. The elastic network of articular cartilage: an imm",
+      "found_in_fulltext": true,
+      "fulltext_offset": 101524
+    },
+    {
+      "block_id": "p18:25",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "239. Ramanayake, W. et al. Fibrillin-1 expression, which regulates of TGF-B bioa",
+      "found_in_fulltext": true,
+      "fulltext_offset": 101689
+    },
+    {
+      "block_id": "p18:26",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "240. He, B., Wu, J. P., Chen, H. H., Kirk, T. B. & Xu, J. Elastin fibers display",
+      "found_in_fulltext": true,
+      "fulltext_offset": 101896
+    },
+    {
+      "block_id": "p18:27",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "241. Mansfield, J. et al. The elastin network: its relationship with collagen an",
+      "found_in_fulltext": true,
+      "fulltext_offset": 102117
+    },
+    {
+      "block_id": "p18:28",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "242. Pacifici, M. Tenascin-C and the development of articular cartilage. Matrix ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 102299
+    },
+    {
+      "block_id": "p18:29",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "243. Leiss, M., Beckmann, K., Girós, A., Costell, M. & Fässler, R. The role of i",
+      "found_in_fulltext": true,
+      "fulltext_offset": 102405
+    },
+    {
+      "block_id": "p18:30",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "244. Maylin, A. B. et al. Genetic abrogation of the fibronectin- $ \\alpha_{5}\\be",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p18:31",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "245. Sun, Y., Wang, T. L., Toh, W. S. & Pei, M. The role of laminins in cartilag",
+      "found_in_fulltext": true,
+      "fulltext_offset": 102787
+    },
+    {
+      "block_id": "p18:32",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "246. Schminke, B., Frese, J., Bode, C., Goldring, M. B. & Miosge, N. Laminins an",
+      "found_in_fulltext": true,
+      "fulltext_offset": 102948
+    },
+    {
+      "block_id": "p18:33",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "247. Batsalova, T. & Dzhambazov, B. Significance of type II collagen posttransla",
+      "found_in_fulltext": true,
+      "fulltext_offset": 103182
+    },
+    {
+      "block_id": "p18:34",
+      "page": 18,
+      "role": "backmatter_heading",
+      "zone": "",
+      "render_default": true,
+      "snippet": "Acknowledgements",
+      "found_in_fulltext": true,
+      "fulltext_offset": 103403
+    },
+    {
+      "block_id": "p18:35",
+      "page": 18,
+      "role": "backmatter_body",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "A.P.M., M.d.R., K.I. and J.M. would like to acknowledge the support of the Dutch",
+      "found_in_fulltext": true,
+      "fulltext_offset": 103422
+    },
+    {
+      "block_id": "p18:36",
+      "page": 18,
+      "role": "backmatter_heading",
+      "zone": "",
+      "render_default": true,
+      "snippet": "Author contributions",
+      "found_in_fulltext": true,
+      "fulltext_offset": 104289
+    },
+    {
+      "block_id": "p18:37",
+      "page": 18,
+      "role": "backmatter_body",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "A.P.M. researched data for the article. A.P.M., J.M. and M.d.R. wrote the articl",
+      "found_in_fulltext": true,
+      "fulltext_offset": 104312
+    },
+    {
+      "block_id": "p18:38",
+      "page": 18,
+      "role": "backmatter_heading",
+      "zone": "",
+      "render_default": true,
+      "snippet": "Competing interests",
+      "found_in_fulltext": true,
+      "fulltext_offset": 104525
+    },
+    {
+      "block_id": "p18:39",
+      "page": 18,
+      "role": "backmatter_body",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "The authors declare no competing interests.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 104547
+    },
+    {
+      "block_id": "p18:40",
+      "page": 18,
+      "role": "backmatter_heading",
+      "zone": "",
+      "render_default": true,
+      "snippet": "Additional information",
+      "found_in_fulltext": true,
+      "fulltext_offset": 104593
+    },
+    {
+      "block_id": "p18:41",
+      "page": 18,
+      "role": "backmatter_body",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Supplementary information The online version contains supplementary material ava",
+      "found_in_fulltext": true,
+      "fulltext_offset": 104618
+    },
+    {
+      "block_id": "p18:42",
+      "page": 18,
+      "role": "backmatter_body",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Peer review information Nature Reviews Rheumatology thanks Daniel Grande and the",
+      "found_in_fulltext": true,
+      "fulltext_offset": 104752
+    },
+    {
+      "block_id": "p18:43",
+      "page": 18,
+      "role": "backmatter_body",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Publisher's note Springer Nature remains neutral with regard to jurisdictional c",
+      "found_in_fulltext": true,
+      "fulltext_offset": 104919
+    },
+    {
+      "block_id": "p18:44",
+      "page": 18,
+      "role": "backmatter_body",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Springer Nature or its licensor (e.g. a society or other partner) holds exclusiv",
+      "found_in_fulltext": true,
+      "fulltext_offset": 105055
+    },
+    {
+      "block_id": "p18:45",
+      "page": 18,
+      "role": "backmatter_body",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "© Springer Nature Limited 2025",
+      "found_in_fulltext": true,
+      "fulltext_offset": 105388
+    },
+    {
+      "block_id": "p18:46",
+      "page": 18,
+      "role": "footnote",
+      "zone": "",
+      "render_default": true,
+      "snippet": "Regenerative Medicine Center Utrecht, Utrecht, the Netherlands. $ ^{2} $Departme",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p18:47",
+      "page": 18,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Nature Reviews Rheumatology",
+      "found_in_fulltext": true,
+      "fulltext_offset": 233
+    }
+  ]
+}

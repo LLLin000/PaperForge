@@ -1,0 +1,2827 @@
+{
+  "mappable_block_count": 282,
+  "found_count": 222,
+  "missing_count": 60,
+  "rows": [
+    {
+      "block_id": "p1:0",
+      "page": 1,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "nature reviews endocrinology",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:1",
+      "page": 1,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "https://doi.org/10.1038/s41574-024-00969-x",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:2",
+      "page": 1,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "Check for updates",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:3",
+      "page": 1,
+      "role": "non_body_insert",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "Review article",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:4",
+      "page": 1,
+      "role": "paper_title",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "Metabolic regulation of skeletal cell fate and function",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2
+    },
+    {
+      "block_id": "p1:5",
+      "page": 1,
+      "role": "authors",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "Steve Stegen Ⓤ & Geert Carmeliet Ⓤ ✉ Abstract",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:8",
+      "page": 1,
+      "role": "media_asset",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "<table><tr><td>Sections</td></tr><tr><td>Introduction</td></tr><tr><td>Cell type",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:9",
+      "page": 1,
+      "role": "non_body_insert",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "Conclusions",
+      "found_in_fulltext": true,
+      "fulltext_offset": 56147
+    },
+    {
+      "block_id": "p1:10",
+      "page": 1,
+      "role": "footnote",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "Laboratory of Clinical and Experimental Endocrinology, Department of Chronic Dis",
+      "found_in_fulltext": true,
+      "fulltext_offset": 1786
+    },
+    {
+      "block_id": "p1:11",
+      "page": 1,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "Nature Reviews Endocrinology | Volume 20 | July 2024 | 399–413",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:12",
+      "page": 1,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "399",
+      "found_in_fulltext": true,
+      "fulltext_offset": 75601
+    },
+    {
+      "block_id": "p2:0",
+      "page": 2,
+      "role": "noise",
+      "zone": "frontmatter_side_zone",
+      "render_default": false,
+      "snippet": "Review article",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:1",
+      "page": 2,
+      "role": "structured_insert",
+      "zone": "frontmatter_side_zone",
+      "render_default": false,
+      "snippet": "Key points",
+      "found_in_fulltext": true,
+      "fulltext_offset": 1980
+    },
+    {
+      "block_id": "p2:2",
+      "page": 2,
+      "role": "structured_insert",
+      "zone": "frontmatter_side_zone",
+      "render_default": false,
+      "snippet": "<table><tr><td>• Skeletal stem and progenitor cells display a high metabolic fle",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:3",
+      "page": 2,
+      "role": "structured_insert",
+      "zone": "frontmatter_side_zone",
+      "render_default": false,
+      "snippet": "• Metabolic disturbance is linked to skeletal cell dysfunction during bone patho",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2750
+    },
+    {
+      "block_id": "p2:4",
+      "page": 2,
+      "role": "section_heading",
+      "zone": "frontmatter_side_zone",
+      "render_default": true,
+      "snippet": "Introduction",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2948
+    },
+    {
+      "block_id": "p2:5",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The skeleton has been considered to be a metabolically active organ for decades ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2961
+    },
+    {
+      "block_id": "p2:6",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Technological developments have enabled scientists to thoroughly analyse cell me",
+      "found_in_fulltext": true,
+      "fulltext_offset": 4129
+    },
+    {
+      "block_id": "p2:8",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In this Review, we summarize the current understanding of fuel selection and int",
+      "found_in_fulltext": true,
+      "fulltext_offset": 4894
+    },
+    {
+      "block_id": "p2:9",
+      "page": 2,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Cell types involved in skeletal development and homeostasis",
+      "found_in_fulltext": true,
+      "fulltext_offset": 5231
+    },
+    {
+      "block_id": "p2:10",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Skeletal development strongly depends on the differentiation and activity of phe",
+      "found_in_fulltext": true,
+      "fulltext_offset": 5291
+    },
+    {
+      "block_id": "p2:11",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The different mature mesenchymal cell types are not derived from a single stem c",
+      "found_in_fulltext": true,
+      "fulltext_offset": 5711
+    },
+    {
+      "block_id": "p2:12",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Osteoblasts derive from all subtypes of SSPCs and typically produce a collagenou",
+      "found_in_fulltext": true,
+      "fulltext_offset": 6296
+    },
+    {
+      "block_id": "p2:13",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The formation of bone tissue is balanced by the action of bone-resorbing osteocl",
+      "found_in_fulltext": true,
+      "fulltext_offset": 8272
+    },
+    {
+      "block_id": "p2:14",
+      "page": 2,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Nature Reviews Endocrinology | Volume 20 | July 2024 | 399–413",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:15",
+      "page": 2,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "400",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:0",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Review article",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:2",
+      "page": 3,
+      "role": "media_asset",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "<table><tr><td>Gene</td><td>Cre driver</td><td>Phenotype</td><td>Cell function</",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:3",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Nature Reviews Endocrinology | Volume 20 | July 2024 | 399–413",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:4",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "401",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:0",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Review article",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:2",
+      "page": 4,
+      "role": "media_asset",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "<table><tr><td>Gene</td><td>Cre driver</td><td>Phenotype</td><td>Cell function</",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:3",
+      "page": 4,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "This table summarizes the most important in vivo studies mentioned in the main t",
+      "found_in_fulltext": true,
+      "fulltext_offset": 8834
+    },
+    {
+      "block_id": "p4:4",
+      "page": 4,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "A general overview of cell metabolism",
+      "found_in_fulltext": true,
+      "fulltext_offset": 9391
+    },
+    {
+      "block_id": "p4:5",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Historically, most studies in the bone field focused on identifying the nutritio",
+      "found_in_fulltext": true,
+      "fulltext_offset": 9429
+    },
+    {
+      "block_id": "p4:7",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In addition to ATP production, many other metabolic pathways produce intermediat",
+      "found_in_fulltext": true,
+      "fulltext_offset": 11476
+    },
+    {
+      "block_id": "p4:8",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Nature Reviews Endocrinology | Volume 20 | July 2024 | 399–413",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:9",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "402",
+      "found_in_fulltext": true,
+      "fulltext_offset": 70546
+    },
+    {
+      "block_id": "p5:0",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Review article",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:1",
+      "page": 5,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Skeletal cell metabolism is more than just bioenergetics Cell metabolism of SSPC",
+      "found_in_fulltext": true,
+      "fulltext_offset": 12355
+    },
+    {
+      "block_id": "p5:3",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "SSPCs are metabolically flexible cells. SSPCs are essential for bone development",
+      "found_in_fulltext": true,
+      "fulltext_offset": 12479
+    },
+    {
+      "block_id": "p5:4",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Of the different nutrients, glucose has long been considered to be the most impo",
+      "found_in_fulltext": true,
+      "fulltext_offset": 13723
+    },
+    {
+      "block_id": "p5:5",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Besides glucose, fatty acids are also a possible nutritional source for SSPCs, a",
+      "found_in_fulltext": true,
+      "fulltext_offset": 15380
+    },
+    {
+      "block_id": "p5:6",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Concerning amino acid metabolism, the amino acid sensor GCN2 (also known as eIF2",
+      "found_in_fulltext": true,
+      "fulltext_offset": 15886
+    },
+    {
+      "block_id": "p5:8",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The lack of an in vivo bone phenotype when important metabolic transporters or e",
+      "found_in_fulltext": true,
+      "fulltext_offset": 16768
+    },
+    {
+      "block_id": "p5:9",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In addition, the high metabolic plasticity of SSPCs provides strategic opportuni",
+      "found_in_fulltext": true,
+      "fulltext_offset": 17450
+    },
+    {
+      "block_id": "p5:11",
+      "page": 5,
+      "role": "figure_caption_candidate",
+      "zone": "display_zone",
+      "render_default": false,
+      "snippet": "Fig. 1 | Differentiation of bone-resident cell types. The mesenchymal lineage gi",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:12",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Nature Reviews Endocrinology | Volume 20 | July 2024 | 399–413",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:13",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "403",
+      "found_in_fulltext": true,
+      "fulltext_offset": 69897
+    },
+    {
+      "block_id": "p6:0",
+      "page": 6,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Review article",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:2",
+      "page": 6,
+      "role": "figure_caption_candidate",
+      "zone": "display_zone",
+      "render_default": false,
+      "snippet": "Fig. 2 | Metabolic features of skeletal cells. Environmental cues lead to intrac",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:3",
+      "page": 6,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "histone and DNA modification to control skeletal cell fate and differentiation. ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 18130
+    },
+    {
+      "block_id": "p6:4",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "maintain redox and energy balance and sustain proliferation $ ^{25} $. These met",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:6",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In summary, SSPCs display a high degree of metabolic plasticity, which enables t",
+      "found_in_fulltext": true,
+      "fulltext_offset": 19629
+    },
+    {
+      "block_id": "p6:7",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Osteoblasts use different nutrients to fulfil specific functions. Upon exposure ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 19756
+    },
+    {
+      "block_id": "p6:8",
+      "page": 6,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Nature Reviews Endocrinology | Volume 20 | July 2024 | 399–413",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:9",
+      "page": 6,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "404",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:0",
+      "page": 7,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Review article",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:1",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "cells that produce large amounts of matrix, but unlike other secretory skeletal ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20013
+    },
+    {
+      "block_id": "p7:2",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Metabolically, osteoblast differentiation relies on GLUT1-mediated glucose uptak",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20178
+    },
+    {
+      "block_id": "p7:5",
+      "page": 7,
+      "role": "figure_caption_candidate",
+      "zone": "display_zone",
+      "render_default": false,
+      "snippet": "Fig. 3 | Metabolic profile of skeletal stem and progenitor cells, and their oste",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:7",
+      "page": 7,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Nature Reviews Endocrinology | Volume 20 | July 2024 | 399–413",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:8",
+      "page": 7,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "405",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:0",
+      "page": 8,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Review article",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:1",
+      "page": 8,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "or by being converted to malate by malic enzyme 2, especially during osteoblast ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 21270
+    },
+    {
+      "block_id": "p8:2",
+      "page": 8,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Whether OXPHOS increases or decreases during osteoblast differentiation is still",
+      "found_in_fulltext": true,
+      "fulltext_offset": 21717
+    },
+    {
+      "block_id": "p8:3",
+      "page": 8,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The availability of amino acids such as glutamine and proline is important for o",
+      "found_in_fulltext": true,
+      "fulltext_offset": 23311
+    },
+    {
+      "block_id": "p8:5",
+      "page": 8,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Metabolites not only regulate intracellular properties but can also function ext",
+      "found_in_fulltext": true,
+      "fulltext_offset": 25300
+    },
+    {
+      "block_id": "p8:7",
+      "page": 8,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Bone marrow adipocytes are a unique cell type. During ageing and in response to ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 27005
+    },
+    {
+      "block_id": "p8:8",
+      "page": 8,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Metabolically, the gene expression profile of adipogenic progenitors differs fro",
+      "found_in_fulltext": true,
+      "fulltext_offset": 28213
+    },
+    {
+      "block_id": "p8:9",
+      "page": 8,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Nature Reviews Endocrinology | Volume 20 | July 2024 | 399–413",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:10",
+      "page": 8,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "406",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:0",
+      "page": 9,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Review article",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:1",
+      "page": 9,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "of Adipo-CAR cells and BMAds, and their metabolic interaction with surrounding s",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29422
+    },
+    {
+      "block_id": "p9:2",
+      "page": 9,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Growth plate chondrocytes are adapted to a specific metabolic microenvironment",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29636
+    },
+    {
+      "block_id": "p9:3",
+      "page": 9,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "During long-bone development, SSPCs not only differentiate into osteoblasts and ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29715
+    },
+    {
+      "block_id": "p9:5",
+      "page": 9,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Glucose, taken up mainly by GLUT1, a process regulated by BMP-HIF1α $ ^{27} $, a",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:8",
+      "page": 9,
+      "role": "figure_caption_candidate",
+      "zone": "display_zone",
+      "render_default": false,
+      "snippet": "Fig. 4 | Metabolic regulation of chondrocyte function. a, Low lipid availability",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:9",
+      "page": 9,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "chondrocyte function. Acan, aggrecan; Ac-CoA, acetyl coenzyme A; GLS1, glutamina",
+      "found_in_fulltext": true,
+      "fulltext_offset": 32693
+    },
+    {
+      "block_id": "p9:10",
+      "page": 9,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Nature Reviews Endocrinology | Volume 20 | July 2024 | 399–413",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:11",
+      "page": 9,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "407",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:0",
+      "page": 10,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Review article",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:1",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "are equally important for chondrocyte function (for example, by supporting biosy",
+      "found_in_fulltext": true,
+      "fulltext_offset": 32987
+    },
+    {
+      "block_id": "p10:2",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The observation that TCA cycle anaplerosis by glucose is rather limited in chond",
+      "found_in_fulltext": true,
+      "fulltext_offset": 34590
+    },
+    {
+      "block_id": "p10:3",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Although exogenous fatty acids seem to have minimal importance for chondrocyte f",
+      "found_in_fulltext": true,
+      "fulltext_offset": 36039
+    },
+    {
+      "block_id": "p10:5",
+      "page": 10,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Metabolic adaptations during osteoclast differentiation",
+      "found_in_fulltext": true,
+      "fulltext_offset": 37564
+    },
+    {
+      "block_id": "p10:6",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Bone homeostasis and quality depend on a well-adjusted balance between osteoblas",
+      "found_in_fulltext": true,
+      "fulltext_offset": 37620
+    },
+    {
+      "block_id": "p10:7",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Besides fatty acids, glucose is another major nutrient for osteoclasts. GLUT1-me",
+      "found_in_fulltext": true,
+      "fulltext_offset": 40894
+    },
+    {
+      "block_id": "p10:8",
+      "page": 10,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Nature Reviews Endocrinology | Volume 20 | July 2024 | 399–413",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:9",
+      "page": 10,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "408",
+      "found_in_fulltext": true,
+      "fulltext_offset": 60945
+    },
+    {
+      "block_id": "p11:0",
+      "page": 11,
+      "role": "noise",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "Review article",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:2",
+      "page": 11,
+      "role": "figure_caption_candidate",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "Fig. 5 | Metabolic regulation of osteoclast differentiation and activity. a, M-C",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:3",
+      "page": 11,
+      "role": "footnote",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "palmitoyltransferase 2; DNMT, DNA methyltransferase; FAO, fatty acid oxidation; ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 41178
+    },
+    {
+      "block_id": "p11:4",
+      "page": 11,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "for ATP synthesis $ ^{110,111} $. Glut1 deletion impairs glycolysis more than it",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:5",
+      "page": 11,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Amino acid metabolism also contributes to osteoclastogenesis, although, for some",
+      "found_in_fulltext": true,
+      "fulltext_offset": 42515
+    },
+    {
+      "block_id": "p11:7",
+      "page": 11,
+      "role": "noise",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "Nature Reviews Endocrinology | Volume 20 | July 2024 | 399–413",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:8",
+      "page": 11,
+      "role": "noise",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "409",
+      "found_in_fulltext": true,
+      "fulltext_offset": 64550
+    },
+    {
+      "block_id": "p12:0",
+      "page": 12,
+      "role": "noise",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "Review article",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:1",
+      "page": 12,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "line with the observation that Tie2-Cre-mediated deletion of Arg1 does not affec",
+      "found_in_fulltext": true,
+      "fulltext_offset": 44543
+    },
+    {
+      "block_id": "p12:2",
+      "page": 12,
+      "role": "subsection_heading",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Metabolic disturbance during bone pathology",
+      "found_in_fulltext": true,
+      "fulltext_offset": 44948
+    },
+    {
+      "block_id": "p12:3",
+      "page": 12,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Most studies investigating skeletal cell metabolism have been performed during b",
+      "found_in_fulltext": true,
+      "fulltext_offset": 44992
+    },
+    {
+      "block_id": "p12:4",
+      "page": 12,
+      "role": "section_heading",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Metabolic dysfunction in osteoarthritic chondrocytes is associated with disease ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 45264
+    },
+    {
+      "block_id": "p12:5",
+      "page": 12,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Osteoarthritis is a complex, multifactorial disease that is characterized by the",
+      "found_in_fulltext": true,
+      "fulltext_offset": 45356
+    },
+    {
+      "block_id": "p12:6",
+      "page": 12,
+      "role": "structured_insert",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "Box 1 Osteoarthritis: a largely unmet clinical problem",
+      "found_in_fulltext": true,
+      "fulltext_offset": 46337
+    },
+    {
+      "block_id": "p12:8",
+      "page": 12,
+      "role": "noise",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "Osteoarthritis is the most common degenerative joint disease, and occurs with in",
+      "found_in_fulltext": true,
+      "fulltext_offset": 46392
+    },
+    {
+      "block_id": "p12:10",
+      "page": 12,
+      "role": "noise",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "Osteoarthritic chondrocytes also display changes in lipid metabolism, as evidenc",
+      "found_in_fulltext": true,
+      "fulltext_offset": 48956
+    },
+    {
+      "block_id": "p12:11",
+      "page": 12,
+      "role": "noise",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "Finally, amino acid-metabolizing pathways also appear to be altered in osteoarth",
+      "found_in_fulltext": true,
+      "fulltext_offset": 49569
+    },
+    {
+      "block_id": "p12:12",
+      "page": 12,
+      "role": "unknown_structural",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "Metabolic alterations in osteolineage cells during diabetic bone loss",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:13",
+      "page": 12,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "There is increasing evidence that diabetes is associated with increased bone fra",
+      "found_in_fulltext": true,
+      "fulltext_offset": 50554
+    },
+    {
+      "block_id": "p12:14",
+      "page": 12,
+      "role": "noise",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "Nature Reviews Endocrinology | Volume 20 | July 2024 | 399–413",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:15",
+      "page": 12,
+      "role": "noise",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "410",
+      "found_in_fulltext": true,
+      "fulltext_offset": 60165
+    },
+    {
+      "block_id": "p13:0",
+      "page": 13,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Review article",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p13:1",
+      "page": 13,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "that bone marrow SSPCs from these diabetic mice display a reduction in glycolysi",
+      "found_in_fulltext": true,
+      "fulltext_offset": 51623
+    },
+    {
+      "block_id": "p13:2",
+      "page": 13,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Are malignant cells in the bone environment metabolically adapted?",
+      "found_in_fulltext": true,
+      "fulltext_offset": 52748
+    },
+    {
+      "block_id": "p13:3",
+      "page": 13,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Metastatic cancer cells are considered to have a specific metabolic profile that",
+      "found_in_fulltext": true,
+      "fulltext_offset": 52815
+    },
+    {
+      "block_id": "p13:4",
+      "page": 13,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "The bone microenvironment also contributes to the progression of haematological ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 54189
+    },
+    {
+      "block_id": "p13:6",
+      "page": 13,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Conclusions",
+      "found_in_fulltext": true,
+      "fulltext_offset": 56147
+    },
+    {
+      "block_id": "p13:7",
+      "page": 13,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Over the past decade, substantial progress has been made in unravelling skeletal",
+      "found_in_fulltext": true,
+      "fulltext_offset": 56159
+    },
+    {
+      "block_id": "p13:8",
+      "page": 13,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "However, several questions remain to be answered. For example, are metabolic int",
+      "found_in_fulltext": true,
+      "fulltext_offset": 56977
+    },
+    {
+      "block_id": "p13:11",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "1. Peck, W. A., Birge, S. J. Jr. & Fedak, S. A. Bone cells: biochemical and biol",
+      "found_in_fulltext": true,
+      "fulltext_offset": 58255
+    },
+    {
+      "block_id": "p13:12",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "2. Otte, P. Basic cell metabolism of articular cartilage. Manometric studies. Z.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 58408
+    },
+    {
+      "block_id": "p13:13",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "3. Borle, A. B., Nichols, N. & Nichols, G. Jr. Metabolic studies of bone in vitr",
+      "found_in_fulltext": true,
+      "fulltext_offset": 58520
+    },
+    {
+      "block_id": "p13:14",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "4. Stegen, S. & Carmeliet, G. The skeletal vascular system – breathing life into",
+      "found_in_fulltext": true,
+      "fulltext_offset": 58657
+    },
+    {
+      "block_id": "p13:15",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "5. Long, F. Building strong bones: molecular regulation of the osteoblast lineag",
+      "found_in_fulltext": true,
+      "fulltext_offset": 58775
+    },
+    {
+      "block_id": "p13:16",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "6. Ikeda, K. & Takeshita, S. The role of osteoclast differentiation and function",
+      "found_in_fulltext": true,
+      "fulltext_offset": 58902
+    },
+    {
+      "block_id": "p13:17",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "7. Jacome-Galarza, C. E. et al. Developmental origin, functional maintenance and",
+      "found_in_fulltext": true,
+      "fulltext_offset": 59037
+    },
+    {
+      "block_id": "p13:18",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "8. Kurenkova, A. D., Medvedeva, E. V., Newton, P. T. & Chagin, A. S. Niches for ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 59177
+    },
+    {
+      "block_id": "p13:19",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "9. Roberts, S. J., van Gastel, N., Carmeliet, G. & Luyten, F. P. Uncovering the ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 59338
+    },
+    {
+      "block_id": "p13:20",
+      "page": 13,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "10. Ambrosi, T. H., Longaker, M. T. & Chan, C. K. F. A revised perspective of sk",
+      "found_in_fulltext": true,
+      "fulltext_offset": 59512
+    },
+    {
+      "block_id": "p13:21",
+      "page": 13,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Nature Reviews Endocrinology | Volume 20 | July 2024 | 399–413",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p13:22",
+      "page": 13,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "411",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p14:0",
+      "page": 14,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Review article",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p14:1",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "11. Matsushita, Y., Ono, W. & Ono, N. Skeletal stem cells for bone development a",
+      "found_in_fulltext": true,
+      "fulltext_offset": 59673
+    },
+    {
+      "block_id": "p14:2",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "12. Feng, H. et al. Skeletal stem cells: origins, definitions, and functions in ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 59826
+    },
+    {
+      "block_id": "p14:3",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "13. Robling, A. G. & Bonewald, L. F. The osteocyte: new insights. Annu. Rev. Phy",
+      "found_in_fulltext": true,
+      "fulltext_offset": 59965
+    },
+    {
+      "block_id": "p14:4",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "14. Delgado-Calle, J. & Bellido, T. The osteocyte as a signaling cell. Physiol. ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 60071
+    },
+    {
+      "block_id": "p14:5",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "15. Dobnig, H. & Turner, R. T. Evidence that intermittent treatment with parathy",
+      "found_in_fulltext": true,
+      "fulltext_offset": 60177
+    },
+    {
+      "block_id": "p14:6",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "16. Long, F. & Ornitz, D. M. Development of the endochondral skeleton. Cold Spri",
+      "found_in_fulltext": true,
+      "fulltext_offset": 60382
+    },
+    {
+      "block_id": "p14:7",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "17. Hallett, S. A., Ono, W. & Ono, N. The hypertrophic chondrocyte: to be or not",
+      "found_in_fulltext": true,
+      "fulltext_offset": 60506
+    },
+    {
+      "block_id": "p14:8",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "18. Goldring, M. B. Chondrogenesis, chondrocyte differentiation, and articular c",
+      "found_in_fulltext": true,
+      "fulltext_offset": 60637
+    },
+    {
+      "block_id": "p14:9",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "19. Zhao, Z. et al. Mechanotransduction pathways in the regulation of cartilage ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 60816
+    },
+    {
+      "block_id": "p14:10",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "20. Lee, P., Chandel, N. S. & Simon, M. C. Cellular adaptation to hypoxia throug",
+      "found_in_fulltext": true,
+      "fulltext_offset": 60962
+    },
+    {
+      "block_id": "p14:11",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "21. Vander Heiden, M. G. & DeBerardinis, R. J. Understanding the Intersections b",
+      "found_in_fulltext": true,
+      "fulltext_offset": 61128
+    },
+    {
+      "block_id": "p14:12",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "22. Martinez-Reyes, I. & Chandel, N. S. Cancer metabolism: looking forward. Nat.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 61272
+    },
+    {
+      "block_id": "p14:13",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "23. Intlekofer, A. M. & Finley, L. W. S. Metabolic signatures of cancer cells an",
+      "found_in_fulltext": true,
+      "fulltext_offset": 61385
+    },
+    {
+      "block_id": "p14:14",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "24. Couasnay, G., Madel, M. B., Lim, J., Lee, B. & Elefteriou, F. Sites of Cre-r",
+      "found_in_fulltext": true,
+      "fulltext_offset": 61510
+    },
+    {
+      "block_id": "p14:15",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "25. Tournaire, G. et al. Skeletal progenitors preserve proliferation and self-re",
+      "found_in_fulltext": true,
+      "fulltext_offset": 61693
+    },
+    {
+      "block_id": "p14:16",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "26. Stegen, S. & Carmeliet, G. Hypoxia, hypoxia-inducible transcription factors ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 61881
+    },
+    {
+      "block_id": "p14:17",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "27. Lee, S. Y., Abel, E. D. & Long, F. Glucose metabolism induced by Bmp signali",
+      "found_in_fulltext": true,
+      "fulltext_offset": 62089
+    },
+    {
+      "block_id": "p14:18",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "leoung, N. H. Pyruvate dehydrogenase kinases: therapeutic targets for diabetes a",
+      "found_in_fulltext": true,
+      "fulltext_offset": 62247
+    },
+    {
+      "block_id": "p14:19",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "29. Heinemann-Yerushalmi, L. et al. BCKDK regulates the TCA cycle through PDC in",
+      "found_in_fulltext": true,
+      "fulltext_offset": 62378
+    },
+    {
+      "block_id": "p14:20",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "30. van Gastel, N. et al. Lipid availability determines fate of skeletal progeni",
+      "found_in_fulltext": true,
+      "fulltext_offset": 62550
+    },
+    {
+      "block_id": "p14:21",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "31. Hu, G. et al. The amino acid sensor Eif2ak4/GCN2 is required for proliferati",
+      "found_in_fulltext": true,
+      "fulltext_offset": 62678
+    },
+    {
+      "block_id": "p14:22",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "32. Devignes, C. S., Carmeliet, G. & Stegen, S. Amino acid metabolism in skeleta",
+      "found_in_fulltext": true,
+      "fulltext_offset": 62838
+    },
+    {
+      "block_id": "p14:23",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "33. Stegen, S. et al. HIF-1α promotes glutamine-mediated redox homeostasis and g",
+      "found_in_fulltext": true,
+      "fulltext_offset": 62956
+    },
+    {
+      "block_id": "p14:24",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "34. Stegen, S. et al. Glutamine metabolism controls chondrocyte identity and fun",
+      "found_in_fulltext": true,
+      "fulltext_offset": 63148
+    },
+    {
+      "block_id": "p14:25",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "35. Yu, Y. et al. Glutamine metabolism regulates proliferation and lineage alloc",
+      "found_in_fulltext": true,
+      "fulltext_offset": 63268
+    },
+    {
+      "block_id": "p14:26",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "36. Solidum, J. G. N., Jeong, Y., Heralde, F. 3rd & Park, D. Differential regula",
+      "found_in_fulltext": true,
+      "fulltext_offset": 63413
+    },
+    {
+      "block_id": "p14:27",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "37. Spencer, J. A. et al. Direct measurement of local oxygen concentration in th",
+      "found_in_fulltext": true,
+      "fulltext_offset": 63603
+    },
+    {
+      "block_id": "p14:28",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "38. Loopmans, S., Stockmans, I., Carmeliet, G. & Stegen, S. Isolation and in vit",
+      "found_in_fulltext": true,
+      "fulltext_offset": 63742
+    },
+    {
+      "block_id": "p14:29",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "39. Stegen, S. et al. Adequate hypoxia inducible factor 1α signaling is indispen",
+      "found_in_fulltext": true,
+      "fulltext_offset": 63934
+    },
+    {
+      "block_id": "p14:30",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "40. Kristensen, H. B., Andersen, T. L., Marcussen, N., Rolighed, L. & Delaisse, ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 64068
+    },
+    {
+      "block_id": "p14:31",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "41. Wei, J. et al. Glucose uptake and Runx2 synergize to orchestrate osteoblast ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 64285
+    },
+    {
+      "block_id": "p14:32",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "42. Li, Z. et al. Glucose transporter-4 facilitates insulin-stimulated glucose u",
+      "found_in_fulltext": true,
+      "fulltext_offset": 64429
+    },
+    {
+      "block_id": "p14:33",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "43. Lee, W. C., Ji, X., Nissim, I. & Long, F. Malic enzyme couples mitochondria ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 64568
+    },
+    {
+      "block_id": "p14:34",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "44. Broeks, M. H., van Karnebeek, C. D. M., Wanders, R. J. A., Jans, J. J. M. & ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 64717
+    },
+    {
+      "block_id": "p14:35",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "45. Chen, C. T., Shih, Y. R., Kuo, T. K., Lee, O. K. & Wei, Y. H. Coordinated ch",
+      "found_in_fulltext": true,
+      "fulltext_offset": 64913
+    },
+    {
+      "block_id": "p14:36",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "46. Kim, S. P. et al. Fatty acid oxidation by the osteoblast is required for nor",
+      "found_in_fulltext": true,
+      "fulltext_offset": 65148
+    },
+    {
+      "block_id": "p14:37",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "47. Bartelt, A. et al. Quantification of bone fatty acid metabolism and its regu",
+      "found_in_fulltext": true,
+      "fulltext_offset": 65316
+    },
+    {
+      "block_id": "p14:38",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "48. Stegen, S. et al. Glutamine metabolism in osteoprogenitors is required for b",
+      "found_in_fulltext": true,
+      "fulltext_offset": 65471
+    },
+    {
+      "block_id": "p14:39",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "49. Sharma, D., Yu, Y., Shen, L., Zhang, G. F. & Karner, C. M. SLC1A5 provides g",
+      "found_in_fulltext": true,
+      "fulltext_offset": 65653
+    },
+    {
+      "block_id": "p14:40",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "50. Hu, G. Glutathione limits RUNX2 oxidation and degradation to regulate bone f",
+      "found_in_fulltext": true,
+      "fulltext_offset": 65822
+    },
+    {
+      "block_id": "p14:41",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "51. Berger, J. M. et al. Mediation of the acute stress response by the skeleton.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 65943
+    },
+    {
+      "block_id": "p14:42",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "52. Shen, L. et al. SLC38A2 provides proline to fulfill unique synthetic demands",
+      "found_in_fulltext": true,
+      "fulltext_offset": 66061
+    },
+    {
+      "block_id": "p14:43",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "53. Shen, L., Yu, Y. & Karner, C. M. SLC38A2 provides proline and alanine to reg",
+      "found_in_fulltext": true,
+      "fulltext_offset": 66229
+    },
+    {
+      "block_id": "p14:44",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "54. Jeon, Y. G., Kim, Y. Y., Lee, G. & Kim, J. B. Physiological and pathological",
+      "found_in_fulltext": true,
+      "fulltext_offset": 66387
+    },
+    {
+      "block_id": "p14:45",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "55. Dickens, F. The citric acid content of animal tissues, with reference to its",
+      "found_in_fulltext": true,
+      "fulltext_offset": 66521
+    },
+    {
+      "block_id": "p14:46",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "56. Hu, Y. Y., Rawal, A. & Schmidt-Rohr, K. Strongly bound citrate stabilizes th",
+      "found_in_fulltext": true,
+      "fulltext_offset": 66667
+    },
+    {
+      "block_id": "p14:47",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "57. Davies, E. et al. Citrate bridges between mineral platelets in bone. Proc. N",
+      "found_in_fulltext": true,
+      "fulltext_offset": 66830
+    },
+    {
+      "block_id": "p14:48",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "58. Pajor, A. M. Sodium-coupled dicarboxylate and citrate transporters from the ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 66954
+    },
+    {
+      "block_id": "p14:49",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "59. Dirckx, N. et al. A specialized metabolic pathway partitions citrate in hydr",
+      "found_in_fulltext": true,
+      "fulltext_offset": 67082
+    },
+    {
+      "block_id": "p14:50",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "60. Cosman, F., Nieves, J. W. & Dempster, D. W. Treatment sequence matters: anab",
+      "found_in_fulltext": true,
+      "fulltext_offset": 67269
+    },
+    {
+      "block_id": "p14:51",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "61. Jilka, R. L. et al. Increased bone formation by prevention of osteoblast apo",
+      "found_in_fulltext": true,
+      "fulltext_offset": 67439
+    },
+    {
+      "block_id": "p14:52",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "62. Kim, S. W. et al. Intermittent parathyroid hormone administration converts q",
+      "found_in_fulltext": true,
+      "fulltext_offset": 67590
+    },
+    {
+      "block_id": "p14:53",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "63. Wu, X. et al. Inhibition of Sca-1-positive skeletal stem cell recruitment by",
+      "found_in_fulltext": true,
+      "fulltext_offset": 67757
+    },
+    {
+      "block_id": "p14:54",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "64. Esen, E., Lee, S. Y., Wice, B. M. & Long, F. PTH promotes bone anabolism by ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 67955
+    },
+    {
+      "block_id": "p14:55",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "65. Alekos, N. S. et al. Mitochondrial $ \\beta $-oxidation of adipose-derived fa",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p14:56",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "66. Maridas, D. E. et al. Progenitor recruitment and adipogenic lipolysis contri",
+      "found_in_fulltext": true,
+      "fulltext_offset": 68311
+    },
+    {
+      "block_id": "p14:57",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "67. Esen, E. et al. WNT-LRP5 signaling induces Warburg effect through mTORC2 act",
+      "found_in_fulltext": true,
+      "fulltext_offset": 68490
+    },
+    {
+      "block_id": "p14:58",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "68. Chen, H. et al. Increased glycolysis mediates Wnt7b-induced bone formation. ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 68645
+    },
+    {
+      "block_id": "p14:59",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "69. Karner, C. M., Esen, E., Okunade, A. L., Patterson, B. W. & Long, F. Increas",
+      "found_in_fulltext": true,
+      "fulltext_offset": 68756
+    },
+    {
+      "block_id": "p14:60",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "70. Frey, J. L. et al. Wnt-Lrp5 signaling regulates fatty acid metabolism in the",
+      "found_in_fulltext": true,
+      "fulltext_offset": 68952
+    },
+    {
+      "block_id": "p14:61",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "71. Frey, J. L., Kim, S. P., Li, Z., Wolfgang, M. J. & Riddle, R. C. Beta-cateni",
+      "found_in_fulltext": true,
+      "fulltext_offset": 69083
+    },
+    {
+      "block_id": "p14:62",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "72. van Gastel, N. & Carmeliet, G. Metabolic regulation of skeletal cell fate an",
+      "found_in_fulltext": true,
+      "fulltext_offset": 69274
+    },
+    {
+      "block_id": "p14:63",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "73. Regan, J. N. et al. Up-regulation of glycolytic metabolism is required for H",
+      "found_in_fulltext": true,
+      "fulltext_offset": 69421
+    },
+    {
+      "block_id": "p14:64",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "74. Dirckx, N. et al. Vhl deletion in osteoblasts boosts cellular glycolysis and",
+      "found_in_fulltext": true,
+      "fulltext_offset": 69578
+    },
+    {
+      "block_id": "p14:65",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "75. Scheller, E. L., Cawthorn, W. P., Burr, A. A., Horowitz, M. C. & MacDougald,",
+      "found_in_fulltext": true,
+      "fulltext_offset": 69735
+    },
+    {
+      "block_id": "p14:66",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "76. Baccin, C. et al. Combined single-cell and spatial transcriptomics reveal th",
+      "found_in_fulltext": true,
+      "fulltext_offset": 69909
+    },
+    {
+      "block_id": "p14:67",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "77. Zhong, L. et al. Single cell transcriptomics identifies a unique adipose lin",
+      "found_in_fulltext": true,
+      "fulltext_offset": 70089
+    },
+    {
+      "block_id": "p14:68",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "78. Hu, Y. et al. RANKL from bone marrow adipose lineage cells promotes osteocla",
+      "found_in_fulltext": true,
+      "fulltext_offset": 70254
+    },
+    {
+      "block_id": "p14:69",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "79. Yu, W. et al. Bone marrow adipogenic lineage precursors promote osteoclastog",
+      "found_in_fulltext": true,
+      "fulltext_offset": 70391
+    },
+    {
+      "block_id": "p14:70",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "80. Zhong, L. et al. Csf1 from marrow adipogenic precursors is required for oste",
+      "found_in_fulltext": true,
+      "fulltext_offset": 70560
+    },
+    {
+      "block_id": "p14:71",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "81. Zhou, B. O. et al. Bone marrow adipocytes promote the regeneration of stem c",
+      "found_in_fulltext": true,
+      "fulltext_offset": 70709
+    },
+    {
+      "block_id": "p14:72",
+      "page": 14,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "82. Tencerova, M. et al. Metabolic programming determines the lineage-differenti",
+      "found_in_fulltext": true,
+      "fulltext_offset": 70867
+    },
+    {
+      "block_id": "p14:73",
+      "page": 14,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Nature Reviews Endocrinology | Volume 20 | July 2024 | 399–413",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p14:74",
+      "page": 14,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "412",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p15:0",
+      "page": 15,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Review article",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p15:1",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "83. Li, Z. et al. Lipolysis of bone marrow adipocytes is required to fuel bone a",
+      "found_in_fulltext": true,
+      "fulltext_offset": 71047
+    },
+    {
+      "block_id": "p15:2",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "84. Suchacki, K. J. et al. Bone marrow adipose tissue is a unique adipose subtyp",
+      "found_in_fulltext": true,
+      "fulltext_offset": 71196
+    },
+    {
+      "block_id": "p15:3",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "85. Scheller, E. L. et al. Bone marrow adipocytes resist lipolysis and remodelin",
+      "found_in_fulltext": true,
+      "fulltext_offset": 71352
+    },
+    {
+      "block_id": "p15:4",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "86. Schipani, E. et al. Hypoxia in cartilage: HIF-1α is essential for chondrocyt",
+      "found_in_fulltext": true,
+      "fulltext_offset": 71505
+    },
+    {
+      "block_id": "p15:5",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "87. Maes, C. et al. VEGF-independent cell-autonomous functions of HIF-1α regulat",
+      "found_in_fulltext": true,
+      "fulltext_offset": 71649
+    },
+    {
+      "block_id": "p15:6",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "88. Yao, Q. et al. Suppressing mitochondrial respiration is critical for hypoxia",
+      "found_in_fulltext": true,
+      "fulltext_offset": 71850
+    },
+    {
+      "block_id": "p15:7",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "89. Stegen, S. et al. HIF-1 $ \\alpha $ metabolically controls collagen synthesis",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p15:8",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "90. Lin, C. et al. Impaired mitochondrial oxidative metabolism in skeletal proge",
+      "found_in_fulltext": true,
+      "fulltext_offset": 72141
+    },
+    {
+      "block_id": "p15:9",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "91. Zhang, F. et al. An extra-erythrocyte role of haemoglobin body in chondrocyt",
+      "found_in_fulltext": true,
+      "fulltext_offset": 72304
+    },
+    {
+      "block_id": "p15:10",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "92. Stegen, S. et al. De novo serine synthesis regulates chondrocyte proliferati",
+      "found_in_fulltext": true,
+      "fulltext_offset": 72434
+    },
+    {
+      "block_id": "p15:11",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "93. Stegen, S., van Gastel, N. & Carmeliet, G. Bringing new life to damaged bone",
+      "found_in_fulltext": true,
+      "fulltext_offset": 72578
+    },
+    {
+      "block_id": "p15:12",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "94. Godman, G. C. & Porter, K. R. Chondrogenesis, studied with the electron micr",
+      "found_in_fulltext": true,
+      "fulltext_offset": 72747
+    },
+    {
+      "block_id": "p15:13",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "95. Pathmanapan, S. et al. Mutant IDH regulates glycogen metabolism from early c",
+      "found_in_fulltext": true,
+      "fulltext_offset": 72882
+    },
+    {
+      "block_id": "p15:14",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "96. Torzilli, P. A., Grande, D. A. & Arduino, J. M. Diffusive properties of imma",
+      "found_in_fulltext": true,
+      "fulltext_offset": 73051
+    },
+    {
+      "block_id": "p15:15",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "97. Prendeville, H. & Lynch, L. Diet, lipids, and antitumor immunity. Cell Mol. ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 73200
+    },
+    {
+      "block_id": "p15:16",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "98. Kikuchi, M. et al. Crucial role of Elovl6 in chondrocyte growth and differen",
+      "found_in_fulltext": true,
+      "fulltext_offset": 73309
+    },
+    {
+      "block_id": "p15:17",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "99. Tsushima, H. et al. Intracellular biosynthesis of lipids and cholesterol by ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 73468
+    },
+    {
+      "block_id": "p15:18",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "100. Park-Min, K. H. et al. Inhibition of osteoclastogenesis and inflammatory bo",
+      "found_in_fulltext": true,
+      "fulltext_offset": 73675
+    },
+    {
+      "block_id": "p15:19",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "101. Ishii, K. A. et al. Coordination of PGC-1 $ \\beta $ and iron uptake in mito",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p15:20",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "102. Bae, S. et al. MYC-dependent oxidative metabolism regulates osteoclastogene",
+      "found_in_fulltext": true,
+      "fulltext_offset": 74006
+    },
+    {
+      "block_id": "p15:21",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "103. Zhang, Y. et al. PGC1β organizes the osteoclast cytoskeleton by mitochondri",
+      "found_in_fulltext": true,
+      "fulltext_offset": 74157
+    },
+    {
+      "block_id": "p15:22",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "104. Jin, Z., Wei, W., Yang, M., Du, Y. & Wan, Y. Mitochondrial complex I activi",
+      "found_in_fulltext": true,
+      "fulltext_offset": 74309
+    },
+    {
+      "block_id": "p15:23",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "105. Kushwaha, P. et al. Mitochondrial fatty acid $ \\beta $-oxidation is importa",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p15:24",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "106. Kim, H. N. et al. Estrogens decrease osteoclast number by attenuating mitoc",
+      "found_in_fulltext": true,
+      "fulltext_offset": 74697
+    },
+    {
+      "block_id": "p15:25",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "107. Nishikawa, K. et al. DNA methyltransferase 3a regulates osteoclast differen",
+      "found_in_fulltext": true,
+      "fulltext_offset": 74890
+    },
+    {
+      "block_id": "p15:26",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "108. Kurotaki, D., Yoshida, H. & Tamura, T. Epigenetic and transcriptional regul",
+      "found_in_fulltext": true,
+      "fulltext_offset": 75076
+    },
+    {
+      "block_id": "p15:27",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "109. Rohatgi, N. et al. BAP1 promotes osteoclast function by metabolic reprogram",
+      "found_in_fulltext": true,
+      "fulltext_offset": 75218
+    },
+    {
+      "block_id": "p15:28",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "110. Li, B. et al. Both aerobic glycolysis and mitochondrial respiration are req",
+      "found_in_fulltext": true,
+      "fulltext_offset": 75334
+    },
+    {
+      "block_id": "p15:29",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "111. Indo, Y. et al. Metabolic regulation of osteoclast differentiation and func",
+      "found_in_fulltext": true,
+      "fulltext_offset": 75485
+    },
+    {
+      "block_id": "p15:30",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "112. Arnett, T. R. & Orriss, I. R. Metabolic properties of the osteoclast. Bone ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 75613
+    },
+    {
+      "block_id": "p15:31",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "113. Stegen, S., Moermans, K., Stockmans, I., Thienpont, B. & Carmeliet, G. The ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 75712
+    },
+    {
+      "block_id": "p15:32",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "114. Ozaki, K. et al. The L-type amino acid transporter LAT1 inhibits osteoclast",
+      "found_in_fulltext": true,
+      "fulltext_offset": 75934
+    },
+    {
+      "block_id": "p15:33",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "115. Go, M. et al. BCAT1 promotes osteoclast maturation by regulating branched-c",
+      "found_in_fulltext": true,
+      "fulltext_offset": 76115
+    },
+    {
+      "block_id": "p15:34",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "116. Pereira, M. et al. A trans-eQTL network regulates osteoclast multinucleatio",
+      "found_in_fulltext": true,
+      "fulltext_offset": 76258
+    },
+    {
+      "block_id": "p15:35",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "117. Brunner, J. S. et al. Environmental arginine controls multinuclear giant ce",
+      "found_in_fulltext": true,
+      "fulltext_offset": 76379
+    },
+    {
+      "block_id": "p15:36",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "118. Cao, S. et al. L-arginine metabolism inhibits arthritis and inflammatory bo",
+      "found_in_fulltext": true,
+      "fulltext_offset": 76517
+    },
+    {
+      "block_id": "p15:37",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "119. Mobasheri, A. et al. The role of metabolism in the pathogenesis of osteoart",
+      "found_in_fulltext": true,
+      "fulltext_offset": 76641
+    },
+    {
+      "block_id": "p15:38",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "120. Zheng, L., Zhang, Z., Sheng, P. & Mobasheri, A. The role of metabolism in c",
+      "found_in_fulltext": true,
+      "fulltext_offset": 76770
+    },
+    {
+      "block_id": "p15:39",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "121. Arra, M. et al. LDHA-mediated ROS generation in chondrocytes is a potential",
+      "found_in_fulltext": true,
+      "fulltext_offset": 76948
+    },
+    {
+      "block_id": "p15:40",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "122. Li, K. et al. Impaired glucose metabolism underlies articular cartilage deg",
+      "found_in_fulltext": true,
+      "fulltext_offset": 77098
+    },
+    {
+      "block_id": "p15:41",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "123. Wang, C. et al. Deletion of Glut1 in early postnatal cartilage reprograms c",
+      "found_in_fulltext": true,
+      "fulltext_offset": 77235
+    },
+    {
+      "block_id": "p15:42",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "124. Choi, W. S. et al. The CH25H-CYP7B1-RORα axis of cholesterol metabolism reg",
+      "found_in_fulltext": true,
+      "fulltext_offset": 77388
+    },
+    {
+      "block_id": "p15:43",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "125. Ratneswaran, A. et al. Peroxisome proliferator-activated receptor δ promote",
+      "found_in_fulltext": true,
+      "fulltext_offset": 77519
+    },
+    {
+      "block_id": "p15:44",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "126. Choi, W. S. et al. Critical role for arginase II in osteoarthritis pathogen",
+      "found_in_fulltext": true,
+      "fulltext_offset": 77708
+    },
+    {
+      "block_id": "p15:45",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "127. Napoli, N. et al. Mechanisms of diabetes mellitus-induced bone fragility. N",
+      "found_in_fulltext": true,
+      "fulltext_offset": 77831
+    },
+    {
+      "block_id": "p15:46",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "128. Yamamoto, M. & Sugimoto, T. Advanced glycation end products, diabetes, and ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 77952
+    },
+    {
+      "block_id": "p15:47",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "129. Ji, X. et al. Genetic activation of glycolysis in osteoblasts preserves bon",
+      "found_in_fulltext": true,
+      "fulltext_offset": 78090
+    },
+    {
+      "block_id": "p15:48",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "130. Song, F. et al. Osteoblast-intrinsic defect in glucose metabolism impairs b",
+      "found_in_fulltext": true,
+      "fulltext_offset": 78239
+    },
+    {
+      "block_id": "p15:49",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "131. Bergers, G. & Fendt, S. M. The metabolism of cancer cells during metastasis",
+      "found_in_fulltext": true,
+      "fulltext_offset": 78389
+    },
+    {
+      "block_id": "p15:50",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "132. Stine, Z. E., Schug, Z. T., Salvino, J. M. & Dang, C. V. Targeting cancer m",
+      "found_in_fulltext": true,
+      "fulltext_offset": 78508
+    },
+    {
+      "block_id": "p15:51",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "133. Makhoul, I., Montgomery, C. O., Gaddy, D. & Suva, L. J. The best of both wo",
+      "found_in_fulltext": true,
+      "fulltext_offset": 78676
+    },
+    {
+      "block_id": "p15:52",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "134. Dupuy, F. et al. PDK1-dependent metabolic reprogramming dictates metastatic",
+      "found_in_fulltext": true,
+      "fulltext_offset": 78841
+    },
+    {
+      "block_id": "p15:53",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "135. Whitburn, J. et al. Metabolic profiling of prostate cancer in skeletal micr",
+      "found_in_fulltext": true,
+      "fulltext_offset": 78982
+    },
+    {
+      "block_id": "p15:54",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "136. Stincone, A. et al. The return of metabolism: biochemistry and physiology o",
+      "found_in_fulltext": true,
+      "fulltext_offset": 79164
+    },
+    {
+      "block_id": "p15:55",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "137. Tirado, H. A., Balasundaram, N., Laauouimir, L., Erdem, A. & van Gastel, N.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 79327
+    },
+    {
+      "block_id": "p15:56",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "138. He, X. et al. Bone marrow niche ATP levels determine leukemia-initiating ce",
+      "found_in_fulltext": true,
+      "fulltext_offset": 79519
+    },
+    {
+      "block_id": "p15:57",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "139. Shafat, M. S. et al. Leukemic blasts program bone marrow adipocytes to gene",
+      "found_in_fulltext": true,
+      "fulltext_offset": 79677
+    },
+    {
+      "block_id": "p15:58",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "140. Vilaplana-Lopera, N. et al. Crosstalk between AML and stromal cells trigger",
+      "found_in_fulltext": true,
+      "fulltext_offset": 79822
+    },
+    {
+      "block_id": "p15:59",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "141. Galan-Diez, M. et al. Subversion of serotonin receptor signaling in osteobl",
+      "found_in_fulltext": true,
+      "fulltext_offset": 80007
+    },
+    {
+      "block_id": "p15:60",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "142. van Gastel, N. et al. Induction of a timed metabolic collapse to overcome c",
+      "found_in_fulltext": true,
+      "fulltext_offset": 80174
+    },
+    {
+      "block_id": "p15:61",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "143. Zhang, W. et al. Stromal control of cystine metabolism promotes cancer cell",
+      "found_in_fulltext": true,
+      "fulltext_offset": 80312
+    },
+    {
+      "block_id": "p15:62",
+      "page": 15,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "144. Panaroni, C. et al. Multiple myeloma cells induce lipolysis in adipocytes a",
+      "found_in_fulltext": true,
+      "fulltext_offset": 80472
+    },
+    {
+      "block_id": "p15:63",
+      "page": 15,
+      "role": "backmatter_heading",
+      "zone": "",
+      "render_default": true,
+      "snippet": "Acknowledgements",
+      "found_in_fulltext": true,
+      "fulltext_offset": 80644
+    },
+    {
+      "block_id": "p15:64",
+      "page": 15,
+      "role": "backmatter_body",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "The authors thank Fonds voor Wetenschappelijk Onderzoek-Flanders for funding: EO",
+      "found_in_fulltext": true,
+      "fulltext_offset": 80663
+    },
+    {
+      "block_id": "p15:65",
+      "page": 15,
+      "role": "backmatter_heading",
+      "zone": "",
+      "render_default": true,
+      "snippet": "Author contributions",
+      "found_in_fulltext": true,
+      "fulltext_offset": 80805
+    },
+    {
+      "block_id": "p15:66",
+      "page": 15,
+      "role": "backmatter_body",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "The authors contributed equally to all aspects of the article.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 80828
+    },
+    {
+      "block_id": "p15:67",
+      "page": 15,
+      "role": "backmatter_heading",
+      "zone": "",
+      "render_default": true,
+      "snippet": "Competing interests",
+      "found_in_fulltext": true,
+      "fulltext_offset": 80893
+    },
+    {
+      "block_id": "p15:68",
+      "page": 15,
+      "role": "backmatter_body",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "The authors declare no competing interests.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 80915
+    },
+    {
+      "block_id": "p15:69",
+      "page": 15,
+      "role": "backmatter_heading",
+      "zone": "",
+      "render_default": true,
+      "snippet": "Additional information",
+      "found_in_fulltext": true,
+      "fulltext_offset": 80961
+    },
+    {
+      "block_id": "p15:70",
+      "page": 15,
+      "role": "backmatter_body",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Peer review information Nature Reviews Endocrinology thanks Martina Rauner, Ryan",
+      "found_in_fulltext": true,
+      "fulltext_offset": 80986
+    },
+    {
+      "block_id": "p15:71",
+      "page": 15,
+      "role": "backmatter_body",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Publisher's note Springer Nature remains neutral with regard to jurisdictional c",
+      "found_in_fulltext": true,
+      "fulltext_offset": 81168
+    },
+    {
+      "block_id": "p15:72",
+      "page": 15,
+      "role": "backmatter_body",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Springer Nature or its licensor (e.g. a society or other partner) holds exclusiv",
+      "found_in_fulltext": true,
+      "fulltext_offset": 81304
+    },
+    {
+      "block_id": "p15:73",
+      "page": 15,
+      "role": "backmatter_body",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "© Springer Nature Limited 2024",
+      "found_in_fulltext": true,
+      "fulltext_offset": 81637
+    },
+    {
+      "block_id": "p15:74",
+      "page": 15,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Nature Reviews Endocrinology | Volume 20 | July 2024 | 399–413",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p15:75",
+      "page": 15,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "413",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    }
+  ]
+}

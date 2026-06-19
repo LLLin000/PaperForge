@@ -1,0 +1,4407 @@
+{
+  "mappable_block_count": 440,
+  "found_count": 290,
+  "missing_count": 150,
+  "rows": [
+    {
+      "block_id": "p1:0",
+      "page": 1,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "REVIEW",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:2",
+      "page": 1,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "ADVANCED HEALTHCARE MATERIALS",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:3",
+      "page": 1,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "www.advhealthmat.de",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:4",
+      "page": 1,
+      "role": "paper_title",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "Extracellular Matrix-Surrogate Advanced Functional Composite Biomaterials for Ti",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2
+    },
+    {
+      "block_id": "p1:5",
+      "page": 1,
+      "role": "unknown_structural",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "Milad Vahidi, Amin S. Rizkalla, and Kibret Mequanint $ ^{*} $",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:7",
+      "page": 1,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "M. Vahidi, A. S. Rizkalla, K. Mequanint Department of Chemical and Biochemical E",
+      "found_in_fulltext": true,
+      "fulltext_offset": 1918
+    },
+    {
+      "block_id": "p1:8",
+      "page": 1,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "1. Introduction",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2210
+    },
+    {
+      "block_id": "p1:9",
+      "page": 1,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Biomaterials, encompassing a wide range of metals, ceramics, polymers, and their",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2226
+    },
+    {
+      "block_id": "p1:11",
+      "page": 1,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "although similar in composition, exhibit distinct porosity and mechanical respon",
+      "found_in_fulltext": true,
+      "fulltext_offset": 3463
+    },
+    {
+      "block_id": "p1:13",
+      "page": 1,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Similarly, articular cartilage showcases a complex organization of collagen fibr",
+      "found_in_fulltext": true,
+      "fulltext_offset": 3745
+    },
+    {
+      "block_id": "p1:14",
+      "page": 1,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "DOI: 10.1002/adhm.202401218",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:15",
+      "page": 1,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Adv. Healthcare Mater. 2024, 13, 2401218",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:16",
+      "page": 1,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "2401218 (1 of 20)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:17",
+      "page": 1,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "© 2024 The Author(s). Advanced Healthcare Materials published by Wiley-VCH GmbH",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:0",
+      "page": 2,
+      "role": "noise",
+      "zone": "frontmatter_side_zone",
+      "render_default": false,
+      "snippet": "ADVANCED SCIENCE NEWS www.advancedsciencenews.com",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:1",
+      "page": 2,
+      "role": "noise",
+      "zone": "frontmatter_side_zone",
+      "render_default": false,
+      "snippet": "ADVANCED HEALTHCARE MATERIALS advhealthmat.de",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:2",
+      "page": 2,
+      "role": "figure_caption_candidate",
+      "zone": "frontmatter_side_zone",
+      "render_default": false,
+      "snippet": "a",
+      "found_in_fulltext": true,
+      "fulltext_offset": 6
+    },
+    {
+      "block_id": "p2:11",
+      "page": 2,
+      "role": "figure_caption_candidate",
+      "zone": "display_zone",
+      "render_default": false,
+      "snippet": "Figure 1. Anisotropic characteristics of natural tissues: a) the wave-like arran",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:12",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "and mechanical attributes of the aforementioned human tissues requires a combina",
+      "found_in_fulltext": true,
+      "fulltext_offset": 4648
+    },
+    {
+      "block_id": "p2:14",
+      "page": 2,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Adv. Healthcare Mater. 2024, 13, 2401218",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:15",
+      "page": 2,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "2401218 (2 of 20)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:16",
+      "page": 2,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "© 2024 The Author(s). Advanced Healthcare Materials published by Wiley-VCH GmbH",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:17",
+      "page": 2,
+      "role": "unknown_structural",
+      "zone": "frontmatter_side_zone",
+      "render_default": false,
+      "snippet": "2022659, 2024, 27, Downloaded from https://advancedonlinelibrary.wiley.com/doi/1",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:0",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ADVANCED SCIENCE NEWS www.advancedsciencenews.com",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:1",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ADVANCED HEALTHCARE MATERIALS advhealthmat.de",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:3",
+      "page": 3,
+      "role": "figure_caption_candidate",
+      "zone": "display_zone",
+      "render_default": false,
+      "snippet": "Figure 2. A rationale for nature-inspired tissue-mimicking biomaterial design st",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:4",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "and durability, coupled with the flexibility of polymers. $ ^{[1]} $ On the othe",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:5",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "This review provides a comprehensive discussion of the advancements across the e",
+      "found_in_fulltext": true,
+      "fulltext_offset": 6162
+    },
+    {
+      "block_id": "p3:6",
+      "page": 3,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "2. Native Tissue-mimicking Composite Biomaterials",
+      "found_in_fulltext": true,
+      "fulltext_offset": 6728
+    },
+    {
+      "block_id": "p3:7",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The quest to emulate the intricate composite nature of biological tissues in reg",
+      "found_in_fulltext": true,
+      "fulltext_offset": 6778
+    },
+    {
+      "block_id": "p3:9",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Composite biomaterials are particularly significant in this context because they",
+      "found_in_fulltext": true,
+      "fulltext_offset": 7540
+    },
+    {
+      "block_id": "p3:10",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In their versatility, composite biomaterials excel at adapting to the varying me",
+      "found_in_fulltext": true,
+      "fulltext_offset": 8925
+    },
+    {
+      "block_id": "p3:11",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Adv. Healthcare Mater. 2024, 13, 2401218",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:12",
+      "page": 3,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "2401218 (3 of 20)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:13",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "© 2024 The Author(s). Advanced Healthcare Materials published by Wiley-VCH GmbH",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:14",
+      "page": 3,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "2022659, 2024, 27, Downloaded from https://advanced.onlinelibrary.wiley.com/doi/",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:0",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ADVANCED SCIENCE NEWS www.advancedsciencenews.com",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:1",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ADVANCED HEALTHCARE MATERIALS advhealthmat.de",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:2",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "www.advhealthmat.de",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:3",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "responses to composite biomaterials also tend to be more favorable, as they usua",
+      "found_in_fulltext": true,
+      "fulltext_offset": 9490
+    },
+    {
+      "block_id": "p4:4",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "From the engineering standpoint, designing and manufacturing composite biomateri",
+      "found_in_fulltext": true,
+      "fulltext_offset": 9713
+    },
+    {
+      "block_id": "p4:5",
+      "page": 4,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "3. Composite biomaterials for bone repair and regeneration",
+      "found_in_fulltext": true,
+      "fulltext_offset": 10259
+    },
+    {
+      "block_id": "p4:5",
+      "page": 4,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "3.1. The materials nexus",
+      "found_in_fulltext": true,
+      "fulltext_offset": 10322
+    },
+    {
+      "block_id": "p4:7",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "As a vascularized composite tissue, bone is subjected to considerable stress, ne",
+      "found_in_fulltext": true,
+      "fulltext_offset": 10347
+    },
+    {
+      "block_id": "p4:8",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The mechanical strength, rigidity, and bonding of composite biomaterial to the n",
+      "found_in_fulltext": true,
+      "fulltext_offset": 11838
+    },
+    {
+      "block_id": "p4:9",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Hydroxyapatite $ [Ca_{10}(PO_{4})_{6}(OH)_{2}] $ is the primary inorganic consti",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:11",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Mg/poly(Lactic acid) (PLA) composites can potentially replace traditional non-de",
+      "found_in_fulltext": true,
+      "fulltext_offset": 14522
+    },
+    {
+      "block_id": "p4:12",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The ease of surgical positioning and robust graft fixation in critical long bone",
+      "found_in_fulltext": true,
+      "fulltext_offset": 16226
+    },
+    {
+      "block_id": "p4:13",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Adv. Healthcare Mater. 2024, 13, 2401218",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:14",
+      "page": 4,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "2401218 (4 of 20)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:15",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "© 2024 The Author(s). Advanced Healthcare Materials published by Wiley-VCH GmbH",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:16",
+      "page": 4,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "21922659, 2024, 27, Downloaded from https://advanced.onlinelibrary.wiley.com/doi",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:0",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ADVANCED SCIENCE NEWS www.advancedsciencenews.com",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:1",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ADVANCED HEALTHCARE MATERIALS advhealthmat.de",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:2",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "www.advhealthmat.de",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:5",
+      "page": 5,
+      "role": "figure_caption_candidate",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "d",
+      "found_in_fulltext": true,
+      "fulltext_offset": 34
+    },
+    {
+      "block_id": "p5:17",
+      "page": 5,
+      "role": "figure_caption_candidate",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Picture",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:20",
+      "page": 5,
+      "role": "figure_caption_candidate",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Masson",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:27",
+      "page": 5,
+      "role": "figure_caption_candidate",
+      "zone": "display_zone",
+      "render_default": false,
+      "snippet": "Figure 3. a) A sequence of images illustrating the process of compressing and th",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:28",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Adv. Healthcare Mater. 2024, 13, 2401218",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:29",
+      "page": 5,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "2401218 (5 of 20)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:30",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "© 2024 The Author(s). Advanced Healthcare Materials published by Wiley-VCH GmbH",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:31",
+      "page": 5,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "21922659, 2024, 27. Downloaded from https://advanced.onlinelibrary.wiley.com/doi",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:0",
+      "page": 6,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ADVANCED SCIENCE NEWS www.advancedsciencenews.com",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:1",
+      "page": 6,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ADVANCED HEALTHCARE MATERIALS",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:2",
+      "page": 6,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "www.advhealthmat.de",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:3",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "tricalcium phosphate, $ [40,41] $ or bioactive glass. $ [20,42] $ While softer a",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:4",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Composite biomaterials designed for non-load-bearing bone defects frequently fou",
+      "found_in_fulltext": true,
+      "fulltext_offset": 17819
+    },
+    {
+      "block_id": "p6:6",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Conversely, cell-free scaffolds depend on tissue-resident cell migration, which ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 21269
+    },
+    {
+      "block_id": "p6:7",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Research revealed that the development of composite hydrogels containing GelMA a",
+      "found_in_fulltext": true,
+      "fulltext_offset": 21664
+    },
+    {
+      "block_id": "p6:8",
+      "page": 6,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "3.2. The signaling nexus",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22792
+    },
+    {
+      "block_id": "p6:9",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In tissue engineering, bioactivity entails the intentional and regulated interac",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22817
+    },
+    {
+      "block_id": "p6:10",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Composite biomaterials could potentially be designed to interact with the variou",
+      "found_in_fulltext": true,
+      "fulltext_offset": 23437
+    },
+    {
+      "block_id": "p6:11",
+      "page": 6,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Adv. Healthcare Mater. 2024, 13, 2401218",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:12",
+      "page": 6,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "2401218 (6 of 20)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:13",
+      "page": 6,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "© 2024 The Author(s). Advanced Healthcare Materials published by Wiley-VCH GmbH",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:14",
+      "page": 6,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "21922659, 2024, 27, Downloaded from https://advanced.onlinelibrary.wiley.com/doi",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:0",
+      "page": 7,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ADVANCED SCIENCE NEWS www.advancedsciencenews.com",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:1",
+      "page": 7,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ADVANCED HEALTHCARE MATERIALS advhealthmat.de",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:2",
+      "page": 7,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "www.advhealthmat.de",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:4",
+      "page": 7,
+      "role": "media_asset",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "<table><tr><td>Clinical need</td><td>Practical application</td><td>Recent advanc",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:5",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "main mechanisms.[56] First, metal ions, especially calcium, influence signaling ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 23754
+    },
+    {
+      "block_id": "p7:6",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Not surprisingly, addressing the multifaceted clinical needs is essential for de",
+      "found_in_fulltext": true,
+      "fulltext_offset": 26176
+    },
+    {
+      "block_id": "p7:8",
+      "page": 7,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "4. Composite biomaterials for articular cartilage repair",
+      "found_in_fulltext": true,
+      "fulltext_offset": 27653
+    },
+    {
+      "block_id": "p7:9",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Osteoarthritis (OA) is a chronic condition impacting millions worldwide, making ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 27710
+    },
+    {
+      "block_id": "p7:10",
+      "page": 7,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Adv. Healthcare Mater. 2024, 13, 2401218",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:11",
+      "page": 7,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "2401218 (7 of 20)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:12",
+      "page": 7,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "© 2024 The Author(s). Advanced Healthcare Materials published by Wiley-VCH GmbH",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:13",
+      "page": 7,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "21922659, 2024, 27. Downloaded from https://advanced.onlinelibrary.wiley.com/doi",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:0",
+      "page": 8,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ADVANCED SCIENCE NEWS www.advancedsciencenews.com",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:1",
+      "page": 8,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ADVANCED HEALTHCARE MATERIALS",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:2",
+      "page": 8,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "www.advhealthmat.de",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:3",
+      "page": 8,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "the potential of biodegradable alternatives. Essentially, piezoelectric material",
+      "found_in_fulltext": true,
+      "fulltext_offset": 28921
+    },
+    {
+      "block_id": "p8:4",
+      "page": 8,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Biodegradable piezoelectric nanofibers like PLLA, used in conjunction with physi",
+      "found_in_fulltext": true,
+      "fulltext_offset": 30124
+    },
+    {
+      "block_id": "p8:5",
+      "page": 8,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Innovatively, injectable hydrogels have drawn much attention in cartilage regene",
+      "found_in_fulltext": true,
+      "fulltext_offset": 32355
+    },
+    {
+      "block_id": "p8:7",
+      "page": 8,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Continuing with the theme of regenerative strategies, the use of viscoelastic hy",
+      "found_in_fulltext": true,
+      "fulltext_offset": 33736
+    },
+    {
+      "block_id": "p8:8",
+      "page": 8,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Administering therapeutics via intra-articular injection proves to be an effecti",
+      "found_in_fulltext": true,
+      "fulltext_offset": 35158
+    },
+    {
+      "block_id": "p8:9",
+      "page": 8,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Adv. Healthcare Mater. 2024, 13, 2401218",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:10",
+      "page": 8,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "2401218 (8 of 20)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:11",
+      "page": 8,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "© 2024 The Author(s). Advanced Healthcare Materials published by Wiley-VCH GmbH",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:12",
+      "page": 8,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "21922659, 2024, 27, Downloaded from https://advanced.onlinelibrary.wiley.com/doi",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:0",
+      "page": 9,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ADVANCED SCIENCE NEWS www.advancedsciencenews.com",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:1",
+      "page": 9,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ADVANCED HEALTHCARE MATERIALS",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:2",
+      "page": 9,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "www.advhealthmat.de",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:3",
+      "page": 9,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "capacity to self-renew hydration layers, thereby minimizing friction and maintai",
+      "found_in_fulltext": true,
+      "fulltext_offset": 36322
+    },
+    {
+      "block_id": "p9:4",
+      "page": 9,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The aging population's increasing pain and disability underscore the need for un",
+      "found_in_fulltext": true,
+      "fulltext_offset": 38373
+    },
+    {
+      "block_id": "p9:5",
+      "page": 9,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "5. Composite biomaterials for cardiac tissue repair",
+      "found_in_fulltext": true,
+      "fulltext_offset": 39982
+    },
+    {
+      "block_id": "p9:6",
+      "page": 9,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The heart muscle is both elastic and strong, capable of constant rhythmic contra",
+      "found_in_fulltext": true,
+      "fulltext_offset": 40034
+    },
+    {
+      "block_id": "p9:7",
+      "page": 9,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Adv. Healthcare Mater. 2024, 13, 2401218",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:8",
+      "page": 9,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "2401218 (9 of 20)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:9",
+      "page": 9,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "© 2024 The Author(s). Advanced Healthcare Materials published by Wiley-VCH GmbH",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:10",
+      "page": 9,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "21922659, 2024, 27, Downloaded from https://advanced.onlinelibrary.wiley.com/doi",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:0",
+      "page": 10,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ADVANCED SCIENCE NEWS www.advancedsciencenews.com",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:1",
+      "page": 10,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ADVANCED HEALTHCARE MATERIALS",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:2",
+      "page": 10,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "www.advhealthmat.de",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:3",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "pathogenesis of early myocardial infarction by addressing the critical issue of ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 43581
+    },
+    {
+      "block_id": "p10:4",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "A stretchable and anisotropic conductive composite hydrogel could be prepared fr",
+      "found_in_fulltext": true,
+      "fulltext_offset": 43715
+    },
+    {
+      "block_id": "p10:5",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In addition to cardiac tissue repair, composite biomaterials have also been used",
+      "found_in_fulltext": true,
+      "fulltext_offset": 46076
+    },
+    {
+      "block_id": "p10:7",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "While considerable progress has been made in cardiac tissue engineering using co",
+      "found_in_fulltext": true,
+      "fulltext_offset": 48275
+    },
+    {
+      "block_id": "p10:8",
+      "page": 10,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "6. Other functional composite biomaterials for tissue mimicry",
+      "found_in_fulltext": true,
+      "fulltext_offset": 48915
+    },
+    {
+      "block_id": "p10:8",
+      "page": 10,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "6.1. Conductive composite 3D scaffolds",
+      "found_in_fulltext": true,
+      "fulltext_offset": 48981
+    },
+    {
+      "block_id": "p10:10",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The primary problem of excitable tissues (e.g., cardiac and nerve tissues) is to",
+      "found_in_fulltext": true,
+      "fulltext_offset": 49020
+    },
+    {
+      "block_id": "p10:11",
+      "page": 10,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Adv. Healthcare Mater. 2024, 13, 2401218",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:12",
+      "page": 10,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "2401218 (10 of 20)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:13",
+      "page": 10,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "© 2024 The Author(s). Advanced Healthcare Materials published by Wiley-VCH GmbH",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:14",
+      "page": 10,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "21922659, 2024, 27, Downloaded from https://advanced.onlinelibrary.wiley.com/doi",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:0",
+      "page": 11,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ADVANCED SCIENCE NEWS www.advancedsciencenews.com",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:1",
+      "page": 11,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ADVANCED HEALTHCARE MATERIALS advhealthmat.de",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:2",
+      "page": 11,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "www.advhealthmat.de",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:5",
+      "page": 11,
+      "role": "figure_caption_candidate",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "d",
+      "found_in_fulltext": true,
+      "fulltext_offset": 34
+    },
+    {
+      "block_id": "p11:16",
+      "page": 11,
+      "role": "figure_caption_candidate",
+      "zone": "display_zone",
+      "render_default": false,
+      "snippet": "Figure 4. Conductive composite scaffolds for neural and cardiac tissue functiona",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:17",
+      "page": 11,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Adv. Healthcare Mater. 2024, 13, 2401218",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:18",
+      "page": 11,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "2401218 (11 of 20)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:19",
+      "page": 11,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "© 2024 The Author(s). Advanced Healthcare Materials published by Wiley-VCH GmbH",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:20",
+      "page": 11,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "21922659, 2024, 27, Downloaded from https://advanced.onlinelibrary.wiley.com/doi",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:0",
+      "page": 12,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ADVANCED SCIENCE NEWS www.advancedsciencenews.com",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:1",
+      "page": 12,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ADVANCED HEALTHCARE MATERIALS advhealthmat.de",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:2",
+      "page": 12,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "www.advhealthmat.de",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:3",
+      "page": 12,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "host tissues, making the hydrogels biomimetic. Furthermore, by selecting suitabl",
+      "found_in_fulltext": true,
+      "fulltext_offset": 50661
+    },
+    {
+      "block_id": "p12:4",
+      "page": 12,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "There are several fabrication strategies for conductive hydrogels for tissue eng",
+      "found_in_fulltext": true,
+      "fulltext_offset": 51101
+    },
+    {
+      "block_id": "p12:5",
+      "page": 12,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Native tissues are responsive to a variety of mechanical stimuli, such as stretc",
+      "found_in_fulltext": true,
+      "fulltext_offset": 52682
+    },
+    {
+      "block_id": "p12:7",
+      "page": 12,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Although hydrogels offer enormous promise for biomedical applications, their imp",
+      "found_in_fulltext": true,
+      "fulltext_offset": 55479
+    },
+    {
+      "block_id": "p12:8",
+      "page": 12,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The rationale behind design strategies for electroconductive porous composite sc",
+      "found_in_fulltext": true,
+      "fulltext_offset": 56457
+    },
+    {
+      "block_id": "p12:9",
+      "page": 12,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "compression (right).[95] i) Transplantation of the composite onto a pig's heart.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 57294
+    },
+    {
+      "block_id": "p12:10",
+      "page": 12,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Adv. Healthcare Mater. 2024, 13, 2401218",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:11",
+      "page": 12,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "2401218 (12 of 20)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:12",
+      "page": 12,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "© 2024 The Author(s). Advanced Healthcare Materials published by Wiley-VCH GmbH",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:13",
+      "page": 12,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "21922659, 2024, 27, Downloaded from https://advanced.onlinelibrary.wiley.com/doi",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p13:0",
+      "page": 13,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ADVANCED SCIENCE NEWS www.advancedsciencenews.com",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p13:1",
+      "page": 13,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ADVANCED HEALTHCARE MATERIALS advhealthmat.de",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p13:2",
+      "page": 13,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "www.advhealthmat.de",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p13:3",
+      "page": 13,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "It is acknowledged that porous scaffolds featuring interconnected pores can stim",
+      "found_in_fulltext": true,
+      "fulltext_offset": 57861
+    },
+    {
+      "block_id": "p13:4",
+      "page": 13,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "6.2. Conductive composite 2D films",
+      "found_in_fulltext": true,
+      "fulltext_offset": 59803
+    },
+    {
+      "block_id": "p13:5",
+      "page": 13,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Conductive composite films are made of conductive particles embedded in a polyme",
+      "found_in_fulltext": true,
+      "fulltext_offset": 59838
+    },
+    {
+      "block_id": "p13:7",
+      "page": 13,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Composite films made of graphene oxide (GO) and either polypyrrole (PPy-GO) or P",
+      "found_in_fulltext": true,
+      "fulltext_offset": 61457
+    },
+    {
+      "block_id": "p13:8",
+      "page": 13,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Adding ceramic to polymers can have both positive and negative effects on their ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 62764
+    },
+    {
+      "block_id": "p13:9",
+      "page": 13,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Conductive polymers and organic/inorganic composites may be molded into various ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 63862
+    },
+    {
+      "block_id": "p13:10",
+      "page": 13,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Adv. Healthcare Mater. 2024, 13, 2401218",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p13:11",
+      "page": 13,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "2401218 (13 of 20)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p13:12",
+      "page": 13,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "© 2024 The Author(s). Advanced Healthcare Materials published by Wiley-VCH GmbH",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p13:13",
+      "page": 13,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "21922659, 2024, 27. Downloaded from https://advanced.onlinelibrary.wiley.com/doi",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p14:0",
+      "page": 14,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "ADVANCED SCIENCE NEWS www.advancedsciencenews.com",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p14:1",
+      "page": 14,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "ADVANCED HEALTHCARE MATERIALS advhealthmat.de",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p14:2",
+      "page": 14,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "www.advhealthmat.de",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p14:3",
+      "page": 14,
+      "role": "body_paragraph",
+      "zone": "",
+      "render_default": true,
+      "snippet": "been investigated.[168] To address the issue of IR- and thermal radiation-shield",
+      "found_in_fulltext": true,
+      "fulltext_offset": 64941
+    },
+    {
+      "block_id": "p14:4",
+      "page": 14,
+      "role": "body_paragraph",
+      "zone": "",
+      "render_default": true,
+      "snippet": "The functioning of various organs and systems is dependent on the nervous system",
+      "found_in_fulltext": true,
+      "fulltext_offset": 65587
+    },
+    {
+      "block_id": "p14:5",
+      "page": 14,
+      "role": "subsection_heading",
+      "zone": "",
+      "render_default": true,
+      "snippet": "6.3. Magnetic and composite biomaterials",
+      "found_in_fulltext": true,
+      "fulltext_offset": 66835
+    },
+    {
+      "block_id": "p14:6",
+      "page": 14,
+      "role": "body_paragraph",
+      "zone": "",
+      "render_default": true,
+      "snippet": "Magnetic nanoparticles (MNPs) are one of the most significant categories of nano",
+      "found_in_fulltext": true,
+      "fulltext_offset": 66876
+    },
+    {
+      "block_id": "p14:7",
+      "page": 14,
+      "role": "body_paragraph",
+      "zone": "",
+      "render_default": true,
+      "snippet": "As an alternative to electric fields and acoustic waves, cardiac tissue engineer",
+      "found_in_fulltext": true,
+      "fulltext_offset": 67854
+    },
+    {
+      "block_id": "p14:9",
+      "page": 14,
+      "role": "body_paragraph",
+      "zone": "",
+      "render_default": true,
+      "snippet": "Neural tissue, which is responsible for the transmission of nerve impulses withi",
+      "found_in_fulltext": true,
+      "fulltext_offset": 70082
+    },
+    {
+      "block_id": "p14:10",
+      "page": 14,
+      "role": "section_heading",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "7. Composite biomaterials for therapeutic drug delivery",
+      "found_in_fulltext": true,
+      "fulltext_offset": 71565
+    },
+    {
+      "block_id": "p14:11",
+      "page": 14,
+      "role": "body_paragraph",
+      "zone": "",
+      "render_default": true,
+      "snippet": "Composite biomaterials possess key features, including tunability, improved perf",
+      "found_in_fulltext": true,
+      "fulltext_offset": 71621
+    },
+    {
+      "block_id": "p14:12",
+      "page": 14,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Adv. Healthcare Mater. 2024, 13, 2401218",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p14:13",
+      "page": 14,
+      "role": "noise",
+      "zone": "reference_zone",
+      "render_default": false,
+      "snippet": "2401218 (14 of 20)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p14:14",
+      "page": 14,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "© 2024 The Author(s). Advanced Healthcare Materials published by Wiley-VCH GmbH",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p14:15",
+      "page": 14,
+      "role": "unknown_structural",
+      "zone": "",
+      "render_default": false,
+      "snippet": "21922659, 2024, 27. Downloaded from https://advanced.onlinelibrary.wiley.com/doi",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p15:0",
+      "page": 15,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "ADVANCED SCIENCE NEWS www.advancedsciencenews.com",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p15:1",
+      "page": 15,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "ADVANCED HEALTHCARE MATERIALS advhealthmat.de",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p15:2",
+      "page": 15,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "www.advhealthmat.de",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p15:3",
+      "page": 15,
+      "role": "body_paragraph",
+      "zone": "",
+      "render_default": true,
+      "snippet": "composite biomaterials in drug delivery and tissue engineering is becoming incre",
+      "found_in_fulltext": true,
+      "fulltext_offset": 71890
+    },
+    {
+      "block_id": "p15:4",
+      "page": 15,
+      "role": "body_paragraph",
+      "zone": "",
+      "render_default": true,
+      "snippet": "To enhance the bioactivity of the drug, several factors need to be considered, i",
+      "found_in_fulltext": true,
+      "fulltext_offset": 72584
+    },
+    {
+      "block_id": "p15:6",
+      "page": 15,
+      "role": "body_paragraph",
+      "zone": "",
+      "render_default": true,
+      "snippet": "Moving forward, hybrid drug delivery systems that combine two or more drug deliv",
+      "found_in_fulltext": true,
+      "fulltext_offset": 76438
+    },
+    {
+      "block_id": "p15:7",
+      "page": 15,
+      "role": "section_heading",
+      "zone": "",
+      "render_default": true,
+      "snippet": "8. Conclusions and Future Directions",
+      "found_in_fulltext": true,
+      "fulltext_offset": 78706
+    },
+    {
+      "block_id": "p15:8",
+      "page": 15,
+      "role": "body_paragraph",
+      "zone": "",
+      "render_default": true,
+      "snippet": "The field of composite biomaterials is continuously evolving, and researchers ar",
+      "found_in_fulltext": true,
+      "fulltext_offset": 78743
+    },
+    {
+      "block_id": "p15:9",
+      "page": 15,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Adv. Healthcare Mater. 2024, 13, 2401218",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p15:10",
+      "page": 15,
+      "role": "noise",
+      "zone": "reference_zone",
+      "render_default": false,
+      "snippet": "2401218 (15 of 20)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p15:11",
+      "page": 15,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "© 2024 The Author(s). Advanced Healthcare Materials published by Wiley-VCH GmbH",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p15:12",
+      "page": 15,
+      "role": "unknown_structural",
+      "zone": "",
+      "render_default": false,
+      "snippet": "21922659, 2024, 27, Downloaded from https://advanced.onlinelibrary.wiley.com/doi",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p16:0",
+      "page": 16,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "ADVANCED SCIENCE NEWS www.advancedsciencenews.com",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p16:1",
+      "page": 16,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "ADVANCED HEALTHCARE MATERIALS advhealthmat.de",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p16:2",
+      "page": 16,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "www.advhealthmat.de",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p16:3",
+      "page": 16,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "to the widespread clinical application of these exciting materials. Despite sign",
+      "found_in_fulltext": true,
+      "fulltext_offset": 79282
+    },
+    {
+      "block_id": "p16:4",
+      "page": 16,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "I) Personalized composite biomaterials. Advancements in personalized medicine wi",
+      "found_in_fulltext": true,
+      "fulltext_offset": 79752
+    },
+    {
+      "block_id": "p16:5",
+      "page": 16,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "III) Luminescent composite biomaterials. The future of tissue repair and regener",
+      "found_in_fulltext": true,
+      "fulltext_offset": 80662
+    },
+    {
+      "block_id": "p16:6",
+      "page": 16,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "II) Bioresorbable electronics. Exploring composite biomaterials for the developm",
+      "found_in_fulltext": true,
+      "fulltext_offset": 80253
+    },
+    {
+      "block_id": "p16:7",
+      "page": 16,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "IV) Integration of smart materials and sensors. The incorporation of smart mater",
+      "found_in_fulltext": true,
+      "fulltext_offset": 81085
+    },
+    {
+      "block_id": "p16:8",
+      "page": 16,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "V) Multifunctional composite systems. The future will see the development of com",
+      "found_in_fulltext": true,
+      "fulltext_offset": 81507
+    },
+    {
+      "block_id": "p16:9",
+      "page": 16,
+      "role": "sub_subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Keywords",
+      "found_in_fulltext": true,
+      "fulltext_offset": 82179
+    },
+    {
+      "block_id": "p16:10",
+      "page": 16,
+      "role": "backmatter_body",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "The authors declare no conflict of interest.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 82129
+    },
+    {
+      "block_id": "p16:11",
+      "page": 16,
+      "role": "backmatter_body",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "bone tissue, cardiac tissue, cartilage tissue, composite biomaterials, electrica",
+      "found_in_fulltext": true,
+      "fulltext_offset": 82188
+    },
+    {
+      "block_id": "p16:12",
+      "page": 16,
+      "role": "backmatter_body",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Revised: June 13, 2024",
+      "found_in_fulltext": true,
+      "fulltext_offset": 82319
+    },
+    {
+      "block_id": "p16:14",
+      "page": 16,
+      "role": "unknown_structural",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Conflict of Interest",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p16:16",
+      "page": 16,
+      "role": "backmatter_heading",
+      "zone": "",
+      "render_default": true,
+      "snippet": "Acknowledgements",
+      "found_in_fulltext": true,
+      "fulltext_offset": 81985
+    },
+    {
+      "block_id": "p16:17",
+      "page": 16,
+      "role": "backmatter_body",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "This research was funded by the Natural Sciences and Engineering Research Counci",
+      "found_in_fulltext": true,
+      "fulltext_offset": 82004
+    },
+    {
+      "block_id": "p16:18",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[1] A. Skorulska, P. Piszko, Z. Rybak, M. Szymonowicz, M. Dobrzyński, Materials ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 82342
+    },
+    {
+      "block_id": "p16:19",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[2] S. Agarwala, G. L. Goh, G. D. Goh, V. Dikshit, W. Y. Yeong, 3D and 4D Printi",
+      "found_in_fulltext": true,
+      "fulltext_offset": 82438
+    },
+    {
+      "block_id": "p16:20",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[3] C. Ma, T. Du, X. Niu, Y. Fan, Bone Res. 2022, 10, https://doi.org/10.1038/s4",
+      "found_in_fulltext": true,
+      "fulltext_offset": 82617
+    },
+    {
+      "block_id": "p16:21",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[4] M. J. Olszta, X. Cheng, S. S. Jee, R. Kumar, Y.-Y. Kim, M. J. Kaufman, E. P.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 82715
+    },
+    {
+      "block_id": "p16:22",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[5] E. F. Morgan, G. U. Unnikrisnan, A. I. Hussein, Annu. Rev. Biomed. Eng. 2018",
+      "found_in_fulltext": true,
+      "fulltext_offset": 82860
+    },
+    {
+      "block_id": "p16:23",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[6] A. M. Bhosale, J. B. Richardson, Br. Med. Bull. 2008, 77, 87.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 82946
+    },
+    {
+      "block_id": "p16:24",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[7] J. Eschweiler, N. Horn, B. Rath, M. Betsch, A. Baroncini, M. Tingart, F. Mig",
+      "found_in_fulltext": true,
+      "fulltext_offset": 83012
+    },
+    {
+      "block_id": "p16:25",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[8] A. R. Poole, T. Kojima, T. Yasuda, F. Mwale, M. Kobayashi, S. Laverty, Clin.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 83121
+    },
+    {
+      "block_id": "p16:26",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[9] O. Bas, E. M. De-Juan-Pardo, C. Meinert, D. D'Angella, J. G. Baldwin, L. J. ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 83278
+    },
+    {
+      "block_id": "p16:27",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[10] G. S. Kassab, J. R. Soc., Interface 2006, 719, 3.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 83493
+    },
+    {
+      "block_id": "p16:28",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[11] A. J. Cocciolone, J. Z. Hawes, M. C. Staiculescu, E. O. Johnson, M. Murshed",
+      "found_in_fulltext": true,
+      "fulltext_offset": 83548
+    },
+    {
+      "block_id": "p16:29",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[12] T. Matsumoto, S. Sugita, T. Yaguchi, \"Biomechanics of Blood Vessels: Struct",
+      "found_in_fulltext": true,
+      "fulltext_offset": 83735
+    },
+    {
+      "block_id": "p16:30",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[13] C. M. B. Ho, A. Mishra, P. T. P. Lin, S. H. Ng, W. Y. Yeong, Y.-J. Kim, Y.-",
+      "found_in_fulltext": true,
+      "fulltext_offset": 83899
+    },
+    {
+      "block_id": "p16:31",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[14] R. Xie, H. Yao, A. S. Mao, Y. Zhu, D. Qi, Y. Jia, M. Gao, Y. Chen, L. Wang,",
+      "found_in_fulltext": true,
+      "fulltext_offset": 84052
+    },
+    {
+      "block_id": "p16:32",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[15] P. Ma, W. Wu, Y. Wei, L. Ren, S. Lin, J. Wu, Mater. Des. 2021, 207, 109865.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 84211
+    },
+    {
+      "block_id": "p16:33",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[16] Y. Fang, T. Zhang, L. Zhang, W. Gong, W. Sun, Biofabrication 2019, 11, 0350",
+      "found_in_fulltext": true,
+      "fulltext_offset": 84292
+    },
+    {
+      "block_id": "p16:34",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[17] Y. Li, L. Huang, G. Tai, F. Yan, L. Cai, C. Xin, S. Al Islam, Compos Part A",
+      "found_in_fulltext": true,
+      "fulltext_offset": 84376
+    },
+    {
+      "block_id": "p16:35",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[18] L. Benedini, J. Laiuppa, G. Santillán, M. Baldini, P. Messina, Mater. Sci. ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 84494
+    },
+    {
+      "block_id": "p16:36",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[19] A. Shapira, R. Feiner, T. Dvir, Int. Mater. Rev. 2016, 61, 1.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 84601
+    },
+    {
+      "block_id": "p16:37",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[20] G. Turnbull, J. Clarke, F. Picard, P. Riches, L. Jia, F. Han, B. Li, W. Shu",
+      "found_in_fulltext": true,
+      "fulltext_offset": 84668
+    },
+    {
+      "block_id": "p16:38",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[21] E. Kon, F. Salamanna, G. Filardo, B. Di Matteo, N. Shabshin, J. Shani, M. F",
+      "found_in_fulltext": true,
+      "fulltext_offset": 84779
+    },
+    {
+      "block_id": "p16:39",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[22] J. A. Nicholson, N. Makaram, A. H. R. W. Simpson, J. F. Keating, Injury 202",
+      "found_in_fulltext": true,
+      "fulltext_offset": 84973
+    },
+    {
+      "block_id": "p16:40",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[23] Sci. Transl. Med. 2016, 8.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 85064
+    },
+    {
+      "block_id": "p16:41",
+      "page": 16,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[24] N. Egge, S. L. B. Arneaud, R. S. Fonseca, K. R. Zuurbier, J. McClendon, P. ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 85096
+    },
+    {
+      "block_id": "p16:42",
+      "page": 16,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Adv. Healthcare Mater. 2024, 13, 2401218",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p16:43",
+      "page": 16,
+      "role": "noise",
+      "zone": "reference_zone",
+      "render_default": false,
+      "snippet": "2401218 (16 of 20)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p16:44",
+      "page": 16,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "© 2024 The Author(s). Advanced Healthcare Materials published by Wiley-VCH GmbH",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p16:45",
+      "page": 16,
+      "role": "unknown_structural",
+      "zone": "",
+      "render_default": false,
+      "snippet": "2022659, 2024, 27, Downloaded from https://advancedonlinelibrary.wiley.com/doi/1",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p17:0",
+      "page": 17,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "ADVANCED SCIENCE NEWS www.advancedsciencenews.co",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p17:1",
+      "page": 17,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "ADVANCED HEALTHCARE MATERIALS",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p17:2",
+      "page": 17,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "www.advhealthmat.de",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p17:3",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[25] Z. Wang, L. P. Nogueira, H. J. Haugen, I. C. Van Der Geest, P. C. de Almeid",
+      "found_in_fulltext": true,
+      "fulltext_offset": 85228
+    },
+    {
+      "block_id": "p17:4",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[26] K. Zhang, Y. Zhou, C. Xiao, W. Zhao, H. Wu, J. Tang, Z. Li, S. Yu, X. Li, L",
+      "found_in_fulltext": true,
+      "fulltext_offset": 85423
+    },
+    {
+      "block_id": "p17:5",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[27] Y. Zhang, N. Sun, M. Zhu, Q. Qiu, P. Zhao, C. Zheng, Q. Bai, Q. Zeng, T. Lu",
+      "found_in_fulltext": true,
+      "fulltext_offset": 85598
+    },
+    {
+      "block_id": "p17:6",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[28] J. Wieding, T. Lindner, P. Bergschmidt, R. Bader, Biomaterials 2015, 46, 35",
+      "found_in_fulltext": true,
+      "fulltext_offset": 85714
+    },
+    {
+      "block_id": "p17:7",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[29] F. A. Shah, A. Snis, A. Matic, P. Thomsen, A. Palmquist, Acta Biomater. 201",
+      "found_in_fulltext": true,
+      "fulltext_offset": 85796
+    },
+    {
+      "block_id": "p17:8",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[30] J. S. Yerramshetty, O. Akkus, Bone 2008, 42, 476.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 85888
+    },
+    {
+      "block_id": "p17:9",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[31] A. Bhattacharjee, S. Bose, Mater. Des. 2022, 221, 110903.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 85943
+    },
+    {
+      "block_id": "p17:10",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[32] Z. Hussain, I. Ullah, X. Liu, W. Shen, P. Ding, Y. Zhang, T. Gao, M. Mansoo",
+      "found_in_fulltext": true,
+      "fulltext_offset": 86006
+    },
+    {
+      "block_id": "p17:11",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[33] Y. Liu, Z. Qiao, J. Gao, F. Wu, B. Sun, M. Lian, J. Qian, Y. Su, X. Zhu, B.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 86144
+    },
+    {
+      "block_id": "p17:12",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[34] Y. Wang, J. Wang, H. Hao, M. Cai, S. Wang, J. Ma, Y. Li, C. Mao, S. Zhang, ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 86263
+    },
+    {
+      "block_id": "p17:13",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[35] W. Ali, A. Mehboob, M. G. Han, S. H. Chang, Compos. Part A Appl. Sci. Manuf",
+      "found_in_fulltext": true,
+      "fulltext_offset": 86368
+    },
+    {
+      "block_id": "p17:14",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[36] H. Lee, D. Y. Shin, Y. Na, G. Han, J. Kim, N. Kim, S.-J. Bang, H. S. Kang, ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 86469
+    },
+    {
+      "block_id": "p17:15",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[37] H. Lee, D. Y. Shin, S.-J. Bang, G. Han, Y. Na, H. S. Kang, S. Oh, C.-B. Yoo",
+      "found_in_fulltext": true,
+      "fulltext_offset": 86646
+    },
+    {
+      "block_id": "p17:16",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[38] W. Wang, B. Zhang, M. Li, J. Li, C. Zhang, Y. Han, L. Wang, K. Wang, C. Zho",
+      "found_in_fulltext": true,
+      "fulltext_offset": 86839
+    },
+    {
+      "block_id": "p17:17",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[39] H. Zhou, J. Lee, Acta Biomater. 2011, 7, 2769.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 86986
+    },
+    {
+      "block_id": "p17:18",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[40] A. J. Wagoner Johnson, B. A. Herschler, Acta Biomater. 2011, 7, 16.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 87038
+    },
+    {
+      "block_id": "p17:19",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[41] S. Bose, S. Tarafder, Acta Biomater. 2012, 8, 1401.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 87111
+    },
+    {
+      "block_id": "p17:20",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[42] A. Hoppe, N. S. Güldal, A. R. Boccaccini, Biomaterials 2011, 32, 2757.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 87168
+    },
+    {
+      "block_id": "p17:21",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[43] D. Ke, J. Yu, P. Liu, C. Niu, X. Yang, Materialia (Oxf) 2022, 21, 101339.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 87244
+    },
+    {
+      "block_id": "p17:22",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[44] S. Bougioukli, A. Jain, O. Sugiyama, B. A. Tinsley, A. H. Tang, M. H. Tan, ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 87323
+    },
+    {
+      "block_id": "p17:23",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[45] B. Zhang, J. D. Skelly, J. R. Maalouf, D. C. Ayers, J. Song, Sci. Transl. M",
+      "found_in_fulltext": true,
+      "fulltext_offset": 87468
+    },
+    {
+      "block_id": "p17:24",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[46] F. Senatov, A. Zimina, A. Chubrik, E. Kolesnikov, E. Permyakova, A. Voronin",
+      "found_in_fulltext": true,
+      "fulltext_offset": 87562
+    },
+    {
+      "block_id": "p17:25",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[47] J. Li, C. Wang, G. Gao, X. Yin, X. Pu, B. Shi, Y. Liu, Z. Huang, J. Wang, J",
+      "found_in_fulltext": true,
+      "fulltext_offset": 87831
+    },
+    {
+      "block_id": "p17:26",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[48] L. Yang, X. Li, Y. Wu, P. Du, L. Sun, Z. Yu, S. Song, J. Yin, X. Ma, C. Jin",
+      "found_in_fulltext": true,
+      "fulltext_offset": 87954
+    },
+    {
+      "block_id": "p17:27",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[49] L. Yang, X. Li, D. Wang, S. Mu, W. Lv, Y. Hao, X. Lu, G. Zhang, W. Nan, H. ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 88116
+    },
+    {
+      "block_id": "p17:28",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[50] J. Liu, G. Chen, H. Xu, K. Hu, J. Sun, M. Liu, F. Zhang, N. Gu, NPG Asia Ma",
+      "found_in_fulltext": true,
+      "fulltext_offset": 88293
+    },
+    {
+      "block_id": "p17:29",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[51] Y. Gong, Y. Zhang, Z. Cao, F. Ye, Z. Lin, Y. Li, Biomater. Sci. 2019, 7, 36",
+      "found_in_fulltext": true,
+      "fulltext_offset": 88393
+    },
+    {
+      "block_id": "p17:30",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[52] W. L. Grayson, B. A. Bunnell, E. Martin, T. Frazier, B. P. Hung, J. M. Gimb",
+      "found_in_fulltext": true,
+      "fulltext_offset": 88477
+    },
+    {
+      "block_id": "p17:31",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[53] B. D. Smith, D. A. Grande, Nat Rev Rheumatol 2015, 11, 213.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 88598
+    },
+    {
+      "block_id": "p17:32",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[54] S. Bersini, M. Gilardi, C. Arrigoni, G. Talò, M. Zamai, L. Zagra, V. Caiolf",
+      "found_in_fulltext": true,
+      "fulltext_offset": 88663
+    },
+    {
+      "block_id": "p17:33",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[55] Z. Wu, J. Bai, G. Ge, T. Wang, S. Feng, Q. Ma, X. Liang, W. Li, W. Zhang, Y",
+      "found_in_fulltext": true,
+      "fulltext_offset": 88786
+    },
+    {
+      "block_id": "p17:34",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[56] D. F. Williams, Bioact. Mater. 2022, 10, 306.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 88974
+    },
+    {
+      "block_id": "p17:35",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[57] X. Cui, Y. Zhang, J. Wang, C. Huang, Y. Wang, H. Yang, W. Liu, T. Wang, D. ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 89025
+    },
+    {
+      "block_id": "p17:36",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[58] B. Yuan, L. Wang, R. Zhao, X. Yang, X. Yang, X. Zhu, L. Liu, K. Zhang, Y. S",
+      "found_in_fulltext": true,
+      "fulltext_offset": 89210
+    },
+    {
+      "block_id": "p17:37",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[59] Y. Xia, Y. Guo, Z. Yang, H. Chen, K. Ren, M. D. Weir, L. C. Chow, M. A. Rey",
+      "found_in_fulltext": true,
+      "fulltext_offset": 89361
+    },
+    {
+      "block_id": "p17:38",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[60] W. Liu, D. Chen, G. Jiang, Q. Li, Q. Wang, M. Cheng, G. He, X. Zhang, Nanom",
+      "found_in_fulltext": true,
+      "fulltext_offset": 89517
+    },
+    {
+      "block_id": "p17:39",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[61] H. Wu, S. Yang, J. Xiao, Z. Ouyang, M. Yang, M. Zhang, D. Zhao, Q. Huang, M",
+      "found_in_fulltext": true,
+      "fulltext_offset": 89620
+    },
+    {
+      "block_id": "p17:40",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[62] S. Rler, C. Heinemann, B. Kruppke, A. S. Wagner, S. Wenisch, H. P. Wiesmann",
+      "found_in_fulltext": true,
+      "fulltext_offset": 89738
+    },
+    {
+      "block_id": "p17:41",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[63] T. Song, J. Yang, P. Liu, M. Liu, D. Li, Y. Xiao, Y. Wang, X. Zhang, Compos",
+      "found_in_fulltext": true,
+      "fulltext_offset": 89865
+    },
+    {
+      "block_id": "p17:42",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[64] B. Ferrigno, R. Bordett, N. Duraisamy, J. Moskow, M. R. Arul, S. Rudraiah, ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 89977
+    },
+    {
+      "block_id": "p17:43",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[65] A. Nain, S. Chakraborty, S. R. Barman, P. Gavit, S. Indrakumar, A. Agrawal,",
+      "found_in_fulltext": true,
+      "fulltext_offset": 90131
+    },
+    {
+      "block_id": "p17:44",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[66] Y. Liu, G. Dzidotor, T. T. Le, T. Vinikoor, K. Morgan, E. J. Curry, R. Das,",
+      "found_in_fulltext": true,
+      "fulltext_offset": 90262
+    },
+    {
+      "block_id": "p17:45",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[67] B. P. Antunes, M. L. Vainieri, M. Alini, E. Monsonego-Ornan, S. Grad, A. Ya",
+      "found_in_fulltext": true,
+      "fulltext_offset": 90543
+    },
+    {
+      "block_id": "p17:46",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[68] G. Zhen, Q. Guo, Y. Li, C. Wu, S. Zhu, R. Wang, X. E. Guo, B. C. Kim, J. Hu",
+      "found_in_fulltext": true,
+      "fulltext_offset": 90659
+    },
+    {
+      "block_id": "p17:47",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[69] J. Liu, C. Tang, J. Huang, J. Gu, J. Yin, G. Xu, S. Yan, Adv. Healthcare Ma",
+      "found_in_fulltext": true,
+      "fulltext_offset": 90852
+    },
+    {
+      "block_id": "p17:48",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[70] Y. Wang, X. Huang, X. Zhang, Nat. Commun. 2021, https://doi.org/10.1038/s41",
+      "found_in_fulltext": true,
+      "fulltext_offset": 90983
+    },
+    {
+      "block_id": "p17:49",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[71] W. J. C. M. Marijnissen, et al., Biomaterials 2002, https://doi.org/10.1016",
+      "found_in_fulltext": true,
+      "fulltext_offset": 91080
+    },
+    {
+      "block_id": "p17:50",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[72] G. A. Ameer, T. A. Mahmood, R. Langer, J. Orthop. Res. 2002, https://doi.or",
+      "found_in_fulltext": true,
+      "fulltext_offset": 91184
+    },
+    {
+      "block_id": "p17:51",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[73] S. J. Hollister, Nat. Mater. 2005, 4, 518.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 91297
+    },
+    {
+      "block_id": "p17:52",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[74] F. T. Moutos, L. E. Freed, F. Guilak, Nat. Mater. 2007, 6, 162.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 91345
+    },
+    {
+      "block_id": "p17:53",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[75] D. Wang, H. Xu, J. Liu, Z. Chen, Y. Li, B. Hu, D. Zhang, J. Li, H. Chu, Com",
+      "found_in_fulltext": true,
+      "fulltext_offset": 91414
+    },
+    {
+      "block_id": "p17:54",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[76] X. Yu, Z. Deng, H. Li, Y. Ma, X. Ma, Q. Zheng, RSC Adv. 2022, 12, 28254.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 91529
+    },
+    {
+      "block_id": "p17:55",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[77] G. Li, S. Liu, Y. Chen, J. Zhao, H. Xu, J. Weng, F. Yu, A. Xiong, A. Uddutt",
+      "found_in_fulltext": true,
+      "fulltext_offset": 91607
+    },
+    {
+      "block_id": "p17:56",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[78] Y. Lei, Y. Wang, J. Shen, Z. Cai, C. Zhao, H. Chen, X. Luo, N. Hu, W. Cui, ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 91754
+    },
+    {
+      "block_id": "p17:57",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[79] H. Rogan, F. Ilagan, X. Tong, C. R. Chu, F. Yang, Biomaterials 2020, 228, 1",
+      "found_in_fulltext": true,
+      "fulltext_offset": 91900
+    },
+    {
+      "block_id": "p17:58",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[80] Y. Sun, Y. You, W. Jiang, B. Wang, Q. Wu, K. Dai, Sci. Adv. 2020, https://d",
+      "found_in_fulltext": true,
+      "fulltext_offset": 91987
+    },
+    {
+      "block_id": "p17:59",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[81] L. Zheng, S. Zhao, Y. Li, J. Xu, W. Yan, B. Guo, J. Xu, L. Jiang, Y. Zhang,",
+      "found_in_fulltext": true,
+      "fulltext_offset": 92098
+    },
+    {
+      "block_id": "p17:60",
+      "page": 17,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[82] S. E. Catheline, et al., Sci. Signaling 2022, 15.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 92253
+    },
+    {
+      "block_id": "p17:61",
+      "page": 17,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Adv. Healthcare Mater. 2024, 13, 2401218",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p17:62",
+      "page": 17,
+      "role": "noise",
+      "zone": "reference_zone",
+      "render_default": false,
+      "snippet": "2401218 (17 of 20)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p17:63",
+      "page": 17,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "© 2024 The Author(s). Advanced Healthcare Materials published by Wiley-VCH GmbH",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p17:64",
+      "page": 17,
+      "role": "unknown_structural",
+      "zone": "",
+      "render_default": false,
+      "snippet": "21922659, 2024, 27, Downloaded from https://advancedonlinelibrary.wiley.com/doi/",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p18:0",
+      "page": 18,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "ADVANCED SCIENCE NEWS www.advancedsciencenews.com",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p18:1",
+      "page": 18,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "ADVANCED HEALTHCARE MATERIALS",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p18:2",
+      "page": 18,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "www.advhealthmat.de",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p18:3",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[83] Y. Deng, J. Lu, W. Li, A. Wu, X. Zhang, W. Tong, K. K. Ho, L. Qin, H. Song,",
+      "found_in_fulltext": true,
+      "fulltext_offset": 92325
+    },
+    {
+      "block_id": "p18:4",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[84] H. Iijima, G. Gilmer, K. Wang, A. C. Bean, Y. He, H. Lin, W.-Y. Tang, D. La",
+      "found_in_fulltext": true,
+      "fulltext_offset": 92480
+    },
+    {
+      "block_id": "p18:5",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[85] S. H. Chang, D. Mori, H. Kobayashi, Y. Mori, H. Nakamoto, K. Okada, Y. Tani",
+      "found_in_fulltext": true,
+      "fulltext_offset": 92678
+    },
+    {
+      "block_id": "p18:6",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[86] J. H. Tsui, A. Leonard, N. D. Camp, J. T. Long, Z. Y. Nawas, R. Chavanachat",
+      "found_in_fulltext": true,
+      "fulltext_offset": 92954
+    },
+    {
+      "block_id": "p18:7",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[87] S. R. Shin, C. Zihlmann, M. Akbari, P. Assawes, L. Cheung, K. Zhang, V. Man",
+      "found_in_fulltext": true,
+      "fulltext_offset": 93173
+    },
+    {
+      "block_id": "p18:8",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[88] A. E. Almada, A. J. Wagers, Nat. Rev. Mol. Cell Biol. 2016, 17, 267.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 93383
+    },
+    {
+      "block_id": "p18:9",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[89] R. Alonaizan, C. Carr, Biochem. Soc. Trans. 2022, 50, 269.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 93457
+    },
+    {
+      "block_id": "p18:10",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[90] M. Mao, H. Liang, J. He, A. Kasimu, Y. Zhang, L. Wang, X. Li, D. Li, Int. J",
+      "found_in_fulltext": true,
+      "fulltext_offset": 93521
+    },
+    {
+      "block_id": "p18:11",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[91] W. Zhu, X. Qu, J. Zhu, X. Ma, S. Patel, J. Liu, P. Wang, C. S. E. Lai, M. G",
+      "found_in_fulltext": true,
+      "fulltext_offset": 93627
+    },
+    {
+      "block_id": "p18:12",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[92] G. Basara, M. Saeidi-Javash, X. Ren, G. Bahcecioglu, B. C. Wyatt, B. Anasor",
+      "found_in_fulltext": true,
+      "fulltext_offset": 93766
+    },
+    {
+      "block_id": "p18:13",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[93] Z. Zheng, C. Lei, H. Liu, M. Jiang, Z. Zhou, Y. Zhao, C.-Y. Yu, H. Wei, Adv",
+      "found_in_fulltext": true,
+      "fulltext_offset": 93904
+    },
+    {
+      "block_id": "p18:14",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[94] C. Wang, Y. Chai, X. Wen, Y. Ai, H. Zhao, W. Hu, X. Yang, M.-Y. Ding, X. Sh",
+      "found_in_fulltext": true,
+      "fulltext_offset": 94050
+    },
+    {
+      "block_id": "p18:15",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[95] L. Wang, Y. Liu, G. Ye, Y. He, B. Li, Y. Guan, B. Gong, K. Mequanint, M. M.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 94183
+    },
+    {
+      "block_id": "p18:16",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[96] Y. He, Q. Li, P. Chen, Q. Duan, J. Zhan, X. Cai, L. Wang, H. Hou, X. Qiu, N",
+      "found_in_fulltext": true,
+      "fulltext_offset": 94316
+    },
+    {
+      "block_id": "p18:17",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[97] S. Chen, J. Qi, S. Fan, Z. Qiao, J. C. Yeo, C. T. Lim, Adv. Healthcare Mate",
+      "found_in_fulltext": true,
+      "fulltext_offset": 94458
+    },
+    {
+      "block_id": "p18:18",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[98] C. Huang, X. Wang, Q. Cao, D. Zhang, S. Ding, H. Xie, J.-Z. Jiang, ACS Appl",
+      "found_in_fulltext": true,
+      "fulltext_offset": 94587
+    },
+    {
+      "block_id": "p18:19",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[99] A. Bodys-Pełka, M. Kusztal, M. Boszko, R. Główczyńska, M. Grabowski, J. Cli",
+      "found_in_fulltext": true,
+      "fulltext_offset": 94704
+    },
+    {
+      "block_id": "p18:20",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[100] A. Kamišalić, I. Fister, M. Turkanović, S. Karakatič, Sensors (Switzerland",
+      "found_in_fulltext": true,
+      "fulltext_offset": 94804
+    },
+    {
+      "block_id": "p18:21",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[101] M. Elgendi, Curr. Cardiol. Rev. 2012, 8, 14.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 94902
+    },
+    {
+      "block_id": "p18:22",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[102] H. Hu, H. Huang, M. Li, X. Gao, L. Yin, R. Qi, R. S. Wu, X. Chen, Y. Ma, K",
+      "found_in_fulltext": true,
+      "fulltext_offset": 94953
+    },
+    {
+      "block_id": "p18:23",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[103] S. Choi, S. I. Han, D. Jung, H. J. Hwang, C. Lim, S. Bae, O. K. Park, C. M",
+      "found_in_fulltext": true,
+      "fulltext_offset": 95247
+    },
+    {
+      "block_id": "p18:24",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[104] B. Seelbinder, S. Ghosh, S. E. Schneider, A. K. Scott, A. G. Berman, C. J.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 95491
+    },
+    {
+      "block_id": "p18:25",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[105] R. Feiner, L. Engel, S. Fleischer, M. Malki, I. Gal, A. Shapira, Y. Shacha",
+      "found_in_fulltext": true,
+      "fulltext_offset": 95706
+    },
+    {
+      "block_id": "p18:26",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[106] M. Shi, R. Dong, J. Hu, B. Guo, Chem. Eng. J. 2023, 457, 141110.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 95833
+    },
+    {
+      "block_id": "p18:27",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[107] M. H. Salehi, H. Golbaten-Mofrad, S. H. Jafari, V. Goodarzi, M. Entezari, ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 95904
+    },
+    {
+      "block_id": "p18:28",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[108] S. Noh, H. Y. Gong, H. J. Lee, W. G. Koh, \"Electrically conductive micropa",
+      "found_in_fulltext": true,
+      "fulltext_offset": 96049
+    },
+    {
+      "block_id": "p18:29",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[109] B. Massoumi, M. Hatamzadeh, N. Firouzi, M. Jaymand, Mater. Sci. Eng., C 20",
+      "found_in_fulltext": true,
+      "fulltext_offset": 96245
+    },
+    {
+      "block_id": "p18:30",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[110] D. Su, J. Zhou, K. S. Ahmed, Q. Ma, G. Lv, J. Chen, Int. J. Biol. Macromol",
+      "found_in_fulltext": true,
+      "fulltext_offset": 96338
+    },
+    {
+      "block_id": "p18:31",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[111] G. Zhao, H. Qing, G. Huang, G. M. Genin, T. J. Lu, Z. Luo, F. Xu, X. Zhang",
+      "found_in_fulltext": true,
+      "fulltext_offset": 96436
+    },
+    {
+      "block_id": "p18:32",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[112] Y. Li, J. Wang, Y. Yang, J. Shi, H. Zhang, X. Yao, W. Chen, X. Zhang, Mate",
+      "found_in_fulltext": true,
+      "fulltext_offset": 96549
+    },
+    {
+      "block_id": "p18:33",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[113] C. Zhang, J. Wang, R. Chi, J. Shi, Y. Yang, X. Zhang, Mater. Des. 2019, 18",
+      "found_in_fulltext": true,
+      "fulltext_offset": 96664
+    },
+    {
+      "block_id": "p18:34",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[114] A. Serafin, C. Murphy, M. C. Rubio, M. N. Collins, Mater. Sci. Eng., C 202",
+      "found_in_fulltext": true,
+      "fulltext_offset": 96755
+    },
+    {
+      "block_id": "p18:35",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[115] Y. Zhou, C. Wan, Y. Yang, H. Yang, S. Wang, Z. Dai, K. Ji, H. Jiang, X. Ch",
+      "found_in_fulltext": true,
+      "fulltext_offset": 96851
+    },
+    {
+      "block_id": "p18:36",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[116] P. Deng, F. Chen, H. Zhang, Y. Chen, J. Zhou, Adv. Healthcare Mater. 2022,",
+      "found_in_fulltext": true,
+      "fulltext_offset": 97009
+    },
+    {
+      "block_id": "p18:37",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[117] M. Dong, B. Shi, D. Liu, J.-H. Liu, D. Zhao, Z.-H. Yu, X.-Q. Shen, J.-M. G",
+      "found_in_fulltext": true,
+      "fulltext_offset": 97130
+    },
+    {
+      "block_id": "p18:38",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[118] L. Sang, Y. Liu, W. Hua, K. Xu, G. Wang, W. Zhong, L. Wang, S. Xu, M. M. Q",
+      "found_in_fulltext": true,
+      "fulltext_offset": 97294
+    },
+    {
+      "block_id": "p18:39",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[119] L. Zhou, L. Fan, X. Yi, Z. Zhou, C. Liu, R. Fu, C. Dai, Z. Wang, X. Chen, ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 97415
+    },
+    {
+      "block_id": "p18:40",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[120] E. A. Kiyotake, E. E. Thomas, H. B. Homburg, C. K. Milton, A. D. Smitherma",
+      "found_in_fulltext": true,
+      "fulltext_offset": 97563
+    },
+    {
+      "block_id": "p18:41",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[121] K. Zhang, J. Li, J. Jin, J. Dong, L. Li, B. Xue, W. Wang, Q. Jiang, Y. Cao",
+      "found_in_fulltext": true,
+      "fulltext_offset": 97762
+    },
+    {
+      "block_id": "p18:42",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[122] B. Yang, C. Liang, D. Chen, F. Cheng, Y. Zhang, S. Wang, J. Shu, X. Huang,",
+      "found_in_fulltext": true,
+      "fulltext_offset": 97875
+    },
+    {
+      "block_id": "p18:43",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[123] C. Xu, Y. Chang, P. Wu, K. Liu, X. Dong, A. Nie, C. Mu, Z. Liu, H. Dai, Z.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 98063
+    },
+    {
+      "block_id": "p18:44",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[124] Y. Luo, L. Fan, C. Liu, H. Wen, S. Wang, P. Guan, D. Chen, C. Ning, L. Zho",
+      "found_in_fulltext": true,
+      "fulltext_offset": 98214
+    },
+    {
+      "block_id": "p18:45",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[125] H. Liu, M. Li, C. Ouyang, T. J. Lu, F. Li, F. Xu, Small 2018, https://doi.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 98333
+    },
+    {
+      "block_id": "p18:46",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[126] Q. Zhang, X. Liu, L. Duan, G. Gao, Chem. Eng. J. 2019, 365, 10.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 98441
+    },
+    {
+      "block_id": "p18:47",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[127] Q. Wang, X. Pan, C. Lin, D. Lin, Y. Ni, L. Chen, L. Huang, S. Cao, X. Ma, ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 98511
+    },
+    {
+      "block_id": "p18:48",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[128] M. Sasaki, B. C. Karikkineth, K. Nagamine, H. Kaji, K. Torimitsu, M. Nishi",
+      "found_in_fulltext": true,
+      "fulltext_offset": 98622
+    },
+    {
+      "block_id": "p18:49",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[129] Y. Ye, Y. Zhang, Y. Chen, X. Han, F. Jiang, Adv. Funct. Mater. 2020, https",
+      "found_in_fulltext": true,
+      "fulltext_offset": 98746
+    },
+    {
+      "block_id": "p18:50",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[130] J. Chen, Q. Peng, T. Thundat, H. Zeng, Chem. Mater. 2019, 31, 4553.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 98861
+    },
+    {
+      "block_id": "p18:51",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[131] L. Han, L. Yan, M. Wang, K. Wang, L. Fang, J. Zhou, J. Fang, F. Ren, X. Lu",
+      "found_in_fulltext": true,
+      "fulltext_offset": 98935
+    },
+    {
+      "block_id": "p18:52",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[132] Z. Deng, T. Hu, Q. Lei, J. He, P. X. Ma, B. Guo, ACS Appl. Mater. Interfac",
+      "found_in_fulltext": true,
+      "fulltext_offset": 99046
+    },
+    {
+      "block_id": "p18:53",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[133] G. Ge, Y. Zhang, J. Shao, W. Wang, W. Si, W. Huang, X. Dong, Adv. Funct. M",
+      "found_in_fulltext": true,
+      "fulltext_offset": 99145
+    },
+    {
+      "block_id": "p18:54",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[134] Y. J. Liu, W. T. Cao, M. G. Ma, P. Wan, ACS Appl. Mater. Interfaces 2017, ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 99277
+    },
+    {
+      "block_id": "p18:55",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[135] Y. Zhou, C. Wan, Y. Yang, H. Yang, S. Wang, Z. Dai, K. Ji, H. Jiang, X. Ch",
+      "found_in_fulltext": true,
+      "fulltext_offset": 99367
+    },
+    {
+      "block_id": "p18:56",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[136] C. Shao, M. Wang, L. Meng, H. Chang, B. Wang, F. Xu, J. Yang, P. Wan, Chem",
+      "found_in_fulltext": true,
+      "fulltext_offset": 99525
+    },
+    {
+      "block_id": "p18:57",
+      "page": 18,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Adv. Healthcare Mater. 2024, 13, 2401218",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p18:58",
+      "page": 18,
+      "role": "noise",
+      "zone": "reference_zone",
+      "render_default": false,
+      "snippet": "2401218 (18 of 20)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p18:59",
+      "page": 18,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "© 2024 The Author(s). Advanced Healthcare Materials published by Wiley-VCH GmbH",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p18:60",
+      "page": 18,
+      "role": "unknown_structural",
+      "zone": "",
+      "render_default": false,
+      "snippet": "21922659, 2024, 27, Downloaded from https://advancedonlinelibrary.wiley.com/doi/",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p19:0",
+      "page": 19,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "ADVANCED SCIENCE NEWS www.advancedsciencenews.com",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p19:1",
+      "page": 19,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "ADVANCED HEALTHCARE MATERIALS",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p19:2",
+      "page": 19,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "www.advhealthmat.de",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p19:3",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[137] G. Cai, J. Wang, K. Qian, J. Chen, S. Li, P. S. Lee, Adv. Sci. 2017, https",
+      "found_in_fulltext": true,
+      "fulltext_offset": 99647
+    },
+    {
+      "block_id": "p19:4",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[138] Y. Zhou, C. Wan, Y. Yang, H. Yang, S. Wang, Z. Dai, K. Ji, H. Jiang, X. Ch",
+      "found_in_fulltext": true,
+      "fulltext_offset": 99762
+    },
+    {
+      "block_id": "p19:5",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[139] Z. Wang, H. Zhou, J. Lai, B. Yan, H. Liu, X. Jin, A. Ma, G. Zhang, W. Zhao",
+      "found_in_fulltext": true,
+      "fulltext_offset": 99920
+    },
+    {
+      "block_id": "p19:6",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[140] X. Jin, H. Jiang, G. Li, B. Fu, X. Bao, Z. Wang, Q. Hu, Chem. Eng. J. 2020",
+      "found_in_fulltext": true,
+      "fulltext_offset": 100051
+    },
+    {
+      "block_id": "p19:7",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[141] C. Zheng, Y. Yue, L. Gan, X. Xu, C. Mei, J. Han, Nanomaterials 2019, 9, 93",
+      "found_in_fulltext": true,
+      "fulltext_offset": 100146
+    },
+    {
+      "block_id": "p19:8",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[142] C. Zheng, K. Lu, Y. Lu, S. Zhu, Y. Yue, X. Xu, C. Mei, H. Xiao, Q. Wu, J. ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 100229
+    },
+    {
+      "block_id": "p19:9",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[143] Y. Chen, K. Lu, Y. Song, J. Han, Y. Yue, S. K. Biswas, Q. Wu, H. Xiao, Nan",
+      "found_in_fulltext": true,
+      "fulltext_offset": 100351
+    },
+    {
+      "block_id": "p19:10",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[144] H. Huang, L. Han, J. Li, X. Fu, Y. Wang, Z. Yang, X. Xu, L. Pan, M. Xu, J.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 100457
+    },
+    {
+      "block_id": "p19:11",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[145] Y. Zhao, B. Zhang, B. Yao, Y. Qiu, Z. Peng, Y. Zhang, Y. Alsaid, I. Frenke",
+      "found_in_fulltext": true,
+      "fulltext_offset": 100576
+    },
+    {
+      "block_id": "p19:12",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[146] T. Distler, C. Polley, F. Shi, D. Schneidereit, M. D. Ashton, O. Friedrich",
+      "found_in_fulltext": true,
+      "fulltext_offset": 100708
+    },
+    {
+      "block_id": "p19:13",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[147] M. Kashi, F. Baghbani, F. Moztarzadeh, H. Mobasheri, E. Kowsari, Int. J. B",
+      "found_in_fulltext": true,
+      "fulltext_offset": 100923
+    },
+    {
+      "block_id": "p19:14",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[148] S. Liang, Y. Zhang, H. Wang, Z. Xu, J. Chen, R. Bao, B. Tan, Y. Cui, G. Fa",
+      "found_in_fulltext": true,
+      "fulltext_offset": 101035
+    },
+    {
+      "block_id": "p19:15",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[149] B. Guo, J. Qu, X. Zhao, M. Zhang, Acta Biomater. 2019, 84, 180.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 101202
+    },
+    {
+      "block_id": "p19:16",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[150] J. Lee, V. Manoharan, L. Cheung, S. Lee, B.-H. Cha, P. Newman, R. Farzad, ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 101272
+    },
+    {
+      "block_id": "p19:17",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[151] B. Maharjan, D. Kumar, G. P. Awasthi, D. P. Bhattarai, J. Y. Kim, C. H. Pa",
+      "found_in_fulltext": true,
+      "fulltext_offset": 101561
+    },
+    {
+      "block_id": "p19:18",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[152] T. Wu, C. Cui, Y. Huang, Y. Liu, C. Fan, X. Han, Y. Yang, Z. Xu, B. Liu, G",
+      "found_in_fulltext": true,
+      "fulltext_offset": 101694
+    },
+    {
+      "block_id": "p19:19",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[153] J. Chen, X. Han, J. Deng, J. Zhang, L. Li, J. Ni, Y. Huang, X. Xie, S. Che",
+      "found_in_fulltext": true,
+      "fulltext_offset": 101833
+    },
+    {
+      "block_id": "p19:20",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[154] L. Han, X. Lu, M. Wang, D. Gan, W. Deng, K. Wang, L. Fang, K. Liu, C. W. C",
+      "found_in_fulltext": true,
+      "fulltext_offset": 101981
+    },
+    {
+      "block_id": "p19:21",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[155] I. K. Han, K.-I. I. Song, S.-M. Jung, Y. Jo, J. Kwon, T. Chung, S. Yoo, J.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 102148
+    },
+    {
+      "block_id": "p19:22",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[156] M. Taale, F. Schütt, K. Zheng, Y. K. Mishra, A. R. Boccaccini, R. Adelung,",
+      "found_in_fulltext": true,
+      "fulltext_offset": 102328
+    },
+    {
+      "block_id": "p19:23",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[157] A. M. Martins, G. Eng, S. G. Caridade, J. F. Mano, R. L. Reis, G. Vunjak-N",
+      "found_in_fulltext": true,
+      "fulltext_offset": 102473
+    },
+    {
+      "block_id": "p19:24",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[158] A. Magaz, X. Li, J. E. Gough, J. J. Blaker, Mater. Sci. Eng., C 2021, 119,",
+      "found_in_fulltext": true,
+      "fulltext_offset": 102596
+    },
+    {
+      "block_id": "p19:25",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[159] J. S. Choi, J. S. Park, B. Kim, B. T. Lee, J. H. Yim, Polymer (Guildf) 201",
+      "found_in_fulltext": true,
+      "fulltext_offset": 102685
+    },
+    {
+      "block_id": "p19:26",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[160] J. Li, W. Fang, T. Hao, D. Dong, B. Yang, F. Yao, C. Wang, Composites, Par",
+      "found_in_fulltext": true,
+      "fulltext_offset": 102777
+    },
+    {
+      "block_id": "p19:27",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[161] I. Rajzer, M. Rom, E. Menaszek, P. Pasierb, Mater. Lett. 2015, 138, 60.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 102880
+    },
+    {
+      "block_id": "p19:28",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[162] S. Wang, S. Guan, J. Wang, H. Liu, T. Liu, X. Ma, Z. Cui, J. Biosci. Bioen",
+      "found_in_fulltext": true,
+      "fulltext_offset": 102958
+    },
+    {
+      "block_id": "p19:29",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[163] S. Khan, M. Ul-Islam, M. W. Ullah, Y. Kim, J. K. Park, Cellulose 2015, 22,",
+      "found_in_fulltext": true,
+      "fulltext_offset": 103057
+    },
+    {
+      "block_id": "p19:30",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[164] D. Naskar, P. Bhattacharjee, A. K. Ghosh, M. Mandal, S. C. Kundu, ACS Appl",
+      "found_in_fulltext": true,
+      "fulltext_offset": 103144
+    },
+    {
+      "block_id": "p19:31",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[165] N. Maráková, Z. A. Boeva, P. Humpolcek, T. Lindfors, J. Pachernik, V. Kasp",
+      "found_in_fulltext": true,
+      "fulltext_offset": 103260
+    },
+    {
+      "block_id": "p19:32",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[166] R. Kouser, A. Vashist, M. Zafaryab, M. A. Rizvi, S. Ahmad, Mater. Sci. Eng",
+      "found_in_fulltext": true,
+      "fulltext_offset": 103444
+    },
+    {
+      "block_id": "p19:33",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[167] M. Affi, M. K. Ahmed, A. M. Fathi, V. Uskoković, Int. J. Pharm. 2020, 585,",
+      "found_in_fulltext": true,
+      "fulltext_offset": 103544
+    },
+    {
+      "block_id": "p19:34",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[168] S.-M. Jeong, J. Ahn, Y. K. Choi, T. Lim, K. Seo, T. Hong, G. H. Choi, H. K",
+      "found_in_fulltext": true,
+      "fulltext_offset": 103633
+    },
+    {
+      "block_id": "p19:35",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[169] J. Park, S. Choi, A. H. Janardhan, S.-Y. Lee, S. Raut, J. Soares, K. Shin,",
+      "found_in_fulltext": true,
+      "fulltext_offset": 103812
+    },
+    {
+      "block_id": "p19:36",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[170] Z. Zhang, Y. Wang, Z. Chen, D. Xu, D. Zhang, F. Wang, Y. Zhao, J. Nanobiot",
+      "found_in_fulltext": true,
+      "fulltext_offset": 104139
+    },
+    {
+      "block_id": "p19:37",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[171] D. O. Adewole, M. D. Serruya, J. A. Wolf, D. K. Cullen, Front. Neurosci. 2",
+      "found_in_fulltext": true,
+      "fulltext_offset": 104279
+    },
+    {
+      "block_id": "p19:38",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[172] F. Lotti, F. Ranieri, G. Vadalà, L. Zollo, G. Di Pino, Front. Neurosci. 20",
+      "found_in_fulltext": true,
+      "fulltext_offset": 104406
+    },
+    {
+      "block_id": "p19:39",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[173] J. Maughan, P. J. Gouveia, J. G. Gonzalez, L. M. Leahy, I. Woods, C. O'Con",
+      "found_in_fulltext": true,
+      "fulltext_offset": 104532
+    },
+    {
+      "block_id": "p19:40",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[174] A. Pardo, M. Gómez-Florit, S. Barbosa, P. Taboada, R. M. A. Domingues, M. ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 104782
+    },
+    {
+      "block_id": "p19:41",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[175] Y. Li, G. Huang, X. Zhang, B. Li, Y. Chen, T. Lu, T. J. Lu, F. Xu, Adv. Fu",
+      "found_in_fulltext": true,
+      "fulltext_offset": 104896
+    },
+    {
+      "block_id": "p19:42",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[176] R. Tognato, A. R. Armiento, V. Bonfrate, R. Levato, J. Malda, M. Alini, D.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 105003
+    },
+    {
+      "block_id": "p19:43",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[177] L. Zwi-Dantsis, B. Wang, C. Marijon, S. Zonetti, A. Ferrini, L. Massi, D. ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 105179
+    },
+    {
+      "block_id": "p19:44",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[178] S. Liu, X. Chen, L. Bao, T. Liu, P. Yuan, X. Yang, X. Qiu, J. J. Gooding, ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 105363
+    },
+    {
+      "block_id": "p19:45",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[179] H.-F. Liang, Y.-P. Zou, A.-N. Hu, B. Wang, J. Li, L. Huang, W.-S. Chen, D.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 105508
+    },
+    {
+      "block_id": "p19:46",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[180] W. J. Tyler, Nat. Rev. Neurosci. 2012, 13, 867.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 105725
+    },
+    {
+      "block_id": "p19:47",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[181] A. Tay, A. Sohrabi, K. Poole, S. Seidlits, D. Di Carlo, Adv. Mater. 2018, ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 105779
+    },
+    {
+      "block_id": "p19:48",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[182] M. Janmohammadi, Z. Nazemi, A. O. M. Salehi, A. Seyfoori, J. V. John, M. S",
+      "found_in_fulltext": true,
+      "fulltext_offset": 105899
+    },
+    {
+      "block_id": "p19:49",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[183] N. Sarkar, S. Bose, ACS Appl. Mater. Interfaces 2019, 11, 17184.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 106029
+    },
+    {
+      "block_id": "p19:50",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[184] S. Noreen, S. Hasan, S. A. Ghumman, S. Anwar, H. Y. Gondal, F. Batool, S. ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 106100
+    },
+    {
+      "block_id": "p19:51",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[185] M. M. Yahoum, S. Toumi, H. Tahraoui, S. Lefnaoui, M. Kebir, A. Amrane, A. ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 106214
+    },
+    {
+      "block_id": "p19:52",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[186] M. Liu, J. Zhang, X. Zhu, W. Shan, L. Li, J. Zhong, Z. Zhang, Y. Huang, J.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 106361
+    },
+    {
+      "block_id": "p19:53",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[187] K. Liang, R. Ricco, C. M. Doherty, M. J. Styles, S. Bell, N. Kirby, S. Mud",
+      "found_in_fulltext": true,
+      "fulltext_offset": 106476
+    },
+    {
+      "block_id": "p19:54",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[188] X. Mo, D. Zhang, K. Liu, X. Zhao, X. Li, W. Wang, Int. J. Mol. Sci. 2023, ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 106637
+    },
+    {
+      "block_id": "p19:55",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[189] K. Hasanbegloo, S. Banihashem, B. Faraji Dizaji, S. Bybordi, N. Farrokh-Es",
+      "found_in_fulltext": true,
+      "fulltext_offset": 106727
+    },
+    {
+      "block_id": "p19:56",
+      "page": 19,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Adv. Healthcare Mater. 2024, 13, 2401218",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p19:57",
+      "page": 19,
+      "role": "noise",
+      "zone": "reference_zone",
+      "render_default": false,
+      "snippet": "2401218 (19 of 20)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p19:58",
+      "page": 19,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "© 2024 The Author(s). Advanced Healthcare Materials published by Wiley-VCH GmbH",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p19:59",
+      "page": 19,
+      "role": "unknown_structural",
+      "zone": "",
+      "render_default": false,
+      "snippet": "2022659, 2024, 27, Downloaded from https://advancedonlinelibrary.wiley.com/doi/1",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p20:0",
+      "page": 20,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "ADVANCED SCIENCE NEWS www.advancedsciencenews.com",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p20:1",
+      "page": 20,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "ADVANCED HEALTHCARE MATERIALS",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p20:2",
+      "page": 20,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "www.advhealthmat.de",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p20:3",
+      "page": 20,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[190] C. Huang, G. Yang, S. Zhou, E. Luo, J. Pan, C. Bao, X. Liu, ACS Biomater. ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 108966
+    },
+    {
+      "block_id": "p20:4",
+      "page": 20,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[191] C. Tipa, M. T. Cidade, T. Vieira, J. C. Silva, P. I. P. Soares, J. P. Borg",
+      "found_in_fulltext": true,
+      "fulltext_offset": 109071
+    },
+    {
+      "block_id": "p20:5",
+      "page": 20,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[192] Y. Qu, B. Chu, K. Shi, X. Wei, P. Yang, M. Chen, M. Tang, S. Li, F. Wang, ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 109183
+    },
+    {
+      "block_id": "p20:6",
+      "page": 20,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[193] N. Aslankoohi, K. Mequanint, ACS Appl. Bio. Mater. 2020, 3, 3621.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 109332
+    },
+    {
+      "block_id": "p20:7",
+      "page": 20,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[194] X. He, Y. Ding, S. Duan, S. Luo, J. Song, C. Peng, Y. Tan, Q. Zeng, Y. Liu",
+      "found_in_fulltext": true,
+      "fulltext_offset": 109404
+    },
+    {
+      "block_id": "p20:8",
+      "page": 20,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[195] M. Feng, G. Jiang, Y. Sun, U. E. Aharodnikau, K. E. Yunusov, T. Liu, Z. Ze",
+      "found_in_fulltext": true,
+      "fulltext_offset": 109526
+    },
+    {
+      "block_id": "p20:9",
+      "page": 20,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[196] G. Jiang, B. Xu, J. Zhu, Y. Zhang, T. Liu, G. Song, Biomed. Phys. Eng. Exp",
+      "found_in_fulltext": true,
+      "fulltext_offset": 109668
+    },
+    {
+      "block_id": "p20:10",
+      "page": 20,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[197] M. Gou, X. Qu, W. Zhu, M. Xiang, J. Yang, K. Zhang, Y. Wei, S. Chen, Nat. ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 109770
+    },
+    {
+      "block_id": "p20:11",
+      "page": 20,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[198] B. Xiao, E. Viennois, Q. Chen, L. Wang, M. K. Han, Y. Zhang, Z. Zhang, Y. ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 109900
+    },
+    {
+      "block_id": "p20:12",
+      "page": 20,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[199] Y. Zhang, J. Zhang, M. Chen, H. Gong, S. Thamphiwatana, L. Eckmann, W. Gao",
+      "found_in_fulltext": true,
+      "fulltext_offset": 110030
+    },
+    {
+      "block_id": "p20:13",
+      "page": 20,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[200] Y. guang Bi, Z. Ting Lin, S. Ting Deng, Mater. Sci. Eng., C 2019, 100, 576",
+      "found_in_fulltext": true,
+      "fulltext_offset": 110166
+    },
+    {
+      "block_id": "p20:14",
+      "page": 20,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[201] Z. Wang, Y. Wang, J. Yan, K. Zhang, F. Lin, L. Xiang, L. Deng, Z. Guan, W.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 110248
+    },
+    {
+      "block_id": "p20:16",
+      "page": 20,
+      "role": "footnote",
+      "zone": "",
+      "render_default": true,
+      "snippet": "Milad Vahidi is a PhD candidate in the Department of Chemical and Biochemical En",
+      "found_in_fulltext": true,
+      "fulltext_offset": 106913
+    },
+    {
+      "block_id": "p20:18",
+      "page": 20,
+      "role": "footnote",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Amin S. Rizkalla is a professor at Western University in Schulich Dentistry; Che",
+      "found_in_fulltext": true,
+      "fulltext_offset": 107488
+    },
+    {
+      "block_id": "p20:20",
+      "page": 20,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Kibret Mequanint is a Professor in the Department of Chemical and Biochemical En",
+      "found_in_fulltext": true,
+      "fulltext_offset": 108088
+    },
+    {
+      "block_id": "p20:21",
+      "page": 20,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Adv. Healthcare Mater. 2024, 13, 2401218",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p20:22",
+      "page": 20,
+      "role": "noise",
+      "zone": "reference_zone",
+      "render_default": false,
+      "snippet": "2401218 (20 of 20)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p20:23",
+      "page": 20,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "© 2024 The Author(s). Advanced Healthcare Materials published by Wiley-VCH GmbH",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p20:24",
+      "page": 20,
+      "role": "unknown_structural",
+      "zone": "",
+      "render_default": false,
+      "snippet": "21922659, 2024, 27, Downloaded from https://advanced.onlinelibrary.wiley.com/doi",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    }
+  ]
+}

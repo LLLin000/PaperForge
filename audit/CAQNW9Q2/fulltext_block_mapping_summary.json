@@ -1,0 +1,1397 @@
+{
+  "mappable_block_count": 139,
+  "found_count": 121,
+  "missing_count": 18,
+  "rows": [
+    {
+      "block_id": "p1:0",
+      "page": 1,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "268",
+      "found_in_fulltext": true,
+      "fulltext_offset": 201
+    },
+    {
+      "block_id": "p1:1",
+      "page": 1,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "Annals of the Rheumatic Diseases 1994; 53: 268–275",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:3",
+      "page": 1,
+      "role": "paper_title",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "Quantitative radiography of osteoarthritis",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2
+    },
+    {
+      "block_id": "p1:4",
+      "page": 1,
+      "role": "authors",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "J C Buckland-Wright",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:5",
+      "page": 1,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Division of Anatomy and Cell Biology, United Medical and Dental Schools of Guy's",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:6",
+      "page": 1,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Radiography is important in the diagnosis of osteoarthritis (OA) as the features",
+      "found_in_fulltext": true,
+      "fulltext_offset": 221
+    },
+    {
+      "block_id": "p1:7",
+      "page": 1,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Scoring systems, although an essential and widely used method for assessing dise",
+      "found_in_fulltext": true,
+      "fulltext_offset": 1459
+    },
+    {
+      "block_id": "p1:8",
+      "page": 1,
+      "role": "frontmatter_support",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Correspondence to: Dr J C Buckland-Wright, Division of Anatomy and Cell Biology,",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:11",
+      "page": 1,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Standard radiography",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2476
+    },
+    {
+      "block_id": "p1:12",
+      "page": 1,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The radiographic image is a shadow of the differential absorption of x rays by t",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2497
+    },
+    {
+      "block_id": "p1:13",
+      "page": 1,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Advantages Standard radiography is simple, cheap, easily accessible and well und",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2746
+    },
+    {
+      "block_id": "p1:14",
+      "page": 1,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Limitations The relatively large size of the x ray source of standard x ray tube",
+      "found_in_fulltext": true,
+      "fulltext_offset": 3094
+    },
+    {
+      "block_id": "p2:0",
+      "page": 2,
+      "role": "noise",
+      "zone": "frontmatter_side_zone",
+      "render_default": false,
+      "snippet": "Quantitative radiography of OA",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:1",
+      "page": 2,
+      "role": "noise",
+      "zone": "frontmatter_side_zone",
+      "render_default": false,
+      "snippet": "269",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:3",
+      "page": 2,
+      "role": "figure_caption_candidate",
+      "zone": "display_zone",
+      "render_default": false,
+      "snippet": "Figure 1 Standard radiographic appearance of osteoarthritic knee joints showing ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:4",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "reliable assessment of joint space loss. The absence of any standards in the rad",
+      "found_in_fulltext": true,
+      "fulltext_offset": 3655
+    },
+    {
+      "block_id": "p2:6",
+      "page": 2,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Quantitative standard radiography",
+      "found_in_fulltext": true,
+      "fulltext_offset": 5212
+    },
+    {
+      "block_id": "p2:7",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Quantitative standard radiography has been applied primarily to joint space widt",
+      "found_in_fulltext": true,
+      "fulltext_offset": 5246
+    },
+    {
+      "block_id": "p3:0",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "270",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:1",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Buckland-Wright",
+      "found_in_fulltext": true,
+      "fulltext_offset": 92
+    },
+    {
+      "block_id": "p3:2",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "standardisation of the position of the hip and knee and reproducible repositioni",
+      "found_in_fulltext": true,
+      "fulltext_offset": 5712
+    },
+    {
+      "block_id": "p3:3",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In the former, Martel's group at Michigan University, undertook to define the pr",
+      "found_in_fulltext": true,
+      "fulltext_offset": 6221
+    },
+    {
+      "block_id": "p3:4",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The development of microcomputers and image analysis technique has provided the ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 8025
+    },
+    {
+      "block_id": "p3:6",
+      "page": 3,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Microfocal radiography",
+      "found_in_fulltext": true,
+      "fulltext_offset": 10093
+    },
+    {
+      "block_id": "p3:7",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Microfocal x ray units are characterised by an extremely small x ray source (<15",
+      "found_in_fulltext": true,
+      "fulltext_offset": 10116
+    },
+    {
+      "block_id": "p3:8",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Advantages of microfocal radiography are those characteristic of an extremely sm",
+      "found_in_fulltext": true,
+      "fulltext_offset": 10609
+    },
+    {
+      "block_id": "p4:0",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Quantitative radiography of OA",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:1",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "271",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:4",
+      "page": 4,
+      "role": "figure_caption_candidate",
+      "zone": "display_zone",
+      "render_default": false,
+      "snippet": "Figure 2 Part of the macroradiographs of osteoarthritic knee joints with medial ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:5",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "resolution, makes it possible to detect structural detail virtually at the histo",
+      "found_in_fulltext": true,
+      "fulltext_offset": 11878
+    },
+    {
+      "block_id": "p4:6",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Limitations are also a function of the small x ray source size. The smallness of",
+      "found_in_fulltext": true,
+      "fulltext_offset": 12122
+    },
+    {
+      "block_id": "p4:7",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Care and accuracy are needed in positioning the patient in relation to the sourc",
+      "found_in_fulltext": true,
+      "fulltext_offset": 12440
+    },
+    {
+      "block_id": "p4:8",
+      "page": 4,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Standardisation of macroradiographic procedure",
+      "found_in_fulltext": true,
+      "fulltext_offset": 13012
+    },
+    {
+      "block_id": "p4:9",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Stereotaxic devices are used to position each patient accurately and reproducibl",
+      "found_in_fulltext": true,
+      "fulltext_offset": 13059
+    },
+    {
+      "block_id": "p4:11",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The anatomical sites within the macroradiograph used in defining the boundaries ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 14359
+    },
+    {
+      "block_id": "p4:12",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Femur: the distal convex margin of the condyle (fig 2).",
+      "found_in_fulltext": true,
+      "fulltext_offset": 14687
+    },
+    {
+      "block_id": "p4:13",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Tibia, medial compartment: a line extending from near the tibial spine to the me",
+      "found_in_fulltext": true,
+      "fulltext_offset": 14743
+    },
+    {
+      "block_id": "p4:14",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "A detailed description of the method of measuring radiographic features and the ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 15696
+    },
+    {
+      "block_id": "p5:0",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "272",
+      "found_in_fulltext": true,
+      "fulltext_offset": 36706
+    },
+    {
+      "block_id": "p5:1",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Buckland-Wright",
+      "found_in_fulltext": true,
+      "fulltext_offset": 92
+    },
+    {
+      "block_id": "p5:2",
+      "page": 5,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Quantitative microfocal radiography",
+      "found_in_fulltext": true,
+      "fulltext_offset": 16518
+    },
+    {
+      "block_id": "p5:3",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Measurement of the radiographic features of OA of the hand and their change over",
+      "found_in_fulltext": true,
+      "fulltext_offset": 16554
+    },
+    {
+      "block_id": "p5:4",
+      "page": 5,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Joint space width",
+      "found_in_fulltext": true,
+      "fulltext_offset": 5097
+    },
+    {
+      "block_id": "p5:5",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Joint space narrowing is considered the most important radiological feature of O",
+      "found_in_fulltext": true,
+      "fulltext_offset": 17457
+    },
+    {
+      "block_id": "p5:6",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In patients with early, but definite OA of the hand, JSW measurements showed tha",
+      "found_in_fulltext": true,
+      "fulltext_offset": 18053
+    },
+    {
+      "block_id": "p5:8",
+      "page": 5,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Relationship between changes in joint space, subchondral sclerosis and osteophyt",
+      "found_in_fulltext": true,
+      "fulltext_offset": 19026
+    },
+    {
+      "block_id": "p5:9",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The results of the studies of OA of the hand $ ^{38} $ and knee $ ^{45} $ showed",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:11",
+      "page": 5,
+      "role": "figure_caption_candidate",
+      "zone": "display_zone",
+      "render_default": false,
+      "snippet": "Figure 3 Part of a macroradiograph of the metacarpo-phalangeal joints of a patie",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:0",
+      "page": 6,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Quantitative radiography of OA",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:1",
+      "page": 6,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "273",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:2",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "cartilage, measured as joint space narrowing, is a late stage phenomenon of oste",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20331
+    },
+    {
+      "block_id": "p6:3",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In the OA hand, the pattern of increased sclerosis and osteophytosis $ ^{39} $ a",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:4",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Evaluation of the pattern of joint space narrowing in the OA hand patients, duri",
+      "found_in_fulltext": true,
+      "fulltext_offset": 21084
+    },
+    {
+      "block_id": "p6:5",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The results of these investigations show that by using accurate and precise radi",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22097
+    },
+    {
+      "block_id": "p6:6",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The greater sensitivity of this technique, compared with standard radiography, h",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22602
+    },
+    {
+      "block_id": "p6:8",
+      "page": 6,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Increasing the accuracy and reproducibility in standard radiography",
+      "found_in_fulltext": true,
+      "fulltext_offset": 23937
+    },
+    {
+      "block_id": "p6:10",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "As described above, quantitative microfocal radiography can measure progression,",
+      "found_in_fulltext": true,
+      "fulltext_offset": 24005
+    },
+    {
+      "block_id": "p6:11",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Equipment: Accurate measurement within the plain film radiograph is dependent on",
+      "found_in_fulltext": true,
+      "fulltext_offset": 24973
+    },
+    {
+      "block_id": "p6:12",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Patients: Standardisation of the radioanatomical position of the joint is necess",
+      "found_in_fulltext": true,
+      "fulltext_offset": 25458
+    },
+    {
+      "block_id": "p6:13",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Measurement: The boundaries or limits of the radiographic feature to be measured",
+      "found_in_fulltext": true,
+      "fulltext_offset": 26023
+    },
+    {
+      "block_id": "p7:0",
+      "page": 7,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "274",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:1",
+      "page": 7,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Buckland-Wright",
+      "found_in_fulltext": true,
+      "fulltext_offset": 92
+    },
+    {
+      "block_id": "p7:2",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "analysis and overall reduce the time taken for the mensural procedures.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 26469
+    },
+    {
+      "block_id": "p7:3",
+      "page": 7,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Conclusion",
+      "found_in_fulltext": true,
+      "fulltext_offset": 26544
+    },
+    {
+      "block_id": "p7:4",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "To measure OA progression, it is necessary to establish a universally acceptable",
+      "found_in_fulltext": true,
+      "fulltext_offset": 26555
+    },
+    {
+      "block_id": "p7:5",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "I wish to express my gratitude to Dr Charles Hutton for inviting me to write thi",
+      "found_in_fulltext": true,
+      "fulltext_offset": 27494
+    },
+    {
+      "block_id": "p7:6",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "1 Resnick D, Niwayama G. Degenerative diseases of extra-spinal locations. In: Re",
+      "found_in_fulltext": true,
+      "fulltext_offset": 27903
+    },
+    {
+      "block_id": "p7:7",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "2 Altman R, Asch E, Block D, et al. Development of criteria for the classificati",
+      "found_in_fulltext": true,
+      "fulltext_offset": 28096
+    },
+    {
+      "block_id": "p7:8",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "3 Altman R, Fries J F, Bloch D A, et al. Radiographic assessment of progression ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 28247
+    },
+    {
+      "block_id": "p7:9",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "4 Kallman D A, Wigley F M, Scott W W, Hochberg M C, Tobin J D. New radiographic ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 28381
+    },
+    {
+      "block_id": "p7:10",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "5 Larsen A. Radiographic evaluation of osteoarthritis in therapeutic trials. In:",
+      "found_in_fulltext": true,
+      "fulltext_offset": 28543
+    },
+    {
+      "block_id": "p7:11",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "hip. Ann Rheum Dis 1962; 21: 31–9.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 28749
+    },
+    {
+      "block_id": "p7:12",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "7 Ahlback S. Osteoarthritis of the knee: a radiographic investigation. Acta Radi",
+      "found_in_fulltext": true,
+      "fulltext_offset": 28784
+    },
+    {
+      "block_id": "p7:13",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "8 Lequesne M. Clinical features, diagnostic criteria, functional assessments and",
+      "found_in_fulltext": true,
+      "fulltext_offset": 28889
+    },
+    {
+      "block_id": "p7:14",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "9 Schouten J S A G, van den Ouweland F A, Valkenburg H A. A 12 year follow up st",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29081
+    },
+    {
+      "block_id": "p7:15",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "10 Dieppe P, Cushnaghan J, McAlindon T. Epidemiology, clinical course and outcom",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29293
+    },
+    {
+      "block_id": "p7:16",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "11 Wevers H W, Siu D, Cooke T D V. A quantitative method of assessing malalignme",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29539
+    },
+    {
+      "block_id": "p7:17",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "12 Siu D, Cooke T D V, Broekhoven L D, et al. A standardized technique for lower",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29692
+    },
+    {
+      "block_id": "p7:18",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "13 Jonson H, Karholm J, Elmqvist L-G. Kinematics of active knee extension after ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29864
+    },
+    {
+      "block_id": "p7:19",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "14 Leach R E, Gregg T, Siber F J. Weight bearing radiography in osteoarthritis o",
+      "found_in_fulltext": true,
+      "fulltext_offset": 30019
+    },
+    {
+      "block_id": "p7:20",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "15 Menkes C J. Radiographic criteria for classification of OA. § Rheumatol 1991:",
+      "found_in_fulltext": true,
+      "fulltext_offset": 30138
+    },
+    {
+      "block_id": "p7:21",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "16 Fife R S, Brant K D, Braunstein E M, et al. Relationship between arthroscopic",
+      "found_in_fulltext": true,
+      "fulltext_offset": 30240
+    },
+    {
+      "block_id": "p7:22",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "17 Brandt K D, Fife R S, Braunstein E M, Katz B. Radiographic grading of the sev",
+      "found_in_fulltext": true,
+      "fulltext_offset": 30472
+    },
+    {
+      "block_id": "p7:23",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "18 Dacre J E, Huskisson E C. The automatic assessment of knee radiographs in ost",
+      "found_in_fulltext": true,
+      "fulltext_offset": 30783
+    },
+    {
+      "block_id": "p7:24",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "19 Dougados M, Gueguen A, Nguyen M, et al. Longitudinal radiologic evaluation of",
+      "found_in_fulltext": true,
+      "fulltext_offset": 30938
+    },
+    {
+      "block_id": "p7:25",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "20 Messieh S S, Fowler P J, Munro T. Anteroposterior radiographs of the osteoart",
+      "found_in_fulltext": true,
+      "fulltext_offset": 31077
+    },
+    {
+      "block_id": "p7:26",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "21 Resnick D, Vint V. The ‘tunnel’ view in assessment of cartilage loss in osteo",
+      "found_in_fulltext": true,
+      "fulltext_offset": 31207
+    },
+    {
+      "block_id": "p7:27",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "22 Altman R, Fries J F, Block D A, et al. Radiological assessment of progression",
+      "found_in_fulltext": true,
+      "fulltext_offset": 31337
+    },
+    {
+      "block_id": "p7:28",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "23 Adams M E, Wallace C J. Quantitative imaging of osteoarthritis. Semin Arthrit",
+      "found_in_fulltext": true,
+      "fulltext_offset": 31472
+    },
+    {
+      "block_id": "p7:29",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "24 Jonsson K, Buckwalter K, Helvie M, Niklason L, Martel W. Precision of hyaline",
+      "found_in_fulltext": true,
+      "fulltext_offset": 31578
+    },
+    {
+      "block_id": "p7:30",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "25 Dacre J E, Coppock J S, Herbert K E, Perrett D, Huskisson E C. Development of",
+      "found_in_fulltext": true,
+      "fulltext_offset": 31722
+    },
+    {
+      "block_id": "p7:31",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "26 Jasani M K. Diclofenac and the osteoarthritis disease process in cartilage. I",
+      "found_in_fulltext": true,
+      "fulltext_offset": 31900
+    },
+    {
+      "block_id": "p7:32",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "27 Spector T D, Dacre J E, Harris P A, Huskisson E C. Radiological progression o",
+      "found_in_fulltext": true,
+      "fulltext_offset": 32109
+    },
+    {
+      "block_id": "p7:33",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "28 Browne M A, Gaydecki P A, Gough R F, Grennant D M, Khalil S I, Mamtora H. Rad",
+      "found_in_fulltext": true,
+      "fulltext_offset": 32280
+    },
+    {
+      "block_id": "p7:34",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "29 Gaydecki P A, Browne M, Mamtora H, Grennant D M. Measurement of radiographic ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 32458
+    },
+    {
+      "block_id": "p7:35",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "30 Dacre J E, Scott D L, Da Silva J A P, Welsh G, Huskisson E C. Joint space in ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 32643
+    },
+    {
+      "block_id": "p7:36",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "31 Buckland-Wright J C. X-ray assessment of activity in rheumatoid disease. Br J",
+      "found_in_fulltext": true,
+      "fulltext_offset": 32784
+    },
+    {
+      "block_id": "p7:37",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "32 Buckland-Wright J C. Microfocal radiographic examination of erosions in the w",
+      "found_in_fulltext": true,
+      "fulltext_offset": 32891
+    },
+    {
+      "block_id": "p7:38",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "33 Buckland-Wright J C. A new high-definition microfocal x-ray unit. Br J Radiol",
+      "found_in_fulltext": true,
+      "fulltext_offset": 33056
+    },
+    {
+      "block_id": "p7:39",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "34 Buckland-Wright J C, Bradshaw C R. Clinical applications of high definition m",
+      "found_in_fulltext": true,
+      "fulltext_offset": 33154
+    },
+    {
+      "block_id": "p7:40",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "35 Buckland-Wright J C. Carmichael I, Walker S R. Quantitative microfocal radiog",
+      "found_in_fulltext": true,
+      "fulltext_offset": 33287
+    },
+    {
+      "block_id": "p7:41",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "36 Clarke G S. Quantitative microfocal radiographic assessment of changes in the",
+      "found_in_fulltext": true,
+      "fulltext_offset": 33462
+    },
+    {
+      "block_id": "p7:42",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "37 Foley-Nolan D, Stack J P, Ryan M, et al. Magnetic resonance imaging in the as",
+      "found_in_fulltext": true,
+      "fulltext_offset": 33633
+    },
+    {
+      "block_id": "p7:43",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "38 Buckland-Wright J C. Macfarlane D G, Lynch J A, Clark B. Quantitative microfo",
+      "found_in_fulltext": true,
+      "fulltext_offset": 33820
+    },
+    {
+      "block_id": "p7:44",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "39 Buckland-Wright J C, Macfarlane D G, Lynch J. Relationship between joint spac",
+      "found_in_fulltext": true,
+      "fulltext_offset": 34004
+    },
+    {
+      "block_id": "p7:45",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "40 Buckland-Wright J C, Macfarlane D G, Fogelman I, Emery P, Lynch J A. Techneti",
+      "found_in_fulltext": true,
+      "fulltext_offset": 34222
+    },
+    {
+      "block_id": "p7:46",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "41 Macfarlane D G, Buckland-Wright J C, Emery P, Fogelman I, Lynch J. Comparison",
+      "found_in_fulltext": true,
+      "fulltext_offset": 34409
+    },
+    {
+      "block_id": "p7:47",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "42 Buckland-Wright J C, Macfarlane D G, Lynch J A. Osteophytes in the arthritic ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 34606
+    },
+    {
+      "block_id": "p7:48",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "43 Kellgren J H, Lawrence J S. Radiological assessment of osteoarthrosis. Ann Rh",
+      "found_in_fulltext": true,
+      "fulltext_offset": 34777
+    },
+    {
+      "block_id": "p7:49",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "44 Moll J M H. Investigation of osteoarthritis. Clin Rheum Dis 1977; 2: 587–613.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 34884
+    },
+    {
+      "block_id": "p7:50",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "45 Buckland-Wright J C, Macfarlane D G, Lynch J A, Jasani M K. Measurement of jo",
+      "found_in_fulltext": true,
+      "fulltext_offset": 34965
+    },
+    {
+      "block_id": "p7:51",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "46 Buckland-Wright J C, Macfarlane D G, Jasani M K, Lynch J A. Quantitative micr",
+      "found_in_fulltext": true,
+      "fulltext_offset": 35233
+    },
+    {
+      "block_id": "p8:0",
+      "page": 8,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "275",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:1",
+      "page": 8,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Buckland-Wright",
+      "found_in_fulltext": true,
+      "fulltext_offset": 92
+    },
+    {
+      "block_id": "p8:2",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "47 Buckland-Wright J C, Macfarlane D G, Jasani M K, Lynch J A. Changes in OA kne",
+      "found_in_fulltext": true,
+      "fulltext_offset": 35482
+    },
+    {
+      "block_id": "p8:3",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "48 Buckland-Wright J C. Macfarlane D G, Jasani M K, Lynch J A. Joint space width",
+      "found_in_fulltext": true,
+      "fulltext_offset": 35715
+    },
+    {
+      "block_id": "p8:4",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "49 Maroudas A. Balance between swelling pressure and collagen tension in normal ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 35936
+    },
+    {
+      "block_id": "p8:5",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "50 Mankin H J, Thrasher A Z. Water content and binding in normal and osteoarthri",
+      "found_in_fulltext": true,
+      "fulltext_offset": 36069
+    },
+    {
+      "block_id": "p8:6",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "51 Mow V C, Setton L A, Ratcliff A, Howell D S, Buckwalter J A. Structure-functi",
+      "found_in_fulltext": true,
+      "fulltext_offset": 36206
+    },
+    {
+      "block_id": "p8:7",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "52 Lane L B, Villacin A, Bullough P G. The vascularity and remodelling of subcho",
+      "found_in_fulltext": true,
+      "fulltext_offset": 36520
+    },
+    {
+      "block_id": "p8:8",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "53 Bullough P G, Goodfellow J W. Incongruent surfaces in the hip joint. Nature 1",
+      "found_in_fulltext": true,
+      "fulltext_offset": 36713
+    },
+    {
+      "block_id": "p8:9",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "54 McDevitt C A, Gilbertson E, Muir H. An experimental model of osteoarthritis: ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 36809
+    },
+    {
+      "block_id": "p8:10",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "55 Mankin H J, Brant K D. Biochemistry and metabolism of cartilage in osteoarthr",
+      "found_in_fulltext": true,
+      "fulltext_offset": 36970
+    },
+    {
+      "block_id": "p8:11",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "56 Fassbender H G. Significance of endogenous and exogenous mechanisms in the de",
+      "found_in_fulltext": true,
+      "fulltext_offset": 37200
+    },
+    {
+      "block_id": "p8:12",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "57 Lanyon C E. Functional strain as a determinant for bone remodelling. Calc Tis",
+      "found_in_fulltext": true,
+      "fulltext_offset": 37481
+    },
+    {
+      "block_id": "p8:13",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "58 Williams J M, Brandt K D. Exercise increases osteophyte",
+      "found_in_fulltext": true,
+      "fulltext_offset": 37587
+    },
+    {
+      "block_id": "p8:14",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "formation and diminishes fibrillation following chemically induced articular car",
+      "found_in_fulltext": true,
+      "fulltext_offset": 37646
+    },
+    {
+      "block_id": "p8:15",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "59 Gilbertson E M M. Development of periarticular osteophytes in experimentally ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 37767
+    },
+    {
+      "block_id": "p8:16",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "60 Napier J R. The form and function of the carpo-metacarpal joint of the thumb.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 37913
+    },
+    {
+      "block_id": "p8:17",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "61 Backhouse K M, Hutchings R T. A colour atlas of surface anatomy, clinical and",
+      "found_in_fulltext": true,
+      "fulltext_offset": 38028
+    },
+    {
+      "block_id": "p8:18",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "62 Tubiana R, Thomine J-M, Mackin E. Examination of hand and upper limb. Philade",
+      "found_in_fulltext": true,
+      "fulltext_offset": 38173
+    },
+    {
+      "block_id": "p8:19",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "63 Jones A R, Unsworth A, Haslock I. A microcomputer controlled hand assessment ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 38282
+    },
+    {
+      "block_id": "p8:20",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "64 Moskowitz R W. Experimental models of osteoarthritis. In: Moskowitz R W, Howe",
+      "found_in_fulltext": true,
+      "fulltext_offset": 38430
+    },
+    {
+      "block_id": "p8:21",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "65 Radin E L, Paul I L, Rose R M. Role of mechanical factors in pathogenesis of ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 38617
+    },
+    {
+      "block_id": "p8:22",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "66 Buckland-Wright J C. The early lesion in subchondral bone in osteoarthritis: ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 38745
+    },
+    {
+      "block_id": "p8:23",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "67 Sokoloff L. Loading and motion in relation to ageing and degeneration of join",
+      "found_in_fulltext": true,
+      "fulltext_offset": 39022
+    },
+    {
+      "block_id": "p8:24",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "68 Stecher R M. Heberden's nodes. A clinical description of osteoarthritis of th",
+      "found_in_fulltext": true,
+      "fulltext_offset": 39340
+    },
+    {
+      "block_id": "p8:25",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "69 Buckland-Wright J C. Imaging and measurement of change in osteoarthritis. In:",
+      "found_in_fulltext": true,
+      "fulltext_offset": 39465
+    },
+    {
+      "block_id": "p8:26",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "70 Lynch J A, Buckland-Wright J C, Hawkes D J. Automated measurement of interbon",
+      "found_in_fulltext": true,
+      "fulltext_offset": 39661
+    }
+  ]
+}

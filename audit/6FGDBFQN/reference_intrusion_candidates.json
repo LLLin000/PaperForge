@@ -1,0 +1,81 @@
+{
+  "candidates": [
+    {
+      "block_id": "p5:10",
+      "page": 5,
+      "role": "reference_heading",
+      "zone": "reference_zone",
+      "reason": "logical_order_between_reference_members"
+    },
+    {
+      "block_id": "p5:11",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "reason": "logical_order_between_reference_members"
+    },
+    {
+      "block_id": "p5:12",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "reason": "logical_order_between_reference_members"
+    },
+    {
+      "block_id": "p5:13",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "reason": "logical_order_between_reference_members"
+    },
+    {
+      "block_id": "p5:14",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "reason": "logical_order_between_reference_members"
+    },
+    {
+      "block_id": "p5:15",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "reason": "logical_order_between_reference_members"
+    },
+    {
+      "block_id": "p5:16",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "reason": "logical_order_between_reference_members"
+    },
+    {
+      "block_id": "p5:17",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "reason": "logical_order_between_reference_members"
+    },
+    {
+      "block_id": "p5:18",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "reason": "logical_order_between_reference_members"
+    },
+    {
+      "block_id": "p5:19",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "reason": "logical_order_between_reference_members"
+    },
+    {
+      "block_id": "p5:20",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "tail_nonref_hold_zone",
+      "reason": "logical_order_between_reference_members"
+    }
+  ]
+}

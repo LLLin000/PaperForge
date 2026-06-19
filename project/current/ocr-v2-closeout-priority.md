@@ -17,9 +17,9 @@ This file is the tie-breaker. If another document disagrees about what to do nex
 ## Current Baseline
 
 - Branch: `ocr-v2`
-- Audit baseline date: `2026-06-17`
-- Verified audited blocks: `945 / 1097` (`86.1%`)
-- Remaining mismatches after Phase 2: `152`
+- Audit baseline date: `2026-06-19`
+- Verified audited blocks: `975 / 1097` (`88.9%`)
+- Remaining mismatches after blind audit: `122` (mostly stale truth ~40 + genuine edge cases ~50)
 
 ## Close-Out Pass Completed After 9.7 (2026-06-18)
 
@@ -41,7 +41,7 @@ That pass is no longer the active execution thread. The branch has now moved int
 | Gate 3: ordering/boundary authority | **DONE** | `_enforce_reference_boundary_from_structure` upstream in normalize path |
 | Gate 4: layout-coverage formalization | **DONE** | Taxonomy normalized to approved readiness-class set; contract tests enforce named representatives |
 | Gate 5: unseen-paper blind audit | **DONE** | 5 papers across domains, all PASS, no new failure families |
-| **Readyness status** | **ALL GATES DONE** | OCR-v2 state healthy on known + unseen layout classes |
+| **Readiness status** | **ALL GATES DONE** | OCR-v2 state healthy on known + unseen layout classes |
 
 ## Next Work
 1. Run final lint/type pass before merge to main

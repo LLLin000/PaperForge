@@ -1,0 +1,737 @@
+{
+  "mappable_block_count": 73,
+  "found_count": 38,
+  "missing_count": 35,
+  "rows": [
+    {
+      "block_id": "p1:0",
+      "page": 1,
+      "role": "unknown_structural",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "Downloaded from www.ajronline.org by 82.152.166.55 on 09/01/25 from IP address 8",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:1",
+      "page": 1,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "Musculoskeletal Research • Original Research",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:2",
+      "page": 1,
+      "role": "paper_title",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "Rotator Cable: MRI Study of Its Appearance in the Intact Rotator Cuff With Anato",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:3",
+      "page": 1,
+      "role": "unknown_structural",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "Soterios Gyftopoulos $ ^{1} $ Jenny Bencardino $ ^{1} $ Gregory Nevsky $ ^{1} $ ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:17",
+      "page": 1,
+      "role": "frontmatter_support",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The rotator cable was initially described by Clark and Harryman [1] as a thin fi",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:18",
+      "page": 1,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "ment that coursed along the undersurface of the rotator cuff fibers superficial ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 1951
+    },
+    {
+      "block_id": "p1:20",
+      "page": 1,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In the initial descriptions of the cable, it was described as a thick, distinct ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 3122
+    },
+    {
+      "block_id": "p1:21",
+      "page": 1,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "AJR:200, May 2013",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:22",
+      "page": 1,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "1101",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:0",
+      "page": 2,
+      "role": "unknown_structural",
+      "zone": "frontmatter_side_zone",
+      "render_default": false,
+      "snippet": "Downloaded from www.ajronline.org by 82.152.166.55 on 09/01/25 from IP address 8",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:1",
+      "page": 2,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Gyftopoulos et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:2",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "There is no consensus in terms of the MRI appearance of the rotator cable. The p",
+      "found_in_fulltext": true,
+      "fulltext_offset": 3805
+    },
+    {
+      "block_id": "p2:3",
+      "page": 2,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Materials and Methods",
+      "found_in_fulltext": true,
+      "fulltext_offset": 4042
+    },
+    {
+      "block_id": "p2:4",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Institutional review board approval was obtained, and informed consent was waive",
+      "found_in_fulltext": true,
+      "fulltext_offset": 4064
+    },
+    {
+      "block_id": "p2:5",
+      "page": 2,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Cadaveric Study",
+      "found_in_fulltext": true,
+      "fulltext_offset": 4196
+    },
+    {
+      "block_id": "p2:6",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Two shoulders from fresh-frozen cadavers (two women, 52 and 56 years of age) wer",
+      "found_in_fulltext": true,
+      "fulltext_offset": 4212
+    },
+    {
+      "block_id": "p2:7",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "After the imaging was completed, the specimens were again frozen at $ -9^{\\circ}",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:10",
+      "page": 2,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Clinical Study",
+      "found_in_fulltext": true,
+      "fulltext_offset": 5799
+    },
+    {
+      "block_id": "p2:11",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Seventy consecutive 1.5- and 3-T MRI studies of the shoulder (in 41 male and 29 ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 5814
+    },
+    {
+      "block_id": "p2:15",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Two musculoskeletal radiologists (the first reader with 3 years and an additiona",
+      "found_in_fulltext": true,
+      "fulltext_offset": 6930
+    },
+    {
+      "block_id": "p2:17",
+      "page": 2,
+      "role": "figure_caption_candidate",
+      "zone": "display_zone",
+      "render_default": false,
+      "snippet": "Fig. 1—Rotator cable measurements.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:18",
+      "page": 2,
+      "role": "figure_caption_candidate",
+      "zone": "",
+      "render_default": false,
+      "snippet": "A–C, Location of cable was measured from medial enthesis to its lateral margin (",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:19",
+      "page": 2,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "1102",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:20",
+      "page": 2,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "AJR:200, May 2013",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:0",
+      "page": 3,
+      "role": "unknown_structural",
+      "zone": "frontmatter_side_zone",
+      "render_default": false,
+      "snippet": "Downloaded from www.ajronline.org by 82.152.166.55 on 09/01/25 from IP address 8",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:1",
+      "page": 3,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "MRI of Rotator Cable in Intact Rotator Cuff",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:2",
+      "page": 3,
+      "role": "figure_caption_candidate",
+      "zone": "display_zone",
+      "render_default": false,
+      "snippet": "Fig. 2—MRI–gross anatomic correlation in sagittal plane. A and B, Sagittal obliq",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:5",
+      "page": 3,
+      "role": "figure_caption_candidate",
+      "zone": "display_zone",
+      "render_default": false,
+      "snippet": "Fig. 3—MRI-gross anatomic correlation in coronal plane.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:6",
+      "page": 3,
+      "role": "figure_caption_candidate",
+      "zone": "",
+      "render_default": false,
+      "snippet": "A and B, Coronal oblique fast-spin proton density image (A) and macroscopic sect",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:7",
+      "page": 3,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Cadaveric Study Results",
+      "found_in_fulltext": true,
+      "fulltext_offset": 8073
+    },
+    {
+      "block_id": "p3:9",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "A linear band of hypointense signal intensity was found extending posteriorly fr",
+      "found_in_fulltext": true,
+      "fulltext_offset": 8097
+    },
+    {
+      "block_id": "p3:12",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Arthroscopic evaluation of cadaver 1 showed a longitudinal, bandlike thickening ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 9472
+    },
+    {
+      "block_id": "p3:14",
+      "page": 3,
+      "role": "figure_caption_candidate",
+      "zone": "",
+      "render_default": false,
+      "snippet": "don (Fig. 6). The posterior insertion was not clearly visualized on arthroscopy.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:15",
+      "page": 3,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Clinical Study",
+      "found_in_fulltext": true,
+      "fulltext_offset": 5799
+    },
+    {
+      "block_id": "p3:16",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The rotator cable was seen in 74.3% of the MRI studies. When visualized, the cab",
+      "found_in_fulltext": true,
+      "fulltext_offset": 9892
+    },
+    {
+      "block_id": "p3:17",
+      "page": 3,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Discussion",
+      "found_in_fulltext": true,
+      "fulltext_offset": 10371
+    },
+    {
+      "block_id": "p3:18",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The rotator cable was initially described in the orthopedic literature as an ext",
+      "found_in_fulltext": true,
+      "fulltext_offset": 10382
+    },
+    {
+      "block_id": "p3:19",
+      "page": 3,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "AJR:200, May 2013",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:20",
+      "page": 3,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "1103",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:0",
+      "page": 4,
+      "role": "unknown_structural",
+      "zone": "frontmatter_side_zone",
+      "render_default": false,
+      "snippet": "Downloaded from www.ajronline.org by 82.152.166.55 on 09/01/25 from IP address 8",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:1",
+      "page": 4,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Gyftopoulos et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:2",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "coracohumeral ligament that plays a role in the stability of the torn and intact",
+      "found_in_fulltext": true,
+      "fulltext_offset": 10560
+    },
+    {
+      "block_id": "p4:3",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Using MRI, Sheah et al. [5] were able to identify the rotator cable most consist",
+      "found_in_fulltext": true,
+      "fulltext_offset": 10890
+    },
+    {
+      "block_id": "p4:6",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "We were able to identify the rotator cable in our cadaveric specimens on MRI. Bo",
+      "found_in_fulltext": true,
+      "fulltext_offset": 11601
+    },
+    {
+      "block_id": "p4:12",
+      "page": 4,
+      "role": "figure_caption_candidate",
+      "zone": "display_zone",
+      "render_default": false,
+      "snippet": "Fig. 4—Histologic evaluation of rotator cable. A, Sagittal histologic section wi",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:14",
+      "page": 4,
+      "role": "figure_caption_candidate",
+      "zone": "display_zone",
+      "render_default": false,
+      "snippet": "Fig. 5—Arthroscopy of rotator cable. A, Image from arthroscopy of cadaver 1 visu",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:15",
+      "page": 4,
+      "role": "figure_caption_candidate",
+      "zone": "",
+      "render_default": false,
+      "snippet": "B, Sagittal oblique image from corresponding MRI shows similar band of tissue (a",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:16",
+      "page": 4,
+      "role": "figure_caption_candidate",
+      "zone": "display_zone",
+      "render_default": false,
+      "snippet": "Fig. 6—Anterior insertion of cable on arthroscopy and MRI.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:17",
+      "page": 4,
+      "role": "figure_caption_candidate",
+      "zone": "",
+      "render_default": false,
+      "snippet": "A and B, Arthroscopic image obtained from posterior portal (A) and corresponding",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:18",
+      "page": 4,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "1104",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:19",
+      "page": 4,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "AJR:200, May 2013",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:0",
+      "page": 5,
+      "role": "unknown_structural",
+      "zone": "frontmatter_side_zone",
+      "render_default": false,
+      "snippet": "Downloaded from www.ajronline.org by 82.152.166.55 on 09/01/25 from IP address 8",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:1",
+      "page": 5,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "MRI of Rotator Cable in Intact Rotator Cuff",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:2",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "cadaver 1 showed the cable along the under-surface of the supraspinatus and infr",
+      "found_in_fulltext": true,
+      "fulltext_offset": 12009
+    },
+    {
+      "block_id": "p5:3",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "We identified the rotator cable in 74.3% of the clinical MRI studies. The cable ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 12182
+    },
+    {
+      "block_id": "p5:4",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "The realization that the rotator cable can be frequently seen on conventional MR",
+      "found_in_fulltext": true,
+      "fulltext_offset": 13029
+    },
+    {
+      "block_id": "p5:6",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The mean cable thickness in our study differed from that in the original papers ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 13603
+    },
+    {
+      "block_id": "p5:7",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Our study had several limitations. The study was limited by the small number of ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 13960
+    },
+    {
+      "block_id": "p5:8",
+      "page": 5,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Conclusion",
+      "found_in_fulltext": true,
+      "fulltext_offset": 13018
+    },
+    {
+      "block_id": "p5:9",
+      "page": 5,
+      "role": "backmatter_body",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Our study has shown that the rotator cable is a structure that can be consistent",
+      "found_in_fulltext": true,
+      "fulltext_offset": 14835
+    },
+    {
+      "block_id": "p5:10",
+      "page": 5,
+      "role": "reference_heading",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "References",
+      "found_in_fulltext": true,
+      "fulltext_offset": 14322
+    },
+    {
+      "block_id": "p5:11",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "1. Clark JM, Harryman DT II. Tendons, ligaments, and capsule of the rotator cuff",
+      "found_in_fulltext": true,
+      "fulltext_offset": 14333
+    },
+    {
+      "block_id": "p5:12",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "2. Burkhart SS. Fluoroscopic comparison of kinematic patterns in massive rotator",
+      "found_in_fulltext": true,
+      "fulltext_offset": 14675
+    },
+    {
+      "block_id": "p5:13",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "3. Burkhart SS, Esch JC, Jolson RS. The rotator crescent and rotator cable: an a",
+      "found_in_fulltext": true,
+      "fulltext_offset": 15015
+    },
+    {
+      "block_id": "p5:14",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "4. Burkhart SS. Reconciling the paradox of rotator cuff repair versus debridemen",
+      "found_in_fulltext": true,
+      "fulltext_offset": 15182
+    },
+    {
+      "block_id": "p5:15",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "5. Sheah K, Bredella MA, Warner JJ, et al. Transverse thickening along the artic",
+      "found_in_fulltext": true,
+      "fulltext_offset": 15366
+    },
+    {
+      "block_id": "p5:16",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "6. Kask K, Kolts I, Lubienski A, et al. Magnetic resonance imaging and correlati",
+      "found_in_fulltext": true,
+      "fulltext_offset": 15613
+    },
+    {
+      "block_id": "p5:17",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "7. Morag Y, Jacobson JA, Lucas D, et al. US appearance of the rotator cable with",
+      "found_in_fulltext": true,
+      "fulltext_offset": 15792
+    },
+    {
+      "block_id": "p5:18",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "8. Morag Y, Jamadar DA, Boon TA, Bedi A, Caoili EM, Jacobson JA. Ultrasound of t",
+      "found_in_fulltext": true,
+      "fulltext_offset": 15946
+    },
+    {
+      "block_id": "p5:19",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "9. Burkhart SS, Nottage WM, Ogilvie-Harris DJ, et al. A partial repair of irrepa",
+      "found_in_fulltext": true,
+      "fulltext_offset": 16119
+    },
+    {
+      "block_id": "p5:20",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "10. Burkhart SS. Arthroscopic debridement and decompression for selected rotator",
+      "found_in_fulltext": true,
+      "fulltext_offset": 14453
+    },
+    {
+      "block_id": "p5:21",
+      "page": 5,
+      "role": "noise",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "AJR:200, May 2013",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:22",
+      "page": 5,
+      "role": "noise",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "1105",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    }
+  ]
+}
