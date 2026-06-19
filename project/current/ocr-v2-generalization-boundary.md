@@ -4,6 +4,12 @@
 > Readiness status: complete
 > Active execution queue: `project/current/ocr-v2-active-queue.md`
 
+## Cross-Links
+
+- Active queue: `project/current/ocr-v2-active-queue.md`
+- Evidence source: `project/current/ocr_rebuild_audit.md`
+- Architecture boundary: `project/current/ocr-v2-generalization-boundary.md`
+
 ## Problem Statement
 
 The OCR-v2 pipeline is no longer failing because the architecture is directionally wrong. The current problem is that the rule set is already complex, but the generalization boundary is still under-specified. A paper can look healthy after a local fix, then a different paper exposes 3-5 new small failures.
