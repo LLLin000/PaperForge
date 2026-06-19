@@ -1263,3 +1263,25 @@ For each paper: rebuilt pipeline, generated annotated pages, performed visual bl
 - GU9R8EPE backmatter disclaimer text bleeds into rendered fulltext
 - L6ALWJFP "A B S T R A C T" duplicate heading (Heliyon publisher formatting)
 - All issues are known patterns — no new failure families from blind audit
+
+### 11.0 OCR Maintenance UX Redesign (2026-06-19)
+
+**Problem:** The plugin OCR maintenance tab exposed raw OCR state fields (green/yellow/red, done_degraded, derived_stale) and pushed ordinary users toward interpreting any warning-like signal as a repair task. The UX was organized around backend table rows instead of user-facing actionability.
+
+**Root cause:** The tab used badge-based status classification as its primary organizing axis, mixing actionable failures with non-actionable quality caveats behind similar visual warnings.
+
+**Fix:** Added a UI-side categorization layer (`paperforge/plugin/src/services/ocr-maintenance-ui.ts`) that maps backend rows into four user-facing categories: `No Action Needed`, `Rebuild Recommended`, `OCR Failed`, and `Result Limited`. Replaced table-first rendering with summary-first layout: hero conclusion card, Needs Attention section (rebuild/failed only), Result Limitations section, and collapsible advanced table. Added new i18n keys in both en/zh. CSS styles for cards, chips, and counts section.
+
+**UX rules implemented:**
+- `recommended_action === 'rebuild'` → promoted as proactive maintenance
+- `recommended_action === 'redo'` only surfaced for true failure states
+- degraded/warning signals without clear action → `Result Limited`, no maintenance button
+- Redo is not aggressively promoted for non-failed papers
+
+**Files changed:** `ocr-maintenance-ui.ts` (new), `ocr-maintenance-ui.test.ts` (new), `settings.ts` (+289/-186), `i18n.ts` (+26), `styles.css` (+101), `main.js` (rebuilt)
+
+**Test status:** `npm test && npm run build` — 57/57 pass, bundle builds clean.
+
+**Design spec:** `docs/superpowers/specs/2026-06-19-ocr-maintenance-ux-design.md`
+
+**Implementation plan:** `docs/superpowers/plans/2026-06-19-ocr-maintenance-ux-implementation.md`
