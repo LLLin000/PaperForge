@@ -35,6 +35,7 @@ _BACKMATTER_TITLE_DENY_LIST: set[str] = set()
 
 _BACKMATTER_HEADINGS = {
     "publisher's note",
+    "publisher\u2019s note",
 }
 
 _PAGE1_ARTICLE_TYPE_LABELS = frozenset(
@@ -557,6 +558,7 @@ def resolve_final_role(
         phrase in text_lower
         for phrase in (
             "conflict of interest",
+            "publisher's note",
             "publisher\u2019s note",
             "the remaining authors declare",
             "copyright",

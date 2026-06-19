@@ -2773,6 +2773,12 @@ def _looks_like_backmatter_body_text(text: str) -> bool:
         "conflict of interest",
         "declaration",
         "publisher",
+        "author contributions",
+        "funding",
+        "acknowledg",
+        "data availability",
+        "supplement",
+        "ethics",
         "copyright",
     )
     return any(marker in lower for marker in markers)
