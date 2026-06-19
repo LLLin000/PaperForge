@@ -2374,3 +2374,17 @@ def test_region_growth_validation_demotes_group_when_crossing_other_caption_zone
 
     verdict = _validate_grown_region(group, assets, competing_caption_bboxes=[other_caption_bbox])
     assert verdict["validation_status"] == "grouped_evidence_only"
+
+
+def test_build_figure_inventory_uses_region_grown_group_for_irregular_pair() -> None:
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    structured_blocks = [
+        {"page": 5, "block_id": "a1", "role": "figure_asset", "raw_label": "image", "bbox": [100, 100, 300, 260], "text": ""},
+        {"page": 5, "block_id": "a2", "role": "figure_asset", "raw_label": "image", "bbox": [315, 110, 525, 270], "text": ""},
+        {"page": 5, "block_id": "c1", "role": "figure_caption", "text": "Figure 1. Irregular pair.", "bbox": [100, 290, 520, 330], "zone": "display_zone", "style_family": "legend_like"},
+    ]
+
+    inventory = build_figure_inventory(structured_blocks)
+    match = inventory["matched_figures"][0]
+    assert len(match["matched_assets"]) == 2

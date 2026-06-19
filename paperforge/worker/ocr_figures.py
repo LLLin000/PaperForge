@@ -552,6 +552,42 @@ def _build_candidate_figure_groups_from_assets(assets: list[dict], page_width: f
                 groups.append(_candidate_group_entry(f"group_{next_id:03d}", page, ordered, group_type, evidence))
                 next_id += 1
 
+    # Region-growth pass: merge adjacent assets per page
+    seen_growth_ids: set[str] = set()
+    by_page_growth: dict[int, list[dict]] = {}
+    for block in media:
+        page = int(block.get("page", 0) or 0)
+        if page not in by_page_growth:
+            by_page_growth[page] = []
+        by_page_growth[page].append(block)
+
+    for page, blocks_in_page in sorted(by_page_growth.items()):
+        def _sort_yx(b: dict) -> tuple:
+            bb = b.get("bbox") or [0, 0, 0, 0]
+            return (bb[1], bb[0])
+        sorted_blocks = sorted(blocks_in_page, key=_sort_yx)
+        for seed in sorted_blocks:
+            seed_id = str(seed.get("block_id", ""))
+            if seed_id in seen_growth_ids:
+                continue
+            others = [b for b in sorted_blocks if str(b.get("block_id", "")) != seed_id]
+            grown = _grow_region_from_seed(seed, others, page_width)
+            if len(grown.get("asset_block_ids", [])) <= 1:
+                continue
+            grown_asset_ids = set(str(bid) for bid in grown.get("asset_block_ids", []))
+            seen_growth_ids.update(grown_asset_ids)
+            grown_assets = [b for b in blocks_in_page if str(b.get("block_id", "")) in grown_asset_ids]
+            entry = _candidate_group_entry(
+                f"group_growth_{next_id:03d}",
+                page,
+                grown_assets,
+                "region_grown_group",
+                ["same_page", "region_growth"],
+            )
+            entry["growth_steps"] = grown.get("growth_steps", [])
+            groups.append(entry)
+            next_id += 1
+
     return groups
 
 
