@@ -18,6 +18,7 @@ import {
 } from "./services/memory-state";
 import { getDisclosureState, toggleDisclosureState } from "./utils/disclosure";
 import { PaperForgeOcrPrivacyModal, PaperForgeSetupModal, checkOrphanState } from "./views/modals";
+import { categorizeMaintenanceRow, buildMaintenanceSummary } from "./services/ocr-maintenance-ui";
 
 // ── Interface ──
 
@@ -1302,249 +1303,293 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           return;
         }
 
-        // ── Count summary ──
-        const counts: Record<string, number> = {};
-        for (const r of rows) { const s = r.status || "?"; counts[s] = (counts[s] || 0) + 1; }
-        const summaryParts: string[] = [];
-        if (counts.done) summaryParts.push(`${counts.done} done`);
-        if (counts.done_degraded) summaryParts.push(`${counts.done_degraded} degraded`);
-        if (counts.failed) summaryParts.push(`${counts.failed} failed`);
-        if (counts.pending) summaryParts.push(`${counts.pending} pending`);
-        if (counts.running) summaryParts.push(`${counts.running} running`);
-        const summaryEl = containerEl.createEl("div", { cls: "setting-item-description" });
-        summaryEl.style.cssText = "margin-bottom:8px;";
-        summaryEl.setText(`\u5171 ${rows.length} \u7BC7: ${summaryParts.join(" \u00B7 ")}`);
+        // ── Categorize each row ──
+        const items = rows.map((row: any) => ({ row, ui: categorizeMaintenanceRow(row) }));
+        const summary = buildMaintenanceSummary(items.map(item => item.ui));
+
+        state.empty();
+
+        // ── Hero: overall conclusion card ──
+        const hero = state.createEl("div", { cls: "pf-maint-hero pf-card" });
+        hero.createEl("h3", {
+          text: summary.tone === "warn"
+            ? t("ocr_maint_hero_warn").replace("{rebuild}", String(summary.counts.rebuild)).replace("{failed}", String(summary.counts.failed))
+            : t("ocr_maint_hero_ok"),
+        });
+        hero.createEl("p", {
+          text: t("ocr_maint_hero_note"),
+          cls: "setting-item-description",
+        });
+
+        // Count chips
+        const counts = hero.createEl("div", { cls: "pf-maint-counts" });
+        for (const [label, value] of [
+          [t("ocr_maint_no_action"), summary.counts.ok] as const,
+          [t("ocr_maint_rebuild"), summary.counts.rebuild] as const,
+          [t("ocr_maint_failed"), summary.counts.failed] as const,
+        ]) {
+          const stat = counts.createEl("div", { cls: "pf-maint-stat" });
+          stat.createEl("strong", { text: String(value) });
+          stat.createEl("span", { text: label });
+        }
+
+        // ── Section: Needs Attention ──
+        const actionable = items.filter(item => item.ui.category === "rebuild" || item.ui.category === "failed");
+        if (actionable.length > 0) {
+          state.createEl("h3", { text: t("ocr_maint_needs_attention") });
+          const actSection = state.createEl("div", { cls: "pf-maint-section" });
+          for (const item of actionable) {
+            const card = actSection.createEl("div", { cls: "pf-maint-card" });
+            card.createEl("strong", { text: item.row.title_short || item.row.title || item.row.key });
+            const chip = card.createEl("span", { cls: "pf-maint-chip pf-maint-chip--" + item.ui.category, text: item.ui.label });
+            chip.style.marginLeft = "8px";
+            card.createEl("p", { text: item.ui.reason, cls: "setting-item-description" });
+            const btn = card.createEl("button", { text: item.ui.primaryAction === "rebuild" ? t("ocr_maint_rebuild_btn") : t("ocr_maint_redo_btn") });
+            btn.style.cssText = "padding:4px 10px; border-radius:4px; cursor:pointer; font-size:12px;";
+            btn.dataset.action = item.ui.primaryAction || "";
+            btn.dataset.key = item.row.key;
+          }
+        }
+
+        // ── Section: Result Limitations ──
+        const limited = items.filter(item => item.ui.category === "limited");
+        if (limited.length > 0) {
+          state.createEl("h3", { text: t("ocr_maint_limitations") });
+          state.createEl("p", {
+            text: t("ocr_maint_limitations_intro"),
+            cls: "setting-item-description",
+          });
+          for (const item of limited) {
+            const card = state.createEl("div", { cls: "pf-maint-card" });
+            card.createEl("strong", { text: item.row.title_short || item.row.title || item.row.key });
+            const chip = card.createEl("span", { cls: "pf-maint-chip pf-maint-chip--limited", text: item.ui.label });
+            chip.style.marginLeft = "8px";
+            card.createEl("p", { text: item.ui.reason, cls: "setting-item-description" });
+          }
+        }
+
+        // ── Section: All Papers (advanced, collapsed) ──
+        const advanced = state.createEl("details", { cls: "pf-maint-advanced" });
+        advanced.createEl("summary", { text: t("ocr_maint_all_papers") + " (" + rows.length + ")" });
+
+        // Helper functions for the table
+        const classifyPaper = (r: any) => {
+          const s = r.status, h = r.health;
+          if (s === "done" && r.version === "v1") return { badge: "? \u672A\u8BC4\u4F30", color: "#9e9e9e" };
+          if (s === "done" && h === "green") return { badge: "\u2713 \u5B8C\u6210", color: "#4caf50" };
+          if (s === "done" && h === "yellow") return { badge: "\u26A0 \u8D28\u91CF\u95EE\u9898", color: "#ff9800" };
+          if (s === "done" && h === "red") return { badge: "\u26A0 \u4E25\u91CD\u5F02\u5E38", color: "#f44336" };
+          if (s === "done_degraded") return { badge: "\u26A0 \u8D28\u91CF\u95EE\u9898", color: "#ff9800" };
+          if (s === "failed" || s === "fatal_error") return { badge: "\u2717 \u5931\u8D25", color: "#f44336" };
+          if (s === "pending" || s === "nopdf" || s === "blocked") return { badge: "\u25CB \u5F85\u5904\u7406", color: "#9e9e9e" };
+          if (s === "running" || s === "queued") return { badge: "\u25CF \u5904\u7406\u4E2D", color: "#2196f3" };
+          if (s === "retryable_error") return { badge: "\u2717 \u53EF\u91CD\u8BD5", color: "#ff9800" };
+          return { badge: s, color: "#9e9e9e" };
+        };
+        const actionHint = (r: any) => {
+          if (r.recommended_action === "redo") return "\u91CD\u65B0OCR";
+          if (r.recommended_action === "rebuild") return "\u91CD\u5EFA\u7D22\u5F15";
+          return "";
+        };
+
+        // Count categories for filter dropdown
+        const catCounts: Record<string, number> = {};
+        for (const r of rows) { const b = classifyPaper(r).badge; catCounts[b] = (catCounts[b] || 0) + 1; }
+        const badgeOrder = ["\u2713 \u5B8C\u6210", "? \u672A\u8BC4\u4F30", "\u26A0 \u8D28\u91CF\u95EE\u9898", "\u26A0 \u4E25\u91CD\u5F02\u5E38", "\u2717 \u5931\u8D25", "\u25CB \u5F85\u5904\u7406", "\u25CF \u5904\u7406\u4E2D"];
+
+        // Toolbar (inside details)
+        const toolbar = advanced.createEl("div");
+        toolbar.style.cssText = "display:flex; align-items:center; gap:8px; margin-bottom:8px; flex-wrap:wrap;";
+
+        // Row state
+        const selState: Record<string, { sel: boolean; action: string }> = {};
+        for (const r of rows) { selState[r.key] = { sel: false, action: r.recommended_action || "" }; }
 
         // ── Active filter ──
         let activeFilter = "all";
         let filtered = rows;
         const redrawTable = () => {
-          filtered = activeFilter === "all" ? rows : rows.filter((r: any) => r.status === activeFilter);
+          filtered = activeFilter === "all" ? rows : rows.filter((r: any) => classifyPaper(r).badge === activeFilter);
           tbody.empty();
           renderRows(filtered);
-          updateCounts();
+          updateSummary();
         };
 
         // Filter dropdown
         const filterSel = toolbar.createEl("select");
         filterSel.style.cssText = "padding:4px 8px; border-radius:4px;";
-        const statusLabels: Record<string, string> = { all: "\u5168\u90E8", done: "done", done_degraded: "degraded", failed: "failed", pending: "pending" };
-        for (const [k, v] of Object.entries(statusLabels)) {
-          const opt = filterSel.createEl("option", { text: `${v}${counts[k] ? ` (${counts[k]})` : ""}` });
-          opt.value = k;
-        }
+        filterSel.createEl("option", { text: "\u5168\u90E8", value: "all" });
+        for (const k of badgeOrder) { if (catCounts[k]) filterSel.createEl("option", { text: k + " " + catCounts[k], value: k }); }
         filterSel.addEventListener("change", () => { activeFilter = filterSel.value; redrawTable(); });
 
-        // Select all / deselect all
+        // Select / deselect / execute buttons
         const selAllBtn = toolbar.createEl("button", { text: "\u5168\u9009" });
         const deselAllBtn = toolbar.createEl("button", { text: "\u53D6\u6D88\u5168\u9009" });
         Object.assign(selAllBtn.style, { padding: "4px 10px", borderRadius: "4px", cursor: "pointer" });
         Object.assign(deselAllBtn.style, { padding: "4px 10px", borderRadius: "4px", cursor: "pointer" });
-
-        // Execute button
         const execBtn = toolbar.createEl("button", { text: "\u25B8 \u6267\u884C\u5DF2\u9009" });
         execBtn.style.cssText = "padding:4px 12px; border-radius:4px; cursor:pointer; font-weight:600; margin-left:auto;";
-
         const execLabel = toolbar.createEl("span", { cls: "setting-item-description" });
         execLabel.style.cssText = "font-size:11px;";
 
-        // ── Table ──
-        const tableWrapper = containerEl.createEl("div");
-        tableWrapper.style.cssText = "max-height:60vh; overflow-y:auto; border:1px solid var(--background-modifier-border); border-radius:6px; margin-bottom:12px;";
+        const updateSummary = () => {
+          let n = 0;
+          for (const r of filtered) { if (selState[r.key].action) n++; }
+          execLabel.setText("\u5F85\u4FEE\u590D " + n + " \u7BC7");
+        };
 
+        selAllBtn.addEventListener("click", () => {
+          for (const r of filtered) {
+            selState[r.key].sel = true;
+            if (!selState[r.key].action) selState[r.key].action = r.recommended_action || "";
+          }
+          redrawTable();
+        });
+        deselAllBtn.addEventListener("click", () => {
+          for (const r of rows) { selState[r.key].sel = false; selState[r.key].action = ""; }
+          redrawTable();
+        });
+        execBtn.addEventListener("click", () => {
+          const redoKeys: string[] = [], rebuildKeys: string[] = [];
+          for (const r of rows) {
+            const a = selState[r.key].action;
+            if (a === "redo") redoKeys.push(r.key);
+            else if (a === "rebuild") rebuildKeys.push(r.key);
+          }
+          if (!redoKeys.length && !rebuildKeys.length) { new Notice("\u8BF7\u5148\u9009\u62E9\u8981\u4FEE\u590D\u7684\u8BBA\u6587\u3002"); return; }
+          state.empty();
+          state.createEl("p", { text: "\u6267\u884C\u4E2D\u2026" });
+          if (redoKeys.length) execFile(py.path, ["-m", "paperforge", "ocr", "redo", ...redoKeys],
+            { cwd: vaultPath, timeout: 300000, windowsHide: true },
+            () => { new Notice("\u91CD\u65B0OCR\u5DF2\u89E6\u53D1\uFF0C\u5171 " + redoKeys.length + " \u7BC7\u3002"); });
+          if (rebuildKeys.length) execFile(py.path, ["-m", "paperforge", "ocr", "rebuild", ...rebuildKeys],
+            { cwd: vaultPath, timeout: 120000, windowsHide: true },
+            () => { new Notice("\u91CD\u5EFA\u5B8C\u6210\uFF0C\u5171 " + rebuildKeys.length + " \u7BC7\u3002"); });
+        });
+
+        // ── Table ──
+        const tableWrapper = advanced.createEl("div");
+        tableWrapper.style.cssText = "max-height:60vh; overflow-y:auto; border:1px solid var(--background-modifier-border); border-radius:6px; margin-bottom:16px;";
         const table = tableWrapper.createEl("table");
         table.style.cssText = "width:100%; border-collapse:collapse; font-size:12px;";
         const thead = table.createEl("thead");
         const tbody = table.createEl("tbody");
         const headerRow = thead.insertRow();
-        ["", "Key", "Title", "Status", "Health", "Ver", "Time", "Redo", "Rebuild"].forEach(h => {
+        ["", "Key", "Title", "\u72B6\u6001", "\u5EFA\u8BAE", "Model", "Time", "\u4FEE\u590D"].forEach(h => {
           const th = document.createElement("th");
           th.textContent = h;
-          th.style.cssText = "padding:4px 6px; text-align:left; border-bottom:1px solid var(--background-modifier-border); position:sticky; top:0; background:var(--background-primary); z-index:1;";
+          th.style.cssText = "padding:4px 6px; text-align:left; border-bottom:1px solid var(--background-modifier-border); position:sticky; top:0; background:var(--background-primary); z-index:1; white-space:nowrap;";
           headerRow.appendChild(th);
         });
 
-        // Row check state
-        const selState: Record<string, { sel: boolean; redo: boolean; rebuild: boolean }> = {};
-        for (const r of rows) {
-          selState[r.key] = { sel: false, redo: false, rebuild: false };
-          if (r.recommended_action === "redo") selState[r.key].redo = true;
-          if (r.recommended_action === "rebuild") selState[r.key].rebuild = true;
-        }
-
-        const updateCounts = () => {
-          let redoCount = 0, rebuildCount = 0;
-          for (const r of filtered) {
-            const s = selState[r.key];
-            if (s.redo) redoCount++;
-            if (s.rebuild) rebuildCount++;
-          }
-          execLabel.setText(`Redo(${redoCount}) \u00B7 \u91CD\u5EFA(${rebuildCount})`);
-        };
-
-        selAllBtn.addEventListener("click", () => {
-          for (const r of filtered) selState[r.key].sel = true;
-          redrawTable();
-        });
-        deselAllBtn.addEventListener("click", () => {
-          for (const r of rows) { selState[r.key].sel = false; selState[r.key].redo = false; selState[r.key].rebuild = false; }
-          redrawTable();
-        });
-
-        execBtn.addEventListener("click", () => {
-          const redoKeys: string[] = [], rebuildKeys: string[] = [];
-          for (const r of rows) {
-            const s = selState[r.key];
-            if (s.redo) redoKeys.push(r.key);
-            if (s.rebuild) rebuildKeys.push(r.key);
-          }
-          if (!redoKeys.length && !rebuildKeys.length) {
-            new Notice("\u8BF7\u5148\u9009\u62E9\u8981\u6267\u884C\u7684\u64CD\u4F5C\u3002"); return;
-          }
-
-          const msgParts: string[] = [];
-          if (redoKeys.length) msgParts.push(`Redo ${redoKeys.length} papers: ${redoKeys.slice(0, 5).join(", ")}${redoKeys.length > 5 ? "..." : ""}`);
-          if (rebuildKeys.length) msgParts.push(`Rebuild ${rebuildKeys.length} papers: ${rebuildKeys.slice(0, 5).join(", ")}${rebuildKeys.length > 5 ? "..." : ""}`);
-
-          const doExec = () => {
-            state.empty();
-            state.createEl("p", { text: "\u6267\u884C\u4E2D\u2026" });
-            let pending = 0;
-
-            if (redoKeys.length) {
-              pending++;
-              const redoArgs = ["-m", "paperforge", "ocr", "redo", "--dry-run"];
-              execFile(py.path, redoArgs, { cwd: vaultPath, timeout: 60000, windowsHide: true }, () => {
-                // For now just show notice; actual redo would need longer timeout
-                new Notice(`Redo was triggered for ${redoKeys.length} paper(s). Check terminal for progress.`);
-              });
-            }
-            if (rebuildKeys.length) {
-              pending++;
-              const rebuildArgs = ["-m", "paperforge", "ocr", "rebuild", ...rebuildKeys];
-              execFile(py.path, rebuildArgs, { cwd: vaultPath, timeout: 120000, windowsHide: true },
-                (_e: any, stdout: string, _se: any) => {
-                  state.empty();
-                  state.createEl("p", { text: stdout || "\u5B8C\u6210" });
-                  new Notice(`Rebuild complete for ${rebuildKeys.length} paper(s).`);
-                });
-            }
-          };
-
-          // Simple confirm via Notice with action buttons is not possible in Obsidian API.
-          // Use a simple confirm approach: just execute.
-          doExec();
-        });
-
-        const statusBadge = (s: string) => {
-          const colors: Record<string, string> = {
-            done: "#4caf50", done_degraded: "#ff9800", failed: "#f44336",
-            pending: "#9e9e9e", running: "#2196f3", queued: "#2196f3",
-          };
-          const c = colors[s] || "#999";
-          return `<span style="display:inline-block;padding:1px 6px;border-radius:3px;font-size:11px;background:${c}22;color:${c};border:1px solid ${c}44;">${s}</span>`;
-        };
-
-        const healthDot = (h: string) => {
-          const colors: Record<string, string> = { green: "#4caf50", yellow: "#ff9800", red: "#f44336" };
-          const c = colors[h] || "#999";
-          return `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${c};"></span> ${h === "-" ? "-" : ""}`;
-        };
+        const badgeHtml = (label: string, color: string) =>
+          `<span style="display:inline-block;padding:1px 6px;border-radius:3px;font-size:11px;background:${color}22;color:${color};border:1px solid ${color}44;white-space:nowrap;">${label}</span>`;
 
         const renderRows = (rowList: any[]) => {
           for (const r of rowList) {
-            const s = selState[r.key];
+            const st = selState[r.key];
+            const cp = classifyPaper(r);
+            const hint = actionHint(r);
             const tr = tbody.insertRow();
             tr.style.cssText = "border-bottom:1px solid var(--background-modifier-border);";
 
             // Sel checkbox
             const selTd = tr.insertCell(); selTd.style.cssText = "padding:3px 4px;";
-            const selCb = document.createElement("input"); selCb.type = "checkbox"; selCb.checked = s.sel;
-            selCb.addEventListener("change", () => { s.sel = selCb.checked; updateCounts(); });
+            const selCb = document.createElement("input"); selCb.type = "checkbox"; selCb.checked = st.sel;
+            selCb.addEventListener("change", () => {
+              st.sel = selCb.checked;
+              if (!st.sel && st.action) st.action = "";
+              if (st.sel && !st.action) st.action = r.recommended_action || "";
+            });
             selTd.appendChild(selCb);
 
-            // Columns
-            const cols = [
-              { v: r.key, w: "90px" },
-              { v: (r.title || r.key).substring(0, 40), w: "200px", title: r.title },
-              { v: statusBadge(r.status), w: "60px", html: true },
-              { v: healthDot(r.health), w: "30px", html: true },
-              { v: r.version, w: "30px" },
-              { v: r.finished_at, w: "70px" },
-            ];
-            for (const col of cols) {
-              const td = tr.insertCell();
-              td.style.cssText = `padding:3px 4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:${col.w};`;
-              if (col.html) { td.innerHTML = col.v; }
-              else { td.textContent = col.v; }
-              if ((col as any).title) td.title = (col as any).title;
-            }
+            // Key
+            const keyTd = tr.insertCell();
+            keyTd.style.cssText = "padding:3px 4px; white-space:nowrap; font-size:11px; max-width:90px; overflow:hidden; text-overflow:ellipsis;";
+            keyTd.textContent = r.key;
 
-            // Redo checkbox
-            const redoTd = tr.insertCell(); redoTd.style.cssText = "padding:3px 4px; text-align:center;";
-            if (r.can_redo) {
-              const redoCb = document.createElement("input"); redoCb.type = "checkbox"; redoCb.checked = s.redo;
-              redoCb.addEventListener("change", () => {
-                s.redo = redoCb.checked;
-                if (s.redo) s.rebuild = false;
-                s.sel = s.redo || s.rebuild;
+            // Title
+            const titleTd = tr.insertCell();
+            titleTd.style.cssText = "padding:3px 4px; white-space:nowrap; max-width:220px; overflow:hidden; text-overflow:ellipsis;";
+            titleTd.textContent = r.title_short || r.title || r.key;
+            titleTd.title = r.title || r.key;
+
+            // Status badge
+            const badgeTd = tr.insertCell();
+            badgeTd.style.cssText = "padding:3px 4px; white-space:nowrap;";
+            badgeTd.innerHTML = badgeHtml(cp.badge, cp.color);
+
+            // Suggestion column
+            const sugTd = tr.insertCell();
+            sugTd.style.cssText = "padding:3px 4px; white-space:nowrap; max-width:160px; overflow:hidden; text-overflow:ellipsis; font-size:11px; color:var(--text-muted);";
+            let sug = "";
+            if (hint) sug = hint;
+            else if (cp.badge === "\u2713 \u5B8C\u6210") sug = "\u5DF2\u5B8C\u6210";
+            else if (cp.badge.includes("\u5F85\u5904\u7406")) sug = "\u7B49\u5F85OCR";
+            else if (cp.badge.includes("\u5931\u8D25")) sug = r.error_summary?.substring(0, 50) || "";
+            else if (cp.badge.includes("\u672A\u8BC4\u4F30")) sug = "\u5EFA\u8BAE\u91CD\u65B0\u5904\u7406";
+            else if (r.degraded_reasons?.length) sug = r.degraded_reasons[0].substring(0, 50);
+            sugTd.textContent = sug;
+
+            // Model
+            const modelTd = tr.insertCell();
+            modelTd.style.cssText = "padding:3px 4px; white-space:nowrap; max-width:140px; overflow:hidden; text-overflow:ellipsis; font-size:11px;";
+            modelTd.textContent = r.model || "-";
+
+            // Time
+            const timeTd = tr.insertCell();
+            timeTd.style.cssText = "padding:3px 4px; white-space:nowrap; font-size:11px; color:var(--text-muted);";
+            timeTd.textContent = r.finished_at || "-";
+
+            // Fix checkbox
+            const fixTd = tr.insertCell(); fixTd.style.cssText = "padding:3px 4px; text-align:center; white-space:nowrap;";
+            if (hint) {
+              const fixCb = document.createElement("input"); fixCb.type = "checkbox"; fixCb.checked = !!st.action;
+              fixCb.title = hint;
+              fixCb.addEventListener("change", () => {
+                st.action = fixCb.checked ? r.recommended_action : "";
+                st.sel = fixCb.checked;
                 redrawTable();
               });
-              redoTd.appendChild(redoCb);
+              fixTd.appendChild(fixCb);
+              const lbl = document.createElement("span");
+              lbl.style.cssText = "font-size:10px; color:var(--text-faint); margin-left:2px;";
+              lbl.textContent = hint;
+              fixTd.appendChild(lbl);
             } else {
-              redoTd.textContent = "-";
-              redoTd.style.color = "var(--text-faint)";
-            }
-
-            // Rebuild checkbox
-            const rebuildTd = tr.insertCell(); rebuildTd.style.cssText = "padding:3px 4px; text-align:center;";
-            if (r.can_rebuild) {
-              const rebuildCb = document.createElement("input"); rebuildCb.type = "checkbox"; rebuildCb.checked = s.rebuild;
-              rebuildCb.addEventListener("change", () => {
-                s.rebuild = rebuildCb.checked;
-                if (s.rebuild) s.redo = false;
-                s.sel = s.redo || s.rebuild;
-                redrawTable();
-              });
-              rebuildTd.appendChild(rebuildCb);
-            } else {
-              rebuildTd.textContent = "-";
-              rebuildTd.style.color = "var(--text-faint)";
+              fixTd.textContent = "-";
+              fixTd.style.cssText = "padding:3px 4px; text-align:center; font-size:11px; color:var(--text-faint);";
             }
           }
         };
 
-        renderRows(filtered);
-        updateCounts();
+        renderRows(rows);
+        updateSummary();
+
+        // ── Separator + Global actions (inside callback, after details) ──
+        containerEl.createEl("hr");
+        containerEl.createEl("h3", { text: "\u5168\u5C40\u64CD\u4F5C" });
+
+        const globalActions = containerEl.createEl("div");
+        globalActions.style.cssText = "display:flex; gap:8px; flex-wrap:wrap;";
+
+        const rebuildIndexBtn = globalActions.createEl("button", { text: "\u91CD\u5EFA\u641C\u7D22\u7D22\u5F15" });
+        rebuildIndexBtn.style.cssText = "padding:6px 14px; border-radius:4px; cursor:pointer;";
+        rebuildIndexBtn.addEventListener("click", () => {
+          new Notice("\u6B63\u5728\u91CD\u5EFA\u641C\u7D22\u7D22\u5F15\u2026");
+          execFile(py.path, ["-m", "paperforge", "embed", "build", "--force"], { cwd: vaultPath, timeout: 300000, windowsHide: true },
+            (_e: any, _o: string, _s: any) => { new Notice("\u641C\u7D22\u7D22\u5F15\u91CD\u5EFA\u5B8C\u6210\u3002"); });
+        });
+
+        const rebuildMemBtn = globalActions.createEl("button", { text: "\u91CD\u5EFA\u8BB0\u5FC6\u5E93" });
+        rebuildMemBtn.style.cssText = "padding:6px 14px; border-radius:4px; cursor:pointer;";
+        rebuildMemBtn.addEventListener("click", () => {
+          new Notice("\u6B63\u5728\u91CD\u5EFA\u8BB0\u5FC6\u5E93\u2026");
+          execFile(py.path, ["-m", "paperforge", "repair", "--fix"], { cwd: vaultPath, timeout: 120000, windowsHide: true },
+            (_e: any, _o: string, _s: any) => { new Notice("\u8BB0\u5FC6\u5E93\u91CD\u5EFA\u5B8C\u6210\u3002"); });
+        });
       });
 
-    // ── Global actions ──
-    containerEl.createEl("h3", { text: "\u5168\u5C40\u64CD\u4F5C" });
-
-    const globalActions = containerEl.createEl("div");
-    globalActions.style.cssText = "display:flex; gap:8px; flex-wrap:wrap;";
-
-    // Rebuild Search Index button
-    const rebuildIndexBtn = globalActions.createEl("button", { text: "\u91CD\u5EFA\u641C\u7D22\u7D22\u5F15" });
-    rebuildIndexBtn.style.cssText = "padding:6px 14px; border-radius:4px; cursor:pointer;";
-    rebuildIndexBtn.addEventListener("click", () => {
-      new Notice("\u6B63\u5728\u91CD\u5EFA\u641C\u7D22\u7D22\u5F15\u2026");
-      execFile(py.path, ["-m", "paperforge", "embed", "build", "--force"], { cwd: vaultPath, timeout: 300000, windowsHide: true },
-        (_e: any, _o: string, _s: any) => {
-          new Notice("\u641C\u7D22\u7D22\u5F15\u91CD\u5EFA\u5B8C\u6210\u3002");
-        });
-    });
-
-    // Rebuild Memory button
-    const rebuildMemBtn = globalActions.createEl("button", { text: "\u91CD\u5EFA\u8BB0\u5FC6\u5E93" });
-    rebuildMemBtn.style.cssText = "padding:6px 14px; border-radius:4px; cursor:pointer;";
-    rebuildMemBtn.addEventListener("click", () => {
-      new Notice("\u6B63\u5728\u91CD\u5EFA\u8BB0\u5FC6\u5E93\u2026");
-      execFile(py.path, ["-m", "paperforge", "repair", "--fix"], { cwd: vaultPath, timeout: 120000, windowsHide: true },
-        (_e: any, _o: string, _s: any) => {
-          new Notice("\u8BB0\u5FC6\u5E93\u91CD\u5EFA\u5B8C\u6210\u3002");
-        });
-    });
   }
 
   _renderReleaseNotesTab(containerEl: HTMLElement) {

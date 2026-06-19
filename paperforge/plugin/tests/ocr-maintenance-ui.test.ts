@@ -81,6 +81,43 @@ describe('categorizeMaintenanceRow', () => {
     expect(result.label).toBe('No Action Needed');
     expect(result.primaryAction).toBeNull();
   });
+
+  it('uses rebuild-first copy for actionable items', () => {
+    const result = categorizeMaintenanceRow({
+      key: 'R1',
+      title: 'Paper R',
+      status: 'done_degraded',
+      health: 'yellow',
+      recommended_action: 'rebuild',
+      degraded_reasons: ['weak span coverage (51%)'],
+      error_summary: '',
+      error_stage: '',
+      version: 'v2',
+      finished_at: '06-19 14:00',
+      model: 'PaddleOCR-VL-1.6',
+    } as any);
+
+    expect(result.reason).toContain('existing OCR data');
+  });
+
+  it('does not promote redo for non-failed rows', () => {
+    const result = categorizeMaintenanceRow({
+      key: 'R2',
+      title: 'Paper R2',
+      status: 'done_degraded',
+      health: 'yellow',
+      recommended_action: 'redo',
+      degraded_reasons: ['weak body spine'],
+      error_summary: '',
+      error_stage: '',
+      version: 'v2',
+      finished_at: '06-19 14:10',
+      model: 'PaddleOCR-VL-1.6',
+    } as any);
+
+    expect(result.category).toBe('limited');
+    expect(result.primaryAction).toBeNull();
+  });
 });
 
 describe('buildMaintenanceSummary', () => {
