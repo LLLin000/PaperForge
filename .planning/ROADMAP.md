@@ -57,7 +57,7 @@ v0.2 makes those annotations visible and useful inside Obsidian. The milestone s
 - `annotation-06-01-PLAN.md` - Phase 5 bridge hard preflight and dependency gate (Wave 1).
 - `annotation-06-02-PLAN.md` - Pure annotation list view-model helpers and tests (Wave 2, depends on Wave 1).
 - `annotation-06-03-PLAN.md` - Paper-mode annotation section runtime integration (Wave 3, depends on Wave 2).
-- `annotation-06-04-PLAN.md` - Bounded compact styling and DOM/regression coverage (Wave 4, depends on Wave 3).
+- `annotation-06-04-PLAN.md` ✅ completed — Bounded compact styling and DOM/regression coverage (Wave 4, depends on Wave 3).
 
 ### Annotation Phase 7: PDF Jump Navigation
 
