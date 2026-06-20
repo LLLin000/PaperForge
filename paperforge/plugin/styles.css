@@ -2429,3 +2429,323 @@
     color: var(--text-faint);
     font-family: var(--font-monospace);
 }
+
+/* ==========================================================================
+   SECTION 40 — Annotation List (Phase 6, Plan 04)
+   Compact row-list layout bounded within the paper panel.
+   ========================================================================== */
+
+/* ── Section wrapper ── */
+.paperforge-annotations-section {
+    margin: 8px 0 4px;
+}
+
+/* ── Header: title + count + refresh ── */
+.paperforge-annotations-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.paperforge-annotations-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--pf-paper-accent);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    line-height: 1.3;
+}
+
+.paperforge-annotations-count {
+    font-size: 11px;
+    color: var(--text-faint);
+    font-weight: 500;
+    line-height: 1.3;
+}
+
+.paperforge-annotations-refresh-btn {
+    margin-left: auto;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    cursor: pointer;
+    background: transparent;
+    color: var(--text-muted);
+    border: none;
+    border-radius: var(--radius-s, 4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    transition: background 0.15s, color 0.15s, transform 0.3s;
+    flex-shrink: 0;
+}
+
+.paperforge-annotations-refresh-btn:hover {
+    background: var(--background-modifier-hover);
+    color: var(--text-normal);
+}
+
+.paperforge-annotations-refresh-btn:active {
+    transform: rotate(180deg);
+}
+
+/* ── Controls row (search, grouping, filter) ── */
+.paperforge-annotation-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+}
+
+.paperforge-annotation-search {
+    flex: 1 1 140px;
+    min-width: 90px;
+    padding: 4px 8px;
+    font-size: 12px;
+    border: 1px solid var(--pf-border);
+    border-radius: var(--radius-s, 4px);
+    background: var(--background-primary-alt);
+    color: var(--text-normal);
+    outline: none;
+    transition: border-color 0.15s;
+}
+
+.paperforge-annotation-search:focus {
+    border-color: var(--interactive-accent);
+}
+
+.paperforge-annotation-group-select,
+.paperforge-annotation-filter-select {
+    padding: 3px 6px;
+    font-size: 11px;
+    border: 1px solid var(--pf-border);
+    border-radius: var(--radius-s, 4px);
+    background: var(--background-primary-alt);
+    color: var(--text-normal);
+    outline: none;
+    cursor: pointer;
+    max-width: 140px;
+}
+
+/* ── Content area (status, empty, error, list) ── */
+.paperforge-annotations-content {
+    position: relative;
+}
+
+.paperforge-annotations-status {
+    padding: 12px 8px;
+    font-size: 12px;
+    color: var(--text-muted);
+    text-align: center;
+    font-style: italic;
+}
+
+.paperforge-annotations-empty {
+    padding: 12px 8px;
+    font-size: 12px;
+    color: var(--text-muted);
+    text-align: center;
+    font-style: italic;
+}
+
+.paperforge-annotations-error {
+    padding: 10px 10px;
+    margin: 4px 0;
+    font-size: 12px;
+    color: var(--text-error);
+    background: color-mix(in srgb, var(--text-error) 6%, transparent);
+    border: 1px solid color-mix(in srgb, var(--text-error) 16%, transparent);
+    border-radius: var(--radius-s, 4px);
+    line-height: 1.4;
+}
+
+/* ── Stale-data banner ── */
+.paperforge-annotations-stale-banner {
+    padding: 6px 10px;
+    margin-bottom: 6px;
+    font-size: 11px;
+    color: var(--text-warning);
+    background: color-mix(in srgb, var(--text-warning) 8%, transparent);
+    border: 1px solid color-mix(in srgb, var(--text-warning) 18%, transparent);
+    border-radius: var(--radius-s, 4px);
+    line-height: 1.4;
+}
+
+/* ── List container with bounded scroll ── */
+.paperforge-annotations-list {
+    max-height: 420px;
+    overflow-y: auto;
+    scrollbar-gutter: stable;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    padding: 2px 0;
+}
+
+/* ── Annotation row — compact ── */
+.paperforge-annotation-row {
+    display: grid;
+    grid-template-columns: auto auto auto 1fr auto auto;
+    align-items: start;
+    gap: 6px;
+    padding: 6px 8px;
+    border-radius: var(--radius-s, 4px);
+    background: var(--background-primary);
+    border: 1px solid var(--pf-border);
+    transition: background 0.12s, border-color 0.12s;
+    font-size: 12px;
+    line-height: 1.45;
+}
+
+.paperforge-annotation-row:hover {
+    background: var(--background-secondary);
+    border-color: color-mix(in srgb, var(--pf-warm-line) 30%, var(--pf-border));
+}
+
+/* ── Page badge ── */
+.paperforge-annotation-page-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 22px;
+    padding: 1px 5px;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-faint);
+    background: var(--pf-surface-alt);
+    border-radius: 3px;
+    line-height: 1.5;
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+}
+
+/* ── Color swatch ── */
+.paperforge-annotation-swatch {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 3px;
+    border: 1px solid color-mix(in srgb, currentColor 20%, transparent);
+}
+
+.paperforge-annotation-swatch.no-color {
+    background: var(--pf-border);
+    border-color: var(--pf-border);
+    opacity: 0.35;
+}
+
+/* ── Type label ── */
+.paperforge-annotation-type-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    line-height: 1.4;
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+/* ── Selected-text preview (2-line clamp) ── */
+.paperforge-annotation-selected-text {
+    font-size: 12px;
+    color: var(--text-normal);
+    line-height: 1.45;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    word-break: break-word;
+    min-width: 0;
+}
+
+.paperforge-annotation-selected-text.truncated::after {
+    content: '\2026';
+    color: var(--text-faint);
+}
+
+/* ── Comment preview (1-line clamp) ── */
+.paperforge-annotation-comment {
+    font-size: 11px;
+    color: var(--text-muted);
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    word-break: break-word;
+    min-width: 0;
+    font-style: italic;
+}
+
+.paperforge-annotation-comment.truncated::after {
+    content: '\2026';
+    color: var(--text-faint);
+}
+
+/* ── Expand button ── */
+.paperforge-annotation-expand-btn {
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    cursor: pointer;
+    background: transparent;
+    color: var(--text-faint);
+    border: none;
+    border-radius: var(--radius-s, 3px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s, color 0.15s;
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+.paperforge-annotation-expand-btn:hover {
+    background: var(--background-modifier-hover);
+    color: var(--text-normal);
+}
+
+/* ── Expanded details (provenance, read-only, source, timestamps) ── */
+.paperforge-annotation-details {
+    grid-column: 1 / -1;
+    margin-top: 4px;
+    padding: 6px 8px;
+    background: var(--pf-surface-alt);
+    border-radius: var(--radius-s, 3px);
+    border: 1px solid var(--pf-border);
+    font-size: 11px;
+    line-height: 1.5;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.paperforge-annotation-detail-line {
+    color: var(--text-faint);
+    word-break: break-all;
+}
+
+/* Expanded row variant (details visible) */
+.paperforge-annotation-row.expanded {
+    background: var(--background-secondary);
+    border-color: color-mix(in srgb, var(--pf-warm-line) 32%, var(--pf-border));
+}
+
+/* ── Row dark theme refinements ── */
+.theme-dark .paperforge-annotation-row {
+    border-color: color-mix(in srgb, var(--pf-border) 72%, black 28%);
+}
+
+.theme-dark .paperforge-annotation-row:hover {
+    border-color: color-mix(in srgb, var(--pf-warm-line) 26%, var(--pf-border));
+}
+
+.theme-dark .paperforge-annotations-list {
+    scrollbar-color: var(--pf-border) transparent;
+}
