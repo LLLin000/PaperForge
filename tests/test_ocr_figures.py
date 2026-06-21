@@ -2429,74 +2429,7 @@ def test_page_assets_does_not_strict_match_when_page_has_competing_captions() ->
             assert all("page_assets" not in e for e in evidence)
 
 
-def test_region_growth_absorbs_adjacent_right_neighbor() -> None:
-    from paperforge.worker.ocr_figures import _grow_region_from_seed
-
-    seed = {"block_id": "a1", "bbox": [100, 100, 300, 260], "page": 5}
-    others = [
-        {"block_id": "a2", "bbox": [315, 105, 520, 258], "page": 5},
-        {"block_id": "a3", "bbox": [700, 100, 920, 260], "page": 5},
-    ]
-
-    group = _grow_region_from_seed(seed, others, page_width=1000)
-
-    assert group["asset_block_ids"] == ["a1", "a2"]
-    assert any(step["reason"] == "adjacent_right" for step in group["growth_steps"])
-
-
-def test_region_growth_absorbs_adjacent_below_neighbor() -> None:
-    from paperforge.worker.ocr_figures import _grow_region_from_seed
-
-    seed = {"block_id": "a1", "bbox": [100, 100, 320, 250], "page": 6}
-    others = [
-        {"block_id": "a2", "bbox": [98, 265, 325, 420], "page": 6},
-    ]
-
-    group = _grow_region_from_seed(seed, others, page_width=1000)
-
-    assert group["asset_block_ids"] == ["a1", "a2"]
-    assert any(step["reason"] == "adjacent_below" for step in group["growth_steps"])
-
-
-# === Task 2: Post-growth validation ===
-
-
-def test_region_growth_validation_rejects_large_gap_without_support() -> None:
-    from paperforge.worker.ocr_figures import _validate_grown_region
-
-    group = {
-        "asset_block_ids": ["a1", "a2"],
-        "group_bbox": [100, 100, 800, 260],
-        "growth_steps": [{"added_block_id": "a2", "reason": "adjacent_right"}],
-    }
-    assets = [
-        {"block_id": "a1", "bbox": [100, 100, 260, 260], "page": 5},
-        {"block_id": "a2", "bbox": [620, 100, 800, 260], "page": 5},
-    ]
-
-    verdict = _validate_grown_region(group, assets)
-    assert verdict["validation_status"] == "split_required"
-
-
-def test_region_growth_validation_demotes_group_when_crossing_other_caption_zone() -> None:
-    from paperforge.worker.ocr_figures import _validate_grown_region
-
-    group = {
-        "asset_block_ids": ["a1", "a2"],
-        "group_bbox": [100, 100, 520, 260],
-        "growth_steps": [{"added_block_id": "a2", "reason": "adjacent_right"}],
-    }
-    assets = [
-        {"block_id": "a1", "bbox": [100, 100, 300, 260], "page": 5},
-        {"block_id": "a2", "bbox": [320, 100, 520, 260], "page": 5},
-    ]
-    other_caption_bbox = [340, 270, 520, 300]
-
-    verdict = _validate_grown_region(group, assets, competing_caption_bboxes=[other_caption_bbox])
-    assert verdict["validation_status"] == "grouped_evidence_only"
-
-
-def test_build_figure_inventory_uses_region_grown_group_for_irregular_pair() -> None:
+def test_build_figure_inventory_uses_distance_cluster_for_irregular_pair() -> None:
     from paperforge.worker.ocr_figures import build_figure_inventory
 
     structured_blocks = [
@@ -2508,6 +2441,7 @@ def test_build_figure_inventory_uses_region_grown_group_for_irregular_pair() -> 
     inventory = build_figure_inventory(structured_blocks)
     match = inventory["matched_figures"][0]
     assert len(match["matched_assets"]) == 2
+    assert match.get("group_type") == "distance_cluster"
 
 
 def test_display_cluster_keeps_empty_bridge_between_asset_and_caption() -> None:
