@@ -1106,6 +1106,7 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
     matched_figures: list[dict] = []
     unresolved_clusters: list[dict] = []
     ambiguous_figures: list[dict] = []
+    used_group_ids: set[str] = set()
 
     def _collect_bridge_blocks(page: int) -> list[dict]:
         bridges: list[dict] = []
@@ -1367,6 +1368,7 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
                         matched_assets = best_group.get("media_blocks", [])
                         g_page = best_group.get("page", 0)
                         used_asset_page_ids.update({(g_page, bid) for bid in best_group.get("asset_block_ids", [])})
+                        used_group_ids.add(str(best_group.get("group_id", "")))
                         matched_assets = _expand_matched_assets_locally(
                             legend,
                             matched_assets,
@@ -1405,14 +1407,13 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
                         )
                         ambiguous = True
                         matched_assets = []
-                        ambiguous = True
-                        matched_assets = []
             else:
                 best_gi, best_group, best_score = candidates[0]
                 if best_score["decision"] == "matched":
                     matched_assets = best_group.get("media_blocks", [])
                     g_page = best_group.get("page", 0)
                     used_asset_page_ids.update({(g_page, bid) for bid in best_group.get("asset_block_ids", [])})
+                    used_group_ids.add(str(best_group.get("group_id", "")))
                     matched_assets = _expand_matched_assets_locally(
                         legend,
                         matched_assets,
@@ -1775,6 +1776,120 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
             # was already matched by the bundle pass.
             bundle_legend_ids = {m["legend_block_id"] for m in matched_figures if "legend_bundle_match" in m.get("flags", [])}
             ambiguous_figures[:] = [a for a in ambiguous_figures if a.get("legend_block_id") not in bundle_legend_ids]
+
+    # === Group-aware sequential fallback ===
+    # Consume unmatched distance_clusters that no same-page legend claimed.
+    # Inserted AFTER preproof fallback, BEFORE old single-asset sequential fallback.
+    local_asset_by_page_id: dict[tuple[int, str], dict] = {}
+    for block in _filter_figure_assets(assets):
+        local_asset_by_page_id[(int(block.get("page", 0) or 0), str(block.get("block_id", "")))] = block
+
+    unmatched_groups = [
+        g for g in candidate_groups
+        if str(g.get("group_id", "")) not in used_group_ids
+        and g.get("group_type") == "distance_cluster"
+        and not any(
+            (int(g.get("page", 0) or 0), str(bid)) in used_asset_page_ids
+            for bid in g.get("asset_block_ids", [])
+            if bid is not None
+        )
+    ]
+    unmatched_groups.sort(key=lambda g: (
+        int(g.get("page", 0) or 0),
+        (g.get("cluster_bbox") or [0, 0, 0, 0])[1],
+    ))
+
+    for legend in list(unmatched_legends):
+        lg_page = int(legend.get("page", 0) or 0)
+        cap_text = str(legend.get("text", "") or "")
+        fn = _extract_figure_number(cap_text)
+        if fn is None:
+            continue
+        cap_ns = _extract_figure_namespace(cap_text)
+        fig_id = _format_figure_id(cap_ns, fn)
+
+        # Collect candidate groups: prefer same-page, then next-page, then previous-page
+        same_page = [g for g in unmatched_groups if g["page"] == lg_page]
+        next_page = [g for g in unmatched_groups if g["page"] == lg_page + 1]
+        prev_page = [g for g in unmatched_groups if g["page"] == lg_page - 1]
+
+        best_group = None
+        if same_page:
+            for sg in same_page:
+                sg_score = _score_legend_to_group(
+                    legend, sg,
+                    caption_score=score_figure_caption(
+                        legend, nearby_media=True, caption_style_match=False,
+                        body_prose_likelihood=False,
+                    ),
+                    page_width=page_width,
+                )
+                if sg_score.get("decision") == "matched" and sg_score.get("score", 0.0) >= 0.5:
+                    best_group = sg
+                    break
+        if best_group is None and next_page:
+            best_group = next_page[0]
+        if best_group is None and prev_page:
+            first_bid = str(prev_page[0]["asset_block_ids"][0]) if prev_page[0]["asset_block_ids"] else ""
+            first_asset = local_asset_by_page_id.get((prev_page[0]["page"], first_bid))
+            if first_asset and _allow_previous_page_sequential_match(legend, first_asset):
+                best_group = prev_page[0]
+
+        if best_group is None:
+            continue
+
+        group_page = int(best_group.get("page", 0) or 0)
+        caption_score = score_figure_caption(
+            legend, nearby_media=True, caption_style_match=False,
+            body_prose_likelihood=False,
+        )
+
+        group_assets = []
+        for bid in best_group.get("asset_block_ids", []):
+            if bid is None:
+                continue
+            asset = local_asset_by_page_id.get((group_page, str(bid)))
+            if asset:
+                group_assets.append(asset)
+                used_asset_page_ids.add((group_page, str(bid)))
+
+        if not group_assets:
+            continue
+
+        matched_figures.append({
+            "figure_id": fig_id,
+            "figure_namespace": cap_ns,
+            "legend_block_id": legend.get("block_id", ""),
+            "page": group_page,
+            "text": cap_text,
+            "figure_number": fn,
+            "matched_assets": [
+                {"block_id": a.get("block_id", ""), "bbox": a.get("bbox", [0, 0, 0, 0])}
+                for a in group_assets
+            ],
+            "asset_block_ids": [str(a.get("block_id", "")) for a in group_assets],
+            "bridge_block_ids": [],
+            "group_type": best_group.get("group_type", ""),
+            "group_evidence": best_group.get("group_evidence", []) + ["group_sequential_fallback"],
+            "cluster_bbox": best_group.get("cluster_bbox", [0, 0, 0, 0]),
+            "confidence": 0.45,
+            "match_score": {
+                "score": 0.45,
+                "decision": "matched",
+                "evidence": ["group_sequential_fallback"],
+            },
+            "flags": ["group_sequential_match"],
+            "caption_score": caption_score,
+        })
+
+        used_group_ids.add(str(best_group.get("group_id", "")))
+        unmatched_legends.remove(legend)
+        ambiguous_figures[:] = [
+            af for af in ambiguous_figures
+            if str(af.get("legend_block_id", "")) != str(legend.get("block_id", ""))
+        ]
+
+    # === End group-aware fallback ===
 
     # Sequential fallback: match unmatched captions to remaining assets in reading order.
     # Captions and figures often appear on different pages — humans match them by
