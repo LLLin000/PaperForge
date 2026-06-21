@@ -370,7 +370,10 @@ def backfill_missing_text_from_pdf(
                 or block.get("block_content")
                 or ""
             ).strip()
-            if current_text:
+            # Ponytail: "text" field may be JSON list [] from raw block format,
+            # not a string. str([]) → "[]" which is truthy but has no real text.
+            # Detect and treat as empty.
+            if current_text and current_text not in ("[]", "[ ]"):
                 continue
 
             # Guard: must have span_metadata as PDF evidence
@@ -442,6 +445,7 @@ def backfill_missing_text_from_pdf(
                 block["_text_source"] = "pdf_text_layer_fallback"
                 block["_ocr_raw_status"] = "missing_text_recovered"
                 block["_ocr_raw_error_type"] = "empty_text_with_pdf_evidence"
+                block["role"] = "body_paragraph"
                 recovered += 1
             else:
                 try:

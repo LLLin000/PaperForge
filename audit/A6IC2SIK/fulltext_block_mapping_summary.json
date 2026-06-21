@@ -1,7 +1,7 @@
 {
-  "mappable_block_count": 235,
-  "found_count": 174,
-  "missing_count": 61,
+  "mappable_block_count": 241,
+  "found_count": 136,
+  "missing_count": 105,
   "rows": [
     {
       "block_id": "p1:0",
@@ -16,9 +16,9 @@
     {
       "block_id": "p1:1",
       "page": 1,
-      "role": "unknown_structural",
+      "role": "authors",
       "zone": "frontmatter_main_zone",
-      "render_default": false,
+      "render_default": true,
       "snippet": "Preparation and Properties of Self-Healable and Conductive PVA-Agar Hydrogel wit",
       "found_in_fulltext": false,
       "fulltext_offset": -1
@@ -41,7 +41,7 @@
       "render_default": true,
       "snippet": "This is a PDF file of an article that has undergone enhancements after acceptanc",
       "found_in_fulltext": true,
-      "fulltext_offset": 2004
+      "fulltext_offset": 1818
     },
     {
       "block_id": "p2:0",
@@ -66,17 +66,27 @@
     {
       "block_id": "p2:2",
       "page": 2,
-      "role": "non_body_insert",
+      "role": "authors",
       "zone": "body_zone",
-      "render_default": false,
+      "render_default": true,
       "snippet": "Xin Xin Sun $ ^{1} $, Chun Hui Luo $ ^{1,2,3*} $ and Fa Liang Luo $ ^{4,*} $",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:3",
+      "page": 2,
+      "role": "affiliation",
+      "zone": "frontmatter_side_zone",
+      "render_default": true,
+      "snippet": "1College of Chemistry and Chemical Engineering, North Minzu University, Yinchuan",
       "found_in_fulltext": false,
       "fulltext_offset": -1
     },
     {
       "block_id": "p2:4",
       "page": 2,
-      "role": "frontmatter_support",
+      "role": "affiliation",
       "zone": "body_zone",
       "render_default": true,
       "snippet": "2Key Laboratory of Chemical Engineering and Technology, State Ethnic Affairs Com",
@@ -86,7 +96,7 @@
     {
       "block_id": "p2:5",
       "page": 2,
-      "role": "frontmatter_support",
+      "role": "affiliation",
       "zone": "body_zone",
       "render_default": true,
       "snippet": "3Ningxia Key Laboratory of Solar Chemical Conversion Technology, North Minzu Uni",
@@ -94,11 +104,21 @@
       "fulltext_offset": -1
     },
     {
+      "block_id": "p2:6",
+      "page": 2,
+      "role": "frontmatter_support",
+      "zone": "frontmatter_side_zone",
+      "render_default": true,
+      "snippet": "4State Key Laboratory of High-efficiency Utilization of Coal and Green Chemical ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
       "block_id": "p2:8",
       "page": 2,
-      "role": "non_body_insert",
+      "role": "frontmatter_support",
       "zone": "body_zone",
-      "render_default": false,
+      "render_default": true,
       "snippet": "Key words: PVA; Agar; high strength; self-healable; electrical conductivity",
       "found_in_fulltext": false,
       "fulltext_offset": -1
@@ -131,7 +151,7 @@
       "render_default": true,
       "snippet": "1. Introduction",
       "found_in_fulltext": true,
-      "fulltext_offset": 2614
+      "fulltext_offset": 2428
     },
     {
       "block_id": "p3:2",
@@ -140,8 +160,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "Human tissues including muscle, skins, cartilage and tendon possess well-defined",
-      "found_in_fulltext": true,
-      "fulltext_offset": 2630
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p3:3",
@@ -150,8 +170,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "To achieve this goal, a variety of biocompatible polymers including poly(hydroxy",
-      "found_in_fulltext": true,
-      "fulltext_offset": 3734
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p3:4",
@@ -161,7 +181,7 @@
       "render_default": true,
       "snippet": "Among these biocompatible materials, PVA gels prepared by freezing-thawing (FT)",
       "found_in_fulltext": true,
-      "fulltext_offset": 4932
+      "fulltext_offset": 2444
     },
     {
       "block_id": "p3:5",
@@ -191,7 +211,7 @@
       "render_default": true,
       "snippet": "have attracted much attention for their easy operation and non-toxicity [15-16, ",
       "found_in_fulltext": true,
-      "fulltext_offset": 5028
+      "fulltext_offset": 2540
     },
     {
       "block_id": "p4:2",
@@ -200,8 +220,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "Various approaches have been developed to toughen hydrogels including dual-netwo",
-      "found_in_fulltext": true,
-      "fulltext_offset": 5832
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p4:3",
@@ -211,7 +231,7 @@
       "render_default": false,
       "snippet": "3",
       "found_in_fulltext": true,
-      "fulltext_offset": 1049
+      "fulltext_offset": 863
     },
     {
       "block_id": "p5:0",
@@ -231,7 +251,7 @@
       "render_default": true,
       "snippet": "and physical interactions [42], instead of chemical cross-linking, to obtain a t",
       "found_in_fulltext": true,
-      "fulltext_offset": 7532
+      "fulltext_offset": 3360
     },
     {
       "block_id": "p5:3",
@@ -249,9 +269,19 @@
       "role": "section_heading",
       "zone": "body_zone",
       "render_default": true,
-      "snippet": "2. Materials and Methods 2.1. Materials",
+      "snippet": "2. Materials and Methods",
       "found_in_fulltext": true,
-      "fulltext_offset": 8739
+      "fulltext_offset": 4570
+    },
+    {
+      "block_id": "p5:5",
+      "page": 5,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "2.1. Materials",
+      "found_in_fulltext": true,
+      "fulltext_offset": 4599
     },
     {
       "block_id": "p5:6",
@@ -260,8 +290,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "Poly(vinyl alcohol) (PVA, Mn=74800 g/mol) and ammonium sulfate (AS, AR) were",
-      "found_in_fulltext": true,
-      "fulltext_offset": 8779
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p5:7",
@@ -291,7 +321,7 @@
       "render_default": true,
       "snippet": "purchased from Aladdin Reagent (Shanghai) Co., Ltd. Agar was obtained from Beiji",
       "found_in_fulltext": true,
-      "fulltext_offset": 8914
+      "fulltext_offset": 4672
     },
     {
       "block_id": "p6:2",
@@ -300,8 +330,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "2.2. Preparation of PVA-Agar-AS hydrogel",
-      "found_in_fulltext": true,
-      "fulltext_offset": 9078
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p6:3",
@@ -310,8 +340,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "PVA-Agar-AS hydrogels were synthesized by a combination of FT and soaking method",
-      "found_in_fulltext": true,
-      "fulltext_offset": 9119
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p6:4",
@@ -321,7 +351,7 @@
       "render_default": true,
       "snippet": "2.3. Characterization",
       "found_in_fulltext": true,
-      "fulltext_offset": 10089
+      "fulltext_offset": 4836
     },
     {
       "block_id": "p6:5",
@@ -331,7 +361,7 @@
       "render_default": true,
       "snippet": "FT-IR spectra were performed on a Thermo Nicolet Avatar 380 Fourier transform in",
       "found_in_fulltext": true,
-      "fulltext_offset": 10111
+      "fulltext_offset": 4858
     },
     {
       "block_id": "p6:6",
@@ -340,8 +370,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "The content of water in the hydrogel at different states was calculated accordin",
-      "found_in_fulltext": true,
-      "fulltext_offset": 10704
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p6:7",
@@ -361,7 +391,7 @@
       "render_default": false,
       "snippet": "(1)",
       "found_in_fulltext": true,
-      "fulltext_offset": 10801
+      "fulltext_offset": 14025
     },
     {
       "block_id": "p6:9",
@@ -401,7 +431,7 @@
       "render_default": true,
       "snippet": "2.4. Mechanical testing",
       "found_in_fulltext": true,
-      "fulltext_offset": 10974
+      "fulltext_offset": 5614
     },
     {
       "block_id": "p7:2",
@@ -410,8 +440,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "The mechanical performance of the hydrogel was measured on an electronic testing",
-      "found_in_fulltext": true,
-      "fulltext_offset": 10998
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p7:3",
@@ -420,8 +450,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "Oscillatory dynamic mechanical measurements were performed on an Anton Paar MCR ",
-      "found_in_fulltext": true,
-      "fulltext_offset": 11789
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p7:4",
@@ -431,7 +461,7 @@
       "render_default": true,
       "snippet": "2.5. Calculation of component content",
       "found_in_fulltext": true,
-      "fulltext_offset": 12418
+      "fulltext_offset": 5642
     },
     {
       "block_id": "p7:5",
@@ -441,7 +471,7 @@
       "render_default": true,
       "snippet": "A gravimetric method was used to measure the content of each component. The wate",
       "found_in_fulltext": true,
-      "fulltext_offset": 12456
+      "fulltext_offset": 5680
     },
     {
       "block_id": "p7:6",
@@ -461,7 +491,7 @@
       "render_default": false,
       "snippet": "(2)",
       "found_in_fulltext": true,
-      "fulltext_offset": 12653
+      "fulltext_offset": 5877
     },
     {
       "block_id": "p7:8",
@@ -501,7 +531,7 @@
       "render_default": false,
       "snippet": "(4)",
       "found_in_fulltext": true,
-      "fulltext_offset": 12657
+      "fulltext_offset": 5881
     },
     {
       "block_id": "p7:12",
@@ -541,7 +571,7 @@
       "render_default": true,
       "snippet": "2.6. Self-healing property",
       "found_in_fulltext": true,
-      "fulltext_offset": 12912
+      "fulltext_offset": 6136
     },
     {
       "block_id": "p8:2",
@@ -550,8 +580,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "The resultant hydrogel was cut into two parts and pressed together in a sealed t",
-      "found_in_fulltext": true,
-      "fulltext_offset": 12939
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p8:3",
@@ -581,7 +611,7 @@
       "render_default": true,
       "snippet": "2.7. Conductivity",
       "found_in_fulltext": true,
-      "fulltext_offset": 13194
+      "fulltext_offset": 6167
     },
     {
       "block_id": "p8:6",
@@ -590,8 +620,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "The hydrogel was connected into an electrical circuit, and the resistances of th",
-      "found_in_fulltext": true,
-      "fulltext_offset": 13212
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p8:7",
@@ -610,13 +640,13 @@
       "zone": "body_zone",
       "render_default": false,
       "snippet": "(8)",
-      "found_in_fulltext": true,
-      "fulltext_offset": 13403
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p8:9",
       "page": 8,
-      "role": "body_paragraph",
+      "role": "reference_item",
       "zone": "body_zone",
       "render_default": true,
       "snippet": "Where R is the resistances at different temperatures; $ R_{0} $ is the resistanc",
@@ -629,9 +659,19 @@
       "role": "section_heading",
       "zone": "body_zone",
       "render_default": true,
-      "snippet": "3. Results and Discussion 3.1. Synthesis and Characterization of Hydrogels",
+      "snippet": "3. Results and Discussion",
       "found_in_fulltext": true,
-      "fulltext_offset": 13499
+      "fulltext_offset": 6274
+    },
+    {
+      "block_id": "p8:11",
+      "page": 8,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "3.1. Synthesis and Characterization of Hydrogels",
+      "found_in_fulltext": true,
+      "fulltext_offset": 6304
     },
     {
       "block_id": "p8:12",
@@ -641,7 +681,7 @@
       "render_default": true,
       "snippet": "Agar was utilized to form hydrogen bonds with PVA followed by a simple soaking m",
       "found_in_fulltext": true,
-      "fulltext_offset": 13574
+      "fulltext_offset": 6353
     },
     {
       "block_id": "p8:13",
@@ -651,7 +691,7 @@
       "render_default": true,
       "snippet": "The chemical structures of s-PVA, s-Agar and PVA-Agar-15 precursor hydrogels wer",
       "found_in_fulltext": true,
-      "fulltext_offset": 14441
+      "fulltext_offset": 7220
     },
     {
       "block_id": "p8:14",
@@ -661,7 +701,7 @@
       "render_default": false,
       "snippet": "7",
       "found_in_fulltext": true,
-      "fulltext_offset": 422
+      "fulltext_offset": 2961
     },
     {
       "block_id": "p9:0",
@@ -701,7 +741,7 @@
       "render_default": true,
       "snippet": "3.2. Mechanical properties",
       "found_in_fulltext": true,
-      "fulltext_offset": 15375
+      "fulltext_offset": 8154
     },
     {
       "block_id": "p9:5",
@@ -711,7 +751,7 @@
       "render_default": true,
       "snippet": "We first investigated the mechanical strength of PVA-Agar-X precursor hydrogels ",
       "found_in_fulltext": true,
-      "fulltext_offset": 15402
+      "fulltext_offset": 8181
     },
     {
       "block_id": "p9:6",
@@ -721,7 +761,7 @@
       "render_default": false,
       "snippet": "8",
       "found_in_fulltext": true,
-      "fulltext_offset": 1125
+      "fulltext_offset": 939
     },
     {
       "block_id": "p10:0",
@@ -741,7 +781,7 @@
       "render_default": true,
       "snippet": "insufficient, while become brittle when they are excessive [38, 62-64].",
       "found_in_fulltext": true,
-      "fulltext_offset": 16599
+      "fulltext_offset": 9378
     },
     {
       "block_id": "p10:4",
@@ -761,7 +801,7 @@
       "render_default": true,
       "snippet": "Previous works have shown that soaking was a successful strategy to tough hydrog",
       "found_in_fulltext": true,
-      "fulltext_offset": 16671
+      "fulltext_offset": 9450
     },
     {
       "block_id": "p10:6",
@@ -791,7 +831,7 @@
       "render_default": true,
       "snippet": "reported PVA gels to date [39, 41].",
       "found_in_fulltext": true,
-      "fulltext_offset": 18479
+      "fulltext_offset": 11258
     },
     {
       "block_id": "p11:5",
@@ -800,6 +840,16 @@
       "zone": "body_zone",
       "render_default": false,
       "snippet": "Fig.4 Hydrogels with high mechanical properties: Tensile (A) and compressive (B)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:6",
+      "page": 11,
+      "role": "table_caption",
+      "zone": "display_zone",
+      "render_default": true,
+      "snippet": "Table 1. Mechanical properties of hydrogels.",
       "found_in_fulltext": false,
       "fulltext_offset": -1
     },
@@ -821,7 +871,7 @@
       "render_default": true,
       "snippet": "The crosslinking density and network homogeneity of physical gels are closely re",
       "found_in_fulltext": true,
-      "fulltext_offset": 18551
+      "fulltext_offset": 11330
     },
     {
       "block_id": "p11:10",
@@ -851,7 +901,7 @@
       "render_default": true,
       "snippet": "saturated AS aqueous solution (~40 wt%) was used to shorten the soaking time. As",
       "found_in_fulltext": true,
-      "fulltext_offset": 19025
+      "fulltext_offset": 11846
     },
     {
       "block_id": "p12:4",
@@ -871,7 +921,7 @@
       "render_default": true,
       "snippet": "3.3. The energy dissipation mechanism of hydrogel",
       "found_in_fulltext": true,
-      "fulltext_offset": 19637
+      "fulltext_offset": 12458
     },
     {
       "block_id": "p12:6",
@@ -880,8 +930,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "We have demonstrated that the mechanical properties increased significantly afte",
-      "found_in_fulltext": true,
-      "fulltext_offset": 19687
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p12:7",
@@ -891,7 +941,7 @@
       "render_default": false,
       "snippet": "11",
       "found_in_fulltext": true,
-      "fulltext_offset": 4150
+      "fulltext_offset": 10647
     },
     {
       "block_id": "p13:0",
@@ -911,7 +961,7 @@
       "render_default": true,
       "snippet": "toughness recovery at a 100% strain could reach 56.1% after relaxing at room tem",
       "found_in_fulltext": true,
-      "fulltext_offset": 20934
+      "fulltext_offset": 12567
     },
     {
       "block_id": "p13:6",
@@ -930,8 +980,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "To gain additional insights into the toughening mechanism, water contents, cross",
-      "found_in_fulltext": true,
-      "fulltext_offset": 21773
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p13:8",
@@ -941,7 +991,7 @@
       "render_default": false,
       "snippet": "12",
       "found_in_fulltext": true,
-      "fulltext_offset": 4356
+      "fulltext_offset": 6728
     },
     {
       "block_id": "p14:0",
@@ -961,7 +1011,7 @@
       "render_default": true,
       "snippet": "the water content of the PVA-Agar-15 precursor hydrogel decreases from 88.5 wt% ",
       "found_in_fulltext": true,
-      "fulltext_offset": 22046
+      "fulltext_offset": 13423
     },
     {
       "block_id": "p14:2",
@@ -971,7 +1021,7 @@
       "render_default": false,
       "snippet": "13",
       "found_in_fulltext": true,
-      "fulltext_offset": 20927
+      "fulltext_offset": 12560
     },
     {
       "block_id": "p15:0",
@@ -1011,7 +1061,7 @@
       "render_default": false,
       "snippet": "14",
       "found_in_fulltext": true,
-      "fulltext_offset": 4359
+      "fulltext_offset": 7392
     },
     {
       "block_id": "p16:0",
@@ -1034,6 +1084,16 @@
       "fulltext_offset": -1
     },
     {
+      "block_id": "p16:2",
+      "page": 16,
+      "role": "table_caption",
+      "zone": "display_zone",
+      "render_default": true,
+      "snippet": "Table 2. Network parameters of hydrogels.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
       "block_id": "p16:4",
       "page": 16,
       "role": "footnote",
@@ -1041,7 +1101,7 @@
       "render_default": true,
       "snippet": "The network parameters of hydrogels were calculated according Eq. S1&S7 (Supplem",
       "found_in_fulltext": true,
-      "fulltext_offset": 25547
+      "fulltext_offset": 15661
     },
     {
       "block_id": "p16:5",
@@ -1051,7 +1111,7 @@
       "render_default": true,
       "snippet": "The network structures of gels were further examined by SEM. As shown in Fig.8, ",
       "found_in_fulltext": true,
-      "fulltext_offset": 25644
+      "fulltext_offset": 15758
     },
     {
       "block_id": "p16:10",
@@ -1071,7 +1131,7 @@
       "render_default": true,
       "snippet": "3.5. Self-healing property of hydrogel",
       "found_in_fulltext": true,
-      "fulltext_offset": 26187
+      "fulltext_offset": 16301
     },
     {
       "block_id": "p16:12",
@@ -1081,7 +1141,7 @@
       "render_default": true,
       "snippet": "Due to the dynamic nature of junctions, the hydrogel was expected to display sel",
       "found_in_fulltext": true,
-      "fulltext_offset": 26226
+      "fulltext_offset": 16340
     },
     {
       "block_id": "p16:13",
@@ -1091,7 +1151,7 @@
       "render_default": false,
       "snippet": "15",
       "found_in_fulltext": true,
-      "fulltext_offset": 4477
+      "fulltext_offset": 2613
     },
     {
       "block_id": "p17:0",
@@ -1111,7 +1171,7 @@
       "render_default": true,
       "snippet": "healing properties [55, 76]. The sample was cut by a razor and pressed together ",
       "found_in_fulltext": true,
-      "fulltext_offset": 26400
+      "fulltext_offset": 16514
     },
     {
       "block_id": "p17:4",
@@ -1131,7 +1191,7 @@
       "render_default": true,
       "snippet": "3.6. Conductivity of hydrogel",
       "found_in_fulltext": true,
-      "fulltext_offset": 27403
+      "fulltext_offset": 17517
     },
     {
       "block_id": "p17:6",
@@ -1180,8 +1240,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "4. Conclusion",
-      "found_in_fulltext": true,
-      "fulltext_offset": 28139
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p18:7",
@@ -1190,38 +1250,38 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "In this work, we demonstrate a universal method based on commercially available ",
-      "found_in_fulltext": true,
-      "fulltext_offset": 28153
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p18:8",
       "page": 18,
-      "role": "backmatter_heading",
+      "role": "sub_subsection_heading",
       "zone": "body_zone",
       "render_default": true,
       "snippet": "Acknowledgements",
       "found_in_fulltext": true,
-      "fulltext_offset": 28881
+      "fulltext_offset": 17608
     },
     {
       "block_id": "p18:9",
       "page": 18,
-      "role": "backmatter_body",
+      "role": "body_paragraph",
       "zone": "body_zone",
       "render_default": true,
       "snippet": "The authors appreciate financial support from the National Natural Science Found",
       "found_in_fulltext": true,
-      "fulltext_offset": 28900
+      "fulltext_offset": 17627
     },
     {
       "block_id": "p18:10",
       "page": 18,
-      "role": "backmatter_body",
+      "role": "body_paragraph",
       "zone": "body_zone",
       "render_default": true,
       "snippet": "The authors declare no competing financial interest.",
       "found_in_fulltext": true,
-      "fulltext_offset": 28826
+      "fulltext_offset": 18147
     },
     {
       "block_id": "p18:11",
@@ -1231,7 +1291,7 @@
       "render_default": false,
       "snippet": "17",
       "found_in_fulltext": true,
-      "fulltext_offset": 3996
+      "fulltext_offset": 8469
     },
     {
       "block_id": "p19:0",
@@ -1251,7 +1311,7 @@
       "render_default": true,
       "snippet": "Reference",
       "found_in_fulltext": true,
-      "fulltext_offset": 29484
+      "fulltext_offset": 18264
     },
     {
       "block_id": "p19:2",
@@ -1260,8 +1320,8 @@
       "zone": "reference_zone",
       "render_default": true,
       "snippet": "[1] Z.G. Zhao, R.C. Fang, Q.F. Rong, M.J. Liu, Bioinspired Nanocomposite Hydroge",
-      "found_in_fulltext": true,
-      "fulltext_offset": 31750
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p19:3",
@@ -1270,8 +1330,8 @@
       "zone": "reference_zone",
       "render_default": true,
       "snippet": "[2] C.J. Little, N.K. Bawolin, X. Chen, Mechanical properties of natural cartila",
-      "found_in_fulltext": true,
-      "fulltext_offset": 29494
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p19:4",
@@ -1281,7 +1341,7 @@
       "render_default": true,
       "snippet": "[3] M. Ribeiro, M.A. de Moraes, M.M. Beppu, M.P. Garcia, M.H. Fernandes, F.J. Mo",
       "found_in_fulltext": true,
-      "fulltext_offset": 29642
+      "fulltext_offset": 18274
     },
     {
       "block_id": "p19:5",
@@ -1291,7 +1351,7 @@
       "render_default": true,
       "snippet": "[4] C.J. Fan, D.A Wang, A biodegradable PEG-based micro-cavitary hydrogel as sca",
       "found_in_fulltext": true,
-      "fulltext_offset": 29871
+      "fulltext_offset": 18503
     },
     {
       "block_id": "p19:6",
@@ -1300,8 +1360,8 @@
       "zone": "reference_zone",
       "render_default": true,
       "snippet": "[5] F. Yu, X.D. Cao, Y.L. Li, L. Zeng, J.H. Zhu, G. Wang, X.F. Chen, Diels–Alder",
-      "found_in_fulltext": true,
-      "fulltext_offset": 31896
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p19:7",
@@ -1310,8 +1370,8 @@
       "zone": "reference_zone",
       "render_default": true,
       "snippet": "[6] D.A. Gyles, L.D. Castro, J.O.C. Silva, R.M. Ribeiro-Costa, A review of the d",
-      "found_in_fulltext": true,
-      "fulltext_offset": 32145
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p19:8",
@@ -1321,7 +1381,7 @@
       "render_default": true,
       "snippet": "[7] J.F. Pan, L. Yuan, C.A. Guo, X.H. Geng, T. Fei, W.S. Fan, S. Li, H.F. Yuan; ",
       "found_in_fulltext": true,
-      "fulltext_offset": 32348
+      "fulltext_offset": 20382
     },
     {
       "block_id": "p19:9",
@@ -1331,7 +1391,7 @@
       "render_default": true,
       "snippet": "[8] G.J. Graulus, A. Mignon, S. Van Vlierberghe, H. Declercq, K. Fehér, M. Corne",
       "found_in_fulltext": true,
-      "fulltext_offset": 30025
+      "fulltext_offset": 18657
     },
     {
       "block_id": "p19:10",
@@ -1341,7 +1401,7 @@
       "render_default": true,
       "snippet": "[9] C.C. Lin, K.S. Anseth, PEG hydrogels for the controlled release of biomolecu",
       "found_in_fulltext": true,
-      "fulltext_offset": 30259
+      "fulltext_offset": 18891
     },
     {
       "block_id": "p19:11",
@@ -1351,7 +1411,7 @@
       "render_default": true,
       "snippet": "[10] M. Teodorescu, M. Bercea, Poly(vinylpyrrolidone) – A Versatile Polymer for ",
       "found_in_fulltext": true,
-      "fulltext_offset": 30399
+      "fulltext_offset": 19031
     },
     {
       "block_id": "p19:12",
@@ -1361,7 +1421,7 @@
       "render_default": true,
       "snippet": "[11] P.D. Dalton, L. Flynn, M.S. Shoichet. Manufacture of poly(2-hydroxyethyl me",
       "found_in_fulltext": true,
-      "fulltext_offset": 30570
+      "fulltext_offset": 19202
     },
     {
       "block_id": "p19:13",
@@ -1371,7 +1431,7 @@
       "render_default": true,
       "snippet": "[12] T.R. Dargaville, J. R. Park, R. Hoogenboom, Poly(2-oxazoline) Hydrogels: St",
       "found_in_fulltext": true,
-      "fulltext_offset": 30770
+      "fulltext_offset": 19402
     },
     {
       "block_id": "p19:14",
@@ -1381,7 +1441,7 @@
       "render_default": true,
       "snippet": "[13] F.A. Jerca, A.M. Anghelache, E. Ghibu, S. Cecoltan; I. C. Stancu, R. Trusca",
       "found_in_fulltext": true,
-      "fulltext_offset": 30929
+      "fulltext_offset": 19561
     },
     {
       "block_id": "p19:15",
@@ -1391,7 +1451,7 @@
       "render_default": true,
       "snippet": "[14] F.A. Jerca, V.V. Jerca, A.M. Anghelache, D.M. Vuluga, R. Hoogenboom, Poly(2",
       "found_in_fulltext": true,
-      "fulltext_offset": 31182
+      "fulltext_offset": 19814
     },
     {
       "block_id": "p19:16",
@@ -1401,7 +1461,7 @@
       "render_default": true,
       "snippet": "[15] R. Ricciardi, F. Auriemma, C. De Rosa, Structure and Properties of Poly(vin",
       "found_in_fulltext": true,
-      "fulltext_offset": 31382
+      "fulltext_offset": 20014
     },
     {
       "block_id": "p19:17",
@@ -1411,7 +1471,7 @@
       "render_default": true,
       "snippet": "[16] C.M. Hassan, N.A. Peppas, Structure and Applications of Poly(vinyl alcohol)",
       "found_in_fulltext": true,
-      "fulltext_offset": 31554
+      "fulltext_offset": 20186
     },
     {
       "block_id": "p19:18",
@@ -1421,7 +1481,7 @@
       "render_default": true,
       "snippet": "[17] X.W. Xu, F.A. Jerca, V.V. Jerca, R. Hoogenboom, Covalent Poly(2-Isopropenyl",
       "found_in_fulltext": true,
-      "fulltext_offset": 32600
+      "fulltext_offset": 20634
     },
     {
       "block_id": "p19:19",
@@ -1431,7 +1491,7 @@
       "render_default": false,
       "snippet": "18",
       "found_in_fulltext": true,
-      "fulltext_offset": 1406
+      "fulltext_offset": 1220
     },
     {
       "block_id": "p20:0",
@@ -1451,7 +1511,7 @@
       "render_default": true,
       "snippet": "Toughness through Secondary Terpyridine Metal-Coordination Crosslinks, Adv. Func",
       "found_in_fulltext": true,
-      "fulltext_offset": 34464
+      "fulltext_offset": 21935
     },
     {
       "block_id": "p20:2",
@@ -1460,8 +1520,8 @@
       "zone": "reference_zone",
       "render_default": true,
       "snippet": "[18] M. Kobayashi, J. Toguchida, M. Oka, Preliminary study of polyvinyl alcohol-",
-      "found_in_fulltext": true,
-      "fulltext_offset": 32760
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p20:3",
@@ -1470,8 +1530,8 @@
       "zone": "reference_zone",
       "render_default": true,
       "snippet": "[19] R. Ricciardi, C. Gaillet, G. Ducouret, F. Lafuma, F. Lauprêtre, Investigati",
-      "found_in_fulltext": true,
-      "fulltext_offset": 34570
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p20:4",
@@ -1481,7 +1541,7 @@
       "render_default": true,
       "snippet": "[20] R. Ricciardi, F. Auriemma, C. De Rosa, F. Lauprêtre, X-ray Diffraction Anal",
       "found_in_fulltext": true,
-      "fulltext_offset": 34803
+      "fulltext_offset": 22041
     },
     {
       "block_id": "p20:5",
@@ -1491,7 +1551,7 @@
       "render_default": true,
       "snippet": "[21] R. Ricciardi, F. Auriemma, C. Gaillet, C. De Rosa, F. Lauprêtre, Investigat",
       "found_in_fulltext": true,
-      "fulltext_offset": 32910
+      "fulltext_offset": 20794
     },
     {
       "block_id": "p20:6",
@@ -1500,8 +1560,8 @@
       "zone": "reference_zone",
       "render_default": true,
       "snippet": "[22] R. Ricciardi, G. D'Errico, F. Auriemma, G. Ducouret, A.M. Tedeschi, C. De R",
-      "found_in_fulltext": true,
-      "fulltext_offset": 33121
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p20:7",
@@ -1510,8 +1570,8 @@
       "zone": "reference_zone",
       "render_default": true,
       "snippet": "[23] C.M. Hassan, N.A. Peppas, Structure and Morphology of Freeze/Thawed PVA Hyd",
-      "found_in_fulltext": true,
-      "fulltext_offset": 33410
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p20:8",
@@ -1521,7 +1581,7 @@
       "render_default": true,
       "snippet": "[24] S.R. Stauffer, N.A. Peppast, Poly(vinyl alcohol) hydrogels prepared by free",
       "found_in_fulltext": true,
-      "fulltext_offset": 35003
+      "fulltext_offset": 22241
     },
     {
       "block_id": "p20:9",
@@ -1531,7 +1591,7 @@
       "render_default": true,
       "snippet": "[25] N.A. Peppas, Turbidimetric studies of aqueous poly(vinyl alcohol) solutions",
       "found_in_fulltext": true,
-      "fulltext_offset": 33534
+      "fulltext_offset": 21005
     },
     {
       "block_id": "p20:10",
@@ -1541,7 +1601,7 @@
       "render_default": true,
       "snippet": "[26] Y. Liu, N.E. Vrana, P.A. Cahill, G.B. McGuinness, Physically crosslinked co",
       "found_in_fulltext": true,
-      "fulltext_offset": 35144
+      "fulltext_offset": 22382
     },
     {
       "block_id": "p20:11",
@@ -1551,7 +1611,7 @@
       "render_default": true,
       "snippet": "[27] P.J. Willcox, D.W. Howie, K. Schmidt-Rohr, D.A. Hoagland, S.P. Gido, S. Pud",
       "found_in_fulltext": true,
-      "fulltext_offset": 35398
+      "fulltext_offset": 22636
     },
     {
       "block_id": "p20:12",
@@ -1561,7 +1621,7 @@
       "render_default": true,
       "snippet": "[28] L.E. Millon, H. Mohammadi, W.K. Wan, Anisotropic polyvinyl alcohol hydrogel",
       "found_in_fulltext": true,
-      "fulltext_offset": 35656
+      "fulltext_offset": 22894
     },
     {
       "block_id": "p20:13",
@@ -1571,7 +1631,7 @@
       "render_default": true,
       "snippet": "[29] L. Zhang, J. Zhao, J.T. Zhu, C.C. He, H.L. Wang, Anisotropic tough poly(vin",
       "found_in_fulltext": true,
-      "fulltext_offset": 33660
+      "fulltext_offset": 21131
     },
     {
       "block_id": "p20:14",
@@ -1581,7 +1641,7 @@
       "render_default": true,
       "snippet": "[30] M.I. Baker, S.P. Walsh, Z. Schwartz, B.D. Boyan, A review of polyvinyl alco",
       "found_in_fulltext": true,
-      "fulltext_offset": 33791
+      "fulltext_offset": 21262
     },
     {
       "block_id": "p20:15",
@@ -1591,7 +1651,7 @@
       "render_default": true,
       "snippet": "[31] J.P. Gong, Y. Katsuyama, T. Kurokawa, Y. Osada, Double-Network Hydrogels wi",
       "found_in_fulltext": true,
-      "fulltext_offset": 33983
+      "fulltext_offset": 21454
     },
     {
       "block_id": "p20:16",
@@ -1601,7 +1661,7 @@
       "render_default": true,
       "snippet": "[32] K. Haraguchi, Nanocomposite Hydrogels: A Unique Organic-Inorganic Network S",
       "found_in_fulltext": true,
-      "fulltext_offset": 34135
+      "fulltext_offset": 21606
     },
     {
       "block_id": "p20:17",
@@ -1611,7 +1671,7 @@
       "render_default": true,
       "snippet": "[33] O. Yasushi, I. Kohzo, The Polyrotaxane Gel: A Topological Gel by Figure-of-",
       "found_in_fulltext": true,
-      "fulltext_offset": 34334
+      "fulltext_offset": 21805
     },
     {
       "block_id": "p20:18",
@@ -1621,7 +1681,7 @@
       "render_default": true,
       "snippet": "[34] T. Huang, H.G. Xu, K.X. Jiao, L.P. Zhu, H.R. Brown, H.L. Wang, A Novel Hydr",
       "found_in_fulltext": true,
-      "fulltext_offset": 35820
+      "fulltext_offset": 23058
     },
     {
       "block_id": "p20:19",
@@ -1651,7 +1711,7 @@
       "render_default": true,
       "snippet": "High Mechanical Strength: A Macromolecular Microsphere Composite Hydrogel, Adv. ",
       "found_in_fulltext": true,
-      "fulltext_offset": 38015
+      "fulltext_offset": 25079
     },
     {
       "block_id": "p21:2",
@@ -1660,8 +1720,8 @@
       "zone": "reference_zone",
       "render_default": true,
       "snippet": "[35] Q.Y. He, Y. Huang, S.Y. Wang, Hofmeister Effect-Assisted One Step Fabricati",
-      "found_in_fulltext": true,
-      "fulltext_offset": 38123
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p21:3",
@@ -1670,8 +1730,8 @@
       "zone": "reference_zone",
       "render_default": true,
       "snippet": "[36] X. Jiang, N. Xiang, H. Zhang, Y. Sun, Z. Lin, L. Hou, Preparation and chara",
-      "found_in_fulltext": true,
-      "fulltext_offset": 38285
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p21:4",
@@ -1681,7 +1741,7 @@
       "render_default": true,
       "snippet": "[37] P. Lin, S.H. Ma, X.L. Wang, F. Zhou, Molecularly engineered dual-crosslinke",
       "found_in_fulltext": true,
-      "fulltext_offset": 38510
+      "fulltext_offset": 25187
     },
     {
       "block_id": "p21:5",
@@ -1691,7 +1751,7 @@
       "render_default": true,
       "snippet": "[38] Y.Y. Yang, X. Wang, F. Yang, H. Shen, D.C. Wu, A Universal Soaking Strategy",
       "found_in_fulltext": true,
-      "fulltext_offset": 35927
+      "fulltext_offset": 23165
     },
     {
       "block_id": "p21:6",
@@ -1700,8 +1760,8 @@
       "zone": "reference_zone",
       "render_default": true,
       "snippet": "[39] H.L. Fan, J.H. Wang, Z.X. Jin, Tough, Swelling-Resistant, Self-Healing, and",
-      "found_in_fulltext": true,
-      "fulltext_offset": 38705
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p21:7",
@@ -1710,8 +1770,8 @@
       "zone": "reference_zone",
       "render_default": true,
       "snippet": "[40] X. Xu, F.A. Jerca, K. Van Hecke, V.V. Jerca, R. Hoogenboom, High compressio",
-      "found_in_fulltext": true,
-      "fulltext_offset": 36143
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p21:8",
@@ -1721,7 +1781,7 @@
       "render_default": true,
       "snippet": "[41] T. Liu, C. Jiao, X. Peng, Y.N. Chen, Y. Chen, C. He, R. Liu, H.L. Wang, Sup",
       "found_in_fulltext": true,
-      "fulltext_offset": 36317
+      "fulltext_offset": 23381
     },
     {
       "block_id": "p21:9",
@@ -1731,7 +1791,7 @@
       "render_default": true,
       "snippet": "[42] V.R. Normand, D.L. Lootens, E. Amici, K.P. Plucknett, P. Aymard. New Insigh",
       "found_in_fulltext": true,
-      "fulltext_offset": 36537
+      "fulltext_offset": 23601
     },
     {
       "block_id": "p21:10",
@@ -1741,7 +1801,7 @@
       "render_default": true,
       "snippet": "[43] L. Voorhaar, R. Hoogenboom, Supramolecular polymer networks: hydrogels and ",
       "found_in_fulltext": true,
-      "fulltext_offset": 38913
+      "fulltext_offset": 25382
     },
     {
       "block_id": "p21:11",
@@ -1751,7 +1811,7 @@
       "render_default": true,
       "snippet": "[44] S. Arnott, A. Fulmer, W.E. Scott, I.C.M. Dea, D.A. Rees, The agarose double",
       "found_in_fulltext": true,
-      "fulltext_offset": 36695
+      "fulltext_offset": 23759
     },
     {
       "block_id": "p21:12",
@@ -1761,7 +1821,7 @@
       "render_default": true,
       "snippet": "[45] X. Chen, S.C. Flores, S.M. Lim, Y. Zhang, T. Yang, J. Kherb, P.S. Cremer, S",
       "found_in_fulltext": true,
-      "fulltext_offset": 36858
+      "fulltext_offset": 23922
     },
     {
       "block_id": "p21:13",
@@ -1771,7 +1831,7 @@
       "render_default": true,
       "snippet": "[46] K. Collins, Ions from the Hofmeister series and osmolytes: effects on prote",
       "found_in_fulltext": true,
-      "fulltext_offset": 37043
+      "fulltext_offset": 24107
     },
     {
       "block_id": "p21:14",
@@ -1781,7 +1841,7 @@
       "render_default": true,
       "snippet": "[47] J.H. Xie, D.D. Fan, A high-toughness and high cell adhesion polyvinyl alcoh",
       "found_in_fulltext": true,
-      "fulltext_offset": 37202
+      "fulltext_offset": 24266
     },
     {
       "block_id": "p21:15",
@@ -1791,7 +1851,7 @@
       "render_default": true,
       "snippet": "[48] Q. Chen, L. Zhu, C. Zhao, Q.M. Wang, J. Zheng, A Robust, One-Pot Synthesis ",
       "found_in_fulltext": true,
-      "fulltext_offset": 37430
+      "fulltext_offset": 24494
     },
     {
       "block_id": "p21:16",
@@ -1801,7 +1861,7 @@
       "render_default": true,
       "snippet": "[49] T. Wang, S. Gunasekaran, State of water in chitosan-PVA hydrogel, J. Appl. ",
       "found_in_fulltext": true,
-      "fulltext_offset": 37652
+      "fulltext_offset": 24716
     },
     {
       "block_id": "p21:17",
@@ -1811,7 +1871,7 @@
       "render_default": true,
       "snippet": "[50] Q. Chen, L. Zhu, H. Chen, H.L. Yan, L.N. Huang, J. Yang, J. Zheng, A Novel ",
       "found_in_fulltext": true,
-      "fulltext_offset": 37766
+      "fulltext_offset": 24830
     },
     {
       "block_id": "p21:18",
@@ -1821,7 +1881,7 @@
       "render_default": true,
       "snippet": "[51] G.S. Song, Z.Y. Zhao, X. Peng, C.C. He, R.A. Weiss, H.L. Wang, Rheological ",
       "found_in_fulltext": true,
-      "fulltext_offset": 39044
+      "fulltext_offset": 25513
     },
     {
       "block_id": "p21:19",
@@ -1851,7 +1911,7 @@
       "render_default": true,
       "snippet": "of Tough PVP-in Situ-PAAm Hydrogels Physically Cross-Linked by Cooperative Hydro",
       "found_in_fulltext": true,
-      "fulltext_offset": 41098
+      "fulltext_offset": 27314
     },
     {
       "block_id": "p22:2",
@@ -1860,8 +1920,8 @@
       "zone": "reference_zone",
       "render_default": true,
       "snippet": "[52] B. Hu, W.X. Fu, B. Zhao, Enhancing Gelation of Doubly Thermosensitive Hydro",
-      "found_in_fulltext": true,
-      "fulltext_offset": 41227
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p22:3",
@@ -1870,8 +1930,8 @@
       "zone": "reference_zone",
       "render_default": true,
       "snippet": "[53] R.G. Larson, The Structure and Rheology of Complex Fluids. 1999; p 243-254.",
-      "found_in_fulltext": true,
-      "fulltext_offset": 39150
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p22:4",
@@ -1881,7 +1941,7 @@
       "render_default": true,
       "snippet": "[54] Y.J. Wang, X.N. Zhang, Y. Song, Y. Zhao, L. Chen, F. Su, L. Li, Z.L. Wu, Q.",
       "found_in_fulltext": true,
-      "fulltext_offset": 41431
+      "fulltext_offset": 27443
     },
     {
       "block_id": "p22:5",
@@ -1891,7 +1951,7 @@
       "render_default": true,
       "snippet": "[55] D.L. Taylor, M.i.h. Panhuis, Self-Healing Hydrogels, Adv. Mater. 28 (2016) ",
       "found_in_fulltext": true,
-      "fulltext_offset": 39231
+      "fulltext_offset": 25619
     },
     {
       "block_id": "p22:6",
@@ -1900,8 +1960,8 @@
       "zone": "reference_zone",
       "render_default": true,
       "snippet": "[56] Z. Lei, P. Wu, A supramolecular biomimetic skin combining a wide spectrum o",
-      "found_in_fulltext": true,
-      "fulltext_offset": 41646
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p22:7",
@@ -1910,8 +1970,8 @@
       "zone": "reference_zone",
       "render_default": true,
       "snippet": "[57] Y.J. Sun, N.P. Xiang, X.C. Jiang, L.X. Hou, Preparation of high tough poly(",
-      "found_in_fulltext": true,
-      "fulltext_offset": 39322
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p22:8",
@@ -1921,7 +1981,7 @@
       "render_default": true,
       "snippet": "[58] L. Fan, H. Yang, J. Yang, M. Peng, J. Hu, Preparation and characterization ",
       "found_in_fulltext": true,
-      "fulltext_offset": 41813
+      "fulltext_offset": 27658
     },
     {
       "block_id": "p22:9",
@@ -1931,7 +1991,7 @@
       "render_default": true,
       "snippet": "[59] K. Prasad. G. Mehta. R. Meena. A.K. Siddhanta Hydrogel-forming agar-graft-P",
       "found_in_fulltext": true,
-      "fulltext_offset": 39494
+      "fulltext_offset": 25710
     },
     {
       "block_id": "p22:10",
@@ -1941,7 +2001,7 @@
       "render_default": true,
       "snippet": "[60] E. Pretsch, P. Buhlmann, M. Badertscher, Structure Determination of Organic",
       "found_in_fulltext": true,
-      "fulltext_offset": 39701
+      "fulltext_offset": 25917
     },
     {
       "block_id": "p22:11",
@@ -1951,7 +2011,7 @@
       "render_default": true,
       "snippet": "[61] S.J. Shi, X. Peng, T.Q. Liu, Y. N. Chen, C.C. He, H.L. Wang, Facile prepara",
       "found_in_fulltext": true,
-      "fulltext_offset": 41984
+      "fulltext_offset": 27829
     },
     {
       "block_id": "p22:12",
@@ -1961,7 +2021,7 @@
       "render_default": true,
       "snippet": "[62] X. Zhang, W.F. Liu, D.J. Yang, X.Q. Qiu, Biomimetic Supertough and Strong B",
       "found_in_fulltext": true,
-      "fulltext_offset": 39860
+      "fulltext_offset": 26076
     },
     {
       "block_id": "p22:13",
@@ -1971,7 +2031,7 @@
       "render_default": true,
       "snippet": "[63] X. Dai, Y. Zhang, L. Gao, T. Bai, W. Wang, Y. Cui, W. Liu, A Mechanically S",
       "found_in_fulltext": true,
-      "fulltext_offset": 40083
+      "fulltext_offset": 26299
     },
     {
       "block_id": "p22:14",
@@ -1981,7 +2041,7 @@
       "render_default": true,
       "snippet": "[64] P.J. Flory, Principles of polymer chemistry, US:Cornell University Press (1",
       "found_in_fulltext": true,
-      "fulltext_offset": 40282
+      "fulltext_offset": 26498
     },
     {
       "block_id": "p22:15",
@@ -1991,7 +2051,7 @@
       "render_default": true,
       "snippet": "[65] X. Chen, T. Yang, S. Kataoka, P.S. Cremer, Specific Ion Effects on Interfac",
       "found_in_fulltext": true,
-      "fulltext_offset": 40376
+      "fulltext_offset": 26592
     },
     {
       "block_id": "p22:16",
@@ -2001,7 +2061,7 @@
       "render_default": true,
       "snippet": "[66] L.M. Pegram, J. Record, M. Thomas, Thermodynamic Origin of Hofmeister Ion E",
       "found_in_fulltext": true,
-      "fulltext_offset": 40539
+      "fulltext_offset": 26755
     },
     {
       "block_id": "p22:17",
@@ -2011,7 +2071,7 @@
       "render_default": true,
       "snippet": "[67] R.B. Bai, J.W. Yang, Z.G. Suo, Fatigue of hydrogels, J. Theor. Appl. Mech. ",
       "found_in_fulltext": true,
-      "fulltext_offset": 40666
+      "fulltext_offset": 26882
     },
     {
       "block_id": "p22:18",
@@ -2021,7 +2081,7 @@
       "render_default": true,
       "snippet": "[68] A.V. Tobolsky, D.W. Carlson, N. Indictor, Rubber elasticity and chain confi",
       "found_in_fulltext": true,
-      "fulltext_offset": 40765
+      "fulltext_offset": 26981
     },
     {
       "block_id": "p22:19",
@@ -2031,7 +2091,7 @@
       "render_default": true,
       "snippet": "[69] H. Itagaki, T. Kurokawa, H. Furukawa, T. Nakajima, Y. Katsumoto, J.P. Gong,",
       "found_in_fulltext": true,
-      "fulltext_offset": 40911
+      "fulltext_offset": 27127
     },
     {
       "block_id": "p22:20",
@@ -2041,7 +2101,7 @@
       "render_default": true,
       "snippet": "[70] S.J. Kim, C.K. Lee, S.I. Kim, Characterization of the Water State of Hyalur",
       "found_in_fulltext": true,
-      "fulltext_offset": 42222
+      "fulltext_offset": 28067
     },
     {
       "block_id": "p22:21",
@@ -2051,7 +2111,7 @@
       "render_default": false,
       "snippet": "21",
       "found_in_fulltext": true,
-      "fulltext_offset": 426
+      "fulltext_offset": 9184
     },
     {
       "block_id": "p23:0",
@@ -2071,7 +2131,7 @@
       "render_default": true,
       "snippet": "Poly(vinyl alcohol) Interpenetrating Polymer Networks, J. Appl. Polym. Sci. 92 (",
       "found_in_fulltext": true,
-      "fulltext_offset": 43187
+      "fulltext_offset": 28660
     },
     {
       "block_id": "p23:2",
@@ -2080,8 +2140,8 @@
       "zone": "reference_zone",
       "render_default": true,
       "snippet": "[71] R. Wang, Q. Wang; L. Li, Evaporation behaviour of water and its plasticizin",
-      "found_in_fulltext": true,
-      "fulltext_offset": 43284
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p23:3",
@@ -2090,8 +2150,8 @@
       "zone": "reference_zone",
       "render_default": true,
       "snippet": "[72] X.Y. Zhou, F. Zhao, Y.H. Guo, B. Rosenberger, G.H. Yu, Architecting highly ",
-      "found_in_fulltext": true,
-      "fulltext_offset": 42333
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p23:4",
@@ -2101,7 +2161,7 @@
       "render_default": true,
       "snippet": "[73] J. Hu, T. Kurokawa, K. Hiwatashi, T. Nakajima, Z.L. Wu, S.M. Liang, J.P. Go",
       "found_in_fulltext": true,
-      "fulltext_offset": 42524
+      "fulltext_offset": 28178
     },
     {
       "block_id": "p23:5",
@@ -2111,7 +2171,7 @@
       "render_default": true,
       "snippet": "[74] G.Q. Jiang, C. Liu, X.L. Liu, Q.R. Chen, G.H. Zhang, M. Yang, F.Q. Liu Netw",
       "found_in_fulltext": true,
-      "fulltext_offset": 42756
+      "fulltext_offset": 28410
     },
     {
       "block_id": "p23:6",
@@ -2120,8 +2180,8 @@
       "zone": "reference_zone",
       "render_default": true,
       "snippet": "[75] H.H. Trieu, S. Qutubuddin, Polyvinyl alcohol hydrogels I. Microscopic struc",
-      "found_in_fulltext": true,
-      "fulltext_offset": 43006
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p23:7",
@@ -2130,8 +2190,8 @@
       "zone": "reference_zone",
       "render_default": true,
       "snippet": "[76] J.J. Cash, T. Kubo, A.P. Bapat, B.S. Sumerlin, Room-Temperature Self-Healin",
-      "found_in_fulltext": true,
-      "fulltext_offset": 43447
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p23:8",
@@ -2141,7 +2201,7 @@
       "render_default": true,
       "snippet": "[77] D. Gan, L. Han, M. Wang, W. Xing, T. Xu, H. Zhang, K. Wang, L. Fang, X. Lu,",
       "found_in_fulltext": true,
-      "fulltext_offset": 43616
+      "fulltext_offset": 28757
     },
     {
       "block_id": "p23:9",
@@ -2151,7 +2211,7 @@
       "render_default": false,
       "snippet": "22",
       "found_in_fulltext": true,
-      "fulltext_offset": 5629
+      "fulltext_offset": 3141
     },
     {
       "block_id": "p24:0",
@@ -2181,7 +2241,7 @@
       "render_default": true,
       "snippet": "Electrical conductivity and Self-healing",
       "found_in_fulltext": true,
-      "fulltext_offset": 43895
+      "fulltext_offset": 29036
     },
     {
       "block_id": "p24:5",
@@ -2191,7 +2251,7 @@
       "render_default": false,
       "snippet": "23",
       "found_in_fulltext": true,
-      "fulltext_offset": 5111
+      "fulltext_offset": 2623
     },
     {
       "block_id": "p25:0",
@@ -2211,7 +2271,7 @@
       "render_default": false,
       "snippet": "Highlights",
       "found_in_fulltext": true,
-      "fulltext_offset": 44011
+      "fulltext_offset": 29152
     },
     {
       "block_id": "p25:2",
@@ -2220,8 +2280,8 @@
       "zone": "",
       "render_default": false,
       "snippet": "• A method from commercially available sources is reported to obtain functional ",
-      "found_in_fulltext": true,
-      "fulltext_offset": 44024
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p25:3",
@@ -2230,8 +2290,8 @@
       "zone": "",
       "render_default": false,
       "snippet": "• The tensile strength and toughness of the gel are 18.0 MPa and 42.3 MJ/m $ ^{3",
-      "found_in_fulltext": true,
-      "fulltext_offset": 44111
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p25:4",
@@ -2241,7 +2301,7 @@
       "render_default": false,
       "snippet": "• The gel is self-healable and conductive",
       "found_in_fulltext": true,
-      "fulltext_offset": 44198
+      "fulltext_offset": 29175
     },
     {
       "block_id": "p25:5",
@@ -2251,7 +2311,7 @@
       "render_default": false,
       "snippet": "- This hydrogel might find applications as a biocompatible and bioactive materia",
       "found_in_fulltext": true,
-      "fulltext_offset": 44242
+      "fulltext_offset": 29219
     },
     {
       "block_id": "p25:6",
@@ -2261,7 +2321,7 @@
       "render_default": false,
       "snippet": "24",
       "found_in_fulltext": true,
-      "fulltext_offset": 5174
+      "fulltext_offset": 2686
     },
     {
       "block_id": "p26:0",
@@ -2281,7 +2341,7 @@
       "render_default": true,
       "snippet": "Declaration of interests",
       "found_in_fulltext": true,
-      "fulltext_offset": 44342
+      "fulltext_offset": 29319
     },
     {
       "block_id": "p26:2",
@@ -2291,7 +2351,7 @@
       "render_default": true,
       "snippet": "The authors declare no competing financial interest.",
       "found_in_fulltext": true,
-      "fulltext_offset": 28826
+      "fulltext_offset": 18147
     },
     {
       "block_id": "p26:3",
@@ -2301,7 +2361,7 @@
       "render_default": false,
       "snippet": "25",
       "found_in_fulltext": true,
-      "fulltext_offset": 5177
+      "fulltext_offset": 2689
     },
     {
       "block_id": "p27:0",
@@ -2321,7 +2381,7 @@
       "render_default": true,
       "snippet": "Author statement",
       "found_in_fulltext": true,
-      "fulltext_offset": 44441
+      "fulltext_offset": 29365
     },
     {
       "block_id": "p27:2",
@@ -2330,8 +2390,8 @@
       "zone": "",
       "render_default": true,
       "snippet": "Chunhui Luo: Conceptualization, Methodology, Resources, Visualization, Supervisi",
-      "found_in_fulltext": true,
-      "fulltext_offset": 44458
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p27:3",
@@ -2340,8 +2400,8 @@
       "zone": "",
       "render_default": true,
       "snippet": "Faliang Luo: Review & Editing",
-      "found_in_fulltext": true,
-      "fulltext_offset": 44690
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p27:4",
@@ -2351,7 +2411,7 @@
       "render_default": false,
       "snippet": "26",
       "found_in_fulltext": true,
-      "fulltext_offset": 5319
+      "fulltext_offset": 2831
     }
   ]
 }

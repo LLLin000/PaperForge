@@ -115,7 +115,7 @@
       "page": 2,
       "raw_label": "doc_title",
       "role": "paper_title",
-      "zone": "body_zone",
+      "zone": "frontmatter_main_zone",
       "bbox": [
         95.0,
         100.0,
@@ -134,8 +134,8 @@
       "block_id": "p2:2",
       "page": 2,
       "raw_label": "text",
-      "role": "frontmatter_support",
-      "zone": "body_zone",
+      "role": "authors",
+      "zone": "frontmatter_main_zone",
       "bbox": [
         119.0,
         234.0,
@@ -154,8 +154,8 @@
       "block_id": "p2:3",
       "page": 2,
       "raw_label": "text",
-      "role": "frontmatter_support",
-      "zone": "body_zone",
+      "role": "affiliation",
+      "zone": "frontmatter_main_zone",
       "bbox": [
         83.0,
         422.0,
@@ -174,8 +174,8 @@
       "block_id": "p2:4",
       "page": 2,
       "raw_label": "text",
-      "role": "frontmatter_support",
-      "zone": "body_zone",
+      "role": "affiliation",
+      "zone": "frontmatter_main_zone",
       "bbox": [
         83.0,
         491.0,
@@ -194,8 +194,8 @@
       "block_id": "p2:5",
       "page": 2,
       "raw_label": "text",
-      "role": "frontmatter_support",
-      "zone": "body_zone",
+      "role": "affiliation",
+      "zone": "frontmatter_main_zone",
       "bbox": [
         83.0,
         559.0,
@@ -214,8 +214,8 @@
       "block_id": "p2:6",
       "page": 2,
       "raw_label": "text",
-      "role": "frontmatter_support",
-      "zone": "body_zone",
+      "role": "affiliation",
+      "zone": "frontmatter_main_zone",
       "bbox": [
         83.0,
         629.0,
@@ -234,8 +234,8 @@
       "block_id": "p2:7",
       "page": 2,
       "raw_label": "text",
-      "role": "frontmatter_support",
-      "zone": "body_zone",
+      "role": "affiliation",
+      "zone": "frontmatter_main_zone",
       "bbox": [
         83.0,
         697.0,
@@ -254,8 +254,8 @@
       "block_id": "p2:8",
       "page": 2,
       "raw_label": "text",
-      "role": "frontmatter_support",
-      "zone": "body_zone",
+      "role": "affiliation",
+      "zone": "frontmatter_main_zone",
       "bbox": [
         82.0,
         767.0,
@@ -274,8 +274,8 @@
       "block_id": "p2:9",
       "page": 2,
       "raw_label": "text",
-      "role": "frontmatter_noise",
-      "zone": "frontmatter_side_zone",
+      "role": "frontmatter_support",
+      "zone": "frontmatter_main_zone",
       "bbox": [
         84.0,
         925.0,
@@ -295,7 +295,7 @@
       "page": 2,
       "raw_label": "number",
       "role": "noise",
-      "zone": "body_zone",
+      "zone": "frontmatter_main_zone",
       "bbox": [
         1039.0,
         1561.0,
@@ -3435,7 +3435,7 @@
       "page": 24,
       "raw_label": "text",
       "role": "body_paragraph",
-      "zone": "tail_nonref_hold_zone",
+      "zone": "body_zone",
       "bbox": [
         84.0,
         101.0,
@@ -3455,7 +3455,7 @@
       "page": 24,
       "raw_label": "paragraph_title",
       "role": "section_heading",
-      "zone": "tail_nonref_hold_zone",
+      "zone": "body_zone",
       "bbox": [
         84.0,
         226.0,
@@ -3475,7 +3475,7 @@
       "page": 24,
       "raw_label": "text",
       "role": "body_paragraph",
-      "zone": "tail_nonref_hold_zone",
+      "zone": "body_zone",
       "bbox": [
         83.0,
         281.0,
@@ -3494,8 +3494,8 @@
       "block_id": "p24:4",
       "page": 24,
       "raw_label": "paragraph_title",
-      "role": "backmatter_heading",
-      "zone": "tail_nonref_hold_zone",
+      "role": "sub_subsection_heading",
+      "zone": "body_zone",
       "bbox": [
         85.0,
         789.0,
@@ -3514,8 +3514,8 @@
       "block_id": "p24:5",
       "page": 24,
       "raw_label": "text",
-      "role": "backmatter_body",
-      "zone": "tail_nonref_hold_zone",
+      "role": "body_paragraph",
+      "zone": "body_zone",
       "bbox": [
         85.0,
         845.0,
@@ -3534,8 +3534,8 @@
       "block_id": "p24:6",
       "page": 24,
       "raw_label": "text",
-      "role": "backmatter_body",
-      "zone": "tail_nonref_hold_zone",
+      "role": "body_paragraph",
+      "zone": "body_zone",
       "bbox": [
         83.0,
         1011.0,
@@ -3554,8 +3554,8 @@
       "block_id": "p24:7",
       "page": 24,
       "raw_label": "text",
-      "role": "backmatter_body",
-      "zone": "tail_nonref_hold_zone",
+      "role": "body_paragraph",
+      "zone": "body_zone",
       "bbox": [
         83.0,
         1340.0,
@@ -3575,7 +3575,7 @@
       "page": 24,
       "raw_label": "number",
       "role": "noise",
-      "zone": "tail_nonref_hold_zone",
+      "zone": "body_zone",
       "bbox": [
         1027.0,
         1561.0,
@@ -3614,7 +3614,7 @@
       "block_id": "p25:1",
       "page": 25,
       "raw_label": "text",
-      "role": "backmatter_body",
+      "role": "body_paragraph",
       "zone": "tail_nonref_hold_zone",
       "bbox": [
         84.0,
@@ -6174,7 +6174,7 @@
       "block_id": "p32:20",
       "page": 32,
       "raw_label": "chart",
-      "role": "media_asset",
+      "role": "figure_asset",
       "zone": "",
       "bbox": [
         139.0,
@@ -6974,7 +6974,7 @@
       "block_id": "p37:3",
       "page": 37,
       "raw_label": "image",
-      "role": "figure_asset",
+      "role": "media_asset",
       "zone": "",
       "bbox": [
         84.0,
@@ -7074,7 +7074,7 @@
       "block_id": "p37:8",
       "page": 37,
       "raw_label": "image",
-      "role": "media_asset",
+      "role": "figure_asset",
       "zone": "",
       "bbox": [
         85.0,
@@ -7274,7 +7274,7 @@
       "block_id": "p39:4",
       "page": 39,
       "raw_label": "chart",
-      "role": "figure_asset",
+      "role": "media_asset",
       "zone": "",
       "bbox": [
         655.0,
@@ -7894,7 +7894,7 @@
       "block_id": "p42:1",
       "page": 42,
       "raw_label": "figure_title",
-      "role": "table_caption_candidate",
+      "role": "table_caption",
       "zone": "display_zone",
       "bbox": [
         85.0,

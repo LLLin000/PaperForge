@@ -32,7 +32,6 @@
       "p12:25",
       "p12:26",
       "p12:27",
-      "p13:0",
       "p13:4",
       "p13:5",
       "p13:6",
@@ -76,7 +75,6 @@
       "p12:25",
       "p12:26",
       "p12:27",
-      "p13:0",
       "p13:4",
       "p13:5",
       "p13:6",
@@ -230,7 +228,7 @@
       {
         "block_id": "p13:0",
         "page": 13,
-        "role": "unknown_structural",
+        "role": "noise",
         "zone": "",
         "reason": "logical_order_between_reference_members"
       },

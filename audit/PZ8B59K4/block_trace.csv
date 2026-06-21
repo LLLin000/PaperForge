@@ -518,11 +518,11 @@ Table 2. Accuracy and the ar","[137.0, 186.0, 1028.0, 338.0]",body_paragraph,0.6
 21,2,vision_footnote,DM: diabetes mellitus,"[139.0, 1003.0, 364.0, 1034.0]",footnote,0.7,"[""vision_footnote label: DM: diabetes mellitus""]",footnote,0.7,,unknown_like,none,True,True
 22,0,header,Journal Pre-proof,"[479.0, 60.0, 678.0, 88.0]",frontmatter_noise,0.98,"[""journal pre-proof running header suppressed: p22 y=60/1684""]",frontmatter_noise,0.98,preproof_cover_zone,unknown_like,preproof_marker,False,False
 22,1,figure_title,ROC curve of each trained model,"[301.0, 157.0, 799.0, 198.0]",figure_caption_candidate,0.85,"[""figure_title label: ROC curve of each trained model""]",figure_caption,0.85,,legend_like,none,False,False
-22,2,chart,,"[147.0, 213.0, 903.0, 718.0]",media_asset,0.85,"[""media label: chart""]",media_asset,0.85,,unknown_like,empty,True,True
+22,2,chart,,"[147.0, 213.0, 903.0, 718.0]",figure_asset,0.85,"[""media label: chart""]",media_asset,0.85,,unknown_like,empty,True,True
 22,3,vision_footnote,ROC: receiver operating characteristic,"[140.0, 745.0, 518.0, 776.0]",footnote,0.7,"[""vision_footnote label: ROC: receiver operating characteristic""]",footnote,0.7,,unknown_like,none,True,True
 23,0,header,Journal Pre-proof,"[480.0, 61.0, 678.0, 87.0]",frontmatter_noise,0.98,"[""journal pre-proof running header suppressed: p23 y=61/1684""]",frontmatter_noise,0.98,preproof_cover_zone,unknown_like,preproof_marker,False,False
 23,1,figure_title,(a),"[200.0, 155.0, 230.0, 179.0]",figure_inner_text,0.9,"[""panel label / figure inner text: (a)""]",figure_inner_text,0.9,display_zone,legend_like,panel_label,True,True
-23,2,chart,,"[149.0, 158.0, 505.0, 578.0]",media_asset,0.85,"[""media label: chart""]",media_asset,0.85,,unknown_like,empty,True,True
+23,2,chart,,"[149.0, 158.0, 505.0, 578.0]",figure_asset,0.85,"[""media label: chart""]",media_asset,0.85,,unknown_like,empty,True,True
 23,3,figure_title,(b),"[555.0, 153.0, 586.0, 179.0]",figure_inner_text,0.9,"[""panel label / figure inner text: (b)""]",figure_inner_text,0.9,display_zone,legend_like,panel_label,True,True
-23,4,chart,,"[497.0, 216.0, 1046.0, 527.0]",media_asset,0.85,"[""media label: chart""]",media_asset,0.85,,unknown_like,empty,True,True
+23,4,chart,,"[497.0, 216.0, 1046.0, 527.0]",figure_asset,0.85,"[""media label: chart""]",media_asset,0.85,,unknown_like,empty,True,True
 23,5,vision_footnote,DM; diabetes mellitus,"[140.0, 600.0, 362.0, 628.0]",footnote,0.7,"[""vision_footnote label: DM; diabetes mellitus""]",footnote,0.7,,unknown_like,none,True,True

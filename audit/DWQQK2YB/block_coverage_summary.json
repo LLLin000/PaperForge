@@ -113,7 +113,7 @@
       "page": 2,
       "raw_label": "text",
       "role": "unknown_structural",
-      "zone": "frontmatter_side_zone",
+      "zone": "frontmatter_main_zone",
       "bbox": [
         76.0,
         101.0,
@@ -132,8 +132,8 @@
       "block_id": "p2:2",
       "page": 2,
       "raw_label": "doc_title",
-      "role": "unknown_structural",
-      "zone": "body_zone",
+      "role": "paper_title",
+      "zone": "frontmatter_main_zone",
       "bbox": [
         74.0,
         155.0,
@@ -152,8 +152,8 @@
       "block_id": "p2:3",
       "page": 2,
       "raw_label": "text",
-      "role": "frontmatter_support",
-      "zone": "body_zone",
+      "role": "authors",
+      "zone": "frontmatter_main_zone",
       "bbox": [
         74.0,
         355.0,
@@ -172,8 +172,8 @@
       "block_id": "p2:4",
       "page": 2,
       "raw_label": "text",
-      "role": "frontmatter_support",
-      "zone": "body_zone",
+      "role": "unknown_structural",
+      "zone": "frontmatter_main_zone",
       "bbox": [
         82.0,
         535.0,
@@ -192,8 +192,8 @@
       "block_id": "p2:5",
       "page": 2,
       "raw_label": "text",
-      "role": "frontmatter_support",
-      "zone": "body_zone",
+      "role": "affiliation",
+      "zone": "frontmatter_main_zone",
       "bbox": [
         81.0,
         645.0,
@@ -212,8 +212,8 @@
       "block_id": "p2:6",
       "page": 2,
       "raw_label": "text",
-      "role": "frontmatter_noise",
-      "zone": "frontmatter_side_zone",
+      "role": "frontmatter_support",
+      "zone": "frontmatter_main_zone",
       "bbox": [
         75.0,
         811.0,
@@ -232,8 +232,8 @@
       "block_id": "p2:7",
       "page": 2,
       "raw_label": "text",
-      "role": "frontmatter_noise",
-      "zone": "frontmatter_side_zone",
+      "role": "frontmatter_support",
+      "zone": "frontmatter_main_zone",
       "bbox": [
         74.0,
         864.0,
@@ -2233,7 +2233,7 @@
       "page": 25,
       "raw_label": "text",
       "role": "body_paragraph",
-      "zone": "tail_nonref_hold_zone",
+      "zone": "body_zone",
       "bbox": [
         75.0,
         100.0,
@@ -2252,8 +2252,8 @@
       "block_id": "p25:2",
       "page": 25,
       "raw_label": "paragraph_title",
-      "role": "backmatter_heading",
-      "zone": "tail_nonref_hold_zone",
+      "role": "subsection_heading",
+      "zone": "frontmatter_side_zone",
       "bbox": [
         76.0,
         241.0,
@@ -2272,8 +2272,8 @@
       "block_id": "p25:3",
       "page": 25,
       "raw_label": "text",
-      "role": "backmatter_body",
-      "zone": "tail_nonref_hold_zone",
+      "role": "body_paragraph",
+      "zone": "body_zone",
       "bbox": [
         75.0,
         359.0,
@@ -2292,8 +2292,8 @@
       "block_id": "p25:4",
       "page": 25,
       "raw_label": "paragraph_title",
-      "role": "backmatter_heading",
-      "zone": "tail_nonref_hold_zone",
+      "role": "sub_subsection_heading",
+      "zone": "body_zone",
       "bbox": [
         76.0,
         444.0,
@@ -2312,8 +2312,8 @@
       "block_id": "p25:5",
       "page": 25,
       "raw_label": "text",
-      "role": "backmatter_body",
-      "zone": "tail_nonref_hold_zone",
+      "role": "body_paragraph",
+      "zone": "body_zone",
       "bbox": [
         74.0,
         518.0,
@@ -3652,7 +3652,7 @@
       "block_id": "p32:2",
       "page": 32,
       "raw_label": "paragraph_title",
-      "role": "backmatter_heading",
+      "role": "sub_subsection_heading",
       "zone": "post_reference_backmatter_zone",
       "bbox": [
         81.0,
@@ -3952,7 +3952,7 @@
       "block_id": "p35:1",
       "page": 35,
       "raw_label": "paragraph_title",
-      "role": "backmatter_heading",
+      "role": "subsection_heading",
       "zone": "post_reference_backmatter_zone",
       "bbox": [
         76.0,
@@ -4092,7 +4092,7 @@
       "block_id": "p37:1",
       "page": 37,
       "raw_label": "figure_title",
-      "role": "figure_caption_candidate",
+      "role": "figure_inner_text",
       "zone": "post_reference_backmatter_zone",
       "bbox": [
         118.0,
@@ -4112,7 +4112,7 @@
       "block_id": "p37:2",
       "page": 37,
       "raw_label": "image",
-      "role": "media_asset",
+      "role": "figure_asset",
       "zone": "post_reference_backmatter_zone",
       "bbox": [
         114.0,
@@ -4132,7 +4132,7 @@
       "block_id": "p37:3",
       "page": 37,
       "raw_label": "figure_title",
-      "role": "figure_caption_candidate",
+      "role": "figure_inner_text",
       "zone": "post_reference_backmatter_zone",
       "bbox": [
         707.0,
@@ -4192,7 +4192,7 @@
       "block_id": "p38:1",
       "page": 38,
       "raw_label": "figure_title",
-      "role": "figure_caption_candidate",
+      "role": "figure_inner_text",
       "zone": "post_reference_backmatter_zone",
       "bbox": [
         94.0,
@@ -4212,7 +4212,7 @@
       "block_id": "p38:2",
       "page": 38,
       "raw_label": "image",
-      "role": "media_asset",
+      "role": "figure_asset",
       "zone": "post_reference_backmatter_zone",
       "bbox": [
         91.0,
@@ -4252,7 +4252,7 @@
       "block_id": "p38:4",
       "page": 38,
       "raw_label": "image",
-      "role": "media_asset",
+      "role": "figure_asset",
       "zone": "post_reference_backmatter_zone",
       "bbox": [
         92.0,
@@ -4272,7 +4272,7 @@
       "block_id": "p38:5",
       "page": 38,
       "raw_label": "image",
-      "role": "media_asset",
+      "role": "figure_asset",
       "zone": "post_reference_backmatter_zone",
       "bbox": [
         192.0,
@@ -4332,7 +4332,7 @@
       "block_id": "p38:8",
       "page": 38,
       "raw_label": "image",
-      "role": "media_asset",
+      "role": "figure_asset",
       "zone": "post_reference_backmatter_zone",
       "bbox": [
         193.0,
@@ -4352,7 +4352,7 @@
       "block_id": "p38:9",
       "page": 38,
       "raw_label": "image",
-      "role": "media_asset",
+      "role": "figure_asset",
       "zone": "post_reference_backmatter_zone",
       "bbox": [
         291.0,
@@ -4392,7 +4392,7 @@
       "block_id": "p38:11",
       "page": 38,
       "raw_label": "image",
-      "role": "media_asset",
+      "role": "figure_asset",
       "zone": "post_reference_backmatter_zone",
       "bbox": [
         295.0,
@@ -4412,7 +4412,7 @@
       "block_id": "p38:12",
       "page": 38,
       "raw_label": "chart",
-      "role": "media_asset",
+      "role": "figure_asset",
       "zone": "post_reference_backmatter_zone",
       "bbox": [
         399.0,
@@ -4432,7 +4432,7 @@
       "block_id": "p38:13",
       "page": 38,
       "raw_label": "figure_title",
-      "role": "figure_caption_candidate",
+      "role": "figure_inner_text",
       "zone": "post_reference_backmatter_zone",
       "bbox": [
         620.0,
@@ -4452,7 +4452,7 @@
       "block_id": "p38:14",
       "page": 38,
       "raw_label": "chart",
-      "role": "media_asset",
+      "role": "figure_asset",
       "zone": "post_reference_backmatter_zone",
       "bbox": [
         628.0,
@@ -4492,7 +4492,7 @@
       "block_id": "p38:16",
       "page": 38,
       "raw_label": "figure_title",
-      "role": "figure_caption_candidate",
+      "role": "figure_inner_text",
       "zone": "post_reference_backmatter_zone",
       "bbox": [
         427.0,
@@ -4512,7 +4512,7 @@
       "block_id": "p38:17",
       "page": 38,
       "raw_label": "image",
-      "role": "media_asset",
+      "role": "figure_asset",
       "zone": "post_reference_backmatter_zone",
       "bbox": [
         93.0,
@@ -4532,7 +4532,7 @@
       "block_id": "p38:18",
       "page": 38,
       "raw_label": "image",
-      "role": "media_asset",
+      "role": "figure_asset",
       "zone": "post_reference_backmatter_zone",
       "bbox": [
         427.0,
@@ -4552,7 +4552,7 @@
       "block_id": "p38:19",
       "page": 38,
       "raw_label": "image",
-      "role": "media_asset",
+      "role": "figure_asset",
       "zone": "post_reference_backmatter_zone",
       "bbox": [
         590.0,
@@ -4572,7 +4572,7 @@
       "block_id": "p38:20",
       "page": 38,
       "raw_label": "image",
-      "role": "media_asset",
+      "role": "figure_asset",
       "zone": "post_reference_backmatter_zone",
       "bbox": [
         701.0,
@@ -4592,7 +4592,7 @@
       "block_id": "p38:21",
       "page": 38,
       "raw_label": "image",
-      "role": "media_asset",
+      "role": "figure_asset",
       "zone": "post_reference_backmatter_zone",
       "bbox": [
         811.0,
@@ -4612,7 +4612,7 @@
       "block_id": "p38:22",
       "page": 38,
       "raw_label": "image",
-      "role": "media_asset",
+      "role": "figure_asset",
       "zone": "post_reference_backmatter_zone",
       "bbox": [
         923.0,
@@ -4632,8 +4632,8 @@
       "block_id": "p38:23",
       "page": 38,
       "raw_label": "figure_title",
-      "role": "figure_caption_candidate",
-      "zone": "post_reference_backmatter_zone",
+      "role": "figure_inner_text",
+      "zone": "display_zone",
       "bbox": [
         95.0,
         637.0,
@@ -4652,7 +4652,7 @@
       "block_id": "p38:24",
       "page": 38,
       "raw_label": "image",
-      "role": "media_asset",
+      "role": "figure_asset",
       "zone": "post_reference_backmatter_zone",
       "bbox": [
         101.0,
@@ -4672,8 +4672,8 @@
       "block_id": "p38:25",
       "page": 38,
       "raw_label": "figure_title",
-      "role": "figure_caption_candidate",
-      "zone": "post_reference_backmatter_zone",
+      "role": "figure_inner_text",
+      "zone": "display_zone",
       "bbox": [
         243.0,
         636.0,
@@ -4692,7 +4692,7 @@
       "block_id": "p38:26",
       "page": 38,
       "raw_label": "image",
-      "role": "media_asset",
+      "role": "figure_asset",
       "zone": "post_reference_backmatter_zone",
       "bbox": [
         248.0,
@@ -4712,7 +4712,7 @@
       "block_id": "p38:27",
       "page": 38,
       "raw_label": "image",
-      "role": "media_asset",
+      "role": "figure_asset",
       "zone": "post_reference_backmatter_zone",
       "bbox": [
         396.0,
@@ -4732,8 +4732,8 @@
       "block_id": "p38:28",
       "page": 38,
       "raw_label": "figure_title",
-      "role": "figure_caption_candidate",
-      "zone": "post_reference_backmatter_zone",
+      "role": "figure_inner_text",
+      "zone": "display_zone",
       "bbox": [
         648.0,
         637.0,
@@ -4752,7 +4752,7 @@
       "block_id": "p38:29",
       "page": 38,
       "raw_label": "image",
-      "role": "media_asset",
+      "role": "figure_asset",
       "zone": "post_reference_backmatter_zone",
       "bbox": [
         522.0,
@@ -4772,7 +4772,7 @@
       "block_id": "p38:30",
       "page": 38,
       "raw_label": "chart",
-      "role": "media_asset",
+      "role": "figure_asset",
       "zone": "post_reference_backmatter_zone",
       "bbox": [
         652.0,
@@ -4792,7 +4792,7 @@
       "block_id": "p38:31",
       "page": 38,
       "raw_label": "figure_title",
-      "role": "figure_caption_candidate",
+      "role": "figure_caption",
       "zone": "display_zone",
       "bbox": [
         73.0,
@@ -4832,7 +4832,7 @@
       "block_id": "p39:1",
       "page": 39,
       "raw_label": "figure_title",
-      "role": "figure_caption_candidate",
+      "role": "figure_inner_text",
       "zone": "post_reference_backmatter_zone",
       "bbox": [
         264.0,
@@ -4872,7 +4872,7 @@
       "block_id": "p39:3",
       "page": 39,
       "raw_label": "figure_title",
-      "role": "figure_caption_candidate",
+      "role": "figure_inner_text",
       "zone": "post_reference_backmatter_zone",
       "bbox": [
         593.0,
@@ -4912,7 +4912,7 @@
       "block_id": "p39:5",
       "page": 39,
       "raw_label": "figure_title",
-      "role": "figure_caption_candidate",
+      "role": "figure_inner_text",
       "zone": "post_reference_backmatter_zone",
       "bbox": [
         265.0,
@@ -4952,7 +4952,7 @@
       "block_id": "p39:7",
       "page": 39,
       "raw_label": "figure_title",
-      "role": "figure_caption_candidate",
+      "role": "figure_inner_text",
       "zone": "post_reference_backmatter_zone",
       "bbox": [
         521.0,
@@ -5032,7 +5032,7 @@
       "block_id": "p39:11",
       "page": 39,
       "raw_label": "figure_title",
-      "role": "figure_caption_candidate",
+      "role": "figure_inner_text",
       "zone": "post_reference_backmatter_zone",
       "bbox": [
         264.0,
@@ -5052,7 +5052,7 @@
       "block_id": "p39:12",
       "page": 39,
       "raw_label": "figure_title",
-      "role": "figure_caption_candidate",
+      "role": "figure_inner_text",
       "zone": "post_reference_backmatter_zone",
       "bbox": [
         526.0,
@@ -5112,7 +5112,7 @@
       "block_id": "p39:15",
       "page": 39,
       "raw_label": "figure_title",
-      "role": "figure_caption_candidate",
+      "role": "figure_inner_text",
       "zone": "post_reference_backmatter_zone",
       "bbox": [
         264.0,
@@ -5132,7 +5132,7 @@
       "block_id": "p39:16",
       "page": 39,
       "raw_label": "figure_title",
-      "role": "figure_caption_candidate",
+      "role": "figure_inner_text",
       "zone": "post_reference_backmatter_zone",
       "bbox": [
         550.0,
@@ -5272,7 +5272,7 @@
       "block_id": "p41:1",
       "page": 41,
       "raw_label": "figure_title",
-      "role": "figure_caption_candidate",
+      "role": "figure_inner_text",
       "zone": "post_reference_backmatter_zone",
       "bbox": [
         234.0,
@@ -5292,7 +5292,7 @@
       "block_id": "p41:2",
       "page": 41,
       "raw_label": "image",
-      "role": "media_asset",
+      "role": "figure_asset",
       "zone": "post_reference_backmatter_zone",
       "bbox": [
         236.0,
@@ -5312,7 +5312,7 @@
       "block_id": "p41:3",
       "page": 41,
       "raw_label": "figure_title",
-      "role": "figure_caption_candidate",
+      "role": "figure_inner_text",
       "zone": "post_reference_backmatter_zone",
       "bbox": [
         232.0,
@@ -5332,7 +5332,7 @@
       "block_id": "p41:4",
       "page": 41,
       "raw_label": "image",
-      "role": "media_asset",
+      "role": "figure_asset",
       "zone": "post_reference_backmatter_zone",
       "bbox": [
         255.0,
@@ -5352,7 +5352,7 @@
       "block_id": "p41:5",
       "page": 41,
       "raw_label": "figure_title",
-      "role": "figure_caption_candidate",
+      "role": "figure_inner_text",
       "zone": "post_reference_backmatter_zone",
       "bbox": [
         576.0,
@@ -5372,7 +5372,7 @@
       "block_id": "p41:6",
       "page": 41,
       "raw_label": "chart",
-      "role": "media_asset",
+      "role": "figure_asset",
       "zone": "post_reference_backmatter_zone",
       "bbox": [
         589.0,
@@ -5392,7 +5392,7 @@
       "block_id": "p41:7",
       "page": 41,
       "raw_label": "figure_title",
-      "role": "figure_caption_candidate",
+      "role": "figure_inner_text",
       "zone": "post_reference_backmatter_zone",
       "bbox": [
         233.0,
@@ -5412,7 +5412,7 @@
       "block_id": "p41:8",
       "page": 41,
       "raw_label": "image",
-      "role": "media_asset",
+      "role": "figure_asset",
       "zone": "post_reference_backmatter_zone",
       "bbox": [
         258.0,
@@ -5432,7 +5432,7 @@
       "block_id": "p41:9",
       "page": 41,
       "raw_label": "image",
-      "role": "media_asset",
+      "role": "figure_asset",
       "zone": "post_reference_backmatter_zone",
       "bbox": [
         567.0,
@@ -5452,7 +5452,7 @@
       "block_id": "p41:10",
       "page": 41,
       "raw_label": "figure_title",
-      "role": "figure_caption_candidate",
+      "role": "figure_inner_text",
       "zone": "post_reference_backmatter_zone",
       "bbox": [
         232.0,
@@ -5472,7 +5472,7 @@
       "block_id": "p41:11",
       "page": 41,
       "raw_label": "chart",
-      "role": "media_asset",
+      "role": "figure_asset",
       "zone": "post_reference_backmatter_zone",
       "bbox": [
         241.0,
@@ -5492,7 +5492,7 @@
       "block_id": "p41:12",
       "page": 41,
       "raw_label": "image",
-      "role": "media_asset",
+      "role": "figure_asset",
       "zone": "post_reference_backmatter_zone",
       "bbox": [
         601.0,

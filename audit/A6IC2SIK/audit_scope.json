@@ -47,6 +47,7 @@
     "p8:4",
     "p8:7",
     "p8:8",
+    "p8:9",
     "p9:2",
     "p9:3",
     "p10:2",
@@ -55,7 +56,6 @@
     "p11:3",
     "p11:4",
     "p11:5",
-    "p11:6",
     "p11:7",
     "p12:2",
     "p12:3",
@@ -70,7 +70,6 @@
     "p15:4",
     "p15:5",
     "p15:6",
-    "p16:2",
     "p16:3",
     "p16:7",
     "p16:9",
@@ -83,9 +82,6 @@
     "p18:3",
     "p18:4",
     "p18:5",
-    "p18:8",
-    "p18:9",
-    "p18:10",
     "p24:1",
     "p24:2",
     "p24:3",
@@ -111,8 +107,7 @@
       "block_id": "p1:1",
       "page": 1,
       "required_reason": [
-        "frontmatter",
-        "needs_resolution"
+        "frontmatter"
       ],
       "minimum_fields": [
         "block_id",
@@ -516,6 +511,21 @@
       ]
     },
     {
+      "block_id": "p8:9",
+      "page": 8,
+      "required_reason": [
+        "reference_span"
+      ],
+      "minimum_fields": [
+        "block_id",
+        "page",
+        "review_status",
+        "truth_role",
+        "truth_zone",
+        "truth_reference_membership"
+      ]
+    },
+    {
       "block_id": "p9:2",
       "page": 9,
       "required_reason": [
@@ -622,21 +632,6 @@
     },
     {
       "block_id": "p11:5",
-      "page": 11,
-      "required_reason": [
-        "object_ownership"
-      ],
-      "minimum_fields": [
-        "block_id",
-        "page",
-        "review_status",
-        "truth_role",
-        "truth_zone",
-        "truth_reference_membership"
-      ]
-    },
-    {
-      "block_id": "p11:6",
       "page": 11,
       "required_reason": [
         "object_ownership"
@@ -861,21 +856,6 @@
       ]
     },
     {
-      "block_id": "p16:2",
-      "page": 16,
-      "required_reason": [
-        "object_ownership"
-      ],
-      "minimum_fields": [
-        "block_id",
-        "page",
-        "review_status",
-        "truth_role",
-        "truth_zone",
-        "truth_reference_membership"
-      ]
-    },
-    {
       "block_id": "p16:3",
       "page": 16,
       "required_reason": [
@@ -1056,51 +1036,6 @@
       ]
     },
     {
-      "block_id": "p18:8",
-      "page": 18,
-      "required_reason": [
-        "backmatter"
-      ],
-      "minimum_fields": [
-        "block_id",
-        "page",
-        "review_status",
-        "truth_role",
-        "truth_zone",
-        "truth_reference_membership"
-      ]
-    },
-    {
-      "block_id": "p18:9",
-      "page": 18,
-      "required_reason": [
-        "backmatter"
-      ],
-      "minimum_fields": [
-        "block_id",
-        "page",
-        "review_status",
-        "truth_role",
-        "truth_zone",
-        "truth_reference_membership"
-      ]
-    },
-    {
-      "block_id": "p18:10",
-      "page": 18,
-      "required_reason": [
-        "backmatter"
-      ],
-      "minimum_fields": [
-        "block_id",
-        "page",
-        "review_status",
-        "truth_role",
-        "truth_zone",
-        "truth_reference_membership"
-      ]
-    },
-    {
       "block_id": "p24:1",
       "page": 24,
       "required_reason": [
@@ -1185,7 +1120,7 @@
     {
       "page": 8,
       "must_review_page": true,
-      "required_block_count": 4
+      "required_block_count": 5
     },
     {
       "page": 9,
@@ -1200,7 +1135,7 @@
     {
       "page": 11,
       "must_review_page": true,
-      "required_block_count": 5
+      "required_block_count": 4
     },
     {
       "page": 12,
@@ -1220,7 +1155,7 @@
     {
       "page": 16,
       "must_review_page": true,
-      "required_block_count": 5
+      "required_block_count": 4
     },
     {
       "page": 17,
@@ -1230,7 +1165,7 @@
     {
       "page": 18,
       "must_review_page": true,
-      "required_block_count": 8
+      "required_block_count": 5
     },
     {
       "page": 24,

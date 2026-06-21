@@ -252,13 +252,13 @@
         "body_paragraph": 0,
         "reference_item": 0,
         "tail_like": 0,
-        "media_assets": 1,
-        "table_like": 2,
+        "media_assets": 2,
+        "table_like": 1,
         "captions": 3,
         "hold": 0,
         "unknown_structural": 0,
         "matched_figures": 1,
-        "ambiguous_figures": 0
+        "ambiguous_figures": 1
       }
     },
     {
@@ -345,8 +345,8 @@
         "captions": 2,
         "hold": 0,
         "unknown_structural": 0,
-        "matched_figures": 1,
-        "ambiguous_figures": 0
+        "matched_figures": 0,
+        "ambiguous_figures": 1
       }
     },
     {
@@ -367,7 +367,7 @@
         "captions": 1,
         "hold": 0,
         "unknown_structural": 0,
-        "matched_figures": 1,
+        "matched_figures": 0,
         "ambiguous_figures": 1
       }
     },
@@ -469,8 +469,8 @@
         "captions": 2,
         "hold": 0,
         "unknown_structural": 0,
-        "matched_figures": 1,
-        "ambiguous_figures": 0
+        "matched_figures": 0,
+        "ambiguous_figures": 1
       }
     },
     {
@@ -618,7 +618,7 @@
         "captions": 1,
         "hold": 0,
         "unknown_structural": 0,
-        "matched_figures": 2,
+        "matched_figures": 1,
         "ambiguous_figures": 0
       }
     },
@@ -735,9 +735,9 @@
         "same_page_boundary"
       ],
       "counts": {
-        "body_paragraph": 2,
+        "body_paragraph": 1,
         "reference_item": 3,
-        "tail_like": 7,
+        "tail_like": 6,
         "media_assets": 0,
         "table_like": 0,
         "captions": 0,
@@ -860,7 +860,7 @@
         "captions": 1,
         "hold": 0,
         "unknown_structural": 0,
-        "matched_figures": 1,
+        "matched_figures": 0,
         "ambiguous_figures": 0
       }
     },
@@ -884,7 +884,7 @@
         "captions": 1,
         "hold": 0,
         "unknown_structural": 0,
-        "matched_figures": 0,
+        "matched_figures": 1,
         "ambiguous_figures": 0
       }
     },

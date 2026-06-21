@@ -9,10 +9,10 @@
       "block_id": "p26:1"
     },
     "end": {
-      "page": 42,
+      "page": 36,
       "column": 1,
-      "y": 632.0,
-      "block_id": "p42:3"
+      "y": 101.0,
+      "block_id": "p36:1"
     },
     "heading_block_id": "p26:1",
     "ordered_block_ids": [
@@ -85,59 +85,8 @@
       "p29:4",
       "p29:5",
       "p29:6",
-      "p30:2",
-      "p31:1",
-      "p31:3",
-      "p31:5",
-      "p31:7",
-      "p31:8",
-      "p31:11",
-      "p31:12",
-      "p31:13",
-      "p31:15",
-      "p31:19",
-      "p31:23",
-      "p32:1",
-      "p32:5",
-      "p32:8",
-      "p32:9",
-      "p32:14",
-      "p32:15",
-      "p32:19",
-      "p33:1",
-      "p34:0",
-      "p34:3",
-      "p34:5",
-      "p34:9",
-      "p34:11",
-      "p34:13",
-      "p34:17",
       "p35:1",
-      "p35:3",
-      "p35:4",
-      "p35:8",
-      "p36:1",
-      "p37:1",
-      "p37:2",
-      "p37:5",
-      "p37:7",
-      "p38:1",
-      "p39:1",
-      "p39:3",
-      "p39:7",
-      "p39:8",
-      "p39:10",
-      "p39:13",
-      "p39:15",
-      "p40:1",
-      "p41:1",
-      "p41:3",
-      "p41:5",
-      "p41:7",
-      "p41:8",
-      "p41:12",
-      "p42:1",
-      "p42:3"
+      "p36:1"
     ],
     "inside_block_ids": [
       "p26:1",
@@ -209,63 +158,12 @@
       "p29:4",
       "p29:5",
       "p29:6",
-      "p30:2",
-      "p31:1",
-      "p31:3",
-      "p31:5",
-      "p31:7",
-      "p31:8",
-      "p31:11",
-      "p31:12",
-      "p31:13",
-      "p31:15",
-      "p31:19",
-      "p31:23",
-      "p32:1",
-      "p32:5",
-      "p32:8",
-      "p32:9",
-      "p32:14",
-      "p32:15",
-      "p32:19",
-      "p33:1",
-      "p34:0",
-      "p34:3",
-      "p34:5",
-      "p34:9",
-      "p34:11",
-      "p34:13",
-      "p34:17",
       "p35:1",
-      "p35:3",
-      "p35:4",
-      "p35:8",
-      "p36:1",
-      "p37:1",
-      "p37:2",
-      "p37:5",
-      "p37:7",
-      "p38:1",
-      "p39:1",
-      "p39:3",
-      "p39:7",
-      "p39:8",
-      "p39:10",
-      "p39:13",
-      "p39:15",
-      "p40:1",
-      "p41:1",
-      "p41:3",
-      "p41:5",
-      "p41:7",
-      "p41:8",
-      "p41:12",
-      "p42:1",
-      "p42:3"
+      "p36:1"
     ],
     "explicitly_outside_nearby_block_ids": [
       "p26:0",
-      "p42:4"
+      "p36:2"
     ],
     "intrusion_candidates": [
       {
@@ -1113,244 +1011,6 @@
         "page": 36,
         "role": "reference_item",
         "zone": "reference_zone",
-        "reason": "logical_order_between_reference_members"
-      },
-      {
-        "block_id": "p36:2",
-        "page": 36,
-        "role": "noise",
-        "zone": "",
-        "reason": "logical_order_between_reference_members"
-      },
-      {
-        "block_id": "p37:0",
-        "page": 37,
-        "role": "frontmatter_noise",
-        "zone": "preproof_cover_zone",
-        "reason": "logical_order_between_reference_members"
-      },
-      {
-        "block_id": "p37:1",
-        "page": 37,
-        "role": "figure_inner_text",
-        "zone": "display_zone",
-        "reason": "logical_order_between_reference_members"
-      },
-      {
-        "block_id": "p37:2",
-        "page": 37,
-        "role": "figure_inner_text",
-        "zone": "display_zone",
-        "reason": "logical_order_between_reference_members"
-      },
-      {
-        "block_id": "p37:5",
-        "page": 37,
-        "role": "figure_inner_text",
-        "zone": "display_zone",
-        "reason": "logical_order_between_reference_members"
-      },
-      {
-        "block_id": "p37:7",
-        "page": 37,
-        "role": "figure_inner_text",
-        "zone": "display_zone",
-        "reason": "logical_order_between_reference_members"
-      },
-      {
-        "block_id": "p37:10",
-        "page": 37,
-        "role": "noise",
-        "zone": "",
-        "reason": "logical_order_between_reference_members"
-      },
-      {
-        "block_id": "p38:0",
-        "page": 38,
-        "role": "frontmatter_noise",
-        "zone": "preproof_cover_zone",
-        "reason": "logical_order_between_reference_members"
-      },
-      {
-        "block_id": "p38:1",
-        "page": 38,
-        "role": "figure_caption",
-        "zone": "display_zone",
-        "reason": "logical_order_between_reference_members"
-      },
-      {
-        "block_id": "p38:2",
-        "page": 38,
-        "role": "noise",
-        "zone": "",
-        "reason": "logical_order_between_reference_members"
-      },
-      {
-        "block_id": "p39:0",
-        "page": 39,
-        "role": "frontmatter_noise",
-        "zone": "preproof_cover_zone",
-        "reason": "logical_order_between_reference_members"
-      },
-      {
-        "block_id": "p39:1",
-        "page": 39,
-        "role": "figure_inner_text",
-        "zone": "display_zone",
-        "reason": "logical_order_between_reference_members"
-      },
-      {
-        "block_id": "p39:3",
-        "page": 39,
-        "role": "figure_inner_text",
-        "zone": "display_zone",
-        "reason": "logical_order_between_reference_members"
-      },
-      {
-        "block_id": "p39:7",
-        "page": 39,
-        "role": "figure_caption_candidate",
-        "zone": "",
-        "reason": "logical_order_between_reference_members"
-      },
-      {
-        "block_id": "p39:8",
-        "page": 39,
-        "role": "figure_inner_text",
-        "zone": "display_zone",
-        "reason": "logical_order_between_reference_members"
-      },
-      {
-        "block_id": "p39:10",
-        "page": 39,
-        "role": "figure_inner_text",
-        "zone": "display_zone",
-        "reason": "logical_order_between_reference_members"
-      },
-      {
-        "block_id": "p39:13",
-        "page": 39,
-        "role": "figure_inner_text",
-        "zone": "display_zone",
-        "reason": "logical_order_between_reference_members"
-      },
-      {
-        "block_id": "p39:15",
-        "page": 39,
-        "role": "figure_caption",
-        "zone": "display_zone",
-        "reason": "logical_order_between_reference_members"
-      },
-      {
-        "block_id": "p39:16",
-        "page": 39,
-        "role": "noise",
-        "zone": "",
-        "reason": "logical_order_between_reference_members"
-      },
-      {
-        "block_id": "p40:0",
-        "page": 40,
-        "role": "frontmatter_noise",
-        "zone": "preproof_cover_zone",
-        "reason": "logical_order_between_reference_members"
-      },
-      {
-        "block_id": "p40:1",
-        "page": 40,
-        "role": "body_paragraph",
-        "zone": "",
-        "reason": "logical_order_between_reference_members"
-      },
-      {
-        "block_id": "p40:2",
-        "page": 40,
-        "role": "noise",
-        "zone": "",
-        "reason": "logical_order_between_reference_members"
-      },
-      {
-        "block_id": "p41:0",
-        "page": 41,
-        "role": "frontmatter_noise",
-        "zone": "preproof_cover_zone",
-        "reason": "logical_order_between_reference_members"
-      },
-      {
-        "block_id": "p41:1",
-        "page": 41,
-        "role": "figure_caption",
-        "zone": "",
-        "reason": "logical_order_between_reference_members"
-      },
-      {
-        "block_id": "p41:3",
-        "page": 41,
-        "role": "figure_caption_candidate",
-        "zone": "",
-        "reason": "logical_order_between_reference_members"
-      },
-      {
-        "block_id": "p41:5",
-        "page": 41,
-        "role": "figure_caption_candidate",
-        "zone": "",
-        "reason": "logical_order_between_reference_members"
-      },
-      {
-        "block_id": "p41:7",
-        "page": 41,
-        "role": "figure_caption_candidate",
-        "zone": "",
-        "reason": "logical_order_between_reference_members"
-      },
-      {
-        "block_id": "p41:8",
-        "page": 41,
-        "role": "figure_caption",
-        "zone": "",
-        "reason": "logical_order_between_reference_members"
-      },
-      {
-        "block_id": "p41:12",
-        "page": 41,
-        "role": "figure_caption",
-        "zone": "display_zone",
-        "reason": "logical_order_between_reference_members"
-      },
-      {
-        "block_id": "p41:13",
-        "page": 41,
-        "role": "noise",
-        "zone": "",
-        "reason": "logical_order_between_reference_members"
-      },
-      {
-        "block_id": "p42:0",
-        "page": 42,
-        "role": "frontmatter_noise",
-        "zone": "preproof_cover_zone",
-        "reason": "logical_order_between_reference_members"
-      },
-      {
-        "block_id": "p42:1",
-        "page": 42,
-        "role": "table_caption_candidate",
-        "zone": "display_zone",
-        "reason": "logical_order_between_reference_members"
-      },
-      {
-        "block_id": "p42:2",
-        "page": 42,
-        "role": "table_html",
-        "zone": "",
-        "reason": "logical_order_between_reference_members"
-      },
-      {
-        "block_id": "p42:3",
-        "page": 42,
-        "role": "footnote",
-        "zone": "",
         "reason": "logical_order_between_reference_members"
       }
     ]

@@ -2,31 +2,12 @@
 
 - Mode: `high-risk`
 - Status: `READY`
-- Reviewed pages: [1, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13]
-- Reviewed blocks: 132
+- Reviewed pages: [1, 3, 4, 5, 6, 7, 9, 11, 13, 15]
+- Reviewed blocks: 181
 
 ## Findings
 
-- `critical` `reference_span_error`: block appears inside the logical reference reading-order region
-- `critical` `reference_span_error`: block appears inside the logical reference reading-order region
-- `critical` `reference_span_error`: block appears inside the logical reference reading-order region
-- `critical` `reference_span_error`: block appears inside the logical reference reading-order region
-- `critical` `reference_span_error`: block appears inside the logical reference reading-order region
-- `critical` `reference_span_error`: block appears inside the logical reference reading-order region
-- `critical` `reference_span_error`: block appears inside the logical reference reading-order region
-- `critical` `reference_span_error`: block appears inside the logical reference reading-order region
-- `critical` `reference_span_error`: block appears inside the logical reference reading-order region
-- `critical` `reference_span_error`: block appears inside the logical reference reading-order region
-- `critical` `reference_span_error`: block appears inside the logical reference reading-order region
-- `critical` `reference_span_error`: block appears inside the logical reference reading-order region
-- `critical` `reference_span_error`: block appears inside the logical reference reading-order region
-- `critical` `reference_span_error`: block appears inside the logical reference reading-order region
-- `critical` `reference_span_error`: block appears inside the logical reference reading-order region
-- `critical` `reference_span_error`: block appears inside the logical reference reading-order region
-- `critical` `reference_span_error`: block appears inside the logical reference reading-order region
-- `critical` `reference_span_error`: block appears inside the logical reference reading-order region
-- `critical` `reference_span_error`: block appears inside the logical reference reading-order region
-- `critical` `reference_span_error`: block appears inside the logical reference reading-order region
+- `major` `same_page_boundary_error`: page contains mixed body/reference/tail signals
 - `major` `same_page_boundary_error`: page contains mixed body/reference/tail signals
 - `minor` `render_mapping_error`: some render-default blocks are not easily mapped into the current fulltext output
 

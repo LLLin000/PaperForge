@@ -172,28 +172,38 @@ def build_ocr_health(
     formal_legend_accounted = int(completeness.get("accounted_for", 0))
     formal_legend_gaps = int(completeness.get("gap_count", 0))
 
-    issues = 0
-    if caption_without_media > 0:
-        issues += 1
-    if media_without_caption > 0:
-        issues += 1
-    if empty_tables > 0:
-        issues += 1
+    # Only flag structural blockers as health-color issues.
+    # Caption/media gaps, empty tables, legend gaps, layout anomalies
+    # are kept in the report as data but do NOT drive the overall color —
+    # they are display-quality concerns, not rebuild triggers.
+    structural_blockers = 0
     if not abstract_found:
-        issues += 1
+        structural_blockers += 1
     if not references_found:
-        issues += 1
+        structural_blockers += 1
     if section_heading_count < 2:
-        issues += 1
-    if formal_legend_gaps > 0:
-        issues += 1
+        structural_blockers += 1
 
-    if issues == 0 and frontmatter_quality >= 0.5:
+    # Count soft issues for the report (informational only)
+    soft_issues = 0
+    if caption_without_media > 0:
+        soft_issues += 1
+    if media_without_caption > 0:
+        soft_issues += 1
+    if empty_tables > 0:
+        soft_issues += 1
+    if formal_legend_gaps > 0:
+        soft_issues += 1
+
+    if structural_blockers == 0:
         overall = "green"
-    elif issues <= 2:
+    elif structural_blockers == 1:
         overall = "yellow"
     else:
         overall = "red"
+
+    # needs_rebuild: only when structural core is broken
+    needs_rebuild = structural_blockers >= 2 or (not abstract_found and not references_found)
 
     # Compute structural health signals
     from paperforge.worker.ocr_document import _compute_span_coverage, _detect_body_spine, _run_layout_audit
@@ -276,6 +286,9 @@ def build_ocr_health(
         "empty_table_count": empty_tables,
         "frontmatter_quality": frontmatter_quality,
         "overall": overall,
+        "needs_rebuild": needs_rebuild,
+        "structural_blockers": structural_blockers,
+        "soft_issues": soft_issues,
         "span_coverage": span,
         "span_coverage_quality": span.get("coverage_quality", "weak"),
         "degraded_mode_active": span.get("degraded_mode_active", True),

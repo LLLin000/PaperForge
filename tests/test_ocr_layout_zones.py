@@ -183,3 +183,17 @@ def test_analyze_document_structure_computes_region_bus_before_role_normalizatio
     assert "p7_b2" not in doc.region_bus["body_zone"]["block_ids"]
     assert "p8_b2" in doc.region_bus["reference_zone"]["block_ids"]
     assert "p8_b3" in doc.region_bus["reference_zone"]["block_ids"]
+
+
+def test_layout_facts_split_body_and_reference_candidates_on_same_page() -> None:
+    from paperforge.worker.ocr_document import compute_layout_facts
+
+    blocks = [
+        {"block_id": "b1", "page": 12, "role": "body_paragraph", "zone": "body_zone", "bbox": [70, 100, 540, 160], "text": "Conclusion paragraph."},
+        {"block_id": "r1", "page": 12, "role": "reference_item", "zone": "reference_zone", "bbox": [620, 100, 1110, 150], "text": "Brown T. Lancet. 2020;395:10-12."},
+    ]
+
+    facts = {row["block_id"]: row for row in compute_layout_facts(blocks)}
+    assert facts["b1"]["layout_region"] == "body_flow"
+    assert facts["r1"]["layout_region"] == "reference_candidate"
+    assert facts["b1"]["reading_band_id"] != facts["r1"]["reading_band_id"]

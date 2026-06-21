@@ -1078,3 +1078,18 @@ def test_bare_table_number_can_match_previous_page_continuation_under_strong_geo
 
     assert table["match_status"] in {"matched_low_confidence", "matched"}
     assert table["asset_block_id"] == "p7_a1"
+
+
+def test_table_inventory_keeps_bridge_gap_inside_sparse_display_cluster() -> None:
+    from paperforge.worker.ocr_tables import build_table_inventory
+
+    structured_blocks = [
+        {"page": 10, "block_id": "table_asset", "role": "table_asset", "raw_label": "table", "bbox": [100, 120, 620, 420], "text": "", "layout_region": "display_zone"},
+        {"page": 10, "block_id": "gap_block", "role": "unknown_structural", "bbox": [640, 130, 930, 420], "text": "", "layout_region": "display_zone", "bridge_eligible": True},
+        {"page": 10, "block_id": "table_caption", "role": "table_caption", "bbox": [120, 450, 900, 490], "text": "Table 1. Sparse reconstruction.", "layout_region": "display_zone"},
+    ]
+
+    inventory = build_table_inventory(structured_blocks)
+    table = inventory["tables"][0]
+    assert table["asset_block_id"] == "table_asset"
+    assert table.get("bridge_block_ids") == ["gap_block"]

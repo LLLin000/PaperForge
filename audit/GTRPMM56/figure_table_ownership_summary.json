@@ -1,9 +1,9 @@
 {
   "figures": {
-    "matched_count": 6,
+    "matched_count": 5,
     "ambiguous_count": 1,
     "unresolved_cluster_count": 0,
-    "unmatched_asset_count": 5,
+    "unmatched_asset_count": 8,
     "matched": [
       {
         "figure_number": 1,
@@ -50,33 +50,41 @@
         ],
         "page": 12,
         "match_type": null
-      },
-      {
-        "figure_number": 5,
-        "legend_block_id": 7,
-        "asset_block_ids": [
-          6
-        ],
-        "page": 9,
-        "match_type": null
       }
     ],
     "ambiguous": [
       {
-        "figure_number": null,
+        "figure_number": 5,
         "legend_block_id": 7,
         "asset_block_ids": [],
-        "candidate_asset_ids": [],
+        "candidate_asset_ids": [
+          6
+        ],
         "page": 9
       }
     ],
     "unresolved": []
   },
   "tables": {
-    "matched_count": 0,
+    "matched_count": 2,
     "ambiguous_count": 0,
-    "unmatched_asset_count": 5,
-    "matched": [],
+    "unmatched_asset_count": 1,
+    "matched": [
+      {
+        "table_number": 1,
+        "caption_block_id": 1,
+        "asset_block_ids": [],
+        "page": 10,
+        "match_status": "matched"
+      },
+      {
+        "table_number": 1,
+        "caption_block_id": 1,
+        "asset_block_ids": [],
+        "page": 11,
+        "match_status": "matched"
+      }
+    ],
     "ambiguous": []
   }
 }

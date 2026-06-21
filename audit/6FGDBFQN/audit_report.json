@@ -5,28 +5,30 @@
   "focus": [],
   "artifact_fingerprint": {
     "result_json_hash": "sha256:81b4e6cabda6976d03ac102c7297f43353b986315256268b52565195343b9c35",
-    "meta_json_hash": "sha256:be6ea801bb95097e73c64aad179d6f716d6924667212ea34e1ba7237b3e6f179",
-    "blocks_raw_hash": "sha256:79c00e12d3a3865714a1bb38ffb163f7986b5fdec25052263e7bd7ef10f97c7f",
-    "structured_blocks_hash": "sha256:acb570ff8913f23d1e8381541de1aed32068f8c28949b20a8ab9f442f1a3f94b",
-    "document_structure_hash": "sha256:b7da96ed9f75feaeeae4f683ca4e83d4564252b3bcc87d67fc2fc8b67e9cb9d5",
-    "figure_inventory_hash": "sha256:64231027525fb8e637b0b4250fb2e1c3aa87890f6dd42887231ef8ad0df6c26a",
+    "meta_json_hash": "sha256:f61285164602ff34169fd8829cc55c34081a5b5c5492f64ddef9fc088c3ed288",
+    "blocks_raw_hash": "sha256:74d4cb6e0754101389ce7a77e74b51c53cdcc66d3db4786148686cafe6eab5ba",
+    "structured_blocks_hash": "sha256:a52c30d6c3908ddc563c33f9b4b9aefb9bae0e750c8cbcccdb856c9b9bf8b947",
+    "document_structure_hash": "sha256:3058c23b0806e97ca99fde3e87a5de38e0db7b4c5f1563a122d628a73163ae65",
+    "figure_inventory_hash": "sha256:ab76820e086eb3d3f88edead70a920da6dc2685777214f8d1418209b00fd295d",
     "table_inventory_hash": "sha256:86ccb48fbfd41da91e87ea2c1ef938513732868efcb5e30b31c36f96d432bba2",
-    "reader_figures_hash": "sha256:f41e4d4305516b375371580d97b8c5326c0ebc287aa7a5fc3d9745019ae875d8",
-    "resolved_metadata_hash": "sha256:7b9c0f8284823f5e06e9c8a04537d910ab68e5f6d0e8e5d15f82153c7eae50e9",
-    "fulltext_hash": "sha256:7ea6b9754d150822fba10be68d4647cbb2e1014f88b89da0a2f3c4de4ade9575",
-    "block_trace_hash": "sha256:24182d9f0489bee98c461d7026af657f25435af4ef067196acb5876b7f7b667f",
+    "reader_figures_hash": "sha256:f27723a3c645fa7128eff17894b61979fd76d3b66a78ccc542c41ab55d33dc36",
+    "resolved_metadata_hash": "sha256:dd301e73cdb0fc0afbc8f8bbe9b91c05f29a14705f516dc2b3f0a2f7eec9c250",
+    "fulltext_hash": "sha256:cee9d9ee1f516978b2cb78a17f0535a1dc387cb1578c0dfd0c7d05615a425f70",
+    "block_trace_hash": "sha256:945744fc71e0671445c17422bd16235487c295047d8e240ffaf234959bb38698",
     "annotated_pages": {
-      "page_001.png": "sha256:647d22dc4356132bdac3c9cae5c23bfd6a633ff996c49e0d94d7c6c65434fe26",
-      "page_002.png": "sha256:914d2a5adc81b69a02852924715dc68c7ba589b0b8dd9a8fe35bf62d36c62d18",
-      "page_003.png": "sha256:b3718e5403287e5e65409fe5f3c832eb6d132be5f9f7cf273e67aad07c781f5a",
-      "page_004.png": "sha256:457b048825968a93ca6e454073b5e16935013b300c0fe5a446fefe5592772adb",
-      "page_005.png": "sha256:18947c0ae5935c85c2035ab9ebe5e2c8188c8a988c3e96628aa4011eca351a73"
+      "page_001.png": "sha256:ae0b55fe8e126c654127eb0eb40756e5136eb5c4edf8edcbb69bbd137675e5a8",
+      "page_002.png": "sha256:1fb12a3ed8ad59db8c7d441202725669b4c9887f55a4b102c83dd8a123e17ccb",
+      "page_003.png": "sha256:357e59ff4256c965761b582ea89f1e3b044217ae90c1013624c13cf82fa06b23",
+      "page_004.png": "sha256:d74af091a4372ad7900eb6871774c8472ed20303abc08158e8ed2d02feb887f2",
+      "page_005.png": "sha256:9397b4533cf7f908f9bb5546d29ff6c55fe44608946ebd8b8d3766870f5e6802"
     }
   },
   "artifact_freshness": {
     "missing": [],
     "mismatches": [
-      "document_structure older than blocks_structured"
+      "document_structure older than blocks_structured",
+      "figure_inventory older than blocks_structured",
+      "resolved_metadata older than blocks_structured"
     ],
     "annotated_pages_rendered": [
       "page_001.png",
@@ -309,18 +311,6 @@
       }
     },
     {
-      "category": "frontmatter_error",
-      "severity": "major",
-      "block_ids": [],
-      "truth": "page 1 should have clearer frontmatter role resolution",
-      "pipeline_behavior": "frontmatter page retains elevated unknown_structural density",
-      "root_cause_hypothesis": "frontmatter anchor or noise routing weakness",
-      "evidence": {
-        "annotated_page": "annotated_pages/page_001.png",
-        "artifact": "page_risk_summary.json"
-      }
-    },
-    {
       "category": "same_page_boundary_error",
       "severity": "major",
       "block_ids": [],
@@ -333,6 +323,18 @@
       }
     },
     {
+      "category": "object_ownership_error",
+      "severity": "major",
+      "block_ids": [],
+      "truth": "figure/table ownership should map captions and assets coherently",
+      "pipeline_behavior": "ambiguous or unresolved object ownership remains in the current artifact set",
+      "root_cause_hypothesis": "caption-to-asset grouping ambiguity",
+      "evidence": {
+        "annotated_page": null,
+        "artifact": "figure_table_ownership_summary.json"
+      }
+    },
+    {
       "category": "render_mapping_error",
       "severity": "minor",
       "block_ids": [
@@ -342,20 +344,20 @@
         "p1:3",
         "p1:17",
         "p1:21",
-        "p1:22",
         "p2:0",
         "p2:1",
+        "p2:3",
         "p2:7",
-        "p2:17",
         "p2:18",
         "p2:19",
         "p2:20",
         "p3:0",
         "p3:1",
-        "p3:2",
-        "p3:5",
         "p3:6",
-        "p3:14"
+        "p3:19",
+        "p3:20",
+        "p4:0",
+        "p4:1"
       ],
       "truth": "rendered fulltext should be traceable back to source blocks",
       "pipeline_behavior": "some render-default blocks are not easily mapped into the current fulltext output",

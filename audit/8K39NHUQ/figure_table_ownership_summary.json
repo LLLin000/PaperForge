@@ -1,0 +1,155 @@
+{
+  "figures": {
+    "matched_count": 8,
+    "ambiguous_count": 1,
+    "unresolved_cluster_count": 0,
+    "unmatched_asset_count": 6,
+    "matched": [
+      {
+        "figure_number": 1,
+        "legend_block_id": 11,
+        "asset_block_ids": [
+          7,
+          8,
+          10,
+          9
+        ],
+        "page": 7,
+        "match_type": null
+      },
+      {
+        "figure_number": 2,
+        "legend_block_id": 9,
+        "asset_block_ids": [
+          3,
+          4,
+          5,
+          8,
+          6,
+          7
+        ],
+        "page": 8,
+        "match_type": null
+      },
+      {
+        "figure_number": 4,
+        "legend_block_id": 12,
+        "asset_block_ids": [
+          10,
+          11
+        ],
+        "page": 10,
+        "match_type": null
+      },
+      {
+        "figure_number": 5,
+        "legend_block_id": 15,
+        "asset_block_ids": [
+          4,
+          5,
+          6,
+          8,
+          9,
+          10,
+          14,
+          11,
+          13
+        ],
+        "page": 11,
+        "match_type": null
+      },
+      {
+        "figure_number": 6,
+        "legend_block_id": 5,
+        "asset_block_ids": [
+          8
+        ],
+        "page": 12,
+        "match_type": null
+      },
+      {
+        "figure_number": 7,
+        "legend_block_id": 6,
+        "asset_block_ids": [
+          3,
+          4,
+          5
+        ],
+        "page": 13,
+        "match_type": null
+      },
+      {
+        "figure_number": 8,
+        "legend_block_id": 10,
+        "asset_block_ids": [
+          6,
+          7,
+          8,
+          9
+        ],
+        "page": 14,
+        "match_type": null
+      },
+      {
+        "figure_number": 9,
+        "legend_block_id": 22,
+        "asset_block_ids": [
+          8,
+          21,
+          13,
+          14,
+          19,
+          20,
+          17,
+          18
+        ],
+        "page": 15,
+        "match_type": null
+      }
+    ],
+    "ambiguous": [
+      {
+        "figure_number": 3,
+        "legend_block_id": 7,
+        "asset_block_ids": [],
+        "candidate_asset_ids": [
+          2,
+          3,
+          4,
+          6,
+          5,
+          2,
+          4,
+          5,
+          10,
+          10,
+          11
+        ],
+        "page": 10
+      }
+    ],
+    "unresolved": []
+  },
+  "tables": {
+    "matched_count": 2,
+    "ambiguous_count": 0,
+    "unmatched_asset_count": 0,
+    "matched": [
+      {
+        "table_number": 1,
+        "caption_block_id": 3,
+        "asset_block_ids": [],
+        "page": 5,
+        "match_status": "matched"
+      },
+      {
+        "table_number": 2,
+        "caption_block_id": 2,
+        "asset_block_ids": [],
+        "page": 6,
+        "match_status": "matched"
+      }
+    ],
+    "ambiguous": []
+  }
+}

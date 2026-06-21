@@ -9,10 +9,10 @@
       "block_id": "p11:5"
     },
     "end": {
-      "page": 16,
+      "page": 15,
       "column": 1,
-      "y": 146.0,
-      "block_id": "p16:0"
+      "y": 1015.0,
+      "block_id": "p15:8"
     },
     "heading_block_id": "p11:5",
     "ordered_block_ids": [
@@ -20,7 +20,6 @@
       "p11:6",
       "p11:7",
       "p11:8",
-      "p12:0",
       "p12:2",
       "p12:3",
       "p12:4",
@@ -32,7 +31,6 @@
       "p12:10",
       "p12:11",
       "p12:12",
-      "p13:0",
       "p13:2",
       "p13:3",
       "p13:4",
@@ -44,7 +42,6 @@
       "p13:10",
       "p13:11",
       "p13:12",
-      "p14:0",
       "p14:2",
       "p14:3",
       "p14:4",
@@ -55,22 +52,19 @@
       "p14:9",
       "p14:10",
       "p14:11",
-      "p15:0",
       "p15:2",
       "p15:3",
       "p15:4",
       "p15:5",
       "p15:6",
       "p15:7",
-      "p15:8",
-      "p16:0"
+      "p15:8"
     ],
     "inside_block_ids": [
       "p11:5",
       "p11:6",
       "p11:7",
       "p11:8",
-      "p12:0",
       "p12:2",
       "p12:3",
       "p12:4",
@@ -82,7 +76,6 @@
       "p12:10",
       "p12:11",
       "p12:12",
-      "p13:0",
       "p13:2",
       "p13:3",
       "p13:4",
@@ -94,7 +87,6 @@
       "p13:10",
       "p13:11",
       "p13:12",
-      "p14:0",
       "p14:2",
       "p14:3",
       "p14:4",
@@ -105,19 +97,17 @@
       "p14:9",
       "p14:10",
       "p14:11",
-      "p15:0",
       "p15:2",
       "p15:3",
       "p15:4",
       "p15:5",
       "p15:6",
       "p15:7",
-      "p15:8",
-      "p16:0"
+      "p15:8"
     ],
     "explicitly_outside_nearby_block_ids": [
       "p11:4",
-      "p16:1"
+      "p15:9"
     ],
     "intrusion_candidates": [
       {
@@ -502,20 +492,6 @@
         "block_id": "p15:8",
         "page": 15,
         "role": "reference_item",
-        "zone": "reference_zone",
-        "reason": "logical_order_between_reference_members"
-      },
-      {
-        "block_id": "p15:9",
-        "page": 15,
-        "role": "noise",
-        "zone": "",
-        "reason": "logical_order_between_reference_members"
-      },
-      {
-        "block_id": "p16:0",
-        "page": 16,
-        "role": "unknown_structural",
         "zone": "reference_zone",
         "reason": "logical_order_between_reference_members"
       }

@@ -1,0 +1,4547 @@
+{
+  "mappable_block_count": 454,
+  "found_count": 260,
+  "missing_count": 194,
+  "rows": [
+    {
+      "block_id": "p1:1",
+      "page": 1,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ORIGINAL RESEARCH published: 04 September 2018 doi: 10.3389/fphys.2018.00974",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:3",
+      "page": 1,
+      "role": "paper_title",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "The Resting Potential and K $ ^{+} $ Currents in Primary Human Articular Chondro",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:4",
+      "page": 1,
+      "role": "authors",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Mary M. Maleckar $ ^{1,2} $, Robert B. Clark $ ^{3} $, Bartholomew Votta $ ^{4} ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:5",
+      "page": 1,
+      "role": "affiliation",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "$ ^{1} $ Simula Research Laboratory, Center for Biomedical Computing and Center ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:16",
+      "page": 1,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "INTRODUCTION",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2117
+    },
+    {
+      "block_id": "p1:17",
+      "page": 1,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Articular cartilage is a major component of the flexible connective tissue that ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2130
+    },
+    {
+      "block_id": "p1:18",
+      "page": 1,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Frontiers in Physiology | www.frontiersin.org",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:19",
+      "page": 1,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "1",
+      "found_in_fulltext": true,
+      "fulltext_offset": 243
+    },
+    {
+      "block_id": "p1:20",
+      "page": 1,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "September 2018 | Volume 9 | Article 974",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:0",
+      "page": 2,
+      "role": "noise",
+      "zone": "frontmatter_side_zone",
+      "render_default": false,
+      "snippet": "Maleckar et al.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20192
+    },
+    {
+      "block_id": "p2:1",
+      "page": 2,
+      "role": "noise",
+      "zone": "frontmatter_side_zone",
+      "render_default": false,
+      "snippet": "Chondrocyte K⁺ Currents Modulate Eᵐ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:2",
+      "page": 2,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "named a “chondron” (Poole, 1997; Guilak et al., 2006; Nguyen et al., 2010; McLan",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:3",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Although chondrocytes occupy only $ \\sim $1–10% of the total volume of mammalian",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:4",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In a variety of progressive chronic diseases, or as a consequence of injury, the",
+      "found_in_fulltext": true,
+      "fulltext_offset": 3610
+    },
+    {
+      "block_id": "p2:5",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Detailed experimental investigations that address possible functional relationsh",
+      "found_in_fulltext": true,
+      "fulltext_offset": 5162
+    },
+    {
+      "block_id": "p2:6",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "other experimental data we have developed a mathematical model based on the fund",
+      "found_in_fulltext": true,
+      "fulltext_offset": 5800
+    },
+    {
+      "block_id": "p2:7",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The goals of this paper are: (i) to identify the main K⁺ currents that contribut",
+      "found_in_fulltext": true,
+      "fulltext_offset": 6328
+    },
+    {
+      "block_id": "p2:8",
+      "page": 2,
+      "role": "section_heading",
+      "zone": "frontmatter_side_zone",
+      "render_default": true,
+      "snippet": "METHODS",
+      "found_in_fulltext": true,
+      "fulltext_offset": 6994
+    },
+    {
+      "block_id": "p2:9",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Mammalian chondrocytes express a number of different voltage-and ligand-gated io",
+      "found_in_fulltext": true,
+      "fulltext_offset": 7002
+    },
+    {
+      "block_id": "p2:10",
+      "page": 2,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Experimental Conditions",
+      "found_in_fulltext": true,
+      "fulltext_offset": 7961
+    },
+    {
+      "block_id": "p2:11",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In the experimental conditions employed in this study, isolated human chondrocyt",
+      "found_in_fulltext": true,
+      "fulltext_offset": 7985
+    },
+    {
+      "block_id": "p2:12",
+      "page": 2,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Frontiers in Physiology | www.frontiersin.org",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:13",
+      "page": 2,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "2",
+      "found_in_fulltext": true,
+      "fulltext_offset": 241
+    },
+    {
+      "block_id": "p2:14",
+      "page": 2,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "September 2018 | Volume 9 | Article 974",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:0",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Maleckar et al.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20192
+    },
+    {
+      "block_id": "p3:1",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Chondrocyte K⁺ Currents Modulate Eᵐ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:2",
+      "page": 3,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Electrophysiological Studies",
+      "found_in_fulltext": true,
+      "fulltext_offset": 9188
+    },
+    {
+      "block_id": "p3:3",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "For these electrophysiological studies, selected populations of chondrocytes wer",
+      "found_in_fulltext": true,
+      "fulltext_offset": 9217
+    },
+    {
+      "block_id": "p3:4",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Patch pipettes were fabricated from non-heparinized hematocrit capillaries. Patc",
+      "found_in_fulltext": true,
+      "fulltext_offset": 9615
+    },
+    {
+      "block_id": "p3:5",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "All electrophysiological measurements were made with a Multi-Clamp 700 A patch c",
+      "found_in_fulltext": true,
+      "fulltext_offset": 10436
+    },
+    {
+      "block_id": "p3:6",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Transmembrane current values were normalized to cell capacitance, which was meas",
+      "found_in_fulltext": true,
+      "fulltext_offset": 11348
+    },
+    {
+      "block_id": "p3:7",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In the second experimental part of this study, after obtaining the data that cha",
+      "found_in_fulltext": true,
+      "fulltext_offset": 11892
+    },
+    {
+      "block_id": "p3:8",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "(1:10). These chondrocytes were used up to a maximum of 6 days after plating and",
+      "found_in_fulltext": true,
+      "fulltext_offset": 12504
+    },
+    {
+      "block_id": "p3:9",
+      "page": 3,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The Atypical Microenvironment of the Chondrocyte",
+      "found_in_fulltext": true,
+      "fulltext_offset": 13043
+    },
+    {
+      "block_id": "p3:10",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In adult mammals, the chondrocyte cell population is in a physiological environm",
+      "found_in_fulltext": true,
+      "fulltext_offset": 13092
+    },
+    {
+      "block_id": "p3:11",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The fixed negative charges on proteoglycans of the extracellular matrix are in t",
+      "found_in_fulltext": true,
+      "fulltext_offset": 14717
+    },
+    {
+      "block_id": "p3:12",
+      "page": 3,
+      "role": "table_caption",
+      "zone": "display_zone",
+      "render_default": true,
+      "snippet": "TABLE 1 | Ion concentrations in compartments within the mammalian knee joint (se",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:14",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Frontiers in Physiology | www.frontiersin.org",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:15",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "3",
+      "found_in_fulltext": true,
+      "fulltext_offset": 260
+    },
+    {
+      "block_id": "p3:16",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "September 2018 | Volume 9 | Article 974",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:0",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Maleckar et al.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20192
+    },
+    {
+      "block_id": "p4:1",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Chondrocyte K⁺ Currents Modulate Eᵐ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:2",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "chondrocyte can serve as a significant diffusion barrier, as demonstrated recent",
+      "found_in_fulltext": true,
+      "fulltext_offset": 15254
+    },
+    {
+      "block_id": "p4:3",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The articular joint receives only very limited blood supply. Accordingly, the sy",
+      "found_in_fulltext": true,
+      "fulltext_offset": 15652
+    },
+    {
+      "block_id": "p4:4",
+      "page": 4,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "MODEL DEVELOPMENT",
+      "found_in_fulltext": true,
+      "fulltext_offset": 16727
+    },
+    {
+      "block_id": "p4:5",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "We have developed a new, first generation mathematical model for the resting mem",
+      "found_in_fulltext": true,
+      "fulltext_offset": 16745
+    },
+    {
+      "block_id": "p4:6",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The equation governing the transmembrane potential, V, of the chondrocyte is",
+      "found_in_fulltext": true,
+      "fulltext_offset": 18044
+    },
+    {
+      "block_id": "p4:7",
+      "page": 4,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "$$ \\begin{align*}C_m\\frac{dV}{dt}=&-(I_{K-DR}+I_{K-Ca}+I_{K-2p}+I_{K-ATP}+I_{Na,",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:8",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "where $ C_m $ is chondrocyte capacitance (8 pF). This equation includes all tran",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:9",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The intracellular concentrations of Na+, [Na+]i and K+, [K+]i, are governed by t",
+      "found_in_fulltext": true,
+      "fulltext_offset": 18410
+    },
+    {
+      "block_id": "p4:10",
+      "page": 4,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "$$ \\frac{d[Na^{+}]_{i}}{dt}=\\frac{-(I_{Na,b}+3I_{NaK}+3I_{NaCa}-I_{NaH})}{\\nu o ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:11",
+      "page": 4,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "(2)",
+      "found_in_fulltext": true,
+      "fulltext_offset": 18853
+    },
+    {
+      "block_id": "p4:12",
+      "page": 4,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "and",
+      "found_in_fulltext": true,
+      "fulltext_offset": 24
+    },
+    {
+      "block_id": "p4:13",
+      "page": 4,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "$$ \\frac{d[K^{+}]_{i}}{dt}=\\frac{-(I_{K,b}-2I_{NaK}+I_{K-DR}+I_{K-2p}+I_{K-Ca}+I",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:14",
+      "page": 4,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "(3)",
+      "found_in_fulltext": true,
+      "fulltext_offset": 18876
+    },
+    {
+      "block_id": "p4:15",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "where $ vol_i $ is the internal volume of the chondrocyte (calculated to be 0.00",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:16",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Intracellular Ca²⁺ concentration, [Ca²⁺]ᵢ, also changes with time, due to transm",
+      "found_in_fulltext": true,
+      "fulltext_offset": 19616
+    },
+    {
+      "block_id": "p4:17",
+      "page": 4,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "$$ \\frac{d\\left[Ca^{2+}\\right]_{i}}{dt}=\\frac{\\left(I_{NaCa}-I_{Ca,ATP}\\right)}{",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:18",
+      "page": 4,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "(4)",
+      "found_in_fulltext": true,
+      "fulltext_offset": 42570
+    },
+    {
+      "block_id": "p4:19",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "where $ O_c $ is the fraction of intracellular calmodulin bound to $ Ca^{2+} $ (",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:20",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Differential equations (1–4) and those for $ I_{K,Ca} $ and calmodulin buffering",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:21",
+      "page": 4,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "RESULTS Ion-Selective Transmembrane Currents Potassium Currents",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20392
+    },
+    {
+      "block_id": "p4:23",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "We have identified and partially characterized three different $ K^{+} $ current",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:24",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Frontiers in Physiology | www.frontiersin.org",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:25",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "4",
+      "found_in_fulltext": true,
+      "fulltext_offset": 280
+    },
+    {
+      "block_id": "p4:26",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "September 2018 | Volume 9 | Article 974",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:0",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Maleckar et al.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20192
+    },
+    {
+      "block_id": "p5:1",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Chondrocyte K⁺ Currents Modulate E_m",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:4",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "K⁺ channels, I_K-2p; and (iii) a large conductance voltage and Ca²⁺-activated K⁺",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20930
+    },
+    {
+      "block_id": "p5:5",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "A typical pattern of K⁺ currents from our patch clamp recordings using single is",
+      "found_in_fulltext": true,
+      "fulltext_offset": 21437
+    },
+    {
+      "block_id": "p5:6",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "display_zone",
+      "render_default": true,
+      "snippet": "Figure 2B consists of an averaged isochronal current-voltage (I–V) relationship ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22144
+    },
+    {
+      "block_id": "p5:7",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "in cell size. Note that this I–V relationship is approximately linear at membran",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22443
+    },
+    {
+      "block_id": "p5:8",
+      "page": 5,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Delayed rectifier $ K^{+} $ current: $ I_{K-DR} $",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:9",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "A conventional time- and voltage-dependent delayed rectifier $ K^{+} $ current h",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:10",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The presence of this small time- and voltage-dependent current in these human ch",
+      "found_in_fulltext": true,
+      "fulltext_offset": 24558
+    },
+    {
+      "block_id": "p5:11",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Frontiers in Physiology | www.frontiersin.org",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:12",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "5",
+      "found_in_fulltext": true,
+      "fulltext_offset": 3806
+    },
+    {
+      "block_id": "p5:13",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "September 2018 | Volume 9 | Article 974",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:0",
+      "page": 6,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Maleckar et al.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20192
+    },
+    {
+      "block_id": "p6:1",
+      "page": 6,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Chondrocyte K⁺ Currents Modulate E_m",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:6",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "revealed more clearly when the linear leak and capacity currents were removed fr",
+      "found_in_fulltext": true,
+      "fulltext_offset": 24721
+    },
+    {
+      "block_id": "p6:7",
+      "page": 6,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "$$ I_{K-D R}=g_{K-D R}\\alpha_{K D r}(\\mathrm{V}-\\mathrm{E_{K}}) $$",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:8",
+      "page": 6,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "(5)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:9",
+      "page": 6,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "where",
+      "found_in_fulltext": true,
+      "fulltext_offset": 18121
+    },
+    {
+      "block_id": "p6:10",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "gK–DR is the maximal $ I_{K–DR} $ conductance, namely 0.0289 nS/pF from Figure 3",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:11",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "$ \\alpha_{KDr} $ is a voltage-dependent activation factor, given by the expressi",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:12",
+      "page": 6,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "$$ \\alpha_{K D r}=\\frac{1.0}{\\left(1.0+e^{\\frac{-(V+26.7)}{4.1}}\\right)} $$",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:13",
+      "page": 6,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "(6)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:14",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Note that the extracellular potassium concentration, $ [K^+]_0 $, was initially ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:15",
+      "page": 6,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "$ Ca^{2+} $-activated $ K^{+} $ current: $ I_{K-Ca} $",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:16",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The prominent fluctuations in outward current traces recorded from all human cho",
+      "found_in_fulltext": true,
+      "fulltext_offset": 27371
+    },
+    {
+      "block_id": "p6:17",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "To more clearly reveal the functionally important properties of this BK current,",
+      "found_in_fulltext": true,
+      "fulltext_offset": 28224
+    },
+    {
+      "block_id": "p6:18",
+      "page": 6,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Frontiers in Physiology | www.frontiersin.org",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:19",
+      "page": 6,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "6",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2759
+    },
+    {
+      "block_id": "p6:20",
+      "page": 6,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "September 2018 | Volume 9 | Article 974",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:0",
+      "page": 7,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Maleckar et al.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20192
+    },
+    {
+      "block_id": "p7:1",
+      "page": 7,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Chondrocyte K⁺ Currents Modulate Eᵐ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:6",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "using a pipette solution containing 3 mM Ca²⁺ and 10 mM EGTA, which yielded a no",
+      "found_in_fulltext": true,
+      "fulltext_offset": 28395
+    },
+    {
+      "block_id": "p7:7",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "It is well-known that the molecular properties and biophysical characteristics o",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29714
+    },
+    {
+      "block_id": "p7:8",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "strongly suggest the presence of the variant of Ca2+ activated K+ channels known",
+      "found_in_fulltext": true,
+      "fulltext_offset": 30566
+    },
+    {
+      "block_id": "p7:9",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The mathematical description for this $ Ca^{2+} $-activated $ K^{+} $current is ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:10",
+      "page": 7,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "$$ \\frac{d\\mathbf{C}_{O}}{dt}=\\beta_{O}\\mathbf{O}_{o}-\\alpha_{O}\\mathbf{C}_{o}+K",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:11",
+      "page": 7,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "(7)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:12",
+      "page": 7,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "$$ \\frac{d\\mathbf{C}_{1}}{dt}=\\beta_{1}\\mathbf{O}_{1}-\\alpha_{1}\\mathbf{C}_{1}-K",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:13",
+      "page": 7,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "(8)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:14",
+      "page": 7,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "$$ \\frac{d\\mathbf{C}_{2}}{dt}=\\beta_{2}\\mathbf{O}_{2}-\\alpha_{2}\\mathbf{C}_{2}-2",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:15",
+      "page": 7,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "(9)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:16",
+      "page": 7,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "$$ \\frac{d\\mathbf{C}_{3}}{dt}=\\beta_{3}\\mathbf{O}_{3}-\\alpha_{3}\\mathbf{C}_{3}-3",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:17",
+      "page": 7,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "(10)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:18",
+      "page": 7,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "$$ \\frac{d\\mathbf{C}_{4}}{dt}=\\beta_{4}\\mathbf{O}_{4}-\\alpha_{4}\\mathbf{C}_{4}-4",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:19",
+      "page": 7,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "(11)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:20",
+      "page": 7,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "$$ \\frac{d\\mathbf{O}_{0}}{dt}=-\\beta_{0}\\mathbf{O}_{0}+\\alpha_{0}\\mathbf{C}_{0}+",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:21",
+      "page": 7,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "(12)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:22",
+      "page": 7,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "$$ \\frac{d\\mathbf{O}_{1}}{dt}=-\\beta_{1}\\mathbf{O}_{1}+\\alpha_{1}\\mathbf{C}_{1}-",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:23",
+      "page": 7,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "(13)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:24",
+      "page": 7,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "$$ \\frac{d\\mathbf{O}_{1}}{dt}=-\\beta_{2}\\mathbf{O}_{2}+\\alpha_{2}\\mathbf{C}_{2}-",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:25",
+      "page": 7,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "(14)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:26",
+      "page": 7,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Frontiers in Physiology | www.frontiersin.org",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:27",
+      "page": 7,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "7",
+      "found_in_fulltext": true,
+      "fulltext_offset": 279
+    },
+    {
+      "block_id": "p7:28",
+      "page": 7,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "September 2018 | Volume 9 | Article 974",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:0",
+      "page": 8,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Maleckar et al.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20192
+    },
+    {
+      "block_id": "p8:1",
+      "page": 8,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Chondrocyte K⁺ Currents Modulate Eᵐ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:10",
+      "page": 8,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "$$ \\frac{d\\mathbf{O}_{3}}{dt}=-\\beta_{3}\\mathbf{O}_{3}+\\alpha_{3}\\mathbf{C}_{3}-",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:11",
+      "page": 8,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "(15)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:12",
+      "page": 8,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "$$ \\frac{d\\mathbf{O}_{4}}{d t}=-\\beta_{4}\\mathbf{O}_{4}+\\alpha_{4}\\mathbf{C}_{4}",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:13",
+      "page": 8,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "(16)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:14",
+      "page": 8,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "where $ C_{n=0,1,2,3,4} $ and $ O_{n=0,1,2,3,4} $ are closed and open states 1 t",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:15",
+      "page": 8,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "$$ \\alpha_{n}=A_{n}e^{\\frac{z_{CO}VF}{RT}} $$",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:16",
+      "page": 8,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "(17)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:17",
+      "page": 8,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "$$ \\beta_{n}=B_{n}e^{\\frac{z_{OC}VF}{RT}} $$",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:18",
+      "page": 8,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "(18)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:19",
+      "page": 8,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "$$ A_{0}=0.659,A_{1}=3.955,A_{2}=25.05,A_{3}=129.2,A_{4}=261.1; $$",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:20",
+      "page": 8,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "$$ B_{0}=2651.7,B_{1}=1767.8,B_{2}=1244.0,B_{3}=713.0,B_{4}=160.0; $$",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:21",
+      "page": 8,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "$$ z_{CO}=0.718,z_{OC}=0.646,K_{c}=13.5,K_{O}=1.5, $$",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:22",
+      "page": 8,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "and the Ca²⁺ on-rates per site are 10⁹ M⁻¹s⁻¹, Ca²⁺ off-rates from Cₙ per bindin",
+      "found_in_fulltext": true,
+      "fulltext_offset": 31681
+    },
+    {
+      "block_id": "p8:23",
+      "page": 8,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "$ I_{K-Ca} $ is then defined by:",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:24",
+      "page": 8,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "$$ I_{K-Ca}=g_{K-Ca}\\mathbf{O}(V-E_{K}) $$",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:25",
+      "page": 8,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "(19)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:26",
+      "page": 8,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "where $ g_{K-Ca} $ is the maximal conductance of the channel, equal to 2.50 nS/p",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:27",
+      "page": 8,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "We have used this mathematical formalism to compute I-V relationships for BK cur",
+      "found_in_fulltext": true,
+      "fulltext_offset": 32207
+    },
+    {
+      "block_id": "p8:28",
+      "page": 8,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Frontiers in Physiology | www.frontiersin.org",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:29",
+      "page": 8,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "8",
+      "found_in_fulltext": true,
+      "fulltext_offset": 244
+    },
+    {
+      "block_id": "p8:30",
+      "page": 8,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "September 2018 | Volume 9 | Article 974",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:0",
+      "page": 9,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Maleckar et al.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20192
+    },
+    {
+      "block_id": "p9:1",
+      "page": 9,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Chondrocyte K⁺ Currents Modulate Eᵐ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:2",
+      "page": 9,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "depolarized membrane potentials, as shown by the computations summarized in Figu",
+      "found_in_fulltext": true,
+      "fulltext_offset": 32776
+    },
+    {
+      "block_id": "p9:3",
+      "page": 9,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Further information regarding the functional properties of this BK channel-media",
+      "found_in_fulltext": true,
+      "fulltext_offset": 32863
+    },
+    {
+      "block_id": "p9:4",
+      "page": 9,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Although, $ I_{K-Ca} $ is a major outward current in human chondrocytes, it appa",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:5",
+      "page": 9,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "2-Pore $ K^{+} $ current: $ I_{K-2p} $",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:6",
+      "page": 9,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Our previous work (Clark et al., 2011) defined recording conditions under which ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 34044
+    },
+    {
+      "block_id": "p9:7",
+      "page": 9,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "We have recorded this $ K^{+} $ current under high $ [K^{+}]_{0} $ conditions, t",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:18",
+      "page": 9,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Frontiers in Physiology | www.frontiersin.org",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:19",
+      "page": 9,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "9",
+      "found_in_fulltext": true,
+      "fulltext_offset": 263
+    },
+    {
+      "block_id": "p9:20",
+      "page": 9,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "September 2018 | Volume 9 | Article 974",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:0",
+      "page": 10,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Maleckar et al.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20192
+    },
+    {
+      "block_id": "p10:1",
+      "page": 10,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Chondrocyte K⁺ Currents Modulate Eᵐ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:2",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "square root of the extracellular concentration of the permeant ion. Accordingly,",
+      "found_in_fulltext": true,
+      "fulltext_offset": 35284
+    },
+    {
+      "block_id": "p10:3",
+      "page": 10,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "$$ I_{K-2p}=\\frac{P_{k}z^{2}V F^{2}}{R T}\\frac{\\left(\\left[K^{+}\\right]_{i}-\\lef",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:4",
+      "page": 10,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "(20)",
+      "found_in_fulltext": true,
+      "fulltext_offset": 35965
+    },
+    {
+      "block_id": "p10:5",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "where $ P_K $ is a $ [K^+] $-dependent scaling factor that describes the permeab",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:6",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The I–V relationship in Figure 6A shows that our primary data (Wilson et al., 20",
+      "found_in_fulltext": true,
+      "fulltext_offset": 35750
+    },
+    {
+      "block_id": "p10:8",
+      "page": 10,
+      "role": "figure_caption_candidate",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Voltage (mV)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:12",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "As illustrated in Table 1, the extracellular milieu of the chondrocyte is somewh",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:13",
+      "page": 10,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "ATP-sensitive $ K^{+} $ current: $ I_{K-ATP} $",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:14",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "An ATP-sensitive K⁺ current I_K-ATP has been identified in chondrocytes that wer",
+      "found_in_fulltext": true,
+      "fulltext_offset": 36182
+    },
+    {
+      "block_id": "p10:15",
+      "page": 10,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "$$ I_{K-,A T P}=\\sigma g_{o}p_{o}f_{A T P}(\\mathbf{V}-\\mathbf{E_{K}}) $$",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:16",
+      "page": 10,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "(21)",
+      "found_in_fulltext": true,
+      "fulltext_offset": 37326
+    },
+    {
+      "block_id": "p10:17",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "where $ \\sigma = 0.6 $ is the channel density, $ g_o $ is the unitary channel co",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:18",
+      "page": 10,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "$$ f_{ATP}=\\frac{1.0}{1.0+\\left[\\frac{ATP_{i}}{K_{m}}\\right]^{H}} $$",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:19",
+      "page": 10,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "(22)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:20",
+      "page": 10,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "(23)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:21",
+      "page": 10,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "$$ H=1.3+0.74e^{-H_{K_{A T P}}A D P_{i}} $$",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:22",
+      "page": 10,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "$$ K_{m}=35.8+17.9ADP_{i}^{K_{m,ATP}} $$",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:23",
+      "page": 10,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "(24)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:24",
+      "page": 10,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "$$ \\mathrm{ADP_{i}~=~C_{A}-ATP_{i}} $$",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:25",
+      "page": 10,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "(25)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:26",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "where $ C_A = 8 \\, mM $ is the total concentration of adenine nucleotides, $ ADP",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:27",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Note that this ATP-sensitive K⁺ current is not utilized in our initial descripti",
+      "found_in_fulltext": true,
+      "fulltext_offset": 37820
+    },
+    {
+      "block_id": "p10:28",
+      "page": 10,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Frontiers in Physiology | www.frontiersin.org",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:29",
+      "page": 10,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "10",
+      "found_in_fulltext": true,
+      "fulltext_offset": 257
+    },
+    {
+      "block_id": "p10:30",
+      "page": 10,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "September 2018 | Volume 9 | Article 974",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:0",
+      "page": 11,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Maleckar et al.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20192
+    },
+    {
+      "block_id": "p11:1",
+      "page": 11,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Chondrocyte K⁺ Currents Modulate Eᵐ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:2",
+      "page": 11,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Time-Independent or Background Ionic Currents",
+      "found_in_fulltext": true,
+      "fulltext_offset": 38116
+    },
+    {
+      "block_id": "p11:3",
+      "page": 11,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Three distinct time-independent background (or leakage) conductances correspondi",
+      "found_in_fulltext": true,
+      "fulltext_offset": 38162
+    },
+    {
+      "block_id": "p11:4",
+      "page": 11,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The background (inward) $ Na^{+} $ and (outward) $ K^{+} $ currents, are describ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:5",
+      "page": 11,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "$$ I_{Na,b}\\;=\\;G_{Na,b}(\\mathrm{V}-\\mathrm{E_{Na}}) $$",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:6",
+      "page": 11,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "(26)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:7",
+      "page": 11,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "$$ I_{K,b}=G_{K,b}(\\mathbf{V}-\\mathbf{E_{K}}) $$",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:8",
+      "page": 11,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "(27)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:9",
+      "page": 11,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "where $ G_{Na,b} = 0.1 $ nS/pF is the maximum conductance for the background sod",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:10",
+      "page": 11,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In mammalian chondrocytes from a number of different species, a significant back",
+      "found_in_fulltext": true,
+      "fulltext_offset": 39288
+    },
+    {
+      "block_id": "p11:11",
+      "page": 11,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "$$ I_{Cl,b}\\;=\\;{\\bf G}_{Cl,b}(V-E_{Cl}) $$",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:12",
+      "page": 11,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "(28)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:13",
+      "page": 11,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "where $ G_{Cl,b} = 0.05 $ pS/pF is the maximum conductance for the background $ ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:14",
+      "page": 11,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Ion Pump and Exchanger Currents Electrogenic Na $ ^{+} $/K $ ^{+} $ pump: I $ _{",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:16",
+      "page": 11,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Active (ATP requiring) extrusion of Na⁺ from chondrocytes is assumed to be achie",
+      "found_in_fulltext": true,
+      "fulltext_offset": 39748
+    },
+    {
+      "block_id": "p11:17",
+      "page": 11,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "$$ \\begin{aligned}I_{NaK}&=\\overline{I}_{NaK}\\left(\\frac{\\left[K^{+}\\right]_{o}}",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:18",
+      "page": 11,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "(29)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:19",
+      "page": 11,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "where $\\bar{I}_{NaK}$ is the maximal current density $1.58\\ \\mathrm{pA/pF}\\ \\lef",
+      "found_in_fulltext": true,
+      "fulltext_offset": 40153
+    },
+    {
+      "block_id": "p11:20",
+      "page": 11,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "set to 140 mM for “typical” values; Table 1), [Na+]i is the intracellular sodium",
+      "found_in_fulltext": true,
+      "fulltext_offset": 40724
+    },
+    {
+      "block_id": "p11:21",
+      "page": 11,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "This Na⁺/K⁺ pump activity (the product of expression density and turnover rate) ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 41031
+    },
+    {
+      "block_id": "p11:22",
+      "page": 11,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "$$ Na^{+}/Ca^{2}+Exchanger:I_{NaCa} $$",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:23",
+      "page": 11,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The activity of the Na⁺/Ca²⁺ exchanger plays a key role in Ca²⁺ homeostasis in a",
+      "found_in_fulltext": true,
+      "fulltext_offset": 41381
+    },
+    {
+      "block_id": "p11:25",
+      "page": 11,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Na_i = 8.5mM, Na_o = 130mM, Ca_i = 5e-5mM, Ca_o = 2mM",
+      "found_in_fulltext": true,
+      "fulltext_offset": 41701
+    },
+    {
+      "block_id": "p11:29",
+      "page": 11,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Frontiers in Physiology | www.frontiersin.org",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:30",
+      "page": 11,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "11",
+      "found_in_fulltext": true,
+      "fulltext_offset": 4620
+    },
+    {
+      "block_id": "p11:31",
+      "page": 11,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "September 2018 | Volume 9 | Article 974",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:0",
+      "page": 12,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Maleckar et al.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20192
+    },
+    {
+      "block_id": "p12:1",
+      "page": 12,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Chondrocyte K⁺ Currents Modulate Eᵐ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:2",
+      "page": 12,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "properties (ion transfer characteristics, dependence on $ [Na^{+}]_{i} $ and $ [",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:3",
+      "page": 12,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "$$ I_{NaCa}=k_{NaCa}\\frac{\\left[Na^{+}\\right]_{i}^{3}\\left[Ca^{2+}\\right]_{o}e^{",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:4",
+      "page": 12,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "(30)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:5",
+      "page": 12,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Where $ k_{NaCa} $ is a scaling factor for this current, set to 0.0374842 pA/(mm",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:6",
+      "page": 12,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "This electrogenic ion exchange mechanism has been scaled based on a baseline or ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 42575
+    },
+    {
+      "block_id": "p12:7",
+      "page": 12,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "$ Na^{+}/H^{+} $ exchanger: $ I_{NaH} $",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:8",
+      "page": 12,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Chondrocytes express a Na⁺/H⁺ antiporter (Trujillo et al., 1999; Barrett-Jolley ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 42917
+    },
+    {
+      "block_id": "p12:9",
+      "page": 12,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "We have used the equations originally developed by Crampin and Smith (2006) to m",
+      "found_in_fulltext": true,
+      "fulltext_offset": 43581
+    },
+    {
+      "block_id": "p12:10",
+      "page": 12,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "$$ I_{NaH}=N_{NaH}I_{NaH_{mod}}I_{NaH_{exch}} $$",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:11",
+      "page": 12,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "(31)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:12",
+      "page": 12,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "$$ I_{NaHmod}=\\frac{1}{1+(K_{i}^{n_{H}}/\\left[H^{+}\\right]_{i}^{n_{H}}} $$",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:13",
+      "page": 12,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "(32)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:14",
+      "page": 12,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "$$ I_{NaH_{exch}}=\\frac{t_{1}t_{2}-t_{3}t_{4}}{t_{1}+t_{2}+t_{3}+t_{4}} $$",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:15",
+      "page": 12,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "(33)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:16",
+      "page": 12,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "$$ t_{1}=\\frac{k_{1}^{+}\\left[Na^{+}\\right]_{o}/K_{Na}^{o}}{1+\\frac{\\left[Na^{+}",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:17",
+      "page": 12,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "(34)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:18",
+      "page": 12,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "$$ t_{2}=\\frac{k_{2}^{+}\\left[H^{+}\\right]_{i}/K_{H}^{i}}{1+\\frac{\\left[Na^{+}\\r",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:19",
+      "page": 12,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "(35)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:20",
+      "page": 12,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "$$ t_{3}=\\frac{k_{1}^{-}\\left[Na^{+}\\right]_{i}/K_{Na}^{i}}{1+\\frac{\\left[Na^{+}",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:21",
+      "page": 12,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "(36)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:22",
+      "page": 12,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "$$ t_{4}=\\frac{k_{2}^{-}\\left[H^{+}\\right]_{o}/K_{H}^{o}}{1+\\frac{\\left[Na^{+}\\r",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:23",
+      "page": 12,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "(37)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:24",
+      "page": 12,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "where, $ N_{NaH} = 4899 $, $ k_1^+ $ = 10.5, $ k_1^- $ = 0.201, $ k_2^+ $ = 15.8",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:25",
+      "page": 12,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Intracellular $ [Ca^{2+}]_{i} $ Homeostasis: ATP-Dependent Ca Pump: $ I_{Ca,ATP}",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:26",
+      "page": 12,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In human chondrocytes, $ [Ca^{2+}]_i $ is regulated by a combination of ion tran",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:27",
+      "page": 12,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The $ Ca^{2+} $ pump ion transporter is electroneutral as a consequence of its a",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:28",
+      "page": 12,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "$$ I_{Ca,ATP}=Imax_{Ca,ATP}\\frac{[Ca^{2+}]_{i}}{[Ca^{2+}]_{i}+k_{Ca,ATP}} $$",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:29",
+      "page": 12,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "(38)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:30",
+      "page": 12,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "and",
+      "found_in_fulltext": true,
+      "fulltext_offset": 24
+    },
+    {
+      "block_id": "p12:31",
+      "page": 12,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "$$ \\frac{d\\mathbf{O}_{C}}{d t}=2x10^{5}[C a^{2+}]_{i}\\left(1-\\mathbf{O}_{C}\\righ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:32",
+      "page": 12,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "(39)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:33",
+      "page": 12,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "where $ I_{\\text{max}} = 0.6349 \\, \\text{pA/pF} $ is the maximal $ Ca^{2+} $ pum",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:34",
+      "page": 12,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Transient Receptor Potential (TRP) Current: $ I_{TRPV4} $",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:35",
+      "page": 12,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "A fundamental question concerning the electrophysiology of non-excitable cells i",
+      "found_in_fulltext": true,
+      "fulltext_offset": 45971
+    },
+    {
+      "block_id": "p12:36",
+      "page": 12,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Frontiers in Physiology | www.frontiersin.org",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:37",
+      "page": 12,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "12",
+      "found_in_fulltext": true,
+      "fulltext_offset": 8563
+    },
+    {
+      "block_id": "p12:38",
+      "page": 12,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "September 2018 | Volume 9 | Article 974",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p13:0",
+      "page": 13,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Maleckar et al.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20192
+    },
+    {
+      "block_id": "p13:1",
+      "page": 13,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Chondrocyte K⁺ Currents Modulate Eᵐ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p13:2",
+      "page": 13,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "of ion channels (Nilius and Oswianik, 2011; Kaneko and Szallasi, 2014) are expre",
+      "found_in_fulltext": true,
+      "fulltext_offset": 46357
+    },
+    {
+      "block_id": "p13:3",
+      "page": 13,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "We have identified significant TRP currents in human articular chondrocyte (HAC)",
+      "found_in_fulltext": true,
+      "fulltext_offset": 47440
+    },
+    {
+      "block_id": "p13:4",
+      "page": 13,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "and a variety of other published results we have formulated the working hypothes",
+      "found_in_fulltext": true,
+      "fulltext_offset": 47793
+    },
+    {
+      "block_id": "p13:5",
+      "page": 13,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "GSK SB488-induced currents in voltage-clamped human chondrocytes",
+      "found_in_fulltext": true,
+      "fulltext_offset": 49085
+    },
+    {
+      "block_id": "p13:6",
+      "page": 13,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The GSK compound SB488 is a potent agonist for TRPV4 channels (Nilius and Oswian",
+      "found_in_fulltext": true,
+      "fulltext_offset": 49150
+    },
+    {
+      "block_id": "p13:13",
+      "page": 13,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Frontiers in Physiology | www.frontiersin.org",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p13:14",
+      "page": 13,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "13",
+      "found_in_fulltext": true,
+      "fulltext_offset": 6964
+    },
+    {
+      "block_id": "p13:15",
+      "page": 13,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "September 2018 | Volume 9 | Article 974",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p14:0",
+      "page": 14,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Maleckar et al.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20192
+    },
+    {
+      "block_id": "p14:1",
+      "page": 14,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Chondrocyte K⁺ Currents Modulate Eᵐ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p14:5",
+      "page": 14,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "preparations. Figure 8 shows a representative example of the time course and I-V",
+      "found_in_fulltext": true,
+      "fulltext_offset": 49750
+    },
+    {
+      "block_id": "p14:6",
+      "page": 14,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Examples of HAC I-V relations recorded before and during SB488 application are s",
+      "found_in_fulltext": true,
+      "fulltext_offset": 50272
+    },
+    {
+      "block_id": "p14:7",
+      "page": 14,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "A different GSK compound, SB779, (Hilfiker et al., 2013) can potently block the ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 50950
+    },
+    {
+      "block_id": "p14:8",
+      "page": 14,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "current was quickly blocked by application of SB779 (even in the presence of SB4",
+      "found_in_fulltext": true,
+      "fulltext_offset": 51511
+    },
+    {
+      "block_id": "p14:9",
+      "page": 14,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "DISCUSSION The Resting Membrane Potential in Human Chondrocytes",
+      "found_in_fulltext": true,
+      "fulltext_offset": 52687
+    },
+    {
+      "block_id": "p14:11",
+      "page": 14,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The new electrophysiological data and first order mathematical model provided by",
+      "found_in_fulltext": true,
+      "fulltext_offset": 52751
+    },
+    {
+      "block_id": "p14:12",
+      "page": 14,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Frontiers in Physiology | www.frontiersin.org",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p14:13",
+      "page": 14,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "14",
+      "found_in_fulltext": true,
+      "fulltext_offset": 3036
+    },
+    {
+      "block_id": "p14:14",
+      "page": 14,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "September 2018 | Volume 9 | Article 974",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p15:0",
+      "page": 15,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Maleckar et al.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20192
+    },
+    {
+      "block_id": "p15:1",
+      "page": 15,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Chondrocyte K⁺ Currents Modulate Eᵐ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p15:2",
+      "page": 15,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "alterations in $ E_{m} $ can contribute to dynamic regulation of cell volume (Ba",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p15:3",
+      "page": 15,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Given the technical difficulty of making accurate, reproducible recordings of tr",
+      "found_in_fulltext": true,
+      "fulltext_offset": 53902
+    },
+    {
+      "block_id": "p15:4",
+      "page": 15,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "At this stage of model development our simulations do not fully reveal the ionic",
+      "found_in_fulltext": true,
+      "fulltext_offset": 54724
+    },
+    {
+      "block_id": "p15:5",
+      "page": 15,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The Physiological Milieu of the Chondrocyte",
+      "found_in_fulltext": true,
+      "fulltext_offset": 55747
+    },
+    {
+      "block_id": "p15:6",
+      "page": 15,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Classical knowledge of unusual physiologic milieu (see Table 1) within the artic",
+      "found_in_fulltext": true,
+      "fulltext_offset": 55791
+    },
+    {
+      "block_id": "p15:7",
+      "page": 15,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "We were very interested in an additional mechanism through which changes in the ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 56477
+    },
+    {
+      "block_id": "p15:8",
+      "page": 15,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "known that divalent or trivalent cations, (as well as charged osmolytes) can eﬀe",
+      "found_in_fulltext": true,
+      "fulltext_offset": 58246
+    },
+    {
+      "block_id": "p15:9",
+      "page": 15,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Perhaps the strongest evidence that in situ the chondrocyte can exhibit signific",
+      "found_in_fulltext": true,
+      "fulltext_offset": 59427
+    },
+    {
+      "block_id": "p15:10",
+      "page": 15,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "As noted in the Introduction, the pH in the extracellular matrix can be somewhat",
+      "found_in_fulltext": true,
+      "fulltext_offset": 60446
+    },
+    {
+      "block_id": "p15:11",
+      "page": 15,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Other conditions that characterize the milieu mammalian articular chondrocyte wo",
+      "found_in_fulltext": true,
+      "fulltext_offset": 60916
+    },
+    {
+      "block_id": "p15:12",
+      "page": 15,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Frontiers in Physiology | www.frontiersin.org",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p15:13",
+      "page": 15,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "15",
+      "found_in_fulltext": true,
+      "fulltext_offset": 3829
+    },
+    {
+      "block_id": "p15:14",
+      "page": 15,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "September 2018 | Volume 9 | Article 974",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p16:0",
+      "page": 16,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Maleckar et al.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20192
+    },
+    {
+      "block_id": "p16:1",
+      "page": 16,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Chondrocyte K⁺ Currents Modulate Eᵐ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p16:4",
+      "page": 16,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "by the black traces in Figure 10C. Note that when $ [Na^+]_{i} $ is increased (8",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p16:5",
+      "page": 16,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Ca²⁺-Influx and Ca²⁺-Dependent Currents As noted, activation of TRPV4 channels w",
+      "found_in_fulltext": true,
+      "fulltext_offset": 62454
+    },
+    {
+      "block_id": "p16:6",
+      "page": 16,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Connexin-Mediated Current Flow and Electrotonic Interactions",
+      "found_in_fulltext": true,
+      "fulltext_offset": 64221
+    },
+    {
+      "block_id": "p16:7",
+      "page": 16,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "As mentioned in the Introduction, chondrocytes in articular joints from adult hu",
+      "found_in_fulltext": true,
+      "fulltext_offset": 64282
+    },
+    {
+      "block_id": "p16:8",
+      "page": 16,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "We also note that is Cx43 increased expression in isolated adult chondrocytes ca",
+      "found_in_fulltext": true,
+      "fulltext_offset": 64864
+    },
+    {
+      "block_id": "p16:9",
+      "page": 16,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Frontiers in Physiology | www.frontiersin.org",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p16:10",
+      "page": 16,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "16",
+      "found_in_fulltext": true,
+      "fulltext_offset": 7236
+    },
+    {
+      "block_id": "p16:11",
+      "page": 16,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "September 2018 | Volume 9 | Article 974",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p17:0",
+      "page": 17,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Maleckar et al.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20192
+    },
+    {
+      "block_id": "p17:1",
+      "page": 17,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Chondrocyte K⁺ Currents Modulate Eᵐ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p17:2",
+      "page": 17,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "et al., 2009; Garcia and Knight, 2010). One plausible mechanism for this, is the",
+      "found_in_fulltext": true,
+      "fulltext_offset": 65102
+    },
+    {
+      "block_id": "p17:3",
+      "page": 17,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Limitations of the Mathematical Model of the Human Chondrocyte Resting Membrane ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 66153
+    },
+    {
+      "block_id": "p17:4",
+      "page": 17,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The mathematical model that we have developed is an important advance. However, ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 66243
+    },
+    {
+      "block_id": "p17:5",
+      "page": 17,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "a) It is apparent that Ca²⁺ is an essential signaling molecule in the chondrocyt",
+      "found_in_fulltext": true,
+      "fulltext_offset": 66388
+    },
+    {
+      "block_id": "p17:6",
+      "page": 17,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "b) Mathematical expressions that would allow simulations of what has been termed",
+      "found_in_fulltext": true,
+      "fulltext_offset": 67192
+    },
+    {
+      "block_id": "p17:7",
+      "page": 17,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "c) There is evidence that cell culture conditions can alter both chondrocyte phe",
+      "found_in_fulltext": true,
+      "fulltext_offset": 67663
+    },
+    {
+      "block_id": "p17:8",
+      "page": 17,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "SUMMARY",
+      "found_in_fulltext": true,
+      "fulltext_offset": 68253
+    },
+    {
+      "block_id": "p17:9",
+      "page": 17,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "This mathematical model of chondrocyte electrophysiology provides a reliable pla",
+      "found_in_fulltext": true,
+      "fulltext_offset": 68261
+    },
+    {
+      "block_id": "p17:10",
+      "page": 17,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "AUTHOR CONTRIBUTIONS",
+      "found_in_fulltext": true,
+      "fulltext_offset": 69775
+    },
+    {
+      "block_id": "p17:11",
+      "page": 17,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "RBC carried out all of the experimental work in this paper, and provided valuabl",
+      "found_in_fulltext": true,
+      "fulltext_offset": 69798
+    },
+    {
+      "block_id": "p17:12",
+      "page": 17,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "ACKNOWLEDGMENTS",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p17:13",
+      "page": 17,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "An Alberta Innovates—Health Solutions (AI-HS) Scientist Award (WRG), an AI-HS St",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p17:14",
+      "page": 17,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Frontiers in Physiology | www.frontiersin.org",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p17:15",
+      "page": 17,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "17",
+      "found_in_fulltext": true,
+      "fulltext_offset": 28509
+    },
+    {
+      "block_id": "p17:16",
+      "page": 17,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "September 2018 | Volume 9 | Article 974",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p18:0",
+      "page": 18,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Maleckar et al.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20192
+    },
+    {
+      "block_id": "p18:1",
+      "page": 18,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Chondrocyte K⁺ Currents Modulate Eᵐ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p18:2",
+      "page": 18,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "aspects of the computational work in this paper. Glaxo Smith Kline Laboratories ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 70442
+    },
+    {
+      "block_id": "p18:3",
+      "page": 18,
+      "role": "reference_heading",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "REFERENCES",
+      "found_in_fulltext": true,
+      "fulltext_offset": 71066
+    },
+    {
+      "block_id": "p18:4",
+      "page": 18,
+      "role": "backmatter_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "SUPPLEMENTARY MATERIAL",
+      "found_in_fulltext": true,
+      "fulltext_offset": 70671
+    },
+    {
+      "block_id": "p18:5",
+      "page": 18,
+      "role": "backmatter_body",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The Supplementary Material for this article can be found online at: https://www.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 70696
+    },
+    {
+      "block_id": "p18:6",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Amanatullah, D. F., Yamane, S., and Reddi, A. H. (2014). Distinct patterns of ge",
+      "found_in_fulltext": true,
+      "fulltext_offset": 71077
+    },
+    {
+      "block_id": "p18:7",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Archer, C. W., and Francis-West, P. (2003). The chondrocyte. Int. J. Biochem. Ce",
+      "found_in_fulltext": true,
+      "fulltext_offset": 71305
+    },
+    {
+      "block_id": "p18:8",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Armstrong, C. M. (2003). The Na/K pump, Cl ion, and osmotic stabilization of cel",
+      "found_in_fulltext": true,
+      "fulltext_offset": 71442
+    },
+    {
+      "block_id": "p18:9",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Asmar, A., Barrett-Jolley, R., Werner, A., Kelly, R. Jr, and Stacey, M. (2016). ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 71601
+    },
+    {
+      "block_id": "p18:10",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Baczkó, I., Giles, W. R., and Light, P. E. (2003). Resting membrane potential re",
+      "found_in_fulltext": true,
+      "fulltext_offset": 71819
+    },
+    {
+      "block_id": "p18:11",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Balakrishna, S., Song, W., Achanta, S., Doran, S. F., Liu, B., Kaelberer, M. M. ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 72066
+    },
+    {
+      "block_id": "p18:12",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Barrett-Jolley, R., Lewis, R., Fallman, R., and Mobasheri, A. (2010). The emergi",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p18:13",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Berkefeld, H., Falker, B., and Schulte, U. (2010). Ca²⁺-activated K⁺ channels: f",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p18:14",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Berkefeld, H., Sailer, C. A., Bildi, W., Rohde, V., Thumfart, J. O., Eble, S., e",
+      "found_in_fulltext": true,
+      "fulltext_offset": 72390
+    },
+    {
+      "block_id": "p18:15",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Berridge, M. J. (1997). The AM and FM of calcium signalling. Nature 386, 759–760",
+      "found_in_fulltext": true,
+      "fulltext_offset": 72619
+    },
+    {
+      "block_id": "p18:16",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Berridge, M. J. (2007). Inositol triphosphate and calcium oscillations. Biochem.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 72723
+    },
+    {
+      "block_id": "p18:17",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Berridge, M. J., Lipp, P., and Bootman, M. D. (2000). The versatility and univer",
+      "found_in_fulltext": true,
+      "fulltext_offset": 72848
+    },
+    {
+      "block_id": "p18:18",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Bond, S. R., Lau, A., Penuela, S., Sampaio, A. V., Underhill, T. M., Laird, D. W",
+      "found_in_fulltext": true,
+      "fulltext_offset": 73016
+    },
+    {
+      "block_id": "p18:19",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Bouchard, R. A., Clark, R. B., and Giles, W. R. (1993). Regulation of unloaded c",
+      "found_in_fulltext": true,
+      "fulltext_offset": 73273
+    },
+    {
+      "block_id": "p18:20",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Bush, P. G., and Hall, A. C. (2005). Passive osmotic properties of in situ human",
+      "found_in_fulltext": true,
+      "fulltext_offset": 73507
+    },
+    {
+      "block_id": "p18:21",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Bush, P. G., Huntley, J. S., Brenkel, I. J., and Hall, A. C. (2003). The shape o",
+      "found_in_fulltext": true,
+      "fulltext_offset": 73714
+    },
+    {
+      "block_id": "p18:22",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Chao, P. H., West, A. C., and Hung, C. T. (2006). Chondrocyte intracellular calc",
+      "found_in_fulltext": true,
+      "fulltext_offset": 73877
+    },
+    {
+      "block_id": "p18:23",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Chekeni, F. B., Elliott, M. R., Sandilos, J. K., Walk, S. F., Kinchen, J. M., La",
+      "found_in_fulltext": true,
+      "fulltext_offset": 74125
+    },
+    {
+      "block_id": "p18:24",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Chen, C., Tambe, D. T., Deng, L., and Yang, L. (2013). Biomechanical properties ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 70854
+    },
+    {
+      "block_id": "p18:25",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Chen, J., Irianto, J., Inamdar, S., Pravincumar, P., Lee, D. A., Bader, D. L., e",
+      "found_in_fulltext": true,
+      "fulltext_offset": 74385
+    },
+    {
+      "block_id": "p18:26",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Chi, S. S., Rattner, J. B., and Matyas, J. R. (2004). Communication between pair",
+      "found_in_fulltext": true,
+      "fulltext_offset": 74653
+    },
+    {
+      "block_id": "p18:27",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Cid, L. P., Roa-Rojas, H. A., Niemeyer, M. I., González, W., Araki, M., and Sepú",
+      "found_in_fulltext": true,
+      "fulltext_offset": 74858
+    },
+    {
+      "block_id": "p18:28",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Clark, A. L., Votta, B. J., Kumar, S., Liedtke, W., and Guilak, F. (2010). Chond",
+      "found_in_fulltext": true,
+      "fulltext_offset": 75101
+    },
+    {
+      "block_id": "p18:29",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Clark, R. B., Kondo, C., and Giles, W. R. (2011). Two-pore K⁺ channels contribut",
+      "found_in_fulltext": true,
+      "fulltext_offset": 75420
+    },
+    {
+      "block_id": "p18:30",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Cohen, A. E., and Venkatachalam, V. (2014). Bringing bioelectricity to light. An",
+      "found_in_fulltext": true,
+      "fulltext_offset": 75628
+    },
+    {
+      "block_id": "p18:31",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Crampin, E. J., and Smith, N. P. (2006). A dynamic model of excitation-contracti",
+      "found_in_fulltext": true,
+      "fulltext_offset": 75782
+    },
+    {
+      "block_id": "p18:32",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Dolmetsch, R. E., Lewis, R. S., Goodnow, C. C., and Healy, J. I. (1997). Differe",
+      "found_in_fulltext": true,
+      "fulltext_offset": 75983
+    },
+    {
+      "block_id": "p18:33",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Duman, J. G., Chen, L., and Hille, B. (2008). Calcium transport mechanisms of PC",
+      "found_in_fulltext": true,
+      "fulltext_offset": 76197
+    },
+    {
+      "block_id": "p18:34",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Eaton, J. W., Bateman, D., Hauberg, S., and Wehbring, R. (2014). GNU Octave Vers",
+      "found_in_fulltext": true,
+      "fulltext_offset": 76345
+    },
+    {
+      "block_id": "p18:35",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Elliott, M. R., Chekeni, F. B., Trampont, P. C., Lazarowski, E. R., Kadl, A., Wa",
+      "found_in_fulltext": true,
+      "fulltext_offset": 76623
+    },
+    {
+      "block_id": "p18:36",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Funabashi, K., Fujii, M., Yamamura, H., Ohya, S., and Imaizumi, Y. (2010a). Cont",
+      "found_in_fulltext": true,
+      "fulltext_offset": 76872
+    },
+    {
+      "block_id": "p18:37",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Funabashi, K., Ohya, S., Yamamura, H., Hatano, N., Muraki, K., and Giles, W. R. ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 77115
+    },
+    {
+      "block_id": "p18:38",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Garcia, M., and Knight, M. M. (2010). Cyclic loading opens hemichannels to relea",
+      "found_in_fulltext": true,
+      "fulltext_offset": 77421
+    },
+    {
+      "block_id": "p18:39",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Gavenis, K., Schumacher, C., Schneider, U., Eisfeld, J., Mollenhauer, J., and Sc",
+      "found_in_fulltext": true,
+      "fulltext_offset": 77614
+    },
+    {
+      "block_id": "p18:40",
+      "page": 18,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Goldstein, S. A. N., Bockenhauer, D., and Zilberberg, N. (2001). Potassium leak ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 77948
+    },
+    {
+      "block_id": "p18:41",
+      "page": 18,
+      "role": "noise",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "Frontiers in Physiology | www.frontiersin.org",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p18:42",
+      "page": 18,
+      "role": "noise",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "18",
+      "found_in_fulltext": true,
+      "fulltext_offset": 243
+    },
+    {
+      "block_id": "p18:43",
+      "page": 18,
+      "role": "noise",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "September 2018 | Volume 9 | Article 974",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p19:0",
+      "page": 19,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Maleckar et al.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20192
+    },
+    {
+      "block_id": "p19:1",
+      "page": 19,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Chondrocyte K⁺ Currents Modulate Eᵐ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p19:2",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Grandolfo, M., D'Andrea, P., Martina, M., Ruzzier, F., and Vittur, F. (1992). Ca",
+      "found_in_fulltext": true,
+      "fulltext_offset": 78154
+    },
+    {
+      "block_id": "p19:3",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Guilak, F., Alexopoulos, L. G., Upton, M. L., Youn, I., Choi, J. B., Cao, L., et",
+      "found_in_fulltext": true,
+      "fulltext_offset": 78367
+    },
+    {
+      "block_id": "p19:4",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Guilak, F., Sah, R. L., and Setton, L. A. (1997). \"Physical regulation of cartil",
+      "found_in_fulltext": true,
+      "fulltext_offset": 78630
+    },
+    {
+      "block_id": "p19:5",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Guilak, F., Zell, R. A., Erickson, G. R., Grande, D. A., Rubin, C. T., McLeod, K",
+      "found_in_fulltext": true,
+      "fulltext_offset": 78839
+    },
+    {
+      "block_id": "p19:6",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Hall, A., Horwitz, E. R., and Wilkins, R. J. (1996). The cellular physiology of ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 79093
+    },
+    {
+      "block_id": "p19:7",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Han, S. K., Wouters, W., Clark, A., and Herzog, W. (2012). Mechanically induced ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 79259
+    },
+    {
+      "block_id": "p19:8",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Harr, M. W., and Distelhorst, C. W. (2010). Apoptosis and autophagy: decoding ca",
+      "found_in_fulltext": true,
+      "fulltext_offset": 79434
+    },
+    {
+      "block_id": "p19:9",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Hilfiker, M. A., Hoang, T. H., Cornil, J., Eidam, H. S., Matasic, D. S., Roethke",
+      "found_in_fulltext": true,
+      "fulltext_offset": 79632
+    },
+    {
+      "block_id": "p19:10",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Hille, B. (2001). Ion Channels of Excitable Membranes. Sunderland, MA: Sinauer A",
+      "found_in_fulltext": true,
+      "fulltext_offset": 79889
+    },
+    {
+      "block_id": "p19:11",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Horrigan, F. T., and Aldrich, R. W. (2002). Coupling between voltage sensor acti",
+      "found_in_fulltext": true,
+      "fulltext_offset": 79980
+    },
+    {
+      "block_id": "p19:12",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Huber, M., Trattnig, S., and Lintner, F. (2000). Anatomy, biochemistry and physi",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p19:13",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Ince, C., van Bavel, E., van Duijn, B., Donkersloot, K., Coremans, A., Ypey, D. ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p19:14",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Kaneko, Y., and Szallasi, A. (2014). Transient receptor potential (TRP) channels",
+      "found_in_fulltext": true,
+      "fulltext_offset": 80208
+    },
+    {
+      "block_id": "p19:15",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Kindler, C. H., and Yost, C. S. (2005). Two-pore domain potassium channels: new ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 80562
+    },
+    {
+      "block_id": "p19:16",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Kell, M. J., and DeFelice, L. J. (1988). Surface charge near the cardiac inward-",
+      "found_in_fulltext": true,
+      "fulltext_offset": 80371
+    },
+    {
+      "block_id": "p19:17",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Knight, M. M., McGlashan, S. R., Garcia, M., Jensen, C. G., and Poole, C. A. (20",
+      "found_in_fulltext": true,
+      "fulltext_offset": 80757
+    },
+    {
+      "block_id": "p19:18",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Kranias, E. G., and Hajjar, R. J. (2012). Modulation of cardiac contractility by",
+      "found_in_fulltext": true,
+      "fulltext_offset": 81041
+    },
+    {
+      "block_id": "p19:19",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Kurita, T., Yamamura, H., Suzuki, Y., Giles, W. R., and Imaizumi, Y. (2015). The",
+      "found_in_fulltext": true,
+      "fulltext_offset": 81221
+    },
+    {
+      "block_id": "p19:20",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Lane Smith, R., Trindade, M. C., Ikenoue, T., Mohtai, M., Das, P., Carter, D. R.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 81445
+    },
+    {
+      "block_id": "p19:21",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Lewis, R., Asplin, K. E., Bruce, G., Dart, C., Mobasheri, A., and Barrett-Jolley",
+      "found_in_fulltext": true,
+      "fulltext_offset": 81627
+    },
+    {
+      "block_id": "p19:22",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Lewis, R., May, H., Mobasheri, A., and Barrett-Jolley, R. (2013). Chondrocyte ch",
+      "found_in_fulltext": true,
+      "fulltext_offset": 81846
+    },
+    {
+      "block_id": "p19:23",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Lin, Z., Fitzgerald, J. B., Xu, J., Willers, C., Wood, D., Grodzinsky, A. J., et",
+      "found_in_fulltext": true,
+      "fulltext_offset": 82054
+    },
+    {
+      "block_id": "p19:24",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Loeser, R. F., Sadiev, S., Tan, L., and Goldring, M. B. (2000). Integrin express",
+      "found_in_fulltext": true,
+      "fulltext_offset": 82287
+    },
+    {
+      "block_id": "p19:25",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Magleby, K. L. (2003). Gating mechanism of BK (Slo1) channels: so near, yet so f",
+      "found_in_fulltext": true,
+      "fulltext_offset": 82635
+    },
+    {
+      "block_id": "p19:26",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Mak, D. O., and Foskett, J. K. (2015). Inositol 1,4,5-trisphosphate receptors in",
+      "found_in_fulltext": true,
+      "fulltext_offset": 82774
+    },
+    {
+      "block_id": "p19:27",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Maleckar, M. M., Greenstein, J. L., Giles, W. R., and Trayanova, N. A. (2009). K",
+      "found_in_fulltext": true,
+      "fulltext_offset": 82970
+    },
+    {
+      "block_id": "p19:28",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Martin, J. A., and Buckwalter, J. A. (2003). The role of chondrocyte senescence ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 83239
+    },
+    {
+      "block_id": "p19:29",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Mason, M. J., Simpson, A. K., Mahaut-Smith, M. P., and Robinson, H. P. C. (2005)",
+      "found_in_fulltext": true,
+      "fulltext_offset": 83466
+    },
+    {
+      "block_id": "p19:30",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Matta, C., Fodor, J., Miosge, N., Takacs, R., Juhasz, T., Rybaltovszki, H., et a",
+      "found_in_fulltext": true,
+      "fulltext_offset": 83701
+    },
+    {
+      "block_id": "p19:31",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Mayan, M. D., Carpintero-Fernandez, P., Gago-Fuentes, R., Fernandez-Puente, P., ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 83971
+    },
+    {
+      "block_id": "p19:32",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Mayan, M. D., Carpintero-Fernandez, P., Gago-Fuentes, R., Martinez-de-Ilarduya, ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 84339
+    },
+    {
+      "block_id": "p19:33",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "McLane, L. T., Chang, P., Granquist, A., Boehm, H., Kramer, A., Scrimgeour, J., ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 84675
+    },
+    {
+      "block_id": "p19:34",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Millward-Sadler, S. J., Wright, M. O., Flatman, P. W., and Salter, D. M. (2004).",
+      "found_in_fulltext": true,
+      "fulltext_offset": 84918
+    },
+    {
+      "block_id": "p19:35",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Millward-Sadler, S. J., Wright, M. O., Lee, H. S., Caldwell, H., Nuki, G., and S",
+      "found_in_fulltext": true,
+      "fulltext_offset": 85093
+    },
+    {
+      "block_id": "p19:36",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Mobasheri, A. (1998). Correlation between $ [Na^{+}] $, glycosaminoglycan and $ ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p19:37",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Mobasheri, A., Bondy, C. A., Moley, K., Mendes, A. F., Rosa, S. C., and Richards",
+      "found_in_fulltext": true,
+      "fulltext_offset": 85608
+    },
+    {
+      "block_id": "p19:38",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Mobasheri, A., Carter, S. D., Martin-Vasallo, P., Shakibaei, M. (2002). Integrin",
+      "found_in_fulltext": true,
+      "fulltext_offset": 85984
+    },
+    {
+      "block_id": "p19:39",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Mobasheri, A., Errington, R. J., Golding, S., Hall, A. C., Urban, J. P. G. (1997",
+      "found_in_fulltext": true,
+      "fulltext_offset": 86242
+    },
+    {
+      "block_id": "p19:40",
+      "page": 19,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Mobasheri, A., Gent, T. C., Nash, A. I., Womack, M. D., Moskaluk, C. A., and Bar",
+      "found_in_fulltext": true,
+      "fulltext_offset": 86512
+    },
+    {
+      "block_id": "p19:41",
+      "page": 19,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Frontiers in Physiology | www.frontiersin.org",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p19:42",
+      "page": 19,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "19",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2756
+    },
+    {
+      "block_id": "p19:43",
+      "page": 19,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "September 2018 | Volume 9 | Article 974",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p20:0",
+      "page": 20,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Maleckar et al.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20192
+    },
+    {
+      "block_id": "p20:1",
+      "page": 20,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Chondrocyte K⁺ Currents Modulate Eᵐ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p20:2",
+      "page": 20,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "potassium channels in human and equine articular chondrocytes. Osteoarthr. Carti",
+      "found_in_fulltext": true,
+      "fulltext_offset": 86678
+    },
+    {
+      "block_id": "p20:3",
+      "page": 20,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Mobasheri, A., Lewsi, R., Ferreira-Mendes, A., Rufino, A., Dart, C., and Barrett",
+      "found_in_fulltext": true,
+      "fulltext_offset": 86802
+    },
+    {
+      "block_id": "p20:4",
+      "page": 20,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Mobasheri, A., Matta, C., Zakany, R., and Musumeci, G. (2015). Chondrosenescence",
+      "found_in_fulltext": true,
+      "fulltext_offset": 86993
+    },
+    {
+      "block_id": "p20:5",
+      "page": 20,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Mobasheri, A. R., Mobasheri, M. J. O., Francis, E., Trujillo, D., Alvarez de la ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 87215
+    },
+    {
+      "block_id": "p20:6",
+      "page": 20,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Mouw, J. K., Imler, S. M., and Levenston, M. E. (2006). Ion-channel regulation o",
+      "found_in_fulltext": true,
+      "fulltext_offset": 87549
+    },
+    {
+      "block_id": "p20:7",
+      "page": 20,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Muir, H. (1995). The chondrocyte, architect of cartilage. Biomechanics, structur",
+      "found_in_fulltext": true,
+      "fulltext_offset": 87782
+    },
+    {
+      "block_id": "p20:8",
+      "page": 20,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Muramatsu, S., Wakabayashi, M., Ohno, T., Amano, K., Ooishi, R., and Sugahara, T",
+      "found_in_fulltext": true,
+      "fulltext_offset": 87985
+    },
+    {
+      "block_id": "p20:9",
+      "page": 20,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Nguyen, B. V., Wang, Q. G., Kuiper, N. J., El Haj, A. J., Thomas, C. R., and Zha",
+      "found_in_fulltext": true,
+      "fulltext_offset": 88234
+    },
+    {
+      "block_id": "p20:10",
+      "page": 20,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Nilius, B., and Oswianik, G. (2011). The transient receptor potential family of ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 88521
+    },
+    {
+      "block_id": "p20:11",
+      "page": 20,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Nygren, A., Fiset, C., Firek, L., Clark, W., Lindblad, D. S., Clark, R. B., et a",
+      "found_in_fulltext": true,
+      "fulltext_offset": 88671
+    },
+    {
+      "block_id": "p20:12",
+      "page": 20,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "O'Conor, C. J., Leddy, H. A., Benefield, H. C., Liedtke, W. B., and Guilak, F. (",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p20:13",
+      "page": 20,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Ogawa, H., Kozhemyakina, E., Hung, H. H., Grodzinsky, A. J., and Lassar, A. B. (",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p20:14",
+      "page": 20,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Parekh, A. B., and Muallem, S. (2011). $ Ca^{2+} $ signaling and gene regulation",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p20:15",
+      "page": 20,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Patel, A. J., and Honoré, E. (2001). Properties and modulation of mammalian 2P d",
+      "found_in_fulltext": true,
+      "fulltext_offset": 89042
+    },
+    {
+      "block_id": "p20:16",
+      "page": 20,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Pelletier, J. P., Martel-Pelletier, J., and Abramson, S. B. (2001). Osteoarthrit",
+      "found_in_fulltext": true,
+      "fulltext_offset": 89206
+    },
+    {
+      "block_id": "p20:17",
+      "page": 20,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Penuela, S., Gehi, R., and Laird, D. W. (2013). The biochemistry and function of",
+      "found_in_fulltext": true,
+      "fulltext_offset": 89481
+    },
+    {
+      "block_id": "p20:18",
+      "page": 20,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Pfander, D., and Gelse, K. (2007). Hypoxia and osteoarthritis: how chondrocytes ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 89651
+    },
+    {
+      "block_id": "p20:19",
+      "page": 20,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Phan, M. N., Leddy, H. A., Votta, B. J., Kumar, S., Levy, D. S., Lipshutz, D. B.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 89831
+    },
+    {
+      "block_id": "p20:20",
+      "page": 20,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Phillips, T., Ferraz, I., Bell, S., Clegg, P. D., Carter, D., and Mobasheri, A. ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 90099
+    },
+    {
+      "block_id": "p20:21",
+      "page": 20,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Poole, A. C., Flint, M. H., and Beaumont, B. W. (1987). Chondrons in cartilage: ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 90392
+    },
+    {
+      "block_id": "p20:22",
+      "page": 20,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Poole, C. A. (1997). Articular cartilage chondrons: form, function and failure. ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 90627
+    },
+    {
+      "block_id": "p20:23",
+      "page": 20,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Poon, I. K., Chiu, Y. H., Armstrong, A. J., Kinchen, J. M., Juncadella, I. J., B",
+      "found_in_fulltext": true,
+      "fulltext_offset": 90768
+    },
+    {
+      "block_id": "p20:24",
+      "page": 20,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Radhakrishnan, K., and Hindmarsh, A. C. (1993). Description and Use of LSODE, th",
+      "found_in_fulltext": true,
+      "fulltext_offset": 90996
+    },
+    {
+      "block_id": "p20:25",
+      "page": 20,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Saez, J. C., Berthoud, V. M., Brañes, M. C., Martínez, A. D., and Beyer, E. C. (",
+      "found_in_fulltext": true,
+      "fulltext_offset": 91222
+    },
+    {
+      "block_id": "p20:26",
+      "page": 20,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Sánchez, J. C., Powell, T., Staines, H. M., and Wilkins, R. J. (2006). Electroph",
+      "found_in_fulltext": true,
+      "fulltext_offset": 91448
+    },
+    {
+      "block_id": "p20:27",
+      "page": 20,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Shaw, P. J., Qu, B., Hoth, M., and Feske, S. (2013). Molecular regulation of CRA",
+      "found_in_fulltext": true,
+      "fulltext_offset": 91632
+    },
+    {
+      "block_id": "p20:28",
+      "page": 20,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Sonkusare, S. K., Bonev, A. D., Ledoux, J., Liedtke, W., Kotlikoff, M. I., Heppn",
+      "found_in_fulltext": true,
+      "fulltext_offset": 91828
+    },
+    {
+      "block_id": "p20:29",
+      "page": 20,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Spitzer, N. C., Lautermilch, N. J., Smith, R. D., and Gomez, T. M. (2000). Codin",
+      "found_in_fulltext": true,
+      "fulltext_offset": 92072
+    },
+    {
+      "block_id": "p20:30",
+      "page": 20,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Sugimoto, T., Yoshino, M., Nagao, M., Ishii, S., and Yabu, H. (1996). Voltage-ga",
+      "found_in_fulltext": true,
+      "fulltext_offset": 92289
+    },
+    {
+      "block_id": "p20:31",
+      "page": 20,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Sun, L., Xiong, Y., Zeng, X., Wu, Y., Pan, N., Lingle, C. J., et al. (2009). Dif",
+      "found_in_fulltext": true,
+      "fulltext_offset": 92504
+    },
+    {
+      "block_id": "p20:32",
+      "page": 20,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Thorneloe, K. S., Sulpizio, A. C., and Westfall, T. D. (2008). N-((1S)-1-[[4-((2",
+      "found_in_fulltext": true,
+      "fulltext_offset": 92763
+    },
+    {
+      "block_id": "p20:33",
+      "page": 20,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Trujillo, E., Alvarez de la Rosa, D., Mobasheri, A., Gonzalez, T., Canessa, C. M",
+      "found_in_fulltext": true,
+      "fulltext_offset": 93193
+    },
+    {
+      "block_id": "p20:34",
+      "page": 20,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Tsuga, K., Tohse, N., Yoshino, M., Sugimoto, T., Yamashita, T., Ishii, S., et al",
+      "found_in_fulltext": true,
+      "fulltext_offset": 93502
+    },
+    {
+      "block_id": "p20:35",
+      "page": 20,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Urban, J. P., Hall, A. C., and Gehl, K. A. (1993). Regulation of matrix synthesi",
+      "found_in_fulltext": true,
+      "fulltext_offset": 93737
+    },
+    {
+      "block_id": "p20:36",
+      "page": 20,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Webb, S. T., and Ghosh, S. (2009). Intra-articular bupivacaine: potentially chon",
+      "found_in_fulltext": true,
+      "fulltext_offset": 93949
+    },
+    {
+      "block_id": "p20:37",
+      "page": 20,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Wilkins, R. J., Browning, J. A., and Ellory, J. C. (2000a). Surviving in a matri",
+      "found_in_fulltext": true,
+      "fulltext_offset": 94091
+    },
+    {
+      "block_id": "p20:38",
+      "page": 20,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Wilkins, R. J., Browning, J. A., and Urban, J. P. (2000b). Chondrocyte regulatio",
+      "found_in_fulltext": true,
+      "fulltext_offset": 94276
+    },
+    {
+      "block_id": "p20:39",
+      "page": 20,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Wilson, J. R., Clark, R. B., Banderali, U., and Giles, W. R. (2011). Measurement",
+      "found_in_fulltext": true,
+      "fulltext_offset": 94401
+    },
+    {
+      "block_id": "p20:40",
+      "page": 20,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Wilson, J. R., Duncan, N. A., Giles, W. R., and Clark, R. B. (2004). A voltage-d",
+      "found_in_fulltext": true,
+      "fulltext_offset": 94599
+    },
+    {
+      "block_id": "p20:41",
+      "page": 20,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Frontiers in Physiology | www.frontiersin.org",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p20:42",
+      "page": 20,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "20",
+      "found_in_fulltext": true,
+      "fulltext_offset": 241
+    },
+    {
+      "block_id": "p20:43",
+      "page": 20,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "September 2018 | Volume 9 | Article 974",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p21:0",
+      "page": 21,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Maleckar et al.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20192
+    },
+    {
+      "block_id": "p21:1",
+      "page": 21,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Chondrocyte K⁺ Currents Modulate Eᵐ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p21:2",
+      "page": 21,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "acutely isolated canine articular chondrocytes. J. Physiol. 557, 93–104. doi: 10",
+      "found_in_fulltext": true,
+      "fulltext_offset": 94759
+    },
+    {
+      "block_id": "p21:3",
+      "page": 21,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Wilusz, R. E., Sanchez-Adams, J., and Guilak, F. (2014). The structure and funct",
+      "found_in_fulltext": true,
+      "fulltext_offset": 94866
+    },
+    {
+      "block_id": "p21:4",
+      "page": 21,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Wright, M. O., Nishida, K., Bavington, C., Godolphin, J. L., Dunne, E., Walmsley",
+      "found_in_fulltext": true,
+      "fulltext_offset": 95059
+    },
+    {
+      "block_id": "p21:5",
+      "page": 21,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Wu, Q. Q., and Chen, Q. (2000). Mechanoregulation of chondrocyte proliferation, ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 95391
+    },
+    {
+      "block_id": "p21:6",
+      "page": 21,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Zuscik, M. J., Gunter, T. E., Puzas, J. E., Rosier, R. N. (1997). Characterizati",
+      "found_in_fulltext": true,
+      "fulltext_offset": 95623
+    },
+    {
+      "block_id": "p21:7",
+      "page": 21,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Conflict of Interest Statement: The authors declare that the research was conduc",
+      "found_in_fulltext": true,
+      "fulltext_offset": 95847
+    },
+    {
+      "block_id": "p21:8",
+      "page": 21,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "Copyright © 2018 Maleckar, Clark, Votta and Giles. This is an open-access articl",
+      "found_in_fulltext": true,
+      "fulltext_offset": 96052
+    },
+    {
+      "block_id": "p21:9",
+      "page": 21,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Frontiers in Physiology | www.frontiersin.org",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p21:10",
+      "page": 21,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "21",
+      "found_in_fulltext": true,
+      "fulltext_offset": 37327
+    },
+    {
+      "block_id": "p21:11",
+      "page": 21,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "September 2018 | Volume 9 | Article 974",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    }
+  ]
+}

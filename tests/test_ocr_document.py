@@ -4683,7 +4683,7 @@ def test_backmatter_zone_preserves_figure_adjacent_roles() -> None:
 
 
 def test_non_backmatter_zone_not_affected() -> None:
-    """Blocks outside post_reference_backmatter_zone are not converted."""
+    """Blocks outside verified reference zone are HOLD by structural gate."""
     from paperforge.worker.ocr_document import normalize_document_structure
 
     blocks = [
@@ -4694,8 +4694,12 @@ def test_non_backmatter_zone_not_affected() -> None:
     ]
     doc, normalized = normalize_document_structure(blocks)
     by_id = {b["block_id"]: b for b in normalized}
-    # No zone set -> not in post_reference_backmatter_zone -> stays reference_item
-    assert by_id["bio_1"]["role"] == "reference_item"
+    # Verified reference zone correctly excludes bio_1 (page 11, not in zone).
+    # Structural gate HOLDs it as unknown_structural with role_candidate retained.
+    assert by_id["bio_1"]["role"] == "unknown_structural"
+    assert by_id["bio_1"]["role_candidate"] == "reference_item"
+    # Ref items inside verified zone remain accepted.
+    assert by_id["r1"]["role"] == "reference_item"
 
 
 def test_sanitize_reference_zone_boundary_strips_non_reference_roles() -> None:
@@ -4838,3 +4842,104 @@ def test_rendered_text_coverage_flags_missing_pdf_segment() -> None:
     )
 
     assert result["rendered_text_gap_count"] == 1
+
+
+def test_compute_layout_facts_marks_reading_band_region_boundary_and_bridge() -> None:
+    from paperforge.worker.ocr_document import compute_layout_facts
+
+    blocks = [
+        {
+            "block_id": "body_1",
+            "page": 5,
+            "role": "body_paragraph",
+            "zone": "body_zone",
+            "bbox": [80, 120, 520, 220],
+            "text": "Body text.",
+        },
+        {
+            "block_id": "ref_1",
+            "page": 5,
+            "role": "reference_item",
+            "zone": "reference_zone",
+            "bbox": [610, 120, 1120, 180],
+            "text": "Smith J, Doe P. J Bone Miner Res. 2021;36(4):100-110.",
+        },
+        {
+            "block_id": "gap_1",
+            "page": 5,
+            "role": "unknown_structural",
+            "zone": "display_zone",
+            "bbox": [640, 200, 1110, 360],
+            "text": "",
+        },
+    ]
+
+    facts = compute_layout_facts(blocks)
+    by_id = {row["block_id"]: row for row in facts}
+
+    assert by_id["body_1"]["layout_region"] == "body_flow"
+    assert by_id["ref_1"]["layout_region"] == "reference_candidate"
+    assert by_id["body_1"]["reading_band_id"] != by_id["ref_1"]["reading_band_id"]
+    assert by_id["gap_1"]["bridge_eligible"] is True
+    assert by_id["ref_1"]["boundary_before"] in {"weak", "hard"}
+
+
+def test_reference_signal_detector_scores_unnumbered_vancouver_entry() -> None:
+    from paperforge.worker.ocr_reference_signals import score_reference_entry
+
+    result = score_reference_entry(
+        "Smith J, Doe P. Bone regeneration with scaffold support. J Bone Miner Res. 2021;36(4):100-110. doi:10.1000/test"
+    )
+
+    assert result["family"] == "vancouver_structured_unnumbered"
+    assert result["confidence"] > 0.6
+    assert result["signals"]["journal_lexicon_match"] is True
+
+
+def test_reference_signal_detector_distinguishes_report_like_entry() -> None:
+    from paperforge.worker.ocr_reference_signals import score_reference_entry
+
+    result = score_reference_entry(
+        "World Health Organization. Clinical management guideline [Internet]. 2023 [cited 2024 Jan 10]. Available from: https://example.org"
+    )
+
+    assert result["family"] == "book_or_report"
+    assert result["signals"]["online_marker_signature"] is True
+
+
+def test_reference_corridor_keeps_reference_like_blocks_but_rejects_acknowledgements() -> None:
+    from paperforge.worker.ocr_document import score_reference_corridor_membership
+
+    ref_block = {
+        "block_id": "r1",
+        "page": 20,
+        "role": "reference_item",
+        "zone": "reference_zone",
+        "layout_region": "reference_candidate",
+        "text": "Brown T, Green S. N Engl J Med. 2020;382(4):100-110.",
+    }
+    ack_block = {
+        "block_id": "a1",
+        "page": 20,
+        "role": "backmatter_body",
+        "zone": "tail_nonref_hold_zone",
+        "layout_region": "tail_candidate",
+        "text": "Acknowledgements We thank the patients and families.",
+    }
+
+    ref_score = score_reference_corridor_membership(ref_block)
+    ack_score = score_reference_corridor_membership(ack_block)
+
+    assert ref_score["accept_reference_membership"] is True
+    assert ack_score["accept_reference_membership"] is False
+    assert ack_score["non_ref_intrusion_score"] > ref_score["non_ref_intrusion_score"]
+
+
+def test_reference_hold_does_not_promote_final_reference_membership() -> None:
+    from paperforge.worker.ocr_structural_gate import build_verified_reference_zone_from_artifacts
+
+    blocks = [
+        {"block_id": "x1", "role": "backmatter_body", "zone": "tail_nonref_hold_zone", "text": "Data availability statement."},
+    ]
+    zone = build_verified_reference_zone_from_artifacts(blocks, {"region_bus": {"reference_zone_ids": set()}})
+    assert zone.get("status") != "ACCEPT"

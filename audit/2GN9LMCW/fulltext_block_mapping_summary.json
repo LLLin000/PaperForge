@@ -1,7 +1,7 @@
 {
-  "mappable_block_count": 156,
+  "mappable_block_count": 154,
   "found_count": 117,
-  "missing_count": 39,
+  "missing_count": 37,
   "rows": [
     {
       "block_id": "p1:1",
@@ -40,6 +40,26 @@
       "zone": "frontmatter_main_zone",
       "render_default": true,
       "snippet": "$ ^{2} $School of Materials, Faculty of Engineering and Physical Sciences, Unive",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:5",
+      "page": 1,
+      "role": "frontmatter_support",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "These authors contributed equally to this work.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:13",
+      "page": 1,
+      "role": "frontmatter_support",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "Corresponding author Sahba Mobini, sahba.mobini@manchester.ac.uk, sahba.mobini@g",
       "found_in_fulltext": false,
       "fulltext_offset": -1
     },
@@ -86,9 +106,9 @@
     {
       "block_id": "p2:1",
       "page": 2,
-      "role": "frontmatter_support",
+      "role": "unknown_structural",
       "zone": "body_zone",
-      "render_default": true,
+      "render_default": false,
       "snippet": "hold great potential for achieving optimal bone healing while eliminating the as",
       "found_in_fulltext": false,
       "fulltext_offset": -1
@@ -127,7 +147,7 @@
       "block_id": "p2:5",
       "page": 2,
       "role": "noise",
-      "zone": "",
+      "zone": "frontmatter_main_zone",
       "render_default": false,
       "snippet": "Mobini et al. (2017), PeerJ, DOI 10.7717/peerj.2821",
       "found_in_fulltext": false,
@@ -242,16 +262,6 @@
       "snippet": "PeerJ",
       "found_in_fulltext": true,
       "fulltext_offset": 233
-    },
-    {
-      "block_id": "p4:2",
-      "page": 4,
-      "role": "figure_caption_candidate",
-      "zone": "display_zone",
-      "render_default": false,
-      "snippet": "Figure 1 Setup for delivering direct current electrical stimulation to the cells",
-      "found_in_fulltext": false,
-      "fulltext_offset": -1
     },
     {
       "block_id": "p4:3",
@@ -404,16 +414,6 @@
       "fulltext_offset": 233
     },
     {
-      "block_id": "p6:2",
-      "page": 6,
-      "role": "figure_caption_candidate",
-      "zone": "display_zone",
-      "render_default": false,
-      "snippet": "Figure 2 Calcium deposition. Calcium deposition stained using Alizarin Red S for",
-      "found_in_fulltext": false,
-      "fulltext_offset": -1
-    },
-    {
       "block_id": "p6:3",
       "page": 6,
       "role": "body_paragraph",
@@ -472,16 +472,6 @@
       "snippet": "PeerJ",
       "found_in_fulltext": true,
       "fulltext_offset": 233
-    },
-    {
-      "block_id": "p7:2",
-      "page": 7,
-      "role": "figure_caption_candidate",
-      "zone": "display_zone",
-      "render_default": false,
-      "snippet": "Figure 3 Cell viability. Measured by MTT assay, compared between electrically st",
-      "found_in_fulltext": false,
-      "fulltext_offset": -1
     },
     {
       "block_id": "p7:3",
@@ -664,16 +654,6 @@
       "fulltext_offset": -1
     },
     {
-      "block_id": "p9:9",
-      "page": 9,
-      "role": "figure_caption_candidate",
-      "zone": "display_zone",
-      "render_default": false,
-      "snippet": "Figure 4 RT-qPCR results. Temporal changes in messenger RNA (mRNA) of (A) Runx2,",
-      "found_in_fulltext": false,
-      "fulltext_offset": -1
-    },
-    {
       "block_id": "p9:10",
       "page": 9,
       "role": "noise",
@@ -756,7 +736,7 @@
     {
       "block_id": "p10:6",
       "page": 10,
-      "role": "backmatter_boundary_candidate",
+      "role": "body_paragraph",
       "zone": "body_zone",
       "render_default": true,
       "snippet": "ADDITIONAL INFORMATION AND DECLARATIONS",
@@ -766,7 +746,7 @@
     {
       "block_id": "p10:7",
       "page": 10,
-      "role": "backmatter_heading",
+      "role": "sub_subsection_heading",
       "zone": "body_zone",
       "render_default": true,
       "snippet": "Funding",
@@ -776,7 +756,7 @@
     {
       "block_id": "p10:8",
       "page": 10,
-      "role": "backmatter_body",
+      "role": "body_paragraph",
       "zone": "body_zone",
       "render_default": true,
       "snippet": "The work described herein was supported in part by a grant from the AO Foundatio",
@@ -816,17 +796,17 @@
     {
       "block_id": "p11:1",
       "page": 11,
-      "role": "backmatter_heading",
+      "role": "subsection_heading",
       "zone": "body_zone",
       "render_default": true,
       "snippet": "Grant Disclosures",
       "found_in_fulltext": true,
-      "fulltext_offset": 22985
+      "fulltext_offset": 22987
     },
     {
       "block_id": "p11:2",
       "page": 11,
-      "role": "backmatter_body",
+      "role": "body_paragraph",
       "zone": "body_zone",
       "render_default": true,
       "snippet": "The following grant information was disclosed by the authors: AO Foundation: #S-",
@@ -836,7 +816,7 @@
     {
       "block_id": "p11:3",
       "page": 11,
-      "role": "backmatter_heading",
+      "role": "subsection_heading",
       "zone": "body_zone",
       "render_default": true,
       "snippet": "Competing Interests",
@@ -846,7 +826,7 @@
     {
       "block_id": "p11:4",
       "page": 11,
-      "role": "backmatter_body",
+      "role": "body_paragraph",
       "zone": "body_zone",
       "render_default": true,
       "snippet": "The authors declare there are no competing interests.",
@@ -856,7 +836,7 @@
     {
       "block_id": "p11:5",
       "page": 11,
-      "role": "backmatter_heading",
+      "role": "subsection_heading",
       "zone": "body_zone",
       "render_default": true,
       "snippet": "Author Contributions",
@@ -866,7 +846,7 @@
     {
       "block_id": "p11:6",
       "page": 11,
-      "role": "backmatter_body",
+      "role": "body_paragraph",
       "zone": "body_zone",
       "render_default": true,
       "snippet": "● Sahba Mobini and Liudmila Leppik conceived and designed the experiments, perfo",
@@ -876,7 +856,7 @@
     {
       "block_id": "p11:7",
       "page": 11,
-      "role": "backmatter_body",
+      "role": "body_paragraph",
       "zone": "body_zone",
       "render_default": true,
       "snippet": "- Vishnu Thottakkattumana Parameswaran performed the experiments, prepared figur",
@@ -886,7 +866,7 @@
     {
       "block_id": "p11:8",
       "page": 11,
-      "role": "backmatter_body",
+      "role": "body_paragraph",
       "zone": "body_zone",
       "render_default": true,
       "snippet": "● John Howard Barker contributed reagents/materials/analysis tools, wrote the pa",
@@ -896,7 +876,7 @@
     {
       "block_id": "p11:9",
       "page": 11,
-      "role": "backmatter_heading",
+      "role": "subsection_heading",
       "zone": "body_zone",
       "render_default": true,
       "snippet": "Data Availability",
@@ -906,7 +886,7 @@
     {
       "block_id": "p11:10",
       "page": 11,
-      "role": "backmatter_body",
+      "role": "body_paragraph",
       "zone": "body_zone",
       "render_default": true,
       "snippet": "The following information was supplied regarding data availability:",
@@ -916,7 +896,7 @@
     {
       "block_id": "p11:11",
       "page": 11,
-      "role": "backmatter_body",
+      "role": "body_paragraph",
       "zone": "body_zone",
       "render_default": true,
       "snippet": "The raw data has been supplied as Supplementary Files.",
@@ -936,7 +916,7 @@
     {
       "block_id": "p11:13",
       "page": 11,
-      "role": "backmatter_body",
+      "role": "body_paragraph",
       "zone": "body_zone",
       "render_default": true,
       "snippet": "Supplemental information for this article can be found online at http://dx.doi.o",

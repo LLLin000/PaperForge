@@ -116,6 +116,14 @@ def score_figure_match(
         has_x_overlap = True
         score += 0.25
         evidence.append("x_overlap")
+    elif len(legend_bbox) >= 4 and len(asset_bbox) >= 4:
+        # Side-by-side: no x_overlap but adjacent columns with shared y-band
+        gap = max(0.0, asset_bbox[0] - legend_bbox[2], legend_bbox[0] - asset_bbox[2])
+        narrow_w = min(legend_bbox[2] - legend_bbox[0], asset_bbox[2] - asset_bbox[0])
+        if gap < narrow_w * 0.3 and gap < 80:
+            has_x_overlap = True
+            score += 0.20
+            evidence.append("adjacent_x")
     if len(legend_bbox) >= 4 and len(asset_bbox) >= 4:
         vertical_gap = min(abs(legend_bbox[1] - asset_bbox[3]), abs(asset_bbox[1] - legend_bbox[3]))
         if vertical_gap <= 300:

@@ -84,10 +84,18 @@
     "unresolved": []
   },
   "tables": {
-    "matched_count": 0,
+    "matched_count": 1,
     "ambiguous_count": 0,
     "unmatched_asset_count": 0,
-    "matched": [],
+    "matched": [
+      {
+        "table_number": 1,
+        "caption_block_id": 3,
+        "asset_block_ids": [],
+        "page": 7,
+        "match_status": "matched"
+      }
+    ],
     "ambiguous": []
   }
 }

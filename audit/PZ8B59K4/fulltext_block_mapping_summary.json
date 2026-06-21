@@ -1,7 +1,7 @@
 {
   "mappable_block_count": 119,
-  "found_count": 95,
-  "missing_count": 24,
+  "found_count": 94,
+  "missing_count": 25,
   "rows": [
     {
       "block_id": "p2:1",
@@ -541,7 +541,7 @@
       "render_default": true,
       "snippet": "References",
       "found_in_fulltext": true,
-      "fulltext_offset": 19089
+      "fulltext_offset": 19031
     },
     {
       "block_id": "p11:6",
@@ -551,7 +551,7 @@
       "render_default": true,
       "snippet": "1. Alderden J, Pepper GA, Wilson A, Whitney JD, Richardson S, Butcher R, et al. ",
       "found_in_fulltext": true,
-      "fulltext_offset": 19100
+      "fulltext_offset": 19042
     },
     {
       "block_id": "p11:7",
@@ -561,7 +561,7 @@
       "render_default": true,
       "snippet": "2. Barth J, Andrieu K, Fotiadis E, Hannink G, Barthelemy R, Saffarini M. Critica",
       "found_in_fulltext": true,
-      "fulltext_offset": 19338
+      "fulltext_offset": 19280
     },
     {
       "block_id": "p11:8",
@@ -571,7 +571,7 @@
       "render_default": true,
       "snippet": "3. Cho NS, Lee BG, Rhee YG. Arthroscopic rotator cuff repair using a suture brid",
       "found_in_fulltext": true,
-      "fulltext_offset": 19613
+      "fulltext_offset": 19555
     },
     {
       "block_id": "p11:9",
@@ -601,7 +601,7 @@
       "render_default": true,
       "snippet": "4. Cho NS, Rhee YG. The factors affecting the clinical outcome and integrity of ",
       "found_in_fulltext": true,
-      "fulltext_offset": 19855
+      "fulltext_offset": 19797
     },
     {
       "block_id": "p12:3",
@@ -611,7 +611,7 @@
       "render_default": true,
       "snippet": "5. Cho NS, Yi JW, Lee BG, Rhee YG. Retear patterns after arthroscopic rotator cu",
       "found_in_fulltext": true,
-      "fulltext_offset": 20080
+      "fulltext_offset": 20022
     },
     {
       "block_id": "p12:4",
@@ -621,7 +621,7 @@
       "render_default": true,
       "snippet": "6. Chona DV, Lakomkin N, Lott A, Workman AD, Henry AC, Kuntz AF, et al. The timi",
       "found_in_fulltext": true,
-      "fulltext_offset": 20277
+      "fulltext_offset": 20219
     },
     {
       "block_id": "p12:5",
@@ -631,7 +631,7 @@
       "render_default": true,
       "snippet": "7. Chung SW, Kim JY, Kim MH, Kim SH, Oh JH. Arthroscopic repair of massive rotat",
       "found_in_fulltext": true,
-      "fulltext_offset": 20484
+      "fulltext_offset": 20426
     },
     {
       "block_id": "p12:6",
@@ -641,7 +641,7 @@
       "render_default": true,
       "snippet": "8. Cofield RH, Parvizi J, Hoffmeyer PJ, Lanzer WL, Ilstrup DM, Rowland CM. Surgi",
       "found_in_fulltext": true,
-      "fulltext_offset": 20740
+      "fulltext_offset": 20682
     },
     {
       "block_id": "p12:7",
@@ -651,7 +651,7 @@
       "render_default": true,
       "snippet": "9. Collin P, Betz M, Herve A, Walch G, Mansat P, Favard L, et al. Clinical and s",
       "found_in_fulltext": true,
-      "fulltext_offset": 20930
+      "fulltext_offset": 20872
     },
     {
       "block_id": "p12:8",
@@ -661,7 +661,7 @@
       "render_default": true,
       "snippet": "10. DeOrio JK, Cofield RH. Results of a second attempt at surgical repair of a f",
       "found_in_fulltext": true,
-      "fulltext_offset": 21172
+      "fulltext_offset": 21114
     },
     {
       "block_id": "p12:9",
@@ -671,7 +671,7 @@
       "render_default": true,
       "snippet": "11. Diebold G, Lam P, Walton J, Murrell GAC. Relationship between age and rotato",
       "found_in_fulltext": true,
-      "fulltext_offset": 21326
+      "fulltext_offset": 21268
     },
     {
       "block_id": "p12:10",
@@ -681,7 +681,7 @@
       "render_default": true,
       "snippet": "12. Doyen S, Taylor H, Nicholas P, Crawford L, Young I, Sughrue ME. Hollow-tree ",
       "found_in_fulltext": true,
-      "fulltext_offset": 21561
+      "fulltext_offset": 21503
     },
     {
       "block_id": "p12:11",
@@ -691,7 +691,7 @@
       "render_default": true,
       "snippet": "13. Elbuluk AM, Coxe FR, Fabricant PD, Ramos NL, Alaia MJ, Jones KJ. Does medial",
       "found_in_fulltext": true,
-      "fulltext_offset": 21813
+      "fulltext_offset": 21755
     },
     {
       "block_id": "p12:12",
@@ -701,7 +701,7 @@
       "render_default": true,
       "snippet": "14. Elkins AR, Lam PH, Murrell GAC. Duration of surgery and learning curve affec",
       "found_in_fulltext": true,
-      "fulltext_offset": 22102
+      "fulltext_offset": 22044
     },
     {
       "block_id": "p12:13",
@@ -731,7 +731,7 @@
       "render_default": true,
       "snippet": "15. Gladstone JN, Bishop JY, Lo IK, Flatow EL. Fatty infiltration and atrophy of",
       "found_in_fulltext": true,
-      "fulltext_offset": 22329
+      "fulltext_offset": 22271
     },
     {
       "block_id": "p13:3",
@@ -741,7 +741,7 @@
       "render_default": true,
       "snippet": "17. Goutallier D, Postel JM, Bernageau J, Lavau L, Voisin MC. Fatty muscle degen",
       "found_in_fulltext": true,
-      "fulltext_offset": 22596
+      "fulltext_offset": 22538
     },
     {
       "block_id": "p13:4",
@@ -751,7 +751,7 @@
       "render_default": true,
       "snippet": "16. Goutallier D, Postel JM, Gleyze P, Leguilloux P, Van Driessche S. Influence ",
       "found_in_fulltext": true,
-      "fulltext_offset": 22786
+      "fulltext_offset": 22728
     },
     {
       "block_id": "p13:5",
@@ -761,7 +761,7 @@
       "render_default": true,
       "snippet": "18. Gowd AK, Agarwalla A, Beck EC, Rosas S, Waterman BR, Romeo AA, et al. Predic",
       "found_in_fulltext": true,
-      "fulltext_offset": 23055
+      "fulltext_offset": 22997
     },
     {
       "block_id": "p13:6",
@@ -771,7 +771,7 @@
       "render_default": true,
       "snippet": "19. Gumina S, Carbone S, Campagna V, Candela V, Sacchetti FM, Giannicola G. The ",
       "found_in_fulltext": true,
-      "fulltext_offset": 23324
+      "fulltext_offset": 23266
     },
     {
       "block_id": "p13:7",
@@ -781,7 +781,7 @@
       "render_default": true,
       "snippet": "20. Hancock JT, Khoshgoftaar TM. CatBoost for big data: an interdisciplinary rev",
       "found_in_fulltext": true,
-      "fulltext_offset": 23520
+      "fulltext_offset": 23462
     },
     {
       "block_id": "p13:8",
@@ -791,7 +791,7 @@
       "render_default": true,
       "snippet": "21. Harris JD. Editorial commentary: personalized hip arthroscopy outcome predic",
       "found_in_fulltext": true,
-      "fulltext_offset": 23680
+      "fulltext_offset": 23622
     },
     {
       "block_id": "p13:9",
@@ -801,7 +801,7 @@
       "render_default": true,
       "snippet": "22. Inui A, Nishimoto H, Mifune Y, Yoshikawa T, Shinohara I, Furukawa T, et al. ",
       "found_in_fulltext": true,
-      "fulltext_offset": 23894
+      "fulltext_offset": 23836
     },
     {
       "block_id": "p13:10",
@@ -811,7 +811,7 @@
       "render_default": true,
       "snippet": "23. Ishitani E, Harada N, Sonoda Y, Okada F, Yara T, Katsuki I. Tendon stump typ",
       "found_in_fulltext": true,
-      "fulltext_offset": 24163
+      "fulltext_offset": 24105
     },
     {
       "block_id": "p13:11",
@@ -821,7 +821,7 @@
       "render_default": true,
       "snippet": "24. Jeong HY, Kim HJ, Jeon YS, Rhee YG. Factors predictive of healing in large r",
       "found_in_fulltext": true,
-      "fulltext_offset": 24421
+      "fulltext_offset": 24363
     },
     {
       "block_id": "p13:12",
@@ -831,7 +831,7 @@
       "render_default": true,
       "snippet": "25. Kunze KN, Police EM, Chahla J. Response to \"regarding 'editorial commentary'",
       "found_in_fulltext": true,
-      "fulltext_offset": 24655
+      "fulltext_offset": 24597
     },
     {
       "block_id": "p13:13",
@@ -861,7 +861,7 @@
       "render_default": true,
       "snippet": "26. Kunze KN, Police EM, Ranawat AS, Randsborg PH, Williams RJ, Allen AA, et al.",
       "found_in_fulltext": true,
-      "fulltext_offset": 24912
+      "fulltext_offset": 24854
     },
     {
       "block_id": "p14:3",
@@ -871,7 +871,7 @@
       "render_default": true,
       "snippet": "27. Li C, Alike Y, Hou J, Long Y, Zheng Z, Meng K, et al. Machine learning model",
       "found_in_fulltext": true,
-      "fulltext_offset": 25221
+      "fulltext_offset": 25163
     },
     {
       "block_id": "p14:4",
@@ -881,7 +881,7 @@
       "render_default": true,
       "snippet": "28. Lubowitz JH, Brand JC, Rossi MJ. Preoperative shoulder corticosteroid inject",
       "found_in_fulltext": true,
-      "fulltext_offset": 25481
+      "fulltext_offset": 25423
     },
     {
       "block_id": "p14:5",
@@ -891,7 +891,7 @@
       "render_default": true,
       "snippet": "29. Malavolta EA, Assunção JH, Ramos FF, Ferreira TC, Gracitelli ME, Bordalo-Rod",
       "found_in_fulltext": true,
-      "fulltext_offset": 25712
+      "fulltext_offset": 25654
     },
     {
       "block_id": "p14:6",
@@ -901,7 +901,7 @@
       "render_default": true,
       "snippet": "30. Matsuo K, Aihara H, Nakai T, Morishita A, Tohma Y, Kohmura E. Machine learni",
       "found_in_fulltext": true,
-      "fulltext_offset": 26033
+      "fulltext_offset": 25975
     },
     {
       "block_id": "p14:7",
@@ -911,7 +911,7 @@
       "render_default": true,
       "snippet": "31. Pedregosa F, Varoquaux G, Al. G. Scikit-learn: machine learning in Python. J",
       "found_in_fulltext": true,
-      "fulltext_offset": 26252
+      "fulltext_offset": 26194
     },
     {
       "block_id": "p14:8",
@@ -921,7 +921,7 @@
       "render_default": true,
       "snippet": "32. Police EM, Kunze KN, Fu MC, Garrigues GE, Forsythe B, Nicholson GP, et al. D",
       "found_in_fulltext": true,
-      "fulltext_offset": 26414
+      "fulltext_offset": 26356
     },
     {
       "block_id": "p14:9",
@@ -931,7 +931,7 @@
       "render_default": true,
       "snippet": "33. Quddusi A, Eversdijk HAJ, Klukowska AM, de Wispelaere MP, Kernbach JM, Schrö",
       "found_in_fulltext": true,
-      "fulltext_offset": 26701
+      "fulltext_offset": 26643
     },
     {
       "block_id": "p14:10",
@@ -941,7 +941,7 @@
       "render_default": true,
       "snippet": "34. Ranebo MC, Björnsson Hallgren HC, Holmgren T, Adolfsson LE. Surgery and phys",
       "found_in_fulltext": true,
-      "fulltext_offset": 26968
+      "fulltext_offset": 26910
     },
     {
       "block_id": "p14:11",
@@ -951,7 +951,7 @@
       "render_default": true,
       "snippet": "35. Sevinç E. An empowered AdaBoost algorithm implementation: a COVID-19 dataset",
       "found_in_fulltext": true,
-      "fulltext_offset": 27246
+      "fulltext_offset": 27188
     },
     {
       "block_id": "p14:12",
@@ -981,7 +981,7 @@
       "render_default": true,
       "snippet": "36. Shimizu T, Suda K, Maki S, Koda M, Matsumoto Harmon S, Komatsu M, et al. Eff",
       "found_in_fulltext": true,
-      "fulltext_offset": 27435
+      "fulltext_offset": 27377
     },
     {
       "block_id": "p15:3",
@@ -991,7 +991,7 @@
       "render_default": true,
       "snippet": "37. Shinohara I, Mifune Y, Inui A, Nishimoto H, Yamaura K, Mukohara S, et al. Bi",
       "found_in_fulltext": true,
-      "fulltext_offset": 27753
+      "fulltext_offset": 27695
     },
     {
       "block_id": "p15:4",
@@ -1001,7 +1001,7 @@
       "render_default": true,
       "snippet": "38. Sugaya H, Maeda K, Matsuki K, Moriishi J. Functional and structural outcome ",
       "found_in_fulltext": true,
-      "fulltext_offset": 28077
+      "fulltext_offset": 28019
     },
     {
       "block_id": "p15:5",
@@ -1011,7 +1011,7 @@
       "render_default": true,
       "snippet": "39. Takeuchi N, Kozono N, Nishii A, Matsuura K, Ishitani E, Onizuka T, et al. St",
       "found_in_fulltext": true,
-      "fulltext_offset": 28335
+      "fulltext_offset": 28277
     },
     {
       "block_id": "p15:6",
@@ -1021,7 +1021,7 @@
       "render_default": true,
       "snippet": "40. Tseng PY, Chen YT, Wang CH, Chiu KM, Peng YS, Hsu SP, et al. Prediction of t",
       "found_in_fulltext": true,
-      "fulltext_offset": 28641
+      "fulltext_offset": 28583
     },
     {
       "block_id": "p15:7",
@@ -1031,7 +1031,7 @@
       "render_default": true,
       "snippet": "41. Yan J, Xu Y, Cheng Q, Jiang S, Wang Q, Xiao Y, et al. LightGBM: accelerated ",
       "found_in_fulltext": true,
-      "fulltext_offset": 28882
+      "fulltext_offset": 28824
     },
     {
       "block_id": "p15:8",
@@ -1041,7 +1041,7 @@
       "render_default": true,
       "snippet": "42. Zhang C, Lei X, Liu L. Predicting metabolite-disease associations based on L",
       "found_in_fulltext": true,
-      "fulltext_offset": 29082
+      "fulltext_offset": 29024
     },
     {
       "block_id": "p15:9",
@@ -1051,7 +1051,7 @@
       "render_default": false,
       "snippet": "13",
       "found_in_fulltext": true,
-      "fulltext_offset": 20693
+      "fulltext_offset": 20635
     },
     {
       "block_id": "p16:0",
@@ -1081,7 +1081,7 @@
       "render_default": true,
       "snippet": "Table.1 Statistical analysis of patient background in the presence or absence of",
       "found_in_fulltext": true,
-      "fulltext_offset": 29274
+      "fulltext_offset": 29216
     },
     {
       "block_id": "p16:4",
@@ -1091,7 +1091,7 @@
       "render_default": true,
       "snippet": "Figure Legends",
       "found_in_fulltext": true,
-      "fulltext_offset": 29549
+      "fulltext_offset": 29491
     },
     {
       "block_id": "p16:10",
@@ -1101,7 +1101,7 @@
       "render_default": false,
       "snippet": "14",
       "found_in_fulltext": true,
-      "fulltext_offset": 22102
+      "fulltext_offset": 22044
     },
     {
       "block_id": "p17:1",
@@ -1121,7 +1121,7 @@
       "render_default": true,
       "snippet": "N.S.: not significant",
       "found_in_fulltext": true,
-      "fulltext_offset": 29423
+      "fulltext_offset": 29365
     },
     {
       "block_id": "p18:1",
@@ -1141,7 +1141,7 @@
       "render_default": true,
       "snippet": "CI: confidence interval; ML: machine learning",
       "found_in_fulltext": true,
-      "fulltext_offset": 29620
+      "fulltext_offset": 29562
     },
     {
       "block_id": "p20:2",
@@ -1151,7 +1151,7 @@
       "render_default": false,
       "snippet": "ROC: receiver operating characteristic",
       "found_in_fulltext": true,
-      "fulltext_offset": 29798
+      "fulltext_offset": 29740
     },
     {
       "block_id": "p21:2",
@@ -1161,7 +1161,7 @@
       "render_default": true,
       "snippet": "DM: diabetes mellitus",
       "found_in_fulltext": true,
-      "fulltext_offset": 29759
+      "fulltext_offset": 29701
     },
     {
       "block_id": "p22:1",
@@ -1170,8 +1170,8 @@
       "zone": "",
       "render_default": false,
       "snippet": "ROC curve of each trained model",
-      "found_in_fulltext": true,
-      "fulltext_offset": 19020
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p22:3",
@@ -1181,7 +1181,7 @@
       "render_default": true,
       "snippet": "ROC: receiver operating characteristic",
       "found_in_fulltext": true,
-      "fulltext_offset": 29798
+      "fulltext_offset": 29740
     },
     {
       "block_id": "p23:5",
@@ -1191,7 +1191,7 @@
       "render_default": true,
       "snippet": "DM; diabetes mellitus",
       "found_in_fulltext": true,
-      "fulltext_offset": 29854
+      "fulltext_offset": 29796
     }
   ]
 }

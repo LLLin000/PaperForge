@@ -3174,7 +3174,7 @@
       "block_id": "p22:2",
       "page": 22,
       "raw_label": "chart",
-      "role": "media_asset",
+      "role": "figure_asset",
       "zone": "",
       "bbox": [
         147.0,
@@ -3254,7 +3254,7 @@
       "block_id": "p23:2",
       "page": 23,
       "raw_label": "chart",
-      "role": "media_asset",
+      "role": "figure_asset",
       "zone": "",
       "bbox": [
         149.0,
@@ -3294,7 +3294,7 @@
       "block_id": "p23:4",
       "page": 23,
       "raw_label": "chart",
-      "role": "media_asset",
+      "role": "figure_asset",
       "zone": "",
       "bbox": [
         497.0,

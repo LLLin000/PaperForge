@@ -2,13 +2,11 @@
   "pages": [
     {
       "page": 1,
-      "risk_score": 7,
+      "risk_score": 5,
       "risk_reasons": [
-        "frontmatter_page",
-        "unknown_structural_threshold"
+        "frontmatter_page"
       ],
       "recommended_audit_targets": [
-        "body_flow",
         "frontmatter"
       ],
       "counts": {
@@ -18,8 +16,8 @@
         "media_assets": 0,
         "table_like": 0,
         "captions": 0,
-        "hold": 1,
-        "unknown_structural": 2,
+        "hold": 0,
+        "unknown_structural": 0,
         "matched_figures": 0,
         "ambiguous_figures": 0
       }
@@ -30,7 +28,7 @@
       "risk_reasons": [],
       "recommended_audit_targets": [],
       "counts": {
-        "body_paragraph": 4,
+        "body_paragraph": 5,
         "reference_item": 0,
         "tail_like": 0,
         "media_assets": 0,
@@ -55,47 +53,42 @@
         "table_like": 0,
         "captions": 0,
         "hold": 0,
-        "unknown_structural": 0,
+        "unknown_structural": 1,
         "matched_figures": 0,
         "ambiguous_figures": 0
       }
     },
     {
       "page": 4,
-      "risk_score": 12,
+      "risk_score": 7,
       "risk_reasons": [
         "multi_asset_page",
-        "caption_asset_mismatch",
-        "reader_object_gap",
-        "unknown_structural_threshold"
+        "caption_asset_mismatch"
       ],
       "recommended_audit_targets": [
-        "body_flow",
         "object_ownership"
       ],
       "counts": {
-        "body_paragraph": 6,
+        "body_paragraph": 7,
         "reference_item": 0,
         "tail_like": 0,
-        "media_assets": 1,
+        "media_assets": 0,
         "table_like": 2,
         "captions": 1,
         "hold": 0,
-        "unknown_structural": 3,
+        "unknown_structural": 1,
         "matched_figures": 0,
         "ambiguous_figures": 0
       }
     },
     {
       "page": 5,
-      "risk_score": 9,
+      "risk_score": 7,
       "risk_reasons": [
         "multi_asset_page",
-        "reader_object_gap",
-        "unknown_structural_threshold"
+        "reader_object_gap"
       ],
       "recommended_audit_targets": [
-        "body_flow",
         "object_ownership"
       ],
       "counts": {
@@ -106,195 +99,178 @@
         "table_like": 0,
         "captions": 4,
         "hold": 0,
-        "unknown_structural": 2,
+        "unknown_structural": 1,
         "matched_figures": 4,
         "ambiguous_figures": 0
       }
     },
     {
       "page": 6,
-      "risk_score": 12,
+      "risk_score": 10,
       "risk_reasons": [
         "multi_asset_page",
         "caption_asset_mismatch",
-        "reader_object_gap",
-        "unknown_structural_threshold"
+        "reader_object_gap"
       ],
       "recommended_audit_targets": [
-        "body_flow",
         "object_ownership"
       ],
       "counts": {
-        "body_paragraph": 6,
+        "body_paragraph": 7,
         "reference_item": 0,
         "tail_like": 0,
-        "media_assets": 2,
+        "media_assets": 1,
         "table_like": 2,
         "captions": 2,
         "hold": 0,
-        "unknown_structural": 3,
+        "unknown_structural": 1,
         "matched_figures": 1,
         "ambiguous_figures": 0
       }
     },
     {
       "page": 7,
-      "risk_score": 12,
+      "risk_score": 7,
       "risk_reasons": [
         "multi_asset_page",
-        "caption_asset_mismatch",
-        "reader_object_gap",
-        "unknown_structural_threshold"
+        "caption_asset_mismatch"
       ],
       "recommended_audit_targets": [
-        "body_flow",
-        "object_ownership"
-      ],
-      "counts": {
-        "body_paragraph": 5,
-        "reference_item": 0,
-        "tail_like": 0,
-        "media_assets": 1,
-        "table_like": 2,
-        "captions": 1,
-        "hold": 0,
-        "unknown_structural": 3,
-        "matched_figures": 0,
-        "ambiguous_figures": 0
-      }
-    },
-    {
-      "page": 8,
-      "risk_score": 12,
-      "risk_reasons": [
-        "multi_asset_page",
-        "caption_asset_mismatch",
-        "reader_object_gap",
-        "unknown_structural_threshold"
-      ],
-      "recommended_audit_targets": [
-        "body_flow",
         "object_ownership"
       ],
       "counts": {
         "body_paragraph": 6,
         "reference_item": 0,
         "tail_like": 0,
-        "media_assets": 1,
+        "media_assets": 0,
         "table_like": 2,
         "captions": 1,
         "hold": 0,
-        "unknown_structural": 3,
+        "unknown_structural": 1,
+        "matched_figures": 0,
+        "ambiguous_figures": 0
+      }
+    },
+    {
+      "page": 8,
+      "risk_score": 7,
+      "risk_reasons": [
+        "multi_asset_page",
+        "caption_asset_mismatch"
+      ],
+      "recommended_audit_targets": [
+        "object_ownership"
+      ],
+      "counts": {
+        "body_paragraph": 7,
+        "reference_item": 0,
+        "tail_like": 0,
+        "media_assets": 0,
+        "table_like": 2,
+        "captions": 1,
+        "hold": 0,
+        "unknown_structural": 1,
         "matched_figures": 0,
         "ambiguous_figures": 0
       }
     },
     {
       "page": 9,
-      "risk_score": 12,
+      "risk_score": 10,
       "risk_reasons": [
         "multi_asset_page",
         "caption_asset_mismatch",
-        "reader_object_gap",
-        "unknown_structural_threshold"
+        "reader_object_gap"
       ],
       "recommended_audit_targets": [
-        "body_flow",
         "object_ownership"
       ],
       "counts": {
         "body_paragraph": 3,
         "reference_item": 0,
         "tail_like": 0,
-        "media_assets": 2,
+        "media_assets": 1,
         "table_like": 2,
         "captions": 2,
         "hold": 0,
-        "unknown_structural": 2,
+        "unknown_structural": 1,
         "matched_figures": 1,
         "ambiguous_figures": 0
       }
     },
     {
       "page": 10,
-      "risk_score": 12,
+      "risk_score": 10,
       "risk_reasons": [
         "multi_asset_page",
         "caption_asset_mismatch",
-        "reader_object_gap",
-        "unknown_structural_threshold"
+        "reader_object_gap"
       ],
       "recommended_audit_targets": [
-        "body_flow",
         "object_ownership"
       ],
       "counts": {
-        "body_paragraph": 3,
+        "body_paragraph": 4,
         "reference_item": 0,
         "tail_like": 0,
         "media_assets": 2,
         "table_like": 4,
         "captions": 2,
         "hold": 0,
-        "unknown_structural": 3,
+        "unknown_structural": 1,
         "matched_figures": 0,
         "ambiguous_figures": 0
       }
     },
     {
       "page": 11,
-      "risk_score": 12,
+      "risk_score": 10,
       "risk_reasons": [
         "multi_asset_page",
         "caption_asset_mismatch",
-        "reader_object_gap",
-        "unknown_structural_threshold"
+        "reader_object_gap"
       ],
       "recommended_audit_targets": [
-        "body_flow",
         "object_ownership"
       ],
       "counts": {
-        "body_paragraph": 2,
+        "body_paragraph": 3,
         "reference_item": 0,
         "tail_like": 0,
-        "media_assets": 2,
+        "media_assets": 1,
         "table_like": 4,
         "captions": 2,
         "hold": 0,
-        "unknown_structural": 3,
+        "unknown_structural": 1,
         "matched_figures": 0,
         "ambiguous_figures": 0
       }
     },
     {
       "page": 12,
-      "risk_score": 25,
+      "risk_score": 20,
       "risk_reasons": [
         "reference_heading_present",
         "mixed_body_reference",
         "same_page_boundary",
         "multi_asset_page",
-        "caption_asset_mismatch",
-        "reader_object_gap",
-        "unknown_structural_threshold"
+        "caption_asset_mismatch"
       ],
       "recommended_audit_targets": [
-        "body_flow",
         "object_ownership",
         "reading_order",
         "reference_span",
         "same_page_boundary"
       ],
       "counts": {
-        "body_paragraph": 2,
+        "body_paragraph": 3,
         "reference_item": 15,
         "tail_like": 5,
-        "media_assets": 1,
+        "media_assets": 0,
         "table_like": 2,
         "captions": 1,
         "hold": 0,
-        "unknown_structural": 3,
+        "unknown_structural": 1,
         "matched_figures": 0,
         "ambiguous_figures": 0
       }
@@ -312,7 +288,7 @@
         "table_like": 0,
         "captions": 0,
         "hold": 0,
-        "unknown_structural": 1,
+        "unknown_structural": 0,
         "matched_figures": 0,
         "ambiguous_figures": 0
       }

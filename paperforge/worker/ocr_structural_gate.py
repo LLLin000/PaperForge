@@ -509,42 +509,108 @@ def _matches_zone_id(block: dict, zone_ids: set) -> bool:
     return bid in zone_ids or f"p{page}:{bid}" in zone_ids
 
 
-def _extend_reference_items_with_continuations(
+def _is_reference_anchor(block: dict) -> bool:
+    role = block.get("role") or block.get("seed_role")
+    if role in {"reference_heading", "reference_item"}:
+        return True
+    seed = block.get("seed_role")
+    if seed in {"reference_heading", "reference_item"}:
+        return True
+    return False
+
+
+def _is_reference_like(block: dict) -> bool:
+    if _is_reference_anchor(block):
+        return True
+    role = block.get("role") or ""
+    if role in {"reference_item", "reference_heading"}:
+        return True
+    seed = block.get("seed_role") or ""
+    if seed == "reference_item":
+        return True
+    return False
+
+
+def _block_sort_key(block: dict) -> tuple:
+    page = int(block.get("page", 0) or 0)
+    bbox = block.get("bbox") or [0, 0, 0, 0]
+    col = 0 if len(bbox) < 4 else (0 if float(bbox[0]) < 600 else 1)
+    y = float(bbox[1]) if len(bbox) >= 2 else 0.0
+    x = float(bbox[0]) if len(bbox) >= 1 else 0.0
+    return (page, col, y, x)
+
+
+def _fill_gap_between_anchors(
     blocks: list[dict],
-    item_ids: list,
-    heading_id: str | int | None,
+    anchor_before: dict,
+    anchor_after: dict,
     duplicate_ids: set[str],
 ) -> list:
-    """Extend reference item_ids with continuation lines following known items."""
-    item_id_set = set(item_ids)
-    active_ref: str | int | None = None
-    result = list(item_ids)
+    gap_ids: list = []
+    b_before = _block_sort_key(anchor_before)
+    b_after = _block_sort_key(anchor_after)
+    for block in blocks:
+        key = _block_sort_key(block)
+        if not (b_before < key < b_after):
+            continue
+        role = block.get("role") or block.get("seed_role")
+        text = str(block.get("text") or "").strip()
+        if not text:
+            continue
+        skip_roles = {"section_heading", "subsection_heading", "sub_subsection_heading",
+                       "backmatter_heading", "backmatter_body", "figure_caption",
+                       "figure_asset", "media_asset", "table_caption", "table_html",
+                       "table_asset", "structured_insert", "non_body_insert",
+                       "frontmatter_support", "noise", "frontmatter_noise"}
+        if role in skip_roles:
+            continue
+        if _is_reference_like(block):
+            artifact_id = _artifact_block_id(block, duplicate_ids)
+            if artifact_id is not None:
+                gap_ids.append(artifact_id)
+    return gap_ids
 
+
+def _build_ordered_reference_items(
+    blocks: list[dict],
+    anchor_ids: set,
+    duplicate_ids: set[str],
+    heading_id: str | int | None = None,
+    region_ids: set | None = None,
+) -> list:
+    """Build reference item_ids from ordered reference anchors with bounded gap repair."""
+    anchors: list[dict] = []
     for block in blocks:
         artifact_id = _artifact_block_id(block, duplicate_ids)
         if artifact_id is None:
             continue
         if heading_id is not None and artifact_id == heading_id:
             continue
+        in_anchor = artifact_id in anchor_ids
+        in_region = region_ids and _matches_zone_id(block, region_ids)
+        if (in_anchor or in_region) and _is_reference_anchor(block):
+            anchors.append(block)
 
-        if artifact_id in item_id_set:
-            active_ref = artifact_id
-            continue
+    if not anchors:
+        return []
 
-        if active_ref is None:
-            continue
+    anchors.sort(key=_block_sort_key)
 
-        role = block.get("role") or block.get("seed_role")
-        text = str(block.get("text") or "").strip()
-        if not text:
+    result: list = []
+    anchor_ids_result: set = set()
+    for i, anchor in enumerate(anchors):
+        aid = _artifact_block_id(anchor, duplicate_ids)
+        if aid is None or aid in anchor_ids_result:
             continue
-        if role in {"noise", "frontmatter_noise", "media_asset", "figure_asset"}:
-            continue
-        if role in {"section_heading", "subsection_heading", "backmatter_heading"}:
-            active_ref = None
-            continue
-
-        result.append(artifact_id)
+        anchor_ids_result.add(aid)
+        result.append(aid)
+        if i + 1 < len(anchors):
+            next_anchor = anchors[i + 1]
+            next_key = _block_sort_key(next_anchor)
+            gap = _fill_gap_between_anchors(blocks, anchor, next_anchor, duplicate_ids)
+            for gid in gap:
+                if gid not in result and gid != heading_id:
+                    result.append(gid)
 
     return result
 
@@ -563,6 +629,14 @@ def build_verified_reference_zone_from_artifacts(blocks: list[dict], artifacts: 
     tail_spread = artifacts.get("tail_spread") or {}
     numbering = artifacts.get("reference_numbering_family") or {}
     region_ids = set(_obj_get(region_bus, "reference_zone_ids", set()))
+    # Expand region_ids with all blocks that carry reference_zone label
+    # or reference_item role from per-block assignment (parallel to region_bus).
+    for block in blocks:
+        if block.get("zone") == "reference_zone" and _is_reference_anchor(block):
+            artifact_id = _artifact_block_id(block, duplicate_ids)
+            if artifact_id is not None:
+                region_ids.add(artifact_id)
+                region_ids.add(str(artifact_id))
     accepted_numbering_ids = set(_obj_get(numbering, "accepted_item_ids", set()))
     end_before = _obj_get(tail_spread, "reference_end_before_block_id")
     before_tail = set()
@@ -591,18 +665,22 @@ def build_verified_reference_zone_from_artifacts(blocks: list[dict], artifacts: 
         matched_block = next((b for b in blocks if b.get("block_id") == item_id), None)
         item_ids.append(_artifact_block_id(matched_block, duplicate_ids) if matched_block is not None else item_id)
 
-    # When anchor doesn't provide item_block_ids (real data model like
-    # discover_reference_family_anchor in ocr_families.py only has
-    # metadata keys: status, item_count, sample_pages, etc.),
-    # extract items from region_bus reference_zone block_ids.
+    heading_id = _obj_get(anchor, "heading_block_id")
+
+    # When anchor doesn't provide item_block_ids, build from region_bus
+    # reference_zone_ids and then extend through ordered reference anchors
+    # with bounded gap repair instead of greedy continuation.
     if not item_ids and region_ids:
+        anchor_ids: set = set()
         for block in blocks:
-            if _matches_zone_id(block, region_ids):
+            if _matches_zone_id(block, region_ids) and _is_reference_anchor(block):
                 artifact_id = _artifact_block_id(block, duplicate_ids)
                 if artifact_id is not None:
-                    item_ids.append(artifact_id)
+                    anchor_ids.add(artifact_id)
+        item_ids = _build_ordered_reference_items(
+            blocks, anchor_ids, duplicate_ids, heading_id, region_ids
+        )
 
-    heading_id = _obj_get(anchor, "heading_block_id")
     if not heading_id and region_ids:
         for block in blocks:
             if _matches_zone_id(block, region_ids) and str(block.get("text", "") or "").strip().lower() in {
@@ -622,18 +700,23 @@ def build_verified_reference_zone_from_artifacts(blocks: list[dict], artifacts: 
     if heading_id is not None and heading_id in item_ids:
         item_ids.remove(heading_id)
 
-    # Extend reference items with continuation lines following known items
+    # Extend reference items through ordered reference-anchor sequence
+    # with bounded gap repair, not greedy continuation.
     if item_ids:
-        item_ids = _extend_reference_items_with_continuations(
-            blocks, item_ids, heading_id, duplicate_ids
+        item_ids = _build_ordered_reference_items(
+            blocks, set(item_ids), duplicate_ids, heading_id, region_ids
         )
 
-    return {
+    zone = {
         "heading_block_id": heading_id,
         "item_block_ids": item_ids,
         "status": "ACCEPT" if heading_id and item_ids else "HOLD",
         "evidence": ["reference zone from anchor, region bus, tail boundary, and numbering continuity"],
     }
+    if zone.get("status") == "HOLD":
+        zone["item_block_ids"] = []
+        zone["heading_block_id"] = None
+    return zone
 
 
 def compute_role_gate_health(decisions: list[VerifiedRoleDecision]) -> dict:

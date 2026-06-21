@@ -5,36 +5,39 @@
   "focus": [],
   "artifact_fingerprint": {
     "result_json_hash": "sha256:7de1095349888c840954210801fea0609c3da9ec30da68420c37918fc1665675",
-    "meta_json_hash": "sha256:78125da39dd4cf01f145c056fe93a969ff8531fbac2e55db6dfa6048982dc341",
-    "blocks_raw_hash": "sha256:e4f5c0f6785296e36f65ba9e11a21cb8762aadf97a4ecc55340a447cfe92585a",
-    "structured_blocks_hash": "sha256:6c32c36b659c37f0fb074ccd1c77799614a41eec23199bd2bcb48de4fa46cd1b",
-    "document_structure_hash": "sha256:03b6fa6173167c8eac0f580845855ae9146da898629164207ad33e55324ebead",
-    "figure_inventory_hash": "sha256:2b33b8d7bb4046d4d4eacf30752a3ee6d3a7a0d0a4e67867b04244f6d0e05e65",
-    "table_inventory_hash": "sha256:e6602ab23d8b2617553df56c95b51713aadc7e4523cabf59cc55ebea027173e4",
-    "reader_figures_hash": "sha256:0307d32634890feeae33124a2e53730a76e7a8093c2ee828c0a9db706d8ced15",
-    "resolved_metadata_hash": "sha256:7a42dcf3d97f28d9dbc3ebb6607303904411777b7193038569a404e1022bd84b",
-    "fulltext_hash": "sha256:46c7e84d22d067f75384127c7493b4053cbc0b98845a7d3278f3964a56912dbb",
-    "block_trace_hash": "sha256:d5153d6963bf9f50a666cf70505644599098f632905a22240b02de720e46abb1",
+    "meta_json_hash": "sha256:c992e5f04de2c5bc6b85aae12193080c2d7cdc8745eb432f089a604ee0d2a2ec",
+    "blocks_raw_hash": "sha256:99ddc2c20967dc2cfbf2777d6483004929f827c3ae3c93a9d889cf9634a16cd9",
+    "structured_blocks_hash": "sha256:1a4b959e5b2ad25acc614f2a6cc0afd8f5c1bba82a5641b77ada237436e20d25",
+    "document_structure_hash": "sha256:f9badd91e579ddcba33151559104180da7bf4f225a3ec20b229e6e1dfff74b2a",
+    "figure_inventory_hash": "sha256:c81ea5c75cddbef525277add9a67e14e9bb32ade0b43fb5b1e6a9473a2ec091a",
+    "table_inventory_hash": "sha256:6e1b567db73dad37c3ec1160d54a048514e4bae1a5df0833fb096d1b91b0082a",
+    "reader_figures_hash": "sha256:f9144529424640ad5684f5049446cc280c31a98509a1f2e86983a25a45824891",
+    "resolved_metadata_hash": "sha256:0e36f9e50ec4b0d901e6a97f0a7fe55f61fe73fde541c371ebdeb5899e55b779",
+    "fulltext_hash": "sha256:2d2f55dbba4cc62be64dba60b92e426545eed774fe8bbcdb41384ccac0841a66",
+    "block_trace_hash": "sha256:60c83e2580925c0e8a51082dcf956fcebc0f847fc97112c4cd37dfaa8644ecc4",
     "annotated_pages": {
-      "page_001.png": "sha256:32cd2f5169aed330775c564c4287ff6870ef1b1408eb6e0d73aa4eb87c013d5b",
-      "page_002.png": "sha256:cb82fa85133a76f1e70b27817d57e2fccd732c107171a87782f609e1b75a8bff",
-      "page_003.png": "sha256:95ed50b282d82408c9cdde4ab4f56de0f8400fb8edce52c77a0625cb4e1b487c",
-      "page_004.png": "sha256:c006871a2227651aab375e1a221cce875801e86e99794000295d3d1ecd07381e",
-      "page_005.png": "sha256:d00e1d41a23828594655cefa4b3694dd600f20cc8de3a577d727f0faa4bd075a",
-      "page_006.png": "sha256:80a9779a3ca3ef3835a59b32fd6385fa1cbac8d05ca06de979832f9a0f1f9789",
-      "page_007.png": "sha256:f46a2ad671e16a60617f37879665cc7dcfdf34e18e02660d9dac94368c06b530",
-      "page_008.png": "sha256:de4f147a4fc02e441a6f326ccc38df15202c7db3e40d12e0528add23bc74e3dc",
-      "page_009.png": "sha256:be824d93e4ae0a70d062ad5efbb47befd5a76c32e3d319e5cfc1fd0b024981a4",
-      "page_010.png": "sha256:2f9ba179ddeca3604ebde3d07d59df692032d3d8636e2259b0176a020a2ed86c",
-      "page_011.png": "sha256:aec50ce7d4f05193911c7c4f0695984ecf75051c6cf8ea89b411a3989593ad14",
-      "page_012.png": "sha256:5454835dd8ec387a4e08f9b2ed5c4ca93fb103441732f2fbc2472b3d86cdfbcb",
-      "page_013.png": "sha256:88e9c65e74173f1507e1c2a9d55086eda675fd216c9d85f82d79d6122dcfa1ac"
+      "page_001.png": "sha256:3a97f0d0e74ca740a7121bf1efdefa4aefba7ad87c666992ef1d18d72fe4f1f8",
+      "page_002.png": "sha256:5e681960b9e2fd596b1a04befba571db648cf43475f09d37eba37e4c4c397314",
+      "page_003.png": "sha256:d51fd97089338b1deb8fd373bff6db302d79124abc16a859562cbd76ade38169",
+      "page_004.png": "sha256:e767f53e27acdd57bd12c66ff77cdfabb7fd125324087d11d20b307a33c029aa",
+      "page_005.png": "sha256:41f24591ea62f80e12d0de499b195f4cc9b109472109efc384e3a6716f8db4ba",
+      "page_006.png": "sha256:97a15c194ef4ba45db4f4c60b006dd63c30c37ac653a223fd0b48b5ce0ab8551",
+      "page_007.png": "sha256:9d4d975e376a666a0d16fcd4f419304ba6fd3b512f1eb1903116401e4c871758",
+      "page_008.png": "sha256:c85fb122d0e58452588ffd555460d5b3ce3329547d4ac0cfd5f37d762dbf4d18",
+      "page_009.png": "sha256:fec866be236cecd86fb80a21f74d0b1be058a5ce6bd63f132af2e76aed904548",
+      "page_010.png": "sha256:dfdbfeb7d8142d61ac6fd074c263cbb395ef0a542cb8752dcbee092e6a60297a",
+      "page_011.png": "sha256:4bed6ba22b2ac3b5fad01797b77693e150d343ee80c2a33385efa6dcf23c2d71",
+      "page_012.png": "sha256:8f738bdf5f72251d1213cc15680df67f4683a66d37a7505ce07edb5097ba3b5d",
+      "page_013.png": "sha256:9b79b777793fd4032b3493d341b66c8c8cfdb5da8a8ea0a2dfd5781b0229f30f"
     }
   },
   "artifact_freshness": {
     "missing": [],
     "mismatches": [
-      "document_structure older than blocks_structured"
+      "document_structure older than blocks_structured",
+      "figure_inventory older than blocks_structured",
+      "table_inventory older than blocks_structured",
+      "resolved_metadata older than blocks_structured"
     ],
     "annotated_pages_rendered": [
       "page_001.png",
@@ -539,18 +542,6 @@
       }
     },
     {
-      "category": "frontmatter_error",
-      "severity": "major",
-      "block_ids": [],
-      "truth": "page 1 should have clearer frontmatter role resolution",
-      "pipeline_behavior": "frontmatter page retains elevated unknown_structural density",
-      "root_cause_hypothesis": "frontmatter anchor or noise routing weakness",
-      "evidence": {
-        "annotated_page": "annotated_pages/page_001.png",
-        "artifact": "page_risk_summary.json"
-      }
-    },
-    {
       "category": "same_page_boundary_error",
       "severity": "major",
       "block_ids": [],
@@ -571,21 +562,21 @@
         "p1:2",
         "p1:3",
         "p1:5",
+        "p1:13",
         "p1:15",
         "p1:18",
         "p2:0",
         "p2:1",
         "p2:2",
         "p2:3",
+        "p2:9",
         "p2:12",
         "p3:0",
         "p3:1",
         "p3:2",
         "p3:3",
-        "p3:12",
-        "p3:18",
-        "p4:0",
-        "p4:1"
+        "p3:4",
+        "p3:5"
       ],
       "truth": "rendered fulltext should be traceable back to source blocks",
       "pipeline_behavior": "some render-default blocks are not easily mapped into the current fulltext output",

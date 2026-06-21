@@ -1,0 +1,367 @@
+{
+  "mappable_block_count": 36,
+  "found_count": 31,
+  "missing_count": 5,
+  "rows": [
+    {
+      "block_id": "p1:0",
+      "page": 1,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "2013 39th Annual Northeast Bioengineering Conference",
+      "found_in_fulltext": true,
+      "fulltext_offset": 194
+    },
+    {
+      "block_id": "p1:1",
+      "page": 1,
+      "role": "paper_title",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "Rheological Analysis of Hydrogel Composites Containing Carbon Nanobrushes",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:5",
+      "page": 1,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "I. INTRODUCTION",
+      "found_in_fulltext": true,
+      "fulltext_offset": 1616
+    },
+    {
+      "block_id": "p1:6",
+      "page": 1,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Hydrogels mimic in vivo environments by providing three-dimensional encapsulatin",
+      "found_in_fulltext": true,
+      "fulltext_offset": 1632
+    },
+    {
+      "block_id": "p1:7",
+      "page": 1,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Kawaguchi showed that alginate gels containing carbon nanotubes exhibited a mild",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2198
+    },
+    {
+      "block_id": "p1:8",
+      "page": 1,
+      "role": "body_paragraph",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "the mechanical properties of the gel in addition to making the gels electrically",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2677
+    },
+    {
+      "block_id": "p1:9",
+      "page": 1,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "II. MATERIALS AND METHODS A. Materials",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2863
+    },
+    {
+      "block_id": "p1:11",
+      "page": 1,
+      "role": "affiliation",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Pluronic F-127 poloxamer (Sigma, USA), carbon nanobrushes (Chemistry Department,",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:12",
+      "page": 1,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "B. Construction of carbon nanobrushes",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2906
+    },
+    {
+      "block_id": "p1:13",
+      "page": 1,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The carbon nanobrushes (CNB) were constructed by coating carbon nanotubes with a",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2944
+    },
+    {
+      "block_id": "p1:14",
+      "page": 1,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "C. Preparation of poloxamer solution",
+      "found_in_fulltext": true,
+      "fulltext_offset": 3194
+    },
+    {
+      "block_id": "p1:15",
+      "page": 1,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The poloxamer solution was prepared as both a 30wt% and 35wt% poloxamer solution",
+      "found_in_fulltext": true,
+      "fulltext_offset": 3231
+    },
+    {
+      "block_id": "p1:16",
+      "page": 1,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "D. Preparation of poloxamer hydrogels with carbon nanobrushes",
+      "found_in_fulltext": true,
+      "fulltext_offset": 3730
+    },
+    {
+      "block_id": "p1:17",
+      "page": 1,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The poloxamer hydrogels were prepared by pipetting 5mL of solution into each wel",
+      "found_in_fulltext": true,
+      "fulltext_offset": 3792
+    },
+    {
+      "block_id": "p1:18",
+      "page": 1,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "E. Observation of cellular density and health",
+      "found_in_fulltext": true,
+      "fulltext_offset": 4287
+    },
+    {
+      "block_id": "p1:19",
+      "page": 1,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Fibroblast and myocyte density and health was observed by optical microscopy at ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 4333
+    },
+    {
+      "block_id": "p1:20",
+      "page": 1,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Harvard School of Engineering and Applied Sciences",
+      "found_in_fulltext": true,
+      "fulltext_offset": 4590
+    },
+    {
+      "block_id": "p1:21",
+      "page": 1,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "978-0-7695-4964-4/13 $26.00 © 2013 IEEE DOI 10.1109/NEBEC.2013.134",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:22",
+      "page": 1,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "109",
+      "found_in_fulltext": true,
+      "fulltext_offset": 292
+    },
+    {
+      "block_id": "p2:0",
+      "page": 2,
+      "role": "paper_title",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "III. RESULTS AND DISCUSSION A. Frequency sweep testing of hydrogels",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:2",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "30wt% and 35wt% poloxamer gels containing 0vol%, 0.1vol%, 0.5vol%, 1vol%, and 5v",
+      "found_in_fulltext": true,
+      "fulltext_offset": 4657
+    },
+    {
+      "block_id": "p2:5",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Analysis of the rheometry data shows a similar pattern in both the 30wt% and 35w",
+      "found_in_fulltext": true,
+      "fulltext_offset": 4877
+    },
+    {
+      "block_id": "p2:6",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "The crossover point for these hydrogel composites is just below 0.02 rad/s for b",
+      "found_in_fulltext": true,
+      "fulltext_offset": 5414
+    },
+    {
+      "block_id": "p2:7",
+      "page": 2,
+      "role": "section_heading",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "IV. CONCLUSION",
+      "found_in_fulltext": true,
+      "fulltext_offset": 5915
+    },
+    {
+      "block_id": "p2:8",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "This work demonstrates that CNB can be successfully dispersed into pluronic F127",
+      "found_in_fulltext": true,
+      "fulltext_offset": 5930
+    },
+    {
+      "block_id": "p2:9",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "mechanical characteristics of hydrogel composites containing CNB. Moreover, this",
+      "found_in_fulltext": true,
+      "fulltext_offset": 6105
+    },
+    {
+      "block_id": "p2:10",
+      "page": 2,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "ACKNOWLEDGMENTS",
+      "found_in_fulltext": true,
+      "fulltext_offset": 8485
+    },
+    {
+      "block_id": "p2:11",
+      "page": 2,
+      "role": "affiliation",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "The team thanks the laboratory of David Weitz and the Rheology Center for rheome",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:12",
+      "page": 2,
+      "role": "reference_heading",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "REFERENCES",
+      "found_in_fulltext": true,
+      "fulltext_offset": 8592
+    },
+    {
+      "block_id": "p2:13",
+      "page": 2,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[1] Nicola C. Hunt and Liam M. Grover, \"Cell encapsulation using biopolymer gels",
+      "found_in_fulltext": true,
+      "fulltext_offset": 8603
+    },
+    {
+      "block_id": "p2:14",
+      "page": 2,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[2] William H. Marks, Sze C. Yang, George W. Dombi, and Sujata K. Bhatia, “Trans",
+      "found_in_fulltext": true,
+      "fulltext_offset": 8757
+    },
+    {
+      "block_id": "p2:15",
+      "page": 2,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[3] William H. Marks, Sze C. Yang, George W. Dombi, and Sujata K. Bhatia, “Hydro",
+      "found_in_fulltext": true,
+      "fulltext_offset": 9006
+    },
+    {
+      "block_id": "p2:16",
+      "page": 2,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[4] William H. Marks, Sze C. Yang, George W. Dombi, and Sujata K. Bhatia, “Inter",
+      "found_in_fulltext": true,
+      "fulltext_offset": 9307
+    },
+    {
+      "block_id": "p2:17",
+      "page": 2,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[5] Minoru Kawaguchi et al., “Preparation of carbon nanotube-alginate nanocompos",
+      "found_in_fulltext": true,
+      "fulltext_offset": 9604
+    },
+    {
+      "block_id": "p2:18",
+      "page": 2,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "[6] C. Basavaraja, Bong Seong Kim and Do Sung Huh, \"Characterization and AC Elec",
+      "found_in_fulltext": true,
+      "fulltext_offset": 9774
+    },
+    {
+      "block_id": "p2:19",
+      "page": 2,
+      "role": "noise",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "110",
+      "found_in_fulltext": true,
+      "fulltext_offset": 291
+    }
+  ]
+}

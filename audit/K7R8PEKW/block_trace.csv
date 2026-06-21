@@ -1,10 +1,10 @@
 page,block_id,raw_label,content_preview,bbox,role,role_confidence,evidence,seed_role,seed_confidence,zone,style_family,marker_type,render_default,index_default
 1,0,header,REVIEW,"[98.0, 53.0, 210.0, 81.0]",noise,0.9,"[""header label""]",noise,0.9,frontmatter_main_zone,support_like,short_fragment,False,False
-1,1,header_image,,"[1037.0, 1.0, 1190.0, 27.0]",unknown_structural,0.2,"[""unrecognized label 'header_image'""]",unknown_structural,0.2,frontmatter_main_zone,support_like,empty,False,True
+1,1,header_image,,"[1037.0, 1.0, 1190.0, 27.0]",non_body_insert,0.2,"[""unrecognized label 'header_image'""]",unknown_structural,0.2,frontmatter_main_zone,support_like,empty,False,False
 1,2,header,ADVANCED HEALTHCARE MATERIALS,"[973.0, 41.0, 1096.0, 97.0]",noise,0.9,"[""header label""]",noise,0.9,frontmatter_main_zone,support_like,none,False,False
 1,3,header,www.advhealthmat.de,"[925.0, 97.0, 1097.0, 117.0]",noise,0.9,"[""header label""]",noise,0.9,frontmatter_main_zone,support_like,short_fragment,False,False
-1,4,doc_title,Extracellular Matrix-Surrogate Advanced Functional Composite Biomaterials for Tissue Repair and Regeneration,"[97.0, 148.0, 1088.0, 238.0]",paper_title,0.6,"[""page-1 frontmatter title guard: Extracellular Matrix-Surrogate Advanced Functional Composite""]",paper_title,0.6,frontmatter_main_zone,support_like,none,True,True
-1,5,text,"Milad Vahidi, Amin S. Rizkalla, and Kibret Mequanint $ ^{*} $","[96.0, 269.0, 715.0, 301.0]",unknown_structural,0.8,"[""page-1 zone author_zone: Milad Vahidi, Amin S. Rizkalla, and Kibret Mequanint $ ^{*} ""]",authors,0.8,frontmatter_main_zone,support_like,none,False,True
+1,4,doc_title,Extracellular Matrix-Surrogate Advanced Functional Composite Biomaterials for Tissue Repair and Regeneration,"[97.0, 148.0, 1088.0, 238.0]",paper_title,0.8,"[""page-1 zone title_zone: Extracellular Matrix-Surrogate Advanced Functional Composite""]",paper_title,0.8,frontmatter_main_zone,support_like,none,True,True
+1,5,text,"Milad Vahidi, Amin S. Rizkalla, and Kibret Mequanint $ ^{*} $","[96.0, 269.0, 715.0, 301.0]",authors,0.8,"[""page-1 zone author_zone: Milad Vahidi, Amin S. Rizkalla, and Kibret Mequanint $ ^{*} ""]",authors,0.8,frontmatter_main_zone,support_like,none,True,True
 1,6,abstract,"Native tissues, comprising multiple cell types and extracellular matrix components, are inherently composites. Mimicking the intricate structure, functionality, and dynamic properties of native compos","[97.0, 363.0, 735.0, 940.0]",abstract_body,0.85,"[""abstract label from Paddle OCR""]",abstract_body,0.85,body_zone,body_like,none,True,True
 1,7,footnote,"M. Vahidi, A. S. Rizkalla, K. Mequanint
 Department of Chemical and Biochemical Engineering
@@ -14,7 +14,7 @@ E-mail: kmequani@uwo.ca
 A. S. Rizkalla, K. Mequanint
 ","[96.0, 1061.0, 467.0, 1230.0]",footnote,0.7,"[""footnote label: M. Vahidi, A. S. Rizkalla, K. Mequanint\nDepartment of Chemic""]",footnote,0.7,body_zone,body_like,none,True,True
 1,8,paragraph_title,1. Introduction,"[766.0, 351.0, 914.0, 375.0]",section_heading,0.85,"[""paragraph_title label with numbering: 1. Introduction""]",section_heading,0.85,body_zone,heading_like,heading_numbered,True,True
-1,9,text,"Biomaterials, encompassing a wide range of metals, ceramics, polymers, and their hybrids, are engineered to interact with biological systems for medical purposes. Whether intended for temporary or per","[764.0, 389.0, 1100.0, 1026.0]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
+1,9,text,"Biomaterials, encompassing a wide range of metals, ceramics, polymers, and their hybrids, are engineered to interact with biological systems for medical purposes. Whether intended for temporary or per","[764.0, 389.0, 1100.0, 1026.0]",non_body_insert,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,False,False
 1,10,footnote,The ORCID identification number(s) for the author(s) of this article can be found under https://doi.org/10.1002/adhm.202401218,"[100.0, 1260.0, 587.0, 1300.0]",frontmatter_noise,0.8,"[""page-1 zone journal_furniture_zone: The ORCID identification number(s) for the author(s) of this""]",frontmatter_noise,0.8,body_zone,body_like,none,False,False
 1,11,text,"although similar in composition, exhibit distinct porosity and mechanical responses, with cortical bone showing linear elasticity due to its homogeneity and anisotropy, whereas cancellous bone display","[605.0, 1027.0, 1098.0, 1136.0]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
 1,12,footnote,"© 2024 The Author(s). Advanced Healthcare Materials published by Wiley-VCH GmbH. This is an open access article under the terms of the Creative Commons Attribution-NonCommercial-NoDerivs License, whic","[95.0, 1303.0, 585.0, 1412.0]",frontmatter_noise,0.8,"[""page-1 zone journal_furniture_zone: \u00a9 2024 The Author(s). Advanced Healthcare Materials publishe""]",frontmatter_noise,0.8,body_zone,body_like,none,False,False
@@ -27,40 +27,45 @@ A. S. Rizkalla, K. Mequanint
 SCIENCE NEWS
 www.advancedsciencenews.com","[91.0, 46.0, 339.0, 116.0]",noise,0.9,"[""header label""]",noise,0.9,frontmatter_side_zone,support_like,none,False,False
 2,1,header,ADVANCED HEALTHCARE MATERIALS advhealthmat.de,"[965.0, 40.0, 1091.0, 116.0]",noise,0.9,"[""header label""]",noise,0.9,frontmatter_side_zone,support_like,none,False,False
-2,2,figure_title,a,"[104.0, 157.0, 129.0, 176.0]",figure_caption_candidate,0.85,"[""figure_title label: a""]",figure_caption,0.85,frontmatter_side_zone,support_like,short_fragment,False,False
-2,3,image,,"[101.0, 155.0, 401.0, 349.0]",media_asset,0.85,"[""media label: image""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
-2,4,chart,,"[448.0, 154.0, 699.0, 360.0]",media_asset,0.85,"[""media label: chart""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
-2,5,chart,,"[102.0, 379.0, 399.0, 646.0]",media_asset,0.85,"[""media label: chart""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
-2,6,chart,,"[415.0, 375.0, 695.0, 642.0]",media_asset,0.85,"[""media label: chart""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
-2,7,chart,,"[709.0, 158.0, 1079.0, 634.0]",media_asset,0.85,"[""media label: chart""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
-2,8,chart,,"[118.0, 662.0, 395.0, 929.0]",media_asset,0.85,"[""media label: chart""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
-2,9,chart,,"[415.0, 663.0, 691.0, 933.0]",media_asset,0.85,"[""media label: chart""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
-2,10,chart,,"[715.0, 638.0, 1063.0, 936.0]",media_asset,0.85,"[""media label: chart""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
-2,11,figure_title,Figure 1. Anisotropic characteristics of natural tissues: a) the wave-like arrangement of collagen fibers within a rabbit's thoracic aorta subjected to 80 mmHg pressure. $ ^{[12]} $ b) quasistatic and,"[89.0, 950.0, 1095.0, 1276.0]",figure_caption_candidate,0.92,"[""figure_title label: Figure 1. Anisotropic characteristics of natural tissues: a)""]",figure_caption,0.92,display_zone,legend_like,figure_number,False,False
+2,2,figure_title,a,"[104.0, 157.0, 129.0, 176.0]",figure_inner_text,0.9,"[""panel label / figure inner text: a""]",figure_inner_text,0.9,display_zone,legend_like,panel_label,True,True
+2,3,image,,"[101.0, 155.0, 401.0, 349.0]",figure_asset,0.85,"[""media label: image""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
+2,4,chart,,"[448.0, 154.0, 699.0, 360.0]",figure_asset,0.85,"[""media label: chart""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
+2,5,chart,,"[102.0, 379.0, 399.0, 646.0]",figure_asset,0.85,"[""media label: chart""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
+2,6,chart,,"[415.0, 375.0, 695.0, 642.0]",figure_asset,0.85,"[""media label: chart""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
+2,7,chart,,"[709.0, 158.0, 1079.0, 634.0]",figure_asset,0.85,"[""media label: chart""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
+2,8,chart,,"[118.0, 662.0, 395.0, 929.0]",figure_asset,0.85,"[""media label: chart""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
+2,9,chart,,"[415.0, 663.0, 691.0, 933.0]",figure_asset,0.85,"[""media label: chart""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
+2,10,chart,,"[715.0, 638.0, 1063.0, 936.0]",figure_asset,0.85,"[""media label: chart""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
+2,11,figure_title,Figure 1. Anisotropic characteristics of natural tissues: a) the wave-like arrangement of collagen fibers within a rabbit's thoracic aorta subjected to 80 mmHg pressure. $ ^{[12]} $ b) quasistatic and,"[89.0, 950.0, 1095.0, 1276.0]",figure_caption,0.92,"[""figure_title label: Figure 1. Anisotropic characteristics of natural tissues: a)""]",figure_caption,0.92,display_zone,legend_like,figure_number,True,True
 2,12,text,"and mechanical attributes of the aforementioned human tissues requires a combination of materials, as a single material alone cannot meet all these complex requirements. Thus, composite biomaterials p","[89.0, 1310.0, 582.0, 1445.0]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
-2,13,text,,"[599.0, 1310.0, 1093.0, 1444.0]",unknown_structural,0.3,"[""short text, uncertain role""]",unknown_structural,0.3,body_zone,body_like,empty,False,True
+2,13,text,"mer/bioactive ﬁller composites, polymer/polymer ﬁller compos-
+ites, polymer/metal ﬁller composites, and bioactive glass/carbon
+ﬁller composites. Each category provides unique beneﬁts, aiding
+in achiev","[599.0, 1310.0, 1093.0, 1444.0]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
 2,14,footer,"Adv. Healthcare Mater. 2024, 13, 2401218","[93.0, 1487.0, 336.0, 1505.0]",noise,0.9,"[""footer label""]",noise,0.9,body_zone,body_like,none,False,False
-2,15,footer,2401218 (2 of 20),"[391.0, 1484.0, 525.0, 1507.0]",noise,0.9,"[""footer label""]",noise,0.9,,reference_like,reference_numeric_dot,False,False
+2,15,footer,2401218 (2 of 20),"[391.0, 1484.0, 525.0, 1507.0]",noise,0.9,"[""footer label""]",noise,0.9,frontmatter_main_zone,reference_like,reference_numeric_dot,False,False
 2,16,footer,© 2024 The Author(s). Advanced Healthcare Materials published by Wiley-VCH GmbH,"[581.0, 1487.0, 1091.0, 1506.0]",noise,0.9,"[""footer label""]",noise,0.9,body_zone,body_like,none,False,False
-2,17,aside_text,"2022659, 2024, 27, Downloaded from https://advancedonlinelibrary.wiley.com/doi/10.1002/adim.202401218 by Shandong University Library, Wiley Online Library on [05/02/2026]. See the Terms and Conditions","[1155.0, 30.0, 1172.0, 1534.0]",unknown_structural,0.2,"[""unrecognized label 'aside_text'""]",unknown_structural,0.2,frontmatter_side_zone,support_like,none,False,True
+2,17,aside_text,"2022659, 2024, 27, Downloaded from https://advancedonlinelibrary.wiley.com/doi/10.1002/adim.202401218 by Shandong University Library, Wiley Online Library on [05/02/2026]. See the Terms and Conditions","[1155.0, 30.0, 1172.0, 1534.0]",noise,0.95,"[""margin-band narrow/tall geometry; treated as noise""]",noise,0.95,frontmatter_side_zone,support_like,none,False,False
 3,0,header,"ADVANCED
 SCIENCE NEWS
 www.advancedsciencenews.com","[98.0, 45.0, 345.0, 117.0]",noise,0.9,"[""header label""]",noise,0.9,body_zone,body_like,none,False,False
 3,1,header,"ADVANCED HEALTHCARE MATERIALS
 advhealthmat.de","[967.0, 40.0, 1096.0, 115.0]",noise,0.9,"[""header label""]",noise,0.9,body_zone,body_like,none,False,False
-3,2,image,,"[99.0, 141.0, 1092.0, 653.0]",media_asset,0.85,"[""media label: image""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
-3,3,figure_title,Figure 2. A rationale for nature-inspired tissue-mimicking biomaterial design strategy.,"[96.0, 669.0, 673.0, 691.0]",figure_caption_candidate,0.92,"[""figure_title label: Figure 2. A rationale for nature-inspired tissue-mimicking b""]",figure_caption,0.92,display_zone,legend_like,figure_number,False,False
+3,2,image,,"[99.0, 141.0, 1092.0, 653.0]",figure_asset,0.85,"[""media label: image""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
+3,3,figure_title,Figure 2. A rationale for nature-inspired tissue-mimicking biomaterial design strategy.,"[96.0, 669.0, 673.0, 691.0]",figure_caption,0.92,"[""figure_title label: Figure 2. A rationale for nature-inspired tissue-mimicking b""]",figure_caption,0.92,display_zone,legend_like,figure_number,True,True
 3,4,text,"and durability, coupled with the flexibility of polymers. $ ^{[1]} $ On the other hand, polymer-carbon nanomaterial composites leverage the unique electrical and thermal properties of carbon nanomater","[95.0, 717.0, 587.0, 960.0]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
 3,5,text,This review provides a comprehensive discussion of the advancements across the entire spectrum of composite biomaterials used as functional systems to restore or regenerate tissues. Our aim is to offe,"[95.0, 960.0, 587.0, 1161.0]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
 3,6,paragraph_title,2. Native Tissue-mimicking Composite Biomaterials,"[96.0, 1183.0, 471.0, 1232.0]",section_heading,0.85,"[""paragraph_title label with numbering: 2. Native Tissue-mimicking Composite Biomaterials""]",section_heading,0.85,body_zone,reference_like,reference_numeric_dot,True,True
 3,7,text,The quest to emulate the intricate composite nature of biological tissues in regenerative medicine pivots on developing functional composite biomaterials. These biomaterials stand out due to their non,"[95.0, 1245.0, 587.0, 1445.0]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
-3,8,text,,"[605.0, 718.0, 1097.0, 784.0]",unknown_structural,0.3,"[""short text, uncertain role""]",unknown_structural,0.3,body_zone,body_like,empty,False,True
+3,8,text,"we aim to create materials that replicate the complex microarchi-
+tecture of biological systems, which is pivotal for the engineering
+of eﬀective tissue constructs.[14–16]","[605.0, 718.0, 1097.0, 784.0]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
 3,9,text,Composite biomaterials are particularly significant in this context because they inherently possess the capability to imitate the composite structure of tissues. These materials offer a dual advantage,"[604.0, 785.0, 1098.0, 1268.0]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
 3,10,text,"In their versatility, composite biomaterials excel at adapting to the varying mechanical attributes among different tissues and within the same tissue type. When scrutinized against single-material co","[604.0, 1267.0, 1098.0, 1445.0]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
 3,11,footer,"Adv. Healthcare Mater. 2024, 13, 2401218","[98.0, 1487.0, 342.0, 1505.0]",noise,0.9,"[""footer label""]",noise,0.9,body_zone,body_like,none,False,False
 3,12,footer,2401218 (3 of 20),"[396.0, 1484.0, 531.0, 1507.0]",noise,0.9,"[""footer label""]",noise,0.9,,reference_like,reference_numeric_dot,False,False
 3,13,footer,© 2024 The Author(s). Advanced Healthcare Materials published by Wiley-VCH GmbH,"[586.0, 1487.0, 1097.0, 1506.0]",noise,0.9,"[""footer label""]",noise,0.9,body_zone,body_like,none,False,False
-3,14,aside_text,"2022659, 2024, 27, Downloaded from https://advanced.onlinelibrary.wiley.com/doi/10.1002/adhm.202401218 by Shandong University Library, Wiley Online Library on [05/02/2026]. See the Terms and Condition","[1155.0, 31.0, 1171.0, 1535.0]",unknown_structural,0.2,"[""unrecognized label 'aside_text'""]",unknown_structural,0.2,body_zone,body_like,none,False,True
+3,14,aside_text,"2022659, 2024, 27, Downloaded from https://advanced.onlinelibrary.wiley.com/doi/10.1002/adhm.202401218 by Shandong University Library, Wiley Online Library on [05/02/2026]. See the Terms and Condition","[1155.0, 31.0, 1171.0, 1535.0]",noise,0.95,"[""margin-band narrow/tall geometry; treated as noise""]",noise,0.95,body_zone,body_like,none,False,False
 4,0,header,"ADVANCED
 SCIENCE NEWS
 www.advancedsciencenews.com","[92.0, 46.0, 339.0, 117.0]",noise,0.9,"[""header label""]",noise,0.9,body_zone,body_like,none,False,False
@@ -69,54 +74,56 @@ advhealthmat.de","[967.0, 39.0, 1090.0, 112.0]",noise,0.9,"[""header label""]",n
 4,2,header,www.advhealthmat.de,"[919.0, 97.0, 1091.0, 116.0]",noise,0.9,"[""header label""]",noise,0.9,body_zone,body_like,short_fragment,False,False
 4,3,text,"responses to composite biomaterials also tend to be more favorable, as they usually foster more positive cellular activities such as adhesion, proliferation, and differentiation and present a reduced ","[90.0, 149.0, 581.0, 237.0]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
 4,4,text,"From the engineering standpoint, designing and manufacturing composite biomaterials involves complex processes that may be more costly. Nevertheless, the outstanding performance and the ability for pr","[90.0, 237.0, 582.0, 436.0]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
-4,5,paragraph_title,3. Composite biomaterials for bone repair and regeneration,"[91.0, 459.0, 534.0, 544.0]",section_heading,0.85,"[""paragraph_title label with numbering: 3. Composite biomaterials for bone repair and regeneration 3"", ""split merged heading: kept '3. Composite biomaterials for bone repair and rege...'""]",section_heading,0.85,body_zone,reference_like,reference_numeric_dot,True,True
-4,5,paragraph_title,3.1. The materials nexus,"[91.0, 459.0, 534.0, 544.0]",subsection_heading,0.85,"[""paragraph_title label with numbering: 3. Composite biomaterials for bone repair and regeneration 3"", ""split from merged heading: extracted '3.1. The materials nexus...'""]",section_heading,0.85,body_zone,reference_like,reference_numeric_dot,True,True
-4,6,footer,,"[91.0, 521.0, 281.0, 544.0]",noise,0.9,"[""footer label""]",noise,0.9,body_zone,body_like,empty,False,False
+4,5,paragraph_title,3. Composite biomaterials for bone repair and regeneration,"[91.0, 459.0, 534.0, 511.0]",section_heading,0.85,"[""paragraph_title label with numbering: 3. Composite biomaterials for bone repair and regeneration""]",section_heading,0.85,body_zone,reference_like,reference_numeric_dot,True,True
+4,6,paragraph_title,3.1. The materials nexus,"[91.0, 521.0, 281.0, 544.0]",subsection_heading,0.85,"[""paragraph_title label with numbering: 3.1. The materials nexus""]",subsection_heading,0.85,body_zone,body_like,heading_numbered,True,True
 4,7,text,"As a vascularized composite tissue, bone is subjected to considerable stress, necessitating biomaterials that possess suitable mechanical strength and durability, biocompatibility, and in certain case","[89.0, 566.0, 582.0, 1093.0]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
 4,8,text,"The mechanical strength, rigidity, and bonding of composite biomaterial to the native bone must be sufficient to support and transmit the force that promotes regeneration. In vivo, the angiogenic pote","[89.0, 1092.0, 582.0, 1355.0]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
 4,9,text,Hydroxyapatite  $ [Ca_{10}(PO_{4})_{6}(OH)_{2}] $ is the primary inorganic constituent in human teeth and bones and is highly bioactive and biocompatible. HA has been steadily incorporated into biomat,"[90.0, 1356.0, 582.0, 1444.0]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
-4,10,text,,"[598.0, 148.0, 1093.0, 741.0]",unknown_structural,0.3,"[""short text, uncertain role""]",unknown_structural,0.3,body_zone,body_like,empty,False,True
+4,10,text,"been coated onto prosthetic metal implants to promote bone
+integration.[32] Accordingly, it has been found that the use of
+iron-reinforced hydroxyapatite nanorods, combined with colla-
+gen/polycaprola","[598.0, 148.0, 1093.0, 741.0]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
 4,11,text,Mg/poly(Lactic acid) (PLA) composites can potentially replace traditional non-degradable metallic implants for long-bone fractures. Evidence has emerged indicating the remarkable tensile and flexural ,"[598.0, 741.0, 1093.0, 1355.0]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
 4,12,text,"The ease of surgical positioning and robust graft fixation in critical long bone defects is also a recognized challenge, particularly when using conventional hard bone allografts or brittle synthetic ","[599.0, 1354.0, 1092.0, 1445.0]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
 4,13,footer,"Adv. Healthcare Mater. 2024, 13, 2401218","[93.0, 1487.0, 336.0, 1505.0]",noise,0.9,"[""footer label""]",noise,0.9,body_zone,body_like,none,False,False
 4,14,footer,2401218 (4 of 20),"[391.0, 1484.0, 525.0, 1507.0]",noise,0.9,"[""footer label""]",noise,0.9,,reference_like,reference_numeric_dot,False,False
 4,15,footer,© 2024 The Author(s). Advanced Healthcare Materials published by Wiley-VCH GmbH,"[580.0, 1487.0, 1091.0, 1506.0]",noise,0.9,"[""footer label""]",noise,0.9,body_zone,body_like,none,False,False
-4,16,aside_text,"21922659, 2024, 27, Downloaded from https://advanced.onlinelibrary.wiley.com/doi/10.1002/adim.202401218 by Shandong University Library, Wiley Online Library on [05/02/2026]. See the Terms and Conditio","[1155.0, 30.0, 1171.0, 1533.0]",unknown_structural,0.2,"[""unrecognized label 'aside_text'""]",unknown_structural,0.2,body_zone,body_like,none,False,True
+4,16,aside_text,"21922659, 2024, 27, Downloaded from https://advanced.onlinelibrary.wiley.com/doi/10.1002/adim.202401218 by Shandong University Library, Wiley Online Library on [05/02/2026]. See the Terms and Conditio","[1155.0, 30.0, 1171.0, 1533.0]",noise,0.95,"[""margin-band narrow/tall geometry; treated as noise""]",noise,0.95,body_zone,body_like,none,False,False
 5,0,header,"ADVANCED
 SCIENCE NEWS
 www.advancedsciencenews.com","[97.0, 45.0, 345.0, 116.0]",noise,0.9,"[""header label""]",noise,0.9,body_zone,body_like,none,False,False
 5,1,header,"ADVANCED HEALTHCARE MATERIALS
 advhealthmat.de","[972.0, 40.0, 1096.0, 114.0]",noise,0.9,"[""header label""]",noise,0.9,body_zone,body_like,none,False,False
 5,2,header,www.advhealthmat.de,"[925.0, 98.0, 1097.0, 116.0]",noise,0.9,"[""header label""]",noise,0.9,body_zone,body_like,short_fragment,False,False
-5,3,image,,"[103.0, 154.0, 404.0, 209.0]",media_asset,0.85,"[""media label: image""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
-5,4,chart,,"[105.0, 213.0, 406.0, 516.0]",media_asset,0.85,"[""media label: chart""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
-5,5,figure_title,d,"[432.0, 175.0, 449.0, 196.0]",figure_caption_candidate,0.85,"[""figure_title label: d""]",figure_caption,0.85,body_zone,unknown_like,short_fragment,False,False
-5,6,image,,"[434.0, 174.0, 761.0, 300.0]",media_asset,0.85,"[""media label: image""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
-5,7,image,,"[761.0, 160.0, 1087.0, 297.0]",media_asset,0.85,"[""media label: image""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
-5,8,chart,,"[105.0, 522.0, 395.0, 652.0]",media_asset,0.85,"[""media label: chart""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
-5,9,image,,"[418.0, 304.0, 745.0, 484.0]",media_asset,0.85,"[""media label: image""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
-5,10,image,,"[745.0, 308.0, 1076.0, 485.0]",media_asset,0.85,"[""media label: image""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
-5,11,image,,"[415.0, 492.0, 729.0, 655.0]",media_asset,0.85,"[""media label: image""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
-5,12,image,,"[738.0, 508.0, 1084.0, 636.0]",media_asset,0.85,"[""media label: image""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
-5,13,chart,,"[104.0, 665.0, 377.0, 840.0]",media_asset,0.85,"[""media label: chart""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
-5,14,chart,,"[376.0, 667.0, 549.0, 843.0]",media_asset,0.85,"[""media label: chart""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
-5,15,image,,"[548.0, 661.0, 1087.0, 774.0]",media_asset,0.85,"[""media label: image""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
-5,16,chart,,"[116.0, 839.0, 367.0, 1024.0]",media_asset,0.85,"[""media label: chart""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
+5,3,image,,"[103.0, 154.0, 404.0, 209.0]",figure_asset,0.85,"[""media label: image""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
+5,4,chart,,"[105.0, 213.0, 406.0, 516.0]",figure_asset,0.85,"[""media label: chart""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
+5,5,figure_title,d,"[432.0, 175.0, 449.0, 196.0]",figure_inner_text,0.9,"[""panel label / figure inner text: d""]",figure_inner_text,0.9,display_zone,legend_like,panel_label,True,True
+5,6,image,,"[434.0, 174.0, 761.0, 300.0]",figure_asset,0.85,"[""media label: image""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
+5,7,image,,"[761.0, 160.0, 1087.0, 297.0]",figure_asset,0.85,"[""media label: image""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
+5,8,chart,,"[105.0, 522.0, 395.0, 652.0]",figure_asset,0.85,"[""media label: chart""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
+5,9,image,,"[418.0, 304.0, 745.0, 484.0]",figure_asset,0.85,"[""media label: image""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
+5,10,image,,"[745.0, 308.0, 1076.0, 485.0]",figure_asset,0.85,"[""media label: image""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
+5,11,image,,"[415.0, 492.0, 729.0, 655.0]",figure_asset,0.85,"[""media label: image""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
+5,12,image,,"[738.0, 508.0, 1084.0, 636.0]",figure_asset,0.85,"[""media label: image""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
+5,13,chart,,"[104.0, 665.0, 377.0, 840.0]",figure_asset,0.85,"[""media label: chart""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
+5,14,chart,,"[376.0, 667.0, 549.0, 843.0]",figure_asset,0.85,"[""media label: chart""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
+5,15,image,,"[548.0, 661.0, 1087.0, 774.0]",figure_asset,0.85,"[""media label: image""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
+5,16,chart,,"[116.0, 839.0, 367.0, 1024.0]",figure_asset,0.85,"[""media label: chart""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
 5,17,figure_title,Picture,"[559.0, 806.0, 575.0, 851.0]",figure_caption_candidate,0.85,"[""figure_title label: Picture""]",figure_caption,0.85,body_zone,unknown_like,short_fragment,False,False
-5,18,image,,"[560.0, 774.0, 705.0, 895.0]",media_asset,0.85,"[""media label: image""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
-5,19,chart,,"[367.0, 848.0, 570.0, 1020.0]",media_asset,0.85,"[""media label: chart""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
+5,18,image,,"[560.0, 774.0, 705.0, 895.0]",figure_asset,0.85,"[""media label: image""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
+5,19,chart,,"[367.0, 848.0, 570.0, 1020.0]",figure_asset,0.85,"[""media label: chart""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
 5,20,figure_title,Masson,"[560.0, 938.0, 572.0, 988.0]",figure_caption_candidate,0.85,"[""figure_title label: Masson""]",figure_caption,0.85,body_zone,unknown_like,short_fragment,False,False
-5,21,image,,"[707.0, 775.0, 830.0, 895.0]",media_asset,0.85,"[""media label: image""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
-5,22,image,,"[574.0, 896.0, 705.0, 1022.0]",media_asset,0.85,"[""media label: image""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
-5,23,image,,"[833.0, 775.0, 957.0, 896.0]",media_asset,0.85,"[""media label: image""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
-5,24,image,,"[706.0, 899.0, 832.0, 1021.0]",media_asset,0.85,"[""media label: image""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
-5,25,image,,"[832.0, 898.0, 961.0, 1022.0]",media_asset,0.85,"[""media label: image""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
-5,26,image,,"[961.0, 777.0, 1089.0, 1021.0]",media_asset,0.85,"[""media label: image""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
-5,27,figure_title,Figure 3. a) A sequence of images illustrating the process of compressing and then allowing a 3D-printed HA-PLGA cylinder of 1 cm diameter to regain its shape over one compression cycle.[23] b) Long-t,"[95.0, 1035.0, 1101.0, 1415.0]",figure_caption_candidate,0.92,"[""figure_title label: Figure 3. a) A sequence of images illustrating the process o""]",figure_caption,0.92,display_zone,legend_like,figure_number,False,False
+5,21,image,,"[707.0, 775.0, 830.0, 895.0]",figure_asset,0.85,"[""media label: image""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
+5,22,image,,"[574.0, 896.0, 705.0, 1022.0]",figure_asset,0.85,"[""media label: image""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
+5,23,image,,"[833.0, 775.0, 957.0, 896.0]",figure_asset,0.85,"[""media label: image""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
+5,24,image,,"[706.0, 899.0, 832.0, 1021.0]",figure_asset,0.85,"[""media label: image""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
+5,25,image,,"[832.0, 898.0, 961.0, 1022.0]",figure_asset,0.85,"[""media label: image""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
+5,26,image,,"[961.0, 777.0, 1089.0, 1021.0]",figure_asset,0.85,"[""media label: image""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
+5,27,figure_title,Figure 3. a) A sequence of images illustrating the process of compressing and then allowing a 3D-printed HA-PLGA cylinder of 1 cm diameter to regain its shape over one compression cycle.[23] b) Long-t,"[95.0, 1035.0, 1101.0, 1415.0]",figure_caption,0.92,"[""figure_title label: Figure 3. a) A sequence of images illustrating the process o""]",figure_caption,0.92,display_zone,legend_like,figure_number,True,True
 5,28,footer,"Adv. Healthcare Mater. 2024, 13, 2401218","[99.0, 1488.0, 342.0, 1505.0]",noise,0.9,"[""footer label""]",noise,0.9,body_zone,body_like,none,False,False
 5,29,number,2401218 (5 of 20),"[396.0, 1485.0, 531.0, 1507.0]",noise,0.9,"[""page number label""]",noise,0.9,,reference_like,reference_numeric_dot,False,False
 5,30,footer,© 2024 The Author(s). Advanced Healthcare Materials published by Wiley-VCH GmbH,"[586.0, 1488.0, 1097.0, 1506.0]",noise,0.9,"[""footer label""]",noise,0.9,body_zone,body_like,none,False,False
-5,31,aside_text,"21922659, 2024, 27. Downloaded from https://advanced.onlinelibrary.wiley.com/doi/10.1002/adhm.202401218 by Shandong University Library, Wiley Online Library on [05/02/2026]. See the Terms and Conditio","[1155.0, 32.0, 1171.0, 1536.0]",unknown_structural,0.2,"[""unrecognized label 'aside_text'""]",unknown_structural,0.2,body_zone,body_like,none,False,True
+5,31,aside_text,"21922659, 2024, 27. Downloaded from https://advanced.onlinelibrary.wiley.com/doi/10.1002/adhm.202401218 by Shandong University Library, Wiley Online Library on [05/02/2026]. See the Terms and Conditio","[1155.0, 32.0, 1171.0, 1536.0]",noise,0.95,"[""margin-band narrow/tall geometry; treated as noise""]",noise,0.95,body_zone,body_like,none,False,False
 6,0,header,"ADVANCED
 SCIENCE NEWS
 www.advancedsciencenews.com","[92.0, 46.0, 339.0, 117.0]",noise,0.9,"[""header label""]",noise,0.9,body_zone,body_like,none,False,False
@@ -124,7 +131,10 @@ www.advancedsciencenews.com","[92.0, 46.0, 339.0, 117.0]",noise,0.9,"[""header l
 6,2,header,www.advhealthmat.de,"[919.0, 97.0, 1091.0, 116.0]",noise,0.9,"[""header label""]",noise,0.9,body_zone,body_like,short_fragment,False,False
 6,3,text,"tricalcium phosphate, $ [40,41] $ or bioactive glass. $ [20,42] $ While softer alternatives like polymer meshes, hydrogels, $ [43] $ and collagen sponges $ [44] $ or foams exist, they often lack the n","[89.0, 148.0, 582.0, 589.0]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
 6,4,text,Composite biomaterials designed for non-load-bearing bone defects frequently found in cranial bones and smaller bones require a different approach. The lower mechanical stress experienced by these bon,"[89.0, 587.0, 582.0, 1445.0]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
-6,5,text,,"[599.0, 149.0, 1092.0, 477.0]",unknown_structural,0.3,"[""short text, uncertain role""]",unknown_structural,0.3,body_zone,body_like,empty,False,True
+6,5,text,"approximately 200 μm/day,[54] this slow pace can result in oxy-
+gen and nutrient deﬁciencies in large bone defects, increasing
+the risk of graft failure. Soft substrates, such as ﬁbrin gel, pro-
+mote ","[599.0, 149.0, 1092.0, 477.0]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
 6,6,text,"Conversely, cell-free scaffolds depend on tissue-resident cell migration, which is less effective and slower. Thus, while both scaffold types improve oxygen and nutrient delivery, cell-loaded fibrin g","[600.0, 478.0, 1092.0, 631.0]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
 6,7,text,Research revealed that the development of composite hydrogels containing GelMA and Li-modified bioglass (GM/M-Li) served as a significant advancement in treating diabetic bone defects. These hydrogels,"[599.0, 631.0, 1093.0, 1029.0]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
 6,8,paragraph_title,3.2. The signaling nexus,"[602.0, 1071.0, 790.0, 1094.0]",subsection_heading,0.85,"[""paragraph_title label with numbering: 3.2. The signaling nexus""]",subsection_heading,0.85,body_zone,body_like,heading_numbered,True,True
@@ -133,24 +143,27 @@ www.advancedsciencenews.com","[92.0, 46.0, 339.0, 117.0]",noise,0.9,"[""header l
 6,11,footer,"Adv. Healthcare Mater. 2024, 13, 2401218","[93.0, 1487.0, 336.0, 1505.0]",noise,0.9,"[""footer label""]",noise,0.9,body_zone,body_like,none,False,False
 6,12,footer,2401218 (6 of 20),"[391.0, 1484.0, 525.0, 1507.0]",noise,0.9,"[""footer label""]",noise,0.9,,reference_like,reference_numeric_dot,False,False
 6,13,footer,© 2024 The Author(s). Advanced Healthcare Materials published by Wiley-VCH GmbH,"[581.0, 1487.0, 1091.0, 1506.0]",noise,0.9,"[""footer label""]",noise,0.9,body_zone,body_like,none,False,False
-6,14,aside_text,"21922659, 2024, 27, Downloaded from https://advanced.onlinelibrary.wiley.com/doi/10.1002/adim.202401218 by Shandong University Library, Wiley Online Library on [05/02/2026]. See the Terms and Conditio","[1155.0, 30.0, 1171.0, 1533.0]",unknown_structural,0.2,"[""unrecognized label 'aside_text'""]",unknown_structural,0.2,body_zone,body_like,none,False,True
+6,14,aside_text,"21922659, 2024, 27, Downloaded from https://advanced.onlinelibrary.wiley.com/doi/10.1002/adim.202401218 by Shandong University Library, Wiley Online Library on [05/02/2026]. See the Terms and Conditio","[1155.0, 30.0, 1171.0, 1533.0]",noise,0.95,"[""margin-band narrow/tall geometry; treated as noise""]",noise,0.95,body_zone,body_like,none,False,False
 7,0,header,"ADVANCED
 SCIENCE NEWS
 www.advancedsciencenews.com","[98.0, 46.0, 345.0, 117.0]",noise,0.9,"[""header label""]",noise,0.9,body_zone,body_like,none,False,False
 7,1,header,"ADVANCED HEALTHCARE MATERIALS
 advhealthmat.de","[973.0, 40.0, 1096.0, 115.0]",noise,0.9,"[""header label""]",noise,0.9,body_zone,body_like,none,False,False
 7,2,header,www.advhealthmat.de,"[926.0, 98.0, 1097.0, 116.0]",noise,0.9,"[""header label""]",noise,0.9,body_zone,body_like,short_fragment,False,False
-7,3,figure_title,"Table 1. Clinical needs, applications, and exemplary recent advances in bone tissue engineering.","[97.0, 149.0, 736.0, 171.0]",table_caption_candidate,0.9,"[""table prefix matched: Table 1. Clinical needs, applications, and exemplary recent ""]",table_caption,0.9,display_zone,table_caption_like,table_number,True,True
-7,4,table,<table><tr><td>Clinical need</td><td>Practical application</td><td>Recent advances</td><td>References</td></tr><tr><td>Mechanical Strength and Durability</td><td>Composite biomaterials combining hydro,"[96.0, 185.0, 1094.0, 478.0]",media_asset,0.85,"[""media label: table""]",media_asset,0.85,body_zone,body_like,none,True,True
+7,3,figure_title,"Table 1. Clinical needs, applications, and exemplary recent advances in bone tissue engineering.","[97.0, 149.0, 736.0, 171.0]",table_caption,0.9,"[""table prefix matched: Table 1. Clinical needs, applications, and exemplary recent ""]",table_caption,0.9,display_zone,table_caption_like,table_number,True,True
+7,4,table,<table><tr><td>Clinical need</td><td>Practical application</td><td>Recent advances</td><td>References</td></tr><tr><td>Mechanical Strength and Durability</td><td>Composite biomaterials combining hydro,"[96.0, 185.0, 1094.0, 478.0]",table_html,0.85,"[""media label: table""]",media_asset,0.85,body_zone,body_like,none,True,True
 7,5,text,"main mechanisms.[56] First, metal ions, especially calcium, influence signaling pathways that balance osteoblast and osteoclast activity and govern stem cell differentiation. Second, material topograp","[95.0, 520.0, 588.0, 1377.0]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
 7,6,text,"Not surprisingly, addressing the multifaceted clinical needs is essential for developing effective and reliable treatments for bone tissue repair. Different clinical scenarios require biomaterials wit","[95.0, 1377.0, 588.0, 1444.0]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
-7,7,text,,"[604.0, 520.0, 1099.0, 963.0]",unknown_structural,0.3,"[""short text, uncertain role""]",unknown_structural,0.3,body_zone,body_like,empty,False,True
+7,7,text,"als with speciﬁc properties to ensure optimal bone repair and re-
+generation. Mechanical strength and durability are necessary for
+load-bearing bone defects caused by trauma or osteoporotic frac-
+ture","[604.0, 520.0, 1099.0, 963.0]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
 7,8,paragraph_title,4. Composite biomaterials for articular cartilage repair,"[606.0, 985.0, 1065.0, 1037.0]",section_heading,0.85,"[""paragraph_title label with numbering: 4. Composite biomaterials for articular cartilage repair""]",section_heading,0.85,body_zone,reference_like,reference_numeric_dot,True,True
 7,9,text,"Osteoarthritis (OA) is a chronic condition impacting millions worldwide, making it a leading cause of disability. The pathogenesis, although still not entirely understood, can be traced to a variety o","[604.0, 1048.0, 1099.0, 1446.0]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
 7,10,footer,"Adv. Healthcare Mater. 2024, 13, 2401218","[98.0, 1487.0, 342.0, 1505.0]",noise,0.9,"[""footer label""]",noise,0.9,body_zone,body_like,none,False,False
 7,11,footer,2401218 (7 of 20),"[396.0, 1484.0, 531.0, 1508.0]",noise,0.9,"[""footer label""]",noise,0.9,,reference_like,reference_numeric_dot,False,False
 7,12,footer,© 2024 The Author(s). Advanced Healthcare Materials published by Wiley-VCH GmbH,"[586.0, 1487.0, 1097.0, 1506.0]",noise,0.9,"[""footer label""]",noise,0.9,body_zone,body_like,none,False,False
-7,13,aside_text,"21922659, 2024, 27. Downloaded from https://advanced.onlinelibrary.wiley.com/doi/10.1002/adlm.202401218 by Shandong University Library, Wiley Online Library on [05/02/2026]. See the Terms and Conditio","[1155.0, 30.0, 1171.0, 1534.0]",unknown_structural,0.2,"[""unrecognized label 'aside_text'""]",unknown_structural,0.2,body_zone,body_like,none,False,True
+7,13,aside_text,"21922659, 2024, 27. Downloaded from https://advanced.onlinelibrary.wiley.com/doi/10.1002/adlm.202401218 by Shandong University Library, Wiley Online Library on [05/02/2026]. See the Terms and Conditio","[1155.0, 30.0, 1171.0, 1534.0]",noise,0.95,"[""margin-band narrow/tall geometry; treated as noise""]",noise,0.95,body_zone,body_like,none,False,False
 8,0,header,"ADVANCED
 SCIENCE NEWS
 www.advancedsciencenews.com","[92.0, 46.0, 339.0, 117.0]",noise,0.9,"[""header label""]",noise,0.9,body_zone,body_like,none,False,False
@@ -159,13 +172,16 @@ www.advancedsciencenews.com","[92.0, 46.0, 339.0, 117.0]",noise,0.9,"[""header l
 8,3,text,"the potential of biodegradable alternatives. Essentially, piezoelectric materials convert mechanical stress into electrical energy and vice versa. Classic piezoelectric materials include lead zirconat","[89.0, 149.0, 582.0, 567.0]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
 8,4,text,"Biodegradable piezoelectric nanofibers like PLLA, used in conjunction with physical activity, have demonstrated potential in cartilage regeneration. $ ^{[66]} $ The in-vivo results indicated that piez","[89.0, 565.0, 582.0, 1334.0]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
 8,5,text,"Innovatively, injectable hydrogels have drawn much attention in cartilage regeneration. The novel design of nanofiber composite microchannel-containing hydrogels inspired by the tunnel-piled structure","[89.0, 1332.0, 582.0, 1446.0]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
-8,6,text,,"[599.0, 150.0, 1093.0, 544.0]",unknown_structural,0.3,"[""short text, uncertain role""]",unknown_structural,0.3,body_zone,body_like,empty,False,True
+8,6,text,"tosan (APA/CMCS) hydrogels, thermosensitive gelatin mi-
+crorods (GMs) act as a pore-forming agent, and coaxial
+electrospinning polylactic acid/gelatin ﬁbers (PGFs) loaded
+with kartogenin (KGN) functio","[599.0, 150.0, 1093.0, 544.0]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
 8,7,text,"Continuing with the theme of regenerative strategies, the use of viscoelastic hydrogels for chondrocyte culture and the creation of self-healing materials have come into focus. The former promotes a n","[598.0, 544.0, 1093.0, 1026.0]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
 8,8,text,"Administering therapeutics via intra-articular injection proves to be an effective method for treating OA. Accordingly, an injectable hydrogel integrated with liposome-anchored teriparatide is another","[598.0, 1027.0, 1093.0, 1446.0]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
 8,9,footer,"Adv. Healthcare Mater. 2024, 13, 2401218","[93.0, 1487.0, 336.0, 1505.0]",noise,0.9,"[""footer label""]",noise,0.9,body_zone,body_like,none,False,False
 8,10,footer,2401218 (8 of 20),"[391.0, 1483.0, 526.0, 1507.0]",noise,0.9,"[""footer label""]",noise,0.9,,reference_like,reference_numeric_dot,False,False
 8,11,footer,© 2024 The Author(s). Advanced Healthcare Materials published by Wiley-VCH GmbH,"[580.0, 1487.0, 1091.0, 1506.0]",noise,0.9,"[""footer label""]",noise,0.9,body_zone,body_like,none,False,False
-8,12,aside_text,"21922659, 2024, 27, Downloaded from https://advanced.onlinelibrary.wiley.com/doi/10.1002/adim.202401218 by Shandong University Library, Wiley Online Library on [05/02/2026]. See the Terms and Conditio","[1155.0, 30.0, 1171.0, 1533.0]",unknown_structural,0.2,"[""unrecognized label 'aside_text'""]",unknown_structural,0.2,body_zone,body_like,none,False,True
+8,12,aside_text,"21922659, 2024, 27, Downloaded from https://advanced.onlinelibrary.wiley.com/doi/10.1002/adim.202401218 by Shandong University Library, Wiley Online Library on [05/02/2026]. See the Terms and Conditio","[1155.0, 30.0, 1171.0, 1533.0]",noise,0.95,"[""margin-band narrow/tall geometry; treated as noise""]",noise,0.95,body_zone,body_like,none,False,False
 9,0,header,"ADVANCED
 SCIENCE NEWS
 www.advancedsciencenews.com","[98.0, 46.0, 345.0, 117.0]",noise,0.9,"[""header label""]",noise,0.9,body_zone,body_like,none,False,False
@@ -178,7 +194,7 @@ www.advancedsciencenews.com","[98.0, 46.0, 345.0, 117.0]",noise,0.9,"[""header l
 9,7,footer,"Adv. Healthcare Mater. 2024, 13, 2401218","[98.0, 1487.0, 342.0, 1505.0]",noise,0.9,"[""footer label""]",noise,0.9,body_zone,body_like,none,False,False
 9,8,footer,2401218 (9 of 20),"[396.0, 1483.0, 531.0, 1507.0]",noise,0.9,"[""footer label""]",noise,0.9,,reference_like,reference_numeric_dot,False,False
 9,9,footer,© 2024 The Author(s). Advanced Healthcare Materials published by Wiley-VCH GmbH,"[586.0, 1487.0, 1097.0, 1506.0]",noise,0.9,"[""footer label""]",noise,0.9,body_zone,body_like,none,False,False
-9,10,aside_text,"21922659, 2024, 27, Downloaded from https://advanced.onlinelibrary.wiley.com/doi/10.1002/adlm.202401218 by Shandong University Library, Wiley Online Library on [05/02/2026]. See the Terms and Conditio","[1154.0, 29.0, 1172.0, 1540.0]",unknown_structural,0.2,"[""unrecognized label 'aside_text'""]",unknown_structural,0.2,body_zone,body_like,none,False,True
+9,10,aside_text,"21922659, 2024, 27, Downloaded from https://advanced.onlinelibrary.wiley.com/doi/10.1002/adlm.202401218 by Shandong University Library, Wiley Online Library on [05/02/2026]. See the Terms and Conditio","[1154.0, 29.0, 1172.0, 1540.0]",noise,0.95,"[""margin-band narrow/tall geometry; treated as noise""]",noise,0.95,body_zone,body_like,none,False,False
 10,0,header,"ADVANCED
 SCIENCE NEWS
 www.advancedsciencenews.com","[92.0, 46.0, 339.0, 117.0]",noise,0.9,"[""header label""]",noise,0.9,body_zone,body_like,none,False,False
@@ -187,40 +203,42 @@ www.advancedsciencenews.com","[92.0, 46.0, 339.0, 117.0]",noise,0.9,"[""header l
 10,3,text,pathogenesis of early myocardial infarction by addressing the critical issue of mitochondrial dysfunction in cardiomyocytes. $ ^{[93]} $,"[88.0, 149.0, 581.0, 193.0]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
 10,4,text,A stretchable and anisotropic conductive composite hydrogel could be prepared from polyacrylamide/polypyrrole composites.[94] This stretch-induced strategy to make polypyrrole nanotubes aligned within,"[89.0, 190.0, 583.0, 1050.0]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
 10,5,text,"In addition to cardiac tissue repair, composite biomaterials have also been used as cardiac monitoring devices. Thus, wearable ultrasonic devices and soft, stretchable elastomers are emerging as promi","[89.0, 1048.0, 582.0, 1445.0]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
-10,6,text,,"[598.0, 149.0, 1092.0, 521.0]",unknown_structural,0.3,"[""short text, uncertain role""]",unknown_structural,0.3,body_zone,body_like,empty,False,True
+10,6,text,"the dynamic examination of the left ventricle, promoting compre-
+hensive cardiac monitoring.[102] Additionally, the quest for con-
+ductive, stretchable, and biocompatible materials for wearable
+and im","[598.0, 149.0, 1092.0, 521.0]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
 10,7,text,"While considerable progress has been made in cardiac tissue engineering using composite biomaterials, creating functional cardiac tissue with controlled cell orientation, mechanical anisotropy, and hi","[599.0, 522.0, 1093.0, 764.0]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
-10,8,paragraph_title,6. Other functional composite biomaterials for tissue mimicry,"[601.0, 787.0, 1049.0, 873.0]",section_heading,0.85,"[""paragraph_title label with numbering: 6. Other functional composite biomaterials for tissue mimicr"", ""split merged heading: kept '6. Other functional composite biomaterials for tis...'""]",section_heading,0.85,body_zone,reference_like,reference_numeric_dot,True,True
-10,8,paragraph_title,6.1. Conductive composite 3D scaffolds,"[601.0, 787.0, 1049.0, 873.0]",subsection_heading,0.85,"[""paragraph_title label with numbering: 6. Other functional composite biomaterials for tissue mimicr"", ""split from merged heading: extracted '6.1. Conductive composite 3D scaffolds...'""]",section_heading,0.85,body_zone,reference_like,reference_numeric_dot,True,True
-10,9,footer,,"[601.0, 850.0, 904.0, 873.0]",noise,0.9,"[""footer label""]",noise,0.9,body_zone,body_like,empty,False,False
+10,8,paragraph_title,6. Other functional composite biomaterials for tissue mimicry,"[601.0, 787.0, 1049.0, 839.0]",section_heading,0.85,"[""paragraph_title label with numbering: 6. Other functional composite biomaterials for tissue mimicr""]",section_heading,0.85,body_zone,reference_like,reference_numeric_dot,True,True
+10,9,paragraph_title,6.1. Conductive composite 3D scaffolds,"[601.0, 850.0, 904.0, 873.0]",subsection_heading,0.85,"[""paragraph_title label with numbering: 6.1. Conductive composite 3D scaffolds""]",subsection_heading,0.85,body_zone,body_like,heading_numbered,True,True
 10,10,text,"The primary problem of excitable tissues (e.g., cardiac and nerve tissues) is to build the electrical microenvironment to perform biomimetic electrical signal transmission.[105] Conductive hydrogels a","[599.0, 894.0, 1094.0, 1446.0]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
 10,11,footer,"Adv. Healthcare Mater. 2024, 13, 2401218","[92.0, 1487.0, 337.0, 1505.0]",noise,0.9,"[""footer label""]",noise,0.9,body_zone,body_like,none,False,False
 10,12,footer,2401218 (10 of 20),"[386.0, 1484.0, 529.0, 1507.0]",noise,0.9,"[""footer label""]",noise,0.9,,reference_like,reference_numeric_dot,False,False
 10,13,footer,© 2024 The Author(s). Advanced Healthcare Materials published by Wiley-VCH GmbH,"[580.0, 1487.0, 1091.0, 1506.0]",noise,0.9,"[""footer label""]",noise,0.9,body_zone,body_like,none,False,False
-10,14,aside_text,"21922659, 2024, 27, Downloaded from https://advanced.onlinelibrary.wiley.com/doi/10.1002/adlm.202401218 by Shandong University Library, Wiley Online Library on [05/02/2026]. See the Terms and Conditio","[1154.0, 29.0, 1172.0, 1540.0]",unknown_structural,0.2,"[""unrecognized label 'aside_text'""]",unknown_structural,0.2,body_zone,body_like,none,False,True
+10,14,aside_text,"21922659, 2024, 27, Downloaded from https://advanced.onlinelibrary.wiley.com/doi/10.1002/adlm.202401218 by Shandong University Library, Wiley Online Library on [05/02/2026]. See the Terms and Conditio","[1154.0, 29.0, 1172.0, 1540.0]",noise,0.95,"[""margin-band narrow/tall geometry; treated as noise""]",noise,0.95,body_zone,body_like,none,False,False
 11,0,header,"ADVANCED
 SCIENCE NEWS
 www.advancedsciencenews.com","[98.0, 45.0, 346.0, 117.0]",noise,0.9,"[""header label""]",noise,0.9,body_zone,body_like,none,False,False
 11,1,header,"ADVANCED HEALTHCARE MATERIALS
 advhealthmat.de","[972.0, 40.0, 1096.0, 115.0]",noise,0.9,"[""header label""]",noise,0.9,body_zone,body_like,none,False,False
 11,2,header,www.advhealthmat.de,"[925.0, 98.0, 1097.0, 116.0]",noise,0.9,"[""header label""]",noise,0.9,body_zone,body_like,short_fragment,False,False
-11,3,chart,,"[106.0, 159.0, 403.0, 448.0]",media_asset,0.85,"[""media label: chart""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
-11,4,chart,,"[419.0, 160.0, 727.0, 381.0]",media_asset,0.85,"[""media label: chart""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
-11,5,figure_title,d,"[763.0, 160.0, 784.0, 184.0]",figure_caption_candidate,0.85,"[""figure_title label: d""]",figure_caption,0.85,body_zone,unknown_like,short_fragment,False,False
-11,6,chart,,"[766.0, 160.0, 1086.0, 382.0]",media_asset,0.85,"[""media label: chart""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
-11,7,chart,,"[106.0, 463.0, 408.0, 769.0]",media_asset,0.85,"[""media label: chart""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
-11,8,image,,"[424.0, 392.0, 831.0, 560.0]",media_asset,0.85,"[""media label: image""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
-11,9,chart,,"[853.0, 387.0, 1086.0, 571.0]",media_asset,0.85,"[""media label: chart""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
-11,10,image,,"[438.0, 568.0, 633.0, 737.0]",media_asset,0.85,"[""media label: image""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
-11,11,image,,"[641.0, 569.0, 831.0, 737.0]",media_asset,0.85,"[""media label: image""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
-11,12,chart,,"[859.0, 580.0, 1088.0, 762.0]",media_asset,0.85,"[""media label: chart""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
-11,13,image,,"[105.0, 777.0, 846.0, 1094.0]",media_asset,0.85,"[""media label: image""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
-11,14,chart,,"[850.0, 783.0, 1089.0, 935.0]",media_asset,0.85,"[""media label: chart""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
-11,15,chart,,"[853.0, 943.0, 1086.0, 1093.0]",media_asset,0.85,"[""media label: chart""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
-11,16,figure_title,Figure 4. Conductive composite scaffolds for neural and cardiac tissue functional recovery. Top-left box: Neuromodulation in the peripheral nervous system using SG₂ (poly(sulfobetaine vinylimidazolium,"[95.0, 1105.0, 1099.0, 1413.0]",figure_caption_candidate,0.92,"[""figure_title label: Figure 4. Conductive composite scaffolds for neural and card""]",figure_caption,0.92,display_zone,legend_like,figure_number,False,False
+11,3,chart,,"[106.0, 159.0, 403.0, 448.0]",figure_asset,0.85,"[""media label: chart""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
+11,4,chart,,"[419.0, 160.0, 727.0, 381.0]",figure_asset,0.85,"[""media label: chart""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
+11,5,figure_title,d,"[763.0, 160.0, 784.0, 184.0]",figure_inner_text,0.9,"[""panel label / figure inner text: d""]",figure_inner_text,0.9,display_zone,legend_like,panel_label,True,True
+11,6,chart,,"[766.0, 160.0, 1086.0, 382.0]",figure_asset,0.85,"[""media label: chart""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
+11,7,chart,,"[106.0, 463.0, 408.0, 769.0]",figure_asset,0.85,"[""media label: chart""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
+11,8,image,,"[424.0, 392.0, 831.0, 560.0]",figure_asset,0.85,"[""media label: image""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
+11,9,chart,,"[853.0, 387.0, 1086.0, 571.0]",figure_asset,0.85,"[""media label: chart""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
+11,10,image,,"[438.0, 568.0, 633.0, 737.0]",figure_asset,0.85,"[""media label: image""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
+11,11,image,,"[641.0, 569.0, 831.0, 737.0]",figure_asset,0.85,"[""media label: image""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
+11,12,chart,,"[859.0, 580.0, 1088.0, 762.0]",figure_asset,0.85,"[""media label: chart""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
+11,13,image,,"[105.0, 777.0, 846.0, 1094.0]",figure_asset,0.85,"[""media label: image""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
+11,14,chart,,"[850.0, 783.0, 1089.0, 935.0]",figure_asset,0.85,"[""media label: chart""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
+11,15,chart,,"[853.0, 943.0, 1086.0, 1093.0]",figure_asset,0.85,"[""media label: chart""]",media_asset,0.85,body_zone,unknown_like,empty,True,True
+11,16,figure_title,Figure 4. Conductive composite scaffolds for neural and cardiac tissue functional recovery. Top-left box: Neuromodulation in the peripheral nervous system using SG₂ (poly(sulfobetaine vinylimidazolium,"[95.0, 1105.0, 1099.0, 1413.0]",figure_caption,0.92,"[""figure_title label: Figure 4. Conductive composite scaffolds for neural and card""]",figure_caption,0.92,display_zone,legend_like,figure_number,True,True
 11,17,footer,"Adv. Healthcare Mater. 2024, 13, 2401218","[99.0, 1487.0, 342.0, 1505.0]",noise,0.9,"[""footer label""]",noise,0.9,body_zone,body_like,none,False,False
 11,18,number,2401218 (11 of 20),"[392.0, 1484.0, 535.0, 1507.0]",noise,0.9,"[""page number label""]",noise,0.9,,reference_like,reference_numeric_dot,False,False
 11,19,footer,© 2024 The Author(s). Advanced Healthcare Materials published by Wiley-VCH GmbH,"[586.0, 1487.0, 1097.0, 1506.0]",noise,0.9,"[""footer label""]",noise,0.9,body_zone,body_like,none,False,False
-11,20,aside_text,"21922659, 2024, 27, Downloaded from https://advanced.onlinelibrary.wiley.com/doi/10.1002/adfm.202401218 by Shandong University Library, Wiley Online Library on [05/02/2026]. See the Terms and Conditio","[1154.0, 29.0, 1172.0, 1534.0]",unknown_structural,0.2,"[""unrecognized label 'aside_text'""]",unknown_structural,0.2,body_zone,body_like,none,False,True
+11,20,aside_text,"21922659, 2024, 27, Downloaded from https://advanced.onlinelibrary.wiley.com/doi/10.1002/adfm.202401218 by Shandong University Library, Wiley Online Library on [05/02/2026]. See the Terms and Conditio","[1154.0, 29.0, 1172.0, 1534.0]",noise,0.95,"[""margin-band narrow/tall geometry; treated as noise""]",noise,0.95,body_zone,body_like,none,False,False
 12,0,header,"ADVANCED
 SCIENCE NEWS
 www.advancedsciencenews.com","[92.0, 46.0, 339.0, 117.0]",noise,0.9,"[""header label""]",noise,0.9,body_zone,body_like,none,False,False
@@ -230,14 +248,17 @@ advhealthmat.de","[966.0, 39.0, 1091.0, 115.0]",noise,0.9,"[""header label""]",n
 12,3,text,"host tissues, making the hydrogels biomimetic. Furthermore, by selecting suitable polymeric components and adjusting moisture content, the mechanical characteristics of hydrogels, such as modulus, may","[89.0, 149.0, 581.0, 303.0]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
 12,4,text,There are several fabrication strategies for conductive hydrogels for tissue engineering and regenerative medicine. The versatility of hydrogel fabrication which is attributed to the diverse gelation ,"[89.0, 302.0, 582.0, 850.0]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
 12,5,text,"Native tissues are responsive to a variety of mechanical stimuli, such as stretching, compression, and shear forces. To retain structural integrity and usefulness, hydrogels utilized in tissue enginee","[90.0, 851.0, 582.0, 1314.0]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
-12,6,text,,"[598.0, 148.0, 1093.0, 675.0]",unknown_structural,0.3,"[""short text, uncertain role""]",unknown_structural,0.3,body_zone,body_like,empty,False,True
+12,6,text,"pGO-PAM hydrogel, composed of Polydopamine (PDA), partially
+reduced Graphene Oxide (pGO), and Polyacrylamide (PAM),
+was successfully synthesized through a three-step process.[154]
+Dopamine was initial","[598.0, 148.0, 1093.0, 675.0]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
 12,7,text,"Although hydrogels offer enormous promise for biomedical applications, their implantable uses are constrained since hydrogels eventually swell under physiological conditions, resulting in considerable","[599.0, 675.0, 1093.0, 1026.0]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
 12,8,text,"The rationale behind design strategies for electroconductive porous composite scaffolds is to create a biomaterial that can mimic the electrical properties of native tissues and support cell growth, d","[598.0, 1025.0, 1093.0, 1314.0]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
 12,9,footnote,compression (right).[95] i) Transplantation of the composite onto a pig's heart.[95] j) Immunostaining of cardiac-specific proteins (α-actinin and CX-43) in RCMs cultured in various scaffolds for 7 da,"[89.0, 1363.0, 1095.0, 1443.0]",footnote,0.7,"[""footnote label: compression (right).[95] i) Transplantation of the composite""]",footnote,0.7,body_zone,body_like,none,True,True
 12,10,footer,"Adv. Healthcare Mater. 2024, 13, 2401218","[93.0, 1487.0, 337.0, 1505.0]",noise,0.9,"[""footer label""]",noise,0.9,body_zone,body_like,none,False,False
 12,11,footer,2401218 (12 of 20),"[386.0, 1484.0, 530.0, 1507.0]",noise,0.9,"[""footer label""]",noise,0.9,,reference_like,reference_numeric_dot,False,False
 12,12,footer,© 2024 The Author(s). Advanced Healthcare Materials published by Wiley-VCH GmbH,"[580.0, 1487.0, 1091.0, 1506.0]",noise,0.9,"[""footer label""]",noise,0.9,body_zone,body_like,none,False,False
-12,13,aside_text,"21922659, 2024, 27, Downloaded from https://advanced.onlinelibrary.wiley.com/doi/10.1002/adim.202401218 by Shandong University Library, Wiley Online Library on [05/02/2026]. See the Terms and Conditio","[1155.0, 22.0, 1171.0, 1533.0]",unknown_structural,0.2,"[""unrecognized label 'aside_text'""]",unknown_structural,0.2,body_zone,body_like,none,False,True
+12,13,aside_text,"21922659, 2024, 27, Downloaded from https://advanced.onlinelibrary.wiley.com/doi/10.1002/adim.202401218 by Shandong University Library, Wiley Online Library on [05/02/2026]. See the Terms and Conditio","[1155.0, 22.0, 1171.0, 1533.0]",noise,0.95,"[""margin-band narrow/tall geometry; treated as noise""]",noise,0.95,body_zone,body_like,none,False,False
 13,0,header,"ADVANCED
 SCIENCE NEWS
 www.advancedsciencenews.com","[98.0, 46.0, 345.0, 116.0]",noise,0.9,"[""header label""]",noise,0.9,body_zone,body_like,none,False,False
@@ -247,14 +268,15 @@ advhealthmat.de","[973.0, 40.0, 1095.0, 113.0]",noise,0.9,"[""header label""]",n
 13,3,text,"It is acknowledged that porous scaffolds featuring interconnected pores can stimulate cell infiltration, facilitate nutrient exchange, and promote tissue regeneration. The porosity of the scaffold can","[95.0, 148.0, 588.0, 811.0]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
 13,4,paragraph_title,6.2. Conductive composite 2D films,"[96.0, 851.0, 368.0, 872.0]",subsection_heading,0.85,"[""paragraph_title label with numbering: 6.2. Conductive composite 2D films""]",subsection_heading,0.85,body_zone,body_like,heading_numbered,True,True
 13,5,text,"Conductive composite films are made of conductive particles embedded in a polymer matrix. These films have potential applications in various fields, such as electronic devices, sensors, energy storage","[95.0, 895.0, 588.0, 1423.0]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
-13,6,text,,"[605.0, 149.0, 1097.0, 192.0]",unknown_structural,0.3,"[""short text, uncertain role""]",unknown_structural,0.3,body_zone,body_like,empty,False,True
+13,6,text,"ity and superior tensile modulus compared to pure silk ﬁbroin
+matrices.[164]","[605.0, 149.0, 1097.0, 192.0]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
 13,7,text,"Composite films made of graphene oxide (GO) and either polypyrrole (PPy-GO) or PEDOT-GO were examined for their cytocompatibility with cardiomyocytes and neural progenitors. $ ^{[165]} $ However, usin","[604.0, 193.0, 1098.0, 654.0]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
 13,8,text,"Adding ceramic to polymers can have both positive and negative effects on their properties, but few studies have directly compared the effects of different types of inorganic additives. A comparison o","[605.0, 654.0, 1098.0, 1048.0]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
 13,9,text,"Conductive polymers and organic/inorganic composites may be molded into various shapes and forms, and because they are flexible, they can also be utilized as wearable bioelectronic materials. Nanopart","[604.0, 1048.0, 1099.0, 1424.0]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
 13,10,footer,"Adv. Healthcare Mater. 2024, 13, 2401218","[98.0, 1487.0, 342.0, 1505.0]",noise,0.9,"[""footer label""]",noise,0.9,body_zone,body_like,none,False,False
 13,11,footer,2401218 (13 of 20),"[392.0, 1484.0, 536.0, 1507.0]",noise,0.9,"[""footer label""]",noise,0.9,,reference_like,reference_numeric_dot,False,False
 13,12,footer,© 2024 The Author(s). Advanced Healthcare Materials published by Wiley-VCH GmbH,"[586.0, 1487.0, 1097.0, 1506.0]",noise,0.9,"[""footer label""]",noise,0.9,body_zone,body_like,none,False,False
-13,13,aside_text,"21922659, 2024, 27. Downloaded from https://advanced.onlinelibrary.wiley.com/doi/10.1002/adlm.202401218 by Shandong University Library, Wiley Online Library on [05/02/2026]. See the Terms and Conditio","[1155.0, 30.0, 1171.0, 1534.0]",unknown_structural,0.2,"[""unrecognized label 'aside_text'""]",unknown_structural,0.2,body_zone,body_like,none,False,True
+13,13,aside_text,"21922659, 2024, 27. Downloaded from https://advanced.onlinelibrary.wiley.com/doi/10.1002/adlm.202401218 by Shandong University Library, Wiley Online Library on [05/02/2026]. See the Terms and Conditio","[1155.0, 30.0, 1171.0, 1534.0]",noise,0.95,"[""margin-band narrow/tall geometry; treated as noise""]",noise,0.95,body_zone,body_like,none,False,False
 14,0,header,"ADVANCED
 SCIENCE NEWS
 www.advancedsciencenews.com","[92.0, 46.0, 339.0, 117.0]",noise,0.9,"[""header label""]",noise,0.9,,unknown_like,none,False,False
@@ -266,14 +288,17 @@ advhealthmat.de","[967.0, 39.0, 1091.0, 114.0]",noise,0.9,"[""header label""]",n
 14,5,paragraph_title,6.3. Magnetic and composite biomaterials,"[90.0, 850.0, 411.0, 873.0]",subsection_heading,0.85,"[""paragraph_title label with numbering: 6.3. Magnetic and composite biomaterials""]",subsection_heading,0.85,,unknown_like,heading_numbered,True,True
 14,6,text,Magnetic nanoparticles (MNPs) are one of the most significant categories of nanomaterials studied for potential use in nanomedicine. Using MNPs allows the creation of soft composite biomaterials for v,"[90.0, 894.0, 582.0, 1246.0]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,,unknown_like,none,True,True
 14,7,text,"As an alternative to electric fields and acoustic waves, cardiac tissue engineering can incorporate magnetic hydrogel components to mimic the physical and biological organization of cardiac tissues an","[89.0, 1246.0, 583.0, 1445.0]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,,unknown_like,none,True,True
-14,8,text,,"[598.0, 147.0, 1094.0, 741.0]",unknown_structural,0.3,"[""short text, uncertain role""]",unknown_structural,0.3,,body_like,empty,False,True
+14,8,text,"sis and improve cardiac function in infarcted cardiac tissue.[178]
+The magnetic nanoparticles consisted of a Fe3O4 core and a sil-
+ica shell, decorated with poly (ethylene glycol) and two types of
+ant","[598.0, 147.0, 1094.0, 741.0]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,,body_like,none,True,True
 14,9,text,"Neural tissue, which is responsible for the transmission of nerve impulses within the nervous system, primarily consists of neurons possessing a cell body, axons, and dendrites. Unlike anisotropic tis","[598.0, 740.0, 1093.0, 1270.0]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,,body_like,none,True,True
-14,10,paragraph_title,7. Composite biomaterials for therapeutic drug delivery,"[600.0, 1292.0, 1053.0, 1344.0]",section_heading,0.85,"[""paragraph_title label with numbering: 7. Composite biomaterials for therapeutic drug delivery"", ""heading rescued from unknown_structural via seed_role + numbering""]",section_heading,0.85,reference_zone,reference_like,reference_numeric_dot,True,True
+14,10,paragraph_title,7. Composite biomaterials for therapeutic drug delivery,"[600.0, 1292.0, 1053.0, 1344.0]",unknown_structural,0.85,"[""paragraph_title label with numbering: 7. Composite biomaterials for therapeutic drug delivery""]",section_heading,0.85,reference_zone,reference_like,reference_numeric_dot,False,True
 14,11,text,"Composite biomaterials possess key features, including tunability, improved performance (mechanical properties, biocompatibility, and controlled release profile), and versatility that make them good c","[599.0, 1354.0, 1094.0, 1445.0]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,,body_like,none,True,True
 14,12,footer,"Adv. Healthcare Mater. 2024, 13, 2401218","[92.0, 1487.0, 337.0, 1506.0]",noise,0.9,"[""footer label""]",noise,0.9,,unknown_like,none,False,False
 14,13,footer,2401218 (14 of 20),"[385.0, 1483.0, 529.0, 1507.0]",noise,0.9,"[""footer label""]",noise,0.9,reference_zone,reference_like,reference_numeric_dot,False,False
 14,14,footer,© 2024 The Author(s). Advanced Healthcare Materials published by Wiley-VCH GmbH,"[580.0, 1486.0, 1091.0, 1506.0]",noise,0.9,"[""footer label""]",noise,0.9,,unknown_like,none,False,False
-14,15,aside_text,"21922659, 2024, 27. Downloaded from https://advanced.onlinelibrary.wiley.com/doi/10.1002/adhm.202401218 by Shandong University Library, Wiley Online Library on [05(02/2026)]. See the Terms and Conditi","[1155.0, 30.0, 1171.0, 1540.0]",unknown_structural,0.2,"[""unrecognized label 'aside_text'""]",unknown_structural,0.2,,unknown_like,none,False,True
+14,15,aside_text,"21922659, 2024, 27. Downloaded from https://advanced.onlinelibrary.wiley.com/doi/10.1002/adhm.202401218 by Shandong University Library, Wiley Online Library on [05(02/2026)]. See the Terms and Conditi","[1155.0, 30.0, 1171.0, 1540.0]",noise,0.95,"[""margin-band narrow/tall geometry; treated as noise""]",noise,0.95,,unknown_like,none,False,False
 15,0,header,"ADVANCED
 SCIENCE NEWS
 www.advancedsciencenews.com","[98.0, 46.0, 345.0, 117.0]",noise,0.9,"[""header label""]",noise,0.9,,unknown_like,none,False,False
@@ -282,14 +307,17 @@ advhealthmat.de","[973.0, 39.0, 1096.0, 115.0]",noise,0.9,"[""header label""]",n
 15,2,header,www.advhealthmat.de,"[925.0, 98.0, 1097.0, 116.0]",noise,0.9,"[""header label""]",noise,0.9,,unknown_like,short_fragment,False,False
 15,3,text,composite biomaterials in drug delivery and tissue engineering is becoming increasingly frequent owing to their superior performance. $ ^{[182]} $ When designing composite biomaterials for drug delive,"[95.0, 149.0, 588.0, 391.0]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,,unknown_like,none,True,True
 15,4,text,"To enhance the bioactivity of the drug, several factors need to be considered, including the use of protective carriers, drug loading, and release modifications, incorporation of bioactive materials s","[95.0, 391.0, 589.0, 1446.0]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,,unknown_like,none,True,True
-15,5,text,,"[604.0, 149.0, 1098.0, 413.0]",unknown_structural,0.3,"[""short text, uncertain role""]",unknown_structural,0.3,,body_like,empty,False,True
+15,5,text,"eﬃciency for tissue engineering and other biomedical applica-
+tions. Bioactive glass (BG) nanoparticles (BGNs) and hydrogels
+have emerged as promising systems for drug delivery.[193] BGNs,
+owing to th","[604.0, 149.0, 1098.0, 413.0]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,,body_like,none,True,True
 15,6,text,"Moving forward, hybrid drug delivery systems that combine two or more drug delivery methods have the potential to maintain drug bioactivity. It has been shown that combining a nanoparticle drug delive","[604.0, 410.0, 1099.0, 1204.0]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,,body_like,none,True,True
 15,7,paragraph_title,8. Conclusions and Future Directions,"[607.0, 1229.0, 967.0, 1254.0]",section_heading,0.85,"[""paragraph_title label with numbering: 8. Conclusions and Future Directions""]",section_heading,0.85,,heading_like,heading_numbered,True,True
 15,8,text,"The field of composite biomaterials is continuously evolving, and researchers are investigating various directions to enhance their properties and expand their applications. The versatile nature of co","[605.0, 1267.0, 1099.0, 1446.0]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,,body_like,none,True,True
 15,9,footer,"Adv. Healthcare Mater. 2024, 13, 2401218","[98.0, 1487.0, 342.0, 1505.0]",noise,0.9,"[""footer label""]",noise,0.9,,unknown_like,none,False,False
 15,10,footer,2401218 (15 of 20),"[392.0, 1484.0, 535.0, 1507.0]",noise,0.9,"[""footer label""]",noise,0.9,reference_zone,reference_like,reference_numeric_dot,False,False
 15,11,footer,© 2024 The Author(s). Advanced Healthcare Materials published by Wiley-VCH GmbH,"[586.0, 1487.0, 1097.0, 1506.0]",noise,0.9,"[""footer label""]",noise,0.9,,unknown_like,none,False,False
-15,12,aside_text,"21922659, 2024, 27, Downloaded from https://advanced.onlinelibrary.wiley.com/doi/10.1002/adlm.202401218 by Shandong University Library, Wiley Online Library on [05/02/2026]. See the Terms and Conditio","[1155.0, 29.0, 1171.0, 1533.0]",unknown_structural,0.2,"[""unrecognized label 'aside_text'""]",unknown_structural,0.2,,unknown_like,none,False,True
+15,12,aside_text,"21922659, 2024, 27, Downloaded from https://advanced.onlinelibrary.wiley.com/doi/10.1002/adlm.202401218 by Shandong University Library, Wiley Online Library on [05/02/2026]. See the Terms and Conditio","[1155.0, 29.0, 1171.0, 1533.0]",noise,0.95,"[""margin-band narrow/tall geometry; treated as noise""]",noise,0.95,,unknown_like,none,False,False
 16,0,header,"ADVANCED
 SCIENCE NEWS
 www.advancedsciencenews.com","[92.0, 46.0, 339.0, 116.0]",noise,0.9,"[""header label""]",noise,0.9,,unknown_like,none,False,False
@@ -304,13 +332,13 @@ advhealthmat.de","[966.0, 40.0, 1091.0, 115.0]",noise,0.9,"[""header label""]",n
 16,8,text,V) Multifunctional composite systems. The future will see the development of composite biomaterials that combine multiple functionalities within a single material system. These multifunctional composi,"[100.0, 1044.0, 581.0, 1244.0]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,tail_nonref_hold_zone,unknown_like,none,True,True
 16,9,paragraph_title,Keywords,"[603.0, 149.0, 701.0, 175.0]",sub_subsection_heading,0.6,"[""unnumbered paragraph_title, inferred level sub_subsection_heading: Keywords""]",sub_subsection_heading,0.6,body_zone,heading_like,short_fragment,True,True
 16,10,text,The authors declare no conflict of interest.,"[92.0, 1422.0, 377.0, 1442.0]",backmatter_body,0.6,"[""default body_paragraph for text label"", ""tail_nonref_hold_zone excluded from body flow""]",backmatter_body,0.6,tail_nonref_hold_zone,support_like,none,True,True
-16,11,text,"bone tissue, cardiac tissue, cartilage tissue, composite biomaterials, electrical conductivity, magnetic stimulation, nerve tissue","[600.0, 186.0, 1090.0, 227.0]",backmatter_body,0.6,"[""default body_paragraph for text label"", ""tail_nonref_hold_zone excluded from body flow""]",backmatter_body,0.6,tail_nonref_hold_zone,unknown_like,none,True,True
-16,12,text,"Revised: June 13, 2024","[938.0, 268.0, 1091.0, 286.0]",backmatter_body,0.6,"[""default body_paragraph for text label"", ""tail_nonref_hold_zone excluded from body flow""]",backmatter_body,0.6,tail_nonref_hold_zone,unknown_like,none,True,True
+16,11,text,"bone tissue, cardiac tissue, cartilage tissue, composite biomaterials, electrical conductivity, magnetic stimulation, nerve tissue","[600.0, 186.0, 1090.0, 227.0]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
+16,12,text,"Revised: June 13, 2024","[938.0, 268.0, 1091.0, 286.0]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,body_zone,body_like,none,True,True
 16,13,text,"Received: April 1, 2024","[937.0, 248.0, 1091.0, 267.0]",frontmatter_noise,0.6,"[""default body_paragraph for text label"", ""frontmatter_side_zone excluded from body flow""]",frontmatter_noise,0.6,frontmatter_side_zone,support_like,none,False,False
-16,14,paragraph_title,Conflict of Interest,"[92.0, 1384.0, 275.0, 1409.0]",unknown_structural,0.5,"[""backmatter heading on page 16: Conflict of Interest""]",backmatter_heading_candidate,0.8,,support_like,none,False,True
+16,14,paragraph_title,Conflict of Interest,"[92.0, 1384.0, 275.0, 1409.0]",unknown_structural,0.6,"[""unnumbered paragraph_title, inferred level subsection_heading: Conflict of Interest""]",subsection_heading,0.6,tail_nonref_hold_zone,support_like,none,False,True
 16,15,text,"Published online: July 22, 2024","[883.0, 287.0, 1090.0, 307.0]",frontmatter_noise,0.6,"[""default body_paragraph for text label"", ""frontmatter_side_zone excluded from body flow""]",frontmatter_noise,0.6,frontmatter_side_zone,support_like,none,False,False
-16,16,paragraph_title,Acknowledgements,"[92.0, 1275.0, 284.0, 1300.0]",backmatter_heading,0.8,"[""backmatter heading on page 16: Acknowledgements""]",backmatter_heading_candidate,0.8,,heading_like,short_fragment,True,True
-16,17,text,This research was funded by the Natural Sciences and Engineering Research Council of Canada (NSERC) Grant # RGPIN2018-06310.,"[90.0, 1311.0, 580.0, 1352.0]",backmatter_body,0.6,"[""default body_paragraph for text label"", ""tail_nonref_hold_zone excluded from body flow""]",backmatter_body,0.6,tail_nonref_hold_zone,unknown_like,none,True,True
+16,16,paragraph_title,Acknowledgements,"[92.0, 1275.0, 284.0, 1300.0]",sub_subsection_heading,0.6,"[""unnumbered paragraph_title, inferred level sub_subsection_heading: Acknowledgements""]",sub_subsection_heading,0.6,tail_nonref_hold_zone,heading_like,short_fragment,True,True
+16,17,text,This research was funded by the Natural Sciences and Engineering Research Council of Canada (NSERC) Grant # RGPIN2018-06310.,"[90.0, 1311.0, 580.0, 1352.0]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,tail_nonref_hold_zone,unknown_like,none,True,True
 16,18,reference_content,"[1] A. Skorulska, P. Piszko, Z. Rybak, M. Szymonowicz, M. Dobrzyński, Materials 1592, 14, 2021.","[620.0, 386.0, 1090.0, 425.0]",reference_item,0.85,"[""reference content label: [1] A. Skorulska, P. Piszko, Z. Rybak, M. Szymonowicz, M. Do""]",reference_item,0.85,reference_zone,reference_like,reference_numeric_bracket,True,True
 16,19,reference_content,"[2] S. Agarwala, G. L. Goh, G. D. Goh, V. Dikshit, W. Y. Yeong, 3D and 4D Printing of Polymer Nanocomposite Materials: Processes, Applications, and Challenges, pp. 297–324, 2020.","[620.0, 427.0, 1090.0, 485.0]",reference_item,0.85,"[""reference content label: [2] S. Agarwala, G. L. Goh, G. D. Goh, V. Dikshit, W. Y. Yeo""]",reference_item,0.85,reference_zone,reference_like,reference_numeric_bracket,True,True
 16,20,reference_content,"[3] C. Ma, T. Du, X. Niu, Y. Fan, Bone Res. 2022, 10, https://doi.org/10.1038/s41413-022-00223-y.","[620.0, 487.0, 1089.0, 524.0]",reference_item,0.85,"[""reference content label: [3] C. Ma, T. Du, X. Niu, Y. Fan, Bone Res. 2022, 10, https:""]",reference_item,0.85,reference_zone,reference_like,reference_numeric_bracket,True,True
@@ -338,7 +366,7 @@ advhealthmat.de","[966.0, 40.0, 1091.0, 115.0]",noise,0.9,"[""header label""]",n
 16,42,footer,"Adv. Healthcare Mater. 2024, 13, 2401218","[93.0, 1487.0, 336.0, 1505.0]",noise,0.9,"[""footer label""]",noise,0.9,,unknown_like,none,False,False
 16,43,footer,2401218 (16 of 20),"[387.0, 1484.0, 529.0, 1507.0]",noise,0.9,"[""footer label""]",noise,0.9,reference_zone,reference_like,reference_numeric_dot,False,False
 16,44,footer,© 2024 The Author(s). Advanced Healthcare Materials published by Wiley-VCH GmbH,"[582.0, 1488.0, 1090.0, 1506.0]",noise,0.9,"[""footer label""]",noise,0.9,,unknown_like,none,False,False
-16,45,aside_text,"2022659, 2024, 27, Downloaded from https://advancedonlinelibrary.wiley.com/doi/10.1002/adhm.202401218 by Shandong University Library, Wiley Online Library on (05/02/2026). See the Terms and Conditions","[1156.0, 32.0, 1171.0, 1536.0]",unknown_structural,0.2,"[""unrecognized label 'aside_text'""]",unknown_structural,0.2,,unknown_like,none,False,True
+16,45,aside_text,"2022659, 2024, 27, Downloaded from https://advancedonlinelibrary.wiley.com/doi/10.1002/adhm.202401218 by Shandong University Library, Wiley Online Library on (05/02/2026). See the Terms and Conditions","[1156.0, 32.0, 1171.0, 1536.0]",noise,0.95,"[""margin-band narrow/tall geometry; treated as noise""]",noise,0.95,,unknown_like,none,False,False
 17,0,header,"ADVANCED
 SCIENCE NEWS
 www.advancedsciencenews.co","[98.0, 46.0, 323.0, 115.0]",noise,0.9,"[""header label""]",noise,0.9,,unknown_like,none,False,False
@@ -405,7 +433,7 @@ www.advancedsciencenews.co","[98.0, 46.0, 323.0, 115.0]",noise,0.9,"[""header la
 17,61,footer,"Adv. Healthcare Mater. 2024, 13, 2401218","[99.0, 1488.0, 342.0, 1504.0]",noise,0.9,"[""footer label""]",noise,0.9,,unknown_like,none,False,False
 17,62,footer,2401218 (17 of 20),"[392.0, 1484.0, 535.0, 1507.0]",noise,0.9,"[""footer label""]",noise,0.9,reference_zone,reference_like,reference_numeric_dot,False,False
 17,63,footer,© 2024 The Author(s). Advanced Healthcare Materials published by Wiley-VCH GmbH,"[586.0, 1487.0, 1097.0, 1506.0]",noise,0.9,"[""footer label""]",noise,0.9,,unknown_like,none,False,False
-17,64,aside_text,"21922659, 2024, 27, Downloaded from https://advancedonlinelibrary.wiley.com/doi/10.1002/adfm.202401218 by Shandong University Library, Wiley Online Library on [05/02/2026]. See the Terms and Condition","[1156.0, 33.0, 1171.0, 1536.0]",unknown_structural,0.2,"[""unrecognized label 'aside_text'""]",unknown_structural,0.2,,unknown_like,none,False,True
+17,64,aside_text,"21922659, 2024, 27, Downloaded from https://advancedonlinelibrary.wiley.com/doi/10.1002/adfm.202401218 by Shandong University Library, Wiley Online Library on [05/02/2026]. See the Terms and Condition","[1156.0, 33.0, 1171.0, 1536.0]",noise,0.95,"[""margin-band narrow/tall geometry; treated as noise""]",noise,0.95,,unknown_like,none,False,False
 18,0,header,"ADVANCED
 SCIENCE NEWS
 www.advancedsciencenews.com","[90.0, 46.0, 339.0, 116.0]",noise,0.9,"[""header label""]",noise,0.9,,unknown_like,none,False,False
@@ -468,7 +496,7 @@ www.advancedsciencenews.com","[90.0, 46.0, 339.0, 116.0]",noise,0.9,"[""header l
 18,57,footer,"Adv. Healthcare Mater. 2024, 13, 2401218","[93.0, 1488.0, 336.0, 1505.0]",noise,0.9,"[""footer label""]",noise,0.9,,unknown_like,none,False,False
 18,58,footer,2401218 (18 of 20),"[386.0, 1484.0, 529.0, 1506.0]",noise,0.9,"[""footer label""]",noise,0.9,reference_zone,reference_like,reference_numeric_dot,False,False
 18,59,footer,© 2024 The Author(s). Advanced Healthcare Materials published by Wiley-VCH GmbH,"[581.0, 1488.0, 1091.0, 1506.0]",noise,0.9,"[""footer label""]",noise,0.9,,unknown_like,none,False,False
-18,60,aside_text,"21922659, 2024, 27, Downloaded from https://advancedonlinelibrary.wiley.com/doi/10.1002/adfm.202401218 by Shandong University Library, Wiley Online Library on [05/02/2026]. See the Terms and Condition","[1156.0, 33.0, 1171.0, 1536.0]",unknown_structural,0.2,"[""unrecognized label 'aside_text'""]",unknown_structural,0.2,,unknown_like,none,False,True
+18,60,aside_text,"21922659, 2024, 27, Downloaded from https://advancedonlinelibrary.wiley.com/doi/10.1002/adfm.202401218 by Shandong University Library, Wiley Online Library on [05/02/2026]. See the Terms and Condition","[1156.0, 33.0, 1171.0, 1536.0]",noise,0.95,"[""margin-band narrow/tall geometry; treated as noise""]",noise,0.95,,unknown_like,none,False,False
 19,0,header,"ADVANCED
 SCIENCE NEWS
 www.advancedsciencenews.com","[98.0, 46.0, 344.0, 116.0]",noise,0.9,"[""header label""]",noise,0.9,,unknown_like,none,False,False
@@ -530,7 +558,7 @@ www.advancedsciencenews.com","[98.0, 46.0, 344.0, 116.0]",noise,0.9,"[""header l
 19,56,footer,"Adv. Healthcare Mater. 2024, 13, 2401218","[99.0, 1488.0, 342.0, 1504.0]",noise,0.9,"[""footer label""]",noise,0.9,,unknown_like,none,False,False
 19,57,footer,2401218 (19 of 20),"[392.0, 1484.0, 535.0, 1507.0]",noise,0.9,"[""footer label""]",noise,0.9,reference_zone,reference_like,reference_numeric_dot,False,False
 19,58,footer,© 2024 The Author(s). Advanced Healthcare Materials published by Wiley-VCH GmbH,"[586.0, 1487.0, 1097.0, 1506.0]",noise,0.9,"[""footer label""]",noise,0.9,,unknown_like,none,False,False
-19,59,aside_text,"2022659, 2024, 27, Downloaded from https://advancedonlinelibrary.wiley.com/doi/10.1002/adhm.202401218 by Shandong University Library, Wiley Online Library on [05/02/2026]. See the Terms and Conditions","[1156.0, 32.0, 1171.0, 1535.0]",unknown_structural,0.2,"[""unrecognized label 'aside_text'""]",unknown_structural,0.2,,unknown_like,none,False,True
+19,59,aside_text,"2022659, 2024, 27, Downloaded from https://advancedonlinelibrary.wiley.com/doi/10.1002/adhm.202401218 by Shandong University Library, Wiley Online Library on [05/02/2026]. See the Terms and Conditions","[1156.0, 32.0, 1171.0, 1535.0]",noise,0.95,"[""margin-band narrow/tall geometry; treated as noise""]",noise,0.95,,unknown_like,none,False,False
 20,0,header,"ADVANCED
 SCIENCE NEWS
 www.advancedsciencenews.com","[93.0, 46.0, 339.0, 116.0]",noise,0.9,"[""header label""]",noise,0.9,,unknown_like,none,False,False
@@ -553,8 +581,8 @@ www.advancedsciencenews.com","[93.0, 46.0, 339.0, 116.0]",noise,0.9,"[""header l
 20,17,image,,"[114.0, 749.0, 314.0, 1007.0]",media_asset,0.85,"[""media label: image""]",media_asset,0.85,,unknown_like,empty,True,True
 20,18,vision_footnote,Amin S. Rizkalla is a professor at Western University in Schulich Dentistry; Chemical and Biochemical Engineering; Medical Biophysics; and Biomedical Engineering. His research area is in dental and or,"[326.0, 748.0, 1070.0, 903.0]",footnote,0.7,"[""vision_footnote label: Amin S. Rizkalla is a professor at Western University in Sch""]",footnote,0.7,reference_zone,reference_like,citation_line,True,True
 20,19,image,,"[113.0, 1036.0, 315.0, 1293.0]",media_asset,0.85,"[""media label: image""]",media_asset,0.85,,unknown_like,empty,True,True
-20,20,text,"Kibret Mequanint is a Professor in the Department of Chemical and Biochemical Engineering and the School of Biomedical Engineering at the University of Western Ontario, Canada. His research interests ","[326.0, 1032.0, 1069.0, 1232.0]",body_paragraph,0.6,"[""default body_paragraph for text label""]",body_paragraph,0.6,tail_nonref_hold_zone,unknown_like,none,True,True
+20,20,text,"Kibret Mequanint is a Professor in the Department of Chemical and Biochemical Engineering and the School of Biomedical Engineering at the University of Western Ontario, Canada. His research interests ","[326.0, 1032.0, 1069.0, 1232.0]",body_paragraph,0.6,"[""default body_paragraph for text label"", ""promoted in tail spread from body_paragraph""]",body_paragraph,0.6,tail_nonref_hold_zone,unknown_like,none,True,True
 20,21,footer,"Adv. Healthcare Mater. 2024, 13, 2401218","[93.0, 1488.0, 336.0, 1504.0]",noise,0.9,"[""footer label""]",noise,0.9,,unknown_like,none,False,False
 20,22,footer,2401218 (20 of 20),"[387.0, 1485.0, 528.0, 1506.0]",noise,0.9,"[""footer label""]",noise,0.9,reference_zone,reference_like,reference_numeric_dot,False,False
 20,23,footer,© 2024 The Author(s). Advanced Healthcare Materials published by Wiley-VCH GmbH,"[582.0, 1488.0, 1090.0, 1506.0]",noise,0.9,"[""footer label""]",noise,0.9,,unknown_like,none,False,False
-20,24,aside_text,"21922659, 2024, 27, Downloaded from https://advanced.onlinelibrary.wiley.com/doi/10.1002/adlm.202401218 by Shandong University Library, Wiley Online Library on [05/02/2026]. See the Terms and Conditio","[1156.0, 31.0, 1171.0, 1535.0]",unknown_structural,0.2,"[""unrecognized label 'aside_text'""]",unknown_structural,0.2,,unknown_like,none,False,True
+20,24,aside_text,"21922659, 2024, 27, Downloaded from https://advanced.onlinelibrary.wiley.com/doi/10.1002/adlm.202401218 by Shandong University Library, Wiley Online Library on [05/02/2026]. See the Terms and Conditio","[1156.0, 31.0, 1171.0, 1535.0]",noise,0.95,"[""margin-band narrow/tall geometry; treated as noise""]",noise,0.95,,unknown_like,none,False,False

@@ -56,7 +56,13 @@ def _vertical_gap(a, b) -> float:
 def _merge_adjacent_headings(rows: list[dict]) -> None:
     """Merge consecutive heading-labeled raw blocks split by OCR line breaks.
     Called BEFORE seed role assignment on raw_blocks, using raw_label only.
+
+    Does NOT merge when the second heading has a deeper numbering level
+    (e.g. ``"2.1. Materials"`` after ``"2. Methods"``), which indicates a
+    subsection that should stay separate from its parent section heading.
     """
+    import re
+    _HEADING_NUMBER_DEPTH = re.compile(r"^\s*(\d+(?:\.\d+)*)")
     _COL_SPLIT_RATIO = 0.5
 
     def _col(b):
@@ -66,6 +72,12 @@ def _merge_adjacent_headings(rows: list[dict]) -> None:
             return 0
         cx = (bb[0] + bb[2]) / 2
         return 0 if cx < pw * _COL_SPLIT_RATIO else 1
+
+    def _heading_depth(b: dict) -> int:
+        m = _HEADING_NUMBER_DEPTH.match(str(b.get("text") or ""))
+        if not m:
+            return 0
+        return m.group(1).count(".") + 1
 
     i = 0
     while i < len(rows) - 1:
@@ -77,6 +89,7 @@ def _merge_adjacent_headings(rows: list[dict]) -> None:
             and cur.get("page") == nxt.get("page")
             and _col(cur) == _col(nxt)
             and _vertical_gap(cur, nxt) <= 30  # OCR line-wrap within same heading
+            and _heading_depth(cur) >= _heading_depth(nxt)  # don't swallow deeper subsections
         ):
             cur["text"] = (str(cur.get("text", "")) + " " + str(nxt.get("text", ""))).strip()
             cur["bbox"] = _union_bbox(cur.get("bbox"), nxt.get("bbox"))

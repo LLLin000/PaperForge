@@ -1,13 +1,13 @@
 {
-  "mappable_block_count": 249,
-  "found_count": 230,
-  "missing_count": 19,
+  "mappable_block_count": 251,
+  "found_count": 177,
+  "missing_count": 74,
   "rows": [
     {
       "block_id": "p2:1",
       "page": 2,
       "role": "paper_title",
-      "zone": "body_zone",
+      "zone": "frontmatter_main_zone",
       "render_default": true,
       "snippet": "Directionalities of magnetic fields and topographic scaffolds synergise to enhan",
       "found_in_fulltext": true,
@@ -16,8 +16,8 @@
     {
       "block_id": "p2:2",
       "page": 2,
-      "role": "frontmatter_support",
-      "zone": "body_zone",
+      "role": "authors",
+      "zone": "frontmatter_main_zone",
       "render_default": true,
       "snippet": "Cenk Celik $ ^{1} $, Alfredo Franco-Obregón $ ^{2,3,4,5*} $, Eng Hin Lee $ ^{1,6",
       "found_in_fulltext": false,
@@ -26,8 +26,8 @@
     {
       "block_id": "p2:3",
       "page": 2,
-      "role": "frontmatter_support",
-      "zone": "body_zone",
+      "role": "affiliation",
+      "zone": "frontmatter_main_zone",
       "render_default": true,
       "snippet": "Department of Orthopaedic Surgery, Yong Loo Lin School of Medicine, National Uni",
       "found_in_fulltext": false,
@@ -36,8 +36,8 @@
     {
       "block_id": "p2:4",
       "page": 2,
-      "role": "frontmatter_support",
-      "zone": "body_zone",
+      "role": "affiliation",
+      "zone": "frontmatter_main_zone",
       "render_default": true,
       "snippet": "2 Department of Surgery, Yong Loo Lin School of Medicine, National University of",
       "found_in_fulltext": false,
@@ -46,8 +46,8 @@
     {
       "block_id": "p2:5",
       "page": 2,
-      "role": "frontmatter_support",
-      "zone": "body_zone",
+      "role": "affiliation",
+      "zone": "frontmatter_main_zone",
       "render_default": true,
       "snippet": "Biolonic Currents Electromagnetic Pulsing Systems Laboratory, BICEPS, National U",
       "found_in_fulltext": false,
@@ -56,8 +56,8 @@
     {
       "block_id": "p2:6",
       "page": 2,
-      "role": "frontmatter_support",
-      "zone": "body_zone",
+      "role": "affiliation",
+      "zone": "frontmatter_main_zone",
       "render_default": true,
       "snippet": "4 Institute for Health Innovation & Technology, iHealthtech, National University",
       "found_in_fulltext": false,
@@ -66,8 +66,8 @@
     {
       "block_id": "p2:7",
       "page": 2,
-      "role": "frontmatter_support",
-      "zone": "body_zone",
+      "role": "affiliation",
+      "zone": "frontmatter_main_zone",
       "render_default": true,
       "snippet": "Department of Physiology, Yong Loo Lin School of Medicine, National University o",
       "found_in_fulltext": false,
@@ -76,10 +76,20 @@
     {
       "block_id": "p2:8",
       "page": 2,
-      "role": "frontmatter_support",
-      "zone": "body_zone",
+      "role": "affiliation",
+      "zone": "frontmatter_main_zone",
       "render_default": true,
       "snippet": "Tissue Engineering Program (NUSTEP), Life Sciences Institute, National Universit",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:9",
+      "page": 2,
+      "role": "frontmatter_support",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "* Corresponding authors: Zheng Yang, dosyz@nus.edu.sg; Alfredo Franco-Obregón, s",
       "found_in_fulltext": false,
       "fulltext_offset": -1
     },
@@ -87,7 +97,7 @@
       "block_id": "p2:10",
       "page": 2,
       "role": "noise",
-      "zone": "body_zone",
+      "zone": "frontmatter_main_zone",
       "render_default": false,
       "snippet": "1",
       "found_in_fulltext": true,
@@ -160,8 +170,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "1. Introduction",
-      "found_in_fulltext": true,
-      "fulltext_offset": 1506
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p4:2",
@@ -170,8 +180,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "Mesenchymal stem cells (MSCs) exhibit multipotency to differentiate into multipl",
-      "found_in_fulltext": true,
-      "fulltext_offset": 1522
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p4:3",
@@ -181,7 +191,7 @@
       "render_default": true,
       "snippet": "Studies have examined the interaction between stem cells and different",
       "found_in_fulltext": true,
-      "fulltext_offset": 2259
+      "fulltext_offset": 1503
     },
     {
       "block_id": "p4:4",
@@ -191,7 +201,7 @@
       "render_default": true,
       "snippet": "microenvironmental cues presented on functionalised scaffolds [8], as well as th",
       "found_in_fulltext": true,
-      "fulltext_offset": 2330
+      "fulltext_offset": 1574
     },
     {
       "block_id": "p4:5",
@@ -201,7 +211,7 @@
       "render_default": true,
       "snippet": "[14]. Mechanotransduction within the cell is dependent on FA and cytoskeleton ac",
       "found_in_fulltext": true,
-      "fulltext_offset": 3115
+      "fulltext_offset": 2359
     },
     {
       "block_id": "p4:6",
@@ -211,7 +221,7 @@
       "render_default": true,
       "snippet": "We have previously demonstrated that brief exposure to PEMFs (10 minutes), appli",
       "found_in_fulltext": true,
-      "fulltext_offset": 3409
+      "fulltext_offset": 2653
     },
     {
       "block_id": "p4:7",
@@ -230,8 +240,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "chondrogenesis in pellet cultures [23], whereby the exposure parameters were est",
-      "found_in_fulltext": true,
-      "fulltext_offset": 3589
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p5:2",
@@ -240,8 +250,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "2. Materials and Methods 2.1. Fabrication and characterisation of electrospun fi",
-      "found_in_fulltext": true,
-      "fulltext_offset": 5077
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p5:4",
@@ -251,7 +261,7 @@
       "render_default": true,
       "snippet": "Poly(lacto-co-caprolactone) (PLCL, PURASORB PLC 7015, Corbion, the Netherlands) ",
       "found_in_fulltext": true,
-      "fulltext_offset": 5173
+      "fulltext_offset": 2833
     },
     {
       "block_id": "p5:5",
@@ -270,8 +280,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "voltage supply of 15 kV. Randomly-oriented (RND) and parallel aligned fibres (AL",
-      "found_in_fulltext": true,
-      "fulltext_offset": 5608
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p6:2",
@@ -280,8 +290,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "2.2. Human bone marrow-derived MSC culture",
-      "found_in_fulltext": true,
-      "fulltext_offset": 6343
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p6:3",
@@ -291,7 +301,7 @@
       "render_default": true,
       "snippet": "Human bone marrow mesenchymal stem cells (MSCs) were purchased from RoosterBio, ",
       "found_in_fulltext": true,
-      "fulltext_offset": 6386
+      "fulltext_offset": 3268
     },
     {
       "block_id": "p6:4",
@@ -301,7 +311,7 @@
       "render_default": true,
       "snippet": "2.3. MSC chondrogenic differentiation",
       "found_in_fulltext": true,
-      "fulltext_offset": 6697
+      "fulltext_offset": 3579
     },
     {
       "block_id": "p6:5",
@@ -311,7 +321,7 @@
       "render_default": true,
       "snippet": "Chondrogenic differentiation of MSCs was induced three days after seeding the MS",
       "found_in_fulltext": true,
-      "fulltext_offset": 6735
+      "fulltext_offset": 3617
     },
     {
       "block_id": "p6:6",
@@ -321,7 +331,7 @@
       "render_default": false,
       "snippet": "5",
       "found_in_fulltext": true,
-      "fulltext_offset": 1882
+      "fulltext_offset": 2482
     },
     {
       "block_id": "p7:1",
@@ -340,8 +350,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "2.4. PEMF exposure paradigm",
-      "found_in_fulltext": true,
-      "fulltext_offset": 8251
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p7:3",
@@ -351,7 +361,7 @@
       "render_default": true,
       "snippet": "The PEMF delivery device used in this study has been previously described [23,31",
       "found_in_fulltext": true,
-      "fulltext_offset": 8279
+      "fulltext_offset": 4597
     },
     {
       "block_id": "p7:4",
@@ -361,7 +371,7 @@
       "render_default": true,
       "snippet": "The PEMF delivery device used in this study has been previously described. MSCs ",
       "found_in_fulltext": true,
-      "fulltext_offset": 8365
+      "fulltext_offset": 4683
     },
     {
       "block_id": "p7:5",
@@ -371,7 +381,7 @@
       "render_default": true,
       "snippet": "topographies were subjected to PEMFs, applied in different directions, as shown ",
       "found_in_fulltext": true,
-      "fulltext_offset": 9033
+      "fulltext_offset": 5351
     },
     {
       "block_id": "p7:6",
@@ -381,7 +391,7 @@
       "render_default": true,
       "snippet": "2.5. Cell apoptosis",
       "found_in_fulltext": true,
-      "fulltext_offset": 9589
+      "fulltext_offset": 5907
     },
     {
       "block_id": "p7:7",
@@ -410,8 +420,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "topographies at room temperature and then was shaken at 400 rpm for 30 s, follow",
-      "found_in_fulltext": true,
-      "fulltext_offset": 9802
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p8:2",
@@ -420,8 +430,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "2.6. Cell proliferation",
-      "found_in_fulltext": true,
-      "fulltext_offset": 10035
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p8:3",
@@ -441,7 +451,7 @@
       "render_default": true,
       "snippet": "2.7. Real-time PCR analyses",
       "found_in_fulltext": true,
-      "fulltext_offset": 10805
+      "fulltext_offset": 6866
     },
     {
       "block_id": "p8:5",
@@ -461,7 +471,7 @@
       "render_default": true,
       "snippet": "2.8. Immunofluorescence staining",
       "found_in_fulltext": true,
-      "fulltext_offset": 11660
+      "fulltext_offset": 7721
     },
     {
       "block_id": "p8:7",
@@ -471,7 +481,7 @@
       "render_default": true,
       "snippet": "Cells were fixed in 10% neutral-buffered formalin solution (Sigma-Aldrich), perm",
       "found_in_fulltext": true,
-      "fulltext_offset": 11693
+      "fulltext_offset": 7754
     },
     {
       "block_id": "p8:8",
@@ -481,7 +491,7 @@
       "render_default": false,
       "snippet": "7",
       "found_in_fulltext": true,
-      "fulltext_offset": 2155
+      "fulltext_offset": 2485
     },
     {
       "block_id": "p9:1",
@@ -500,8 +510,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "2.9. Western blotting",
-      "found_in_fulltext": true,
-      "fulltext_offset": 13056
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p9:3",
@@ -521,7 +531,7 @@
       "render_default": false,
       "snippet": "8",
       "found_in_fulltext": true,
-      "fulltext_offset": 2393
+      "fulltext_offset": 1637
     },
     {
       "block_id": "p10:1",
@@ -530,8 +540,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "anti-YAP (63.7) antibody (sc-101199, Santa Cruz Biotechnology). Blots were incub",
-      "found_in_fulltext": true,
-      "fulltext_offset": 14175
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p10:2",
@@ -540,8 +550,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "2.10. Mitochondrial Stress Measurements",
-      "found_in_fulltext": true,
-      "fulltext_offset": 14598
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p10:3",
@@ -551,7 +561,7 @@
       "render_default": true,
       "snippet": "Effects of PEMFs on mitochondrial stress was assessed by the Mitochondrial Stres",
       "found_in_fulltext": true,
-      "fulltext_offset": 14638
+      "fulltext_offset": 9131
     },
     {
       "block_id": "p10:4",
@@ -561,7 +571,7 @@
       "render_default": true,
       "snippet": "2.11. Statistical Analysis",
       "found_in_fulltext": true,
-      "fulltext_offset": 16168
+      "fulltext_offset": 10661
     },
     {
       "block_id": "p10:5",
@@ -571,7 +581,7 @@
       "render_default": true,
       "snippet": "All experiments were performed in biological replicates (n = 3). Statistical ana",
       "found_in_fulltext": true,
-      "fulltext_offset": 16195
+      "fulltext_offset": 10688
     },
     {
       "block_id": "p10:6",
@@ -590,8 +600,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "assessed by Student's t-test for comparison of PEMF directions within a topograp",
-      "found_in_fulltext": true,
-      "fulltext_offset": 16303
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p11:2",
@@ -600,8 +610,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "3. Results 3.1. Characterisation of electrospun scaffolds",
-      "found_in_fulltext": true,
-      "fulltext_offset": 16692
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p11:4",
@@ -611,7 +621,7 @@
       "render_default": true,
       "snippet": "SEM images (Fig. 2A) showed the distinct nanofibrillar organisations present in ",
       "found_in_fulltext": true,
-      "fulltext_offset": 16750
+      "fulltext_offset": 10796
     },
     {
       "block_id": "p11:5",
@@ -621,7 +631,7 @@
       "render_default": true,
       "snippet": "3.2. Optimisation of PEMF conditions for MSC chondrogenesis on fibrous scaffolds",
       "found_in_fulltext": true,
-      "fulltext_offset": 17826
+      "fulltext_offset": 11872
     },
     {
       "block_id": "p11:6",
@@ -640,8 +650,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "and ACAN in response to exposure at 2 mT PEMFs (Fig. 3A). By contrast, MSC chond",
-      "found_in_fulltext": true,
-      "fulltext_offset": 18269
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p12:2",
@@ -650,8 +660,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "We investigated the consequences of repetitive PEMF exposures over MSC chondroge",
-      "found_in_fulltext": true,
-      "fulltext_offset": 18950
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p12:3",
@@ -661,7 +671,7 @@
       "render_default": true,
       "snippet": "3.3. Effect of directional PEMF on MSC chondrogenesis",
       "found_in_fulltext": true,
-      "fulltext_offset": 19976
+      "fulltext_offset": 12319
     },
     {
       "block_id": "p12:4",
@@ -671,7 +681,7 @@
       "render_default": true,
       "snippet": "After defining a reference PEMF efficacy window, the chondrogenic consequences o",
       "found_in_fulltext": true,
-      "fulltext_offset": 20030
+      "fulltext_offset": 12373
     },
     {
       "block_id": "p12:5",
@@ -681,7 +691,7 @@
       "render_default": false,
       "snippet": "11",
       "found_in_fulltext": true,
-      "fulltext_offset": 2745
+      "fulltext_offset": 1989
     },
     {
       "block_id": "p13:1",
@@ -690,8 +700,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "the RND scaffolds, but not when applied to MSCs on TCP or ALN scaffolds (Fig. 4A",
-      "found_in_fulltext": true,
-      "fulltext_offset": 20299
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p13:2",
@@ -700,8 +710,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "Immunofluorescence staining for COL II, ACAN and COL I at 21-days following PEMF",
-      "found_in_fulltext": true,
-      "fulltext_offset": 21097
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p13:3",
@@ -711,7 +721,7 @@
       "render_default": true,
       "snippet": "3.4. Effects of directional PEMFs on MSC proliferation and viability",
       "found_in_fulltext": true,
-      "fulltext_offset": 21930
+      "fulltext_offset": 12646
     },
     {
       "block_id": "p13:4",
@@ -721,7 +731,7 @@
       "render_default": true,
       "snippet": "The effects of directional PEMF exposure over MSC apoptosis on TCP, RND and ALN ",
       "found_in_fulltext": true,
-      "fulltext_offset": 21999
+      "fulltext_offset": 12715
     },
     {
       "block_id": "p13:5",
@@ -731,7 +741,7 @@
       "render_default": false,
       "snippet": "12",
       "found_in_fulltext": true,
-      "fulltext_offset": 12160
+      "fulltext_offset": 8538
     },
     {
       "block_id": "p14:1",
@@ -740,8 +750,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "unaffected by PEMF exposure of any orientation. Apoptosis was initially lowest f",
-      "found_in_fulltext": true,
-      "fulltext_offset": 22444
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p14:2",
@@ -750,8 +760,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "3.5. Dynamic effects of directional PEMFs on cell morphology",
-      "found_in_fulltext": true,
-      "fulltext_offset": 23277
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p14:3",
@@ -761,7 +771,7 @@
       "render_default": true,
       "snippet": "Changes in MSC morphology, indicative of mechanical force distribution, were mon",
       "found_in_fulltext": true,
-      "fulltext_offset": 23338
+      "fulltext_offset": 13160
     },
     {
       "block_id": "p14:4",
@@ -771,7 +781,7 @@
       "render_default": true,
       "snippet": "3.6. Effects of directional PEMF on focal adhesion kinase",
       "found_in_fulltext": true,
-      "fulltext_offset": 24042
+      "fulltext_offset": 13864
     },
     {
       "block_id": "p14:5",
@@ -781,7 +791,7 @@
       "render_default": true,
       "snippet": "The response of MSCs to PEMF orientation and substrate was examined at the level",
       "found_in_fulltext": true,
-      "fulltext_offset": 24100
+      "fulltext_offset": 13922
     },
     {
       "block_id": "p14:6",
@@ -791,7 +801,7 @@
       "render_default": false,
       "snippet": "13",
       "found_in_fulltext": true,
-      "fulltext_offset": 2748
+      "fulltext_offset": 1992
     },
     {
       "block_id": "p15:1",
@@ -800,8 +810,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "polygonal morphology but were smaller in size and lacked prominent stress fibre ",
-      "found_in_fulltext": true,
-      "fulltext_offset": 24538
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p15:2",
@@ -810,8 +820,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "pFAK size and dimensions was also subject to modulation by field orientation. Th",
-      "found_in_fulltext": true,
-      "fulltext_offset": 25700
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p15:3",
@@ -821,7 +831,7 @@
       "render_default": true,
       "snippet": "pFAK-mediated mechanotransduction via the ERK and P38 signalling pathways [35–37",
       "found_in_fulltext": true,
-      "fulltext_offset": 26327
+      "fulltext_offset": 14360
     },
     {
       "block_id": "p15:4",
@@ -831,7 +841,7 @@
       "render_default": false,
       "snippet": "14",
       "found_in_fulltext": true,
-      "fulltext_offset": 3116
+      "fulltext_offset": 2360
     },
     {
       "block_id": "p16:1",
@@ -840,8 +850,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "both the RND and ALN scaffolds, whereas they had no effect on MSCs on TCP. ERK p",
-      "found_in_fulltext": true,
-      "fulltext_offset": 26672
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p16:2",
@@ -850,8 +860,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "3.7. Dynamic effects of directional PEMFs on YAP expression",
-      "found_in_fulltext": true,
-      "fulltext_offset": 27401
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p16:3",
@@ -861,7 +871,7 @@
       "render_default": true,
       "snippet": "YAP, a mechanosensitive transcriptional co-activator [38,39], exhibited predomin",
       "found_in_fulltext": true,
-      "fulltext_offset": 27461
+      "fulltext_offset": 14705
     },
     {
       "block_id": "p16:4",
@@ -871,7 +881,7 @@
       "render_default": true,
       "snippet": "3.8. Role of pFAK in transducing PEMF effect on MSC chondrogenesis",
       "found_in_fulltext": true,
-      "fulltext_offset": 28700
+      "fulltext_offset": 15944
     },
     {
       "block_id": "p16:5",
@@ -881,7 +891,7 @@
       "render_default": false,
       "snippet": "15",
       "found_in_fulltext": true,
-      "fulltext_offset": 3237
+      "fulltext_offset": 2481
     },
     {
       "block_id": "p17:1",
@@ -890,8 +900,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "Inhibition of FAK phosphorylation confirmed the role of pFAK in transducing the ",
-      "found_in_fulltext": true,
-      "fulltext_offset": 28784
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p17:2",
@@ -900,8 +910,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "3.9. Effects of directional PEMFs on mitochondrial stress and the role of pFAK P",
-      "found_in_fulltext": true,
-      "fulltext_offset": 29925
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p17:3",
@@ -920,8 +930,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "but was strongly suppressed pFAK inhibition in all conditions.",
-      "found_in_fulltext": true,
-      "fulltext_offset": 30947
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p18:2",
@@ -930,8 +940,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "4. Discussion",
-      "found_in_fulltext": true,
-      "fulltext_offset": 31013
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p18:3",
@@ -941,7 +951,7 @@
       "render_default": true,
       "snippet": "Existing studies examining the capacity of PEMF-based strategies to promote MSC ",
       "found_in_fulltext": true,
-      "fulltext_offset": 31027
+      "fulltext_offset": 16045
     },
     {
       "block_id": "p18:4",
@@ -951,7 +961,7 @@
       "render_default": true,
       "snippet": "The distinct substrates compared in this study established diverse micromechanic",
       "found_in_fulltext": true,
-      "fulltext_offset": 32356
+      "fulltext_offset": 17374
     },
     {
       "block_id": "p18:5",
@@ -961,7 +971,7 @@
       "render_default": false,
       "snippet": "17",
       "found_in_fulltext": true,
-      "fulltext_offset": 3240
+      "fulltext_offset": 2484
     },
     {
       "block_id": "p19:1",
@@ -970,8 +980,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "cytoplasmic YAP localisation.",
-      "found_in_fulltext": true,
-      "fulltext_offset": 32979
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p19:2",
@@ -980,8 +990,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "MSCs with rounded morphologies are associated with great chondrogenic potential ",
-      "found_in_fulltext": true,
-      "fulltext_offset": 33009
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p19:3",
@@ -991,7 +1001,7 @@
       "render_default": true,
       "snippet": "Both RND and ALN fibrous scaffolds have previously been demonstrated to be condu",
       "found_in_fulltext": true,
-      "fulltext_offset": 33980
+      "fulltext_offset": 17997
     },
     {
       "block_id": "p19:4",
@@ -1001,7 +1011,7 @@
       "render_default": false,
       "snippet": "18",
       "found_in_fulltext": true,
-      "fulltext_offset": 3281
+      "fulltext_offset": 2525
     },
     {
       "block_id": "p20:1",
@@ -1010,8 +1020,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "which Z-directed PEMFs to promote MSC-chondrogenesis chondrogenesis.",
-      "found_in_fulltext": true,
-      "fulltext_offset": 35093
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p20:2",
@@ -1020,8 +1030,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "PEMFs administered parallel to the plane of the tissue culture dish, in either t",
-      "found_in_fulltext": true,
-      "fulltext_offset": 35162
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p20:3",
@@ -1031,7 +1041,7 @@
       "render_default": true,
       "snippet": "Agreeing with our previous report examining PEMF-induced MSC chondrogenesis in p",
       "found_in_fulltext": true,
-      "fulltext_offset": 35893
+      "fulltext_offset": 19110
     },
     {
       "block_id": "p20:4",
@@ -1041,7 +1051,7 @@
       "render_default": false,
       "snippet": "19",
       "found_in_fulltext": true,
-      "fulltext_offset": 3329
+      "fulltext_offset": 2573
     },
     {
       "block_id": "p21:1",
@@ -1050,8 +1060,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "6B), increased ERK phosphorylation (Fig. 5F-G) and, accordingly, enhanced",
-      "found_in_fulltext": true,
-      "fulltext_offset": 37263
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p21:2",
@@ -1060,8 +1070,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "chondrogenesis. By direct contrast, X-directed PEMFs applied to the RND scaffold",
-      "found_in_fulltext": true,
-      "fulltext_offset": 37337
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p21:3",
@@ -1071,7 +1081,7 @@
       "render_default": true,
       "snippet": "increased FAK activation, decreased ERK phosphorylation (Fig. 6G), pro",
       "found_in_fulltext": true,
-      "fulltext_offset": 37419
+      "fulltext_offset": 20480
     },
     {
       "block_id": "p21:4",
@@ -1081,7 +1091,7 @@
       "render_default": true,
       "snippet": "detectable change in YAP localisation (Fig. 6B) and inhibited MSC chondrogenesis",
       "found_in_fulltext": true,
-      "fulltext_offset": 37490
+      "fulltext_offset": 20551
     },
     {
       "block_id": "p21:5",
@@ -1091,7 +1101,7 @@
       "render_default": true,
       "snippet": "neither the macroscopic mechanical environment nor amplitude of the magnetic fie",
       "found_in_fulltext": true,
-      "fulltext_offset": 37578
+      "fulltext_offset": 20639
     },
     {
       "block_id": "p21:6",
@@ -1101,7 +1111,7 @@
       "render_default": true,
       "snippet": "differ in the distinct orientations, differences in cell sheet spreading in the ",
       "found_in_fulltext": true,
-      "fulltext_offset": 37662
+      "fulltext_offset": 20723
     },
     {
       "block_id": "p21:7",
@@ -1111,7 +1121,7 @@
       "render_default": true,
       "snippet": "of the dish) and vertical planes are the most likely variable to account for the",
       "found_in_fulltext": true,
-      "fulltext_offset": 37760
+      "fulltext_offset": 20821
     },
     {
       "block_id": "p21:8",
@@ -1121,7 +1131,7 @@
       "render_default": true,
       "snippet": "difference (Fig. 1B). These results reveal an interplay between magnetic field d",
       "found_in_fulltext": true,
-      "fulltext_offset": 37850
+      "fulltext_offset": 20911
     },
     {
       "block_id": "p21:9",
@@ -1131,7 +1141,7 @@
       "render_default": true,
       "snippet": "and the mechanical preconditioning conferred by fibrous scaffolds, mediated via",
       "found_in_fulltext": true,
-      "fulltext_offset": 37944
+      "fulltext_offset": 21005
     },
     {
       "block_id": "p21:10",
@@ -1141,7 +1151,7 @@
       "render_default": true,
       "snippet": "cytoskeleton dynamics involving the FAK/ERK/YAP signalling axis.",
       "found_in_fulltext": true,
-      "fulltext_offset": 38024
+      "fulltext_offset": 21085
     },
     {
       "block_id": "p21:11",
@@ -1151,7 +1161,7 @@
       "render_default": true,
       "snippet": "Mitochondrial interplay between mechanotransduction and magnetoreception",
       "found_in_fulltext": true,
-      "fulltext_offset": 38089
+      "fulltext_offset": 21150
     },
     {
       "block_id": "p21:12",
@@ -1161,7 +1171,7 @@
       "render_default": true,
       "snippet": "We have previously demonstrated that PEMFs induce calcium entry through transien",
       "found_in_fulltext": true,
-      "fulltext_offset": 38162
+      "fulltext_offset": 21223
     },
     {
       "block_id": "p21:13",
@@ -1171,7 +1181,7 @@
       "render_default": true,
       "snippet": "mechanotransduction [55] and magnetoreception [23,31], which, in turn, would inf",
       "found_in_fulltext": true,
-      "fulltext_offset": 38493
+      "fulltext_offset": 21554
     },
     {
       "block_id": "p21:14",
@@ -1181,7 +1191,7 @@
       "render_default": true,
       "snippet": "[57,58]. It is thus consistend with available evidence that mechanotransduction ",
       "found_in_fulltext": true,
-      "fulltext_offset": 38832
+      "fulltext_offset": 21893
     },
     {
       "block_id": "p21:15",
@@ -1191,7 +1201,7 @@
       "render_default": true,
       "snippet": "magnetoreception interact via a mutual impingement upon mitochondrial respiratio",
       "found_in_fulltext": true,
-      "fulltext_offset": 38920
+      "fulltext_offset": 21981
     },
     {
       "block_id": "p21:16",
@@ -1201,7 +1211,7 @@
       "render_default": true,
       "snippet": "we show that PEMF directionality differentially modulates mitochondrial respirat",
       "found_in_fulltext": true,
-      "fulltext_offset": 39009
+      "fulltext_offset": 22070
     },
     {
       "block_id": "p21:17",
@@ -1211,7 +1221,7 @@
       "render_default": true,
       "snippet": "MSCs undergoing chondrogenesis. Z-directed PEMFs applied to MSCs on the RND scaf",
       "found_in_fulltext": true,
-      "fulltext_offset": 39100
+      "fulltext_offset": 22161
     },
     {
       "block_id": "p21:19",
@@ -1221,7 +1231,7 @@
       "render_default": true,
       "snippet": "chondrogenic outcome, whereas X-directed PEMFs produced more exaggerated",
       "found_in_fulltext": true,
-      "fulltext_offset": 39256
+      "fulltext_offset": 22317
     },
     {
       "block_id": "p21:20",
@@ -1231,7 +1241,7 @@
       "render_default": true,
       "snippet": "increases respiratory capacities (Fig. 8) that instead coincided with compromise",
       "found_in_fulltext": true,
-      "fulltext_offset": 39329
+      "fulltext_offset": 22390
     },
     {
       "block_id": "p21:21",
@@ -1250,8 +1260,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "chondrogenic induction (Fig. 4A). Subtle differences in ROS levels have been sho",
-      "found_in_fulltext": true,
-      "fulltext_offset": 39428
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p22:2",
@@ -1260,8 +1270,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "TRPC1 is activated by ROS [66] and conversely, TRPC1-mediated calcium entry",
-      "found_in_fulltext": true,
-      "fulltext_offset": 40658
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p22:3",
@@ -1271,7 +1281,7 @@
       "render_default": true,
       "snippet": "mitohormesis [31]. FAK staining indicates that resting cytoskeletal tensions of ",
       "found_in_fulltext": true,
-      "fulltext_offset": 40734
+      "fulltext_offset": 22489
     },
     {
       "block_id": "p22:5",
@@ -1281,7 +1291,7 @@
       "render_default": true,
       "snippet": "exposure and resting mechanotransduction act cumulatively in a mitohormetic fash",
       "found_in_fulltext": true,
-      "fulltext_offset": 40905
+      "fulltext_offset": 22660
     },
     {
       "block_id": "p22:6",
@@ -1291,7 +1301,7 @@
       "render_default": true,
       "snippet": "increases and decreases (excessive mitochondrial activation) in FAK phosphorylat",
       "found_in_fulltext": true,
-      "fulltext_offset": 40994
+      "fulltext_offset": 22749
     },
     {
       "block_id": "p22:8",
@@ -1301,7 +1311,7 @@
       "render_default": true,
       "snippet": "levels of resting mechanical tension, respectively, correspondent to X-directed ",
       "found_in_fulltext": true,
-      "fulltext_offset": 41170
+      "fulltext_offset": 22925
     },
     {
       "block_id": "p22:9",
@@ -1311,7 +1321,7 @@
       "render_default": true,
       "snippet": "applied to MSCs on the RND scaffolds and Z-directed PEMFs applied to MSCs on TCP",
       "found_in_fulltext": true,
-      "fulltext_offset": 41256
+      "fulltext_offset": 23011
     },
     {
       "block_id": "p22:10",
@@ -1330,8 +1340,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "(Fig. 5D-E). It must be stipulated, however, that these results are cumulative, ",
-      "found_in_fulltext": true,
-      "fulltext_offset": 41354
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p23:2",
@@ -1340,8 +1350,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "Influence of magnetic field directionality",
-      "found_in_fulltext": true,
-      "fulltext_offset": 41885
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p23:3",
@@ -1351,7 +1361,7 @@
       "render_default": true,
       "snippet": "Previous studies have demonstrated an anisotropic relationship between magnetic ",
       "found_in_fulltext": true,
-      "fulltext_offset": 41928
+      "fulltext_offset": 23109
     },
     {
       "block_id": "p23:4",
@@ -1361,7 +1371,7 @@
       "render_default": true,
       "snippet": "maxima and minima: 1) cells plated in 2D in the X-Y plane in response to Z-direc",
       "found_in_fulltext": true,
-      "fulltext_offset": 43441
+      "fulltext_offset": 24622
     },
     {
       "block_id": "p23:5",
@@ -1371,97 +1381,97 @@
       "render_default": false,
       "snippet": "22",
       "found_in_fulltext": true,
-      "fulltext_offset": 3404
+      "fulltext_offset": 2648
     },
     {
       "block_id": "p24:1",
       "page": 24,
       "role": "body_paragraph",
-      "zone": "tail_nonref_hold_zone",
+      "zone": "body_zone",
       "render_default": true,
       "snippet": "and; 2) Y-aligned cells exposed to Y-directed fields, respectively, in accordanc",
-      "found_in_fulltext": true,
-      "fulltext_offset": 43549
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p24:2",
       "page": 24,
       "role": "section_heading",
-      "zone": "tail_nonref_hold_zone",
+      "zone": "body_zone",
       "render_default": true,
       "snippet": "5. Conclusion",
-      "found_in_fulltext": true,
-      "fulltext_offset": 43664
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p24:3",
       "page": 24,
       "role": "body_paragraph",
-      "zone": "tail_nonref_hold_zone",
+      "zone": "body_zone",
       "render_default": true,
       "snippet": "Chondrogenic responses to PEMF exposure were modulated by both micromechanical e",
       "found_in_fulltext": true,
-      "fulltext_offset": 43678
+      "fulltext_offset": 24730
     },
     {
       "block_id": "p24:4",
       "page": 24,
-      "role": "backmatter_heading",
-      "zone": "tail_nonref_hold_zone",
+      "role": "sub_subsection_heading",
+      "zone": "body_zone",
       "render_default": true,
       "snippet": "Acknowledgements",
       "found_in_fulltext": true,
-      "fulltext_offset": 44214
+      "fulltext_offset": 25266
     },
     {
       "block_id": "p24:5",
       "page": 24,
-      "role": "backmatter_body",
-      "zone": "tail_nonref_hold_zone",
+      "role": "body_paragraph",
+      "zone": "body_zone",
       "render_default": true,
       "snippet": "This work was supported by funding from Singapore Ministry of Education (MOE2019",
       "found_in_fulltext": true,
-      "fulltext_offset": 44233
+      "fulltext_offset": 25285
     },
     {
       "block_id": "p24:6",
       "page": 24,
-      "role": "backmatter_body",
-      "zone": "tail_nonref_hold_zone",
+      "role": "body_paragraph",
+      "zone": "body_zone",
       "render_default": true,
       "snippet": "Authors' contributions: CC conducted all experimental work, data acquisition and",
       "found_in_fulltext": true,
-      "fulltext_offset": 44404
+      "fulltext_offset": 25456
     },
     {
       "block_id": "p24:7",
       "page": 24,
-      "role": "backmatter_body",
-      "zone": "tail_nonref_hold_zone",
+      "role": "body_paragraph",
+      "zone": "body_zone",
       "render_default": true,
       "snippet": "Conflicts of interest statement: AF-O is an inventor on patent WO 2019/17863 A1,",
       "found_in_fulltext": true,
-      "fulltext_offset": 44843
+      "fulltext_offset": 25895
     },
     {
       "block_id": "p24:8",
       "page": 24,
       "role": "noise",
-      "zone": "tail_nonref_hold_zone",
+      "zone": "body_zone",
       "render_default": false,
       "snippet": "23",
       "found_in_fulltext": true,
-      "fulltext_offset": 3624
+      "fulltext_offset": 4672
     },
     {
       "block_id": "p25:1",
       "page": 25,
-      "role": "backmatter_body",
+      "role": "body_paragraph",
       "zone": "tail_nonref_hold_zone",
       "render_default": true,
       "snippet": "conflicts of interest.",
-      "found_in_fulltext": true,
-      "fulltext_offset": 45190
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p25:2",
@@ -1471,7 +1481,7 @@
       "render_default": false,
       "snippet": "24",
       "found_in_fulltext": true,
-      "fulltext_offset": 6912
+      "fulltext_offset": 3794
     },
     {
       "block_id": "p26:1",
@@ -1480,8 +1490,8 @@
       "zone": "reference_zone",
       "render_default": true,
       "snippet": "References",
-      "found_in_fulltext": true,
-      "fulltext_offset": 47761
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p26:2",
@@ -1490,8 +1500,8 @@
       "zone": "reference_zone",
       "render_default": true,
       "snippet": "[1] M. Pumberger, T.H. Qazi, M.C. Ehrentraut, M. Textor, J. Kueper, G. Stoltenbu",
-      "found_in_fulltext": true,
-      "fulltext_offset": 47772
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p26:3",
@@ -1501,7 +1511,7 @@
       "render_default": true,
       "snippet": "[2] G. Chamberlain, J. Fox, B. Ashton, J. Middleton, Concise Review: Mesenchymal",
       "found_in_fulltext": true,
-      "fulltext_offset": 48145
+      "fulltext_offset": 26259
     },
     {
       "block_id": "p26:4",
@@ -1511,7 +1521,7 @@
       "render_default": true,
       "snippet": "[3] H. Afizah, J.H. Hui, Mesenchymal stem cell therapy for osteoarthritis, J Cli",
       "found_in_fulltext": true,
-      "fulltext_offset": 48409
+      "fulltext_offset": 26523
     },
     {
       "block_id": "p26:5",
@@ -1521,7 +1531,7 @@
       "render_default": true,
       "snippet": "[4] K. Pelttari, E. Steck, W. Richter, The use of mesenchymal stem cells for cho",
       "found_in_fulltext": true,
-      "fulltext_offset": 48567
+      "fulltext_offset": 26681
     },
     {
       "block_id": "p26:6",
@@ -1531,7 +1541,7 @@
       "render_default": true,
       "snippet": "[5] H. Nejadnik, J.H. Hui, E.P. Feng Choong, B.C. Tai, E.H. Lee, Autologous bone",
       "found_in_fulltext": true,
-      "fulltext_offset": 48748
+      "fulltext_offset": 26862
     },
     {
       "block_id": "p26:7",
@@ -1541,7 +1551,7 @@
       "render_default": true,
       "snippet": "[6] M. Lo Monaco, G. Merckx, J. Ratajczak, P. Gervois, P. Hilkens, P. Clegg, A. ",
       "found_in_fulltext": true,
-      "fulltext_offset": 49019
+      "fulltext_offset": 27133
     },
     {
       "block_id": "p26:8",
@@ -1551,7 +1561,7 @@
       "render_default": true,
       "snippet": "[7] S. Wakitani, K. Imoto, T. Yamamoto, M. Saito, N. Murata, M. Yoneda, Human au",
       "found_in_fulltext": true,
-      "fulltext_offset": 49334
+      "fulltext_offset": 27448
     },
     {
       "block_id": "p26:9",
@@ -1561,7 +1571,7 @@
       "render_default": true,
       "snippet": "[8] Z. Ge, C. Li, B. Heng, G. Cao, Z. Yang, Functional biomaterials for cartilag",
       "found_in_fulltext": true,
-      "fulltext_offset": 49627
+      "fulltext_offset": 27741
     },
     {
       "block_id": "p26:10",
@@ -1571,7 +1581,7 @@
       "render_default": true,
       "snippet": "[9] C. O'Conor, N. Case, F. Guliak, Mechanical regulation of chondrogenesis, Ste",
       "found_in_fulltext": true,
-      "fulltext_offset": 49765
+      "fulltext_offset": 27879
     },
     {
       "block_id": "p26:11",
@@ -1581,7 +1591,7 @@
       "render_default": true,
       "snippet": "[10] D. Discher, D. Mooney, P. Zandstra, Growth factors, matrices, and forces co",
       "found_in_fulltext": true,
-      "fulltext_offset": 49874
+      "fulltext_offset": 27988
     },
     {
       "block_id": "p26:12",
@@ -1591,7 +1601,7 @@
       "render_default": true,
       "snippet": "[11] T. Zhang, F. Wen, Y. Wu, G.S. Goh, Z. Ge, L.P. Tan, J.H. Hui, Z. Yang, Cros",
       "found_in_fulltext": true,
-      "fulltext_offset": 50012
+      "fulltext_offset": 28126
     },
     {
       "block_id": "p26:13",
@@ -1601,7 +1611,7 @@
       "render_default": true,
       "snippet": "[12] Y.N. Wu, J.B. Law, A.Y. He, H.Y. Low, J.H. Hui, C.T. Lim, Z. Yang, E.H. Lee",
       "found_in_fulltext": true,
-      "fulltext_offset": 50338
+      "fulltext_offset": 28452
     },
     {
       "block_id": "p26:14",
@@ -1611,7 +1621,7 @@
       "render_default": true,
       "snippet": "[13] Y. Wu, Z. Yang, J.B.K. Law, A.Y. He, A.A. Abbas, V. Denslin, T. Kamarul, J.",
       "found_in_fulltext": true,
-      "fulltext_offset": 50638
+      "fulltext_offset": 28752
     },
     {
       "block_id": "p26:15",
@@ -1621,7 +1631,7 @@
       "render_default": true,
       "snippet": "[14] B. Geiger, A. Bershadsky, R. Pankov, K.M. Yamada, Transmembrane extracellul",
       "found_in_fulltext": true,
-      "fulltext_offset": 50943
+      "fulltext_offset": 29057
     },
     {
       "block_id": "p26:16",
@@ -1631,7 +1641,7 @@
       "render_default": true,
       "snippet": "[15] Y. Tang, R.G. Rowe, E.L. Botvinick, A. Kurup, A.J. Putnam, M. Seiki, V.M. W",
       "found_in_fulltext": true,
-      "fulltext_offset": 51098
+      "fulltext_offset": 29212
     },
     {
       "block_id": "p26:17",
@@ -1641,7 +1651,7 @@
       "render_default": true,
       "snippet": "[16] X. He, H. Wang, T. Jin, Y. Xu, L. Mei, J. Yang, TLR4 Activation Promotes Bo",
       "found_in_fulltext": true,
-      "fulltext_offset": 51433
+      "fulltext_offset": 29547
     },
     {
       "block_id": "p26:18",
@@ -1651,7 +1661,7 @@
       "render_default": true,
       "snippet": "[17] M. Kuroda, H. Wada, Y. Kimura, K. Ueda, N. Kioka, Vinculin promotes nuclear",
       "found_in_fulltext": true,
-      "fulltext_offset": 51679
+      "fulltext_offset": 29793
     },
     {
       "block_id": "p26:19",
@@ -1661,7 +1671,7 @@
       "render_default": true,
       "snippet": "[18] Q. Chen, M.S. Kinch, T.H. Lin, K. Burridge, R.L. Juliano, Integrin-mediated",
       "found_in_fulltext": true,
-      "fulltext_offset": 51917
+      "fulltext_offset": 30031
     },
     {
       "block_id": "p26:20",
@@ -1671,7 +1681,7 @@
       "render_default": true,
       "snippet": "[19] S. Dupont, L. Morsut, M. Aragona, E. Enzo, S. Giulitti, M. Cordenonsi, F. Z",
       "found_in_fulltext": true,
-      "fulltext_offset": 52096
+      "fulltext_offset": 30210
     },
     {
       "block_id": "p26:21",
@@ -1681,7 +1691,7 @@
       "render_default": true,
       "snippet": "[20] S. Dupont, Role of YAP/TAZ in cell-matrix adhesion-mediated signalling and ",
       "found_in_fulltext": true,
-      "fulltext_offset": 52356
+      "fulltext_offset": 30470
     },
     {
       "block_id": "p26:22",
@@ -1691,7 +1701,7 @@
       "render_default": true,
       "snippet": "[21] W. Zhong, Y. Li, L. Li, W. Zhang, S. Wang, X. Zheng, YAP-mediated regulatio",
       "found_in_fulltext": true,
-      "fulltext_offset": 52534
+      "fulltext_offset": 30648
     },
     {
       "block_id": "p26:23",
@@ -1701,7 +1711,7 @@
       "render_default": false,
       "snippet": "25",
       "found_in_fulltext": true,
-      "fulltext_offset": 3904
+      "fulltext_offset": 26235
     },
     {
       "block_id": "p27:1",
@@ -1710,8 +1720,8 @@
       "zone": "reference_zone",
       "render_default": true,
       "snippet": "[22] A. Karystinou, A.J. Roelofs, A. Neve, F.P. Cantatore, H. Wackerhage, C. De ",
-      "found_in_fulltext": true,
-      "fulltext_offset": 52772
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p27:2",
@@ -1720,8 +1730,8 @@
       "zone": "reference_zone",
       "render_default": true,
       "snippet": "[23] D. Parate, A. Franco-Obregon, J. Frohlich, C. Beyer, A.A. Abbas, T. Kamarul",
-      "found_in_fulltext": true,
-      "fulltext_offset": 53035
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p27:3",
@@ -1731,7 +1741,7 @@
       "render_default": true,
       "snippet": "[24] F. Kurtn, Y.K. Iai, D. Parate, M. van Oostrum, Y.R.F. Schmid, S.J. Toh, J.L",
       "found_in_fulltext": true,
-      "fulltext_offset": 53319
+      "fulltext_offset": 30886
     },
     {
       "block_id": "p27:4",
@@ -1741,7 +1751,7 @@
       "render_default": true,
       "snippet": "[25] Y.K. Tai, C. Ng, K. Purnamawati, J.L.Y. Yap, J.N. Yin, C. Wong, B.K. Patel,",
       "found_in_fulltext": true,
-      "fulltext_offset": 53660
+      "fulltext_offset": 31227
     },
     {
       "block_id": "p27:5",
@@ -1751,7 +1761,7 @@
       "render_default": true,
       "snippet": "[26] M. Esposito, A. Lucariello, C. Costanzo, A. Fiumarella, A. Giannini, G. Ric",
       "found_in_fulltext": true,
-      "fulltext_offset": 54268
+      "fulltext_offset": 31835
     },
     {
       "block_id": "p27:6",
@@ -1761,7 +1771,7 @@
       "render_default": true,
       "snippet": "[27] J. Huang, Y. Liang, Z. Huang, P. Zhao, Q. Liang, Y. Liu, L. Duan, W. Liu, F",
       "found_in_fulltext": true,
-      "fulltext_offset": 54549
+      "fulltext_offset": 32116
     },
     {
       "block_id": "p27:7",
@@ -1771,7 +1781,7 @@
       "render_default": true,
       "snippet": "[28] C.L. Ross, M. Siriwardane, G. Almeida-Porada, C.D. Porada, P. Brink, G.J. C",
       "found_in_fulltext": true,
-      "fulltext_offset": 54845
+      "fulltext_offset": 32412
     },
     {
       "block_id": "p27:8",
@@ -1781,7 +1791,7 @@
       "render_default": true,
       "snippet": "[29] W. Zhong, W. Zhang, S. Wang, J. Qin, Regulation of fibrochondrogenesis of m",
       "found_in_fulltext": true,
-      "fulltext_offset": 55132
+      "fulltext_offset": 32699
     },
     {
       "block_id": "p27:9",
@@ -1791,7 +1801,7 @@
       "render_default": true,
       "snippet": "[30] W.M. Han, S.J. Heo, T.P. Driscoll, M.E. Boggs, R.L. Duncan, R.L. Mauck, D.M",
       "found_in_fulltext": true,
-      "fulltext_offset": 55394
+      "fulltext_offset": 32961
     },
     {
       "block_id": "p27:10",
@@ -1801,7 +1811,7 @@
       "render_default": true,
       "snippet": "[31] J.L.Y. Yap, Y.K. Tai, J. Fröhlich, C.H.H. Fong, J.N. Yin, Z.L. Foo, S. Rama",
       "found_in_fulltext": true,
-      "fulltext_offset": 55636
+      "fulltext_offset": 33203
     },
     {
       "block_id": "p27:11",
@@ -1811,7 +1821,7 @@
       "render_default": true,
       "snippet": "[32] S. Crocetti, C. Beyer, G. Schade, M. Egli, J. Frohlich, A. Franco-Obregon, ",
       "found_in_fulltext": true,
-      "fulltext_offset": 56037
+      "fulltext_offset": 33604
     },
     {
       "block_id": "p27:12",
@@ -1821,7 +1831,7 @@
       "render_default": true,
       "snippet": "[33] M.E. Berginski, S.M. Gomez, The Focal Adhesion Analysis Server: a web tool ",
       "found_in_fulltext": true,
-      "fulltext_offset": 56297
+      "fulltext_offset": 33864
     },
     {
       "block_id": "p27:13",
@@ -1831,7 +1841,7 @@
       "render_default": true,
       "snippet": "[34] D.R. Hipfner, S.M. Cohen, Connecting proliferation and apoptosis in develop",
       "found_in_fulltext": true,
-      "fulltext_offset": 56487
+      "fulltext_offset": 34054
     },
     {
       "block_id": "p27:14",
@@ -1841,7 +1851,7 @@
       "render_default": true,
       "snippet": "[35] N.A. Arita, D. Pelaez, H.S. Cheung, Activation of the extracellular signal-",
       "found_in_fulltext": true,
-      "fulltext_offset": 56662
+      "fulltext_offset": 34229
     },
     {
       "block_id": "p27:15",
@@ -1851,7 +1861,7 @@
       "render_default": true,
       "snippet": "[36] P.P. Provenzano, D.R. Inman, K.W. Eliceiri, P.J. Keely, Matrix density-indu",
       "found_in_fulltext": true,
-      "fulltext_offset": 56976
+      "fulltext_offset": 34543
     },
     {
       "block_id": "p27:16",
@@ -1861,7 +1871,7 @@
       "render_default": true,
       "snippet": "[37] S. Wan, X. Fu, Y. Ji, M. Li, X. Shi, Y. Wang, FAK- and YAP/TAZ dependent me",
       "found_in_fulltext": true,
-      "fulltext_offset": 57228
+      "fulltext_offset": 34795
     },
     {
       "block_id": "p27:17",
@@ -1871,7 +1881,7 @@
       "render_default": true,
       "snippet": "[38] T.P. Driscoll, B.D. Cosgrove, S.J. Heo, Z.E. Shurden, R.L. Mauck, Cytoskele",
       "found_in_fulltext": true,
-      "fulltext_offset": 57555
+      "fulltext_offset": 35122
     },
     {
       "block_id": "p27:18",
@@ -1881,7 +1891,7 @@
       "render_default": true,
       "snippet": "[39] S. Piccolo, S. Dupont, M. Cordenonsi, The biology of YAP/TAZ: hippo signali",
       "found_in_fulltext": true,
-      "fulltext_offset": 57791
+      "fulltext_offset": 35358
     },
     {
       "block_id": "p27:19",
@@ -1891,7 +1901,7 @@
       "render_default": true,
       "snippet": "[40] M. Fischer, P. Rikeit, P. Knaus, C. Coirault, YAP-Mediated Mechanotransduct",
       "found_in_fulltext": true,
-      "fulltext_offset": 57963
+      "fulltext_offset": 35530
     },
     {
       "block_id": "p27:20",
@@ -1901,7 +1911,7 @@
       "render_default": false,
       "snippet": "26",
       "found_in_fulltext": true,
-      "fulltext_offset": 4078
+      "fulltext_offset": 8759
     },
     {
       "block_id": "p28:1",
@@ -1910,8 +1920,8 @@
       "zone": "reference_zone",
       "render_default": true,
       "snippet": "[41] H. Kavand, N. Haghighipour, B. Zeynali, E. Seyedjafari, B. Abdemami, Extrem",
-      "found_in_fulltext": true,
-      "fulltext_offset": 58157
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p28:2",
@@ -1920,8 +1930,8 @@
       "zone": "reference_zone",
       "render_default": true,
       "snippet": "[42] S. Mayer-Wagner, A. Passberger, B. Sievers, J. Aigner, B. Summer, T.S. Schi",
-      "found_in_fulltext": true,
-      "fulltext_offset": 58421
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p28:3",
@@ -1931,7 +1941,7 @@
       "render_default": true,
       "snippet": "[43] D. Parate, N.D. Kadir, C. Celik, E.H. Lee, J.H.P. Hui, A. Franco-Obregón, Z",
       "found_in_fulltext": true,
-      "fulltext_offset": 58725
+      "fulltext_offset": 35724
     },
     {
       "block_id": "p28:4",
@@ -1941,7 +1951,7 @@
       "render_default": true,
       "snippet": "[44] S. Zhou, S. Chen, Q. Jiang, M. Pei, Determinants of stem cell lineage diffe",
       "found_in_fulltext": true,
-      "fulltext_offset": 59011
+      "fulltext_offset": 36010
     },
     {
       "block_id": "p28:5",
@@ -1951,7 +1961,7 @@
       "render_default": true,
       "snippet": "[45] S. Ichinose, M. Tagami, T. Muneta, I. Sekiya, Morphological examination dur",
       "found_in_fulltext": true,
-      "fulltext_offset": 59229
+      "fulltext_offset": 36228
     },
     {
       "block_id": "p28:6",
@@ -1961,7 +1971,7 @@
       "render_default": true,
       "snippet": "[46] S. Ghosh, M. Laha, S. Mondal, S. Sengupta, D.L. Kaplan, In vitro model of m",
       "found_in_fulltext": true,
-      "fulltext_offset": 59454
+      "fulltext_offset": 36453
     },
     {
       "block_id": "p28:7",
@@ -1971,7 +1981,7 @@
       "render_default": true,
       "snippet": "[47] J.S. Park, J.S. Chu, A.D. Tsou, R. Diop, Z. Tang, A. Wang, S. Li, The effec",
       "found_in_fulltext": true,
-      "fulltext_offset": 59676
+      "fulltext_offset": 36675
     },
     {
       "block_id": "p28:8",
@@ -1981,7 +1991,7 @@
       "render_default": true,
       "snippet": "[48] A. Wooas, G. Wang, F. Beier, Regulation of chondrocyte differentiation by t",
       "found_in_fulltext": true,
-      "fulltext_offset": 59939
+      "fulltext_offset": 36938
     },
     {
       "block_id": "p28:9",
@@ -1991,7 +2001,7 @@
       "render_default": true,
       "snippet": "[49] S.K. Mitra, D.A. Hanson, D.D. Schlaepfer, Focal adhesion kinase: in command",
       "found_in_fulltext": true,
-      "fulltext_offset": 60135
+      "fulltext_offset": 37134
     },
     {
       "block_id": "p28:10",
@@ -2001,7 +2011,7 @@
       "render_default": true,
       "snippet": "[50] I. Takahashi, Effect of stretching on gene expression of beta1 integrin and",
       "found_in_fulltext": true,
-      "fulltext_offset": 60318
+      "fulltext_offset": 37317
     },
     {
       "block_id": "p28:11",
@@ -2011,7 +2021,7 @@
       "render_default": true,
       "snippet": "[51] A.M. Delise, R.S. Tuan, Analysis of N-cadherin function in limb mesenchymal",
       "found_in_fulltext": true,
-      "fulltext_offset": 60570
+      "fulltext_offset": 37569
     },
     {
       "block_id": "p28:12",
@@ -2021,7 +2031,7 @@
       "render_default": true,
       "snippet": "[52] O.S. Bang, E.J. Kim, J.G. Chung, S.R. Lee, T.K. Park, S.S. Kang, Associatio",
       "found_in_fulltext": true,
-      "fulltext_offset": 60741
+      "fulltext_offset": 37740
     },
     {
       "block_id": "p28:13",
@@ -2031,7 +2041,7 @@
       "render_default": true,
       "snippet": "[53] J.K. Wise, A.L. Yarin, C.M. Megaridis, M. Cho, Chondrogenic differentiation",
       "found_in_fulltext": true,
-      "fulltext_offset": 61036
+      "fulltext_offset": 38035
     },
     {
       "block_id": "p28:14",
@@ -2041,7 +2051,7 @@
       "render_default": true,
       "snippet": "[54] Y.Y. Li, T.H. Choy, F.C. Ho, P.B. Chan, Scaffold composition affects cytosk",
       "found_in_fulltext": true,
-      "fulltext_offset": 61280
+      "fulltext_offset": 38279
     },
     {
       "block_id": "p28:15",
@@ -2051,7 +2061,7 @@
       "render_default": true,
       "snippet": "[55] A. Patel, R. Sharif-Naeini, J.R.H. Folgering, D. Bichet, F. Duprat, E. Hono",
       "found_in_fulltext": true,
-      "fulltext_offset": 61578
+      "fulltext_offset": 38577
     },
     {
       "block_id": "p28:16",
@@ -2061,7 +2071,7 @@
       "render_default": true,
       "snippet": "[56] J. Canales, D. Morales, C. Blanco, J. Rivas, N. Díaz, I. Angelopoulos, O. C",
       "found_in_fulltext": true,
-      "fulltext_offset": 61840
+      "fulltext_offset": 38839
     },
     {
       "block_id": "p28:17",
@@ -2071,7 +2081,7 @@
       "render_default": true,
       "snippet": "[57] M.F. Forni, J. Peloggia, K. Trudeau, O. Shirihai, A.J. Kowaltowski, Murine ",
       "found_in_fulltext": true,
-      "fulltext_offset": 62088
+      "fulltext_offset": 39087
     },
     {
       "block_id": "p28:18",
@@ -2081,7 +2091,7 @@
       "render_default": true,
       "snippet": "[58] K.V. Tormos, E. Anso, R.B. Hamanaka, J. Eisenbart, J. Joseph, B. Kalyanaram",
       "found_in_fulltext": true,
-      "fulltext_offset": 62325
+      "fulltext_offset": 39324
     },
     {
       "block_id": "p28:19",
@@ -2091,7 +2101,7 @@
       "render_default": true,
       "snippet": "[59] T. Finkel, Signal transduction by reactive oxygen species, J Cell Biol. 194",
       "found_in_fulltext": true,
-      "fulltext_offset": 62563
+      "fulltext_offset": 39562
     },
     {
       "block_id": "p28:20",
@@ -2101,7 +2111,7 @@
       "render_default": true,
       "snippet": "[60] K. Morita, T. Miyamoto, N. Fujita, Y. Kubota, K. Ito, K. Takubo, K. Miyamot",
       "found_in_fulltext": true,
-      "fulltext_offset": 62696
+      "fulltext_offset": 39695
     },
     {
       "block_id": "p28:21",
@@ -2111,7 +2121,7 @@
       "render_default": true,
       "snippet": "[61] K.S. Kim, H.W. Choi, H.E. Yoon, I.Y. Kim, Reactive Oxygen Species Generated",
       "found_in_fulltext": true,
-      "fulltext_offset": 63015
+      "fulltext_offset": 40014
     },
     {
       "block_id": "p28:22",
@@ -2121,7 +2131,7 @@
       "render_default": true,
       "snippet": "[62] A. Maziarz, B. Kocan, M. Bester, S. Budzik, M. Cholewa, T. Ochiya, A. Banas",
       "found_in_fulltext": true,
-      "fulltext_offset": 63248
+      "fulltext_offset": 40247
     },
     {
       "block_id": "p28:23",
@@ -2131,7 +2141,7 @@
       "render_default": false,
       "snippet": "27",
       "found_in_fulltext": true,
-      "fulltext_offset": 44320
+      "fulltext_offset": 25372
     },
     {
       "block_id": "p29:1",
@@ -2140,8 +2150,8 @@
       "zone": "reference_zone",
       "render_default": true,
       "snippet": "[63] K.J. Wolff, P.S. Ramakrishnan, M.J. Brouillette, B.J. Journot, T.O. McKinle",
-      "found_in_fulltext": true,
-      "fulltext_offset": 63515
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p29:2",
@@ -2150,8 +2160,8 @@
       "zone": "reference_zone",
       "render_default": true,
       "snippet": "[64] K. Lee, W.J. Esselman, Inhibition of PTPs by H2O2 regulates the activation ",
-      "found_in_fulltext": true,
-      "fulltext_offset": 63792
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p29:3",
@@ -2161,7 +2171,7 @@
       "render_default": true,
       "snippet": "[65] M. Louis, N. Zanou, M. Van Schoor, P. Gailly, TRPC1 regulates skeletal myob",
       "found_in_fulltext": true,
-      "fulltext_offset": 63943
+      "fulltext_offset": 40514
     },
     {
       "block_id": "p29:4",
@@ -2171,7 +2181,7 @@
       "render_default": true,
       "snippet": "[66] O.L. Gervasio, N.P. Whitehead, E.W. Yeung, W.D. Phillips, D.G. Allen, TRPC1",
       "found_in_fulltext": true,
-      "fulltext_offset": 64130
+      "fulltext_offset": 40701
     },
     {
       "block_id": "p29:5",
@@ -2181,7 +2191,7 @@
       "render_default": true,
       "snippet": "[67] R.J. Usselman, C. Chavarriaga, P.R. Castello, M. Procopio, T. Ritz, E.A. Dr",
       "found_in_fulltext": true,
-      "fulltext_offset": 64372
+      "fulltext_offset": 40943
     },
     {
       "block_id": "p29:6",
@@ -2191,7 +2201,7 @@
       "render_default": true,
       "snippet": "[68] C. Polk, Physical mechanisms by which low-frequency magnetic fields can aff",
       "found_in_fulltext": true,
-      "fulltext_offset": 64637
+      "fulltext_offset": 41208
     },
     {
       "block_id": "p29:7",
@@ -2201,7 +2211,7 @@
       "render_default": false,
       "snippet": "28",
       "found_in_fulltext": true,
-      "fulltext_offset": 4081
+      "fulltext_offset": 9029
     },
     {
       "block_id": "p30:3",
@@ -2211,7 +2221,7 @@
       "render_default": false,
       "snippet": "29",
       "found_in_fulltext": true,
-      "fulltext_offset": 4556
+      "fulltext_offset": 18190
     },
     {
       "block_id": "p31:13",
@@ -2231,7 +2241,7 @@
       "render_default": false,
       "snippet": "RND",
       "found_in_fulltext": true,
-      "fulltext_offset": 5652
+      "fulltext_offset": 3857
     },
     {
       "block_id": "p31:24",
@@ -2241,7 +2251,7 @@
       "render_default": false,
       "snippet": "30",
       "found_in_fulltext": true,
-      "fulltext_offset": 4559
+      "fulltext_offset": 5192
     },
     {
       "block_id": "p32:9",
@@ -2261,7 +2271,7 @@
       "render_default": false,
       "snippet": "31",
       "found_in_fulltext": true,
-      "fulltext_offset": 8357
+      "fulltext_offset": 4675
     },
     {
       "block_id": "p33:2",
@@ -2271,7 +2281,7 @@
       "render_default": false,
       "snippet": "32",
       "found_in_fulltext": true,
-      "fulltext_offset": 8111
+      "fulltext_offset": 4678
     },
     {
       "block_id": "p34:3",
@@ -2281,7 +2291,7 @@
       "render_default": false,
       "snippet": "COL I/COL II",
       "found_in_fulltext": true,
-      "fulltext_offset": 34702
+      "fulltext_offset": 18719
     },
     {
       "block_id": "p34:5",
@@ -2291,7 +2301,7 @@
       "render_default": false,
       "snippet": "COL X/COL II",
       "found_in_fulltext": true,
-      "fulltext_offset": 20998
+      "fulltext_offset": 18736
     },
     {
       "block_id": "p34:11",
@@ -2311,7 +2321,7 @@
       "render_default": false,
       "snippet": "33",
       "found_in_fulltext": true,
-      "fulltext_offset": 12858
+      "fulltext_offset": 33198
     },
     {
       "block_id": "p35:1",
@@ -2320,8 +2330,8 @@
       "zone": "reference_zone",
       "render_default": true,
       "snippet": "2 independent experiments. (B) Immunofluorescent staining for COL II, ACAN and C",
-      "found_in_fulltext": true,
-      "fulltext_offset": 64962
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p35:9",
@@ -2331,7 +2341,7 @@
       "render_default": false,
       "snippet": "34",
       "found_in_fulltext": true,
-      "fulltext_offset": 15336
+      "fulltext_offset": 9829
     },
     {
       "block_id": "p36:1",
@@ -2340,8 +2350,8 @@
       "zone": "reference_zone",
       "render_default": true,
       "snippet": "15. (F) Western blot analysis for the effect of directional PEMFs on the activat",
-      "found_in_fulltext": true,
-      "fulltext_offset": 65543
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p36:2",
@@ -2351,7 +2361,7 @@
       "render_default": false,
       "snippet": "35",
       "found_in_fulltext": true,
-      "fulltext_offset": 26402
+      "fulltext_offset": 14435
     },
     {
       "block_id": "p37:10",
@@ -2361,7 +2371,7 @@
       "render_default": false,
       "snippet": "36",
       "found_in_fulltext": true,
-      "fulltext_offset": 49002
+      "fulltext_offset": 27116
     },
     {
       "block_id": "p38:2",
@@ -2371,7 +2381,7 @@
       "render_default": false,
       "snippet": "37",
       "found_in_fulltext": true,
-      "fulltext_offset": 6646
+      "fulltext_offset": 3528
     },
     {
       "block_id": "p39:7",
@@ -2381,7 +2391,7 @@
       "render_default": false,
       "snippet": "COL II",
       "found_in_fulltext": true,
-      "fulltext_offset": 11938
+      "fulltext_offset": 7999
     },
     {
       "block_id": "p39:16",
@@ -2391,7 +2401,7 @@
       "render_default": false,
       "snippet": "38",
       "found_in_fulltext": true,
-      "fulltext_offset": 14055
+      "fulltext_offset": 9011
     },
     {
       "block_id": "p40:1",
@@ -2400,8 +2410,8 @@
       "zone": "",
       "render_default": true,
       "snippet": "COL II and ACAN by PEMF-treated MSCs in the presence (red bars) or absence of FA",
-      "found_in_fulltext": true,
-      "fulltext_offset": 66083
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p40:2",
@@ -2451,7 +2461,17 @@
       "render_default": false,
       "snippet": "40",
       "found_in_fulltext": true,
-      "fulltext_offset": 9858
+      "fulltext_offset": 7405
+    },
+    {
+      "block_id": "p42:1",
+      "page": 42,
+      "role": "table_caption",
+      "zone": "display_zone",
+      "render_default": true,
+      "snippet": "Table 1 Nomenclature of test groups.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p42:3",
@@ -2461,7 +2481,7 @@
       "render_default": true,
       "snippet": "N/A: not applicable, mT: milliTesla; NP: no PEMFs",
       "found_in_fulltext": true,
-      "fulltext_offset": 66847
+      "fulltext_offset": 41924
     },
     {
       "block_id": "p42:4",
@@ -2471,7 +2491,7 @@
       "render_default": false,
       "snippet": "41",
       "found_in_fulltext": true,
-      "fulltext_offset": 31319
+      "fulltext_offset": 16337
     },
     {
       "block_id": "p43:1",
@@ -2480,8 +2500,8 @@
       "zone": "post_reference_backmatter_zone",
       "render_default": true,
       "snippet": "Graphical abstract",
-      "found_in_fulltext": true,
-      "fulltext_offset": 66950
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p43:4",
@@ -2491,7 +2511,7 @@
       "render_default": true,
       "snippet": "42",
       "found_in_fulltext": true,
-      "fulltext_offset": 13948
+      "fulltext_offset": 8904
     }
   ]
 }

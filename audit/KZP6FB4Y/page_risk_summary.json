@@ -2,28 +2,24 @@
   "pages": [
     {
       "page": 1,
-      "risk_score": 12,
+      "risk_score": 8,
       "risk_reasons": [
         "frontmatter_page",
-        "reader_object_gap",
-        "hold_threshold",
-        "unknown_structural_threshold"
+        "reader_object_gap"
       ],
       "recommended_audit_targets": [
-        "body_flow",
         "frontmatter",
-        "object_ownership",
-        "reading_order"
+        "object_ownership"
       ],
       "counts": {
-        "body_paragraph": 1,
+        "body_paragraph": 3,
         "reference_item": 0,
         "tail_like": 0,
         "media_assets": 1,
         "table_like": 0,
         "captions": 0,
-        "hold": 2,
-        "unknown_structural": 3,
+        "hold": 1,
+        "unknown_structural": 1,
         "matched_figures": 0,
         "ambiguous_figures": 0
       }
@@ -38,14 +34,14 @@
         "object_ownership"
       ],
       "counts": {
-        "body_paragraph": 3,
+        "body_paragraph": 4,
         "reference_item": 0,
         "tail_like": 0,
         "media_assets": 1,
         "table_like": 0,
         "captions": 1,
         "hold": 0,
-        "unknown_structural": 1,
+        "unknown_structural": 0,
         "matched_figures": 1,
         "ambiguous_figures": 0
       }
@@ -62,16 +58,16 @@
         "object_ownership"
       ],
       "counts": {
-        "body_paragraph": 3,
+        "body_paragraph": 4,
         "reference_item": 0,
         "tail_like": 0,
         "media_assets": 1,
         "table_like": 1,
         "captions": 1,
         "hold": 0,
-        "unknown_structural": 1,
-        "matched_figures": 0,
-        "ambiguous_figures": 1
+        "unknown_structural": 0,
+        "matched_figures": 1,
+        "ambiguous_figures": 0
       }
     },
     {
@@ -98,14 +94,14 @@
       "risk_reasons": [],
       "recommended_audit_targets": [],
       "counts": {
-        "body_paragraph": 8,
+        "body_paragraph": 9,
         "reference_item": 0,
         "tail_like": 0,
         "media_assets": 0,
         "table_like": 0,
         "captions": 0,
         "hold": 0,
-        "unknown_structural": 1,
+        "unknown_structural": 0,
         "matched_figures": 0,
         "ambiguous_figures": 0
       }
@@ -116,14 +112,14 @@
       "risk_reasons": [],
       "recommended_audit_targets": [],
       "counts": {
-        "body_paragraph": 9,
+        "body_paragraph": 10,
         "reference_item": 0,
         "tail_like": 0,
         "media_assets": 0,
         "table_like": 0,
         "captions": 0,
         "hold": 0,
-        "unknown_structural": 1,
+        "unknown_structural": 0,
         "matched_figures": 0,
         "ambiguous_figures": 0
       }
@@ -140,14 +136,14 @@
         "object_ownership"
       ],
       "counts": {
-        "body_paragraph": 3,
+        "body_paragraph": 4,
         "reference_item": 0,
         "tail_like": 0,
         "media_assets": 1,
         "table_like": 0,
         "captions": 1,
         "hold": 0,
-        "unknown_structural": 3,
+        "unknown_structural": 2,
         "matched_figures": 1,
         "ambiguous_figures": 0
       }
@@ -164,38 +160,20 @@
         "object_ownership"
       ],
       "counts": {
-        "body_paragraph": 3,
+        "body_paragraph": 4,
         "reference_item": 0,
         "tail_like": 0,
         "media_assets": 3,
         "table_like": 0,
         "captions": 1,
         "hold": 0,
-        "unknown_structural": 1,
+        "unknown_structural": 0,
         "matched_figures": 1,
         "ambiguous_figures": 0
       }
     },
     {
       "page": 9,
-      "risk_score": 0,
-      "risk_reasons": [],
-      "recommended_audit_targets": [],
-      "counts": {
-        "body_paragraph": 8,
-        "reference_item": 0,
-        "tail_like": 0,
-        "media_assets": 0,
-        "table_like": 0,
-        "captions": 0,
-        "hold": 0,
-        "unknown_structural": 1,
-        "matched_figures": 0,
-        "ambiguous_figures": 0
-      }
-    },
-    {
-      "page": 10,
       "risk_score": 0,
       "risk_reasons": [],
       "recommended_audit_targets": [],
@@ -207,7 +185,25 @@
         "table_like": 0,
         "captions": 0,
         "hold": 0,
-        "unknown_structural": 1,
+        "unknown_structural": 0,
+        "matched_figures": 0,
+        "ambiguous_figures": 0
+      }
+    },
+    {
+      "page": 10,
+      "risk_score": 0,
+      "risk_reasons": [],
+      "recommended_audit_targets": [],
+      "counts": {
+        "body_paragraph": 10,
+        "reference_item": 0,
+        "tail_like": 0,
+        "media_assets": 0,
+        "table_like": 0,
+        "captions": 0,
+        "hold": 0,
+        "unknown_structural": 0,
         "matched_figures": 0,
         "ambiguous_figures": 0
       }
@@ -246,14 +242,14 @@
         "object_ownership"
       ],
       "counts": {
-        "body_paragraph": 4,
+        "body_paragraph": 5,
         "reference_item": 0,
         "tail_like": 0,
         "media_assets": 1,
         "table_like": 0,
         "captions": 1,
         "hold": 0,
-        "unknown_structural": 1,
+        "unknown_structural": 0,
         "matched_figures": 1,
         "ambiguous_figures": 0
       }
@@ -268,14 +264,14 @@
         "object_ownership"
       ],
       "counts": {
-        "body_paragraph": 2,
+        "body_paragraph": 3,
         "reference_item": 0,
         "tail_like": 0,
         "media_assets": 1,
         "table_like": 0,
         "captions": 1,
         "hold": 0,
-        "unknown_structural": 1,
+        "unknown_structural": 0,
         "matched_figures": 1,
         "ambiguous_figures": 0
       }
@@ -290,14 +286,14 @@
         "object_ownership"
       ],
       "counts": {
-        "body_paragraph": 7,
+        "body_paragraph": 8,
         "reference_item": 0,
         "tail_like": 0,
         "media_assets": 1,
         "table_like": 0,
         "captions": 1,
         "hold": 0,
-        "unknown_structural": 1,
+        "unknown_structural": 0,
         "matched_figures": 1,
         "ambiguous_figures": 0
       }
@@ -314,14 +310,14 @@
         "object_ownership"
       ],
       "counts": {
-        "body_paragraph": 2,
+        "body_paragraph": 3,
         "reference_item": 0,
         "tail_like": 0,
         "media_assets": 2,
         "table_like": 0,
         "captions": 1,
         "hold": 0,
-        "unknown_structural": 1,
+        "unknown_structural": 0,
         "matched_figures": 1,
         "ambiguous_figures": 0
       }
@@ -332,14 +328,14 @@
       "risk_reasons": [],
       "recommended_audit_targets": [],
       "counts": {
-        "body_paragraph": 5,
+        "body_paragraph": 6,
         "reference_item": 0,
         "tail_like": 0,
         "media_assets": 0,
         "table_like": 0,
         "captions": 0,
         "hold": 0,
-        "unknown_structural": 1,
+        "unknown_structural": 0,
         "matched_figures": 0,
         "ambiguous_figures": 0
       }
@@ -356,14 +352,14 @@
         "object_ownership"
       ],
       "counts": {
-        "body_paragraph": 3,
+        "body_paragraph": 4,
         "reference_item": 0,
         "tail_like": 0,
         "media_assets": 3,
         "table_like": 0,
         "captions": 1,
         "hold": 0,
-        "unknown_structural": 1,
+        "unknown_structural": 0,
         "matched_figures": 1,
         "ambiguous_figures": 0
       }
@@ -380,14 +376,14 @@
         "object_ownership"
       ],
       "counts": {
-        "body_paragraph": 2,
+        "body_paragraph": 3,
         "reference_item": 0,
         "tail_like": 0,
         "media_assets": 5,
         "table_like": 0,
         "captions": 1,
         "hold": 0,
-        "unknown_structural": 1,
+        "unknown_structural": 0,
         "matched_figures": 1,
         "ambiguous_figures": 0
       }
@@ -398,14 +394,14 @@
       "risk_reasons": [],
       "recommended_audit_targets": [],
       "counts": {
-        "body_paragraph": 6,
+        "body_paragraph": 7,
         "reference_item": 0,
         "tail_like": 0,
         "media_assets": 0,
         "table_like": 0,
         "captions": 0,
         "hold": 0,
-        "unknown_structural": 1,
+        "unknown_structural": 0,
         "matched_figures": 0,
         "ambiguous_figures": 0
       }
@@ -422,38 +418,20 @@
         "object_ownership"
       ],
       "counts": {
-        "body_paragraph": 1,
+        "body_paragraph": 2,
         "reference_item": 0,
         "tail_like": 0,
         "media_assets": 10,
         "table_like": 1,
         "captions": 4,
         "hold": 0,
-        "unknown_structural": 1,
+        "unknown_structural": 0,
         "matched_figures": 1,
-        "ambiguous_figures": 1
-      }
-    },
-    {
-      "page": 21,
-      "risk_score": 0,
-      "risk_reasons": [],
-      "recommended_audit_targets": [],
-      "counts": {
-        "body_paragraph": 10,
-        "reference_item": 0,
-        "tail_like": 0,
-        "media_assets": 0,
-        "table_like": 0,
-        "captions": 0,
-        "hold": 0,
-        "unknown_structural": 1,
-        "matched_figures": 0,
         "ambiguous_figures": 0
       }
     },
     {
-      "page": 22,
+      "page": 21,
       "risk_score": 0,
       "risk_reasons": [],
       "recommended_audit_targets": [],
@@ -465,7 +443,25 @@
         "table_like": 0,
         "captions": 0,
         "hold": 0,
-        "unknown_structural": 1,
+        "unknown_structural": 0,
+        "matched_figures": 0,
+        "ambiguous_figures": 0
+      }
+    },
+    {
+      "page": 22,
+      "risk_score": 0,
+      "risk_reasons": [],
+      "recommended_audit_targets": [],
+      "counts": {
+        "body_paragraph": 12,
+        "reference_item": 0,
+        "tail_like": 0,
+        "media_assets": 0,
+        "table_like": 0,
+        "captions": 0,
+        "hold": 0,
+        "unknown_structural": 0,
         "matched_figures": 0,
         "ambiguous_figures": 0
       }
@@ -482,14 +478,14 @@
         "object_ownership"
       ],
       "counts": {
-        "body_paragraph": 4,
+        "body_paragraph": 5,
         "reference_item": 0,
         "tail_like": 0,
         "media_assets": 5,
         "table_like": 0,
         "captions": 2,
         "hold": 0,
-        "unknown_structural": 1,
+        "unknown_structural": 0,
         "matched_figures": 1,
         "ambiguous_figures": 0
       }
@@ -500,57 +496,49 @@
       "risk_reasons": [],
       "recommended_audit_targets": [],
       "counts": {
-        "body_paragraph": 11,
+        "body_paragraph": 12,
         "reference_item": 0,
         "tail_like": 0,
         "media_assets": 0,
         "table_like": 0,
         "captions": 0,
         "hold": 0,
-        "unknown_structural": 1,
+        "unknown_structural": 0,
         "matched_figures": 0,
         "ambiguous_figures": 0
       }
     },
     {
       "page": 25,
-      "risk_score": 7,
+      "risk_score": 3,
       "risk_reasons": [
-        "same_page_boundary",
         "reader_object_gap"
       ],
       "recommended_audit_targets": [
-        "object_ownership",
-        "reading_order",
-        "same_page_boundary"
+        "object_ownership"
       ],
       "counts": {
-        "body_paragraph": 2,
+        "body_paragraph": 3,
         "reference_item": 0,
-        "tail_like": 7,
+        "tail_like": 0,
         "media_assets": 1,
         "table_like": 0,
         "captions": 1,
         "hold": 0,
-        "unknown_structural": 1,
+        "unknown_structural": 0,
         "matched_figures": 1,
         "ambiguous_figures": 0
       }
     },
     {
       "page": 26,
-      "risk_score": 4,
-      "risk_reasons": [
-        "same_page_boundary"
-      ],
-      "recommended_audit_targets": [
-        "reading_order",
-        "same_page_boundary"
-      ],
+      "risk_score": 0,
+      "risk_reasons": [],
+      "recommended_audit_targets": [],
       "counts": {
         "body_paragraph": 7,
         "reference_item": 0,
-        "tail_like": 13,
+        "tail_like": 0,
         "media_assets": 0,
         "table_like": 0,
         "captions": 0,
@@ -562,21 +550,18 @@
     },
     {
       "page": 27,
-      "risk_score": 11,
+      "risk_score": 7,
       "risk_reasons": [
-        "same_page_boundary",
         "multi_asset_page",
         "caption_asset_mismatch"
       ],
       "recommended_audit_targets": [
-        "object_ownership",
-        "reading_order",
-        "same_page_boundary"
+        "object_ownership"
       ],
       "counts": {
-        "body_paragraph": 6,
+        "body_paragraph": 11,
         "reference_item": 0,
-        "tail_like": 19,
+        "tail_like": 0,
         "media_assets": 0,
         "table_like": 2,
         "captions": 1,
@@ -601,13 +586,13 @@
       ],
       "counts": {
         "body_paragraph": 1,
-        "reference_item": 40,
-        "tail_like": 3,
+        "reference_item": 41,
+        "tail_like": 1,
         "media_assets": 0,
         "table_like": 0,
         "captions": 0,
-        "hold": 1,
-        "unknown_structural": 1,
+        "hold": 0,
+        "unknown_structural": 0,
         "matched_figures": 0,
         "ambiguous_figures": 0
       }
@@ -737,7 +722,6 @@
     20,
     23,
     25,
-    26,
     27,
     28
   ]

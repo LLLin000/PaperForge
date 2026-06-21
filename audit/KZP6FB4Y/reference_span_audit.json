@@ -17,6 +17,7 @@
     "heading_block_id": "p28:4",
     "ordered_block_ids": [
       "p28:4",
+      "p28:5",
       "p28:6",
       "p28:7",
       "p28:8",
@@ -289,6 +290,7 @@
     ],
     "inside_block_ids": [
       "p28:4",
+      "p28:5",
       "p28:6",
       "p28:7",
       "p28:8",
@@ -574,8 +576,8 @@
       {
         "block_id": "p28:5",
         "page": 28,
-        "role": "unknown_structural",
-        "zone": "tail_nonref_hold_zone",
+        "role": "reference_item",
+        "zone": "reference_zone",
         "reason": "logical_order_between_reference_members"
       },
       {
@@ -701,7 +703,7 @@
         "block_id": "p28:23",
         "page": 28,
         "role": "reference_item",
-        "zone": "reference_zone",
+        "zone": "",
         "reason": "logical_order_between_reference_members"
       },
       {

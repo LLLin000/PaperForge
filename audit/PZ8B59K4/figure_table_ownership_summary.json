@@ -1,7 +1,7 @@
 {
   "figures": {
-    "matched_count": 6,
-    "ambiguous_count": 4,
+    "matched_count": 5,
+    "ambiguous_count": 1,
     "unresolved_cluster_count": 0,
     "unmatched_asset_count": 8,
     "matched": [
@@ -18,73 +18,47 @@
         "figure_number": 1,
         "legend_block_id": 5,
         "asset_block_ids": [
-          2
-        ],
-        "page": 19,
-        "match_type": null
-      },
-      {
-        "figure_number": 2,
-        "legend_block_id": 6,
-        "asset_block_ids": [
-          5
-        ],
-        "page": 19,
-        "match_type": null
-      },
-      {
-        "figure_number": 3,
-        "legend_block_id": 7,
-        "asset_block_ids": [
-          4
-        ],
-        "page": 19,
-        "match_type": null
-      },
-      {
-        "figure_number": 4,
-        "legend_block_id": 8,
-        "asset_block_ids": [
+          2,
+          4,
+          5,
           6
         ],
         "page": 19,
         "match_type": null
       },
       {
-        "figure_number": 5,
-        "legend_block_id": 9,
+        "figure_number": 2,
+        "legend_block_id": 6,
         "asset_block_ids": [
           1
         ],
         "page": 21,
         "match_type": null
-      }
-    ],
-    "ambiguous": [
+      },
       {
         "figure_number": 3,
         "legend_block_id": 7,
-        "asset_block_ids": [],
-        "candidate_asset_ids": [],
-        "page": 16
-      },
-      {
-        "figure_number": 1,
-        "legend_block_id": 5,
-        "asset_block_ids": [],
-        "candidate_asset_ids": [],
-        "page": 16
-      },
-      {
-        "figure_number": 2,
-        "legend_block_id": 6,
-        "asset_block_ids": [],
-        "candidate_asset_ids": [],
-        "page": 16
+        "asset_block_ids": [
+          2
+        ],
+        "page": 22,
+        "match_type": null
       },
       {
         "figure_number": 4,
         "legend_block_id": 8,
+        "asset_block_ids": [
+          2,
+          4
+        ],
+        "page": 23,
+        "match_type": null
+      }
+    ],
+    "ambiguous": [
+      {
+        "figure_number": 5,
+        "legend_block_id": 9,
         "asset_block_ids": [],
         "candidate_asset_ids": [],
         "page": 16
@@ -95,7 +69,7 @@
   "tables": {
     "matched_count": 0,
     "ambiguous_count": 0,
-    "unmatched_asset_count": 5,
+    "unmatched_asset_count": 2,
     "matched": [],
     "ambiguous": []
   }

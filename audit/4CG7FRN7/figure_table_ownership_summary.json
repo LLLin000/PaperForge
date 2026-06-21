@@ -1,0 +1,129 @@
+{
+  "figures": {
+    "matched_count": 10,
+    "ambiguous_count": 0,
+    "unresolved_cluster_count": 0,
+    "unmatched_asset_count": 3,
+    "matched": [
+      {
+        "figure_number": 1,
+        "legend_block_id": 3,
+        "asset_block_ids": [
+          2
+        ],
+        "page": 5,
+        "match_type": null
+      },
+      {
+        "figure_number": 2,
+        "legend_block_id": 5,
+        "asset_block_ids": [
+          2,
+          4
+        ],
+        "page": 6,
+        "match_type": null
+      },
+      {
+        "figure_number": 3,
+        "legend_block_id": 5,
+        "asset_block_ids": [
+          2,
+          4
+        ],
+        "page": 7,
+        "match_type": null
+      },
+      {
+        "figure_number": 4,
+        "legend_block_id": 9,
+        "asset_block_ids": [
+          3,
+          4,
+          6,
+          8
+        ],
+        "page": 8,
+        "match_type": null
+      },
+      {
+        "figure_number": 5,
+        "legend_block_id": 17,
+        "asset_block_ids": [
+          12,
+          9,
+          11,
+          14,
+          16
+        ],
+        "page": 9,
+        "match_type": null
+      },
+      {
+        "figure_number": 6,
+        "legend_block_id": 11,
+        "asset_block_ids": [
+          10
+        ],
+        "page": 10,
+        "match_type": null
+      },
+      {
+        "figure_number": 7,
+        "legend_block_id": 28,
+        "asset_block_ids": [
+          27
+        ],
+        "page": 11,
+        "match_type": null
+      },
+      {
+        "figure_number": 8,
+        "legend_block_id": 11,
+        "asset_block_ids": [
+          7,
+          10,
+          9
+        ],
+        "page": 13,
+        "match_type": null
+      },
+      {
+        "figure_number": 9,
+        "legend_block_id": 4,
+        "asset_block_ids": [
+          2,
+          3
+        ],
+        "page": 14,
+        "match_type": null
+      },
+      {
+        "figure_number": 10,
+        "legend_block_id": 3,
+        "asset_block_ids": [
+          2
+        ],
+        "page": 16,
+        "match_type": null
+      }
+    ],
+    "ambiguous": [],
+    "unresolved": []
+  },
+  "tables": {
+    "matched_count": 1,
+    "ambiguous_count": 0,
+    "unmatched_asset_count": 2,
+    "matched": [
+      {
+        "table_number": 1,
+        "caption_block_id": 12,
+        "asset_block_ids": [],
+        "page": 3,
+        "match_status": "matched"
+      }
+    ],
+    "ambiguous": []
+  }
+}

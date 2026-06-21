@@ -1,0 +1,1317 @@
+{
+  "mappable_block_count": 131,
+  "found_count": 102,
+  "missing_count": 29,
+  "rows": [
+    {
+      "block_id": "p1:0",
+      "page": 1,
+      "role": "unknown_structural",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "Open Access",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:1",
+      "page": 1,
+      "role": "unknown_structural",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "Orthopaedic Surgery",
+      "found_in_fulltext": true,
+      "fulltext_offset": 249
+    },
+    {
+      "block_id": "p1:3",
+      "page": 1,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "1997",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:5",
+      "page": 1,
+      "role": "authors",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "CLINICAL ARTICLE",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:6",
+      "page": 1,
+      "role": "paper_title",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "The Correlation between Various Shoulder Anatomical Indices on X-Ray and Subacro",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:7",
+      "page": 1,
+      "role": "authors",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "Jinsong Yang, MD $ {}^{ID} $, Ming Xiang, PhD, Yiping Li, MD, Qing Zhang, MD $ {",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:8",
+      "page": 1,
+      "role": "affiliation",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "Sichuan Provincial Orthopedic Hospital Upper Arm Department, Chengdu, China",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:13",
+      "page": 1,
+      "role": "body_paragraph",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "Key words: Sub-Acromial impingement; Rotator cuff tear; Arthroscopy; Morphology;",
+      "found_in_fulltext": true,
+      "fulltext_offset": 3089
+    },
+    {
+      "block_id": "p1:14",
+      "page": 1,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Introduction",
+      "found_in_fulltext": true,
+      "fulltext_offset": 3190
+    },
+    {
+      "block_id": "p1:15",
+      "page": 1,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Sub-acromial impingement is a common cause of shoulder pain and is also a crucia",
+      "found_in_fulltext": true,
+      "fulltext_offset": 3203
+    },
+    {
+      "block_id": "p1:16",
+      "page": 1,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "factor for rotator cuff injury.1,2 Shoulder standard A-P (anterior–posterior) vi",
+      "found_in_fulltext": true,
+      "fulltext_offset": 3479
+    },
+    {
+      "block_id": "p1:18",
+      "page": 1,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Orthopaedic Surgery 2023;15:1997-2006 · DOI: 10.1111/os.13610",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:19",
+      "page": 1,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "This is an open access article under the terms of the Creative Commons Attributi",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:0",
+      "page": 2,
+      "role": "noise",
+      "zone": "frontmatter_side_zone",
+      "render_default": false,
+      "snippet": "1998",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:1",
+      "page": 2,
+      "role": "noise",
+      "zone": "frontmatter_side_zone",
+      "render_default": false,
+      "snippet": "Orthopaedic Surgery VOLUME 15 · NUMBER 8 · AUGUST, 2023",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:2",
+      "page": 2,
+      "role": "noise",
+      "zone": "frontmatter_side_zone",
+      "render_default": false,
+      "snippet": "SHOULDER ANATOMY AND ROTATOR CUFF TEAR",
+      "found_in_fulltext": true,
+      "fulltext_offset": 10488
+    },
+    {
+      "block_id": "p2:3",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "acromial impingement. $ ^{3-5} $ Previous studies have reported the correlation ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:4",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Therefore, the purpose of this study is to (i) summarize the shoulder anatomical",
+      "found_in_fulltext": true,
+      "fulltext_offset": 5987
+    },
+    {
+      "block_id": "p2:5",
+      "page": 2,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Methods",
+      "found_in_fulltext": true,
+      "fulltext_offset": 6426
+    },
+    {
+      "block_id": "p2:6",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Between January 2020 and May 2022, patients who were diagnosed as subacromial im",
+      "found_in_fulltext": true,
+      "fulltext_offset": 6434
+    },
+    {
+      "block_id": "p2:7",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "(1) the arthroscopic examination identiﬁed the tear was cau- sed by impingement ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 7324
+    },
+    {
+      "block_id": "p2:8",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The radiographic indices of acromial slope (AS), acromial tilt (AT), lateral acr",
+      "found_in_fulltext": true,
+      "fulltext_offset": 7928
+    },
+    {
+      "block_id": "p2:9",
+      "page": 2,
+      "role": "unknown_structural",
+      "zone": "frontmatter_side_zone",
+      "render_default": false,
+      "snippet": "Measurement of Radiographic Indices Acromial Slope (AS)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:12",
+      "page": 2,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Acromial Tilt (AT)",
+      "found_in_fulltext": true,
+      "fulltext_offset": 8623
+    },
+    {
+      "block_id": "p2:13",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The AT was measured on the outlet-view X-ray. First, a line was drawn connecting",
+      "found_in_fulltext": true,
+      "fulltext_offset": 8642
+    },
+    {
+      "block_id": "p2:14",
+      "page": 2,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Lateral Acromial Angle (LAA)",
+      "found_in_fulltext": true,
+      "fulltext_offset": 9023
+    },
+    {
+      "block_id": "p2:15",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The LAA was measured on the true anteroposterior (AP)-view X-ray. First, a line ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 9052
+    },
+    {
+      "block_id": "p2:16",
+      "page": 2,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Acromion Index (AI)",
+      "found_in_fulltext": true,
+      "fulltext_offset": 9388
+    },
+    {
+      "block_id": "p2:17",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The AI was measured on the true anteroposterior (AP) view X-ray. First, a latera",
+      "found_in_fulltext": true,
+      "fulltext_offset": 9408
+    },
+    {
+      "block_id": "p3:0",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "1999",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:1",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Orthopaedic Surgery VOLUME 15 · NUMBER 8 · AUGUST, 2023",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:4",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "glenoid. Then, we measured the distance between the most lateral point of the ac",
+      "found_in_fulltext": true,
+      "fulltext_offset": 9599
+    },
+    {
+      "block_id": "p3:5",
+      "page": 3,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Sub-Acromial Distance (SAD)",
+      "found_in_fulltext": true,
+      "fulltext_offset": 9904
+    },
+    {
+      "block_id": "p3:6",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The SAD was measured on the true anteroposterior (AP) view X-ray. A line was dra",
+      "found_in_fulltext": true,
+      "fulltext_offset": 9932
+    },
+    {
+      "block_id": "p4:0",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "2000",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:1",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "ORTHOPAEDIC SURGERY VOLUME 15·NUMBER 8·AUGUST, 2023 SHOULDER ANATOMY AND ROTATOR",
+      "found_in_fulltext": true,
+      "fulltext_offset": 10436
+    },
+    {
+      "block_id": "p4:2",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "SHOULDER ANATOMY AND ROTATOR CUFF TEAR",
+      "found_in_fulltext": true,
+      "fulltext_offset": 10488
+    },
+    {
+      "block_id": "p4:3",
+      "page": 4,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Measurement of the Location and Morphology of Rotator Cuff Tears Tear Location i",
+      "found_in_fulltext": true,
+      "fulltext_offset": 10570
+    },
+    {
+      "block_id": "p4:5",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Tear location must be viewed from a standard arthroscopic lateral portal. If the",
+      "found_in_fulltext": true,
+      "fulltext_offset": 10688
+    },
+    {
+      "block_id": "p4:6",
+      "page": 4,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Tear Location in the Medial to Lateral Direction",
+      "found_in_fulltext": true,
+      "fulltext_offset": 11441
+    },
+    {
+      "block_id": "p4:7",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Tear location should be viewed from a standard arthroscopic lateral portal. If t",
+      "found_in_fulltext": true,
+      "fulltext_offset": 11490
+    },
+    {
+      "block_id": "p4:8",
+      "page": 4,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Tear Morphology",
+      "found_in_fulltext": true,
+      "fulltext_offset": 11772
+    },
+    {
+      "block_id": "p4:9",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Tear location should be viewed from a standard arthroscopic lateral portal. If t",
+      "found_in_fulltext": true,
+      "fulltext_offset": 11490
+    },
+    {
+      "block_id": "p4:10",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "All radiographic measurements were made by two experienced arthroscopic surgeons",
+      "found_in_fulltext": true,
+      "fulltext_offset": 12273
+    },
+    {
+      "block_id": "p4:11",
+      "page": 4,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Statistical Analysis",
+      "found_in_fulltext": true,
+      "fulltext_offset": 12742
+    },
+    {
+      "block_id": "p4:12",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "SPSS version 22.0 (SPSS, Inc., Chicago, IL) was used to perform the statistical ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 12763
+    },
+    {
+      "block_id": "p4:13",
+      "page": 4,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Results",
+      "found_in_fulltext": true,
+      "fulltext_offset": 1571
+    },
+    {
+      "block_id": "p4:14",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In total, we analyzed 92 shoulders of 92 patients (33 males and 59 females). Mea",
+      "found_in_fulltext": true,
+      "fulltext_offset": 13264
+    },
+    {
+      "block_id": "p4:15",
+      "page": 4,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Comparison between Groups of Different Tear Locations (Anterior, Middle, and Pos",
+      "found_in_fulltext": true,
+      "fulltext_offset": 14837
+    },
+    {
+      "block_id": "p4:16",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The radiographic indices in the anterior tear, middle tear, and posterior tear g",
+      "found_in_fulltext": true,
+      "fulltext_offset": 14925
+    },
+    {
+      "block_id": "p4:17",
+      "page": 4,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Comparison between Groups of Different Tear Shapes (Horizontal, Longitudinal, L-",
+      "found_in_fulltext": true,
+      "fulltext_offset": 15684
+    },
+    {
+      "block_id": "p4:18",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The radiographic indices in the horizontal tear, longitudinal tear, L-shaped tea",
+      "found_in_fulltext": true,
+      "fulltext_offset": 15787
+    },
+    {
+      "block_id": "p5:0",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "2001",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:1",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Orthopaedic Surgery VOLUME 15 · NUMBER 8 · AUGUST, 2023",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:4",
+      "page": 5,
+      "role": "media_asset",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "<table><tr><td colspan=\"10\">TABLE 1 General data of patients in each group</td><",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:0",
+      "page": 6,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "2002",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:1",
+      "page": 6,
+      "role": "media_asset",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "<table><tr><td colspan=\"6\">TABLE 2 Comparison of radiographic indices between an",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:0",
+      "page": 7,
+      "role": "figure_caption_candidate",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "2003",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:1",
+      "page": 7,
+      "role": "media_asset",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "<table><tr><td colspan=\"6\">TABLE 3 Comparison of radiographic indices in the hor",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:2",
+      "page": 7,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Abbreviations: Al, acromial index; AS, acromial slope; AT, acromial tilt; LAA, l",
+      "found_in_fulltext": true,
+      "fulltext_offset": 16492
+    },
+    {
+      "block_id": "p7:3",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "$ (p = 0.019) $ and the irregular tear group $ (0.781 \\pm 0.068) $ $ (p = 0.047)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:4",
+      "page": 7,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Comparison between Groups with Different Tear Locations (Medial Tear and Lateral",
+      "found_in_fulltext": true,
+      "fulltext_offset": 16804
+    },
+    {
+      "block_id": "p7:6",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The radiographic indices in the medial tear and lateral tear group are shown in ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 16891
+    },
+    {
+      "block_id": "p7:7",
+      "page": 7,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Discussion Summary",
+      "found_in_fulltext": true,
+      "fulltext_offset": 17084
+    },
+    {
+      "block_id": "p7:9",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "To our knowledge, this is the first study to explore the correlation between rad",
+      "found_in_fulltext": true,
+      "fulltext_offset": 17103
+    },
+    {
+      "block_id": "p7:10",
+      "page": 7,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Correlations between Shoulder Anatomical Indices and Occurrence of Subacromial I",
+      "found_in_fulltext": true,
+      "fulltext_offset": 18108
+    },
+    {
+      "block_id": "p7:11",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Previous studies have reported the correlation between different radiographic in",
+      "found_in_fulltext": true,
+      "fulltext_offset": 18199
+    },
+    {
+      "block_id": "p7:12",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "elevated AI, usually greater than 0.74, was associated with the presence of rota",
+      "found_in_fulltext": true,
+      "fulltext_offset": 18727
+    },
+    {
+      "block_id": "p7:13",
+      "page": 7,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Correlations between Shoulder Anatomical Indices and the Morphology of Rotator C",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20848
+    },
+    {
+      "block_id": "p7:14",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The number of anterior tears was almost equal to that of middle tears but much g",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20938
+    },
+    {
+      "block_id": "p8:0",
+      "page": 8,
+      "role": "noise",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "2004",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:2",
+      "page": 8,
+      "role": "figure_caption_candidate",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "Fig. 4 Comparison of radiographic indices between the horizontal tear, longitudi",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:3",
+      "page": 8,
+      "role": "media_asset",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "<table><tr><td colspan=\"6\">TABLE 4 Comparison of radiographic indices in the med",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:4",
+      "page": 8,
+      "role": "footnote",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Abbreviations: AI, acromial index; AS, acromial slope; AT, acromial tilt; LAA, l",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22273
+    },
+    {
+      "block_id": "p8:5",
+      "page": 8,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "contact area was mainly a specific point; with shoulder abduction, the track was",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22403
+    },
+    {
+      "block_id": "p8:6",
+      "page": 8,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "with shoulder abduction, the acromion edge worked like a guillotine and a horizo",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22581
+    },
+    {
+      "block_id": "p9:0",
+      "page": 9,
+      "role": "noise",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "2005",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:1",
+      "page": 9,
+      "role": "noise",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "Orthopaedic Surgery VOLUME 15 · NUMBER 8 · AUGUST, 2023",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:2",
+      "page": 9,
+      "role": "noise",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "SHOULDER ANATOMY AND ROTATOR CUFF TEAR",
+      "found_in_fulltext": true,
+      "fulltext_offset": 10488
+    },
+    {
+      "block_id": "p9:3",
+      "page": 9,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "mainly formed by tendon retraction), the L-shaped tears observed in this study w",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22983
+    },
+    {
+      "block_id": "p9:4",
+      "page": 9,
+      "role": "subsection_heading",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Clinical Translation",
+      "found_in_fulltext": true,
+      "fulltext_offset": 25394
+    },
+    {
+      "block_id": "p9:5",
+      "page": 9,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "The location of rotator cuff tears can differ; consequently, patients tend to co",
+      "found_in_fulltext": true,
+      "fulltext_offset": 25415
+    },
+    {
+      "block_id": "p9:6",
+      "page": 9,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "be predicted from radiographic indices, thus allowing clini- cians to guide the ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 27203
+    },
+    {
+      "block_id": "p9:7",
+      "page": 9,
+      "role": "subsection_heading",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Strengths and Limitations",
+      "found_in_fulltext": true,
+      "fulltext_offset": 28259
+    },
+    {
+      "block_id": "p9:8",
+      "page": 9,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "To the best of our knowledge, this is the first study to investigate the correla",
+      "found_in_fulltext": true,
+      "fulltext_offset": 28285
+    },
+    {
+      "block_id": "p9:9",
+      "page": 9,
+      "role": "section_heading",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Conclusion",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2744
+    },
+    {
+      "block_id": "p9:10",
+      "page": 9,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Acromion with a larger AS tend to cause anterior tears and middle tears rather t",
+      "found_in_fulltext": true,
+      "fulltext_offset": 28697
+    },
+    {
+      "block_id": "p9:11",
+      "page": 9,
+      "role": "sub_subsection_heading",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Acknowledgments",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29161
+    },
+    {
+      "block_id": "p9:12",
+      "page": 9,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Thank you for the tacit teamwork of all authors. This research did not receive a",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29179
+    },
+    {
+      "block_id": "p9:13",
+      "page": 9,
+      "role": "subsection_heading",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Conflict of Interest",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29355
+    },
+    {
+      "block_id": "p9:14",
+      "page": 9,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "The authors declared that they have no conflicts of interest for this work.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29378
+    },
+    {
+      "block_id": "p9:15",
+      "page": 9,
+      "role": "subsection_heading",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Author's Contribution",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29458
+    },
+    {
+      "block_id": "p9:16",
+      "page": 9,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Jinsong Yang—study design, data collection, statistics, paper writing.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29480
+    },
+    {
+      "block_id": "p9:17",
+      "page": 9,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Ming Xiang—operation implementation.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29551
+    },
+    {
+      "block_id": "p9:18",
+      "page": 9,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Yiping Li—data collection.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29588
+    },
+    {
+      "block_id": "p9:19",
+      "page": 9,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Qing Zhang—data collection.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29615
+    },
+    {
+      "block_id": "p9:20",
+      "page": 9,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Fei Dai—data collection.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29643
+    },
+    {
+      "block_id": "p10:0",
+      "page": 10,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "2006",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:1",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "ORTHOPAEDIC SURGERY SHOULDER ANATOMY AND ROTATOR CUFF TEAR",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29685
+    },
+    {
+      "block_id": "p10:2",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "SHOULDER ANATOMY AND ROTATOR CUFF TEAR",
+      "found_in_fulltext": true,
+      "fulltext_offset": 10488
+    },
+    {
+      "block_id": "p10:3",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "VOLUME 15 · NUMBER 8 · AUGUST, 2023",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29744
+    },
+    {
+      "block_id": "p10:4",
+      "page": 10,
+      "role": "reference_heading",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "References",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29822
+    },
+    {
+      "block_id": "p10:5",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "1. Balke M, Liem D, Greshake O, Hoeher J, Bouillon B, Banerjee M. Differences in",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29833
+    },
+    {
+      "block_id": "p10:6",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "2. Balke M, Schmidt C, Dedy N, Banerjee M, Bouillon B, Liem D. Correlation of ac",
+      "found_in_fulltext": true,
+      "fulltext_offset": 30072
+    },
+    {
+      "block_id": "p10:7",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "3. Blonna D, Giani A, Bellato E, Mattei L, Calo M, Rossi R, et al. Predominance ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 30249
+    },
+    {
+      "block_id": "p10:8",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "4. Chalmers PN, Salazar D, Steger-May K, Chamberlain A, Yamaguchi K, Keener J. D",
+      "found_in_fulltext": true,
+      "fulltext_offset": 30462
+    },
+    {
+      "block_id": "p10:9",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "5. Cherchi L, Ciornohac J, Godet J, Clavert P, Kempf J. Critical shoulder angle:",
+      "found_in_fulltext": true,
+      "fulltext_offset": 30661
+    },
+    {
+      "block_id": "p10:10",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "6. Gomide LC, Carmo TC, Bergo GHM, Oliveira GA, Macedo IS. Relationship between ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 30862
+    },
+    {
+      "block_id": "p10:11",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "7. Kum DH, Kim JH, Park KM, Lee ES, Park YB, Yoo JC. Acromion index in Korean po",
+      "found_in_fulltext": true,
+      "fulltext_offset": 31085
+    },
+    {
+      "block_id": "p10:12",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "8. Singleton N, Agius L, Andrews S. The acromiohumeral Centre edge angle: a new ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 31254
+    },
+    {
+      "block_id": "p10:13",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "9. Watanabe A, Ono Q, Nishigami T, Hirooka T, Machida H. Differences in risk fac",
+      "found_in_fulltext": true,
+      "fulltext_offset": 31435
+    },
+    {
+      "block_id": "p10:14",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "10. Güray A, Ismail T, Deniz K, et al. The effect of sagittal orientation of the",
+      "found_in_fulltext": true,
+      "fulltext_offset": 31618
+    },
+    {
+      "block_id": "p10:15",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "11. Thi HT, Geun-Tae K, Taewoo K, et al. Classification of rotator cuff tears in",
+      "found_in_fulltext": true,
+      "fulltext_offset": 31821
+    },
+    {
+      "block_id": "p10:16",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "12. Plancher Kevin D, Jaya S, Karen B, et al. Diagnosis and Management of Partia",
+      "found_in_fulltext": true,
+      "fulltext_offset": 31986
+    },
+    {
+      "block_id": "p10:17",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "13. Leslie V, Carol C, Gaelan C, et al. Exploring clinician perceptions of a car",
+      "found_in_fulltext": true,
+      "fulltext_offset": 32162
+    },
+    {
+      "block_id": "p10:18",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "14. Escamilla Rafael F, Kyle Y, Lonnie P, et al. Shoulder muscle activity and fu",
+      "found_in_fulltext": true,
+      "fulltext_offset": 32344
+    },
+    {
+      "block_id": "p10:19",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "15. Rony-Orijit DH, Erat Justin J, Rakowski Dylan R, et al. The evolution of art",
+      "found_in_fulltext": true,
+      "fulltext_offset": 32504
+    },
+    {
+      "block_id": "p10:20",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "16. Willenbring Taylor J, DeVos MJ, Warth Ryan J, et al. Trends in acromioplasty",
+      "found_in_fulltext": true,
+      "fulltext_offset": 32662
+    },
+    {
+      "block_id": "p10:21",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "17. Ozgun K, Burak G, Selcuk K, et al. The effect of acromioplasty or bursectomy",
+      "found_in_fulltext": true,
+      "fulltext_offset": 32896
+    },
+    {
+      "block_id": "p10:22",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "18. Zaid MB et al. Anatomic shoulder parameters and their relationship to the pr",
+      "found_in_fulltext": true,
+      "fulltext_offset": 33141
+    },
+    {
+      "block_id": "p10:23",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "19. Moor BK, Weiser K, Slankamenac K, Geber C, Bouaicha S. Relationship of indiv",
+      "found_in_fulltext": true,
+      "fulltext_offset": 33377
+    },
+    {
+      "block_id": "p10:24",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "20. Xinyu L, Wei X, Ning H, et al. Relationship between acromial morphological v",
+      "found_in_fulltext": true,
+      "fulltext_offset": 33606
+    },
+    {
+      "block_id": "p10:25",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "21. Lionel P, Sophie B, Philippe M, et al. Multimodality imaging of subacromial ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 33782
+    },
+    {
+      "block_id": "p10:26",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "22. Pogorzelski J, Beitzel K, Imhoff AB, Millett P, Braun S. Surgical treatment ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 33917
+    },
+    {
+      "block_id": "p10:27",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "23. Nazim K, Bans Y, Ahmet O, et al. Evaluation of critical shoulder angle and a",
+      "found_in_fulltext": true,
+      "fulltext_offset": 34083
+    },
+    {
+      "block_id": "p10:28",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "24. Rugg Caitlin M, Gallo Robert A, Craig Edward V, et al. The pathogenesis and ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 34290
+    },
+    {
+      "block_id": "p10:29",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "25. Frank Jonathan M, Jaskardip C, Frank Rachel M, et al. The role of acromiopla",
+      "found_in_fulltext": true,
+      "fulltext_offset": 34447
+    },
+    {
+      "block_id": "p10:30",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "26. Koca R, Fazliogullan Z, Aydin BK, et al. Acromion types and morphometric eva",
+      "found_in_fulltext": true,
+      "fulltext_offset": 34595
+    },
+    {
+      "block_id": "p10:31",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "27. Qi M, Changjiao S, Ruiyong D, et al. Morphological characteristics of acromi",
+      "found_in_fulltext": true,
+      "fulltext_offset": 34726
+    },
+    {
+      "block_id": "p10:32",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "28. Page Matthew J, Sally G, Brodwen MB, et al. Manual therapy and exercise for ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 35038
+    },
+    {
+      "block_id": "p10:33",
+      "page": 10,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "29. Ophelie L-G, Ghassan F, Yining L, et al. Physical therapy combined with suba",
+      "found_in_fulltext": true,
+      "fulltext_offset": 35185
+    }
+  ]
+}

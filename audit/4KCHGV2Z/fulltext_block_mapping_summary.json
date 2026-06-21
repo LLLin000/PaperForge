@@ -1,0 +1,1057 @@
+{
+  "mappable_block_count": 105,
+  "found_count": 44,
+  "missing_count": 61,
+  "rows": [
+    {
+      "block_id": "p1:0",
+      "page": 1,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "Clin Orthop Relat Res (2010) 468:1542–1550 DOI 10.1007/s11999-009-1058-5",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:1",
+      "page": 1,
+      "role": "authors",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "CLINICAL RESEARCH",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:2",
+      "page": 1,
+      "role": "paper_title",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "Classification and Clinical Significance of Acromial Spur in Rotator Cuff Tear",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:3",
+      "page": 1,
+      "role": "authors",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "Heel-type Spur and Rotator Cuff Tear",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:4",
+      "page": 1,
+      "role": "authors",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "Joo Han Oh MD, PhD, Jae Yoon Kim MD, Ho Kyoo Lee MD, Jung-Ah Choi MD, PhD",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:9",
+      "page": 1,
+      "role": "body_paragraph",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "Level of Evidence: Level IV, diagnostic study. See Guidelines for Authors for a ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 1660
+    },
+    {
+      "block_id": "p1:11",
+      "page": 1,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Introduction",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:12",
+      "page": 1,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Each author certifies that his or her institution has approved the human protoco",
+      "found_in_fulltext": true,
+      "fulltext_offset": 1784
+    },
+    {
+      "block_id": "p1:13",
+      "page": 1,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Rotator cuff disorder is a common cause of chronic shoulder pain in adults. The ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:14",
+      "page": 1,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "J. H. Oh, H. K. Lee Department of Orthopedic Surgery, Seoul National University ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:15",
+      "page": 1,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "J. Y. Kim (✉) Department of Orthopaedic Surgery, Chung-Ang University College of",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2071
+    },
+    {
+      "block_id": "p1:16",
+      "page": 1,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "J.-A. Choi Department of Radiology, Seoul National University College of Medicin",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:17",
+      "page": 1,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The coracoacromial ligament [9, 10, 20], shape of the acromion [2, 3, 25], and f",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:0",
+      "page": 2,
+      "role": "noise",
+      "zone": "frontmatter_side_zone",
+      "render_default": false,
+      "snippet": "Volume 468, Number 6, June 2010",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:1",
+      "page": 2,
+      "role": "noise",
+      "zone": "frontmatter_side_zone",
+      "render_default": false,
+      "snippet": "Heel-type Spur and Rotator Cuff Tear",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:2",
+      "page": 2,
+      "role": "noise",
+      "zone": "frontmatter_side_zone",
+      "render_default": false,
+      "snippet": "1543",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:3",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "enlarge the subacromial space and decompress the rotator cuff. Numerous subseque",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:4",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Various relationships reportedly occur between acromial spurs and rotator cuff t",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:5",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Therefore, the purposes of our study were (1) to classify the morphologic charac",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2262
+    },
+    {
+      "block_id": "p2:6",
+      "page": 2,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Materials and Methods",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2535
+    },
+    {
+      "block_id": "p2:7",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "We retrospectively reviewed the prospectively collected data from all 106 patien",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2557
+    },
+    {
+      "block_id": "p2:8",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "shoulders, fractures, and tumors. There were 54 men and 48 women with an average",
+      "found_in_fulltext": true,
+      "fulltext_offset": 3612
+    },
+    {
+      "block_id": "p2:9",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "We evaluated plain radiographs, including shoulder true AP, lateral, axial, supr",
+      "found_in_fulltext": true,
+      "fulltext_offset": 4090
+    },
+    {
+      "block_id": "p2:10",
+      "page": 2,
+      "role": "table_caption",
+      "zone": "display_zone",
+      "render_default": true,
+      "snippet": "Table 1. Demographic data for both patient groups",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:12",
+      "page": 2,
+      "role": "unknown_structural",
+      "zone": "frontmatter_side_zone",
+      "render_default": false,
+      "snippet": "$$ p>0.05. $$",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:0",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "1544",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:1",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Oh et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:2",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Clinical Orthopaedics and Related Research $ ^{®} $",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:3",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "interobserver reliability, acromial spur types were redetermined independently b",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:4",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "We used Student's t-test to compare continuous variables (age, acromial thicknes",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:5",
+      "page": 3,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Results",
+      "found_in_fulltext": true,
+      "fulltext_offset": 5070
+    },
+    {
+      "block_id": "p3:6",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "We observed distinct morphologic types of acromial spurs and categorized them in",
+      "found_in_fulltext": true,
+      "fulltext_offset": 5078
+    },
+    {
+      "block_id": "p3:7",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "type spur (Fig. 2). Laterally protruding spurs were seen with the lateral tracti",
+      "found_in_fulltext": true,
+      "fulltext_offset": 5371
+    },
+    {
+      "block_id": "p3:8",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "We detected acromial spurs in 142 of the 208 patients (68%), and their incidence",
+      "found_in_fulltext": true,
+      "fulltext_offset": 7087
+    },
+    {
+      "block_id": "p4:0",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Volume 468, Number 6, June 2010",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:1",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Heel-type Spur and Rotator Cuff Tear",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:2",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "1545",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:6",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "subjects [58%] (Table 2). Spurs were more frequent (p = 0.002) in patients with ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 7916
+    },
+    {
+      "block_id": "p4:7",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "One hundred twenty-five patients (60%) had a flat-type acromion, 60 (28%) had th",
+      "found_in_fulltext": true,
+      "fulltext_offset": 8508
+    },
+    {
+      "block_id": "p4:8",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "thicker (p = 0.014) than those in the control group (Table 4). Acromions were th",
+      "found_in_fulltext": true,
+      "fulltext_offset": 9009
+    },
+    {
+      "block_id": "p4:9",
+      "page": 4,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Discussion",
+      "found_in_fulltext": true,
+      "fulltext_offset": 9488
+    },
+    {
+      "block_id": "p4:10",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Acromial spurs apparently form by traction of the coracoacromial ligament and re",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:0",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "1546",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:1",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Oh et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:2",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Clinical Orthopaedics and Related Research $ ^{®} $",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:8",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "acromial spurs and rotator cuff tears. This could provide useful guidance regard",
+      "found_in_fulltext": true,
+      "fulltext_offset": 9825
+    },
+    {
+      "block_id": "p5:9",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "There are certain limitations to our study. First, spur classification by morpho",
+      "found_in_fulltext": true,
+      "fulltext_offset": 9960
+    },
+    {
+      "block_id": "p5:10",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "substantial number of patients, including a healthy popu- lation, would be neede",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:11",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Ogawa et al. [21] classified acromial spurs according to size and emphasized onl",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:0",
+      "page": 6,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Volume 468, Number 6, June 2010",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:1",
+      "page": 6,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Heel-type Spur and Rotator Cuff Tear",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:2",
+      "page": 6,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "1547",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:8",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "morphologic characteristics, because we noticed some acromial spurs share their ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 12383
+    },
+    {
+      "block_id": "p6:9",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "tears. However, we observed an association of full-thick- ness rotator cuff tear",
+      "found_in_fulltext": true,
+      "fulltext_offset": 14007
+    },
+    {
+      "block_id": "p6:10",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "There are numerous theories regarding the causative factors of rotator cuff tear",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:0",
+      "page": 7,
+      "role": "noise",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "1548",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:1",
+      "page": 7,
+      "role": "noise",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "Oh et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:2",
+      "page": 7,
+      "role": "noise",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "Clinical Orthopaedics and Related Research $ ^{®} $",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:3",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Fig. 7A–D (A) The anteroinferior bony projection has the appearance of a bird be",
+      "found_in_fulltext": true,
+      "fulltext_offset": 14856
+    },
+    {
+      "block_id": "p7:10",
+      "page": 7,
+      "role": "figure_caption_candidate",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "Fig. 8 The incidence of acromial spurs increased with advancing age. Patients yo",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:11",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Since Neer [15, 16] reported the impingement theory and rotator cuff tears, nume",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:12",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "than 5 mm were associated with rotator cuff tears. Our data suggest the incidenc",
+      "found_in_fulltext": true,
+      "fulltext_offset": 14441
+    },
+    {
+      "block_id": "p7:13",
+      "page": 7,
+      "role": "table_caption",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Table 2. Relationship between the type of acromial spur and rotator cuff tear",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:15",
+      "page": 7,
+      "role": "footnote",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "$ ^{*} $ Significant difference between the two groups (p < 0.05).",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:16",
+      "page": 7,
+      "role": "table_caption",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Table 3. Size of full-thickness rotator cuff tears according to the acromial spu",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:18",
+      "page": 7,
+      "role": "unknown_structural",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "$$ p>0.05. $$",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:0",
+      "page": 8,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Volume 468, Number 6, June 2010",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:1",
+      "page": 8,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Heel-type Spur and Rotator Cuff Tear",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:2",
+      "page": 8,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "1549",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:3",
+      "page": 8,
+      "role": "table_caption",
+      "zone": "display_zone",
+      "render_default": true,
+      "snippet": "Table 4. Relationship among acromial thickness, shape, and full-thickness rotato",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:5",
+      "page": 8,
+      "role": "footnote",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "$ ^{*} $ Significant difference between the two groups (p < 0.05).",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:6",
+      "page": 8,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "between the acromial shape and rotator cuff disease. These authors emphasized th",
+      "found_in_fulltext": true,
+      "fulltext_offset": 15337
+    },
+    {
+      "block_id": "p8:7",
+      "page": 8,
+      "role": "backmatter_body",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Morphologic features of acromial spurs can be classified as heel, lateral/anteri",
+      "found_in_fulltext": true,
+      "fulltext_offset": 19322
+    },
+    {
+      "block_id": "p8:8",
+      "page": 8,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Acknowledgments We thank Ki Hyun Jo, MD, Suk Jae Lee, MD, Hye Ran Kim, and Sang ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 17010
+    },
+    {
+      "block_id": "p8:9",
+      "page": 8,
+      "role": "reference_heading",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "References",
+      "found_in_fulltext": true,
+      "fulltext_offset": 17384
+    },
+    {
+      "block_id": "p8:10",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "1. Anderson K, Bowen MK. Spur reformation after arthroscopic acromioplasty. Arth",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:11",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "2. Bigliani LU, Morrison DS, April EW. The morphology of the acromion and its re",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:12",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "3. Bigliani LU, Ticker JB, Flatow EL, Soslowsky LJ, Mow VC. [Relationship of acr",
+      "found_in_fulltext": true,
+      "fulltext_offset": 17395
+    },
+    {
+      "block_id": "p8:13",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "4. Bonsell S, Pearsall AW 4th, Heitman RJ, Helms CA, Major NM, Speer KP. The rel",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:14",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "5. Chambler AF, Pitsillides AA, Emery RJ. Acromial spur formation in patients wi",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:15",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "6. Chansky HA, Iannotti JP. The vascularity of the rotator cuff. Clin Sports Med",
+      "found_in_fulltext": true,
+      "fulltext_offset": 17569
+    },
+    {
+      "block_id": "p8:16",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "7. Edelson JG, Taitz C. Anatomy of the coraco-acromial arch: relation to degener",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:17",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "8. Epstein RE, Schweitzer ME, Frieman BG, Fenlin JM, Mitchell DG. Hooked acromio",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:18",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "9. Fealy S, April EW, Khazzam M, Armengol-Barallat J, Bigliani LU. The coracoacr",
+      "found_in_fulltext": true,
+      "fulltext_offset": 17668
+    },
+    {
+      "block_id": "p8:19",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "10. Harryman DT 2nd, Sides JA, Clark JM, McQuade KJ, Gibb TD, Matsen FA 3rd. Tra",
+      "found_in_fulltext": true,
+      "fulltext_offset": 17851
+    },
+    {
+      "block_id": "p8:20",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "11. Hayes PR, Flatow EL. Attrition sign in impingement syndrome. Arthroscopy. 20",
+      "found_in_fulltext": true,
+      "fulltext_offset": 18050
+    },
+    {
+      "block_id": "p8:21",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "12. Hirano M, Ide J, Takagi K. Acromial shapes and extension of rotator cuff tea",
+      "found_in_fulltext": true,
+      "fulltext_offset": 18141
+    },
+    {
+      "block_id": "p8:22",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "13. Jim YF, Chang CY, Wu JJ, Chang T. Shoulder impingement syndrome: impingement",
+      "found_in_fulltext": true,
+      "fulltext_offset": 18304
+    },
+    {
+      "block_id": "p8:23",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "14. Liotard JP, Cochard P, Walch G. Critical analysis of the supra-spinatus outl",
+      "found_in_fulltext": true,
+      "fulltext_offset": 18467
+    },
+    {
+      "block_id": "p8:24",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "15. Neer CS 2nd. Anterior acromioplasty for the chronic impingement syndrome in ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 18637
+    },
+    {
+      "block_id": "p8:25",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "16. Neer CS 2nd. Impingement lesions. Clin Orthop Relat Res. 1983;173:70–77.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 18790
+    },
+    {
+      "block_id": "p8:26",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "17. Nicholson GP, Goodman DA, Flatow EL, Bigliani LU. The acromion: morphologic ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 18867
+    },
+    {
+      "block_id": "p8:27",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "18. Nixon JE, DiStefano V. Ruptures of the rotator cuff. Orthop Clin North Am. 1",
+      "found_in_fulltext": true,
+      "fulltext_offset": 19043
+    },
+    {
+      "block_id": "p8:28",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "19. Nyffeler RW, Werner CM, Sukthankar A, Schmid MR, Gerber C. Association of a ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 19138
+    },
+    {
+      "block_id": "p9:0",
+      "page": 9,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "1550",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:1",
+      "page": 9,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Oh et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:2",
+      "page": 9,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Clinical Orthopaedics and Related Research $ ^{®} $",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:3",
+      "page": 9,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "20. Ogata S, Uthoff HK. Acromial enthesopathy and rotator cuff tear: a radiologi",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:4",
+      "page": 9,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "21. Ogawa K, Yoshida A, Inokuchi W, Naniwa T. Acromial spur: relationship to agi",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:5",
+      "page": 9,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "22. Ouellette H, Labis J, Bredella M, Palmer WE, Sheah K, Torriani M. Spectrum o",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20205
+    },
+    {
+      "block_id": "p9:6",
+      "page": 9,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "23. Ozaki J, Fujimoto S, Nakagawa Y, Masuhara K, Tamai S. Tears of the rotator c",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20364
+    },
+    {
+      "block_id": "p9:7",
+      "page": 9,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "changes in the acromion: a study in cadavera. J Bone Joint Surg Am. 1988;70:1224",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20493
+    },
+    {
+      "block_id": "p9:8",
+      "page": 9,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "24. Panni AS, Milano G, Lucania L, Fabbriciani C, Logroscino CA. Histological an",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20580
+    },
+    {
+      "block_id": "p9:9",
+      "page": 9,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "25. Toivonen DA, Tuite MJ, Orwin JF. Acromial structure and tears of the rotator",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20789
+    },
+    {
+      "block_id": "p9:10",
+      "page": 9,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "26. Tucker TJ, Snyder SJ. The keeled acromion: an aggressive acromial variant—a ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    }
+  ]
+}

@@ -2,8 +2,8 @@
 
 - Mode: `high-risk`
 - Status: `READY`
-- Reviewed pages: [1, 2, 3, 7, 8, 11, 12, 13, 14, 15, 17, 18, 20, 23, 25, 26, 27, 28]
-- Reviewed blocks: 291
+- Reviewed pages: [1, 2, 3, 7, 8, 11, 12, 13, 14, 15, 17, 18, 20, 23, 25, 27, 28]
+- Reviewed blocks: 278
 
 ## Findings
 
@@ -27,9 +27,7 @@
 - `critical` `reference_span_error`: block appears inside the logical reference reading-order region
 - `critical` `reference_span_error`: block appears inside the logical reference reading-order region
 - `critical` `reference_span_error`: block appears inside the logical reference reading-order region
-- `major` `frontmatter_error`: frontmatter page retains elevated unknown_structural density
 - `major` `same_page_boundary_error`: page contains mixed body/reference/tail signals
-- `major` `object_ownership_error`: ambiguous or unresolved object ownership remains in the current artifact set
 - `minor` `render_mapping_error`: some render-default blocks are not easily mapped into the current fulltext output
 
 ## Disposition Guidance

@@ -1,20 +1,10 @@
 {
   "figures": {
-    "matched_count": 14,
-    "ambiguous_count": 2,
+    "matched_count": 10,
+    "ambiguous_count": 5,
     "unresolved_cluster_count": 0,
-    "unmatched_asset_count": 14,
+    "unmatched_asset_count": 23,
     "matched": [
-      {
-        "figure_number": 1,
-        "legend_block_id": 5,
-        "asset_block_ids": [
-          3,
-          4
-        ],
-        "page": 41,
-        "match_type": null
-      },
       {
         "figure_number": 2,
         "legend_block_id": 4,
@@ -32,16 +22,6 @@
           2
         ],
         "page": 17,
-        "match_type": null
-      },
-      {
-        "figure_number": 4,
-        "legend_block_id": 3,
-        "asset_block_ids": [
-          2,
-          1
-        ],
-        "page": 19,
         "match_type": null
       },
       {
@@ -63,16 +43,6 @@
           3
         ],
         "page": 22,
-        "match_type": null
-      },
-      {
-        "figure_number": 8,
-        "legend_block_id": 4,
-        "asset_block_ids": [
-          3,
-          2
-        ],
-        "page": 24,
         "match_type": null
       },
       {
@@ -127,31 +97,57 @@
         "match_type": null
       },
       {
-        "figure_number": 5,
-        "legend_block_id": 3,
+        "figure_number": null,
+        "legend_block_id": 1,
         "asset_block_ids": [
           2
         ],
-        "page": 20,
-        "match_type": null
-      },
-      {
-        "figure_number": 10,
-        "legend_block_id": 10,
-        "asset_block_ids": [
-          2
-        ],
-        "page": 30,
+        "page": 42,
         "match_type": null
       }
     ],
     "ambiguous": [
       {
+        "figure_number": 1,
+        "legend_block_id": 2,
+        "asset_block_ids": [],
+        "candidate_asset_ids": [
+          3
+        ],
+        "page": 15
+      },
+      {
         "figure_number": null,
         "legend_block_id": 3,
         "asset_block_ids": [],
-        "candidate_asset_ids": [],
+        "candidate_asset_ids": [
+          2,
+          1,
+          5,
+          1
+        ],
+        "page": 19
+      },
+      {
+        "figure_number": 5,
+        "legend_block_id": 3,
+        "asset_block_ids": [],
+        "candidate_asset_ids": [
+          2
+        ],
         "page": 20
+      },
+      {
+        "figure_number": null,
+        "legend_block_id": 4,
+        "asset_block_ids": [],
+        "candidate_asset_ids": [
+          3,
+          2,
+          6,
+          2
+        ],
+        "page": 24
       },
       {
         "figure_number": 10,
@@ -164,10 +160,33 @@
     "unresolved": []
   },
   "tables": {
-    "matched_count": 0,
+    "matched_count": 2,
     "ambiguous_count": 0,
-    "unmatched_asset_count": 13,
-    "matched": [],
-    "ambiguous": []
+    "unmatched_asset_count": 2,
+    "matched": [
+      {
+        "table_number": 2,
+        "caption_block_id": 4,
+        "asset_block_ids": [],
+        "page": 19,
+        "match_status": "matched"
+      },
+      {
+        "table_number": 3,
+        "caption_block_id": 5,
+        "asset_block_ids": [],
+        "page": 24,
+        "match_status": "matched"
+      }
+    ],
+    "ambiguous": [
+      {
+        "table_number": 1,
+        "caption_block_id": 5,
+        "asset_block_ids": [],
+        "page": 15,
+        "match_status": "unmatched_caption"
+      }
+    ]
   }
 }

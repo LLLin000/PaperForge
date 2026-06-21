@@ -1,0 +1,707 @@
+{
+  "mappable_block_count": 70,
+  "found_count": 44,
+  "missing_count": 26,
+  "rows": [
+    {
+      "block_id": "p1:0",
+      "page": 1,
+      "role": "paper_title",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "Articular Cartilage Lesions in 993 Consecutive Knee Arthroscopies",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:1",
+      "page": 1,
+      "role": "affiliation",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "Asbjørn Årøen, *⁴⁴⁵ MD, Sverre Løken, †⁴⁵ MD, Stig Heir, ⁴⁴ MD, Elling Alvik, ⁴ ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:7",
+      "page": 1,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Studies concerning knee joint cartilage lesions have resulted in an impressive v",
+      "found_in_fulltext": true,
+      "fulltext_offset": 1518
+    },
+    {
+      "block_id": "p1:8",
+      "page": 1,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "MATERIALS AND METHODS",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:9",
+      "page": 1,
+      "role": "affiliation",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Three hospitals collaborated in the study. All knee arthroscopic procedures were",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:10",
+      "page": 1,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "At the Symposium of the International Society for Cartilage Repair in 1997, a wo",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2567
+    },
+    {
+      "block_id": "p1:11",
+      "page": 1,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "* Address correspondence and reprint requests to Asbjørn Årøen, MD, Institute fo",
+      "found_in_fulltext": true,
+      "fulltext_offset": 3237
+    },
+    {
+      "block_id": "p1:12",
+      "page": 1,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The American Journal of Sports Medicine, Vol. 32, No. 1",
+      "found_in_fulltext": true,
+      "fulltext_offset": 3415
+    },
+    {
+      "block_id": "p1:15",
+      "page": 1,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "211",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:0",
+      "page": 2,
+      "role": "noise",
+      "zone": "frontmatter_side_zone",
+      "render_default": false,
+      "snippet": "212",
+      "found_in_fulltext": true,
+      "fulltext_offset": 13271
+    },
+    {
+      "block_id": "p2:1",
+      "page": 2,
+      "role": "noise",
+      "zone": "frontmatter_side_zone",
+      "render_default": false,
+      "snippet": "Ảrợen et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:2",
+      "page": 2,
+      "role": "noise",
+      "zone": "frontmatter_side_zone",
+      "render_default": false,
+      "snippet": "The American Journal of Sports Medicine",
+      "found_in_fulltext": true,
+      "fulltext_offset": 185
+    },
+    {
+      "block_id": "p2:5",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The defects are also outlined by the surgeon on standard grid maps including fro",
+      "found_in_fulltext": true,
+      "fulltext_offset": 3487
+    },
+    {
+      "block_id": "p2:6",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Our objective was to find the number of localized cartilage lesions. The surgeon",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:7",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "According to the ICRS form, $ ^{1} $ ratings of radiographic findings are ranked",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:10",
+      "page": 2,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "STATISTICAL ANALYSIS",
+      "found_in_fulltext": true,
+      "fulltext_offset": 5034
+    },
+    {
+      "block_id": "p2:11",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "A Microsoft Access database was used for this study. Statistical analysis was pe",
+      "found_in_fulltext": true,
+      "fulltext_offset": 5055
+    },
+    {
+      "block_id": "p3:0",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Vol. 32, No. 1, 2004",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:1",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Articular Cartilage Lesions in Knee Arthroscopies",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:2",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "213",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:5",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Chicago, Illinois). All percentages are given without any decimals.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 5265
+    },
+    {
+      "block_id": "p3:6",
+      "page": 3,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "RESULTS",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:7",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Articular cartilage changes were noted in 66% of the knees. A localized cartilag",
+      "found_in_fulltext": true,
+      "fulltext_offset": 5333
+    },
+    {
+      "block_id": "p3:8",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "A full-thickness cartilage defect with a square area of more than $ 2 \\, cm^2 $ ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:9",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Of all patients (N = 993), an acute traumatic onset of the knee symptoms was rep",
+      "found_in_fulltext": true,
+      "fulltext_offset": 6076
+    },
+    {
+      "block_id": "p3:12",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "most frequent (Fig. 4). An x-ray examination was performed in 93% of the knees, ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 6351
+    },
+    {
+      "block_id": "p3:13",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Previous arthroscopic procedures had been performed in 28% of the knees, most co",
+      "found_in_fulltext": true,
+      "fulltext_offset": 6505
+    },
+    {
+      "block_id": "p3:14",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Pain was reported with a median value of 40 on a Visual Analog Scale in which 0 ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 6783
+    },
+    {
+      "block_id": "p3:15",
+      "page": 3,
+      "role": "table_caption",
+      "zone": "display_zone",
+      "render_default": true,
+      "snippet": "Table 2 shows the different diagnosis groups and the number of cases with concom",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:16",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Most of the patients with localized cartilage lesions were in younger age groups",
+      "found_in_fulltext": true,
+      "fulltext_offset": 7272
+    },
+    {
+      "block_id": "p4:0",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "214",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:1",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Ảrợen et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:2",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "The American Journal of Sports Medicine",
+      "found_in_fulltext": true,
+      "fulltext_offset": 185
+    },
+    {
+      "block_id": "p4:6",
+      "page": 4,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "DISCUSSION",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:7",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The widespread clinical use of many relatively new cartilage repair methods may ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 7696
+    },
+    {
+      "block_id": "p4:12",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "meniscal injuries are less frequently associated with focal cartilage lesions th",
+      "found_in_fulltext": true,
+      "fulltext_offset": 8517
+    },
+    {
+      "block_id": "p4:13",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Another similar study presented at the 2000 ICRS conference in Gothenburg demons",
+      "found_in_fulltext": true,
+      "fulltext_offset": 8634
+    },
+    {
+      "block_id": "p4:14",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "To date, only nonrandomized clinical series have been published on cartilage rep",
+      "found_in_fulltext": true,
+      "fulltext_offset": 9296
+    },
+    {
+      "block_id": "p5:0",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Vol. 32, No. 1, 2004",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:1",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Articular Cartilage Lesions in Knee Arthroscopies",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:2",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "215",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:3",
+      "page": 5,
+      "role": "table_caption",
+      "zone": "display_zone",
+      "render_default": true,
+      "snippet": "TABLE 1",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:5",
+      "page": 5,
+      "role": "media_asset",
+      "zone": "",
+      "render_default": true,
+      "snippet": "<table><tr><td>Activity level</td><td>Frequency (N = 993)</td><td>Percentage</td",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:6",
+      "page": 5,
+      "role": "table_caption",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "TABLE 2",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:7",
+      "page": 5,
+      "role": "figure_caption_candidate",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "An Overview of the Association of the Localized Cartilage Damage to the Specific",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:9",
+      "page": 5,
+      "role": "footnote",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "$ ^{a} $N $ _{o} $, number of patients with the different knee pathology in this",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:10",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "osteochondritis dissecans lesions has demonstrated that failed surgical treatmen",
+      "found_in_fulltext": true,
+      "fulltext_offset": 9913
+    },
+    {
+      "block_id": "p5:11",
+      "page": 5,
+      "role": "section_heading",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "CONCLUSION",
+      "found_in_fulltext": true,
+      "fulltext_offset": 10340
+    },
+    {
+      "block_id": "p5:12",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "This study shows that 6% of the patients admitted for arthroscopic procedures ha",
+      "found_in_fulltext": true,
+      "fulltext_offset": 10351
+    },
+    {
+      "block_id": "p5:13",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "ber of patients that will benefit from a cartilage repair pro- cedure are so far",
+      "found_in_fulltext": true,
+      "fulltext_offset": 10775
+    },
+    {
+      "block_id": "p5:14",
+      "page": 5,
+      "role": "reference_heading",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "REFERENCES",
+      "found_in_fulltext": true,
+      "fulltext_offset": 10868
+    },
+    {
+      "block_id": "p5:15",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "1. The cartilage standard evaluation form/knee. ICRS Newsletter, spring 1998.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:16",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "2. Alfredson H, Thorsen K, Lorentzon R: Treatment of tear of the anterior crucia",
+      "found_in_fulltext": true,
+      "fulltext_offset": 10879
+    },
+    {
+      "block_id": "p5:17",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "3. Angermann P, Riegels-Nielsen P, Pedersen H: Osteochondritis dissecans of the ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 11153
+    },
+    {
+      "block_id": "p5:18",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "4. Brittberg M, Lindahl A, Nilsson A, et al: Treatment of deep cartilage defects",
+      "found_in_fulltext": true,
+      "fulltext_offset": 11378
+    },
+    {
+      "block_id": "p5:19",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "5. Curl WW, Krome J, Gordon ES, et al: Cartilage injuries: A review of 31,516 kn",
+      "found_in_fulltext": true,
+      "fulltext_offset": 11548
+    },
+    {
+      "block_id": "p5:20",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "6. Hangody L, Kish G, Karpati Z, et al: Mosaicplasty for the treatment of articu",
+      "found_in_fulltext": true,
+      "fulltext_offset": 11676
+    },
+    {
+      "block_id": "p5:21",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "7. Hjelle K, Austgulen O, Muri R, et al: Full thickness chondral defects: A pros",
+      "found_in_fulltext": true,
+      "fulltext_offset": 11843
+    },
+    {
+      "block_id": "p5:22",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "8. Lewandrowski KU, Muller J, Schollmeier G: Concomitant meniscal and articular ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 12047
+    },
+    {
+      "block_id": "p5:23",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "9. Lorentzon R, Alfredson H, Hildingsson C: Treatment of deep cartilage defects ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 12206
+    },
+    {
+      "block_id": "p5:24",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "10. Mandelbaum BR, Browne JE, Fu F, et al: Articular cartilage lesions of the kn",
+      "found_in_fulltext": true,
+      "fulltext_offset": 12387
+    },
+    {
+      "block_id": "p5:25",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "11. Messner K, Gillquist J: Cartilage repair: A critical review. Acta Orthop Sca",
+      "found_in_fulltext": true,
+      "fulltext_offset": 12505
+    },
+    {
+      "block_id": "p5:26",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "12. Minas T, Peterson L: Advanced techniques in autologous chondrocyte transplan",
+      "found_in_fulltext": true,
+      "fulltext_offset": 12606
+    },
+    {
+      "block_id": "p5:27",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "13. Mont MA, Jones LC, Vogelstein BN, et al: Evidence of inappropriate applicati",
+      "found_in_fulltext": true,
+      "fulltext_offset": 12732
+    },
+    {
+      "block_id": "p5:28",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "14. Murrell GA, Maddali S, Horovitz L, et al: The effects of time course after a",
+      "found_in_fulltext": true,
+      "fulltext_offset": 12929
+    },
+    {
+      "block_id": "p5:29",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "15. Peterson L, Minas T, Brittberg M, et al: Two- to 9-year outcome after autolo",
+      "found_in_fulltext": true,
+      "fulltext_offset": 13122
+    },
+    {
+      "block_id": "p5:30",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "16. Steadman JR, Rodkey WG, Singleton SB, et al: Microfracture technique for ful",
+      "found_in_fulltext": true,
+      "fulltext_offset": 13285
+    },
+    {
+      "block_id": "p5:31",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "17. Stone KR, Walgenbach A: Surgical technique for articular cartilage transplan",
+      "found_in_fulltext": true,
+      "fulltext_offset": 13481
+    },
+    {
+      "block_id": "p5:32",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "18. Zamber RW, Teitz CC, McGuire DA, et al: Articular cartilage lesions of the k",
+      "found_in_fulltext": true,
+      "fulltext_offset": 13677
+    },
+    {
+      "block_id": "p5:33",
+      "page": 5,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "19. Årøen A, Jones DG, Fu HF: Arthroscopic diagnosis and treatment of cartilage ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 13791
+    }
+  ]
+}

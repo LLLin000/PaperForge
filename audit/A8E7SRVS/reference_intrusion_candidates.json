@@ -122,7 +122,7 @@
     {
       "block_id": "p13:0",
       "page": 13,
-      "role": "unknown_structural",
+      "role": "noise",
       "zone": "",
       "reason": "logical_order_between_reference_members"
     },

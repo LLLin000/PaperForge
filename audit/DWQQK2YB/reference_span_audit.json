@@ -9,10 +9,10 @@
       "block_id": "p26:1"
     },
     "end": {
-      "page": 32,
+      "page": 31,
       "column": 1,
-      "y": 99.0,
-      "block_id": "p32:1"
+      "y": 1369.0,
+      "block_id": "p31:10"
     },
     "heading_block_id": "p26:1",
     "ordered_block_ids": [
@@ -73,8 +73,7 @@
       "p31:7",
       "p31:8",
       "p31:9",
-      "p31:10",
-      "p32:1"
+      "p31:10"
     ],
     "inside_block_ids": [
       "p26:1",
@@ -134,12 +133,11 @@
       "p31:7",
       "p31:8",
       "p31:9",
-      "p31:10",
-      "p32:1"
+      "p31:10"
     ],
     "explicitly_outside_nearby_block_ids": [
       "p26:0",
-      "p32:2"
+      "p32:0"
     ],
     "intrusion_candidates": [
       {
@@ -581,20 +579,6 @@
         "page": 31,
         "role": "reference_item",
         "zone": "reference_zone",
-        "reason": "logical_order_between_reference_members"
-      },
-      {
-        "block_id": "p32:0",
-        "page": 32,
-        "role": "frontmatter_noise",
-        "zone": "preproof_cover_zone",
-        "reason": "logical_order_between_reference_members"
-      },
-      {
-        "block_id": "p32:1",
-        "page": 32,
-        "role": "backmatter_body",
-        "zone": "post_reference_backmatter_zone",
         "reason": "logical_order_between_reference_members"
       }
     ]

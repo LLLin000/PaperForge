@@ -241,7 +241,7 @@
     {
       "block_id": "p7:1",
       "truth_role": "figure_asset",
-      "pipe_role": "media_asset",
+      "pipe_role": "figure_asset",
       "pipe_zone": "body_zone",
       "pipe_text_len": 0,
       "role_match": true,
@@ -259,7 +259,7 @@
     {
       "block_id": "p9:2",
       "truth_role": "figure_asset",
-      "pipe_role": "media_asset",
+      "pipe_role": "figure_asset",
       "pipe_zone": "body_zone",
       "pipe_text_len": 0,
       "role_match": true,
@@ -268,7 +268,7 @@
     {
       "block_id": "p9:3",
       "truth_role": "figure_asset",
-      "pipe_role": "media_asset",
+      "pipe_role": "figure_asset",
       "pipe_zone": "body_zone",
       "pipe_text_len": 0,
       "role_match": true,
@@ -277,7 +277,7 @@
     {
       "block_id": "p9:4",
       "truth_role": "figure_asset",
-      "pipe_role": "media_asset",
+      "pipe_role": "figure_asset",
       "pipe_zone": "body_zone",
       "pipe_text_len": 0,
       "role_match": true,
@@ -286,7 +286,7 @@
     {
       "block_id": "p9:5",
       "truth_role": "figure_asset",
-      "pipe_role": "media_asset",
+      "pipe_role": "figure_asset",
       "pipe_zone": "body_zone",
       "pipe_text_len": 0,
       "role_match": true,
@@ -295,7 +295,7 @@
     {
       "block_id": "p9:6",
       "truth_role": "figure_asset",
-      "pipe_role": "media_asset",
+      "pipe_role": "figure_asset",
       "pipe_zone": "body_zone",
       "pipe_text_len": 0,
       "role_match": true,
@@ -304,7 +304,7 @@
     {
       "block_id": "p9:7",
       "truth_role": "figure_asset",
-      "pipe_role": "media_asset",
+      "pipe_role": "figure_asset",
       "pipe_zone": "body_zone",
       "pipe_text_len": 0,
       "role_match": true,

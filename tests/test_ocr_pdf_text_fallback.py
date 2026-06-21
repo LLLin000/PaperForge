@@ -120,3 +120,17 @@ def test_backfill_requires_page_dimensions(tmp_path: Path):
 
     assert blocks[0]["_ocr_raw_status"] == "missing_text_unrecovered"
     assert blocks[0]["_ocr_raw_error_type"] == "missing_page_dimensions"
+
+
+def test_local_reference_pdf_fallback_repairs_only_local_candidate_text() -> None:
+    from paperforge.worker.ocr_document import repair_reference_entry_from_pdf_text
+
+    block_run = [
+        {"block_id": "r1", "page": 14, "bbox": [620, 900, 1100, 950], "text": "Brown T, Green S."},
+        {"block_id": "r2", "page": 14, "bbox": [620, 952, 1100, 1000], "text": "N Engl J M"},
+    ]
+    page_text = "Body text ... Brown T, Green S. N Engl J Med. 2020;382(4):100-110. More body text"
+
+    repaired = repair_reference_entry_from_pdf_text(block_run, page_text)
+    assert "N Engl J Med" in repaired
+    assert repaired.startswith("Brown T, Green S.")

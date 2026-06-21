@@ -20,7 +20,7 @@
       "block_id": "p1:0",
       "page": 1,
       "raw_label": "aside_text",
-      "role": "unknown_structural",
+      "role": "noise",
       "zone": "frontmatter_main_zone",
       "bbox": [
         0.0,
@@ -80,7 +80,7 @@
       "block_id": "p1:3",
       "page": 1,
       "raw_label": "text",
-      "role": "unknown_structural",
+      "role": "authors",
       "zone": "frontmatter_main_zone",
       "bbox": [
         103.0,
@@ -200,7 +200,7 @@
       "block_id": "p1:9",
       "page": 1,
       "raw_label": "text",
-      "role": "frontmatter_noise",
+      "role": "body_paragraph",
       "zone": "body_zone",
       "bbox": [
         104.0,
@@ -240,8 +240,8 @@
       "block_id": "p1:11",
       "page": 1,
       "raw_label": "text",
-      "role": "unknown_structural",
-      "zone": "frontmatter_main_zone",
+      "role": "body_paragraph",
+      "zone": "body_zone",
       "bbox": [
         449.0,
         457.0,
@@ -260,7 +260,7 @@
       "block_id": "p1:12",
       "page": 1,
       "raw_label": "text",
-      "role": "frontmatter_noise",
+      "role": "body_paragraph",
       "zone": "body_zone",
       "bbox": [
         104.0,
@@ -301,7 +301,7 @@
       "page": 1,
       "raw_label": "abstract",
       "role": "abstract_body",
-      "zone": "frontmatter_main_zone",
+      "zone": "body_zone",
       "bbox": [
         450.0,
         501.0,
@@ -321,7 +321,7 @@
       "page": 1,
       "raw_label": "abstract",
       "role": "abstract_body",
-      "zone": "frontmatter_main_zone",
+      "zone": "body_zone",
       "bbox": [
         450.0,
         656.0,
@@ -341,7 +341,7 @@
       "page": 1,
       "raw_label": "abstract",
       "role": "abstract_body",
-      "zone": "frontmatter_main_zone",
+      "zone": "body_zone",
       "bbox": [
         450.0,
         808.0,
@@ -400,8 +400,8 @@
       "block_id": "p1:19",
       "page": 1,
       "raw_label": "text",
-      "role": "unknown_structural",
-      "zone": "frontmatter_main_zone",
+      "role": "body_paragraph",
+      "zone": "body_zone",
       "bbox": [
         798.0,
         923.0,
@@ -480,7 +480,7 @@
       "block_id": "p2:0",
       "page": 2,
       "raw_label": "aside_text",
-      "role": "unknown_structural",
+      "role": "noise",
       "zone": "frontmatter_side_zone",
       "bbox": [
         0.0,
@@ -501,7 +501,7 @@
       "page": 2,
       "raw_label": "header",
       "role": "noise",
-      "zone": "",
+      "zone": "frontmatter_main_zone",
       "bbox": [
         510.0,
         93.0,
@@ -540,8 +540,8 @@
       "block_id": "p2:3",
       "page": 2,
       "raw_label": "paragraph_title",
-      "role": "section_heading",
-      "zone": "body_zone",
+      "role": "unknown_structural",
+      "zone": "frontmatter_main_zone",
       "bbox": [
         74.0,
         296.0,
@@ -640,8 +640,8 @@
       "block_id": "p2:8",
       "page": 2,
       "raw_label": "text",
-      "role": "unknown_structural",
-      "zone": "",
+      "role": "body_paragraph",
+      "zone": "body_zone",
       "bbox": [
         421.0,
         143.0,
@@ -720,8 +720,8 @@
       "block_id": "p2:12",
       "page": 2,
       "raw_label": "text",
-      "role": "unknown_structural",
-      "zone": "",
+      "role": "body_paragraph",
+      "zone": "body_zone",
       "bbox": [
         768.0,
         143.0,
@@ -740,8 +740,8 @@
       "block_id": "p2:13",
       "page": 2,
       "raw_label": "image",
-      "role": "media_asset",
-      "zone": "",
+      "role": "figure_asset",
+      "zone": "display_zone",
       "bbox": [
         73.0,
         967.0,
@@ -760,8 +760,8 @@
       "block_id": "p2:14",
       "page": 2,
       "raw_label": "image",
-      "role": "media_asset",
-      "zone": "",
+      "role": "figure_asset",
+      "zone": "display_zone",
       "bbox": [
         420.0,
         966.0,
@@ -800,8 +800,8 @@
       "block_id": "p2:16",
       "page": 2,
       "raw_label": "image",
-      "role": "media_asset",
-      "zone": "",
+      "role": "figure_asset",
+      "zone": "display_zone",
       "bbox": [
         770.0,
         967.0,
@@ -820,7 +820,7 @@
       "block_id": "p2:17",
       "page": 2,
       "raw_label": "figure_title",
-      "role": "figure_caption_candidate",
+      "role": "figure_caption",
       "zone": "display_zone",
       "bbox": [
         74.0,
@@ -861,7 +861,7 @@
       "page": 2,
       "raw_label": "number",
       "role": "noise",
-      "zone": "",
+      "zone": "frontmatter_main_zone",
       "bbox": [
         76.0,
         1480.0,
@@ -881,7 +881,7 @@
       "page": 2,
       "raw_label": "footer",
       "role": "noise",
-      "zone": "",
+      "zone": "frontmatter_main_zone",
       "bbox": [
         970.0,
         1479.0,
@@ -900,7 +900,7 @@
       "block_id": "p3:0",
       "page": 3,
       "raw_label": "aside_text",
-      "role": "unknown_structural",
+      "role": "noise",
       "zone": "frontmatter_side_zone",
       "bbox": [
         0.0,
@@ -940,7 +940,7 @@
       "block_id": "p3:2",
       "page": 3,
       "raw_label": "figure_title",
-      "role": "figure_caption_candidate",
+      "role": "figure_caption",
       "zone": "display_zone",
       "bbox": [
         103.0,
@@ -960,7 +960,7 @@
       "block_id": "p3:3",
       "page": 3,
       "raw_label": "image",
-      "role": "media_asset",
+      "role": "figure_asset",
       "zone": "",
       "bbox": [
         451.0,
@@ -980,7 +980,7 @@
       "block_id": "p3:4",
       "page": 3,
       "raw_label": "image",
-      "role": "media_asset",
+      "role": "figure_asset",
       "zone": "",
       "bbox": [
         804.0,
@@ -1000,7 +1000,7 @@
       "block_id": "p3:5",
       "page": 3,
       "raw_label": "figure_title",
-      "role": "figure_caption_candidate",
+      "role": "figure_caption",
       "zone": "display_zone",
       "bbox": [
         105.0,
@@ -1100,8 +1100,8 @@
       "block_id": "p3:10",
       "page": 3,
       "raw_label": "text",
-      "role": "unknown_structural",
-      "zone": "",
+      "role": "body_paragraph",
+      "zone": "body_zone",
       "bbox": [
         450.0,
         963.0,
@@ -1120,7 +1120,7 @@
       "block_id": "p3:11",
       "page": 3,
       "raw_label": "image",
-      "role": "media_asset",
+      "role": "figure_asset",
       "zone": "",
       "bbox": [
         451.0,
@@ -1180,7 +1180,7 @@
       "block_id": "p3:14",
       "page": 3,
       "raw_label": "figure_title",
-      "role": "figure_caption_candidate",
+      "role": "figure_caption",
       "zone": "",
       "bbox": [
         799.0,
@@ -1320,7 +1320,7 @@
       "block_id": "p4:0",
       "page": 4,
       "raw_label": "aside_text",
-      "role": "unknown_structural",
+      "role": "noise",
       "zone": "frontmatter_side_zone",
       "bbox": [
         0.0,
@@ -1400,8 +1400,8 @@
       "block_id": "p4:4",
       "page": 4,
       "raw_label": "text",
-      "role": "unknown_structural",
-      "zone": "",
+      "role": "body_paragraph",
+      "zone": "body_zone",
       "bbox": [
         420.0,
         142.0,
@@ -1420,8 +1420,8 @@
       "block_id": "p4:5",
       "page": 4,
       "raw_label": "text",
-      "role": "unknown_structural",
-      "zone": "",
+      "role": "body_paragraph",
+      "zone": "body_zone",
       "bbox": [
         769.0,
         142.0,
@@ -1460,7 +1460,7 @@
       "block_id": "p4:7",
       "page": 4,
       "raw_label": "image",
-      "role": "media_asset",
+      "role": "figure_asset",
       "zone": "",
       "bbox": [
         73.0,
@@ -1480,7 +1480,7 @@
       "block_id": "p4:8",
       "page": 4,
       "raw_label": "image",
-      "role": "media_asset",
+      "role": "figure_asset",
       "zone": "",
       "bbox": [
         421.0,
@@ -1500,7 +1500,7 @@
       "block_id": "p4:9",
       "page": 4,
       "raw_label": "image",
-      "role": "media_asset",
+      "role": "figure_asset",
       "zone": "",
       "bbox": [
         72.0,
@@ -1520,7 +1520,7 @@
       "block_id": "p4:10",
       "page": 4,
       "raw_label": "image",
-      "role": "media_asset",
+      "role": "figure_asset",
       "zone": "",
       "bbox": [
         420.0,
@@ -1540,7 +1540,7 @@
       "block_id": "p4:11",
       "page": 4,
       "raw_label": "image",
-      "role": "media_asset",
+      "role": "figure_asset",
       "zone": "",
       "bbox": [
         72.0,
@@ -1560,7 +1560,7 @@
       "block_id": "p4:12",
       "page": 4,
       "raw_label": "figure_title",
-      "role": "figure_caption_candidate",
+      "role": "figure_caption",
       "zone": "display_zone",
       "bbox": [
         770.0,
@@ -1580,7 +1580,7 @@
       "block_id": "p4:13",
       "page": 4,
       "raw_label": "image",
-      "role": "media_asset",
+      "role": "figure_asset",
       "zone": "",
       "bbox": [
         421.0,
@@ -1600,7 +1600,7 @@
       "block_id": "p4:14",
       "page": 4,
       "raw_label": "figure_title",
-      "role": "figure_caption_candidate",
+      "role": "figure_caption",
       "zone": "display_zone",
       "bbox": [
         770.0,
@@ -1620,7 +1620,7 @@
       "block_id": "p4:15",
       "page": 4,
       "raw_label": "vision_footnote",
-      "role": "figure_caption_candidate",
+      "role": "footnote",
       "zone": "",
       "bbox": [
         771.0,
@@ -1640,7 +1640,7 @@
       "block_id": "p4:16",
       "page": 4,
       "raw_label": "figure_title",
-      "role": "figure_caption_candidate",
+      "role": "figure_caption",
       "zone": "display_zone",
       "bbox": [
         772.0,
@@ -1660,7 +1660,7 @@
       "block_id": "p4:17",
       "page": 4,
       "raw_label": "figure_title",
-      "role": "figure_caption_candidate",
+      "role": "figure_caption",
       "zone": "",
       "bbox": [
         771.0,
@@ -1720,7 +1720,7 @@
       "block_id": "p5:0",
       "page": 5,
       "raw_label": "aside_text",
-      "role": "unknown_structural",
+      "role": "noise",
       "zone": "frontmatter_side_zone",
       "bbox": [
         0.0,
@@ -1820,8 +1820,8 @@
       "block_id": "p5:5",
       "page": 5,
       "raw_label": "text",
-      "role": "unknown_structural",
-      "zone": "",
+      "role": "body_paragraph",
+      "zone": "body_zone",
       "bbox": [
         451.0,
         143.0,
@@ -1900,8 +1900,8 @@
       "block_id": "p5:9",
       "page": 5,
       "raw_label": "text",
-      "role": "backmatter_body",
-      "zone": "tail_nonref_hold_zone",
+      "role": "body_paragraph",
+      "zone": "body_zone",
       "bbox": [
         451.0,
         583.0,
@@ -1981,7 +1981,7 @@
       "page": 5,
       "raw_label": "reference_content",
       "role": "reference_item",
-      "zone": "reference_zone",
+      "zone": "",
       "bbox": [
         811.0,
         146.0,
@@ -2001,7 +2001,7 @@
       "page": 5,
       "raw_label": "reference_content",
       "role": "reference_item",
-      "zone": "reference_zone",
+      "zone": "",
       "bbox": [
         811.0,
         233.0,
@@ -2021,7 +2021,7 @@
       "page": 5,
       "raw_label": "reference_content",
       "role": "reference_item",
-      "zone": "reference_zone",
+      "zone": "",
       "bbox": [
         811.0,
         322.0,
@@ -2041,7 +2041,7 @@
       "page": 5,
       "raw_label": "reference_content",
       "role": "reference_item",
-      "zone": "reference_zone",
+      "zone": "",
       "bbox": [
         811.0,
         454.0,
@@ -2061,7 +2061,7 @@
       "page": 5,
       "raw_label": "reference_content",
       "role": "reference_item",
-      "zone": "reference_zone",
+      "zone": "",
       "bbox": [
         812.0,
         542.0,
@@ -2081,7 +2081,7 @@
       "page": 5,
       "raw_label": "reference_content",
       "role": "reference_item",
-      "zone": "reference_zone",
+      "zone": "",
       "bbox": [
         811.0,
         607.0,
@@ -2121,7 +2121,7 @@
       "page": 5,
       "raw_label": "reference_content",
       "role": "reference_item",
-      "zone": "tail_nonref_hold_zone",
+      "zone": "reference_zone",
       "bbox": [
         806.0,
         762.0,

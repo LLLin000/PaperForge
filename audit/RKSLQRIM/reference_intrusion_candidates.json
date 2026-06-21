@@ -699,62 +699,6 @@
       "role": "reference_item",
       "zone": "reference_zone",
       "reason": "logical_order_between_reference_members"
-    },
-    {
-      "block_id": "p40:11",
-      "page": 40,
-      "role": "noise",
-      "zone": "",
-      "reason": "logical_order_between_reference_members"
-    },
-    {
-      "block_id": "p41:0",
-      "page": 41,
-      "role": "frontmatter_noise",
-      "zone": "preproof_cover_zone",
-      "reason": "logical_order_between_reference_members"
-    },
-    {
-      "block_id": "p41:1",
-      "page": 41,
-      "role": "backmatter_boundary_candidate",
-      "zone": "",
-      "reason": "logical_order_between_reference_members"
-    },
-    {
-      "block_id": "p41:2",
-      "page": 41,
-      "role": "body_paragraph",
-      "zone": "",
-      "reason": "logical_order_between_reference_members"
-    },
-    {
-      "block_id": "p41:5",
-      "page": 41,
-      "role": "figure_caption_candidate",
-      "zone": "",
-      "reason": "logical_order_between_reference_members"
-    },
-    {
-      "block_id": "p41:6",
-      "page": 41,
-      "role": "noise",
-      "zone": "",
-      "reason": "logical_order_between_reference_members"
-    },
-    {
-      "block_id": "p42:0",
-      "page": 42,
-      "role": "frontmatter_noise",
-      "zone": "preproof_cover_zone",
-      "reason": "logical_order_between_reference_members"
-    },
-    {
-      "block_id": "p42:1",
-      "page": 42,
-      "role": "figure_caption_candidate",
-      "zone": "",
-      "reason": "logical_order_between_reference_members"
     }
   ]
 }

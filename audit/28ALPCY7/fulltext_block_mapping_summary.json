@@ -1,0 +1,2887 @@
+{
+  "mappable_block_count": 288,
+  "found_count": 101,
+  "missing_count": 187,
+  "rows": [
+    {
+      "block_id": "p1:2",
+      "page": 1,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "Subscriber access provided by University of Glasgow Library",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:3",
+      "page": 1,
+      "role": "authors",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "Tissue Engineering and Regenerative Medicine",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:4",
+      "page": 1,
+      "role": "paper_title",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "3D-printed #- tricalcium phosphate scaffold combined with a pulse electromagneti",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:5",
+      "page": 1,
+      "role": "authors",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "Haifeng Liang, Xiao Liu, Ying Pi, Qiang Yu, Yukun Yin, Xian Li, Yipei Yang, and ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:7",
+      "page": 1,
+      "role": "body_paragraph",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "Downloaded from pubs.acs.org on September 3, 2019",
+      "found_in_fulltext": true,
+      "fulltext_offset": 1673
+    },
+    {
+      "block_id": "p1:9",
+      "page": 1,
+      "role": "unknown_structural",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "“Just Accepted” manuscripts have been peer-reviewed and accepted for publication",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:10",
+      "page": 1,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "is published by the American Chemical Society. 1155 Sixteenth Street N.W., Washi",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:11",
+      "page": 1,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "Published by American Chemical Society. Copyright © American Chemical Society. H",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:0",
+      "page": 2,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:1",
+      "page": 2,
+      "role": "noise",
+      "zone": "frontmatter_side_zone",
+      "render_default": false,
+      "snippet": "Page 1 of 36",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:2",
+      "page": 2,
+      "role": "noise",
+      "zone": "frontmatter_side_zone",
+      "render_default": false,
+      "snippet": "ACS Biomaterials Science & Engineering",
+      "found_in_fulltext": true,
+      "fulltext_offset": 276
+    },
+    {
+      "block_id": "p2:3",
+      "page": 2,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "3D-printed $ \\beta $-tricalcium phosphate scaffold combined with a pulse electro",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:4",
+      "page": 2,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Haifeng Liang $ ^{a} $, Xiao Liu $ ^{b} $, Ying Pi $ ^{a} $, Qiang Yu $ ^{a} $, ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:5",
+      "page": 2,
+      "role": "affiliation",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "a Department of Orthopedics, Zhujiang Hospital, Southern Medical University, No.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:6",
+      "page": 2,
+      "role": "affiliation",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "$ ^{b} $ School of Materials Science and Engineering, South China University of ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:7",
+      "page": 2,
+      "role": "frontmatter_support",
+      "zone": "frontmatter_side_zone",
+      "render_default": true,
+      "snippet": "*Corresponding author: Jing Tian, Email: tianjing_ortho@163.com",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:10",
+      "page": 2,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ACS Paragon Plus Environment",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:0",
+      "page": 3,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:1",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ACS Biomaterials Science & Engineering",
+      "found_in_fulltext": true,
+      "fulltext_offset": 276
+    },
+    {
+      "block_id": "p3:2",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Page 2 of 36",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:3",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "proliferation and differentiation of rADSCs and the repair of a critical defect ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 1417
+    },
+    {
+      "block_id": "p3:4",
+      "page": 3,
+      "role": "structured_insert",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "KEYWORDS: 3D printing; $ \\beta $-tricalcium phosphate; pulse electromagnetic fie",
+      "found_in_fulltext": true,
+      "fulltext_offset": 1767
+    },
+    {
+      "block_id": "p3:5",
+      "page": 3,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "INTRODUCTION",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:6",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Pulse electromagnetic fields (PEMFs) are transient electromagnetic fields produc",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:7",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ACS Paragon Plus Environment",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:0",
+      "page": 4,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:1",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Page 3 of 36",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:2",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ACS Biomaterials Science & Engineering",
+      "found_in_fulltext": true,
+      "fulltext_offset": 276
+    },
+    {
+      "block_id": "p4:3",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "PEMFs have a \"window effect\" $ ^{39} $; that is, the field strength, frequency a",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:4",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ACS Paragon Plus Environment",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:0",
+      "page": 5,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:1",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ACS Biomaterials Science & Engineering",
+      "found_in_fulltext": true,
+      "fulltext_offset": 276
+    },
+    {
+      "block_id": "p5:2",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Page 4 of 36",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:3",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "nonunion and other orthopedic diseases, it is rarely used to treat bone defects.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:4",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The treatment of bone defects has always been a clinical problem, and the gold s",
+      "found_in_fulltext": true,
+      "fulltext_offset": 1895
+    },
+    {
+      "block_id": "p5:5",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ACS Paragon Plus Environment",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:0",
+      "page": 6,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:1",
+      "page": 6,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Page 5 of 36",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:2",
+      "page": 6,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ACS Biomaterials Science & Engineering",
+      "found_in_fulltext": true,
+      "fulltext_offset": 276
+    },
+    {
+      "block_id": "p6:3",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "also contains a porous structure design and rapid prototyping technology to prov",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:4",
+      "page": 6,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "MATERIALS AND METHODS",
+      "found_in_fulltext": true,
+      "fulltext_offset": 3562
+    },
+    {
+      "block_id": "p6:5",
+      "page": 6,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Fabrication and characterization of $ \\beta $-TCP scaffolds",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:6",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The β-TCP scaffolds were fabricated as previously described $ ^{33} $. Briefly, ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:7",
+      "page": 6,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ACS Paragon Plus Environment",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:0",
+      "page": 7,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:1",
+      "page": 7,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ACS Biomaterials Science & Engineering",
+      "found_in_fulltext": true,
+      "fulltext_offset": 276
+    },
+    {
+      "block_id": "p7:2",
+      "page": 7,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Page 6 of 36",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:3",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "volume of the $ \\beta $-TCP scaffolds was reduced to 90% after sintering. The de",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:4",
+      "page": 7,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Cell culture and PEMF treatment",
+      "found_in_fulltext": true,
+      "fulltext_offset": 3604
+    },
+    {
+      "block_id": "p7:5",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "ADSCs were obtained from the groin of 3-day-old Sprague Dawley rats. The cells w",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:6",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The prepared cells were randomly divided into four groups and seeded on tissue c",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:7",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The PEMF device (Yongyikeji, Hunan, China) consisted of a generator and its conn",
+      "found_in_fulltext": true,
+      "fulltext_offset": 3636
+    },
+    {
+      "block_id": "p7:8",
+      "page": 7,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "CCK-8 and LIVE/DEAD cell staining",
+      "found_in_fulltext": true,
+      "fulltext_offset": 4237
+    },
+    {
+      "block_id": "p7:9",
+      "page": 7,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ACS Paragon Plus Environment",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:0",
+      "page": 8,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:1",
+      "page": 8,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Page 7 of 36",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:2",
+      "page": 8,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ACS Biomaterials Science & Engineering",
+      "found_in_fulltext": true,
+      "fulltext_offset": 276
+    },
+    {
+      "block_id": "p8:3",
+      "page": 8,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The CCK-8 assay was performed to evaluate the proliferation of ADSCs under the i",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:4",
+      "page": 8,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "LIVE/DEAD cell staining was performed to evaluate the cytotoxicity of the $ \\bet",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:5",
+      "page": 8,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "ALP activity and osteogenesis - related gene expression",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:6",
+      "page": 8,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "To evaluate the osteogenic differentiation of ADSCs, cellular ALP activity was a",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:7",
+      "page": 8,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ACS Paragon Plus Environment",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:0",
+      "page": 9,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:1",
+      "page": 9,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ACS Biomaterials Science & Engineering",
+      "found_in_fulltext": true,
+      "fulltext_offset": 276
+    },
+    {
+      "block_id": "p9:2",
+      "page": 9,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Page 8 of 36",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:3",
+      "page": 9,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "was completed with the cALP Stain Kit (D001-1-1, Nanjing Jiancheng Bioengineerin",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:4",
+      "page": 9,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The expression of osteogenesis-related genes in the four groups was evaluated by",
+      "found_in_fulltext": true,
+      "fulltext_offset": 4719
+    },
+    {
+      "block_id": "p9:5",
+      "page": 9,
+      "role": "table_caption",
+      "zone": "display_zone",
+      "render_default": true,
+      "snippet": "Table 1. Primer sequences used for qRT-PCR.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p9:7",
+      "page": 9,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Surgical operation and PEMF treatment",
+      "found_in_fulltext": true,
+      "fulltext_offset": 5540
+    },
+    {
+      "block_id": "p9:8",
+      "page": 9,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "All the surgical operations were approved by the Ethics Committee of Southern Me",
+      "found_in_fulltext": true,
+      "fulltext_offset": 5578
+    },
+    {
+      "block_id": "p9:9",
+      "page": 9,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ACS Paragon Plus Environment",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:0",
+      "page": 10,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:1",
+      "page": 10,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Page 9 of 36",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:2",
+      "page": 10,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ACS Biomaterials Science & Engineering",
+      "found_in_fulltext": true,
+      "fulltext_offset": 276
+    },
+    {
+      "block_id": "p10:3",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "mm, on both sides of the parietal bone; physiological saline was added dropwise ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:4",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "On the third day after the operation, the 18 SD rats were randomly divided into ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 6095
+    },
+    {
+      "block_id": "p10:5",
+      "page": 10,
+      "role": "sub_subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Micro-CT",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:6",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The skulls were placed into an X-ray CT scanner for experimental animals (Lathet",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p10:7",
+      "page": 10,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Histological examination",
+      "found_in_fulltext": true,
+      "fulltext_offset": 6668
+    },
+    {
+      "block_id": "p10:8",
+      "page": 10,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The free skulls were fixed with formalin for 24 hours and then decalcified with ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 6693
+    },
+    {
+      "block_id": "p10:9",
+      "page": 10,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ACS Paragon Plus Environment",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:0",
+      "page": 11,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:1",
+      "page": 11,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ACS Biomaterials Science & Engineering",
+      "found_in_fulltext": true,
+      "fulltext_offset": 276
+    },
+    {
+      "block_id": "p11:2",
+      "page": 11,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Page 10 of 36",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:3",
+      "page": 11,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "tissue sections. Hematoxylin-eosin staining of the sections was used to stain th",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:4",
+      "page": 11,
+      "role": "sub_subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Statistics",
+      "found_in_fulltext": true,
+      "fulltext_offset": 6989
+    },
+    {
+      "block_id": "p11:5",
+      "page": 11,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The statistical analyses of this study were completed with SPSS software (Versio",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:6",
+      "page": 11,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "RESULTS AND DISCUSSION",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:7",
+      "page": 11,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "β-TCP scaffold characterization",
+      "found_in_fulltext": true,
+      "fulltext_offset": 7004
+    },
+    {
+      "block_id": "p11:8",
+      "page": 11,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The surface morphology of the fritted β-TCP scaffolds was observed by SEM (Figur",
+      "found_in_fulltext": true,
+      "fulltext_offset": 7036
+    },
+    {
+      "block_id": "p11:9",
+      "page": 11,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The $ \\beta $-TCP scaffolds produced by 3D printing technology had great porosit",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p11:10",
+      "page": 11,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ACS Paragon Plus Environment",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:0",
+      "page": 12,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:1",
+      "page": 12,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Page 11 of 36",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p12:2",
+      "page": 12,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ACS Biomaterials Science & Engineering",
+      "found_in_fulltext": true,
+      "fulltext_offset": 276
+    },
+    {
+      "block_id": "p12:3",
+      "page": 12,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "beneficial for osteogenesis and angiogenesis.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 7379
+    },
+    {
+      "block_id": "p12:9",
+      "page": 12,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "LIVE/DEAD staining",
+      "found_in_fulltext": true,
+      "fulltext_offset": 8074
+    },
+    {
+      "block_id": "p12:10",
+      "page": 12,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "To determine the cytocompatibility and cytotoxicity of the scaffolds, we perform",
+      "found_in_fulltext": true,
+      "fulltext_offset": 8093
+    },
+    {
+      "block_id": "p12:11",
+      "page": 12,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ACS Paragon Plus Environment",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p13:0",
+      "page": 13,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p13:1",
+      "page": 13,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ACS Biomaterials Science & Engineering",
+      "found_in_fulltext": true,
+      "fulltext_offset": 276
+    },
+    {
+      "block_id": "p13:2",
+      "page": 13,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Page 12 of 36",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p13:3",
+      "page": 13,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "morphology of the rADSCs attached to the scaffold was observed. The ratios of li",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p13:11",
+      "page": 13,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ACS Paragon Plus Environment",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p14:0",
+      "page": 14,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p14:1",
+      "page": 14,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Page 13 of 36",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p14:2",
+      "page": 14,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ACS Biomaterials Science & Engineering",
+      "found_in_fulltext": true,
+      "fulltext_offset": 276
+    },
+    {
+      "block_id": "p14:3",
+      "page": 14,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "of culture time. In the high-power field of vision, the living cells exhibit a s",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p14:4",
+      "page": 14,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "CCK-8 assay",
+      "found_in_fulltext": true,
+      "fulltext_offset": 8570
+    },
+    {
+      "block_id": "p14:5",
+      "page": 14,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "As shown in Figure 3, after one day of culture, the proliferation rate of the rA",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p14:6",
+      "page": 14,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ACS Paragon Plus Environment",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p15:0",
+      "page": 15,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p15:1",
+      "page": 15,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ACS Biomaterials Science & Engineering",
+      "found_in_fulltext": true,
+      "fulltext_offset": 276
+    },
+    {
+      "block_id": "p15:2",
+      "page": 15,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Page 14 of 36",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p15:5",
+      "page": 15,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "ALP activity and osteogenesis-related gene expression",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p15:6",
+      "page": 15,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "ALP activity and ALP staining were used to assess the osteogenic differentiation",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p15:7",
+      "page": 15,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ACS Paragon Plus Environment",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p16:0",
+      "page": 16,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p16:1",
+      "page": 16,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Page 15 of 36",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p16:2",
+      "page": 16,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ACS Biomaterials Science & Engineering",
+      "found_in_fulltext": true,
+      "fulltext_offset": 276
+    },
+    {
+      "block_id": "p16:5",
+      "page": 16,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Areas of positive ALP staining are shown as purple. As seen from Figure 5a and 5",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p16:6",
+      "page": 16,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ACS Paragon Plus Environment",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p17:0",
+      "page": 17,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p17:1",
+      "page": 17,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ACS Biomaterials Science & Engineering",
+      "found_in_fulltext": true,
+      "fulltext_offset": 276
+    },
+    {
+      "block_id": "p17:2",
+      "page": 17,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Page 16 of 36",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p17:7",
+      "page": 17,
+      "role": "figure_caption_candidate",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "β-TCP",
+      "found_in_fulltext": true,
+      "fulltext_offset": 7004
+    },
+    {
+      "block_id": "p17:12",
+      "page": 17,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "qRT-PCR was performed to detect the expression of osteoblast-related genes in ce",
+      "found_in_fulltext": true,
+      "fulltext_offset": 8701
+    },
+    {
+      "block_id": "p17:13",
+      "page": 17,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ACS Paragon Plus Environment",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p18:0",
+      "page": 18,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p18:1",
+      "page": 18,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Page 17 of 36",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p18:2",
+      "page": 18,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ACS Biomaterials Science & Engineering",
+      "found_in_fulltext": true,
+      "fulltext_offset": 276
+    },
+    {
+      "block_id": "p18:3",
+      "page": 18,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "shown in Figure 6a, the mean values of ALP and Runx2 expression were the highest",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p18:4",
+      "page": 18,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "On the 14th day (Figure 6b.), the expression of ALP, Runx2 and OPN was highest i",
+      "found_in_fulltext": true,
+      "fulltext_offset": 8840
+    },
+    {
+      "block_id": "p18:5",
+      "page": 18,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "On the 21st day (Figure 6c.), the expression of ALP, Runx2 and OPN in the $ \\bet",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p18:6",
+      "page": 18,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The ALP activity assay showed that the ALP activity of the cells treated with PE",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p18:7",
+      "page": 18,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "A study by LeGeros, R $ Z^{32} $ et al. showed that calcium phosphate compounds ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p18:8",
+      "page": 18,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ACS Paragon Plus Environment",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p19:0",
+      "page": 19,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p19:1",
+      "page": 19,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ACS Biomaterials Science & Engineering",
+      "found_in_fulltext": true,
+      "fulltext_offset": 276
+    },
+    {
+      "block_id": "p19:2",
+      "page": 19,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Page 18 of 36",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p19:3",
+      "page": 19,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "mechanism by which PEMFs can promote osteogenic differentiation is not completel",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p19:6",
+      "page": 19,
+      "role": "figure_caption_candidate",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Runx2",
+      "found_in_fulltext": true,
+      "fulltext_offset": 8893
+    },
+    {
+      "block_id": "p19:10",
+      "page": 19,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ACS Paragon Plus Environment",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p20:0",
+      "page": 20,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p20:1",
+      "page": 20,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Page 19 of 36",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p20:2",
+      "page": 20,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ACS Biomaterials Science & Engineering",
+      "found_in_fulltext": true,
+      "fulltext_offset": 276
+    },
+    {
+      "block_id": "p20:4",
+      "page": 20,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Micro CT scanning and hematoxylin-eosin staining",
+      "found_in_fulltext": true,
+      "fulltext_offset": 9585
+    },
+    {
+      "block_id": "p20:5",
+      "page": 20,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "As shown in Figure 7, the bone defect site of the SD rats not treated with PEMF,",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p20:6",
+      "page": 20,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Osteogenic differentiation and angiogenesis are essential for bone regeneration.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p20:7",
+      "page": 20,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ACS Paragon Plus Environment",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p21:0",
+      "page": 21,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p21:1",
+      "page": 21,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ACS Biomaterials Science & Engineering",
+      "found_in_fulltext": true,
+      "fulltext_offset": 276
+    },
+    {
+      "block_id": "p21:2",
+      "page": 21,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Page 20 of 36",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p21:3",
+      "page": 21,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "to promoting the osteogenic differentiation of stem cells, PEMF therapy can also",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p21:4",
+      "page": 21,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ACS Paragon Plus Environment",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p22:0",
+      "page": 22,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p22:1",
+      "page": 22,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Page 21 of 36",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p22:2",
+      "page": 22,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ACS Biomaterials Science & Engineering",
+      "found_in_fulltext": true,
+      "fulltext_offset": 276
+    },
+    {
+      "block_id": "p22:5",
+      "page": 22,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Bone mineral density (BMD) measurements of the new bone were determined in SD ra",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p22:6",
+      "page": 22,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ACS Paragon Plus Environment",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p23:0",
+      "page": 23,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p23:1",
+      "page": 23,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ACS Biomaterials Science & Engineering",
+      "found_in_fulltext": true,
+      "fulltext_offset": 276
+    },
+    {
+      "block_id": "p23:2",
+      "page": 23,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Page 22 of 36",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p23:3",
+      "page": 23,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "of rats treated with the scaffold and PEMFs. The cranial defect of rats with the",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p23:6",
+      "page": 23,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The results of the HE staining (Figure 9) showed that the implanted scaffold def",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p23:7",
+      "page": 23,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ACS Paragon Plus Environment",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p24:0",
+      "page": 24,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p24:1",
+      "page": 24,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Page 23 of 36",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p24:2",
+      "page": 24,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ACS Biomaterials Science & Engineering",
+      "found_in_fulltext": true,
+      "fulltext_offset": 276
+    },
+    {
+      "block_id": "p24:3",
+      "page": 24,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "the rats who had not been treated with PEMFs. In the defect sites without $ \\bet",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p24:4",
+      "page": 24,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The BMD results of this study indicate that the BMD values of the defect sites o",
+      "found_in_fulltext": true,
+      "fulltext_offset": 9770
+    },
+    {
+      "block_id": "p24:5",
+      "page": 24,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ACS Paragon Plus Environment",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p25:0",
+      "page": 25,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p25:1",
+      "page": 25,
+      "role": "noise",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "ACS Biomaterials Science & Engineering",
+      "found_in_fulltext": true,
+      "fulltext_offset": 276
+    },
+    {
+      "block_id": "p25:2",
+      "page": 25,
+      "role": "noise",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "Page 24 of 36",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p25:7",
+      "page": 25,
+      "role": "noise",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "ACS Paragon Plus Environment",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p26:0",
+      "page": 26,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p26:1",
+      "page": 26,
+      "role": "noise",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "Page 25 of 36",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p26:2",
+      "page": 26,
+      "role": "noise",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "ACS Biomaterials Science & Engineering",
+      "found_in_fulltext": true,
+      "fulltext_offset": 276
+    },
+    {
+      "block_id": "p26:5",
+      "page": 26,
+      "role": "noise",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "ACS Paragon Plus Environment",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p27:0",
+      "page": 27,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p27:1",
+      "page": 27,
+      "role": "noise",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "ACS Biomaterials Science & Engineering",
+      "found_in_fulltext": true,
+      "fulltext_offset": 276
+    },
+    {
+      "block_id": "p27:2",
+      "page": 27,
+      "role": "noise",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "Page 26 of 36",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p27:6",
+      "page": 27,
+      "role": "noise",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "ACS Paragon Plus Environment",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p28:0",
+      "page": 28,
+      "role": "noise",
+      "zone": "reference_zone",
+      "render_default": false,
+      "snippet": "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p28:1",
+      "page": 28,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Page 27 of 36",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p28:2",
+      "page": 28,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ACS Biomaterials Science & Engineering",
+      "found_in_fulltext": true,
+      "fulltext_offset": 276
+    },
+    {
+      "block_id": "p28:3",
+      "page": 28,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "implanted with a $ \\beta $-TCP scaffold and exposed to PEMFs. (B), (F) Rats impl",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p28:4",
+      "page": 28,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "CONCLUSION",
+      "found_in_fulltext": true,
+      "fulltext_offset": 10569
+    },
+    {
+      "block_id": "p28:5",
+      "page": 28,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "To summarize, 3D-printed $ \\beta $-TCP porous scaffolds have excellent performan",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p28:6",
+      "page": 28,
+      "role": "reference_heading",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "REFERENCES",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p28:7",
+      "page": 28,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(1) Bassett, C. A.; Pawluk, R. J.; Pilla, A. A., Acceleration of fracture repair",
+      "found_in_fulltext": true,
+      "fulltext_offset": 10580
+    },
+    {
+      "block_id": "p28:8",
+      "page": 28,
+      "role": "noise",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "ACS Paragon Plus Environment",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p29:0",
+      "page": 29,
+      "role": "noise",
+      "zone": "reference_zone",
+      "render_default": false,
+      "snippet": "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p29:1",
+      "page": 29,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "ACS Biomaterials Science & Engineering",
+      "found_in_fulltext": true,
+      "fulltext_offset": 276
+    },
+    {
+      "block_id": "p29:2",
+      "page": 29,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Page 28 of 36",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p29:3",
+      "page": 29,
+      "role": "body_paragraph",
+      "zone": "",
+      "render_default": true,
+      "snippet": "fields. A surgically noninvasive method. Ann N Y Acad Sci 1974, 238, 242-62",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p29:4",
+      "page": 29,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(2) Bassett, C. A.; Mitchell, S. N.; Gaston, S. R., Treatment of ununited tibial",
+      "found_in_fulltext": true,
+      "fulltext_offset": 10697
+    },
+    {
+      "block_id": "p29:5",
+      "page": 29,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(3) Ryaby, J. T., Clinical effects of electromagnetic and electric fields on fra",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p29:6",
+      "page": 29,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(4) Adie, S.; Harris, I. A.; Naylor, J. M.; Rae, H.; Dao, A.; Yong, S.; Ying, V.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p29:7",
+      "page": 29,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(5) Prakash, D.; Behari, J., Synergistic role of hydroxyapatite nanoparticles an",
+      "found_in_fulltext": true,
+      "fulltext_offset": 10879
+    },
+    {
+      "block_id": "p29:8",
+      "page": 29,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(6) Thamsborg, G.;Florescu, A.;Oturai, P.;Fallentin, E.;Tritsaris, K.;Dissing, S",
+      "found_in_fulltext": true,
+      "fulltext_offset": 11108
+    },
+    {
+      "block_id": "p29:9",
+      "page": 29,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(7) Ryang, W. S.; Koog, Y. H.; Jeong, K. I.; Wi, H., Effects of pulsed electroma",
+      "found_in_fulltext": true,
+      "fulltext_offset": 11392
+    },
+    {
+      "block_id": "p29:10",
+      "page": 29,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(8) Bagnato, G. L.; Miceli, G.; Marino, N.; Sciortino, D.; Bagnato, G. F., Pulse",
+      "found_in_fulltext": true,
+      "fulltext_offset": 11607
+    },
+    {
+      "block_id": "p29:11",
+      "page": 29,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(9) Barker, A. T.; Dixon, R. A.; Sharrard, W. J.; Sutcliffe, M. L., Pulsed magne",
+      "found_in_fulltext": true,
+      "fulltext_offset": 11876
+    },
+    {
+      "block_id": "p29:12",
+      "page": 29,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "ACS Paragon Plus Environment",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p30:0",
+      "page": 30,
+      "role": "noise",
+      "zone": "reference_zone",
+      "render_default": false,
+      "snippet": "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p30:1",
+      "page": 30,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Page 29 of 36",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p30:2",
+      "page": 30,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "ACS Biomaterials Science & Engineering",
+      "found_in_fulltext": true,
+      "fulltext_offset": 276
+    },
+    {
+      "block_id": "p30:3",
+      "page": 30,
+      "role": "body_paragraph",
+      "zone": "",
+      "render_default": true,
+      "snippet": "tibial non-union. Interim results of a double-blind trial. LANCET 1984, 1, (8384",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p30:4",
+      "page": 30,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(11) Khooshideh, M.; Latifi, R. S.; Sheikh, M.; Ghorbani, Y. B.; Shahriari, A., ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 12276
+    },
+    {
+      "block_id": "p30:5",
+      "page": 30,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(12) Varani, K.; Vincenzi, F.; Ravani, A.; Pasquini, S.; Merighi, S.; Gessi, S.;",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p30:6",
+      "page": 30,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(13) Martiny, K.; Lunde, M.; Bech, P., Transcranial low voltage pulsed electroma",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p30:7",
+      "page": 30,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(14) van Belkum, S. M.; Bosker, F. J.; Kortekaas, R.; Beersma, D. G.; Schoevers,",
+      "found_in_fulltext": true,
+      "fulltext_offset": 12580
+    },
+    {
+      "block_id": "p30:8",
+      "page": 30,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(15) Rezaei, K. M.; Tabeie, F.; Sahebjam, F.; Poursani, N.; Jahanbakhsh, N.; Pay",
+      "found_in_fulltext": true,
+      "fulltext_offset": 11995
+    },
+    {
+      "block_id": "p30:9",
+      "page": 30,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "ACS Paragon Plus Environment",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p31:0",
+      "page": 31,
+      "role": "noise",
+      "zone": "reference_zone",
+      "render_default": false,
+      "snippet": "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p31:1",
+      "page": 31,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "ACS Biomaterials Science & Engineering",
+      "found_in_fulltext": true,
+      "fulltext_offset": 276
+    },
+    {
+      "block_id": "p31:2",
+      "page": 31,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Page 30 of 36",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p31:3",
+      "page": 31,
+      "role": "body_paragraph",
+      "zone": "",
+      "render_default": true,
+      "snippet": "216-223.DOI:10.1016/j.exer.2016.01.007",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p31:4",
+      "page": 31,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(16) Pena-Philippides, J. C.; Yang, Y.; Bragina, O.; Hagberg, S.; Nemoto, E.; Ro",
+      "found_in_fulltext": true,
+      "fulltext_offset": 12892
+    },
+    {
+      "block_id": "p31:5",
+      "page": 31,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(17) Leoci, R.; Aiudi, G.; Silvestre, F.; Lissner, E.; Lacalandra, G. M., Effect",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p31:6",
+      "page": 31,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(18) Wang, Y. Y.; Pu, X. Y.; Shi, W. G.; Fang, Q. Q.; Chen, X. R.; Xi, H. R.; Ga",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p31:7",
+      "page": 31,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(19) Poh, P.; Seeliger, C.; Unger, M.; Falldorf, K.; Balmayor, E. R.; van Griens",
+      "found_in_fulltext": true,
+      "fulltext_offset": 13166
+    },
+    {
+      "block_id": "p31:8",
+      "page": 31,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(20) Bagheri, L.; Pellati, A.; Rizzo, P.; Aquila, G.; Massari, L.; De Mattei, M.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 13466
+    },
+    {
+      "block_id": "p31:9",
+      "page": 31,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(21) Selvamurugan, N.; He, Z.; Rifkin, D.; Dabovic, B.; Partridge, N. C., Pulsed",
+      "found_in_fulltext": true,
+      "fulltext_offset": 13773
+    },
+    {
+      "block_id": "p31:10",
+      "page": 31,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "ACS Paragon Plus Environment",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p32:0",
+      "page": 32,
+      "role": "noise",
+      "zone": "reference_zone",
+      "render_default": false,
+      "snippet": "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p32:1",
+      "page": 32,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Page 31 of 36",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p32:2",
+      "page": 32,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "ACS Biomaterials Science & Engineering",
+      "found_in_fulltext": true,
+      "fulltext_offset": 276
+    },
+    {
+      "block_id": "p32:3",
+      "page": 32,
+      "role": "body_paragraph",
+      "zone": "",
+      "render_default": true,
+      "snippet": "Stromal Cells to Enhance Osteoblast Differentiation. STEM CELLS INT 2017, 2017, ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p32:4",
+      "page": 32,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(22) Xie, Y. F.; Shi, W. G.; Zhou, J.; Gao, Y. H.; Li, S. F.; Fang, Q. Q.; Wang,",
+      "found_in_fulltext": true,
+      "fulltext_offset": 13978
+    },
+    {
+      "block_id": "p32:5",
+      "page": 32,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(23) Yin, Y.; Chen, P.; Yu, Q.; Peng, Y.; Zhu, Z.; Tian, J., The Effects of a Pu",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p32:6",
+      "page": 32,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(24) Hollister, S. J., Porous scaffold design for tissue engineering. NAT MATER ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p32:7",
+      "page": 32,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(25) Verrier, S.;Alini, M.;Alsberg, E.;Buchman, S. R.;Kelly, D.;Laschke, M. W.;M",
+      "found_in_fulltext": true,
+      "fulltext_offset": 14348
+    },
+    {
+      "block_id": "p32:8",
+      "page": 32,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(26) Matinfar, M.;Mesgar, A. S.;Mohammadi, Z., Evaluation of physicochemical, me",
+      "found_in_fulltext": true,
+      "fulltext_offset": 14648
+    },
+    {
+      "block_id": "p32:9",
+      "page": 32,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(27) Dasgupta, S.; Maji, K.; Nandi, S. K., Investigating the mechanical, physioc",
+      "found_in_fulltext": true,
+      "fulltext_offset": 14976
+    },
+    {
+      "block_id": "p32:10",
+      "page": 32,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "ACS Paragon Plus Environment",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p33:0",
+      "page": 33,
+      "role": "noise",
+      "zone": "reference_zone",
+      "render_default": false,
+      "snippet": "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p33:1",
+      "page": 33,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "ACS Biomaterials Science & Engineering",
+      "found_in_fulltext": true,
+      "fulltext_offset": 276
+    },
+    {
+      "block_id": "p33:2",
+      "page": 33,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Page 32 of 36",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p33:3",
+      "page": 33,
+      "role": "body_paragraph",
+      "zone": "",
+      "render_default": true,
+      "snippet": "713-728.DOI:10.1016/j.msec.2018.10.022",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p33:4",
+      "page": 33,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(28) Mathieu, L. M.; Mueller, T. L.; Bourban, P. E.; Pioletti, D. P.; Muller, R.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 15746
+    },
+    {
+      "block_id": "p33:5",
+      "page": 33,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(29) Park, H. J.; Lee, O. J.; Lee, M. C.; Moon, B. M.; Ju, H. W.; Lee, J.; Kim, ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p33:6",
+      "page": 33,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(30) Ma, H.; Feng, C.; Chang, J.; Wu, C., 3D-printed bioceramic scaffolds: From ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p33:7",
+      "page": 33,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(31) Samavedi, S.; Whittington, A. R.; Goldstein, A. S., Calcium phosphate ceram",
+      "found_in_fulltext": true,
+      "fulltext_offset": 15263
+    },
+    {
+      "block_id": "p33:8",
+      "page": 33,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(32) LeGeros, R. Z., Properties of osteoconductive biomaterials: calcium phospha",
+      "found_in_fulltext": true,
+      "fulltext_offset": 15506
+    },
+    {
+      "block_id": "p33:9",
+      "page": 33,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(33) Zou, F.;Zhao, N.;Fu, X.;Diao, J.;Ma, Y.;Cao, X.;Wan, S.;Zhong, S.;Wang, Y.,",
+      "found_in_fulltext": true,
+      "fulltext_offset": 16018
+    },
+    {
+      "block_id": "p33:10",
+      "page": 33,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(34) Jarcho, M., Calcium phosphate ceramics as hard tissue prosthetics. Clin Ort",
+      "found_in_fulltext": true,
+      "fulltext_offset": 15632
+    },
+    {
+      "block_id": "p33:11",
+      "page": 33,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(35) Zhang, Y.;Xia, L.;Zhai, D.;Shi, M.;Luo, Y.;Feng, C.;Fang, B.;Yin, J.;Chang,",
+      "found_in_fulltext": true,
+      "fulltext_offset": 16317
+    },
+    {
+      "block_id": "p33:12",
+      "page": 33,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "ACS Paragon Plus Environment",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p34:0",
+      "page": 34,
+      "role": "noise",
+      "zone": "reference_zone",
+      "render_default": false,
+      "snippet": "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p34:1",
+      "page": 34,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Page 33 of 36",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p34:2",
+      "page": 34,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "ACS Biomaterials Science & Engineering",
+      "found_in_fulltext": true,
+      "fulltext_offset": 276
+    },
+    {
+      "block_id": "p34:3",
+      "page": 34,
+      "role": "body_paragraph",
+      "zone": "",
+      "render_default": true,
+      "snippet": "bioactive glass nanolayer-functionalized 3D-printed scaffolds for accelerating o",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p34:4",
+      "page": 34,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(36) Bose, S.; Tarafder, S.; Bandyopadhyay, A., Effect of Chemistry on Osteogene",
+      "found_in_fulltext": true,
+      "fulltext_offset": 16437
+    },
+    {
+      "block_id": "p34:5",
+      "page": 34,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(37) Karageorgiou, V.; Kaplan, D., Porosity of 3D biomaterial scaffolds and oste",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p34:6",
+      "page": 34,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(38) Midura, R. J.; Ibiwoye, M. O.; Powell, K. A.; Sakai, Y.; Doehring, T.; Grab",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p34:7",
+      "page": 34,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(39) Parkinson, W. C.; Hanks, C. T., Search for cyclotron resonance in cells in ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 16667
+    },
+    {
+      "block_id": "p34:8",
+      "page": 34,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(40) Liu, C.; Yu, J.; Yang, Y.; Tang, X.; Zhao, D.; Zhao, W.; Wu, H., Effect of ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 16796
+    },
+    {
+      "block_id": "p34:9",
+      "page": 34,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(41) Tsai, M. T.; Chang, W. H.; Chang, K.; Hou, R. J.; Wu, T. W., Pulsed electro",
+      "found_in_fulltext": true,
+      "fulltext_offset": 17074
+    },
+    {
+      "block_id": "p34:10",
+      "page": 34,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(42) Wang, P.; Liu, J.; Yang, Y.; Zhai, M.; Shao, X.; Yan, Z.; Zhang, X.; Wu, Y.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 17315
+    },
+    {
+      "block_id": "p34:11",
+      "page": 34,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "ACS Paragon Plus Environment",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p35:0",
+      "page": 35,
+      "role": "noise",
+      "zone": "reference_zone",
+      "render_default": false,
+      "snippet": "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p35:1",
+      "page": 35,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "ACS Biomaterials Science & Engineering",
+      "found_in_fulltext": true,
+      "fulltext_offset": 276
+    },
+    {
+      "block_id": "p35:2",
+      "page": 35,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Page 34 of 36",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p35:3",
+      "page": 35,
+      "role": "body_paragraph",
+      "zone": "",
+      "render_default": true,
+      "snippet": "BIOELECTROMAGNETICS 2017, 38, (8), 602-612.DOI:10.1002/bem.22070",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p35:4",
+      "page": 35,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(43) Yen-Patton, G. P.; Patton, W. F.; Beer, D. M.; Jacobson, B. S., Endothelial",
+      "found_in_fulltext": true,
+      "fulltext_offset": 17620
+    },
+    {
+      "block_id": "p35:5",
+      "page": 35,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(44) Tepper, O. M.; Callaghan, M. J.; Chang, E. I.; Galiano, R. D.; Bhatt, K. A.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p35:6",
+      "page": 35,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(45) Loh, Q. L.; Choong, C., Three-Dimensional Scaffolds for Tissue Engineering ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p35:7",
+      "page": 35,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "(46) Koski, C.; Onuike, B.; Bandyopadhyay, A.; Bose, S., Starch-hydroxyapatite c",
+      "found_in_fulltext": true,
+      "fulltext_offset": 17868
+    },
+    {
+      "block_id": "p35:8",
+      "page": 35,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "ACS Paragon Plus Environment",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p36:0",
+      "page": 36,
+      "role": "noise",
+      "zone": "reference_zone",
+      "render_default": false,
+      "snippet": "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p36:1",
+      "page": 36,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Page 35 of 36",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p36:2",
+      "page": 36,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "ACS Biomaterials Science & Engineering",
+      "found_in_fulltext": true,
+      "fulltext_offset": 276
+    },
+    {
+      "block_id": "p36:4",
+      "page": 36,
+      "role": "unknown_structural",
+      "zone": "",
+      "render_default": false,
+      "snippet": "3D-printed $ \\beta $-tricalcium phosphate scaffold combined with a pulse electro",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p36:7",
+      "page": 36,
+      "role": "footnote",
+      "zone": "",
+      "render_default": true,
+      "snippet": "Skull Defects Model in S-D Rat",
+      "found_in_fulltext": true,
+      "fulltext_offset": 18134
+    },
+    {
+      "block_id": "p36:8",
+      "page": 36,
+      "role": "footnote",
+      "zone": "",
+      "render_default": true,
+      "snippet": "3D-Printed β-TCP Scaffold",
+      "found_in_fulltext": true,
+      "fulltext_offset": 18165
+    },
+    {
+      "block_id": "p36:11",
+      "page": 36,
+      "role": "footnote",
+      "zone": "",
+      "render_default": true,
+      "snippet": "PEMF Generator",
+      "found_in_fulltext": true,
+      "fulltext_offset": 18191
+    },
+    {
+      "block_id": "p36:13",
+      "page": 36,
+      "role": "footnote",
+      "zone": "",
+      "render_default": true,
+      "snippet": "20ms",
+      "found_in_fulltext": true,
+      "fulltext_offset": 18206
+    },
+    {
+      "block_id": "p36:15",
+      "page": 36,
+      "role": "footnote",
+      "zone": "",
+      "render_default": true,
+      "snippet": "The rat exposed to PEMF",
+      "found_in_fulltext": true,
+      "fulltext_offset": 18211
+    },
+    {
+      "block_id": "p36:17",
+      "page": 36,
+      "role": "footnote",
+      "zone": "",
+      "render_default": true,
+      "snippet": "The rat not exposed to PEMF",
+      "found_in_fulltext": true,
+      "fulltext_offset": 18235
+    },
+    {
+      "block_id": "p36:18",
+      "page": 36,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "ACS Paragon Plus Environment",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p37:0",
+      "page": 37,
+      "role": "noise",
+      "zone": "reference_zone",
+      "render_default": false,
+      "snippet": "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p37:1",
+      "page": 37,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "ACS Biomaterials Science & Engineering",
+      "found_in_fulltext": true,
+      "fulltext_offset": 276
+    },
+    {
+      "block_id": "p37:2",
+      "page": 37,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Page 36 of 36",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p37:3",
+      "page": 37,
+      "role": "body_paragraph",
+      "zone": "",
+      "render_default": true,
+      "snippet": "For Table of Contents Use Only",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p37:4",
+      "page": 37,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "ACS Paragon Plus Environment",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    }
+  ]
+}

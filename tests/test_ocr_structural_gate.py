@@ -215,6 +215,74 @@ def test_reference_zone_accepts_heading_when_region_ids_are_plain_block_ids() ->
     assert zone["item_block_ids"] == [11]
 
 
+def test_ordered_reference_anchors_do_not_swallow_non_ref_blocks_between_anchors() -> None:
+    from paperforge.worker.ocr_structural_gate import _build_ordered_reference_items
+
+    blocks = [
+        {"page": 14, "block_id": 11, "seed_role": "reference_item", "bbox": [620, 500, 1100, 520], "text": "Smith J. 2020."},
+        {"page": 14, "block_id": 12, "seed_role": "body_paragraph", "bbox": [620, 530, 1100, 600], "text": "A long body paragraph that does not belong in references."},
+        {"page": 14, "block_id": 13, "seed_role": "reference_item", "bbox": [620, 610, 1100, 630], "text": "Brown T. 2021."},
+    ]
+    anchor_ids = {11, 13}
+    result = _build_ordered_reference_items(blocks, anchor_ids, set())
+    assert 11 in result
+    assert 13 in result
+    assert 12 not in result
+
+
+def test_ordered_reference_anchors_fill_reference_like_gap_but_not_intrusion() -> None:
+    from paperforge.worker.ocr_structural_gate import _build_ordered_reference_items
+
+    blocks = [
+        {"page": 20, "block_id": 1, "seed_role": "reference_item", "bbox": [80, 500, 520, 520], "text": "Ref [1]."},
+        {"page": 20, "block_id": 2, "seed_role": "reference_item", "bbox": [80, 525, 520, 545], "text": "Continuation line of ref [1]."},
+        {"page": 20, "block_id": 3, "seed_role": "reference_item", "bbox": [80, 550, 520, 570], "text": "Ref [2]."},
+    ]
+    anchor_ids = {1, 3}
+    result = _build_ordered_reference_items(blocks, anchor_ids, set())
+    assert 1 in result
+    assert 3 in result
+    assert 2 in result
+
+
+def test_ordered_reference_anchors_stop_at_section_heading() -> None:
+    from paperforge.worker.ocr_structural_gate import _build_ordered_reference_items
+
+    blocks = [
+        {"page": 14, "block_id": 11, "seed_role": "reference_item", "bbox": [620, 500, 1100, 520], "text": "Smith J. 2020."},
+        {"page": 14, "block_id": 12, "seed_role": "section_heading", "bbox": [620, 530, 1100, 550], "text": "Data Availability"},
+        {"page": 14, "block_id": 13, "seed_role": "reference_item", "bbox": [620, 560, 1100, 580], "text": "Brown T. 2021."},
+    ]
+    anchor_ids = {11, 13}
+    result = _build_ordered_reference_items(blocks, anchor_ids, set())
+    assert 11 in result
+    assert 13 in result
+    assert 12 not in result
+
+
+def test_ordered_reference_anchors_rejects_acknowledgement_swallowed_as_gap() -> None:
+    from paperforge.worker.ocr_structural_gate import build_verified_reference_zone_from_artifacts
+
+    blocks = [
+        {"page": 14, "block_id": "refs", "seed_role": "reference_heading", "text": "References"},
+        {"page": 14, "block_id": "r1", "seed_role": "reference_item", "bbox": [80, 120, 520, 140], "text": "[1] Smith J. 2020."},
+        {"page": 14, "block_id": "ack", "seed_role": "backmatter_body", "bbox": [80, 160, 520, 200], "text": "Acknowledgements We thank the funding agency."},
+        {"page": 14, "block_id": "r2", "seed_role": "reference_item", "bbox": [80, 220, 520, 240], "text": "[2] Brown T. 2021."},
+    ]
+    zone = build_verified_reference_zone_from_artifacts(
+        blocks,
+        {
+            "reference_family_anchor": {"heading_block_id": "refs", "item_block_ids": ["r1", "r2"]},
+            "region_bus": {"reference_zone_ids": {"refs", "r1", "r2"}},
+            "tail_spread": {},
+        },
+    )
+    assert zone["status"] == "ACCEPT"
+    assert "r1" in zone["item_block_ids"]
+    assert "r2" in zone["item_block_ids"]
+    assert "ack" not in zone["item_block_ids"]
+
+
 def test_abstract_body_without_span_is_not_verified_accept() -> None:
     from paperforge.worker.ocr_structural_gate import RoleGateContext, resolve_verified_role
 

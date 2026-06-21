@@ -146,7 +146,7 @@
       "block_id": "p1:5",
       "page": 1,
       "raw_label": "text",
-      "role": "unknown_structural",
+      "role": "authors",
       "zone": "frontmatter_main_zone",
       "bbox": [
         73.0,
@@ -406,7 +406,7 @@
       "block_id": "p2:7",
       "page": 2,
       "raw_label": "text",
-      "role": "unknown_structural",
+      "role": "body_paragraph",
       "zone": "body_zone",
       "bbox": [
         606.0,
@@ -726,7 +726,7 @@
       "block_id": "p3:7",
       "page": 3,
       "raw_label": "text",
-      "role": "unknown_structural",
+      "role": "body_paragraph",
       "zone": "body_zone",
       "bbox": [
         606.0,
@@ -986,7 +986,7 @@
       "block_id": "p4:8",
       "page": 4,
       "raw_label": "text",
-      "role": "unknown_structural",
+      "role": "body_paragraph",
       "zone": "body_zone",
       "bbox": [
         605.0,
@@ -1186,7 +1186,7 @@
       "block_id": "p5:5",
       "page": 5,
       "raw_label": "text",
-      "role": "unknown_structural",
+      "role": "body_paragraph",
       "zone": "body_zone",
       "bbox": [
         606.0,
@@ -1346,7 +1346,7 @@
       "block_id": "p6:6",
       "page": 6,
       "raw_label": "text",
-      "role": "unknown_structural",
+      "role": "body_paragraph",
       "zone": "body_zone",
       "bbox": [
         605.0,
@@ -1606,7 +1606,7 @@
       "block_id": "p7:8",
       "page": 7,
       "raw_label": "text",
-      "role": "unknown_structural",
+      "role": "body_paragraph",
       "zone": "body_zone",
       "bbox": [
         605.0,
@@ -2006,7 +2006,7 @@
       "block_id": "p9:4",
       "page": 9,
       "raw_label": "text",
-      "role": "unknown_structural",
+      "role": "body_paragraph",
       "zone": "body_zone",
       "bbox": [
         605.0,
@@ -2046,7 +2046,7 @@
       "block_id": "p9:6",
       "page": 9,
       "raw_label": "image",
-      "role": "figure_asset",
+      "role": "media_asset",
       "zone": "body_zone",
       "bbox": [
         79.0,
@@ -2126,7 +2126,7 @@
       "block_id": "p10:1",
       "page": 10,
       "raw_label": "figure_title",
-      "role": "table_caption_candidate",
+      "role": "table_caption",
       "zone": "display_zone",
       "bbox": [
         75.0,
@@ -2206,7 +2206,7 @@
       "block_id": "p11:1",
       "page": 11,
       "raw_label": "figure_title",
-      "role": "table_caption_candidate",
+      "role": "table_caption",
       "zone": "display_zone",
       "bbox": [
         78.0,
@@ -2366,7 +2366,7 @@
       "block_id": "p11:9",
       "page": 11,
       "raw_label": "text",
-      "role": "unknown_structural",
+      "role": "body_paragraph",
       "zone": "body_zone",
       "bbox": [
         605.0,
@@ -3106,7 +3106,7 @@
       "block_id": "p13:18",
       "page": 13,
       "raw_label": "text",
-      "role": "unknown_structural",
+      "role": "body_paragraph",
       "zone": "tail_nonref_hold_zone",
       "bbox": [
         875.0,
@@ -3546,8 +3546,8 @@
       "block_id": "p14:5",
       "page": 14,
       "raw_label": "text",
-      "role": "unknown_structural",
-      "zone": "",
+      "role": "body_paragraph",
+      "zone": "body_zone",
       "bbox": [
         605.0,
         223.0,
@@ -8746,8 +8746,8 @@
       "block_id": "p18:34",
       "page": 18,
       "raw_label": "paragraph_title",
-      "role": "backmatter_heading",
-      "zone": "",
+      "role": "sub_subsection_heading",
+      "zone": "tail_nonref_hold_zone",
       "bbox": [
         609.0,
         589.0,
@@ -8786,8 +8786,8 @@
       "block_id": "p18:36",
       "page": 18,
       "raw_label": "paragraph_title",
-      "role": "backmatter_heading",
-      "zone": "",
+      "role": "unknown_structural",
+      "zone": "tail_nonref_hold_zone",
       "bbox": [
         609.0,
         782.0,
@@ -8806,7 +8806,7 @@
       "block_id": "p18:37",
       "page": 18,
       "raw_label": "text",
-      "role": "backmatter_body",
+      "role": "body_paragraph",
       "zone": "tail_nonref_hold_zone",
       "bbox": [
         608.0,
@@ -8826,8 +8826,8 @@
       "block_id": "p18:38",
       "page": 18,
       "raw_label": "paragraph_title",
-      "role": "backmatter_heading",
-      "zone": "",
+      "role": "unknown_structural",
+      "zone": "tail_nonref_hold_zone",
       "bbox": [
         610.0,
         863.0,
@@ -8846,7 +8846,7 @@
       "block_id": "p18:39",
       "page": 18,
       "raw_label": "text",
-      "role": "backmatter_body",
+      "role": "body_paragraph",
       "zone": "tail_nonref_hold_zone",
       "bbox": [
         610.0,

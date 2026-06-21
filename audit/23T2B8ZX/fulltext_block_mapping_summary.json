@@ -1,0 +1,1237 @@
+{
+  "mappable_block_count": 123,
+  "found_count": 93,
+  "missing_count": 30,
+  "rows": [
+    {
+      "block_id": "p1:0",
+      "page": 1,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "J Shoulder Elbow Surg (2018)",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:2",
+      "page": 1,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "ARTICLE IN PRESS",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:3",
+      "page": 1,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "JOURNAL OF SHOULDER AND ELBOW SURGERY",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:4",
+      "page": 1,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "www.elsevier.com/locate/ymse",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:5",
+      "page": 1,
+      "role": "authors",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "ORIGINAL ARTICLE",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:6",
+      "page": 1,
+      "role": "paper_title",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "Predictive findings on magnetic resonance imaging in patients with symptomatic a",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2
+    },
+    {
+      "block_id": "p1:7",
+      "page": 1,
+      "role": "authors",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "Egbert J.D. Veen, MD $ ^{a,b,*} $, Cornelia M. Donders, MD $ ^{a} $, Robin E. We",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:8",
+      "page": 1,
+      "role": "affiliation",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "$ ^{a} $Department of Orthopaedic Surgery and Traumatology, Deventer Hospital, D",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:15",
+      "page": 1,
+      "role": "footnote",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "Approval of this study was obtained from the regional Medical Ethical Committee ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2300
+    },
+    {
+      "block_id": "p1:16",
+      "page": 1,
+      "role": "footnote",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "$ ^{*} $Reprint requests: Egbert J.D. Veen, MD, Department of Orthopaedic Surger",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:17",
+      "page": 1,
+      "role": "footnote",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "E-mail address: ejdveen@gmail.com (E.J.D. Veen).",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2575
+    },
+    {
+      "block_id": "p1:18",
+      "page": 1,
+      "role": "noise",
+      "zone": "frontmatter_main_zone",
+      "render_default": false,
+      "snippet": "1058-2746/$ - see front matter © 2018 Journal of Shoulder and Elbow Surgery Boar",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:0",
+      "page": 2,
+      "role": "noise",
+      "zone": "frontmatter_side_zone",
+      "render_default": false,
+      "snippet": "2",
+      "found_in_fulltext": true,
+      "fulltext_offset": 342
+    },
+    {
+      "block_id": "p2:1",
+      "page": 2,
+      "role": "unknown_structural",
+      "zone": "frontmatter_side_zone",
+      "render_default": false,
+      "snippet": "ARTICLE IN PRESS",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:2",
+      "page": 2,
+      "role": "noise",
+      "zone": "frontmatter_side_zone",
+      "render_default": false,
+      "snippet": "E.J.D. Veen et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:3",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Degeneration of the acromioclavicular (AC) joint, with joint space narrowing and",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2640
+    },
+    {
+      "block_id": "p2:4",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The diagnosis of symptomatic AC osteoarthritis is made by an accurate history, c",
+      "found_in_fulltext": true,
+      "fulltext_offset": 3314
+    },
+    {
+      "block_id": "p2:5",
+      "page": 2,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Previous research has shown that advanced signs of degeneration in the AC joint ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:6",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The aim of this study was to identify predictive MRI signs in patients with symp",
+      "found_in_fulltext": true,
+      "fulltext_offset": 3760
+    },
+    {
+      "block_id": "p2:7",
+      "page": 2,
+      "role": "unknown_structural",
+      "zone": "frontmatter_side_zone",
+      "render_default": false,
+      "snippet": "Materials and methods Design",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:9",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "This study had a retrospective, case-control, diagnostic study design and was co",
+      "found_in_fulltext": true,
+      "fulltext_offset": 3970
+    },
+    {
+      "block_id": "p2:10",
+      "page": 2,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Study population",
+      "found_in_fulltext": true,
+      "fulltext_offset": 4127
+    },
+    {
+      "block_id": "p2:11",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "A total of 140 patients were selected from the electronic patient files: 70 cons",
+      "found_in_fulltext": true,
+      "fulltext_offset": 4144
+    },
+    {
+      "block_id": "p2:12",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Patients in both groups were recruited from our outpatient department: group 1 i",
+      "found_in_fulltext": true,
+      "fulltext_offset": 4535
+    },
+    {
+      "block_id": "p2:13",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "the AC joint and a positive cross-body adduction test. The exclusion criteria fo",
+      "found_in_fulltext": true,
+      "fulltext_offset": 5347
+    },
+    {
+      "block_id": "p2:14",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "All patients with shoulder pain were reviewed in our shoulder unit by 2 experien",
+      "found_in_fulltext": true,
+      "fulltext_offset": 5935
+    },
+    {
+      "block_id": "p2:15",
+      "page": 2,
+      "role": "subsection_heading",
+      "zone": "frontmatter_side_zone",
+      "render_default": true,
+      "snippet": "Signs on MRI",
+      "found_in_fulltext": true,
+      "fulltext_offset": 6488
+    },
+    {
+      "block_id": "p2:16",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "All MRI scans were performed 2 to 3 weeks after the outpatient visit in our hosp",
+      "found_in_fulltext": true,
+      "fulltext_offset": 6501
+    },
+    {
+      "block_id": "p2:17",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "On the basis of previous research and clinical experience, 7 variables were eval",
+      "found_in_fulltext": true,
+      "fulltext_offset": 7103
+    },
+    {
+      "block_id": "p2:18",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "",
+      "render_default": true,
+      "snippet": "1. AC joint space narrowing: minimal space between the clavicle and acromion on ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 7207
+    },
+    {
+      "block_id": "p2:19",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "",
+      "render_default": true,
+      "snippet": "2. AC joint effusion: fluid-equivalent signal in the AC joint space",
+      "found_in_fulltext": true,
+      "fulltext_offset": 7361
+    },
+    {
+      "block_id": "p2:20",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "",
+      "render_default": true,
+      "snippet": "3. Subchondral bone marrow edema of the distal clavicle and/or medial acromion: ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 7429
+    },
+    {
+      "block_id": "p2:21",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "",
+      "render_default": true,
+      "snippet": "4. AC osteolysis: lytic bone lesion with cortical destruction of the distal clav",
+      "found_in_fulltext": true,
+      "fulltext_offset": 7633
+    },
+    {
+      "block_id": "p2:22",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "",
+      "render_default": true,
+      "snippet": "5. AC inferior osteophytes: inferior osteophyte, 2 mm or longer (length measured",
+      "found_in_fulltext": true,
+      "fulltext_offset": 7718
+    },
+    {
+      "block_id": "p2:23",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "",
+      "render_default": true,
+      "snippet": "6. Inferior AC joint distension: distal protrusion of the AC joint, 3 mm or long",
+      "found_in_fulltext": true,
+      "fulltext_offset": 7895
+    },
+    {
+      "block_id": "p2:24",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "",
+      "render_default": true,
+      "snippet": "7. Impression on the supraspinatus due to the AC joint: 3 scores (on sagittal T1",
+      "found_in_fulltext": true,
+      "fulltext_offset": 8096
+    },
+    {
+      "block_id": "p2:25",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "To enhance interpretation of the findings on MRI in clinical practice, variables",
+      "found_in_fulltext": true,
+      "fulltext_offset": 8358
+    },
+    {
+      "block_id": "p2:26",
+      "page": 2,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Statistical analysis Demographic and clinical characteristics",
+      "found_in_fulltext": true,
+      "fulltext_offset": 8630
+    },
+    {
+      "block_id": "p2:28",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The demographic and clinical characteristics were presented as proportion, mean ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 8692
+    },
+    {
+      "block_id": "p3:0",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ARTICLE IN PRESS",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:1",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Signs on MRI for AC osteoarthritis",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:2",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "3",
+      "found_in_fulltext": true,
+      "fulltext_offset": 1775
+    },
+    {
+      "block_id": "p3:5",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "in the case of a skewed distribution. Differences between patients with symptoma",
+      "found_in_fulltext": true,
+      "fulltext_offset": 8842
+    },
+    {
+      "block_id": "p3:6",
+      "page": 3,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Analysis of MRI predictors for symptomatic AC osteoarthritis",
+      "found_in_fulltext": true,
+      "fulltext_offset": 9088
+    },
+    {
+      "block_id": "p3:7",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Univariate logistic regression analyses were performed to evaluate the associati",
+      "found_in_fulltext": true,
+      "fulltext_offset": 9149
+    },
+    {
+      "block_id": "p3:8",
+      "page": 3,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Intraobserver and interobserver variability",
+      "found_in_fulltext": true,
+      "fulltext_offset": 10500
+    },
+    {
+      "block_id": "p3:9",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Intraobserver and interobserver variability was calculated for the findings of t",
+      "found_in_fulltext": true,
+      "fulltext_offset": 10544
+    },
+    {
+      "block_id": "p3:10",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "variability was evaluated by comparing the values within the panel of judges; in",
+      "found_in_fulltext": true,
+      "fulltext_offset": 11077
+    },
+    {
+      "block_id": "p3:11",
+      "page": 3,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Results Demographic characteristics",
+      "found_in_fulltext": true,
+      "fulltext_offset": 11806
+    },
+    {
+      "block_id": "p3:13",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "display_zone",
+      "render_default": true,
+      "snippet": "Figure 3 shows a flow diagram of study enrollment. Between 2009 and 2014, 126 co",
+      "found_in_fulltext": true,
+      "fulltext_offset": 11842
+    },
+    {
+      "block_id": "p3:14",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Complete demographic and clinical data for both groups are shown in Table I. Dem",
+      "found_in_fulltext": true,
+      "fulltext_offset": 13038
+    },
+    {
+      "block_id": "p3:15",
+      "page": 3,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "MRI characteristics",
+      "found_in_fulltext": true,
+      "fulltext_offset": 13446
+    },
+    {
+      "block_id": "p3:16",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Because bone marrow edema was found only in patients with symptomatic AC osteoar",
+      "found_in_fulltext": true,
+      "fulltext_offset": 13466
+    },
+    {
+      "block_id": "p4:0",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "4",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2541
+    },
+    {
+      "block_id": "p4:1",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ARTICLE IN PRESS",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:2",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "E.J.D. Veen et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:7",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "confidence interval [CI], 3.53 to 36.44; P < .001 and joint distension (odds rat",
+      "found_in_fulltext": true,
+      "fulltext_offset": 14397
+    },
+    {
+      "block_id": "p4:8",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The Hosmer-Lemeshow test for goodness of fit of the model including these 2 vari",
+      "found_in_fulltext": true,
+      "fulltext_offset": 14520
+    },
+    {
+      "block_id": "p4:9",
+      "page": 4,
+      "role": "subsection_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Intraobserver and interobserver variability",
+      "found_in_fulltext": true,
+      "fulltext_offset": 10500
+    },
+    {
+      "block_id": "p4:10",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The mean κ value for intraobserver variability was 0.86 (95% CI, 0.75 to 1.00) f",
+      "found_in_fulltext": true,
+      "fulltext_offset": 15079
+    },
+    {
+      "block_id": "p4:11",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "edema, 0.70 (95% CI, 0.65 to 0.75) for AC joint distension, and 0.84 (95% CI, 0.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 15378
+    },
+    {
+      "block_id": "p4:12",
+      "page": 4,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Discussion",
+      "found_in_fulltext": true,
+      "fulltext_offset": 16301
+    },
+    {
+      "block_id": "p4:13",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The most important finding of our study was the correlation of 3 MRI signs with ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 16312
+    },
+    {
+      "block_id": "p5:0",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ARTICLE IN PRESS",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:1",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Signs on MRI for AC osteoarthritis",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:2",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "5",
+      "found_in_fulltext": true,
+      "fulltext_offset": 1780
+    },
+    {
+      "block_id": "p5:3",
+      "page": 5,
+      "role": "figure_caption_candidate",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Table I Demographic and clinical data and MRI findings of study population",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:4",
+      "page": 5,
+      "role": "media_asset",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "<table><tr><td></td><td>Group 1 (n = 70)</td><td>Group 2 (n = 70)</td><td>P valu",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:5",
+      "page": 5,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "MRI, magnetic resonance imaging; SD, standard deviation; AC, acromioclavicular.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 16855
+    },
+    {
+      "block_id": "p5:6",
+      "page": 5,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Group 1 patients had symptomatic AC osteoarthritis, and group 2 patients had chr",
+      "found_in_fulltext": true,
+      "fulltext_offset": 16935
+    },
+    {
+      "block_id": "p5:7",
+      "page": 5,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "* Data are missing for 3 patients.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 17047
+    },
+    {
+      "block_id": "p5:8",
+      "page": 5,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Data are missing for 1 patient.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 17082
+    },
+    {
+      "block_id": "p5:9",
+      "page": 5,
+      "role": "figure_caption_candidate",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Table II Univariate association between potential predictor variables on MRI and",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:10",
+      "page": 5,
+      "role": "media_asset",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "<table><tr><td></td><td>Group 1 (n = 70)</td><td>Group 2 (n = 70)</td><td>Odds r",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:11",
+      "page": 5,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "MRI, magnetic resonance imaging; AC, acromioclavicular; CI, confidence interval.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 17114
+    },
+    {
+      "block_id": "p5:12",
+      "page": 5,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Group 1 patients had symptomatic AC osteoarthritis, and group 2 patients had chr",
+      "found_in_fulltext": true,
+      "fulltext_offset": 16935
+    },
+    {
+      "block_id": "p5:14",
+      "page": 5,
+      "role": "media_asset",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "<table><tr><td>Variable</td><td>Coefficient</td><td>Odds ratio (95% CI)</td><td>",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:15",
+      "page": 5,
+      "role": "footnote",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "MRI, magnetic resonance imaging; AC, acromioclavicular; CI, confidence interval.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 17114
+    },
+    {
+      "block_id": "p5:16",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "findings, with good to excellent $ \\kappa $ values, are easy to use and can assi",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:17",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Several clinical tests are available to diagnose symptomatic AC osteoarthritis. ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 17564
+    },
+    {
+      "block_id": "p5:18",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "varying accuracy.3,13,22 The current diagnostic process in shoul- der pathology ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 18666
+    },
+    {
+      "block_id": "p5:19",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "There are limited data available in the literature about the association between",
+      "found_in_fulltext": true,
+      "fulltext_offset": 19212
+    },
+    {
+      "block_id": "p6:0",
+      "page": 6,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "6",
+      "found_in_fulltext": true,
+      "fulltext_offset": 364
+    },
+    {
+      "block_id": "p6:1",
+      "page": 6,
+      "role": "unknown_structural",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "ARTICLE IN PRESS",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:2",
+      "page": 6,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "E.J.D. Veen et al.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:3",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "symptomatic AC osteoarthritis and not in the control group. This was also found ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 19540
+    },
+    {
+      "block_id": "p6:4",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Another study showed the association of osteophytes and AC joint distension with",
+      "found_in_fulltext": true,
+      "fulltext_offset": 19802
+    },
+    {
+      "block_id": "p6:5",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The comparative study of Choo et al $ ^{2} $ found bone edema in only 9% of symp",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:6",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "One of the strengths of this study is the relatively large group of consecutive ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 21670
+    },
+    {
+      "block_id": "p6:7",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "This study also has some limitations. It has a retrospective design, creating a ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22001
+    },
+    {
+      "block_id": "p6:8",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "amination, and additional radio-diagnostic imaging studies. Painful palpation of",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22911
+    },
+    {
+      "block_id": "p6:9",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The prediction of symptomatic AC osteoarthritis using impression on the supraspi",
+      "found_in_fulltext": true,
+      "fulltext_offset": 24625
+    },
+    {
+      "block_id": "p6:10",
+      "page": 6,
+      "role": "structured_insert",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Conclusion",
+      "found_in_fulltext": true,
+      "fulltext_offset": 1928
+    },
+    {
+      "block_id": "p6:11",
+      "page": 6,
+      "role": "structured_insert",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "In this study we identified predictive MRI signs in patients with symptomatic AC",
+      "found_in_fulltext": true,
+      "fulltext_offset": 25249
+    },
+    {
+      "block_id": "p6:12",
+      "page": 6,
+      "role": "structured_insert",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "Disclaimer",
+      "found_in_fulltext": true,
+      "fulltext_offset": 25636
+    },
+    {
+      "block_id": "p6:13",
+      "page": 6,
+      "role": "structured_insert",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "The authors, their immediate families, and any research foundations with which t",
+      "found_in_fulltext": true,
+      "fulltext_offset": 25649
+    },
+    {
+      "block_id": "p6:14",
+      "page": 6,
+      "role": "reference_heading",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "References",
+      "found_in_fulltext": true,
+      "fulltext_offset": 25877
+    },
+    {
+      "block_id": "p6:15",
+      "page": 6,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "1. Brown JN, Roberts SN, Hayes MG, Sales AD. Shoulder pathology associated with ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 25888
+    },
+    {
+      "block_id": "p6:16",
+      "page": 6,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "2. Choo HJ, Lee SJ, Kim JH, Cha SS, Park YM, Park JS, et al. Can symptomatic acr",
+      "found_in_fulltext": true,
+      "fulltext_offset": 26054
+    },
+    {
+      "block_id": "p6:17",
+      "page": 6,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "3. Chronopoulos E, Kim TK, Park HB, Ashenbrenner D, McFarland EG. Diagnostic val",
+      "found_in_fulltext": true,
+      "fulltext_offset": 26309
+    },
+    {
+      "block_id": "p7:0",
+      "page": 7,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "Signs on MRI for AC osteoarthritis",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:1",
+      "page": 7,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "ARTICLE IN PRESS",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:2",
+      "page": 7,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "7",
+      "found_in_fulltext": true,
+      "fulltext_offset": 763
+    },
+    {
+      "block_id": "p7:3",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "lesions. Am J Sports Med 2004;32:655-61. http://dx.doi.org/10.1177/0363546503261",
+      "found_in_fulltext": true,
+      "fulltext_offset": 26465
+    },
+    {
+      "block_id": "p7:4",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "4. Colegate-Stone T, Allom R, Singh R, Elias DA, Standring S, Sinha J. Classific",
+      "found_in_fulltext": true,
+      "fulltext_offset": 26549
+    },
+    {
+      "block_id": "p7:5",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "5. Docimo S Jr, Kornitsky D, Futterman B, Elkowitz DE. Surgical treatment for ac",
+      "found_in_fulltext": true,
+      "fulltext_offset": 26802
+    },
+    {
+      "block_id": "p7:6",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "6. Heers G, Götz J, Schachner H, Neumaier U, Grifka J, Hedtmann A. Ultrasound ev",
+      "found_in_fulltext": true,
+      "fulltext_offset": 27071
+    },
+    {
+      "block_id": "p7:7",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "7. Hossain S, Jacobs LG, Hashmi R. The long-term effectiveness of steroid inject",
+      "found_in_fulltext": true,
+      "fulltext_offset": 27332
+    },
+    {
+      "block_id": "p7:8",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "8. Jordan L, Kenter K, Griffiths H. Relationship between MRI and clinical findin",
+      "found_in_fulltext": true,
+      "fulltext_offset": 27575
+    },
+    {
+      "block_id": "p7:9",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "9. Landis JR, Koch GG. The measurement of observer agreement for categorical dat",
+      "found_in_fulltext": true,
+      "fulltext_offset": 27766
+    },
+    {
+      "block_id": "p7:10",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "10. Mall NA, Foley E, Chalmers PN, Cole BJ, Romeo AA, Bach BR Jr. Degenerative j",
+      "found_in_fulltext": true,
+      "fulltext_offset": 27873
+    },
+    {
+      "block_id": "p7:11",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "11. McFarland EG, Garzon-Muvdi J, Jia X, Desai P, Petersen SA. Clinical and diag",
+      "found_in_fulltext": true,
+      "fulltext_offset": 28084
+    },
+    {
+      "block_id": "p7:12",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "12. Menge TJ, Boykin RE, Bushnell BD, Byram IR. Acromioclavicular osteoarthritis",
+      "found_in_fulltext": true,
+      "fulltext_offset": 28295
+    },
+    {
+      "block_id": "p7:13",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "13. O'Brien SJ, Pagnani MJ, Fealy S, McGlynn SR, Wilson JB. The active compressi",
+      "found_in_fulltext": true,
+      "fulltext_offset": 28485
+    },
+    {
+      "block_id": "p7:14",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "14. Peduzzi P, Concato J, Kemper E, Holford TR, Feinstein AR. A simulation study",
+      "found_in_fulltext": true,
+      "fulltext_offset": 28699
+    },
+    {
+      "block_id": "p7:15",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "15. Pensak M, Grumet RC, Slabaugh MA, Bach BR. Open versus arthroscopic distal c",
+      "found_in_fulltext": true,
+      "fulltext_offset": 28883
+    },
+    {
+      "block_id": "p7:16",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "16. Raynor MB, Kuhn JE. Utility of features of the patient's history in the diag",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29058
+    },
+    {
+      "block_id": "p7:17",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "17. Schünke M, Schulte E, Schumacher U, Voll M, Wesker K. Anatomische atlas Prom",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29276
+    },
+    {
+      "block_id": "p7:18",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "18. Shubin Stein BE, Ahmad CS, Pfaff CH, Bigliani LU, Levine WN. A comparison of",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29439
+    },
+    {
+      "block_id": "p7:19",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "19. Shubin Stein BE, Wiater JM, Pfaff HC, Bigliani LU, Levine WN. Detection of a",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29712
+    },
+    {
+      "block_id": "p7:20",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "20. Strobel K, Pfirrmann CW, Zanetti M, Nagy L, Hodler J. MRI features of the ac",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29921
+    },
+    {
+      "block_id": "p7:21",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "21. van Riet RP, Goehre T, Bell SN. The long term effect of an intra-articular i",
+      "found_in_fulltext": true,
+      "fulltext_offset": 30160
+    },
+    {
+      "block_id": "p7:22",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "22. Walton J, Mahajan S, Paxinos A, Marshall J, Bryant C, Shnier R, et al. Diagn",
+      "found_in_fulltext": true,
+      "fulltext_offset": 30381
+    }
+  ]
+}

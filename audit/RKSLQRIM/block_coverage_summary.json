@@ -117,7 +117,7 @@
       "page": 2,
       "raw_label": "doc_title",
       "role": "paper_title",
-      "zone": "body_zone",
+      "zone": "frontmatter_main_zone",
       "bbox": [
         139.0,
         143.0,
@@ -136,8 +136,8 @@
       "block_id": "p2:2",
       "page": 2,
       "raw_label": "text",
-      "role": "frontmatter_support",
-      "zone": "body_zone",
+      "role": "authors",
+      "zone": "frontmatter_main_zone",
       "bbox": [
         147.0,
         214.0,
@@ -156,8 +156,8 @@
       "block_id": "p2:3",
       "page": 2,
       "raw_label": "text",
-      "role": "frontmatter_support",
-      "zone": "body_zone",
+      "role": "affiliation",
+      "zone": "frontmatter_main_zone",
       "bbox": [
         140.0,
         354.0,
@@ -176,8 +176,8 @@
       "block_id": "p2:4",
       "page": 2,
       "raw_label": "text",
-      "role": "frontmatter_support",
-      "zone": "body_zone",
+      "role": "affiliation",
+      "zone": "frontmatter_main_zone",
       "bbox": [
         140.0,
         404.0,
@@ -196,8 +196,8 @@
       "block_id": "p2:5",
       "page": 2,
       "raw_label": "text",
-      "role": "frontmatter_support",
-      "zone": "body_zone",
+      "role": "affiliation",
+      "zone": "frontmatter_main_zone",
       "bbox": [
         139.0,
         456.0,
@@ -216,8 +216,8 @@
       "block_id": "p2:6",
       "page": 2,
       "raw_label": "text",
-      "role": "frontmatter_support",
-      "zone": "body_zone",
+      "role": "affiliation",
+      "zone": "frontmatter_main_zone",
       "bbox": [
         139.0,
         503.0,
@@ -236,8 +236,8 @@
       "block_id": "p2:7",
       "page": 2,
       "raw_label": "text",
-      "role": "frontmatter_noise",
-      "zone": "frontmatter_side_zone",
+      "role": "authors",
+      "zone": "frontmatter_main_zone",
       "bbox": [
         140.0,
         622.0,
@@ -257,7 +257,7 @@
       "page": 2,
       "raw_label": "text",
       "role": "frontmatter_noise",
-      "zone": "frontmatter_side_zone",
+      "zone": "frontmatter_main_zone",
       "bbox": [
         139.0,
         667.0,
@@ -277,7 +277,7 @@
       "page": 2,
       "raw_label": "number",
       "role": "noise",
-      "zone": "body_zone",
+      "zone": "frontmatter_main_zone",
       "bbox": [
         1065.0,
         1460.0,
@@ -1836,7 +1836,7 @@
       "block_id": "p15:1",
       "page": 15,
       "raw_label": "chart",
-      "role": "table_html",
+      "role": "media_asset",
       "zone": "body_zone",
       "bbox": [
         150.0,
@@ -1916,7 +1916,7 @@
       "block_id": "p15:5",
       "page": 15,
       "raw_label": "figure_title",
-      "role": "table_caption_candidate",
+      "role": "table_caption",
       "zone": "display_zone",
       "bbox": [
         140.0,
@@ -2336,7 +2336,7 @@
       "block_id": "p19:1",
       "page": 19,
       "raw_label": "chart",
-      "role": "figure_asset",
+      "role": "media_asset",
       "zone": "body_zone",
       "bbox": [
         147.0,
@@ -2356,7 +2356,7 @@
       "block_id": "p19:2",
       "page": 19,
       "raw_label": "chart",
-      "role": "figure_asset",
+      "role": "media_asset",
       "zone": "body_zone",
       "bbox": [
         563.0,
@@ -2396,7 +2396,7 @@
       "block_id": "p19:4",
       "page": 19,
       "raw_label": "figure_title",
-      "role": "table_caption_candidate",
+      "role": "table_caption",
       "zone": "display_zone",
       "bbox": [
         140.0,
@@ -2536,7 +2536,7 @@
       "block_id": "p20:2",
       "page": 20,
       "raw_label": "chart",
-      "role": "figure_asset",
+      "role": "media_asset",
       "zone": "body_zone",
       "bbox": [
         143.0,
@@ -3156,7 +3156,7 @@
       "block_id": "p24:2",
       "page": 24,
       "raw_label": "chart",
-      "role": "figure_asset",
+      "role": "media_asset",
       "zone": "tail_nonref_hold_zone",
       "bbox": [
         146.0,
@@ -3176,7 +3176,7 @@
       "block_id": "p24:3",
       "page": 24,
       "raw_label": "chart",
-      "role": "figure_asset",
+      "role": "media_asset",
       "zone": "tail_nonref_hold_zone",
       "bbox": [
         525.0,
@@ -3216,7 +3216,7 @@
       "block_id": "p24:5",
       "page": 24,
       "raw_label": "figure_title",
-      "role": "table_caption_candidate",
+      "role": "table_caption",
       "zone": "tail_nonref_hold_zone",
       "bbox": [
         140.0,
@@ -4016,7 +4016,7 @@
       "block_id": "p30:2",
       "page": 30,
       "raw_label": "chart",
-      "role": "figure_asset",
+      "role": "media_asset",
       "zone": "tail_nonref_hold_zone",
       "bbox": [
         152.0,
@@ -4916,7 +4916,7 @@
       "block_id": "p35:1",
       "page": 35,
       "raw_label": "paragraph_title",
-      "role": "backmatter_heading",
+      "role": "section_heading",
       "zone": "body_zone",
       "bbox": [
         140.0,
@@ -4936,7 +4936,7 @@
       "block_id": "p35:2",
       "page": 35,
       "raw_label": "text",
-      "role": "backmatter_body",
+      "role": "body_paragraph",
       "zone": "body_zone",
       "bbox": [
         137.0,
@@ -4956,7 +4956,7 @@
       "block_id": "p35:3",
       "page": 35,
       "raw_label": "paragraph_title",
-      "role": "body_paragraph",
+      "role": "backmatter_heading",
       "zone": "body_zone",
       "bbox": [
         140.0,
@@ -4996,7 +4996,7 @@
       "block_id": "p35:5",
       "page": 35,
       "raw_label": "paragraph_title",
-      "role": "body_paragraph",
+      "role": "section_heading",
       "zone": "body_zone",
       "bbox": [
         140.0,
@@ -7216,7 +7216,7 @@
       "block_id": "p41:3",
       "page": 41,
       "raw_label": "chart",
-      "role": "figure_asset",
+      "role": "media_asset",
       "zone": "",
       "bbox": [
         147.0,
@@ -7236,7 +7236,7 @@
       "block_id": "p41:4",
       "page": 41,
       "raw_label": "chart",
-      "role": "figure_asset",
+      "role": "media_asset",
       "zone": "",
       "bbox": [
         599.0,
@@ -7336,7 +7336,7 @@
       "block_id": "p42:2",
       "page": 42,
       "raw_label": "table",
-      "role": "media_asset",
+      "role": "figure_asset",
       "zone": "",
       "bbox": [
         130.0,

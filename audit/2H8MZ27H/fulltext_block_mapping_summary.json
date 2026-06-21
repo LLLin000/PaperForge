@@ -1,0 +1,1317 @@
+{
+  "mappable_block_count": 131,
+  "found_count": 112,
+  "missing_count": 19,
+  "rows": [
+    {
+      "block_id": "p1:2",
+      "page": 1,
+      "role": "authors",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "OPEN",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:3",
+      "page": 1,
+      "role": "body_paragraph",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "SUBJECT AREAS: BIONANOELECTRONICS BIOLOGICAL MODELS",
+      "found_in_fulltext": true,
+      "fulltext_offset": 1327
+    },
+    {
+      "block_id": "p1:4",
+      "page": 1,
+      "role": "paper_title",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "Nanosecond Pulsed Electric Fields (nsPEFs) Regulate Phenotypes of Chondrocytes t",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2
+    },
+    {
+      "block_id": "p1:7",
+      "page": 1,
+      "role": "non_body_insert",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "8 July 2014",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:9",
+      "page": 1,
+      "role": "non_body_insert",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "25 July 2014",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:10",
+      "page": 1,
+      "role": "frontmatter_support",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "Correspondence and requests for materials should be addressed to Z.G.G. (gez@pku",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:11",
+      "page": 1,
+      "role": "authors",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "Kun Zhang1, Jinsong Guo2, Zigang Ge1,3,4 & Jue Zhang2,5",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:12",
+      "page": 1,
+      "role": "affiliation",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "$ ^{1} $Department of Biomedical Engineering, College of Engineering, Peking Uni",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:14",
+      "page": 1,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "M illisecond or microsecond pulsed electric fields (PEFs) have been shown to fac",
+      "found_in_fulltext": true,
+      "fulltext_offset": 1379
+    },
+    {
+      "block_id": "p1:15",
+      "page": 1,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Chondrocytes are critical for maintenance and regeneration of cartilage, and sev",
+      "found_in_fulltext": true,
+      "fulltext_offset": 3034
+    },
+    {
+      "block_id": "p1:16",
+      "page": 1,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "SCIENTIFIC REPORTS | 4:5836 | DOI: 10.1038/srep05836",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p1:17",
+      "page": 1,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "1",
+      "found_in_fulltext": true,
+      "fulltext_offset": 255
+    },
+    {
+      "block_id": "p2:0",
+      "page": 2,
+      "role": "noise",
+      "zone": "frontmatter_side_zone",
+      "render_default": false,
+      "snippet": "www.nature.com/scientificreports",
+      "found_in_fulltext": true,
+      "fulltext_offset": 39760
+    },
+    {
+      "block_id": "p2:4",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "ments were used in the aforementioned research due to the thermal effects of PEF",
+      "found_in_fulltext": true,
+      "fulltext_offset": 4037
+    },
+    {
+      "block_id": "p2:5",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "In this study, we evaluated the phenotypic effects of nsPEFs on chondrocytes and",
+      "found_in_fulltext": true,
+      "fulltext_offset": 4406
+    },
+    {
+      "block_id": "p2:6",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "II. We then explored whether activation of the wnt/b-catenin signal- ing pathway",
+      "found_in_fulltext": true,
+      "fulltext_offset": 4802
+    },
+    {
+      "block_id": "p2:7",
+      "page": 2,
+      "role": "section_heading",
+      "zone": "frontmatter_side_zone",
+      "render_default": true,
+      "snippet": "Results",
+      "found_in_fulltext": true,
+      "fulltext_offset": 4937
+    },
+    {
+      "block_id": "p2:8",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "nsPEFs enhance proliferation of chondrocytes. Based on favorable results obtaine",
+      "found_in_fulltext": true,
+      "fulltext_offset": 4945
+    },
+    {
+      "block_id": "p2:9",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "nsPEFs downregulate glycosaminoglycan (GAG) production. Results obtained demonst",
+      "found_in_fulltext": true,
+      "fulltext_offset": 5984
+    },
+    {
+      "block_id": "p2:10",
+      "page": 2,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "nsPEFs downregulate expression of functional genes. Effects of nsPEFs on gene ex",
+      "found_in_fulltext": true,
+      "fulltext_offset": 6661
+    },
+    {
+      "block_id": "p2:17",
+      "page": 2,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "SCIENTIFIC REPORTS | 4:5836 | DOI: 10.1038/srep05836",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:18",
+      "page": 2,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "2",
+      "found_in_fulltext": true,
+      "fulltext_offset": 253
+    },
+    {
+      "block_id": "p3:0",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "www.nature.com/scientificreports",
+      "found_in_fulltext": true,
+      "fulltext_offset": 39760
+    },
+    {
+      "block_id": "p3:12",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "after nsPEF treatment. At 1 hour, nsPEFs at 10 kV/cm decreased gene expression o",
+      "found_in_fulltext": true,
+      "fulltext_offset": 6929
+    },
+    {
+      "block_id": "p3:13",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "At 24 hours after nsPEF treatment, gene expression showed an increase compared t",
+      "found_in_fulltext": true,
+      "fulltext_offset": 7679
+    },
+    {
+      "block_id": "p3:14",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "nsPEFs activate wnt/β-catenin signaling pathway. Expression of β-catenin protein",
+      "found_in_fulltext": true,
+      "fulltext_offset": 8130
+    },
+    {
+      "block_id": "p3:15",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "(p 5 0.006) 1 hour after 10 kV/cm and 20 kV/cm nsPEF treatment, respectively (Fi",
+      "found_in_fulltext": true,
+      "fulltext_offset": 9042
+    },
+    {
+      "block_id": "p3:16",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Our findings demonstrated that after 24 hours, nsPEFs induced a decrease in Lef1",
+      "found_in_fulltext": true,
+      "fulltext_offset": 9888
+    },
+    {
+      "block_id": "p3:17",
+      "page": 3,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Inhibition of wnt/ $ \\beta $-catenin pathway partially blocks effects of nsPEFs.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:18",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "SCIENTIFIC REPORTS | 4:5836 | DOI: 10.1038/srep05836",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p3:19",
+      "page": 3,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "3",
+      "found_in_fulltext": true,
+      "fulltext_offset": 274
+    },
+    {
+      "block_id": "p4:0",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "www.nature.com/scientificreports",
+      "found_in_fulltext": true,
+      "fulltext_offset": 39760
+    },
+    {
+      "block_id": "p4:6",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "catenin (Fig. 6j–6l), wnt7a gene (Fig. 6d) and the downstream genes of wnt, Lef1",
+      "found_in_fulltext": true,
+      "fulltext_offset": 10506
+    },
+    {
+      "block_id": "p4:7",
+      "page": 4,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Discussion",
+      "found_in_fulltext": true,
+      "fulltext_offset": 11477
+    },
+    {
+      "block_id": "p4:8",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "nsPEFs have profound effects on multiple organelles of a cell. nsPEFs generate l",
+      "found_in_fulltext": true,
+      "fulltext_offset": 11488
+    },
+    {
+      "block_id": "p4:9",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "pulse duration decreases, the outer membrane is likely shorted, and the applied ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 11975
+    },
+    {
+      "block_id": "p4:10",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Effects of nsPEFs are usually transient. Typically, the nanopores can be formed ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 13377
+    },
+    {
+      "block_id": "p4:11",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Fine-tuned activation of the wnt/β-catenin signaling pathway is essential to reg",
+      "found_in_fulltext": true,
+      "fulltext_offset": 14351
+    },
+    {
+      "block_id": "p4:12",
+      "page": 4,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "The fact that inhibition of the wnt/ $ \\beta $-catenin signaling can only partia",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:13",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "SCIENTIFIC REPORTS | 4:5836 | DOI: 10.1038/srep05836",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p4:14",
+      "page": 4,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "4",
+      "found_in_fulltext": true,
+      "fulltext_offset": 256
+    },
+    {
+      "block_id": "p5:0",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "www.nature.com/scientificreports",
+      "found_in_fulltext": true,
+      "fulltext_offset": 39760
+    },
+    {
+      "block_id": "p5:9",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "due to its folded spiral structure, it is sensitive to nsPEFs and forms speckles",
+      "found_in_fulltext": true,
+      "fulltext_offset": 17172
+    },
+    {
+      "block_id": "p5:10",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "nsPEFs may have different effects on suspended and attached cells in vitro. Cell",
+      "found_in_fulltext": true,
+      "fulltext_offset": 18055
+    },
+    {
+      "block_id": "p5:11",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "development of a real-time visual microfluidic system for monitoring adherent ce",
+      "found_in_fulltext": true,
+      "fulltext_offset": 19673
+    },
+    {
+      "block_id": "p5:12",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "As nsPEFs do not exist in a natural cellular environment, a comprehensive unders",
+      "found_in_fulltext": true,
+      "fulltext_offset": 19895
+    },
+    {
+      "block_id": "p5:13",
+      "page": 5,
+      "role": "section_heading",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Methods",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20667
+    },
+    {
+      "block_id": "p5:14",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Cell culture. Porcine articular cartilage tissue was cut into small pieces by a ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 20675
+    },
+    {
+      "block_id": "p5:15",
+      "page": 5,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Application of nsPEFs. The nsPEF generator was applied as previously described $",
+      "found_in_fulltext": true,
+      "fulltext_offset": 21705
+    },
+    {
+      "block_id": "p5:16",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "SCIENTIFIC REPORTS | 4:5836 | DOI: 10.1038/srep05836",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p5:17",
+      "page": 5,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "5",
+      "found_in_fulltext": true,
+      "fulltext_offset": 282
+    },
+    {
+      "block_id": "p6:0",
+      "page": 6,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "www.nature.com/scientificreports",
+      "found_in_fulltext": true,
+      "fulltext_offset": 39760
+    },
+    {
+      "block_id": "p6:17",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Celltoxicity. The toxicity of nsPEFs was evaluated by 3-(4,5-Dimethyl-2-thiazoly",
+      "found_in_fulltext": true,
+      "fulltext_offset": 22425
+    },
+    {
+      "block_id": "p6:18",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Cell proliferation. Cell proliferation was assayed with Hoechst 33258 (H6024, Si",
+      "found_in_fulltext": true,
+      "fulltext_offset": 23060
+    },
+    {
+      "block_id": "p6:19",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "GAG content. Chondrocytes were digested in 0.5 mg/mL proteinase K at 56°C for 12",
+      "found_in_fulltext": true,
+      "fulltext_offset": 23580
+    },
+    {
+      "block_id": "p6:20",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Gene expression. Total RNA was extracted and isolated from chondrocytes with Tri",
+      "found_in_fulltext": true,
+      "fulltext_offset": 24122
+    },
+    {
+      "block_id": "p6:21",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "cycler (Mycycler, Bio-Rad). Quantitative real-time PCR was performed in the PCR ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 24508
+    },
+    {
+      "block_id": "p6:22",
+      "page": 6,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Western blotting. Chondrocytes were lysed by RIPA lysis buffer (R0020, Solarbio)",
+      "found_in_fulltext": true,
+      "fulltext_offset": 27797
+    },
+    {
+      "block_id": "p6:23",
+      "page": 6,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "SCIENTIFIC REPORTS | 4:5836 | DOI: 10.1038/srep05836",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p6:24",
+      "page": 6,
+      "role": "noise",
+      "zone": "body_zone",
+      "render_default": false,
+      "snippet": "6",
+      "found_in_fulltext": true,
+      "fulltext_offset": 285
+    },
+    {
+      "block_id": "p7:0",
+      "page": 7,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "www.nature.com/scientificreports",
+      "found_in_fulltext": true,
+      "fulltext_offset": 39760
+    },
+    {
+      "block_id": "p7:2",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "and $ \\beta $-actin (4970, Cell Signaling) was combined with HRP-linked antibody",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:3",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Immunofluorescence. Immunofluorescence was utilized to confirm the location of $",
+      "found_in_fulltext": true,
+      "fulltext_offset": 28662
+    },
+    {
+      "block_id": "p7:4",
+      "page": 7,
+      "role": "body_paragraph",
+      "zone": "body_zone",
+      "render_default": true,
+      "snippet": "Statistical analysis. Analysis was performed using SPSS V13.0 (SPSS Inc.) one-wa",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29309
+    },
+    {
+      "block_id": "p7:5",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "1. Chen, C., Smye, S. W., Robinson, M. P. & Evans, J. A. Membrane electroporatio",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29580
+    },
+    {
+      "block_id": "p7:6",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "2. Awasthi, K., Nakabayashi, T. & Ohta, N. Application of Nanosecond Pulsed Elec",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29723
+    },
+    {
+      "block_id": "p7:7",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "3. Weaver, J. C. Electroporation of biological membranes from multicellular to n",
+      "found_in_fulltext": true,
+      "fulltext_offset": 29958
+    },
+    {
+      "block_id": "p7:8",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "4. Schoenbach, K. H. et al. Ultrashort electrical pulses open a new gateway into",
+      "found_in_fulltext": true,
+      "fulltext_offset": 30107
+    },
+    {
+      "block_id": "p7:9",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "5. Silve, A., Leray, I. & Mir, L. M. Demonstration of cell membrane permeabiliza",
+      "found_in_fulltext": true,
+      "fulltext_offset": 30239
+    },
+    {
+      "block_id": "p7:10",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "6. Rems, L. et al. Cell electrofusion using nanosecond electric pulses. Sci. Rep",
+      "found_in_fulltext": true,
+      "fulltext_offset": 30431
+    },
+    {
+      "block_id": "p7:11",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "7. Hu, Q., Joshi, R. P. & Schoenbach, K. H. Simulations of nanopore formation an",
+      "found_in_fulltext": true,
+      "fulltext_offset": 30552
+    },
+    {
+      "block_id": "p7:12",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "8. Schoenbach, K. H., Beebe, S. J. & Buescher, E. S. Intracellular effect of ult",
+      "found_in_fulltext": true,
+      "fulltext_offset": 30770
+    },
+    {
+      "block_id": "p7:13",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "9. White, J. A., Blackmore, P. F., Schoenbach, K. H. & Beebe, S. J. Stimulation ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 30917
+    },
+    {
+      "block_id": "p7:14",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "10. Morotomi-Yano, K., Akiyama, H. & Yano, K. Nanosecond pulsed electric fields ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 31120
+    },
+    {
+      "block_id": "p7:15",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "11. Garon, E. B. et al. In vitro and in vivo evaluation and a case report of int",
+      "found_in_fulltext": true,
+      "fulltext_offset": 31283
+    },
+    {
+      "block_id": "p7:16",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "12. Ren, W., Sain, N. M. & Beebe, S. J. Nanosecond pulsed electric fields (nsPEF",
+      "found_in_fulltext": true,
+      "fulltext_offset": 31480
+    },
+    {
+      "block_id": "p7:17",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "13. Basu, G., Kalluri, B. S., Sabuncu, A. C., Osgood, C. J. & Stacey, M. W. Enha",
+      "found_in_fulltext": true,
+      "fulltext_offset": 31704
+    },
+    {
+      "block_id": "p7:18",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "14. van der Kraan, P. M., Davidson, E. N. B., Blom, A. & van den Berg, W. B. TGF",
+      "found_in_fulltext": true,
+      "fulltext_offset": 31953
+    },
+    {
+      "block_id": "p7:19",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "15. Grimsrud, C. D. et al. BMP signaling stimulates chondrocyte maturation and t",
+      "found_in_fulltext": true,
+      "fulltext_offset": 32224
+    },
+    {
+      "block_id": "p7:20",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "16. Riemer, S., Gebhard, S., Beier, F., Poschl, E. & von der Mark, K. Role of c-",
+      "found_in_fulltext": true,
+      "fulltext_offset": 32388
+    },
+    {
+      "block_id": "p7:21",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "17. Ryu, J., Kang, S. & Chun, J. Regulation of the chondrocyte phenotype by beta",
+      "found_in_fulltext": true,
+      "fulltext_offset": 32673
+    },
+    {
+      "block_id": "p7:22",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "18. Lyu, J. & Joo, C. K. Wnt-7a up-regulates matrix metalloproteinase-12 express",
+      "found_in_fulltext": true,
+      "fulltext_offset": 32799
+    },
+    {
+      "block_id": "p7:23",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "19. Fini, M. et al. Functional Tissue Engineering in Articular Cartilage Repair:",
+      "found_in_fulltext": true,
+      "fulltext_offset": 33005
+    },
+    {
+      "block_id": "p7:24",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "20. Macginitie, L. A., Gluzband, Y. A. & Grodzinsky, A. J. Electric-Field Stimul",
+      "found_in_fulltext": true,
+      "fulltext_offset": 33188
+    },
+    {
+      "block_id": "p7:25",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "21. Lippiello, L., Chakkalakal, D. & Connolly, J. F. Pulsing Direct Current-Indu",
+      "found_in_fulltext": true,
+      "fulltext_offset": 33390
+    },
+    {
+      "block_id": "p7:26",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "22. Wang, W., Wang, Z. Y., Zhang, G. H., Clark, C. C. & Brighton, C. T. Up-regul",
+      "found_in_fulltext": true,
+      "fulltext_offset": 33588
+    },
+    {
+      "block_id": "p7:27",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "23. Morotomi-Yano, K., Oyadomari, S., Akiyama, H. & Yano, K. Nanosecond pulsed e",
+      "found_in_fulltext": true,
+      "fulltext_offset": 33774
+    },
+    {
+      "block_id": "p7:28",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "24. Ge, Z. G., Baguenard, S., Lim, L. Y., Wee, A. & Khor, E. Hydroxyapatite-chit",
+      "found_in_fulltext": true,
+      "fulltext_offset": 34061
+    },
+    {
+      "block_id": "p7:29",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "25. Schoenbach, K. H., Katsuki, S., Stark, R. H., Buescher, E. S. & Beebe, S. J.",
+      "found_in_fulltext": true,
+      "fulltext_offset": 34238
+    },
+    {
+      "block_id": "p7:30",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "26. Frey, W. et al. Plasma membrane voltage changes during nanosecond pulsed ele",
+      "found_in_fulltext": true,
+      "fulltext_offset": 34424
+    },
+    {
+      "block_id": "p7:31",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "27. Ellappan, P. & Sundararajan, R. A simulation study of the electrical model o",
+      "found_in_fulltext": true,
+      "fulltext_offset": 34568
+    },
+    {
+      "block_id": "p7:32",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "28. Stacey, M. et al. Differential effects in cells exposed to ultra-short, high",
+      "found_in_fulltext": true,
+      "fulltext_offset": 34703
+    },
+    {
+      "block_id": "p7:33",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "29. Chen, N. Y. et al. Nanosecond electric pulses penetrate the nucleus an enhan",
+      "found_in_fulltext": true,
+      "fulltext_offset": 34903
+    },
+    {
+      "block_id": "p7:34",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "30. Pakhomova, O. N. et al. Oxidative effects of nanosecond pulsed electric fiel",
+      "found_in_fulltext": true,
+      "fulltext_offset": 35057
+    },
+    {
+      "block_id": "p7:35",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "31. Zhang, J. et al. Nanosecond pulse electric field (nanopulse): A novel non-li",
+      "found_in_fulltext": true,
+      "fulltext_offset": 35221
+    },
+    {
+      "block_id": "p7:36",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "32. Beebe, S. J., Blackmore, P. F., White, J., Joshi, R. P. & Schoenbach, K. H. ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 35384
+    },
+    {
+      "block_id": "p7:37",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "33. Hwang, S. G., Yu, S. S., Poo, H. & Chun, J. S. c-Jun/activator protein-1 med",
+      "found_in_fulltext": true,
+      "fulltext_offset": 35610
+    },
+    {
+      "block_id": "p7:38",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "34. Novak, A. & Dedhar, S. Signaling through beta-catenin and Lef/Tcf. Cellular ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 35844
+    },
+    {
+      "block_id": "p7:39",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "35. Shtutman, M. et al. The cyclin D1 gene is a target of the beta-catenin/LEF-1",
+      "found_in_fulltext": true,
+      "fulltext_offset": 35972
+    },
+    {
+      "block_id": "p7:40",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "36. Hwang, S. G., Yu, S. S., Lee, S. W. & Chun, J. S. Wnt-3a regulates chondrocy",
+      "found_in_fulltext": true,
+      "fulltext_offset": 36104
+    },
+    {
+      "block_id": "p7:41",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "37. Beebe, S. J., Fox, P. M., Rec, L. J., Willis, L. K. & Schoenbach, K. H. Nano",
+      "found_in_fulltext": true,
+      "fulltext_offset": 36254
+    },
+    {
+      "block_id": "p7:42",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "38. Bell, D. M. et al. SOX9 directly regulates the type-II collagen gene. Nat Ge",
+      "found_in_fulltext": true,
+      "fulltext_offset": 36440
+    },
+    {
+      "block_id": "p7:43",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "39. de Crombrugghe, B. et al. Transcriptional mechanisms of chondrocyte differen",
+      "found_in_fulltext": true,
+      "fulltext_offset": 36544
+    },
+    {
+      "block_id": "p7:44",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "40. Ryu, J. H. et al. Regulation of the chondrocyte phenotype by beta-catenin. D",
+      "found_in_fulltext": true,
+      "fulltext_offset": 36665
+    },
+    {
+      "block_id": "p7:45",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "41. Zhu, M. et al. Activation of beta-Catenin Signaling in Articular Chondrocyte",
+      "found_in_fulltext": true,
+      "fulltext_offset": 36779
+    },
+    {
+      "block_id": "p7:46",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "42. Zhu, M. et al. Inhibition of beta-catenin signaling in articular chondrocyte",
+      "found_in_fulltext": true,
+      "fulltext_offset": 36986
+    },
+    {
+      "block_id": "p7:47",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "43. Ibey, B. L. et al. Dose-Dependent Thresholds of 10-ns Electric Pulse Induced",
+      "found_in_fulltext": true,
+      "fulltext_offset": 37151
+    },
+    {
+      "block_id": "p7:48",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "44. Morotomi-Yano, K., Uemura, Y., Katsuki, S., Akiyama, H. & Yano, K. Activatio",
+      "found_in_fulltext": true,
+      "fulltext_offset": 37319
+    },
+    {
+      "block_id": "p7:49",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "45. Scarlett, S. S., White, J. A., Blackmore, P. F., Schoenbach, K. H. & Kolb, J",
+      "found_in_fulltext": true,
+      "fulltext_offset": 37510
+    },
+    {
+      "block_id": "p7:50",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "46. Nutt, L. K. et al. Bax-mediated Ca $ ^{2+} $ mobilization promotes cytochrom",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:51",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "47. Lin, J. C. Microwave Auditory Phenomenon. Proc. IEEE 68, 67–73 (1980).",
+      "found_in_fulltext": true,
+      "fulltext_offset": 37888
+    },
+    {
+      "block_id": "p7:52",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "48. Pakhomov, A. G. et al. Long-lasting plasma membrane permeabilization in mamm",
+      "found_in_fulltext": true,
+      "fulltext_offset": 37963
+    },
+    {
+      "block_id": "p7:53",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "49. Kirawanich, P., Pausawasdi, N., Srisawat, C., Yakura, S. J. & Islam, N. E. A",
+      "found_in_fulltext": true,
+      "fulltext_offset": 38140
+    },
+    {
+      "block_id": "p7:54",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "50. Wang, N., Butler, J. P. & Ingber, D. E. Mechanotransduction across the Cell-",
+      "found_in_fulltext": true,
+      "fulltext_offset": 38394
+    },
+    {
+      "block_id": "p7:55",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "51. Thompson, G. L., Roth, C., Tolstykh, G., Kuipers, M. & Ibey, B. L. Role of C",
+      "found_in_fulltext": true,
+      "fulltext_offset": 38543
+    },
+    {
+      "block_id": "p7:56",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "52. Dalmay, C., De Menorval, M. A., Francais, O., Mir, L. M. & Le Pioufle, B. A ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 38736
+    },
+    {
+      "block_id": "p7:57",
+      "page": 7,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "53. Beebe, S. J. Cell responses without receptors and ligands, using nanosecond ",
+      "found_in_fulltext": true,
+      "fulltext_offset": 39000
+    },
+    {
+      "block_id": "p7:58",
+      "page": 7,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "SCIENTIFIC REPORTS | 4:5836 | DOI: 10.1038/srep05836",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p7:59",
+      "page": 7,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "7",
+      "found_in_fulltext": true,
+      "fulltext_offset": 2423
+    },
+    {
+      "block_id": "p8:0",
+      "page": 8,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "www.nature.com/scientificreports",
+      "found_in_fulltext": true,
+      "fulltext_offset": 39760
+    },
+    {
+      "block_id": "p8:2",
+      "page": 8,
+      "role": "reference_item",
+      "zone": "reference_zone",
+      "render_default": true,
+      "snippet": "54. Wang, J. et al. Synergistic Effects of Nanosecond Pulsed Electric Fields Com",
+      "found_in_fulltext": true,
+      "fulltext_offset": 40367
+    },
+    {
+      "block_id": "p8:3",
+      "page": 8,
+      "role": "sub_subsection_heading",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Acknowledgments",
+      "found_in_fulltext": true,
+      "fulltext_offset": 39155
+    },
+    {
+      "block_id": "p8:4",
+      "page": 8,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "This work was supported by National Basic Research Program of China (973 Program",
+      "found_in_fulltext": true,
+      "fulltext_offset": 39173
+    },
+    {
+      "block_id": "p8:5",
+      "page": 8,
+      "role": "unknown_structural",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": false,
+      "snippet": "Author contributions",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:6",
+      "page": 8,
+      "role": "body_paragraph",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Z.G. and J.Z. designed this study, whereas K.Z. and J.G. were involved in the ex",
+      "found_in_fulltext": true,
+      "fulltext_offset": 39454
+    },
+    {
+      "block_id": "p8:7",
+      "page": 8,
+      "role": "backmatter_heading",
+      "zone": "",
+      "render_default": true,
+      "snippet": "Additional information",
+      "found_in_fulltext": true,
+      "fulltext_offset": 39676
+    },
+    {
+      "block_id": "p8:8",
+      "page": 8,
+      "role": "backmatter_body",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Supplementary information accompanies this paper at http://www.nature.com/scient",
+      "found_in_fulltext": true,
+      "fulltext_offset": 39701
+    },
+    {
+      "block_id": "p8:9",
+      "page": 8,
+      "role": "backmatter_body",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Competing financial interests: The authors declare no competing financial intere",
+      "found_in_fulltext": true,
+      "fulltext_offset": 39793
+    },
+    {
+      "block_id": "p8:11",
+      "page": 8,
+      "role": "backmatter_body",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "This work is licensed under a Creative Commons Attribution 4.0 International Lic",
+      "found_in_fulltext": true,
+      "fulltext_offset": 39878
+    },
+    {
+      "block_id": "p8:13",
+      "page": 8,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "SCIENTIFIC REPORTS | 4:5836 | DOI: 10.1038/srep05836",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p8:14",
+      "page": 8,
+      "role": "noise",
+      "zone": "",
+      "render_default": false,
+      "snippet": "8",
+      "found_in_fulltext": true,
+      "fulltext_offset": 275
+    }
+  ]
+}

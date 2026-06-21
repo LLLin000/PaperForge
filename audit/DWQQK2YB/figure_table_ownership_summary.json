@@ -60,10 +60,10 @@
     "ambiguous": [
       {
         "figure_number": 3,
-        "legend_block_id": 1,
+        "legend_block_id": 4,
         "asset_block_ids": [],
         "candidate_asset_ids": [],
-        "page": 40
+        "page": 35
       }
     ],
     "unresolved": [
@@ -77,7 +77,7 @@
   "tables": {
     "matched_count": 0,
     "ambiguous_count": 0,
-    "unmatched_asset_count": 0,
+    "unmatched_asset_count": 1,
     "matched": [],
     "ambiguous": []
   }

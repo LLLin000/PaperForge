@@ -2,8 +2,8 @@
 
 - Mode: `high-risk`
 - Status: `READY`
-- Reviewed pages: [2, 25, 26, 37, 38, 39, 40, 41]
-- Reviewed blocks: 103
+- Reviewed pages: [2, 26, 35, 37, 38, 39, 41]
+- Reviewed blocks: 100
 
 ## Findings
 

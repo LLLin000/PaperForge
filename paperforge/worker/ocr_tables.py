@@ -147,7 +147,9 @@ def build_table_inventory(structured_blocks: list[dict]) -> dict[str, Any]:
         raw_label = str(block.get("raw_label", "") or "").strip()
         if role in {"table_caption", "table_caption_candidate"} or _is_validation_first_table_candidate(block):
             captions.append(block)
-        elif role in ("table_asset", "media_asset"):
+        elif role in ("table_asset", "media_asset", "figure_asset"):
+            if role == "figure_asset" and raw_label != "table":
+                continue
             if role == "media_asset":
                 bbox = block.get("bbox") or block.get("block_bbox") or [0, 0, 0, 0]
                 width = (bbox[2] - bbox[0]) if len(bbox) >= 4 else 0
@@ -181,7 +183,13 @@ def build_table_inventory(structured_blocks: list[dict]) -> dict[str, Any]:
         is_weak_explicit_caption = _is_weak_explicit_table_caption(caption)
 
         if is_validation_first_candidate and is_weak_truncated:
-            held_tables.append(
+            # Check if same-page table assets exist before holding.
+            same_page_assets = [
+                a for i,a in enumerate(assets)
+                if i not in used_asset_indices and a.get('page',0) == caption_page
+            ]
+            if not same_page_assets:
+                held_tables.append(
                 {
                     "table_id": f"held_table_{len(held_tables) + 1:03d}",
                     "caption_block_id": caption.get("block_id", ""),
@@ -196,6 +204,11 @@ def build_table_inventory(structured_blocks: list[dict]) -> dict[str, Any]:
                 }
             )
             continue
+        if is_weak_truncated:
+            # Truncated table label with same-page assets: proceed
+            # to weak-explicit matching (same as figure's truncated
+            # legend now matching to nearby assets).
+            pass
         if is_weak_explicit_caption:
             candidate_pages = [caption_page - 1, caption_page, caption_page + 1]
             pre_candidates: list[tuple[int, dict, dict]] = []
@@ -405,6 +418,14 @@ def build_table_inventory(structured_blocks: list[dict]) -> dict[str, Any]:
             consumed_block_ids.append(matched_asset.get("block_id", ""))
         consumed_block_ids.extend(note_block_ids)
         consumed_block_ids = [bid for bid in consumed_block_ids if bid]
+        bridge_block_ids = [
+            str(block.get("block_id") or "")
+            for block in structured_blocks
+            if int(block.get("page", 0) or 0) == int(caption_page or 0)
+            and block.get("bridge_eligible")
+            and str(block.get("layout_region") or "") == "display_zone"
+            and block.get("block_id")
+        ]
 
         tables.append(
             {
@@ -425,6 +446,7 @@ def build_table_inventory(structured_blocks: list[dict]) -> dict[str, Any]:
                 "note_band_bbox": note_band_bbox,
                 "note_match_reason": note_match_reason,
                 "note_confidence": note_confidence,
+                "bridge_block_ids": bridge_block_ids,
                 "consumed_block_ids": consumed_block_ids,
                 "is_continuation": is_cont,
                 "continuation_of": continuation_of,

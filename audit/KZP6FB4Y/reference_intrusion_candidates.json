@@ -10,8 +10,8 @@
     {
       "block_id": "p28:5",
       "page": 28,
-      "role": "unknown_structural",
-      "zone": "tail_nonref_hold_zone",
+      "role": "reference_item",
+      "zone": "reference_zone",
       "reason": "logical_order_between_reference_members"
     },
     {
@@ -137,7 +137,7 @@
       "block_id": "p28:23",
       "page": 28,
       "role": "reference_item",
-      "zone": "reference_zone",
+      "zone": "",
       "reason": "logical_order_between_reference_members"
     },
     {

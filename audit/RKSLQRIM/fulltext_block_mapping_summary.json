@@ -1,13 +1,13 @@
 {
-  "mappable_block_count": 255,
-  "found_count": 230,
-  "missing_count": 25,
+  "mappable_block_count": 259,
+  "found_count": 195,
+  "missing_count": 64,
   "rows": [
     {
       "block_id": "p2:1",
       "page": 2,
       "role": "paper_title",
-      "zone": "body_zone",
+      "zone": "frontmatter_main_zone",
       "render_default": true,
       "snippet": "Engineering electroactive and biocompatible tetra(aniline)-based terpolymers wit",
       "found_in_fulltext": true,
@@ -16,8 +16,8 @@
     {
       "block_id": "p2:2",
       "page": 2,
-      "role": "frontmatter_support",
-      "zone": "body_zone",
+      "role": "authors",
+      "zone": "frontmatter_main_zone",
       "render_default": true,
       "snippet": "Irrum Mushtaq, a* Iram Mushtaq, b Zareen Akhter, a* Iram Murtaza, b Samina Qamar",
       "found_in_fulltext": false,
@@ -26,8 +26,8 @@
     {
       "block_id": "p2:3",
       "page": 2,
-      "role": "frontmatter_support",
-      "zone": "body_zone",
+      "role": "affiliation",
+      "zone": "frontmatter_main_zone",
       "render_default": true,
       "snippet": "$ ^{a} $Department of Chemistry, Quaid-i-Azam University, Islamabad-45320, Pakis",
       "found_in_fulltext": false,
@@ -36,8 +36,8 @@
     {
       "block_id": "p2:4",
       "page": 2,
-      "role": "frontmatter_support",
-      "zone": "body_zone",
+      "role": "affiliation",
+      "zone": "frontmatter_main_zone",
       "render_default": true,
       "snippet": "$ ^{b} $ Department of Biochemistry, Quaid-i-Azam University, Islamabad-45320, P",
       "found_in_fulltext": false,
@@ -46,8 +46,8 @@
     {
       "block_id": "p2:5",
       "page": 2,
-      "role": "frontmatter_support",
-      "zone": "body_zone",
+      "role": "affiliation",
+      "zone": "frontmatter_main_zone",
       "render_default": true,
       "snippet": "Chemistry of Interfaces, Luleå University of Technology, SE-97187 Luleå, Sweden",
       "found_in_fulltext": false,
@@ -56,10 +56,20 @@
     {
       "block_id": "p2:6",
       "page": 2,
-      "role": "frontmatter_support",
-      "zone": "body_zone",
+      "role": "affiliation",
+      "zone": "frontmatter_main_zone",
       "render_default": true,
       "snippet": "$ ^{d} $ Department of Women’s and Children’s Health, Karolinska Institutet and ",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
+      "block_id": "p2:7",
+      "page": 2,
+      "role": "authors",
+      "zone": "frontmatter_main_zone",
+      "render_default": true,
+      "snippet": "*Corresponding authors:",
       "found_in_fulltext": false,
       "fulltext_offset": -1
     },
@@ -67,7 +77,7 @@
       "block_id": "p2:9",
       "page": 2,
       "role": "noise",
-      "zone": "body_zone",
+      "zone": "frontmatter_main_zone",
       "render_default": false,
       "snippet": "1",
       "found_in_fulltext": true,
@@ -210,8 +220,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "2.1. Materials and methods",
-      "found_in_fulltext": true,
-      "fulltext_offset": 6439
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p6:5",
@@ -230,8 +240,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "2.2. Synthesis of boc-protected amino-capped aniline tetramer (TANI)",
-      "found_in_fulltext": true,
-      "fulltext_offset": 7067
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p6:7",
@@ -241,7 +251,7 @@
       "render_default": true,
       "snippet": "The details of terpolymer synthesis steps are explained in Fig. 1. TANI was synt",
       "found_in_fulltext": true,
-      "fulltext_offset": 7136
+      "fulltext_offset": 6435
     },
     {
       "block_id": "p6:8",
@@ -261,7 +271,7 @@
       "render_default": true,
       "snippet": "FTIR (solid sample, cm⁻¹) v: 3467, 3360, 3010, 2981, 2925, 1693, 1621, 1510, 145",
       "found_in_fulltext": true,
-      "fulltext_offset": 7960
+      "fulltext_offset": 7259
     },
     {
       "block_id": "p7:2",
@@ -271,7 +281,7 @@
       "render_default": true,
       "snippet": "2.3. Synthesis of oligo (poly(ethylene glycol) fumarate) (PF-100)",
       "found_in_fulltext": true,
-      "fulltext_offset": 8128
+      "fulltext_offset": 7427
     },
     {
       "block_id": "p7:3",
@@ -290,8 +300,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "2.4. Synthesis of terpolymers (P-19, P-37)",
-      "found_in_fulltext": true,
-      "fulltext_offset": 8903
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p7:5",
@@ -300,8 +310,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "Terpolymers were synthesized by using solution polycondensation reaction as show",
-      "found_in_fulltext": true,
-      "fulltext_offset": 8946
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p7:7",
@@ -311,7 +321,7 @@
       "render_default": true,
       "snippet": "dissolved in DCM.",
       "found_in_fulltext": true,
-      "fulltext_offset": 9038
+      "fulltext_offset": 8198
     },
     {
       "block_id": "p7:8",
@@ -321,7 +331,7 @@
       "render_default": true,
       "snippet": "1. PEG (dried by azeotropic distillation with dried toluene) and TANI predetermi",
       "found_in_fulltext": true,
-      "fulltext_offset": 9056
+      "fulltext_offset": 8216
     },
     {
       "block_id": "p7:9",
@@ -331,7 +341,7 @@
       "render_default": true,
       "snippet": "Scheme 1. Synthesis of boc-protected and deprotected terpolymers",
       "found_in_fulltext": true,
-      "fulltext_offset": 9485
+      "fulltext_offset": 8645
     },
     {
       "block_id": "p7:10",
@@ -351,7 +361,7 @@
       "render_default": true,
       "snippet": "The reaction mixture was stirred at 0 °C for 1 hour and then maintained to room ",
       "found_in_fulltext": true,
-      "fulltext_offset": 9566
+      "fulltext_offset": 8726
     },
     {
       "block_id": "p8:2",
@@ -361,7 +371,7 @@
       "render_default": true,
       "snippet": "2.5. Deprotected terpolymers (L-19, L-37)",
       "found_in_fulltext": true,
-      "fulltext_offset": 10139
+      "fulltext_offset": 9299
     },
     {
       "block_id": "p8:3",
@@ -371,7 +381,7 @@
       "render_default": true,
       "snippet": "Terpolymers (P-19 and P-37) were deprotected by using TFA 50 % solution in DCM a",
       "found_in_fulltext": true,
-      "fulltext_offset": 10181
+      "fulltext_offset": 9341
     },
     {
       "block_id": "p8:4",
@@ -380,8 +390,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "2.6. Characterization of engineered terpolymers",
-      "found_in_fulltext": true,
-      "fulltext_offset": 11011
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p8:5",
@@ -390,8 +400,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "We next characterized the engineered terpolymers. First, FTIR spectra were recor",
-      "found_in_fulltext": true,
-      "fulltext_offset": 11059
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p8:6",
@@ -411,7 +421,7 @@
       "render_default": true,
       "snippet": "Hg/Hg₂Cl₂ (saturated calomel electrode) as the reference electrode and Pt wire a",
       "found_in_fulltext": true,
-      "fulltext_offset": 11795
+      "fulltext_offset": 10183
     },
     {
       "block_id": "p9:2",
@@ -421,7 +431,7 @@
       "render_default": true,
       "snippet": "2.7. In vitro hydrolytic degradation analysis",
       "found_in_fulltext": true,
-      "fulltext_offset": 13783
+      "fulltext_offset": 12171
     },
     {
       "block_id": "p9:3",
@@ -441,7 +451,7 @@
       "render_default": true,
       "snippet": "The biodegradation of the synthesized material was observed by measuring the cha",
       "found_in_fulltext": true,
-      "fulltext_offset": 13846
+      "fulltext_offset": 12234
     },
     {
       "block_id": "p10:2",
@@ -451,7 +461,7 @@
       "render_default": true,
       "snippet": "2.8. Co-culture of chondrocytes with terpolymers and cellular toxicity",
       "found_in_fulltext": true,
-      "fulltext_offset": 14176
+      "fulltext_offset": 12564
     },
     {
       "block_id": "p10:3",
@@ -461,7 +471,7 @@
       "render_default": true,
       "snippet": "ATDC-5 chondrocytes in proliferation stage were exposed to different concentrati",
       "found_in_fulltext": true,
-      "fulltext_offset": 14247
+      "fulltext_offset": 12635
     },
     {
       "block_id": "p10:4",
@@ -470,8 +480,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "2.9. Antioxidant (Radical scavenging activity) assay in vitro",
-      "found_in_fulltext": true,
-      "fulltext_offset": 15042
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p10:5",
@@ -480,8 +490,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "Antioxidant assay of the materials was determined by using a model stable free r",
-      "found_in_fulltext": true,
-      "fulltext_offset": 15104
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p10:6",
@@ -501,7 +511,7 @@
       "render_default": true,
       "snippet": "using the formula: % RSA = (A_{control} - A_{sample} / A_{Control}) × 100, where",
       "found_in_fulltext": true,
-      "fulltext_offset": 15760
+      "fulltext_offset": 13443
     },
     {
       "block_id": "p11:2",
@@ -511,7 +521,7 @@
       "render_default": true,
       "snippet": "2.10. Antioxidative effects of terpolymers in diabetic rats",
       "found_in_fulltext": true,
-      "fulltext_offset": 15991
+      "fulltext_offset": 13674
     },
     {
       "block_id": "p11:3",
@@ -521,7 +531,7 @@
       "render_default": true,
       "snippet": "All animal experiments were conducted according to international guidelines and ",
       "found_in_fulltext": true,
-      "fulltext_offset": 16051
+      "fulltext_offset": 13734
     },
     {
       "block_id": "p11:4",
@@ -530,8 +540,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "2.11. Blood glucose levels and oxidative and antioxidative profiling in the seru",
-      "found_in_fulltext": true,
-      "fulltext_offset": 17316
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p11:5",
@@ -540,8 +550,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "Blood glucose of diabetic rats was measured before and after systemic administra",
-      "found_in_fulltext": true,
-      "fulltext_offset": 17398
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p11:6",
@@ -571,7 +581,7 @@
       "render_default": true,
       "snippet": "2.12. Liver profiling, ALP analysis and histopathology of heart tissue",
       "found_in_fulltext": true,
-      "fulltext_offset": 17832
+      "fulltext_offset": 15246
     },
     {
       "block_id": "p12:3",
@@ -581,7 +591,7 @@
       "render_default": true,
       "snippet": "Levels of liver enzyme Alanine Aminotransferase (ALT) and Aspartate Aminotransfe",
       "found_in_fulltext": true,
-      "fulltext_offset": 17903
+      "fulltext_offset": 15317
     },
     {
       "block_id": "p12:4",
@@ -590,8 +600,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "2.13. Statistical analysis",
-      "found_in_fulltext": true,
-      "fulltext_offset": 18813
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p12:5",
@@ -600,8 +610,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "All statistical comparisons were performed by using GraphPad Prism 5 and statist",
-      "found_in_fulltext": true,
-      "fulltext_offset": 18840
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p12:6",
@@ -621,7 +631,7 @@
       "render_default": true,
       "snippet": "3. Results and discussion",
       "found_in_fulltext": true,
-      "fulltext_offset": 19337
+      "fulltext_offset": 16243
     },
     {
       "block_id": "p13:2",
@@ -631,7 +641,7 @@
       "render_default": true,
       "snippet": "3.1. Synthesis and characterization of electroactive terpolymers",
       "found_in_fulltext": true,
-      "fulltext_offset": 19367
+      "fulltext_offset": 16273
     },
     {
       "block_id": "p13:3",
@@ -641,7 +651,7 @@
       "render_default": true,
       "snippet": "PEG fumarate (PF-100), boc-protected terpolymers (P-19 and P-37), and deprotecte",
       "found_in_fulltext": true,
-      "fulltext_offset": 19432
+      "fulltext_offset": 16338
     },
     {
       "block_id": "p13:4",
@@ -650,8 +660,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "Representative FTIR spectra are shown in Figure 1. FTIR spectrum for P-100 (Figu",
-      "found_in_fulltext": true,
-      "fulltext_offset": 20141
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p13:5",
@@ -671,7 +681,7 @@
       "render_default": true,
       "snippet": "characteristic stretches for boc-protected TANI in respective regions. The stret",
       "found_in_fulltext": true,
-      "fulltext_offset": 21250
+      "fulltext_offset": 17064
     },
     {
       "block_id": "p14:2",
@@ -681,7 +691,17 @@
       "render_default": false,
       "snippet": "13",
       "found_in_fulltext": true,
-      "fulltext_offset": 7865
+      "fulltext_offset": 7164
+    },
+    {
+      "block_id": "p15:5",
+      "page": 15,
+      "role": "table_caption",
+      "zone": "display_zone",
+      "render_default": true,
+      "snippet": "Table 1. Feed ratio and characterization of polymer and terpolymers",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p15:6",
@@ -721,7 +741,7 @@
       "render_default": true,
       "snippet": "Electrochemical characterization of terpolymers",
       "found_in_fulltext": true,
-      "fulltext_offset": 23275
+      "fulltext_offset": 19595
     },
     {
       "block_id": "p16:4",
@@ -730,8 +750,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "We next assessed electrochemistry of the synthesized terpolymers by using UV-vis",
-      "found_in_fulltext": true,
-      "fulltext_offset": 23323
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p16:5",
@@ -740,8 +760,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "On doping of the material with CSA (ES-19 and ES-37), peak at 312 nm slightly bl",
-      "found_in_fulltext": true,
-      "fulltext_offset": 23873
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p16:6",
@@ -751,7 +771,7 @@
       "render_default": false,
       "snippet": "15",
       "found_in_fulltext": true,
-      "fulltext_offset": 7911
+      "fulltext_offset": 7210
     },
     {
       "block_id": "p17:1",
@@ -781,7 +801,7 @@
       "render_default": true,
       "snippet": "Thermal properties analysis",
       "found_in_fulltext": true,
-      "fulltext_offset": 24222
+      "fulltext_offset": 19715
     },
     {
       "block_id": "p18:2",
@@ -791,7 +811,7 @@
       "render_default": true,
       "snippet": "We performed thermal analysis of polymers and engineered terpolymers by using TG",
       "found_in_fulltext": true,
-      "fulltext_offset": 24250
+      "fulltext_offset": 19743
     },
     {
       "block_id": "p18:3",
@@ -814,6 +834,16 @@
       "fulltext_offset": 2756
     },
     {
+      "block_id": "p19:4",
+      "page": 19,
+      "role": "table_caption",
+      "zone": "display_zone",
+      "render_default": true,
+      "snippet": "Table 2. Thermal properties of the polymer and terpolymers.",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
+    },
+    {
       "block_id": "p19:6",
       "page": 19,
       "role": "body_paragraph",
@@ -831,7 +861,7 @@
       "render_default": true,
       "snippet": "WAXD analysis was carried out to observe the effect of TANI incorporation on the",
       "found_in_fulltext": true,
-      "fulltext_offset": 25729
+      "fulltext_offset": 21105
     },
     {
       "block_id": "p19:8",
@@ -851,7 +881,7 @@
       "render_default": true,
       "snippet": "increasing TANI content from 10 % to 30 %, with a shoulder appearing at 21° for ",
       "found_in_fulltext": true,
-      "fulltext_offset": 26103
+      "fulltext_offset": 21894
     },
     {
       "block_id": "p20:4",
@@ -860,8 +890,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "Aqueous self-assembly behavior",
-      "found_in_fulltext": true,
-      "fulltext_offset": 26313
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p20:5",
@@ -870,8 +900,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "We have recently reported that antioxidant terpolymers comprising of rigid TANI ",
-      "found_in_fulltext": true,
-      "fulltext_offset": 26344
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p20:6",
@@ -891,7 +921,7 @@
       "render_default": true,
       "snippet": "The SEM images (Figure 6A, 6B) showed the same trend of aggregate sizes i.e., L-",
       "found_in_fulltext": true,
-      "fulltext_offset": 27415
+      "fulltext_offset": 22195
     },
     {
       "block_id": "p21:10",
@@ -921,7 +951,7 @@
       "render_default": true,
       "snippet": "In vitro hydrolytic degradation",
       "found_in_fulltext": true,
-      "fulltext_offset": 13788
+      "fulltext_offset": 12176
     },
     {
       "block_id": "p22:2",
@@ -931,7 +961,7 @@
       "render_default": true,
       "snippet": "Terpolymers engineered herein are unique as they contain low molecular weight co",
       "found_in_fulltext": true,
-      "fulltext_offset": 28248
+      "fulltext_offset": 23028
     },
     {
       "block_id": "p22:5",
@@ -951,7 +981,7 @@
       "render_default": true,
       "snippet": "Antioxidant (Radical scavenging activity) analysis",
       "found_in_fulltext": true,
-      "fulltext_offset": 29172
+      "fulltext_offset": 23952
     },
     {
       "block_id": "p23:2",
@@ -961,7 +991,7 @@
       "render_default": true,
       "snippet": "To measure the antioxidant properties of these engineered terpolymers, DPPH scav",
       "found_in_fulltext": true,
-      "fulltext_offset": 29223
+      "fulltext_offset": 24003
     },
     {
       "block_id": "p23:3",
@@ -971,7 +1001,7 @@
       "render_default": true,
       "snippet": "We observed that the outcomes of the reaction between DPPH⁺ and NH of TANI segme",
       "found_in_fulltext": true,
-      "fulltext_offset": 29821
+      "fulltext_offset": 24601
     },
     {
       "block_id": "p23:4",
@@ -1001,7 +1031,17 @@
       "render_default": true,
       "snippet": "content and doping with CSA. Indeed, previously it has been shown that doping of",
       "found_in_fulltext": true,
-      "fulltext_offset": 30977
+      "fulltext_offset": 25470
+    },
+    {
+      "block_id": "p24:5",
+      "page": 24,
+      "role": "table_caption",
+      "zone": "tail_nonref_hold_zone",
+      "render_default": true,
+      "snippet": "Table 3. IC $ _{50} $ data of terpolymers",
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p24:7",
@@ -1011,7 +1051,7 @@
       "render_default": true,
       "snippet": "Systemic administration of terpolymers prevents ROS generation in diabetic rats",
       "found_in_fulltext": true,
-      "fulltext_offset": 31234
+      "fulltext_offset": 25727
     },
     {
       "block_id": "p24:8",
@@ -1031,7 +1071,7 @@
       "render_default": true,
       "snippet": "After confirming in vitro antioxidative effects of terpolymers as shown in Figur",
       "found_in_fulltext": true,
-      "fulltext_offset": 31397
+      "fulltext_offset": 26024
     },
     {
       "block_id": "p25:2",
@@ -1041,7 +1081,7 @@
       "render_default": true,
       "snippet": "Therapeutic scavenging activity of terpolymers in diabetic rats",
       "found_in_fulltext": true,
-      "fulltext_offset": 33361
+      "fulltext_offset": 27988
     },
     {
       "block_id": "p25:3",
@@ -1051,7 +1091,7 @@
       "render_default": false,
       "snippet": "24",
       "found_in_fulltext": true,
-      "fulltext_offset": 8848
+      "fulltext_offset": 8147
     },
     {
       "block_id": "p26:1",
@@ -1061,7 +1101,7 @@
       "render_default": true,
       "snippet": "We next measured the therapeutic scavenging activity of the synthesized terpolym",
       "found_in_fulltext": true,
-      "fulltext_offset": 33442
+      "fulltext_offset": 28069
     },
     {
       "block_id": "p26:2",
@@ -1071,7 +1111,7 @@
       "render_default": true,
       "snippet": "We noted that GSH activity was significantly suppressed in alloxan treated rats,",
       "found_in_fulltext": true,
-      "fulltext_offset": 34286
+      "fulltext_offset": 28913
     },
     {
       "block_id": "p26:3",
@@ -1081,7 +1121,7 @@
       "render_default": false,
       "snippet": "25",
       "found_in_fulltext": true,
-      "fulltext_offset": 8015
+      "fulltext_offset": 7314
     },
     {
       "block_id": "p27:1",
@@ -1091,7 +1131,7 @@
       "render_default": true,
       "snippet": "resulting into severe decrease in the total number of beta cells. All taken toge",
       "found_in_fulltext": true,
-      "fulltext_offset": 35629
+      "fulltext_offset": 30256
     },
     {
       "block_id": "p27:8",
@@ -1101,7 +1141,7 @@
       "render_default": false,
       "snippet": "26",
       "found_in_fulltext": true,
-      "fulltext_offset": 7927
+      "fulltext_offset": 7226
     },
     {
       "block_id": "p28:1",
@@ -1121,7 +1161,7 @@
       "render_default": true,
       "snippet": "Terpolymers improve liver profiling",
       "found_in_fulltext": true,
-      "fulltext_offset": 35896
+      "fulltext_offset": 30523
     },
     {
       "block_id": "p28:3",
@@ -1131,7 +1171,7 @@
       "render_default": true,
       "snippet": "We assessed liver enzymes activity in response to systemic treatment with terpol",
       "found_in_fulltext": true,
-      "fulltext_offset": 35932
+      "fulltext_offset": 30559
     },
     {
       "block_id": "p28:10",
@@ -1141,7 +1181,7 @@
       "render_default": false,
       "snippet": "Figure 10. Liver profiling in diabetic rats. Terpolymers were administered syste",
       "found_in_fulltext": true,
-      "fulltext_offset": 36711
+      "fulltext_offset": 31338
     },
     {
       "block_id": "p28:11",
@@ -1151,7 +1191,7 @@
       "render_default": false,
       "snippet": "27",
       "found_in_fulltext": true,
-      "fulltext_offset": 7840
+      "fulltext_offset": 7139
     },
     {
       "block_id": "p29:2",
@@ -1161,7 +1201,7 @@
       "render_default": true,
       "snippet": "Effects of terpolymers on bone health related markers",
       "found_in_fulltext": true,
-      "fulltext_offset": 36918
+      "fulltext_offset": 31545
     },
     {
       "block_id": "p29:3",
@@ -1171,7 +1211,7 @@
       "render_default": true,
       "snippet": "We detected high levels of ALP in the serum of alloxan-treated rats when compare",
       "found_in_fulltext": true,
-      "fulltext_offset": 36972
+      "fulltext_offset": 31599
     },
     {
       "block_id": "p29:4",
@@ -1181,7 +1221,7 @@
       "render_default": false,
       "snippet": "28",
       "found_in_fulltext": true,
-      "fulltext_offset": 7922
+      "fulltext_offset": 7221
     },
     {
       "block_id": "p30:8",
@@ -1201,7 +1241,7 @@
       "render_default": true,
       "snippet": "Effects on lipid profiling and histopathological examination of heart tissues",
       "found_in_fulltext": true,
-      "fulltext_offset": 38771
+      "fulltext_offset": 33398
     },
     {
       "block_id": "p30:10",
@@ -1210,8 +1250,8 @@
       "zone": "tail_nonref_hold_zone",
       "render_default": true,
       "snippet": "Diabetes-induced oxidative stress affects the heart health leading to various ca",
-      "found_in_fulltext": false,
-      "fulltext_offset": -1
+      "found_in_fulltext": true,
+      "fulltext_offset": 33476
     },
     {
       "block_id": "p30:11",
@@ -1221,7 +1261,7 @@
       "render_default": false,
       "snippet": "29",
       "found_in_fulltext": true,
-      "fulltext_offset": 8007
+      "fulltext_offset": 7306
     },
     {
       "block_id": "p31:1",
@@ -1251,7 +1291,7 @@
       "render_default": true,
       "snippet": "Heart tissues stained with Haematoxylin and Eosin (H&E) as seen Figure 13a show ",
       "found_in_fulltext": true,
-      "fulltext_offset": 39114
+      "fulltext_offset": 34486
     },
     {
       "block_id": "p31:10",
@@ -1271,7 +1311,7 @@
       "render_default": true,
       "snippet": "injury due to oxidative stress. Interestingly, systemic treatment with terpolyme",
       "found_in_fulltext": true,
-      "fulltext_offset": 39535
+      "fulltext_offset": 34907
     },
     {
       "block_id": "p32:12",
@@ -1301,7 +1341,7 @@
       "render_default": true,
       "snippet": "CONCLUSIONS",
       "found_in_fulltext": true,
-      "fulltext_offset": 40262
+      "fulltext_offset": 35634
     },
     {
       "block_id": "p33:2",
@@ -1311,7 +1351,7 @@
       "render_default": true,
       "snippet": "We herein report synthesis and structural characterization of TANI-based electro",
       "found_in_fulltext": true,
-      "fulltext_offset": 40274
+      "fulltext_offset": 35646
     },
     {
       "block_id": "p33:3",
@@ -1321,7 +1361,7 @@
       "render_default": true,
       "snippet": "As a proof-of-principle, the antioxidant behavior of these terpolymers was evalu",
       "found_in_fulltext": true,
-      "fulltext_offset": 40751
+      "fulltext_offset": 36123
     },
     {
       "block_id": "p33:4",
@@ -1346,32 +1386,32 @@
     {
       "block_id": "p35:1",
       "page": 35,
-      "role": "backmatter_heading",
+      "role": "section_heading",
       "zone": "body_zone",
       "render_default": true,
       "snippet": "DATA AVAILABILITY",
       "found_in_fulltext": true,
-      "fulltext_offset": 41764
+      "fulltext_offset": 37091
     },
     {
       "block_id": "p35:2",
       "page": 35,
-      "role": "backmatter_body",
+      "role": "body_paragraph",
       "zone": "body_zone",
       "render_default": true,
       "snippet": "All data supporting the findings of this study are available within the article ",
       "found_in_fulltext": true,
-      "fulltext_offset": 41835
+      "fulltext_offset": 37111
     },
     {
       "block_id": "p35:3",
       "page": 35,
-      "role": "body_paragraph",
+      "role": "backmatter_heading",
       "zone": "body_zone",
       "render_default": true,
       "snippet": "Declaration of Competing Interest",
       "found_in_fulltext": true,
-      "fulltext_offset": 41784
+      "fulltext_offset": 37317
     },
     {
       "block_id": "p35:4",
@@ -1380,18 +1420,18 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "The authors declare that they have no known competing financial interests or per",
-      "found_in_fulltext": true,
-      "fulltext_offset": 41994
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p35:5",
       "page": 35,
-      "role": "body_paragraph",
+      "role": "section_heading",
       "zone": "body_zone",
       "render_default": true,
       "snippet": "ACKNOWLEDGEMENTS",
-      "found_in_fulltext": true,
-      "fulltext_offset": 41818
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p35:6",
@@ -1400,8 +1440,8 @@
       "zone": "body_zone",
       "render_default": true,
       "snippet": "Authors highly thank the Karolinska Institutet, Stockholm Sweden., Luleå Univers",
-      "found_in_fulltext": true,
-      "fulltext_offset": 42165
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p35:7",
@@ -1411,7 +1451,7 @@
       "render_default": true,
       "snippet": "Conflicts of interest",
       "found_in_fulltext": true,
-      "fulltext_offset": 41721
+      "fulltext_offset": 37274
     },
     {
       "block_id": "p35:8",
@@ -1421,7 +1461,7 @@
       "render_default": true,
       "snippet": "The authors declare no conflicts of interest.",
       "found_in_fulltext": true,
-      "fulltext_offset": 42452
+      "fulltext_offset": 37353
     },
     {
       "block_id": "p35:9",
@@ -1431,7 +1471,7 @@
       "render_default": true,
       "snippet": "Contributions",
       "found_in_fulltext": true,
-      "fulltext_offset": 41748
+      "fulltext_offset": 37301
     },
     {
       "block_id": "p35:10",
@@ -1451,7 +1491,7 @@
       "render_default": true,
       "snippet": "REFERENCES",
       "found_in_fulltext": true,
-      "fulltext_offset": 42713
+      "fulltext_offset": 37614
     },
     {
       "block_id": "p35:12",
@@ -1461,7 +1501,7 @@
       "render_default": true,
       "snippet": "1. Adeoye AT, Ajibade TO, Oyagbemi AA, et al. The methanol leaf extract of Verno",
       "found_in_fulltext": true,
-      "fulltext_offset": 42724
+      "fulltext_offset": 37625
     },
     {
       "block_id": "p35:13",
@@ -1471,7 +1511,7 @@
       "render_default": true,
       "snippet": "2. Volpe CMO, Villar-Delfino PH, Anjos PMF, Nogueira-Machado JA. Cellular death,",
       "found_in_fulltext": true,
-      "fulltext_offset": 42880
+      "fulltext_offset": 37781
     },
     {
       "block_id": "p35:14",
@@ -1481,7 +1521,7 @@
       "render_default": true,
       "snippet": "3. Faria A, Persaud SJ. Cardiac oxidative stress in diabetes: mechanisms and the",
       "found_in_fulltext": true,
-      "fulltext_offset": 43052
+      "fulltext_offset": 37953
     },
     {
       "block_id": "p35:15",
@@ -1491,7 +1531,7 @@
       "render_default": false,
       "snippet": "34",
       "found_in_fulltext": true,
-      "fulltext_offset": 7989
+      "fulltext_offset": 7288
     },
     {
       "block_id": "p36:1",
@@ -1501,7 +1541,7 @@
       "render_default": true,
       "snippet": "4. Shiekh PA, Singh A, Kumar A. Engineering bioinspired antioxidant materials pr",
       "found_in_fulltext": true,
-      "fulltext_offset": 43213
+      "fulltext_offset": 38114
     },
     {
       "block_id": "p36:2",
@@ -1511,7 +1551,7 @@
       "render_default": true,
       "snippet": "5. Domazetovic V, Marcucci G, Iantomasi T, Brandi ML, Vincenzini MT. Oxidative s",
       "found_in_fulltext": true,
-      "fulltext_offset": 43432
+      "fulltext_offset": 38333
     },
     {
       "block_id": "p36:3",
@@ -1521,7 +1561,7 @@
       "render_default": true,
       "snippet": "6. Kalyanaraman H, Schwaerzer G, Ramdani G, et al. Protein Kinase G Activation R",
       "found_in_fulltext": true,
-      "fulltext_offset": 43619
+      "fulltext_offset": 38520
     },
     {
       "block_id": "p36:4",
@@ -1530,8 +1570,8 @@
       "zone": "reference_zone",
       "render_default": true,
       "snippet": "7. Bachewal P, Gundu C, Yerra VG, Kalvala AK, Areti A, Kumar A. Morin exerts neu",
-      "found_in_fulltext": true,
-      "fulltext_offset": 43833
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p36:5",
@@ -1540,8 +1580,8 @@
       "zone": "reference_zone",
       "render_default": true,
       "snippet": "8. Saberi Firouzi S, Namazi Sarvestani N, Bakhtiarian A, et al. Sildenafil prote",
-      "found_in_fulltext": true,
-      "fulltext_offset": 44060
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p36:6",
@@ -1550,8 +1590,8 @@
       "zone": "reference_zone",
       "render_default": true,
       "snippet": "9. Sifuentes-Franco S, Padilla-Tejeda DE, Carrillo-Ibarra S, Miranda-D, #x00ED, ",
-      "found_in_fulltext": true,
-      "fulltext_offset": 44367
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p36:7",
@@ -1561,7 +1601,7 @@
       "render_default": true,
       "snippet": "10. Cignarelli A, Genchi VA, Caruso I, et al. Diabetes and cancer: Pathophysiolo",
       "found_in_fulltext": true,
-      "fulltext_offset": 46927
+      "fulltext_offset": 41073
     },
     {
       "block_id": "p36:8",
@@ -1571,7 +1611,7 @@
       "render_default": true,
       "snippet": "11. Khansari N, Shakiba Y, Mahmoudi M. Chronic inflammation and oxidative stress",
       "found_in_fulltext": true,
-      "fulltext_offset": 44588
+      "fulltext_offset": 38734
     },
     {
       "block_id": "p36:9",
@@ -1581,7 +1621,7 @@
       "render_default": true,
       "snippet": "12. Chen J, Qin X, Zhong S, Chen S, Su W, Liu Y. Characterization of Curcumin/Cy",
       "found_in_fulltext": true,
-      "fulltext_offset": 44792
+      "fulltext_offset": 38938
     },
     {
       "block_id": "p36:10",
@@ -1591,7 +1631,7 @@
       "render_default": true,
       "snippet": "13. Larrañaga A, Isa ILM, Patil V, et al. Antioxidant functionalized polymer cap",
       "found_in_fulltext": true,
-      "fulltext_offset": 45004
+      "fulltext_offset": 39150
     },
     {
       "block_id": "p36:11",
@@ -1601,7 +1641,7 @@
       "render_default": true,
       "snippet": "14. van Lith R, Ameer GA. Chapter Ten - Antioxidant Polymers as Biomaterial. In:",
       "found_in_fulltext": true,
-      "fulltext_offset": 45153
+      "fulltext_offset": 39299
     },
     {
       "block_id": "p36:12",
@@ -1611,7 +1651,7 @@
       "render_default": true,
       "snippet": "15. Wang J, Tian L, Luo B, et al. Engineering PCL/lignin nanofibers as an antiox",
       "found_in_fulltext": true,
-      "fulltext_offset": 45330
+      "fulltext_offset": 39476
     },
     {
       "block_id": "p36:13",
@@ -1621,7 +1661,7 @@
       "render_default": true,
       "snippet": "16. Yang J, Van Lith R, Baler K, Hoshi RA, Ameer GA. A thermoresponsive biodegra",
       "found_in_fulltext": true,
-      "fulltext_offset": 45524
+      "fulltext_offset": 39670
     },
     {
       "block_id": "p36:14",
@@ -1631,7 +1671,7 @@
       "render_default": true,
       "snippet": "17. Zhu Y, Cankova Z, Iwanaszko M, Lichtor S, Mrksich M, Ameer GA. Potent lamini",
       "found_in_fulltext": true,
-      "fulltext_offset": 45692
+      "fulltext_offset": 39838
     },
     {
       "block_id": "p36:15",
@@ -1641,7 +1681,7 @@
       "render_default": true,
       "snippet": "18. Wattamwar PP, Mo Y, Wan R, Palli R, Zhang Q, Dziubla TD. Antioxidant activit",
       "found_in_fulltext": true,
-      "fulltext_offset": 45922
+      "fulltext_offset": 40068
     },
     {
       "block_id": "p36:16",
@@ -1651,7 +1691,7 @@
       "render_default": true,
       "snippet": "19. Williams SR, Lepene BS, Thatcher CD, Long TE. Synthesis and characterization",
       "found_in_fulltext": true,
-      "fulltext_offset": 46142
+      "fulltext_offset": 40288
     },
     {
       "block_id": "p36:17",
@@ -1661,7 +1701,7 @@
       "render_default": true,
       "snippet": "20. Jabeen E, Janjua NK, Ahmed S, Murtaza I, Ali T, Hameed S. Radical scavenging",
       "found_in_fulltext": true,
-      "fulltext_offset": 46360
+      "fulltext_offset": 40506
     },
     {
       "block_id": "p36:18",
@@ -1671,7 +1711,7 @@
       "render_default": true,
       "snippet": "21. Oliveira Al, Pinho C, Fonte P, Sarmento B, Dias AC. Development, characteriz",
       "found_in_fulltext": true,
-      "fulltext_offset": 46625
+      "fulltext_offset": 40771
     },
     {
       "block_id": "p36:19",
@@ -1681,7 +1721,7 @@
       "render_default": false,
       "snippet": "35",
       "found_in_fulltext": true,
-      "fulltext_offset": 10805
+      "fulltext_offset": 9965
     },
     {
       "block_id": "p37:1",
@@ -1691,7 +1731,7 @@
       "render_default": true,
       "snippet": "22. Wei Z, Faul CF. Aniline oligomers–architecture, function and new opportuniti",
       "found_in_fulltext": true,
-      "fulltext_offset": 47125
+      "fulltext_offset": 41271
     },
     {
       "block_id": "p37:2",
@@ -1701,7 +1741,7 @@
       "render_default": true,
       "snippet": "23. Baheiraei N, Yeganeh H, Ai J, Gharibi R, Azami M, Faghihi F. Synthesis, char",
       "found_in_fulltext": true,
-      "fulltext_offset": 47290
+      "fulltext_offset": 41436
     },
     {
       "block_id": "p37:3",
@@ -1711,7 +1751,7 @@
       "render_default": true,
       "snippet": "24. Cui H, Liu Y, Cheng Y, et al. In vitro study of electroactive tetraaniline-c",
       "found_in_fulltext": true,
-      "fulltext_offset": 47560
+      "fulltext_offset": 41706
     },
     {
       "block_id": "p37:4",
@@ -1720,8 +1760,8 @@
       "zone": "reference_zone",
       "render_default": true,
       "snippet": "25. Arioz I, Erol O, Bakan G, et al. Biocompatible electroactive tetra (aniline)",
-      "found_in_fulltext": true,
-      "fulltext_offset": 47743
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p37:5",
@@ -1730,8 +1770,8 @@
       "zone": "reference_zone",
       "render_default": true,
       "snippet": "26. Zarrintaj P, Bakhshandeh B, Saeb MR, et al. Oligoaniline-based conductive bi",
-      "found_in_fulltext": true,
-      "fulltext_offset": 47933
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p37:6",
@@ -1740,8 +1780,8 @@
       "zone": "reference_zone",
       "render_default": true,
       "snippet": "27. Qu J, Zhao X, Liang Y, Xu Y, Ma PX, Guo B. Degradable conductive injectable ",
-      "found_in_fulltext": true,
-      "fulltext_offset": 48082
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p37:7",
@@ -1751,7 +1791,7 @@
       "render_default": true,
       "snippet": "28. Li M, Chen J, Shi M, Zhang H, Ma PX, Guo B. Electroactive anti-oxidant polyu",
       "found_in_fulltext": true,
-      "fulltext_offset": 50550
+      "fulltext_offset": 44149
     },
     {
       "block_id": "p37:8",
@@ -1761,7 +1801,7 @@
       "render_default": true,
       "snippet": "29. Dong R, Zhao X, Guo B, Ma PX. Self-healing conductive injectable hydrogels w",
       "found_in_fulltext": true,
-      "fulltext_offset": 50775
+      "fulltext_offset": 44374
     },
     {
       "block_id": "p37:9",
@@ -1771,7 +1811,7 @@
       "render_default": true,
       "snippet": "30. Guo B, Qu J, Zhao X, Zhang M. Degradable conductive self-healing hydrogels b",
       "found_in_fulltext": true,
-      "fulltext_offset": 48290
+      "fulltext_offset": 41889
     },
     {
       "block_id": "p37:10",
@@ -1781,7 +1821,7 @@
       "render_default": true,
       "snippet": "31. Alconcel SN, Baas AS, Maynard HD. FDA-approved poly (ethylene glycol)-protei",
       "found_in_fulltext": true,
-      "fulltext_offset": 48542
+      "fulltext_offset": 42141
     },
     {
       "block_id": "p37:11",
@@ -1791,7 +1831,7 @@
       "render_default": true,
       "snippet": "32. Sheikhpour M, Barani L, Kasaeian A. Biomimetics in drug delivery systems: A ",
       "found_in_fulltext": true,
-      "fulltext_offset": 48674
+      "fulltext_offset": 42273
     },
     {
       "block_id": "p37:12",
@@ -1801,7 +1841,7 @@
       "render_default": true,
       "snippet": "33. Manavitehrani I, Fathi A, Badr H, Daly S, Negahi Shirazi A, Dehghani F. Biom",
       "found_in_fulltext": true,
-      "fulltext_offset": 48818
+      "fulltext_offset": 42417
     },
     {
       "block_id": "p37:13",
@@ -1811,7 +1851,7 @@
       "render_default": true,
       "snippet": "34. Ahn CB, Kim Y, Park SJ, Hwang Y, Lee JW. Development of arginine-glycine-asp",
       "found_in_fulltext": true,
-      "fulltext_offset": 48967
+      "fulltext_offset": 42566
     },
     {
       "block_id": "p37:14",
@@ -1821,7 +1861,7 @@
       "render_default": true,
       "snippet": "35. Doulabi AH, Mirzadeh H, Imani M, Bagheri-Khoulenjani S. Chitosan/polyethylen",
       "found_in_fulltext": true,
-      "fulltext_offset": 49212
+      "fulltext_offset": 42811
     },
     {
       "block_id": "p37:15",
@@ -1831,7 +1871,7 @@
       "render_default": true,
       "snippet": "36. Guo Y, Lv Z, Huo Y, et al. A biodegradable functional water-responsive shape",
       "found_in_fulltext": true,
-      "fulltext_offset": 49449
+      "fulltext_offset": 43048
     },
     {
       "block_id": "p37:16",
@@ -1841,7 +1881,7 @@
       "render_default": true,
       "snippet": "37. Koosehgol S, Ebrahimian-Hosseinabadi M, Alizadeh M, Zamanian A. Preparation ",
       "found_in_fulltext": true,
-      "fulltext_offset": 49622
+      "fulltext_offset": 43221
     },
     {
       "block_id": "p37:17",
@@ -1851,7 +1891,7 @@
       "render_default": true,
       "snippet": "38. Shahbazi S, Zamanian A, Pazouki M, Jafari Y. Introducing an attractive metho",
       "found_in_fulltext": true,
-      "fulltext_offset": 49872
+      "fulltext_offset": 43471
     },
     {
       "block_id": "p37:18",
@@ -1861,7 +1901,7 @@
       "render_default": true,
       "snippet": "39. Šilhavý J, Zídek V, Mlejnek P, et al. Fumaric acid esters can block pro-infl",
       "found_in_fulltext": true,
-      "fulltext_offset": 50132
+      "fulltext_offset": 43731
     },
     {
       "block_id": "p37:19",
@@ -1871,7 +1911,7 @@
       "render_default": true,
       "snippet": "40. Teng Y, Giambini H, Rezaei A, et al. Poly (Propylene Fumarate)–Hydroxyapatit",
       "found_in_fulltext": true,
-      "fulltext_offset": 50352
+      "fulltext_offset": 43951
     },
     {
       "block_id": "p37:20",
@@ -1881,7 +1921,7 @@
       "render_default": false,
       "snippet": "36",
       "found_in_fulltext": true,
-      "fulltext_offset": 7996
+      "fulltext_offset": 7295
     },
     {
       "block_id": "p38:1",
@@ -1891,7 +1931,7 @@
       "render_default": true,
       "snippet": "41. Ali T, Shaheen F, Mahmud M, et al. Serotonin-promoted elevation of ROS level",
       "found_in_fulltext": true,
-      "fulltext_offset": 51002
+      "fulltext_offset": 44601
     },
     {
       "block_id": "p38:2",
@@ -1901,7 +1941,7 @@
       "render_default": true,
       "snippet": "42. Casey M, Leonard J, Lygo B, Procter G. Purification and Drying of Solvents. ",
       "found_in_fulltext": true,
-      "fulltext_offset": 51181
+      "fulltext_offset": 44780
     },
     {
       "block_id": "p38:3",
@@ -1911,7 +1951,7 @@
       "render_default": true,
       "snippet": "43. Eelkema R, Anderson HL. Synthesis of End-Functionalized Polyanilines. Macrom",
       "found_in_fulltext": true,
-      "fulltext_offset": 51336
+      "fulltext_offset": 44935
     },
     {
       "block_id": "p38:4",
@@ -1920,8 +1960,8 @@
       "zone": "reference_zone",
       "render_default": true,
       "snippet": "44. Chen X, Zhou X-Y, Wu H, Lei Y-Z, Li J-H. Highly efficient reduction of nitro",
-      "found_in_fulltext": true,
-      "fulltext_offset": 51441
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p38:5",
@@ -1930,8 +1970,8 @@
       "zone": "reference_zone",
       "render_default": true,
       "snippet": "45. Kinard LA, Kasper FK, Mikos AG. Synthesis of oligo (poly (ethylene glycol) f",
-      "found_in_fulltext": true,
-      "fulltext_offset": 51687
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p38:6",
@@ -1940,8 +1980,8 @@
       "zone": "reference_zone",
       "render_default": true,
       "snippet": "46. Wang Q, He W, Huang J, et al. Synthesis of water soluble, biodegradable, and",
-      "found_in_fulltext": true,
-      "fulltext_offset": 51810
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p38:7",
@@ -1951,7 +1991,7 @@
       "render_default": true,
       "snippet": "47. Coburn JM, Bernstein N, Bhattacharya R, Aich U, Yarema KJ, Elisseeff JH. Dif",
       "found_in_fulltext": true,
-      "fulltext_offset": 52039
+      "fulltext_offset": 45040
     },
     {
       "block_id": "p38:8",
@@ -1961,7 +2001,7 @@
       "render_default": true,
       "snippet": "48. Chrysis D, Zaman F, Chagin AS, Takigawa M, Savendahl L. Dexamethasone induce",
       "found_in_fulltext": true,
-      "fulltext_offset": 52272
+      "fulltext_offset": 45273
     },
     {
       "block_id": "p38:9",
@@ -1971,7 +2011,7 @@
       "render_default": true,
       "snippet": "49. Nakatani S, Mano H, Im R, Shimizu J, Wada M. Glucosamine regulates different",
       "found_in_fulltext": true,
-      "fulltext_offset": 52533
+      "fulltext_offset": 45534
     },
     {
       "block_id": "p38:10",
@@ -1981,7 +2021,7 @@
       "render_default": true,
       "snippet": "50. Cui H, Cui L, Zhang P, Huang Y, Wei Y, Chen X. In Situ Electroactive and Ant",
       "found_in_fulltext": true,
-      "fulltext_offset": 52687
+      "fulltext_offset": 45688
     },
     {
       "block_id": "p38:11",
@@ -1991,7 +2031,7 @@
       "render_default": true,
       "snippet": "51. Hayashi I, Morishita Y, Imai K, Nakamura M, Nakachi K, Hayashi T. High-throu",
       "found_in_fulltext": true,
-      "fulltext_offset": 52915
+      "fulltext_offset": 45916
     },
     {
       "block_id": "p38:12",
@@ -2001,7 +2041,7 @@
       "render_default": true,
       "snippet": "52. Jevremović S, Petrić M, Živković S, Trifunović M, Subotić A. Superoxide dism",
       "found_in_fulltext": true,
-      "fulltext_offset": 53146
+      "fulltext_offset": 46147
     },
     {
       "block_id": "p38:13",
@@ -2011,7 +2051,7 @@
       "render_default": true,
       "snippet": "53. Ali T, Mushtaq I, Maryam S, et al. Interplay of N acetyl cysteine and melato",
       "found_in_fulltext": true,
-      "fulltext_offset": 53378
+      "fulltext_offset": 46379
     },
     {
       "block_id": "p38:14",
@@ -2021,7 +2061,7 @@
       "render_default": true,
       "snippet": "54. Tirkey N, Pilkhwal S, Kuhad A, Chopra K. Hesperidin, a citrus bioflavonoid, ",
       "found_in_fulltext": true,
-      "fulltext_offset": 53601
+      "fulltext_offset": 46602
     },
     {
       "block_id": "p38:15",
@@ -2031,7 +2071,7 @@
       "render_default": true,
       "snippet": "55. Buege JA, Aust SD. [30] Microsomal lipid peroxidation. Methods in enzymology",
       "found_in_fulltext": true,
-      "fulltext_offset": 53794
+      "fulltext_offset": 46795
     },
     {
       "block_id": "p38:16",
@@ -2041,7 +2081,7 @@
       "render_default": true,
       "snippet": "56. Guo BL, Finne-Wistrand A, Albertsson AC. Universal Two-Step Approach to Degr",
       "found_in_fulltext": true,
-      "fulltext_offset": 53899
+      "fulltext_offset": 46900
     },
     {
       "block_id": "p38:17",
@@ -2051,7 +2091,7 @@
       "render_default": true,
       "snippet": "57. Jo S, Shin H, Shung AK, Fisher JP, Mikos AG. Synthesis and characterization ",
       "found_in_fulltext": true,
-      "fulltext_offset": 54169
+      "fulltext_offset": 47170
     },
     {
       "block_id": "p38:18",
@@ -2061,7 +2101,7 @@
       "render_default": true,
       "snippet": "58. Cui H, Shao J, Wang Y, Zhang P, Chen X, Wei Y. PLA-PEG-PLA and its electroac",
       "found_in_fulltext": true,
-      "fulltext_offset": 54334
+      "fulltext_offset": 47335
     },
     {
       "block_id": "p38:19",
@@ -2071,7 +2111,7 @@
       "render_default": true,
       "snippet": "59. Pang Z, Fu J, Lv P, Huang F, Wei Q. Effect of CSA concentration on the ammon",
       "found_in_fulltext": true,
-      "fulltext_offset": 54543
+      "fulltext_offset": 47544
     },
     {
       "block_id": "p38:20",
@@ -2091,7 +2131,7 @@
       "render_default": true,
       "snippet": "60. Mushtaq I, Akhter Z, Shah FU. Tunable Self-Assembled Nanostructures of Elect",
       "found_in_fulltext": true,
-      "fulltext_offset": 54732
+      "fulltext_offset": 47733
     },
     {
       "block_id": "p39:2",
@@ -2101,7 +2141,7 @@
       "render_default": true,
       "snippet": "61. Lyu W, Alotaibi M, Bell OA, et al. An addressable packing parameter approach",
       "found_in_fulltext": true,
-      "fulltext_offset": 54918
+      "fulltext_offset": 47919
     },
     {
       "block_id": "p39:3",
@@ -2111,7 +2151,7 @@
       "render_default": true,
       "snippet": "62. Wang H, Guo P, Han Y. Synthesis and surface morphology of tetraaniline-block",
       "found_in_fulltext": true,
-      "fulltext_offset": 55112
+      "fulltext_offset": 48113
     },
     {
       "block_id": "p39:4",
@@ -2120,8 +2160,8 @@
       "zone": "reference_zone",
       "render_default": true,
       "snippet": "63. Margulis K, Zhang X, Joubert LM, et al. Formation of Polymeric Nanocubes by ",
-      "found_in_fulltext": true,
-      "fulltext_offset": 55279
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p39:5",
@@ -2130,8 +2170,8 @@
       "zone": "reference_zone",
       "render_default": true,
       "snippet": "64. Guo BL, Glavas L, Albertsson AC. Biodegradable and electrically conducting p",
-      "found_in_fulltext": true,
-      "fulltext_offset": 55476
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p39:6",
@@ -2140,8 +2180,8 @@
       "zone": "reference_zone",
       "render_default": true,
       "snippet": "65. Deepshikha, Basu T. Synthesis and characterisation of nanostructured conduct",
-      "found_in_fulltext": true,
-      "fulltext_offset": 55625
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p39:7",
@@ -2151,7 +2191,7 @@
       "render_default": true,
       "snippet": "66. Haidara MA, Yassin HZ, Rateb M, Ammar H, Zorkani MA. Role of oxidative stres",
       "found_in_fulltext": true,
-      "fulltext_offset": 55814
+      "fulltext_offset": 48280
     },
     {
       "block_id": "p39:8",
@@ -2161,7 +2201,7 @@
       "render_default": true,
       "snippet": "67. Wang X, Tao L, Hai CX. Redox-regulating role of insulin: the essence of insu",
       "found_in_fulltext": true,
-      "fulltext_offset": 56010
+      "fulltext_offset": 48476
     },
     {
       "block_id": "p39:9",
@@ -2171,7 +2211,7 @@
       "render_default": true,
       "snippet": "68. Whiting PH, Kalansooriya A, Holbrook I, Haddad F, Jennings PE. The relations",
       "found_in_fulltext": true,
-      "fulltext_offset": 56139
+      "fulltext_offset": 48605
     },
     {
       "block_id": "p39:10",
@@ -2181,7 +2221,7 @@
       "render_default": true,
       "snippet": "69. Sekhar RV, McKay SV, Patel SG, et al. Glutathione Synthesis Is Diminished in",
       "found_in_fulltext": true,
-      "fulltext_offset": 56339
+      "fulltext_offset": 48805
     },
     {
       "block_id": "p39:11",
@@ -2191,7 +2231,7 @@
       "render_default": true,
       "snippet": "70. Droge W. Free radicals in the physiological control of cell function. Physio",
       "found_in_fulltext": true,
-      "fulltext_offset": 56552
+      "fulltext_offset": 49018
     },
     {
       "block_id": "p39:12",
@@ -2201,7 +2241,7 @@
       "render_default": true,
       "snippet": "71. Fiory F, Parrillo L, Raciti GA, et al. PED/PEA-15 Inhibits Hydrogen Peroxide",
       "found_in_fulltext": true,
-      "fulltext_offset": 58441
+      "fulltext_offset": 50907
     },
     {
       "block_id": "p39:13",
@@ -2211,7 +2251,7 @@
       "render_default": true,
       "snippet": "72. Xie M, Wang L, Ge J, Guo B, Ma PX. Strong electroactive biodegradable shape ",
       "found_in_fulltext": true,
-      "fulltext_offset": 56653
+      "fulltext_offset": 49119
     },
     {
       "block_id": "p39:14",
@@ -2221,7 +2261,7 @@
       "render_default": true,
       "snippet": "73. Nanke Y, Kotake S, Akama H, Kamatani N. Alkaline phosphatase in rheumatoid a",
       "found_in_fulltext": true,
-      "fulltext_offset": 56889
+      "fulltext_offset": 49355
     },
     {
       "block_id": "p39:15",
@@ -2231,7 +2271,7 @@
       "render_default": true,
       "snippet": "74. Chen SCC, Tsai SP, Jhao JY, Jiang WK, Tsao CK, Chang LY. Liver Fat, Hepatic ",
       "found_in_fulltext": true,
-      "fulltext_offset": 57125
+      "fulltext_offset": 49591
     },
     {
       "block_id": "p39:16",
@@ -2241,7 +2281,7 @@
       "render_default": true,
       "snippet": "75. Akkiraju H, Nohe A. Role of Chondrocytes in Cartilage Formation, Progression",
       "found_in_fulltext": true,
-      "fulltext_offset": 57335
+      "fulltext_offset": 49801
     },
     {
       "block_id": "p39:17",
@@ -2251,7 +2291,7 @@
       "render_default": true,
       "snippet": "76. Zhou X, von der Mark K, Henry S, Norton W, Adams H, de Crombrugghe B. Chondr",
       "found_in_fulltext": true,
-      "fulltext_offset": 57488
+      "fulltext_offset": 49954
     },
     {
       "block_id": "p39:18",
@@ -2261,7 +2301,7 @@
       "render_default": true,
       "snippet": "77. Smeriglio P, Lai JH, Yang F, Bhutani N. 3D Hydrogel Scaffolds for Articular ",
       "found_in_fulltext": true,
-      "fulltext_offset": 57719
+      "fulltext_offset": 50185
     },
     {
       "block_id": "p39:19",
@@ -2271,7 +2311,7 @@
       "render_default": true,
       "snippet": "78. Zaman F, Chrysis D, Huntjens K, Fadeel B, Savendahl L. Ablation of the pro-a",
       "found_in_fulltext": true,
-      "fulltext_offset": 57861
+      "fulltext_offset": 50327
     },
     {
       "block_id": "p39:20",
@@ -2281,7 +2321,7 @@
       "render_default": true,
       "snippet": "79. Zaman F, Chrysis D, Huntjens K, et al. Dexamethasone differentially regulate",
       "found_in_fulltext": true,
-      "fulltext_offset": 58052
+      "fulltext_offset": 50518
     },
     {
       "block_id": "p39:21",
@@ -2291,7 +2331,7 @@
       "render_default": true,
       "snippet": "80. Zaman F, Zhao Y, Celvin B, et al. Humanin is a novel regulator of Hedgehog s",
       "found_in_fulltext": true,
-      "fulltext_offset": 58257
+      "fulltext_offset": 50723
     },
     {
       "block_id": "p39:22",
@@ -2311,7 +2351,7 @@
       "render_default": true,
       "snippet": "81. Pushparaj P, Tan CH, Tan BKH. Effects of Averrhoa bilimbi leaf extract on bl",
       "found_in_fulltext": true,
-      "fulltext_offset": 58617
+      "fulltext_offset": 51083
     },
     {
       "block_id": "p40:2",
@@ -2321,7 +2361,7 @@
       "render_default": true,
       "snippet": "82. Bray TM. Dietary antioxidants and assessment of oxidative stress. Nutrition ",
       "found_in_fulltext": true,
-      "fulltext_offset": 58785
+      "fulltext_offset": 51251
     },
     {
       "block_id": "p40:3",
@@ -2331,7 +2371,7 @@
       "render_default": true,
       "snippet": "83. Bhaskar A, Kumar A. Antihyperglycemic, antioxidant and hypolipidemic effect ",
       "found_in_fulltext": true,
-      "fulltext_offset": 58881
+      "fulltext_offset": 51347
     },
     {
       "block_id": "p40:4",
@@ -2340,8 +2380,8 @@
       "zone": "reference_zone",
       "render_default": true,
       "snippet": "84. Rosa EVC, Valgas C, Souza-Sierra MM, Corrëa AX, Radetski CM. Biomass growth,",
-      "found_in_fulltext": true,
-      "fulltext_offset": 59101
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p40:5",
@@ -2350,8 +2390,8 @@
       "zone": "reference_zone",
       "render_default": true,
       "snippet": "85. Ayyasamy R, Leelavinothan P. Myrtenal alleviates hyperglycaemia, hyperlipida",
-      "found_in_fulltext": true,
-      "fulltext_offset": 59372
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p40:6",
@@ -2360,8 +2400,8 @@
       "zone": "reference_zone",
       "render_default": true,
       "snippet": "86. Babukumar S, Vinothkumar V, Sankaranarayanan C, Srinivasan S. Geraniol, a na",
-      "found_in_fulltext": true,
-      "fulltext_offset": 59564
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p40:7",
@@ -2371,7 +2411,7 @@
       "render_default": true,
       "snippet": "87. Giacco F, Brownlee M. Oxidative stress and diabetic complications. Circulati",
       "found_in_fulltext": true,
-      "fulltext_offset": 59827
+      "fulltext_offset": 51567
     },
     {
       "block_id": "p40:8",
@@ -2381,7 +2421,7 @@
       "render_default": true,
       "snippet": "88. Shen GX. Oxidative stress and diabetic cardiovascular disorders: roles of mi",
       "found_in_fulltext": true,
-      "fulltext_offset": 59937
+      "fulltext_offset": 51677
     },
     {
       "block_id": "p40:9",
@@ -2391,7 +2431,7 @@
       "render_default": true,
       "snippet": "89. Folli F, Corradi D, Fanti P, et al. The role of oxidative stress in the path",
       "found_in_fulltext": true,
-      "fulltext_offset": 60082
+      "fulltext_offset": 51822
     },
     {
       "block_id": "p40:10",
@@ -2401,7 +2441,7 @@
       "render_default": true,
       "snippet": "90. Fang WJ, Wang CJ, He Y, Zhou YL, Peng XD, Liu SK. Resveratrol alleviates dia",
       "found_in_fulltext": true,
-      "fulltext_offset": 60332
+      "fulltext_offset": 52072
     },
     {
       "block_id": "p40:11",
@@ -2411,7 +2451,7 @@
       "render_default": false,
       "snippet": "39",
       "found_in_fulltext": true,
-      "fulltext_offset": 7917
+      "fulltext_offset": 7216
     },
     {
       "block_id": "p41:1",
@@ -2421,7 +2461,7 @@
       "render_default": true,
       "snippet": "Supporting Information",
       "found_in_fulltext": true,
-      "fulltext_offset": 60563
+      "fulltext_offset": 52303
     },
     {
       "block_id": "p41:2",
@@ -2431,7 +2471,7 @@
       "render_default": true,
       "snippet": "Electroactive and Biocompatible Tetra(aniline)-Based Terpolymers as Intrinsic An",
       "found_in_fulltext": true,
-      "fulltext_offset": 60586
+      "fulltext_offset": 52326
     },
     {
       "block_id": "p41:5",
@@ -2466,7 +2506,7 @@
     {
       "block_id": "p42:2",
       "page": 42,
-      "role": "media_asset",
+      "role": "figure_asset",
       "zone": "",
       "render_default": true,
       "snippet": "<table><tr><td>Experimental Group</td><td>Initial Glucose Level</td><td>Final Gl",
@@ -2491,7 +2531,7 @@
       "render_default": true,
       "snippet": "Graphical abstract",
       "found_in_fulltext": true,
-      "fulltext_offset": 60790
+      "fulltext_offset": 52538
     },
     {
       "block_id": "p43:3",
@@ -2501,7 +2541,7 @@
       "render_default": true,
       "snippet": "42",
       "found_in_fulltext": true,
-      "fulltext_offset": 7058
+      "fulltext_offset": 8130
     },
     {
       "block_id": "p44:1",
@@ -2511,7 +2551,7 @@
       "render_default": true,
       "snippet": "Highlights",
       "found_in_fulltext": true,
-      "fulltext_offset": 60832
+      "fulltext_offset": 52577
     },
     {
       "block_id": "p44:2",
@@ -2521,7 +2561,7 @@
       "render_default": true,
       "snippet": "- Novel class of electroactive tetra(aniline)-based terpolymers which are not on",
       "found_in_fulltext": true,
-      "fulltext_offset": 61010
+      "fulltext_offset": 52666
     },
     {
       "block_id": "p44:3",
@@ -2531,7 +2571,7 @@
       "render_default": true,
       "snippet": "• The tested terpolymers showed high antioxidative activity in diabetic rats.",
       "found_in_fulltext": true,
-      "fulltext_offset": 60843
+      "fulltext_offset": 52588
     },
     {
       "block_id": "p44:4",
@@ -2540,8 +2580,8 @@
       "zone": "post_reference_backmatter_zone",
       "render_default": true,
       "snippet": "- These terpolymers present a new strategy for the development of tuneable antio",
-      "found_in_fulltext": true,
-      "fulltext_offset": 60921
+      "found_in_fulltext": false,
+      "fulltext_offset": -1
     },
     {
       "block_id": "p44:5",
@@ -2551,7 +2591,7 @@
       "render_default": true,
       "snippet": "43",
       "found_in_fulltext": true,
-      "fulltext_offset": 7437
+      "fulltext_offset": 6736
     }
   ]
 }

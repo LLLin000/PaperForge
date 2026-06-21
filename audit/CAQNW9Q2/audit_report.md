@@ -7,26 +7,6 @@
 
 ## Findings
 
-- `critical` `reference_span_error`: block appears inside the logical reference reading-order region
-- `critical` `reference_span_error`: block appears inside the logical reference reading-order region
-- `critical` `reference_span_error`: block appears inside the logical reference reading-order region
-- `critical` `reference_span_error`: block appears inside the logical reference reading-order region
-- `critical` `reference_span_error`: block appears inside the logical reference reading-order region
-- `critical` `reference_span_error`: block appears inside the logical reference reading-order region
-- `critical` `reference_span_error`: block appears inside the logical reference reading-order region
-- `critical` `reference_span_error`: block appears inside the logical reference reading-order region
-- `critical` `reference_span_error`: block appears inside the logical reference reading-order region
-- `critical` `reference_span_error`: block appears inside the logical reference reading-order region
-- `critical` `reference_span_error`: block appears inside the logical reference reading-order region
-- `critical` `reference_span_error`: block appears inside the logical reference reading-order region
-- `critical` `reference_span_error`: block appears inside the logical reference reading-order region
-- `critical` `reference_span_error`: block appears inside the logical reference reading-order region
-- `critical` `reference_span_error`: block appears inside the logical reference reading-order region
-- `critical` `reference_span_error`: block appears inside the logical reference reading-order region
-- `critical` `reference_span_error`: block appears inside the logical reference reading-order region
-- `critical` `reference_span_error`: block appears inside the logical reference reading-order region
-- `critical` `reference_span_error`: block appears inside the logical reference reading-order region
-- `critical` `reference_span_error`: block appears inside the logical reference reading-order region
 - `major` `same_page_boundary_error`: page contains mixed body/reference/tail signals
 - `minor` `render_mapping_error`: some render-default blocks are not easily mapped into the current fulltext output
 

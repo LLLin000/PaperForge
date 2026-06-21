@@ -419,13 +419,6 @@
       "role": "reference_item",
       "zone": "reference_zone",
       "reason": "logical_order_between_reference_members"
-    },
-    {
-      "block_id": "p15:4",
-      "page": 15,
-      "role": "noise",
-      "zone": "reference_zone",
-      "reason": "logical_order_between_reference_members"
     }
   ]
 }

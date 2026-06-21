@@ -367,7 +367,7 @@
     {
       "block_id": "p3:13",
       "truth_role": "figure_asset",
-      "pipe_role": "figure_asset",
+      "pipe_role": "media_asset",
       "pipe_zone": "",
       "pipe_text_len": 0,
       "role_match": true,
