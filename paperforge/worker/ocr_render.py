@@ -30,6 +30,135 @@ _BACKMATTER_HEADING_KEYWORDS: frozenset[str] = frozenset(
 )
 
 
+def _block_font_size(block: dict) -> float | None:
+    sig = block.get("span_signature") or {}
+    fs = sig.get("font_size")
+    if fs is not None:
+        return float(fs)
+    meta = block.get("span_metadata")
+    if isinstance(meta, dict) and meta.get("size") is not None:
+        return float(meta["size"])
+    if isinstance(meta, list):
+        sizes = [
+            float(s["size"]) for s in meta
+            if isinstance(s, dict) and s.get("size") is not None
+        ]
+        if sizes:
+            return sorted(sizes)[len(sizes) // 2]
+    return None
+
+
+def _is_near_body_flow(
+    fn_bbox: list[float],
+    body_blocks: list[dict],
+    page_height: float,
+) -> bool:
+    fn_x1, fn_y1, fn_x2, fn_y2 = fn_bbox[0], fn_bbox[1], fn_bbox[2], fn_bbox[3]
+    fn_width = max(1.0, fn_x2 - fn_x1)
+    if fn_y1 > page_height * 0.82:
+        return False
+    for body in body_blocks:
+        bb = body.get("bbox") or body.get("block_bbox") or []
+        if len(bb) < 4:
+            continue
+        bx1, by1, bx2, by2 = bb[0], bb[1], bb[2], bb[3]
+        h_overlap = max(0.0, min(fn_x2, bx2) - max(fn_x1, bx1))
+        x_aligned = h_overlap / fn_width >= 0.5
+        if not x_aligned:
+            continue
+        overlaps_y = fn_y1 < by2 and fn_y2 > by1
+        gap = fn_y1 - by2
+        near_below = 0 <= gap <= page_height * 0.08
+        if overlaps_y or near_below:
+            return True
+    return False
+
+
+_BOILERPLATE_MARKERS = frozenset({
+    "copyright", "\u00a9", "all rights reserved", "downloaded from",
+    "published by", "received:", "accepted:",
+})
+
+_POSITIVE_CALLOUT_MARKERS = frozenset({
+    "correspondence",
+    "corresponding author",
+    "e-mail",
+    "email",
+    "department",
+    "university",
+    "institute",
+    "affiliation",
+    "address",
+    "these authors contributed",
+    "contributed equally",
+})
+
+
+def _convert_footnotes_to_callouts(blocks: list[dict]) -> list[dict]:
+    body_blocks = [b for b in blocks if b.get("role") == "body_paragraph"]
+    body_fonts_by_page: dict[int, list[float]] = {}
+    for body in body_blocks:
+        p = int(body.get("page", 0) or 0)
+        fs = _block_font_size(body)
+        if fs is not None:
+            body_fonts_by_page.setdefault(p, []).append(fs)
+    all_body_fonts = [fs for sizes in body_fonts_by_page.values() for fs in sizes]
+    if not all_body_fonts:
+        return blocks
+
+    result = list(blocks)
+    for i, b in enumerate(result):
+        if b.get("role") != "footnote":
+            continue
+        bbox = b.get("bbox") or b.get("block_bbox") or []
+        if len(bbox) < 4:
+            continue
+
+        raw_text = str(b.get("text", "") or "")
+        text_lower = raw_text.lower()
+
+        if any(m in text_lower for m in _BOILERPLATE_MARKERS):
+            continue
+
+        has_positive = any(m in text_lower for m in _POSITIVE_CALLOUT_MARKERS)
+        has_symbol = any(sym in raw_text for sym in ("\u2020", "*", "\u2021", "\u00a7"))
+        if not (has_positive or has_symbol):
+            continue
+
+        fn_page = int(b.get("page", 0) or 0)
+        page_body_fonts = body_fonts_by_page.get(fn_page) or all_body_fonts
+        body_font_median = sorted(page_body_fonts)[len(page_body_fonts) // 2]
+        fn_fs = _block_font_size(b)
+        if fn_fs is None or fn_fs >= body_font_median * 0.9:
+            continue
+
+        page_body_blocks = [bb for bb in body_blocks if int(bb.get("page", 0) or 0) == fn_page]
+        page_height = max(
+            (
+                float(bb.get("page_height") or 0)
+                for bb in blocks
+                if int(bb.get("page", 0) or 0) == fn_page
+            ),
+            default=0.0,
+        ) or 1500.0
+
+        if not _is_near_body_flow(bbox, page_body_blocks, page_height):
+            continue
+
+        result[i] = dict(b)
+        result[i]["role"] = "structured_insert"
+        from paperforge.worker.ocr_decisions import record_decision
+        record_decision(
+            result[i],
+            stage="footnote_to_callout",
+            old_role="footnote",
+            new_role="structured_insert",
+            reason=f"footnote near body flow font={fn_fs:.1f} < body={body_font_median:.1f}",
+        )
+
+    return result
+
+
 def _should_suppress_frontmatter_heading(text: str) -> bool:
     lower = text.strip().lower()
     if not lower:
@@ -1136,6 +1265,8 @@ def render_fulltext_markdown(
             if old_role != new_role:
                 block["role"] = new_role
                 block["role_confidence"] = new_blocks[i].get("role_confidence", block.get("role_confidence", 0.5))
+
+    structured_blocks = _convert_footnotes_to_callouts(structured_blocks)
 
     style_profiles = _build_heading_style_profiles(structured_blocks)
 

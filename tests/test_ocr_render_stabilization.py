@@ -1229,3 +1229,212 @@ def test_tail_page_backmatter_headings_claim_same_column_body_paragraphs() -> No
     refs_idx = md.index("## REFERENCES")
 
     assert funding_idx < funding_body_idx < ack_idx < ack_body_idx < refs_idx
+
+
+def test_block_font_size_from_span_signature():
+    from paperforge.worker.ocr_render import _block_font_size
+    block = {"span_signature": {"font_size": 8.0}}
+    assert _block_font_size(block) == 8.0
+
+
+def test_block_font_size_fallback_to_span_metadata_dict():
+    from paperforge.worker.ocr_render import _block_font_size
+    block = {"span_metadata": {"size": 7.5}}
+    assert _block_font_size(block) == 7.5
+
+
+def test_block_font_size_fallback_to_span_metadata_list():
+    from paperforge.worker.ocr_render import _block_font_size
+    block = {"span_metadata": [{"size": 9.0}, {"size": 9.0}, {"size": 9.0}]}
+    assert _block_font_size(block) == 9.0
+
+
+def test_block_font_size_none():
+    from paperforge.worker.ocr_render import _block_font_size
+    assert _block_font_size({}) is None
+
+
+def test_is_near_body_flow_overlaps_y():
+    """Footnote whose y-range overlaps body y-range -> near body flow."""
+    from paperforge.worker.ocr_render import _is_near_body_flow
+    fn_bbox = [100, 460, 800, 540]
+    body_blocks = [
+        {"bbox": [100, 300, 800, 500]},
+    ]
+    assert _is_near_body_flow(fn_bbox, body_blocks, page_height=1500) is True
+
+
+def test_is_near_body_flow_just_below():
+    """Footnote 40px below body (within 8% of page) and x-aligned -> near body flow."""
+    from paperforge.worker.ocr_render import _is_near_body_flow
+    fn_bbox = [100, 520, 800, 600]
+    body_blocks = [
+        {"bbox": [100, 300, 800, 500]},
+    ]
+    assert _is_near_body_flow(fn_bbox, body_blocks, page_height=1500) is True
+
+
+def test_is_near_body_flow_too_far_down():
+    """Footnote at page bottom (y1 > 0.82 * page_height) -> not near body flow."""
+    from paperforge.worker.ocr_render import _is_near_body_flow
+    fn_bbox = [100, 1300, 800, 1400]
+    body_blocks = [
+        {"bbox": [100, 300, 800, 500]},
+    ]
+    assert _is_near_body_flow(fn_bbox, body_blocks, page_height=1500) is False
+
+
+def test_is_near_body_flow_wrong_column():
+    """Footnote not x-aligned with body -> not near body flow."""
+    from paperforge.worker.ocr_render import _is_near_body_flow
+    fn_bbox = [50, 400, 200, 500]
+    body_blocks = [
+        {"bbox": [400, 300, 800, 500]},
+    ]
+    assert _is_near_body_flow(fn_bbox, body_blocks, page_height=1500) is False
+
+
+def test_footnote_in_body_zone_smaller_font_converts():
+    """Footnote near body with smaller font -> converts to structured_insert."""
+    from paperforge.worker.ocr_render import _convert_footnotes_to_callouts
+    blocks = [
+        {"page": 1, "block_id": 0, "role": "paper_title", "text": "Title",
+         "bbox": [100, 50, 800, 100], "page_height": 1500},
+        {"page": 1, "block_id": 1, "role": "body_paragraph",
+         "text": "Real body text that has at least twenty words in it to make the count threshold trigger correctly here.",
+         "bbox": [100, 300, 800, 500], "page_height": 1500,
+         "span_signature": {"font_size": 9.0}},
+        {"page": 1, "block_id": 2, "role": "footnote",
+         "text": "Y. Bai, Z. Wang, X. He -- affiliation footnote with author details and addresses.",
+         "bbox": [100, 520, 800, 600], "page_height": 1500,
+         "span_signature": {"font_size": 7.5}},
+    ]
+    result = _convert_footnotes_to_callouts(blocks)
+    fn = next(b for b in result if b["block_id"] == 2)
+    assert fn["role"] == "structured_insert", f"Expected structured_insert, got {fn['role']}"
+
+
+def test_footnote_same_font_stays_footnote():
+    from paperforge.worker.ocr_render import _convert_footnotes_to_callouts
+    blocks = [
+        {"page": 1, "block_id": 1, "role": "body_paragraph",
+         "text": "Body text with at least twenty words here for testing detection logic accordingly.",
+         "bbox": [100, 300, 800, 500], "page_height": 1500,
+         "span_signature": {"font_size": 9.0}},
+        {"page": 1, "block_id": 2, "role": "footnote",
+         "text": "Same font size footnote.",
+         "bbox": [100, 520, 800, 600], "page_height": 1500,
+         "span_signature": {"font_size": 9.0}},
+    ]
+    result = _convert_footnotes_to_callouts(blocks)
+    fn = next(b for b in result if b["block_id"] == 2)
+    assert fn["role"] == "footnote"
+
+
+def test_footnote_page_bottom_stays_footnote():
+    from paperforge.worker.ocr_render import _convert_footnotes_to_callouts
+    blocks = [
+        {"page": 1, "block_id": 1, "role": "body_paragraph",
+         "text": "Body text with at least twenty words here for testing purpose only thank you.",
+         "bbox": [100, 300, 800, 500], "page_height": 1500,
+         "span_signature": {"font_size": 9.0}},
+        {"page": 1, "block_id": 2, "role": "footnote",
+         "text": "Way at bottom of page.",
+         "bbox": [100, 1300, 800, 1400], "page_height": 1500,
+         "span_signature": {"font_size": 8.0}},
+    ]
+    result = _convert_footnotes_to_callouts(blocks)
+    fn = next(b for b in result if b["block_id"] == 2)
+    assert fn["role"] == "footnote"
+
+
+def test_footnote_wrong_column_stays_footnote():
+    from paperforge.worker.ocr_render import _convert_footnotes_to_callouts
+    blocks = [
+        {"page": 1, "block_id": 1, "role": "body_paragraph",
+         "text": "Body text with at least twenty words here for testing purpose only.",
+         "bbox": [400, 300, 800, 500], "page_height": 1500,
+         "span_signature": {"font_size": 9.0}},
+        {"page": 1, "block_id": 2, "role": "footnote",
+         "text": "Left column footnote not aligned with body column.",
+         "bbox": [50, 400, 200, 500], "page_height": 1500,
+         "span_signature": {"font_size": 8.0}},
+    ]
+    result = _convert_footnotes_to_callouts(blocks)
+    fn = next(b for b in result if b["block_id"] == 2)
+    assert fn["role"] == "footnote"
+
+
+def test_footnote_copyright_boilerplate_not_converted():
+    """Copyright/boilerplate footnote -> keep as footnote."""
+    from paperforge.worker.ocr_render import _convert_footnotes_to_callouts
+    blocks = [
+        {"page": 1, "block_id": 1, "role": "body_paragraph",
+         "text": "Body text with at least twenty words in this test scenario that must pass correctly.",
+         "bbox": [100, 300, 800, 500], "page_height": 1500,
+         "span_signature": {"font_size": 9.0}},
+        {"page": 1, "block_id": 2, "role": "footnote",
+         "text": "Copyright (c) 2023 Publisher. All rights reserved.",
+         "bbox": [100, 520, 800, 560], "page_height": 1500,
+         "span_signature": {"font_size": 8.0}},
+    ]
+    result = _convert_footnotes_to_callouts(blocks)
+    fn = next(b for b in result if b["block_id"] == 2)
+    assert fn["role"] == "footnote"
+
+
+def test_footnote_to_callout_full_render(tmp_path):
+    """Full render output shows [!NOTE] for qualifying footnote."""
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+
+    structured_blocks = [
+        {"page": 1, "block_id": 0, "role": "paper_title", "text": "Test Title",
+         "bbox": [100, 50, 800, 100], "page_height": 1500, "render_default": True,
+         "span_signature": {"font_size": 12.0}},
+        {"page": 1, "block_id": 1, "role": "body_paragraph",
+         "text": "Body text that has at least twenty words in the paragraph for the threshold test to pass correctly.",
+         "bbox": [100, 300, 800, 500], "page_height": 1500, "render_default": True,
+         "span_signature": {"font_size": 9.0}},
+        {"page": 1, "block_id": 2, "role": "footnote",
+         "text": "Correspondence to: John Doe, Department of Orthopaedic Surgery.",
+         "bbox": [100, 520, 800, 560], "page_height": 1500, "render_default": True,
+         "span_signature": {"font_size": 8.0}},
+    ]
+    doc_structure = type("_", (), {
+        "body_family_anchor": {},
+        "spread_start": None,
+        "source_frontmatter_anchors": {},
+        "tail_reading_order": None,
+        "reference_zones": None,
+        "reference_zone": None,
+    })()
+
+    md = render_fulltext_markdown(
+        structured_blocks=structured_blocks,
+        resolved_metadata={},
+        figure_inventory={"matched_figures": [], "unresolved_clusters": []},
+        table_inventory={"tables": []},
+        page_count=1,
+        document_structure=doc_structure,
+        reader_payload={"reader_figures": [], "consumed_caption_block_ids": []},
+    )
+    assert "[!NOTE]" in md, f"Expected [!NOTE] callout in output:\n{md}"
+    assert "Correspondence to: John Doe" in md
+
+
+def test_footnote_without_positive_marker_stays_footnote():
+    """Footnote near body flow but no affiliation/author content -> not converted."""
+    from paperforge.worker.ocr_render import _convert_footnotes_to_callouts
+    blocks = [
+        {"page": 1, "block_id": 1, "role": "body_paragraph",
+         "text": "Body text with at least twenty words in this test scenario that must pass correctly.",
+         "bbox": [100, 300, 800, 500], "page_height": 1500,
+         "span_signature": {"font_size": 9.0}},
+        {"page": 1, "block_id": 2, "role": "footnote",
+         "text": "Some generic note in small font with no identifying author metadata.",
+         "bbox": [100, 520, 800, 560], "page_height": 1500,
+         "span_signature": {"font_size": 8.0}},
+    ]
+    result = _convert_footnotes_to_callouts(blocks)
+    fn = next(b for b in result if b["block_id"] == 2)
+    assert fn["role"] == "footnote"
