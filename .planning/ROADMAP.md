@@ -74,7 +74,12 @@ v0.2 makes those annotations visible and useful inside Obsidian. The milestone s
 3. Jump action opens the PDF and lands on or near the annotation page where Obsidian supports page fragments or viewer commands.
 4. Unsupported jump cases show a clear fallback message and keep the annotation list usable.
 
-**Plans:** TBD
+**Plans:** 4 plans
+
+- [ ] `annotation-07-01-PLAN.md` - Pure fail-closed attachment/PDF target resolver and helper tests (Wave 1).
+- [ ] `annotation-07-02-PLAN.md` - Obsidian runtime page opening, fallback, state isolation, and read-only tests (Wave 2).
+- [ ] `annotation-07-03-PLAN.md` - Accessible page-badge jump affordance, styling, and DOM regressions (Wave 3).
+- [ ] `annotation-07-04-PLAN.md` - Focused automated gate and manual Obsidian navigation checkpoint (Wave 4).
 
 ### Annotation Phase 8: PDF Overlay Rendering Spike and Implementation
 
@@ -120,7 +125,7 @@ v0.2 makes those annotations visible and useful inside Obsidian. The milestone s
 |-------|----------------|--------|-----------|
 | Annotation Phase 5. Plugin Annotation Data Bridge | 2/2 | Executed | 2026-06-19 |
 | Annotation Phase 6. Annotation Sidebar and List View | 0/4 | Planned | - |
-| Annotation Phase 7. PDF Jump Navigation | 0/TBD | Not started | - |
+| Annotation Phase 7. PDF Jump Navigation | 0/4 | Planned | - |
 | Annotation Phase 8. PDF Overlay Rendering Spike and Implementation | 0/TBD | Not started | - |
 | Annotation Phase 9. Display Layer Verification Gate | 0/TBD | Not started | - |
 
