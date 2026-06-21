@@ -1163,8 +1163,10 @@ def assign_block_role(
 
         if _has_heading_numbering(text):
             depth = _heading_number_depth(text)
+            role_map = {1: "section_heading", 2: "subsection_heading"}
+            role = role_map.get(depth, "sub_subsection_heading")
             return RoleAssignment(
-                role="section_heading" if depth <= 1 else "subsection_heading",
+                role=role,
                 confidence=0.85,
                 evidence=[f"paragraph_title label with numbering: {text[:60]}"],
             )
@@ -1192,8 +1194,10 @@ def assign_block_role(
             if bbox[1] < max(page_height, 1) * 0.25:
                 if lower in _BACKMATTER_TITLE_DENY_LIST:
                     depth = _heading_number_depth(text)
+                    role_map = {1: "section_heading", 2: "subsection_heading"}
+                    role = role_map.get(depth, "sub_subsection_heading")
                     return RoleAssignment(
-                        role="section_heading" if depth <= 1 else "subsection_heading",
+                        role=role,
                         confidence=0.5,
                         evidence=[f"backmatter title in title zone, treated as heading: {text[:60]}"],
                     )
