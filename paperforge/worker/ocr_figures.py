@@ -726,6 +726,30 @@ def _score_legend_to_group(
 ) -> dict:
     gt = group.get("group_type", "")
 
+    if gt == "distance_cluster":
+        num_assets = len(group.get("media_blocks", []))
+        if group.get("safe_auto_match") and num_assets >= 2:
+            return {"score": 0.85, "decision": "matched",
+                    "evidence": ["same_page", "distance_clustered", "safe_auto_match"]}
+
+        cluster_bbox = group.get("cluster_bbox", [0, 0, 0, 0])
+        match_score = score_figure_match(
+            legend,
+            {"bbox": cluster_bbox, "page": group.get("page", 0)},
+            caption_score=caption_score,
+            anchor_supported=anchor_supported,
+            caption_text_supported=caption_text_supported,
+            family_supported=family_supported,
+            zone_supported=zone_supported,
+        )
+        if num_assets >= 2 and match_score.get("score", 0) > 0:
+            match_score = dict(match_score)
+            match_score["score"] = min(1.0, match_score["score"] + 0.15)
+            match_score.setdefault("evidence", []).append("multi_asset_coherence_bonus")
+            if match_score["score"] >= 0.5 and match_score.get("decision") in ("candidate", "ambiguous"):
+                match_score["decision"] = "matched"
+        return match_score
+
     if gt == "page_assets":
         basic = {
             "score": 0.55,
