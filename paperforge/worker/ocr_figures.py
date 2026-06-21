@@ -64,33 +64,24 @@ _INLINE_FIGURE_MENTION_VERBS = (
 )
 
 
-def _looks_like_inline_figure_mention(text: str) -> bool:
-    t = " ".join(text.strip().split())
-    lower = t.lower()
-
-    # Text starting with "Figure N." / "Fig. N." is a self-identifying
-    # caption — never flag as body mention regardless of verb content.
-    if re.match(r"^(?:Figure|Fig\.?)\s+\d+\.\b", t, re.IGNORECASE):
-        return False
-    if re.match(r"^(?:Figure|Fig\.?)\s+\d+\s+(?:" + "|".join(_INLINE_FIGURE_MENTION_VERBS) + r")\b", t, re.IGNORECASE):
-        return True
-
-    if not re.search(r"\bfi(?:g(?:ure)?\.?\s*\d+)", lower):
-        return False
-
-    # Explicitly NOT inline: Frontiers format FIGURE N | ...
-    if re.match(r"^figure\s+\d+[a-z]?\s*\|", t, re.I):
-        return False
-
-    # "as shown in Figure X" / "shown in Figure X" / "see Figure X"
-    if re.search(r"\b(as shown in|shown in|see |according to|consistent with)\s+(fig(?:ure)?\.?\s*\d+)", lower):
-        return True
-
-    # Long sentence with a prose verb
-    words = t.split()
-    if len(words) >= 10 and any(re.search(rf"\b{v}\b", lower) for v in _INLINE_FIGURE_MENTION_VERBS):
-        return True
-
+def _looks_like_inline_figure_mention(text: str, block: dict | None = None) -> bool:
+    """
+    Ponytail: position and style are the reliable signals for distinguishing
+    figure captions from body mentions.  Text-content heuristics (verb lists,
+    word-count thresholds) introduce errors for long captions and non-English
+    prose.  Default to False when the block is already classified as a figure
+    caption in a display zone.
+    """
+    if block is not None:
+        role = str(block.get("role") or "")
+        zone = str(block.get("zone") or "")
+        style = str(block.get("style_family") or "")
+        if role == "figure_caption":
+            return False
+        if role == "figure_caption_candidate" and zone != "body_zone":
+            return False
+        if zone == "display_zone" and style == "legend_like":
+            return False
     return False
 
 
@@ -179,7 +170,7 @@ def _is_body_mention(block: dict) -> bool:
     if raw_role == "figure_caption_candidate":
         text = block.get("text", "")
         if text and _FIGURE_NUMBER_PATTERN.search(text):
-            if _looks_like_inline_figure_mention(text):
+            if _looks_like_inline_figure_mention(text, block):
                 return True
             return False
         if text and _looks_like_figure_narrative_prose(text):
@@ -367,6 +358,18 @@ def _asset_gap_below(a: dict, b: dict) -> float:
     return max(0.0, bb[1] - ab[3])
 
 
+def _asset_gap_left(a: dict, b: dict) -> float:
+    ab = a.get("bbox") or [0, 0, 0, 0]
+    bb = b.get("bbox") or [0, 0, 0, 0]
+    return max(0.0, ab[0] - bb[2])
+
+
+def _asset_gap_above(a: dict, b: dict) -> float:
+    ab = a.get("bbox") or [0, 0, 0, 0]
+    bb = b.get("bbox") or [0, 0, 0, 0]
+    return max(0.0, ab[1] - bb[3])
+
+
 def _grow_region_from_seed(seed: dict, others: list[dict], page_width: float) -> dict:
     group = [seed]
     growth_steps: list[dict] = []
@@ -379,10 +382,14 @@ def _grow_region_from_seed(seed: dict, others: list[dict], page_width: float) ->
         for candidate in remaining:
             reason = None
             cb = candidate.get("bbox") or [0, 0, 0, 0]
-            if cb[0] >= group_bbox[2] and _asset_gap_right({"bbox": group_bbox}, candidate) <= page_width * 0.03:
+            if cb[0] >= group_bbox[2] and _asset_gap_right({"bbox": group_bbox}, candidate) <= max(page_width * 0.08, 40):
                 reason = "adjacent_right"
-            elif cb[1] >= group_bbox[3] and _asset_gap_below({"bbox": group_bbox}, candidate) <= page_width * 0.03:
+            elif cb[1] >= group_bbox[3] and _asset_gap_below({"bbox": group_bbox}, candidate) <= max(page_width * 0.08, 40):
                 reason = "adjacent_below"
+            elif cb[2] <= group_bbox[0] and _asset_gap_left({"bbox": group_bbox}, candidate) <= max(page_width * 0.08, 40):
+                reason = "adjacent_left"
+            elif cb[3] <= group_bbox[1] and _asset_gap_above({"bbox": group_bbox}, candidate) <= max(page_width * 0.08, 40):
+                reason = "adjacent_above"
             if reason:
                 group.append(candidate)
                 growth_steps.append({"added_block_id": candidate.get("block_id", ""), "reason": reason})
@@ -429,7 +436,10 @@ def _media_clusters(blocks: list[dict], page_width: float = 1200) -> list[list[d
         if not b.get("_non_body_media")
         and (
             b.get("role") == "figure_asset"
-            or (b.get("role") == "media_asset" and b.get("raw_label", "") in {"image", "chart", "figure"})
+            or (b.get("role") == "media_asset" and (
+                b.get("raw_label", "") in {"image", "chart", "figure"}
+                or (b.get("raw_label", "") == "table" and "<img" in str(b.get("text") or "").lower())
+            ))
         )
     ]
     media.sort(key=lambda b: (b.get("page", 0), b.get("bbox", [0, 0, 0, 0])[1], b.get("bbox", [0, 0, 0, 0])[0]))
@@ -499,7 +509,11 @@ def _build_candidate_figure_groups_from_assets(assets: list[dict], page_width: f
             b.get("role") == "figure_asset"
             or (
                 b.get("role") == "media_asset"
-                and (b.get("raw_label", "") in {"image", "chart", "figure"} or not str(b.get("raw_label", "")).strip())
+                and (
+                    b.get("raw_label", "") in {"image", "chart", "figure"}
+                    or (b.get("raw_label", "") == "table" and "<img" in str(b.get("text") or "").lower())
+                    or not str(b.get("raw_label") or "").strip()
+                )
             )
         )
     ]
@@ -639,12 +653,14 @@ def _score_legend_to_group(
     )
     num_assets = len(group.get("media_blocks", []))
     if num_assets > 1 and match_score.get("score", 0) > 0:
-        coherence_bonus = 0.05
+        coherence_bonus = 0.15
         match_score = dict(match_score)
         match_score["score"] = min(1.0, match_score["score"] + coherence_bonus)
         match_score.setdefault("evidence", []).append("multi_asset_coherence_bonus")
-        if match_score["score"] >= 0.6 and match_score.get("decision") == "ambiguous":
+        if match_score["score"] >= 0.5 and match_score.get("decision") in ("ambiguous", "candidate"):
             match_score["decision"] = "matched"
+        if match_score.get("decision") == "rejected":
+            match_score["decision"] = "candidate"
     return match_score
 
 
@@ -875,7 +891,7 @@ def _allow_previous_page_sequential_match(cap: dict, asset: dict) -> bool:
     page_width = float(cap.get("page_width") or asset.get("page_width") or 1200)
     page_height = float(cap.get("page_height") or asset.get("page_height") or 1600)
     strong_numbered_caption = _extract_figure_number(str(cap.get("text", ""))) is not None
-    post_reference_layout = str(cap.get("zone") or "") == "post_reference_backmatter_zone"
+    post_reference_layout = str(cap.get("zone") or "") in {"post_reference_backmatter_zone", "display_zone"}
     starts_page = cap_top <= 220
     prior_asset_near_bottom = asset_bottom >= page_height * 0.7
     wide_caption = cap_width >= page_width * 0.6
@@ -944,6 +960,18 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
     unresolved_clusters: list[dict] = []
     ambiguous_figures: list[dict] = []
 
+    def _collect_bridge_blocks(page: int) -> list[dict]:
+        bridges: list[dict] = []
+        for block in structured_blocks:
+            if int(block.get("page", 0) or 0) != page:
+                continue
+            if not block.get("bridge_eligible"):
+                continue
+            if str(block.get("layout_region") or "") != "display_zone":
+                continue
+            bridges.append(block)
+        return bridges
+
     for block in structured_blocks:
         if block.get("page_width"):
             page_width = float(block["page_width"])
@@ -957,15 +985,14 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
             continue
         is_validation_first_candidate = _is_validation_first_legend_candidate(block)
         if role in ("figure_caption", "figure_caption_candidate") or is_validation_first_candidate:
-            if _is_body_mention(block):
-                unmatched_legends.append(block)
-                continue
-            if (
-                role == "figure_caption_candidate"
-                and str(block.get("zone") or "") != "display_zone"
-                and str(block.get("style_family") or "") != "legend_like"
-                and _looks_like_figure_narrative_prose(block.get("text", ""))
-                and _extract_figure_number(block.get("text", "")) is None
+            if role == "figure_caption_candidate" and (
+                str(block.get("zone") or "") == "body_zone"
+                or (
+                    str(block.get("zone") or "") != "display_zone"
+                    and str(block.get("style_family") or "") != "legend_like"
+                    and _looks_like_figure_narrative_prose(block.get("text", ""))
+                    and _extract_figure_number(block.get("text", "")) is None
+                )
             ):
                 continue
             if not _is_formal_legend(block.get("text", ""), block, page_width):
@@ -973,7 +1000,7 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
                     block,
                     nearby_media=False,
                     caption_style_match=False,
-                    body_prose_likelihood=_looks_like_inline_figure_mention(block.get("text", "")),
+                    body_prose_likelihood=_looks_like_inline_figure_mention(block.get("text", ""), block),
                 )
                 rejected_legends.append(block)
             else:
@@ -983,6 +1010,8 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
         elif role == "media_asset":
             raw_label = str(block.get("raw_label", "")).strip()
             if raw_label in {"image", "chart", "figure_title", "figure"} or not raw_label:
+                assets.append(block)
+            elif raw_label == "table" and "<img" in str(block.get("text") or "").lower():
                 assets.append(block)
 
     numbered_legends = [leg for leg in legends if _extract_figure_number(leg.get("text", "")) is not None]
@@ -1009,7 +1038,10 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
             if current_has_asset and not existing_has_asset:
                 _dedup_map[key] = legend
             elif current_has_asset and existing_has_asset or not current_has_asset and not existing_has_asset:
-                pass
+                existing_role = str(existing.get("role") or "")
+                current_role = str(legend.get("role") or "")
+                if current_role == "figure_caption" and existing_role != "figure_caption":
+                    _dedup_map[key] = legend
 
     seen_fig_keys: set[tuple[str, int]] = set()
     deduped_legends: list[dict] = []
@@ -1038,11 +1070,13 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
 
     # Gate: suppress page_assets groups on pages with competing captions
     # so one big group doesn't swallow assets meant for multiple figures.
+    # Only count legends with a real figure number — sub-panel labels
+    # ("Tensile strength", "RND") are not captions and should not gate.
     _page_captions_for_gate: dict[int, set[str]] = {}
-    for block in structured_blocks:
-        role = block.get("role", "")
-        if role in ("figure_caption", "figure_caption_candidate") and block.get("block_id"):
-            _page_captions_for_gate.setdefault(block.get("page", 0), set()).add(block["block_id"])
+    for legend in ordered_legends:
+        fid = legend.get("block_id")
+        if fid and _extract_figure_number(str(legend.get("text") or "")) is not None:
+            _page_captions_for_gate.setdefault(legend.get("page", 0), set()).add(str(fid))
     _competing_caption_pages = {p for p, ids in _page_captions_for_gate.items() if len(ids) > 1}
     candidate_groups = [
         g
@@ -1054,13 +1088,22 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
     page_caption_index = _formal_figure_caption_blocks(structured_blocks)
     for legend in ordered_legends:
         legend_page = legend.get("page", 0)
-        legend_text = legend.get("text", "")
+        legend_text = str(legend.get("text") or "")
         ns = _extract_figure_namespace(legend_text)
         fig_num = _extract_figure_number(legend_text)
+        # Text may be empty (stored as [] in raw block) but marker_signature
+        # still carries the figure number.
+        if fig_num is None:
+            ms = legend.get("marker_signature") or {}
+            if ms.get("type") == "figure_number":
+                try:
+                    fig_num = int(float(ms.get("number", 0) or 0))
+                except (ValueError, TypeError):
+                    pass
         is_validation_first_candidate = _is_validation_first_legend_candidate(legend)
         is_weak_truncated = _is_insufficient_legend_evidence(legend)
 
-        body_prose_likelihood = _looks_like_inline_figure_mention(legend_text)
+        body_prose_likelihood = _looks_like_inline_figure_mention(legend_text, legend)
 
         caption_score = score_figure_caption(
             legend,
@@ -1111,26 +1154,40 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
                 matched_assets = []
             elif len(close) > 1:
                 close_sides = {_asset_vertical_side(legend, g) for _, g, _ in close}
-                if "above" in close_sides and "below" in close_sides:
-                    ambiguous_figures.append(
-                        {
-                            "legend_block_id": legend.get("block_id", ""),
-                            "page": legend_page,
-                            "caption_score": caption_score,
-                            "candidates": [
+                if "above" in close_sides and "below" in close_sides and fig_num is not None:
+                    # If one candidate is the page_assets group (all assets),
+                    # don't tie-break — it's the canonical match.
+                    page_assets_candidate = next((item for item in close if item[1].get("group_type") == "page_assets"), None)
+                    if page_assets_candidate is not None:
+                        close = [page_assets_candidate]
+                    else:
+                        # Caption sandwiched between two asset groups:
+                        # prefer above (standard: image above, caption below).
+                        above_only = [item for item in close if _asset_vertical_side(legend, item[1]) == "above"]
+                        if above_only:
+                            close = above_only
+                        else:
+                            ambiguous_figures.append(
                                 {
-                                    "asset_block_id": g.get("media_blocks", [{}])[0].get("block_id", ""),
-                                    "group_type": g.get("group_type", ""),
-                                    "match_score": s,
+                                    "legend_block_id": legend.get("block_id", ""),
+                                    "page": legend_page,
+                                    "text": legend_text,
+                                    "figure_number": fig_num,
+                                    "caption_score": caption_score,
+                                    "candidates": [
+                                        {
+                                            "asset_block_id": g.get("media_blocks", [{}])[0].get("block_id", ""),
+                                            "group_type": g.get("group_type", ""),
+                                            "match_score": s,
+                                        }
+                                        for _, g, s in close
+                                    ],
+                                    "hold_reason": "close_asset_tie",
                                 }
-                                for _, g, s in close
-                            ],
-                            "hold_reason": "close_asset_tie",
-                        }
-                    )
-                    ambiguous = True
-                    matched_assets = []
-                    close = []
+                            )
+                            ambiguous = True
+                            matched_assets = []
+                            close = []
                 if not close:
                     pass
                 else:
@@ -1177,11 +1234,15 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
                         if len(matched_assets) > 1:
                             region_match["cluster_bbox"] = best_group.get("cluster_bbox", [0, 0, 0, 0])
                     else:
+                        if fig_num is None and str(legend.get("role") or "") in ("figure_caption", "figure_caption_candidate") and len(legend_text) < 80:
+                            unmatched_legends.append(legend)
+                            continue
                         ambiguous_figures.append(
                             {
                                 "legend_block_id": legend.get("block_id", ""),
                                 "page": legend_page,
                                 "caption_score": caption_score,
+                                "figure_number": fig_num,
                                 "candidates": [
                                     {
                                         "asset_block_id": g.get("media_blocks", [{}])[0].get("block_id", ""),
@@ -1190,8 +1251,11 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
                                     }
                                     for _, g, s in close
                                 ],
+                                "hold_reason": "close_unconfirmed_match",
                             }
                         )
+                        ambiguous = True
+                        matched_assets = []
                         ambiguous = True
                         matched_assets = []
             else:
@@ -1216,11 +1280,15 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
                     if len(matched_assets) > 1:
                         region_match["cluster_bbox"] = best_group.get("cluster_bbox", [0, 0, 0, 0])
                 else:
+                    if fig_num is None and str(legend.get("role") or "") in ("figure_caption", "figure_caption_candidate"):
+                        unmatched_legends.append(legend)
+                        continue
                     ambiguous_figures.append(
                         {
                             "legend_block_id": legend.get("block_id", ""),
                             "page": legend_page,
                             "caption_score": caption_score,
+                            "figure_number": fig_num,
                             "candidates": [
                                 {
                                     "asset_block_id": best_group.get("media_blocks", [{}])[0].get("block_id", ""),
@@ -1228,8 +1296,10 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
                                     "match_score": best_score,
                                 }
                             ],
+                            "hold_reason": "single_unconfirmed_match",
                         }
                     )
+                    ambiguous = True
                     ambiguous = True
 
         is_legend_only = len(matched_assets) == 0
@@ -1238,7 +1308,7 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
             unmatched_legends.append(legend)
             continue
 
-        if is_weak_truncated and is_validation_first_candidate:
+        if is_weak_truncated and is_validation_first_candidate and is_legend_only:
             held_figures.append(
                 {
                     "figure_id": f"held_figure_{len(held_figures) + 1:03d}",
@@ -1256,25 +1326,49 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
             unmatched_legends.append(legend)
             continue
 
+        # When multiple truncated legends ("Fig. 4" only) share a page,
+        # they are sub-panel labels on a multi-figure gallery — skip them
+        # and let the shared caption claim all assets.
         if is_weak_truncated:
-            ambiguous_figures.append(
-                {
-                    "legend_block_id": legend.get("block_id", ""),
-                    "page": legend_page,
-                    "text": legend_text,
-                    "figure_number": fig_num,
-                    "caption_score": caption_score,
-                    "candidates": [],
-                    "hold_reason": "ambiguous_truncated_legend",
-                    "zone": legend.get("zone"),
-                    "style_family": legend.get("style_family"),
-                    "marker_signature": legend.get("marker_signature") or {},
-                }
+            page_truncated_count = sum(
+                1 for leg in ordered_legends
+                if leg.get("page", 0) == legend_page and _is_insufficient_legend_evidence(leg)
             )
-            unmatched_legends.append(legend)
-            continue
+            if page_truncated_count >= 2:
+                unmatched_legends.append(legend)
+                continue
+            # Single truncated legend on page: match normally with candidates
+            if is_legend_only:
+                weak_candidates = [
+                    {
+                        "asset_block_id": g.get("media_blocks", [{}])[0].get("block_id", ""),
+                        "group_type": g.get("group_type", ""),
+                        "match_score": s,
+                    }
+                    for _, g, s in (candidates or [])
+                ]
+                ambiguous_figures.append(
+                    {
+                        "legend_block_id": legend.get("block_id", ""),
+                        "page": legend_page,
+                        "text": legend_text,
+                        "figure_number": fig_num,
+                        "caption_score": caption_score,
+                        "candidates": weak_candidates,
+                        "hold_reason": "ambiguous_truncated_legend",
+                        "zone": legend.get("zone"),
+                        "style_family": legend.get("style_family"),
+                        "marker_signature": legend.get("marker_signature") or {},
+                    }
+                )
+                unmatched_legends.append(legend)
+                continue
+            # Single truncated legend with matched assets — proceed to confirmation
 
         if is_legend_only:
+            if fig_num is None and str(legend.get("role") or "") in ("figure_caption_candidate", "figure_caption"):
+                unmatched_legends.append(legend)
+                continue
             weak_entry = {
                 "legend_block_id": legend.get("block_id", ""),
                 "page": legend_page,
@@ -1323,6 +1417,9 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
             "flags": [],
             "caption_score": caption_score,
         }
+        local_bridges = _collect_bridge_blocks(int(legend_page or 0))
+        entry["asset_block_ids"] = [str(a.get("block_id", "")) for a in matched_assets if a.get("block_id")]
+        entry["bridge_block_ids"] = [str(b.get("block_id", "")) for b in local_bridges if b.get("block_id")]
         if len(matched_assets) > 1:
             entry["cluster_bbox"] = _cluster_bbox([a.get("bbox", [0, 0, 0, 0]) for a in matched_assets])
         matched_figures.append(entry)
@@ -1433,6 +1530,103 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
         matched_figures.extend(sidecar_promoted)
         used_asset_page_ids.update(sidecar_consumed_ids)
 
+    # Preproof legend-bundling: when a page packs 3+ figure captions
+    # with zero same-page assets, match them 1:1 by page order to
+    # subsequent pages that each hold unclaimed assets.
+    if unmatched_legends and unmatched_assets:
+        page_captions: dict[int, list[dict]] = {}
+        for leg in unmatched_legends:
+            cp = int(leg.get("page", 0) or 0)
+            if _extract_figure_number(str(leg.get("text", ""))) is not None:
+                page_captions.setdefault(cp, []).append(leg)
+        for cp, caps in sorted(page_captions.items()):
+            if len(caps) < 3:
+                continue
+            page_has_assets = any(
+                a.get("page", 0) == cp for a in unmatched_assets
+            )
+            if page_has_assets:
+                continue
+            caps_sorted = sorted(caps, key=lambda b: (b.get("bbox") or [0, 0, 0, 0])[1])
+            # Collect subsequent pages with unclaimed assets and no captions
+            asset_pages: dict[int, list[dict]] = {}
+            for ast in unmatched_assets:
+                ap = int(ast.get("page", 0) or 0)
+                bid = ast.get("block_id", "")
+                if ap <= cp:
+                    continue
+                if bid and (ap, bid) in used_asset_page_ids:
+                    continue
+                asset_pages.setdefault(ap, []).append(ast)
+            page_order = sorted(asset_pages.keys())
+            # Validate: no body/table blocks between legend page and first asset page,
+            # and each asset page is free of competing body/table text.
+            _NON_PURE_ROLES = {"body_paragraph", "section_heading", "subsection_heading",
+                               "table_caption", "table_asset", "table_html",
+                               "backmatter_heading", "backmatter_body", "reference_item"}
+            intervening_pages = set(range(cp + 1, page_order[0])) if page_order else set()
+            intervening_body = any(
+                b.get("page", 0) in intervening_pages and b.get("role", "") in _NON_PURE_ROLES
+                for b in structured_blocks
+            )
+            if intervening_body:
+                continue
+            valid_pages = []
+            for ap in page_order:
+                page_has_body = any(
+                    b.get("page", 0) == ap and b.get("role", "") in _NON_PURE_ROLES
+                    for b in structured_blocks
+                )
+                if not page_has_body:
+                    valid_pages.append(ap)
+            if len(valid_pages) < len(caps_sorted):
+                caps_sorted = caps_sorted[:len(valid_pages)]
+            if not valid_pages:
+                continue
+            # Match captions to validated asset pages in order
+            for idx, cap in enumerate(caps_sorted):
+                if idx >= len(valid_pages):
+                    break
+                ap = valid_pages[idx]
+                page_assets = asset_pages[ap]
+                if not page_assets:
+                    continue
+                fn = _extract_figure_number(str(cap.get("text", "")))
+                cap_ns = _extract_figure_namespace(str(cap.get("text", "")))
+                fig_id = _format_figure_id(cap_ns, fn)
+                cap_score = score_figure_caption(
+                    cap, nearby_media=True, caption_style_match=False, body_prose_likelihood=False
+                )
+                consumed = []
+                for ast in page_assets:
+                    bid = ast.get("block_id", "")
+                    if bid:
+                        used_asset_page_ids.add((ap, bid))
+                    consumed.append({
+                        "block_id": bid,
+                        "bbox": ast.get("bbox", [0, 0, 0, 0]),
+                    })
+                unmatched_legends = [l for l in unmatched_legends if l.get("block_id") != cap.get("block_id")]
+                matched_figures.append({
+                    "figure_id": fig_id,
+                    "figure_namespace": cap_ns,
+                    "legend_block_id": cap.get("block_id", ""),
+                    "page": ap,
+                    "text": str(cap.get("text", "")),
+                    "figure_number": fn,
+                    "matched_assets": consumed,
+                    "asset_block_ids": [c["block_id"] for c in consumed],
+                    "bridge_block_ids": [],
+                    "caption_score": cap_score,
+                    "match_score": {"score": 0.3, "decision": "matched", "evidence": ["legend_bundle_fallback"]},
+                    "confidence": 0.3,
+                    "flags": ["legend_bundle_match"],
+                })
+            # De-dup ambiguous_figures: remove entries whose legend_block_id
+            # was already matched by the bundle pass.
+            bundle_legend_ids = {m["legend_block_id"] for m in matched_figures if "legend_bundle_match" in m.get("flags", [])}
+            ambiguous_figures[:] = [a for a in ambiguous_figures if a.get("legend_block_id") not in bundle_legend_ids]
+
     # Sequential fallback: match unmatched captions to remaining assets in reading order.
     # Captions and figures often appear on different pages — humans match them by
     # sequential reading order, not spatial proximity. This is a necessary tradeoff.
@@ -1487,7 +1681,9 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
             ):
                 asset = previous_page_asset
             if asset is None and future_page_asset is not None:
-                asset = future_page_asset
+                fap = future_page_asset.get("page", 0) or 0
+                if fap in (cp, cp + 1):
+                    asset = future_page_asset
             if asset is None:
                 continue
 

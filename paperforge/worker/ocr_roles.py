@@ -681,13 +681,30 @@ def resolve_final_role(
             "body_family_anchor",
         }
         if style_family in _NON_BODY_FAMILIES and style_family_authority in _STRONG_AUTHORITIES:
-            if style_family == "legend_like" and _looks_like_late_figure_narrative_prose(str(block.get("text") or "")):
-                pass  # narrative prose stays body_paragraph
-            else:
+            if style_family == "legend_like":
+                if str(block.get("zone") or "") == "body_zone":
+                    pass  # body text with figure mention, not a caption
+                elif _looks_like_late_figure_narrative_prose(str(block.get("text") or "")):
+                    pass  # narrative prose stays body_paragraph
+                else:
+                    _FAMILY_ROLE_MAP = {
+                        "legend_like": "figure_caption_candidate",
+                    }
+                    mapped_role = _FAMILY_ROLE_MAP.get(style_family)
+                    if mapped_role:
+                        return RoleAssignment(
+                            role=mapped_role,
+                            confidence=max(current_confidence, 0.78),
+                            evidence=[
+                                f"late role resolution: non-body family '{style_family}' overrides body_paragraph",
+                                f"style_family_authority={style_family_authority or 'none'}",
+                                f"context_source={context_source}",
+                            ],
+                        )
+            elif style_family in {"reference_like", "table_caption_like", "heading_like"}:
                 _FAMILY_ROLE_MAP = {
                     "reference_like": "reference_item",
                     "table_caption_like": "table_caption_candidate",
-                    "legend_like": "figure_caption_candidate",
                     "heading_like": "section_heading",
                 }
                 mapped_role = _FAMILY_ROLE_MAP.get(style_family)

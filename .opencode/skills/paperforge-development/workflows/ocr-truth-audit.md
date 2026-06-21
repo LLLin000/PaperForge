@@ -36,22 +36,72 @@ Inputs:
    Materialize helper outputs under `audit/<paper_key>/` via `../scripts/ocr_truth_audit.py`, but treat them as accelerators only, not truth.
 
 6. Inspect truth from evidence.
-   Start with the overview pages (`annotated_pages/page_*.png`). Each page shows every block as a numbered rectangle, color-coded by the **pipeline's final rendered role** (after gate + normalize, the same role used in `fulltext.md`). Each of the 28 roles has a distinct color, grouped by semantic family:
-   - dark blue family: `paper_title` `authors` `affiliation` `frontmatter_support` `frontmatter_noise`
-   - purple family: `abstract_heading` `abstract_body`
-   - orange/red family: `section_heading` `subsection_heading` `sub_subsection_heading`
+
+   The audit is split into **five phases**. Phase 6a-6d use the 4 recipes + 4 templates.
+   Phase **6e** is the deep quality pass using the master atom.
+   Work through them in this order.
+   Each domain has a **data map** (run the recipe) and a **vision template** (read the atom).
+
+   **6a. Figure verification (most error-prone — do this first).**
+   ```bash
+   python .opencode/skills/paperforge-development/scripts/audit_helpers.py --recipe figure_map --key {KEY}
+   ```
+   This prints a JSON listing every figure: caption page/text, asset blocks with bboxes,
+   match status, candidates, panel labels, cross-page flags.
+   Then read `../atoms/ocr-vision-audit-templates.md` → "Template 1: Figure Verification".
+   Dispatch a `vision` subagent with the figure_map JSON + that prompt template.
+   The vision agent checks: asset coverage, caption correctness, sub-panel merging,
+   cross-page pairing, role mislabels. Reports discrepancies between pipeline data and
+   visual truth.
+
+   **6b. Frontmatter verification.**
+   ```bash
+   python .opencode/skills/paperforge-development/scripts/audit_helpers.py --recipe frontmatter_map --key {KEY}
+   ```
+   Then read `../atoms/ocr-vision-audit-templates.md` → "Template 2: Frontmatter Verification".
+   Dispatch `vision` subagent with the frontmatter JSON + template.
+   Checks: role correctness on page 1, badge mislabel, missing roles, ordering.
+
+   **6c. Reference verification.**
+   ```bash
+   python .opencode/skills/paperforge-development/scripts/audit_helpers.py --recipe reference_map --key {KEY}
+   ```
+   Then read `../atoms/ocr-vision-audit-templates.md` → "Template 3: Reference Verification".
+   Dispatch `vision` subagent with the reference JSON + template.
+   Checks: reference boundary, real intrusions, zone gaps, transition pages.
+
+   **6d. Body text verification (only flagged pages need vision).**
+   ```bash
+   python .opencode/skills/paperforge-development/scripts/audit_helpers.py --recipe body_text_map --key {KEY}
+   ```
+   Then read `../atoms/ocr-vision-audit-templates.md` → "Template 4: Body Text Verification".
+   Most pages pass on data alone. Dispatch `vision` only for pages with
+   flagged gaps, noise-in-content, or empty body text blocks.
+
+   **6e. Deep quality + typography audit (new — extends all 4 domains).**
+   After the 4 recipe-driven vision passes, read `../atoms/ocr-vision-audit-master.md`.
+   This atom provides per-role cross-reference pathways, typography checks,
+   figure/table quality checks, chart-type routing to the chart-reading atoms,
+   and full-page layout audit.
+   
+   For each block that passed the recipe check, dispatch an additional vision pass
+   if the block is Tier A (figure/table/structured) or if the page has typography flags.
+   The master atom tells you which data files to cross-reference and what to look for.
+   
+   **Color reference for annotated pages:** Each role has a distinct color:
+   - dark blue: `paper_title` `authors` `affiliation` `frontmatter_*`
+   - purple: `abstract_heading` `abstract_body`
+   - orange/red: `section_heading` `subsection_heading` `sub_subsection_heading`
    - green: `body_paragraph`
-   - red family: `reference_heading` `reference_item`
-   - purple-brown family: `backmatter_heading` `backmatter_body` `backmatter_boundary_candidate`
-   - amber/gold family: `media_asset` `figure_caption` `figure_caption_candidate` `figure_inner_text` `table_caption` `table_caption_candidate`
-   - teal family: `structured_insert` `structured_insert_candidate` `non_body_insert`
-   - gray family: `noise` `footnote` `unknown_structural`
+   - red: `reference_heading` `reference_item`
+   - purple-brown: `backmatter_*`
+   - amber/gold: `figure_asset` `media_asset` `figure_caption*` `table_caption*` `figure_inner_text`
+   - teal: `structured_insert*` `non_body_insert`
+   - gray: `noise` `footnote` `unknown_structural`
 
-   The color tells you what the pipeline decided. Your job is to judge whether that decision matches visual truth.
-
-   The companion index file (`annotated_pages/page_*_index.json`) maps each label number to its full `block_id`, `role`, `zone`, `category`, `text_preview`, and `bbox`. Use the index to look up what any numbered block currently is, then judge its truth visually from the overview page.
-
-   Cross-reference against `block_trace`, document-structure artifacts, and rendered `fulltext` only after forming an initial visual judgment.
+   The annotated pages show what the pipeline decided. Your job is to judge whether
+   that matches visual truth. The companion index (`page_*_index.json`) maps label
+   numbers to block IDs for cross-reference.
 
 7. Write audit outputs.
    Produce the required reports and summaries using `../scripts/ocr_truth_audit.py` plus the schema in `../atoms/ocr-audit-report-schema.md`.
@@ -70,6 +120,13 @@ Inputs:
    ```
 
    Use the page index to find a block's current role/zone before judging. Color category helps orient: red blocks are reference candidates, purple are backmatter candidates, etc.
+
+   For deep quality checks, see `../atoms/ocr-vision-audit-master.md` section 3 (chart quality),
+   section 4 (page typography), and section 2 (per-role analysis with quality dimensions).
+
+8.5. Record quality findings in block_review.jsonl.
+   Extend each block_review.jsonl entry with optional fields `quality_checks` and `page_typography`
+   as described in `../atoms/ocr-vision-audit-master.md` section 5. Use `null` for unchecked dimensions.
 
 9. Verify review coverage.
    Run `../scripts/verify_review_coverage.py` against the paper audit directory. If required blocks are missing for the chosen mode, the audit is incomplete.

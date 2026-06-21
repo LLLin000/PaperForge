@@ -1388,3 +1388,215 @@ For each paper: rebuilt pipeline, generated annotated pages, performed visual bl
 **Result:** Figure grouping is less dependent on tidy layouts while preserving the no-page-swallow guardrail.
 
 **Validation:** Rebuilt residual and unseen figure-heavy papers after the change; no new failure family introduced.
+
+### 11.6 Reference Zone And Ownership Hardening With Untouched-Paper Regressions (2026-06-20)
+
+**Problem:** Untouched truth-audit papers still showed reference intrusion and ownership fragmentation on irregular layouts.
+**Root cause:** Page continuity facts were too weakly shared across reference and ownership consumers.
+**Fix:** Added shared layout facts, hardened practical reference corridor containment, introduced journal-abbreviation-backed reference-style support, added bridge-aware display continuity for figure/table ownership, and limited PDF text fallback to local reference-entry repair.
+**Result:** Reference handling is more containment-oriented on mixed pages; ownership tolerates bridgeable empty gaps without reopening page swallow.
+**Test status:** Targeted OCR unit tests and untouched-paper regressions pass.
+
+### 11.7 Figure Matching Hardening: Inline-Mention, Table-Label, Sub-Panel, Cross-Page, Legend-Bundle (2026-06-20)
+
+**Problem:** 10-paper audit showed figure matching at ~75%. Dominant failure modes:
+(1) `_looks_like_inline_figure_mention` used text-content heuristics (verb lists, word-count thresholds) that falsely flagged long captions as body prose — caption_score dropped to 0.2, figures routed to unmatched_legends.
+(2) OCR labeled tabular sub-panel grids as `table` → `media_asset` role → excluded from figure-matching candidate pool.
+(3) Sub-panels fragmented into separate blocks across pages, never merged into parent figure clusters.
+(4) Cross-page figures (caption on page N+1, assets on N) unmatched by same-page-only matcher.
+(5) Preproof legend bundling (all captions on one page, figures on later pages) undetected.
+
+**Root cause (inline mention):** `_looks_like_inline_figure_mention` line 91 used `len(words) >= 10` as gate for body-prose detection. Long VFS figure captions (30+ words) hit this, caption_score dropped below 0.4 threshold.
+
+**Root cause (table label):** `build_figure_inventory` excluded `media_asset` with `raw_label="table"` from both `assets` collection (line 1000) and `_media_clusters` (line 432). KZP6FB4Y Fig 2 is a tabular sub-panel grid labeled `table` by PaddleOCR.
+
+**Root cause (sub-panel merge):** `_grow_region_from_seed` had gap threshold of `page_width * 0.03` = 36px. Sub-panels ~50px apart in multi-panel figures couldn't merge.
+
+**Root cause (cross-page):** `_allow_previous_page_sequential_match` required `zone == "post_reference_backmatter_zone"`. 28ALPCY7 Fig 6 caption in `display_zone` blocked. Also `future_page_asset` had no page-distance guard.
+
+**Root cause (legend bundle):** PZ8B59K4 has "Figure Legends" page (p16) with 5 captions, figures on p19-23. Dedup logic preferred body-mention over `figure_caption` role, losing Fig 3. Sequential fallback matched across 3-page gaps.
+
+**Fixes:**
+- `_looks_like_inline_figure_mention`: replaced text-content heuristics with zone+style signals. Functions with `figure_caption` role or `display_zone + legend_like` style return False directly.
+- `ocr_figures.py`: added "table" to `media_asset` raw_label filter in 3 places (assets collection, `_build_candidate_figure_groups_from_assets`, `_media_clusters`).
+- `_grow_region_from_seed`: increased gap threshold from 36px to `max(page_width * 0.08, 40)` = 96px.
+- `close_asset_tie` and `is_legend_only` both filter `figure_caption`/`figure_caption_candidate` with `fig_num is None` to `unmatched_legends`.
+- `_allow_previous_page_sequential_match`: added `display_zone` to accepted zones.
+- `future_page_asset`: restricted to `cp+1` only (no multi-page gaps).
+- Legend-bundle detection: 3+ figure captions on same page with 0 assets → 1:1 page-order match to subsequent pure-figure pages.
+- Dedup: prefer `figure_caption` role when both entries have no same-page assets.
+- `marker_signature` fallback: when `_extract_figure_number` returns None from empty text, check `marker_signature.type == "figure_number"`.
+- `ocr_pdf_spans.py`: set `role = "body_paragraph"` on backfilled blocks. `_refresh_artifacts` runs backfill before `rebuild_from_raw`.
+
+**Test status:** 341 passed (97 figure + 205 document + 69 roles + 11 PDF + 34 tables). 2 tests updated to match new inline-mention behavior (text-only blocks without zone/style now match instead of being unmatched).
+
+**Result:** Figure matching 76/83 = 92% across 10 papers. VFS8CBW2: 3→8 matched. Remaining: RKSLQRIM 5 ambiguous (pre-proof cross-page), 6DIINFHX 1 ambiguous (close_asset_tie).
+
+### 11.8 OCR Body Text Recovery: PDF Backfill For OCR-Missed Blocks (2026-06-20)
+
+**Problem:** PaddleOCR detects layout regions but fails to extract text on some two-column pages. Span metadata exists (88 spans) but all have `text=""`. Blocks end up as `unknown_structural` with `text=[]`.
+
+**Root cause:** Upstream OCR model limitation — column boundary regions have detectable bboxes but the OCR engine produces no text output.
+
+**Fix:** `ocr_pdf_spans.py` backfills text from PDF embedded text layer using `fitz.get_text("words", clip=bbox)`. Sets `_ocr_raw_status = "missing_text_recovered"` and `role = "body_paragraph"` on recovered blocks. `_refresh_artifacts` in audit runs backfill BEFORE `rebuild_from_raw` so structured block builder sees recovered text.
+
+**Result:** KIX7SKXQ p3:7 recovered 323 chars ("Studying and understanding EnEF..."), p1:17 recovered 373 chars. All 4 papers audited show 0 empty unknown_structural blocks.
+
+### 11.9 Figure Matching Known Issue: Shared-Caption Multi-Panel Figures (2026-06-20)
+
+**Problem:** Paper 6QNRHRKX (JBJS 1970) has a 2x2 X-ray grid with individual "Fig. N" sub-panel labels (N=4,5,6,7) and a single shared caption below the entire grid. Each "Fig. N" label is treated as a separate truncated legend, creating 4 ambiguous figures with 4-7 candidates each. The real caption (block p3:12, `figure_caption_candidate`) can't match all 4 images simultaneously.
+
+**Scope:** Rare pre-1990 format. Only observed in 6QNRHRKX across 36 audited papers.
+
+**Current mitigation:** Truncated legends filtered when 2+ on same page. Short (<80 char) captions with fig_num=None go to unmatched_legends. Long shared caption remains as is.
+
+**Targeted fix (deferred):** Detect N truncated legends sharing one long caption on same page → merge all N images as sub-panels of one composite figure with the long caption as owner. Trigger: >=2 \( `_TRUNCATED_LEGEND_ONLY_PATTERN`\) entries on same page + >=1 `figure_caption_candidate` with text >80 chars spanning the full grid width.
+
+### 11.10 Figure Matching Known Issue: Cross-Page Preproof (RKSLQRIM) (2026-06-20)
+
+**Problem:** RKSLQRIM (preproof) has 5 remaining ambiguous figures. Fig 10 caption on p28 has 0 same-page candidates. Sub-figure panel labels (A, B, C) on p15, p19, p20, p24 are misclassified as `figure_caption` with empty text. These block types: `display_zone` + `legend_like` + `raw_label=figure_title` — the pipeline sees a legend with empty text and a marker_signature with the figure number, but the figure assets are on different pages.
+
+**Scope:** Preproof papers with cross-page figure layouts. Affects ~5-7 papers across 36.
+
+**Current mitigation:** marker_signature fallback extracts figure numbers from empty-text blocks. These now get `single_unconfirmed_match` with 1 candidate instead of `no_asset_match`. But cross-page matching still fails for pages separated by body text.
+
+**Targeted fix (deferred):** Extend sequential fallback or legend-bundle to handle cross-page gaps larger than 1 page when intervening pages have no competing figure captions.
+
+### 11.11 Figure Matching: close_asset_tie Above-Preference + adjacent_x Scoring (2026-06-20)
+
+**Problem 1 (close_asset_tie):** When a figure caption is sandwiched between two asset groups (one above, one below), both scored identically and the algorithm couldn't break the tie. This produced `close_asset_tie` ambiguous entries for standard layouts where the caption sits below the figure image and above the next figure's image.
+
+**Fix:** When `close_asset_tie` fires with both "above" and "below" sides, prefer the above-only candidates (standard: image → caption stacked below). Falls back to close_asset_tie only when no above-only candidates exist.
+
+**Result:** 2AGGSMVQ Fig2+Fig5 fixed (4/6→6/6), 2H8MZ27H Fig1 fixed (5/6→6/6). 97 figure tests pass.
+
+**Problem 2 (side-by-side caption):** Two-column journals (JSES International, Springer CORR) place figure captions in the left column with the image in the right column at the same y-band. `score_figure_match` had zero `x_overlap` for this layout because bounding boxes don't intersect horizontally. The decision gate at `score >= 0.6 AND (has_x_overlap OR ...)` blocked the match because `has_x_overlap=False` and `contextual_support=False`.
+
+**Fix:** Added `adjacent_x` signal to `ocr_scores.py:score_figure_match`: when horizontal gap < 80px AND < 30% of narrower bbox width, treat as horizontal adjacency → set `has_x_overlap=True` and add +0.20 score. This is a side-by-side layout detection, not a column segmentation, so it doesn't require stable page-level column boundaries.
+
+**Result:** 4DU8LEH2 Fig1 (JSES, caption-left image-right) fixed: 3/4→4/4. 4KCHGV2Z Fig2 (Springer CORR, same pattern) fixed. 302 tests pass.
+
+### 11.12 Figure Matching Known Issue: Multi-Column Figure Over-Merge (2026-06-20)
+
+**Problem:** 3FDT9652 (JSES International, 2-column journal). Page 3 has Fig 2 (left column) + Fig 3 (right column) at the same y-band. The `page_assets` / `_grow_region_from_seed` logic merges both images into one cluster because they share y-ranges, even though they belong to different figures in different columns. This causes Fig 2 to steal Fig 3's image, Fig 3 to steal Fig 4's images below, and Fig 4 to go ambiguous (0 assets left). All 6 figures on pages 2-5 are affected.
+
+**Root cause:** Matching uses vertical proximity only, without column-boundary awareness. On multi-column pages, figures in different columns at the same y get incorrectly merged. The `_grow_region_from_seed` function's `adjacent_right` check (gap ≤ 96px) happily merges across column gutters.
+
+**Why not fix with column segmentation:** Column gutter positions vary by journal (JSES ~750px, Springer ~650px, 3-column layouts ~450px/750px). A hardcoded threshold regresses other papers. Multi-column layouts are also relatively rare in the current collection (1 of 37 normal papers).
+
+**Scope:** Affects 3FDT9652 specifically. Not observed in the other 36 normal papers.
+
+**Targeted fix (deferred):** Requires "caption-as-boundary" matching: when N captions exist on a page with N asset clusters, match by reading-order proximity rather than all-page-assets clustering. Each caption should act as a firewall that prevents assets from being claimed by captions above it. Alternatively, detect multi-caption pages and disable `page_assets` groups (which merges all page assets into one cluster) for those pages, relying on `same_row_*` + region-grown groups only.
+
+---
+
+## 9.3 Figure Merge Root-Cause Analysis (2026-06-21)
+
+### The problem
+
+Multi-panel figures on complex layouts (SAN9AYVR, 2GN9LMCW Fig 4) fail to merge all sub-panels. Unmatched assets remain. The 4-direction growth + scoring bonus fixes didn't solve the core issue.
+
+### Why human vision always merges them
+
+A human looking at a page sees:
+1. A cluster of images close together → ONE perceptual group
+2. ONE legend/caption for that cluster → confirms the group
+3. Gaps between images in the same figure < gaps to the next figure/text
+4. The cluster forms a rectangular bounding box
+
+Result: the human **always** merges, no competition.
+
+### Why the algorithm fails
+
+The grouping has 3 competing layers:
+
+| Layer | What it creates | Why it fails |
+|-------|----------------|-------------|
+| `single_asset` (line 514) | 1 asset = 1 group | ALWAYS created, competes with merged groups |
+| `same_row_pair/triple` (line 528) | Consecutive same-row assets | Misses 2x2 grids, 3x2 layouts, irregular shapes |
+| `region_grown` (line 553) | Greedy seed-growth | First seed wins, no backtracking, eats adjacent regardless of actual figure boundary |
+
+**Root cause:** The algorithm treats grouping as a LOCAL greedy problem when it should be a GLOBAL clustering problem.
+
+A human sees ALL assets, computes global distances, and forms clusters. The algorithm:
+1. Generates overlapping groups (same asset can be in single_asset, same_row, AND region_grown)
+2. Makes them COMPETE via scoring (single_asset vs merged group for the same legend)
+3. The scoring favors closeness (single asset close to caption wins over merged group with larger centroid distance)
+
+**Fix direction:** Replace greedy competition with global spatial clustering.
+
+### Edge-case analysis: risks and fallbacks
+
+The simple clustering approach (group all assets within a distance threshold) fails on multiple real layouts. Here's a complete risk matrix:
+
+| # | Scenario | Risk | How to handle | Fallback if still wrong |
+|---|----------|------|---------------|------------------------|
+| 1 | **One page, 2+ separate figures, each with its own caption** | Clustering merges them into 1 group | **Caption-as-boundary**: count legends on the page. If N legends == 1 → one cluster. If N legends > 1 → split assets by nearest caption y-position. Each legend "owns" the assets in its y-band. | Fall through to single_asset matching: if a cluster has multiple legends and splitting fails, treat each asset as its own group |
+| 2 | **Cross-page figure (preprint, figure floats)** | Per-page clustering won't see assets on adjacent pages | Keep existing sequential fallback (`_expand_matched_assets_locally`). After matching per-page clusters, check cp-1, cp, cp+1 for orphan assets. | If the caption is on page N but ALL assets are on page N+1, the cluster on N is empty → sequential fallback claims assets on N+1 |
+| 3 | **Old journal (dense, small figures, tight spacing)** | Distance threshold too generous → merge unrelated figures | Check for **text separators** between asset groups. If body_paragraph / section_heading blocks exist in the vertical gap between two asset clusters, don't merge across the separator. | Tight spacing not a problem if text separators are respected |
+| 4 | **Irregular layout (1 tall panel left + 3 small panels right)** | Large horizontal gap > threshold → left panel and right stack are separate clusters | Use **vertical-overlap signal**: if two asset groups share significant y-overlap (>= 50% of the shorter group's height), merge them even if horizontal gap is large. This is how humans see them as one figure. | If vertical-overlap approach over-merges, fall back to pure distance clustering |
+| 5 | **Embedded caption inside figure** | Caption block exists inside asset cluster bbox (e.g., panel labels, axis text) | This is fine — we cluster ASSETS (figure_asset / media_asset), not all blocks. Text blocks are ignored. | N/A |
+| 6 | **Figure + table on same page** | Table assets merge with figure assets | Split by type BEFORE clustering: figure_asset → one cluster set, table_asset → another. Legends also split by type (figure_caption vs table_caption). | If type labels are wrong (table mislabeled as figure), the split won't help. Need type-independent position-only fallback. |
+| 7 | **Multi-column layout (figures in different columns at same y)** | Assets in left column figure merge with right column figure | **Caption-as-boundary**: 2+ legends on the page → split assets by nearest caption y. Each legend claims the assets below it until the next legend. Text separators (column gutters are not text separators, but section headings/subheadings in each column ARE). | If split by y fails (same y, different columns), fall through to single_asset matching — safe but unmerged |
+| 8 | **Orphan single-panel figure** | 1 asset, 1 legend on the page, not near any other asset | A cluster of 1 asset is still a valid cluster. Match legend → single-panel figure. Perfectly fine. | N/A |
+| 9 | **Figures separated by section heading or body text** | Text acts as visual separator but algorithm ignores text | **Text separator detection**: check the gap between two asset clusters. If any text block (section_heading, body_paragraph, backmatter_heading) exists in that gap, it's a separator. Don't merge across separators. | If text detection fails (empty block, wrong classification), fall back to distance-only clustering |
+| 10 | **Very large multi-panel figure (>10 panels)** | Panels spread across full page, gaps may exceed threshold | Use **permissive distance threshold** but constrain by bounding-box aspect. A figure spanning the full page width is normal; threshold should be proportional to the cluster's growing bbox, not a fixed % of page width. | If still split, the sequential expansion (existing `_expand_matched_assets_locally`) merges remaining orphans |
+
+### Complete proposed algorithm
+
+```
+For each page:
+  1. Collect figure assets on this page
+     (figure_asset + media_asset with image/chart/figure raw_label)
+     Exclude: non_body_media, table assets
+
+  2. Remove single_asset groups from consideration
+
+  3. Cluster assets by distance:
+     - For each pair of assets:
+       - Check horizontal gap < 12% page_width
+       - Check vertical gap < 8% page_height
+       - Check NO text separator (body_paragraph, section_heading)
+         in the vertical gap between them
+     - Form clusters via union-find on connected pairs
+
+  4. For irregular layouts: if two clusters share >= 50% y-overlap,
+     merge them even if horizontal gap exceeds threshold
+
+  5. Each cluster → ONE candidate group (no single_asset option for
+     any asset inside a cluster)
+
+  6. Count legends on this page:
+     - 0 legends → orphan cluster, pass to cross-page fallback
+     - 1 legend → auto-match (no scoring competition)
+     - N legends → split: assign each asset to nearest caption
+       by y-distance (each legend claims the vertical band below it)
+
+  7. Match: legend → cluster → accept.
+     No scoring competition. If the cluster exists and the legend
+     is on the same page, they belong together.
+
+  8. Single assets NOT in any cluster → treated as individual
+     candidate groups (backward compatible with single-panel figs).
+```
+
+### Changes to existing code
+
+1. `_build_candidate_figure_groups_from_assets`: Replace single_asset/same_row/page_assets/region_growth with clustering
+2. `_score_legend_to_group`: Remove single_asset path. Cluster groups auto-match at high confidence.
+3. No change to `_expand_matched_assets_locally` (cross-page fallback remains)
+4. No change to dedup (separate issue)
+5. Column detection: new helper function
+
+### Implementation risk summary
+
+| Risk | Severity | Mitigation |
+|------|----------|-----------|
+| Over-merge (separate figures merged) | Medium | Caption-as-boundary split, text separator detection |
+| Under-merge (figure split into pieces) | Low | Existing cross-page fallback collects orphans |
+| Performance regression on large pages | Low | Union-find is O(n log n), same as current |
+| Column detection false positive | Low | Column mode is additive — assets still cluster within each column |
+
+---
+
+

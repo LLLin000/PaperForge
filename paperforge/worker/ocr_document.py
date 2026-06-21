@@ -1418,6 +1418,25 @@ def _block_in_any_reference_zone(
     return any(global_index in zone.block_indices for zone in zones)
 
 
+def repair_reference_entry_from_pdf_text(block_run: list[dict], page_text: str) -> str:
+    seed = " ".join(
+        str(block.get("text") or "").strip()
+        for block in block_run
+        if str(block.get("text") or "").strip()
+    )
+    seed = re.sub(r"\s+", " ", seed).strip()
+    if not seed:
+        return ""
+    parts = [part for part in seed.split() if len(part) > 2]
+    if not parts:
+        return seed
+    first = parts[0]
+    idx = page_text.find(first)
+    if idx < 0:
+        return seed
+    return page_text[idx : idx + 300].strip()
+
+
 def _detect_forward_body_end(
     blocks: list[dict],
     page_layouts: dict[int, PageLayoutProfile] | None = None,
@@ -2391,6 +2410,68 @@ def analyze_document_structure(blocks: list[dict]) -> DocumentStructure:
     return ds
 
 
+def compute_layout_facts(blocks: list[dict]) -> list[dict]:
+    facts: list[dict] = []
+    band_seq = 0
+    last_key: tuple[int, str, int] | None = None
+    ref_roles = {"reference_heading", "reference_item"}
+    display_roles = {"figure_asset", "media_asset", "table_html", "figure_caption", "table_caption"}
+    tail_zones = {"tail_nonref_hold_zone", "post_reference_backmatter_zone"}
+    side_roles = {"structured_insert", "structured_insert_candidate", "non_body_insert"}
+    fm_zones = {"frontmatter_side_zone", "frontmatter_main_zone"}
+
+    def _sort_key(block: dict) -> tuple[int, float, float]:
+        bbox = block.get("bbox") or [0, 0, 0, 0]
+        return (
+            int(block.get("page", 0) or 0),
+            float(bbox[0]) if len(bbox) >= 1 else 0.0,
+            float(bbox[1]) if len(bbox) >= 2 else 0.0,
+        )
+
+    for block in sorted(blocks, key=_sort_key):
+        page = int(block.get("page", 0) or 0)
+        bbox = block.get("bbox") or [0, 0, 0, 0]
+        role = str(block.get("role") or "")
+        zone = str(block.get("zone") or "")
+        text = str(block.get("text") or block.get("block_content") or "").strip()
+        if zone == "reference_zone" or role in ref_roles:
+            layout_region = "reference_candidate"
+        elif zone == "display_zone" or role in display_roles:
+            layout_region = "display_zone"
+        elif zone in tail_zones or role.startswith("backmatter"):
+            layout_region = "tail_candidate"
+        elif zone in fm_zones and role in side_roles:
+            layout_region = "side_insert"
+        else:
+            layout_region = "body_flow"
+        col_key = 0 if len(bbox) < 4 else (0 if float(bbox[0]) < 600 else 1)
+        key = (page, layout_region, col_key)
+        if key != last_key:
+            band_seq += 1
+            last_key = key
+        facts.append(
+            {
+                "block_id": str(block.get("block_id") or ""),
+                "reading_band_id": f"band_{band_seq:03d}",
+                "display_cluster_candidate_id": f"disp_{page}_{col_key}" if layout_region == "display_zone" else "",
+                "layout_region": layout_region,
+                "boundary_before": (
+                    "weak"
+                    if role == "reference_item"
+                    else (
+                        "hard"
+                        if layout_region in {"reference_candidate", "display_zone"}
+                        and role not in {"figure_asset", "media_asset", "table_html"}
+                        else "none"
+                    )
+                ),
+                "boundary_after": "none",
+                "bridge_eligible": role == "unknown_structural" and not text and layout_region == "display_zone",
+            }
+        )
+    return facts
+
+
 def _apply_zone_labels(blocks: list[dict], region_bus: dict[str, dict] | None) -> None:
     if not region_bus:
         return
@@ -2495,6 +2576,56 @@ def _apply_content_zone_fallback(blocks: list[dict], region_bus: dict[str, dict]
                     block["zone"] = "tail_nonref_hold_zone"
             elif ref_start is None or page < ref_start:
                 block["zone"] = "body_zone"
+
+
+def _recover_empty_text_from_spans(blocks: list[dict]) -> None:
+    """Recover text for blocks where OCR detected spans but assembled text is empty.
+
+    When a block has ``raw_label == "text"``, non-empty ``span_metadata``, and
+    empty block-level text, the text can be reconstructed from span content.
+    These blocks are typically body paragraphs whose OCR assembly step dropped
+    the text but whose individual spans retained it.
+    """
+    recovered_count = 0
+    for block in blocks:
+        if str(block.get("text") or block.get("block_content") or "").strip():
+            continue
+        spans = block.get("span_metadata")
+        if not spans or not isinstance(spans, list) or len(spans) == 0:
+            continue
+        raw_label = str(block.get("raw_label") or "")
+        if raw_label not in {"text", "paragraph_title", "header"}:
+            continue
+        parts: list[str] = []
+        for span in spans:
+            st = str(span.get("text") or "").strip()
+            if st and not st.isdigit() and len(st) > 1:
+                parts.append(st)
+        if parts:
+            recovered = " ".join(parts)
+            if not _looks_like_author_list(recovered) and not _looks_like_affiliation(recovered):
+                block["text"] = recovered
+                block["block_content"] = recovered
+                block["_text_source"] = "span_recovery"
+                block["role"] = "body_paragraph"
+                block["seed_role"] = "body_paragraph"
+                recovered_count += 1
+                record_decision(
+                    block,
+                    stage="empty_text_span_recovery",
+                    old_role=block.get("role", "unknown_structural"),
+                    new_role=block["role"],
+                    reason=f"recovered {len(recovered)} chars from {len(parts)} spans",
+                )
+        # If span text is also empty, mark as needing PDF fallback so
+        # downstream callers (audit refresh) can attempt backfill via PDF
+        # and then re-normalize with seed_role set.
+        if not parts:
+            block["_needs_pdf_fallback"] = True
+            if not block.get("text") and str(block.get("raw_label") or "") == "text":
+                # Give a temporary seed_role so re-normalize treats it as body
+                block["seed_role"] = block.get("seed_role") or "body_paragraph"
+    return recovered_count
 
 
 def _sanitize_reference_zone_boundary(blocks: list[dict]) -> None:
@@ -4544,7 +4675,13 @@ def _should_keep_formal_caption_seed(block: dict) -> bool:
         return False
     if marker in {"figure_number", "table_number"}:
         return True
-    return zone == "display_zone" and style in {"legend_like", "support_like"} and text.lower().startswith(("fig", "figure", "table"))
+    # Ponytail: accept as caption when text identifies itself as figure/table
+    # label OR has substantial descriptive text typical of captions (>= 80 chars)
+    # AND is in a display-paired zone or legend-like style
+    text_lower = text.lower()
+    looks_like_caption = text_lower.startswith(("fig", "figure", "table")) or len(text) >= 80
+    in_display_context = zone in {"display_zone", "body_zone"} or style in {"legend_like", "support_like"}
+    return looks_like_caption and in_display_context
 
 
 def _demote_early_frontmatter_body_leaks(blocks: list[dict]) -> None:
@@ -4578,6 +4715,13 @@ def _demote_early_frontmatter_body_leaks(blocks: list[dict]) -> None:
             block["render_default"] = False
             continue
         if lower.startswith(("pii:", "reference:", "to appear in:", "revised date:", "doi ", "doi:", "received:", "accepted date:")):
+            block["role"] = "frontmatter_noise"
+            block["render_default"] = False
+            continue
+        # Journal badge/marker text above the real title — not body content
+        if lower in ("highlighted paper", "research highlight", "highlight", "research article",
+                      "review article", "original article", "editorial", "letter", "perspective",
+                      "communication", "technical note", "case report"):
             block["role"] = "frontmatter_noise"
             block["render_default"] = False
             continue
@@ -4615,16 +4759,14 @@ def _restore_numbered_body_from_tail_hold(blocks: list[dict]) -> None:
 def normalize_document_structure(
     blocks: list[dict],
     source_frontmatter_anchors: dict | None = None,
+    pdf_path: str | None = None,
 ) -> tuple[DocumentStructure, list[dict]]:
-    """Analyze document structure and normalize roles.
-
-    Returns (document_structure, normalized_blocks).
-    Normalization includes:
-    - backmatter form classification
-    - backmatter role normalization after boundary
-    - tail body candidate promotion
-    - tail spread ownership assignment
     """
+    Returns (document_structure, normalized_blocks).
+    """
+    if pdf_path:
+        from paperforge.worker.ocr_pdf_spans import backfill_missing_text_from_pdf
+        backfill_missing_text_from_pdf(blocks, pdf_path)
     page_layouts = _build_page_layout_profiles(blocks)
     body_family_anchor = discover_body_family_anchor(blocks)
     reference_family_anchor = discover_reference_family_anchor(blocks)
@@ -4647,6 +4789,7 @@ def normalize_document_structure(
     )
     _exclude_frontmatter_side_from_body_flow(blocks)
     _exclude_tail_nonref_from_body_flow(blocks)
+    _recover_empty_text_from_spans(blocks)
 
     from paperforge.worker.ocr_roles import resolve_final_role
 
@@ -4669,6 +4812,23 @@ def normalize_document_structure(
             block["role_confidence"] = resolved.confidence
             if resolved.evidence:
                 block.setdefault("evidence", []).extend(resolved.evidence)
+
+    try:
+        layout_facts = compute_layout_facts(blocks)
+        fact_by_id = {row["block_id"]: row for row in layout_facts if row.get("block_id")}
+        for block in blocks:
+            block_id = str(block.get("block_id") or "")
+            fact = fact_by_id.get(block_id)
+            if not fact:
+                continue
+            block["reading_band_id"] = fact["reading_band_id"]
+            block["display_cluster_candidate_id"] = fact["display_cluster_candidate_id"]
+            block["layout_region"] = fact["layout_region"]
+            block["boundary_before"] = fact["boundary_before"]
+            block["boundary_after"] = fact["boundary_after"]
+            block["bridge_eligible"] = fact["bridge_eligible"]
+    except Exception:
+        pass
 
     # Backmatter heading candidate promotion: confirm candidates that are
     # followed by body-like text on the same page.  This runs after role
@@ -5151,6 +5311,10 @@ def normalize_document_structure(
                 "frontmatter_support",
                 "structured_insert",
                 "non_body_insert",
+                "subsection_heading",
+                "reference_item",
+                "table_caption",
+                "table_html",
             }:
                 block["role_source"] = "structural_gate_fallback"
                 continue
@@ -5173,3 +5337,34 @@ def normalize_document_structure(
                 block["role"] = seed_role
 
     return doc_structure, blocks
+
+
+def score_reference_corridor_membership(block: dict) -> dict:
+    from paperforge.worker.ocr_reference_signals import score_reference_entry
+
+    text = str(block.get("text") or block.get("block_content") or "").strip()
+    role = str(block.get("role") or "")
+    layout_region = str(block.get("layout_region") or "")
+    style = score_reference_entry(text)
+    ref_membership_score = 0.0
+    if role in {"reference_heading", "reference_item"}:
+        ref_membership_score += 0.6
+    if layout_region == "reference_candidate":
+        ref_membership_score += 0.2
+    ref_membership_score += float(style.get("confidence") or 0.0) * 0.3
+
+    intrusion = 0.0
+    lower = text.lower()
+    if role.startswith("backmatter"):
+        intrusion += 0.4
+    if any(token in lower for token in ("acknowledgements", "funding", "conflict of interest", "data availability")):
+        intrusion += 0.8
+    if layout_region in {"body_flow", "display_zone", "side_insert"} and role not in {"reference_heading", "reference_item"}:
+        intrusion += 0.3
+    return {
+        "ref_membership_score": ref_membership_score,
+        "non_ref_intrusion_score": intrusion,
+        "reference_style_family": style["family"],
+        "reference_style_confidence": style["confidence"],
+        "accept_reference_membership": ref_membership_score >= 0.55 and intrusion < 0.5,
+    }
