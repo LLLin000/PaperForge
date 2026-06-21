@@ -1307,12 +1307,6 @@ def render_fulltext_markdown(
             last_structured_insert_page = None
             last_structured_insert_bbox = None
             text = _display_heading_text(block, text)
-            _heading_lower = text.strip().lower()
-            if any(kw in _heading_lower for kw in _BACKMATTER_HEADING_KEYWORDS):
-                if text and not _should_suppress_frontmatter_heading(text):
-                    lines.append(f"**{text}**")
-                    lines.append("")
-                continue
             if role == "section_heading":
                 if _should_suppress_frontmatter_heading(text):
                     continue
