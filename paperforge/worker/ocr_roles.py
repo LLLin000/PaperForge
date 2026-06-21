@@ -442,7 +442,21 @@ def _infer_heading_level(
                     if match["size_compatible"] and match["match_score"] > 0.6:
                         return candidate_role
 
-    # Legacy heuristics (fallback when no profile data)
+    # Visual signal: font_size + bold overrides text heuristics
+    ss = (block or {}).get("span_signature") or {}
+    fs = ss.get("font_size_median", 0) or ss.get("font_size", 0) or font_size
+    is_bold = ss.get("bold", False)
+    if fs > 0:
+        # Larger font (section_heading tier) → highest level
+        if fs >= 11:
+            return "section_heading"
+        # Same-as-body bold → intermediate level
+        if is_bold:
+            return "subsection_heading"
+        # Same-as-body regular → lowest level
+        return "sub_subsection_heading"
+
+    # Legacy text heuristics (fallback when no visual data)
     upper_ratio = sum(1 for c in text if c.isupper()) / max(len(text), 1)
     is_mostly_upper = upper_ratio > 0.7
     sentence_verbs = {" is ", " are ", " was ", " were ", " have ", " has ", " been "}
@@ -1211,7 +1225,7 @@ def assign_block_role(
                 confidence=0.5,
                 evidence=[f"unnumbered paragraph_title on page 1 outside title zone: {text[:60]}"],
             )
-        level = _infer_heading_level(text)
+        level = _infer_heading_level(text, block=block)
         return RoleAssignment(
             role=level,
             confidence=0.6,
@@ -1473,7 +1487,7 @@ def assign_block_role(
             bbox = block.get("block_bbox", [0, 0, 0, 0])
             in_top_80 = page_height == 0 or (len(bbox) >= 4 and bbox[1] < page_height * 0.8)
             if in_top_80:
-                heading_level = _infer_heading_level(text, font_size)
+                heading_level = _infer_heading_level(text, font_size, block=block)
                 return RoleAssignment(
                     role=heading_level,
                     confidence=0.65,

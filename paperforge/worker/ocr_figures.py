@@ -1501,6 +1501,21 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
         entry["bridge_block_ids"] = [str(b.get("block_id", "")) for b in local_bridges if b.get("block_id")]
         if len(matched_assets) > 1:
             entry["cluster_bbox"] = _cluster_bbox([a.get("bbox", [0, 0, 0, 0]) for a in matched_assets])
+            # Push cluster_bbox top down past figure_inner_text blocks (panel labels)
+            # to exclude (A), (B) etc. from the cropped figure image.
+            leg_page = int(legend_page or 0)
+            for ib in structured_blocks:
+                if int(ib.get("page", 0) or 0) != leg_page or ib.get("role") != "figure_inner_text":
+                    continue
+                ib_bbox = ib.get("bbox") or ib.get("block_bbox") or [0, 0, 0, 0]
+                cb = entry["cluster_bbox"]
+                if len(ib_bbox) >= 4 and len(cb) >= 4:
+                    # Horizontal overlap: inner text sits in the figure's column
+                    x_overlap = ib_bbox[0] < cb[2] and ib_bbox[2] > cb[0]
+                    # Text starts above cluster top and extends into it
+                    is_above = ib_bbox[1] < cb[1] and ib_bbox[3] > cb[1]
+                    if x_overlap and is_above:
+                        cb[1] = max(cb[1], ib_bbox[3])
         matched_figures.append(entry)
 
     for _i, asset in enumerate(assets):

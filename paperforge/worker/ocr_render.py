@@ -381,9 +381,10 @@ def _reorder_tail_run(
     # Column-sort is maintained; ref items are grouped at the end.
     if skip_section_grouping:
         ref_roles = frozenset({"reference_heading", "reference_item", "reference_body"})
-        non_ref = [b for b in tail_blocks if b.get("role") not in ref_roles]
+        non_ref = [b for b in tail_blocks if b.get("role") not in ref_roles and b.get("role") != "footnote"]
         refs = [b for b in tail_blocks if b.get("role") in ref_roles]
-        return non_ref + refs, carried_ref, carried_backmatter
+        fnotes = [b for b in tail_blocks if b.get("role") == "footnote"]
+        return non_ref + refs + fnotes, carried_ref, carried_backmatter
 
     # Quick check: do blocks have bbox data?  If not, use FIFO fallback.
     has_geo = any(
@@ -400,6 +401,7 @@ def _reorder_tail_run(
     ref_section: dict | None = carried_ref
     ref_items: list[dict] = []
     non_tail_pass: list[dict] = []
+    footnote_blocks: list[dict] = []
     orphan_blocks: list[dict] = []
     carried_bodies: list[dict] = []
 
@@ -430,6 +432,8 @@ def _reorder_tail_run(
                     non_tail_pass.append(block)
             else:
                 non_tail_pass.append(block)
+        elif role == "footnote":
+            footnote_blocks.append(block)
         else:
             non_tail_pass.append(block)
 
@@ -505,9 +509,9 @@ def _reorder_tail_run(
 
     # Phase 5 — emit: non-tail pass (frontmatter), then backmatter
     # sections sorted by y-position (boundary-level and sub-headings
-    # emit in reading order), then reference sections.  The y-sort is
-    # applied only to backmatter_sections to avoid carrying cross-page
-    # relationship artifacts from previous pages' carried blocks.
+    # emit in reading order), then reference sections, then footnotes.  The
+    # y-sort is applied only to backmatter_sections to avoid carrying
+    # cross-page relationship artifacts from previous pages' carried blocks.
     result: list[dict] = []
     result.extend(non_tail_pass)
     result.extend(carried_bodies)
@@ -526,6 +530,7 @@ def _reorder_tail_run(
         if ref_section.get("heading"):
             result.append(ref_section["heading"])
         result.extend(ref_section["bodies"])
+    result.extend(footnote_blocks)
     result.extend(orphan_blocks)
 
     next_backmatter = carried_backmatter
@@ -1237,7 +1242,9 @@ def render_fulltext_markdown(
         if role == "structured_insert":
             pass  # render as callout below
         elif not block.get("render_default", True):
-            continue
+            bm_start = getattr(document_structure, "spread_start", None) if document_structure else None
+            if role != "frontmatter_noise" or block_page is None or not bm_start or block_page < bm_start:
+                continue
         if role in CONSUMED_FRONTMATTER_ROLES and int(block.get("page", 0) or 0) <= 2:
             continue
         _SKIPPED_BODY_ROLES = {
@@ -1251,7 +1258,11 @@ def render_fulltext_markdown(
             "figure_inner_text",
         }
         if role in _SKIPPED_BODY_ROLES:
-            continue
+            bm_start = getattr(document_structure, "spread_start", None) if document_structure else None
+            if role == "frontmatter_noise" and block_page is not None and bm_start and block_page >= bm_start:
+                pass
+            else:
+                continue
 
         block_id = block.get("block_id")
         block_key = _page_block_key(block_page, block_id)
@@ -1271,7 +1282,9 @@ def render_fulltext_markdown(
         if role == "structured_insert":
             pass  # render as callout below
         elif not block.get("render_default", True):
-            continue
+            bm_start2 = getattr(document_structure, "spread_start", None) if document_structure else None
+            if role != "frontmatter_noise" or block_page is None or not bm_start2 or block_page < bm_start2:
+                continue
         if role == "backmatter_boundary_heading" or role == "backmatter_heading":
             last_structured_insert_page = None
             last_structured_insert_bbox = None
