@@ -136,6 +136,21 @@ def test_has_text_separator_diagonal_no_false_positive() -> None:
     assert _has_text_separator(a, b, []) is False
 
 
+def test_filter_figure_assets() -> None:
+    from paperforge.worker.ocr_figures import _filter_figure_assets
+    assets = [
+        {"block_id": "fig", "role": "figure_asset", "raw_label": "image"},
+        {"block_id": "chart", "role": "media_asset", "raw_label": "chart"},
+        {"block_id": "empty_label", "role": "media_asset", "raw_label": ""},
+        {"block_id": "table_img", "role": "media_asset", "raw_label": "table", "text": "<img src='x.png'>"},
+        {"block_id": "table_plain", "role": "media_asset", "raw_label": "table", "text": "plain table"},
+        {"block_id": "noise", "role": "noise", "raw_label": "image"},
+        {"block_id": "nonbody", "role": "media_asset", "raw_label": "image", "_non_body_media": True},
+    ]
+    result = _filter_figure_assets(assets)
+    assert [a["block_id"] for a in result] == ["fig", "chart", "empty_label", "table_img"]
+
+
 def test_precaption_media_region_above() -> None:
     from paperforge.worker.ocr_figures import _precaption_media_region
 

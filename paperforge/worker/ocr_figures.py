@@ -521,6 +521,25 @@ def _media_clusters(blocks: list[dict], page_width: float = 1200) -> list[list[d
     return clusters
 
 
+def _filter_figure_assets(assets: list[dict]) -> list[dict]:
+    result = []
+    for b in assets:
+        if b.get("_non_body_media"):
+            continue
+        role = b.get("role", "")
+        if role == "figure_asset":
+            result.append(b)
+        elif role == "media_asset":
+            rl = str(b.get("raw_label", "") or "")
+            if rl in {"image", "chart", "figure"}:
+                result.append(b)
+            elif not rl.strip():
+                result.append(b)
+            elif rl == "table" and "<img" in str(b.get("text", "") or "").lower():
+                result.append(b)
+    return result
+
+
 def _bbox_width(bbox: list[float]) -> float:
     return float(bbox[2] - bbox[0])
 
