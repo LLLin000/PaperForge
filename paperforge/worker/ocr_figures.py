@@ -405,6 +405,74 @@ def _has_text_separator(a: dict, b: dict, page_blocks: list[dict]) -> bool:
     return False
 
 
+def _cluster_page_assets(
+    page_assets: list[dict],
+    all_blocks: list[dict],
+    n_legends: int,
+    page_width: float,
+    page_height: float,
+) -> list[list[dict]]:
+    if not page_assets:
+        return []
+    if len(page_assets) == 1:
+        return [list(page_assets)]
+
+    h_threshold = max(page_width * 0.12, 40.0)
+    v_threshold = max(min(page_width, page_height) * 0.08, 40.0)
+    parent = list(range(len(page_assets)))
+
+    def find(x):
+        while parent[x] != x:
+            parent[x] = parent[parent[x]]
+            x = parent[x]
+        return x
+
+    def union(x, y):
+        px, py = find(x), find(y)
+        if px != py:
+            parent[py] = px
+
+    for i in range(len(page_assets)):
+        for j in range(i + 1, len(page_assets)):
+            a, b = page_assets[i], page_assets[j]
+            ab = a.get("bbox", [0, 0, 0, 0])
+            bb = b.get("bbox", [0, 0, 0, 0])
+
+            h_gap = max(0.0, bb[0] - ab[2], ab[0] - bb[2])
+            v_gap = max(0.0, bb[1] - ab[3], ab[1] - bb[3])
+
+            if h_gap > h_threshold:
+                if n_legends <= 1:
+                    a_y1, a_y2 = ab[1], ab[3]
+                    b_y1, b_y2 = bb[1], bb[3]
+                    y_overlap = max(0, min(a_y2, b_y2) - max(a_y1, b_y1))
+                    shorter_h = min(a_y2 - a_y1, b_y2 - b_y1)
+                    if shorter_h > 0 and y_overlap / shorter_h >= 0.5:
+                        if h_gap > page_width * 0.25:
+                            continue
+                    else:
+                        continue
+                else:
+                    continue
+
+            if v_gap > v_threshold:
+                continue
+
+            if _has_text_separator(a, b, all_blocks):
+                continue
+
+            union(i, j)
+
+    clusters: dict[int, list[dict]] = {}
+    for i, block in enumerate(page_assets):
+        root = find(i)
+        if root not in clusters:
+            clusters[root] = []
+        clusters[root].append(block)
+
+    return list(clusters.values())
+
+
 def _asset_gap_left(a: dict, b: dict) -> float:
     ab = a.get("bbox") or [0, 0, 0, 0]
     bb = b.get("bbox") or [0, 0, 0, 0]

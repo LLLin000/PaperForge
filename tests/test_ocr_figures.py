@@ -151,6 +151,63 @@ def test_filter_figure_assets() -> None:
     assert [a["block_id"] for a in result] == ["fig", "chart", "empty_label", "table_img"]
 
 
+def test_cluster_page_assets_2x2_grid() -> None:
+    from paperforge.worker.ocr_figures import _cluster_page_assets
+    assets = [
+        {"bbox": [0, 0, 100, 100], "page": 1, "role": "figure_asset"},
+        {"bbox": [120, 0, 220, 100], "page": 1, "role": "figure_asset"},
+        {"bbox": [0, 120, 100, 220], "page": 1, "role": "figure_asset"},
+        {"bbox": [120, 120, 220, 220], "page": 1, "role": "figure_asset"},
+    ]
+    clusters = _cluster_page_assets(assets, [], 1, 1000, 1000)
+    assert len(clusters) == 1
+    assert len(clusters[0]) == 4
+
+
+def test_cluster_page_assets_wide_separation_no_irregular() -> None:
+    from paperforge.worker.ocr_figures import _cluster_page_assets
+    assets = [
+        {"bbox": [0, 0, 100, 100], "page": 1, "role": "figure_asset"},
+        {"bbox": [500, 0, 600, 100], "page": 1, "role": "figure_asset"},
+    ]
+    clusters = _cluster_page_assets(assets, [], 1, 1000, 1000)
+    assert len(clusters) == 2
+
+
+def test_cluster_page_assets_text_separator_splits() -> None:
+    from paperforge.worker.ocr_figures import _cluster_page_assets
+    assets = [
+        {"bbox": [0, 0, 100, 100], "page": 1, "role": "figure_asset"},
+        {"bbox": [0, 200, 100, 300], "page": 1, "role": "figure_asset"},
+    ]
+    body = {"bbox": [10, 120, 90, 180], "page": 1, "role": "body_paragraph", "text": "some body text here between figures"}
+    clusters = _cluster_page_assets(assets, [body], 1, 1000, 1000)
+    assert len(clusters) == 2
+
+
+def test_cluster_page_assets_irregular_merge() -> None:
+    from paperforge.worker.ocr_figures import _cluster_page_assets
+    assets = [
+        {"bbox": [0, 0, 100, 300], "page": 1, "role": "figure_asset"},
+        {"bbox": [200, 0, 300, 100], "page": 1, "role": "figure_asset"},
+        {"bbox": [200, 120, 300, 220], "page": 1, "role": "figure_asset"},
+        {"bbox": [200, 240, 300, 340], "page": 1, "role": "figure_asset"},
+    ]
+    clusters = _cluster_page_assets(assets, [], 1, 1000, 1000)
+    assert len(clusters) == 1
+    assert len(clusters[0]) == 4
+
+
+def test_cluster_page_assets_no_irregular_when_multi_legend() -> None:
+    from paperforge.worker.ocr_figures import _cluster_page_assets
+    assets = [
+        {"bbox": [0, 0, 100, 300], "page": 1, "role": "figure_asset"},
+        {"bbox": [300, 0, 400, 100], "page": 1, "role": "figure_asset"},
+    ]
+    clusters = _cluster_page_assets(assets, [], 2, 1000, 1000)
+    assert len(clusters) == 2
+
+
 def test_precaption_media_region_above() -> None:
     from paperforge.worker.ocr_figures import _precaption_media_region
 
