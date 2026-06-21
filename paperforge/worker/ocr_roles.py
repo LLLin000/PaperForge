@@ -12,7 +12,7 @@ class RoleAssignment:
 
 
 _HEADING_NUMBER_PATTERN = re.compile(
-    r"^\d+(?:\.\d+)*\.?\s+[A-Z]",
+    r"^\d+(?:\.\d+)*\.?\s+(?:[A-Z0-9])",
 )
 
 _FIGURE_PREFIX_PATTERN = re.compile(

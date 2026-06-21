@@ -1029,12 +1029,26 @@ def render_fulltext_markdown(
         }
         # Group by size for the fallback, but prefer role-based assignment
         size_groups: dict[float, list[int]] = {}
+        bid_to_block: dict[int, dict] = {}
         for bid, sz in heading_font_sizes.items():
             bucket = round(sz * 2) / 2
             size_groups.setdefault(bucket, []).append(bid)
+        for blk in structured_blocks:
+            bid_to_block[id(blk)] = blk
         sorted_sizes = sorted(size_groups.keys(), reverse=True)
         for level_idx, bucket in enumerate(sorted_sizes):
-            prefix = "##" if level_idx == 0 else "###"
+            if level_idx == 0:
+                prefix = "##"
+            else:
+                # Within same font size, bold → ###, regular → ####
+                bolds = [bid for bid in size_groups[bucket]
+                         if (bid_to_block.get(bid, {}).get("span_signature") or {}).get("bold")]
+                regulars = [bid for bid in size_groups[bucket] if bid not in bolds]
+                for bid in bolds:
+                    block_heading_prefix[bid] = "###"
+                for bid in regulars:
+                    block_heading_prefix[bid] = "####"
+                continue
             for bid in size_groups[bucket]:
                 block_heading_prefix[bid] = prefix  # size-based fallback
 
