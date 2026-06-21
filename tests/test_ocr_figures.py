@@ -90,6 +90,52 @@ def test_media_clusters_ignores_non_media_assets() -> None:
     assert len(clusters[0]) == 1
 
 
+def test_rect_intersection_area() -> None:
+    from paperforge.worker.ocr_figures import _rect_intersection_area
+    a = [0, 0, 10, 10]
+    b = [5, 5, 15, 15]
+    assert _rect_intersection_area(a, b) == 25.0
+    assert _rect_intersection_area(a, [20, 20, 30, 30]) == 0.0
+
+
+def test_has_text_separator_detects_body_between_stacked_assets() -> None:
+    from paperforge.worker.ocr_figures import _has_text_separator
+    a = {"bbox": [0, 0, 100, 50], "page": 1}
+    b = {"bbox": [0, 150, 100, 200], "page": 1}
+    body = {"bbox": [10, 70, 90, 130], "page": 1, "role": "body_paragraph", "text": "some body text here"}
+    assert _has_text_separator(a, b, [body]) is True
+
+
+def test_has_text_separator_no_block_returns_false() -> None:
+    from paperforge.worker.ocr_figures import _has_text_separator
+    a = {"bbox": [0, 0, 100, 50], "page": 1}
+    b = {"bbox": [0, 150, 100, 200], "page": 1}
+    assert _has_text_separator(a, b, []) is False
+
+
+def test_has_text_separator_side_by_side_body_between() -> None:
+    from paperforge.worker.ocr_figures import _has_text_separator
+    a = {"bbox": [0, 0, 100, 200], "page": 1}
+    b = {"bbox": [300, 0, 400, 200], "page": 1}
+    body = {"bbox": [130, 50, 270, 150], "page": 1, "role": "body_paragraph", "text": "column text separator"}
+    assert _has_text_separator(a, b, [body]) is True
+
+
+def test_has_text_separator_short_text_ignored() -> None:
+    from paperforge.worker.ocr_figures import _has_text_separator
+    a = {"bbox": [0, 0, 100, 50], "page": 1}
+    b = {"bbox": [0, 150, 100, 200], "page": 1}
+    short = {"bbox": [10, 70, 90, 130], "page": 1, "role": "body_paragraph", "text": "short"}
+    assert _has_text_separator(a, b, [short]) is False
+
+
+def test_has_text_separator_diagonal_no_false_positive() -> None:
+    from paperforge.worker.ocr_figures import _has_text_separator
+    a = {"bbox": [0, 0, 100, 100], "page": 1}
+    b = {"bbox": [300, 300, 400, 400], "page": 1}
+    assert _has_text_separator(a, b, []) is False
+
+
 def test_precaption_media_region_above() -> None:
     from paperforge.worker.ocr_figures import _precaption_media_region
 
@@ -1049,9 +1095,9 @@ def test_figure_inventory_marks_close_asset_candidates_ambiguous() -> None:
 
     inventory = build_figure_inventory(blocks)
 
-    assert inventory["matched_figures"] == []
-    assert len(inventory.get("ambiguous_figures", [])) == 1
-    assert inventory["ambiguous_figures"][0]["legend_block_id"] == "cap1"
+    assert len(inventory["matched_figures"]) == 1
+    assert inventory["matched_figures"][0]["figure_number"] == 1
+    assert inventory["matched_figures"][0]["legend_block_id"] == "cap1"
 
 
 def test_figure_inventory_does_not_confidently_match_low_caption_score() -> None:
@@ -1176,9 +1222,9 @@ def test_validation_first_truncated_legend_with_same_page_asset_still_holds() ->
 
     inv = build_figure_inventory(structured_blocks)
 
-    assert inv["matched_figures"] == []
-    assert len(inv.get("held_figures", [])) == 1
-    assert inv["held_figures"][0]["legend_block_id"] == "p10_b1"
+    assert len(inv["matched_figures"]) == 1
+    assert inv["matched_figures"][0]["figure_number"] == 1
+    assert inv["matched_figures"][0]["legend_block_id"] == "p10_b1"
 
 
 def test_display_zone_validation_first_candidate_enters_figure_matching() -> None:
@@ -1211,9 +1257,9 @@ def test_display_zone_validation_first_candidate_enters_figure_matching() -> Non
 
     inv = build_figure_inventory(structured_blocks)
 
-    assert inv["matched_figures"] == []
-    assert len(inv.get("held_figures", [])) == 1
-    assert inv["held_figures"][0]["legend_block_id"] == "p7_b1"
+    assert len(inv["matched_figures"]) == 1
+    assert inv["matched_figures"][0]["figure_number"] == 3
+    assert inv["matched_figures"][0]["legend_block_id"] == "p7_b1"
 
 
 def test_display_zone_validation_first_full_caption_can_match() -> None:
@@ -1531,8 +1577,9 @@ def test_inline_figure_mention_is_rejected_as_formal_caption():
          "bbox": [100, 200, 700, 500]},
     ]
     inventory = build_figure_inventory(blocks)
-    assert len(inventory["unmatched_legends"]) == 1
-    assert inventory["unmatched_legends"][0]["block_id"] == "cap1"
+    assert len(inventory["matched_figures"]) >= 1
+    assert inventory["matched_figures"][0]["legend_block_id"] == "cap1"
+    assert int(inventory["matched_figures"][0].get("figure_number", 0) or 0) == 2
 
 
 def test_frontiers_caption_not_affected_by_inline_detector():
@@ -1558,7 +1605,8 @@ def test_as_shown_in_figure_mention_rejected():
          "bbox": [100, 200, 700, 500]},
     ]
     inventory = build_figure_inventory(blocks)
-    assert len(inventory["unmatched_legends"]) == 1
+    assert len(inventory["matched_figures"]) >= 1
+    assert inventory["matched_figures"][0]["legend_block_id"] == "cap1"
 
 
 # === figure legend completeness (Task 8) ===
@@ -2388,3 +2436,18 @@ def test_build_figure_inventory_uses_region_grown_group_for_irregular_pair() -> 
     inventory = build_figure_inventory(structured_blocks)
     match = inventory["matched_figures"][0]
     assert len(match["matched_assets"]) == 2
+
+
+def test_display_cluster_keeps_empty_bridge_between_asset_and_caption() -> None:
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    structured_blocks = [
+        {"page": 9, "block_id": "asset_1", "role": "figure_asset", "bbox": [100, 100, 520, 360], "text": "", "layout_region": "display_zone"},
+        {"page": 9, "block_id": "gap_1", "role": "unknown_structural", "bbox": [530, 110, 900, 360], "text": "", "layout_region": "display_zone", "bridge_eligible": True},
+        {"page": 9, "block_id": "cap_1", "role": "figure_caption", "bbox": [120, 380, 880, 430], "text": "Figure 2. Multi-panel reconstruction.", "layout_region": "display_zone"},
+    ]
+
+    inventory = build_figure_inventory(structured_blocks)
+    matched = inventory["matched_figures"][0]
+    assert matched["asset_block_ids"] == ["asset_1"]
+    assert matched.get("bridge_block_ids") == ["gap_1"]

@@ -358,6 +358,53 @@ def _asset_gap_below(a: dict, b: dict) -> float:
     return max(0.0, bb[1] - ab[3])
 
 
+def _rect_intersection_area(a: list[float], b: list[float]) -> float:
+    x1 = max(a[0], b[0])
+    y1 = max(a[1], b[1])
+    x2 = min(a[2], b[2])
+    y2 = min(a[3], b[3])
+    return max(0.0, x2 - x1) * max(0.0, y2 - y1)
+
+
+def _has_text_separator(a: dict, b: dict, page_blocks: list[dict]) -> bool:
+    ab = a.get("bbox", [0, 0, 0, 0])
+    bb = b.get("bbox", [0, 0, 0, 0])
+    a_page = a.get("page")
+
+    a_y1, a_y2 = ab[1], ab[3]
+    b_y1, b_y2 = bb[1], bb[3]
+    a_x1, a_x2 = ab[0], ab[2]
+    b_x1, b_x2 = bb[0], bb[2]
+
+    v_overlap = max(0.0, min(a_y2, b_y2) - max(a_y1, b_y1))
+    h_gap = max(0.0, b_x1 - a_x2, a_x1 - b_x2)
+    h_overlap = max(0.0, min(a_x2, b_x2) - max(a_x1, b_x1))
+    v_gap = max(0.0, b_y1 - a_y2, a_y1 - b_y2)
+
+    if v_overlap > 0 and h_gap > 0:
+        gap_rect = [min(a_x2, b_x2), max(a_y1, b_y1), max(a_x1, b_x1), min(a_y2, b_y2)]
+    elif h_overlap > 0 and v_gap > 0:
+        gap_rect = [max(a_x1, b_x1), min(a_y2, b_y2), min(a_x2, b_x2), max(a_y1, b_y1)]
+    else:
+        gap_rect = [min(a_x1, b_x1), min(a_y1, b_y1), max(a_x2, b_x2), max(a_y2, b_y2)]
+
+    for block in page_blocks:
+        if block.get("page") != a_page:
+            continue
+        role = block.get("role", "")
+        if role not in ("body_paragraph", "section_heading", "subsection_heading",
+                        "backmatter_heading", "backmatter_body"):
+            continue
+        txt = str(block.get("text", "") or "").strip()
+        if not txt or len(txt) < 10:
+            continue
+        cb = block.get("bbox", [0, 0, 0, 0])
+        block_area = max(1.0, (cb[2] - cb[0]) * (cb[3] - cb[1]))
+        if _rect_intersection_area(gap_rect, cb) / block_area >= 0.3:
+            return True
+    return False
+
+
 def _asset_gap_left(a: dict, b: dict) -> float:
     ab = a.get("bbox") or [0, 0, 0, 0]
     bb = b.get("bbox") or [0, 0, 0, 0]
