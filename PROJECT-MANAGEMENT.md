@@ -1678,5 +1678,25 @@ Final plan at `docs/superpowers/plans/2026-06-22-cover-page-detection-and-block-
 | 2026-06-22 | Cover detection = positive markers, not "no body" | Normal papers may have abstract on page 1, body on page 2 |
 | 2026-06-22 | footnote→callout needs positive content markers | Only affiliation/correspondence, not all small-font footnotes |
 | 2026-06-22 | Task 1 and Task 2: separate commits | Different risk profiles |
+| 2026-06-22 | footnote→callout font threshold: `fn_fs < body_font_median` | `0.9 * median` had 0.014pt margin miss; any smaller-than-body is callout-worthy |
 
+### 12.12 Issues Found During 2HEUD5P9 Rebuild (2026-06-22)
+
+1. **P1:8 eaten** — Block 8 on page 1 (right column body paragraph continuation, `seed_role=body_paragraph`) was misclassified as `non_body_insert`. Root cause: `_detect_non_body_insert_clusters` first-pass page-1 guard uses `"-" in text` (any hyphen anywhere, e.g. "bone-related"), not `startswith`. Fix in `ocr_document.py`: change `any(m in text.lower() for m in ["\u2022", "-", "*"])` to `text.startswith(("\u2022", "- ", "* "))` AND add position+style check (font matches body spine + width > 20% page) instead of naive length check.
+
+2. **P11:5,6 MOF paragraph duplication** — Block 5 (left column, OCR text=full 1637-char paragraph) + Block 6 (right column, `text_source="pdf_text_layer_fallback"` with 1010-char fragment) both render the same overlapping content. Root cause: `backfill_missing_text_from_pdf` uses `get_text("words", clip=expanded)` which returns ANY word with bbox overlapping the clip rect, even if the word text belongs to a larger paragraph that extends beyond the block's bbox. Fix needed: filter backfilled words to only those strictly within the block's original bbox, OR handle dedup at render level.
+
+3. **Callout font threshold too tight** — `0.9 * body_font_median` missed footnote bid=9 (`fn_fs=7.97 < 8.84*0.9=7.956` by 0.014). **RESOLVED**: changed to `fn_fs < body_font_median`.
+
+### 12.13 Parked Hard Cases
+
+- `backfill_missing_text_from_pdf` bbox-exact word filtering: need to decide between render-level dedup vs backfill-level bbox clamp.
+- Two-column page 1 body paragraph width check: right-column body is naturally narrower than left-column spine median; `is_narrow` heuristic misfires for multi-column page 1 layouts.
+
+### 12.14 Commits
+
+| Commit | Message |
+|--------|---------|
+| `cc8a0f9` | `feat: convert body-zone footnotes with distinct font to callout` (Task 2) |
+| `4f215c9` | `feat: drop non-preproof cover page 1 via positive cover markers` (Task 1) |
 

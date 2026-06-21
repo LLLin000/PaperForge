@@ -129,7 +129,7 @@ def _convert_footnotes_to_callouts(blocks: list[dict]) -> list[dict]:
         page_body_fonts = body_fonts_by_page.get(fn_page) or all_body_fonts
         body_font_median = sorted(page_body_fonts)[len(page_body_fonts) // 2]
         fn_fs = _block_font_size(b)
-        if fn_fs is None or fn_fs >= body_font_median * 0.9:
+        if fn_fs is None or fn_fs >= body_font_median:
             continue
 
         page_body_blocks = [bb for bb in body_blocks if int(bb.get("page", 0) or 0) == fn_page]
@@ -1266,7 +1266,10 @@ def render_fulltext_markdown(
                 block["role"] = new_role
                 block["role_confidence"] = new_blocks[i].get("role_confidence", block.get("role_confidence", 0.5))
 
+    before = sum(1 for b in structured_blocks if b.get("role") == "footnote")
     structured_blocks = _convert_footnotes_to_callouts(structured_blocks)
+    after = sum(1 for b in structured_blocks if b.get("role") == "footnote")
+    import sys; print(f"[DEBUG] callout footnotes: {before} -> {after}", file=sys.stderr)
 
     style_profiles = _build_heading_style_profiles(structured_blocks)
 

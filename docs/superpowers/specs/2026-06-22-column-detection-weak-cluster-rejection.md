@@ -33,12 +33,12 @@ Replace the x-center-only clustering with a function that returns cluster metada
 ```
 center: float          — mean x_center of blocks in this cluster
 count: int             — number of blocks
-x_min: float           — minimum x_center
-x_max: float           — maximum x_center
+center_min: float      — minimum x_center among blocks
+center_max: float      — maximum x_center among blocks
 y_min: float           — minimum y_top of blocks' bboxes
 y_max: float           — maximum y_bottom of blocks' bboxes
 y_coverage: float      — y_max - y_min (vertical span in px)
-word_count: int        — total word count across all blocks
+word_count: int        — total word count across all blocks, computed via _block_text(block).split()
 width_median: float    — median block width
 block_ids: list[str|int] — block identifiers
 blocks: list[dict]     — the full block dicts
@@ -65,7 +65,7 @@ Determines if a cluster lacks sufficient evidence to be considered a real column
 ```python
 def _is_weak_isolated_column_cluster(cluster: dict, page_height: float) -> bool:
     # Not weak if ANY evidence of being a real column
-    if cluster["count"] >= 2:
+    if cluster["count"] >= 3:
         return False
     if cluster["y_coverage"] >= page_height * 0.10:
         return False
@@ -75,7 +75,7 @@ def _is_weak_isolated_column_cluster(cluster: dict, page_height: float) -> bool:
 ```
 
 **Rationale for thresholds:**
-- `count >= 2`: A real column in a two-column paper will have multiple blocks per page.
+- `count >= 3`: A real column in a two-column paper will have multiple blocks per page. Threshold is 3 (not 2) to prevent two adjacent short lines (e.g. "Informed Consent Statement" + "Data Availability") from merging into a single count=2 cluster that would be immunized if the threshold were 2.
 - `y_coverage >= page_height * 0.10`: ~160px on a 1600px page. A single large paragraph block covers this easily.
 - `word_count >= 25`: ~3 lines of text. Short backmatter lines (e.g. "Informed Consent Statement: Not applicable.") are ~5 words.
 
@@ -204,7 +204,8 @@ def _classify_page_layout(page_blocks, page_width, page_height):
 | True two-column body page (multi-block per column) | `two_column` | Both clusters: count >= 2 |
 | True two-column reference page | `two_column` | Reference items have sufficient count |
 | Mixed tail page (body + backmatter) | `mixed_tail` | Both columns have sufficient y_coverage |
-| Single-column page (1 cluster) | `single_column` | Does not enter weak check |
+| Single-column page with one real cluster | `single_column` | The cluster survives weak filtering |
+| Single-column page with only tiny snippets | `single_column` low confidence | All clusters weak → `all_column_clusters_weak` |
 | Single-column + 1 short offset line (this bug) | `single_column` | Weak cluster ignored |
 | Single-column + 2 short offset lines (3 raw clusters) | `single_column` | 2 weak filtered, 1 real remains |
 | All clusters weak (rare) | `single_column` low confidence | Fallback, does not preserve false two_column |
@@ -213,6 +214,10 @@ def _classify_page_layout(page_blocks, page_width, page_height):
 ---
 
 ## Tests
+
+**Location:** `tests/test_ocr_document.py` (alongside existing layout-profile tests like `test_layout_profile_single_column`). Use function-local imports matching current style.
+
+**Evidence assertions:** Use `assert evidence_string in profile.evidence`. Do not assert exact evidence list equality — `_build_page_layout_profiles()` may append `few_eligible_blocks` or `excluded_non_body_blocks` after `_classify_page_layout()` returns, and this stacking is expected behavior.
 
 ### Required (4)
 

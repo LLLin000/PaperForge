@@ -3660,11 +3660,22 @@ def _detect_non_body_insert_clusters(
         if block.get("role") not in _INSERT_CANDIDATE_ROLES:
             continue
 
-        # Never mark page-1 title-like blocks as non_body_insert
+        # Never mark page-1 body-like blocks as non_body_insert.
+        # Uses position (in main column, not narrow sidebar) and style (body font).
         if page == 1:
-            text = (block.get("text") or "").strip()
-            if len(text) > 20 and not any(m in text.lower() for m in ["\u2022", "-", "*"]):
-                continue
+            bbox = block.get("bbox", [0, 0, 0, 0])
+            if len(bbox) >= 4:
+                block_width = bbox[2] - bbox[0]
+                spine_key = page if page in body_spine else 1
+                spine = body_spine.get(spine_key, {"median_width": 500})
+                spine_fonts = spine.get("all_fonts") or spine.get("fonts", set())
+                if not isinstance(spine_fonts, set):
+                    spine_fonts = set(spine_fonts) if spine_fonts else set()
+                block_font = _first_font(block)
+                font_matches_body = not block_font or not spine_fonts or block_font in spine_fonts
+                not_extremely_narrow = block_width > page_width * 0.2
+                if font_matches_body and not_extremely_narrow:
+                    continue
 
         bbox = block.get("bbox", [0, 0, 0, 0])
 
@@ -3728,6 +3739,21 @@ def _detect_non_body_insert_clusters(
                 text = block.get("text", "")
                 if not text or not text[0].islower():
                     continue
+                # Same page-1 guard as first pass: position + style check
+                if page == 1:
+                    bbox = block.get("bbox", [0, 0, 0, 0])
+                    if len(bbox) >= 4:
+                        block_width = bbox[2] - bbox[0]
+                        spine_key = page if page in body_spine else 1
+                        spine = body_spine.get(spine_key, {"median_width": 500})
+                        spine_fonts = spine.get("all_fonts") or spine.get("fonts", set())
+                        if not isinstance(spine_fonts, set):
+                            spine_fonts = set(spine_fonts) if spine_fonts else set()
+                        block_font = _first_font(block)
+                        font_matches_body = not block_font or not spine_fonts or block_font in spine_fonts
+                        not_extremely_narrow = block_width > page_width * 0.2
+                        if font_matches_body and not_extremely_narrow:
+                            continue
                 block_font = _first_font(block)
                 if block_font and block_font in insert_fonts:
                     # Check adjacency to existing cluster members on the same page
