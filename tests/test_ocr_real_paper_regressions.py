@@ -1106,3 +1106,78 @@ def test_caqnw9q2_page1_correspondence_is_not_frontmatter_noise(tmp_path: Path) 
     assert candidates, "Expected a correspondence-related block on CAQNW9Q2 page 1"
     assert any(b.get("role") == "frontmatter_support" for b in candidates)
     assert not all(b.get("role") == "frontmatter_noise" for b in candidates)
+
+
+def test_kix7skxq_reference_zone_does_not_absorb_acknowledgements(tmp_path: Path) -> None:
+    result = replay_production_pipeline("KIX7SKXQ", tmp_path)
+    blocks = result["structured_blocks"]
+    bad = [
+        b for b in blocks
+        if b.get("zone") == "reference_zone"
+        and "acknowledgements" in str(b.get("text") or "").lower()
+    ]
+    assert bad == []
+
+
+def test_gtrpmm56_reference_hold_does_not_create_accepted_reference_zone(tmp_path: Path) -> None:
+    result = replay_production_pipeline("GTRPMM56", tmp_path)
+    doc = result.get("doc_structure") or {}
+    ref_zone = doc.get("reference_zone") or {}
+    if ref_zone.get("status") == "HOLD":
+        assert ref_zone.get("reference_item_count", 0) == 0
+
+
+def test_san9ayvr_figure_23_all_panels_merged(tmp_path: Path) -> None:
+    from paperforge.worker.ocr_figures import build_figure_inventory
+    result = replay_production_pipeline("SAN9AYVR", tmp_path)
+    inventory = result["figure_inventory"]
+
+    fig23 = [f for f in inventory["matched_figures"] if f.get("figure_number") == 23]
+    assert len(fig23) == 1, "Figure 23 should be a single matched figure"
+    assert len(fig23[0].get("matched_assets", [])) >= 8, "Figure 23 should have 8+ sub-panels"
+    assert fig23[0].get("group_type") == "distance_cluster", (
+        f"Figure 23 should be distance_clustered, got {fig23[0].get('group_type')}"
+    )
+
+
+def test_2gn9lmcw_figure_4_six_assets_merged(tmp_path: Path) -> None:
+    result = replay_production_pipeline("2GN9LMCW", tmp_path)
+    inventory = result["figure_inventory"]
+
+    fig4 = [f for f in inventory["matched_figures"] if f.get("figure_number") == 4]
+    assert len(fig4) == 1, "Figure 4 should be matched"
+    assert len(fig4[0].get("matched_assets", [])) >= 6, "Figure 4 should have 6+ assets"
+    assert fig4[0].get("group_type") == "distance_cluster"
+
+
+def test_dwqqk2yb_figure_2_on_correct_page(tmp_path: Path) -> None:
+    result = replay_production_pipeline("DWQQK2YB", tmp_path)
+    inventory = result["figure_inventory"]
+
+    fig2 = [f for f in inventory["matched_figures"] if f.get("figure_number") == 2]
+    assert len(fig2) == 1, "Figure 2 should be matched"
+    assert fig2[0]["page"] == 38, f"Figure 2 should be on page 38, got page {fig2[0]['page']}"
+    assert len(fig2[0].get("matched_assets", [])) >= 18, (
+        f"Figure 2 should have 18+ assets, got {len(fig2[0].get('matched_assets', []))}"
+    )
+
+
+def test_3fdt9652_multi_column_figures_not_merged(tmp_path: Path) -> None:
+    result = replay_production_pipeline("3FDT9652", tmp_path)
+    inventory = result["figure_inventory"]
+
+    fig2 = [f for f in inventory["matched_figures"] if f.get("figure_number") == 2]
+    fig3 = [f for f in inventory["matched_figures"] if f.get("figure_number") == 3]
+
+    assert len(fig2) == 1, "Figure 2 should be matched"
+    assert len(fig3) == 1, "Figure 3 should be matched"
+
+    fig2_assets = {str(a.get("block_id", "")) for a in fig2[0].get("matched_assets", [])}
+    fig3_assets = {str(a.get("block_id", "")) for a in fig3[0].get("matched_assets", [])}
+    assert fig2_assets.isdisjoint(fig3_assets), (
+        f"Fig 2 and Fig 3 share assets: {fig2_assets & fig3_assets}"
+    )
+
+    assert fig2[0].get("legend_block_id") != fig3[0].get("legend_block_id"), (
+        "Fig 2 and Fig 3 share the same legend_block_id"
+    )
