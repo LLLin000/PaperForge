@@ -1,6 +1,6 @@
 # OCR-v2 Project Management Log
 
-> **Branch:** `ocr-v2` | **Base:** `master` | **Last Updated:** 2026-06-20 (rebuild hardening batch executed; next slice scoped)
+> **Branch:** `ocr-v2` | **Base:** `master` | **Last Updated:** 2026-06-22 (figure merge refactor + heading/backmatter fixes + cover page plan)
 > **Rule:** Every step is documented with: What was done, Why it was done, What comes next.
 
 ---
@@ -11,9 +11,9 @@
 
 | Metric | master | ocr-v2 |
 |--------|--------|--------|
-| Commits ahead of other | 1 (`docs: add OCR real-paper regression design`) | 186 (entire OCR-v2 pipeline) |
-| Files changed | -- | 244 files, +44,778 / -896 |
-| Merge status | -- | Can be merged (only 1 divergent commit) |
+| Commits ahead of other | 1 (`docs: add OCR real-paper regression design`) | 201 (entire OCR-v2 pipeline + figure merge refactor + heading/backmatter fixes) |
+| Files changed | -- | 587 files, +378855 / -40565 |
+| Test pass | -- | 164 pass, 1 pre-existing fail (legend_like→caption) |
 
 ### 0.2 What ocr-v2 is
 
@@ -1598,5 +1598,85 @@ For each page:
 | Column detection false positive | Low | Column mode is additive — assets still cluster within each column |
 
 ---
+
+## 12. 2026-06-21 ~ 06-22: Figure Merge Refactor + Heading/Backmatter Fixes + Cover Page Detection Plan
+
+> **Session:** Global distance clustering figure merge (replaced greedy region-growth), heading detection overhaul, backmatter consistency, table consumed fix, footnote reordering, figure crop fix, vision audit for block 9 strategy, cover page detection plan.
+> **Branch:** `ocr-v2` | **Commit:** `e7e4733` | **Tests:** 164 pass, 1 pre-existing fail
+
+### 12.1 Figure Merge: Greedy Region-Growth → Global Distance Clustering
+
+**Problem:** `_build_candidate_figure_groups_from_assets` used greedy seed-growth (first seed wins, eats adjacent regardless of figure boundary). Failed on multi-panel figures with irregular layouts.
+
+**Fix:** Replaced with global distance clustering via union-find:
+- Added helpers: `_rect_intersection_area`, `_has_text_separator`, `_filter_figure_assets`, `_cluster_page_assets`
+- Clusters by distance (horizontal < 12% page_width, vertical < 8% page_height), text-separator-aware
+- Added scoring branch for distance clusters (auto-match at 0.98, skip legacy)
+- Group-aware sequential fallback: searches any future page, not just cp+1
+- Fixed pre-existing close-tie fallthrough bug hidden by region-growth
+- Fixed side-by-side partition via x-proximity detection
+- Deleted 6 obsolete functions: `_grow_region_from_seed`, `_validate_grown_region`, `_gap_above_below_mask`, `_build_overlap_mask`, `_row_gap_score`, `_gap_penalty_near_asset_boundary`
+
+### 12.2 Heading Detection Overhaul
+
+**Fixes:**
+- `_heading_number_depth`: depth≥3 → `sub_subsection_heading` (####)
+- Visual heading grading: renderer clusters by font_size bucket, splits by bold
+- `_HEADING_NUMBER_PATTERN`: `[A-Z]` → `[A-Z0-9]` for "3. 3D printing..." titles
+- `_is_bogus_heading`: exempt numbered headings from 100-char limit
+- `_infer_heading_level`: span_signature as primary signal over word-count heuristics
+- Title guard: `_has_heading_numbering` exclusion to prevent page-2 section heading misclassification as paper_title
+
+### 12.3 Backmatter Consistency
+
+- Removed `_BACKMATTER_HEADING_KEYWORDS` bold override — headings render at visual level
+- Frontmatter_noise blocks now render on backmatter pages (previously suppressed)
+
+### 12.4 Table Consumed Fix
+
+`consumed_table_block_ids` changed from flat block_id set to `(page, block_id)` tuples. Fixed 6 missing headings across papers.
+
+### 12.5 Footnote Reordering
+
+Author biography footnotes separated into `footnote_blocks` bucket, emitted after references instead of between refs.
+
+### 12.6 Figure Crop Label Exclusion
+
+`build_figure_inventory` post-processing pushes `cluster_bbox` y1 past horizontally-overlapping `figure_inner_text` blocks (excludes (A)/(B) panel labels from crop).
+
+### 12.7 Vision Audit for Block 9 Strategy
+
+Analyzed 10 unseen papers via vision agents. Findings:
+- 3 papers: no intervention needed
+- 4 papers: footnotes with affiliation info could convert to callouts
+- 2 papers: cover-only pages would produce false positives
+- 1 paper: two-column layout needs column awareness
+
+### 12.8 Cover Page Detection Plan
+
+Final plan at `docs/superpowers/plans/2026-06-22-cover-page-detection-and-block-9-callout-strategy.md`.
+- Task 1: Detect cover page 1 via positive markers + no body guard (separate commit)
+- Task 2: Convert body-zone footnotes with distinct font to callout (separate commit)
+
+### 12.9 Remaining Issues
+
+1. Cover page detection + block 9 strategy not yet implemented (plan ready)
+2. DW biography page mismatch (pages 32-34 vs expectations 33-34)
+3. 2HEUD5P9 Fig 3 pre-existing reader-layer dedup issue
+
+### 12.10 Commits
+
+| Commit | Message |
+|--------|---------|
+| `e7e4733` (HEAD) | `fix: heading detection, backmatter, table consumed, footnote reorder, figure crop + audit fixtures` |
+
+### 12.11 Decisions
+
+| Date | Decision | Rationale |
+|------|----------|-----------|
+| 2026-06-21 | Global distance clustering over greedy region-growth | No backtracking in region-growth; union-find gives global optimum |
+| 2026-06-22 | Cover detection = positive markers, not "no body" | Normal papers may have abstract on page 1, body on page 2 |
+| 2026-06-22 | footnote→callout needs positive content markers | Only affiliation/correspondence, not all small-font footnotes |
+| 2026-06-22 | Task 1 and Task 2: separate commits | Different risk profiles |
 
 
