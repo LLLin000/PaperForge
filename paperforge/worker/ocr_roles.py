@@ -1013,7 +1013,7 @@ def assign_block_role(
             and "keywords" not in _lv[:15]
             and "introduction" not in _lv[:15]
         ):
-            if len(_tv) > 20 and not _seems_like_authors(_tv):
+            if len(_tv) > 20 and not _seems_like_authors(_tv) and not _has_heading_numbering(_tv):
                 return RoleAssignment(
                     role="paper_title",
                     confidence=0.6,
