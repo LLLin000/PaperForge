@@ -634,107 +634,81 @@ def _candidate_group_entry(
     }
 
 
-def _build_candidate_figure_groups_from_assets(assets: list[dict], page_width: float = 1200) -> list[dict]:
-    media = [
-        b
-        for b in assets
-        if not b.get("_non_body_media")
-        and (
-            b.get("role") == "figure_asset"
-            or (
-                b.get("role") == "media_asset"
-                and (
-                    b.get("raw_label", "") in {"image", "chart", "figure"}
-                    or (b.get("raw_label", "") == "table" and "<img" in str(b.get("text") or "").lower())
-                    or not str(b.get("raw_label") or "").strip()
-                )
-            )
-        )
-    ]
-    media.sort(key=lambda b: (b.get("page", 0), (b.get("bbox") or [0, 0, 0, 0])[1], (b.get("bbox") or [0, 0, 0, 0])[0]))
-
+def _build_candidate_figure_groups_from_assets(
+    assets: list[dict],
+    all_blocks: list[dict],
+    legends: list[dict],
+    page_width: float = 1200,
+) -> list[dict]:
+    media = _filter_figure_assets(assets)
     groups: list[dict] = []
     next_id = 1
+
+    def _estimate_page_height(page_blocks: list[dict]) -> float:
+        explicit = [float(b["page_height"]) for b in page_blocks if b.get("page_height")]
+        if explicit:
+            return max(explicit)
+        bottoms = [
+            float((b.get("bbox") or [0, 0, 0, 0])[3])
+            for b in page_blocks if len(b.get("bbox") or []) >= 4
+        ]
+        return max(bottoms, default=1600.0)
+
     by_page: dict[int, list[dict]] = {}
     for block in media:
         by_page.setdefault(int(block.get("page", 0) or 0), []).append(block)
 
     for page, page_media in by_page.items():
-        for block in page_media:
-            groups.append(
-                _candidate_group_entry(f"group_{next_id:03d}", page, [block], "single_asset", ["single_asset"])
-            )
-            next_id += 1
+        page_blocks = [b for b in all_blocks if int(b.get("page", 0) or 0) == page]
+        page_height = _estimate_page_height(page_blocks)
 
-        # ponytail: page-level group for multi-panel figures with irregular layouts
-        if len(page_media) >= 3:
-            groups.append(
-                _candidate_group_entry(
-                    f"group_{next_id:03d}", page, list(page_media), "page_assets", ["same_page", "all_assets"]
+        page_legends = [l for l in legends if l.get("page") == page]
+        n_legends = len(page_legends)
+
+        # Multi-legend: partition by caption bands first
+        if n_legends >= 2:
+            band_map = _partition_assets_by_caption_bands(page_legends, page_media, page_height)
+            partitions: list[tuple[str | None, list[dict]]] = [
+                (band_id, list(assets)) for band_id, assets in band_map.items() if assets
+            ]
+            assigned_ids = {id(a) for _, p in partitions for a in p}
+            free = [a for a in page_media if id(a) not in assigned_ids]
+            if free:
+                partitions.append((None, free))
+        else:
+            partitions = [(None, list(page_media))]
+
+        # Cluster each partition
+        page_groups: list[dict] = []
+        for band_id, partition in partitions:
+            if not partition:
+                continue
+            clusters = _cluster_page_assets(partition, page_blocks, n_legends, page_width, page_height)
+            for cluster in clusters:
+                gt = "distance_cluster" if len(cluster) >= 2 else "single_asset"
+                entry = _candidate_group_entry(
+                    f"group_{next_id:04d}", page, cluster, gt,
+                    ["same_page", "distance_clustered" if gt == "distance_cluster" else "single_asset"],
                 )
-            )
-            next_id += 1
-
-        for start in range(len(page_media)):
-            for size in (2, 3):
-                chunk = page_media[start : start + size]
-                if len(chunk) != size:
-                    continue
-                bboxes = [b.get("bbox", [0, 0, 0, 0]) for b in chunk]
-                heights = [_bbox_height(bb) for bb in bboxes]
-                centers_y = [_bbox_center_y(bb) for bb in bboxes]
-                if max(centers_y) - min(centers_y) > max(50.0, min(heights) * 0.6):
-                    continue
-                if max(heights) - min(heights) > max(50.0, min(heights) * 0.6):
-                    continue
-                gaps = []
-                ordered = sorted(chunk, key=lambda b: (b.get("bbox") or [0, 0, 0, 0])[0])
-                for left, right in zip(ordered, ordered[1:]):
-                    lb = left.get("bbox", [0, 0, 0, 0])
-                    rb = right.get("bbox", [0, 0, 0, 0])
-                    gaps.append(max(0.0, rb[0] - lb[2]))
-                if any(gap > page_width * 0.12 for gap in gaps):
-                    continue
-                group_type = "same_row_pair" if size == 2 else "same_row_triple"
-                evidence = ["same_page", "same_row_band", "size_similar", "tight_horizontal_gap"]
-                groups.append(_candidate_group_entry(f"group_{next_id:03d}", page, ordered, group_type, evidence))
+                entry["caption_band_id"] = band_id
+                entry["page_legend_count"] = n_legends
+                entry["safe_auto_match"] = False
+                page_groups.append(entry)
                 next_id += 1
 
-    # Region-growth pass: merge adjacent assets per page
-    seen_growth_ids: set[str] = set()
-    by_page_growth: dict[int, list[dict]] = {}
-    for block in media:
-        page = int(block.get("page", 0) or 0)
-        if page not in by_page_growth:
-            by_page_growth[page] = []
-        by_page_growth[page].append(block)
-
-    for page, blocks_in_page in sorted(by_page_growth.items()):
-        def _sort_yx(b: dict) -> tuple:
-            bb = b.get("bbox") or [0, 0, 0, 0]
-            return (bb[1], bb[0])
-        sorted_blocks = sorted(blocks_in_page, key=_sort_yx)
-        for seed in sorted_blocks:
-            seed_id = str(seed.get("block_id", ""))
-            if seed_id in seen_growth_ids:
-                continue
-            others = [b for b in sorted_blocks if str(b.get("block_id", "")) != seed_id]
-            grown = _grow_region_from_seed(seed, others, page_width)
-            if len(grown.get("asset_block_ids", [])) <= 1:
-                continue
-            grown_asset_ids = set(str(bid) for bid in grown.get("asset_block_ids", []))
-            seen_growth_ids.update(grown_asset_ids)
-            grown_assets = [b for b in blocks_in_page if str(b.get("block_id", "")) in grown_asset_ids]
-            entry = _candidate_group_entry(
-                f"group_growth_{next_id:03d}",
-                page,
-                grown_assets,
-                "region_grown_group",
-                ["same_page", "region_growth"],
+        page_group_count = len(page_groups)
+        page_distance_cluster_count = sum(1 for g in page_groups if g["group_type"] == "distance_cluster")
+        for g in page_groups:
+            g["page_group_count"] = page_group_count
+            g["page_distance_cluster_count"] = page_distance_cluster_count
+            g["safe_auto_match"] = (
+                n_legends == 1
+                and page_group_count == 1
+                and g["group_type"] == "distance_cluster"
+                and len(g.get("media_blocks", [])) >= 2
             )
-            entry["growth_steps"] = grown.get("growth_steps", [])
-            groups.append(entry)
-            next_id += 1
+
+        groups.extend(page_groups)
 
     return groups
 
@@ -1048,7 +1022,22 @@ def _partition_assets_by_caption_bands(
 
     ordered = sorted(page_captions, key=lambda cap: (cap.get("bbox") or [0, 0, 0, 0])[1])
     result: dict[str, list[dict]] = {str(cap.get("block_id", "")): [] for cap in ordered}
-    caption_tops = [((cap.get("bbox") or [0, 0, 0, 0])[1]) for cap in ordered]
+
+    cap_bboxes = [(cap.get("bbox") or [0, 0, 0, 0]) for cap in ordered]
+    side_by_side = all(cap_bboxes[i][2] <= cap_bboxes[i + 1][0] for i in range(len(cap_bboxes) - 1))
+
+    if side_by_side:
+        for asset in page_assets:
+            bbox = asset.get("bbox") or [0, 0, 0, 0]
+            ax = (bbox[0] + bbox[2]) / 2
+            best_idx = min(
+                range(len(ordered)),
+                key=lambda idx: abs(ax - (cap_bboxes[idx][0] + cap_bboxes[idx][2]) / 2),
+            )
+            result[str(ordered[best_idx].get("block_id", ""))].append(asset)
+        return result
+
+    caption_tops = [cb[1] for cb in cap_bboxes]
     asset_centers = [
         (((asset.get("bbox") or [0, 0, 0, 0])[1] + (asset.get("bbox") or [0, 0, 0, 0])[3]) / 2) for asset in page_assets
     ]
@@ -1200,7 +1189,9 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
             deduped_legends.append(legend)
     ordered_legends = deduped_legends
 
-    candidate_groups = _build_candidate_figure_groups_from_assets(assets, page_width=page_width)
+    candidate_groups = _build_candidate_figure_groups_from_assets(
+        assets, structured_blocks, ordered_legends, page_width=page_width,
+    )
 
     # Gate: suppress page_assets groups on pages with competing captions
     # so one big group doesn't swallow assets meant for multiple figures.
