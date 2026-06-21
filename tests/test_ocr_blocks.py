@@ -278,3 +278,93 @@ def test_build_structured_blocks_exposes_source_frontmatter_anchors() -> None:
     anchors = getattr(doc_structure, "source_frontmatter_anchors", {})
     assert anchors["title_source_anchor"]["status"] == "ACCEPT"
     assert anchors["authors_source_anchor"]["status"] == "ACCEPT"
+
+
+def test_nonpreproof_cover_false_when_page1_has_abstract():
+    """page 1 with abstract but no cover marker -> NOT cover."""
+    rows = [
+        {"page": 1, "seed_role": "paper_title", "text": "Some Title"},
+        {"page": 1, "seed_role": "authors", "text": "John Doe"},
+        {"page": 1, "seed_role": "abstract_body",
+         "text": "This abstract describes the study purpose, methods, results, and conclusions."},
+        {"page": 1, "seed_role": "frontmatter_noise", "text": "Keywords: something"},
+        {"page": 2, "seed_role": "section_heading", "text": "1. Introduction"},
+        {"page": 2, "seed_role": "body_paragraph",
+         "text": "Real body text starts here with many words. It has enough length to pass the threshold."},
+    ]
+    from paperforge.worker.ocr_blocks import _has_nonpreproof_cover_page_one
+    assert _has_nonpreproof_cover_page_one(rows) is False
+
+
+def test_nonpreproof_cover_false_when_page1_has_section_heading():
+    """page 1 with section heading -> NOT cover even with marker."""
+    rows = [
+        {"page": 1, "seed_role": "frontmatter_noise", "text": "Just Accepted"},
+        {"page": 1, "seed_role": "paper_title", "text": "Some Title"},
+        {"page": 1, "seed_role": "section_heading", "text": "1. Introduction"},
+    ]
+    from paperforge.worker.ocr_blocks import _has_nonpreproof_cover_page_one
+    assert _has_nonpreproof_cover_page_one(rows) is False
+
+
+def test_nonpreproof_cover_true_with_just_accepted_marker():
+    """ACS 'Just Accepted' marker + no body -> cover page."""
+    rows = [
+        {"page": 1, "seed_role": "frontmatter_noise", "text": "Just Accepted"},
+        {"page": 1, "seed_role": "frontmatter_noise",
+         "text": "This is a PDF file of an unedited manuscript that has been accepted for publication."},
+        {"page": 1, "seed_role": "frontmatter_noise",
+         "text": "American Chemical Society"},
+        {"page": 2, "seed_role": "paper_title", "text": "Some Title"},
+        {"page": 2, "seed_role": "body_paragraph",
+         "text": "Real body text starts here with many words to pass the threshold requirement. More words here."},
+    ]
+    from paperforge.worker.ocr_blocks import _has_nonpreproof_cover_page_one
+    assert _has_nonpreproof_cover_page_one(rows) is True
+
+
+def test_nonpreproof_cover_false_when_no_cover_marker():
+    """page 1 with no cover marker text but no body -> NOT cover (too risky)."""
+    rows = [
+        {"page": 1, "seed_role": "frontmatter_noise", "text": "Copyright 2023 Publisher"},
+        {"page": 2, "seed_role": "section_heading", "text": "Introduction"},
+    ]
+    from paperforge.worker.ocr_blocks import _has_nonpreproof_cover_page_one
+    assert _has_nonpreproof_cover_page_one(rows) is False
+
+
+def test_nonpreproof_cover_false_for_available_online_only():
+    """'Available online' alone must NOT trigger cover drop."""
+    rows = [
+        {"page": 1, "seed_role": "frontmatter_noise", "text": "Available online 12 March 2024"},
+        {"page": 1, "seed_role": "abstract_body",
+         "text": "This abstract describes the study purpose, methods, and results."},
+        {"page": 2, "seed_role": "section_heading", "text": "1. Introduction"},
+    ]
+    from paperforge.worker.ocr_blocks import _has_nonpreproof_cover_page_one
+    assert _has_nonpreproof_cover_page_one(rows) is False
+
+
+def test_nonpreproof_cover_wired_through_build_structured_blocks(tmp_path):
+    """build_structured_blocks drops page 1 for non-preproof cover."""
+    from paperforge.worker.ocr_blocks import build_structured_blocks
+
+    raw_blocks = [
+        {"paper_id": "TEST", "page": 1, "block_id": 0, "raw_label": "text",
+         "text": "Just Accepted", "bbox": [0, 0, 100, 20], "page_width": 1200, "page_height": 1600,
+         "raw_order": 0},
+        {"paper_id": "TEST", "page": 1, "block_id": 1, "raw_label": "text",
+         "text": "This is a PDF file of an unedited manuscript that has been accepted for publication.",
+         "bbox": [0, 30, 500, 60], "page_width": 1200, "page_height": 1600, "raw_order": 1},
+        {"paper_id": "TEST", "page": 2, "block_id": 2, "raw_label": "doc_title",
+         "text": "Real Title", "bbox": [0, 100, 500, 150], "page_width": 1200, "page_height": 1600,
+         "raw_order": 2},
+        {"paper_id": "TEST", "page": 2, "block_id": 3, "raw_label": "text",
+         "text": "Real body text starts here with enough words in this paragraph to pass the threshold check correctly.",
+         "bbox": [0, 200, 500, 250], "page_width": 1200, "page_height": 1600, "raw_order": 3},
+    ]
+
+    rows, doc = build_structured_blocks(raw_blocks, structure_output_dir=tmp_path)
+    assert all(r["page"] != 1 for r in rows), "page 1 should be dropped"
+    assert any("page_1_cover_dropped_upstream:cover_marker_no_body" in (r.get("evidence") or [])
+               for r in rows), "evidence should mark cover drop"

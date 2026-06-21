@@ -124,13 +124,50 @@ def _has_preproof_cover_page_one(rows: list[dict]) -> bool:
     return False
 
 
-def _annotate_preproof_cover_drop(rows: list[dict]) -> None:
+_COVER_PAGE_MARKERS = {
+    "just accepted",
+    "accepted manuscript",
+    "this is a pdf file of an unedited manuscript",
+    "this is a pdf file of a manuscript that has been accepted",
+    "manuscript has been accepted",
+}
+
+
+def _has_nonpreproof_cover_page_one(rows: list[dict]) -> bool:
+    page1_blocks = [r for r in rows if (int(r.get("page", 0) or 0)) == 1]
+    if not page1_blocks:
+        return False
+
+    texts_lower = " ".join(
+        str(r.get("text", "") or "").lower()
+        for r in page1_blocks
+    )
+    has_marker = any(m in texts_lower for m in _COVER_PAGE_MARKERS)
+    if not has_marker:
+        return False
+
+    for r in page1_blocks:
+        role = r.get("seed_role", "")
+        if role in {"section_heading", "subsection_heading", "sub_subsection_heading"}:
+            return False
+        if role in {"abstract_body", "abstract_heading", "authors"}:
+            return False
+        if role == "body_paragraph":
+            words = str(r.get("text", "") or "").strip().split()
+            if len(words) >= 20:
+                return False
+
+    return True
+
+
+def _annotate_cover_page_drop(rows: list[dict], *, reason: str) -> None:
     for row in rows:
         if int(row.get("page", 0) or 0) <= 1:
             continue
         evidence = row.setdefault("evidence", [])
-        if "page_1_preproof_cover_dropped_upstream" not in evidence:
-            evidence.append("page_1_preproof_cover_dropped_upstream")
+        label = f"page_1_cover_dropped_upstream:{reason}"
+        if label not in evidence:
+            evidence.append(label)
         return
 
 
@@ -241,7 +278,10 @@ def build_structured_blocks(
 
     if _has_preproof_cover_page_one(rows):
         rows = [row for row in rows if (row.get("page", 0) or 0) != 1]
-        _annotate_preproof_cover_drop(rows)
+        _annotate_cover_page_drop(rows, reason="preproof_marker")
+    elif _has_nonpreproof_cover_page_one(rows):
+        rows = [row for row in rows if (row.get("page", 0) or 0) != 1]
+        _annotate_cover_page_drop(rows, reason="cover_marker_no_body")
 
     body_family_anchor = discover_body_family_anchor(rows, page_count=total_pages)
     doc_structure = DocumentStructure(body_family_anchor=body_family_anchor)
