@@ -51,6 +51,9 @@ def _display_heading_text(block: dict, text: str) -> str:
 
 def _is_bogus_heading(text: str) -> bool:
     t = text.strip()
+    # Numbered headings (e.g. "3. 3D printing Scaffolds...") can legitimately be long
+    if re.match(r"^\d+(?:\.\d+)*\.?\s", t):
+        return False
     if len(t) > 100:
         return True
     if t.count(". ") > 1:
@@ -834,11 +837,12 @@ def render_fulltext_markdown(
     reader_figures = (reader_payload or {}).get("reader_figures", [])
     consumed_caption_keys: set[tuple[int | None, int | str]] = set()
     consumed_caption_ids_unkeyed: set[int | str] = set()
-    consumed_table_block_ids: set[str | int] = set()
+    consumed_table_block_keys: set[tuple[int | None, str | int]] = set()
     for table in table_inventory.get("tables", []):
+        table_page = table.get("page")
         for block_id in table.get("consumed_block_ids", []):
             if block_id:
-                consumed_table_block_ids.add(block_id)
+                consumed_table_block_keys.add((table_page, block_id))
     for item in (reader_payload or {}).get("consumed_caption_block_ids", []):
         if isinstance(item, dict):
             page = item.get("page")
@@ -1253,7 +1257,7 @@ def render_fulltext_markdown(
         block_key = _page_block_key(block_page, block_id)
         if block_id is not None and (block_key in consumed_caption_keys or block_id in consumed_caption_ids_unkeyed):
             continue
-        if block_id is not None and block_id in consumed_table_block_ids:
+        if block_id is not None and (block_page, block_id) in consumed_table_block_keys:
             continue
         if block_key in abstract_member_keys or block_id in abstract_member_ids_unkeyed:
             continue
