@@ -1875,7 +1875,7 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
                 asset = previous_page_asset
             if asset is None and future_page_asset is not None:
                 fap = future_page_asset.get("page", 0) or 0
-                if fap in (cp, cp + 1):
+                if fap >= cp:
                     asset = future_page_asset
             if asset is None:
                 continue
