@@ -998,6 +998,115 @@ Still open:
 
 **Result:** Later implementation steps no longer inherit already-fixed P0-P2 failures as active blockers.
 
+---
+
+## 10. 2026-06-22: Cross-Page Caption Consumption Fix
+
+### 10.1 Reader/Render Contract Root Cause (2026-06-22)
+
+**Problem:**
+- Cross-page figure ownership for `2HEUD5P9` had been repaired at the inventory layer, but the reader/render chain still consumed caption blocks using the asset page instead of the true legend page.
+- This left a backend contract breach: cross-page matches could still leak the original caption on `legend_page`, or at minimum keep inconsistent caption-consumption metadata.
+
+**Root cause:**
+- `paperforge/worker/ocr_figures.py` already emits cross-page matched figures with distinct `page` and `legend_page` fields.
+- `paperforge/worker/ocr_figure_reader.py::_normalize_bucket()` kept `page`, but did not preserve `legend_page` as first-class normalized data.
+- `_materialize_reader_figure()` then built `consumed_caption_block_ids` using `normalized_item["page"]`, which is the asset page, not the caption page.
+- `paperforge/worker/ocr_render.py` correctly suppresses captions by `(page, block_id)`, so once the reader handed it the wrong page, the contract was already broken upstream.
+
+**Fix:**
+- Added `_caption_consumption_page()` in `ocr_figure_reader.py`.
+- `_normalize_bucket()` now preserves `legend_page` from strict inventory items.
+- All reader materialization paths that consume captions (`matched_figures`, grouped approximate, held/legend-only, unmatched legends) now prefer `legend_page`, falling back to `page` only when `legend_page` is absent.
+- Added regression coverage:
+  - `tests/test_ocr_figure_reader.py::test_reader_matched_cross_page_figure_consumes_caption_on_legend_page`
+  - `tests/test_ocr_render.py::test_render_fulltext_markdown_suppresses_cross_page_caption_on_legend_page`
+
+**Result:**
+- Reader payload now records cross-page caption consumption on the real legend page.
+- Render path suppresses the original page-13 caption block while still allowing the figure object card to render normally.
+- This fixes the highest-value contract bug without expanding scope into orphan recomputation or broader fallback redesign.
+
+**Test status:**
+- `python -m pytest tests/test_ocr_figure_reader.py tests/test_ocr_render.py -v --tb=short` -> `16 passed`
+- `python -m pytest tests/test_ocr_figures.py tests/test_ocr_figure_reader.py tests/test_ocr_render.py -q` -> `148 passed`
+- Live rebuild verification:
+  - `python -m paperforge --vault "D:/L/OB/Literature-hub" ocr rebuild 2HEUD5P9` -> success
+
+**Remaining known issues after this fix:**
+- `unmatched_assets` / orphan outputs are still recomputed too early and can go stale after later fallback ownership passes.
+- Reserved cross-page settlement still picks prior/next-page owners by order rather than true compatibility when multiple candidates exist.
+- Sidecar fallback still repartitions all page assets, not just unresolved/unowned ones.
+- Figure/table ownership still lacks a shared consumed registry for ambiguous image-like blocks.
+
+**Root-cause notes for the remaining issues:**
+- `unmatched_assets` is rebuilt once immediately after primary cross-page settlement, but later sidecar / group-sequential / legacy sequential fallback passes still consume assets without a final orphan recomputation.
+- Reserved cross-page settlement currently chooses the first sorted compatible prior/next target rather than re-scoring multiple semantic-group candidates.
+- Sidecar fallback rebuilds bands from the whole page asset list instead of just still-unowned assets, so it can theoretically reassign already-owned media.
+- Figure and table matching still maintain separate ownership registries; image-like `media_asset` blocks can satisfy figure and table admission rules independently.
+
+### 10.2 Final Orphan Recompute Fix (2026-06-22)
+
+**Problem:**
+- `unmatched_assets` / orphan outputs were correct immediately after primary cross-page settlement, but became stale after later ownership passes.
+- This left a mismatch between actual `used_asset_page_ids` truth and the exported orphan inventory.
+
+**Root cause:**
+- `build_figure_inventory()` rebuilt `unmatched_assets` once after Stage 1 cross-page settlement, then later sidecar / group-sequential / legacy sequential fallback passes continued consuming assets.
+- No final inventory-wide recomputation happened before returning `figure_inventory`.
+- As a result, assets already owned by late fallback passes could still remain in `unmatched_assets` and later be emitted as orphan outputs.
+
+**Fix:**
+- Added `_recompute_final_unmatched_assets()` in `paperforge/worker/ocr_figures.py`.
+- The helper now computes final orphan truth from:
+  - all original `assets`
+  - final `used_asset_page_ids`
+  - `unresolved_clusters` ownership
+- `build_figure_inventory()` now runs this recomputation once at the end of the matching/fallback pipeline, just before assembling the final inventory payload.
+- Updated regression expectation for cross-page asset ownership and added a new late-fallback recomputation test:
+  - `tests/test_ocr_figures.py::test_final_unmatched_assets_recomputed_after_late_fallback_match`
+
+**Result:**
+- Assets consumed by late fallback passes no longer remain in `unmatched_assets`.
+- Orphan output truth now matches final ownership truth rather than an intermediate pipeline snapshot.
+
+**Test status:**
+- `python -m pytest tests/test_ocr_figures.py -k "legend_does_not_steal_offpage_asset or final_unmatched_assets_recomputed_after_late_fallback_match or legend_bundle_fallback_does_not_consume_grouped_assets" -v --tb=short` -> `3 passed`
+- `python -m pytest tests/test_ocr_figures.py tests/test_ocr_figure_reader.py tests/test_ocr_render.py -q` -> `149 passed`
+- Live rebuild verification:
+  - `python -m paperforge --vault "D:/L/OB/Literature-hub" ocr rebuild 2HEUD5P9` -> success
+
+### 10.3 Cross-Page Figure Double-Emit Fix (SAN9AYVR Figure 24) (2026-06-22)
+
+**Problem:**
+- In `SAN9AYVR`, `Figure 24` was matched only once in inventory/reader structures, but `fulltext.md` embedded `figure_024.md` twice.
+- The duplicate appeared once on the asset page and once again on the legend page.
+
+**Root cause:**
+- This was not a matching duplication bug.
+- `figure_inventory.json` contained one `matched_figures` entry for `figure_024` and `reader_figures.json` contained one `figure_024_reader` entry.
+- The duplication happened in `ocr_render.py` because two independent render channels both emitted the same figure:
+  - legacy `figures_by_page` emitted `figure_024.md` on asset page 50
+  - reader-driven emission emitted the same embed again on legend page 51 via `reader_figures_by_page`
+- Render had no cross-surface dedup rule saying that if a reader figure already covers `figure_024`, the legacy `matched_figures` path must not also emit it.
+
+**Fix:**
+- Added `_reader_covered_figure_ids()` in `ocr_render.py`.
+- `render_fulltext_markdown()` now computes the set of figure ids already covered by reader figures and excludes those ids from the legacy `figures_by_page` emission map.
+- Added regression coverage:
+  - `tests/test_ocr_render.py::test_render_fulltext_markdown_does_not_double_emit_cross_page_figure_embed`
+
+**Result:**
+- Cross-page figures no longer emit once from the legacy figure path and again from the reader path.
+- Rebuilding `SAN9AYVR` now leaves exactly one `![[render/figures/figure_024.md]]` embed in `fulltext.md`.
+
+**Test status:**
+- `python -m pytest tests/test_ocr_render.py -k "cross_page" -v --tb=short` -> `2 passed`
+- `python -m pytest tests/test_ocr_figures.py tests/test_ocr_figure_reader.py tests/test_ocr_render.py -q` -> `150 passed`
+- Live rebuild verification:
+  - `python -m paperforge --vault "D:/L/OB/Literature-hub" ocr rebuild SAN9AYVR` -> success
+  - `fulltext.md` count of `![[render/figures/figure_024.md]]` -> `1`
+
 ### 9.9 Task 2 — DWQQK2YB Support + Ownership Repair And Rebuild (2026-06-18)
 
 **Problem:** After 9.7, DWQQK2YB still had one real frontmatter-support routing gap and one real same-page figure ownership gap; derived assets also lagged behind the repaired code path.
@@ -1699,4 +1808,135 @@ Final plan at `docs/superpowers/plans/2026-06-22-cover-page-detection-and-block-
 |--------|---------|
 | `cc8a0f9` | `feat: convert body-zone footnotes with distinct font to callout` (Task 2) |
 | `4f215c9` | `feat: drop non-preproof cover page 1 via positive cover markers` (Task 1) |
+
+### 12.15 OCR rebuild low-risk de-dup pass (2026-06-22)
+
+**Problem:** Derived rebuild spent avoidable time reopening PDFs during object extraction, writing structured blocks twice, reading frontmatter candidates back from a just-written JSONL file, and rescanning structured blocks during heading-prefix override in render.
+
+**Root cause:** Expensive resources and intermediate artifacts were owned below the correct batch boundary, so rebuild paid repeated PDF, render, write, and lookup costs even when the final outputs did not require them.
+
+**Fix:** Reused one lazily-opened shared PDF handle per `extract_and_write_objects()` call, preserved cache-first crop semantics, switched rebuild metadata-candidate extraction to an in-memory helper, removed the intermediate structured JSONL write, and replaced the render heading-prefix rescan with direct `bid_to_block` lookup.
+
+**Result:** Rebuild preserves the same output semantics while removing repeated PDF opens, repeated same-page setup work, one intermediate structured write/read cycle, and one safe O(n^2) render lookup.
+
+**Test status:** Added focused regression coverage for cache-first no-open behavior, open-once reuse, same-page render reuse, markdown survival on PDF-open failure, in-memory/file-based frontmatter-candidate parity, single structured-block write in rebuild, and heading-prefix parity in render.
+
+### 12.16 Derived rebuild span-backfill skip contract (2026-06-22)
+
+**Problem:** Derived rebuild reran PDF span backfill on every rebuild even when raw blocks already contained valid span enrichment.
+
+**Root cause:** Rebuild had no explicit validity contract for stored span enrichment, so it treated all rebuilds as requiring a fresh PDF scan.
+
+**Fix:** Added explicit skip/rerun policy using span-backfill version, visual-container version, current PDF fingerprint from `compute_pdf_fingerprint()`, eligible text-like coverage, recorded `span_backfill_status` fields in `meta.json`, and protected the meta write order so validity fields are only refreshed after raw persistence succeeds.
+
+**Result:** Rebuild can reuse valid stored raw enrichment, avoid unnecessary PDF scans, and record why skip or rerun happened.
+
+**Test status:** Added focused rebuild tests for eligible coverage denominator, valid skip, version/fingerprint/coverage/visual-container mismatches, unknown fingerprint invalidation, PDF-missing unavailable status, and raw-write failure validity protection.
+
+### 12.17 Caption-independent semantic figure grouping Stage 1A (2026-06-22)
+
+**Problem:** `build_figure_inventory()` still fed `candidate_groups` from caption-band-local partitions on multi-caption pages, so ledger/reservation truth was already caption-conditioned before matching.
+
+**Root cause:** `_build_candidate_figure_groups_from_assets()` mixed semantic grouping truth with `_partition_assets_by_caption_bands(...)` and caption-count-aware topology, letting local caption bands masquerade as ownership groups.
+
+**Fix:** Added caption-independent semantic grouping helpers in `paperforge/worker/ocr_figures.py`, introduced topology-by-`asset_block_ids` test seam, kept caption-band data as metadata-only assist keyed by semantic groups, and rewired `_build_candidate_figure_groups_from_assets()` so `candidate_groups` now comes from semantic groups rather than band-local partitions.
+
+**Result:** Same visual assets now keep stable semantic topology across caption-count changes; neutral text barriers still split continuity; ordinary same-page two-figure layouts remain separate; caption-band-local groups no longer enter the main ownership input stream.
+
+**Test status:**
+```
+python -m pytest tests/test_ocr_figures.py -k "semantic_group_topology_uses_asset_block_ids_not_group_id or semantic_grouping_topology_is_caption_count_independent or semantic_grouping_keeps_two_visual_figures_separate or semantic_grouping_uses_caption_text_as_neutral_barrier_only or candidate_groups_do_not_include_caption_band_local_groups" -v --tb=short
+  -> 5 passed
+```
+
+### 12.18 Stage 1B grouped-asset fallback guard (2026-06-22)
+
+**Problem:** Stage 1B reservation and cross-page settlement were already operating on semantic groups, but the preproof `legend_bundle` fallback still consumed raw `unmatched_assets` without checking whether those assets already belonged to semantic groups.
+
+**Root cause:** The late old sequential fallback had a grouped-asset exclusion, but the earlier legend-bundle fallback rebuilt its own asset-page list directly from `unmatched_assets`, so grouped assets could still be stolen before the group-aware fallback ran.
+
+**Fix:** Added `_grouped_asset_page_ids(candidate_groups)` in `paperforge/worker/ocr_figures.py`, reused it for the old sequential fallback, and applied the same grouped-asset exclusion to the legend-bundle fallback. Added a narrow regression in `tests/test_ocr_figures.py` proving legend-bundle cannot consume assets from a semantic group.
+
+**Result:** Stage 1B now keeps semantic-group ownership intact across the remaining late fallback paths: reserve/same-page/cross-page continue to use semantic groups, and legacy fallback paths no longer steal grouped assets.
+
+**Test status:**
+```
+pytest tests/test_ocr_figures.py -k "legend_bundle_fallback_does_not_consume_grouped_assets or 2heud5p9 or cross_page_backward_settlement or reservation_reserves_top_caption_on_caption_surplus_page or legacy_fallback_does_not_consume_grouped_asset" -v --tb=short
+  -> 5 passed
+
+pytest tests/test_ocr_figures.py -v --tb=short
+  -> 132 passed
+```
+
+### 12.15 Stage A Ownership Registry Mirror (2026-06-22)
+
+- Problem: figure ownership state in `ocr_figures.py` was mutated through scattered `used_group_ids` and `used_asset_page_ids` writes, so Stage B/C governance work had no explicit ownership seam to build on.
+- Root cause: ownership lived only as ad hoc set updates inside same-page, cross-page, sidecar, bundle, and sequential figure matching paths.
+- Fix: added `FigureOwnershipRegistry` in `paperforge/worker/ocr_figures.py` and routed Stage A figure-ownership commits through it while keeping the existing `used_group_ids` / `used_asset_page_ids` sets as the mirrored truth surface for current green flows. Added tests in `tests/test_ocr_figures.py` for blocked-asset reasons, conflicting figure/table ownership rejection, and registry mirror agreement with the current used-set contract.
+- Result: Stage A now has an explicit ownership helper API without changing matched-figure behavior on the verified green ownership/grouped cases.
+- Tests: `python -m pytest tests/test_ocr_figures.py -k "ownership_registry" -v --tb=short` -> 3 passed; `python -m pytest tests/test_ocr_figures.py -k "ownership or blocked or grouped" -v --tb=short` -> 8 passed; `python -m pytest tests/test_ocr_figures.py -v --tb=short` -> 135 passed, 1 failed (`test_caption_group_assignments_does_not_cross_page`, pre-existing failure in `paperforge/worker/ocr.py`).
+
+### 12.16 Stage B Local Pairing Hypothesis Surface (2026-06-22)
+
+- Problem: same-page figure matching only existed as immediate commit-time geometry/scoring decisions, so Stage C had no explicit local hypothesis surface to validate or defer.
+- Root cause: `caption_below`, `caption_above`, and sidecar interpretation were implicit in scattered matching branches and never exposed as side-effect-free objects.
+- Fix: added `_make_local_pairing_hypothesis()` and `_infer_local_pairing_mode()` in `paperforge/worker/ocr_figures.py`, collected non-authoritative `local_pairing_hypotheses` during same-page candidate evaluation, and surfaced sidecar partition hypotheses without changing current ownership commit flow. Added focused tests in `tests/test_ocr_figures.py` for pure below/above/sidecar hypothesis construction plus a mixed-page fixture proving sidecar and below hypotheses can coexist on one page.
+- Result: Stage B now exposes explicit local pairing hypothesis objects while keeping ownership mutation on the existing paths.
+- Tests: `python -m pytest tests/test_ocr_figures.py -k "make_local_pairing_hypothesis or mixed_local_pairing_hypotheses" -v --tb=short` -> 4 passed; `python -m pytest tests/test_ocr_figures.py -k "caption_below or caption_above or sidecar" -v --tb=short` -> 6 passed.
+
+### 12.17 Stage C Reservation-Aware Same-Page Commit Gate (2026-06-22)
+
+- Problem: reservation outranked same-page commit only by skipping reserved legends/groups before local evaluation, so reserved same-page interpretations never surfaced as explicit deferred hypotheses and one reserved no-asset path could leak into ambiguous state before cross-page settlement.
+- Root cause: same-page scoring and same-page commit were still fused; reserved objects were excluded too early instead of being evaluated then withheld at commit time.
+- Fix: added `_mark_hypothesis_conflict()` in `paperforge/worker/ocr_figures.py`, allowed reserved same-page candidates to be scored into `local_pairing_hypotheses`, tagged them with `reserved_same_page_commit_deferred`, and inserted a narrow defer-at-commit gate so reserved legends/groups stay in the cross-page settlement flow instead of committing or falling into early ambiguous/unmatched buckets.
+- Result: reservation now outranks same-page commit through an explicit gate, while non-reserved same-page matches still commit normally and `2HEUD5P9` keeps the intended cross-page ownership behavior.
+- Tests: `python -m pytest tests/test_ocr_figures.py -k "reserved_same_page_hypothesis_is_deferred_from_commit or non_reserved_same_page_pair_still_commits_normally" -v --tb=short` -> 2 passed; `python -m pytest tests/test_ocr_figures.py -k "reservation or cross_page_backward or 2HEUD5P9" -v --tb=short` -> 4 passed; `python -m pytest tests/test_ocr_figures.py tests/test_ocr_figure_reader.py tests/test_ocr_render.py -q` -> 158 passed, 1 failed (`test_caption_group_assignments_does_not_cross_page`, pre-existing failure in `paperforge/worker/ocr.py`).
+
+### 12.18 Stage D1 Shared Fallback Eligibility Helpers (2026-06-22)
+
+- Problem: late fallback paths each performed their own ownership checks, so grouped/pre-owned/blocked objects were filtered inconsistently.
+- Root cause: there was no shared helper layer for fallback eligibility; each path mixed ownership logic into local control flow.
+- Fix: added `_fallback_eligible_asset_page_ids()`, `_fallback_can_consume()`, and `_fallback_eligible_groups()` in `paperforge/worker/ocr_figures.py` as the shared ownership boundary layer for later fallback stages.
+- Result: fallback stages now have one consistent helper surface for rejecting pre-owned, blocked, and grouped objects.
+- Tests: `python -m pytest tests/test_ocr_figures.py -k "fallback and eligible" -v --tb=short` -> 3 passed.
+
+### 12.19 Stage D2 Sidecar Fallback Guard (2026-06-22)
+
+- Problem: sidecar fallback could reclaim too much page media and was willing to reinterpret a page based on narrow captions without enough local row-coupled evidence.
+- Root cause: sidecar partitioning operated on broad page bands and had no explicit reclaim/eligibility layer when replacing earlier narrow-caption ownership.
+- Fix: added `_caption_row_coupled_assets()` and rewired the sidecar fallback to use D1 eligibility helpers plus narrow reclaim of only the ownership it is explicitly replacing.
+- Result: sidecar remains available for true narrow sidecar layouts while mixed local layouts can keep ordinary below pairs separate.
+- Tests: `python -m pytest tests/test_ocr_figures.py -k "6FGDBFQN or sidecar or 3FDT9652" -v --tb=short` -> 5 passed; `python -m pytest tests/test_ocr_real_paper_regressions.py -k "6FGDBFQN or 3FDT9652" -v --tb=short` -> 2 skipped in this worktree because fixture prerequisites are absent.
+
+### 12.20 Stage D3 legend_bundle Fallback Guard (2026-06-22)
+
+- Problem: bundle fallback needed explicit confirmation that grouped assets, interrupted pages, and pre-owned asset pages remain unavailable.
+- Root cause: the bundle path relied on local inline checks but had no dedicated regression coverage for those ownership and interruption boundaries.
+- Fix: added focused bundle regressions covering grouped-asset exclusion, pre-owned asset-page exclusion, and body interruption rejection.
+- Result: the existing narrowed bundle path remains green under the new ownership/interruption contract.
+- Tests: `python -m pytest tests/test_ocr_figures.py -k "legend_bundle" -v --tb=short` -> 3 passed.
+
+### 12.21 Stage D4 Sequential Guard (2026-06-22)
+
+- Problem: sequential fallbacks needed explicit proof they do not cross ownership boundaries once earlier paths have already claimed an object.
+- Root cause: earlier tests covered grouped-asset protection but not the pre-owned bare-asset case explicitly.
+- Fix: added `test_sequential_fallback_skips_preowned_bare_asset()` to lock the old sequential path behind the same ownership boundary.
+- Result: both group-aware sequential and old sequential now have focused regression evidence for ownership-safe behavior.
+- Tests: `python -m pytest tests/test_ocr_figures.py -k "group_sequential or sequential" -v --tb=short` -> 4 passed.
+
+### 12.22 Stage D5 sequence_match Contract (2026-06-22)
+
+- Problem: `sequence_match` promotion could create a matched figure shell without carrying the real ownership payload required by downstream consumers.
+- Root cause: `_promote_sequence_matches()` only checked adjacent numbering plus `asset_block_ids`, then emitted a placeholder matched figure with empty `matched_assets` and no `legend_page` / `asset_pages` / `settlement_type` contract.
+- Fix: tightened `_promote_sequence_matches()` so promotion now requires concrete `matched_assets`, `asset_pages`, `legend_page`, and `page`, and emits a full contract with `asset_block_ids` and `settlement_type="sequence_match"`; otherwise the item stays ambiguous.
+- Result: `sequence_match` is now either a real matched-figure payload or not promoted at all.
+- Tests: `python -m pytest tests/test_ocr_figures.py tests/test_ocr_figure_reader.py -k "sequence_match" -v --tb=short` -> 3 passed.
+
+### 12.23 Stage E Figure/Table Ownership Conflict Surface (2026-06-22)
+
+- Problem: figure/table overlap had no explicit post-hoc conflict surface, so dual ownership would stay silent.
+- Root cause: figure and table inventories were produced independently and never compared after matching.
+- Fix: added `_collect_figure_owned_asset_ids()`, `_collect_table_owned_asset_ids()`, `_build_ownership_conflicts()`, and `attach_ownership_conflicts()` in `paperforge/worker/ocr_figures.py`, then wired the conflict attachment into `paperforge/worker/ocr.py` and `paperforge/worker/ocr_rebuild.py` after table inventory construction.
+- Result: one-owner violations are now surfaced explicitly as `ownership_conflicts` instead of remaining invisible.
+- Tests: `python -m pytest tests/test_ocr_figures.py -k "ownership_conflict or table" -v --tb=short` -> 1 passed.
 

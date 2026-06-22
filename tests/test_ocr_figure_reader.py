@@ -388,3 +388,39 @@ def test_reader_materializes_grouped_strict_match_as_single_visual_group() -> No
     assert len(rf["visual_groups"]) == 1
     assert rf["visual_groups"][0]["asset_block_ids"] == [20, 21]
     assert rf["visual_groups"][0]["group_status"] == "matched_group"
+
+
+def test_reader_matched_cross_page_figure_consumes_caption_on_legend_page() -> None:
+    from paperforge.worker.ocr_figure_reader import synthesize_reader_figures
+
+    strict_inventory = {
+        "figure_legends": [],
+        "matched_figures": [
+            {
+                "figure_id": "figure_004",
+                "figure_number": 4,
+                "legend_block_id": 6,
+                "page": 12,
+                "legend_page": 13,
+                "asset_pages": [12],
+                "text": "Figure 4. Cross-page caption.",
+                "matched_assets": [
+                    {"block_id": 101, "bbox": [100, 100, 300, 300]},
+                ],
+                "asset_block_ids": [101],
+                "strict_status": "matched",
+                "match_score": {"score": 0.8, "decision": "matched"},
+            }
+        ],
+        "held_figures": [],
+        "ambiguous_figures": [],
+        "unmatched_legends": [],
+        "unresolved_clusters": [],
+    }
+
+    payload = synthesize_reader_figures(strict_inventory, structured_blocks=[])
+
+    rf = payload["reader_figures"][0]
+    assert rf["visual_groups"][0]["page"] == 12
+    assert rf["consumed_caption_block_ids"] == [{"page": 13, "block_id": 6}]
+    assert payload["consumed_caption_block_ids"] == [{"page": 13, "block_id": 6}]

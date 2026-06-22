@@ -1427,6 +1427,8 @@ def caption_group_assignments(blocks: list[dict]) -> tuple[dict[int, list[dict]]
             best_caption = None
             best_distance = None
             for caption in figure_captions:
+                if block.get("page") != caption.get("page"):
+                    continue
                 cb = caption.get("block_bbox", [0, 0, 0, 0])
                 if bbox[1] < cb[1]:
                     horizontal_overlap = _bbox_horizontal_overlap(bbox, cb)
@@ -1878,6 +1880,9 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
 
     # --- Phase 2: table inventory ---
     table_inventory = build_table_inventory(structured)
+    from paperforge.worker.ocr_figures import attach_ownership_conflicts
+
+    attach_ownership_conflicts(figure_inventory, table_inventory)
     write_back_table_roles(table_inventory, structured)
     write_table_inventory(
         artifacts.blocks_structured.parent / "table_inventory.json",

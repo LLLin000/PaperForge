@@ -148,6 +148,7 @@ def _normalize_bucket(
                 "height_ratio": float(source_item.get("height_ratio", 0.0)),
                 "media_block_count": int(source_item.get("media_block_count", len(_asset_ids_from_item(source_item)))),
                 "page": source_item.get("page", block.get("page")),
+                "legend_page": source_item.get("legend_page", source_page),
                 "zone": (legend_data.get("zone") or source_item.get("zone") or block.get("zone")),
                 "style_family": (
                     legend_data.get("style_family") or source_item.get("style_family") or block.get("style_family")
@@ -176,6 +177,10 @@ def _build_bucket(
         page_block_index=page_block_index,
         page_legends_index=page_legends_index,
     )
+
+
+def _caption_consumption_page(item: dict) -> int | str | None:
+    return item.get("legend_page", item.get("page"))
 
 
 _READER_STATUS_MAP = {
@@ -281,7 +286,7 @@ def _materialize_reader_figure(
                     "rendered_as_representative": True,
                 }
             ],
-            "consumed_caption_block_ids": [{"page": normalized_item.get("page"), "block_id": legend_block_id}]
+            "consumed_caption_block_ids": [{"page": _caption_consumption_page(normalized_item), "block_id": legend_block_id}]
             if legend_block_id is not None
             else [],
             "consumed_asset_block_ids": [{"page": normalized_item.get("page"), "block_id": aid} for aid in asset_ids],
@@ -312,7 +317,7 @@ def _materialize_reader_figure(
                         "rendered_as_representative": False,
                     }
                 ],
-                "consumed_caption_block_ids": [{"page": normalized_item.get("page"), "block_id": legend_block_id}]
+                "consumed_caption_block_ids": [{"page": _caption_consumption_page(normalized_item), "block_id": legend_block_id}]
                 if legend_block_id is not None
                 else [],
                 "consumed_asset_block_ids": [],
@@ -337,7 +342,7 @@ def _materialize_reader_figure(
                         status="legend_only_group",
                     )
                 ],
-                "consumed_caption_block_ids": [{"page": normalized_item.get("page"), "block_id": legend_block_id}]
+                "consumed_caption_block_ids": [{"page": _caption_consumption_page(normalized_item), "block_id": legend_block_id}]
                 if legend_block_id is not None
                 else [],
                 "consumed_asset_block_ids": [],
@@ -364,7 +369,7 @@ def _materialize_reader_figure(
                     status="legend_only_group",
                 )
             ],
-            "consumed_caption_block_ids": [{"page": normalized_item.get("page"), "block_id": legend_block_id}]
+            "consumed_caption_block_ids": [{"page": _caption_consumption_page(normalized_item), "block_id": legend_block_id}]
             if legend_block_id is not None
             else [],
             "consumed_asset_block_ids": [],
