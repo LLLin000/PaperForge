@@ -52,7 +52,6 @@ _PAGE1_ARTICLE_TYPE_LABELS = frozenset(
 
 FRONTMATTER_NOISE = {
     "open access",
-    "copyright",
     "citation",
     "keywords",
     "edited by",
@@ -335,7 +334,7 @@ def _is_backmatter_boundary_heading(block: dict, page_num: int, total_pages: int
 
     upper = text.upper()
     has_container_words = (
-        "ADDITIONAL" in upper or "SUPPLEMENTARY" in upper or "DECLARATION" in upper or "INFORMATION" in upper
+        "ADDITIONAL" in upper or "DECLARATION" in upper or "INFORMATION" in upper
     )
 
     if not is_visually_heading and not has_container_words:
@@ -575,7 +574,6 @@ def resolve_final_role(
             "publisher's note",
             "publisher\u2019s note",
             "the remaining authors declare",
-            "copyright",
             "published online",
         )
     )
@@ -1119,7 +1117,7 @@ def assign_block_role(
             confidence = 0.7
             lower_txt = text.lower()
             has_container_words = any(
-                w in lower_txt for w in ["additional information", "declaration", "supplementary"]
+                w in lower_txt for w in ["additional information", "declaration"]
             )
             span_meta = block.get("span_metadata", {}) or {}
             is_bold = False
@@ -1293,7 +1291,7 @@ def assign_block_role(
     # Page-1 DOI / received / accepted / published footnotes → frontmatter_noise
     if raw_label in {"footnote", "vision_footnote"} and page_num == 1:
         lower_txt = text.lower()
-        if lower_txt.startswith(("doi", "received", "accepted", "published", "copyright")):
+        if lower_txt.startswith(("doi", "received", "accepted", "published")):
             return RoleAssignment(
                 role="frontmatter_noise",
                 confidence=0.75,
@@ -1348,13 +1346,7 @@ def assign_block_role(
                 evidence=[f"abstract heading from text block: {text[:40]}"],
             )
 
-        # Check for copyright (page 1 only)
-        if still_frontmatter and ("copyright" in lower_txt or "©" in text):
-            return RoleAssignment(
-                role="frontmatter_noise",
-                confidence=0.85,
-                evidence=[f"copyright text: {text[:60]}"],
-            )
+        # Check for copyright — removed: position-based checks are sufficient
 
         # Check for email / ORCID / DOI patterns (page 1 only)
         if (
@@ -1505,7 +1497,7 @@ def assign_block_role(
             confidence = 0.7
             lower_txt = text.lower()
             has_container_words = any(
-                w in lower_txt for w in ["additional information", "declaration", "supplementary"]
+                w in lower_txt for w in ["additional information", "declaration"]
             )
             span_meta = block.get("span_metadata", {}) or {}
             is_bold = False

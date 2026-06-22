@@ -5,8 +5,8 @@ def test_page_layout_profile_includes_confidence_and_evidence() -> None:
     from paperforge.worker.ocr_document import _build_page_layout_profiles
 
     blocks = [
-        {"role": "body_paragraph", "page": 1, "bbox": [100, 100, 500, 160], "page_width": 1200, "page_height": 1700},
-        {"role": "body_paragraph", "page": 1, "bbox": [700, 100, 1100, 160], "page_width": 1200, "page_height": 1700},
+        {"role": "body_paragraph", "page": 1, "bbox": [100, 100, 500, 280], "page_width": 1200, "page_height": 1700},
+        {"role": "body_paragraph", "page": 1, "bbox": [700, 100, 1100, 280], "page_width": 1200, "page_height": 1700},
     ]
 
     profile = _build_page_layout_profiles(blocks)[1]
@@ -23,8 +23,8 @@ def test_layout_profiles_ignore_wide_headings_and_media() -> None:
     blocks = [
         {"role": "section_heading", "page": 1, "bbox": [50, 50, 1150, 90], "page_width": 1200, "page_height": 1700},
         {"role": "figure_asset", "page": 1, "bbox": [400, 120, 800, 500], "page_width": 1200, "page_height": 1700},
-        {"role": "body_paragraph", "page": 1, "bbox": [100, 600, 500, 660], "page_width": 1200, "page_height": 1700},
-        {"role": "body_paragraph", "page": 1, "bbox": [700, 600, 1100, 660], "page_width": 1200, "page_height": 1700},
+        {"role": "body_paragraph", "page": 1, "bbox": [100, 600, 500, 780], "page_width": 1200, "page_height": 1700},
+        {"role": "body_paragraph", "page": 1, "bbox": [700, 600, 1100, 780], "page_width": 1200, "page_height": 1700},
     ]
 
     profile = _build_page_layout_profiles(blocks)[1]
@@ -607,7 +607,7 @@ def test_reference_zones_remain_column_scoped_after_authority_refresh() -> None:
             "block_id": "p4_b2",
             "raw_label": "text",
             "raw_order": 2,
-            "bbox": [620, 180, 960, 250],
+            "bbox": [620, 180, 960, 360],
             "text": "[1] Example reference entry with enough tokens to be reference-like.",
             "page_width": 1200,
             "page_height": 1600,
@@ -619,7 +619,7 @@ def test_reference_zones_remain_column_scoped_after_authority_refresh() -> None:
             "block_id": "p4_b3",
             "raw_label": "text",
             "raw_order": 3,
-            "bbox": [80, 180, 420, 250],
+            "bbox": [80, 180, 420, 360],
             "text": "Left-column body text that should not be part of the reference zone.",
             "page_width": 1200,
             "page_height": 1600,
@@ -2608,9 +2608,9 @@ def test_layout_profile_build_profiles() -> None:
         {"page": 1, "bbox": [100, 100, 700, 140], "role": "body_paragraph", "page_width": 800, "page_height": 1000},
         {"page": 1, "bbox": [100, 160, 700, 200], "role": "body_paragraph", "page_width": 800, "page_height": 1000},
         # Page 2: two-column, body left + tail right
-        {"page": 2, "bbox": [50, 100, 380, 140], "role": "body_paragraph", "page_width": 800, "page_height": 1000},
+        {"page": 2, "bbox": [50, 100, 380, 210], "role": "body_paragraph", "page_width": 800, "page_height": 1000},
         {"page": 2, "bbox": [420, 100, 750, 140], "role": "backmatter_heading", "page_width": 800, "page_height": 1000},
-        {"page": 2, "bbox": [420, 160, 750, 200], "role": "reference_item", "page_width": 800, "page_height": 1000},
+        {"page": 2, "bbox": [420, 160, 750, 270], "role": "reference_item", "page_width": 800, "page_height": 1000},
     ]
 
     profiles = _build_page_layout_profiles(blocks)
@@ -2833,9 +2833,9 @@ def test_forward_body_end_mixed_page() -> None:
         {"page": 2, "bbox": [100, 100, 700, 140], "role": "body_paragraph", "page_width": 800, "page_height": 1000},
         {"page": 3, "bbox": [100, 100, 700, 140], "role": "body_paragraph", "page_width": 800, "page_height": 1000},
         # Page 4: left body (clean column), right tail
-        {"page": 4, "bbox": [50, 100, 380, 140], "role": "body_paragraph", "page_width": 800, "page_height": 1000},
+        {"page": 4, "bbox": [50, 100, 380, 210], "role": "body_paragraph", "page_width": 800, "page_height": 1000},
         {"page": 4, "bbox": [420, 100, 750, 140], "role": "backmatter_heading", "page_width": 800, "page_height": 1000},
-        {"page": 4, "bbox": [420, 160, 750, 200], "role": "backmatter_body", "page_width": 800, "page_height": 1000},
+        {"page": 4, "bbox": [420, 160, 750, 260], "role": "backmatter_body", "page_width": 800, "page_height": 1000},
         # Page 5: tail only
         {"page": 5, "bbox": [420, 100, 750, 140], "role": "reference_heading", "page_width": 800, "page_height": 1000},
         {"page": 5, "bbox": [420, 160, 750, 200], "role": "reference_item", "page_width": 800, "page_height": 1000},
@@ -4943,3 +4943,112 @@ def test_reference_hold_does_not_promote_final_reference_membership() -> None:
     ]
     zone = build_verified_reference_zone_from_artifacts(blocks, {"region_bus": {"reference_zone_ids": set()}})
     assert zone.get("status") != "ACCEPT"
+
+
+# ---------------------------------------------------------------------------
+# Weak cluster rejection tests (Task 3-7)
+# ---------------------------------------------------------------------------
+
+
+def test_short_isolated_body_line_does_not_create_two_column_layout() -> None:
+    """Replicates page 12 of paper 2E4EPHN2: 6 full-width body blocks +
+    1 short offset line should NOT be classified as two_column."""
+    from paperforge.worker.ocr_document import _classify_page_layout
+
+    page_width = 1191.0
+    page_height = 1684.0
+    blocks = [
+        {"role": "body_paragraph", "bbox": [325, 224, 1123, 298], "text": "Long paragraph " * 40, "page_width": page_width},
+        {"role": "body_paragraph", "bbox": [325, 299, 1124, 377], "text": "Long paragraph " * 40, "page_width": page_width},
+        {"role": "body_paragraph", "bbox": [325, 398, 1125, 633], "text": "Long paragraph " * 40, "page_width": page_width},
+        {"role": "body_paragraph", "bbox": [326, 643, 1125, 762], "text": "Long paragraph " * 40, "page_width": page_width},
+        {"role": "body_paragraph", "bbox": [325, 772, 1124, 820], "text": "Long paragraph " * 40, "page_width": page_width},
+        {"role": "body_paragraph", "bbox": [328, 832, 704, 854], "text": "Informed Consent Statement: Not applicable.", "page_width": page_width},
+        {"role": "body_paragraph", "bbox": [327, 867, 1122, 914], "text": "Long paragraph " * 40, "page_width": page_width},
+    ]
+
+    profile = _classify_page_layout(blocks, page_width, page_height)
+
+    assert profile.layout_type == "single_column", f"Expected single_column, got {profile.layout_type}"
+    assert profile.column_count == 1, f"Expected column_count=1, got {profile.column_count}"
+    assert "weak_isolated_column_cluster_ignored" in profile.evidence, (
+        f"Expected weak_isolated_column_cluster_ignored in evidence, got {profile.evidence}"
+    )
+
+
+def test_balanced_two_column_layout_still_detected() -> None:
+    """True two-column page with multiple blocks per column must remain two_column."""
+    from paperforge.worker.ocr_document import _classify_page_layout
+
+    page_width = 800.0
+    page_height = 1000.0
+    blocks = [
+        {"role": "body_paragraph", "bbox": [50, 100, 380, 250], "text": "Left body " * 30, "page_width": page_width},
+        {"role": "body_paragraph", "bbox": [50, 270, 380, 420], "text": "Left body " * 30, "page_width": page_width},
+        {"role": "body_paragraph", "bbox": [420, 100, 750, 250], "text": "Right body " * 30, "page_width": page_width},
+        {"role": "body_paragraph", "bbox": [420, 270, 750, 420], "text": "Right body " * 30, "page_width": page_width},
+    ]
+
+    profile = _classify_page_layout(blocks, page_width, page_height)
+    assert profile.layout_type == "two_column", f"Expected two_column, got {profile.layout_type}"
+    assert profile.column_count == 2, f"Expected column_count=2, got {profile.column_count}"
+
+
+def test_single_large_block_per_column_still_two_column() -> None:
+    """Each column has only 1 block, but large y_coverage and word_count
+    must still classify as two_column (not killed by count=1 guard)."""
+    from paperforge.worker.ocr_document import _classify_page_layout
+
+    page_width = 800.0
+    page_height = 1000.0
+    blocks = [
+        {"role": "body_paragraph", "bbox": [50, 100, 380, 800], "text": "Left body " * 100, "page_width": page_width},
+        {"role": "body_paragraph", "bbox": [420, 100, 750, 800], "text": "Right body " * 100, "page_width": page_width},
+    ]
+
+    profile = _classify_page_layout(blocks, page_width, page_height)
+    assert profile.layout_type == "two_column", f"Expected two_column, got {profile.layout_type}"
+    assert profile.column_count == 2, f"Expected column_count=2, got {profile.column_count}"
+
+
+def test_multiple_weak_offset_lines_do_not_create_wide_dispersion() -> None:
+    """3 raw clusters (2 weak, 1 real) must produce single_column, not two_column/wide_dispersion."""
+    from paperforge.worker.ocr_document import _classify_page_layout
+
+    page_width = 1191.0
+    page_height = 1684.0
+    blocks = [
+        {"role": "body_paragraph", "bbox": [325, 224, 1123, 298], "text": "Long paragraph " * 40, "page_width": page_width},
+        {"role": "body_paragraph", "bbox": [325, 299, 1124, 377], "text": "Long paragraph " * 40, "page_width": page_width},
+        {"role": "body_paragraph", "bbox": [328, 832, 704, 854], "text": "IC Statement: Not applicable.", "page_width": page_width},
+        {"role": "body_paragraph", "bbox": [328, 870, 550, 890], "text": "Short note.", "page_width": page_width},
+        {"role": "body_paragraph", "bbox": [327, 900, 1122, 950], "text": "Long paragraph " * 40, "page_width": page_width},
+    ]
+
+    profile = _classify_page_layout(blocks, page_width, page_height)
+
+    assert profile.layout_type == "single_column", f"Expected single_column, got {profile.layout_type}"
+    assert profile.column_count == 1, f"Expected column_count=1, got {profile.column_count}"
+    assert "weak_isolated_column_cluster_ignored" in profile.evidence, (
+        f"Expected weak_isolated_column_cluster_ignored in evidence, got {profile.evidence}"
+    )
+
+
+def test_all_clusters_weak_fallback_to_single_column() -> None:
+    """When all clusters are weak (e.g. only short offset lines), fallback to low-confidence single_column."""
+    from paperforge.worker.ocr_document import _classify_page_layout
+
+    page_width = 1191.0
+    page_height = 1684.0
+    blocks = [
+        {"role": "body_paragraph", "bbox": [328, 832, 704, 854], "text": "IC Statement: Not applicable.", "page_width": page_width},
+        {"role": "body_paragraph", "bbox": [60, 870, 300, 890], "text": "Footnote text.", "page_width": page_width},
+    ]
+
+    profile = _classify_page_layout(blocks, page_width, page_height)
+
+    assert profile.layout_type == "single_column", f"Expected single_column, got {profile.layout_type}"
+    assert profile.confidence <= 0.35, f"Expected confidence <= 0.35, got {profile.confidence}"
+    assert "all_column_clusters_weak" in profile.evidence, (
+        f"Expected all_column_clusters_weak in evidence, got {profile.evidence}"
+    )

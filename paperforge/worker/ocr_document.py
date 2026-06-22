@@ -318,12 +318,14 @@ def _is_layout_eligible_block(block: dict) -> bool:
     return True
 
 
-def _cluster_page_columns(page_blocks: list[dict], page_width: float) -> list[float]:
-    """Cluster block x-centers by column using a gap-based approach.
+def _cluster_page_column_groups(page_blocks: list[dict], page_width: float) -> list[dict]:
+    """Cluster block x-centers by column and return per-cluster metadata.
 
-    Returns one representative x-center per column cluster.
+    Returns list of cluster dicts sorted by center ascending. Each dict:
+        center, count, center_min, center_max, y_min, y_max, y_coverage,
+        word_count, width_median, block_ids, blocks
     """
-    centers: list[float] = []
+    items: list[tuple[float, dict]] = []
     for block in page_blocks:
         bbox = block.get("bbox") or block.get("block_bbox")
         if not bbox or len(bbox) < 4:
@@ -332,47 +334,135 @@ def _cluster_page_columns(page_blocks: list[dict], page_width: float) -> list[fl
         if block_width <= 50:
             continue
         x_center = (bbox[0] + bbox[2]) / 2
-        centers.append(x_center)
+        items.append((x_center, block))
 
-    if not centers:
-        return [page_width / 2]
+    if not items:
+        return [{
+            "center": page_width / 2,
+            "count": 0,
+            "center_min": page_width / 2,
+            "center_max": page_width / 2,
+            "y_min": 0.0,
+            "y_max": 0.0,
+            "y_coverage": 0.0,
+            "word_count": 0,
+            "width_median": 0.0,
+            "block_ids": [],
+            "blocks": [],
+        }]
 
-    centers.sort()
+    items.sort(key=lambda x: x[0])
     gap_threshold = page_width * 0.15
-    clusters: list[list[float]] = [[centers[0]]]
+    raw_clusters: list[list[dict]] = [[items[0][1]]]
+    last_center = items[0][0]
 
-    for c in centers[1:]:
-        if c - clusters[-1][-1] > gap_threshold:
-            clusters.append([c])
+    for center, block in items[1:]:
+        if center - last_center > gap_threshold:
+            raw_clusters.append([block])
         else:
-            clusters[-1].append(c)
+            raw_clusters[-1].append(block)
+        last_center = center
 
-    return [sum(cluster) / len(cluster) for cluster in clusters]
+    result: list[dict] = []
+    for cluster_blocks in raw_clusters:
+        valid_bboxes = [
+            bb for b in cluster_blocks
+            for bb in [b.get("bbox") or b.get("block_bbox")]
+            if bb and len(bb) >= 4
+        ]
+        centers_for_compute = [(bb[0] + bb[2]) / 2 for bb in valid_bboxes]
+
+        widths = sorted(bb[2] - bb[0] for bb in valid_bboxes)
+
+        y_vals = [(bb[1], bb[3]) for bb in valid_bboxes]
+
+        center_val = sum(centers_for_compute) / len(centers_for_compute) if centers_for_compute else page_width / 2
+        y_min_val = min(yv[0] for yv in y_vals) if y_vals else 0.0
+        y_max_val = max(yv[1] for yv in y_vals) if y_vals else 0.0
+
+        result.append({
+            "center": center_val,
+            "count": len(cluster_blocks),
+            "center_min": min(centers_for_compute) if centers_for_compute else page_width / 2,
+            "center_max": max(centers_for_compute) if centers_for_compute else page_width / 2,
+            "y_min": y_min_val,
+            "y_max": y_max_val,
+            "y_coverage": y_max_val - y_min_val,
+            "word_count": sum(len(_block_text(b).split()) for b in cluster_blocks),
+            "width_median": widths[len(widths) // 2] if widths else 0.0,
+            "block_ids": [b.get("block_id", "") for b in cluster_blocks],
+            "blocks": cluster_blocks,
+        })
+
+    result.sort(key=lambda c: c["center"])
+    return result
+
+
+# ponytail: Replace _cluster_page_columns() body with wrapper delegating to _cluster_page_column_groups()
+def _cluster_page_columns(page_blocks: list[dict], page_width: float) -> list[float]:
+    return [c["center"] for c in _cluster_page_column_groups(page_blocks, page_width)]
+
+
+def _is_weak_isolated_column_cluster(cluster: dict, page_height: float) -> bool:
+    """Return True if this cluster has insufficient evidence to be a real column."""
+    if cluster["count"] >= 3:
+        return False
+    if cluster["y_coverage"] >= page_height * 0.10:
+        return False
+    if cluster["word_count"] >= 25:
+        return False
+    return True
 
 
 def _classify_page_layout(page_blocks: list[dict], page_width: float, page_height: float) -> PageLayoutProfile:
     """Classify a page's layout based on column clusters and role distribution."""
-    centers = _cluster_page_columns(page_blocks, page_width)
-    column_count = len(centers)
+    clusters = _cluster_page_column_groups(page_blocks, page_width)
 
-    if column_count == 1:
+    # ponytail: fallback empty cluster (count=0) should not be penalized
+    if len(clusters) == 1 and clusters[0]["count"] == 0:
         return PageLayoutProfile(
             column_count=1,
-            column_boundaries=centers,
+            column_boundaries=[page_width / 2],
             layout_type="single_column",
             confidence=0.7,
             evidence=["eligible_body_blocks"],
         )
 
+    real_clusters = [
+        c for c in clusters
+        if not _is_weak_isolated_column_cluster(c, page_height)
+    ]
+
+    if not real_clusters:
+        return PageLayoutProfile(
+            column_count=1,
+            column_boundaries=[page_width / 2],
+            layout_type="single_column",
+            confidence=0.35,
+            evidence=["eligible_body_blocks", "all_column_clusters_weak"],
+        )
+
+    evidence_extra: list[str] = []
+    if len(real_clusters) < len(clusters):
+        evidence_extra.append("weak_isolated_column_cluster_ignored")
+
+    centers = [c["center"] for c in real_clusters]
+    column_count = len(real_clusters)
+
+    if column_count == 1:
+        return PageLayoutProfile(
+            column_count=1,
+            column_boundaries=[real_clusters[0]["center"]],
+            layout_type="single_column",
+            confidence=0.55 if evidence_extra else 0.7,
+            evidence=["eligible_body_blocks"] + evidence_extra,
+        )
+
     if column_count == 2:
         col_blocks: dict[int, list[str]] = {0: [], 1: []}
-        for block in page_blocks:
-            bbox = block.get("bbox") or block.get("block_bbox")
-            if not bbox or len(bbox) < 4:
-                continue
-            x_center = (bbox[0] + bbox[2]) / 2
-            col = 0 if x_center < page_width / 2 else 1
-            col_blocks[col].append(block.get("role", ""))
+        for i in (0, 1):
+            for block in real_clusters[i]["blocks"]:
+                col_blocks[i].append(block.get("role", ""))
 
         body_roles = {
             "body_paragraph",
@@ -398,7 +488,7 @@ def _classify_page_layout(page_blocks: list[dict], page_width: float, page_heigh
                 column_boundaries=centers,
                 layout_type="mixed_tail",
                 confidence=0.6,
-                evidence=["eligible_body_blocks", "two_center_clusters"],
+                evidence=["eligible_body_blocks", "two_center_clusters"] + evidence_extra,
             )
 
         return PageLayoutProfile(
@@ -406,7 +496,7 @@ def _classify_page_layout(page_blocks: list[dict], page_width: float, page_heigh
             column_boundaries=centers,
             layout_type="two_column",
             confidence=0.7,
-            evidence=["eligible_body_blocks"],
+            evidence=["eligible_body_blocks"] + evidence_extra,
         )
 
     return PageLayoutProfile(

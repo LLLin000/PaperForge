@@ -37,7 +37,6 @@ _EDITORIAL_TAIL_PHRASES = (
     "ethics statement",
     "author contributions",
     "the remaining authors declare",
-    "copyright",
     "published online",
 )
 

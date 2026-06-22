@@ -17,7 +17,7 @@
 
 - [ ] **Step 1: Insert `_cluster_page_column_groups()` before `_cluster_page_columns()`, then replace `_cluster_page_columns()` body with wrapper**
 
-Open `paperforge/worker/ocr_document.py`. Insert the new function before `_cluster_page_columns()` (before line 321), then replace the body of `_cluster_page_columns()` (lines 321-350) with a one-line wrapper:
+Open `paperforge/worker/ocr_document.py`. Insert the new function before `_cluster_page_columns()` (currently at line 278), then replace the body of `_cluster_page_columns()` with a one-line wrapper:
 
 ```python
 def _cluster_page_column_groups(page_blocks: list[dict], page_width: float) -> list[dict]:
@@ -125,11 +125,11 @@ git commit -m "feat: add _cluster_page_column_groups() returning cluster metadat
 ### Task 2: Add `_is_weak_isolated_column_cluster()` and modify `_classify_page_layout()`
 
 **Files:**
-- Modify: `paperforge/worker/ocr_document.py` — insert helper, modify `_classify_page_layout()` (lines 353-418)
+- Modify: `paperforge/worker/ocr_document.py` — insert helper before `_classify_page_layout()`, replace `_classify_page_layout()` body
 
-- [ ] **Step 1: Read current `_classify_page_layout()` to confirm boundaries**
+- [ ] **Step 1: Read current functions to confirm boundaries**
 
-Read `paperforge/worker/ocr_document.py` lines 321-418 to confirm no changes since the spec was written.
+Read `paperforge/worker/ocr_document.py` from `_cluster_page_columns` through `_classify_page_layout` to confirm no conflicting changes since this plan was written.
 
 - [ ] **Step 2: Insert `_is_weak_isolated_column_cluster()` before `_classify_page_layout()`**
 
@@ -147,7 +147,7 @@ def _is_weak_isolated_column_cluster(cluster: dict, page_height: float) -> bool:
     return True
 ```
 
-- [ ] **Step 3: Replace `_classify_page_layout()` (lines 353-418)**
+- [ ] **Step 3: Replace `_classify_page_layout()` body**
 
 Replace the entire function with:
 
