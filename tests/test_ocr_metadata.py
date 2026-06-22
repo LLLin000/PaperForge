@@ -73,8 +73,9 @@ def test_resolved_metadata_preserves_alternatives() -> None:
 
 
 def test_legacy_frontmatter_recovers_title_from_first_page(tmp_path: Path) -> None:
-    from paperforge.worker.ocr_metadata import extract_frontmatter_candidates
     import json
+
+    from paperforge.worker.ocr_metadata import extract_frontmatter_candidates
 
     blocks_path = tmp_path / "blocks.structured.jsonl"
     blocks_path.write_text(
@@ -339,6 +340,26 @@ def test_live_and_rebuild_metadata_inputs_keep_first_author_fallback_parity() ->
 
     assert live_like["authors"] == rebuild_like["authors"]
     assert live_like["authors"]["source"] == "ocr_blocks_verified_by_first_author"
+
+
+def test_extract_frontmatter_candidates_from_blocks_matches_file_based(tmp_path: Path) -> None:
+    import json
+
+    from paperforge.worker.ocr_metadata import (
+        extract_frontmatter_candidates,
+        extract_frontmatter_candidates_from_blocks,
+    )
+
+    structured = [
+        {"role": "paper_title", "text": "Example Title"},
+        {"role": "authors", "text": "Ada Lovelace, Alan Turing"},
+        {"role": "doi", "text": "10.1000/example"},
+    ]
+
+    path = tmp_path / "blocks.structured.jsonl"
+    path.write_text("\n".join(json.dumps(row) for row in structured) + "\n", encoding="utf-8")
+
+    assert extract_frontmatter_candidates_from_blocks(structured) == extract_frontmatter_candidates(path)
 
 
 def test_build_source_backed_frontmatter_anchors_reports_alignment() -> None:

@@ -384,6 +384,247 @@ def test_table_caption_math_normalized() -> None:
     assert "$\\\\mu$M" in md
 
 
+# === Phase 1: cache-first and shared-PDF guardrails ===
+
+
+def test_crop_asset_uses_cached_page_without_opening_pdf(tmp_path: Path, monkeypatch) -> None:
+    from PIL import Image
+
+    from paperforge.worker.ocr_objects import _crop_asset_from_pdf
+
+    page_cache_dir = tmp_path / "pages"
+    page_cache_dir.mkdir()
+    Image.new("RGB", (600, 800), "white").save(page_cache_dir / "page_001.jpg")
+
+    called = {"count": 0}
+
+    def _boom(*args, **kwargs):
+        called["count"] += 1
+        raise AssertionError("fitz.open should not be called on cache hit")
+
+    monkeypatch.setattr("fitz.open", _boom)
+
+    dst = tmp_path / "crop.jpg"
+    ok = _crop_asset_from_pdf(
+        None,
+        1,
+        [50, 50, 100, 100],
+        dst,
+        page_cache_dir=page_cache_dir,
+    )
+
+    assert ok is True
+    assert called["count"] == 0
+
+
+def test_extract_objects_opens_pdf_once_across_multiple_cache_miss_pages(tmp_path: Path, monkeypatch) -> None:
+    import fitz
+
+    from paperforge.worker.ocr_objects import extract_and_write_objects
+
+    pdf_path = tmp_path / "sample.pdf"
+    doc = fitz.open()
+    for _ in range(3):
+        page = doc.new_page(width=300, height=400)
+        page.draw_rect(fitz.Rect(25, 25, 75, 75), color=(1, 0, 0), fill=(1, 0, 0))
+    doc.save(pdf_path)
+    doc.close()
+
+    figure_inventory = {
+        "matched_figures": [
+            {
+                "figure_id": "figure_001",
+                "text": "Figure 1.",
+                "page": 1,
+                "cluster_bbox": [50, 50, 150, 150],
+                "matched_assets": [],
+            },
+            {
+                "figure_id": "figure_002",
+                "text": "Figure 2.",
+                "page": 2,
+                "cluster_bbox": [160, 50, 260, 150],
+                "matched_assets": [],
+            },
+            {
+                "figure_id": "figure_003",
+                "text": "Figure 3.",
+                "page": 3,
+                "cluster_bbox": [80, 80, 200, 200],
+                "matched_assets": [],
+            },
+        ],
+        "unmatched_assets": [],
+        "rejected_legends": [],
+        "figure_legends": [],
+        "figure_assets": [],
+        "official_figure_count": 3,
+        "unresolved_clusters": [],
+    }
+
+    open_count = {"count": 0}
+    real_open = fitz.open
+
+    def _counting_open(*args, **kwargs):
+        open_count["count"] += 1
+        return real_open(*args, **kwargs)
+
+    monkeypatch.setattr("fitz.open", _counting_open)
+
+    extract_and_write_objects(
+        pdf_path=pdf_path,
+        figure_inventory=figure_inventory,
+        table_inventory={"tables": [], "unmatched_assets": []},
+        asset_root=tmp_path / "assets",
+        render_root=tmp_path / "render",
+        page_dimensions_by_page={1: (600, 800), 2: (600, 800), 3: (600, 800)},
+    )
+
+    assert open_count["count"] == 1
+
+
+def test_extract_objects_renders_same_page_once_for_multiple_crops(tmp_path: Path, monkeypatch) -> None:
+    import fitz
+
+    from paperforge.worker.ocr_objects import extract_and_write_objects
+
+    pdf_path = tmp_path / "sample.pdf"
+    doc = fitz.open()
+    page = doc.new_page(width=300, height=400)
+    page.draw_rect(fitz.Rect(25, 25, 75, 75), color=(1, 0, 0), fill=(1, 0, 0))
+    doc.save(pdf_path)
+    doc.close()
+
+    figure_inventory = {
+        "matched_figures": [
+            {"figure_id": "figure_001", "text": "Figure 1.", "page": 1, "cluster_bbox": [50, 50, 150, 150], "matched_assets": []},
+            {"figure_id": "figure_002", "text": "Figure 2.", "page": 1, "cluster_bbox": [160, 50, 260, 150], "matched_assets": []},
+        ],
+        "unmatched_assets": [],
+        "rejected_legends": [],
+        "figure_legends": [],
+        "figure_assets": [],
+        "official_figure_count": 2,
+        "unresolved_clusters": [],
+    }
+
+    render_calls = {"count": 0}
+
+    from paperforge.worker import ocr as ocr_module
+    real_render = ocr_module.render_pdf_page_cached
+
+    def _counting_render(*args, **kwargs):
+        render_calls["count"] += 1
+        return real_render(*args, **kwargs)
+
+    monkeypatch.setattr(ocr_module, "render_pdf_page_cached", _counting_render)
+
+    extract_and_write_objects(
+        pdf_path=pdf_path,
+        figure_inventory=figure_inventory,
+        table_inventory={"tables": [], "unmatched_assets": []},
+        asset_root=tmp_path / "assets",
+        render_root=tmp_path / "render",
+        page_dimensions_by_page={1: (600, 800)},
+    )
+
+    assert render_calls["count"] == 1
+
+
+def test_extract_objects_cache_hit_does_not_eager_open_shared_pdf(tmp_path: Path, monkeypatch) -> None:
+    import fitz
+    from PIL import Image
+
+    from paperforge.worker.ocr_objects import extract_and_write_objects
+
+    pdf_path = tmp_path / "sample.pdf"
+    doc = fitz.open()
+    page = doc.new_page(width=300, height=400)
+    page.draw_rect(fitz.Rect(25, 25, 75, 75), color=(1, 0, 0), fill=(1, 0, 0))
+    doc.save(pdf_path)
+    doc.close()
+
+    pages_dir = tmp_path / "pages"
+    pages_dir.mkdir()
+    Image.new("RGB", (600, 800), "white").save(pages_dir / "page_001.jpg")
+
+    def _boom(*args, **kwargs):
+        raise AssertionError("fitz.open should not be called when page cache already exists")
+
+    monkeypatch.setattr("fitz.open", _boom)
+
+    figure_inventory = {
+        "matched_figures": [
+            {
+                "figure_id": "figure_001",
+                "text": "Figure 1.",
+                "page": 1,
+                "cluster_bbox": [50, 50, 150, 150],
+                "matched_assets": [],
+            }
+        ],
+        "unmatched_assets": [],
+        "rejected_legends": [],
+        "figure_legends": [],
+        "figure_assets": [],
+        "official_figure_count": 1,
+        "unresolved_clusters": [],
+    }
+
+    extract_and_write_objects(
+        pdf_path=pdf_path,
+        figure_inventory=figure_inventory,
+        table_inventory={"tables": [], "unmatched_assets": []},
+        asset_root=tmp_path / "assets",
+        render_root=tmp_path / "render",
+        page_dimensions_by_page={1: (600, 800)},
+    )
+
+    assert (tmp_path / "assets" / "figures" / "figure_001.jpg").exists()
+
+
+def test_extract_objects_pdf_open_failure_still_writes_markdown(tmp_path: Path, monkeypatch) -> None:
+    from paperforge.worker.ocr_objects import extract_and_write_objects
+
+    pdf_path = tmp_path / "broken.pdf"
+    pdf_path.touch()
+
+    figure_inventory = {
+        "matched_figures": [
+            {
+                "figure_id": "figure_001",
+                "text": "Figure 1. Example.",
+                "page": 1,
+                "cluster_bbox": [50, 50, 150, 150],
+                "matched_assets": [],
+            }
+        ],
+        "unmatched_assets": [],
+        "rejected_legends": [],
+        "figure_legends": [],
+        "figure_assets": [],
+        "official_figure_count": 1,
+        "unresolved_clusters": [],
+    }
+
+    def _boom(*args, **kwargs):
+        raise RuntimeError("cannot open pdf")
+
+    monkeypatch.setattr("fitz.open", _boom)
+
+    extract_and_write_objects(
+        pdf_path=pdf_path,
+        figure_inventory=figure_inventory,
+        table_inventory={"tables": [], "unmatched_assets": []},
+        asset_root=tmp_path / "assets",
+        render_root=tmp_path / "render",
+        page_dimensions_by_page={1: (600, 800)},
+    )
+
+    note = tmp_path / "render" / "figures" / "figure_001.md"
+    assert note.exists()
+
+
 # === figure legend completeness integration (Task 8) ===
 
 

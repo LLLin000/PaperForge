@@ -875,6 +875,15 @@ def _reader_figure_embed_target(figure: dict) -> str | None:
     return f"figure_{int(figure_number):03d}"
 
 
+def _reader_covered_figure_ids(reader_figures: list[dict]) -> set[str]:
+    covered: set[str] = set()
+    for figure in reader_figures:
+        embed_target = _reader_figure_embed_target(figure)
+        if embed_target:
+            covered.add(embed_target)
+    return covered
+
+
 def _page_block_key(
     block_or_page: dict | int | None, block_id: int | str | None = None
 ) -> tuple[int | None, int | str] | None:
@@ -1113,9 +1122,13 @@ def render_fulltext_markdown(
                 lines.append("")
 
     # Build per-page figure/table lookups
+    reader_covered_figure_ids = _reader_covered_figure_ids(reader_figures)
+
     figures_by_page: dict[int, list[dict]] = {}
     for i, fig in enumerate(figure_inventory.get("matched_figures", [])):
         fig_id = fig.get("figure_id") or f"figure_{i + 1:03d}"
+        if fig_id in reader_covered_figure_ids:
+            continue
         page = fig.get("page", 0) or 1
         figures_by_page.setdefault(page, []).append(
             {

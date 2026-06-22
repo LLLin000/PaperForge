@@ -174,16 +174,48 @@ def _get_ocr_author_names(structured_blocks: list[dict]) -> list[str]:
     return []
 
 
-def extract_frontmatter_candidates(blocks_structured_path: Path) -> dict[str, Any]:
+def extract_frontmatter_candidates_from_blocks(structured_blocks: list[dict[str, Any]]) -> dict[str, Any]:
     candidates: dict[str, Any] = {
         "title": None,
         "authors_text": None,
         "doi_candidates": [],
     }
 
-    if not blocks_structured_path.exists():
-        return candidates
+    for block in structured_blocks:
+        role = block.get("role", "")
+        text = block.get("text", "").strip()
 
+        if role == "paper_title":
+            candidates["title"] = text
+        elif role == "authors":
+            if block.get("_non_body_insert"):
+                continue
+            if candidates["authors_text"] is None:
+                candidates["authors_text"] = text
+            else:
+                current_score = _name_likeness_score(candidates["authors_text"])
+                new_score = _name_likeness_score(text)
+                if new_score > current_score:
+                    candidates["authors_text"] = text
+        elif role in ("affiliation",):
+            if "affiliation_blocks" not in candidates:
+                candidates["affiliation_blocks"] = []
+            candidates["affiliation_blocks"].append(text)
+        elif role == "doi" and text:
+            candidates["doi_candidates"].append(text)
+        elif role == "frontmatter_heading":
+            if "frontmatter_headings" not in candidates:
+                candidates["frontmatter_headings"] = []
+            candidates["frontmatter_headings"].append(text)
+
+    return candidates
+
+
+def extract_frontmatter_candidates(blocks_structured_path: Path) -> dict[str, Any]:
+    if not blocks_structured_path.exists():
+        return {"title": None, "authors_text": None, "doi_candidates": []}
+
+    structured_blocks: list[dict[str, Any]] = []
     with blocks_structured_path.open("r", encoding="utf-8") as f:
         for line in f:
             line = line.strip()
@@ -193,34 +225,9 @@ def extract_frontmatter_candidates(blocks_structured_path: Path) -> dict[str, An
                 block = json.loads(line)
             except json.JSONDecodeError:
                 continue
+            structured_blocks.append(block)
 
-            role = block.get("role", "")
-            text = block.get("text", "").strip()
-
-            if role == "paper_title":
-                candidates["title"] = text
-            elif role == "authors":
-                if block.get("_non_body_insert"):
-                    continue
-                if candidates["authors_text"] is None:
-                    candidates["authors_text"] = text
-                else:
-                    current_score = _name_likeness_score(candidates["authors_text"])
-                    new_score = _name_likeness_score(text)
-                    if new_score > current_score:
-                        candidates["authors_text"] = text
-            elif role in ("affiliation",):
-                if "affiliation_blocks" not in candidates:
-                    candidates["affiliation_blocks"] = []
-                candidates["affiliation_blocks"].append(text)
-            elif role == "doi" and text:
-                candidates["doi_candidates"].append(text)
-            elif role == "frontmatter_heading":
-                if "frontmatter_headings" not in candidates:
-                    candidates["frontmatter_headings"] = []
-                candidates["frontmatter_headings"].append(text)
-
-    return candidates
+    return extract_frontmatter_candidates_from_blocks(structured_blocks)
 
 
 def _token_overlap(a: str, b: str) -> float:

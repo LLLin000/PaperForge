@@ -324,6 +324,52 @@ def _words_to_text(words: list[tuple]) -> str:
 
 TEXT_LIKE_RAW_LABELS = frozenset({"text"})
 
+_LIGATURE_MAP = {
+    "\ufb01": "fi", "\ufb02": "fl", "\ufb00": "ff",
+    "\ufb03": "ffi", "\ufb04": "ffl",
+    "\u2013": "-", "\u2014": "-", "\u2015": "-",
+}
+
+
+def _strip_for_comparison(s: str) -> str:
+    """Normalize text for overlap detection: drop formatting, citations, LaTeX, ligatures."""
+    import re
+
+    for src, dst in _LIGATURE_MAP.items():
+        s = s.replace(src, dst)
+    s = re.sub(r'\$\$?[^$]+\$\$?', '', s)
+    s = re.sub(r'\$?\^?\{?\[?\d+[\d,\-]*\]?\}?\$?', '', s)
+    s = re.sub(r'[\s\W_]+', '', s)
+    return s.lower()
+
+
+def _backfill_coverage_in_existing(backfill_text: str, existing_text: str) -> float:
+    """Fraction of backfill_text n-grams present in existing_text, after stripping.
+
+    Uses 5-gram overlap (not exact character sequence) to be robust against:
+    - Prefix fragments (e.g. "cific" vs "specific" at column boundary)
+    - PDF text layer encoding artifacts (ligature→normal)
+    - Hyphenation and spacing differences.
+    """
+    a = _strip_for_comparison(backfill_text)
+    b = _strip_for_comparison(existing_text)
+    if len(a) < 40:
+        return 0.0
+
+    n = 5
+    if len(a) < n or len(b) < n:
+        return 0.0
+
+    a_grams = {a[i : i + n] for i in range(len(a) - n + 1)}
+    b_grams = {b[i : i + n] for i in range(len(b) - n + 1)}
+    if not a_grams:
+        return 0.0
+
+    return len(a_grams & b_grams) / len(a_grams)
+
+
+_BACKFILL_OVERLAP_REJECT_THRESHOLD = 0.8
+
 
 def backfill_missing_text_from_pdf(
     raw_blocks: list[dict],
@@ -439,14 +485,30 @@ def backfill_missing_text_from_pdf(
             text = _words_to_text(words)
 
             if text:
-                block["_original_ocr_text"] = ""
-                block["text"] = text
-                block["block_content"] = text
-                block["_text_source"] = "pdf_text_layer_fallback"
-                block["_ocr_raw_status"] = "missing_text_recovered"
-                block["_ocr_raw_error_type"] = "empty_text_with_pdf_evidence"
-                block["role"] = "body_paragraph"
-                recovered += 1
+                same_page_existing = [
+                    other for other in raw_blocks
+                    if other is not block
+                    and other.get("page") == block.get("page")
+                    and str(other.get("text") or other.get("block_content") or "").strip()
+                ]
+                overlaps = any(
+                    _backfill_coverage_in_existing(text, str(other.get("text") or other.get("block_content") or ""))
+                    >= _BACKFILL_OVERLAP_REJECT_THRESHOLD
+                    for other in same_page_existing
+                )
+                if overlaps:
+                    block["_ocr_raw_status"] = "missing_text_rejected"
+                    block["_ocr_raw_error_type"] = "backfill_overlaps_existing_text_block"
+                    block["_text_source"] = "pdf_text_layer_fallback_rejected"
+                    unrecovered += 1
+                else:
+                    block["_original_ocr_text"] = ""
+                    block["text"] = text
+                    block["block_content"] = text
+                    block["_text_source"] = "pdf_text_layer_fallback"
+                    block["_ocr_raw_status"] = "missing_text_recovered"
+                    block["_ocr_raw_error_type"] = "empty_text_with_pdf_evidence"
+                    recovered += 1
             else:
                 try:
                     page_text = pdf_page.get_text("text").strip()

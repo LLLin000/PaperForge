@@ -278,6 +278,9 @@ def run_derived_rebuild_for_keys(vault: Path, keys: list[str]) -> dict:
         from paperforge.worker.ocr_tables import build_table_inventory, write_back_table_roles, write_table_inventory
 
         table_inventory = build_table_inventory(structured)
+        from paperforge.worker.ocr_figures import attach_ownership_conflicts
+
+        attach_ownership_conflicts(figure_inventory, table_inventory)
         write_back_table_roles(table_inventory, structured)
         write_table_inventory(artifacts.blocks_structured.parent / "table_inventory.json", table_inventory)
 
