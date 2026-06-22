@@ -366,6 +366,10 @@ def build_table_inventory(structured_blocks: list[dict]) -> dict[str, Any]:
                         0 < len(btext) < 120
                         and brole
                         not in (
+                            "noise",
+                            "page_footer",
+                            "page_header",
+                            "frontmatter_noise",
                             "table_caption",
                             "table_caption_candidate",
                             "table_asset",

@@ -259,6 +259,9 @@ def build_structured_blocks(
                 "_in_visual_container": block.get("_in_visual_container", None),
                 "_container_bbox": block.get("_container_bbox", None),
                 "_container_text": block.get("_container_text", None),
+                "_text_source": block.get("_text_source"),
+                "_ocr_raw_status": block.get("_ocr_raw_status"),
+                "_ocr_raw_error_type": block.get("_ocr_raw_error_type"),
                 "render_default": render_default,
                 "index_default": index_default,
             }

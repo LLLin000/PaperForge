@@ -5,6 +5,10 @@ from pathlib import Path
 
 from paperforge.core.io import read_json, write_json
 
+CURRENT_SPAN_BACKFILL_VERSION = "2026-06-22.1"
+CURRENT_SPAN_VISUAL_CONTAINER_VERSION = "2026-06-22.1"
+MIN_SPAN_BACKFILL_COVERAGE = 0.90
+
 
 def _resolve_source_pdf_for_rebuild(vault: Path, key: str, meta: dict) -> Path | None:
     """Resolve a usable source PDF path for span backfill.
@@ -29,6 +33,61 @@ def _resolve_source_pdf_for_rebuild(vault: Path, key: str, meta: dict) -> Path |
         return local
 
     return None
+
+
+def _is_text_like_raw_block(block: dict) -> bool:
+    raw_label = str(block.get("raw_label") or "")
+    text = str(block.get("text") or "").strip()
+    bbox = block.get("bbox") or []
+    text_like_labels = {"text", "paragraph_title", "abstract", "reference_content", "figure_title"}
+    return raw_label in text_like_labels and bool(text) and len(bbox) >= 4
+
+
+def _compute_span_backfill_coverage(raw_blocks: list[dict]) -> tuple[int, int, float]:
+    eligible = [block for block in raw_blocks if _is_text_like_raw_block(block)]
+    eligible_count = len(eligible)
+    if eligible_count == 0:
+        return 0, 0, 1.0
+    covered_count = sum(1 for block in eligible if block.get("span_metadata"))
+    return covered_count, eligible_count, covered_count / eligible_count
+
+
+def _span_backfill_is_valid(meta: dict, *, current_pdf_fingerprint: str, coverage: float) -> bool:
+    if current_pdf_fingerprint == "unknown":
+        return False
+    return (
+        meta.get("span_backfill_version") == CURRENT_SPAN_BACKFILL_VERSION
+        and meta.get("span_visual_container_version") == CURRENT_SPAN_VISUAL_CONTAINER_VERSION
+        and meta.get("span_pdf_fingerprint") == current_pdf_fingerprint
+        and coverage >= MIN_SPAN_BACKFILL_COVERAGE
+    )
+
+
+def _update_span_status_meta(
+    meta: dict, *, covered_count: int, eligible_count: int, coverage: float, status: str,
+) -> dict:
+    updated = dict(meta)
+    updated["span_backfill_covered_count"] = covered_count
+    updated["span_backfill_eligible_count"] = eligible_count
+    updated["span_backfill_coverage"] = coverage
+    updated["span_backfill_status"] = status
+    return updated
+
+
+def _update_span_validity_meta(
+    meta: dict, *, fingerprint: str, covered_count: int, eligible_count: int, coverage: float, status: str,
+) -> dict:
+    updated = _update_span_status_meta(
+        meta,
+        covered_count=covered_count,
+        eligible_count=eligible_count,
+        coverage=coverage,
+        status=status,
+    )
+    updated["span_backfill_version"] = CURRENT_SPAN_BACKFILL_VERSION
+    updated["span_visual_container_version"] = CURRENT_SPAN_VISUAL_CONTAINER_VERSION
+    updated["span_pdf_fingerprint"] = fingerprint
+    return updated
 
 
 def _apply_post_rebuild_version_flags(meta: dict) -> dict:
@@ -80,15 +139,84 @@ def run_derived_rebuild_for_keys(vault: Path, keys: list[str]) -> dict:
             continue
         all_raw_blocks = list(read_jsonl(artifacts.blocks_raw))
 
+        # Reject pdf_text_layer_fallback blocks whose text overlaps >=80% with
+        # a non-backfill block on the same page.  These are column fragments
+        # the PDF text layer spilled during the initial OCR backfill.
+        from paperforge.worker.ocr_pdf_spans import (
+            _BACKFILL_OVERLAP_REJECT_THRESHOLD,
+            _backfill_coverage_in_existing,
+        )
+        for block in all_raw_blocks:
+            if block.get("_text_source") != "pdf_text_layer_fallback":
+                continue
+            text = str(block.get("text") or block.get("block_content") or "").strip()
+            if not text:
+                continue
+            same_page_body = [
+                other for other in all_raw_blocks
+                if other is not block
+                and other.get("page") == block.get("page")
+                and str(other.get("text") or other.get("block_content") or "").strip()
+                and other.get("_text_source") != "pdf_text_layer_fallback"
+            ]
+            if any(
+                _backfill_coverage_in_existing(text, str(other.get("text") or other.get("block_content") or ""))
+                >= _BACKFILL_OVERLAP_REJECT_THRESHOLD
+                for other in same_page_body
+            ):
+                block["text"] = ""
+                block.pop("block_content", None)
+                block["_ocr_raw_status"] = "missing_text_rejected"
+                block["_ocr_raw_error_type"] = "backfill_overlaps_existing_text_block"
+                block["_text_source"] = "pdf_text_layer_fallback_rejected"
+
         # Backfill span_metadata from source PDF
         ocr_meta = read_json(artifacts.meta_json) if artifacts.meta_json.exists() else {}
         source_pdf_path = _resolve_source_pdf_for_rebuild(vault, key, ocr_meta)
-        if source_pdf_path and source_pdf_path.exists():
-            from paperforge.worker.ocr_blocks import write_raw_blocks_jsonl
-            from paperforge.worker.ocr_pdf_spans import backfill_span_metadata_from_pdf
 
-            backfill_span_metadata_from_pdf(all_raw_blocks, source_pdf_path)
-            write_raw_blocks_jsonl(artifacts.blocks_raw, all_raw_blocks)
+        span_meta_patch: dict[str, object] = {}
+        covered_count, eligible_count, coverage = _compute_span_backfill_coverage(all_raw_blocks)
+
+        if not source_pdf_path or not source_pdf_path.exists():
+            span_meta_patch = _update_span_status_meta(
+                ocr_meta,
+                covered_count=covered_count,
+                eligible_count=eligible_count,
+                coverage=coverage,
+                status="unavailable_pdf_missing",
+            )
+        else:
+            from paperforge.worker.ocr_artifacts import compute_pdf_fingerprint
+
+            current_fp = compute_pdf_fingerprint(source_pdf_path)
+            if current_fp != "unknown" and _span_backfill_is_valid(
+                ocr_meta,
+                current_pdf_fingerprint=current_fp,
+                coverage=coverage,
+            ):
+                span_meta_patch = _update_span_validity_meta(
+                    ocr_meta,
+                    fingerprint=current_fp,
+                    covered_count=covered_count,
+                    eligible_count=eligible_count,
+                    coverage=coverage,
+                    status="skipped_valid",
+                )
+            else:
+                from paperforge.worker.ocr_blocks import write_raw_blocks_jsonl
+                from paperforge.worker.ocr_pdf_spans import backfill_span_metadata_from_pdf
+
+                backfill_span_metadata_from_pdf(all_raw_blocks, source_pdf_path)
+                covered_count, eligible_count, coverage = _compute_span_backfill_coverage(all_raw_blocks)
+                write_raw_blocks_jsonl(artifacts.blocks_raw, all_raw_blocks)
+                span_meta_patch = _update_span_validity_meta(
+                    ocr_meta,
+                    fingerprint=current_fp,
+                    covered_count=covered_count,
+                    eligible_count=eligible_count,
+                    coverage=coverage,
+                    status="rerun_backfill",
+                )
 
         # Read source metadata. If legacy/old OCR papers are missing canonical
         # bibliographic metadata, enrich source_metadata.json from the formal
@@ -104,7 +232,6 @@ def run_derived_rebuild_for_keys(vault: Path, keys: list[str]) -> dict:
             source_metadata=source_meta,
             structure_output_dir=artifacts.blocks_structured.parent,
         )
-        write_structured_blocks_jsonl(artifacts.blocks_structured, structured)
         # Write role-level span profiles
         from paperforge.worker.ocr_profiles import write_role_span_profiles
 
@@ -112,14 +239,14 @@ def run_derived_rebuild_for_keys(vault: Path, keys: list[str]) -> dict:
 
         # Rebuild resolved metadata
         from paperforge.worker.ocr_metadata import (
-            extract_frontmatter_candidates,
+            extract_frontmatter_candidates_from_blocks,
             resolve_metadata,
             write_resolved_metadata,
         )
 
         metadata_dir = paper_root / "metadata"
         metadata_dir.mkdir(parents=True, exist_ok=True)
-        frontmatter_candidates = extract_frontmatter_candidates(artifacts.blocks_structured)
+        frontmatter_candidates = extract_frontmatter_candidates_from_blocks(structured)
         resolved = resolve_metadata(
             source_meta,
             frontmatter_candidates,
@@ -129,7 +256,11 @@ def run_derived_rebuild_for_keys(vault: Path, keys: list[str]) -> dict:
         write_resolved_metadata(metadata_dir / "resolved_metadata.json", resolved)
 
         # Rebuild figure inventory
-        from paperforge.worker.ocr_figures import build_figure_inventory, write_figure_inventory, write_back_figure_roles
+        from paperforge.worker.ocr_figures import (
+            build_figure_inventory,
+            write_back_figure_roles,
+            write_figure_inventory,
+        )
 
         figure_inventory = build_figure_inventory(structured)
         write_back_figure_roles(figure_inventory, structured)
@@ -144,7 +275,7 @@ def run_derived_rebuild_for_keys(vault: Path, keys: list[str]) -> dict:
         write_json(reader_figures_dir / "reader_figures.json", reader_payload)
 
         # Rebuild table inventory
-        from paperforge.worker.ocr_tables import build_table_inventory, write_table_inventory, write_back_table_roles
+        from paperforge.worker.ocr_tables import build_table_inventory, write_back_table_roles, write_table_inventory
 
         table_inventory = build_table_inventory(structured)
         write_back_table_roles(table_inventory, structured)
@@ -230,6 +361,7 @@ def run_derived_rebuild_for_keys(vault: Path, keys: list[str]) -> dict:
 
         # Update version state in meta.json
         meta = read_json(artifacts.meta_json) if artifacts.meta_json.exists() else {}
+        meta.update(span_meta_patch)
         meta = _apply_post_rebuild_version_flags(meta)
         # Rebuild regenerated the derived outputs; validate from a clean
         # optimistic status instead of short-circuiting on a stale

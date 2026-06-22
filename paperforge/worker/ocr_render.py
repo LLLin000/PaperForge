@@ -12,6 +12,7 @@ from paperforge.worker.ocr_document import (
     _is_in_usable_content,
 )
 from paperforge.worker.ocr_math import normalize_ocr_math_text
+from paperforge.worker.ocr_pdf_spans import _BACKFILL_OVERLAP_REJECT_THRESHOLD, _backfill_coverage_in_existing
 from paperforge.worker.ocr_roles import FRONTMATTER_NOISE
 
 _BACKMATTER_HEADING_KEYWORDS: frozenset[str] = frozenset(
@@ -75,7 +76,7 @@ def _is_near_body_flow(
 
 
 _BOILERPLATE_MARKERS = frozenset({
-    "copyright", "\u00a9", "all rights reserved", "downloaded from",
+    "all rights reserved", "downloaded from",
     "published by", "received:", "accepted:",
 })
 
@@ -1137,6 +1138,7 @@ def render_fulltext_markdown(
         unresolved_clusters_by_page.setdefault(page, []).append(cluster_id)
 
     emitted_pages: set[int] = set()
+    _emitted_body_text_by_page: dict[int, list[str]] = {}
     last_structured_insert_page: int | None = None
     last_structured_insert_bbox: list[float] | None = None
     pre_reference_reader_figures_emitted = False
@@ -1192,12 +1194,7 @@ def render_fulltext_markdown(
 
         # Override with role-based prefix where role is explicit
         for bid in block_heading_prefix:
-            # Find the block with this id
-            b = None
-            for blk in structured_blocks:
-                if id(blk) == bid:
-                    b = blk
-                    break
+            b = bid_to_block.get(bid)
             if b:
                 role = str(b.get("role") or "")
                 if role in _ROLE_HEADING_PREFIX:
@@ -1533,6 +1530,14 @@ def render_fulltext_markdown(
             last_structured_insert_page = None
             last_structured_insert_bbox = None
             if text:
+                if block_page is not None and block.get("_text_source") == "pdf_text_layer_fallback":
+                    if any(
+                        _backfill_coverage_in_existing(text, existing)
+                        >= _BACKFILL_OVERLAP_REJECT_THRESHOLD
+                        for existing in _emitted_body_text_by_page.get(block_page, [])
+                    ):
+                        continue
+                _emitted_body_text_by_page.setdefault(block_page if block_page is not None else -1, []).append(text)
                 lines.append(text)
                 lines.append("")
         else:
