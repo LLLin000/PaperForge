@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import contextlib
 import re
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -87,7 +88,7 @@ def _find_cached_page_image(page_cache_dir: Path | None, page_num: int) -> Path 
 
 
 def _crop_asset_from_pdf(
-    pdf_path: Path,
+    pdf_path: Path | None,
     page_num: int,
     bbox: list[float],
     dst: Path,
@@ -95,13 +96,9 @@ def _crop_asset_from_pdf(
     page_width: int = 0,
     page_height: int = 0,
     page_cache_dir: Path | None = None,
+    pdf_doc: Any | None = None,
+    pdf_doc_provider: Callable[[], Any | None] | None = None,
 ) -> bool:
-    """Crop a region from a PDF page and save as JPEG.
-
-    The OCR bbox values are in rendered page-image coordinates, not PDF point
-    coordinates. To preserve the previously stable behavior, first render the
-    PDF page into the OCR page dimensions, then crop with the OCR bbox.
-    """
     if dst.exists():
         with contextlib.suppress(Exception):
             dst.unlink()
@@ -114,51 +111,61 @@ def _crop_asset_from_pdf(
             return False
         return crop_block_asset(cached_page_image, [int(v) for v in bbox], dst)
 
-    if not pdf_path.exists():
-        return False
-
-    if page_width > 0 and page_height > 0 and page_cache_dir is not None:
+    created_doc = None
+    doc = pdf_doc
+    if doc is None and pdf_doc_provider is not None:
+        doc = pdf_doc_provider()
+        if doc is None:
+            return False
+    if doc is None:
+        if pdf_path is None or not pdf_path.exists():
+            return False
         try:
             import fitz
+        except ImportError:
+            return False
+        created_doc = fitz.open(str(pdf_path))
+        doc = created_doc
 
-            from paperforge.worker.ocr import crop_block_asset, render_pdf_page_cached
+    try:
+        if page_width > 0 and page_height > 0 and page_cache_dir is not None:
+            try:
+                from paperforge.worker.ocr import crop_block_asset, render_pdf_page_cached
+            except ImportError:
+                return False
+
+            try:
+                page_image_path = page_cache_dir / f"page_{page_num:03d}.jpg"
+                rendered = render_pdf_page_cached(
+                    doc,
+                    page_num,
+                    target_width=page_width,
+                    target_height=page_height,
+                    destination=page_image_path,
+                )
+                if not rendered:
+                    return False
+                return crop_block_asset(rendered, [int(v) for v in bbox], dst)
+            except Exception:
+                return False
+
+        try:
+            import fitz
         except ImportError:
             return False
 
         try:
-            doc = fitz.open(str(pdf_path))
-            page_image_path = page_cache_dir / f"page_{page_num:03d}.jpg"
-            rendered = render_pdf_page_cached(
-                doc,
-                page_num,
-                target_width=page_width,
-                target_height=page_height,
-                destination=page_image_path,
-            )
-            doc.close()
-            if not rendered:
-                return False
-            return crop_block_asset(rendered, [int(v) for v in bbox], dst)
+            page = doc[page_num - 1]
+            rect = fitz.Rect(*bbox)
+            pix = page.get_pixmap(matrix=fitz.Matrix(2, 2), clip=rect)
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            pix.save(str(dst))
+            return True
         except Exception:
             return False
-
-    # Fallback path for callers lacking OCR page dimensions.
-    try:
-        import fitz
-    except ImportError:
-        return False
-
-    try:
-        doc = fitz.open(str(pdf_path))
-        page = doc[page_num - 1]
-        rect = fitz.Rect(*bbox)
-        pix = page.get_pixmap(matrix=fitz.Matrix(2, 2), clip=rect)
-        dst.parent.mkdir(parents=True, exist_ok=True)
-        pix.save(str(dst))
-        doc.close()
-        return True
-    except Exception:
-        return False
+    finally:
+        if created_doc is not None:
+            doc.close()
 
 
 def extract_and_write_objects(
@@ -208,187 +215,218 @@ def extract_and_write_objects(
     def _page_dims(page_num: int) -> tuple[int, int]:
         return page_dimensions_by_page.get(page_num, (0, 0))
 
-    # Process matched figures
-    for i, match in enumerate(figure_inventory.get("matched_figures", [])):
-        fig_id = match.get("figure_id", f"figure_{i + 1:03d}")
-        caption_text = match.get("text", "")
-        page = match.get("page", 0)
-        page_width, page_height = _page_dims(page)
-        asset_path_rel = f"assets/figures/{fig_id}.jpg"
-        asset_path_abs = figures_asset_dir / f"{fig_id}.jpg"
+    shared_pdf_doc: Any | None = None
+    shared_pdf_open_attempted = False
 
-        was_cropped = False
-        cluster_bbox = match.get("cluster_bbox")
-        if cluster_bbox and all(v > 0 for v in cluster_bbox):
-            was_cropped = _crop_asset_from_pdf(
-                pdf_path,
-                page,
-                cluster_bbox,
-                asset_path_abs,
-                page_width=page_width,
-                page_height=page_height,
-                page_cache_dir=page_cache_dir,
+    def _get_shared_pdf_doc() -> Any | None:
+        nonlocal shared_pdf_doc, shared_pdf_open_attempted
+        if shared_pdf_doc is not None:
+            return shared_pdf_doc
+        if shared_pdf_open_attempted:
+            return None
+        if pdf_path is None or not pdf_path.exists():
+            shared_pdf_open_attempted = True
+            return None
+        shared_pdf_open_attempted = True
+        try:
+            import fitz
+            shared_pdf_doc = fitz.open(str(pdf_path))
+        except Exception:
+            return None
+        return shared_pdf_doc
+
+    try:
+        # Process matched figures
+        for i, match in enumerate(figure_inventory.get("matched_figures", [])):
+            fig_id = match.get("figure_id", f"figure_{i + 1:03d}")
+            caption_text = match.get("text", "")
+            page = match.get("page", 0)
+            page_width, page_height = _page_dims(page)
+            asset_path_rel = f"assets/figures/{fig_id}.jpg"
+            asset_path_abs = figures_asset_dir / f"{fig_id}.jpg"
+
+            was_cropped = False
+            cluster_bbox = match.get("cluster_bbox")
+            if cluster_bbox and all(v > 0 for v in cluster_bbox):
+                was_cropped = _crop_asset_from_pdf(
+                    pdf_path,
+                    page,
+                    cluster_bbox,
+                    asset_path_abs,
+                    page_width=page_width,
+                    page_height=page_height,
+                    page_cache_dir=page_cache_dir,
+                    pdf_doc_provider=_get_shared_pdf_doc,
+                )
+            if not was_cropped:
+                for asset_info in match.get("matched_assets", []):
+                    bbox = asset_info.get("bbox", [0, 0, 0, 0])
+                    if (
+                        pdf_path
+                        and bbox
+                        and all(v > 0 for v in bbox)
+                        and _crop_asset_from_pdf(
+                            pdf_path,
+                            page,
+                            bbox,
+                            asset_path_abs,
+                            page_width=page_width,
+                            page_height=page_height,
+                            page_cache_dir=page_cache_dir,
+                            pdf_doc_provider=_get_shared_pdf_doc,
+                        )
+                    ):
+                        was_cropped = True
+                        break
+
+            md = render_figure_object_markdown(
+                {
+                    "figure_id": fig_id,
+                    "page": page,
+                    "caption": caption_text,
+                    "image_relpath": asset_path_rel,
+                    "confidence": match.get("confidence", 0.5),
+                    "was_cropped": was_cropped,
+                }
             )
-        if not was_cropped:
-            for asset_info in match.get("matched_assets", []):
-                bbox = asset_info.get("bbox", [0, 0, 0, 0])
-                if (
-                    pdf_path
-                    and bbox
-                    and all(v > 0 for v in bbox)
-                    and _crop_asset_from_pdf(
-                        pdf_path,
-                        page,
-                        bbox,
-                        asset_path_abs,
-                        page_width=page_width,
-                        page_height=page_height,
-                        page_cache_dir=page_cache_dir,
-                    )
-                ):
-                    was_cropped = True
-                    break
+            _write_object_markdown(md, figures_render_dir / f"{fig_id}.md")
 
-        md = render_figure_object_markdown(
-            {
-                "figure_id": fig_id,
-                "page": page,
-                "caption": caption_text,
-                "image_relpath": asset_path_rel,
-                "confidence": match.get("confidence", 0.5),
-                "was_cropped": was_cropped,
-            }
-        )
-        _write_object_markdown(md, figures_render_dir / f"{fig_id}.md")
+        # Process unresolved figure clusters (multi-panel without reliable legend)
+        for i, cluster in enumerate(figure_inventory.get("unresolved_clusters", [])):
+            cluster_id = cluster.get("cluster_id") or f"unresolved_cluster_{i + 1:03d}"
+            page = cluster.get("page", 0)
+            bbox = cluster.get("cluster_bbox", [0, 0, 0, 0])
+            page_width, page_height = _page_dims(page)
+            asset_path_rel = f"assets/figures/{cluster_id}.jpg"
+            asset_path_abs = figures_asset_dir / f"{cluster_id}.jpg"
 
-    # Process unresolved figure clusters (multi-panel without reliable legend)
-    for i, cluster in enumerate(figure_inventory.get("unresolved_clusters", [])):
-        cluster_id = cluster.get("cluster_id") or f"unresolved_cluster_{i + 1:03d}"
-        page = cluster.get("page", 0)
-        bbox = cluster.get("cluster_bbox", [0, 0, 0, 0])
-        page_width, page_height = _page_dims(page)
-        asset_path_rel = f"assets/figures/{cluster_id}.jpg"
-        asset_path_abs = figures_asset_dir / f"{cluster_id}.jpg"
+            if pdf_path and bbox and all(v > 0 for v in bbox):
+                _crop_asset_from_pdf(
+                    pdf_path,
+                    page,
+                    bbox,
+                    asset_path_abs,
+                    page_width=page_width,
+                    page_height=page_height,
+                    page_cache_dir=page_cache_dir,
+                    pdf_doc_provider=_get_shared_pdf_doc,
+                )
 
-        if pdf_path and bbox and all(v > 0 for v in bbox):
-            _crop_asset_from_pdf(
-                pdf_path,
-                page,
-                bbox,
-                asset_path_abs,
-                page_width=page_width,
-                page_height=page_height,
-                page_cache_dir=page_cache_dir,
+            md = render_figure_object_markdown(
+                {
+                    "figure_id": cluster_id,
+                    "page": page,
+                    "caption": "",
+                    "image_relpath": asset_path_rel,
+                    "confidence": 0.45,
+                }
             )
+            _write_object_markdown(md, figures_render_dir / f"{cluster_id}.md")
 
-        md = render_figure_object_markdown(
-            {
-                "figure_id": cluster_id,
-                "page": page,
-                "caption": "",
-                "image_relpath": asset_path_rel,
-                "confidence": 0.45,
-            }
-        )
-        _write_object_markdown(md, figures_render_dir / f"{cluster_id}.md")
+        # Process unmatched assets as orphans
+        orphan_count = 0
+        for asset in figure_inventory.get("unmatched_assets", []):
+            orphan_count += 1
+            orphan_id = f"orphan_{orphan_count:03d}"
+            bbox = asset.get("bbox", [0, 0, 0, 0])
+            page = asset.get("page", 0)
+            page_width, page_height = _page_dims(page)
+            asset_path_rel = f"assets/orphans/{orphan_id}.jpg"
+            asset_path_abs = orphans_asset_dir / f"{orphan_id}.jpg"
 
-    # Process unmatched assets as orphans
-    orphan_count = 0
-    for asset in figure_inventory.get("unmatched_assets", []):
-        orphan_count += 1
-        orphan_id = f"orphan_{orphan_count:03d}"
-        bbox = asset.get("bbox", [0, 0, 0, 0])
-        page = asset.get("page", 0)
-        page_width, page_height = _page_dims(page)
-        asset_path_rel = f"assets/orphans/{orphan_id}.jpg"
-        asset_path_abs = orphans_asset_dir / f"{orphan_id}.jpg"
+            if pdf_path and bbox and all(v > 0 for v in bbox):
+                _crop_asset_from_pdf(
+                    pdf_path,
+                    page,
+                    bbox,
+                    asset_path_abs,
+                    page_width=page_width,
+                    page_height=page_height,
+                    page_cache_dir=page_cache_dir,
+                    pdf_doc_provider=_get_shared_pdf_doc,
+                )
 
-        if pdf_path and bbox and all(v > 0 for v in bbox):
-            _crop_asset_from_pdf(
-                pdf_path,
-                page,
-                bbox,
-                asset_path_abs,
-                page_width=page_width,
-                page_height=page_height,
-                page_cache_dir=page_cache_dir,
+            md = render_figure_object_markdown(
+                {
+                    "figure_id": orphan_id,
+                    "page": page,
+                    "caption": "",
+                    "image_relpath": asset_path_rel,
+                    "confidence": 0.3,
+                }
             )
+            _write_object_markdown(md, figures_render_dir / f"{orphan_id}.md")
 
-        md = render_figure_object_markdown(
-            {
-                "figure_id": orphan_id,
-                "page": page,
-                "caption": "",
-                "image_relpath": asset_path_rel,
-                "confidence": 0.3,
-            }
-        )
-        _write_object_markdown(md, figures_render_dir / f"{orphan_id}.md")
+        # Process tables
+        for i, table in enumerate(table_inventory.get("tables", [])):
+            tbl_id = f"table_{i + 1:03d}"
+            caption_text = table.get("caption_text", "")
+            page = table.get("page", 0)
+            page_width, page_height = _page_dims(page)
+            asset_bbox = table.get("asset_bbox", [0, 0, 0, 0])
+            asset_path_rel = f"assets/tables/{tbl_id}.jpg"
+            asset_path_abs = tables_asset_dir / f"{tbl_id}.jpg"
 
-    # Process tables
-    for i, table in enumerate(table_inventory.get("tables", [])):
-        tbl_id = f"table_{i + 1:03d}"
-        caption_text = table.get("caption_text", "")
-        page = table.get("page", 0)
-        page_width, page_height = _page_dims(page)
-        asset_bbox = table.get("asset_bbox", [0, 0, 0, 0])
-        asset_path_rel = f"assets/tables/{tbl_id}.jpg"
-        asset_path_abs = tables_asset_dir / f"{tbl_id}.jpg"
+            was_cropped = False
+            if table.get("has_asset") and pdf_path and asset_bbox and all(v > 0 for v in asset_bbox):
+                was_cropped = _crop_asset_from_pdf(
+                    pdf_path,
+                    page,
+                    asset_bbox,
+                    asset_path_abs,
+                    page_width=page_width,
+                    page_height=page_height,
+                    page_cache_dir=page_cache_dir,
+                    pdf_doc_provider=_get_shared_pdf_doc,
+                )
 
-        was_cropped = False
-        if table.get("has_asset") and pdf_path and asset_bbox and all(v > 0 for v in asset_bbox):
-            was_cropped = _crop_asset_from_pdf(
-                pdf_path,
-                page,
-                asset_bbox,
-                asset_path_abs,
-                page_width=page_width,
-                page_height=page_height,
-                page_cache_dir=page_cache_dir,
+            md = render_table_object_markdown(
+                {
+                    "table_id": tbl_id,
+                    "page": page,
+                    "caption": caption_text,
+                    "image_relpath": asset_path_rel,
+                    "confidence": 0.85 if was_cropped else 0.4,
+                    "formal_table_number": table.get("formal_table_number") or table.get("table_number"),
+                    "note_texts": table.get("note_texts", []),
+                    "note_match_reason": table.get("note_match_reason", ""),
+                }
             )
+            _write_object_markdown(md, tables_render_dir / f"{tbl_id}.md")
 
-        md = render_table_object_markdown(
-            {
-                "table_id": tbl_id,
-                "page": page,
-                "caption": caption_text,
-                "image_relpath": asset_path_rel,
-                "confidence": 0.85 if was_cropped else 0.4,
-                "formal_table_number": table.get("formal_table_number") or table.get("table_number"),
-                "note_texts": table.get("note_texts", []),
-                "note_match_reason": table.get("note_match_reason", ""),
-            }
-        )
-        _write_object_markdown(md, tables_render_dir / f"{tbl_id}.md")
+        # Process unmatched table assets as orphans
+        for asset in table_inventory.get("unmatched_assets", []):
+            orphan_count += 1
+            orphan_id = f"orphan_{orphan_count:03d}"
+            bbox = asset.get("bbox", [0, 0, 0, 0])
+            page = asset.get("page", 0)
+            page_width, page_height = _page_dims(page)
+            asset_path_rel = f"assets/orphans/{orphan_id}.jpg"
+            asset_path_abs = orphans_asset_dir / f"{orphan_id}.jpg"
 
-    # Process unmatched table assets as orphans
-    for asset in table_inventory.get("unmatched_assets", []):
-        orphan_count += 1
-        orphan_id = f"orphan_{orphan_count:03d}"
-        bbox = asset.get("bbox", [0, 0, 0, 0])
-        page = asset.get("page", 0)
-        page_width, page_height = _page_dims(page)
-        asset_path_rel = f"assets/orphans/{orphan_id}.jpg"
-        asset_path_abs = orphans_asset_dir / f"{orphan_id}.jpg"
+            if pdf_path and bbox and all(v > 0 for v in bbox):
+                _crop_asset_from_pdf(
+                    pdf_path,
+                    page,
+                    bbox,
+                    asset_path_abs,
+                    page_width=page_width,
+                    page_height=page_height,
+                    page_cache_dir=page_cache_dir,
+                    pdf_doc_provider=_get_shared_pdf_doc,
+                )
 
-        if pdf_path and bbox and all(v > 0 for v in bbox):
-            _crop_asset_from_pdf(
-                pdf_path,
-                page,
-                bbox,
-                asset_path_abs,
-                page_width=page_width,
-                page_height=page_height,
-                page_cache_dir=page_cache_dir,
+            md = render_figure_object_markdown(
+                {
+                    "figure_id": orphan_id,
+                    "page": page,
+                    "caption": "",
+                    "image_relpath": asset_path_rel,
+                    "confidence": 0.3,
+                }
             )
-
-        md = render_figure_object_markdown(
-            {
-                "figure_id": orphan_id,
-                "page": page,
-                "caption": "",
-                "image_relpath": asset_path_rel,
-                "confidence": 0.3,
-            }
-        )
-        _write_object_markdown(md, figures_render_dir / f"{orphan_id}.md")
+            _write_object_markdown(md, figures_render_dir / f"{orphan_id}.md")
+    finally:
+        if shared_pdf_doc is not None:
+            with contextlib.suppress(Exception):
+                shared_pdf_doc.close()
