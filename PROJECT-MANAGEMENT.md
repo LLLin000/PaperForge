@@ -1,6 +1,6 @@
 # OCR-v2 Project Management Log
 
-> **Branch:** `ocr-v2` | **Base:** `master` | **Last Updated:** 2026-06-22 (figure merge refactor + heading/backmatter fixes + cover page plan)
+> **Branch:** `ocr-v2` | **Base:** `master` | **Last Updated:** 2026-06-23 (P0 through P3 complete — visual-grammar hardening)
 > **Rule:** Every step is documented with: What was done, Why it was done, What comes next.
 
 ---
@@ -1939,4 +1939,69 @@ pytest tests/test_ocr_figures.py -v --tb=short
 - Fix: added `_collect_figure_owned_asset_ids()`, `_collect_table_owned_asset_ids()`, `_build_ownership_conflicts()`, and `attach_ownership_conflicts()` in `paperforge/worker/ocr_figures.py`, then wired the conflict attachment into `paperforge/worker/ocr.py` and `paperforge/worker/ocr_rebuild.py` after table inventory construction.
 - Result: one-owner violations are now surfaced explicitly as `ownership_conflicts` instead of remaining invisible.
 - Tests: `python -m pytest tests/test_ocr_figures.py -k "ownership_conflict or table" -v --tb=short` -> 1 passed.
+
+### 12.24 Stage P0-A Conflict Persistence Order (2026-06-23)
+
+- Problem: no test existed to confirm `ownership_conflicts` was persisted in the written `figure_inventory.json` artifact; the in-memory test alone could not catch a write-order regression.
+- Root cause: write-order was already correct (attach before write) in both `ocr.py` and `ocr_rebuild.py`, but the absence of a persisted-artifact test meant future reordering could silently drop the field.
+- Fix: added `test_ownership_conflicts_persisted_in_figure_inventory_json` that exercises `attach_ownership_conflicts` + `write_figure_inventory` + `read_json`, asserting the written file carries `ownership_conflicts` with the expected list shape and content.
+- Result: persisted-artifact contract is now explicitly enforced. No code changes needed in production path.
+- Tests: `python -m pytest tests/test_ocr_figures.py -k "ownership_conflict" -v --tb=short` -> 2 passed.
+
+### 12.25 Stage P0-B Bundle-Source Duplicate Legend Canonicalization (2026-06-23)
+
+- Problem: bundle-source legends (caption pages with 3+ figure legends and zero assets) that had NO stronger duplicate elsewhere were excluded from the `legend_bundle` fallback. After dedup removed sibling bundle captions, only 1-2 legends remained on the page, falling below the hard `len(caps) >= 3` threshold. Additionally, the fallback excluded all assets in candidate groups (`grouped_asset_page_ids`), including single-asset orphans on subsequent pages.
+- Root cause: (1) the bundle fallback threshold `len(caps) < 3` did not account for deduped bundle-source pages where survivors drop below 3. (2) the `grouped_asset_page_ids` filter excluded all candidate-group assets, even `single_asset` groups on pages without same-page captions which are functionally unclaimed.
+- Fix: (1) lowered the threshold for bundle-source pages (pages with any `bundle_source_legend_ids` captions) to allow 1+ legends to trigger the fallback. (2) replaced `grouped_asset_page_ids` with `cluster_asset_page_ids` (only `distance_cluster` groups) so single-asset orphans on subsequent pages remain available for bundle consumption while true multi-asset clusters stay protected.
+- Result: bundle-only source legends now reach the `legend_bundle` fallback; dedup losers still properly defer to stronger real duplicates; multi-asset clusters remain unbroken; DWQQK2YB figure 3 ownership unaffected.
+- Tests: `python -m pytest tests/test_ocr_figures.py -k "bundle_source_duplicate or bundle_only_source or deduped_duplicate or same_page_real_legend" -v --tb=short` -> 3 passed. `python -m pytest tests/test_ocr_figures.py tests/test_ocr_figure_reader.py tests/test_ocr_render.py -q` -> 174 passed. DWQQK2YB regression passes.
+
+### 12.26 Stage P1A Composite Parent Detector (Diagnostic-Only) (2026-06-23)
+
+- Problem: composite (multi-panel) figures were not modeled beyond atomic semantic grouping. Pages with columnar stacks, grids, or vertically aligned sub-panels had no parent-candidate surface, leaving downstream ownership paths blind to composite structure.
+- Root cause: the visual grammar layer stopped at atomic distance-based clustering (distance_cluster / single_asset), with no higher-order same-page parent candidate construction.
+- Fix: added `_build_composite_parent_figure_groups_visual_only()` that clusters atomic groups on the same page using horizontal alignment (x-overlap >= 50%) plus height/width similarity. Connected components with ≥2 groups become `composite_parent` candidates with confidence scores (0.50-0.75, capped). Strictly visual-only — no caption/legend identity used in topology. Wired into `build_figure_inventory` as `composite_parent_candidates` output field. All candidates have `ownership_enabled: False` (diagnostic-only, P1B enables ownership).
+- Result: audit-visible composite parent surface available without changing any ownership behavior. 174 baseline tests unchanged. DWQQK2YB regression unaffected.
+- Tests: `python -m pytest tests/test_ocr_figures.py -k "composite_parent or mega_merge" -v --tb=short` -> 4 passed (dense grid detection, stacked vertical panels, mega-merge prevention, ownership-count preservation). Real-paper regression tests for VFS8CBW2/24YKLTHQ/2UIPV93M not yet in suite — synthetic fixtures cover the representative layouts.
+- Fixture absence note: no real-paper regression tests existed for VFS8CBW2, 24YKLTHQ, or 2UIPV93M. The 4 synthetic tests in `test_ocr_figures.py` provide coverage for dense composite grids, vertically stacked panels, ordinary multi-figure page separation, and diagnostic non-interference.
+
+### 12.27 Stage P1B Composite Parent Ownership Arbitration (2026-06-23)
+
+- Problem: P1A diagnostic-only composite parents had no ownership path. Strong parent candidates (evenly spaced, same-width sub-panels) could not claim their children, leaving assets matched individually or orphaned.
+- Root cause: composite parent candidates were only diagnostic output. No arbitration path existed to promote strong parents into ownership.
+- Fix: inserted parent arbitration before same-page candidate scanning in the per-legend matching loop. For each legend with a figure number, check if a `composite_parent_candidate` exists on the same page. If parent confidence >= 0.65, page has no competing captions (>1 numbered legend), and parent is unclaimed: accept the parent, consume all child groups/assets, emit a `settlement_type="composite_parent"` match, and skip normal candidate scanning. Weak parents (confidence < 0.65) or pages with competing captions fall through to normal atomic matching. Forbidden: composite_parent_candidates never flow into legacy fallback paths.
+- Result: strong composite parents now claim all child assets in one match. The `forbidden approach` (`candidate_groups = atomic_groups + composite_parent_candidates`) was avoided — parents are arbitrated in a separate pre-scan, not commingled with atomic groups. 182 baseline tests pass, 0 regressions.
+- Tests: `python -m pytest tests/test_ocr_figures.py -k "parent or veto" -v --tb=short` -> 8 passed (acceptance, weak rejection, competing-caption veto, no-legacy-fallback).
+
+### 12.28 Stage P2 Mixed Caption Grammar Validator (2026-06-23)
+
+- Problem: pages with mixed caption grammar styles (e.g. "Figure 1." vs "Fig 1.") had no annotation surface, so downstream could not detect inconsistent figure/table caption patterns.
+- Root cause: local pairing hypotheses carried no grammar consistency metadata.
+- Fix: added `_validate_page_local_caption_grammar()` that groups hypotheses by page, extracts caption prefix style (e.g. "figure" vs "fig"), and annotates each hypothesis with `grammar_status` (accepted/deferred/conflict), `grammar_reason`, and `grammar_evidence`. Uniform pages get "accepted", mixed pages get "conflict", pages with no detectable grammar get "deferred". Annotation-only — no matching behavior change.
+- Result: all local_pairing_hypotheses now carry grammar metadata for audit/debugging. 185 baseline tests pass.
+- Tests: `python -m pytest tests/test_ocr_figures.py -k "grammar_status or mixed_page or grammar" -v --tb=short` -> 4 passed (annotation contract, conflict detection, uniform-page consistency, sidecar preservation).
+
+### 12.29 Stage P3A Asset Family Hint (2026-06-23)
+
+- Problem: figure/table separation had no signal about whether an asset is intrinsically figure-like or table-like based on its raw label.
+- Root cause: assets carried raw_label but no downstream-usable family hint.
+- Fix: annotated each figure asset after collection with `asset_family_hint` (figure_like/table_like/ambiguous), `asset_family_confidence`, and `asset_family_evidence` based on raw_label. Image/chart/figure → figure_like (0.70), table → table_like (0.70), no label → ambiguous (0.35). Hints are persisted in figure_inventory.json asset records.
+- Result: audit-visible family hints available for P3B/C veto and future figure/table arbitration.
+
+### 12.30 Stage P3B/P3C Figure/Table Separator Veto (2026-06-23)
+
+- Problem: figure matcher could claim table-like assets, creating ownership conflicts with the table matcher.
+- Root cause: no pre-match veto existed to prevent figures from consuming table-like regions.
+- Fix: in the same-page candidate scanning loop, after ownership check and before scoring, compute whether ALL assets in a candidate group are strongly table-like (asset_family_hint == "table_like" AND confidence >= 0.70). If so, skip the group (veto). Ambiguous assets pass through. This is a down-rank approach — only strong table-like signals are hard-vetoed.
+- Result: table-like assets are now excluded from figure matching. 188 baseline tests pass (188/188).
+- Tests: `python -m pytest tests/test_ocr_figures.py -k "asset_family_hint or table_like or ambiguous_region" -v --tb=short` -> 3 passed (hint contract, strong table-like veto, ambiguous pass-through).
+
+### 12.31 Live-paper residual triage reset (2026-06-23)
+
+- Problem: after the visual-grammar hardening pass, the remaining ugly papers were being treated too uniformly even though they represent very different kinds of residual risk.
+- Root cause: the project had not yet separated “worth optimizing for” papers from “good only as guardrail samples”, so the execution queue still risked overfitting to pathological wraparound layouts.
+- Fix: reclassified `RKSLQRIM` as a defensive guardrail paper rather than a perfection target, and elevated `VFS8CBW2` as the highest-value residual vulnerability family because it exposes reusable weaknesses: panel text falsely promoted into caption candidates, dense multi-panel pages exploding into unresolved clusters, and formal-caption-plus-panel-title competition. Recorded the same triage boundary in `project/current/ocr-v2-generalization-boundary.md`.
+- Result: current closeout strategy is now explicit: `VFS8CBW2` first, then `6FGDBFQN`, then smaller tails like `3FDT9652` / `24YKLTHQ`, while `RKSLQRIM` remains a regression/guardrail sample and `DWQQK2YB` / `2UIPV93M` leave the urgent queue.
+- Tests: live artifact review only; no code-path assertions added in this bookkeeping step.
+
 

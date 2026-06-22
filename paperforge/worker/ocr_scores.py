@@ -2,7 +2,10 @@ from __future__ import annotations
 
 import re
 
-_FIGURE_NUMBER = re.compile(r"\b(?:fig(?:ure)?\.?|extended data fig(?:ure)?\.?|supplementary fig(?:ure)?\.?)\s*\d+", re.I)
+_FIGURE_NUMBER = re.compile(
+    r"\b(?:fig(?:ure)?\.?|extended data fig(?:ure)?\.?|supplementary fig(?:ure)?\.?|图|圖|ͼ|\uFFFD{1,2})\s*\d+",
+    re.I,
+)
 
 
 def _bbox_x_overlap_ratio(a: list[float], b: list[float]) -> float:

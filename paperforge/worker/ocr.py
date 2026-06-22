@@ -1865,10 +1865,6 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
     # --- Phase 2: figure inventory ---
     figure_inventory = build_figure_inventory(structured)
     write_back_figure_roles(figure_inventory, structured)
-    write_figure_inventory(
-        artifacts.blocks_structured.parent / "figure_inventory.json",
-        figure_inventory,
-    )
 
     # --- Phase 2a: reader figure synthesis ---
     from paperforge.worker.ocr_figure_reader import synthesize_reader_figures
@@ -1883,6 +1879,10 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
     from paperforge.worker.ocr_figures import attach_ownership_conflicts
 
     attach_ownership_conflicts(figure_inventory, table_inventory)
+    write_figure_inventory(
+        artifacts.blocks_structured.parent / "figure_inventory.json",
+        figure_inventory,
+    )
     write_back_table_roles(table_inventory, structured)
     write_table_inventory(
         artifacts.blocks_structured.parent / "table_inventory.json",

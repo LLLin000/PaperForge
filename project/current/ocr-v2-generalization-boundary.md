@@ -74,6 +74,59 @@ The renderer consumes verified artifacts, but it still performs tail ordering an
 
 The audit corpus is formalized via `audit/coverage_ledger.json` using the approved readiness-class taxonomy (`multi_panel`, `side_caption`, `same_page_ref_body_split`, `post_reference_biography`, `preproof_frontmatter`, `review_callout`, `special_structure`). `tests/test_ocr_real_paper_audit_contracts.py` enforces named representatives per class. Layout coverage is treated as a tracked capability surface rather than just a list of example papers.
 
+## Current Live-Paper Triage
+
+Recent rebuild checks on live vault artifacts sharpen the boundary between papers we should actively optimize for and papers we should only use as guardrail samples.
+
+### RKSLQRIM is a guardrail sample, not a perfection target
+
+`RKSLQRIM` combines several hostile layout traits in one paper:
+
+- text wraparound around figures and tables
+- figure/table same-page mixes
+- inconsistent subfigure label conventions (`A)`, `(a)`, SI-style overlays)
+- backmatter / SI structures that visually resemble object regions
+
+The useful value of this paper is not "make every figure perfect". Its value is to provide negative constraints:
+
+- do not mega-merge across wrapped text
+- do not let figure and table ownership steal from each other on co-page layouts
+- do not promote panel-local labels into formal caption candidates
+
+Operationally, `RKSLQRIM` should be treated as a **defensive guardrail paper**. Residual ambiguity is acceptable if the pipeline avoids catastrophic ownership corruption.
+
+### VFS8CBW2 remains the highest-value residual vulnerability family
+
+`VFS8CBW2` still looks structurally wrong after rebuild, but not because the base OCR is hopeless. The live artifacts show that the formal long captions survive, while many panel titles / subplot labels also enter the candidate pool as `figure_caption_candidate` blocks.
+
+This paper is best understood as:
+
+```text
+OCR noise is somewhat elevated
++
+dense multi-panel composite pages
++
+panel text falsely competing with formal captions
+```
+
+The important consequence is that `VFS8CBW2` exposes **generalizable vulnerabilities**, not just one ugly paper:
+
+1. panel text / subplot labels can be mis-promoted into caption candidates
+2. dense composite pages can still explode into many `unresolved_clusters`
+3. one real caption plus many local titles can fragment ownership instead of producing a parent figure
+
+This makes `VFS8CBW2` a better positive target for continued figure-ownership hardening than `RKSLQRIM`.
+
+### Current pragmatic priority order
+
+For closeout work, the live-paper priority is now:
+
+1. `VFS8CBW2` — highest-value residual vulnerability family
+2. `6FGDBFQN` — mixed caption-grammar / side-caption residuals
+3. `3FDT9652` / `24YKLTHQ` — smaller residual ownership tails
+4. `RKSLQRIM` — regression guardrail, not a perfection target
+5. `DWQQK2YB` / `2UIPV93M` — now healthy enough to leave the high-priority queue
+
 ## Agreed Direction
 
 Execution priority is currently governed by `project/current/ocr-v2-active-queue.md`.
@@ -113,6 +166,7 @@ Expand fixture classification deliberately, not randomly:
 - Do not mix AJR-specific rescue logic into the generic group-first refactor.
 - Do not add a large new artifact surface before existing structure artifacts are tightened.
 - Do not treat every new paper failure as a one-off rule patch without classifying the failure type first.
+- Do not optimize for perfect parsing of `RKSLQRIM`-style wraparound pages before the system is robust on higher-value composite vulnerability families such as `VFS8CBW2`.
 
 ## Relevant Files
 

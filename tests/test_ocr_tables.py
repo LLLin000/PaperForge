@@ -3,6 +3,18 @@
 from __future__ import annotations
 
 
+def test_extract_table_number_chinese_biao_prefix() -> None:
+    from paperforge.worker.ocr_tables import _extract_table_number
+
+    assert _extract_table_number("表 3 术前规划时间比较") == 3
+
+
+def test_extract_table_number_garbled_biao_prefix() -> None:
+    from paperforge.worker.ocr_tables import _extract_table_number
+
+    assert _extract_table_number("�� 4 AIHIP术前规划结果") == 4
+
+
 def test_table_image_is_truth_source_and_text_is_assistive() -> None:
     from paperforge.worker.ocr_tables import build_table_inventory
 
@@ -29,6 +41,40 @@ def test_table_image_is_truth_source_and_text_is_assistive() -> None:
 
     assert inventory["official_table_count"] == 1
     assert inventory["tables"][0]["truth_source"] == "image"
+
+
+def test_table_inventory_preserves_asset_family_hints() -> None:
+    from paperforge.worker.ocr_tables import build_table_inventory
+
+    structured_blocks = [
+        {
+            "paper_id": "KEY001",
+            "page": 5,
+            "block_id": "p5_b10",
+            "role": "table_asset",
+            "raw_label": "table",
+            "asset_family_hint": "table_like",
+            "asset_family_confidence": 0.70,
+            "asset_family_evidence": ["raw_label:table"],
+            "text": "raw parsed cells",
+            "bbox": [100, 100, 600, 500],
+        },
+        {
+            "paper_id": "KEY001",
+            "page": 5,
+            "block_id": "p5_b11",
+            "role": "table_caption",
+            "text": "Table 1. Results",
+            "bbox": [100, 520, 600, 560],
+        },
+    ]
+
+    inventory = build_table_inventory(structured_blocks)
+    table = inventory["tables"][0]
+
+    assert table["asset_family_hint"] == "table_like"
+    assert table["asset_family_confidence"] == 0.70
+    assert table["asset_family_evidence"] == ["raw_label:table"]
 
 
 def test_table_inventory_includes_all_sections() -> None:

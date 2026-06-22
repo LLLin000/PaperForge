@@ -8,13 +8,13 @@ from paperforge.core.io import write_json
 from paperforge.worker.ocr_scores import score_table_match
 
 _TABLE_PREFIX_PATTERN = re.compile(
-    r"^(?:Table|Supplementary\s+Table|Extended\s+Data\s+Table)\s+(?:S\.?\s*)?(\d+(?:\.\d+)?)",
+    r"^(?:Table|Supplementary\s+Table|Extended\s+Data\s+Table|表|��)\s*(?:S\.?\s*)?(\d+(?:\.\d+)?)",
     flags=re.IGNORECASE,
 )
 
 _CONTINUATION_PATTERN = re.compile(r"\(cont(?:inued)?\.?\)", re.IGNORECASE)
 _TRUNCATED_TABLE_ONLY_PATTERN = re.compile(
-    r"^(?:Table|Supplementary\s+Table|Extended\s+Data\s+Table)\s+\d+(?:\.\d+)?\.?$",
+    r"^(?:Table|Supplementary\s+Table|Extended\s+Data\s+Table|表|��)\s*\d+(?:\.\d+)?\.?$",
     re.IGNORECASE,
 )
 
@@ -160,6 +160,14 @@ def build_table_inventory(structured_blocks: list[dict]) -> dict[str, Any]:
                     aspect = width / max(height, 1)
                     if aspect < 1.5:
                         continue
+            if raw_label in {"table", "table_image"}:
+                block["asset_family_hint"] = "table_like"
+                block["asset_family_confidence"] = 0.70
+                block["asset_family_evidence"] = [f"raw_label:{raw_label}"]
+            else:
+                block.setdefault("asset_family_hint", "ambiguous")
+                block.setdefault("asset_family_confidence", 0.35)
+                block.setdefault("asset_family_evidence", ["no_label_signal"])
             assets.append(block)
 
     used_asset_indices: set[int] = set()
@@ -465,6 +473,9 @@ def build_table_inventory(structured_blocks: list[dict]) -> dict[str, Any]:
                         else {"score": 0.0, "matched_asset_id": "", "decision": "ambiguous", "evidence": []}
                     )
                 ),
+                "asset_family_hint": (matched_asset.get("asset_family_hint") if matched_asset else None),
+                "asset_family_confidence": (matched_asset.get("asset_family_confidence") if matched_asset else None),
+                "asset_family_evidence": (matched_asset.get("asset_family_evidence") if matched_asset else None),
             }
         )
 

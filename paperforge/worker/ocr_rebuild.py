@@ -264,8 +264,6 @@ def run_derived_rebuild_for_keys(vault: Path, keys: list[str]) -> dict:
 
         figure_inventory = build_figure_inventory(structured)
         write_back_figure_roles(figure_inventory, structured)
-        write_figure_inventory(artifacts.blocks_structured.parent / "figure_inventory.json", figure_inventory)
-
         # Rebuild reader figures
         from paperforge.worker.ocr_figure_reader import synthesize_reader_figures
 
@@ -281,6 +279,7 @@ def run_derived_rebuild_for_keys(vault: Path, keys: list[str]) -> dict:
         from paperforge.worker.ocr_figures import attach_ownership_conflicts
 
         attach_ownership_conflicts(figure_inventory, table_inventory)
+        write_figure_inventory(artifacts.blocks_structured.parent / "figure_inventory.json", figure_inventory)
         write_back_table_roles(table_inventory, structured)
         write_table_inventory(artifacts.blocks_structured.parent / "table_inventory.json", table_inventory)
 

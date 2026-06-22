@@ -784,6 +784,18 @@ def test_extract_figure_number_multiline() -> None:
     assert _extract_figure_number("Figure 3.\nDescription continues") == 3
 
 
+def test_extract_figure_number_chinese_tu_prefix() -> None:
+    from paperforge.worker.ocr_figures import _extract_figure_number
+
+    assert _extract_figure_number("图 3 AIHIP系统自动匹配假体型号") == 3
+
+
+def test_extract_figure_number_garbled_tu_prefix() -> None:
+    from paperforge.worker.ocr_figures import _extract_figure_number
+
+    assert _extract_figure_number("ͼ 4 AIHIP系统安放髋臼假体") == 4
+
+
 def test_formal_legend_detection_explicit_figure_prefix() -> None:
     from paperforge.worker.ocr_figures import build_figure_inventory
 
@@ -2393,6 +2405,27 @@ def test_sequence_match_promoted_entry_carries_full_contract() -> None:
     assert seq["settlement_type"] == "sequence_match"
 
 
+def test_bundle_source_duplicate_loser_is_accounted_not_gap() -> None:
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    blocks = [
+        {"block_id": "dup_legend", "page": 10, "role": "figure_caption", "text": "Figure 3. Caption list duplicate.", "bbox": [100, 100, 900, 150], "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 3}},
+        {"block_id": "dup_peer_1", "page": 10, "role": "figure_caption", "text": "Figure 1. Caption list.", "bbox": [100, 200, 900, 250], "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 1}},
+        {"block_id": "dup_peer_2", "page": 10, "role": "figure_caption", "text": "Figure 2. Caption list.", "bbox": [100, 300, 900, 350], "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 2}},
+        {"block_id": "real_legend", "page": 12, "role": "figure_caption", "text": "Figure 3. Real legend.", "bbox": [100, 100, 900, 150], "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 3}},
+        {"block_id": "asset_3", "page": 11, "role": "figure_asset", "raw_label": "image", "bbox": [100, 120, 700, 520]},
+    ]
+
+    inv = build_figure_inventory(blocks)
+    deduped = inv.get("deduped_legend_ids", [])
+    completeness = inv["figure_legend_completeness"]
+    details = {item["block_id"]: item for item in completeness["details"]}
+
+    assert any(item.get("block_id") == "dup_legend" for item in deduped)
+    assert details["dup_legend"]["status"] == "deduped_duplicate"
+    assert completeness["gap_count"] == 0
+
+
 def test_reader_figures_never_include_empty_visual_groups() -> None:
     """No reader figure may have an empty visual_groups list."""
     from paperforge.worker.ocr_figure_reader import synthesize_reader_figures
@@ -2592,6 +2625,71 @@ def test_build_ownership_conflicts_surfaces_figure_table_overlap() -> None:
 
     assert len(conflicts) == 1
     assert conflicts[0]["asset_page_id"] == (5, "shared_asset")
+
+
+def test_matched_figure_assets_preserve_asset_family_hints() -> None:
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    blocks = [
+        {"block_id": "asset_1", "page": 1, "role": "media_asset", "raw_label": "image", "bbox": [100, 100, 500, 380]},
+        {
+            "block_id": "cap_1",
+            "page": 1,
+            "role": "figure_caption",
+            "text": "Figure 1. Test figure.",
+            "bbox": [100, 420, 800, 470],
+            "style_family": "legend_like",
+            "marker_signature": {"type": "figure_number", "number": 1},
+        },
+    ]
+
+    inv = build_figure_inventory(blocks)
+    asset = inv["matched_figures"][0]["matched_assets"][0]
+
+    assert asset["asset_family_hint"] == "figure_like"
+    assert asset["asset_family_confidence"] == 0.70
+    assert asset["asset_family_evidence"] == ["raw_label:image"]
+
+
+def test_ownership_conflicts_persisted_in_figure_inventory_json(tmp_path) -> None:
+    """P0-A: ownership_conflicts must be in the written figure_inventory.json."""
+    from paperforge.worker.ocr_figures import (
+        attach_ownership_conflicts,
+        write_figure_inventory,
+    )
+    from paperforge.core.io import read_json
+
+    figure_inventory: dict = {
+        "matched_figures": [
+            {
+                "figure_id": "figure_001",
+                "page": 3,
+                "legend_page": 3,
+                "matched_assets": [{"block_id": "collision_asset"}],
+                "asset_block_ids": ["collision_asset"],
+            }
+        ]
+    }
+    table_inventory: dict = {
+        "tables": [
+            {
+                "caption_block_id": "tab_cap",
+                "page": 3,
+                "asset_block_id": "collision_asset",
+                "has_asset": True,
+            }
+        ]
+    }
+
+    attach_ownership_conflicts(figure_inventory, table_inventory)
+    figure_json_path = tmp_path / "figure_inventory.json"
+    write_figure_inventory(figure_json_path, figure_inventory)
+
+    written = read_json(figure_json_path)
+    assert "ownership_conflicts" in written
+    assert isinstance(written["ownership_conflicts"], list)
+    assert len(written["ownership_conflicts"]) == 1
+    assert written["ownership_conflicts"][0]["asset_page_id"] == [3, "collision_asset"]
 
 
 # === Task 6: Health counters ===
@@ -3293,6 +3391,51 @@ def test_legend_bundle_fallback_respects_body_interruption() -> None:
     assert not any(m.get("settlement_type") == "legend_bundle" for m in inv["matched_figures"])
 
 
+def test_dwqq_style_duplicate_legend_prefers_real_cross_page_instance() -> None:
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    blocks = [
+        {"block_id": "c1", "page": 35, "role": "figure_caption", "text": "Figure 1. Caption list peer.", "bbox": [100, 100, 900, 150], "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 1}},
+        {"block_id": "c2", "page": 35, "role": "figure_caption", "text": "Figure 2. Caption list peer.", "bbox": [100, 200, 900, 250], "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 2}},
+        {"block_id": "dup_fig3", "page": 35, "role": "figure_caption", "text": "Figure 3. Caption list duplicate.", "bbox": [100, 300, 900, 350], "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 3}},
+        {"block_id": "asset_39a", "page": 39, "role": "figure_asset", "raw_label": "image", "bbox": [100, 100, 500, 400]},
+        {"block_id": "asset_39b", "page": 39, "role": "figure_asset", "raw_label": "image", "bbox": [520, 100, 920, 400]},
+        {"block_id": "real_fig3", "page": 40, "role": "figure_caption", "text": "Figure 3. Real cross-page legend.", "bbox": [100, 100, 900, 150], "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 3}},
+    ]
+
+    inv = build_figure_inventory(blocks)
+
+    fig3 = [m for m in inv["matched_figures"] if m.get("figure_number") == 3]
+    assert len(fig3) == 1
+    assert fig3[0]["legend_block_id"] == "real_fig3"
+    assert fig3[0]["legend_page"] == 40
+    assert fig3[0]["settlement_type"] == "cross_page_backward"
+    assert {a["block_id"] for a in fig3[0]["matched_assets"]} == {"asset_39a", "asset_39b"}
+    assert any(
+        item.get("block_id") == "dup_fig3" and item.get("dedup_reason") == "bundle_source_duplicate_loser"
+        for item in inv.get("deduped_legend_ids", [])
+    )
+
+
+def test_same_page_real_legend_outranks_bundle_duplicate() -> None:
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    blocks = [
+        {"block_id": "c1", "page": 10, "role": "figure_caption", "text": "Figure 1. Caption list peer.", "bbox": [100, 100, 700, 150], "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 1}},
+        {"block_id": "dup_fig2", "page": 10, "role": "figure_caption", "text": "Figure 2. Caption list duplicate.", "bbox": [100, 200, 700, 250], "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 2}},
+        {"block_id": "c3", "page": 10, "role": "figure_caption", "text": "Figure 3. Caption list peer.", "bbox": [100, 300, 700, 350], "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 3}},
+        {"block_id": "real_fig2", "page": 20, "role": "figure_caption", "text": "Figure 2. Real same-page legend.", "bbox": [100, 500, 800, 560], "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 2}},
+        {"block_id": "asset_20", "page": 20, "role": "figure_asset", "raw_label": "image", "bbox": [100, 100, 700, 460]},
+    ]
+
+    inv = build_figure_inventory(blocks)
+
+    fig2 = [m for m in inv["matched_figures"] if m.get("figure_number") == 2]
+    assert len(fig2) == 1
+    assert fig2[0]["legend_block_id"] == "real_fig2"
+    assert fig2[0]["legend_page"] == 20
+
+
 def test_final_unmatched_assets_recomputed_after_late_fallback_match() -> None:
     from paperforge.worker.ocr_figures import build_figure_inventory
 
@@ -3308,6 +3451,67 @@ def test_final_unmatched_assets_recomputed_after_late_fallback_match() -> None:
     matched_asset_ids = {str(a.get("block_id", "")) for a in fig1[0].get("matched_assets", [])}
     assert "a2" in matched_asset_ids
     assert all(a.get("block_id") != "a2" for a in inv.get("unmatched_assets", []))
+
+
+def test_bundle_only_source_legends_remain_eligible_for_legend_bundle_fallback() -> None:
+    """P0-B: bundle-source legends with no stronger duplicate must still reach legend_bundle."""
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    blocks = [
+        # Bundle-source page (p10): three captions, zero assets
+        {"block_id": "bs_fig1", "page": 10, "role": "figure_caption",
+         "text": "Figure 1. Bundle caption.", "bbox": [100, 100, 700, 140],
+         "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 1}},
+        {"block_id": "bs_fig2", "page": 10, "role": "figure_caption",
+         "text": "Figure 2. Bundle-only caption.", "bbox": [100, 160, 700, 200],
+         "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 2}},
+        {"block_id": "bs_fig3", "page": 10, "role": "figure_caption",
+         "text": "Figure 3. Bundle caption.", "bbox": [100, 220, 700, 260],
+         "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 3}},
+        # Real duplicate for Fig 1 on page 11 (outranks bundle)
+        {"block_id": "real_fig1", "page": 11, "role": "figure_caption",
+         "text": "Figure 1. Real legend on asset page.", "bbox": [100, 520, 700, 560],
+         "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 1}},
+        {"block_id": "a11", "page": 11, "role": "figure_asset", "raw_label": "image",
+         "bbox": [100, 100, 700, 500]},
+        # Asset for Fig 2 on page 12 (no same-page caption)
+        {"block_id": "a12", "page": 12, "role": "figure_asset", "raw_label": "image",
+         "bbox": [100, 100, 700, 500]},
+        # Asset for Fig 3 on page 13 (no same-page caption)
+        {"block_id": "a13", "page": 13, "role": "figure_asset", "raw_label": "image",
+         "bbox": [100, 100, 700, 500]},
+    ]
+
+    inv = build_figure_inventory(blocks)
+    matched = {m.get("figure_number"): m for m in inv["matched_figures"]}
+
+    assert 2 in matched, (
+        "Fig 2 (bundle-only) must be matched via legend_bundle fallback"
+    )
+    assert 3 in matched, (
+        "Fig 3 (bundle-only) must be matched via legend_bundle fallback"
+    )
+    fig2 = matched[2]
+    assert fig2["settlement_type"] == "legend_bundle"
+    assert fig2["legend_block_id"] == "bs_fig2"
+    fig3 = matched[3]
+    assert fig3["settlement_type"] == "legend_bundle"
+    assert fig3["legend_block_id"] == "bs_fig3"
+
+    deduped = inv.get("deduped_legend_ids", [])
+    assert any(
+        item.get("block_id") == "bs_fig1" and item.get("dedup_reason") == "bundle_source_duplicate_loser"
+        for item in deduped
+    ), "Fig 1 bundle-source must be deduped loser"
+    assert not any(
+        item.get("block_id") == "bs_fig3" for item in deduped
+    ), "Fig 3 must NOT be deduped (no stronger duplicate exists)"
+    assert not any(
+        item.get("block_id") == "bs_fig2" for item in deduped
+    ), "Fig 2 must NOT be deduped (bundle-only, no stronger duplicate)"
+
+    completeness = inv["figure_legend_completeness"]
+    assert completeness["gap_count"] == 0
 
 
 # Task 7: output schema contract
@@ -3359,3 +3563,480 @@ def test_2heud5p9_ownership_pattern() -> None:
     orphan_groups = inv.get("unresolved_clusters", [])
     total_orphan_assets = len(orphan_assets) + sum(len(g.get("media_block_ids", [])) for g in orphan_groups)
     assert total_orphan_assets <= 2, f"Too many orphaned assets: {total_orphan_assets}"
+
+
+# === P1A: Composite Parent Detector (Diagnostic-Only) ===
+
+
+def test_composite_parent_candidates_appear_for_dense_grid_page() -> None:
+    """P1A: VFS8CBW2-like dense 2x2 grid page should produce composite parent candidates."""
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    blocks = [
+        # Two same-width columns, vertical gaps > 96px so atomic clustering
+        # produces separate single_asset groups. Composite parent should re-group them.
+        # Column A at x=[100,500]: pan_a (top), pan_b (bottom)
+        # Column B at x=[600,1000]: pan_c (wider top-right), fig2_asset (separate)
+        {"block_id": "leg_1a", "page": 5, "role": "figure_caption",
+         "text": "Figure 1. Composite figure legend.", "bbox": [100, 880, 700, 920],
+         "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 1}},
+        {"block_id": "pan_a", "page": 5, "role": "figure_asset", "raw_label": "image",
+         "bbox": [100, 100, 500, 250]},
+        {"block_id": "pan_b", "page": 5, "role": "figure_asset", "raw_label": "image",
+         "bbox": [100, 380, 500, 530]},
+        {"block_id": "pan_c", "page": 5, "role": "figure_asset", "raw_label": "image",
+         "bbox": [600, 100, 1000, 350]},
+        {"block_id": "fig2_asset", "page": 5, "role": "figure_asset", "raw_label": "image",
+         "bbox": [600, 480, 1000, 800]},
+    ]
+
+    inv = build_figure_inventory(blocks)
+    candidates = inv.get("composite_parent_candidates", [])
+
+    assert len(candidates) >= 1, "Dense grid page must produce composite parent candidates"
+    for c in candidates:
+        assert c["group_type"] == "composite_parent"
+        assert isinstance(c["parent_confidence"], float)
+        assert isinstance(c["parent_evidence"], list)
+        assert isinstance(c["child_group_ids"], list)
+        assert c["ownership_enabled"] is False
+
+
+def test_composite_parent_candidates_for_stacked_vertical_panels() -> None:
+    """P1A: 24YKLTHQ-like vertically stacked panels should form composite parent."""
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    blocks = [
+        {"block_id": "leg_stacked", "page": 6, "role": "figure_caption",
+         "text": "Figure 1. Stacked panels.", "bbox": [100, 800, 700, 840],
+         "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 1}},
+        {"block_id": "top", "page": 6, "role": "figure_asset", "raw_label": "image",
+         "bbox": [100, 100, 800, 250]},
+        {"block_id": "mid", "page": 6, "role": "figure_asset", "raw_label": "image",
+         "bbox": [100, 380, 800, 530]},
+        {"block_id": "bot", "page": 6, "role": "figure_asset", "raw_label": "image",
+         "bbox": [100, 660, 800, 810]},
+    ]
+
+    inv = build_figure_inventory(blocks)
+    candidates = inv.get("composite_parent_candidates", [])
+
+    assert len(candidates) >= 1, "Stacked vertical panels must produce composite parent candidates"
+    panel_ids = {"top", "mid", "bot"}
+    for c in candidates:
+        child_asset_ids = set(c.get("asset_block_ids", []))
+        if len(child_asset_ids) >= 3:
+            assert panel_ids <= child_asset_ids, f"Parent must cover all panels, got {child_asset_ids}"
+            break
+    else:
+        assert False, "No composite parent candidate covers all 3 stacked panels"
+
+
+def test_ordinary_multi_figure_page_does_not_mega_merge() -> None:
+    """P1A: ordinary page with separate figures must NOT form a single mega-parent."""
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    blocks = [
+        {"block_id": "leg_7a", "page": 7, "role": "figure_caption",
+         "text": "Figure 1. Top-left figure.", "bbox": [100, 420, 400, 450],
+         "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 1}},
+        {"block_id": "a7_1", "page": 7, "role": "figure_asset", "raw_label": "image",
+         "bbox": [100, 100, 400, 400]},
+        {"block_id": "leg_7b", "page": 7, "role": "figure_caption",
+         "text": "Figure 2. Bottom-right figure.", "bbox": [520, 780, 900, 810],
+         "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 2}},
+        {"block_id": "a7_2", "page": 7, "role": "figure_asset", "raw_label": "image",
+         "bbox": [520, 520, 900, 760]},
+    ]
+
+    inv = build_figure_inventory(blocks)
+    candidates = inv.get("composite_parent_candidates", [])
+
+    for c in candidates:
+        child_assets = set(c.get("asset_block_ids", []))
+        # No candidate should consume both separate figures
+        assert not ({"a7_1", "a7_2"} <= child_assets), (
+            f"Mega-merge detected: candidate {c['group_id']} consumes both separate figures"
+        )
+
+
+def test_composite_parent_detection_preserves_ownership_counts() -> None:
+    """P1A: diagnostic detection must not change matched/unmatched/unresolved/official counts."""
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    blocks = [
+        {"block_id": "c1", "page": 8, "role": "figure_caption",
+         "text": "Figure 1. Grid layout.", "bbox": [100, 850, 700, 890],
+         "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 1}},
+        {"block_id": "g1_a", "page": 8, "role": "figure_asset", "raw_label": "image",
+         "bbox": [100, 100, 450, 250]},
+        {"block_id": "g1_b", "page": 8, "role": "figure_asset", "raw_label": "image",
+         "bbox": [100, 380, 450, 530]},
+        {"block_id": "g1_c", "page": 8, "role": "figure_asset", "raw_label": "image",
+         "bbox": [100, 660, 450, 810]},
+        {"block_id": "c2", "page": 8, "role": "figure_caption",
+         "text": "Figure 2. Simple single figure.", "bbox": [600, 850, 1000, 890],
+         "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 2}},
+        {"block_id": "g2", "page": 8, "role": "figure_asset", "raw_label": "image",
+         "bbox": [600, 100, 1000, 600]},
+    ]
+
+    inv = build_figure_inventory(blocks)
+
+    assert inv.get("composite_parent_candidates"), "Must produce composite parent candidates"
+    assert inv["matched_figures"], "Must have matched figures"
+    assert inv["official_figure_count"] >= 1
+
+    # Verify the composite parent hasn't consumed assets that should be matched
+    matched_asset_ids = {
+        str(a.get("block_id", ""))
+        for mf in inv["matched_figures"]
+        for a in mf.get("matched_assets", [])
+    }
+    # Figure 1 legend should own its composite 4-panel group
+    fig1 = [mf for mf in inv["matched_figures"] if mf.get("figure_number") == 1]
+    assert fig1, "Figure 1 must be matched"
+    fig1_assets = {str(a.get("block_id", "")) for a in fig1[0].get("matched_assets", [])}
+    assert len(fig1_assets) >= 1, "Figure 1 must have matched assets"
+
+    # Figure 2 should also be matched
+    fig2 = [mf for mf in inv["matched_figures"] if mf.get("figure_number") == 2]
+    assert fig2, "Figure 2 must be matched"
+
+
+# === P1B: Composite Parent Ownership Arbitration ===
+
+
+def test_composite_parent_acceptance_consumes_children() -> None:
+    """P1B: strong parent candidate should own all child assets and consume child groups."""
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    blocks = [
+        {"block_id": "leg_cp", "page": 10, "role": "figure_caption",
+         "text": "Figure 1. Composite multi-panel legend.", "bbox": [100, 880, 700, 920],
+         "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 1}},
+        {"block_id": "top", "page": 10, "role": "figure_asset", "raw_label": "image",
+         "bbox": [100, 100, 800, 250]},
+        {"block_id": "mid", "page": 10, "role": "figure_asset", "raw_label": "image",
+         "bbox": [100, 380, 800, 530]},
+        {"block_id": "bot", "page": 10, "role": "figure_asset", "raw_label": "image",
+         "bbox": [100, 660, 800, 810]},
+    ]
+
+    inv = build_figure_inventory(blocks)
+
+    assert inv.get("composite_parent_candidates"), "Must have composite parent candidates"
+    fig1 = [m for m in inv["matched_figures"] if m.get("figure_number") == 1]
+    assert len(fig1) == 1, "Figure 1 must be matched exactly once"
+    m = fig1[0]
+    matched_assets = {str(a.get("block_id", "")) for a in m.get("matched_assets", [])}
+    assert "top" in matched_assets, "Top panel must be owned"
+    assert "mid" in matched_assets, "Mid panel must be owned"
+    assert "bot" in matched_assets, "Bot panel must be owned"
+    assert m.get("settlement_type") == "composite_parent", (
+        f"Expected composite_parent settlement, got {m.get('settlement_type')}"
+    )
+
+
+def test_scoped_composite_parent_keeps_neighboring_single_figure_separate() -> None:
+    """P1B: accept only the scoped composite child subset, not the whole over-wide parent."""
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    blocks = [
+        {"block_id": "asset_fig3", "page": 18, "role": "figure_asset", "raw_label": "image", "bbox": [377, 155, 813, 440]},
+        {"block_id": "leg_fig3", "page": 18, "role": "figure_caption_candidate", "seed_role": "figure_caption", "raw_label": "figure_title", "text": "图 3 AIHIP 系统自动匹配假体型号", "bbox": [436, 466, 754, 493], "zone": "display_zone", "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 3}},
+        {"block_id": "asset_fig4_a", "page": 18, "role": "figure_asset", "raw_label": "image", "bbox": [381, 556, 573, 742]},
+        {"block_id": "asset_fig4_b", "page": 18, "role": "figure_asset", "raw_label": "image", "bbox": [618, 554, 811, 742]},
+        {"block_id": "asset_fig4_c", "page": 18, "role": "figure_asset", "raw_label": "image", "bbox": [381, 753, 573, 942]},
+        {"block_id": "asset_fig4_d", "page": 18, "role": "figure_asset", "raw_label": "image", "bbox": [618, 754, 811, 941]},
+        {"block_id": "leg_fig4", "page": 18, "role": "figure_caption_candidate", "seed_role": "figure_caption", "raw_label": "figure_title", "text": "图 4 AIHIP 系统安放髋臼假体并展示三维模拟位置", "bbox": [360, 963, 828, 990], "zone": "display_zone", "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 4}},
+    ]
+
+    inv = build_figure_inventory(blocks, page_width=1191)
+    matched = {m.get("figure_number"): m for m in inv.get("matched_figures", [])}
+
+    assert 3 in matched, "图3 must remain independently matched"
+    assert 4 in matched, "图4 must be matched"
+    assert {str(a.get('block_id', '')) for a in matched[3].get('matched_assets', [])} == {"asset_fig3"}
+    assert matched[3].get("settlement_type") == "same_page"
+    assert {str(a.get('block_id', '')) for a in matched[4].get('matched_assets', [])} == {"asset_fig4_a", "asset_fig4_b", "asset_fig4_c", "asset_fig4_d"}
+    assert matched[4].get("settlement_type") == "composite_parent"
+
+
+def test_caption_nearest_trap_prefers_interval_scoped_composite() -> None:
+    """P1B: upper composite panels may be nearer to the previous caption, but still belong to the lower caption interval."""
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    blocks = [
+        {"block_id": "asset_top", "page": 30, "role": "figure_asset", "raw_label": "image", "bbox": [380, 120, 820, 400]},
+        {"block_id": "leg_top", "page": 30, "role": "figure_caption_candidate", "seed_role": "figure_caption", "raw_label": "figure_title", "text": "图 3 上方单图", "bbox": [430, 430, 760, 460], "zone": "display_zone", "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 3}},
+        {"block_id": "asset_bl", "page": 30, "role": "figure_asset", "raw_label": "image", "bbox": [390, 520, 575, 720]},
+        {"block_id": "asset_br", "page": 30, "role": "figure_asset", "raw_label": "image", "bbox": [620, 520, 805, 720]},
+        {"block_id": "asset_cl", "page": 30, "role": "figure_asset", "raw_label": "image", "bbox": [390, 740, 575, 930]},
+        {"block_id": "asset_cr", "page": 30, "role": "figure_asset", "raw_label": "image", "bbox": [620, 740, 805, 930]},
+        {"block_id": "leg_bottom", "page": 30, "role": "figure_caption_candidate", "seed_role": "figure_caption", "raw_label": "figure_title", "text": "图 4 下方复合图", "bbox": [360, 955, 830, 985], "zone": "display_zone", "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 4}},
+    ]
+
+    inv = build_figure_inventory(blocks, page_width=1191)
+    matched = {m.get("figure_number"): m for m in inv.get("matched_figures", [])}
+
+    assert {str(a.get('block_id', '')) for a in matched[3].get('matched_assets', [])} == {"asset_top"}
+    assert matched[3].get("settlement_type") == "same_page"
+    assert {str(a.get('block_id', '')) for a in matched[4].get('matched_assets', [])} == {"asset_bl", "asset_br", "asset_cl", "asset_cr"}
+    assert matched[4].get("settlement_type") == "composite_parent"
+
+
+def test_weak_parent_candidate_does_not_consume_children() -> None:
+    """P1B: low-confidence parent should not block children from normal matching."""
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    blocks = [
+        {"block_id": "leg_wp", "page": 11, "role": "figure_caption",
+         "text": "Figure 1. Weak parent legend.", "bbox": [100, 880, 700, 920],
+         "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 1}},
+        {"block_id": "wp_a", "page": 11, "role": "figure_asset", "raw_label": "image",
+         "bbox": [100, 100, 500, 250]},
+        {"block_id": "wp_b", "page": 11, "role": "figure_asset", "raw_label": "image",
+         "bbox": [600, 380, 1000, 530]},
+    ]
+
+    inv = build_figure_inventory(blocks)
+
+    fig1 = [m for m in inv["matched_figures"] if m.get("figure_number") == 1]
+    assert len(fig1) == 1, "Figure 1 must be matched"
+    # Weak parent: the two assets are in different x-columns, so parent confidence
+    # should be low. Legend should still match via same_page (distance_cluster or single_asset).
+    assert fig1[0].get("settlement_type") != "composite_parent", (
+        "Weak parent must not force composite_parent settlement"
+    )
+    matched_assets = {str(a.get("block_id", "")) for a in fig1[0].get("matched_assets", [])}
+    assert matched_assets, "Figure 1 must have matched assets"
+
+
+def test_competing_caption_veto_blocks_parent_promotion() -> None:
+    """P1B: two captions targeting same composite parent should not promote."""
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    blocks = [
+        {"block_id": "leg_cv_1", "page": 12, "role": "figure_caption",
+         "text": "Figure 1. First caption in shared region.", "bbox": [100, 880, 400, 920],
+         "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 1}},
+        {"block_id": "leg_cv_2", "page": 12, "role": "figure_caption",
+         "text": "Figure 2. Second caption in shared region.", "bbox": [500, 880, 800, 920],
+         "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 2}},
+        {"block_id": "cv_a", "page": 12, "role": "figure_asset", "raw_label": "image",
+         "bbox": [100, 100, 450, 250]},
+        {"block_id": "cv_b", "page": 12, "role": "figure_asset", "raw_label": "image",
+         "bbox": [100, 380, 450, 530]},
+        {"block_id": "cv_c", "page": 12, "role": "figure_asset", "raw_label": "image",
+         "bbox": [100, 660, 450, 810]},
+    ]
+
+    inv = build_figure_inventory(blocks)
+
+    fig1 = [m for m in inv["matched_figures"] if m.get("figure_number") == 1]
+    fig2 = [m for m in inv["matched_figures"] if m.get("figure_number") == 2]
+    assert fig1, "Figure 1 must be matched"
+    assert fig2, "Figure 2 must be matched"
+    # Neither should claim composite_parent settlement — two captions compete
+    assert all(
+        m.get("settlement_type") != "composite_parent"
+        for m in inv["matched_figures"]
+    ), "Competing captions must prevent composite_parent settlement"
+
+
+def test_parent_candidate_never_enters_legacy_fallback_directly() -> None:
+    """P1B: composite_parent must not flow into legacy sequential/single-asset fallback."""
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    blocks = [
+        {"block_id": "leg_nl", "page": 13, "role": "figure_caption",
+         "text": "Figure 1. Legend for composite.", "bbox": [100, 880, 700, 920],
+         "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 1}},
+        {"block_id": "nl_a", "page": 13, "role": "figure_asset", "raw_label": "image",
+         "bbox": [100, 100, 500, 300]},
+        {"block_id": "nl_b", "page": 13, "role": "figure_asset", "raw_label": "image",
+         "bbox": [100, 430, 500, 630]},
+        {"block_id": "nl_c", "page": 13, "role": "figure_asset", "raw_label": "image",
+         "bbox": [100, 760, 500, 960]},
+    ]
+
+    inv = build_figure_inventory(blocks)
+
+    candidates = inv.get("composite_parent_candidates", [])
+    assert candidates, "Must have composite parent candidates"
+    # Verify no composite_parent appears in unmatched_legends or ambiguous_figures
+    # as if it were a normal group — composite parents are not peer candidates
+    ambiguous_ids = {str(af.get("legend_block_id", "")) for af in inv.get("ambiguous_figures", [])}
+    assert "leg_nl" not in ambiguous_ids or len(inv["matched_figures"]) >= 1, (
+        "Composite parent must not be treated as ordinary ambiguous group"
+    )
+
+
+# === P2: Mixed Caption Grammar Validator ===
+
+
+def test_page_local_grammar_annotations_include_status_reason_evidence() -> None:
+    """P2: local_pairing_hypotheses must carry grammar_status, grammar_reason, grammar_evidence."""
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    blocks = [
+        {"block_id": "leg_ga", "page": 20, "role": "figure_caption",
+         "text": "Figure 1. Consistent grammar page.", "bbox": [100, 700, 700, 740],
+         "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 1}},
+        {"block_id": "ga_1", "page": 20, "role": "figure_asset", "raw_label": "image",
+         "bbox": [100, 100, 700, 650]},
+    ]
+
+    inv = build_figure_inventory(blocks)
+    hypotheses = inv.get("local_pairing_hypotheses", [])
+
+    assert len(hypotheses) >= 1, "Must have at least one pairing hypothesis"
+    for h in hypotheses:
+        assert h.get("grammar_status") in {"accepted", "deferred", "rejected", "conflict"}, (
+            f"grammar_status missing or invalid: {h.get('grammar_status')}"
+        )
+        assert isinstance(h.get("grammar_reason"), str), (
+            f"grammar_reason missing or not string: {h.get('grammar_reason')}"
+        )
+        assert isinstance(h.get("grammar_evidence"), list), (
+            f"grammar_evidence missing or not list: {h.get('grammar_evidence')}"
+        )
+
+
+def test_incompatible_local_grammar_marks_conflict() -> None:
+    """P2: mixed grammar styles on same page should mark grammar_status='conflict'."""
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    blocks = [
+        {"block_id": "leg_mx1", "page": 21, "role": "figure_caption",
+         "text": "Figure 1. Mixed-grammar page A.", "bbox": [100, 400, 450, 440],
+         "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 1}},
+        {"block_id": "mx1_a", "page": 21, "role": "figure_asset", "raw_label": "image",
+         "bbox": [100, 100, 450, 380]},
+        {"block_id": "leg_mx2", "page": 21, "role": "figure_caption",
+         "text": "Fig 2. Different grammar style.", "bbox": [550, 400, 900, 440],
+         "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 2}},
+        {"block_id": "mx2_a", "page": 21, "role": "figure_asset", "raw_label": "image",
+         "bbox": [550, 100, 900, 380]},
+    ]
+
+    inv = build_figure_inventory(blocks)
+    hypotheses = inv.get("local_pairing_hypotheses", [])
+
+    conflict_hypotheses = [h for h in hypotheses if h.get("grammar_status") == "conflict"]
+    assert len(conflict_hypotheses) >= 1, (
+        f"Mixed grammar page must have conflict hypotheses, got statuses: "
+        f"{[h.get('grammar_status') for h in hypotheses]}"
+    )
+
+
+def test_mixed_page_can_be_self_consistent_without_one_global_mode() -> None:
+    """P2: a page with uniformly styled captions should not be marked as conflict."""
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    blocks = [
+        {"block_id": "leg_u1", "page": 22, "role": "figure_caption",
+         "text": "Figure 1. Uniform style.", "bbox": [100, 400, 450, 440],
+         "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 1}},
+        {"block_id": "u1_a", "page": 22, "role": "figure_asset", "raw_label": "image",
+         "bbox": [100, 100, 450, 380]},
+        {"block_id": "leg_u2", "page": 22, "role": "figure_caption",
+         "text": "Figure 2. Same style family.", "bbox": [550, 400, 900, 440],
+         "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 2}},
+        {"block_id": "u2_a", "page": 22, "role": "figure_asset", "raw_label": "image",
+         "bbox": [550, 100, 900, 380]},
+    ]
+
+    inv = build_figure_inventory(blocks)
+    hypotheses = inv.get("local_pairing_hypotheses", [])
+
+    for h in hypotheses:
+        assert h.get("grammar_status") != "conflict", (
+            f"Uniform page should not have conflict: {h.get('grammar_status')} - {h.get('grammar_reason')}"
+        )
+
+
+# === P3A: Asset Family Hint ===
+
+
+def test_asset_family_hint_populated_on_figure_assets() -> None:
+    """P3A: figure_assets in inventory must carry asset_family_hint fields."""
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    blocks = [
+        {"block_id": "leg_ah", "page": 30, "role": "figure_caption",
+         "text": "Figure 1. Asset family test.", "bbox": [100, 700, 700, 740],
+         "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 1}},
+        {"block_id": "img1", "page": 30, "role": "figure_asset", "raw_label": "image",
+         "bbox": [100, 100, 500, 600]},
+        {"block_id": "img2", "page": 30, "role": "media_asset", "raw_label": "chart",
+         "bbox": [520, 100, 900, 600]},
+    ]
+
+    inv = build_figure_inventory(blocks)
+    assets = inv.get("figure_assets", [])
+
+    assert len(assets) >= 2, "Must have at least 2 figure assets"
+    for a in assets:
+        hint = a.get("asset_family_hint")
+        assert hint in {"figure_like", "table_like", "ambiguous"}, (
+            f"Invalid or missing asset_family_hint: {hint}"
+        )
+        assert isinstance(a.get("asset_family_confidence"), (int, float)), (
+            f"asset_family_confidence missing or not numeric"
+        )
+        assert isinstance(a.get("asset_family_evidence"), list), (
+            f"asset_family_evidence missing or not list"
+        )
+
+
+# === P3B/P3C: Figure/Table Separator Veto ===
+
+
+def test_figure_matcher_skips_strong_table_like_region() -> None:
+    """P3B/P3C: table-like assets should not be claimed as figures."""
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    blocks = [
+        {"block_id": "leg_fv", "page": 31, "role": "figure_caption",
+         "text": "Figure 1. Should NOT own table assets.", "bbox": [100, 700, 700, 740],
+         "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 1}},
+        {"block_id": "img", "page": 31, "role": "figure_asset", "raw_label": "image",
+         "bbox": [100, 100, 400, 600]},
+        {"block_id": "tbl_like", "page": 31, "role": "figure_asset", "raw_label": "table",
+         "bbox": [500, 100, 900, 600], "asset_family_hint": "table_like",
+         "asset_family_confidence": 0.85, "asset_family_evidence": ["raw_label:table"]},
+    ]
+
+    inv = build_figure_inventory(blocks)
+
+    fig1 = [m for m in inv["matched_figures"] if m.get("figure_number") == 1]
+    assert fig1, "Figure 1 must be matched"
+    matched_assets = {str(a.get("block_id", "")) for a in fig1[0].get("matched_assets", [])}
+    assert "tbl_like" not in matched_assets, (
+        "Table-like asset with strong hint must NOT be claimed by figure matcher"
+    )
+
+
+def test_ambiguous_region_is_not_hard_forced() -> None:
+    """P3B/P3C: ambiguous assets should not be hard-excluded from either path."""
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    blocks = [
+        {"block_id": "leg_amb", "page": 32, "role": "figure_caption",
+         "text": "Figure 1. Ambiguous region test.", "bbox": [100, 700, 700, 740],
+         "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 1}},
+        {"block_id": "amb_img", "page": 32, "role": "figure_asset", "raw_label": "image",
+         "bbox": [100, 100, 500, 600], "asset_family_hint": "ambiguous",
+         "asset_family_confidence": 0.40, "asset_family_evidence": []},
+    ]
+
+    inv = build_figure_inventory(blocks)
+
+    fig1 = [m for m in inv["matched_figures"] if m.get("figure_number") == 1]
+    assert fig1, "Figure 1 must be matched"
+    matched_assets = {str(a.get("block_id", "")) for a in fig1[0].get("matched_assets", [])}
+    assert "amb_img" in matched_assets, (
+        "Ambiguous asset must NOT be hard-excluded from figure matching"
+    )
