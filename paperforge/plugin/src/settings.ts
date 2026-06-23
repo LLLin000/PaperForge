@@ -1389,6 +1389,13 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         let filtered = rows;
         const redrawTable = () => {
           filtered = activeFilter === "all" ? rows : rows.filter((r: any) => classifyPaper(r).badge === activeFilter);
+          filtered.sort((a: any, b: any) => {
+            const ta = a.rebuild_finished_at && a.rebuild_finished_at !== "-" ? a.rebuild_finished_at : a.finished_at || "";
+            const tb = b.rebuild_finished_at && b.rebuild_finished_at !== "-" ? b.rebuild_finished_at : b.finished_at || "";
+            if (ta === "-" || !ta) return 1;
+            if (tb === "-" || !tb) return -1;
+            return tb.localeCompare(ta);
+          });
           tbody.empty();
           renderRows(filtered);
           updateSummary();
@@ -1537,7 +1544,15 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           }
         };
 
-        renderRows(rows);
+        // Sort by time descending (latest first)
+        const _rowsSorted = [...rows].sort((a, b) => {
+            const ta = a.rebuild_finished_at && a.rebuild_finished_at !== "-" ? a.rebuild_finished_at : a.finished_at || "";
+            const tb = b.rebuild_finished_at && b.rebuild_finished_at !== "-" ? b.rebuild_finished_at : b.finished_at || "";
+            if (ta === "-" || !ta) return 1;
+            if (tb === "-" || !tb) return -1;
+            return tb.localeCompare(ta);
+        });
+        renderRows(_rowsSorted);
         updateSummary();
 
         // ── Separator + Global actions (inside callback, after details) ──
