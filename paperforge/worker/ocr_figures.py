@@ -2152,7 +2152,7 @@ def _reserve_cross_page_objects(
     used_group_ids: set[str] | None = None,
     used_asset_page_ids: set[tuple] | None = None,
 ) -> tuple[set[str], set[str]]:
-    reserved_legend_ids: set[str] = set()
+    reserved_legend_ids: set[tuple[int, str]] = set()
     reserved_group_ids: set[str] = set()
 
     legends_by_page: dict[int, list[dict]] = {}
@@ -2180,7 +2180,7 @@ def _reserve_cross_page_objects(
                 key=lambda l: (l.get("bbox") or [0, 0, 0, 0])[1],
             )
             for leg in page_legends[:k]:
-                reserved_legend_ids.add(str(leg.get("block_id", "")))
+                reserved_legend_ids.add((int(leg.get("page", 0) or 0), str(leg.get("block_id", ""))))
         if entry["residual_delta"] < 0:
             k = min(-entry["residual_delta"], _residual_legend_surplus([page + 1, page + 2], residual_ledger))
             if k <= 0:
@@ -2203,6 +2203,10 @@ def _reserve_cross_page_objects(
                 reserved_group_ids.add(str(grp.get("group_id", "")))
 
     return reserved_legend_ids, reserved_group_ids
+
+
+def _reserved_legend_block_ids(reserved_legend_ids: set[tuple[int, str]]) -> set[str]:
+    return {block_id for _, block_id in reserved_legend_ids}
 
 
 INTERRUPTION_ROLES = {
@@ -2230,7 +2234,7 @@ def _has_strong_interruption(page: int, structured_blocks: list[dict]) -> bool:
 
 
 def _settle_cross_page_reserved_objects(
-    reserved_legend_ids: set[str],
+    reserved_legend_ids: set[tuple[int, str]],
     reserved_group_ids: set[str],
     legends: list[dict],
     candidate_groups: list[dict],
@@ -2246,10 +2250,13 @@ def _settle_cross_page_reserved_objects(
     competing_caption_pages: set[int],
     page_width: float = 1200,
 ) -> None:
-    legends_by_id = {str(leg.get("block_id", "")): leg for leg in legends}
+    legends_by_id = {
+        (int(leg.get("page", 0) or 0), str(leg.get("block_id", ""))): leg
+        for leg in legends
+    }
     groups_by_id = {str(g.get("group_id", "")): g for g in candidate_groups}
 
-    failed_legend_ids: set[str] = set()
+    failed_legend_ids: set[tuple[int, str]] = set()
     failed_group_ids: set[str] = set()
 
     # reserved legends look backward
@@ -2291,7 +2298,7 @@ def _settle_cross_page_reserved_objects(
             group_page = int(best_group.get("page", 0) or 0)
             group_assets = [g for g in best_group.get("media_blocks", [])]
 
-            ownership.match_group(best_group, owner_id=lid, owner_family="figure")
+            ownership.match_group(best_group, owner_id=f"{lid[0]}:{lid[1]}", owner_family="figure")
 
             asset_pages = sorted({int(a.get("page", 0) or 0) for a in group_assets})
             matched_figures.append(
@@ -2319,7 +2326,10 @@ def _settle_cross_page_reserved_objects(
                     "settlement_type": "cross_page_backward",
                 }
             )
-            unmatched_legends[:] = [u for u in unmatched_legends if str(u.get("block_id", "")) != lid]
+            unmatched_legends[:] = [
+                u for u in unmatched_legends
+                if (int(u.get("page", 0) or 0), str(u.get("block_id", ""))) != lid
+            ]
             break
         else:
             failed_legend_ids.add(lid)
@@ -2345,7 +2355,7 @@ def _settle_cross_page_reserved_objects(
                     l
                     for l in legends
                     if str(l.get("block_id", "")) not in _used_legend_ids
-                    and str(l.get("block_id", "")) not in failed_legend_ids
+                    and (int(l.get("page", 0) or 0), str(l.get("block_id", ""))) not in failed_legend_ids
                     and int(l.get("page", 0) or 0) == np
                     and _is_strong_numbered_legend(l)
                 ],
@@ -2408,7 +2418,7 @@ def _settle_cross_page_reserved_objects(
             continue
         ambiguous_figures.append(
             {
-                "legend_block_id": lid,
+                "legend_block_id": lid[1],
                 "page": legend.get("page", 0),
                 "text": legend.get("text", ""),
                 "figure_number": _extract_figure_number(str(legend.get("text", "") or "")),
@@ -2686,7 +2696,7 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
     page_caption_index = _formal_figure_caption_blocks(structured_blocks)
     for legend in ordered_legends:
         legend_id = str(legend.get("block_id", ""))
-        legend_reserved_for_cross_page = legend_id in _reserved_legend_ids
+        legend_reserved_for_cross_page = (int(legend.get("page", 0) or 0), legend_id) in _reserved_legend_ids
         legend_page = legend.get("page", 0)
         legend_text = str(legend.get("text") or "")
         ns = _extract_figure_namespace(legend_text)
@@ -2770,11 +2780,19 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
                     )
                 )
                 _band_scoped_parent = len(_matching_child_groups) >= 2
+                _dense_parent_unresolved_count = int(_best_parent.get("unresolved_child_count", 0) or 0)
+                _dense_parent_fragment_count = int(_best_parent.get("fragment_count", 0) or 0)
+                _dense_parent_single_group_ok = (
+                    _best_parent.get("parent_subtype") == "dense_composite"
+                    and len(_effective_child_groups) == 1
+                    and _dense_parent_unresolved_count >= 2
+                    and _dense_parent_fragment_count >= 6
+                )
 
                 if (
                     _parent_conf >= 0.60
                     and (not _has_competing_caption or _band_scoped_parent)
-                    and len(_effective_child_groups) >= 2
+                    and (len(_effective_child_groups) >= 2 or _dense_parent_single_group_ok)
                 ):
                     _parent_accepted = True
                     _parent_consumed_asset_ids = _effective_asset_ids
@@ -2831,7 +2849,8 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
             assist = group.get("assist", {}) or {}
             assist_band_id = str(assist.get("best_caption_band_id") or "")
             if (
-                legend_page in _competing_caption_pages
+                not legend_reserved_for_cross_page
+                and legend_page in _competing_caption_pages
                 and assist_band_id
                 and assist_band_id != legend_id
             ):
@@ -2839,7 +2858,8 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
             g_asset_block_ids = set(group.get("asset_block_ids", []))
             g_page = group.get("page", 0)
             g_qual = {(g_page, bid) for bid in g_asset_block_ids}
-            if not ownership.can_consume_assets(list(g_qual)):
+            group_reserved_for_cross_page = group_id in _reserved_group_ids
+            if not group_reserved_for_cross_page and not ownership.can_consume_assets(list(g_qual)):
                 continue
             # --- P3B/P3C: strong table-like veto in figure matcher ---
             _group_asset_ids = group.get("asset_block_ids", [])
@@ -3872,7 +3892,16 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
         _numbered_pages,
         page_width,
     )
-    composite_parent_candidates.extend(dense_parents)
+    _composite_parent_by_id = {
+        str(parent.get("group_id", "")): parent
+        for parent in composite_parent_candidates
+        if str(parent.get("group_id", ""))
+    }
+    for parent in dense_parents:
+        parent_id = str(parent.get("group_id", ""))
+        if parent_id:
+            _composite_parent_by_id[parent_id] = parent
+    composite_parent_candidates = list(_composite_parent_by_id.values())
 
     # --- P2: page-local caption grammar validation ---
     local_pairing_hypotheses = _validate_page_local_caption_grammar(
