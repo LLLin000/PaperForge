@@ -478,6 +478,14 @@ def _attach_container_bodies(
     return remaining
 
 
+def _ref_number_sort_key(block: dict) -> tuple:
+    text = str(block.get("text") or block.get("block_content") or "")
+    m = re.match(r"^\s*(\d+)[\.\)]", text)
+    if m:
+        return (0, int(m.group(1)))
+    return (1, text)
+
+
 def _reorder_tail_run(
     tail_blocks: list[dict],
     carried_ref: dict | None = None,
@@ -513,6 +521,7 @@ def _reorder_tail_run(
         ref_roles = frozenset({"reference_heading", "reference_item", "reference_body"})
         non_ref = [b for b in tail_blocks if b.get("role") not in ref_roles and b.get("role") != "footnote"]
         refs = [b for b in tail_blocks if b.get("role") in ref_roles]
+        refs.sort(key=_ref_number_sort_key)
         fnotes = [b for b in tail_blocks if b.get("role") == "footnote"]
         return non_ref + refs + fnotes, carried_ref, carried_backmatter
 
@@ -659,7 +668,9 @@ def _reorder_tail_run(
     if ref_section is not None and ref_section is not carried_ref:
         if ref_section.get("heading"):
             result.append(ref_section["heading"])
-        result.extend(ref_section["bodies"])
+        if ref_section.get("bodies"):
+            ref_section["bodies"].sort(key=_ref_number_sort_key)
+            result.extend(ref_section["bodies"])
     result.extend(footnote_blocks)
     result.extend(orphan_blocks)
 
@@ -848,8 +859,10 @@ def _order_tail_blocks(
     if not has_verified_reference_zone:
         ref_roles = frozenset({"reference_heading", "reference_item", "reference_body"})
         non_ref = [b for b in result if b.get("role") not in ref_roles]
-        refs = [b for b in result if b.get("role") in ref_roles]
-        return non_ref + refs
+        ref_headings = [b for b in result if b.get("role") == "reference_heading"]
+        ref_items = [b for b in result if b.get("role") in {"reference_item", "reference_body"}]
+        ref_items.sort(key=_ref_number_sort_key)
+        return non_ref + ref_headings + ref_items
     return result
 
 
