@@ -2004,4 +2004,15 @@ pytest tests/test_ocr_figures.py -v --tb=short
 - Result: current closeout strategy is now explicit: `VFS8CBW2` first, then `6FGDBFQN`, then smaller tails like `3FDT9652` / `24YKLTHQ`, while `RKSLQRIM` remains a regression/guardrail sample and `DWQQK2YB` / `2UIPV93M` leave the urgent queue.
 - Tests: live artifact review only; no code-path assertions added in this bookkeeping step.
 
+### 12.32 Dense composite parent candidate hardening (2026-06-23)
+
+- Problem: `VFS8CBW2`-class dense fragmented pages produce zero `composite_parent_candidates` because `_build_composite_parent_figure_groups_visual_only` only uses atomic `candidate_groups` as input and cannot see `unresolved_clusters`. This means dense composite figures are invisible to arbitration before it even starts.
+- Root cause: parent candidate construction was scoped to ordinary atomic groups only. Dense pages with many visual fragments that partially match produce `unresolved_clusters` — but these were invisible to parent construction.
+- Fix: added `_build_dense_composite_parent_candidates(...)` — a visual-only construction function that runs after unresolved clusters are available. It triggers on pages with a numbered legend and `>= 4` visual fragments (atomic group assets + unresolved cluster media blocks), merges all visual envelopes into a compact dense composite parent candidate, and appends it to `composite_parent_candidates` with `parent_subtype = "dense_composite"` and `ownership_enabled = False`. `_compute_grid_score(...)` provides row/column regularity scoring.
+- What this does NOT touch: ordinary same-page arbitration, sidecar, persisted buckets (`matched_figures` / `ambiguous_figures` / `unresolved_clusters`), atomic grouping thresholds, panel-title suppression logic, `settlement_type` list. The existing `_build_composite_parent_figure_groups_visual_only` is unchanged.
+- Result: dense fragmented pages now produce audit-visible `composite_parent_candidates` with `parent_subtype="dense_composite"`, `unresolved_cluster_ids`, `fragment_count`, `compactness`, `grid_score`, and `construction_reason`. Ordinary multi-figure pages do not gain page-wide dense parents (guard test verified). Full regression: 209 pass, 2 pre-existing fail (unchanged).
+- Tests: 5 new synthetic tests covering dense parent emission, ordinary page guard, unresolved cluster visibility, and contract field completeness. All existing `composite_parent` tests remain green.
+- Stop-condition check: no atomic grouping thresholds widened, no new settlement path, no sidecar changes, no bucket semantics changed, no literal label blacklist. All boundaries intact.
+
+
 

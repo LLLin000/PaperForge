@@ -4321,3 +4321,158 @@ def test_suppressed_panel_title_remains_accounted_not_body() -> None:
     rejected_ids = {str(r.get("block_id", "")) for r in inv.get("rejected_legends", [])}
     assert "panel_k" not in rejected_ids, "Suppressed title must not be in rejected_legends"
 
+
+# === Dense Composite Parent Candidate Hardening ===
+
+
+def test_dense_fragmented_page_emits_composite_parent_candidate() -> None:
+    """Page with 5+ compact visual fragments and a numbered caption
+    must emit at least one dense composite parent candidate."""
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    blocks = [
+        {"block_id": "d_leg", "page": 20, "role": "figure_caption",
+         "text": "Figure 1. Dense multi-panel composite figure showing expression profiles.",
+         "bbox": [100, 750, 900, 800],
+         "style_family": "legend_like",
+         "marker_signature": {"type": "figure_number", "number": 1}},
+        {"block_id": "d_a1", "page": 20, "role": "figure_asset", "raw_label": "image",
+         "bbox": [100, 100, 350, 300]},
+        {"block_id": "d_a2", "page": 20, "role": "figure_asset", "raw_label": "image",
+         "bbox": [400, 100, 650, 300]},
+        {"block_id": "d_a3", "page": 20, "role": "figure_asset", "raw_label": "image",
+         "bbox": [700, 100, 950, 300]},
+        {"block_id": "d_a4", "page": 20, "role": "figure_asset", "raw_label": "image",
+         "bbox": [100, 350, 350, 550]},
+        {"block_id": "d_a5", "page": 20, "role": "figure_asset", "raw_label": "image",
+         "bbox": [400, 350, 650, 550]},
+    ]
+
+    inv = build_figure_inventory(blocks, page_width=1100)
+
+    dense_parents = [
+        p for p in inv.get("composite_parent_candidates", [])
+        if p.get("parent_subtype") == "dense_composite"
+    ]
+    assert dense_parents, (
+        f"Dense fragmented page must emit a dense composite parent candidate. "
+        f"Total parents: {len(inv.get('composite_parent_candidates', []))}"
+    )
+
+
+def test_ordinary_multi_figure_page_does_not_emit_dense_parent() -> None:
+    """Two independent numbered figures on same page must NOT produce
+    a page-wide dense parent candidate."""
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    blocks = [
+        {"block_id": "ord_leg1", "page": 30, "role": "figure_caption",
+         "text": "Figure 2. First independent figure.", "bbox": [100, 350, 500, 390],
+         "style_family": "legend_like",
+         "marker_signature": {"type": "figure_number", "number": 2}},
+        {"block_id": "ord_a1", "page": 30, "role": "figure_asset", "raw_label": "image",
+         "bbox": [100, 100, 500, 300]},
+        {"block_id": "ord_leg2", "page": 30, "role": "figure_caption",
+         "text": "Figure 3. Second independent figure.", "bbox": [600, 350, 1000, 390],
+         "style_family": "legend_like",
+         "marker_signature": {"type": "figure_number", "number": 3}},
+        {"block_id": "ord_a2", "page": 30, "role": "figure_asset", "raw_label": "image",
+         "bbox": [600, 100, 1000, 300]},
+    ]
+
+    inv = build_figure_inventory(blocks, page_width=1100)
+
+    dense_parents = [
+        p for p in inv.get("composite_parent_candidates", [])
+        if p.get("parent_subtype") == "dense_composite"
+    ]
+    assert not dense_parents, (
+        "Ordinary multi-figure page must NOT emit a dense parent candidate"
+    )
+
+
+def test_dense_parent_candidate_records_unresolved_cluster_ids() -> None:
+    """Dense parent candidate must include unresolved_cluster_ids when
+    unresolved visual mass falls within the parent envelope."""
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    blocks = [
+        {"block_id": "u_leg", "page": 25, "role": "figure_caption",
+         "text": "Figure 4. Dense composite with orphaned sub-panels.",
+         "bbox": [100, 750, 900, 800],
+         "style_family": "legend_like",
+         "marker_signature": {"type": "figure_number", "number": 4}},
+        {"block_id": "u_a1", "page": 25, "role": "figure_asset", "raw_label": "image",
+         "bbox": [100, 100, 350, 300]},
+        {"block_id": "u_a2", "page": 25, "role": "figure_asset", "raw_label": "image",
+         "bbox": [400, 100, 650, 300]},
+        {"block_id": "u_a3", "page": 25, "role": "figure_asset", "raw_label": "image",
+         "bbox": [700, 100, 950, 300]},
+        {"block_id": "u_a4", "page": 25, "role": "figure_asset", "raw_label": "image",
+         "bbox": [100, 350, 350, 550]},
+        {"block_id": "u_a5", "page": 25, "role": "figure_asset", "raw_label": "image",
+         "bbox": [400, 350, 650, 550]},
+        {"block_id": "u_a6", "page": 25, "role": "figure_asset", "raw_label": "image",
+         "bbox": [700, 350, 950, 550]},
+    ]
+
+    inv = build_figure_inventory(blocks, page_width=1100)
+
+    dense_parents = [
+        p for p in inv.get("composite_parent_candidates", [])
+        if p.get("parent_subtype") == "dense_composite"
+    ]
+    assert dense_parents, "Must emit dense parent candidate"
+
+    parent = dense_parents[0]
+    uids = parent.get("unresolved_cluster_ids", None)
+    assert uids is not None, "unresolved_cluster_ids field must exist"
+    assert isinstance(uids, list), "unresolved_cluster_ids must be a list"
+
+
+def test_dense_parent_candidate_has_required_contract_fields() -> None:
+    """Every dense composite parent candidate must include all required
+    contract fields per spec."""
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    blocks = [
+        {"block_id": "c_leg", "page": 35, "role": "figure_caption",
+         "text": "Figure 5. Multi-panel expression atlas.", "bbox": [100, 750, 900, 800],
+         "style_family": "legend_like",
+         "marker_signature": {"type": "figure_number", "number": 5}},
+        {"block_id": "c_a1", "page": 35, "role": "figure_asset", "raw_label": "image",
+         "bbox": [100, 100, 350, 300]},
+        {"block_id": "c_a2", "page": 35, "role": "figure_asset", "raw_label": "image",
+         "bbox": [400, 100, 650, 300]},
+        {"block_id": "c_a3", "page": 35, "role": "figure_asset", "raw_label": "image",
+         "bbox": [700, 100, 950, 300]},
+        {"block_id": "c_a4", "page": 35, "role": "figure_asset", "raw_label": "image",
+         "bbox": [100, 350, 350, 550]},
+        {"block_id": "c_a5", "page": 35, "role": "figure_asset", "raw_label": "image",
+         "bbox": [400, 350, 650, 550]},
+    ]
+
+    inv = build_figure_inventory(blocks, page_width=1100)
+
+    dense_parents = [
+        p for p in inv.get("composite_parent_candidates", [])
+        if p.get("parent_subtype") == "dense_composite"
+    ]
+    assert dense_parents, "Must emit dense parent candidate"
+
+    p = dense_parents[0]
+    assert p.get("group_type") == "composite_parent"
+    assert p.get("parent_subtype") == "dense_composite"
+    assert isinstance(p.get("page"), int)
+    assert isinstance(p.get("child_group_ids"), list)
+    assert isinstance(p.get("unresolved_cluster_ids"), list)
+    assert isinstance(p.get("asset_block_ids"), list)
+    assert isinstance(p.get("cluster_bbox"), list) and len(p.get("cluster_bbox", [])) == 4
+    assert isinstance(p.get("fragment_count"), int)
+    assert isinstance(p.get("atomic_child_count"), int)
+    assert isinstance(p.get("unresolved_child_count"), int)
+    assert isinstance(p.get("compactness"), (int, float))
+    assert isinstance(p.get("grid_score"), (int, float))
+    assert isinstance(p.get("construction_reason"), list)
+    assert p.get("ownership_enabled") is False
+

@@ -1660,6 +1660,132 @@ def _build_composite_parent_figure_groups_visual_only(
     return results
 
 
+def _compute_grid_score(envelopes: list[dict]) -> float:
+    if len(envelopes) < 2:
+        return 0.0
+    bboxes = [
+        cb
+        for env in envelopes
+        if (cb := env.get("cluster_bbox") or env.get("bbox")) and len(cb) >= 4
+    ]
+    if len(bboxes) < 2:
+        return 0.0
+    y_centers = [(b[1] + b[3]) / 2 for b in bboxes]
+    mean_y = sum(y_centers) / len(y_centers)
+    page_h = max(b[3] for b in bboxes) - min(b[1] for b in bboxes)
+    if page_h <= 0:
+        return 0.0
+    y_spread = sum(abs(y - mean_y) for y in y_centers) / len(y_centers)
+    row_score = max(0.0, 1.0 - y_spread / page_h)
+    x_centers = [(b[0] + b[2]) / 2 for b in bboxes]
+    mean_x = sum(x_centers) / len(x_centers)
+    page_w = max(b[2] for b in bboxes) - min(b[0] for b in bboxes)
+    if page_w <= 0:
+        return 0.0
+    x_spread = sum(abs(x - mean_x) for x in x_centers) / len(x_centers)
+    col_score = max(0.0, 1.0 - x_spread / page_w)
+    return min(1.0, (row_score + col_score) / 2)
+
+
+def _build_dense_composite_parent_candidates(
+    atomic_groups: list[dict],
+    unresolved_clusters: list[dict],
+    numbered_legend_pages: set[int],
+    page_width: float,
+) -> list[dict]:
+    results: list[dict] = []
+    groups_by_page: dict[int, list[dict]] = {}
+    for group in atomic_groups:
+        page = int(group.get("page", 0) or 0)
+        if page in numbered_legend_pages:
+            groups_by_page.setdefault(page, []).append(group)
+
+    uc_by_page: dict[int, list[dict]] = {}
+    for uc in unresolved_clusters:
+        page = int(uc.get("page", 0) or 0)
+        if page in numbered_legend_pages:
+            uc_by_page.setdefault(page, []).append(uc)
+
+    for page in numbered_legend_pages:
+        page_groups = groups_by_page.get(page, [])
+        page_ucs = uc_by_page.get(page, [])
+
+        total_asset_ids: set[str] = set()
+        for g in page_groups:
+            for bid in g.get("asset_block_ids", []):
+                if bid:
+                    total_asset_ids.add(str(bid))
+        for uc in page_ucs:
+            for bid in uc.get("media_block_ids", []):
+                if bid:
+                    total_asset_ids.add(str(bid))
+
+        fragment_count = len(total_asset_ids)
+        if fragment_count < 4:
+            continue
+
+        envelopes: list[dict] = []
+        for g in page_groups:
+            cb = g.get("cluster_bbox")
+            if cb and len(cb) >= 4:
+                envelopes.append({"cluster_bbox": cb})
+        for uc in page_ucs:
+            cb = uc.get("cluster_bbox")
+            if cb and len(cb) >= 4:
+                envelopes.append({"cluster_bbox": cb})
+
+        if not envelopes:
+            continue
+
+        cluster_bbox = _cluster_bbox([e["cluster_bbox"] for e in envelopes])
+        page_area = page_width * 1600.0
+        envelope_area = (
+            (cluster_bbox[2] - cluster_bbox[0]) * (cluster_bbox[3] - cluster_bbox[1])
+            if len(cluster_bbox) >= 4
+            else 0.0
+        )
+        compactness = min(1.0, envelope_area / max(1.0, page_area))
+
+        grid_score = _compute_grid_score(envelopes)
+
+        child_group_ids = [str(g.get("group_id", "")) for g in page_groups if g.get("group_id")]
+        unresolved_cluster_ids = [
+            str(uc.get("cluster_id", "")) for uc in page_ucs if uc.get("cluster_id")
+        ]
+        all_asset_ids: list[str] = list(dict.fromkeys(
+            bid for g in page_groups for bid in g.get("asset_block_ids", []) if bid is not None
+        ))
+
+        reason = ["dense_fragment_page", f"{fragment_count}_visual_fragments"]
+        if page_ucs:
+            reason.append(f"{len(page_ucs)}_unresolved_clusters")
+
+        results.append({
+            "group_id": f"dense_composite_parent_{page:04d}_{len(results):03d}",
+            "group_type": "composite_parent",
+            "parent_subtype": "dense_composite",
+            "page": page,
+            "child_group_ids": child_group_ids,
+            "unresolved_cluster_ids": unresolved_cluster_ids,
+            "asset_block_ids": all_asset_ids,
+            "embedded_text_block_ids": [],
+            "cluster_bbox": cluster_bbox,
+            "parent_evidence": reason,
+            "parent_confidence": round(grid_score, 4),
+            "fragment_count": fragment_count,
+            "atomic_child_count": len(page_groups),
+            "unresolved_child_count": len(page_ucs),
+            "visual_mass": float(len(all_asset_ids)),
+            "compactness": round(compactness, 4),
+            "grid_score": round(grid_score, 4),
+            "construction_reason": reason,
+            "crosses_caption_boundary": False,
+            "ownership_enabled": False,
+        })
+
+    return results
+
+
 def _should_suppress_panel_title_candidate(
     block: dict,
     *,
@@ -3738,6 +3864,15 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
             unmatched_assets = [a for a in unmatched_assets if a.get("block_id", "") not in consumed]
 
     unmatched_assets = _recompute_final_unmatched_assets(assets, used_asset_page_ids, unresolved_clusters)
+
+    # --- Dense composite parent candidate construction from visual fragments ---
+    dense_parents = _build_dense_composite_parent_candidates(
+        candidate_groups,
+        unresolved_clusters,
+        _numbered_pages,
+        page_width,
+    )
+    composite_parent_candidates.extend(dense_parents)
 
     # --- P2: page-local caption grammar validation ---
     local_pairing_hypotheses = _validate_page_local_caption_grammar(
