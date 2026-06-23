@@ -1523,18 +1523,26 @@ SAN9AYVR_BODY_AND_FIGURES = [
 
 
 def test_san9ayvr_fig26c_body_narrative() -> None:
-    """SAN9AYVR's Fig. 26c narrative text stays body narrative, not formal legend."""
+    """SAN9AYVR's Fig. 26c narrative text stays body narrative, not formal legend.
+
+    With same-number distinct-legend guard, Fig. 26c narrative survives dedup
+    (its text differs from the real Figure 26 caption and it is not a bundle-source).
+    This is correct: dedup should not be the safety net for body-narrative legend rejection.
+    """
     from paperforge.worker.ocr_figures import build_figure_inventory
 
     inventory = build_figure_inventory(SAN9AYVR_BODY_AND_FIGURES)
 
-    assert len(inventory["matched_figures"]) == 2, (
-        f"Expected 2 matched figures (Fig. 26, Fig. 27), got {len(inventory['matched_figures'])}"
+    # Fig. 26c narrative + real Fig 26 + Fig 27 = 3 matched figures
+    assert len(inventory["matched_figures"]) == 3, (
+        f"Expected 3 matched figures (Fig 26c narrative, Fig 26, Fig 27), "
+        f"got {len(inventory['matched_figures'])}"
     )
-    # Without text-matching expansion ("addresses" not in prose-verb list),
-    # Fig. 26c may win the dedup and appear as the matched legend text.
-    # This is acceptable for now; figure inventory correctness is not
-    # compromised.
+    # Fig 26c narrative should be recorded as same-number-distinct
+    distinct = inventory.get("same_number_distinct_legends", [])
+    assert any(
+        d.get("figure_number") == 26 for d in distinct
+    ), "Fig 26c narrative must appear in same_number_distinct_legends"
 
 
 def test_san9ayvr_fig26_fig27_remain_formal() -> None:

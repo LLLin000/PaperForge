@@ -1504,6 +1504,15 @@ def _legend_has_adjacent_page_asset(legend: dict, assets: list[dict]) -> bool:
     return any(abs(int(asset.get("page", 0) or 0) - legend_page) == 1 for asset in assets)
 
 
+def _strip_caption_number_prefix(text: str) -> str:
+    return _FIGURE_NUMBER_PATTERN.sub("", text, count=1).strip()
+
+
+def _normalized_caption_body(text: str) -> str:
+    body = _strip_caption_number_prefix(text)
+    return " ".join(body.lower().split())
+
+
 def _legend_dedup_priority(legend: dict, *, bundle_source_legend_ids: set[str], assets: list[dict]) -> tuple[int, int, int, int, int]:
     legend_id = str(legend.get("block_id", ""))
     role = str(legend.get("role") or "")
@@ -2549,6 +2558,7 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
     # Deduplicate numbered legends by family, but treat caption-list / bundle-source
     # pages as lower-priority duplicates when a stronger real legend instance exists.
     _dedup_map: dict[tuple[str, int], dict] = {}
+    _same_number_distinct_keys: set[tuple[str, int, int, str]] = set()
     for legend in ordered_legends:
         text = legend.get("text", "")
         fn = _extract_figure_number(text)
@@ -2560,6 +2570,12 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
             _dedup_map[key] = legend
         else:
             existing = _dedup_map[key]
+            existing_body = _normalized_caption_body(str(existing.get("text", "")))
+            new_body = _normalized_caption_body(text)
+            existing_is_bundle = str(existing.get("block_id", "")) in bundle_source_legend_ids
+            new_is_bundle = str(legend.get("block_id", "")) in bundle_source_legend_ids
+
+            # Always determine winner/loser via dedup priority
             if _legend_dedup_priority(
                 legend,
                 bundle_source_legend_ids=bundle_source_legend_ids,
@@ -2569,7 +2585,23 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
                 bundle_source_legend_ids=bundle_source_legend_ids,
                 assets=assets,
             ):
-                _dedup_map[key] = legend
+                winner, loser = legend, existing
+            else:
+                winner, loser = existing, legend
+
+            if (
+                existing_body
+                and new_body
+                and existing_body != new_body
+                and not existing_is_bundle
+                and not new_is_bundle
+            ):
+                _dedup_map[key] = winner
+                _same_number_distinct_keys.add(
+                    (ns, fn, int(loser.get("page", 0) or 0), str(loser.get("block_id", "")))
+                )
+            else:
+                _dedup_map[key] = winner
 
     emitted_winner_keys: set[tuple[str, int]] = set()
     deduped_legends: list[dict] = []
@@ -2580,6 +2612,22 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
         if fn is not None:
             ns = _extract_figure_namespace(text)
             key = (ns, fn)
+            _distinct_check = (
+                ns,
+                fn,
+                int(legend.get("page", 0) or 0),
+                str(legend.get("block_id", "")),
+            )
+            if _distinct_check in _same_number_distinct_keys:
+                deduped_legends.append(legend)
+                deduped_legend_ids.append(
+                    {
+                        "page": legend.get("page"),
+                        "block_id": legend.get("block_id", ""),
+                        "dedup_reason": "same_number_distinct_caption_text",
+                    }
+                )
+                continue
             kept = _dedup_map[key]
             current_id = str(legend.get("block_id", ""))
             kept_id = str(kept.get("block_id", ""))
@@ -4025,6 +4073,10 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
         "rejected_legends": rejected_legends,
         "unresolved_clusters": unresolved_clusters,
         "deduped_legend_ids": deduped_legend_ids,
+        "same_number_distinct_legends": [
+            {"figure_number": fn, "page": page, "block_id": str(bid), "reason": "same_number_different_caption_text"}
+            for (_ns, fn, page, bid) in _same_number_distinct_keys
+        ],
         "composite_parent_candidates": composite_parent_candidates,
         "suppressed_caption_candidates": suppressed_caption_candidates,
         "official_figure_count": len(matched_figures),

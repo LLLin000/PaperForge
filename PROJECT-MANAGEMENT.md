@@ -1,6 +1,6 @@
 # OCR-v2 Project Management Log
 
-> **Branch:** `ocr-v2` | **Base:** `master` | **Last Updated:** 2026-06-23 (figure ownership arbitration convergence)
+> **Branch:** `ocr-v2` | **Base:** `master` | **Last Updated:** 2026-06-23 (same-number distinct legend dedup guard)
 > **Rule:** Every step is documented with: What was done, Why it was done, What comes next.
 
 ---
@@ -2047,6 +2047,14 @@ Vision audit of VFS8CBW2/6FGDBFQN/2UIPV93M/RKSLQRIM identified two residual issu
 2. **2UIPV93M page 49 unmatched X-ray assets** — blocks 1 and 5 are `media_asset` with empty zone, captions sit directly below. Pipeline fails to match because role/zone classification does not route these into figure candidate context. → Separate ticket: "Figure asset role/zone normalization for ordinary caption-below X-ray pages"
 
 These are NOT convergence-layer issues. The phantom cluster bug (fixed in 12.34) was the only convergence-layer diagnostic inaccuracy found by this audit pass.
+
+### 12.36 Same-number distinct legend dedup guard (2026-06-23)
+
+- Problem: the legend dedup (`_dedup_map`) uses `(namespace, figure_number)` as the unique key and unconditionally removes all but the highest-priority legend. When a paper has independent figures with the same number in different sections (e.g., body Figure 1 vs appendix Figure 1), the weaker style/zone variant is silently dropped. 2UIPV93M page 49 "图 1" / "图 2" (appendix X-ray figures) were removed because page 16/17 "图 1" / "图 2" (body figures with `legend_like` style) had higher dedup priority.
+- Root cause: dedup assumed all legends sharing the same `(namespace, figure_number)` key are duplicates of the same figure. It did not check whether the caption text itself is different.
+- Fix: added `_strip_caption_number_prefix` and `_normalized_caption_body` helpers. When a dedup collision occurs, compare the normalized caption bodies (figure-number prefix stripped). If bodies differ AND neither legend is a bundle-source duplicate, mark the lower-priority legend as `same_number_distinct_caption_text` and retain it — using a distinct key so both survive. Bundle-source legends always dedup (their text may differ but they are intentionally weaker duplicates).
+- Result: 2UIPV93M now has 19 matched figures (was 17). Page 49 Fig 1 / Fig 2 now correctly retained in `figure_legends` and matched to their X-ray assets. `same_number_distinct_legends` audit surface added to inventory. Bundle-source dedup (DWQQK2YB pattern) unaffected.
+- Tests: updated `test_san9ayvr_fig26c_body_narrative` (Fig 26c narrative now correctly survives dedup as distinct legend). All existing dedup tests pass. 217 tests total, 0 failures.
 
 
 
