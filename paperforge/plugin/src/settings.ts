@@ -1,4 +1,4 @@
-import { PluginSettingTab, App, Setting, Notice } from "obsidian";
+import { PluginSettingTab, App, Setting, Notice, setTooltip } from "obsidian";
 import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
@@ -388,18 +388,15 @@ export class PaperForgeSettingTab extends PluginSettingTab {
 
   _renderMemoryStatusText(el: HTMLElement, text: string, extraInfo: string | null | undefined) {
     el.innerHTML = "";
-    el.createEl("span", { text: text, cls: "paperforge-memory-text" }).style.cssText = "flex:1;";
+    el.createEl("span", { text: text, cls: "paperforge-memory-text" });
 
     if (extraInfo === "syncing") {
-      const syncEl = el.createEl("span", { text: "Syncing...", cls: "paperforge-sync-status" });
-      syncEl.style.cssText = "opacity:0.7; margin-right:8px;";
+      el.createEl("span", { text: "Syncing...", cls: "paperforge-sync-status" });
     } else if (extraInfo) {
-      const timeEl = el.createEl("span", { text: extraInfo, cls: "paperforge-sync-status" });
-      timeEl.style.cssText = "opacity:0.7; margin-right:8px;";
+      el.createEl("span", { text: extraInfo, cls: "paperforge-sync-status" });
     }
 
     const rebuildBtn = el.createEl("button", { cls: "paperforge-rebuild-btn", text: t("feat_memory_rebuild_btn") });
-    rebuildBtn.style.cssText = "margin-left:auto; border:1px solid var(--background-modifier-border); background:var(--background-secondary); cursor:pointer; font-size:11px; padding:2px 6px; border-radius:3px; margin-right:4px;";
     rebuildBtn.title = "Rebuild memory database";
     rebuildBtn.onclick = () => {
       const vp = (this.app.vault.adapter as any).basePath as string;
@@ -426,7 +423,6 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     };
 
     const refreshBtn = el.createEl("button", { cls: "paperforge-refresh-btn", text: "\u21BB" });
-    refreshBtn.style.cssText = "border:none; background:none; cursor:pointer; font-size:16px; padding:0 4px;";
     refreshBtn.title = "Sync now";
     refreshBtn.onclick = () => {
       this._memoryStatusText = null;
@@ -488,10 +484,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     // --- Section: Skills ---
     containerEl.createEl("h3", { text: "Skills" });
     const skillsDescEl = containerEl.createEl("div", { cls: "paperforge-desc-box" });
-    skillsDescEl.style.cssText = "padding:8px 12px; margin:0 0 12px; background:var(--background-secondary); border-radius:4px; font-size:12px; color:var(--text-muted); line-height:1.5;";
     skillsDescEl.setText(t("feat_skills_desc"));
     skillsDescEl.createEl("br");
-    skillsDescEl.createEl("span", { text: t("feat_skills_system"), cls: "" }).style.opacity = "0.7";
+    skillsDescEl.createEl("span", { text: t("feat_skills_system") });
 
     // Agent platform selector
     const agentPlatforms: Record<string, string> = {
@@ -594,8 +589,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       });
     }
 
-    const skillsBox = containerEl.createEl("div");
-    skillsBox.style.cssText = "background:var(--background-secondary); border-radius:8px; padding:12px 12px 10px; margin:8px 0 16px;";
+    const skillsBox = containerEl.createEl("div", { cls: "paperforge-skills-box" });
 
     const renderCollapsibleSkills = (label: string, skills: any[], isSystem: boolean) => {
       if (skills.length === 0) return;
@@ -604,7 +598,6 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       const header = group.createEl("div", { cls: "paperforge-skills-collapse-header" });
       const content = group.createEl("div", { cls: "paperforge-skills-collapse-content" });
       const arrow = header.createEl("span", { text: "\u25BC", cls: "paperforge-skills-arrow" });
-      arrow.style.cssText = "display:inline-block; font-size:10px; margin-right:6px; transition:transform 0.2s; transform:rotate(0deg);";
       header.createEl("h4", { text: `${label} (${skills.length})`, cls: "paperforge-skills-subheader" });
 
       skills.forEach(s => {
@@ -669,13 +662,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     // --- Section: Advanced ---
     if (this._advCollapsed === undefined) this._advCollapsed = true;
     const advHeader = containerEl.createEl("div", { cls: "paperforge-collapsible-header" });
-    advHeader.style.cssText = "cursor:pointer; display:flex; align-items:center; gap:8px; padding:8px 0; user-select:none;";
     const advArrow = advHeader.createEl("span", { text: "\u25B6", cls: "paperforge-collapsible-arrow" });
-    advArrow.style.cssText = "display:inline-block; transition:transform 0.2s; font-size:10px; transform:" + (this._advCollapsed ? "rotate(0deg)" : "rotate(90deg)") + ";";
-    const advTitle = advHeader.createEl("span", { text: "Advanced" });
-    advTitle.style.cssText = "font-size:16px; font-weight:700; line-height:1.4;";
-    const advSub = advHeader.createEl("span", { text: "Memory + Vector DB + Embedding" });
-    advSub.style.cssText = "font-size:12px; color:var(--text-muted); margin-left:10px;";
+    advArrow.style.transform = this._advCollapsed ? "rotate(0deg)" : "rotate(90deg)";
+    const advTitle = advHeader.createEl("span", { cls: "paperforge-collapsible-title", text: "Advanced" });
+    const advSub = advHeader.createEl("span", { cls: "paperforge-collapsible-sub", text: "Memory + Vector DB + Embedding" });
 
     const advContent = containerEl.createEl("div", { cls: "paperforge-collapsible-content" });
     advContent.style.display = this._advCollapsed ? "none" : "";
@@ -690,11 +680,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     advContent.createEl("h4", { text: "Memory Layer" });
 
     const memoryDescEl = advContent.createEl("div", { cls: "paperforge-desc-box" });
-    memoryDescEl.style.cssText = "padding:8px 12px; margin:0 0 12px; background:var(--background-secondary); border-radius:4px; font-size:12px; color:var(--text-muted); line-height:1.5;";
     memoryDescEl.setText(t("feat_memory_desc"));
 
     const statusRow = advContent.createEl("div", { cls: "paperforge-memory-status" });
-    statusRow.style.cssText = "display:flex; align-items:center; padding:8px 12px; margin:8px 0; background:var(--background-secondary); border-radius:4px;";
 
     const vp = (this.app.vault.adapter as any).basePath as string;
 
@@ -719,7 +707,6 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     }
 
     const vecDescEl = containerEl.createEl("div", { cls: "paperforge-desc-box" });
-    vecDescEl.style.cssText = "padding:8px 12px; margin:0 0 8px; background:var(--background-secondary); border-radius:4px; font-size:12px; color:var(--text-muted); line-height:1.5;";
     vecDescEl.setText(t("feat_vector_desc"));
 
     new Setting(containerEl)
@@ -740,11 +727,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
 
     const vp = (this.app.vault.adapter as any).basePath as string;
 
-    const vecConfigHeader = containerEl.createEl("div", { cls: "paperforge-skills-collapse-header" });
-    vecConfigHeader.style.cssText = "display:flex; align-items:center; cursor:pointer; padding:6px 0 2px; margin:0;";
-    const vecArrow = vecConfigHeader.createEl("span", { text: "\u25BC" });
-    vecArrow.style.cssText = "display:inline-block; font-size:10px; margin-right:6px; transition:transform 0.2s;";
-    vecConfigHeader.createEl("span", { text: t("feat_vector_config_label"), cls: "" }).style.cssText = "font-size:12px; color:var(--text-muted);";
+    const vecConfigHeader = containerEl.createEl("div", { cls: "paperforge-vec-header" });
+    const vecArrow = vecConfigHeader.createEl("span", { text: "\u25BC", cls: "paperforge-skills-arrow" });
+    vecConfigHeader.createEl("span", { cls: "paperforge-vec-header-label", text: t("feat_vector_config_label") });
     const vecConfigContent = containerEl.createEl("div", { cls: "paperforge-vector-config" });
 
     const applyVectorConfigDisclosure = (collapsed: boolean) => {
@@ -814,8 +799,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   }
 
   _renderVectorNoDeps(containerEl: HTMLElement) {
-    const box = containerEl.createEl("div");
-    box.style.cssText = "padding:8px 12px; margin:8px 0; background:var(--background-secondary); border-radius:4px;";
+    const box = containerEl.createEl("div", { cls: "paperforge-desc-box" });
     box.setText(t("feat_deps_missing"));
 
     new Setting(containerEl)
@@ -856,21 +840,17 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   }
 
   _renderVectorReady(containerEl: HTMLElement, vp: string) {
-    const statusEl = containerEl.createEl("div");
-    statusEl.style.cssText = "padding:8px 12px; margin:8px 0; background:var(--background-secondary); border-radius:4px;";
+    const statusEl = containerEl.createEl("div", { cls: "paperforge-desc-box" });
     statusEl.setText(getVectorStatusText(vp));
 
     this._renderApiConfig(containerEl);
 
-    const embedSection = containerEl.createEl("div");
-    embedSection.style.cssText = "padding:4px 0;";
+    const embedSection = containerEl.createEl("div", { cls: "paperforge-embed-section" });
 
-    const embedHeader = embedSection.createEl("div");
-    embedHeader.style.cssText = "display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;";
+    const embedHeader = embedSection.createEl("div", { cls: "paperforge-embed-header" });
     embedHeader.createEl("span", { text: t("feat_rebuild_vectors"), cls: "setting-item-name" });
 
-    const embedControls = embedSection.createEl("div");
-    embedControls.style.cssText = "display:flex; align-items:center; gap:8px;";
+    const embedControls = embedSection.createEl("div", { cls: "paperforge-embed-controls" });
 
     const embedStatusText = embedSection.createEl("div", { cls: "paperforge-embed-status-text" });
 
@@ -1338,10 +1318,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
             const card = actSection.createEl("div", { cls: "pf-maint-card" });
             card.createEl("strong", { text: item.row.title_short || item.row.title || item.row.key });
             const chip = card.createEl("span", { cls: "pf-maint-chip pf-maint-chip--" + item.ui.category, text: item.ui.label });
-            chip.style.marginLeft = "8px";
             card.createEl("p", { text: item.ui.reason, cls: "setting-item-description" });
             const btn = card.createEl("button", { text: item.ui.primaryAction === "rebuild" ? t("ocr_maint_rebuild_btn") : t("ocr_maint_redo_btn") });
-            btn.style.cssText = "padding:4px 10px; border-radius:4px; cursor:pointer; font-size:12px;";
             btn.addEventListener("click", () => {
               const keys = [item.row.key];
               if (item.ui.primaryAction === "rebuild") {
@@ -1371,7 +1349,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         }
 
         // ── Section: All Papers (advanced, collapsed) ──
-        const advanced = state.createEl("details", { cls: "pf-maint-advanced" });
+        const advanced = state.createEl("details", { cls: "pf-maint-advanced", attr: { open: "" } });
         advanced.createEl("summary", { text: t("ocr_maint_all_papers") + " (" + rows.length + ")" });
 
         // Helper functions for the table
@@ -1400,8 +1378,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         const badgeOrder = ["\u2713 \u5B8C\u6210", "? \u672A\u8BC4\u4F30", "\u26A0 \u8D28\u91CF\u95EE\u9898", "\u26A0 \u4E25\u91CD\u5F02\u5E38", "\u2717 \u5931\u8D25", "\u25CB \u5F85\u5904\u7406", "\u25CF \u5904\u7406\u4E2D"];
 
         // Toolbar (inside details)
-        const toolbar = advanced.createEl("div");
-        toolbar.style.cssText = "display:flex; align-items:center; gap:8px; margin-bottom:8px; flex-wrap:wrap;";
+        const toolbar = advanced.createEl("div", { cls: "pf-maint-toolbar" });
 
         // Row state
         const selState: Record<string, { sel: boolean; action: string }> = {};
@@ -1419,7 +1396,6 @@ export class PaperForgeSettingTab extends PluginSettingTab {
 
         // Filter dropdown
         const filterSel = toolbar.createEl("select");
-        filterSel.style.cssText = "padding:4px 8px; border-radius:4px;";
         filterSel.createEl("option", { text: "\u5168\u90E8", value: "all" });
         for (const k of badgeOrder) { if (catCounts[k]) filterSel.createEl("option", { text: k + " " + catCounts[k], value: k }); }
         filterSel.addEventListener("change", () => { activeFilter = filterSel.value; redrawTable(); });
@@ -1427,12 +1403,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         // Select / deselect / execute buttons
         const selAllBtn = toolbar.createEl("button", { text: "\u5168\u9009" });
         const deselAllBtn = toolbar.createEl("button", { text: "\u53D6\u6D88\u5168\u9009" });
-        Object.assign(selAllBtn.style, { padding: "4px 10px", borderRadius: "4px", cursor: "pointer" });
-        Object.assign(deselAllBtn.style, { padding: "4px 10px", borderRadius: "4px", cursor: "pointer" });
-        const execBtn = toolbar.createEl("button", { text: "\u25B8 \u6267\u884C\u5DF2\u9009" });
-        execBtn.style.cssText = "padding:4px 12px; border-radius:4px; cursor:pointer; font-weight:600; margin-left:auto;";
-        const execLabel = toolbar.createEl("span", { cls: "setting-item-description" });
-        execLabel.style.cssText = "font-size:11px;";
+        const execBtn = toolbar.createEl("button", { text: "\u25B8 \u6267\u884C\u5DF2\u9009", cls: "mod-cta" });
+        const execLabel = toolbar.createEl("span", { cls: "pf-maint-exec-label" });
 
         const updateSummary = () => {
           let n = 0;
@@ -1470,22 +1442,19 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         });
 
         // ── Table ──
-        const tableWrapper = advanced.createEl("div");
-        tableWrapper.style.cssText = "max-height:60vh; overflow-y:auto; border:1px solid var(--background-modifier-border); border-radius:6px; margin-bottom:16px;";
-        const table = tableWrapper.createEl("table");
-        table.style.cssText = "width:100%; border-collapse:collapse; font-size:12px;";
+        const tableWrapper = advanced.createEl("div", { cls: "pf-maint-table-wrap" });
+        const table = tableWrapper.createEl("table", { cls: "pf-maint-table" });
         const thead = table.createEl("thead");
         const tbody = table.createEl("tbody");
         const headerRow = thead.insertRow();
-        ["", "Key", "Title", "\u72B6\u6001", "\u5EFA\u8BAE", "Model", "Time", "\u4FEE\u590D"].forEach(h => {
+        ["", "Key", "Title", "\u72B6\u6001", "\u5EFA\u8BAE", "Model", "\u65F6\u95F4", "\u4FEE\u590D"].forEach(h => {
           const th = document.createElement("th");
           th.textContent = h;
-          th.style.cssText = "padding:4px 6px; text-align:left; border-bottom:1px solid var(--background-modifier-border); position:sticky; top:0; background:var(--background-primary); z-index:1; white-space:nowrap;";
           headerRow.appendChild(th);
         });
 
         const badgeHtml = (label: string, color: string) =>
-          `<span style="display:inline-block;padding:1px 6px;border-radius:3px;font-size:11px;background:${color}22;color:${color};border:1px solid ${color}44;white-space:nowrap;">${label}</span>`;
+          `<span class="pf-maint-badge" style="background:${color}22;color:${color};border:1px solid ${color}44;">${label}</span>`;
 
         const renderRows = (rowList: any[]) => {
           for (const r of rowList) {
@@ -1493,7 +1462,6 @@ export class PaperForgeSettingTab extends PluginSettingTab {
             const cp = classifyPaper(r);
             const hint = actionHint(r);
             const tr = tbody.insertRow();
-            tr.style.cssText = "border-bottom:1px solid var(--background-modifier-border);";
 
             // Sel checkbox
             const selTd = tr.insertCell(); selTd.style.cssText = "padding:3px 4px;";
@@ -1514,7 +1482,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
             const titleTd = tr.insertCell();
             titleTd.style.cssText = "padding:3px 4px; white-space:nowrap; max-width:220px; overflow:hidden; text-overflow:ellipsis;";
             titleTd.textContent = r.title_short || r.title || r.key;
-            titleTd.title = r.title || r.key;
+            setTooltip(titleTd, r.title_full || r.title || r.key, { placement: "top", delay: 500 });
 
             // Status badge
             const badgeTd = tr.insertCell();
@@ -1538,10 +1506,14 @@ export class PaperForgeSettingTab extends PluginSettingTab {
             modelTd.style.cssText = "padding:3px 4px; white-space:nowrap; max-width:140px; overflow:hidden; text-overflow:ellipsis; font-size:11px;";
             modelTd.textContent = r.model || "-";
 
-            // Time
+            // Time — show latest (rebuild > ocr)
             const timeTd = tr.insertCell();
             timeTd.style.cssText = "padding:3px 4px; white-space:nowrap; font-size:11px; color:var(--text-muted);";
-            timeTd.textContent = r.finished_at || "-";
+            const latestTime = r.rebuild_finished_at && r.rebuild_finished_at !== "-" ? r.rebuild_finished_at : r.finished_at;
+            timeTd.textContent = latestTime || "-";
+            setTooltip(timeTd, r.rebuild_finished_at && r.rebuild_finished_at !== "-"
+                ? "OCR: " + (r.finished_at || "-") + "\n重建: " + r.rebuild_finished_at
+                : "OCR: " + (r.finished_at || "-"), { placement: "top", delay: 500 });
 
             // Fix checkbox
             const fixTd = tr.insertCell(); fixTd.style.cssText = "padding:3px 4px; text-align:center; white-space:nowrap;";
@@ -1572,11 +1544,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         containerEl.createEl("hr");
         containerEl.createEl("h3", { text: "\u5168\u5C40\u64CD\u4F5C" });
 
-        const globalActions = containerEl.createEl("div");
-        globalActions.style.cssText = "display:flex; gap:8px; flex-wrap:wrap;";
+        const globalActions = containerEl.createEl("div", { cls: "pf-maint-global" });
 
         const rebuildIndexBtn = globalActions.createEl("button", { text: "\u91CD\u5EFA\u641C\u7D22\u7D22\u5F15" });
-        rebuildIndexBtn.style.cssText = "padding:6px 14px; border-radius:4px; cursor:pointer;";
         rebuildIndexBtn.addEventListener("click", () => {
           new Notice("\u6B63\u5728\u91CD\u5EFA\u641C\u7D22\u7D22\u5F15\u2026");
           execFile(py.path, ["-m", "paperforge", "embed", "build", "--force"], { cwd: vaultPath, timeout: 300000, windowsHide: true },
@@ -1584,7 +1554,6 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         });
 
         const rebuildMemBtn = globalActions.createEl("button", { text: "\u91CD\u5EFA\u8BB0\u5FC6\u5E93" });
-        rebuildMemBtn.style.cssText = "padding:6px 14px; border-radius:4px; cursor:pointer;";
         rebuildMemBtn.addEventListener("click", () => {
           new Notice("\u6B63\u5728\u91CD\u5EFA\u8BB0\u5FC6\u5E93\u2026");
           execFile(py.path, ["-m", "paperforge", "repair", "--fix"], { cwd: vaultPath, timeout: 120000, windowsHide: true },

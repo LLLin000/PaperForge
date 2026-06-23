@@ -4,6 +4,7 @@ export type MaintenanceAction = 'rebuild' | 'redo' | null;
 export type MaintenanceRowLike = {
   key: string;
   title: string;
+  title_full: string;
   status: string;
   health: string;
   recommended_action: string;
@@ -12,6 +13,7 @@ export type MaintenanceRowLike = {
   error_stage: string;
   version: string;
   finished_at: string;
+  rebuild_finished_at: string;
   model: string;
 };
 

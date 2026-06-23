@@ -16,10 +16,12 @@ from paperforge.core.io import read_json
 class OCRMaintenanceRow:
     key: str
     title: str
+    title_full: str
     status: str
     health: str
     version: str
     finished_at: str
+    rebuild_finished_at: str
     pages: int
     blocks: int
     figures: int
@@ -36,10 +38,12 @@ class OCRMaintenanceRow:
         return {
             "key": _safe_str(self.key),
             "title": _safe_str(self.title),
+            "title_full": _safe_str(self.title_full),
             "status": _safe_str(self.status),
             "health": _safe_str(self.health),
             "version": _safe_str(self.version),
             "finished_at": _safe_str(self.finished_at),
+            "rebuild_finished_at": _safe_str(self.rebuild_finished_at),
             "pages": int(self.pages),
             "blocks": int(self.blocks),
             "figures": int(self.figures),
@@ -59,6 +63,8 @@ def _fmt_iso(iso_str: str | None) -> str:
         return "-"
     try:
         dt = datetime.datetime.fromisoformat(iso_str.replace("Z", "+00:00"))
+        if dt.tzinfo is not None:
+            dt = dt.astimezone()
         return dt.strftime("%m-%d %H:%M")
     except (ValueError, TypeError):
         return "-"
@@ -201,13 +207,16 @@ def collect_maintenance_rows(vault: Path) -> list[OCRMaintenanceRow]:
         )
         degraded_reasons = [r for r in degraded_reasons if r]
 
+        rebuild_ts = meta.get("rebuild_finished_at") or meta.get("ocr_health_rebuild_time") or ""
         row = OCRMaintenanceRow(
             key=key,
             title=_short_title(meta.get("title") or key),
+            title_full=_safe_str(meta.get("title") or key),
             status=status if status != "-" else "pending",
             health=health_overall or "-",
             version=version,
             finished_at=_fmt_iso(meta.get("ocr_finished_at")),
+            rebuild_finished_at=_fmt_iso(rebuild_ts),
             pages=int(meta.get("page_count") or health.get("page_count") or 0),
             blocks=int(health.get("blocks_count") or 0),
             figures=int(health.get("figure_caption_count") or 0),

@@ -369,6 +369,7 @@ def run_derived_rebuild_for_keys(vault: Path, keys: list[str]) -> dict:
         # optimistic status instead of short-circuiting on a stale
         # done_incomplete value from a previous render.
         meta["ocr_status"] = "done"
+        meta["rebuild_finished_at"] = datetime.datetime.now(datetime.timezone.utc).isoformat()
         # Re-validate and clear stale errors (e.g. page marker mismatch from pre-fix render)
         paths_dict = {"ocr": pipeline_paths(vault)["ocr"]}
         _status, _err = validate_ocr_meta(paths_dict, meta)

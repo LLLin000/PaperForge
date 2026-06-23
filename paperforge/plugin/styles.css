@@ -761,6 +761,189 @@
     outline: none;
 }
 
+/* ── Description box token ── */
+.paperforge-desc-box {
+    padding: 10px 14px;
+    margin: 0 0 12px;
+    background: var(--background-secondary);
+    border-radius: var(--radius-m, 8px);
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.6;
+    border: 1px solid var(--background-modifier-border);
+}
+.paperforge-desc-box span {
+    opacity: 0.7;
+}
+
+/* ── Skills container ── */
+.paperforge-skills-box {
+    background: var(--background-secondary);
+    border-radius: 8px;
+    padding: 14px 14px 10px;
+    margin: 10px 0 18px;
+    border: 1px solid var(--background-modifier-border);
+}
+
+/* ── Skills arrow ── */
+.paperforge-skills-arrow,
+.paperforge-collapsible-arrow {
+    display: inline-block;
+    font-size: 10px;
+    margin-right: 6px;
+    transition: transform 0.2s;
+    color: var(--text-muted);
+}
+.paperforge-skills-subheader {
+    margin: 0;
+    font-size: 13px;
+}
+
+/* ── Collapsible header ── */
+.paperforge-collapsible-header {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 0;
+    user-select: none;
+    border-radius: 6px;
+    transition: background 0.15s;
+}
+.paperforge-collapsible-header:hover {
+    background: var(--background-modifier-hover);
+    padding-left: 6px;
+    padding-right: 6px;
+}
+.paperforge-collapsible-title {
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1.4;
+}
+.paperforge-collapsible-sub {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-left: 8px;
+}
+
+/* ── Memory status row ── */
+.paperforge-memory-status {
+    display: flex;
+    align-items: center;
+    padding: 10px 14px;
+    margin: 10px 0;
+    background: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 8px;
+    box-shadow: 0 1px 1px rgba(0,0,0,0.03);
+    transition: border-color 0.15s;
+}
+.paperforge-memory-status:hover {
+    border-color: var(--background-modifier-border-hover);
+}
+
+/* ── Memory / embed status text ── */
+.paperforge-memory-text {
+    flex: 1;
+}
+.paperforge-sync-status {
+    opacity: 0.7;
+    margin-right: 8px;
+    font-size: 12px;
+}
+
+/* ── Rebuild / refresh buttons ── */
+.paperforge-rebuild-btn {
+    margin-left: auto;
+    border: 1px solid var(--background-modifier-border);
+    background: var(--background-secondary);
+    cursor: pointer;
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    margin-right: 6px;
+    color: var(--text-normal);
+    transition: background 0.15s, border-color 0.15s;
+}
+.paperforge-rebuild-btn:hover {
+    background: var(--background-modifier-hover);
+    border-color: var(--background-modifier-border-hover);
+}
+.paperforge-refresh-btn {
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 0 4px;
+    color: var(--text-muted);
+    transition: color 0.15s;
+    border-radius: 4px;
+}
+.paperforge-refresh-btn:hover {
+    color: var(--text-normal);
+    background: var(--background-modifier-hover);
+}
+
+/* ── Vector config ── */
+.paperforge-vec-header {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    padding: 6px 6px 4px;
+    margin: 0;
+    border-radius: 6px;
+    transition: background 0.15s;
+}
+.paperforge-vec-header:hover {
+    background: var(--background-modifier-hover);
+}
+.paperforge-vec-header-label {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+.paperforge-vector-config {
+    margin: 4px 0;
+}
+.paperforge-embed-status-text {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+.paperforge-embed-progress-text {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+.paperforge-embed-progress-key {
+    font-size: 11px;
+    color: var(--text-faint);
+}
+
+/* ── Embed rebuild section ── */
+.paperforge-embed-section {
+    padding: 4px 0;
+}
+.paperforge-embed-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+.paperforge-embed-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* ── Progress track in features ── */
+.paperforge-progress-track {
+    flex: 1;
+}
+.paperforge-progress-track .paperforge-progress-seg.done {
+    background: #3e5a47;
+}
+.theme-dark .paperforge-progress-track .paperforge-progress-seg.done {
+    background: #4f735b;
+}
+
 /* ── Step 1: Directory Tree ── */
 .paperforge-dir-tree {
     margin: 16px 0; font-size: var(--font-ui-small); line-height: 1.8; font-family: var(--font-monospace);
@@ -1729,6 +1912,349 @@
 .paperforge-contextual-btn:focus-visible {
     outline: 2px solid color-mix(in srgb, var(--interactive-accent) 62%, white 38%);
     outline-offset: 2px;
+}
+
+/* ==========================================================================
+   SECTION 40 — Maintenance Tab (Vercel-inspired)
+   ========================================================================== */
+.pf-maint-hero {
+    background: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 8px;
+    padding: 20px 24px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 4px 8px rgba(0,0,0,0.02);
+    margin-bottom: 20px;
+}
+.pf-maint-hero h3 {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0 0 6px;
+    line-height: 1.4;
+}
+.pf-maint-hero p {
+    margin: 0;
+}
+
+.pf-maint-counts {
+    display: flex;
+    gap: 12px;
+    margin-top: 14px;
+}
+.pf-maint-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px 18px;
+    background: var(--background-secondary);
+    border-radius: 6px;
+    min-width: 72px;
+}
+.pf-maint-stat strong {
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--text-normal);
+    letter-spacing: -0.5px;
+}
+.pf-maint-stat span {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-top: 2px;
+}
+
+.pf-maint-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 10px 0 18px;
+}
+.pf-maint-card {
+    background: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    box-shadow: 0 1px 1px rgba(0,0,0,0.03);
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+.pf-maint-card:hover {
+    border-color: var(--background-modifier-border-hover);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 8px rgba(0,0,0,0.02);
+}
+.pf-maint-card > strong {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-normal);
+    line-height: 1.4;
+}
+.pf-maint-card p {
+    margin: 4px 0 8px;
+    font-size: 12px;
+}
+.pf-maint-card button {
+    padding: 4px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    background: var(--interactive-accent);
+    color: var(--text-on-accent);
+    border: none;
+    transition: opacity 0.15s;
+}
+.pf-maint-card button:hover {
+    opacity: 0.85;
+}
+
+.pf-maint-chip {
+    display: inline-block;
+    padding: 1px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1.5;
+    vertical-align: middle;
+    margin-left: 8px;
+}
+.pf-maint-chip--rebuild {
+    background: color-mix(in srgb, var(--color-orange, #ff9800) 14%, var(--background-primary));
+    color: var(--color-orange, #ff9800);
+    border: 1px solid color-mix(in srgb, var(--color-orange, #ff9800) 25%, transparent);
+}
+.pf-maint-chip--failed {
+    background: color-mix(in srgb, var(--color-red, #f44336) 10%, var(--background-primary));
+    color: var(--color-red, #f44336);
+    border: 1px solid color-mix(in srgb, var(--color-red, #f44336) 22%, transparent);
+}
+.pf-maint-chip--limited {
+    background: color-mix(in srgb, var(--color-yellow, #ffc107) 10%, var(--background-primary));
+    color: var(--color-yellow, #ffc107);
+    border: 1px solid color-mix(in srgb, var(--color-yellow, #ffc107) 22%, transparent);
+}
+
+.pf-maint-advanced {
+    margin: 18px 0;
+}
+.pf-maint-advanced summary {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 6px 0;
+    user-select: none;
+}
+.pf-maint-advanced summary:hover {
+    color: var(--text-normal);
+}
+
+.pf-maint-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+}
+.pf-maint-toolbar select {
+    padding: 4px 8px;
+    border-radius: 6px;
+    border: 1px solid var(--background-modifier-border);
+    background: var(--background-primary);
+    color: var(--text-normal);
+    font-size: 12px;
+    cursor: pointer;
+}
+.pf-maint-toolbar select:focus {
+    border-color: var(--interactive-accent);
+    outline: none;
+}
+.pf-maint-toolbar button {
+    padding: 4px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    background: var(--background-secondary);
+    border: 1px solid var(--background-modifier-border);
+    color: var(--text-normal);
+    transition: background 0.15s, border-color 0.15s;
+}
+.pf-maint-toolbar button:hover {
+    background: var(--background-modifier-hover);
+    border-color: var(--background-modifier-border-hover);
+}
+.pf-maint-toolbar .mod-cta {
+    padding: 4px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    background: var(--interactive-accent);
+    color: var(--text-on-accent);
+    border: none;
+    margin-left: auto;
+    transition: opacity 0.15s;
+}
+.pf-maint-toolbar .mod-cta:hover {
+    opacity: 0.85;
+}
+.pf-maint-toolbar .pf-maint-exec-label {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.pf-maint-table-wrap {
+    max-height: 60vh;
+    overflow-y: auto;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 8px;
+    margin-bottom: 16px;
+}
+.pf-maint-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+.pf-maint-table th {
+    padding: 6px 8px;
+    text-align: left;
+    border-bottom: 1px solid var(--background-modifier-border);
+    position: sticky;
+    top: 0;
+    background: var(--background-primary);
+    z-index: 1;
+    white-space: nowrap;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+.pf-maint-table td {
+    padding: 4px 8px;
+    border-bottom: 1px solid var(--background-modifier-border);
+}
+.pf-maint-table tr:last-child td {
+    border-bottom: none;
+}
+.pf-maint-table tr:hover td {
+    background: var(--background-secondary);
+}
+
+
+.pf-maint-badge {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+.pf-maint-global {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 4px;
+}
+.pf-maint-global button {
+    padding: 6px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    background: var(--background-secondary);
+    border: 1px solid var(--background-modifier-border);
+    color: var(--text-normal);
+    transition: background 0.15s, border-color 0.15s;
+}
+.pf-maint-global button:hover {
+    background: var(--background-modifier-hover);
+    border-color: var(--background-modifier-border-hover);
+}
+
+/* ==========================================================================
+   SECTION 41 — Global Settings Tab Polish (Vercel-inspired)
+   ========================================================================== */
+.paperforge-settings-tabs {
+    gap: 0 !important;
+    margin-bottom: 20px !important;
+}
+.paperforge-settings-tab {
+    padding: 8px 20px !important;
+    font-size: 13px !important;
+    font-weight: 500;
+    transition: color 0.15s, border-color 0.15s;
+}
+.paperforge-settings-tab:hover {
+    color: var(--text-normal);
+}
+
+.paperforge-guide-item,
+.paperforge-nextstep-item {
+    border-radius: 6px !important;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+.paperforge-guide-item:hover,
+.paperforge-nextstep-item:hover {
+    border-color: var(--background-modifier-border-hover);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+
+.paperforge-summary-row {
+    transition: background 0.15s;
+}
+.paperforge-summary-row:hover {
+    background: var(--background-secondary) !important;
+}
+
+.paperforge-release-card {
+    border-radius: 8px !important;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+.paperforge-release-card:hover {
+    border-color: var(--background-modifier-border-hover);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 8px rgba(0,0,0,0.02);
+}
+
+/* Collapsible sections */
+.paperforge-collapsible-header,
+.paperforge-skills-collapse-header {
+    border-radius: 6px;
+    padding: 8px 10px !important;
+    transition: background 0.15s;
+    margin: 0 !important;
+}
+.paperforge-collapsible-header:hover,
+.paperforge-skills-collapse-header:hover {
+    background: var(--background-modifier-hover);
+}
+
+/* Clean up desc boxes */
+.paperforge-settings-desc {
+    border-radius: 8px !important;
+    font-size: 13px !important;
+}
+
+/* Runtime badge */
+.paperforge-runtime-badge {
+    border-radius: 6px !important;
+}
+
+/* CTA button for install */
+.paperforge-setup-bar {
+    border-radius: 8px !important;
+}
+
+.paperforge-setup-label {
+    font-size: 14px;
+}
+
+/* Modal step bar polish */
+.paperforge-step-dot .paperforge-step-num {
+    box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+}
+.paperforge-step-btn {
+    border-radius: 8px !important;
 }
 
 .paperforge-contextual-btn-icon {
