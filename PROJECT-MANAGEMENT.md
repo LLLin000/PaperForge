@@ -1,6 +1,6 @@
 # OCR-v2 Project Management Log
 
-> **Branch:** `ocr-v2` | **Base:** `master` | **Last Updated:** 2026-06-23 (same-number distinct legend dedup guard)
+> **Branch:** `ocr-v2` | **Base:** `master` | **Last Updated:** 2026-06-23 (sidecar outlier tolerance + raw band)
 > **Rule:** Every step is documented with: What was done, Why it was done, What comes next.
 
 ---
@@ -2048,7 +2048,13 @@ Vision audit of VFS8CBW2/6FGDBFQN/2UIPV93M/RKSLQRIM identified two residual issu
 
 These are NOT convergence-layer issues. The phantom cluster bug (fixed in 12.34) was the only convergence-layer diagnostic inaccuracy found by this audit pass.
 
-### 12.36 Same-number distinct legend dedup guard (2026-06-23)
+### 12.37 Sidecar narrow column outlier tolerance + raw band (2026-06-23)
+
+- Problem: 6FGDBFQN page 3 (AJR three-column layout with narrow left captions and wide right assets) sidecar fallback never triggered. Two root causes: (1) A right-column body text block ("...Fig. 6...") misclassified as a figure caption broke `_same_page_narrow_caption_column`'s x-center spread check, returning [] instead of the valid left-column cluster. (2) When sidecar did run, `_caption_row_coupled_assets` over-filtered far-column panels with `x_gap > 0.25*page_width`, dropping the rightmost asset in each figure's band.
+- Root cause: `_same_page_narrow_caption_column` used a one-shot spread check — any outlier x-center killed the entire narrow column. And sidecar promotion used row-coupled geometry designed for caption-below/above layouts, which is too strict for caption-column layouts.
+- Fixes: (1) Outlier-tolerant `_same_page_narrow_caption_column`: when the global x-center spread check fails, clusters formal captions by x-center and keeps the largest aligned cluster with >=2 captions. Singleton outliers (right-column body mentions) are dropped. (2) Sidecar promotion uses `band_assets = raw_band_assets` directly — the band partition is the ownership unit for sidecar pages, not row-coupled geometry. (3) Added `asset_block_ids` to sidecar entry schema (was missing, causing empty asset reporting).
+- Result: 6FGDBFQN Fig 3 now correctly matched with 2 assets [11, 13] via sidecar settlement. Fig 2 on same page correctly gets 2 assets [3, 4] via sidecar (previously 4 via same_page, incorrectly included Fig 3's assets). No same_page/cross_page/dedup changes. Row-coupled helper retained for other uses.
+- Tests: 4 new synthetic tests covering outlier-tolerant narrow column, 2-caption minimum, full raw band usage, and protected asset exclusion. 221 tests total, 0 failures.
 
 - Problem: the legend dedup (`_dedup_map`) uses `(namespace, figure_number)` as the unique key and unconditionally removes all but the highest-priority legend. When a paper has independent figures with the same number in different sections (e.g., body Figure 1 vs appendix Figure 1), the weaker style/zone variant is silently dropped. 2UIPV93M page 49 "图 1" / "图 2" (appendix X-ray figures) were removed because page 16/17 "图 1" / "图 2" (body figures with `legend_like` style) had higher dedup priority.
 - Root cause: dedup assumed all legends sharing the same `(namespace, figure_number)` key are duplicates of the same figure. It did not check whether the caption text itself is different.

@@ -1446,11 +1446,45 @@ def _same_page_narrow_caption_column(page_captions: list[dict], page_width: floa
     ]
     if len(formal) < 2:
         return []
-    centers = [((cap.get("bbox") or [0, 0, 0, 0])[0] + (cap.get("bbox") or [0, 0, 0, 0])[2]) / 2 for cap in formal]
-    if max(centers) - min(centers) > page_width * 0.08:
+
+    def _center_x(cap: dict) -> float:
+        bb = cap.get("bbox") or [0, 0, 0, 0]
+        return (bb[0] + bb[2]) / 2
+
+    max_spread = page_width * 0.08
+    centers = [_center_x(cap) for cap in formal]
+
+    if max(centers) - min(centers) <= max_spread:
+        return sorted(formal, key=lambda cap: (cap.get("bbox") or [0, 0, 0, 0])[1])
+
+    # Outlier-tolerant: cluster by x-center and keep the largest aligned column.
+    ordered_by_x = sorted(formal, key=_center_x)
+    clusters: list[list[dict]] = []
+
+    for cap in ordered_by_x:
+        cx = _center_x(cap)
+        placed = False
+        for cluster in clusters:
+            cluster_centers = [_center_x(c) for c in cluster]
+            cluster_mean = sum(cluster_centers) / len(cluster_centers)
+            if abs(cx - cluster_mean) <= max_spread:
+                cluster.append(cap)
+                placed = True
+                break
+        if not placed:
+            clusters.append([cap])
+
+    viable = [c for c in clusters if len(c) >= 2]
+    if not viable:
         return []
-    ordered = sorted(formal, key=lambda cap: (cap.get("bbox") or [0, 0, 0, 0])[1])
-    return ordered
+
+    best = max(viable, key=lambda c: (len(c), -_center_x(c[0])))
+
+    best_centers = [_center_x(c) for c in best]
+    if max(best_centers) - min(best_centers) > max_spread:
+        return []
+
+    return sorted(best, key=lambda cap: (cap.get("bbox") or [0, 0, 0, 0])[1])
 
 
 def _caption_row_coupled_assets(caption: dict, assets: list[dict], *, page_width: float = 1200) -> list[dict]:
@@ -3489,13 +3523,11 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
                 if (int(asset.get("page", 0) or 0), str(asset.get("block_id", ""))) not in protected_asset_page_ids
                 and (int(asset.get("page", 0) or 0), str(asset.get("block_id", ""))) not in hypothesis_protected_asset_page_ids
             ]
-            band_assets = _caption_row_coupled_assets(
-                cap,
-                raw_band_assets,
-                page_width=page_width,
-            )
-            if not band_assets:
-                band_assets = raw_band_assets
+            # In sidecar mode _partition_assets_by_caption_bands is the
+            # ownership unit.  Row-coupled geometry is too strict for
+            # AJR-style caption-column layouts and can drop far-column
+            # panels within the same caption band.
+            band_assets = raw_band_assets
             if not band_assets:
                 continue
             eligible_asset_ids = _fallback_eligible_asset_page_ids(
@@ -3538,6 +3570,7 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
                 "matched_assets": [
                     {"block_id": a.get("block_id", ""), "bbox": a.get("bbox", [0, 0, 0, 0])} for a in band_assets
                 ],
+                "asset_block_ids": [str(a.get("block_id", "")) for a in band_assets if a.get("block_id") is not None],
                 "group_type": "sidecar_partition",
                 "group_evidence": ["same_page", "narrow_caption_column", "sidecar_fallback"],
                 "confidence": 0.5,

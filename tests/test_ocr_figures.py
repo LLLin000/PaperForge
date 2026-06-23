@@ -4732,3 +4732,113 @@ def test_unresolved_clusters_deduped_against_matched_figures() -> None:
                 if str(b) == str(bid)
             }, f"block {bid} in unresolved_cluster must not also be in matched_figures"
 
+
+# --- Sidecar: outlier-tolerant narrow column + raw band ---
+
+def test_narrow_caption_column_ignores_x_center_outlier() -> None:
+    from paperforge.worker.ocr_figures import _same_page_narrow_caption_column
+
+    captions = [
+        {"block_id": 2, "page": 3, "text": "Fig. 2. Left-column caption.",
+         "bbox": [103, 140, 422, 312]},
+        {"block_id": 5, "page": 3, "text": "Fig. 3. Another left-column caption.",
+         "bbox": [105, 802, 419, 838]},
+        {"block_id": 14, "page": 3, "text": "Fig. 6 body mention right column.",
+         "bbox": [799, 963, 1132, 1052]},
+    ]
+
+    result = _same_page_narrow_caption_column(captions, page_width=1133)
+    result_ids = {c.get("block_id") for c in result}
+    assert 2 in result_ids, "Fig 2 must be in narrow column"
+    assert 5 in result_ids, "Fig 3 must be in narrow column"
+    assert 14 not in result_ids, "Right-column outlier must not be in narrow column"
+
+
+def test_narrow_caption_column_requires_two_aligned_captions_after_outlier_filter() -> None:
+    from paperforge.worker.ocr_figures import _same_page_narrow_caption_column
+
+    # Only 1 left-column caption + 1 right outlier → no valid cluster
+    captions = [
+        {"block_id": 2, "page": 3, "text": "Fig. 2. Left-column caption.",
+         "bbox": [103, 140, 422, 312]},
+        {"block_id": 14, "page": 3, "text": "Fig. 6 body mention right column.",
+         "bbox": [799, 963, 1132, 1052]},
+    ]
+    assert _same_page_narrow_caption_column(captions, page_width=1133) == []
+
+
+def test_sidecar_uses_full_filtered_raw_band_not_row_coupled_subset() -> None:
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    # AJR-style three-column layout: narrow left captions, wide right assets.
+    # All assets cluster into one group, same_page gives it all to Fig 2.
+    # Fig 3 is unresolved → violation → sidecar fires and redistributes.
+    blocks = [
+        {"block_id": "leg2", "page": 10, "role": "figure_caption",
+         "text": "Fig. 2. Left column caption.", "bbox": [100, 80, 400, 150],
+         "style_family": "legend_like",
+         "marker_signature": {"type": "figure_number", "number": 2}},
+        {"block_id": "leg3", "page": 10, "role": "figure_caption",
+         "text": "Fig. 3. Second left caption.", "bbox": [100, 600, 400, 650],
+         "style_family": "legend_like",
+         "marker_signature": {"type": "figure_number", "number": 3}},
+        {"block_id": "a2a", "page": 10, "role": "figure_asset", "raw_label": "image",
+         "bbox": [450, 80, 700, 250]},
+        {"block_id": "a2b", "page": 10, "role": "figure_asset", "raw_label": "image",
+         "bbox": [450, 280, 700, 450]},
+        {"block_id": "a3a", "page": 10, "role": "figure_asset", "raw_label": "image",
+         "bbox": [450, 550, 700, 750]},
+        {"block_id": "a3b", "page": 10, "role": "figure_asset", "raw_label": "image",
+         "bbox": [450, 800, 700, 1000]},
+    ]
+
+    inv = build_figure_inventory(blocks, page_width=1200)
+    matched = {m.get("figure_number"): m for m in inv.get("matched_figures", [])}
+
+    assert 2 in matched, "Fig 2 must be matched via sidecar"
+    assert {str(b) for b in matched[2].get("asset_block_ids", [])} == {"a2a", "a2b"}, (
+        f"Fig 2 must get both band assets, got {matched[2].get('asset_block_ids')}"
+    )
+
+    assert 3 in matched, "Fig 3 must be matched via sidecar"
+    assert {str(b) for b in matched[3].get("asset_block_ids", [])} == {"a3a", "a3b"}, (
+        f"Fig 3 must get both band assets, got {matched[3].get('asset_block_ids')}"
+    )
+
+
+def test_sidecar_raw_band_still_excludes_protected_assets() -> None:
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    blocks = [
+        {"block_id": "legA", "page": 10, "role": "figure_caption",
+         "text": "Fig. 1. Protected below caption.", "bbox": [100, 500, 400, 550],
+         "style_family": "legend_like",
+         "marker_signature": {"type": "figure_number", "number": 1}},
+        {"block_id": "aA", "page": 10, "role": "figure_asset", "raw_label": "image",
+         "bbox": [100, 100, 500, 480]},
+        {"block_id": "legB", "page": 10, "role": "figure_caption",
+         "text": "Fig. 2. Narrow left caption.", "bbox": [100, 600, 400, 650],
+         "style_family": "legend_like",
+         "marker_signature": {"type": "figure_number", "number": 2}},
+        {"block_id": "legC", "page": 10, "role": "figure_caption",
+         "text": "Fig. 3. Narrow left caption.", "bbox": [100, 750, 400, 800],
+         "style_family": "legend_like",
+         "marker_signature": {"type": "figure_number", "number": 3}},
+        {"block_id": "aB", "page": 10, "role": "figure_asset", "raw_label": "image",
+         "bbox": [450, 550, 800, 750]},
+        {"block_id": "aC", "page": 10, "role": "figure_asset", "raw_label": "image",
+         "bbox": [450, 800, 800, 1000]},
+    ]
+
+    inv = build_figure_inventory(blocks, page_width=1200)
+    matched = {m.get("figure_number"): m for m in inv.get("matched_figures", [])}
+
+    assert 1 in matched, "Fig 1 (caption_below) must remain matched separately"
+    # Fig 1 is a caption_below match with its own asset aA.
+    # Narrow sidecar (Fig 2, Fig 3) should NOT capture aA.
+    fig1_assets = {str(b) for b in matched[1].get("asset_block_ids", [])}
+    assert "aA" in fig1_assets, "Fig 1 must keep its caption_below asset"
+
+    fig2_assets = {str(b) for b in matched.get(2, {}).get("asset_block_ids", [])}
+    assert "aA" not in fig2_assets, "Sidecar Fig 2 must not steal Fig 1 protected asset"
+
