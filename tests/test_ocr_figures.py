@@ -4230,3 +4230,94 @@ def test_ambiguous_region_is_not_hard_forced() -> None:
     assert "amb_img" in matched_assets, (
         "Ambiguous asset must NOT be hard-excluded from figure matching"
     )
+
+
+# === P1B: Panel-Title Suppression (Task 3) ===
+
+
+def test_short_unnumbered_panel_title_does_not_compete_with_numbered_caption() -> None:
+    """Panel-title candidate on a page with a numbered caption must not produce
+    local pairing hypotheses as a formal legend."""
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    blocks = [
+        {"block_id": "fig1_legend", "page": 10, "role": "figure_caption",
+         "text": "Figure 1. Main experimental results.", "bbox": [100, 900, 900, 950],
+         "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 1}},
+        {"block_id": "fig1_asset", "page": 10, "role": "figure_asset", "raw_label": "image",
+         "bbox": [100, 100, 900, 500]},
+        {"block_id": "panel_title", "page": 10, "role": "figure_caption_candidate",
+         "text": "RND", "bbox": [100, 520, 500, 540],
+         "zone": "display_zone", "style_family": "legend_like"},
+    ]
+
+    inv = build_figure_inventory(blocks)
+
+    suppressed = inv.get("suppressed_caption_candidates", [])
+    assert len(suppressed) == 1, f"Expected 1 suppressed panel title, got {len(suppressed)}"
+    assert suppressed[0]["block_id"] == "panel_title"
+    assert suppressed[0]["suppression_reason"] == "panel_title_inside_visual_envelope"
+
+    hypotheses = inv.get("local_pairing_hypotheses", [])
+    panel_hypotheses = [h for h in hypotheses if h.get("legend_block_id") == "panel_title"]
+    assert not panel_hypotheses, "Panel title must not produce local pairing hypotheses"
+
+    fig1 = [m for m in inv["matched_figures"] if m.get("figure_number") == 1]
+    assert fig1, "Figure 1 must still be matched"
+
+
+def test_suppressed_panel_title_not_emitted_as_matched_or_ambiguous() -> None:
+    """Suppressed panel titles must not appear in matched_figures or
+    ambiguous_figures."""
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    blocks = [
+        {"block_id": "leg_1", "page": 20, "role": "figure_caption",
+         "text": "Figure 2. Group analysis.", "bbox": [100, 900, 900, 950],
+         "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 2}},
+        {"block_id": "ast_1", "page": 20, "role": "figure_asset", "raw_label": "image",
+         "bbox": [100, 100, 900, 500]},
+        {"block_id": "fake_cap", "page": 20, "role": "figure_caption_candidate",
+         "text": "Basal respiration rate", "bbox": [100, 520, 500, 550],
+         "zone": "display_zone", "style_family": "legend_like"},
+    ]
+
+    inv = build_figure_inventory(blocks)
+
+    suppressed = inv.get("suppressed_caption_candidates", [])
+    assert len(suppressed) == 1
+
+    matched_ids = {str(m.get("legend_block_id", "")) for m in inv.get("matched_figures", [])}
+    assert "fake_cap" not in matched_ids, "Suppressed title must not be in matched_figures"
+
+    ambiguous_ids = {str(a.get("legend_block_id", "")) for a in inv.get("ambiguous_figures", [])}
+    assert "fake_cap" not in ambiguous_ids, "Suppressed title must not be in ambiguous_figures"
+
+    suppressed_ids = {s["block_id"] for s in suppressed}
+    assert "fake_cap" in suppressed_ids
+
+
+def test_suppressed_panel_title_remains_accounted_not_body() -> None:
+    """Suppressed panel titles must appear as retained embedded text, not lost."""
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    blocks = [
+        {"block_id": "leg_k", "page": 30, "role": "figure_caption",
+         "text": "Figure 3. Analysis.", "bbox": [100, 900, 900, 950],
+         "style_family": "legend_like", "marker_signature": {"type": "figure_number", "number": 3}},
+        {"block_id": "ast_k", "page": 30, "role": "figure_asset", "raw_label": "image",
+         "bbox": [100, 100, 900, 500]},
+        {"block_id": "panel_k", "page": 30, "role": "figure_caption_candidate",
+         "text": "COL II", "bbox": [100, 520, 500, 540],
+         "zone": "display_zone", "style_family": "legend_like"},
+    ]
+
+    inv = build_figure_inventory(blocks)
+
+    suppressed = inv.get("suppressed_caption_candidates", [])
+    assert len(suppressed) == 1
+    assert suppressed[0]["retained_as"] == "embedded_figure_text"
+
+    rejected_ids = {str(r.get("block_id", "")) for r in inv.get("rejected_legends", [])}
+    assert "panel_k" not in rejected_ids, "Suppressed title must not be in rejected_legends"
+

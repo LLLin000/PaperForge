@@ -1660,6 +1660,64 @@ def _build_composite_parent_figure_groups_visual_only(
     return results
 
 
+def _should_suppress_panel_title_candidate(
+    block: dict,
+    *,
+    page_has_numbered_legend: bool,
+    visual_envelopes: list[dict],
+    page_width: float,
+) -> bool:
+    """Structurally demote short unnumbered text that looks like a caption
+    but is actually a panel title inside a figure visual envelope.
+
+    Signals (all required):
+    1. no figure number
+    2. short text span (<= 50 chars)
+    3. inside a likely visual parent envelope (overlaps a candidate_group
+       or composite_parent bbox on the same page)
+    4. page already has a strong numbered figure caption
+    5. title-like geometry (narrow block or small text relative to page)
+
+    No literal string blacklist.
+    """
+    if not page_has_numbered_legend:
+        return False
+    text = str(block.get("text") or "").strip()
+    if _extract_figure_number(text) is not None:
+        return False
+    if len(text) > 50:
+        return False
+    if len(text.split()) > 4:
+        return False
+    bbox = block.get("bbox") or block.get("block_bbox") or [0, 0, 0, 0]
+    if len(bbox) < 4:
+        return False
+    block_width = bbox[2] - bbox[0]
+    block_page = int(block.get("page", 0) or 0)
+    page_envelopes = [
+        env
+        for env in visual_envelopes
+        if int(env.get("page", 0) or 0) == block_page
+    ]
+    inside_envelope = False
+    for env in page_envelopes:
+        eb = env.get("cluster_bbox") or env.get("bbox") or [0, 0, 0, 0]
+        if len(eb) < 4:
+            continue
+        x_overlap = bbox[0] < eb[2] and bbox[2] > eb[0]
+        y_overlap = bbox[1] < eb[3] and bbox[3] > eb[1]
+        x_near = max(0.0, eb[0] - bbox[2], bbox[0] - eb[2]) <= page_width * 0.3
+        y_near = max(0.0, eb[1] - bbox[3], bbox[1] - eb[3]) <= 80
+        if (x_overlap or x_near) and (y_overlap or y_near):
+            inside_envelope = True
+            break
+    if not inside_envelope:
+        return False
+    if block_width > page_width * 0.7:
+        return False
+    return True
+
+
 def _asset_vertical_side(legend: dict, group: dict) -> str:
     legend_bbox = legend.get("bbox") or legend.get("block_bbox") or [0, 0, 0, 0]
     cluster_bbox = group.get("cluster_bbox") or [0, 0, 0, 0]
@@ -2417,6 +2475,45 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
         structured_blocks,
         page_width,
     )
+
+    # --- Panel-title suppression: demote short unnumbered text inside visual
+    # envelopes from formal legend matching on pages with numbered captions ---
+    _numbered_pages = {
+        int(leg.get("page", 0) or 0)
+        for leg in legends
+        if _extract_figure_number(str(leg.get("text") or "")) is not None
+    }
+    visual_envelopes: list[dict] = list(candidate_groups) + list(composite_parent_candidates)
+    suppressed_caption_candidates: list[dict] = []
+    remaining_legends: list[dict] = []
+    for leg in legends:
+        if _should_suppress_panel_title_candidate(
+            leg,
+            page_has_numbered_legend=int(leg.get("page", 0) or 0) in _numbered_pages,
+            visual_envelopes=visual_envelopes,
+            page_width=page_width,
+        ):
+            suppressed_caption_candidates.append(
+                {
+                    "block_id": leg.get("block_id", ""),
+                    "page": leg.get("page"),
+                    "text": leg.get("text", ""),
+                    "suppression_reason": "panel_title_inside_visual_envelope",
+                    "retained_as": "embedded_figure_text",
+                }
+            )
+        else:
+            remaining_legends.append(leg)
+    legends = remaining_legends
+    ordered_legends = [
+        leg for leg in ordered_legends
+        if not _should_suppress_panel_title_candidate(
+            leg,
+            page_has_numbered_legend=int(leg.get("page", 0) or 0) in _numbered_pages,
+            visual_envelopes=visual_envelopes,
+            page_width=page_width,
+        )
+    ]
 
     # Gate: suppress page_assets groups on pages with competing captions
     # so one big group doesn't swallow assets meant for multiple figures.
@@ -3660,6 +3757,7 @@ def build_figure_inventory(structured_blocks: list[dict], page_width: float = 12
         "unresolved_clusters": unresolved_clusters,
         "deduped_legend_ids": deduped_legend_ids,
         "composite_parent_candidates": composite_parent_candidates,
+        "suppressed_caption_candidates": suppressed_caption_candidates,
         "official_figure_count": len(matched_figures),
     }
 
