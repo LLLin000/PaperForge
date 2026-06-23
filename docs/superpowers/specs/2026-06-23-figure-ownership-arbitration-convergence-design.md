@@ -139,6 +139,27 @@ rejected
 `settlement_type` may continue to exist as provenance.
 It must no longer be treated as equivalent to truth strength.
 
+### 4.2.1 OwnershipDecision is internal before bucket migration
+
+In the first convergence pass, `OwnershipDecision` is an internal arbitration result.
+It does **not** replace the persisted inventory buckets immediately.
+
+Required mapping:
+
+```text
+accepted -> matched_figures
+provisional -> ambiguous_figures (or a future provisional audit surface), but not strong solved ownership
+unresolved -> unresolved_clusters / unmatched_assets / unmatched_legends depending on object type
+rejected -> rejected_legends / rejected_candidates
+```
+
+Phase-1 rule:
+
+```text
+The system may add `ownership_decision` or equivalent metadata onto existing entries,
+but it must not remove the current persisted buckets until reader/render/health/object consumers are migrated.
+```
+
 ### 4.3 Partial local ownership is not automatically protected
 
 Any same-page result that only explains a small subset of the local visual mass on a dense page is not automatically strong ownership.
@@ -151,12 +172,43 @@ provisional
 
 until arbitration confirms it is the best ownership explanation.
 
+### 4.3.1 Provisional ownership uses soft reservation semantics
+
+`provisional` must have explicit reservation behavior.
+Otherwise it either blocks stronger repair paths too early or remains too weak to prevent duplicate fallback consumption.
+
+Required semantics:
+
+```text
+provisional candidates may place soft reservations during arbitration
+soft reservations block legacy fallback from consuming the same assets during the arbitration window
+soft reservations may be superseded by a stronger candidate before finalization
+only accepted decisions finalize ownership into matched_figures truth
+rejected or unresolved outcomes must release or downgrade the reservation according to the audit policy
+```
+
 ### 4.4 Assetless sequence shells are not solved matches
 
 If a `sequence_match` has no real asset payload, it is not a real ownership win.
 
 It may be visible as a shell outcome for traceability.
 It must not count as a strong solved match in audit or health reporting.
+
+Required output rule:
+
+```text
+assetless sequence shells must not be emitted into matched_figures
+```
+
+They may instead appear as:
+
+1. `ambiguous_figures` with `hold_reason = "assetless_sequence_shell"`
+2. a separate `sequence_shells` audit bucket
+
+They must not increment:
+
+1. `official_figure_count`
+2. solved ownership metrics in health / audit summaries
 
 ---
 
@@ -197,6 +249,32 @@ Examples:
 A proposed explanation that a given legend owns a specific visual grouping.
 
 This is where same-page, composite-parent, sidecar-rescue, and sequence-shell provenance belong.
+
+Minimum contract shape in the convergence direction:
+
+```python
+{
+    "candidate_id": str,
+    "candidate_source": str,
+    "legend_block_id": str | None,
+    "visual_group_id": str | None,
+    "asset_block_ids": list[str],
+    "embedded_text_block_ids": list[str],
+    "page": int,
+    "legend_page": int | None,
+    "asset_pages": list[int],
+    "bbox": list[float],
+    "evidence": list[str],
+    "conflicts": list[str],
+    "coverage_score": float,
+    "caption_score": float,
+    "visual_score": float,
+    "arbitration_score": float | None,
+}
+```
+
+The exact field names may vary.
+The shape must remain unified across candidate sources.
 
 ### 5.5 `OwnershipDecision`
 
@@ -294,6 +372,29 @@ dense_composite_parent_candidate
 This must be generated as part of candidate generation.
 It must **not** be implemented as a new direct settlement path.
 
+### 7.2.1 Dense parent is a composite-parent subtype
+
+`dense_composite_parent_candidate` is not a new ownership family parallel to `composite_parent`.
+
+It is a subtype or evidence profile of composite parent candidacy.
+
+Required interpretation:
+
+```text
+dense_composite_parent_candidate is a subtype of composite_parent_candidate,
+not a separate ownership path and not a new settlement mechanism
+```
+
+One acceptable representation is:
+
+```python
+{
+    "group_type": "composite_parent",
+    "parent_subtype": "dense_composite",
+    ...
+}
+```
+
 ### 7.3 Dense parent construction constraints
 
 Dense parent candidates must be:
@@ -310,17 +411,29 @@ Caption alignment is allowed later in arbitration.
 
 The system should only build dense parent candidates in pages that look like real dense-composite pages.
 
-Typical trigger signals:
+Construction-time trigger signals:
 
 1. page contains a formal numbered figure caption
 2. same local visual zone contains many fragments
 3. visual fragment count is high, e.g. `>= 4`
-4. unresolved clusters are already present, e.g. `>= 2`
-5. ordinary same-page ownership explains only part of the zone
-6. the candidate does not cross another numbered caption interval boundary
+4. the candidate does not cross another numbered caption interval boundary
+5. local fragments show compact visual structure rather than page-wide scatter
 
 This is not page-wide mega-merge.
 This is scoped visual-parent candidacy.
+
+Arbitration-time scoring signals may additionally use:
+
+1. coverage gain over ordinary local ownership
+2. unresolved visual mass reduction
+3. penalty for partial local ownership that explains only a small subset of the zone
+4. sibling-caption conflict penalties
+
+Rule:
+
+```text
+Layer 2 construction may not depend on values that only exist after Layer 3/4 finalization.
+```
 
 ### 7.5 Dense parent candidate contract
 
@@ -425,6 +538,20 @@ partial ordinary local ownership on dense page
 < strong dense parent candidate
 ```
 
+### 8.6 Relationship to existing roadmap
+
+This convergence spec does **not** replace the already-approved visual-grammar hardening roadmap.
+
+It acts as an architecture constraint layer for that roadmap.
+
+Required relationship:
+
+```text
+P0 close-out fixes still land first
+P1A diagnostic-only parent detection still lands before ownership-bearing parent arbitration
+P1B / P2 / P3 and later dense-page work must follow the convergence rules in this spec
+```
+
 ---
 
 ## 9. Layer 4 - Render and Accounting
@@ -446,7 +573,7 @@ Required distinction:
 
 Shell outcomes must not be counted as strong matched ownership in health and audit summaries.
 
-Suggested status label:
+Suggested shell label:
 
 ```text
 assetless_sequence_shell
